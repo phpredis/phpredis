@@ -1,0 +1,29 @@
+============
+= phpredis =
+============
+
+This is a fork of alfonsojimenez's phpredis.
+
+This extension provides an API for communicating with Redis database, a persistent 
+key-value database with built-in net interface written in ANSI-C for Posix systems.
+
+IMPORTANT
+=========
+
+This extension is experimental, it's still under development and it's not safe
+enough for production use. The method names may change in future versions.
+
+
+INSTALLING
+==========
+
+    phpize
+    ./configure
+    make && make install
+
+CONTRIBUTING
+============
+
+Send comments, patches... to:
+	* n.bouafif@owlient.eu
+	* n.favre-felix@owlient.eu
