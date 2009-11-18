@@ -655,6 +655,54 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     }
 
+    public function testsInter() {
+        $this->redis->delete('x');	// set of odd numbers
+        $this->redis->delete('y');	// set of prime numbers
+        $this->redis->delete('z');	// set of squares
+        $this->redis->delete('t');	// set of numbers of the form n^2 - 1
+
+        $x = array(1,3,5,7,9,11,13,15,17,19,21,23,25);
+        foreach($x as $i) {
+            $this->redis->sAdd('x', $i);
+        }
+
+        $y = array(1,2,3,5,7,11,13,17,19,23);
+        foreach($y as $i) {
+            $this->redis->sAdd('y', $i);
+        }
+
+        $z = array(1,4,9,16,25);
+        foreach($z as $i) {
+            $this->redis->sAdd('z', $i);
+        }
+
+        $t = array(2,5,10,17,26);
+        foreach($t as $i) {
+            $this->redis->sAdd('t', $i);
+        }
+
+        $xy = $this->redis->sInter('x', 'y');	// odd prime numbers
+        foreach($xy as $i) {
+	    $i = (int)$i;
+            $this->assertTrue(in_array($i, array_intersect($x, $y)));
+        }
+
+        $yz = $this->redis->sInter('y', 'z');	// set of odd squares
+        foreach($yz as $i) {
+	    $i = (int)$i;
+            $this->assertTrue(in_array($i, array_intersect($y, $z)));
+        }
+
+        $zt = $this->redis->sInter('y', 'z');	// prime squares
+        $this->assertTrue($zt === array('1'));
+
+        $xyz = $this->redis->sInter('x', 'y', 'z');// odd prime squares
+        $this->assertTrue($xyz === array('1'));
+
+        $nil = $this->redis->sInter();
+        $this->assertTrue($nil === FALSE);
+    }
+
     public function testlGetRange() {
 
       	$this->redis->delete('list');

@@ -72,6 +72,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sPop, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sContains, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sGetMembers, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sInter, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setTimeout, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
@@ -1949,6 +1950,79 @@ PHP_METHOD(Redis, sGetMembers)
         RETURN_FALSE;
     }
 
+    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                        redis_sock, &response_len TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+}
+/* }}} */
+
+/* {{{ proto array Redis::sInter(string key0, ... string keyN)
+ */
+PHP_METHOD(Redis, sInter) {
+
+    sinter_common(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SINTER", sizeof("SINTER") - 1);
+}
+
+PHPAPI int sinter_common(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len TSRMLS_DC)
+{
+    zval *object, **z_args;
+    RedisSock *redis_sock;
+    char **keys, *cmd, *response;
+    int cmd_len, count, response_len, *keys_len;
+    int i, argc = ZEND_NUM_ARGS();
+
+    z_args = emalloc(argc * sizeof(zval*));
+    if(zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
+        efree(z_args);
+        RETURN_FALSE;
+    }
+
+    /* prepare an array for the keys, and one for their lengths */
+    keys = emalloc(argc * sizeof(char*));
+    keys_len = emalloc(argc * sizeof(int));
+
+    cmd_len = keyword_len; /* start computing the command length */
+
+    for(i = 0; i < argc; ++i) { /* store each key */
+        keys[i] = Z_STRVAL_P(z_args[i]);
+        keys_len[i] = Z_STRLEN_P(z_args[i]);
+        cmd_len += keys_len[i] + 1; /* +1 for the preceding space. */
+    }
+
+    /* get redis socket */
+    if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC) < 0) {
+        efree(keys);
+        efree(keys_len);
+        efree(z_args);
+        RETURN_FALSE;
+    }
+
+    cmd_len += sizeof("\r\n") - 1;
+    cmd = emalloc(cmd_len);
+
+    memcpy(cmd, keyword, keyword_len);
+    int pos = keyword_len;
+    /* copy each key to its destination */
+    for(i = 0; i < argc; ++i) {
+        cmd[pos] = ' ';
+        memcpy(cmd + pos + 1, keys[i], keys_len[i]);
+        pos += 1+keys_len[i];
+    }
+    /* add the final new line. */
+    memcpy(cmd + pos, "\r\n", 2);
+    efree(keys);
+    efree(keys_len);
+    efree(z_args);
+
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+
+    /* read multibulk reply */
     if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                         redis_sock, &response_len TSRMLS_CC) < 0) {
         RETURN_FALSE;
