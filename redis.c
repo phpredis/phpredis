@@ -43,6 +43,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, set, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setnx, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getSet, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, randomKey, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, add, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getMultiple, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, exists, NULL, ZEND_ACC_PUBLIC)
@@ -717,6 +718,52 @@ PHP_METHOD(Redis, getSet)
     }
 
     RETURN_STRINGL(response, response_len, 0);
+}
+/* }}} */
+
+/* {{{ proto string Redis::randomKey()
+ */
+PHP_METHOD(Redis, randomKey)
+{
+
+    zval *object;
+    RedisSock *redis_sock;
+    char *cmd, *response, *ret;
+    int cmd_len, response_len;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
+                                     &object, redis_ce) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd, "RANDOMKEY\r\n");
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    if(response == NULL) {
+        RETURN_FALSE;
+    }
+
+    if(response[0] == '+') {
+        ret = estrndup(response+1, response_len-1);
+        efree(response);
+        RETURN_STRINGL(ret, response_len-1, 0);  // need to remove the '+'
+    } else {
+        efree(response);
+        RETURN_FALSE;
+    }
+
 }
 /* }}} */
 

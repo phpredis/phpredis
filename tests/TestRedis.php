@@ -118,6 +118,14 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue($this->redis->getSet('key', '123') === '123');
     }
 
+    public function testRandomKey() {
+
+        for($i = 0; $i < 1000; $i++) {
+            $k = $this->redis->randomKey();
+	    $this->assertTrue($this->redis->exists($k));
+	}
+    }
+
     public function testMultiple() {
       
     	$this->redis->delete('k1');
