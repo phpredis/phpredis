@@ -279,8 +279,8 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	/* None */
         $this->assertEquals(0, $this->redis->type('keyNotExists'));
     }
-    
-    /* PUSH, POP : LPUSH, RPUSH, LPOP, RPOP */
+
+    /* PUSH, POP : LPUSH, LPOP */
     public function testlPop()
     {
 	/*
@@ -296,9 +296,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	/* 'list' = [ 'val2', 'val', 'val3'] */
 
-	$this->assertEquals('val2', $this->redis->lPop('list', 1));
-        $this->assertEquals('val3', $this->redis->lPop('list'));
+	$this->assertEquals('val2', $this->redis->lPop('list'));
         $this->assertEquals('val', $this->redis->lPop('list'));
+        $this->assertEquals('val3', $this->redis->lPop('list'));
         $this->assertEquals(FALSE, $this->redis->lPop('list'));
 
 	/* testing binary data */
@@ -308,9 +308,43 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(TRUE, $this->redis->lPush('list', gzcompress('val2')));
         $this->assertEquals(TRUE, $this->redis->lPush('list', gzcompress('val3')));
 
-	$this->assertEquals('val1', gzuncompress($this->redis->lPop('list')));
-	$this->assertEquals('val2', gzuncompress($this->redis->lPop('list')));
 	$this->assertEquals('val3', gzuncompress($this->redis->lPop('list')));
+	$this->assertEquals('val2', gzuncompress($this->redis->lPop('list')));
+	$this->assertEquals('val1', gzuncompress($this->redis->lPop('list')));
+	
+    }
+    
+    /* PUSH, POP : RPUSH, RPOP */
+    public function testrPop()
+    {
+	/*
+		rpush  => tail
+		lpush => head
+	*/
+
+        $this->redis->delete('list');
+
+        $this->redis->rPush('list', 'val');
+        $this->redis->rPush('list', 'val2');
+	$this->redis->lPush('list', 'val3');
+
+	/* 'list' = [ 'val3', 'val', 'val2'] */
+
+	$this->assertEquals('val2', $this->redis->rPop('list'));
+        $this->assertEquals('val', $this->redis->rPop('list'));
+        $this->assertEquals('val3', $this->redis->rPop('list'));
+        $this->assertEquals(FALSE, $this->redis->rPop('list'));
+
+	/* testing binary data */
+
+	$this->redis->delete('list');
+        $this->assertEquals(TRUE, $this->redis->rPush('list', gzcompress('val1')));
+        $this->assertEquals(TRUE, $this->redis->rPush('list', gzcompress('val2')));
+        $this->assertEquals(TRUE, $this->redis->rPush('list', gzcompress('val3')));
+
+	$this->assertEquals('val3', gzuncompress($this->redis->rPop('list')));
+	$this->assertEquals('val2', gzuncompress($this->redis->rPop('list')));
+	$this->assertEquals('val1', gzuncompress($this->redis->rPop('list')));
 	
     }
     
@@ -325,10 +359,10 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->redis->lPush('list', 'val2');
         $this->assertEquals(2, $this->redis->lSize('list'));
 
-	$this->assertEquals('val', $this->redis->lPop('list'));
+	$this->assertEquals('val2', $this->redis->lPop('list'));
         $this->assertEquals(1, $this->redis->lSize('list'));
 
-	$this->assertEquals('val2', $this->redis->lPop('list'));
+	$this->assertEquals('val', $this->redis->lPop('list'));
         $this->assertEquals(0, $this->redis->lSize('list'));
 
         $this->assertEquals(FALSE, $this->redis->lPop('list'));
@@ -520,6 +554,28 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals($this->redis->lGet('list', 0), 'val3');
 	$this->assertEquals($this->redis->lGet('list', 1), 'valx');
 	$this->assertEquals($this->redis->lGet('list', 2), 'val');
+
+    }
+
+    public function testlGetRange() {
+
+      	$this->redis->delete('list');
+        $this->redis->lPush('list', 'val');
+        $this->redis->lPush('list', 'val2');
+        $this->redis->lPush('list', 'val3');	
+
+	// pos :   0     1     2
+	// pos :  -3    -2    -1
+	// list: [val3, val2, val]
+
+	$this->assertEquals($this->redis->lGetRange('list', 0, 0), array('val3'));
+	$this->assertEquals($this->redis->lGetRange('list', 0, 1), array('val3', 'val2'));
+	$this->assertEquals($this->redis->lGetRange('list', 0, 2), array('val3', 'val2', 'val'));
+	$this->assertEquals($this->redis->lGetRange('list', 0, 3), array('val3', 'val2', 'val'));
+
+	$this->assertEquals($this->redis->lGetRange('list', 0, -1), array('val3', 'val2', 'val'));
+	$this->assertEquals($this->redis->lGetRange('list', 0, -2), array('val3', 'val2'));
+	$this->assertEquals($this->redis->lGetRange('list', -2, -1), array('val2', 'val'));
 
     }
 }

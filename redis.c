@@ -54,6 +54,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, lPush, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, rPush, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPop, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, rPop, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lSize, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lRemove, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, listTrim, NULL, ZEND_ACC_PUBLIC)
@@ -1215,7 +1216,7 @@ PHP_METHOD(Redis, rPush)
 }
 /* }}} */
 
-/* {{{ proto string Redis::lPOP(string key , [, int type=0])
+/* {{{ proto string Redis::lPOP(string key)
  */
 PHP_METHOD(Redis, lPop)
 {
@@ -1225,9 +1226,9 @@ PHP_METHOD(Redis, lPop)
     int key_len, cmd_len, response_len;
     long type = 0;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
                                      &object, redis_ce,
-                                     &key, &key_len, &type) == FAILURE) {
+                                     &key, &key_len) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -1235,13 +1236,7 @@ PHP_METHOD(Redis, lPop)
         RETURN_FALSE;
     }
 
-    if (type == 0) {
-        cmd_len = spprintf(&cmd, 0, "RPOP %s\r\n", key);
-    } else if (type == 1) {
-        cmd_len = spprintf(&cmd, 0, "LPOP %s\r\n", key);
-    } else {
-        RETURN_FALSE;
-    }
+    cmd_len = spprintf(&cmd, 0, "LPOP %s\r\n", key);
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
         efree(cmd);
@@ -1253,12 +1248,42 @@ PHP_METHOD(Redis, lPop)
         RETURN_FALSE;
     }
 
-    if (strncmp(response, "nil", 4) != 0) {
-        RETURN_STRINGL(response, response_len, 0);
-    } else {
-        efree(response);
+    RETURN_STRINGL(response, response_len, 0);
+}
+
+/* {{{ proto string Redis::rPOP(string key)
+ */
+PHP_METHOD(Redis, rPop)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd, *response;
+    int key_len, cmd_len, response_len;
+    long type = 0;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
+                                     &object, redis_ce,
+                                     &key, &key_len) == FAILURE) {
         RETURN_FALSE;
     }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = spprintf(&cmd, 0, "RPOP %s\r\n", key);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    RETURN_STRINGL(response, response_len, 0);
 }
 /* }}} */
 
