@@ -693,14 +693,72 @@ class Redis_Test extends PHPUnit_Framework_TestCase
             $this->assertTrue(in_array($i, array_intersect($y, $z)));
         }
 
-        $zt = $this->redis->sInter('y', 'z');	// prime squares
-        $this->assertTrue($zt === array('1'));
+        $zt = $this->redis->sInter('z', 't');	// prime squares
+        $this->assertTrue($zt === array());
 
         $xyz = $this->redis->sInter('x', 'y', 'z');// odd prime squares
         $this->assertTrue($xyz === array('1'));
 
         $nil = $this->redis->sInter();
         $this->assertTrue($nil === FALSE);
+    }
+
+    public function testsInterStore() {
+        $this->redis->delete('x');	// set of odd numbers
+        $this->redis->delete('y');	// set of prime numbers
+        $this->redis->delete('z');	// set of squares
+        $this->redis->delete('t');	// set of numbers of the form n^2 - 1
+
+        $x = array(1,3,5,7,9,11,13,15,17,19,21,23,25);
+        foreach($x as $i) {
+            $this->redis->sAdd('x', $i);
+        }
+
+        $y = array(1,2,3,5,7,11,13,17,19,23);
+        foreach($y as $i) {
+            $this->redis->sAdd('y', $i);
+        }
+
+        $z = array(1,4,9,16,25);
+        foreach($z as $i) {
+            $this->redis->sAdd('z', $i);
+        }
+
+        $t = array(2,5,10,17,26);
+        foreach($t as $i) {
+            $this->redis->sAdd('t', $i);
+        }
+
+        $count = $this->redis->sInterStore('k', 'x', 'y');	// odd prime numbers
+	$this->assertEquals($count, $this->redis->sSize('k'));
+        foreach(array_intersect($x, $y) as $i) {
+            $this->assertTrue($this->redis->sContains('k', $i));
+        }
+
+        $count = $this->redis->sInterStore('k', 'y', 'z');	// set of odd squares
+	$this->assertEquals($count, $this->redis->sSize('k'));
+        foreach(array_intersect($y, $z) as $i) {
+            $this->assertTrue($this->redis->sContains('k', $i));
+        }
+
+        $count = $this->redis->sInterStore('k', 'z', 't');	// squares of the form n^2 + 1
+	$this->assertEquals($count, 0);
+	$this->assertEquals($count, $this->redis->sSize('k'));
+
+	$this->redis->delete('z');
+        $xyz = $this->redis->sInterStore('k', 'x', 'y', 'z'); // only z missing, expect FALSE.
+        $this->assertTrue($xyz === FALSE);
+
+	$this->redis->delete('y');
+        $xyz = $this->redis->sInterStore('k', 'x', 'y', 'z'); // y and z missing, expect FALSE.
+        $this->assertTrue($xyz === FALSE);
+
+	$this->redis->delete('x');
+        $xyz = $this->redis->sInterStore('k', 'x', 'y', 'z'); // x y and z ALL missing, expect FALSE.
+        $this->assertTrue($xyz === FALSE);
+
+        $o = $this->redis->sInterStore('k');
+	$this->assertTrue($o === 0);
     }
 
     public function testlGetRange() {

@@ -73,6 +73,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sContains, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sGetMembers, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sInter, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sInterStore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setTimeout, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
@@ -1961,16 +1962,62 @@ PHP_METHOD(Redis, sGetMembers)
  */
 PHP_METHOD(Redis, sInter) {
 
-    sinter_common(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SINTER", sizeof("SINTER") - 1);
-}
+    char *response;
+    int response_len;
+    RedisSock *redis_sock;
 
-PHPAPI int sinter_common(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len TSRMLS_DC)
+    sinter_common(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                    "SINTER", sizeof("SINTER") - 1,
+                    0, &redis_sock);
+
+    /* read multibulk reply */
+    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                        redis_sock, &response_len TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+}
+/* }}} */
+
+/* {{{ proto array Redis::sInter(string destination, string key0, ... string keyN)
+ */
+PHP_METHOD(Redis, sInterStore) {
+
+    char *response;
+    int response_len;
+    RedisSock *redis_sock;
+
+    sinter_common(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                    "SINTERSTORE", sizeof("SINTERSTORE") - 1,
+                    1, &redis_sock);
+
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    if(response[0] == '+') {
+        efree(response);
+        RETURN_FALSE;
+    } else {
+        long ret = atol(response + 1);
+        efree(response);
+        RETURN_LONG(ret);
+    }
+
+}
+/* }}} */
+
+PHPAPI int sinter_common(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
+                int min_argc, RedisSock **redis_sock TSRMLS_DC)
 {
     zval *object, **z_args;
-    RedisSock *redis_sock;
-    char **keys, *cmd, *response;
-    int cmd_len, count, response_len, *keys_len;
+    char **keys, *cmd;
+    int cmd_len, count, *keys_len;
     int i, argc = ZEND_NUM_ARGS();
+
+    if(argc < min_argc) {
+        WRONG_PARAM_COUNT;
+        RETURN_FALSE;
+    }
 
     z_args = emalloc(argc * sizeof(zval*));
     if(zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
@@ -1991,7 +2038,7 @@ PHPAPI int sinter_common(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keywor
     }
 
     /* get redis socket */
-    if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC) < 0) {
+    if (redis_sock_get(getThis(), redis_sock TSRMLS_CC) < 0) {
         efree(keys);
         efree(keys_len);
         efree(z_args);
@@ -2016,19 +2063,12 @@ PHPAPI int sinter_common(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keywor
     efree(z_args);
 
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+    if (redis_sock_write(*redis_sock, cmd, cmd_len) < 0) {
         efree(cmd);
         RETURN_FALSE;
     }
     efree(cmd);
-
-    /* read multibulk reply */
-    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                        redis_sock, &response_len TSRMLS_CC) < 0) {
-        RETURN_FALSE;
-    }
 }
-/* }}} */
 
 /* {{{ proto array Redis::getSort(string key [,order = 0, pattern = "*", start=0,
  *                                                                       end = 0])
