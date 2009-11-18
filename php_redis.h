@@ -60,6 +60,8 @@ PHP_METHOD(Redis, sContains);
 PHP_METHOD(Redis, sGetMembers);
 PHP_METHOD(Redis, sInter);
 PHP_METHOD(Redis, sInterStore);
+PHP_METHOD(Redis, sUnion);
+PHP_METHOD(Redis, sUnionStore);
 PHP_METHOD(Redis, setTimeout);
 
 #ifdef PHP_WIN32

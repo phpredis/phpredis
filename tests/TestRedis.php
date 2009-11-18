@@ -758,7 +758,136 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->assertTrue($xyz === FALSE);
 
         $o = $this->redis->sInterStore('k');
-	$this->assertTrue($o === 0);
+	$this->assertTrue($o === FALSE);
+    }
+
+    public function testsUnion() {
+        $this->redis->delete('x');	// set of odd numbers
+        $this->redis->delete('y');	// set of prime numbers
+        $this->redis->delete('z');	// set of squares
+        $this->redis->delete('t');	// set of numbers of the form n^2 - 1
+
+        $x = array(1,3,5,7,9,11,13,15,17,19,21,23,25);
+        foreach($x as $i) {
+            $this->redis->sAdd('x', $i);
+        }
+
+        $y = array(1,2,3,5,7,11,13,17,19,23);
+        foreach($y as $i) {
+            $this->redis->sAdd('y', $i);
+        }
+
+        $z = array(1,4,9,16,25);
+        foreach($z as $i) {
+            $this->redis->sAdd('z', $i);
+        }
+
+        $t = array(2,5,10,17,26);
+        foreach($t as $i) {
+            $this->redis->sAdd('t', $i);
+        }
+
+        $xy = $this->redis->sUnion('x', 'y');	// x U y
+        foreach($xy as $i) {
+	    $i = (int)$i;
+            $this->assertTrue(in_array($i, array_merge($x, $y)));
+        }
+
+        $yz = $this->redis->sUnion('y', 'z');	// y U Z
+        foreach($yz as $i) {
+	    $i = (int)$i;
+            $this->assertTrue(in_array($i, array_merge($y, $z)));
+        }
+
+        $zt = $this->redis->sUnion('z', 't');	// z U t
+        foreach($zt as $i) {
+	    $i = (int)$i;
+            $this->assertTrue(in_array($i, array_merge($z, $t)));
+        }
+
+        $xyz = $this->redis->sUnion('x', 'y', 'z'); // x U y U z
+        foreach($xyz as $i) {
+	    $i = (int)$i;
+            $this->assertTrue(in_array($i, array_merge($x, $y, $z)));
+        }
+
+        $nil = $this->redis->sUnion();
+        $this->assertTrue($nil === FALSE);
+    }
+
+    public function testsUnionStore() {
+        $this->redis->delete('x');	// set of odd numbers
+        $this->redis->delete('y');	// set of prime numbers
+        $this->redis->delete('z');	// set of squares
+        $this->redis->delete('t');	// set of numbers of the form n^2 - 1
+
+        $x = array(1,3,5,7,9,11,13,15,17,19,21,23,25);
+        foreach($x as $i) {
+            $this->redis->sAdd('x', $i);
+        }
+
+        $y = array(1,2,3,5,7,11,13,17,19,23);
+        foreach($y as $i) {
+            $this->redis->sAdd('y', $i);
+        }
+
+        $z = array(1,4,9,16,25);
+        foreach($z as $i) {
+            $this->redis->sAdd('z', $i);
+        }
+
+        $t = array(2,5,10,17,26);
+        foreach($t as $i) {
+            $this->redis->sAdd('t', $i);
+        }
+
+        $count = $this->redis->sUnionStore('k', 'x', 'y');	// x U y
+	$xy = array_unique(array_merge($x, $y));
+	$this->assertEquals($count, count($xy));
+        foreach($xy as $i) {
+	    $i = (int)$i;
+            $this->assertTrue($this->redis->sContains('k', $i));
+        }
+
+        $count = $this->redis->sUnionStore('k', 'y', 'z');	// y U z
+	$yz = array_unique(array_merge($y, $z));
+	$this->assertEquals($count, count($yz));
+        foreach($yz as $i) {
+	    $i = (int)$i;
+            $this->assertTrue($this->redis->sContains('k', $i));
+        }
+
+        $count = $this->redis->sUnionStore('k', 'z', 't');	// z U t
+	$zt = array_unique(array_merge($z, $t));
+	$this->assertEquals($count, count($zt));
+        foreach($zt as $i) {
+	    $i = (int)$i;
+            $this->assertTrue($this->redis->sContains('k', $i));
+        }
+
+        $count = $this->redis->sUnionStore('k', 'x', 'y', 'z');	// x U y U z
+	$xyz = array_unique(array_merge($x, $y, $z));
+	$this->assertEquals($count, count($xyz));
+        foreach($xyz as $i) {
+	    $i = (int)$i;
+            $this->assertTrue($this->redis->sContains('k', $i));
+        }
+
+	$this->redis->delete('x');	// x missing now
+        $count = $this->redis->sUnionStore('k', 'x', 'y', 'z');	// x U y U z
+	$this->assertTrue($count === count(array_unique(array_merge($y, $z))));
+
+	$this->redis->delete('y');	// x and y missing
+        $count = $this->redis->sUnionStore('k', 'x', 'y', 'z');	// x U y U z
+	$this->assertTrue($count === count(array_unique($z)));
+
+	$this->redis->delete('z');	// x, y, and z ALL missing
+        $count = $this->redis->sUnionStore('k', 'x', 'y', 'z');	// x U y U z
+	$this->assertTrue($count === 0);
+
+        $count = $this->redis->sUnionStore('k');	// Union on nothing...
+	$this->assertTrue($count === FALSE);
+
     }
 
     public function testlGetRange() {
