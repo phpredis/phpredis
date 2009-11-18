@@ -50,6 +50,7 @@ PHP_METHOD(Redis, lSet);
 PHP_METHOD(Redis, sAdd);
 PHP_METHOD(Redis, sSize);
 PHP_METHOD(Redis, sRemove);
+PHP_METHOD(Redis, sMove);
 PHP_METHOD(Redis, sContains);
 PHP_METHOD(Redis, sGetMembers);
 PHP_METHOD(Redis, setTimeout);

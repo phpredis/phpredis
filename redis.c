@@ -64,6 +64,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sAdd, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sSize, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sRemove, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sMove, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sContains, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sGetMembers, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setTimeout, NULL, ZEND_ACC_PUBLIC)
@@ -1583,6 +1584,7 @@ PHP_METHOD(Redis, sRemove)
     RedisSock *redis_sock;
     char *key = NULL, *val = NULL, *cmd, *response;
     int key_len, val_len, cmd_len, response_len;
+    int ret;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
                                      &object, redis_ce,
@@ -1607,7 +1609,56 @@ PHP_METHOD(Redis, sRemove)
         RETURN_FALSE;
     }
 
-    if (response[1] == '1') {
+    ret = response[1];
+    efree(response);
+
+    if (ret == '1') {
+        RETURN_TRUE;
+    } else {
+        RETURN_FALSE;
+    }
+}
+/* }}} */
+/* {{{ proto boolean Redis::sMove(string set_src, string set_dst, string value)
+ */
+PHP_METHOD(Redis, sMove)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *src = NULL, *dst = NULL, *val = NULL, *cmd, *response;
+    int src_len, dst_len, val_len, cmd_len, response_len;
+    char ret;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osss",
+                                     &object, redis_ce,
+                                     &src, &src_len,
+                                     &dst, &dst_len,
+                                     &val, &val_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd, "SMOVE %s %s %d\r\n%s\r\n",
+                               src, src_len,
+                               dst, dst_len,
+                               val_len,
+                               val, val_len);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        RETURN_FALSE;
+    }
+
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    ret = response[1];
+    efree(response);
+
+    if (ret == '1') {
         RETURN_TRUE;
     } else {
         RETURN_FALSE;

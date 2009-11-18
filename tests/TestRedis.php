@@ -515,6 +515,25 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(0, $this->redis->sSize('set'));
     }
 
+    public function testsMove()
+    {
+        $this->redis->delete('set0');
+        $this->redis->delete('set1');
+
+        $this->redis->sAdd('set0', 'val');
+        $this->redis->sAdd('set0', 'val2');
+
+        $this->assertTrue($this->redis->sMove('set0', 'set1', 'val'));
+        $this->assertFalse($this->redis->sMove('set0', 'set1', 'val'));
+        $this->assertFalse($this->redis->sMove('set0', 'set1', 'val-what'));
+
+        $this->assertEquals(1, $this->redis->sSize('set0'));
+        $this->assertEquals(1, $this->redis->sSize('set1'));
+
+	$this->assertEquals(array('val2'), $this->redis->sGetMembers('set0'));
+	$this->assertEquals(array('val'), $this->redis->sGetMembers('set1'));
+    }
+
     public function testsContains()
     {
         $this->redis->delete('set');
