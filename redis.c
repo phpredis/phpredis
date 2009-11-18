@@ -44,6 +44,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, setnx, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getSet, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, randomKey, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, renameKey, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, add, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getMultiple, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, exists, NULL, ZEND_ACC_PUBLIC)
@@ -761,6 +762,52 @@ PHP_METHOD(Redis, randomKey)
         RETURN_STRINGL(ret, response_len-1, 0);  // need to remove the '+'
     } else {
         efree(response);
+        RETURN_FALSE;
+    }
+
+}
+/* }}} */
+
+/* {{{ proto string Redis::renameKey(string key_src, string key_dst)
+ */
+PHP_METHOD(Redis, renameKey)
+{
+
+    zval *object;
+    RedisSock *redis_sock;
+    char *cmd, *response, *src, *dst;
+    int cmd_len, response_len, src_len, dst_len;
+    char ret;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
+                                     &object, redis_ce,
+                                     &src, &src_len,
+                                     &dst, &dst_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd, "RENAME %s %s\r\n",
+                               src, src_len,
+                               dst, dst_len);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+    ret = response[0];
+    efree(response);
+
+    if(ret == '+') {
+        RETURN_TRUE;
+    } else {
         RETURN_FALSE;
     }
 

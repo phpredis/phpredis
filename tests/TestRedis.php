@@ -126,6 +126,25 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	}
     }
 
+    public function testRename() {
+
+	// strings
+	$this->redis->delete('key0');
+	$this->redis->set('key0', 'val0');
+	$this->redis->renameKey('key0', 'key1');
+	$this->assertTrue($this->redis->get('key0') === FALSE);
+	$this->assertTrue($this->redis->get('key1') === 'val0');
+
+	// lists
+	$this->redis->delete('key0');
+	$this->redis->lPush('key0', 'val0');
+	$this->redis->lPush('key0', 'val1');
+	$this->redis->renameKey('key0', 'key1');
+	$this->assertTrue($this->redis->lGetRange('key0', 0, -1) === array());
+	$this->assertTrue($this->redis->lGetRange('key1', 0, -1) === array('val1', 'val0'));
+
+    }
+
     public function testMultiple() {
       
     	$this->redis->delete('k1');
@@ -627,6 +646,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals($this->redis->lGetRange('list', 0, -1), array('val3', 'val2', 'val'));
 	$this->assertEquals($this->redis->lGetRange('list', 0, -2), array('val3', 'val2'));
 	$this->assertEquals($this->redis->lGetRange('list', -2, -1), array('val2', 'val'));
+
+	$this->redis->delete('list');
+	$this->assertEquals($this->redis->lGetRange('list', 0, -1), array());
 
     }
 }
