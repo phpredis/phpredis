@@ -42,6 +42,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, get, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, set, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setnx, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getSet, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, add, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getMultiple, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, exists, NULL, ZEND_ACC_PUBLIC)
@@ -678,6 +679,44 @@ PHP_METHOD(Redis, setnx)
     } else {
         RETURN_FALSE;
     }
+}
+/* }}} */
+/* {{{ proto string Redis::getSet(string key, string value)
+ */
+PHP_METHOD(Redis, getSet)
+{
+
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *val = NULL, *cmd, *response;
+    int key_len, val_len, cmd_len, response_len, count;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
+                                     &object, redis_ce, &key, &key_len,
+                                     &val, &val_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd, "GETSET %s %d\r\n%s\r\n", key, key_len, val_len, val, val_len);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    if(response == NULL) {
+        RETURN_FALSE;
+    }
+
+    RETURN_STRINGL(response, response_len, 0);
 }
 /* }}} */
 

@@ -28,6 +28,7 @@ PHP_METHOD(Redis, ping);
 PHP_METHOD(Redis, get);
 PHP_METHOD(Redis, set);
 PHP_METHOD(Redis, setnx);
+PHP_METHOD(Redis, getSet);
 PHP_METHOD(Redis, add);
 PHP_METHOD(Redis, getMultiple);
 PHP_METHOD(Redis, exists);

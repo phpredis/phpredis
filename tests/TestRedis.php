@@ -110,6 +110,14 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	
     }
 
+    public function testGetSet() {
+
+	$this->redis->delete('key');
+	$this->assertTrue($this->redis->getSet('key', '42') === FALSE);
+	$this->assertTrue($this->redis->getSet('key', '123') === '42');
+	$this->assertTrue($this->redis->getSet('key', '123') === '123');
+    }
+
     public function testMultiple() {
       
     	$this->redis->delete('k1');
