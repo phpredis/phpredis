@@ -154,6 +154,17 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals(False, $this->redis->get('key'));
     }
 
+    public function testSetNX() {
+
+	    $this->redis->set('key', 42);
+	    $this->assertTrue($this->redis->setnx('key', 'err') === FALSE);
+	    $this->assertTrue($this->redis->get('key') === '42');
+
+	    $this->redis->delete('key');
+	    $this->assertTrue($this->redis->setnx('key', '42') === TRUE);
+	    $this->assertTrue($this->redis->get('key') === '42');
+    }
+
     public function testAdd()
     {
         $key = 'key' . rand();

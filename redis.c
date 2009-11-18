@@ -41,6 +41,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, ping, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, get, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, set, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setnx, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, add, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getMultiple, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, exists, NULL, ZEND_ACC_PUBLIC)
@@ -604,6 +605,7 @@ PHP_METHOD(Redis, set)
     RedisSock *redis_sock;
     char *key = NULL, *val = NULL, *cmd, *response;
     int key_len, val_len, cmd_len, response_len, count;
+    char ret = 0;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
                                      &object, redis_ce, &key, &key_len,
@@ -625,8 +627,50 @@ PHP_METHOD(Redis, set)
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
     }
+    ret = response[0];
+    efree(response);
 
-    if (response[0] == 0x2b) {
+    if (ret == '+') {
+        RETURN_TRUE;
+    } else {
+        RETURN_FALSE;
+    }
+}
+/* {{{ proto boolean Redis::setnx(string key, string value)
+ */
+PHP_METHOD(Redis, setnx)
+{
+
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *val = NULL, *cmd, *response;
+    int key_len, val_len, cmd_len, response_len, count;
+    int ret = 0;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
+                                     &object, redis_ce, &key, &key_len,
+                                     &val, &val_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd, "SETNX %s %d\r\n%s\r\n", key, key_len, val_len, val, val_len);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+    ret = atoi(response + 1);
+    efree(response);
+
+    if (ret == 1) {
         RETURN_TRUE;
     } else {
         RETURN_FALSE;
