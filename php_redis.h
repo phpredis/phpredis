@@ -62,6 +62,8 @@ PHP_METHOD(Redis, sInter);
 PHP_METHOD(Redis, sInterStore);
 PHP_METHOD(Redis, sUnion);
 PHP_METHOD(Redis, sUnionStore);
+PHP_METHOD(Redis, sDiff);
+PHP_METHOD(Redis, sDiffStore);
 PHP_METHOD(Redis, setTimeout);
 
 #ifdef PHP_WIN32

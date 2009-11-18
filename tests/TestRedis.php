@@ -887,7 +887,134 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
         $count = $this->redis->sUnionStore('k');	// Union on nothing...
 	$this->assertTrue($count === FALSE);
+    }
 
+    public function testsDiff() {
+        $this->redis->delete('x');	// set of odd numbers
+        $this->redis->delete('y');	// set of prime numbers
+        $this->redis->delete('z');	// set of squares
+        $this->redis->delete('t');	// set of numbers of the form n^2 - 1
+
+        $x = array(1,3,5,7,9,11,13,15,17,19,21,23,25);
+        foreach($x as $i) {
+            $this->redis->sAdd('x', $i);
+        }
+
+        $y = array(1,2,3,5,7,11,13,17,19,23);
+        foreach($y as $i) {
+            $this->redis->sAdd('y', $i);
+        }
+
+        $z = array(1,4,9,16,25);
+        foreach($z as $i) {
+            $this->redis->sAdd('z', $i);
+        }
+
+        $t = array(2,5,10,17,26);
+        foreach($t as $i) {
+            $this->redis->sAdd('t', $i);
+        }
+
+        $xy = $this->redis->sDiff('x', 'y');	// x U y
+        foreach($xy as $i) {
+	    $i = (int)$i;
+            $this->assertTrue(in_array($i, array_diff($x, $y)));
+        }
+
+        $yz = $this->redis->sDiff('y', 'z');	// y U Z
+        foreach($yz as $i) {
+	    $i = (int)$i;
+            $this->assertTrue(in_array($i, array_diff($y, $z)));
+        }
+
+        $zt = $this->redis->sDiff('z', 't');	// z U t
+        foreach($zt as $i) {
+	    $i = (int)$i;
+            $this->assertTrue(in_array($i, array_diff($z, $t)));
+        }
+
+        $xyz = $this->redis->sDiff('x', 'y', 'z'); // x U y U z
+        foreach($xyz as $i) {
+	    $i = (int)$i;
+            $this->assertTrue(in_array($i, array_diff($x, $y, $z)));
+        }
+
+        $nil = $this->redis->sDiff();
+        $this->assertTrue($nil === FALSE);
+    }
+
+    public function testsDiffStore() {
+        $this->redis->delete('x');	// set of odd numbers
+        $this->redis->delete('y');	// set of prime numbers
+        $this->redis->delete('z');	// set of squares
+        $this->redis->delete('t');	// set of numbers of the form n^2 - 1
+
+        $x = array(1,3,5,7,9,11,13,15,17,19,21,23,25);
+        foreach($x as $i) {
+            $this->redis->sAdd('x', $i);
+        }
+
+        $y = array(1,2,3,5,7,11,13,17,19,23);
+        foreach($y as $i) {
+            $this->redis->sAdd('y', $i);
+        }
+
+        $z = array(1,4,9,16,25);
+        foreach($z as $i) {
+            $this->redis->sAdd('z', $i);
+        }
+
+        $t = array(2,5,10,17,26);
+        foreach($t as $i) {
+            $this->redis->sAdd('t', $i);
+        }
+
+        $count = $this->redis->sDiffStore('k', 'x', 'y');	// x - y
+	$xy = array_unique(array_diff($x, $y));
+	$this->assertEquals($count, count($xy));
+        foreach($xy as $i) {
+	    $i = (int)$i;
+            $this->assertTrue($this->redis->sContains('k', $i));
+        }
+
+        $count = $this->redis->sDiffStore('k', 'y', 'z');	// y - z
+	$yz = array_unique(array_diff($y, $z));
+	$this->assertEquals($count, count($yz));
+        foreach($yz as $i) {
+	    $i = (int)$i;
+            $this->assertTrue($this->redis->sContains('k', $i));
+        }
+
+        $count = $this->redis->sDiffStore('k', 'z', 't');	// z - t
+	$zt = array_unique(array_diff($z, $t));
+	$this->assertEquals($count, count($zt));
+        foreach($zt as $i) {
+	    $i = (int)$i;
+            $this->assertTrue($this->redis->sContains('k', $i));
+        }
+
+        $count = $this->redis->sDiffStore('k', 'x', 'y', 'z');	// x - y - z
+	$xyz = array_unique(array_diff($x, $y, $z));
+	$this->assertEquals($count, count($xyz));
+        foreach($xyz as $i) {
+	    $i = (int)$i;
+            $this->assertTrue($this->redis->sContains('k', $i));
+        }
+
+	$this->redis->delete('x');	// x missing now
+        $count = $this->redis->sDiffStore('k', 'x', 'y', 'z');	// x - y - z
+	$this->assertTrue($count === 0);
+
+	$this->redis->delete('y');	// x and y missing
+        $count = $this->redis->sDiffStore('k', 'x', 'y', 'z');	// x - y - z
+	$this->assertTrue($count === 0);
+
+	$this->redis->delete('z');	// x, y, and z ALL missing
+        $count = $this->redis->sDiffStore('k', 'x', 'y', 'z');	// x - y - z
+	$this->assertTrue($count === 0);
+
+        $count = $this->redis->sDiffStore('k');	// diff on nothing...
+	$this->assertTrue($count === FALSE);
     }
 
     public function testlGetRange() {
