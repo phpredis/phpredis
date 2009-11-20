@@ -1,6 +1,8 @@
 <?php
 require_once 'PHPUnit/Framework/TestCase.php';
 
+echo "Note: these tests might take up to a minute. Don't worry :-)\n";
+
 class Redis_Test extends PHPUnit_Framework_TestCase
 {
     /**
@@ -10,7 +12,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $this->redis = new Redis();
+	$this->redis = new Redis();
         $this->redis->connect('127.0.0.1', 6379);
     }
 
@@ -49,14 +51,8 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals('val', $this->redis->get('key'));
 	$this->assertEquals(FALSE, $this->redis->get('keyNotExist'));
 
-	$this->tearDown();
-	$this->setUp();
-
-        $this->redis->set('key2', 'val');
+	$this->redis->set('key2', 'val');
 	$this->assertEquals('val', $this->redis->get('key2'));
-
-    	$this->tearDown();
-	$this->setUp();
 
      	$value = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 	$this->redis->set('key2', $value);
@@ -1046,6 +1042,14 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	}
 	$this->assertTrue($this->redis->bgSave() === TRUE);	// the first one should work.
 	$this->assertTrue($this->redis->bgSave() === FALSE);	// the second one should fail (still working on the first one)
+    }
+
+    public function testlastSave() {
+	$this->redis->save();
+	$t_php = microtime(TRUE);
+	$t_redis = $this->redis->lastSave();
+
+	$this->assertTrue($t_php - $t_redis < 10000); // check that it's approximately what we've measured in PHP.
     }
 }
 

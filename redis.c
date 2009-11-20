@@ -81,6 +81,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, setTimeout, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, save, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, bgSave, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lastSave, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
@@ -2367,6 +2368,45 @@ PHP_METHOD(Redis, bgSave)
 }
 /* }}} */
 
+
+/* {{{ proto integer Redis::lastSave()
+ */
+PHP_METHOD(Redis, lastSave)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char cmd[] = "LASTSAVE\r\n";
+    int cmd_len = sizeof(cmd)-1;
+    char *response;
+    int response_len;
+    long val = 0;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
+                                     &object, redis_ce) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        RETURN_FALSE;
+    }
+
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    if(response[0] != ':') {
+        efree(response);
+        RETURN_FALSE;
+    }
+    val = atol(response+1);
+    efree(response);
+    RETURN_LONG(val);
+}
+/* }}} */
 
 
 /* vim: set tabstop=4 expandtab: */
