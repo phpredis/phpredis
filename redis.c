@@ -80,6 +80,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sDiffStore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setTimeout, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, save, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, bgSave, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
@@ -220,7 +221,8 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     redis_sock->stream = php_stream_xport_create(host, host_len, ENFORCE_SAFE_MODE,
                                                  STREAM_XPORT_CLIENT
                                                  | STREAM_XPORT_CONNECT,
-                                                 hash_key, &tv, NULL, &errstr, &err
+                                                 // hash_key, &tv, NULL, &errstr, &err
+                                                 hash_key, NULL, NULL, &errstr, &err
                                                 );
 
     efree(host);
@@ -232,9 +234,8 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     php_stream_auto_cleanup(redis_sock->stream);
 
-    php_stream_set_option(redis_sock->stream, 
-                          PHP_STREAM_OPTION_READ_TIMEOUT,
-                          0, &tv);
+//    php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_READ_TIMEOUT,
+//                          0, &tv);
     php_stream_set_option(redis_sock->stream,
                           PHP_STREAM_OPTION_WRITE_BUFFER,
                           PHP_STREAM_BUFFER_NONE, NULL);
@@ -301,7 +302,6 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
     char *resp;
 
     php_stream_gets(redis_sock->stream, inbuf, 1024);
-
 
     switch(inbuf[0]) {
 
@@ -2310,11 +2310,8 @@ PHP_METHOD(Redis, lSet) {
 }
 /* }}} */
 
-/* {{{ proto string Redis::save()
- */
-PHP_METHOD(Redis, save)
-{
 
+PHPAPI void generic_save_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len TSRMLS_DC) {
     zval *object;
     RedisSock *redis_sock;
     char *cmd, *response, ret;
@@ -2329,12 +2326,14 @@ PHP_METHOD(Redis, save)
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format(&cmd, "SAVE\r\n");
+    cmd_len = redis_cmd_format(&cmd, "%s\r\n",
+                               keyword, keyword_len);
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
         efree(cmd);
         RETURN_FALSE;
     }
+
     efree(cmd);
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
@@ -2349,7 +2348,25 @@ PHP_METHOD(Redis, save)
         RETURN_FALSE;
     }
 }
+
+/* {{{ proto string Redis::save()
+ */
+PHP_METHOD(Redis, save)
+{
+    generic_save_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SAVE", sizeof("SAVE")-1);
+
+}
 /* }}} */
+
+/* {{{ proto string Redis::bgSave()
+ */
+PHP_METHOD(Redis, bgSave)
+{
+    generic_save_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "BGSAVE", sizeof("BGSAVE")-1);
+
+}
+/* }}} */
+
 
 
 /* vim: set tabstop=4 expandtab: */

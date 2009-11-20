@@ -66,6 +66,7 @@ PHP_METHOD(Redis, sDiff);
 PHP_METHOD(Redis, sDiffStore);
 PHP_METHOD(Redis, setTimeout);
 PHP_METHOD(Redis, save);
+PHP_METHOD(Redis, bgSave);
 
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
