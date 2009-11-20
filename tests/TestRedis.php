@@ -1051,6 +1051,20 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$this->assertTrue($t_php - $t_redis < 10000); // check that it's approximately what we've measured in PHP.
     }
+
+    public function testflushDb() {
+	$this->redis->set('x', 'y');
+	$this->assertTrue($this->redis->flushDb());
+	$this->assertTrue($this->redis->getKeys('*') === array());
+    }
+
+    public function testflushAll() {
+	$this->redis->set('x', 'y');
+	$this->assertTrue($this->redis->flushAll());
+	$this->assertTrue($this->redis->getKeys('*') === array());
+    }
+
+
 }
 
 ?>
