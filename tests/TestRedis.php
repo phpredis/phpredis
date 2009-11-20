@@ -1039,7 +1039,10 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$this->redis->delete('list');
 	$this->assertEquals($this->redis->lGetRange('list', 0, -1), array());
+    }
 
+    public function testsave() {
+	$this->assertTrue($this->redis->save() === TRUE);	// don't really know how else to test this...
     }
 }
 
