@@ -2603,4 +2603,47 @@ PHP_METHOD(Redis, select) {
 }
 /* }}} */
 
+/* {{{ proto bool Redis::move(string key, long dbindex)
+ */
+PHP_METHOD(Redis, move) {
+
+    zval *object;
+    RedisSock *redis_sock;
+
+    char *cmd, *response, *key;
+    int cmd_len, response_len, key_len;
+    long dbNumber;
+    char ret;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl",
+                                     &object, redis_ce, &key, &key_len, &dbNumber) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd, "MOVE %s %d\r\n",
+                               key, key_len, dbNumber);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    if(response[0] == ':' && response[1] == '1') {
+        efree(response);
+        RETURN_TRUE;
+    } else {
+        efree(response);
+        RETURN_FALSE;
+    }
+}
+/* }}} */
 /* vim: set tabstop=4 expandtab: */
