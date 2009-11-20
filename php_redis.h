@@ -70,6 +70,7 @@ PHP_METHOD(Redis, bgSave);
 PHP_METHOD(Redis, lastSave);
 PHP_METHOD(Redis, flushDB);
 PHP_METHOD(Redis, flushAll);
+PHP_METHOD(Redis, dbSize);
 
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)

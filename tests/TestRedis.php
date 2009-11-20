@@ -1045,7 +1045,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     }
 
     public function testlastSave() {
-	$this->redis->save();
+	while(!$this->redis->save()) {
+	    sleep(1);
+	}
 	$t_php = microtime(TRUE);
 	$t_redis = $this->redis->lastSave();
 
@@ -1062,6 +1064,12 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->set('x', 'y');
 	$this->assertTrue($this->redis->flushAll());
 	$this->assertTrue($this->redis->getKeys('*') === array());
+    }
+
+    public function testdbSize() {
+	$this->assertTrue($this->redis->flushDB());
+	$this->redis->set('x', 'y');
+	$this->assertTrue($this->redis->dbSize() === 1);
     }
 
 

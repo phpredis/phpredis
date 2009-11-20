@@ -84,6 +84,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, lastSave, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, flushDB, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, flushAll, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, dbSize, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
@@ -640,6 +641,7 @@ PHP_METHOD(Redis, set)
         efree(cmd);
         RETURN_FALSE;
     }
+
     efree(cmd);
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
@@ -2351,7 +2353,7 @@ PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_l
  */
 PHP_METHOD(Redis, save)
 {
-    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SAVE\r\n", sizeof("SAVE\r\n")-1);
+    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SAVE\r\n", sizeof("SAVE\r\n")-1 TSRMLS_CC);
 
 }
 /* }}} */
@@ -2360,20 +2362,15 @@ PHP_METHOD(Redis, save)
  */
 PHP_METHOD(Redis, bgSave)
 {
-    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "BGSAVE\r\n", sizeof("BGSAVE\r\n")-1);
+    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "BGSAVE\r\n", sizeof("BGSAVE\r\n")-1 TSRMLS_CC);
 
 }
 /* }}} */
 
+PHPAPI void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len TSRMLS_DC) {
 
-/* {{{ proto integer Redis::lastSave()
- */
-PHP_METHOD(Redis, lastSave)
-{
     zval *object;
     RedisSock *redis_sock;
-    char cmd[] = "LASTSAVE\r\n";
-    int cmd_len = sizeof(cmd)-1;
     char *response;
     int response_len;
     long val = 0;
@@ -2403,14 +2400,21 @@ PHP_METHOD(Redis, lastSave)
     efree(response);
     RETURN_LONG(val);
 }
+
+/* {{{ proto integer Redis::lastSave()
+ */
+PHP_METHOD(Redis, lastSave)
+{
+    generic_empty_long_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "LASTSAVE\r\n", sizeof("LASTSAVE\r\n") TSRMLS_CC);
+}
 /* }}} */
+
 
 /* {{{ proto bool Redis::flushDB()
  */
 PHP_METHOD(Redis, flushDB)
 {
-    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHDB\r\n", sizeof("FLUSHDB\r\n")-1);
-    RETURN_TRUE;
+    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHDB\r\n", sizeof("FLUSHDB\r\n")-1 TSRMLS_CC);
 }
 /* }}} */
 
@@ -2418,10 +2422,18 @@ PHP_METHOD(Redis, flushDB)
  */
 PHP_METHOD(Redis, flushAll)
 {
-    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHALL\r\n", sizeof("FLUSHALL\r\n")-1);
-    RETURN_TRUE;
+    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHALL\r\n", sizeof("FLUSHALL\r\n")-1 TSRMLS_CC);
 }
 /* }}} */
+
+/* {{{ proto int Redis::dbSize()
+ */
+PHP_METHOD(Redis, dbSize)
+{
+    generic_empty_long_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DBSIZE\r\n", sizeof("DBSIZE\r\n") TSRMLS_CC);
+}
+/* }}} */
+
 
 
 /* vim: set tabstop=4 expandtab: */
