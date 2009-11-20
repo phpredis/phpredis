@@ -1105,6 +1105,10 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	}
     }
 
+    public function testSelect() {
+	$this->assertFalse($this->redis->select(-1));
+	$this->assertTrue($this->redis->select(0));
+    }
 }
 
 ?>

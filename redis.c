@@ -87,6 +87,8 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, dbSize, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, ttl, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, info, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, select, NULL, ZEND_ACC_PUBLIC)
+
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
@@ -2553,6 +2555,50 @@ PHP_METHOD(Redis, info) {
             add_assoc_string(return_value, key, value, 0);
         }
         efree(key);
+    }
+}
+/* }}} */
+
+/* {{{ proto bool Redis::select(long dbNumber)
+ */
+PHP_METHOD(Redis, select) {
+
+    zval *object;
+    RedisSock *redis_sock;
+
+    char *cmd, *response;
+    int cmd_len, response_len;
+    long dbNumber;
+    char ret;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol",
+                                     &object, redis_ce, &dbNumber) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd, "SELECT %d\r\n", dbNumber);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    ret = response[0];
+    efree(response);
+
+    if(ret == '+') {
+        RETURN_TRUE;
+    } else {
+        RETURN_FALSE;
     }
 }
 /* }}} */
