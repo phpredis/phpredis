@@ -85,6 +85,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, flushDB, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, flushAll, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dbSize, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, ttl, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
@@ -2434,6 +2435,47 @@ PHP_METHOD(Redis, dbSize)
 }
 /* }}} */
 
+/* {{{ proto long Redis::ttl(string key)
+ */
+PHP_METHOD(Redis, ttl) {
 
+    zval *object;
+    RedisSock *redis_sock;
+
+    char *cmd, *response, *key;
+    int cmd_len, response_len, key_len;
+    long ttl;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
+                                     &object, redis_ce, &key, &key_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd, "TTL %s\r\n", key, key_len);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    if (response[0] == ':') {
+        ttl = atol(response + 1);
+        efree(response);
+        RETURN_LONG(ttl);
+    } else {
+        efree(response);
+        RETURN_FALSE;
+    }
+}
+/* }}} */
 
 /* vim: set tabstop=4 expandtab: */

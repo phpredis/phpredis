@@ -1072,6 +1072,14 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue($this->redis->dbSize() === 1);
     }
 
+    public function testttl() {
+	$this->redis->set('x', 'y');
+	$this->redis->setTimeout('x', 5);
+	for($i = 5; $i > 0; $i--) {
+		$this->assertEquals($i, $this->redis->ttl('x'));
+		sleep(1);
+	}
+    }
 
 }
 
