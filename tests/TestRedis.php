@@ -1081,6 +1081,30 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	}
     }
 
+    public function testinfo() {
+	$info = $this->redis->info();
+
+	$keys = array(
+	    "redis_version",
+	    "arch_bits",
+	    "uptime_in_seconds",
+	    "uptime_in_days",
+	    "connected_clients",
+	    "connected_slaves",
+	    "used_memory",
+	    "changes_since_last_save",
+	    "bgsave_in_progress",
+	    "last_save_time",
+	    "total_connections_received",
+	    "total_commands_processed",
+	    "role");
+
+
+	foreach($keys as $k) {
+	    $this->assertTrue(in_array($k, array_keys($info)));
+	}
+    }
+
 }
 
 ?>

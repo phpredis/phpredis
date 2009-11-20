@@ -86,6 +86,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, flushAll, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dbSize, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, ttl, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, info, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
@@ -2474,6 +2475,84 @@ PHP_METHOD(Redis, ttl) {
     } else {
         efree(response);
         RETURN_FALSE;
+    }
+}
+/* }}} */
+
+/* {{{ proto array Redis::info()
+ */
+PHP_METHOD(Redis, info) {
+
+    zval *object;
+    RedisSock *redis_sock;
+
+    char cmd[] = "INFO\r\n", *response, *key;
+    int cmd_len = sizeof(cmd)-1, response_len;
+    long ttl;
+    char *cur, *pos, *value;
+    int is_numeric;
+    char *p;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
+                                     &object, redis_ce) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        RETURN_FALSE;
+    }
+
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    array_init(return_value);
+    /* response :: [response_line]
+     * response_line :: key ':' value CRLF
+     */
+
+    cur = response;
+    while(1) {
+        /* key */
+        pos = strchr(cur, ':');
+        if(pos == NULL) {
+            break;
+        }
+        key = emalloc(pos - cur + 1);
+        memcpy(key, cur, pos-cur);
+        key[pos-cur] = 0;
+
+        /* value */
+        cur = pos + 1;
+        pos = strchr(cur, '\r');
+        if(pos == NULL) {
+            break;
+        }
+        value = emalloc(pos - cur + 1);
+        memcpy(value, cur, pos-cur);
+        value[pos-cur] = 0;
+        pos += 2; /* \r, \n */
+        cur = pos;
+
+        is_numeric = 1;
+        for(p = value; *p; ++p) {
+            if(*p < '0' || *p > '9') {
+                is_numeric = 0;
+                break;
+            }
+        }
+
+        if(is_numeric == 1) {
+            add_assoc_long(return_value, key, atol(value));
+            efree(value);
+        } else {
+            add_assoc_string(return_value, key, value, 0);
+        }
+        efree(key);
     }
 }
 /* }}} */

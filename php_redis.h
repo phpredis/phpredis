@@ -72,6 +72,7 @@ PHP_METHOD(Redis, flushDB);
 PHP_METHOD(Redis, flushAll);
 PHP_METHOD(Redis, dbSize);
 PHP_METHOD(Redis, ttl);
+PHP_METHOD(Redis, info);
 
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
