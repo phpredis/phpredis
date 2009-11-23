@@ -311,9 +311,43 @@ array(2) {
 
 ## sinterstore
 ##### *Description*
+Performs a sInter command and stores the result in a new set.
 ##### *Parameters*
+key0, key1, key2... keyN. key0 is the destination key for the new set, while key1..keyN are intersected as in sInter.
+
 ##### *Return value*
+The number of elements in the destination set in case of success, FALSE in case of failure.
 ##### *Example*
+<pre>
+$redis = new Redis();
+$redis->connect('127.0.0.1', 6379);
+$redis->sadd('key1', 'val1');
+$redis->sadd('key1', 'val2');
+$redis->sadd('key1', 'val3');
+$redis->sadd('key1', 'val4');
+
+$redis->sadd('key2', 'val3');
+$redis->sadd('key2', 'val4');
+
+$redis->sadd('key3', 'val3');
+$redis->sadd('key3', 'val4');
+
+var_dump($redis->sInterStore('output', 'key1', 'key2', 'key3'));
+var_dump($redis->sGetMembers('output'));
+</pre>
+
+the output :
+
+<pre>
+int(2)
+
+array(2) {
+  [0]=>
+  string(4) "val4"
+  [1]=>
+  string(4) "val3"
+}
+</pre>
 
 ## sunion
 ##### *Description*
@@ -341,9 +375,36 @@ array(2) {
 
 ## smembers
 ##### *Description*
+Returns the contents of a set.
+
 ##### *Parameters*
+key: string
+
 ##### *Return value*
+An array of elements, the contents of the set.
+
 ##### *Example*
+<pre>
+$redis->delete('s');
+$redis->sAdd('s', 'a');
+$redis->sAdd('s', 'b');
+$redis->sAdd('s', 'a');
+$redis->sAdd('s', 'c');
+var_dump($redis->sGetMembers('s'));
+</pre>
+
+Output:
+<pre>
+array(3) {
+  [0]=>
+  string(1) "c"
+  [1]=>
+  string(1) "a"
+  [2]=>
+  string(1) "b"
+}
+</pre>
+The order is random and corresponds to redis' own internal representation of the set structure.
 
 ## getSet
 ##### *Description*
