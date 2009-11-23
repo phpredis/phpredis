@@ -181,9 +181,19 @@ $redis->rpop('key1'); /* key1 => [ 'A', 'B' ] */
 
 ## lpop
 ##### *Description*
+Return and remove the first element of the list.
 ##### *Parameters*
+*key*
 ##### *Return value*
+*STRING*
+*BOOL*
 ##### *Example*
+<pre>
+$redis->rpush('key1', 'A');
+$redis->rpush('key1', 'B');
+$redis->rpush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
+$redis->rpop('key1'); /* key1 => [ 'B', 'A' ] */
+</pre>
 
 ## rpop
 ##### *Description*
