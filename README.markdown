@@ -102,28 +102,84 @@ $redis->incr('key1'); /* 4 */
 
 ## decr
 ##### Description
+Decremetn the number stored at key by one. If the second argument is filled, it will be used as the integer value of the decrement.
 ##### Parameters
+*key* : key
+*value* : value that will be decremented to key
 ##### Return value
+*INT* the new value of decremented value
 ##### Examples
+<pre>
+$redis->decr('key1'); /*key1 didn't exists, setted to 0 before the increment */
+					  /*and now has the value -1 							 */
 
-## mget
+$redis->incr('key1'); /* -2 */
+$redis->incr('key1'); /* -3 */
+</pre>
+
+## getMultple
 ##### Description
+Get the values of all the specified keys. If one or more keys dont exists, the array will be filled at the position of the key by a FALSE.
 ##### Parameters
+*Array* : Array containing the list of the keys
 ##### Return value
+*Array* : Array containing the values related to keys in argument
 ##### Examples
+<pre>
+$redis->set('key1', 'value1');
+$redis->set('key2', 'value2');
+$redis->set('key3', 'value3');
+$redis->getMultiple(array('key1', 'key2', 'key3')); /* array('value1', 'value2', 'value3');
+$redis->getMultiple(array('key0', 'key1', 'key5')); /* array(FALSE, 'value2', FALSE);
+</pre>
 
 ## rpush
 ##### Description
+Add the string value to the head(right) of the list. Create the list if the key didn't exist. Il the key exists and is not a list, FALSE is returned.
 ##### Parameters
+*key* string
+*value* string
 ##### Return value
+*BOOL*
 ##### Examples
+<pre>
+$redis->rpush('key1', 'A');
+$redis->rpush('key1', 'B');
+$redis->rpush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+</pre>
 
 ## lpush
 ##### Description
+Add the string value to the tail(left) of the list. Create the list if the key didn't exist. Il the key exists and is not a list, FALSE is returned.
 ##### Parameters
+*key* string
+*value* string
 ##### Return value
+*BOOL*
 ##### Examples
+<pre>
+$redis->rpush('key1', 'A');
+$redis->rpush('key1', 'B');
+$redis->rpush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
+</pre>
+
 ## rpop
+##### Description
+Return and remove the last element of the list.
+##### Parameters
+*key*
+##### Return value
+*STRING* 
+*BOOL*
+##### Examples
+<pre>
+$redis->rpush('key1', 'A');
+$redis->rpush('key1', 'B');
+$redis->rpush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->rpop('key1'); /* key1 => [ 'A', 'B' ] */
+</pre>
+
+
 ## lpop
 ## llen
 ## lindex
