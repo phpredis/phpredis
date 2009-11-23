@@ -112,31 +112,102 @@ $redis->incr('key1'); /* 4 */
 ##### Return value
 ##### Examples
 
+## lpush
+##### Description
+##### Parameters
+##### Return value
+##### Examples
+
 ## rpush
 ##### Description
 ##### Parameters
 ##### Return value
 ##### Examples
 
-## lpush
-##### Description
-##### Parameters
-##### Return value
-##### Examples
-## rpop
 ## lpop
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## rpop
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## llen
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## lindex
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## lset
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## lrange
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## ltrim
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## lrem
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## sadd
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## srem
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## smove
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## sismember
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## scard
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## spop
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## sinter
 
 ##### *Description*
@@ -184,42 +255,154 @@ array(2) {
 </pre>
 
 ## sinterstore
-## sunion
-## sunionstore
-## sdiff
-## sdiffstore
-## smembers
-## incrby
-## decrby
-## getset
-## randomkey
-## select
-## move
-## rename
-## renamenx
-## expire
 ##### *Description*
 ##### *Parameters*
 ##### *Return value*
 ##### *Example*
+
+## sunion
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## sunionstore
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## sdiff
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## sdiffstore
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## smembers
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## incrby
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## decrby
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## getset
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## randomkey
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## select
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## move
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## rename
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## renamenx
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## setTimeout
+##### *Description*
+Sets an expiration date (a timeout) on an item.
+
+##### *Parameters*
+key: string. The key that will disappear.
+ttl: integer. The key's remaining Time To Live, in seconds.
+
+##### *Return value*
+TRUE in case of success, FALSE in case of failure.
+##### *Example*
+<pre>
+$this->set('x', '42');
+$this->setTimeout('x', 3);	// x will disappear in 3 seconds.
+sleep(5);			// wait 5 seconds
+$this->get('x'); 		// will return NULL.
+</pre>
 
 ## keys
 ##### *Description*
-##### *Parameters*
-##### *Return value*
-##### *Example*
+Returns the keys that match a certain pattern.
 
-## dbsize
-##### *Description*
 ##### *Parameters*
+pattern: string using '*' as a wildcard.
+
 ##### *Return value*
+A list of strings, corresponding to keys matching the given pattern.
+
 ##### *Example*
+<pre>
+$allKeys = $this->redis->getKeys('*');	// all keys will match this.
+$keyWithUserPrefix = $this->redis->getKeys('user*');
+</pre>
+
+## dbSize
+##### *Description*
+Returns the current database's size.
+
+##### *Parameters*
+None.
+
+##### *Return value*
+DB size, in number of keys.
+
+##### *Example*
+<pre>
+$count = $redis->dbSize();
+echo "Redis has $count keys\n";
+</pre>
 
 ## auth
 ##### *Description*
+Authenticate the connection using a password.
+*Warning*: The password is sent in plain-text over the network.
+
 ##### *Parameters*
+password: string
+
 ##### *Return value*
+TRUE if the connection is authenticated, FALSE otherwise.
+
 ##### *Example*
+<pre>
+$redis->auth('foobared');
+</pre>
 
 ## save
 ##### *Description*
