@@ -324,8 +324,29 @@ class Redis_Test extends PHPUnit_Framework_TestCase
       	$key = 'key' . rand();
         $this->redis->set($key, 'val');
         $this->assertEquals('val', $this->redis->get($key));
-        $this->redis->delete($key);
+	$this->assertEquals(1, $this->redis->delete($key));
         $this->assertEquals(null, $this->redis->get($key));
+
+	// multiple, all existing
+	$this->redis->set('x', 0);
+	$this->redis->set('y', 1);
+	$this->redis->set('z', 2);
+	$this->assertEquals(3, $this->redis->delete('x', 'y', 'z'));
+	$this->assertEquals(NULL, $this->redis->get('x'));
+	$this->assertEquals(NULL, $this->redis->get('y'));
+	$this->assertEquals(NULL, $this->redis->get('z'));
+
+	// multiple, none existing
+	$this->assertEquals(0, $this->redis->delete('x', 'y', 'z'));
+	$this->assertEquals(NULL, $this->redis->get('x'));
+	$this->assertEquals(NULL, $this->redis->get('y'));
+	$this->assertEquals(NULL, $this->redis->get('z'));
+
+	// multiple, some existing
+	$this->redis->set('y', 1);
+	$this->assertEquals(1, $this->redis->delete('x', 'y', 'z'));
+	$this->assertEquals(NULL, $this->redis->get('y'));
+
     }
 
     public function testType()

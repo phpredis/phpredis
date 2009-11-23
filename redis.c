@@ -1184,42 +1184,26 @@ PHP_METHOD(Redis, exists)
  */
 PHP_METHOD(Redis, delete)
 {
-    zval *object;
+
+    char *response;
+    int response_len;
     RedisSock *redis_sock;
-    char *key = NULL, *cmd, *response;
-    int key_len, cmd_len, response_len;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
-                                     &object, redis_ce,
-                                     &key, &key_len) == FAILURE) {
-        RETURN_FALSE;
-    }
+    generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                    "DEL", sizeof("DEL") - 1,
+                    1, &redis_sock);
 
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
-        RETURN_FALSE;
-    }
-
-    cmd_len = spprintf(&cmd, 0, "DEL %s\r\n", key);
-
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
-        efree(cmd);
-        RETURN_FALSE;
-    }
-
-    efree(cmd);
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
     }
 
-    char c = (response && response_len > 1 ? response[1] : 0); /* character at [1] if available, otherwise NIL */
-    if(response) {
+    if(response[0] != ':') {
         efree(response);
-    }
-
-    if (c == '1') {
-        RETURN_TRUE;
-    } else {
         RETURN_FALSE;
+    } else {
+        long l = atol(response+1);
+        efree(response);
+        RETURN_LONG(l);
     }
 }
 /* }}} */
@@ -1978,7 +1962,7 @@ PHP_METHOD(Redis, sGetMembers)
 /* }}} */
 
 
-PHPAPI int generic_set_command(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
+PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
                 int min_argc, RedisSock **redis_sock TSRMLS_DC)
 {
     zval *object, **z_args;
@@ -2050,7 +2034,7 @@ PHP_METHOD(Redis, sInter) {
     int response_len;
     RedisSock *redis_sock;
 
-    generic_set_command(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+    generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SINTER", sizeof("SINTER") - 1,
                     0, &redis_sock);
 
@@ -2070,7 +2054,7 @@ PHP_METHOD(Redis, sInterStore) {
     int response_len;
     RedisSock *redis_sock;
 
-    generic_set_command(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+    generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SINTERSTORE", sizeof("SINTERSTORE") - 1,
                     1, &redis_sock);
 
@@ -2098,7 +2082,7 @@ PHP_METHOD(Redis, sUnion) {
     int response_len;
     RedisSock *redis_sock;
 
-    generic_set_command(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+    generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SUNION", sizeof("SUNION") - 1,
                     0, &redis_sock);
 
@@ -2117,7 +2101,7 @@ PHP_METHOD(Redis, sUnionStore) {
     int response_len;
     RedisSock *redis_sock;
 
-    generic_set_command(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+    generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SUNIONSTORE", sizeof("SUNIONSTORE") - 1,
                     1, &redis_sock);
 
@@ -2145,7 +2129,7 @@ PHP_METHOD(Redis, sDiff) {
     int response_len;
     RedisSock *redis_sock;
 
-    generic_set_command(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+    generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SDiff", sizeof("SDiff") - 1,
                     0, &redis_sock);
 
@@ -2165,7 +2149,7 @@ PHP_METHOD(Redis, sDiffStore) {
     int response_len;
     RedisSock *redis_sock;
 
-    generic_set_command(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+    generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SDIFFSTORE", sizeof("SDIFFSTORE") - 1,
                     1, &redis_sock);
 
