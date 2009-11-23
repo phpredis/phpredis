@@ -323,6 +323,8 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
     switch(inbuf[0]) {
 
         case '-':
+            return NULL;
+
         case '+':
         case ':':    
             // Single Line Reply 
@@ -914,10 +916,6 @@ PHP_METHOD(Redis, get)
         RETURN_FALSE;
     }
 
-    if(strncmp(response, "-ERR", 4) == 0) {
-        efree(response);
-        RETURN_FALSE;
-    }
     RETURN_STRINGL(response, response_len, 0);
 }
 /* }}} */
