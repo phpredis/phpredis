@@ -27,14 +27,102 @@ If key didn't exist, FALSE is returned. Else, the value related to this key is r
 $redis->get('key');
 
 ## set
+##### Description
+
+Set the string value in argument as value of the key.
+
+##### Parameters
+*Key* : key
+*Value* : Value
+
+##### Return value
+*Bool* : TRUE if the SET is successful.
+
+##### Examples
+
+<pre>
+$redis->set('key', 'value')
+</pre>
+
 ## setnx
-## del
+##### Description
+Set the string value in argument as value of the key if the target key already exists.
+
+##### Parameters
+*key*
+*value*
+
+##### Return value
+*BOOL*
+
+##### Examples
+<pre>
+$this->redis->setnx('key', 'value'); /* return TRUE */
+$this->redis->setnx('key', 'value'); /* return FALSE */
+</pre>
+
+## delete
+##### Description
+##### Parameters
+##### Return value
+##### Examples
+
+
 ## exists
+##### Description
+Vérify if the specified key exists.
+##### Parameters
+*key* : key 
+##### Return value
+*BOOL* : If the key exists, return TRUE, else return FALSE.
+##### Examples
+<pre>
+$this->set('key', 'value');
+$this->exists('key'); /* TRUE*/
+$this->exists('NonExistingKey'); /* FALSE*/
+</pre>
+
 ## incr
+##### Description
+Increment the number stored at key by one. If the second argument is filled, it will be used as the integer value of the increment.
+##### Parameters
+*key* : key
+*value* : value that will be incremented to key
+##### Return value
+*INT* the new value of incremented value
+##### Examples
+<pre>
+$redis->incr('key1'); /*key1 didn't exists, setted to 0 before the increment */
+					  /*and now has the value 1 							 */
+
+$redis->incr('key1'); /* 2 */
+$redis->incr('key1'); /* 3 */
+$redis->incr('key1'); /* 4 */
+</pre>
+
 ## decr
+##### Description
+##### Parameters
+##### Return value
+##### Examples
+
 ## mget
+##### Description
+##### Parameters
+##### Return value
+##### Examples
+
 ## rpush
+##### Description
+##### Parameters
+##### Return value
+##### Examples
+
 ## lpush
+##### Description
+##### Parameters
+##### Return value
+##### Examples
 ## rpop
 ## lpop
 ## llen
