@@ -26,7 +26,6 @@
 #include "ext/standard/info.h"
 #include "php_redis.h"
 #include <zend_exceptions.h>
-#define BUFFER_SIZE 1024
 
 static int le_redis_sock;
 static zend_class_entry *redis_ce;
@@ -54,7 +53,10 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, decr, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, type, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getKeys, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, getSort, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sortAsc, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sortAscAlpha, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sortDesc, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sortDescAlpha, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPush, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, rPush, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPop, NULL, ZEND_ACC_PUBLIC)
@@ -2172,23 +2174,32 @@ PHP_METHOD(Redis, sDiffStore) {
 }
 /* }}} */
 
-/* {{{ proto array Redis::getSort(string key [,order = 0, pattern = "*", start=0,
- *                                                                       end = 0])
- */
-PHP_METHOD(Redis, getSort)
-{
+
+PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_alpha TSRMLS_DC) {
+
     zval *object;
     RedisSock *redis_sock;
-    char *key = NULL, *pattern = "*", *cmd, *response, *limit = "";
-    char order_str[] = "DESC";
-    int key_len, pattern_len, cmd_len, response_len, limit_len, order_len;
-    zend_bool alpha = 0;
-    long start = 0, end = 0, order = 0;
+    char *key = NULL, *pattern = "*", *get = NULL, *cmd, *response;
+    int key_len, pattern_len, get_len, cmd_len, response_len;
+    long start = -1, end = -1;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|lsll",
+    int use_pound = 0;
+
+    char *by_cmd = "";
+    char *by_arg = "";
+
+    char *get_cmd = "";
+    char *get_arg = "";
+    char *get_pound = "";
+
+    char *limit = "";
+
+    char *alpha = "";
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|ssllb",
                                      &object, redis_ce,
-                                     &key, &key_len, &order, &pattern, &pattern_len,
-                                     &start, &end) == FAILURE) {
+                                     &key, &key_len, &pattern, &pattern_len,
+                                     &get, &get_len, &start, &end, &use_pound) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -2196,29 +2207,85 @@ PHP_METHOD(Redis, getSort)
         RETURN_FALSE;
     }
 
-    if (start != 0 && end != 0) {
-        limit_len = spprintf(&limit, 0, "LIMIT %d %d", (int)start, (int)end);
+    if(start >= 0 && end >= start) {
+        redis_cmd_format(&limit, "LIMIT %d %d", start, end);
     }
 
-    if (order == 1) {
-        strcpy(order_str, "ASC");
+    char format[] = "SORT "
+            "%s " /* key, mandatory */
+            "%s " /* BY, optional */
+            "%s " /* argument for BY, optional */
+            "%s " /* GET, optional */
+            "%s " /* argument for GET, optional */
+            "%s " /* "#" argument for GET, optional */
+            "%s " /* LIMIT, optional. full string in this format: "LIMIT 42, 100" */
+            "%s " /* ALPHA, optional */
+            "%s " /* ASC or DESC, optional */
+            "\r\n";
+
+    if(pattern && pattern_len) {
+        by_cmd = "BY";
+        by_arg = pattern;
     }
-    
-    cmd_len = spprintf(&cmd, 0, "SORT %s BY %s %s %s ALPHA\r\n", key, pattern,
-                       limit, order_str);
+    if(get && get_len) {
+        get_cmd = "GET";
+        get_arg = get;
+        get_pound = use_pound ? "#" : "";
+    }
+    if(start >= 0 && end >= start) {
+        spprintf(&limit, 0, "LIMIT %ld %ld", start, end);
+    }
+    if(use_alpha) {
+        alpha = "ALPHA";
+    }
+
+    cmd_len = spprintf(&cmd, 0, format, key, by_cmd, by_arg, get_cmd, get_arg, get_pound, limit, alpha, sort);
+
+    if(*limit) {
+        efree(limit);
+    }
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
         efree(cmd);
-        efree(limit);
         RETURN_FALSE;
     }
     efree(cmd);
-    efree(limit);
 
     if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                         redis_sock, &response_len TSRMLS_CC) < 0) {
         RETURN_FALSE;
     }
+}
+
+/* {{{ proto array Redis::sortAsc(string key, string pattern, string get, int start, int end, bool getList])
+ */
+PHP_METHOD(Redis, sortAsc)
+{
+    generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ASC", 0 TSRMLS_CC);
+}
+/* }}} */
+
+/* {{{ proto array Redis::sortAscAlpha(string key, string pattern, string get, int start, int end, bool getList])
+ */
+PHP_METHOD(Redis, sortAscAlpha)
+{
+    generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ASC", 1 TSRMLS_CC);
+}
+/* }}} */
+
+/* {{{ proto array Redis::sortDesc(string key, string pattern, string get, int start, int end, bool getList])
+ */
+PHP_METHOD(Redis, sortDesc)
+{
+    generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DESC", 0 TSRMLS_CC);
+}
+/* }}} */
+
+/* {{{ proto array Redis::sortDescAlpha(string key, string pattern, string get, int start, int end, bool getList])
+ */
+PHP_METHOD(Redis, sortDescAlpha)
+{
+    generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DESC", 1 TSRMLS_CC);
 }
 /* }}} */
 
