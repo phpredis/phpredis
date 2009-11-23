@@ -326,17 +326,26 @@ array(2) {
 ##### *Return value*
 ##### *Example*
 
-## rename
+## renameKey
 ##### *Description*
+Renames a key.
 ##### *Parameters*
-##### *Return value*
-##### *Example*
+srckey: string. The key to rename.
+dstkey: string. The new name for the key.
 
-## renamenx
-##### *Description*
-##### *Parameters*
 ##### *Return value*
+TRUE in case of success, FALSE in case of failure.
 ##### *Example*
+<pre>
+$redis->set('x', '42');
+$redis->renameKey('x', 'y');
+$redis->get('y'); 	// → 42
+$redis->get('x'); 	// → FALSE
+</pre>
+
+## renameNx
+##### *Description*
+Same as rename, but will not replace a key if the destination already exists. This is the same behaviour as setNx.
 
 ## setTimeout
 ##### *Description*
@@ -350,10 +359,10 @@ ttl: integer. The key's remaining Time To Live, in seconds.
 TRUE in case of success, FALSE in case of failure.
 ##### *Example*
 <pre>
-$this->set('x', '42');
-$this->setTimeout('x', 3);	// x will disappear in 3 seconds.
-sleep(5);			// wait 5 seconds
-$this->get('x'); 		// will return NULL.
+$redis->set('x', '42');
+$redis->setTimeout('x', 3);	// x will disappear in 3 seconds.
+sleep(5);				// wait 5 seconds
+$this->get('x'); 		// will return FALSE, as 'x' has expired.
 </pre>
 
 ## keys
@@ -368,8 +377,8 @@ A list of strings, corresponding to keys matching the given pattern.
 
 ##### *Example*
 <pre>
-$allKeys = $this->redis->getKeys('*');	// all keys will match this.
-$keyWithUserPrefix = $this->redis->getKeys('user*');
+$allKeys = $redis->getKeys('*');	// all keys will match this.
+$keyWithUserPrefix = $redis->getKeys('user*');
 </pre>
 
 ## dbSize
