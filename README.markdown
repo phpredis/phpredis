@@ -118,11 +118,9 @@ array(2) {
 ## lastsave
 ## type
 ##### *Description*
-
 Returns the type of data pointed by a given key.
 
 ##### *Parameters*
-
 key: string.
 
 ##### *Return value*
@@ -136,27 +134,22 @@ Depending on the type of the data pointed by the key, this method will return th
 ## flushdb
 
 ##### *Description*
-
 Removes all entries from a given database.
 
 ##### *Parameters*
-
 dbindex: integer, the database number to delete from. The first database has number zero.
 
 ## flushall
 ##### *Description*
-
 Removes all entries from all databases.
 
 ##### *Parameters*
-
 None.
 
 ## sort
 
 ## info
 ##### *Description*
-
 Returns an associative array of strings and integers, with the following keys:
 
 * redis_version
@@ -173,19 +166,16 @@ Returns an associative array of strings and integers, with the following keys:
 * total_commands_processed
 * role
 
-##### *Parameters*
 
+##### *Parameters*
 None.
 
 ## ttl
 ##### *Description*
-
 Returns the time to live left for a given key, in seconds. If the key doesn't exist, FALSE is returned.
 
 ##### *Parameters*
-
 key: string
 
 ##### *Return value*
-
 Long, the time left to live in seconds.
