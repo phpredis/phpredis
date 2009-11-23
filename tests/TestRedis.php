@@ -14,6 +14,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     {
 	$this->redis = new Redis();
 	$this->redis->connect('127.0.0.1', 6379);
+
+	// uncomment the following if you want to use authentication
+	// $this->assertTrue($this->redis->auth('foobared'));
     }
 
     public function tearDown()

@@ -71,6 +71,7 @@ PHP_METHOD(Redis, lastSave);
 PHP_METHOD(Redis, flushDB);
 PHP_METHOD(Redis, flushAll);
 PHP_METHOD(Redis, dbSize);
+PHP_METHOD(Redis, auth);
 PHP_METHOD(Redis, ttl);
 PHP_METHOD(Redis, info);
 PHP_METHOD(Redis, select);

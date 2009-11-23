@@ -85,6 +85,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, flushDB, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, flushAll, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dbSize, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, auth, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, ttl, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, info, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, select, NULL, ZEND_ACC_PUBLIC)
@@ -2426,6 +2427,49 @@ PHP_METHOD(Redis, flushAll)
 PHP_METHOD(Redis, dbSize)
 {
     generic_empty_long_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DBSIZE\r\n", sizeof("DBSIZE\r\n") TSRMLS_CC);
+}
+/* }}} */
+
+/* {{{ proto bool Redis::auth(string passwd)
+ */
+PHP_METHOD(Redis, auth) {
+
+    zval *object;
+    RedisSock *redis_sock;
+
+    char *cmd, *response, *password;
+    int cmd_len, response_len, password_len;
+    char ret;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
+                                     &object, redis_ce, &password, &password_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd, "AUTH %s\r\n", password, password_len);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    ret = response[0];
+    efree(response);
+
+    if (ret == '+') {
+        RETURN_TRUE;
+    } else {
+        RETURN_FALSE;
+    }
 }
 /* }}} */
 
