@@ -218,7 +218,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
  */
 PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 {
-    struct timeval tv;
+    struct timeval tv, *tv_ptr = NULL;
     char *host = NULL, *hash_key = NULL, *errstr = NULL;
     int host_len, err = 0;
 
@@ -231,11 +231,13 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     host_len = spprintf(&host, 0, "%s:%d", redis_sock->host, redis_sock->port);
 
+    if(tv.tv_sec != 0) {
+        tv_ptr = &tv;
+    }
     redis_sock->stream = php_stream_xport_create(host, host_len, ENFORCE_SAFE_MODE,
                                                  STREAM_XPORT_CLIENT
                                                  | STREAM_XPORT_CONNECT,
-                                                 // hash_key, &tv, NULL, &errstr, &err
-                                                 hash_key, NULL, NULL, &errstr, &err
+                                                 hash_key, tv_ptr, NULL, &errstr, &err
                                                 );
 
     efree(host);
@@ -247,8 +249,10 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     php_stream_auto_cleanup(redis_sock->stream);
 
-//    php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_READ_TIMEOUT,
-//                          0, &tv);
+    if(tv.tv_sec != 0) {
+        php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_READ_TIMEOUT,
+                              0, &tv);
+    }
     php_stream_set_option(redis_sock->stream,
                           PHP_STREAM_OPTION_WRITE_BUFFER,
                           PHP_STREAM_BUFFER_NONE, NULL);
@@ -565,7 +569,7 @@ PHP_METHOD(Redis, connect)
     char *host = NULL;
     long port;
 
-    struct timeval timeout = {5L, 0L};
+    struct timeval timeout = {0L, 0L};
     RedisSock *redis_sock  = NULL;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl|l",
