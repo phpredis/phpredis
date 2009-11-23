@@ -500,6 +500,96 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     }
 
+    public function setupSort() {
+	// people with name, age, salary
+	$this->redis->set('person:name_1', 'Alice');
+	$this->redis->set('person:age_1', 27);
+	$this->redis->set('person:salary_1', 2500);
+
+	$this->redis->set('person:name_2', 'Bob');
+	$this->redis->set('person:age_2', 34);
+	$this->redis->set('person:salary_2', 2000);
+
+	$this->redis->set('person:name_3', 'Carol');
+	$this->redis->set('person:age_3', 25);
+	$this->redis->set('person:salary_3', 2800);
+
+	$this->redis->set('person:name_4', 'Dave');
+	$this->redis->set('person:age_4', 41);
+	$this->redis->set('person:salary_4', 3100);
+
+	// set-up
+	$this->redis->delete('person:id');
+	foreach(array(1,2,3,4) as $id) {
+	    $this->redis->lPush('person:id', $id);
+	}
+
+    }
+
+    public function testSortAsc() {
+
+	// sort by age and get IDs
+	$byAgeAsc = array('3','1','2','4');
+	$this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*'));
+
+	// sort by age and get names
+	$byAgeAsc = array('Carol','Alice','Bob','Dave');
+	$this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*'));
+
+	$this->assertEquals(array_slice($byAgeAsc, 0, 2), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 0, 2));
+	$this->assertEquals(array_slice($byAgeAsc, 1, 2), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 1, 2));
+
+	// sort by salary and get ages
+	$agesBySalaryAsc = array('34', '27', '25', '41');
+	$this->assertEquals($agesBySalaryAsc, $this->redis->sortAsc('person:id', 'person:salary_*', 'person:age_*'));
+
+
+	// sort non-alpha doesn't change all-string lists
+	// list → [ghi, def, abc]
+	$list = array('abc', 'def', 'ghi');
+	$this->redis->delete('list');
+	foreach($list as $i) {
+	    $this->redis->lPush('list', $i);
+	}
+
+	// SORT list → [ghi, def, abc]
+	$this->assertEquals(array_reverse($list), $this->redis->sortAsc('list'));
+
+	// SORT list ALPHA → [abc, def, ghi]
+	$this->assertEquals($list, $this->redis->sortAscAlpha('list'));
+    }
+
+    public function testSortDesc() {
+
+	// sort by age and get IDs
+	$byAgeDesc = array('4','2','1','3');
+	$this->assertEquals($byAgeDesc, $this->redis->sortDesc('person:id', 'person:age_*'));
+
+	// sort by age and get names
+	$byAgeDesc = array('Dave', 'Bob', 'Alice', 'Carol');
+	$this->assertEquals($byAgeDesc, $this->redis->sortDesc('person:id', 'person:age_*', 'person:name_*'));
+
+	$this->assertEquals(array_slice($byAgeDesc, 0, 2), $this->redis->sortDesc('person:id', 'person:age_*', 'person:name_*', 0, 2));
+	$this->assertEquals(array_slice($byAgeDesc, 1, 2), $this->redis->sortDesc('person:id', 'person:age_*', 'person:name_*', 1, 2));
+
+	// sort by salary and get ages
+	$agesBySalaryDesc = array('41', '25', '27', '34');
+	$this->assertEquals($agesBySalaryDesc, $this->redis->sortDesc('person:id', 'person:salary_*', 'person:age_*'));
+
+	// sort non-alpha doesn't change all-string lists
+	$list = array('def', 'abc', 'ghi');
+	$this->redis->delete('list');
+	foreach($list as $i) {
+	    $this->redis->lPush('list', $i);
+	}
+
+	// SORT list → [ghi, abc, def]
+	$this->assertEquals(array_reverse($list), $this->redis->sortDesc('list'));
+
+	// SORT list ALPHA → [abc, def, ghi]
+	$this->assertEquals(array('ghi', 'def', 'abc'), $this->redis->sortDescAlpha('list'));
+    }
+
     // LINDEX
     public function testlGet() {
 
