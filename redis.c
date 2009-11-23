@@ -127,7 +127,7 @@ redis_cmd_format(char **ret, char *format, ...) {
     va_list ap;
 
     int total = 0, sz, ret_sz;
-    int i;
+    int i, ci;
     unsigned int u;
 
 
@@ -153,7 +153,12 @@ redis_cmd_format(char **ret, char *format, ...) {
                     case 'd':
                         i = va_arg(ap, int);
                         /* compute display size of integer value */
-                        sz = 1+log(abs(i))/log(10);
+                        sz = 0;
+                        ci = abs(i);
+                        while (ci>0) {
+                                ci = (ci/10);
+                                sz += 1;
+                        }
                         if(i == 0) { /* log 0 doesn't make sense. */
                                 sz = 1;
                         } else if(i < 0) { /* allow for neg sign as well. */
