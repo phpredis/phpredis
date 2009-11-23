@@ -290,41 +290,66 @@ array(2) {
 ##### *Return value*
 ##### *Example*
 
-## incrby
+## getSet
 ##### *Description*
+Sets a value and returns the previous entry at that key.
 ##### *Parameters*
+string: key
+string: value
 ##### *Return value*
+A string, the previous value located at this key.
 ##### *Example*
+<pre>
+$redis->set('x', '42');
+$exValue = $redis->getSet('x', 'lol');	// return '42', replaces x by 'lol'
+$newValue = $redis->get('x')'		// return 'lol'
+</pre>
 
-## decrby
+## randomKey
 ##### *Description*
+Returns a random key.
 ##### *Parameters*
+None.
 ##### *Return value*
-##### *Example*
+A string, corresponding to an existing key in redis.
 
-## getset
-##### *Description*
-##### *Parameters*
-##### *Return value*
 ##### *Example*
-
-## randomkey
-##### *Description*
-##### *Parameters*
-##### *Return value*
-##### *Example*
+<pre>
+$key = $redis->randomKey();
+$surprise = $redis->get($key);	// who knows what's in there.
+</pre>
 
 ## select
 ##### *Description*
+Switch to a given database.
+
 ##### *Parameters*
+dbindex: integer. The database number to switch to.
+
 ##### *Return value*
+TRUE in case of success, FALSE in case of failure.
 ##### *Example*
+(See following function)
 
 ## move
 ##### *Description*
+Move a key to a different database.
+
 ##### *Parameters*
+key: string. The key to move.
+dbindex: integer. The database number to move the key to.
+
 ##### *Return value*
+TRUE in case of success, FALSE in case of failure.
 ##### *Example*
+
+<pre>
+$redis->select(0);	// switch to DB 0
+$redis->set('x', '42');	// write 42 to x
+$redis->move('x', 1);	// move to DB 1
+$redis->select(1);	// switch to DB 1
+$redis->get('x');	// will return 42
+</pre>
 
 ## renameKey
 ##### *Description*

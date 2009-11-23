@@ -91,6 +91,7 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, ttl, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, info, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, select, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, move, NULL, ZEND_ACC_PUBLIC)
 
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
