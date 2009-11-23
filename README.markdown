@@ -1,40 +1,35 @@
 PhpRedis
 =============
 
-Introduction
-------------
+### Introduction
 
-Installing/Configuring
-----------------------
+### Installing/Configuring
+
 * Requirements
 * Installation
 * Runtime Configuration
 * Resource Types
 
-Predefined Constants
---------------------
-Examples
---------
+### Predefined Constants
+
+### Examples
+
 * overview example
 	
-PhpRedis Functions
-------------------
-
-* Redis::set
+### PhpRedis Functions
 
 * Redis::get
-# (@version)
-# [mini description]
-Get the value related to key
-# [description]
-# [Parameters]
-## key
-# Return Value
-# Examples
+Get the value related to the specified key
+**Parameters
+key : key
+** Return Value
+If key didn't exist, False is returned. Else, the value related to this key is returned.
+** Examples
+$redis->get('key');
 
+
+* Redis::set
 * Redis::setnx
-
-
 * Redis::del
 * Redis::exists
 * Redis::incr
@@ -57,7 +52,6 @@ Get the value related to key
 * Redis::scard
 * Redis::spop
 * Redis::sinter
-
 * Redis::sinterstore
 * Redis::sunion
 * Redis::sunionstore
