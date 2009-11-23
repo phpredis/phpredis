@@ -110,13 +110,77 @@ array(2) {
 ## rename
 ## renamenx
 ## expire
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## keys
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## dbsize
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## auth
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## save
+##### *Description*
+Performs a synchronous save.
+
+##### *Parameters*
+None.
+
+##### *Return value*
+TRUE in case of success, FALSE in case of failure. If a save is already running, this command will fail and return FALSE.
+
+##### *Example*
+<pre>
+$redis->save();
+</pre>
+
 ## bgsave
+
+##### *Description*
+Performs a background save.
+
+##### *Parameters*
+None.
+
+##### *Return value*
+TRUE in case of success, FALSE in case of failure. If a save is already running, this command will fail and return FALSE.
+
+##### *Example*
+<pre>
+$redis->bgSave();
+</pre>
 ## lastsave
+
+##### *Description*
+Returns the timestamp of the last disk save.
+
+##### *Parameters*
+None.
+
+##### *Return value*
+Integer timestamp.
+
+##### *Example*
+<pre>
+$redis->lastSave();
+</pre>
+
 ## type
+
 ##### *Description*
 Returns the type of data pointed by a given key.
 
@@ -131,6 +195,11 @@ Depending on the type of the data pointed by the key, this method will return th
 * list: 3
 * other: 0
 
+##### *Example*
+<pre>
+$redis->type('key');
+</pre>
+
 ## flushdb
 
 ##### *Description*
@@ -139,12 +208,29 @@ Removes all entries from a given database.
 ##### *Parameters*
 dbindex: integer, the database number to delete from. The first database has number zero.
 
+##### *Return value*
+TRUE on success, FALSE on failure.
+
+##### *Example*
+<pre>
+$redis->flushDB(0);
+</pre>
+
+
 ## flushall
 ##### *Description*
 Removes all entries from all databases.
 
 ##### *Parameters*
 None.
+
+##### *Return value*
+TRUE on success, FALSE on failure.
+
+##### *Example*
+<pre>
+$redis->flushAll();
+</pre>
 
 ## sort
 
@@ -170,6 +256,11 @@ Returns an associative array of strings and integers, with the following keys:
 ##### *Parameters*
 None.
 
+##### *Example*
+<pre>
+$redis->info();
+</pre>
+
 ## ttl
 ##### *Description*
 Returns the time to live left for a given key, in seconds. If the key doesn't exist, FALSE is returned.
@@ -179,3 +270,8 @@ key: string
 
 ##### *Return value*
 Long, the time left to live in seconds.
+
+##### *Example*
+<pre>
+$redis->ttl('key');
+</pre>
