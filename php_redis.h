@@ -78,6 +78,7 @@ PHP_METHOD(Redis, auth);
 PHP_METHOD(Redis, ttl);
 PHP_METHOD(Redis, info);
 PHP_METHOD(Redis, select);
+PHP_METHOD(Redis, move);
 
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)

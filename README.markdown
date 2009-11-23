@@ -133,7 +133,7 @@ $redis->getMultiple(array('key1', 'key2', 'key3')); /* array('value1', 'value2',
 $redis->getMultiple(array('key0', 'key1', 'key5')); /* array(FALSE, 'value2', FALSE);
 </pre>
 
-## rpush
+## lpush
 ##### Description
 Add the string value to the head(right) of the list. Create the list if the key didn't exist. Il the key exists and is not a list, FALSE is returned.
 ##### Parameters
@@ -148,7 +148,7 @@ $redis->rpush('key1', 'B');
 $redis->rpush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
 </pre>
 
-## lpush
+## rpush
 ##### Description
 Add the string value to the tail(left) of the list. Create the list if the key didn't exist. Il the key exists and is not a list, FALSE is returned.
 ##### Parameters
@@ -179,20 +179,90 @@ $redis->rpush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
 $redis->rpop('key1'); /* key1 => [ 'A', 'B' ] */
 </pre>
 
-
 ## lpop
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## rpop
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## llen
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## lindex
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## lset
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## lrange
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## ltrim
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## lrem
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## sadd
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## srem
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## smove
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## sismember
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## scard
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## spop
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## sinter
 
 ##### *Description*
@@ -240,27 +310,237 @@ array(2) {
 </pre>
 
 ## sinterstore
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## sunion
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## sunionstore
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## sdiff
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## sdiffstore
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
 ## smembers
-## incrby
-## decrby
-## getset
-## randomkey
+##### *Description*
+##### *Parameters*
+##### *Return value*
+##### *Example*
+
+## getSet
+##### *Description*
+Sets a value and returns the previous entry at that key.
+##### *Parameters*
+string: key
+string: value
+##### *Return value*
+A string, the previous value located at this key.
+##### *Example*
+<pre>
+$redis->set('x', '42');
+$exValue = $redis->getSet('x', 'lol');	// return '42', replaces x by 'lol'
+$newValue = $redis->get('x')'		// return 'lol'
+</pre>
+
+## randomKey
+##### *Description*
+Returns a random key.
+##### *Parameters*
+None.
+##### *Return value*
+A string, corresponding to an existing key in redis.
+
+##### *Example*
+<pre>
+$key = $redis->randomKey();
+$surprise = $redis->get($key);	// who knows what's in there.
+</pre>
+
 ## select
+##### *Description*
+Switch to a given database.
+
+##### *Parameters*
+dbindex: integer. The database number to switch to.
+
+##### *Return value*
+TRUE in case of success, FALSE in case of failure.
+##### *Example*
+(See following function)
+
 ## move
-## rename
-## renamenx
-## expire
+##### *Description*
+Move a key to a different database.
+
+##### *Parameters*
+key: string. The key to move.
+dbindex: integer. The database number to move the key to.
+
+##### *Return value*
+TRUE in case of success, FALSE in case of failure.
+##### *Example*
+
+<pre>
+$redis->select(0);	// switch to DB 0
+$redis->set('x', '42');	// write 42 to x
+$redis->move('x', 1);	// move to DB 1
+$redis->select(1);	// switch to DB 1
+$redis->get('x');	// will return 42
+</pre>
+
+## renameKey
+##### *Description*
+Renames a key.
+##### *Parameters*
+srckey: string. The key to rename.
+dstkey: string. The new name for the key.
+
+##### *Return value*
+TRUE in case of success, FALSE in case of failure.
+##### *Example*
+<pre>
+$redis->set('x', '42');
+$redis->renameKey('x', 'y');
+$redis->get('y'); 	// → 42
+$redis->get('x'); 	// → FALSE
+</pre>
+
+## renameNx
+##### *Description*
+Same as rename, but will not replace a key if the destination already exists. This is the same behaviour as setNx.
+
+## setTimeout
+##### *Description*
+Sets an expiration date (a timeout) on an item.
+
+##### *Parameters*
+key: string. The key that will disappear.
+ttl: integer. The key's remaining Time To Live, in seconds.
+
+##### *Return value*
+TRUE in case of success, FALSE in case of failure.
+##### *Example*
+<pre>
+$redis->set('x', '42');
+$redis->setTimeout('x', 3);	// x will disappear in 3 seconds.
+sleep(5);				// wait 5 seconds
+$this->get('x'); 		// will return FALSE, as 'x' has expired.
+</pre>
+
 ## keys
-## dbsize
+##### *Description*
+Returns the keys that match a certain pattern.
+
+##### *Parameters*
+pattern: string using '*' as a wildcard.
+
+##### *Return value*
+A list of strings, corresponding to keys matching the given pattern.
+
+##### *Example*
+<pre>
+$allKeys = $redis->getKeys('*');	// all keys will match this.
+$keyWithUserPrefix = $redis->getKeys('user*');
+</pre>
+
+## dbSize
+##### *Description*
+Returns the current database's size.
+
+##### *Parameters*
+None.
+
+##### *Return value*
+DB size, in number of keys.
+
+##### *Example*
+<pre>
+$count = $redis->dbSize();
+echo "Redis has $count keys\n";
+</pre>
+
 ## auth
+##### *Description*
+Authenticate the connection using a password.
+*Warning*: The password is sent in plain-text over the network.
+
+##### *Parameters*
+password: string
+
+##### *Return value*
+TRUE if the connection is authenticated, FALSE otherwise.
+
+##### *Example*
+<pre>
+$redis->auth('foobared');
+</pre>
+
 ## save
+##### *Description*
+Performs a synchronous save.
+
+##### *Parameters*
+None.
+
+##### *Return value*
+TRUE in case of success, FALSE in case of failure. If a save is already running, this command will fail and return FALSE.
+
+##### *Example*
+<pre>
+$redis->save();
+</pre>
+
 ## bgsave
+
+##### *Description*
+Performs a background save.
+
+##### *Parameters*
+None.
+
+##### *Return value*
+TRUE in case of success, FALSE in case of failure. If a save is already running, this command will fail and return FALSE.
+
+##### *Example*
+<pre>
+$redis->bgSave();
+</pre>
 ## lastsave
+
+##### *Description*
+Returns the timestamp of the last disk save.
+
+##### *Parameters*
+None.
+
+##### *Return value*
+Integer timestamp.
+
+##### *Example*
+<pre>
+$redis->lastSave();
+</pre>
+
 ## type
+
 ##### *Description*
 Returns the type of data pointed by a given key.
 
@@ -275,6 +555,11 @@ Depending on the type of the data pointed by the key, this method will return th
 * list: 3
 * other: 0
 
+##### *Example*
+<pre>
+$redis->type('key');
+</pre>
+
 ## flushdb
 
 ##### *Description*
@@ -283,12 +568,29 @@ Removes all entries from a given database.
 ##### *Parameters*
 dbindex: integer, the database number to delete from. The first database has number zero.
 
+##### *Return value*
+TRUE on success, FALSE on failure.
+
+##### *Example*
+<pre>
+$redis->flushDB(0);
+</pre>
+
+
 ## flushall
 ##### *Description*
 Removes all entries from all databases.
 
 ##### *Parameters*
 None.
+
+##### *Return value*
+TRUE on success, FALSE on failure.
+
+##### *Example*
+<pre>
+$redis->flushAll();
+</pre>
 
 ## sort
 
@@ -314,6 +616,11 @@ Returns an associative array of strings and integers, with the following keys:
 ##### *Parameters*
 None.
 
+##### *Example*
+<pre>
+$redis->info();
+</pre>
+
 ## ttl
 ##### *Description*
 Returns the time to live left for a given key, in seconds. If the key doesn't exist, FALSE is returned.
@@ -323,3 +630,8 @@ key: string
 
 ##### *Return value*
 Long, the time left to live in seconds.
+
+##### *Example*
+<pre>
+$redis->ttl('key');
+</pre>
