@@ -1,80 +1,71 @@
 PhpRedis
 =============
 
-### Introduction
 
-### Installing/Configuring
+Installing/Configuring
+======================
 
-* Requirements
-* Installation
-* Runtime Configuration
-* Resource Types
+Functions
+=========
 
-### Predefined Constants
 
-### Examples
-
-* overview example
-	
-### PhpRedis Functions
-
-#### Redis::get
-* *Description*
+## get
+##### *Description*
 
 	Get the value related to the specified key
 
-* *Parameters*
+##### *Parameters*
 
 	key : key
 
-* *Return Value*
+##### *Return Value*
 
 	If key didn't exist, FALSE is returned. Else, the value related to this key is returned.
 
-* *Examples*
+##### *Examples*
 
 	$redis->get('key');
 
-#### Redis::set
-#### Redis::setnx
-#### Redis::del
-#### Redis::exists
-#### Redis::incr
-#### Redis::decr
-#### Redis::mget
-#### Redis::rpush
-#### Redis::lpush
-#### Redis::rpop
-#### Redis::lpop
-#### Redis::llen
-#### Redis::lindex
-#### Redis::lset
-#### Redis::lrange
-#### Redis::ltrim
-#### Redis::lrem
-#### Redis::sadd
-#### Redis::srem
-#### Redis::smove
-#### Redis::sismember
-#### Redis::scard
-#### Redis::spop
-#### Redis::sinter
+## set
+## setnx
+## del
+## exists
+## incr
+## decr
+## mget
+## rpush
+## lpush
+## rpop
+## lpop
+## llen
+## lindex
+## lset
+## lrange
+## ltrim
+## lrem
+## sadd
+## srem
+## smove
+## sismember
+## scard
+## spop
+## sinter
 
-* *Description*
+##### *Description*
 
 	Return the members of a set resulting from the intersection of all the sets hold at the specified keys.
 	if just a single key is specified, then this command produces the members of this set. If one of the keys
 	is missing, FALSE is returned.
 
-* *Parameters*
+##### *Parameters*
 
 	key1, key2, keyN : keys identifying the different set on which we will apply the intersection.
 		
-* *Return value*
+##### *Return value*
 
 	Array, contain the result of the intersesction between those keys. If the Intersection beteen the different set is empty, the return value will be empty array.
 
-* *Examples*
+##### *Examples*
 
 	<pre>
 	$redis = new Redis();
@@ -102,30 +93,30 @@ PhpRedis
 	}
 	</pre>
 
-#### Redis::sinterstore
-#### Redis::sunion
-#### Redis::sunionstore
-#### Redis::sdiff
-#### Redis::sdiffstore
-#### Redis::smembers
-#### Redis::incrby
-#### Redis::decrby
-#### Redis::getset
-#### Redis::randomkey
-#### Redis::select
-#### Redis::move
-#### Redis::rename
-#### Redis::renamenx
-#### Redis::expire
-#### Redis::keys
-#### Redis::dbsize
-#### Redis::auth
-#### Redis::save
-#### Redis::bgsave
-#### Redis::lastsave
-#### Redis::type
-#### Redis::flushdb
-#### Redis::flushall
-#### Redis::sort
-#### Redis::info
-#### Redis::ttl
+## sinterstore
+## sunion
+## sunionstore
+## sdiff
+## sdiffstore
+## smembers
+## incrby
+## decrby
+## getset
+## randomkey
+## select
+## move
+## rename
+## renamenx
+## expire
+## keys
+## dbsize
+## auth
+## save
+## bgsave
+## lastsave
+## type
+## flushdb
+## flushall
+## sort
+## info
+## ttl
