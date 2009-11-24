@@ -94,6 +94,8 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, move, NULL, ZEND_ACC_PUBLIC)
 
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, lLen, lSize, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, sMembers, sGetMembers, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
@@ -989,9 +991,11 @@ PHP_METHOD(Redis, ping)
 
        redis_sock_write(redis_sock, cmd, sizeof(cmd)-1);
 
-       response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
+       if((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+           RETURN_FALSE;
+       }
 
-       RETURN_STRING(response, 1);
+       RETURN_STRINGL(response, response_len, 0);
     } else {
        php_error_docref(NULL TSRMLS_CC, E_ERROR, "The object is not connected");
        RETURN_FALSE;
@@ -1696,6 +1700,7 @@ PHP_METHOD(Redis, sAdd)
     RedisSock *redis_sock;
     char *key = NULL, *val = NULL, *cmd, *response;
     int key_len, val_len, cmd_len, response_len;
+    char ret;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
                                      &object, redis_ce, &key, &key_len,
@@ -1713,19 +1718,20 @@ PHP_METHOD(Redis, sAdd)
                     val, val_len);
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
         RETURN_FALSE;
     }
+    efree(cmd);
 
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
     }
 
-    if (response[1] == 0x31) {
+    ret = response[1];
+    efree(response);
+
+    if (ret == '1') {
         RETURN_TRUE;
-    } else if (response[1] == '0') {
-        php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                         "The new element was already a member of the set");
-        RETURN_FALSE;
     } else {
         RETURN_FALSE;
     }
