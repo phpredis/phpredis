@@ -530,9 +530,13 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$this->setupSort();
 
+	$this->assertTrue(FALSE === $this->redis->sortAsc(NULL));
+
 	// sort by age and get IDs
 	$byAgeAsc = array('3','1','2','4');
 	$this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*'));
+	$this->assertEquals(array('1', '2', '3', '4'), $this->redis->sortAsc('person:id', NULL));	// check that NULL works.
+	$this->assertEquals(array('1', '2', '3', '4'), $this->redis->sortAsc('person:id', NULL, NULL));	// for all fields.
 
 	// sort by age and get names
 	$byAgeAsc = array('Carol','Alice','Bob','Dave');
@@ -540,6 +544,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$this->assertEquals(array_slice($byAgeAsc, 0, 2), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 0, 2));
 	$this->assertEquals(array_slice($byAgeAsc, 1, 2), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 1, 2));
+	$this->assertEquals(array_slice($byAgeAsc, 0, 3), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', NULL, 3)); // NULL is transformed to 0 if there is something after it.
+	$this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 1, NULL));
+	$this->assertEquals(array(), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', NULL, NULL)); // NULL, NULL is the same as (0,0). That returns no element.
 
 	// sort by salary and get ages
 	$agesBySalaryAsc = array('34', '27', '25', '41');
