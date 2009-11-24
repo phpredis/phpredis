@@ -83,7 +83,7 @@ $redis->delete('key1', 'key2', 'key3'); /* return 0 */
 ##### Description
 Verify if the specified key exists.
 ##### Parameters
-*key*: key
+*key*
 ##### Return value
 *BOOL*: If the key exists, return TRUE, else return FALSE.
 ##### Examples
@@ -97,7 +97,7 @@ $this->exists('NonExistingKey'); /* FALSE*/
 ##### Description
 Increment the number stored at key by one. If the second argument is filled, it will be used as the integer value of the increment.
 ##### Parameters
-*key*: key
+*key*
 *value*: value that will be incremented to key
 ##### Return value
 *INT* the new value of incremented value
@@ -115,7 +115,7 @@ $redis->incr('key1'); /* 4 */
 ##### Description
 Decremetn the number stored at key by one. If the second argument is filled, it will be used as the integer value of the decrement.
 ##### Parameters
-*key*: key
+*key*  
 *value*: value that will be decremented to key
 ##### Return value
 *INT* the new value of decremented value
@@ -148,8 +148,8 @@ $redis->getMultiple(array('key0', 'key1', 'key5')); /* array(FALSE, 'value2', FA
 ##### Description
 Add the string value to the head(right) of the list. Create the list if the key didn't exist. Il the key exists and is not a list, FALSE is returned.
 ##### Parameters
-*key* string
-*value* string
+*key*  
+*value* String, value to push in key
 ##### Return value
 *BOOL*
 ##### Examples
@@ -163,8 +163,8 @@ $redis->rpush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
 ##### Description
 Add the string value to the tail(left) of the list. Create the list if the key didn't exist. Il the key exists and is not a list, FALSE is returned.
 ##### Parameters
-*key* string
-*value* string
+*key*  
+*value* String, value to push in key
 ##### Return value
 *BOOL* Tue in case of success, False in case of Failure.
 ##### Examples
@@ -180,8 +180,7 @@ Return and remove the last element of the list.
 ##### Parameters
 *key*
 ##### Return value
-*STRING* 
-*BOOL*
+*STRING* if command executed successfully, *BOOL* False if failure.
 ##### Examples
 <pre>
 $redis->rpush('key1', 'A');
@@ -196,7 +195,7 @@ Return and remove the first element of the list.
 ##### *Parameters*
 *key*
 ##### *Return value*
-*STRING* in case of success (key exists)
+*STRING* in case of success (key exists)  
 *BOOL* False in case of failure (key didn't exist)
 ##### *Example*
 <pre>
@@ -252,7 +251,7 @@ Return False is the identify a data type
 *index*
 
 ##### *Return value*
-*String* the element at this index
+*String* the element at this index  
 *Bool* False if the key identify a non-string data type, or no values corresponds at this index in the list Key.
 ##### *Example*
 <pre>
@@ -311,7 +310,7 @@ Trim an existing list so that it will contain only the specified range of elemen
 *start*
 *stop*
 ##### *Return value*
-*Array*
+*Array*  
 *Bool* return False if the key identify a non-list value.
 ##### *Example*
 <pre>
@@ -332,7 +331,7 @@ Remove the first count occurences of the value element from the list. If count e
 *value*
 
 ##### *Return value*
-*LONG* the number of removed elements
+*LONG* the number of removed elements  
 *BOOL* False if data type of the value identified by key is not a list.
 ##### *Example*
 <pre>
@@ -431,15 +430,20 @@ Return the cardinality of the set identified by key.
 
 ## spop
 ##### *Description*
+Remove and retrun a random element from the set value at Key.
 ##### *Parameters*
+*key*
 ##### *Return value*
+*String* popped value  
+*Bool* False if set identified by key is empty or didn't exist.
 ##### *Example*
 <pre>
 $redis->sadd('key1' , 'set1'); 
 $redis->sadd('key1' , 'set2'); 
-$redis->sadd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
-$redis->sSize('key1'); /* 3 */
-$redis->sSize('keyX'); /* 0 */
+$redis->sadd('key1' , 'set3'); /* 'key1' => {'set3', 'set1', 'set2'}*/
+$redis->spop('key1'); /* 'set1', 'key1' => {'set3', 'set2'} */
+$redis->spop('key1'); /* 'set3', 'key1' => {'set2'} */
+
 </pre>
 
 ## sinter
