@@ -117,7 +117,7 @@ $redis->incr('key1'); /* -2 */
 $redis->incr('key1'); /* -3 */
 </pre>
 
-## getMultple
+## getMultiple
 ##### Description
 Get the values of all the specified keys. If one or more keys dont exists, the array will be filled at the position of the key by a FALSE.
 ##### Parameters
@@ -509,7 +509,6 @@ var_dump($redis->sMembers('dst'));
 Return value: the number of elements that are either in s0 or in s1 or in s2.
 <pre>
 int(4)
-
 array(4) {
   [0]=>
   string(1) "3"
@@ -584,7 +583,6 @@ var_dump($redis->sMembers('dst'));
 Return value: the number of elements of s0 that are neither in s1 nor in s2.
 <pre>
 int(2)
-
 array(2) {
   [0]=>
   string(1) "4"
