@@ -16,7 +16,7 @@ Get the value related to the specified key
 
 ##### *Parameters*
 
-key : key
+key: key
 
 ##### *Return Value*
 
@@ -32,11 +32,11 @@ $redis->get('key');
 Set the string value in argument as value of the key.
 
 ##### Parameters
-*Key* : key
-*Value* : Value
+*Key*: key
+*Value*: Value
 
 ##### Return value
-*Bool* : TRUE if the SET is successful.
+*Bool*: TRUE if the SET is successful.
 
 ##### Examples
 
@@ -72,9 +72,9 @@ $this->redis->setnx('key', 'value'); /* return FALSE */
 ##### Description
 Verify if the specified key exists.
 ##### Parameters
-*key* : key 
+*key*: key
 ##### Return value
-*BOOL* : If the key exists, return TRUE, else return FALSE.
+*BOOL*: If the key exists, return TRUE, else return FALSE.
 ##### Examples
 <pre>
 $this->set('key', 'value');
@@ -86,8 +86,8 @@ $this->exists('NonExistingKey'); /* FALSE*/
 ##### Description
 Increment the number stored at key by one. If the second argument is filled, it will be used as the integer value of the increment.
 ##### Parameters
-*key* : key
-*value* : value that will be incremented to key
+*key*: key
+*value*: value that will be incremented to key
 ##### Return value
 *INT* the new value of incremented value
 ##### Examples
@@ -104,8 +104,8 @@ $redis->incr('key1'); /* 4 */
 ##### Description
 Decremetn the number stored at key by one. If the second argument is filled, it will be used as the integer value of the decrement.
 ##### Parameters
-*key* : key
-*value* : value that will be decremented to key
+*key*: key
+*value*: value that will be decremented to key
 ##### Return value
 *INT* the new value of decremented value
 ##### Examples
@@ -117,13 +117,13 @@ $redis->incr('key1'); /* -2 */
 $redis->incr('key1'); /* -3 */
 </pre>
 
-## getMultple
+## getMultiple
 ##### Description
 Get the values of all the specified keys. If one or more keys dont exists, the array will be filled at the position of the key by a FALSE.
 ##### Parameters
-*Array* : Array containing the list of the keys
+*Array*: Array containing the list of the keys
 ##### Return value
-*Array* : Array containing the values related to keys in argument
+*Array*: Array containing the values related to keys in argument
 ##### Examples
 <pre>
 $redis->set('key1', 'value1');
@@ -441,7 +441,7 @@ is missing, FALSE is returned.
 
 ##### *Parameters*
 
-key1, key2, keyN : keys identifying the different set on which we will apply the intersection.
+key1, key2, keyN: keys identifying the different set on which we will apply the intersection.
 		
 ##### *Return value*
 
@@ -481,10 +481,13 @@ array(2) {
 ##### *Description*
 Performs a sInter command and stores the result in a new set.
 ##### *Parameters*
-key0, key1, key2... keyN. key0 is the destination key for the new set, while key1..keyN are intersected as in sInter.
+*Key*: dstkey, the key to store the diff into.
+
+*Keys*: key1, key2... keyN. key1..keyN are intersected as in sInter.
 
 ##### *Return value*
-The number of elements in the destination set in case of success, FALSE in case of failure.
+*INTEGER*: The cardinality of the resulting set, or FALSE in case of a missing key.
+
 ##### *Example*
 <pre>
 $redis = new Redis();
@@ -517,36 +520,160 @@ array(2) {
 }
 </pre>
 
-## sunion
+## sUnion
 ##### *Description*
-##### *Parameters*
-##### *Return value*
-##### *Example*
+Performs the union between N sets and returns it.
 
-## sunionstore
+##### *Parameters*
+*Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis.
+
+##### *Return value*
+*Array of strings*: The union of all these sets.
+
+##### *Example*
+<pre>
+$redis->delete('s0', 's1', 's2');
+
+$redis->sAdd('s0', '1');
+$redis->sAdd('s0', '2');
+$redis->sAdd('s1', '3');
+$redis->sAdd('s1', '1');
+$redis->sAdd('s2', '3');
+$redis->sAdd('s2', '4');
+
+var_dump($redis->sUnion('s0', 's1', 's2'));
+</pre>
+Return value: all elements that are either in s0 or in s1 or in s2.
+<pre>
+array(4) {
+  [0]=>
+  string(1) "3"
+  [1]=>
+  string(1) "4"
+  [2]=>
+  string(1) "1"
+  [3]=>
+  string(1) "2"
+}
+</pre>
+
+## sUnionStore
 ##### *Description*
-##### *Parameters*
-##### *Return value*
-##### *Example*
+Performs the same action as sUnion, but stores the result in the first key
 
-## sdiff
+##### *Parameters*
+*Key*: dstkey, the key to store the diff into.
+
+*Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis.
+
+##### *Return value*
+*INTEGER*: The cardinality of the resulting set, or FALSE in case of a missing key.
+
+##### *Example*
+<pre>
+$redis->delete('s0', 's1', 's2');
+
+$redis->sAdd('s0', '1');
+$redis->sAdd('s0', '2');
+$redis->sAdd('s1', '3');
+$redis->sAdd('s1', '1');
+$redis->sAdd('s2', '3');
+$redis->sAdd('s2', '4');
+
+var_dump($redis->sUnionStore('dst', 's0', 's1', 's2'));
+var_dump($redis->sMembers('dst'));
+</pre>
+Return value: the number of elements that are either in s0 or in s1 or in s2.
+<pre>
+int(4)
+array(4) {
+  [0]=>
+  string(1) "3"
+  [1]=>
+  string(1) "4"
+  [2]=>
+  string(1) "1"
+  [3]=>
+  string(1) "2"
+}
+</pre>
+
+## sDiff
 ##### *Description*
-##### *Parameters*
-##### *Return value*
-##### *Example*
+Performs the difference between N sets and returns it.
 
-## sdiffstore
+##### *Parameters*
+*Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis.
+
+##### *Return value*
+*Array of strings*: The difference of the first set will all the others.
+
+##### *Example*
+<pre>
+$redis->delete('s0', 's1', 's2');
+
+$redis->sAdd('s0', '1');
+$redis->sAdd('s0', '2');
+$redis->sAdd('s0', '3');
+$redis->sAdd('s0', '4');
+
+$redis->sAdd('s1', '1');
+$redis->sAdd('s2', '3');
+
+var_dump($redis->sDiff('s0', 's1', 's2'));
+</pre>
+Return value: all elements of s0 that are neither in s1 nor in s2.
+<pre>
+array(2) {
+  [0]=>
+  string(1) "4"
+  [1]=>
+  string(1) "2"
+}
+</pre>
+
+## sDiffStore
 ##### *Description*
+Performs the same action as sDiff, but stores the result in the first key
 ##### *Parameters*
-##### *Return value*
-##### *Example*
+*Key*: dstkey, the key to store the diff into.
 
-## smembers
+*Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis
+##### *Return value*
+*INTEGER*: The cardinality of the resulting set, or FALSE in case of a missing key.
+
+##### *Example*
+<pre>
+$redis->delete('s0', 's1', 's2');
+
+$redis->sAdd('s0', '1');
+$redis->sAdd('s0', '2');
+$redis->sAdd('s0', '3');
+$redis->sAdd('s0', '4');
+
+$redis->sAdd('s1', '1');
+$redis->sAdd('s2', '3');
+
+var_dump($redis->sDiffStore('dst', 's0', 's1', 's2'));
+var_dump($redis->sMembers('dst'));
+</pre>
+Return value: the number of elements of s0 that are neither in s1 nor in s2.
+<pre>
+int(2)
+array(2) {
+  [0]=>
+  string(1) "4"
+  [1]=>
+  string(1) "2"
+}
+</pre>
+
+## sMembers
 ##### *Description*
 Returns the contents of a set.
 
 ##### *Parameters*
-key: string
+*Key*: key
 
 ##### *Return value*
 An array of elements, the contents of the set.
@@ -578,8 +705,10 @@ The order is random and corresponds to redis' own internal representation of the
 ##### *Description*
 Sets a value and returns the previous entry at that key.
 ##### *Parameters*
-string: key
-string: value
+*Key*: key
+
+*STRING*: value
+
 ##### *Return value*
 A string, the previous value located at this key.
 ##### *Example*
@@ -592,10 +721,11 @@ $newValue = $redis->get('x')'		// return 'lol'
 ## randomKey
 ##### *Description*
 Returns a random key.
+
 ##### *Parameters*
 None.
 ##### *Return value*
-A string, corresponding to an existing key in redis.
+*STRING*: an existing key in redis.
 
 ##### *Example*
 <pre>
@@ -605,10 +735,10 @@ $surprise = $redis->get($key);	// who knows what's in there.
 
 ## select
 ##### *Description*
-Switch to a given database.
+Switches to a given database.
 
 ##### *Parameters*
-dbindex: integer. The database number to switch to.
+*INTEGER*: dbindex, the database number to switch to.
 
 ##### *Return value*
 TRUE in case of success, FALSE in case of failure.
@@ -617,14 +747,15 @@ TRUE in case of success, FALSE in case of failure.
 
 ## move
 ##### *Description*
-Move a key to a different database.
+Moves a key to a different database.
 
 ##### *Parameters*
-key: string. The key to move.
-dbindex: integer. The database number to move the key to.
+*Key*: key, the key to move.
+
+*INTEGER*: dbindex, the database number to move the key to.
 
 ##### *Return value*
-TRUE in case of success, FALSE in case of failure.
+*BOOL*: TRUE in case of success, FALSE in case of failure.
 ##### *Example*
 
 <pre>
@@ -639,8 +770,9 @@ $redis->get('x');	// will return 42
 ##### *Description*
 Renames a key.
 ##### *Parameters*
-srckey: string. The key to rename.
-dstkey: string. The new name for the key.
+*STRING*: srckey, the key to rename.
+
+*STRING*: dstkey, the new name for the key.
 
 ##### *Return value*
 TRUE in case of success, FALSE in case of failure.
@@ -661,11 +793,12 @@ Same as rename, but will not replace a key if the destination already exists. Th
 Sets an expiration date (a timeout) on an item.
 
 ##### *Parameters*
-key: string. The key that will disappear.
-ttl: integer. The key's remaining Time To Live, in seconds.
+*Key*: key. The key that will disappear.
+
+*Integer*: ttl. The key's remaining Time To Live, in seconds.
 
 ##### *Return value*
-TRUE in case of success, FALSE in case of failure.
+*BOOL*: TRUE in case of success, FALSE in case of failure.
 ##### *Example*
 <pre>
 $redis->set('x', '42');
@@ -677,12 +810,13 @@ $this->get('x'); 		// will return FALSE, as 'x' has expired.
 ## keys
 ##### *Description*
 Returns the keys that match a certain pattern.
+##### *Description*
 
 ##### *Parameters*
-pattern: string using '*' as a wildcard.
+*STRING*: pattern, using '*' as a wildcard.
 
 ##### *Return value*
-A list of strings, corresponding to keys matching the given pattern.
+*Array of STRING*: The keys that match a certain pattern.
 
 ##### *Example*
 <pre>
@@ -698,7 +832,7 @@ Returns the current database's size.
 None.
 
 ##### *Return value*
-DB size, in number of keys.
+*INTEGER*: DB size, in number of keys.
 
 ##### *Example*
 <pre>
@@ -712,10 +846,10 @@ Authenticate the connection using a password.
 *Warning*: The password is sent in plain-text over the network.
 
 ##### *Parameters*
-password: string
+*STRING*: password
 
 ##### *Return value*
-TRUE if the connection is authenticated, FALSE otherwise.
+*BOOL*: TRUE if the connection is authenticated, FALSE otherwise.
 
 ##### *Example*
 <pre>
@@ -730,7 +864,7 @@ Performs a synchronous save.
 None.
 
 ##### *Return value*
-TRUE in case of success, FALSE in case of failure. If a save is already running, this command will fail and return FALSE.
+*BOOL*: TRUE in case of success, FALSE in case of failure. If a save is already running, this command will fail and return FALSE.
 
 ##### *Example*
 <pre>
@@ -746,7 +880,7 @@ Performs a background save.
 None.
 
 ##### *Return value*
-TRUE in case of success, FALSE in case of failure. If a save is already running, this command will fail and return FALSE.
+*BOOL*: TRUE in case of success, FALSE in case of failure. If a save is already running, this command will fail and return FALSE.
 
 ##### *Example*
 <pre>
@@ -761,7 +895,7 @@ Returns the timestamp of the last disk save.
 None.
 
 ##### *Return value*
-Integer timestamp.
+*INT*: timestamp.
 
 ##### *Example*
 <pre>
@@ -774,7 +908,7 @@ $redis->lastSave();
 Returns the type of data pointed by a given key.
 
 ##### *Parameters*
-key: string.
+*Key*: key
 
 ##### *Return value*
 
@@ -795,10 +929,10 @@ $redis->type('key');
 Removes all entries from a given database.
 
 ##### *Parameters*
-dbindex: integer, the database number to delete from. The first database has number zero.
+*INTEGER*: dbindex, the database number to delete from. The first database has number zero.
 
 ##### *Return value*
-TRUE on success, FALSE on failure.
+*BOOL*: TRUE on success, FALSE on failure.
 
 ##### *Example*
 <pre>
@@ -814,7 +948,7 @@ Removes all entries from all databases.
 None.
 
 ##### *Return value*
-TRUE on success, FALSE on failure.
+*BOOL*: TRUE on success, FALSE on failure.
 
 ##### *Example*
 <pre>
@@ -855,7 +989,7 @@ $redis->info();
 Returns the time to live left for a given key, in seconds. If the key doesn't exist, FALSE is returned.
 
 ##### *Parameters*
-key: string
+*Key*: key
 
 ##### *Return value*
 Long, the time left to live in seconds.
