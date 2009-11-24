@@ -53,7 +53,7 @@ Set the string value in argument as value of the key if the target key already e
 *value*
 
 ##### Return value
-*BOOL*
+*BOOL* True in case of success, False in case of failure.
 
 ##### Examples
 <pre>
@@ -70,7 +70,7 @@ $this->redis->setnx('key', 'value'); /* return FALSE */
 
 ## exists
 ##### Description
-Vérify if the specified key exists.
+Verify if the specified key exists.
 ##### Parameters
 *key* : key 
 ##### Return value
@@ -155,7 +155,7 @@ Add the string value to the tail(left) of the list. Create the list if the key d
 *key* string
 *value* string
 ##### Return value
-*BOOL*
+*BOOL* Tue in case of success, False in case of Failure.
 ##### Examples
 <pre>
 $redis->rpush('key1', 'A');
@@ -185,51 +185,132 @@ Return and remove the first element of the list.
 ##### *Parameters*
 *key*
 ##### *Return value*
-*STRING*
-*BOOL*
+*STRING* in case of success (key exists)
+*BOOL* False in case of failure (key didn't exist)
 ##### *Example*
 <pre>
 $redis->rpush('key1', 'A');
 $redis->rpush('key1', 'B');
 $redis->rpush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
-$redis->rpop('key1'); /* key1 => [ 'B', 'A' ] */
+$redis->lpop('key1'); /* key1 => [ 'B', 'A' ] */
 </pre>
 
 ## rpop
 ##### *Description*
+Return and remove the last element of the list.
 ##### *Parameters*
+*key*
 ##### *Return value*
+*STRING* in case of success (key exists)
+*BOOL* False in case of failure (key didn't exist)
 ##### *Example*
+<pre>
+$redis->rpush('key1', 'A');
+$redis->rpush('key1', 'B');
+$redis->rpush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
+$redis->rpop('key1'); /* key1 => [ 'C', 'B' ] */
+</pre>
 
-## llen
+## lSize
 ##### *Description*
+Return the size of a list identified by Key. If the list didn't exist or is empty, the command returns 0. If the data type identified by Key is not a list, the command return False.
 ##### *Parameters*
+*Key*
 ##### *Return value*
-##### *Example*
+*LONG* The size of the list identified by Key exists. 
+*BOOL* False if the data type identified by Key is not String
 
-## lindex
-##### *Description*
-##### *Parameters*
-##### *Return value*
 ##### *Example*
+<pre>
+$redis->rpush('key1', 'A');
+$redis->rpush('key1', 'B');
+$redis->rpush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
+$redis->lSize('key1');/* 3 */
+$redis->rpop('key1'); 
+$redis->lSize('key1');/* 2 */
+</pre>
 
-## lset
+## lGet
 ##### *Description*
+Return the specified element of the list stored at the specified key.
+0 the first element, 1 the second ...
+-1 the last element, -2 the penultimate ...
+Return False is the identify a data type 
 ##### *Parameters*
-##### *Return value*
-##### *Example*
+*key*
+*index*
 
-## lrange
-##### *Description*
-##### *Parameters*
 ##### *Return value*
+*String* the element at this index
+*Bool* False if the key identify a non-string data type, or no values corresponds at this index in the list Key.
 ##### *Example*
+<pre>
+$redis->rpush('key1', 'A');
+$redis->rpush('key1', 'B');
+$redis->rpush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
+$redis->lGet('key1', 0); /* 'C' */
+$redis->lGet('key1', -1); /* 'A' */
+$redis->lGet('key1', 10); /* False */
+</pre>
 
-## ltrim
+## lSet
 ##### *Description*
+Set the list at index with the new value.
 ##### *Parameters*
+*key*
+*index*
+*value*
 ##### *Return value*
+*BOOL* True if the new value is setted. False if the index is out of range, or data type identified by key is not a list.
 ##### *Example*
+<pre>
+$redis->rpush('key1', 'A');
+$redis->rpush('key1', 'B');
+$redis->rpush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
+$redis->lGet('key1', 0); /* 'C' */
+$redis->lSet('key1', 0, 'X');
+$redis->lGet('key1', 0); /* 'X' */ 
+</pre>
+
+## lGetRange
+##### *Description*
+Return the specified elements of the list stored at the specified key in the range [start, end]. start and stop are interpretated like index :
+0 the first element, 1 the second ...
+-1 the last element, -2 the penultimate ...
+##### *Parameters*
+*key*
+*start*
+*end*
+
+##### *Return value*
+*Array* containing the values in specified range. 
+##### *Example*
+<pre>
+$redis->rpush('key1', 'A');
+$redis->rpush('key1', 'B');
+$redis->rpush('key1', 'C'); 
+$redis->lGetRange('key1', 0, -1); /* array('C', 'B', 'A') */
+</pre>
+
+## listTrim
+##### *Description*
+Trim an existing list so that it will contain only the specified range of elements specified.
+##### *Parameters*
+*key*
+*start*
+*stop*
+##### *Return value*
+*Array*
+*Bool* return False if the key identify a non-list value.
+##### *Example*
+<pre>
+$redis->rpush('key1', 'A');
+$redis->rpush('key1', 'B');
+$redis->rpush('key1', 'C'); 
+$redis->lGetRange('key1', 0, -1); /* array('C', 'B', 'A') */
+$redis->listTrim('key1', 0, 1);
+$redis->lGetRange('key1', 0, -1); /* array('C', 'B') */
+</pre>
 
 ## lrem
 ##### *Description*
