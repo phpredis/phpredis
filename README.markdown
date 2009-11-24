@@ -173,9 +173,9 @@ Add the string value to the head(right) of the list. Create the list if the key 
 *BOOL*
 ##### Examples
 <pre>
-$redis->rpush('key1', 'A');
-$redis->rpush('key1', 'B');
-$redis->rpush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->lpush('key1', 'C');
+$redis->lpush('key1', 'B');
+$redis->lpush('key1', 'A'); /* key1 => [ 'A', 'B', 'C' ] */
 </pre>
 
 ## rpush
@@ -190,7 +190,7 @@ Add the string value to the tail(left) of the list. Create the list if the key d
 <pre>
 $redis->rpush('key1', 'A');
 $redis->rpush('key1', 'B');
-$redis->rpush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
+$redis->rpush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
 </pre>
 
 ## rpop
