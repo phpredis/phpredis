@@ -1,11 +1,29 @@
 PhpRedis
 =============
+This extension provides an API for communicating with Redis database, a persistent key-value database with built-in net interface written in ANSI-C for Posix systems.
+
+It is a fork of alfonsojimenez's phpredis, adding many methods and fixing a lot of issues.
+
+This code is maintained by [Owlient](http://owlient.eu/).
+You can send comments, patches here on github or by email to:
+* n.bouafif@owlient.eu
+* n.favre-felix@owlient.eu
 
 
 Installing/Configuring
 ======================
 
-Functions
+<pre>
+phpize
+./configure
+make && make install
+</pre>
+
+You can generate a debian package for PHP5, accessible from Apache 2 by running `./mkdeb-apache2.sh`.
+
+This extension exports a single class, `Redis`.
+
+Methods
 =========
 
 
