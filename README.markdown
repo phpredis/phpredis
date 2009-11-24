@@ -16,11 +16,11 @@ Get the value related to the specified key
 
 ##### *Parameters*
 
-key: key
+*key*
 
 ##### *Return Value*
 
-If key didn't exist, FALSE is returned. Else, the value related to this key is returned.
+*String* or *Bool* : If key didn't exist, FALSE is returned. Else, the value related to this key is returned.
 
 ##### *Examples*
 
@@ -32,11 +32,11 @@ $redis->get('key');
 Set the string value in argument as value of the key.
 
 ##### Parameters
-*Key*: key
-*Value*: Value
+*Key*
+*Value*
 
 ##### Return value
-*Bool*: TRUE if the SET is successful.
+*Bool* TRUE if the SET is successful.
 
 ##### Examples
 
@@ -53,7 +53,7 @@ Set the string value in argument as value of the key if the target key already e
 *value*
 
 ##### Return value
-*BOOL* True in case of success, False in case of failure.
+*Bool* True in case of success, False in case of failure.
 
 ##### Examples
 <pre>
@@ -63,9 +63,20 @@ $this->redis->setnx('key', 'value'); /* return FALSE */
 
 ## delete
 ##### Description
+Remove specified keys.
 ##### Parameters
+*key1* *key2* *key3* ... *keyN*
 ##### Return value
+*Long* Number of keys deleted.
 ##### Examples
+<pre>
+$redis->set('key1', 'val1');
+$redis->set('key2', 'val2');
+$redis->set('key3', 'val3');
+
+$redis->delete('key1', 'key2', 'key3'); /* return 3 */
+$redis->delete('key1', 'key2', 'key3'); /* return 0 */
+</pre>
 
 
 ## exists
