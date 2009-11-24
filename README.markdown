@@ -312,40 +312,110 @@ $redis->listTrim('key1', 0, 1);
 $redis->lGetRange('key1', 0, -1); /* array('C', 'B') */
 </pre>
 
-## lrem
+## lRemove
 ##### *Description*
+Remove the first count occurences of the value element from the list. If count es zero, all the element are removed. if count is negatif, elements are removed from tail to head
 ##### *Parameters*
+*key*
+*count*
+*value*
+
 ##### *Return value*
+*LONG* the number of removed elements
+*BOOL* False if data type of the value identified by key is not a list.
 ##### *Example*
+<pre>
+$redis->lpush('key1', 'A');
+$redis->lpush('key1', 'B');
+$redis->lpush('key1', 'C'); 
+$redis->lpush('key1', 'A'); 
+$redis->lpush('key1', 'A'); 
+
+$redis->lGetRange('key1', 0, -1); /* array('A', 'B', 'C') */
+$redis->lRemove('key1', 'A', 2); /* 2 */
+$redis->lGetRange('key1', 0, -1); /* array('B', 'C', 'B') */
+</pre>
 
 ## sadd
 ##### *Description*
+Add the specified member to the set value stored at key. if member already exists, False is returned. 
 ##### *Parameters*
-##### *Return value*
-##### *Example*
+*key*
+*member*
 
-## srem
-##### *Description*
-##### *Parameters*
 ##### *Return value*
+*BOOL* True if value didn't exist and added successfully. False if value exists.
 ##### *Example*
+<pre>
+$redis->sadd('key1' , 'set1'); /* True, 'key1' => {'set1'} */
+$redis->sadd('key1' , 'set2'); /* True, 'key1' => {'set1', 'set2'}*/
+$redis->sadd('key1' , 'set2'); /* False, 'key1' => {'set1', 'set2'}*/
+</pre>
+
+## sRemove
+##### *Description*
+Remove the specified member from the set value stored at key.
+##### *Parameters*
+*key*
+*member*
+##### *Return value*
+*BOOL* True id member exists in the set values. False if member didn't exist.
+##### *Example*
+<pre>
+$redis->sadd('key1' , 'set1'); 
+$redis->sadd('key1' , 'set2'); 
+$redis->sadd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
+$redis->sRemove('key1', 'set2'); /* 'key1' => {'set1', 'set3'} */
+</pre>
 
 ## smove
 ##### *Description*
+Move the specified member from the set at srcKey to the set at dstKey.
 ##### *Parameters*
+*srcKey*
+*dstKey*
+*member*
 ##### *Return value*
+*BOOL* If the operation is successful, return TRUE. If the srcKey or/and dstKey didn't exist, or/and member didn't exist in srcKey, False si returned
 ##### *Example*
+<pre>
+$redis->sadd('key1' , 'set11'); 
+$redis->sadd('key1' , 'set12'); 
+$redis->sadd('key1' , 'set13'); /* 'key1' => {'set11', 'set12', 'set13'}*/
+$redis->sadd('key2' , 'set21'); 
+$redis->sadd('key2' , 'set22'); /* 'key2' => {'set21', 'set22'}*/
+$redis->sMove('key1', 'key2', 'set13'); /* 'key1' =>  {'set11', 'set12'} */
+										/* 'key2' =>  {'set21', 'set22', 'set13'} */
 
-## sismember
+</pre>
+
+## sContains
 ##### *Description*
+Verify if member is member of the set stored at the key key.
 ##### *Parameters*
+*key*
+*member*
+
 ##### *Return value*
+*BOOL* True if member is member of the set at key key, False if is not a member.
 ##### *Example*
+<pre>
+$redis->sadd('key1' , 'set1'); 
+$redis->sadd('key1' , 'set2'); 
+$redis->sadd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
 
-## scard
+$redis->sContains('key1', 'set1'); /* True */
+$redis->sContains('key1', 'setX'); /* False */
+
+</pre>
+
+## sSize
 ##### *Description*
+Return the cardinality of the set identified by key.
 ##### *Parameters*
+*key*
 ##### *Return value*
+*LONG* the cardinality of the set identified by key, 0 if set didn't exist.
 ##### *Example*
 
 ## spop
@@ -353,6 +423,13 @@ $redis->lGetRange('key1', 0, -1); /* array('C', 'B') */
 ##### *Parameters*
 ##### *Return value*
 ##### *Example*
+<pre>
+$redis->sadd('key1' , 'set1'); 
+$redis->sadd('key1' , 'set2'); 
+$redis->sadd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
+$redis->sSize('key1'); /* 3 */
+$redis->sSize('keyX'); /* 0 */
+</pre>
 
 ## sinter
 
