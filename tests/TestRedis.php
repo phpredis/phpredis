@@ -528,6 +528,8 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     public function testSortAsc() {
 
+	$this->setupSort();
+
 	// sort by age and get IDs
 	$byAgeAsc = array('3','1','2','4');
 	$this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*'));
@@ -560,6 +562,8 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     }
 
     public function testSortDesc() {
+
+	$this->setupSort();
 
 	// sort by age and get IDs
 	$byAgeDesc = array('4','2','1','3');
@@ -756,6 +760,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $array = array('val', 'val2', 'val3');
 
         $this->assertEquals($array, $this->redis->sGetMembers('set'));
+	$this->assertEquals($array, $this->redis->sMembers('set'));	// test alias
     }
 
     public function testlSet() {
