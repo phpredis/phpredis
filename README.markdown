@@ -39,7 +39,7 @@ Get the value related to the specified key
 
 ##### *Return Value*
 
-*String* or *Bool* : If key didn't exist, FALSE is returned. Else, the value related to this key is returned.
+*String* or *Bool*: If key didn't exist, `FALSE` is returned. Otherwise, the value related to this key is returned.
 
 ##### *Examples*
 
@@ -55,7 +55,7 @@ Set the string value in argument as value of the key.
 *Value*
 
 ##### Return value
-*Bool* TRUE if the SET is successful.
+*Bool* `TRUE` if the command is successful.
 
 ##### Examples
 
@@ -72,7 +72,7 @@ Set the string value in argument as value of the key if the target key already e
 *value*
 
 ##### Return value
-*Bool* True in case of success, False in case of failure.
+*Bool* `TRUE` in case of success, `FALSE` in case of failure.
 
 ##### Examples
 <pre>
@@ -104,12 +104,12 @@ Verify if the specified key exists.
 ##### Parameters
 *key*
 ##### Return value
-*BOOL*: If the key exists, return TRUE, else return FALSE.
+*BOOL*: If the key exists, return `TRUE`, otherwise return `FALSE`.
 ##### Examples
 <pre>
 $this->set('key', 'value');
-$this->exists('key'); /* TRUE*/
-$this->exists('NonExistingKey'); /* FALSE*/
+$this->exists('key'); /*  TRUE */
+$this->exists('NonExistingKey'); /* FALSE */
 </pre>
 
 ## incr
@@ -117,13 +117,13 @@ $this->exists('NonExistingKey'); /* FALSE*/
 Increment the number stored at key by one. If the second argument is filled, it will be used as the integer value of the increment.
 ##### Parameters
 *key*
-*value*: value that will be incremented to key
+*value*: value that will be added to key
 ##### Return value
-*INT* the new value of incremented value
+*INT* the new value
 ##### Examples
 <pre>
-$redis->incr('key1'); /*key1 didn't exists, setted to 0 before the increment */
-					  /*and now has the value 1 							 */
+$redis->incr('key1'); /* key1 didn't exists, set to 0 before the increment */
+					  /* and now has the value 1  */
 
 $redis->incr('key1'); /* 2 */
 $redis->incr('key1'); /* 3 */
@@ -132,24 +132,23 @@ $redis->incr('key1'); /* 4 */
 
 ## decr
 ##### Description
-Decremetn the number stored at key by one. If the second argument is filled, it will be used as the integer value of the decrement.
+Decrement the number stored at key by one. If the second argument is filled, it will be used as the integer value of the decrement.
 ##### Parameters
-*key*  
-*value*: value that will be decremented to key
+*key*  *value*: value that will be substracted to key
 ##### Return value
-*INT* the new value of decremented value
+*INT* the new value
 ##### Examples
 <pre>
-$redis->decr('key1'); /*key1 didn't exists, setted to 0 before the increment */
-					  /*and now has the value -1 							 */
+$redis->decr('key1'); /* key1 didn't exists, set to 0 before the increment */
+					  /* and now has the value -1  */
 
-$redis->incr('key1'); /* -2 */
-$redis->incr('key1'); /* -3 */
+$redis->decr('key1'); /* -2 */
+$redis->decr('key1'); /* -3 */
 </pre>
 
 ## getMultiple
 ##### Description
-Get the values of all the specified keys. If one or more keys dont exists, the array will be filled at the position of the key by a FALSE.
+Get the values of all the specified keys. If one or more keys dont exist, the array will contain `FALSE` at the position of the key.
 ##### Parameters
 *Array*: Array containing the list of the keys
 ##### Return value
@@ -160,17 +159,17 @@ $redis->set('key1', 'value1');
 $redis->set('key2', 'value2');
 $redis->set('key3', 'value3');
 $redis->getMultiple(array('key1', 'key2', 'key3')); /* array('value1', 'value2', 'value3');
-$redis->getMultiple(array('key0', 'key1', 'key5')); /* array(FALSE, 'value2', FALSE);
+$redis->getMultiple(array('key0', 'key1', 'key5')); /* array(`FALSE`, 'value2', `FALSE`);
 </pre>
 
 ## lpush
 ##### Description
-Add the string value to the head(right) of the list. Create the list if the key didn't exist. Il the key exists and is not a list, FALSE is returned.
+Adds the string value to the head (left) of the list. Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
 ##### Parameters
 *key*  
 *value* String, value to push in key
 ##### Return value
-*BOOL*
+*BOOL* `TRUE` in case of success, `FALSE` in case of Failure.
 ##### Examples
 <pre>
 $redis->lpush('key1', 'C');
@@ -180,12 +179,12 @@ $redis->lpush('key1', 'A'); /* key1 => [ 'A', 'B', 'C' ] */
 
 ## rpush
 ##### Description
-Add the string value to the tail(left) of the list. Create the list if the key didn't exist. Il the key exists and is not a list, FALSE is returned.
+Adds the string value to the tail (right) of the list. Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
 ##### Parameters
 *key*  
 *value* String, value to push in key
 ##### Return value
-*BOOL* Tue in case of success, False in case of Failure.
+*BOOL* `TRUE` in case of success, `FALSE` in case of Failure.
 ##### Examples
 <pre>
 $redis->rpush('key1', 'A');
@@ -195,11 +194,11 @@ $redis->rpush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
 
 ## rpop
 ##### Description
-Return and remove the last element of the list.
+Returns and removes the last element of the list.
 ##### Parameters
 *key*
 ##### Return value
-*STRING* if command executed successfully, *BOOL* False if failure.
+*STRING* if command executed successfully, *BOOL* `FALSE` in case of failure (key didn't exist)
 ##### Examples
 <pre>
 $redis->rpush('key1', 'A');
@@ -214,8 +213,8 @@ Return and remove the first element of the list.
 ##### *Parameters*
 *key*
 ##### *Return value*
-*STRING* in case of success (key exists)  
-*BOOL* False in case of failure (key didn't exist)
+*STRING* in case of success (key exists)
+*STRING* if command executed successfully, *BOOL* `FALSE` in case of failure (key didn't exist)
 ##### *Example*
 <pre>
 $redis->rpush('key1', 'A');
@@ -226,12 +225,12 @@ $redis->lpop('key1'); /* key1 => [ 'B', 'A' ] */
 
 ## rpop
 ##### *Description*
-Return and remove the last element of the list.
+Returns and removes the first element of the list.
 ##### *Parameters*
 *key*
 ##### *Return value*
-*STRING* in case of success (key exists)
-*BOOL* False in case of failure (key didn't exist)
+*STRING* in case of success (key exists)  
+*BOOL* `FALSE` in case of failure (key didn't exist)
 ##### *Example*
 <pre>
 $redis->rpush('key1', 'A');
@@ -242,12 +241,12 @@ $redis->rpop('key1'); /* key1 => [ 'C', 'B' ] */
 
 ## lSize
 ##### *Description*
-Return the size of a list identified by Key. If the list didn't exist or is empty, the command returns 0. If the data type identified by Key is not a list, the command return False.
+Returns the size of a list identified by Key. If the list didn't exist or is empty, the command returns 0. If the data type identified by Key is not a list, the command return `FALSE`.
 ##### *Parameters*
 *Key*
 ##### *Return value*
-*LONG* The size of the list identified by Key exists. 
-*BOOL* False if the data type identified by Key is not String
+*LONG* The size of the list identified by Key exists.  
+*BOOL* `FALSE` if the data type identified by Key is not list
 
 ##### *Example*
 <pre>
@@ -264,22 +263,22 @@ $redis->lSize('key1');/* 2 */
 Return the specified element of the list stored at the specified key.
 0 the first element, 1 the second ...
 -1 the last element, -2 the penultimate ...
-Return False is the identify a data type 
+Return `FALSE` in case of a bad index or a key that doesn't point to a list.
 ##### *Parameters*
 *key*
 *index*
 
 ##### *Return value*
 *String* the element at this index  
-*Bool* False if the key identify a non-string data type, or no values corresponds at this index in the list Key.
+*Bool* `FALSE` if the key identifies a non-string data type, or no value corresponds to this index in the list `Key`.
 ##### *Example*
 <pre>
 $redis->rpush('key1', 'A');
 $redis->rpush('key1', 'B');
-$redis->rpush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
-$redis->lGet('key1', 0); /* 'C' */
-$redis->lGet('key1', -1); /* 'A' */
-$redis->lGet('key1', 10); /* False */
+$redis->rpush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->lGet('key1', 0); /* 'A' */
+$redis->lGet('key1', -1); /* 'C' */
+$redis->lGet('key1', 10); /* `FALSE` */
 </pre>
 
 ## lSet
@@ -290,20 +289,20 @@ Set the list at index with the new value.
 *index*
 *value*
 ##### *Return value*
-*BOOL* True if the new value is setted. False if the index is out of range, or data type identified by key is not a list.
+*BOOL* `TRUE` if the new value is setted. `FALSE` if the index is out of range, or data type identified by key is not a list.
 ##### *Example*
 <pre>
 $redis->rpush('key1', 'A');
 $redis->rpush('key1', 'B');
-$redis->rpush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
-$redis->lGet('key1', 0); /* 'C' */
+$redis->rpush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->lGet('key1', 0); /* 'A' */
 $redis->lSet('key1', 0, 'X');
 $redis->lGet('key1', 0); /* 'X' */ 
 </pre>
 
 ## lGetRange
 ##### *Description*
-Return the specified elements of the list stored at the specified key in the range [start, end]. start and stop are interpretated like index :
+Returns the specified elements of the list stored at the specified key in the range [start, end]. start and stop are interpretated as indices:
 0 the first element, 1 the second ...
 -1 the last element, -2 the penultimate ...
 ##### *Parameters*
@@ -318,40 +317,40 @@ Return the specified elements of the list stored at the specified key in the ran
 $redis->rpush('key1', 'A');
 $redis->rpush('key1', 'B');
 $redis->rpush('key1', 'C'); 
-$redis->lGetRange('key1', 0, -1); /* array('C', 'B', 'A') */
+$redis->lGetRange('key1', 0, -1); /* array('A', 'B', 'C') */
 </pre>
 
 ## listTrim
 ##### *Description*
-Trim an existing list so that it will contain only the specified range of elements specified.
+Trims an existing list so that it will contain only a specified range of elements.
 ##### *Parameters*
 *key*
 *start*
 *stop*
 ##### *Return value*
 *Array*  
-*Bool* return False if the key identify a non-list value.
+*Bool* return `FALSE` if the key identify a non-list value.
 ##### *Example*
 <pre>
 $redis->rpush('key1', 'A');
 $redis->rpush('key1', 'B');
 $redis->rpush('key1', 'C'); 
-$redis->lGetRange('key1', 0, -1); /* array('C', 'B', 'A') */
+$redis->lGetRange('key1', 0, -1); /* array('A', 'B', 'C') */
 $redis->listTrim('key1', 0, 1);
-$redis->lGetRange('key1', 0, -1); /* array('C', 'B') */
+$redis->lGetRange('key1', 0, -1); /* array('A', 'B') */
 </pre>
 
 ## lRemove
 ##### *Description*
-Remove the first count occurences of the value element from the list. If count es zero, all the element are removed. if count is negatif, elements are removed from tail to head
+Removes the first `count` occurences of the value element from the list. If count is zero, all the matching elements are removed. If count is negative, elements are removed from tail to head.
 ##### *Parameters*
 *key*
 *count*
 *value*
 
 ##### *Return value*
-*LONG* the number of removed elements  
-*BOOL* False if data type of the value identified by key is not a list.
+*LONG* the number of elements to remove  
+*BOOL* `FALSE` if the value identified by key is not a list.
 ##### *Example*
 <pre>
 $redis->lpush('key1', 'A');
@@ -360,35 +359,35 @@ $redis->lpush('key1', 'C');
 $redis->lpush('key1', 'A'); 
 $redis->lpush('key1', 'A'); 
 
-$redis->lGetRange('key1', 0, -1); /* array('A', 'B', 'C') */
+$redis->lGetRange('key1', 0, -1); /* array('A', 'A', 'C', 'B', 'A') */
 $redis->lRemove('key1', 'A', 2); /* 2 */
-$redis->lGetRange('key1', 0, -1); /* array('B', 'C', 'B') */
+$redis->lGetRange('key1', 0, -1); /* array('C', 'B', 'A') */
 </pre>
 
-## sadd
+## sAdd
 ##### *Description*
-Add the specified member to the set value stored at key. if member already exists, False is returned. 
+Adds a value to the set value stored at key. If this value is already in the set, `FALSE` is returned.  
 ##### *Parameters*
 *key*
-*member*
+*value*
 
 ##### *Return value*
-*BOOL* True if value didn't exist and added successfully. False if value exists.
+*BOOL* `TRUE` if value didn't exist and was added successfully, `FALSE` if the value is already present.
 ##### *Example*
 <pre>
-$redis->sadd('key1' , 'set1'); /* True, 'key1' => {'set1'} */
-$redis->sadd('key1' , 'set2'); /* True, 'key1' => {'set1', 'set2'}*/
-$redis->sadd('key1' , 'set2'); /* False, 'key1' => {'set1', 'set2'}*/
+$redis->sadd('key1' , 'set1'); /* TRUE, 'key1' => {'set1'} */
+$redis->sadd('key1' , 'set2'); /* TRUE, 'key1' => {'set1', 'set2'}*/
+$redis->sadd('key1' , 'set2'); /* FALSE, 'key1' => {'set1', 'set2'}*/
 </pre>
 
 ## sRemove
 ##### *Description*
-Remove the specified member from the set value stored at key.
+Removes the specified member from the set value stored at key.
 ##### *Parameters*
 *key*
 *member*
 ##### *Return value*
-*BOOL* True id member exists in the set values. False if member didn't exist.
+*BOOL* `TRUE` if the member was present in the set, `FALSE` if it didn't.
 ##### *Example*
 <pre>
 $redis->sadd('key1' , 'set1'); 
@@ -397,15 +396,15 @@ $redis->sadd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
 $redis->sRemove('key1', 'set2'); /* 'key1' => {'set1', 'set3'} */
 </pre>
 
-## smove
+## sMove
 ##### *Description*
-Move the specified member from the set at srcKey to the set at dstKey.
+Moves the specified member from the set at srcKey to the set at dstKey.
 ##### *Parameters*
 *srcKey*
 *dstKey*
 *member*
 ##### *Return value*
-*BOOL* If the operation is successful, return TRUE. If the srcKey or/and dstKey didn't exist, or/and member didn't exist in srcKey, False si returned
+*BOOL* If the operation is successful, return `TRUE`. If the srcKey and/or dstKey didn't exist, and/or the member didn't exist in srcKey, `FALSE` is returned.
 ##### *Example*
 <pre>
 $redis->sadd('key1' , 'set11'); 
@@ -414,37 +413,37 @@ $redis->sadd('key1' , 'set13'); /* 'key1' => {'set11', 'set12', 'set13'}*/
 $redis->sadd('key2' , 'set21'); 
 $redis->sadd('key2' , 'set22'); /* 'key2' => {'set21', 'set22'}*/
 $redis->sMove('key1', 'key2', 'set13'); /* 'key1' =>  {'set11', 'set12'} */
-										/* 'key2' =>  {'set21', 'set22', 'set13'} */
+					/* 'key2' =>  {'set21', 'set22', 'set13'} */
 
 </pre>
 
 ## sContains
 ##### *Description*
-Verify if member is member of the set stored at the key key.
+Checks if `value` is a member of the set stored at the key `key`.
 ##### *Parameters*
 *key*
-*member*
+*value*
 
 ##### *Return value*
-*BOOL* True if member is member of the set at key key, False if is not a member.
+*BOOL* `TRUE` if `value` is a member of the set at key `key`, `FALSE` otherwise.
 ##### *Example*
 <pre>
 $redis->sadd('key1' , 'set1'); 
 $redis->sadd('key1' , 'set2'); 
 $redis->sadd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
 
-$redis->sContains('key1', 'set1'); /* True */
-$redis->sContains('key1', 'setX'); /* False */
+$redis->sContains('key1', 'set1'); /* TRUE */
+$redis->sContains('key1', 'setX'); /* FALSE */
 
 </pre>
 
 ## sSize
 ##### *Description*
-Return the cardinality of the set identified by key.
+Returns the cardinality of the set identified by key.
 ##### *Parameters*
 *key*
 ##### *Return value*
-*LONG* the cardinality of the set identified by key, 0 if set didn't exist.
+*LONG* the cardinality of the set identified by key, 0 if the set doesn't exist.
 ##### *Example*
 <pre>
 $redis->sadd('key1' , 'set1'); 
@@ -456,12 +455,12 @@ $redis->sSize('keyX'); /* 0 */
 
 ## spop
 ##### *Description*
-Remove and retrun a random element from the set value at Key.
+Removes and returns a random element from the set value at Key.
 ##### *Parameters*
 *key*
 ##### *Return value*
-*String* popped value  
-*Bool* False if set identified by key is empty or didn't exist.
+*String* "popped" value  
+*Bool* `FALSE` if set identified by key is empty or doesn't exist.
 ##### *Example*
 <pre>
 $redis->sadd('key1' , 'set1'); 
@@ -472,27 +471,25 @@ $redis->spop('key1'); /* 'set3', 'key1' => {'set2'} */
 
 </pre>
 
-## sinter
+## sInter
 
 ##### *Description*
 
-Return the members of a set resulting from the intersection of all the sets hold at the specified keys.
-if just a single key is specified, then this command produces the members of this set. If one of the keys
-is missing, FALSE is returned.
+Returns the members of a set resulting from the intersection of all the sets held at the specified keys.
+If just a single key is specified, then this command produces the members of this set. If one of the keys
+is missing, `FALSE` is returned.
 
 ##### *Parameters*
 
-key1, key2, keyN: keys identifying the different set on which we will apply the intersection.
+key1, key2, keyN: keys identifying the different sets on which we will apply the intersection.
 		
 ##### *Return value*
 
-Array, contain the result of the intersesction between those keys. If the Intersection beteen the different set is empty, the return value will be empty array.
+Array, contain the result of the intersection between those keys. If the intersection beteen the different sets is empty, the return value will be empty array.
 
 ##### *Examples*
 
 <pre>
-$redis = new Redis();
-$redis->connect('127.0.0.1', 6379);
 $redis->sadd('key1', 'val1');
 $redis->sadd('key1', 'val2');
 $redis->sadd('key1', 'val3');
@@ -504,10 +501,10 @@ $redis->sadd('key2', 'val4');
 $redis->sadd('key3', 'val3');
 $redis->sadd('key3', 'val4');
 
-var_dump($redis->sinter('key1', 'key2', 'key3'));
+var_dump($redis->sInter('key1', 'key2', 'key3'));
 </pre>
 
-the output :
+Output:
 
 <pre>
 array(2) {
@@ -527,7 +524,7 @@ Performs a sInter command and stores the result in a new set.
 *Keys*: key1, key2... keyN. key1..keyN are intersected as in sInter.
 
 ##### *Return value*
-*INTEGER*: The cardinality of the resulting set, or FALSE in case of a missing key.
+*INTEGER*: The cardinality of the resulting set, or `FALSE` in case of a missing key.
 
 ##### *Example*
 <pre>
@@ -548,7 +545,7 @@ var_dump($redis->sInterStore('output', 'key1', 'key2', 'key3'));
 var_dump($redis->sGetMembers('output'));
 </pre>
 
-the output :
+Output:
 
 <pre>
 int(2)
@@ -608,7 +605,7 @@ Performs the same action as sUnion, but stores the result in the first key
 *Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis.
 
 ##### *Return value*
-*INTEGER*: The cardinality of the resulting set, or FALSE in case of a missing key.
+*INTEGER*: The cardinality of the resulting set, or `FALSE` in case of a missing key.
 
 ##### *Example*
 <pre>
@@ -681,7 +678,7 @@ Performs the same action as sDiff, but stores the result in the first key
 
 *Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis
 ##### *Return value*
-*INTEGER*: The cardinality of the resulting set, or FALSE in case of a missing key.
+*INTEGER*: The cardinality of the resulting set, or `FALSE` in case of a missing key.
 
 ##### *Example*
 <pre>
@@ -782,7 +779,7 @@ Switches to a given database.
 *INTEGER*: dbindex, the database number to switch to.
 
 ##### *Return value*
-TRUE in case of success, FALSE in case of failure.
+`TRUE` in case of success, `FALSE` in case of failure.
 ##### *Example*
 (See following function)
 
@@ -796,7 +793,7 @@ Moves a key to a different database.
 *INTEGER*: dbindex, the database number to move the key to.
 
 ##### *Return value*
-*BOOL*: TRUE in case of success, FALSE in case of failure.
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
 ##### *Example*
 
 <pre>
@@ -816,13 +813,13 @@ Renames a key.
 *STRING*: dstkey, the new name for the key.
 
 ##### *Return value*
-TRUE in case of success, FALSE in case of failure.
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
 ##### *Example*
 <pre>
 $redis->set('x', '42');
 $redis->renameKey('x', 'y');
 $redis->get('y'); 	// → 42
-$redis->get('x'); 	// → FALSE
+$redis->get('x'); 	// → `FALSE`
 </pre>
 
 ## renameNx
@@ -839,13 +836,13 @@ Sets an expiration date (a timeout) on an item.
 *Integer*: ttl. The key's remaining Time To Live, in seconds.
 
 ##### *Return value*
-*BOOL*: TRUE in case of success, FALSE in case of failure.
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
 ##### *Example*
 <pre>
 $redis->set('x', '42');
 $redis->setTimeout('x', 3);	// x will disappear in 3 seconds.
 sleep(5);				// wait 5 seconds
-$this->get('x'); 		// will return FALSE, as 'x' has expired.
+$this->get('x'); 		// will return `FALSE`, as 'x' has expired.
 </pre>
 
 ## keys
@@ -890,7 +887,7 @@ Authenticate the connection using a password.
 *STRING*: password
 
 ##### *Return value*
-*BOOL*: TRUE if the connection is authenticated, FALSE otherwise.
+*BOOL*: `TRUE` if the connection is authenticated, `FALSE` otherwise.
 
 ##### *Example*
 <pre>
@@ -905,7 +902,7 @@ Performs a synchronous save.
 None.
 
 ##### *Return value*
-*BOOL*: TRUE in case of success, FALSE in case of failure. If a save is already running, this command will fail and return FALSE.
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure. If a save is already running, this command will fail and return `FALSE`.
 
 ##### *Example*
 <pre>
@@ -921,7 +918,7 @@ Performs a background save.
 None.
 
 ##### *Return value*
-*BOOL*: TRUE in case of success, FALSE in case of failure. If a save is already running, this command will fail and return FALSE.
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure. If a save is already running, this command will fail and return `FALSE`.
 
 ##### *Example*
 <pre>
@@ -973,7 +970,7 @@ Removes all entries from a given database.
 *INTEGER*: dbindex, the database number to delete from. The first database has number zero.
 
 ##### *Return value*
-*BOOL*: TRUE on success, FALSE on failure.
+*BOOL*: `TRUE` on success, `FALSE` on failure.
 
 ##### *Example*
 <pre>
@@ -989,7 +986,7 @@ Removes all entries from all databases.
 None.
 
 ##### *Return value*
-*BOOL*: TRUE on success, FALSE on failure.
+*BOOL*: `TRUE` on success, `FALSE` on failure.
 
 ##### *Example*
 <pre>
@@ -1027,7 +1024,7 @@ $redis->info();
 
 ## ttl
 ##### *Description*
-Returns the time to live left for a given key, in seconds. If the key doesn't exist, FALSE is returned.
+Returns the time to live left for a given key, in seconds. If the key doesn't exist, `FALSE` is returned.
 
 ##### *Parameters*
 *Key*: key
