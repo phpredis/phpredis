@@ -404,10 +404,13 @@ array(2) {
 ##### *Description*
 Performs a sInter command and stores the result in a new set.
 ##### *Parameters*
-key0, key1, key2... keyN. key0 is the destination key for the new set, while key1..keyN are intersected as in sInter.
+*Key*: dstkey, the key to store the diff into.
+
+*Keys*: key1, key2... keyN. key1..keyN are intersected as in sInter.
 
 ##### *Return value*
-The number of elements in the destination set in case of success, FALSE in case of failure.
+*INTEGER*: The cardinality of the resulting set, or FALSE in case of a missing key.
+
 ##### *Example*
 <pre>
 $redis = new Redis();
@@ -477,12 +480,13 @@ array(4) {
 }
 </pre>
 
-## sunionstore
+## sUnionStore
 ##### *Description*
 Performs the same action as sUnion, but stores the result in the first key
 
 ##### *Parameters*
 *Key*: dstkey, the key to store the diff into.
+
 *Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis.
 
 ##### *Return value*
@@ -557,6 +561,7 @@ array(2) {
 Performs the same action as sDiff, but stores the result in the first key
 ##### *Parameters*
 *Key*: dstkey, the key to store the diff into.
+
 *Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis
 ##### *Return value*
 *INTEGER*: The cardinality of the resulting set, or FALSE in case of a missing key.
@@ -626,6 +631,7 @@ The order is random and corresponds to redis' own internal representation of the
 Sets a value and returns the previous entry at that key.
 ##### *Parameters*
 *Key*: key
+
 *STRING*: value
 
 ##### *Return value*
@@ -670,6 +676,7 @@ Moves a key to a different database.
 
 ##### *Parameters*
 *Key*: key, the key to move.
+
 *INTEGER*: dbindex, the database number to move the key to.
 
 ##### *Return value*
@@ -689,6 +696,7 @@ $redis->get('x');	// will return 42
 Renames a key.
 ##### *Parameters*
 *STRING*: srckey, the key to rename.
+
 *STRING*: dstkey, the new name for the key.
 
 ##### *Return value*
@@ -711,6 +719,7 @@ Sets an expiration date (a timeout) on an item.
 
 ##### *Parameters*
 *Key*: key. The key that will disappear.
+
 *Integer*: ttl. The key's remaining Time To Live, in seconds.
 
 ##### *Return value*
