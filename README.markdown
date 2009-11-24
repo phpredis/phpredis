@@ -427,6 +427,13 @@ Return the cardinality of the set identified by key.
 ##### *Return value*
 *LONG* the cardinality of the set identified by key, 0 if set didn't exist.
 ##### *Example*
+<pre>
+$redis->sadd('key1' , 'set1'); 
+$redis->sadd('key1' , 'set2'); 
+$redis->sadd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
+$redis->sSize('key1'); /* 3 */
+$redis->sSize('keyX'); /* 0 */
+</pre>
 
 ## spop
 ##### *Description*
