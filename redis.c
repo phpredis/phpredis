@@ -1441,21 +1441,7 @@ PHP_METHOD(Redis, lSize)
         RETURN_FALSE;
     }
     efree(cmd);
-
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    if(response) {
-        if(response[0] == ':') {
-            int res = atoi(response + 1);
-            efree(response);
-            RETURN_LONG(res);
-        }
-        efree(response);
-        RETURN_FALSE;
-    }
-
+    redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
 /* }}} */
 
@@ -1491,20 +1477,7 @@ PHP_METHOD(Redis, lRemove)
         RETURN_FALSE;
     }
     efree(cmd);
-
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    if(response[0] == ':') {
-        long l = atoi(response + 1);
-        efree(response);
-        RETURN_LONG(l);
-    } else {
-        efree(response);
-        RETURN_FALSE;
-    }
-
+    redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
 /* }}} */
 
@@ -1571,12 +1544,7 @@ PHP_METHOD(Redis, lGet)
         RETURN_FALSE;
     }
 
-    if (strncmp(response, "nil", 4) != 0) {
-        RETURN_STRINGL(response, response_len, 0);
-    } else {
-        efree(response);
-        RETURN_FALSE;
-    }
+    RETURN_STRINGL(response, response_len, 0);
 }
 /* }}} */
 
@@ -1668,16 +1636,11 @@ PHP_METHOD(Redis, sSize)
     cmd_len = spprintf(&cmd, 0, "SCARD %s\r\n", key);
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
         RETURN_FALSE;
     }
-
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    int res = atoi(response + 1);
-
-    RETURN_LONG(res);
+    efree(cmd);
+    redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
 /* }}} */
 
