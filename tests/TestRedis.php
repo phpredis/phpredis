@@ -673,12 +673,13 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     {
         $this->redis->delete('set');
 
-        $this->redis->sAdd('set', 'val');
+	$this->assertEquals(TRUE, $this->redis->sAdd('set', 'val'));
+	$this->assertEquals(FALSE, $this->redis->sAdd('set', 'val'));
 
         $this->assertTrue($this->redis->sContains('set', 'val'));
         $this->assertFalse($this->redis->sContains('set', 'val2'));
 
-        $this->redis->sAdd('set', 'val2');
+	$this->assertEquals(TRUE, $this->redis->sAdd('set', 'val2'));
 
         $this->assertTrue($this->redis->sContains('set', 'val2'));
     }
@@ -686,11 +687,11 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     {
         $this->redis->delete('set');
 
-        $this->redis->sAdd('set', 'val');
+	$this->assertEquals(TRUE, $this->redis->sAdd('set', 'val'));
 
         $this->assertEquals(1, $this->redis->sSize('set'));
 
-        $this->redis->sAdd('set', 'val2');
+	$this->assertEquals(TRUE, $this->redis->sAdd('set', 'val2'));
 
         $this->assertEquals(2, $this->redis->sSize('set'));
     }
@@ -1175,6 +1176,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals($this->redis->lGetRange('list', 0, -1), array());
     }
 
+    /*
     public function testsave() {
 	$this->assertTrue($this->redis->save() === TRUE);	// don't really know how else to test this...
     }
@@ -1197,6 +1199,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$this->assertTrue($t_php - $t_redis < 10000); // check that it's approximately what we've measured in PHP.
     }
+     */
 
     public function testflushDb() {
 	$this->redis->set('x', 'y');
