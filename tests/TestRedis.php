@@ -1176,7 +1176,6 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals($this->redis->lGetRange('list', 0, -1), array());
     }
 
-    /*
     public function testsave() {
 	$this->assertTrue($this->redis->save() === TRUE);	// don't really know how else to test this...
     }
@@ -1199,7 +1198,6 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$this->assertTrue($t_php - $t_redis < 10000); // check that it's approximately what we've measured in PHP.
     }
-     */
 
     public function testflushDb() {
 	$this->redis->set('x', 'y');
