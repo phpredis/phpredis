@@ -121,9 +121,22 @@ PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC);
 PHPAPI int redis_sock_server_open(RedisSock *redis_sock, int TSRMLS_DC);
 PHPAPI char * redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC);
 PHPAPI char * redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes);
-PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, int *buf_len TSRMLS_DC);
+PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock TSRMLS_DC);
 PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz);
 PHPAPI void redis_free_socket(RedisSock *redis_sock);
+
+PHPAPI void redis_boolean_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock TSRMLS_DC);
+PHPAPI void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock TSRMLS_DC);
+PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock TSRMLS_DC);
+PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword TSRMLS_DC);
+PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
+                int min_argc, RedisSock **redis_sock TSRMLS_DC);
+PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_alpha TSRMLS_DC);
+PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len TSRMLS_DC);
+PHPAPI void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len TSRMLS_DC);
+
+
+
 /* }}} */
 
 #ifdef ZTS
