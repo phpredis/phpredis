@@ -1036,3 +1036,71 @@ Long, the time left to live in seconds.
 <pre>
 $redis->ttl('key');
 </pre>
+
+## mset (redis >= 1.1)
+##### *Description*
+Sets multiple key-value pairs in one atomic command
+
+##### *Parameters*
+*Pairs*: array(key => value, ...)
+
+##### *Return value*
+*Bool* `TRUE` in case of success, `FALSE` in case of failure.
+
+##### *Example*
+<pre>
+
+$redis->mset(array('key0' => 'value0', 'key1' => 'value1'));
+var_dump($redis->get('key0'));
+var_dump($redis->get('key1'));
+
+</pre>
+Output:
+</pre>
+string(6) "value0"
+string(6) "value1"
+</pre>
+
+
+## rpoplpush (redis >= 1.1)
+##### *Description*
+Pops a value from the tail of a list, and pushes it to the front of another list. Also return this value.
+
+##### *Parameters*
+*Key*: srckey
+*Key*: dstkey
+
+##### *Return value*
+*STRING* The element that was moved in case of success, `FALSE` in case of failure.
+
+##### *Example*
+<pre>
+$redis->delete('x', 'y');
+
+$redis->lpush('x', 'abc');
+$redis->lpush('x', 'def');
+$redis->lpush('y', '123');
+$redis->lpush('y', '456');
+
+// move the last of x to the front of y.
+var_dump($redis->rpoplpush('x', 'y'));
+var_dump($redis->lGetRange('x', 0, -1));
+var_dump($redis->lGetRange('y', 0, -1));
+
+</pre>
+Output:
+</pre>
+string(3) "abc"
+array(1) {
+  [0]=>
+  string(3) "def"
+}
+array(3) {
+  [0]=>
+  string(3) "abc"
+  [1]=>
+  string(3) "456"
+  [2]=>
+  string(3) "123"
+}
+</pre>
