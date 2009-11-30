@@ -93,9 +93,14 @@ zend_function_entry redis_functions[] = {
      PHP_ME(Redis, select, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, move, NULL, ZEND_ACC_PUBLIC)
 
+     /* 1.1 */
+     PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
+
+     /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, lLen, lSize, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, sMembers, sGetMembers, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, mget, getMultiple, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
@@ -2416,4 +2421,79 @@ PHP_METHOD(Redis, move) {
     redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
 /* }}} */
+
+/* {{{ proto bool Redis::mset(array (key => value, ...))
+ */
+PHP_METHOD(Redis, mset) {
+    zval *object;
+    RedisSock *redis_sock;
+
+    char *cmd;
+    int cmd_len;
+    zval *z_array;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
+                                     &object, redis_ce, &z_array) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    if(zend_hash_num_elements(Z_ARRVAL_P(z_array)) == 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd, "*%d\r\n", 1 + 2 * zend_hash_num_elements(Z_ARRVAL_P(z_array)));
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+
+    if (redis_sock_write(redis_sock, "$4\r\nMSET\r\n", 10) < 0) {
+        RETURN_FALSE;
+    }
+
+    HashTable *keytable = Z_ARRVAL_P(z_array);
+    for(zend_hash_internal_pointer_reset(keytable);
+        zend_hash_has_more_elements(keytable) == SUCCESS;
+        zend_hash_move_forward(keytable)) {
+
+        char *key, *val;
+        int key_len, val_len;
+        unsigned long idx;
+        int type;
+        zval **z_value_pp;
+
+        type = zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx, 0, NULL);
+        if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
+            continue; 	/* this should never happen, according to the PHP people. */
+        }
+
+        if(type != HASH_KEY_IS_STRING) { /* ignore non-string keys */
+            continue;
+        }
+
+        val = Z_STRVAL_PP(z_value_pp);
+        val_len = Z_STRLEN_PP(z_value_pp);
+
+        if(key_len > 0) {
+            key_len--;
+        }
+
+        cmd_len = redis_cmd_format(&cmd, "$%d\r\n%s\r\n$%d\r\n%s\r\n",
+                                   key_len, key, key_len,
+                                   val_len, val, val_len);
+
+        redis_sock_write(redis_sock, cmd, cmd_len);
+        efree(cmd);
+    }
+
+    redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
+}
+/* }}} */
+
 /* vim: set tabstop=4 expandtab: */

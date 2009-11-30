@@ -1254,6 +1254,19 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertFalse($this->redis->select(-1));
 	$this->assertTrue($this->redis->select(0));
     }
+
+    public function testMset() {
+	$this->redis->delete('x', 'y', 'z');	// remove x y z
+	$this->assertTrue($this->redis->mset(array('x' => 'a', 'y' => 'b', 'z' => 'c')));	// set x y z
+
+	$this->assertEquals($this->redis->mget(array('x', 'y', 'z')), array('a', 'b', 'c'));	// check x y z
+
+	$this->redis->delete('x');	// delete just x
+	$this->assertTrue($this->redis->mset(array('x' => 'a', 'y' => 'b', 'z' => 'c')));	// set x y z
+	$this->assertEquals($this->redis->mget(array('x', 'y', 'z')), array('a', 'b', 'c'));	// check x y z
+
+	$this->assertFalse($this->redis->mset(array())); // set ø → FALSE
+    }
 }
 
 ?>
