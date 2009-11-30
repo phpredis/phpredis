@@ -951,10 +951,10 @@ Returns the type of data pointed by a given key.
 ##### *Return value*
 
 Depending on the type of the data pointed by the key, this method will return the following value:  
-* string: Redis::REDIS_STRING  
-* set: Redis::REDIS_SET  
-* list: Redis::REDIS_LIST  
-* other: Redis::REDIS_NOT_FOUND  
+string: Redis::REDIS_STRING  
+set: Redis::REDIS_SET  
+list: Redis::REDIS_LIST  
+other: Redis::REDIS_NOT_FOUND  
 
 ##### *Example*
 <pre>
