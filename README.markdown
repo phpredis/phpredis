@@ -1056,7 +1056,7 @@ var_dump($redis->get('key1'));
 
 </pre>
 Output:
-</pre>
+<pre>
 string(6) "value0"
 string(6) "value1"
 </pre>
@@ -1089,7 +1089,7 @@ var_dump($redis->lGetRange('y', 0, -1));
 
 </pre>
 Output:
-</pre>
+<pre>
 string(3) "abc"
 array(1) {
   [0]=>
