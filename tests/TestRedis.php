@@ -368,15 +368,21 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	// string
 	$this->redis->set('key', 'val');
-	$this->assertEquals(1, $this->redis->type('key'));
+	$this->assertEquals(Redis::REDIS_STRING, $this->redis->type('key'));
 
 	// list
 	$this->redis->lPush('keyList', "val0");
 	$this->redis->lPush('keyList', "val1");
-	$this->assertEquals(3, $this->redis->type('keyList'));
+	$this->assertEquals(Redis::REDIS_LIST, $this->redis->type('keyList'));
+
+	// set
+	$this->redis->delete('keySet');
+	$this->redis->sAdd('keySet', "val0");
+	$this->redis->sAdd('keySet', "val1");
+	$this->assertEquals(Redis::REDIS_SET, $this->redis->type('keySet'));
 
 	//None
-	$this->assertEquals(0, $this->redis->type('keyNotExists'));
+	$this->assertEquals(Redis::REDIS_NOT_FOUND, $this->redis->type('keyNotExists'));
     }
 
     // PUSH, POP : LPUSH, LPOP

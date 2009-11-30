@@ -126,6 +126,16 @@ zend_module_entry redis_module_entry = {
 ZEND_GET_MODULE(redis)
 #endif
 
+void
+add_constant_long(zend_class_entry *ce, char *name, int value) {
+
+	zval *constval;
+	constval = pemalloc(sizeof(zval), 1);
+	INIT_PZVAL(constval);
+	ZVAL_LONG(constval, value);
+	zend_hash_add(&ce->constants_table, name, 1 + strlen(name),
+		(void*)&constval, sizeof(zval*), NULL);
+}
 
 /**
  * This command behave somehow like printf, except that strings need 2 arguments:
@@ -525,6 +535,11 @@ PHP_MINIT_FUNCTION(redis)
         NULL,
         redis_sock_name, module_number
     );
+
+	add_constant_long(redis_ce, "REDIS_NOT_FOUND", REDIS_NOT_FOUND);
+	add_constant_long(redis_ce, "REDIS_STRING", REDIS_STRING);
+	add_constant_long(redis_ce, "REDIS_SET", REDIS_SET);
+	add_constant_long(redis_ce, "REDIS_LIST", REDIS_LIST);
 
     return SUCCESS;
 }
@@ -1235,13 +1250,13 @@ PHP_METHOD(Redis, type)
 
     long l;
     if (strncmp(response, "+string", 7) == 0) {
-       l = 1;
+       l = REDIS_STRING;
     } else if (strncmp(response, "+set", 4) == 0){
-       l = 2;
+       l = REDIS_SET;
     } else if (strncmp(response, "+list", 5) == 0){
-       l = 3;
+       l = REDIS_LIST;
     } else {
-       l = 0;
+       l = REDIS_NOT_FOUND;
     }
     efree(response);
     RETURN_LONG(l);
@@ -2532,5 +2547,6 @@ PHP_METHOD(Redis, rpoplpush)
     }
     RETURN_STRINGL(response, response_len, 0);
 }
+/* }}} */
 
 /* vim: set tabstop=4 expandtab: */

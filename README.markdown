@@ -951,10 +951,10 @@ Returns the type of data pointed by a given key.
 ##### *Return value*
 
 Depending on the type of the data pointed by the key, this method will return the following value:
-* string: 1
-* set: 2
-* list: 3
-* other: 0
+* string: Redis::REDIS_STRING
+* set: Redis::REDIS_SET
+* list: Redis::REDIS_LIST
+* other: Redis::REDIS_NOT_FOUND
 
 ##### *Example*
 <pre>
@@ -1067,7 +1067,7 @@ string(6) "value1"
 Pops a value from the tail of a list, and pushes it to the front of another list. Also return this value.
 
 ##### *Parameters*
-*Key*: srckey
+*Key*: srckey  
 *Key*: dstkey
 
 ##### *Return value*

@@ -117,7 +117,17 @@ typedef struct RedisSock_ {
 #define REDIS_SOCK_STATUS_UNKNOWN 2
 #define REDIS_SOCK_STATUS_CONNECTED 3
 
+/* properties */
+#define REDIS_NOT_FOUND 0
+#define REDIS_STRING 1
+#define REDIS_SET 2
+#define REDIS_LIST 3
+
+
 /* {{{ internal function protos */
+void
+add_constant_long(zend_class_entry *ce, char *name, int value);
+
 PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port, long timeout);
 PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC);
 PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC);
