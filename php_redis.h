@@ -79,7 +79,9 @@ PHP_METHOD(Redis, ttl);
 PHP_METHOD(Redis, info);
 PHP_METHOD(Redis, select);
 PHP_METHOD(Redis, move);
+
 PHP_METHOD(Redis, mset);
+PHP_METHOD(Redis, rpoplpush);
 
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)

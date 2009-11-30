@@ -1267,6 +1267,28 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$this->assertFalse($this->redis->mset(array())); // set ø → FALSE
     }
+
+    public function testRpopLpush() {
+
+	// standard case.
+	$this->redis->delete('x', 'y');
+	$this->redis->lpush('x', 'abc');
+	$this->redis->lpush('x', 'def');	// x = [def, abc]
+
+	$this->redis->lpush('y', '123');
+	$this->redis->lpush('y', '456');	// y = [456, 123]
+
+	$this->assertEquals($this->redis->rpoplpush('x', 'y'), 'abc');	// we RPOP x, yielding abc.
+	$this->assertEquals($this->redis->lgetRange('x', 0, -1), array('def'));	// only def remains in x.
+	$this->assertEquals($this->redis->lgetRange('y', 0, -1), array('abc', '456', '123'));	// abc has been lpushed to y.
+
+	// with an empty source, expecting no change.
+	$this->redis->delete('x', 'y');
+	$this->assertTrue(FALSE === $this->redis->rpoplpush('x', 'y'));
+	$this->assertTrue(array() === $this->redis->lgetRange('x', 0, -1));
+	$this->assertTrue(array() === $this->redis->lgetRange('y', 0, -1));
+
+    }
 }
 
 ?>

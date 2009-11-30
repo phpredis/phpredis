@@ -95,6 +95,7 @@ zend_function_entry redis_functions[] = {
 
      /* 1.1 */
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, rpoplpush, NULL, ZEND_ACC_PUBLIC)
 
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
@@ -704,7 +705,7 @@ PHP_METHOD(Redis, set)
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *val = NULL, *cmd;
-    int key_len, val_len, cmd_len, count;
+    int key_len, val_len, cmd_len;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
                                      &object, redis_ce, &key, &key_len,
@@ -734,7 +735,7 @@ PHP_METHOD(Redis, setnx)
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *val = NULL, *cmd;
-    int key_len, val_len, cmd_len, count;
+    int key_len, val_len, cmd_len;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
                                      &object, redis_ce, &key, &key_len,
@@ -1790,7 +1791,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 {
     zval *object, **z_args;
     char **keys, *cmd;
-    int cmd_len, count, *keys_len;
+    int cmd_len, *keys_len;
     int i, argc = ZEND_NUM_ARGS();
 
     if(argc < min_argc) {
@@ -2066,7 +2067,7 @@ PHP_METHOD(Redis, setTimeout) {
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *cmd;
-    int key_len, cmd_len, count;
+    int key_len, cmd_len;
     long timeout;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl",
@@ -2495,5 +2496,41 @@ PHP_METHOD(Redis, mset) {
     redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
 /* }}} */
+
+
+/* {{{ proto string Redis::rpoplpush(string srckey, string dstkey)
+ */
+PHP_METHOD(Redis, rpoplpush)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *srckey = NULL, *dstkey = NULL, *cmd, *response;
+    int srckey_len, dstkey_len, cmd_len, response_len;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
+                                     &object, redis_ce, &srckey, &srckey_len,
+                                     &dstkey, &dstkey_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd, "RPOPLPUSH %s %d\r\n%s\r\n",
+                               srckey, srckey_len,
+                               dstkey_len,
+                               dstkey, dstkey_len);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+    RETURN_STRINGL(response, response_len, 0);
+}
 
 /* vim: set tabstop=4 expandtab: */
