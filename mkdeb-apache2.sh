@@ -2,7 +2,7 @@
 phpize
 ./configure CFLAGS="-O3" 
 make clean all
-DIR=`php-config5 --extension-dir | cut -c 2-`
+DIR=`php-config --extension-dir | cut -c 2-`
 
 rm -rf debian
 
