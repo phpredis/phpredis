@@ -79,6 +79,13 @@ PHP_METHOD(Redis, ttl);
 PHP_METHOD(Redis, info);
 PHP_METHOD(Redis, select);
 PHP_METHOD(Redis, move);
+PHP_METHOD(Redis, zAdd);
+PHP_METHOD(Redis, zDelete);
+PHP_METHOD(Redis, zGetRange);
+PHP_METHOD(Redis, zGetReverseRange);
+PHP_METHOD(Redis, zGetByScoreRange);
+PHP_METHOD(Redis, zSize);
+PHP_METHOD(Redis, zScore);
 
 PHP_METHOD(Redis, mset);
 PHP_METHOD(Redis, rpoplpush);
@@ -140,6 +147,7 @@ PHPAPI void redis_free_socket(RedisSock *redis_sock);
 
 PHPAPI void redis_boolean_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock TSRMLS_DC);
 PHPAPI void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock TSRMLS_DC);
+PHPAPI void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock TSRMLS_DC);
 PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock TSRMLS_DC);
 PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword TSRMLS_DC);
 PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
