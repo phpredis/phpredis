@@ -1104,3 +1104,133 @@ array(3) {
   string(3) "123"
 }
 </pre>
+
+
+## zAdd
+##### *Description*
+Add the specified member having the specified score to the sorted set stored at key.
+##### *Parameters*
+*STRING*: key
+
+*LONG* : score
+
+*STRING*: value
+
+##### *Return value*
+*Long* 1 if the element is added. 0 otherwise.
+##### *Example*
+<pre>
+$redis->zAdd('key', 1, 'val1');
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 5, 'val5');
+$redis->zGetRange('key', 0, -1); // array(val0, val1, val5)
+</pre>
+
+## zGetRange
+##### *Description*
+Returns the specified elements of the ordered set stored at the specified key in the range [start, end]. start and stop are interpretated as indices:
+0 the first element, 1 the second ...
+-1 the last element, -2 the penultimate ...
+##### *Parameters*
+*key*
+*start*
+*end*
+
+##### *Return value*
+*Array* containing the values in specified range. 
+##### *Example*
+<pre>
+$redis->zAdd('key1', 0, 'val0');
+$redis->zAdd('key1', 2, 'val2');
+$redis->zAdd('key1', 10, 'val10');
+$redis->lGetRange('key1', 0, -1); /* array('val0', 'val2', 'val10') */
+</pre>
+
+## zDelete
+##### *Description*
+Delete specified member from the specified ordered set.
+##### *Parameters*
+*key*
+*member*
+
+##### *Return value*
+*LONG* 1 on success, 0 on failure.
+##### *Example*
+<pre>
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 2, 'val2');
+$redis->zAdd('key', 10, 'val10');
+$redis->zDelete('key', 'val2');
+$redis->lGetRange('key', 0, -1); /* array('val0', 'val10') */
+</pre>
+
+## zGetReverseRange
+##### *Description*
+Returns the specified elements of the sorted set stored at the specified key in the range [start, end] in reverse order. start and stop are interpretated as indices:
+0 the first element, 1 the second ...
+-1 the last element, -2 the penultimate ...
+
+##### *Parameters*
+*key*
+*member*
+
+##### *Return value*
+*LONG* 1 on success, 0 on failure.
+##### *Example*
+<pre>
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 2, 'val2');
+$redis->zAdd('key', 10, 'val10');
+$redis->zGetReversedRange('key', 0, -1); /* array('val10', 'val2', 'val0') */
+</pre>
+
+## zGetByScoreRange
+##### *Description*
+Return the specified elements of the sorted set stored at the specified key and have scores in the range [start,end].
+##### *Parameters*
+*key*
+*start*
+*end*
+
+##### *Return value*
+*Array* 
+##### *Example*
+<pre>
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 2, 'val2');
+$redis->zAdd('key', 10, 'val10');
+$redis->zGetByScoreRange('key', 0, 3); /* array('val0', 'val2') */
+</pre>
+
+## zSize
+##### *Description*
+Return the cardinality of the oredered set idetified by key.
+##### *Parameters*
+*key*
+
+##### *Return value*
+*Array* 
+##### *Example*
+<pre>
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 2, 'val2');
+$redis->zAdd('key', 10, 'val10');
+$redis->zSize('key'); /* 3 */
+</pre>
+
+## zScore
+##### *Description*
+Return the score of the specified member in the specified sorted set.
+##### *Parameters*
+*key*
+*member*
+
+##### *Return value*
+*Double*
+##### *Example*
+<pre>
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 2, 'val2');
+$redis->zAdd('key', 10, 'val10');
+$redis->zScore('key', 'val2'); /* 2 */
+</pre>
