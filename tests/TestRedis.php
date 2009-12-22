@@ -200,6 +200,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->set('k2', 'v2');
 	$this->redis->set('k3', 'v3');
 
+	$this->assertEquals(array('v1'), $this->redis->getMultiple(array('k1')));
 	$this->assertEquals(array('v1', 'v3', false), $this->redis->getMultiple(array('k1', 'k3', 'NoKey')));
 	$this->assertEquals(array('v1', 'v2', 'v3'), $this->redis->getMultiple(array('k1', 'k2', 'k3')));
 	$this->assertEquals(array('v1', 'v2', 'v3'), $this->redis->getMultiple(array('k1', 'k2', 'k3')));
@@ -881,19 +882,19 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals($count, $this->redis->sSize('k'));
 
 	$this->redis->delete('z');
-        $xyz = $this->redis->sInterStore('k', 'x', 'y', 'z'); // only z missing, expect FALSE.
-        $this->assertTrue($xyz === FALSE);
+	$xyz = $this->redis->sInterStore('k', 'x', 'y', 'z'); // only z missing, expect 0.
+	$this->assertTrue($xyz === 0);
 
 	$this->redis->delete('y');
-        $xyz = $this->redis->sInterStore('k', 'x', 'y', 'z'); // y and z missing, expect FALSE.
-        $this->assertTrue($xyz === FALSE);
+	$xyz = $this->redis->sInterStore('k', 'x', 'y', 'z'); // y and z missing, expect 0.
+	$this->assertTrue($xyz === 0);
 
 	$this->redis->delete('x');
-        $xyz = $this->redis->sInterStore('k', 'x', 'y', 'z'); // x y and z ALL missing, expect FALSE.
-        $this->assertTrue($xyz === FALSE);
+	$xyz = $this->redis->sInterStore('k', 'x', 'y', 'z'); // x y and z ALL missing, expect 0.
+	$this->assertTrue($xyz === 0);
 
         $o = $this->redis->sInterStore('k');
-	$this->assertTrue($o === FALSE);
+	$this->assertTrue($o === FALSE);	// error, wrong parameter count
     }
 
     public function testsUnion() {

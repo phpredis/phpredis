@@ -1055,7 +1055,7 @@ PHP_METHOD(Redis, getMultiple)
     HashTable *arr_hash;
     HashPosition pointer;
     RedisSock *redis_sock;
-    char *cmd = "";
+    char *cmd = "", *old_cmd = NULL;
     int cmd_len, response_len, array_count;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
@@ -1080,11 +1080,20 @@ PHP_METHOD(Redis, getMultiple)
          zend_hash_move_forward_ex(arr_hash, &pointer)) {
 
         if (Z_TYPE_PP(data) == IS_STRING) {
+            char *old_cmd = NULL;
+            if(*cmd) {
+                old_cmd = cmd;
+            }
             cmd_len = spprintf(&cmd, 0, "%s %s", cmd, Z_STRVAL_PP(data));
+            if(old_cmd) {
+                efree(old_cmd);
+            }
         }
     }
 
+    old_cmd = cmd;
     cmd_len = spprintf(&cmd, 0, "MGET%s\r\n", cmd);
+    efree(old_cmd);
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
         efree(cmd);
         RETURN_FALSE;
