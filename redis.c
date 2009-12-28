@@ -338,8 +338,9 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
 {
 
     char inbuf[1024];
-    char *resp;
+    char *resp = NULL;
 
+    redis_check_eof(redis_sock TSRMLS_CC);
     php_stream_gets(redis_sock->stream, inbuf, 1024);
 
     switch(inbuf[0]) {
@@ -385,6 +386,8 @@ PHPAPI char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
 
     char * reply;
 
+    redis_check_eof(redis_sock TSRMLS_CC);
+
     if (bytes == -1) {
 	  return NULL;
     } else {
@@ -415,6 +418,7 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
     char inbuf[1024], *response;
     int response_len;
 
+    redis_check_eof(redis_sock TSRMLS_CC);
     php_stream_gets(redis_sock->stream, inbuf, 1024);
 
     if(inbuf[0] != '*') {
@@ -443,8 +447,20 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
  */
 PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz)
 {
-    php_stream_write(redis_sock->stream, cmd, sz);
+    redis_check_eof(redis_sock TSRMLS_CC);
+    return php_stream_write(redis_sock->stream, cmd, sz);
+
     return 0;
+}
+
+
+PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC) {
+    int eof = php_stream_eof(redis_sock->stream);
+    while(eof) {
+        redis_sock->stream = NULL;
+        redis_sock_connect(redis_sock TSRMLS_CC);
+        eof = php_stream_eof(redis_sock->stream);
+    }
 }
 
 /**

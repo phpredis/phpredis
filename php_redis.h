@@ -128,6 +128,7 @@ typedef struct RedisSock_ {
 void
 add_constant_long(zend_class_entry *ce, char *name, int value);
 
+PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC);
 PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port, long timeout);
 PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC);
 PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC);
