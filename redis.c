@@ -102,6 +102,7 @@ zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, lLen, lSize, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, sMembers, sGetMembers, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, mget, getMultiple, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, expire, setTimeout, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
