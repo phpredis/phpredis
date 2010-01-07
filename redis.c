@@ -13,7 +13,9 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Alfonso Jimenez <yo@alfonsojimenez.com>                      |
+  | Original author: Alfonso Jimenez <yo@alfonsojimenez.com>             |
+  | Maintainer: Nicolas Favre-Felix <n.favre-felix@owlient.eu>           |
+  | Maintainer: Nasreddine Bouafif <n.bouafif@owlient.eu>                |
   +----------------------------------------------------------------------+
 */
 
@@ -32,8 +34,9 @@ static zend_class_entry *redis_ce;
 static zend_class_entry *redis_exception_ce;
 static zend_class_entry *spl_ce_RuntimeException = NULL;
 
+ZEND_DECLARE_MODULE_GLOBALS(redis)
 
-zend_function_entry redis_functions[] = {
+static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, __construct, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, close, NULL, ZEND_ACC_PUBLIC)
@@ -111,14 +114,14 @@ zend_module_entry redis_module_entry = {
      STANDARD_MODULE_HEADER,
 #endif
      "redis",
-     redis_functions,
+     NULL,
      PHP_MINIT(redis),
      PHP_MSHUTDOWN(redis),
      PHP_RINIT(redis),
      PHP_RSHUTDOWN(redis),
      PHP_MINFO(redis),
 #if ZEND_MODULE_API_NO >= 20010901
-     "0.1",
+     PHP_REDIS_VERSION,
 #endif
      STANDARD_MODULE_PROPERTIES
 };
