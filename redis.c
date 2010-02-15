@@ -13,7 +13,9 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Alfonso Jimenez <yo@alfonsojimenez.com>                      |
+  | Original author: Alfonso Jimenez <yo@alfonsojimenez.com>             |
+  | Maintainer: Nicolas Favre-Felix <n.favre-felix@owlient.eu>           |
+  | Maintainer: Nasreddine Bouafif <n.bouafif@owlient.eu>                |
   +----------------------------------------------------------------------+
 */
 
@@ -32,8 +34,9 @@ static zend_class_entry *redis_ce;
 static zend_class_entry *redis_exception_ce;
 static zend_class_entry *spl_ce_RuntimeException = NULL;
 
+ZEND_DECLARE_MODULE_GLOBALS(redis)
 
-zend_function_entry redis_functions[] = {
+static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, __construct, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, close, NULL, ZEND_ACC_PUBLIC)
@@ -109,6 +112,7 @@ zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, lLen, lSize, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, sMembers, sGetMembers, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, mget, getMultiple, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, expire, setTimeout, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
@@ -117,14 +121,14 @@ zend_module_entry redis_module_entry = {
      STANDARD_MODULE_HEADER,
 #endif
      "redis",
-     redis_functions,
+     NULL,
      PHP_MINIT(redis),
      PHP_MSHUTDOWN(redis),
      PHP_RINIT(redis),
      PHP_RSHUTDOWN(redis),
      PHP_MINFO(redis),
 #if ZEND_MODULE_API_NO >= 20010901
-     "0.1",
+     PHP_REDIS_VERSION,
 #endif
      STANDARD_MODULE_PROPERTIES
 };
@@ -345,8 +349,9 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
 {
 
     char inbuf[1024];
-    char *resp;
+    char *resp = NULL;
 
+    redis_check_eof(redis_sock TSRMLS_CC);
     php_stream_gets(redis_sock->stream, inbuf, 1024);
 
     switch(inbuf[0]) {
@@ -392,6 +397,8 @@ PHPAPI char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
 
     char * reply;
 
+    redis_check_eof(redis_sock TSRMLS_CC);
+
     if (bytes == -1) {
 	  return NULL;
     } else {
@@ -422,6 +429,7 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
     char inbuf[1024], *response;
     int response_len;
 
+    redis_check_eof(redis_sock TSRMLS_CC);
     php_stream_gets(redis_sock->stream, inbuf, 1024);
 
     if(inbuf[0] != '*') {
@@ -450,8 +458,20 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
  */
 PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz)
 {
-    php_stream_write(redis_sock->stream, cmd, sz);
+    redis_check_eof(redis_sock TSRMLS_CC);
+    return php_stream_write(redis_sock->stream, cmd, sz);
+
     return 0;
+}
+
+
+PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC) {
+    int eof = php_stream_eof(redis_sock->stream);
+    while(eof) {
+        redis_sock->stream = NULL;
+        redis_sock_connect(redis_sock TSRMLS_CC);
+        eof = php_stream_eof(redis_sock->stream);
+    }
 }
 
 /**
@@ -1097,7 +1117,7 @@ PHP_METHOD(Redis, getMultiple)
     HashTable *arr_hash;
     HashPosition pointer;
     RedisSock *redis_sock;
-    char *cmd = "";
+    char *cmd = "", *old_cmd = NULL;
     int cmd_len, response_len, array_count;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
@@ -1122,11 +1142,20 @@ PHP_METHOD(Redis, getMultiple)
          zend_hash_move_forward_ex(arr_hash, &pointer)) {
 
         if (Z_TYPE_PP(data) == IS_STRING) {
+            char *old_cmd = NULL;
+            if(*cmd) {
+                old_cmd = cmd;
+            }
             cmd_len = spprintf(&cmd, 0, "%s %s", cmd, Z_STRVAL_PP(data));
+            if(old_cmd) {
+                efree(old_cmd);
+            }
         }
     }
 
+    old_cmd = cmd;
     cmd_len = spprintf(&cmd, 0, "MGET%s\r\n", cmd);
+    efree(old_cmd);
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
         efree(cmd);
         RETURN_FALSE;

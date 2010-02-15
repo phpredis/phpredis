@@ -12,14 +12,14 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Alfonso Jimenez <yo@alfonsojimenez.com>                      |
+  | Original author: Alfonso Jimenez <yo@alfonsojimenez.com>             |
+  | Maintainer: Nicolas Favre-Felix <n.favre-felix@owlient.eu>           |
+  | Maintainer: Nasreddine Bouafif <n.bouafif@owlient.eu>                |
   +----------------------------------------------------------------------+
 */
 
 #ifndef PHP_REDIS_H
 #define PHP_REDIS_H
-
-extern zend_module_entry redis_module_entry;
 
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, connect);
@@ -132,9 +132,9 @@ typedef struct RedisSock_ {
 
 
 /* {{{ internal function protos */
-void
-add_constant_long(zend_class_entry *ce, char *name, int value);
+void add_constant_long(zend_class_entry *ce, char *name, int value);
 
+PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC);
 PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port, long timeout);
 PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC);
 PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC);
@@ -156,17 +156,20 @@ PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_a
 PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len TSRMLS_DC);
 PHPAPI void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len TSRMLS_DC);
 
-
-
 /* }}} */
 
+ZEND_BEGIN_MODULE_GLOBALS(redis)
+ZEND_END_MODULE_GLOBALS(redis)
+
+	/*
 #ifdef ZTS
 #define REDIS_G(v) TSRMG(redis_globals_id, zend_redis_globals *, v)
 #else
 #define REDIS_G(v) (redis_globals.v)
 #endif
+*/
 
-#define PHP_REDIS_VERSION "0.1.0"
+#define PHP_REDIS_VERSION "0.1"
 
 #endif
 
