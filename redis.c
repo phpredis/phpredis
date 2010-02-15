@@ -100,12 +100,14 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, rpoplpush, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zAdd, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zDelete, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zGetRange, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zGetReverseRange, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zGetByScoreRange, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zSize, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRemove, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zReverseRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRangeByScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zCard, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zScore, NULL, ZEND_ACC_PUBLIC)
+    /* PHP_ME(Redis, zIncrBy, NULL, ZEND_ACC_PUBLIC) */
 
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
@@ -113,6 +115,9 @@ static zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, sMembers, sGetMembers, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, mget, getMultiple, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, expire, setTimeout, NULL, ZEND_ACC_PUBLIC)
+
+     PHP_MALIAS(Redis, zDelete, zRemove, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zSize, zCard, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
@@ -2636,9 +2641,9 @@ PHP_METHOD(Redis, zAdd) {
     redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
 /* }}} */
-/* {{{ proto array Redis::zGetRange(string key, int start , int end)
+/* {{{ proto array Redis::zRange(string key, int start , int end)
  */
-PHP_METHOD(Redis, zGetRange)
+PHP_METHOD(Redis, zRange)
 {
     zval *object;
     RedisSock *redis_sock;
@@ -2672,7 +2677,7 @@ PHP_METHOD(Redis, zGetRange)
 /* }}} */
 /* {{{ proto boolean Redis::zDelete(string key, string member)
  */
-PHP_METHOD(Redis, zDelete)
+PHP_METHOD(Redis, zRemove)
 {
     zval *object;
     RedisSock *redis_sock;
@@ -2699,9 +2704,39 @@ PHP_METHOD(Redis, zDelete)
     redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
 /* }}} */
-/* {{{ proto array Redis::zGetReverseRange(string key, int start , int end)
+/* {{{ proto boolean Redis::zDeleteRangeByScore(string key, string member)
  */
-PHP_METHOD(Redis, zGetReverseRange)
+PHP_METHOD(Redis, zDeleteRangeByScore)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd;
+    int key_len, cmd_len, response_len;
+    long start, end;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll",
+                                     &object, redis_ce,
+                                     &key, &key_len, &start, &end) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = spprintf(&cmd, 0, "ZREMRANGEBYSCORE %s %d %d\r\n\r\n", key, (int)start, (int)end);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+    redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
+}
+/* }}} */
+/* {{{ proto array Redis::zReverseRange(string key, int start , int end)
+ */
+PHP_METHOD(Redis, zReverseRange)
 {
     zval *object;
     RedisSock *redis_sock;
@@ -2733,9 +2768,9 @@ PHP_METHOD(Redis, zGetReverseRange)
     }
 }
 /* }}} */
-/* {{{ proto array Redis::zGetByScoreRange(string key, int start , int end)
+/* {{{ proto array Redis::zRangeByScore(string key, int start , int end)
  */
-PHP_METHOD(Redis, zGetByScoreRange)
+PHP_METHOD(Redis, zRangeByScore)
 {
     zval *object;
     RedisSock *redis_sock;
@@ -2768,9 +2803,9 @@ PHP_METHOD(Redis, zGetByScoreRange)
 }
 /* }}} */
 
-/* {{{ proto int Redis::zSize(string key)
+/* {{{ proto int Redis::zCard(string key)
  */
-PHP_METHOD(Redis, zSize)
+PHP_METHOD(Redis, zCard)
 {
     zval *object;
     RedisSock *redis_sock;
@@ -2825,5 +2860,41 @@ PHP_METHOD(Redis, zScore)
     efree(cmd);
     redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
+/* {{{ proto boolean Redis::zIncrBy(string key, int value, string member)
+ */
+/*
+PHP_METHOD(Redis, zIncrBy)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd, *member, *response;
+    int key_len, member_len, cmd_len, response_len;
+    long val = 1;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osls",
+                                     &object, redis_ce,
+                                     &key, &key_len, &val, &member, &member_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+    cmd_len = redis_cmd_format(&cmd, "ZINCRBY %s %d %d\r\n%s\r\n",
+                    key, key_len, (int)val, member_len, member, member_len);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    RETURN_LONG(atol(response));
+}
+*/
+/* }}} */
 
 /* vim: set tabstop=4 expandtab: */

@@ -80,12 +80,14 @@ PHP_METHOD(Redis, info);
 PHP_METHOD(Redis, select);
 PHP_METHOD(Redis, move);
 PHP_METHOD(Redis, zAdd);
-PHP_METHOD(Redis, zDelete);
-PHP_METHOD(Redis, zGetRange);
-PHP_METHOD(Redis, zGetReverseRange);
-PHP_METHOD(Redis, zGetByScoreRange);
-PHP_METHOD(Redis, zSize);
+PHP_METHOD(Redis, zRemove);
+PHP_METHOD(Redis, zRange);
+PHP_METHOD(Redis, zReverseRange);
+PHP_METHOD(Redis, zRangeByScore);
+PHP_METHOD(Redis, zDeleteRangeByScore);
+PHP_METHOD(Redis, zCard);
 PHP_METHOD(Redis, zScore);
+/* PHP_METHOD(Redis, zIncrBy); */
 
 PHP_METHOD(Redis, mset);
 PHP_METHOD(Redis, rpoplpush);

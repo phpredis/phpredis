@@ -1297,38 +1297,47 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     }
 
-	public function testZX() {
+    public function testZX() {
 
-		$r = $this->redis->delete('key');	
-		$this->assertTrue($r === 0);
+	$r = $this->redis->delete('key');
+	$this->assertTrue($r === 0);
 
-	  	$this->assertTrue(array() === $this->redis->zGetRange('key', 0, -1));
+	$this->assertTrue(array() === $this->redis->zRange('key', 0, -1));
 
-		$this->assertTrue(1 === $this->redis->zAdd('key', 0, 'val0'));	
-		$this->assertTrue(1 === $this->redis->zAdd('key', 2, 'val2'));	
-		$this->assertTrue(1 === $this->redis->zAdd('key', 1, 'val1'));	
-		$this->assertTrue(1 === $this->redis->zAdd('key', 3, 'val3'));
+	$this->assertTrue(1 === $this->redis->zAdd('key', 0, 'val0'));
+	$this->assertTrue(1 === $this->redis->zAdd('key', 2, 'val2'));
+	$this->assertTrue(1 === $this->redis->zAdd('key', 1, 'val1'));
+	$this->assertTrue(1 === $this->redis->zAdd('key', 3, 'val3'));
 
-	  	$this->assertTrue(array('val0', 'val1', 'val2', 'val3') === $this->redis->zGetRange('key', 0, -1));
+	$this->assertTrue(array('val0', 'val1', 'val2', 'val3') === $this->redis->zRange('key', 0, -1));
 
-		$this->assertTrue(0 === $this->redis->zDelete('key', 'valX'));
-		$this->assertTrue(1 === $this->redis->zDelete('key', 'val3'));
+	$this->assertTrue(0 === $this->redis->zDelete('key', 'valX'));
+	$this->assertTrue(1 === $this->redis->zDelete('key', 'val3'));
 
-		$this->assertTrue(array('val0', 'val1', 'val2') === $this->redis->zGetRange('key', 0, -1));
+	$this->assertTrue(array('val0', 'val1', 'val2') === $this->redis->zRange('key', 0, -1));
 
-		/*zGetReverseRange */
+	// zGetReverseRange
 
-		$this->assertTrue(1 === $this->redis->zAdd('key', 3, 'val3'));	
-		$this->assertTrue(1 === $this->redis->zAdd('key', 3, 'aal3'));	
+	$this->assertTrue(1 === $this->redis->zAdd('key', 3, 'val3'));
+	$this->assertTrue(1 === $this->redis->zAdd('key', 3, 'aal3'));
 
-		$this->assertTrue(array('val0', 'val1', 'val2', 'aal3', 'val3') === $this->redis->zGetByScoreRange('key', 0, 3));
-		
-		$this->assertTrue(5 === $this->redis->zSize('key'));
-		$this->assertTrue(1 === $this->redis->zScore('key', 'val1'));
-		$this->assertFalse($this->redis->zScore('key', 'val'));
-		$this->assertFalse($this->redis->zScore(3, 2));
+	$zero_to_three = $this->redis->zRangeByScore('key', 0, 3);
+	$this->assertTrue(array('val0', 'val1', 'val2', 'aal3', 'val3') === $zero_to_three || array('val0', 'val1', 'val2', 'val3', 'aal3') === $zero_to_three);
 
-	}
+	$this->assertTrue(5 === $this->redis->zSize('key'));
+	$this->assertTrue(1 === $this->redis->zScore('key', 'val1'));
+	$this->assertFalse($this->redis->zScore('key', 'val'));
+	$this->assertFalse($this->redis->zScore(3, 2));
+
+	// zincrby
+	/*
+	$this->redis->delete('key');
+	$this->assertTrue(1 === $this->redis->zIncrBy('key', 1, 'val1'));
+	$this->assertTrue(1 === $this->redis->zScore('key', 'val1'));
+	$this->assertTrue(2 === $this->redis->zIncrBy('key', 1, 'val1'));
+	$this->assertTrue(2 === $this->redis->zScore('key', 'val1'));
+	 */
+    }
 
 }
 
