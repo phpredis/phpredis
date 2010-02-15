@@ -87,7 +87,7 @@ PHP_METHOD(Redis, zRangeByScore);
 PHP_METHOD(Redis, zDeleteRangeByScore);
 PHP_METHOD(Redis, zCard);
 PHP_METHOD(Redis, zScore);
-/* PHP_METHOD(Redis, zIncrBy); */
+PHP_METHOD(Redis, zIncrBy);
 
 PHP_METHOD(Redis, mset);
 PHP_METHOD(Redis, rpoplpush);

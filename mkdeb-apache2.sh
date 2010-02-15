@@ -1,6 +1,6 @@
 #!/bin/sh
 phpize
-./configure CFLAGS="-O3" 
+./configure CFLAGS="-O3"
 make clean all
 DIR=`php-config --extension-dir | cut -c 2-`
 

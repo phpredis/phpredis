@@ -1299,8 +1299,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     public function testZX() {
 
-	$r = $this->redis->delete('key');
-	$this->assertTrue($r === 0);
+	$this->redis->delete('key');
 
 	$this->assertTrue(array() === $this->redis->zRange('key', 0, -1));
 
@@ -1325,18 +1324,16 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(array('val0', 'val1', 'val2', 'aal3', 'val3') === $zero_to_three || array('val0', 'val1', 'val2', 'val3', 'aal3') === $zero_to_three);
 
 	$this->assertTrue(5 === $this->redis->zSize('key'));
-	$this->assertTrue(1 === $this->redis->zScore('key', 'val1'));
+	$this->assertTrue(1.0 === $this->redis->zScore('key', 'val1'));
 	$this->assertFalse($this->redis->zScore('key', 'val'));
 	$this->assertFalse($this->redis->zScore(3, 2));
 
 	// zincrby
-	/*
 	$this->redis->delete('key');
-	$this->assertTrue(1 === $this->redis->zIncrBy('key', 1, 'val1'));
-	$this->assertTrue(1 === $this->redis->zScore('key', 'val1'));
-	$this->assertTrue(2 === $this->redis->zIncrBy('key', 1, 'val1'));
-	$this->assertTrue(2 === $this->redis->zScore('key', 'val1'));
-	 */
+	$this->assertTrue(1.0 === $this->redis->zIncrBy('key', 1, 'val1'));
+	$this->assertTrue(1.0 === $this->redis->zScore('key', 'val1'));
+	$this->assertTrue(2.5 === $this->redis->zIncrBy('key', 1.5, 'val1'));
+	$this->assertTrue(2.5 === $this->redis->zScore('key', 'val1'));
     }
 
 }
