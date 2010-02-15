@@ -2042,6 +2042,9 @@ PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_a
     if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
         RETURN_FALSE;
     }
+    if(key_len == 0) {
+        RETURN_FALSE;
+    }
 
     if(start >= 0 && end >= start) {
         redis_cmd_format(&limit, "LIMIT %d %d", start, end);
