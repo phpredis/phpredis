@@ -100,7 +100,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, rpoplpush, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zAdd, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zRemove, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zDelete, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRange, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zReverseRange, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRangeByScore, NULL, ZEND_ACC_PUBLIC)
@@ -116,7 +116,8 @@ static zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, mget, getMultiple, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, expire, setTimeout, NULL, ZEND_ACC_PUBLIC)
 
-     PHP_MALIAS(Redis, zDelete, zRemove, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zRemove, zDelete, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zRemoveRangeByScore, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zSize, zCard, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
@@ -2691,7 +2692,7 @@ PHP_METHOD(Redis, zRange)
 /* }}} */
 /* {{{ proto long Redis::zDelete(string key, string member)
  */
-PHP_METHOD(Redis, zRemove)
+PHP_METHOD(Redis, zDelete)
 {
     zval *object;
     RedisSock *redis_sock;

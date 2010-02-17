@@ -80,7 +80,7 @@ PHP_METHOD(Redis, info);
 PHP_METHOD(Redis, select);
 PHP_METHOD(Redis, move);
 PHP_METHOD(Redis, zAdd);
-PHP_METHOD(Redis, zRemove);
+PHP_METHOD(Redis, zDelete);
 PHP_METHOD(Redis, zRange);
 PHP_METHOD(Redis, zReverseRange);
 PHP_METHOD(Redis, zRangeByScore);

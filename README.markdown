@@ -1108,13 +1108,11 @@ array(3) {
 
 ## zAdd
 ##### *Description*
-Add the specified member having the specified score to the sorted set stored at key.
+Adds the specified member with a given score to the sorted set stored at key.
 ##### *Parameters*
-*STRING*: key
-
-*LONG* : score
-
-*STRING*: value
+*key*
+*score* : double
+*value*: string
 
 ##### *Return value*
 *Long* 1 if the element is added. 0 otherwise.
@@ -1123,12 +1121,12 @@ Add the specified member having the specified score to the sorted set stored at 
 $redis->zAdd('key', 1, 'val1');
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 5, 'val5');
-$redis->zGetRange('key', 0, -1); // array(val0, val1, val5)
+$redis->zRange('key', 0, -1); // array(val0, val1, val5)
 </pre>
 
-## zGetRange
+## zRange
 ##### *Description*
-Returns the specified elements of the ordered set stored at the specified key in the range [start, end]. start and stop are interpretated as indices:
+Returns a range of elements from the ordered set stored at the specified key, with values in the range [start, end]. start and stop are interpreted as zero-based indices:
 0 the first element, 1 the second ...
 -1 the last element, -2 the penultimate ...
 ##### *Parameters*
@@ -1146,9 +1144,9 @@ $redis->zAdd('key1', 10, 'val10');
 $redis->lGetRange('key1', 0, -1); /* array('val0', 'val2', 'val10') */
 </pre>
 
-## zDelete
+## zDelete, zRemove
 ##### *Description*
-Delete specified member from the specified ordered set.
+Deletes a specified member from the ordered set.
 ##### *Parameters*
 *key*
 *member*
@@ -1161,12 +1159,12 @@ $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
 $redis->zDelete('key', 'val2');
-$redis->lGetRange('key', 0, -1); /* array('val0', 'val10') */
+$redis->zRange('key', 0, -1); /* array('val0', 'val10') */
 </pre>
 
-## zGetReverseRange
+## zReverseRange
 ##### *Description*
-Returns the specified elements of the sorted set stored at the specified key in the range [start, end] in reverse order. start and stop are interpretated as indices:
+Returns the elements of the sorted set stored at the specified key in the range [start, end] in reverse order. start and stop are interpretated as zero-based indices:
 0 the first element, 1 the second ...
 -1 the last element, -2 the penultimate ...
 
@@ -1175,41 +1173,59 @@ Returns the specified elements of the sorted set stored at the specified key in 
 *member*
 
 ##### *Return value*
-*LONG* 1 on success, 0 on failure.
+*Array* containing the values in specified range. 
 ##### *Example*
 <pre>
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
-$redis->zGetReversedRange('key', 0, -1); /* array('val10', 'val2', 'val0') */
+$redis->zReverseRange('key', 0, -1); /* array('val10', 'val2', 'val0') */
 </pre>
 
-## zGetByScoreRange
+## zRangeByScore
 ##### *Description*
-Return the specified elements of the sorted set stored at the specified key and have scores in the range [start,end].
+Returns the elements of the sorted set stored at the specified key which have scores in the range [start,end].
 ##### *Parameters*
 *key*
-*start*
-*end*
+*start*: double
+*end*: double
 
 ##### *Return value*
-*Array* 
+*Array* containing the values in specified range. 
 ##### *Example*
 <pre>
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
-$redis->zGetByScoreRange('key', 0, 3); /* array('val0', 'val2') */
+$redis->zRangeByScore('key', 0, 3); /* array('val0', 'val2') */
 </pre>
 
-## zSize
+## zDeleteRangeByScore, zRemoveRangeByScore
 ##### *Description*
-Return the cardinality of the oredered set idetified by key.
+Deletes the elements of the sorted set stored at the specified key which have scores in the range [start,end].
+##### *Parameters*
+*key*
+*start*: double
+*end*: double
+
+##### *Return value*
+*LONG* The number of values deleted from the sorted set
+##### *Example*
+<pre>
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 2, 'val2');
+$redis->zAdd('key', 10, 'val10');
+$redis->zDeleteRangeByScore('key', 0, 3); /* 2 */
+</pre>
+
+## zSize, zCard
+##### *Description*
+Returns the cardinality of an ordered set.
 ##### *Parameters*
 *key*
 
 ##### *Return value*
-*Array* 
+*Long*, the set's cardinality
 ##### *Example*
 <pre>
 $redis->zAdd('key', 0, 'val0');
@@ -1220,7 +1236,7 @@ $redis->zSize('key'); /* 3 */
 
 ## zScore
 ##### *Description*
-Return the score of the specified member in the specified sorted set.
+Returns the score of a given member in the specified sorted set.
 ##### *Parameters*
 *key*
 *member*
@@ -1230,7 +1246,24 @@ Return the score of the specified member in the specified sorted set.
 ##### *Example*
 <pre>
 $redis->zAdd('key', 0, 'val0');
-$redis->zAdd('key', 2, 'val2');
+$redis->zAdd('key', 2.5, 'val2');
 $redis->zAdd('key', 10, 'val10');
-$redis->zScore('key', 'val2'); /* 2 */
+$redis->zScore('key', 'val2'); /* 2.5 */
+</pre>
+
+## zIncrBy
+##### Description
+Increments the score of a member from a sorted set by a given amount.
+##### Parameters
+*key*
+*value*: (double) value that will be added to the member's score
+*member*
+##### Return value
+*DOUBLE* the new value
+##### Examples
+<pre>
+$redis->delete('key');
+$redis->zIncrBy('key', 2.5, 'member1'); /* key or member1 didn't exist, so member1's score is to 0 before the increment */
+					  /* and now has the value 2.5  */
+$redis->zIncrBy('key', 1, 'member1'); /* 3.5 */
 </pre>
