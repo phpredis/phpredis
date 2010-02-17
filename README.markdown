@@ -1110,9 +1110,9 @@ array(3) {
 ##### *Description*
 Adds the specified member with a given score to the sorted set stored at key.
 ##### *Parameters*
-*key*
-*score* : double
-*value*: string
+*key*  
+*score* : double  
+*value*: string  
 
 ##### *Return value*
 *Long* 1 if the element is added. 0 otherwise.
@@ -1130,9 +1130,9 @@ Returns a range of elements from the ordered set stored at the specified key, wi
 0 the first element, 1 the second ...
 -1 the last element, -2 the penultimate ...
 ##### *Parameters*
-*key*
-*start*
-*end*
+*key*  
+*start*  
+*end*  
 
 ##### *Return value*
 *Array* containing the values in specified range. 
@@ -1148,8 +1148,8 @@ $redis->lGetRange('key1', 0, -1); /* array('val0', 'val2', 'val10') */
 ##### *Description*
 Deletes a specified member from the ordered set.
 ##### *Parameters*
-*key*
-*member*
+*key*  
+*member*  
 
 ##### *Return value*
 *LONG* 1 on success, 0 on failure.
@@ -1169,8 +1169,8 @@ Returns the elements of the sorted set stored at the specified key in the range 
 -1 the last element, -2 the penultimate ...
 
 ##### *Parameters*
-*key*
-*member*
+*key*  
+*member*  
 
 ##### *Return value*
 *Array* containing the values in specified range. 
@@ -1186,9 +1186,9 @@ $redis->zReverseRange('key', 0, -1); /* array('val10', 'val2', 'val0') */
 ##### *Description*
 Returns the elements of the sorted set stored at the specified key which have scores in the range [start,end].
 ##### *Parameters*
-*key*
-*start*: double
-*end*: double
+*key*  
+*start*: double  
+*end*: double  
 
 ##### *Return value*
 *Array* containing the values in specified range. 
@@ -1204,9 +1204,9 @@ $redis->zRangeByScore('key', 0, 3); /* array('val0', 'val2') */
 ##### *Description*
 Deletes the elements of the sorted set stored at the specified key which have scores in the range [start,end].
 ##### *Parameters*
-*key*
-*start*: double
-*end*: double
+*key*  
+*start*: double  
+*end*: double  
 
 ##### *Return value*
 *LONG* The number of values deleted from the sorted set
@@ -1238,16 +1238,14 @@ $redis->zSize('key'); /* 3 */
 ##### *Description*
 Returns the score of a given member in the specified sorted set.
 ##### *Parameters*
-*key*
-*member*
+*key*  
+*member*  
 
 ##### *Return value*
 *Double*
 ##### *Example*
 <pre>
-$redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2.5, 'val2');
-$redis->zAdd('key', 10, 'val10');
 $redis->zScore('key', 'val2'); /* 2.5 */
 </pre>
 
@@ -1255,9 +1253,9 @@ $redis->zScore('key', 'val2'); /* 2.5 */
 ##### Description
 Increments the score of a member from a sorted set by a given amount.
 ##### Parameters
-*key*
-*value*: (double) value that will be added to the member's score
-*member*
+*key*  
+*value*: (double) value that will be added to the member's score  
+*member*  
 ##### Return value
 *DOUBLE* the new value
 ##### Examples
