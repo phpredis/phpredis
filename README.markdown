@@ -988,17 +988,17 @@ $redis->type('key');
 ## flushDB
 
 ##### *Description*
-Removes all entries from a given database.
+Removes all entries from the current database.
 
 ##### *Parameters*
-*INTEGER*: dbindex, the database number to delete from. The first database has number zero.
+None.
 
 ##### *Return value*
-*BOOL*: `TRUE` on success, `FALSE` on failure.
+*BOOL*: Always `TRUE`.
 
 ##### *Example*
 <pre>
-$redis->flushDB(0);
+$redis->flushDB();
 </pre>
 
 
@@ -1010,7 +1010,7 @@ Removes all entries from all databases.
 None.
 
 ##### *Return value*
-*BOOL*: `TRUE` on success, `FALSE` on failure.
+*BOOL*: Always `TRUE`.
 
 ##### *Example*
 <pre>
