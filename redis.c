@@ -76,7 +76,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sMove, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sPop, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sContains, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sGetMembers, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sMembers, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sInter, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sInterStore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sUnion, NULL, ZEND_ACC_PUBLIC)
@@ -112,7 +112,7 @@ static zend_function_entry redis_functions[] = {
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, lLen, lSize, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, sMembers, sGetMembers, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, sGetMembers, sMembers, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, mget, getMultiple, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, expire, setTimeout, NULL, ZEND_ACC_PUBLIC)
 
@@ -1836,9 +1836,9 @@ PHP_METHOD(Redis, sContains)
 }
 /* }}} */
 
-/* {{{ proto array Redis::sGetMembers(string set)
+/* {{{ proto array Redis::sMembers(string set)
  */
-PHP_METHOD(Redis, sGetMembers)
+PHP_METHOD(Redis, sMembers)
 {
     zval *object;
     RedisSock *redis_sock;

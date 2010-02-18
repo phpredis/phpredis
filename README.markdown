@@ -27,6 +27,32 @@ This extension exports a single class, `Redis`.
 Methods
 =========
 
+## Redis::__construct
+##### *Description*
+
+Creates a Redis client
+
+##### *Example*
+
+$redis = new Redis();
+
+## connect, open
+##### *Description*
+
+Connects to a Redis instance.
+
+##### *Parameters*
+
+*host*: string  
+*port*: int  
+
+##### *Return Value*
+
+*BOOL*: `TRUE` on success, `FALSE` on error.
+
+##### *Example*
+
+$redis->connect('127.0.0.1', 6379);
 
 ## get
 ##### *Description*
@@ -162,7 +188,7 @@ $redis->getMultiple(array('key1', 'key2', 'key3')); /* array('value1', 'value2',
 $redis->getMultiple(array('key0', 'key1', 'key5')); /* array(`FALSE`, 'value2', `FALSE`);
 </pre>
 
-## lpush
+## lPush
 ##### Description
 Adds the string value to the head (left) of the list. Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
 ##### Parameters
@@ -172,12 +198,12 @@ Adds the string value to the head (left) of the list. Creates the list if the ke
 *BOOL* `TRUE` in case of success, `FALSE` in case of Failure.
 ##### Examples
 <pre>
-$redis->lpush('key1', 'C');
-$redis->lpush('key1', 'B');
-$redis->lpush('key1', 'A'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->lPush('key1', 'C');
+$redis->lPush('key1', 'B');
+$redis->lPush('key1', 'A'); /* key1 => [ 'A', 'B', 'C' ] */
 </pre>
 
-## rpush
+## rPush
 ##### Description
 Adds the string value to the tail (right) of the list. Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
 ##### Parameters
@@ -187,9 +213,9 @@ Adds the string value to the tail (right) of the list. Creates the list if the k
 *BOOL* `TRUE` in case of success, `FALSE` in case of Failure.
 ##### Examples
 <pre>
-$redis->rpush('key1', 'A');
-$redis->rpush('key1', 'B');
-$redis->rpush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
 </pre>
 
 ## rpop
@@ -201,13 +227,13 @@ Returns and removes the last element of the list.
 *STRING* if command executed successfully, *BOOL* `FALSE` in case of failure (key didn't exist)
 ##### Examples
 <pre>
-$redis->rpush('key1', 'A');
-$redis->rpush('key1', 'B');
-$redis->rpush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
-$redis->rpop('key1'); /* key1 => [ 'A', 'B' ] */
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->rPop('key1'); /* key1 => [ 'A', 'B' ] */
 </pre>
 
-## lpop
+## lPop
 ##### *Description*
 Return and remove the first element of the list.
 ##### *Parameters*
@@ -217,10 +243,10 @@ Return and remove the first element of the list.
 *STRING* if command executed successfully, *BOOL* `FALSE` in case of failure (key didn't exist)
 ##### *Example*
 <pre>
-$redis->rpush('key1', 'A');
-$redis->rpush('key1', 'B');
-$redis->rpush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
-$redis->lpop('key1'); /* key1 => [ 'B', 'A' ] */
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
+$redis->lPop('key1'); /* key1 => [ 'B', 'A' ] */
 </pre>
 
 ## rpop
@@ -233,10 +259,10 @@ Returns and removes the first element of the list.
 *BOOL* `FALSE` in case of failure (key didn't exist)
 ##### *Example*
 <pre>
-$redis->rpush('key1', 'A');
-$redis->rpush('key1', 'B');
-$redis->rpush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
-$redis->rpop('key1'); /* key1 => [ 'C', 'B' ] */
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
+$redis->rPop('key1'); /* key1 => [ 'C', 'B' ] */
 </pre>
 
 ## lSize
@@ -250,11 +276,11 @@ Returns the size of a list identified by Key. If the list didn't exist or is emp
 
 ##### *Example*
 <pre>
-$redis->rpush('key1', 'A');
-$redis->rpush('key1', 'B');
-$redis->rpush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
 $redis->lSize('key1');/* 3 */
-$redis->rpop('key1'); 
+$redis->rPop('key1'); 
 $redis->lSize('key1');/* 2 */
 </pre>
 
@@ -273,9 +299,9 @@ Return `FALSE` in case of a bad index or a key that doesn't point to a list.
 *Bool* `FALSE` if the key identifies a non-string data type, or no value corresponds to this index in the list `Key`.
 ##### *Example*
 <pre>
-$redis->rpush('key1', 'A');
-$redis->rpush('key1', 'B');
-$redis->rpush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
 $redis->lGet('key1', 0); /* 'A' */
 $redis->lGet('key1', -1); /* 'C' */
 $redis->lGet('key1', 10); /* `FALSE` */
@@ -292,9 +318,9 @@ Set the list at index with the new value.
 *BOOL* `TRUE` if the new value is setted. `FALSE` if the index is out of range, or data type identified by key is not a list.
 ##### *Example*
 <pre>
-$redis->rpush('key1', 'A');
-$redis->rpush('key1', 'B');
-$redis->rpush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
 $redis->lGet('key1', 0); /* 'A' */
 $redis->lSet('key1', 0, 'X');
 $redis->lGet('key1', 0); /* 'X' */ 
@@ -314,9 +340,9 @@ Returns the specified elements of the list stored at the specified key in the ra
 *Array* containing the values in specified range. 
 ##### *Example*
 <pre>
-$redis->rpush('key1', 'A');
-$redis->rpush('key1', 'B');
-$redis->rpush('key1', 'C'); 
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C'); 
 $redis->lGetRange('key1', 0, -1); /* array('A', 'B', 'C') */
 </pre>
 
@@ -332,9 +358,9 @@ Trims an existing list so that it will contain only a specified range of element
 *Bool* return `FALSE` if the key identify a non-list value.
 ##### *Example*
 <pre>
-$redis->rpush('key1', 'A');
-$redis->rpush('key1', 'B');
-$redis->rpush('key1', 'C'); 
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C'); 
 $redis->lGetRange('key1', 0, -1); /* array('A', 'B', 'C') */
 $redis->listTrim('key1', 0, 1);
 $redis->lGetRange('key1', 0, -1); /* array('A', 'B') */
@@ -353,11 +379,11 @@ Removes the first `count` occurences of the value element from the list. If coun
 *BOOL* `FALSE` if the value identified by key is not a list.
 ##### *Example*
 <pre>
-$redis->lpush('key1', 'A');
-$redis->lpush('key1', 'B');
-$redis->lpush('key1', 'C'); 
-$redis->lpush('key1', 'A'); 
-$redis->lpush('key1', 'A'); 
+$redis->lPush('key1', 'A');
+$redis->lPush('key1', 'B');
+$redis->lPush('key1', 'C'); 
+$redis->lPush('key1', 'A'); 
+$redis->lPush('key1', 'A'); 
 
 $redis->lGetRange('key1', 0, -1); /* array('A', 'A', 'C', 'B', 'A') */
 $redis->lRemove('key1', 'A', 2); /* 2 */
@@ -375,9 +401,9 @@ Adds a value to the set value stored at key. If this value is already in the set
 *BOOL* `TRUE` if value didn't exist and was added successfully, `FALSE` if the value is already present.
 ##### *Example*
 <pre>
-$redis->sadd('key1' , 'set1'); /* TRUE, 'key1' => {'set1'} */
-$redis->sadd('key1' , 'set2'); /* TRUE, 'key1' => {'set1', 'set2'}*/
-$redis->sadd('key1' , 'set2'); /* FALSE, 'key1' => {'set1', 'set2'}*/
+$redis->sAdd('key1' , 'set1'); /* TRUE, 'key1' => {'set1'} */
+$redis->sAdd('key1' , 'set2'); /* TRUE, 'key1' => {'set1', 'set2'}*/
+$redis->sAdd('key1' , 'set2'); /* FALSE, 'key1' => {'set1', 'set2'}*/
 </pre>
 
 ## sRemove
@@ -390,9 +416,9 @@ Removes the specified member from the set value stored at key.
 *BOOL* `TRUE` if the member was present in the set, `FALSE` if it didn't.
 ##### *Example*
 <pre>
-$redis->sadd('key1' , 'set1'); 
-$redis->sadd('key1' , 'set2'); 
-$redis->sadd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
+$redis->sAdd('key1' , 'set1'); 
+$redis->sAdd('key1' , 'set2'); 
+$redis->sAdd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
 $redis->sRemove('key1', 'set2'); /* 'key1' => {'set1', 'set3'} */
 </pre>
 
@@ -407,11 +433,11 @@ Moves the specified member from the set at srcKey to the set at dstKey.
 *BOOL* If the operation is successful, return `TRUE`. If the srcKey and/or dstKey didn't exist, and/or the member didn't exist in srcKey, `FALSE` is returned.
 ##### *Example*
 <pre>
-$redis->sadd('key1' , 'set11'); 
-$redis->sadd('key1' , 'set12'); 
-$redis->sadd('key1' , 'set13'); /* 'key1' => {'set11', 'set12', 'set13'}*/
-$redis->sadd('key2' , 'set21'); 
-$redis->sadd('key2' , 'set22'); /* 'key2' => {'set21', 'set22'}*/
+$redis->sAdd('key1' , 'set11'); 
+$redis->sAdd('key1' , 'set12'); 
+$redis->sAdd('key1' , 'set13'); /* 'key1' => {'set11', 'set12', 'set13'}*/
+$redis->sAdd('key2' , 'set21'); 
+$redis->sAdd('key2' , 'set22'); /* 'key2' => {'set21', 'set22'}*/
 $redis->sMove('key1', 'key2', 'set13'); /* 'key1' =>  {'set11', 'set12'} */
 					/* 'key2' =>  {'set21', 'set22', 'set13'} */
 
@@ -428,9 +454,9 @@ Checks if `value` is a member of the set stored at the key `key`.
 *BOOL* `TRUE` if `value` is a member of the set at key `key`, `FALSE` otherwise.
 ##### *Example*
 <pre>
-$redis->sadd('key1' , 'set1'); 
-$redis->sadd('key1' , 'set2'); 
-$redis->sadd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
+$redis->sAdd('key1' , 'set1'); 
+$redis->sAdd('key1' , 'set2'); 
+$redis->sAdd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
 
 $redis->sContains('key1', 'set1'); /* TRUE */
 $redis->sContains('key1', 'setX'); /* FALSE */
@@ -446,14 +472,14 @@ Returns the cardinality of the set identified by key.
 *LONG* the cardinality of the set identified by key, 0 if the set doesn't exist.
 ##### *Example*
 <pre>
-$redis->sadd('key1' , 'set1'); 
-$redis->sadd('key1' , 'set2'); 
-$redis->sadd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
+$redis->sAdd('key1' , 'set1'); 
+$redis->sAdd('key1' , 'set2'); 
+$redis->sAdd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
 $redis->sSize('key1'); /* 3 */
 $redis->sSize('keyX'); /* 0 */
 </pre>
 
-## spop
+## sPop
 ##### *Description*
 Removes and returns a random element from the set value at Key.
 ##### *Parameters*
@@ -463,11 +489,11 @@ Removes and returns a random element from the set value at Key.
 *Bool* `FALSE` if set identified by key is empty or doesn't exist.
 ##### *Example*
 <pre>
-$redis->sadd('key1' , 'set1'); 
-$redis->sadd('key1' , 'set2'); 
-$redis->sadd('key1' , 'set3'); /* 'key1' => {'set3', 'set1', 'set2'}*/
-$redis->spop('key1'); /* 'set1', 'key1' => {'set3', 'set2'} */
-$redis->spop('key1'); /* 'set3', 'key1' => {'set2'} */
+$redis->sAdd('key1' , 'set1'); 
+$redis->sAdd('key1' , 'set2'); 
+$redis->sAdd('key1' , 'set3'); /* 'key1' => {'set3', 'set1', 'set2'}*/
+$redis->sPop('key1'); /* 'set1', 'key1' => {'set3', 'set2'} */
+$redis->sPop('key1'); /* 'set3', 'key1' => {'set2'} */
 
 </pre>
 
@@ -490,16 +516,16 @@ Array, contain the result of the intersection between those keys. If the interse
 ##### *Examples*
 
 <pre>
-$redis->sadd('key1', 'val1');
-$redis->sadd('key1', 'val2');
-$redis->sadd('key1', 'val3');
-$redis->sadd('key1', 'val4');
+$redis->sAdd('key1', 'val1');
+$redis->sAdd('key1', 'val2');
+$redis->sAdd('key1', 'val3');
+$redis->sAdd('key1', 'val4');
 
-$redis->sadd('key2', 'val3');
-$redis->sadd('key2', 'val4');
+$redis->sAdd('key2', 'val3');
+$redis->sAdd('key2', 'val4');
 
-$redis->sadd('key3', 'val3');
-$redis->sadd('key3', 'val4');
+$redis->sAdd('key3', 'val3');
+$redis->sAdd('key3', 'val4');
 
 var_dump($redis->sInter('key1', 'key2', 'key3'));
 </pre>
@@ -515,7 +541,7 @@ array(2) {
 }
 </pre>
 
-## sinterstore
+## sInterStore
 ##### *Description*
 Performs a sInter command and stores the result in a new set.
 ##### *Parameters*
@@ -528,21 +554,19 @@ Performs a sInter command and stores the result in a new set.
 
 ##### *Example*
 <pre>
-$redis = new Redis();
-$redis->connect('127.0.0.1', 6379);
-$redis->sadd('key1', 'val1');
-$redis->sadd('key1', 'val2');
-$redis->sadd('key1', 'val3');
-$redis->sadd('key1', 'val4');
+$redis->sAdd('key1', 'val1');
+$redis->sAdd('key1', 'val2');
+$redis->sAdd('key1', 'val3');
+$redis->sAdd('key1', 'val4');
 
-$redis->sadd('key2', 'val3');
-$redis->sadd('key2', 'val4');
+$redis->sAdd('key2', 'val3');
+$redis->sAdd('key2', 'val4');
 
-$redis->sadd('key3', 'val3');
-$redis->sadd('key3', 'val4');
+$redis->sAdd('key3', 'val3');
+$redis->sAdd('key3', 'val4');
 
 var_dump($redis->sInterStore('output', 'key1', 'key2', 'key3'));
-var_dump($redis->sGetMembers('output'));
+var_dump($redis->sMembers('output'));
 </pre>
 
 Output:
@@ -706,7 +730,7 @@ array(2) {
 }
 </pre>
 
-## sMembers
+## sMembers, sGetMembers
 ##### *Description*
 Returns the contents of a set.
 
@@ -723,7 +747,7 @@ $redis->sAdd('s', 'a');
 $redis->sAdd('s', 'b');
 $redis->sAdd('s', 'a');
 $redis->sAdd('s', 'c');
-var_dump($redis->sGetMembers('s'));
+var_dump($redis->sMembers('s'));
 </pre>
 
 Output:
@@ -845,7 +869,7 @@ sleep(5);				// wait 5 seconds
 $this->get('x'); 		// will return `FALSE`, as 'x' has expired.
 </pre>
 
-## keys
+## getKeys
 ##### *Description*
 Returns the keys that match a certain pattern.
 ##### *Description*
@@ -924,7 +948,7 @@ None.
 <pre>
 $redis->bgSave();
 </pre>
-## lastsave
+## lastSave
 
 ##### *Description*
 Returns the timestamp of the last disk save.
@@ -961,7 +985,7 @@ other: Redis::REDIS_NOT_FOUND
 $redis->type('key');
 </pre>
 
-## flushdb
+## flushDB
 
 ##### *Description*
 Removes all entries from a given database.
@@ -978,7 +1002,7 @@ $redis->flushDB(0);
 </pre>
 
 
-## flushall
+## flushAll
 ##### *Description*
 Removes all entries from all databases.
 
@@ -994,6 +1018,7 @@ $redis->flushAll();
 </pre>
 
 ## sort
+Documentation for this method will be added shortly.
 
 ## info
 ##### *Description*
@@ -1077,10 +1102,10 @@ Pops a value from the tail of a list, and pushes it to the front of another list
 <pre>
 $redis->delete('x', 'y');
 
-$redis->lpush('x', 'abc');
-$redis->lpush('x', 'def');
-$redis->lpush('y', '123');
-$redis->lpush('y', '456');
+$redis->lPush('x', 'abc');
+$redis->lPush('x', 'def');
+$redis->lPush('y', '123');
+$redis->lPush('y', '456');
 
 // move the last of x to the front of y.
 var_dump($redis->rpoplpush('x', 'y'));
@@ -1141,7 +1166,7 @@ Returns a range of elements from the ordered set stored at the specified key, wi
 $redis->zAdd('key1', 0, 'val0');
 $redis->zAdd('key1', 2, 'val2');
 $redis->zAdd('key1', 10, 'val10');
-$redis->lGetRange('key1', 0, -1); /* array('val0', 'val2', 'val10') */
+$redis->zRange('key1', 0, -1); /* array('val0', 'val2', 'val10') */
 </pre>
 
 ## zDelete, zRemove
