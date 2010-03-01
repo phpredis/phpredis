@@ -218,29 +218,14 @@ $redis->rPush('key1', 'B');
 $redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
 </pre>
 
-## rpop
-##### Description
-Returns and removes the last element of the list.
-##### Parameters
-*key*
-##### Return value
-*STRING* if command executed successfully, *BOOL* `FALSE` in case of failure (key didn't exist)
-##### Examples
-<pre>
-$redis->rPush('key1', 'A');
-$redis->rPush('key1', 'B');
-$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
-$redis->rPop('key1'); /* key1 => [ 'A', 'B' ] */
-</pre>
-
 ## lPop
 ##### *Description*
 Return and remove the first element of the list.
 ##### *Parameters*
 *key*
 ##### *Return value*
-*STRING* in case of success (key exists)
-*STRING* if command executed successfully, *BOOL* `FALSE` in case of failure (key didn't exist)
+*STRING* if command executed successfully
+*BOOL* `FALSE` in case of failure (empty list)
 ##### *Example*
 <pre>
 $redis->rPush('key1', 'A');
@@ -249,14 +234,14 @@ $redis->rPush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
 $redis->lPop('key1'); /* key1 => [ 'B', 'A' ] */
 </pre>
 
-## rpop
+## rPop
 ##### *Description*
 Returns and removes the first element of the list.
 ##### *Parameters*
 *key*
 ##### *Return value*
-*STRING* in case of success (key exists)  
-*BOOL* `FALSE` in case of failure (key didn't exist)
+*STRING* if command executed successfully
+*BOOL* `FALSE` in case of failure (empty list)
 ##### *Example*
 <pre>
 $redis->rPush('key1', 'A');
