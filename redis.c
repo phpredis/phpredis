@@ -108,6 +108,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zCard, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zScore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zIncrBy, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, expireAt, NULL, ZEND_ACC_PUBLIC)
 
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
@@ -2148,19 +2149,16 @@ PHP_METHOD(Redis, sortDescAlpha)
 }
 /* }}} */
 
-/* {{{ proto array Redis::setTimeout(string key, int timeout)
- */
-PHP_METHOD(Redis, setTimeout) {
-
+PHPAPI void generic_expire_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len TSRMLS_DC) {
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *cmd;
     int key_len, cmd_len;
-    long timeout;
+    long t;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl",
                                      &object, redis_ce, &key, &key_len,
-                                     &timeout) == FAILURE) {
+                                     &t) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -2168,7 +2166,10 @@ PHP_METHOD(Redis, setTimeout) {
         RETURN_FALSE;
     }
 
-    cmd_len = spprintf(&cmd, 0, "EXPIRE %s %d\r\n", key, (int)timeout);
+    cmd_len = redis_cmd_format(&cmd, "%s %s %d\r\n",
+        keyword, keyword_len,
+        key, key_len,
+        (int)t);
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
         efree(cmd);
@@ -2177,7 +2178,21 @@ PHP_METHOD(Redis, setTimeout) {
     efree(cmd);
     redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
+
+/* {{{ proto array Redis::setTimeout(string key, int timeout)
+ */
+PHP_METHOD(Redis, setTimeout) {
+    generic_expire_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "EXPIRE", sizeof("EXPIRE")-1 TSRMLS_CC);
+}
 /* }}} */
+
+/* {{{ proto array Redis::expireAt(string key, int timestamp)
+ */
+PHP_METHOD(Redis, expireAt) {
+    generic_expire_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "EXPIREAT", sizeof("EXPIREAT")-1 TSRMLS_CC);
+}
+/* }}} */
+
 
 /* {{{ proto array Redis::lSet(string key, int index, string value)
  */

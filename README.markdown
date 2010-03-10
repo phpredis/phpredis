@@ -836,7 +836,7 @@ $redis->get('x'); 	// → `FALSE`
 ##### *Description*
 Same as rename, but will not replace a key if the destination already exists. This is the same behaviour as setNx.
 
-## setTimeout
+## setTimeout, expire
 ##### *Description*
 Sets an expiration date (a timeout) on an item.
 
@@ -851,6 +851,26 @@ Sets an expiration date (a timeout) on an item.
 <pre>
 $redis->set('x', '42');
 $redis->setTimeout('x', 3);	// x will disappear in 3 seconds.
+sleep(5);				// wait 5 seconds
+$this->get('x'); 		// will return `FALSE`, as 'x' has expired.
+</pre>
+
+## expireAt
+##### *Description*
+Sets an expiration date (a timestamp) on an item.
+
+##### *Parameters*
+*Key*: key. The key that will disappear.
+
+*Integer*: Unix timestamp. The key's date of death, in seconds from Epoch time.
+
+##### *Return value*
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
+##### *Example*
+<pre>
+$redis->set('x', '42');
+$now = time(NULL); // current timestamp
+$redis->setTimeout('x', $now + 3);	// x will disappear in 3 seconds.
 sleep(5);				// wait 5 seconds
 $this->get('x'); 		// will return `FALSE`, as 'x' has expired.
 </pre>

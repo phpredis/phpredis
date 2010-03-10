@@ -235,6 +235,17 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals(False, $this->redis->get('key'));
     }
 
+    public function testExpireAt() {
+
+	$this->redis->delete('key');
+        $this->redis->set('key', 'value');
+	$now = time(NULL);
+	$this->redis->expireAt('key', $now + 1);
+	$this->assertEquals('value', $this->redis->get('key'));
+	sleep(2);
+	$this->assertEquals(FALSE, $this->redis->get('key'));
+    }
+
     public function testSetNX() {
 
 	    $this->redis->set('key', 42);
