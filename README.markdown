@@ -110,7 +110,7 @@ $this->redis->setnx('key', 'value'); /* return FALSE */
 ##### Description
 Remove specified keys.
 ##### Parameters
-*key1* *key2* *key3* ... *keyN*
+An array of keys, or an undefined number of parameters, each a key: *key1* *key2* *key3* ... *keyN*
 ##### Return value
 *Long* Number of keys deleted.
 ##### Examples
@@ -118,9 +118,10 @@ Remove specified keys.
 $redis->set('key1', 'val1');
 $redis->set('key2', 'val2');
 $redis->set('key3', 'val3');
+$redis->set('key4', 'val4');
 
-$redis->delete('key1', 'key2', 'key3'); /* return 3 */
-$redis->delete('key1', 'key2', 'key3'); /* return 0 */
+$redis->delete('key1', 'key2'); /* return 2 */
+$redis->delete(array('key3', 'key4')); /* return 2 */
 </pre>
 
 
