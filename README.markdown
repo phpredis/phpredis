@@ -91,7 +91,7 @@ $redis->set('key', 'value')
 
 ## setnx
 ##### Description
-Set the string value in argument as value of the key if the target key already exists.
+Set the string value in argument as value of the key if the key doesn't already exist in the database.
 
 ##### Parameters
 *key*
