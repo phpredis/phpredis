@@ -458,16 +458,31 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
     }
     int numElems = atoi(inbuf+1);
 
-    array_init(return_value);
+    zval *z_tab;
+    MAKE_STD_ZVAL(z_tab);
+    array_init(z_tab);
+
+    redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                    redis_sock, z_tab, numElems);
+
+    *return_value = *z_tab;
+    return 0;
+}
+
+PHPAPI int
+redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                                     zval *z_tab, int numElems TSRMLS_DC) {
+    char *response;
+    int response_len;
 
     while(numElems > 0) {
         int response_len;
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
 
         if(response != NULL) {
-            add_next_index_stringl(return_value, response, response_len, 0);
+            add_next_index_stringl(z_tab, response, response_len, 0);
         } else {
-            add_next_index_bool(return_value, 0);
+            add_next_index_bool(z_tab, 0);
         }
         numElems --;
     }
@@ -1240,7 +1255,8 @@ PHP_METHOD(Redis, getKeys)
     zval *object;
     RedisSock *redis_sock;
     char *pattern = NULL, *cmd, *response;
-    int pattern_len, cmd_len, response_len;
+    int pattern_len, cmd_len, response_len, count;
+    char inbuf[1024];
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
                                      &object, redis_ce,
@@ -1260,31 +1276,50 @@ PHP_METHOD(Redis, getKeys)
     }
     efree(cmd);
 
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-        RETURN_FALSE;
-    }
+    /* two cases:
+     * 1 - old versions of redis (before 1st of March 2010): one space-separated line
+     * 2 - newer versions of redis: multi-bulk data.
+     *
+     * The following code supports both.
+     **/
 
     /* prepare for php_explode */
     array_init(return_value);
 
-    if(response_len) { /* empty array in case of an empty string */
-        zval *delimiter; /* delimiter */
-        MAKE_STD_ZVAL(delimiter);
-        ZVAL_STRING(delimiter, " ", 1);
+    /* read a first line. */
+    redis_check_eof(redis_sock TSRMLS_CC);
+    php_stream_gets(redis_sock->stream, inbuf, 1024);
 
-        zval *keys; /* keys */
-        MAKE_STD_ZVAL(keys);
-        ZVAL_STRING(keys, response, 1);
-        php_explode(delimiter, keys, return_value, -1);
+    switch(inbuf[0]) { /* check what character it starts with. */
+        case '$':
+            response_len = atoi(inbuf + 1);
+            response = redis_sock_read_bulk_reply(redis_sock, response_len);
+            if(!response_len) { /* empty array in case of an empty string */
+                efree(response);
+                return;
+            }
+            zval *delimiter; /* delimiter */
+            MAKE_STD_ZVAL(delimiter);
+            ZVAL_STRING(delimiter, " ", 1);
 
-        /* free memory */
-        zval_dtor(keys);
-        efree(keys);
-        zval_dtor(delimiter);
-        efree(delimiter);
+            zval *keys; /* keys */
+            MAKE_STD_ZVAL(keys);
+            ZVAL_STRING(keys, response, 1);
+            php_explode(delimiter, keys, return_value, -1);
+
+            /* free memory */
+            zval_dtor(keys);
+            efree(keys);
+            zval_dtor(delimiter);
+            efree(delimiter);
+            break;
+
+        case '*':
+            count = atoi(inbuf + 1);
+            redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                            redis_sock, return_value, count);
+            break;
     }
-
-    efree(response);
 }
 /* }}} */
 
@@ -1363,7 +1398,7 @@ PHP_METHOD(Redis, lPush)
         RETURN_FALSE;
     }
     efree(cmd);
-    redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
+    redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
 
 /* {{{ proto boolean Redis::rPush(string key , string value)
@@ -1395,7 +1430,7 @@ PHP_METHOD(Redis, rPush)
         RETURN_FALSE;
     }
     efree(cmd);
-    redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
+    redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
 /* }}} */
 
@@ -2620,9 +2655,8 @@ PHP_METHOD(Redis, rpoplpush)
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format(&cmd, "RPOPLPUSH %s %d\r\n%s\r\n",
+    cmd_len = redis_cmd_format(&cmd, "RPOPLPUSH %s %s\r\n",
                                srckey, srckey_len,
-                               dstkey_len,
                                dstkey, dstkey_len);
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {

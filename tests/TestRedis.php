@@ -13,7 +13,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     public function setUp()
     {
 	$this->redis = new Redis();
-	$this->redis->connect('127.0.0.1', 6379);
+	$this->redis->connect('127.0.0.1', 6380);
 
 	// uncomment the following if you want to use authentication
 	// $this->assertTrue($this->redis->auth('foobared'));
@@ -126,7 +126,6 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->assertEquals('42', gzuncompress($this->redis->get('key')));
 
     }
-
     public function testGetSet() {
 
 	$this->redis->delete('key');
@@ -151,6 +150,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->renameKey('key0', 'key1');
 	$this->assertTrue($this->redis->get('key0') === FALSE);
 	$this->assertTrue($this->redis->get('key1') === 'val0');
+
 
 	// lists
 	$this->redis->delete('key0');
@@ -421,9 +421,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	// testing binary data
 
 	$this->redis->delete('list');
-        $this->assertEquals(TRUE, $this->redis->lPush('list', gzcompress('val1')));
-        $this->assertEquals(TRUE, $this->redis->lPush('list', gzcompress('val2')));
-        $this->assertEquals(TRUE, $this->redis->lPush('list', gzcompress('val3')));
+	$this->assertEquals(1, $this->redis->lPush('list', gzcompress('val1')));
+	$this->assertEquals(2, $this->redis->lPush('list', gzcompress('val2')));
+	$this->assertEquals(3, $this->redis->lPush('list', gzcompress('val3')));
 
 	$this->assertEquals('val3', gzuncompress($this->redis->lPop('list')));
 	$this->assertEquals('val2', gzuncompress($this->redis->lPop('list')));
@@ -453,9 +453,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	// testing binary data
 
 	$this->redis->delete('list');
-        $this->assertEquals(TRUE, $this->redis->rPush('list', gzcompress('val1')));
-        $this->assertEquals(TRUE, $this->redis->rPush('list', gzcompress('val2')));
-        $this->assertEquals(TRUE, $this->redis->rPush('list', gzcompress('val3')));
+	$this->assertEquals(1, $this->redis->rPush('list', gzcompress('val1')));
+	$this->assertEquals(2, $this->redis->rPush('list', gzcompress('val2')));
+	$this->assertEquals(3, $this->redis->rPush('list', gzcompress('val3')));
 
 	$this->assertEquals('val3', gzuncompress($this->redis->rPop('list')));
 	$this->assertEquals('val2', gzuncompress($this->redis->rPop('list')));
@@ -1346,7 +1346,6 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(2.5 === $this->redis->zIncrBy('key', 1.5, 'val1'));
 	$this->assertTrue(2.5 === $this->redis->zScore('key', 'val1'));
     }
-
 }
 
 ?>
