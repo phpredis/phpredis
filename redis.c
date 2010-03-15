@@ -110,6 +110,11 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zIncrBy, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, expireAt, NULL, ZEND_ACC_PUBLIC)
 
+     /* 1.2 */
+     PHP_ME(Redis, hGet, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hSet, NULL, ZEND_ACC_PUBLIC)
+
+
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, lLen, lSize, NULL, ZEND_ACC_PUBLIC)
@@ -2952,6 +2957,98 @@ PHP_METHOD(Redis, zIncrBy)
     }
     efree(cmd);
     redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
+}
+/* }}} */
+
+/* hashes */
+
+/* hGet */
+PHP_METHOD(Redis, hSet)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd, *member, *val;
+    int key_len, member_len, cmd_len, val_len;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osss",
+                                     &object, redis_ce,
+                                     &key, &key_len, &member, &member_len, &val, &val_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+    cmd_len = redis_cmd_format(&cmd,
+                    "*4\r\n"
+                    "$4\r\n"
+                    "HSET\r\n"
+
+                    "$%d\r\n"   /* key */
+                    "%s\r\n"
+
+                    "$%d\r\n"   /* field */
+                    "%s\r\n"
+
+                    "$%d\r\n"   /* value */
+                    "%s\r\n"
+                    ,
+                    key_len, key, key_len,
+                    member_len, member, member_len,
+                    val_len, val, val_len);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+
+    redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
+}
+/* }}} */
+
+/* hSet */
+PHP_METHOD(Redis, hGet)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd, *member, *response;
+    int key_len, member_len, cmd_len, response_len;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
+                                     &object, redis_ce,
+                                     &key, &key_len, &member, &member_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+    cmd_len = redis_cmd_format(&cmd,
+                    "*3\r\n"
+                    "$4\r\n"
+                    "HGET\r\n"
+
+                    "$%d\r\n"   /* key */
+                    "%s\r\n"
+
+                    "$%d\r\n"   /* field */
+                    "%s\r\n"
+                    ,
+                    key_len, key, key_len,
+                    member_len, member, member_len);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    RETURN_STRINGL(response, response_len, 0);
 }
 /* }}} */
 

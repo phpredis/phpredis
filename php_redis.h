@@ -93,6 +93,9 @@ PHP_METHOD(Redis, expireAt);
 PHP_METHOD(Redis, mset);
 PHP_METHOD(Redis, rpoplpush);
 
+PHP_METHOD(Redis, hGet);
+PHP_METHOD(Redis, hSet);
+
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
 #else

@@ -1296,3 +1296,35 @@ $redis->zIncrBy('key', 2.5, 'member1'); /* key or member1 didn't exist, so membe
 					  /* and now has the value 2.5  */
 $redis->zIncrBy('key', 1, 'member1'); /* 3.5 */
 </pre>
+
+
+## hSet
+##### *Description*
+Adds a value to the hash stored at key. If this value is already in the hash, `FALSE` is returned.  
+##### *Parameters*
+*key*
+*hashKey*
+*value*
+
+##### *Return value*
+*LONG* `TRUE` if value didn't exist and was added successfully, `FALSE` if the value was already present and was replaced.
+##### *Example*
+<pre>
+$redis->delete('h')
+$redis->hSet('h', 'key1', 'hello'); /* TRUE, 'key1' => 'hello' in the hash at "h" */
+$redis->hGet('h', 'key1'); /* returns "hello" */
+
+$redis->hSet('h', 'key1', 'plop'); /* FALSE, value was replaced. */
+$redis->hGet('h', 'key1'); /* returns "plop" */
+</pre>
+
+## hGet
+##### *Description*
+Gets a value from the hash stored at key. If the hash table doesn't exist, or the key doesn't exist, `FALSE` is returned.  
+##### *Parameters*
+*key*
+*hashKey*
+
+##### *Return value*
+*STRING* The value, if the command executed successfully
+*BOOL* `FALSE` in case of failure (empty list)

@@ -1346,6 +1346,24 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(2.5 === $this->redis->zIncrBy('key', 1.5, 'val1'));
 	$this->assertTrue(2.5 === $this->redis->zScore('key', 'val1'));
     }
+
+    public function testHashes() {
+	$this->redis->delete('h', 'key');
+
+	$this->assertTrue(TRUE === $this->redis->hSet('h', 'a', 'a-value'));
+	$this->assertTrue(TRUE === $this->redis->hSet('h', 'b', 'b-value'));
+
+	$this->assertTrue('a-value' === $this->redis->hGet('h', 'a')); 	// simple get
+	$this->assertTrue('b-value' === $this->redis->hGet('h', 'b')); 	// simple get
+
+	$this->assertTrue(FALSE === $this->redis->hSet('h', 'a', 'another-value')); // replacement
+	$this->assertTrue('another-value' === $this->redis->hGet('h', 'a')); 	// get the new value
+
+	$this->assertTrue('b-value' === $this->redis->hGet('h', 'b')); 	// simple get
+	$this->assertTrue(FALSE === $this->redis->hGet('h', 'c'));	// unknown hash member
+	$this->assertTrue(FALSE === $this->redis->hGet('key', 'c'));	// unknownkey
+
+    }
 }
 
 ?>
