@@ -113,7 +113,11 @@ static zend_function_entry redis_functions[] = {
      /* 1.2 */
      PHP_ME(Redis, hGet, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hSet, NULL, ZEND_ACC_PUBLIC)
-
+     PHP_ME(Redis, hDel, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hLen, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hKeys, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hVals, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hGetAll, NULL, ZEND_ACC_PUBLIC)
 
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
@@ -3052,4 +3056,220 @@ PHP_METHOD(Redis, hGet)
 }
 /* }}} */
 
+/* hLen */
+PHP_METHOD(Redis, hLen)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd;
+    int key_len, cmd_len;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
+                                     &object, redis_ce,
+                                     &key, &key_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+    cmd_len = redis_cmd_format(&cmd,
+                    "*2\r\n"
+                    "$4\r\n"
+                    "HLEN\r\n"
+
+                    "$%d\r\n"   /* key */
+                    "%s\r\n"
+                    ,
+                    key_len, key, key_len);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+
+    redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
+}
+/* }}} */
+
+/* hDel */
+PHP_METHOD(Redis, hDel)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd, *member;
+    int key_len, member_len, cmd_len;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
+                                     &object, redis_ce,
+                                     &key, &key_len, &member, &member_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+    cmd_len = redis_cmd_format(&cmd,
+                    "*3\r\n"
+                    "$4\r\n"
+                    "HDEL\r\n"
+
+                    "$%d\r\n"   /* key */
+                    "%s\r\n"
+
+                    "$%d\r\n"   /* field */
+                    "%s\r\n"
+                    ,
+                    key_len, key, key_len,
+                    member_len, member, member_len);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+
+    redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
+}
+/* }}} */
+
+PHPAPI void generic_hash_command(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len TSRMLS_DC) {
+
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd;
+    int key_len, cmd_len;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
+                                     &object, redis_ce,
+                                     &key, &key_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+    cmd_len = redis_cmd_format(&cmd,
+                    "*2\r\n"
+                    "$%d\r\n"
+
+                    "%s\r\n"
+
+                    "$%d\r\n"   /* key */
+                    "%s\r\n"
+                    ,
+                    keyword_len,
+                    keyword, keyword_len,
+                    key_len, key, key_len);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+
+    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                        redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+}
+
+/* hKeys */
+PHP_METHOD(Redis, hKeys)
+{
+    generic_hash_command(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HKEYS", sizeof("HKEYS")-1 TSRMLS_CC);
+}
+/* hVals */
+PHP_METHOD(Redis, hVals)
+{
+    generic_hash_command(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HVALS", sizeof("HVALS")-1 TSRMLS_CC);
+}
+
+
+PHP_METHOD(Redis, hGetAll) {
+
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd;
+    int key_len, cmd_len;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
+                                     &object, redis_ce,
+                                     &key, &key_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+    cmd_len = redis_cmd_format(&cmd,
+                    "*2\r\n"
+                    "$7\r\n"
+
+                    "HGETALL\r\n"
+
+                    "$%d\r\n"   /* key */
+                    "%s\r\n"
+                    ,
+                    key_len, key, key_len);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+    efree(cmd);
+
+    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                        redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+    /* return_value now holds an array in the following format:
+     * [k0, v0, k1, v1, k2, v2]
+     */
+
+    zval *z_ret;
+    MAKE_STD_ZVAL(z_ret);
+    *z_ret = *return_value; /* copy */
+    array_init(return_value);
+
+    HashTable *keytable = Z_ARRVAL_P(z_ret);
+    for(zend_hash_internal_pointer_reset(keytable);
+        zend_hash_has_more_elements(keytable) == SUCCESS;
+        zend_hash_move_forward(keytable)) {
+
+        char *tablekey, *hkey, *hval;
+        int tablekey_len, hkey_len, hval_len;
+        unsigned long idx;
+        int type;
+        zval **z_value_pp;
+
+        type = zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
+        if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
+            continue; 	/* this should never happen, according to the PHP people. */
+        }
+
+        // get current value, a key
+        hkey = Z_STRVAL_PP(z_value_pp);
+        hkey_len = Z_STRLEN_PP(z_value_pp);
+     
+        // move forward
+        zend_hash_move_forward(keytable);
+
+        // fetch again
+        type = zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
+        if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
+            continue; 	/* this should never happen, according to the PHP people. */
+        }
+
+        // get current value, a hash value now.
+        hval = Z_STRVAL_PP(z_value_pp);
+        hval_len = Z_STRLEN_PP(z_value_pp);
+
+        add_assoc_stringl_ex(return_value, hkey, 1+hkey_len, hval, hval_len, 1);
+    }
+    zval_dtor(z_ret);
+    efree(z_ret);
+    
+}
 /* vim: set tabstop=4 expandtab: */

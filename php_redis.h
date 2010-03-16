@@ -95,6 +95,11 @@ PHP_METHOD(Redis, rpoplpush);
 
 PHP_METHOD(Redis, hGet);
 PHP_METHOD(Redis, hSet);
+PHP_METHOD(Redis, hDel);
+PHP_METHOD(Redis, hLen);
+PHP_METHOD(Redis, hKeys);
+PHP_METHOD(Redis, hVals);
+PHP_METHOD(Redis, hGetAll);
 
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)

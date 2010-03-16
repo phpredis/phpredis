@@ -13,7 +13,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     public function setUp()
     {
 	$this->redis = new Redis();
-	$this->redis->connect('127.0.0.1', 6379);
+	$this->redis->connect('127.0.0.1', 6380);
 
 	// uncomment the following if you want to use authentication
 	// $this->assertTrue($this->redis->auth('foobared'));
@@ -1350,8 +1350,11 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     public function testHashes() {
 	$this->redis->delete('h', 'key');
 
+	$this->assertTrue(0 === $this->redis->hLen('h'));
 	$this->assertTrue(TRUE === $this->redis->hSet('h', 'a', 'a-value'));
+	$this->assertTrue(1 === $this->redis->hLen('h'));
 	$this->assertTrue(TRUE === $this->redis->hSet('h', 'b', 'b-value'));
+	$this->assertTrue(2 === $this->redis->hLen('h'));
 
 	$this->assertTrue('a-value' === $this->redis->hGet('h', 'a')); 	// simple get
 	$this->assertTrue('b-value' === $this->redis->hGet('h', 'b')); 	// simple get
@@ -1362,6 +1365,23 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue('b-value' === $this->redis->hGet('h', 'b')); 	// simple get
 	$this->assertTrue(FALSE === $this->redis->hGet('h', 'c'));	// unknown hash member
 	$this->assertTrue(FALSE === $this->redis->hGet('key', 'c'));	// unknownkey
+
+	// hDel
+	$this->assertTrue(TRUE === $this->redis->hDel('h', 'a')); // TRUE on success
+	$this->assertTrue(FALSE === $this->redis->hDel('h', 'a')); // FALSE on failure
+
+	$this->redis->delete('h');
+	$this->redis->hSet('h', 'x', 'a');
+	$this->redis->hSet('h', 'y', 'b');
+
+	$keys = $this->redis->hKeys('h');
+	$this->assertTrue($keys === array('x', 'y') || $keys === array('y', 'x'));
+
+	$values = $this->redis->hVals('h');
+	$this->assertTrue($values === array('a', 'b') || $values === array('b', 'a'));
+
+	$all = $this->redis->hGetAll('h');
+	$this->assertTrue($all === array('x' => 'a', 'y' => 'b') || $all === array('y' => 'b', 'x' => 'a'));
 
     }
 }
