@@ -3252,7 +3252,7 @@ PHP_METHOD(Redis, hGetAll) {
         // get current value, a key
         hkey = Z_STRVAL_PP(z_value_pp);
         hkey_len = Z_STRLEN_PP(z_value_pp);
-     
+
         // move forward
         zend_hash_move_forward(keytable);
 
@@ -3270,6 +3270,6 @@ PHP_METHOD(Redis, hGetAll) {
     }
     zval_dtor(z_ret);
     efree(z_ret);
-    
+
 }
 /* vim: set tabstop=4 expandtab: */
