@@ -1307,7 +1307,7 @@ Adds a value to the hash stored at key. If this value is already in the hash, `F
 *value*
 
 ##### *Return value*
-*LONG* `TRUE` if value didn't exist and was added successfully, `FALSE` if the value was already present and was replaced.
+*BOOL* `TRUE` if value didn't exist and was added successfully, `FALSE` if the value was already present and was replaced.
 ##### *Example*
 <pre>
 $redis->delete('h')
@@ -1327,4 +1327,137 @@ Gets a value from the hash stored at key. If the hash table doesn't exist, or th
 
 ##### *Return value*
 *STRING* The value, if the command executed successfully
-*BOOL* `FALSE` in case of failure (empty list)
+*BOOL* `FALSE` in case of failure
+
+
+## hLen
+##### *Description*
+Returns the length of a hash, in number of items
+##### *Parameters*
+*key*
+
+##### *Return value*
+*LONG* the number of items in a hash, `FALSE` if the key doesn't exist or isn't a hash.
+##### *Example*
+<pre>
+$redis->delete('h')
+$redis->hSet('h', 'key1', 'hello');
+$redis->hSet('h', 'key2', 'plop');
+$redis->hLen('h'); /* returns 2 */
+</pre>
+
+## hDel
+##### *Description*
+Removes a value from the hash stored at key. If the hash table doesn't exist, or the key doesn't exist, `FALSE` is returned.  
+##### *Parameters*
+*key*
+*hashKey*
+
+##### *Return value*
+*BOOL* `TRUE` in case of success, `FALSE` in case of failure
+
+
+## hKeys
+##### *Description*
+Returns the keys in a hash, as an array of strings.
+
+##### *Parameters*
+*Key*: key
+
+##### *Return value*
+An array of elements, the keys of the hash. This works like PHP's array_keys().
+
+##### *Example*
+<pre>
+$redis->delete('h');
+$redis->hSet('h', 'a', 'x');
+$redis->hSet('h', 'b', 'y');
+$redis->hSet('h', 'c', 'z');
+$redis->hSet('h', 'd', 't');
+var_dump($redis->hKeys('h'));
+</pre>
+
+Output:
+<pre>
+array(4) {
+  [0]=>
+  string(1) "a"
+  [1]=>
+  string(1) "b"
+  [2]=>
+  string(1) "c"
+  [3]=>
+  string(1) "d"
+}
+</pre>
+The order is random and corresponds to redis' own internal representation of the set structure.
+
+## hVals
+##### *Description*
+Returns the values in a hash, as an array of strings.
+
+##### *Parameters*
+*Key*: key
+
+##### *Return value*
+An array of elements, the values of the hash. This works like PHP's array_values().
+
+##### *Example*
+<pre>
+$redis->delete('h');
+$redis->hSet('h', 'a', 'x');
+$redis->hSet('h', 'b', 'y');
+$redis->hSet('h', 'c', 'z');
+$redis->hSet('h', 'd', 't');
+var_dump($redis->hVals('h'));
+</pre>
+
+Output:
+<pre>
+array(4) {
+  [0]=>
+  string(1) "x"
+  [1]=>
+  string(1) "y"
+  [2]=>
+  string(1) "z"
+  [3]=>
+  string(1) "t"
+}
+</pre>
+The order is random and corresponds to redis' own internal representation of the set structure.
+
+## hGetAll
+##### *Description*
+Returns the whole hash, as an array of strings indexed by strings.
+
+##### *Parameters*
+*Key*: key
+
+##### *Return value*
+An array of elements, the contents of the hash.
+
+##### *Example*
+<pre>
+$redis->delete('h');
+$redis->hSet('h', 'a', 'x');
+$redis->hSet('h', 'b', 'y');
+$redis->hSet('h', 'c', 'z');
+$redis->hSet('h', 'd', 't');
+var_dump($redis->hGetAll('h'));
+</pre>
+
+Output:
+<pre>
+array(4) {
+  ["a"]=>
+  string(1) "x"
+  ["b"]=>
+  string(1) "y"
+  ["c"]=>
+  string(1) "z"
+  ["d"]=>
+  string(1) "t"
+}
+</pre>
+The order is random and corresponds to redis' own internal representation of the set structure.
