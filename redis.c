@@ -1919,10 +1919,11 @@ PHP_METHOD(Redis, sMembers)
 PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
                 int min_argc, RedisSock **redis_sock TSRMLS_DC)
 {
-    zval *object, **z_args;
+    zval *object, **z_args, *z_array;
     char **keys, *cmd;
     int cmd_len, *keys_len;
     int i, argc = ZEND_NUM_ARGS();
+    int single_array = 0;
 
     if(argc < min_argc) {
         WRONG_PARAM_COUNT;
@@ -1935,23 +1936,60 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
         RETURN_FALSE;
     }
 
+    /* case of a single array */
+    if(argc == 1 && Z_TYPE_P(z_args[0]) == IS_ARRAY) {
+        single_array = 1;
+        z_array = z_args[0];
+        efree(z_args);
+        z_args = NULL;
+
+        /* new count */
+        argc = zend_hash_num_elements(Z_ARRVAL_P(z_array));
+    }
+
     /* prepare an array for the keys, and one for their lengths */
     keys = emalloc(argc * sizeof(char*));
     keys_len = emalloc(argc * sizeof(int));
 
     cmd_len = keyword_len; /* start computing the command length */
 
-    for(i = 0; i < argc; ++i) { /* store each key */
-        keys[i] = Z_STRVAL_P(z_args[i]);
-        keys_len[i] = Z_STRLEN_P(z_args[i]);
-        cmd_len += keys_len[i] + 1; /* +1 for the preceding space. */
+    if(single_array) { /* loop over the array */
+        HashTable *keytable = Z_ARRVAL_P(z_array);
+
+        for(i = 0, zend_hash_internal_pointer_reset(keytable);
+            zend_hash_has_more_elements(keytable) == SUCCESS;
+            zend_hash_move_forward(keytable), i++) {
+
+            char *key, *val;
+            int key_len, val_len;
+            unsigned long idx;
+            int type;
+            zval **z_value_pp;
+
+            type = zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx, 0, NULL);
+            if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
+                continue; 	/* this should never happen, according to the PHP people. */
+            }
+
+            // get current value
+            keys[i] = Z_STRVAL_PP(z_value_pp);
+            keys_len[i] = Z_STRLEN_PP(z_value_pp);
+            cmd_len += keys_len[i] + 1; /* +1 for the preceding space. */
+            printf("keys[i]=[%s], keys_len[i]=%d\n", keys[i], keys_len[i]);
+        }
+    } else {
+        for(i = 0; i < argc; ++i) { /* store each key */
+            keys[i] = Z_STRVAL_P(z_args[i]);
+            keys_len[i] = Z_STRLEN_P(z_args[i]);
+            cmd_len += keys_len[i] + 1; /* +1 for the preceding space. */
+        }
     }
 
     /* get redis socket */
     if (redis_sock_get(getThis(), redis_sock TSRMLS_CC) < 0) {
         efree(keys);
         efree(keys_len);
-        efree(z_args);
+        if(z_args) efree(z_args);
         RETURN_FALSE;
     }
 
@@ -1970,8 +2008,11 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     memcpy(cmd + pos, "\r\n", 2);
     efree(keys);
     efree(keys_len);
-    efree(z_args);
+    if(z_args) efree(z_args);
 
+    if(single_array) {
+        printf("cmd=[%s]\n", cmd);
+    }
 
     if (redis_sock_write(*redis_sock, cmd, cmd_len) < 0) {
         efree(cmd);
