@@ -223,7 +223,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals(array(gzcompress('v1'), gzcompress('v2'), gzcompress('v3')), $this->redis->getMultiple(array('k1', 'k2', 'k3')));
 
     }
-/*
+
     public function testSetTimeout() {
 
 	$this->redis->delete('key');
@@ -245,7 +245,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	sleep(2);
 	$this->assertEquals(FALSE, $this->redis->get('key'));
     }
- */
+
     public function testSetNX() {
 
 	    $this->redis->set('key', 42);
@@ -371,9 +371,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$this->redis->set('x', 0);
 	$this->redis->set('y', 1);
-	echo "braaaaaaaaaaace\n";
 	$this->assertEquals(2, $this->redis->delete(array('x', 'y')));
-	die;
 
     }
 

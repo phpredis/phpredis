@@ -1975,7 +1975,6 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
             keys[i] = Z_STRVAL_PP(z_value_pp);
             keys_len[i] = Z_STRLEN_PP(z_value_pp);
             cmd_len += keys_len[i] + 1; /* +1 for the preceding space. */
-            printf("keys[i]=[%s], keys_len[i]=%d\n", keys[i], keys_len[i]);
         }
     } else {
         for(i = 0; i < argc; ++i) { /* store each key */
@@ -2009,10 +2008,6 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     efree(keys);
     efree(keys_len);
     if(z_args) efree(z_args);
-
-    if(single_array) {
-        printf("cmd=[%s]\n", cmd);
-    }
 
     if (redis_sock_write(*redis_sock, cmd, cmd_len) < 0) {
         efree(cmd);
