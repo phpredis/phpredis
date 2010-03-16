@@ -1199,7 +1199,7 @@ PHP_METHOD(Redis, getMultiple)
     }
 
     old_cmd = cmd;
-    cmd_len = spprintf(&cmd, 0, "MGET%s\r\n", cmd);
+    cmd_len = spprintf(&cmd, 0, "MGET %s\r\n", cmd);
     efree(old_cmd);
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
         efree(cmd);
