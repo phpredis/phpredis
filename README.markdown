@@ -1297,6 +1297,55 @@ $redis->zIncrBy('key', 2.5, 'member1'); /* key or member1 didn't exist, so membe
 $redis->zIncrBy('key', 1, 'member1'); /* 3.5 */
 </pre>
 
+## zUnion
+##### *Description*
+Creates an union of sorted sets given in second argument. The result of the union will be stored in the sorted set defined by the first argument.
+The third optionnel argument defines `weights` to apply to the sorted sets in input. In this case, the `weights` will be multiplied by the score of each element in the sorted set before applying the aggregation.
+The forth argument defines the AGGREGATE option which specify how the results of the union are aggregated.
+##### *Parameters*
+*keyOutput*
+*arrayZSetKeys*
+*arrayWeights*
+*aggregateFunction*
+
+##### *Return value*
+*LONG* The number of values in the new sorted set.
+##### *Example*
+<pre>
+$redis->zAdd('k1', 1, 'val1');
+$redis->zAdd('k1', 2, 'val2');
+$redis->zAdd('k1', 3, 'val3');
+
+$redis->zAdd('k1', 1, 'val1');
+$redis->zAdd('k1', 2, 'val2');
+
+$redis->zUnion('ko1', array('k1', 'k2')); /* 3, 'ko1' => array('val1', 'val2', 'val3') */
+</pre>
+
+## zInter
+##### *Description*
+Creates an intersection of sorted sets given in second argument. The result of the union will be stored in the sorted set defined by the first argument.
+The third optionnel argument defines `weights` to apply to the sorted sets in input. In this case, the `weights` will be multiplied by the score of each element in the sorted set before applying the aggregation.
+The forth argument defines the `AGGREGATE` option which specify how the results of the union are aggregated.
+##### *Parameters*
+*keyOutput*
+*arrayZSetKeys*
+*arrayWeights*
+*aggregateFunction*
+
+##### *Return value*
+*LONG* The number of values in the new sorted set.
+##### *Example*
+<pre>
+$redis->zAdd('k1', 1, 'val1');
+$redis->zAdd('k1', 2, 'val2');
+$redis->zAdd('k1', 3, 'val3');
+
+$redis->zAdd('k1', 1, 'val1');
+$redis->zAdd('k1', 2, 'val2');
+
+$redis->zInter('ko1', array('k1', 'k2')); /* 2, 'ko1' => array('val1', 'val2') */
+</pre>
 
 ## hSet
 ##### *Description*
