@@ -1307,12 +1307,12 @@ $redis->zIncrBy('key', 1, 'member1'); /* 3.5 */
 ##### *Description*
 Creates an union of sorted sets given in second argument. The result of the union will be stored in the sorted set defined by the first argument.
 The third optionnel argument defines `weights` to apply to the sorted sets in input. In this case, the `weights` will be multiplied by the score of each element in the sorted set before applying the aggregation.
-The forth argument defines the AGGREGATE option which specify how the results of the union are aggregated.
+The forth argument defines the `AGGREGATE` option which specify how the results of the union are aggregated.
 ##### *Parameters*
-*keyOutput*
-*arrayZSetKeys*
-*arrayWeights*
-*aggregateFunction*
+*keyOutput*  
+*arrayZSetKeys*  
+*arrayWeights*  
+*aggregateFunction*  
 
 ##### *Return value*
 *LONG* The number of values in the new sorted set.
@@ -1334,10 +1334,10 @@ Creates an intersection of sorted sets given in second argument. The result of t
 The third optionnel argument defines `weights` to apply to the sorted sets in input. In this case, the `weights` will be multiplied by the score of each element in the sorted set before applying the aggregation.
 The forth argument defines the `AGGREGATE` option which specify how the results of the union are aggregated.
 ##### *Parameters*
-*keyOutput*
-*arrayZSetKeys*
-*arrayWeights*
-*aggregateFunction*
+*keyOutput*  
+*arrayZSetKeys*  
+*arrayWeights*  
+*aggregateFunction*  
 
 ##### *Return value*
 *LONG* The number of values in the new sorted set.
