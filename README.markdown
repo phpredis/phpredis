@@ -1461,3 +1461,34 @@ array(4) {
 }
 </pre>
 The order is random and corresponds to redis' own internal representation of the set structure.
+
+## hExists
+##### Description
+Verify if the specified member exists in a key.
+##### Parameters
+*key*  
+*memberKey*
+##### Return value
+*BOOL*: If the member exists in the hash table, return `TRUE`, otherwise return `FALSE`.
+##### Examples
+<pre>
+$this->hSet('h', 'a', 'x');
+$this->hExists('h', 'a'); /*  TRUE */
+$this->hExists('h', 'NonExistingKey'); /* FALSE */
+</pre>
+
+## hIncrBy
+##### Description
+Increments the value of a member from a hash by a given amount.
+##### Parameters
+*key*  
+*value*: (double) value that will be added to the member's value  
+*member*  
+##### Return value
+*DOUBLE* the new value
+##### Examples
+<pre>
+$redis->delete('h');
+$redis->hIncrBy('h', 2.5, 'x'); /* returns 2.5: h[x] = 2.5 now. */
+$redis->zIncrBy('h', 1, 'x'); /* h[x] ← 2.5 + 1. Returns 3.5 */
+</pre>

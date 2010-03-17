@@ -1378,14 +1378,33 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->hSet('h', 'x', 'a');
 	$this->redis->hSet('h', 'y', 'b');
 
+	// keys
 	$keys = $this->redis->hKeys('h');
 	$this->assertTrue($keys === array('x', 'y') || $keys === array('y', 'x'));
 
+	// values
 	$values = $this->redis->hVals('h');
 	$this->assertTrue($values === array('a', 'b') || $values === array('b', 'a'));
 
+	// keys + values
 	$all = $this->redis->hGetAll('h');
 	$this->assertTrue($all === array('x' => 'a', 'y' => 'b') || $all === array('y' => 'b', 'x' => 'a'));
+
+	// hExists
+	$this->assertTrue(TRUE === $this->redis->hExists('h', 'x'));
+	$this->assertTrue(TRUE === $this->redis->hExists('h', 'y'));
+	$this->assertTrue(FALSE === $this->redis->hExists('h', 'w'));
+	$this->redis->delete('h');
+	$this->assertTrue(FALSE === $this->redis->hExists('h', 'x'));
+
+	// hIncrBy
+	$this->redis->delete('h');
+	$this->assertTrue(2.5 === $this->redis->hIncrBy('h', 2.5, 'x'));
+	$this->assertTrue(3.5 === $this->redis->hIncrBy('h', 1, 'x'));
+
+	$this->redis->hSet('h', 'y', 'not-a-number');
+	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 1, 'y'));
+
 
     }
 }
