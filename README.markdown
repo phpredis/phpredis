@@ -1461,3 +1461,18 @@ array(4) {
 }
 </pre>
 The order is random and corresponds to redis' own internal representation of the set structure.
+
+## hExists
+##### Description
+Verify if the specified member exists in a key.
+##### Parameters
+*key*  
+*memberKey*
+##### Return value
+*BOOL*: If the member exists in the hash table, return `TRUE`, otherwise return `FALSE`.
+##### Examples
+<pre>
+$this->hSet('h', 'a', 'x');
+$this->hExists('h', 'a'); /*  TRUE */
+$this->hExists('h', 'NonExistingKey'); /* FALSE */
+</pre>

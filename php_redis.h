@@ -100,6 +100,7 @@ PHP_METHOD(Redis, hLen);
 PHP_METHOD(Redis, hKeys);
 PHP_METHOD(Redis, hVals);
 PHP_METHOD(Redis, hGetAll);
+PHP_METHOD(Redis, hExists);
 
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)

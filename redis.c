@@ -118,6 +118,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, hKeys, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hVals, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hGetAll, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hExists, NULL, ZEND_ACC_PUBLIC)
 
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
@@ -3129,13 +3130,13 @@ PHP_METHOD(Redis, hLen)
 }
 /* }}} */
 
-/* hDel */
-PHP_METHOD(Redis, hDel)
-{
+PHPAPI RedisSock*
+generic_hash_command_2(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len TSRMLS_DC) {
+
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *cmd, *member;
-    int key_len, member_len, cmd_len;
+    int key_len, cmd_len, *member_len;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
                                      &object, redis_ce,
@@ -3148,15 +3149,18 @@ PHP_METHOD(Redis, hDel)
     }
     cmd_len = redis_cmd_format(&cmd,
                     "*3\r\n"
-                    "$4\r\n"
-                    "HDEL\r\n"
+                    "$%d\r\n"
+
+                    "%s\r\n"
 
                     "$%d\r\n"   /* key */
                     "%s\r\n"
 
-                    "$%d\r\n"   /* field */
+                    "$%d\r\n"   /* member */
                     "%s\r\n"
                     ,
+                    keyword_len,
+                    keyword, keyword_len,
                     key_len, key, key_len,
                     member_len, member, member_len);
 
@@ -3166,11 +3170,25 @@ PHP_METHOD(Redis, hDel)
     }
     efree(cmd);
 
+    return redis_sock;
+}
+
+/* hDel */
+PHP_METHOD(Redis, hDel)
+{
+    RedisSock *redis_sock = generic_hash_command_2(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HDEL", 4 TSRMLS_CC);
     redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
-/* }}} */
 
-PHPAPI void generic_hash_command(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len TSRMLS_DC) {
+/* hExists */
+PHP_METHOD(Redis, hExists)
+{
+    RedisSock *redis_sock = generic_hash_command_2(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HEXISTS", 7 TSRMLS_CC);
+    redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
+}
+
+PHPAPI RedisSock*
+generic_hash_command_1(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len TSRMLS_DC) {
 
     zval *object;
     RedisSock *redis_sock;
@@ -3204,62 +3222,40 @@ PHPAPI void generic_hash_command(INTERNAL_FUNCTION_PARAMETERS, char *keyword, in
         RETURN_FALSE;
     }
     efree(cmd);
-
-    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                        redis_sock TSRMLS_CC) < 0) {
-        RETURN_FALSE;
-    }
+    return redis_sock;
 }
 
 /* hKeys */
 PHP_METHOD(Redis, hKeys)
 {
-    generic_hash_command(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HKEYS", sizeof("HKEYS")-1 TSRMLS_CC);
-}
-/* hVals */
-PHP_METHOD(Redis, hVals)
-{
-    generic_hash_command(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HVALS", sizeof("HVALS")-1 TSRMLS_CC);
-}
-
-
-PHP_METHOD(Redis, hGetAll) {
-
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
-                                     &object, redis_ce,
-                                     &key, &key_len) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
-        RETURN_FALSE;
-    }
-    cmd_len = redis_cmd_format(&cmd,
-                    "*2\r\n"
-                    "$7\r\n"
-
-                    "HGETALL\r\n"
-
-                    "$%d\r\n"   /* key */
-                    "%s\r\n"
-                    ,
-                    key_len, key, key_len);
-
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
-        efree(cmd);
-        RETURN_FALSE;
-    }
-    efree(cmd);
+    RedisSock *redis_sock = generic_hash_command_1(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HKEYS", sizeof("HKEYS")-1 TSRMLS_CC);
 
     if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                         redis_sock TSRMLS_CC) < 0) {
         RETURN_FALSE;
     }
+}
+/* hVals */
+PHP_METHOD(Redis, hVals)
+{
+    RedisSock *redis_sock = generic_hash_command_1(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HVALS", sizeof("HVALS")-1 TSRMLS_CC);
+
+    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                        redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+}
+
+
+PHP_METHOD(Redis, hGetAll) {
+
+    RedisSock *redis_sock = generic_hash_command_1(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HGETALL", sizeof("HGETALL")-1 TSRMLS_CC);
+
+    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                        redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
     /* return_value now holds an array in the following format:
      * [k0, v0, k1, v1, k2, v2]
      */
