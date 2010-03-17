@@ -2879,19 +2879,21 @@ PHP_METHOD(Redis, zReverseRange)
     }
 }
 /* }}} */
-/* {{{ proto array Redis::zRangeByScore(string key, int start , int end)
+/* {{{ proto array Redis::zRangeByScore(string key, int start , int end [,array options = NULL])
  */
 PHP_METHOD(Redis, zRangeByScore)
 {
-    zval *object;
+    zval *object, *z_options = NULL, **z_limit_val_pp = NULL, **z_withscores_val_pp = NULL;
+
     RedisSock *redis_sock;
-    char *key = NULL, *cmd;
+    char *key = NULL, *limit = NULL, *cmd;
     int key_len, cmd_len, response_len;
+    zend_bool withscores = 0;
     double start, end;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osdd",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osdd|a",
                                      &object, redis_ce,
-                                     &key, &key_len, &start, &end) == FAILURE) {
+                                     &key, &key_len, &start, &end, &z_options) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -2899,7 +2901,38 @@ PHP_METHOD(Redis, zRangeByScore)
         RETURN_FALSE;
     }
 
-    cmd_len = spprintf(&cmd, 0, "ZRANGEBYSCORE %s %f %f\r\n\r\n", key, start, end);
+    /* options */
+    if (z_options && Z_TYPE_P(z_options) == IS_ARRAY) {
+        /* add scores */
+        zend_hash_find(Z_ARRVAL_P(z_options), "withscores", sizeof("withscores"), (void**)&z_withscores_val_pp);
+        withscores = (z_withscores_val_pp ? Z_BVAL_PP(z_withscores_val_pp) : 0);
+
+        /* limit offset, count:
+           z_limit_val_pp points to an array($longFrom, $longCount)
+        */
+        if(zend_hash_find(Z_ARRVAL_P(z_options), "limit", sizeof("limit"), (void**)&z_limit_val_pp)== SUCCESS) {;
+            if(zend_hash_num_elements(Z_ARRVAL_PP(z_limit_val_pp)) == 2) {
+                zval **z_offset_pp, **z_count_pp;
+                // get the two values from the table, check that they are indeed of LONG type
+                if(SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_limit_val_pp), 0, (void**)&z_offset_pp) &&
+                  SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_limit_val_pp), 1, (void**)&z_count_pp) &&
+                  Z_TYPE_PP(z_offset_pp) == IS_LONG &&
+                  Z_TYPE_PP(z_count_pp) == IS_LONG) {
+
+                    spprintf(&limit, 0, " LIMIT %ld %ld", Z_LVAL_PP(z_offset_pp), Z_LVAL_PP(z_count_pp));
+                }
+            }
+        }
+    }
+
+    if(withscores) {
+        cmd_len = spprintf(&cmd, 0, "ZRANGEBYSCORE %s %f %f%s WITHSCORES\r\n\r\n", key, start, end, limit?limit:"");
+    } else {
+        cmd_len = spprintf(&cmd, 0, "ZRANGEBYSCORE %s %f %f%s\r\n\r\n", key, start, end, limit?limit:"");
+    }
+    if(limit) {
+        efree(limit);
+    }
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
         efree(cmd);
@@ -2911,6 +2944,15 @@ PHP_METHOD(Redis, zRangeByScore)
                                         redis_sock TSRMLS_CC) < 0) {
         RETURN_FALSE;
     }
+
+    if(!withscores) {
+        return;
+    }
+    /* with scores! we have to transform the return array.
+     * return_value currently holds this: [elt0, val0, elt1, val1 ... ]
+     * we want [elt0 => val0, elt1 => val1], etc.
+     */
+    array_zip_values_and_scores(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
 }
 /* }}} */
 
@@ -3265,7 +3307,13 @@ PHP_METHOD(Redis, hGetAll) {
 
     /* return_value now holds an array in the following format:
      * [k0, v0, k1, v1, k2, v2]
+     *
+     * The following call takes care of all this.
      */
+    array_zip_values_and_scores(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
+}
+
+PHPAPI void array_zip_values_and_scores(INTERNAL_FUNCTION_PARAMETERS, int use_atof TSRMLS_DC) {
 
     zval *z_ret;
     MAKE_STD_ZVAL(z_ret);
@@ -3305,7 +3353,11 @@ PHP_METHOD(Redis, hGetAll) {
         hval = Z_STRVAL_PP(z_value_pp);
         hval_len = Z_STRLEN_PP(z_value_pp);
 
-        add_assoc_stringl_ex(return_value, hkey, 1+hkey_len, hval, hval_len, 1);
+        if(use_atof) {
+            add_assoc_double_ex(return_value, hkey, 1+hkey_len, atof(hval));
+        } else {
+            add_assoc_stringl_ex(return_value, hkey, 1+hkey_len, hval, hval_len, 1);
+        }
     }
     zval_dtor(z_ret);
     efree(z_ret);
@@ -3316,4 +3368,5 @@ PHP_METHOD(Redis, hIncrBy)
 {
     generic_incrby_method(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HINCRBY", sizeof("HINCRBY")-1 TSRMLS_CC);
 }
+
 /* vim: set tabstop=4 expandtab: */
