@@ -1220,7 +1220,9 @@ Returns the elements of the sorted set stored at the specified key which have sc
 *key*  
 *start*: double  
 *end*: double  
+*options*: array  
 
+Two options are available: `withscores => TRUE`, and `limit => array($offset, $count)`
 ##### *Return value*
 *Array* containing the values in specified range. 
 ##### *Example*
@@ -1229,6 +1231,10 @@ $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
 $redis->zRangeByScore('key', 0, 3); /* array('val0', 'val2') */
+$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE); /* array('val0' => 0, 'val2' => 2) */
+$redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1)); /* array('val2' => 2) */
+$redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1)); /* array('val2') */
+$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(1, 1)); /* array('val2' => 2) */
 </pre>
 
 ## zDeleteRangeByScore, zRemoveRangeByScore
