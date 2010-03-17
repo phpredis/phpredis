@@ -1397,6 +1397,15 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->delete('h');
 	$this->assertTrue(FALSE === $this->redis->hExists('h', 'x'));
 
+	// hIncrBy
+	$this->redis->delete('h');
+	$this->assertTrue(2.5 === $this->redis->hIncrBy('h', 2.5, 'x'));
+	$this->assertTrue(3.5 === $this->redis->hIncrBy('h', 1, 'x'));
+
+	$this->redis->hSet('h', 'y', 'not-a-number');
+	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 1, 'y'));
+
+
     }
 }
 

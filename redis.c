@@ -119,6 +119,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, hVals, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hGetAll, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hExists, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hIncrBy, NULL, ZEND_ACC_PUBLIC)
 
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
@@ -2970,10 +2971,8 @@ PHP_METHOD(Redis, zScore)
     efree(cmd);
     redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
-/* {{{ proto double Redis::zIncrBy(string key, double value, string member)
- */
-PHP_METHOD(Redis, zIncrBy)
-{
+
+PHPAPI void generic_incrby_method(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len TSRMLS_DC) {
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *cmd, *member, *response;
@@ -2989,7 +2988,8 @@ PHP_METHOD(Redis, zIncrBy)
     if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
         RETURN_FALSE;
     }
-    cmd_len = redis_cmd_format(&cmd, "ZINCRBY %s %f %d\r\n%s\r\n",
+    cmd_len = redis_cmd_format(&cmd, "%s %s %f %d\r\n%s\r\n",
+                    keyword, keyword_len,
                     key, key_len, val, member_len, member, member_len);
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
@@ -2998,6 +2998,13 @@ PHP_METHOD(Redis, zIncrBy)
     }
     efree(cmd);
     redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
+}
+
+/* {{{ proto double Redis::zIncrBy(string key, double value, string member)
+ */
+PHP_METHOD(Redis, zIncrBy)
+{
+    generic_incrby_method(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZINCRBY", sizeof("ZINCRBY")-1 TSRMLS_CC);
 }
 /* }}} */
 
@@ -3303,5 +3310,10 @@ PHP_METHOD(Redis, hGetAll) {
     zval_dtor(z_ret);
     efree(z_ret);
 
+}
+
+PHP_METHOD(Redis, hIncrBy)
+{
+    generic_incrby_method(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HINCRBY", sizeof("HINCRBY")-1 TSRMLS_CC);
 }
 /* vim: set tabstop=4 expandtab: */
