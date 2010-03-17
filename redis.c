@@ -107,6 +107,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCard, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zInter, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zUnion, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zIncrBy, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, expireAt, NULL, ZEND_ACC_PUBLIC)
 
@@ -789,7 +791,7 @@ PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock
         RETURN_FALSE;
     }
 
-    ret = response[1];
+	ret = response[1];
     efree(response);
 
     if (ret == '1') {
@@ -2999,6 +3001,119 @@ PHP_METHOD(Redis, zIncrBy)
     redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
 /* }}} */
+PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command TSRMLS_DC) {
+
+	zval *object, *keys_array, *weights_array = NULL, **data;
+	HashTable *arr_weights_hash, *arr_keys_hash;
+	int key_output_len, array_weights_count, array_keys_count, operation_len = 0;
+	char *key_output, *operation;
+	RedisSock *redis_sock;
+
+	HashPosition pointer;
+	char *cmd = "";
+	int cmd_len, response_len, array_count;
+
+	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa|as",
+					&object, redis_ce,
+					&key_output, &key_output_len, &keys_array, &weights_array, &operation, &operation_len) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+    }
+
+    arr_keys_hash    = Z_ARRVAL_P(keys_array);
+	array_keys_count = zend_hash_num_elements(arr_keys_hash);
+
+    if (array_keys_count == 0) {
+        RETURN_FALSE;
+    }
+
+	if(weights_array != NULL) {
+		arr_weights_hash    = Z_ARRVAL_P(weights_array);
+		array_weights_count = zend_hash_num_elements(arr_weights_hash);
+		if (array_weights_count == 0) {
+        	RETURN_FALSE;
+    	}
+		if((array_weights_count != 0) && (array_weights_count != array_keys_count)) {	  
+			RETURN_FALSE;		
+		}
+
+	}
+
+	cmd_len = spprintf(&cmd, 0, "%s %s %d", command, key_output, array_keys_count);
+
+	/* keys */
+    for (zend_hash_internal_pointer_reset_ex(arr_keys_hash, &pointer);
+         zend_hash_get_current_data_ex(arr_keys_hash, (void**) &data,
+                                       &pointer) == SUCCESS;
+         zend_hash_move_forward_ex(arr_keys_hash, &pointer)) {
+
+        if (Z_TYPE_PP(data) == IS_STRING) {
+            char *old_cmd = NULL;
+            if(*cmd) {
+                old_cmd = cmd;
+            }
+            cmd_len = spprintf(&cmd, 0, "%s %s", cmd, Z_STRVAL_PP(data));
+            if(old_cmd) {
+                efree(old_cmd);
+            }
+        }
+    }
+
+	/* weight */
+	if(weights_array != NULL) {
+		cmd_len = spprintf(&cmd, 0, "%s WEIGHTS", cmd);
+		for (zend_hash_internal_pointer_reset_ex(arr_weights_hash, &pointer);
+			zend_hash_get_current_data_ex(arr_weights_hash, (void**) &data, &pointer) == SUCCESS;
+			zend_hash_move_forward_ex(arr_weights_hash, &pointer)) {
+		
+			if (Z_TYPE_PP(data) == IS_LONG) {
+				char *old_cmd = NULL;
+				if(*cmd) {
+					old_cmd = cmd;
+				}
+				cmd_len = spprintf(&cmd, 0, "%s %ld", cmd, Z_LVAL_PP(data));
+				if(old_cmd) {
+					efree(old_cmd);
+				}
+			} else {
+				/* error */
+				free(cmd);
+				RETURN_FALSE;
+			}
+		}
+	}
+	
+ 	if(operation_len != 0) { 
+		char *old_cmd = NULL;
+		old_cmd = cmd;
+ 		cmd_len = spprintf(&cmd, 0, "%s AGGREGATE %s", cmd, operation); 
+		efree(old_cmd);
+	} 
+
+	char *old_cmd = cmd;
+	cmd_len = spprintf(&cmd, 0, "%s \r\n", cmd);
+	efree(old_cmd);
+
+	if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+		efree(cmd);
+		RETURN_FALSE;
+	}
+	efree(cmd);
+	redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
+}
+
+/* zInter */
+PHP_METHOD(Redis, zInter) {						
+	generic_z_command(INTERNAL_FUNCTION_PARAM_PASSTHRU, "zInter" TSRMLS_CC);
+}
+
+/* zUnion */
+PHP_METHOD(Redis, zUnion) {
+	generic_z_command(INTERNAL_FUNCTION_PARAM_PASSTHRU, "zUnion" TSRMLS_CC);
+}
 
 /* hashes */
 
