@@ -88,6 +88,8 @@ PHP_METHOD(Redis, zDeleteRangeByScore);
 PHP_METHOD(Redis, zCard);
 PHP_METHOD(Redis, zScore);
 PHP_METHOD(Redis, zIncrBy);
+PHP_METHOD(Redis, zInter);
+PHP_METHOD(Redis, zUnion);
 PHP_METHOD(Redis, expireAt);
 
 PHP_METHOD(Redis, mset);
