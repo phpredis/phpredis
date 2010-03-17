@@ -13,7 +13,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     public function setUp()
     {
 	$this->redis = new Redis();
-	$this->redis->connect('127.0.0.1', 6379);
+	$this->redis->connect('127.0.0.1', 6380);
 
 	// uncomment the following if you want to use authentication
 	// $this->assertTrue($this->redis->auth('foobared'));
@@ -1338,7 +1338,18 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$zero_to_three = $this->redis->zRangeByScore('key', 0, 3);
 	$this->assertTrue(array('val0', 'val1', 'val2', 'aal3', 'val3') === $zero_to_three || array('val0', 'val1', 'val2', 'val3', 'aal3') === $zero_to_three);
 
-	$this->assertTrue(5 === $this->redis->zSize('key'));
+	// withscores
+	$this->redis->zRemove('key', 'aal3');
+	$zero_to_three = $this->redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE));
+	$this->assertTrue(array('val0' => 0, 'val1' => 1, 'val2' => 2, 'val3' => 3) == $zero_to_three);
+
+	// limit
+	$this->assertTrue(array('val0') === $this->redis->zRangeByScore('key', 0, 3, array('limit' => array(0, 1))));
+	$this->assertTrue(array('val0', 'val1') === $this->redis->zRangeByScore('key', 0, 3, array('limit' => array(0, 2))));
+	$this->assertTrue(array('val1', 'val2') === $this->redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 2))));
+	$this->assertTrue(array('val0', 'val1') === $this->redis->zRangeByScore('key', 0, 1, array('limit' => array(0, 100))));
+
+	$this->assertTrue(4 === $this->redis->zSize('key'));
 	$this->assertTrue(1.0 === $this->redis->zScore('key', 'val1'));
 	$this->assertFalse($this->redis->zScore('key', 'val'));
 	$this->assertFalse($this->redis->zScore(3, 2));
@@ -1397,16 +1408,18 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->delete('h');
 	$this->assertTrue(FALSE === $this->redis->hExists('h', 'x'));
 
-	// hIncrBy
+	// hIncrBy - not even in redis yet.
+	/*
 	$this->redis->delete('h');
 	$this->assertTrue(2.5 === $this->redis->hIncrBy('h', 2.5, 'x'));
 	$this->assertTrue(3.5 === $this->redis->hIncrBy('h', 1, 'x'));
 
 	$this->redis->hSet('h', 'y', 'not-a-number');
 	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 1, 'y'));
-
+	*/
 
     }
+
 }
 
 ?>
