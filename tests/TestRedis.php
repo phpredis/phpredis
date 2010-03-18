@@ -1360,6 +1360,101 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(1.0 === $this->redis->zScore('key', 'val1'));
 	$this->assertTrue(2.5 === $this->redis->zIncrBy('key', 1.5, 'val1'));
 	$this->assertTrue(2.5 === $this->redis->zScore('key', 'val1'));
+
+	//zUnion
+	$this->redis->delete('key1');
+	$this->redis->delete('key2');
+	$this->redis->delete('key3');
+	$this->redis->delete('keyU');
+
+	$this->redis->zAdd('key1', 0, 'val0');
+	$this->redis->zAdd('key1', 1, 'val1');
+
+	$this->redis->zAdd('key2', 2, 'val2');
+	$this->redis->zAdd('key2', 3, 'val3');
+
+	$this->redis->zAdd('key3', 4, 'val4');
+	$this->redis->zAdd('key3', 5, 'val5');
+
+	$this->assertTrue(4 === $this->redis->zUnion('keyU', array('key1', 'key3')));
+	$this->assertTrue(array('val0', 'val1', 'val4', 'val5') === $this->redis->zRange('keyU', 0, -1));
+
+	/* Union on non existing keys */
+	$this->redis->delete('keyU');
+	$this->assertTrue(0 === $this->redis->zUnion('keyU', array('X', 'Y')));
+	$this->assertTrue(array() === $this->redis->zRange('keyU', 0, -1));
+
+	/* !Exist U Exist */
+	$this->redis->delete('keyU');
+	$this->assertTrue(2 === $this->redis->zUnion('keyU', array('key1', 'X')));
+	$this->assertTrue($this->redis->zRange('key1', 0, -1) === $this->redis->zRange('keyU', 0, -1));
+
+	/* test weighted zUnion*/
+	$this->redis->delete('keyZ');
+	$this->assertTrue(4 === $this->redis->zUnion('keyZ', array('key1', 'key2'), array(1, 1)));
+	$this->assertTrue(array('val0', 'val1', 'val2', 'val3') === $this->redis->zRange('keyZ', 0, -1));
+
+	$this->redis->zDeleteRangeByScore('keyZ', 0, 10);
+	$this->assertTrue(4 === $this->redis->zUnion('keyZ', array('key1', 'key2'), array(5, 1)));
+	$this->assertTrue(array('val0', 'val2', 'val3', 'val1') === $this->redis->zRange('keyZ', 0, -1));
+
+	$this->redis->delete('key1');
+	$this->redis->delete('key2');
+	$this->redis->delete('key3');
+
+	/* zInter */
+
+	$this->redis->zAdd('key1', 0, 'val0');
+	$this->redis->zAdd('key1', 1, 'val1');
+	$this->redis->zAdd('key1', 3, 'val3');
+
+	$this->redis->zAdd('key2', 2, 'val1');
+	$this->redis->zAdd('key2', 3, 'val3');
+
+	$this->redis->zAdd('key3', 4, 'val3');
+	$this->redis->zAdd('key3', 5, 'val5');
+
+	$this->redis->delete('keyI');
+	$this->assertTrue(2 === $this->redis->zInter('keyI', array('key1', 'key2')));
+	$this->assertTrue(array('val1', 'val3') === $this->redis->zRange('keyI', 0, -1));
+
+	/* Union on non existing keys */
+	$this->assertTrue(0 === $this->redis->zInter('keyX', array('X', 'Y')));
+	$this->assertTrue(array() === $this->redis->zRange('keyX', 0, -1));
+
+	/* !Exist U Exist */
+	$this->assertTrue(0 === $this->redis->zInter('keyY', array('key1', 'X')));
+	$this->assertTrue(array() === $this->redis->zRange('keyY', 0, -1));
+
+
+	/* test weighted zInter*/
+	$this->redis->delete('key1');
+	$this->redis->delete('key2');
+	$this->redis->delete('key3');
+
+	$this->redis->zAdd('key1', 0, 'val0');
+	$this->redis->zAdd('key1', 1, 'val1');
+	$this->redis->zAdd('key1', 3, 'val3');
+
+
+	$this->redis->zAdd('key2', 2, 'val1');
+	$this->redis->zAdd('key2', 1, 'val3');
+
+	$this->redis->zAdd('key3', 7, 'val1');
+	$this->redis->zAdd('key3', 3, 'val3');
+
+	$this->redis->delete('keyI');
+	$this->assertTrue(2 === $this->redis->zInter('keyI', array('key1', 'key2'), array(1, 1)));
+	$this->assertTrue(array('val1', 'val3') === $this->redis->zRange('keyI', 0, -1));
+
+	$this->redis->delete('keyI');
+	$this->assertTrue( 2 === $this->redis->zInter('keyI', array('key1', 'key2', 'key3'), array(1, 5, 1), 'min'));
+	$this->assertTrue(array('val1', 'val3') === $this->redis->zRange('keyI', 0, -1));
+	$this->redis->delete('keyI');
+	$this->assertTrue( 2 === $this->redis->zInter('keyI', array('key1', 'key2', 'key3'), array(1, 5, 1), 'max'));
+	$this->assertTrue(array('val3', 'val1') === $this->redis->zRange('keyI', 0, -1));	
+
+
     }
 
     public function testHashes() {
