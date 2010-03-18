@@ -1318,14 +1318,24 @@ The forth argument defines the `AGGREGATE` option which specify how the results 
 *LONG* The number of values in the new sorted set.
 ##### *Example*
 <pre>
-$redis->zAdd('k1', 1, 'val1');
-$redis->zAdd('k1', 2, 'val2');
-$redis->zAdd('k1', 3, 'val3');
+$redis->delete('k1');
+$redis->delete('k2');
+$redis->delete('k3');
+$redis->delete('ko1');
+$redis->delete('ko2');
+$redis->delete('ko3');
 
+$redis->zAdd('k1', 0, 'val0');
 $redis->zAdd('k1', 1, 'val1');
-$redis->zAdd('k1', 2, 'val2');
 
-$redis->zUnion('ko1', array('k1', 'k2')); /* 3, 'ko1' => array('val1', 'val2', 'val3') */
+$redis->zAdd('k2', 2, 'val2');
+$redis->zAdd('k2', 3, 'val3');
+
+$redis->zUnion('ko1', array('k1', 'k2')); /* 4, 'ko1' => array('val0', 'val1', 'val2', 'val3') */
+
+/* Weighted zUnion */
+$redis->zUnion('ko2', array('k1', 'k2'), array(1, 1)); /* 4, 'ko1' => array('val0', 'val1', 'val2', 'val3') */
+$redis->zUnion('ko3', array('k1', 'k2'), array(5, 1)); /* 4, 'ko1' => array('val0', 'val2', 'val3', 'val1') */
 </pre>
 
 ## zInter
@@ -1343,14 +1353,29 @@ The forth argument defines the `AGGREGATE` option which specify how the results 
 *LONG* The number of values in the new sorted set.
 ##### *Example*
 <pre>
+$redis->delete('k1');
+$redis->delete('k2');
+$redis->delete('k3');
+
+$redis->delete('ko1');
+$redis->delete('ko2');
+$redis->delete('ko3');
+$redis->delete('ko4');
+
+$redis->zAdd('k1', 0, 'val0');
 $redis->zAdd('k1', 1, 'val1');
-$redis->zAdd('k1', 2, 'val2');
 $redis->zAdd('k1', 3, 'val3');
 
-$redis->zAdd('k1', 1, 'val1');
-$redis->zAdd('k1', 2, 'val2');
+$redis->zAdd('k2', 2, 'val1');
+$redis->zAdd('k2', 3, 'val3');
 
-$redis->zInter('ko1', array('k1', 'k2')); /* 2, 'ko1' => array('val1', 'val2') */
+$redis->zInter('ko1', array('k1', 'k2')); 				/* 2, 'ko1' => array('val1', 'val3') */
+$redis->zInter('ko2', array('k1', 'k2'), array(1, 1)); 	/* 2, 'ko2' => array('val1', 'val3') */
+
+/* Weighted zInter */
+$redis->zInter('ko3', array('k1', 'k2'), array(1, 5), 'min'); /* 2, 'ko3' => array('val1', 'val3') */
+$redis->zInter('ko4', array('k1', 'k2'), array(1, 5), 'max'); /* 2, 'ko4' => array('val3', 'val1') */
+
 </pre>
 
 ## hSet
