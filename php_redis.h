@@ -109,6 +109,8 @@ PHP_METHOD(Redis, multi);
 PHP_METHOD(Redis, discard);
 PHP_METHOD(Redis, exec);
 
+PHP_METHOD(Redis, pipeline);
+
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
 #else
@@ -125,51 +127,6 @@ PHP_RINIT_FUNCTION(redis);
 PHP_RSHUTDOWN_FUNCTION(redis);
 PHP_MINFO_FUNCTION(redis);
 
-/* {{{ struct RedisSock */
-typedef struct RedisSock_ {
-    php_stream     *stream;
-    char           *host;
-    unsigned short port;
-    long           timeout;
-    int            failed;
-    int            status;
-} RedisSock;
-/* }}} */
-
-#define redis_sock_name "Redis Socket Buffer"
-
-#define REDIS_SOCK_STATUS_FAILED 0
-#define REDIS_SOCK_STATUS_DISCONNECTED 1
-#define REDIS_SOCK_STATUS_UNKNOWN 2
-#define REDIS_SOCK_STATUS_CONNECTED 3
-
-#define redis_multi_access_type_name "Redis Multi type access"
-
-/* properties */
-#define REDIS_NOT_FOUND 0
-#define REDIS_STRING 1
-#define REDIS_SET 2
-#define REDIS_LIST 3
-
-
-/* {{{ internal function protos */
-void add_constant_long(zend_class_entry *ce, char *name, int value);
-
-PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC);
-PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port, long timeout);
-PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC);
-PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC);
-PHPAPI int redis_sock_server_open(RedisSock *redis_sock, int TSRMLS_DC);
-PHPAPI char * redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC);
-PHPAPI char * redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes);
-PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC);
-PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz);
-PHPAPI void redis_free_socket(RedisSock *redis_sock);
-
-PHPAPI void redis_boolean_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC);
-PHPAPI void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval* z_tab TSRMLS_DC);
-PHPAPI void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock TSRMLS_DC);
-PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC);
 PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword TSRMLS_DC);
 PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
                 int min_argc, RedisSock **redis_sock TSRMLS_DC);
@@ -179,20 +136,9 @@ PHPAPI void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int 
 
 PHPAPI void array_zip_values_and_scores(INTERNAL_FUNCTION_PARAMETERS, int use_atof TSRMLS_DC);
 PHPAPI int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC);
-PHPAPI int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, int numElems TSRMLS_DC);
-PHPAPI int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock TSRMLS_DC);
-/* }}} */
 
 ZEND_BEGIN_MODULE_GLOBALS(redis)
 ZEND_END_MODULE_GLOBALS(redis)
-
-	/*
-#ifdef ZTS
-#define REDIS_G(v) TSRMG(redis_globals_id, zend_redis_globals *, v)
-#else
-#define REDIS_G(v) (redis_globals.v)
-#endif
-*/
 
 #define PHP_REDIS_VERSION "0.1"
 
