@@ -16,7 +16,6 @@ PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
  */
 PHPAPI char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
 {
-
     int offset = 0;
     size_t got;
 
@@ -25,9 +24,8 @@ PHPAPI char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
     redis_check_eof(redis_sock TSRMLS_CC);
 
     if (bytes == -1) {
-	  return NULL;
+		return NULL;
     } else {
-
         reply = emalloc(bytes+1);
 
         while(offset < bytes) {
@@ -53,7 +51,7 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
 
     char inbuf[1024];
     char *resp = NULL;
-
+	
     redis_check_eof(redis_sock TSRMLS_CC);
     php_stream_gets(redis_sock->stream, inbuf, 1024);
 
@@ -211,12 +209,11 @@ PHPAPI void redis_boolean_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redi
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
     }
-
     ret = response[0];
     efree(response);
 
 	zval *object = getThis();
-	IF_MULTI() {
+	IF_MULTI_OR_PIPELINE() {
 		if (ret == '+') {
 			add_next_index_bool(z_tab, 1);
 	    } else {
@@ -244,13 +241,13 @@ PHPAPI void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
 
     if(response[0] == ':') {
         long ret = atol(response + 1);
-		IF_MULTI() {
+		IF_MULTI_OR_PIPELINE() {
 			add_next_index_long(z_tab, ret);
 		}
         efree(response);
         RETURN_LONG(ret);
     } else {
-		IF_MULTI() {
+		IF_MULTI_OR_PIPELINE() {
 		  add_next_index_null(z_tab);
 		}
         efree(response);
@@ -267,13 +264,12 @@ PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
     }
-
 	ret = response[1];
     efree(response);
 
 	zval *object = getThis();
 	
-	IF_MULTI() {
+	IF_MULTI_OR_PIPELINE() {
 		if(ret == '1') {
 			add_next_index_bool(z_tab, 1);
 		} else {
@@ -297,13 +293,13 @@ PHPAPI void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis
 	zval *object = getThis();
 
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-		IF_MULTI() {
+		IF_MULTI_OR_PIPELINE() {
+			
 			add_next_index_bool(z_tab, 0);
 		}
         RETURN_FALSE;
     }
-
-	IF_MULTI() {
+	IF_MULTI_OR_PIPELINE() {
         add_next_index_stringl(z_tab, response, response_len, 0);
 	}
 
@@ -487,9 +483,7 @@ redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *re
 PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz)
 {
     redis_check_eof(redis_sock TSRMLS_CC);
-    return php_stream_write(redis_sock->stream, cmd, sz);
-
-    return 0;
+	return php_stream_write(redis_sock->stream, cmd, sz);
 }
 
 /**
