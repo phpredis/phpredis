@@ -582,16 +582,22 @@ PHP_METHOD(Redis, renameKey)
                                src, src_len,
                                dst, dst_len);
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
-        efree(cmd);
-        RETURN_FALSE;
-    }
-    efree(cmd);
+	IF_MULTI_OR_ATOMIC() {
+		SOCKET_WRITE_COMMAND();
+	}
+	IF_PIPELINE() {
+		php_printf("COMMANDE [%s]\n", cmd);
+		PIPELINE_ENQUEUE_COMMAND("RENAMEKEY");
+	}	
 
+    efree(cmd);
 	MULTI_RESPONSE("RENAMEKEY", redis_boolean_response);
-	IF_NOT_MULTI() {
+	IF_ATOMIC() {
 	  redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
-	} ELSE_IF_MULTI()
+	}
+	ELSE_IF_MULTI()
+	ELSE_IF_PIPELINE();
+
 }
 /* }}} */
 
@@ -620,10 +626,7 @@ PHP_METHOD(Redis, renameNx)
                                src, src_len,
                                dst, dst_len);
 	IF_MULTI_OR_ATOMIC() {
-	    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
-    	    efree(cmd);
-        	RETURN_FALSE;
-	    }
+		SOCKET_WRITE_COMMAND();
 	}
 	IF_PIPELINE() {
 		PIPELINE_ENQUEUE_COMMAND("RENAMENX");
@@ -660,15 +663,11 @@ PHP_METHOD(Redis, get)
 
     cmd_len = spprintf(&cmd, 0, "GET %s\r\n", key);
 	IF_MULTI_OR_ATOMIC() {
-	    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
-    	    efree(cmd);
-        	RETURN_FALSE;
-	    }
+		SOCKET_WRITE_COMMAND();
 	}
 	IF_PIPELINE() {
 		PIPELINE_ENQUEUE_COMMAND("GET");
 	}	
-
     efree(cmd);
 
 	MULTI_RESPONSE("GET", redis_string_response);
@@ -746,6 +745,7 @@ PHP_METHOD(Redis, ping)
        RETURN_FALSE;
     }
 	char cmd[] = "PING\r\n";
+	cmd_len = 6;
 	char buf[8];
 
 	IF_MULTI_OR_ATOMIC() {
@@ -870,6 +870,7 @@ PHP_METHOD(Redis, getMultiple)
 
     efree(old_cmd);
 
+	// @TODO : fix for pipeline
 	IF_MULTI_OR_ATOMIC() {
 		SOCKET_WRITE_COMMAND();
 	}
@@ -906,22 +907,22 @@ PHP_METHOD(Redis, exists)
         RETURN_FALSE;
     }
 
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
-        RETURN_FALSE;
-    }
-
     cmd_len = spprintf(&cmd, 0, "EXISTS %s\r\n", key);
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
-        efree(cmd);
-        RETURN_FALSE;
-    }
+	IF_MULTI_OR_ATOMIC() {
+		SOCKET_WRITE_COMMAND();
+	}
+	IF_PIPELINE() {
+		PIPELINE_ENQUEUE_COMMAND("EXISTS");
+	}	
     efree(cmd);
 
 	MULTI_RESPONSE("EXISTS", redis_1_response);
-	IF_NOT_MULTI() {
+	IF_ATOMIC() {
 	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);	
-	} ELSE_IF_MULTI()
+	} 
+	ELSE_IF_MULTI()
+	ELSE_IF_PIPELINE();
 
 }
 /* }}} */
@@ -1040,14 +1041,16 @@ PHP_METHOD(Redis, type)
 
     cmd_len = spprintf(&cmd, 0, "TYPE %s\r\n", key);
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
-        efree(cmd);
-        RETURN_FALSE;
-    }
+	IF_MULTI_OR_ATOMIC() {
+		SOCKET_WRITE_COMMAND();
+	}
+	IF_PIPELINE() {
+		PIPELINE_ENQUEUE_COMMAND("TYPE");
+	}	
     efree(cmd);
 
 	MULTI_RESPONSE("TYPE", redis_long_response);
-	IF_NOT_MULTI() {
+	IF_ATOMIC() {
 	    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
     	    RETURN_FALSE;
 	    }
@@ -1064,7 +1067,9 @@ PHP_METHOD(Redis, type)
 	    }
     	efree(response);
 	    RETURN_LONG(l);
-	} ELSE_IF_MULTI()
+	} 
+	ELSE_IF_MULTI()
+	ELSE_IF_PIPELINE();
 
 
 }
@@ -1094,16 +1099,20 @@ PHP_METHOD(Redis, lPush)
                                val_len,
                                val, val_len);
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
-        efree(cmd);
-        RETURN_FALSE;
-    }
+	IF_MULTI_OR_ATOMIC() {
+		SOCKET_WRITE_COMMAND();
+	}
+	IF_PIPELINE() {
+		PIPELINE_ENQUEUE_COMMAND("LPUSH");
+	}	
     efree(cmd);
 
 	MULTI_RESPONSE("LPUSH", redis_long_response);
 	IF_NOT_MULTI() {
 	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
-	} ELSE_IF_MULTI()
+	}
+	ELSE_IF_MULTI()
+	ELSE_IF_PIPELINE();
 }
 
 /* {{{ proto boolean Redis::rPush(string key , string value)
@@ -3665,6 +3674,7 @@ PHP_METHOD(Redis, exec)
 		}
 
 		if(request != NULL) {
+		  php_printf("=> request[%s]\n", request);
 		    if (redis_sock_write(redis_sock, request, total) < 0) {
     		    free(request);
         		RETURN_FALSE;
@@ -3744,3 +3754,4 @@ PHP_METHOD(Redis, pipeline)
 	RETURN_ZVAL(getThis(), 1, 0);
 }
 /* vim: set tabstop=4 expandtab: */
+
