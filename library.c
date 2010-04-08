@@ -441,7 +441,6 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
         return -1;
     }
     int numElems = atoi(inbuf+1);
-
     zval *z_tab;
     MAKE_STD_ZVAL(z_tab);
     array_init(z_tab);
@@ -450,7 +449,7 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
                     redis_sock, z_tab, numElems);
 
 	zval *object = getThis();
-	IF_MULTI() {
+	IF_MULTI_OR_PIPELINE() {
 		add_next_index_zval(_z_tab, z_tab);
 	}
     *return_value = *z_tab;
@@ -463,7 +462,7 @@ redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *re
 {
     char *response;
     int response_len;
-
+	
     while(numElems > 0) {
         int response_len;
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
