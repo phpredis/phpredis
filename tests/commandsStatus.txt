@@ -1,0 +1,107 @@
+
+Status : {MULTI, PIPELINE}
+Command : Status
+example
+get : {1, 1}
+
+
+    * get	{0, 1}
+    * set	{0, 1}  
+    * getset	{0, 1}
+    * incr	{0, 1}
+    * incrby	{0, 1}
+    * decr	{0, 1}
+    * decrby	{0, 1}
+    * rename	{0, 1}
+    * renameNx	{0, 1}
+    * ttl
+    * ping	{0, 1}
+    * setnx	{0, 1}
+    * exists	{0, 1}
+    * randomkey	{0, 1}
+    * del	{0, 1}
+    * mget
+    * mset
+    * msetnx
+    * expire
+    * expireat
+    * info
+    * multi
+    * exec
+    * discard
+    * auth
+    * select
+    * keys
+    * dbsize
+    * lastsave
+    * flushdb
+    * flushall
+    * save
+    * bgsave
+    * bgrewriteaof
+    * move
+    * sort
+    * type
+    * append
+    * substr
+    * config (get and set, not resetstat)
+
+    * lpush
+    * rpush
+    * rpoplpush
+    * llen
+    * lpop
+    * rpop
+    * blpop
+    * brpop
+    * ltrim
+    * lindex
+    * lrem
+    * lset
+    * lrange
+
+    * sadd
+    * srem
+    * sismember
+    * scard
+    * spop
+    * srandmember
+    * smove
+    * sinter
+    * sunion
+    * sdiff
+    * sinterstore
+    * sunionstore
+    * sdiffstore
+
+    * zadd
+    * zincrby
+    * zrem
+    * zscore
+    * zrank
+    * zrevrank
+    * zrange
+    * zrevrange
+    * zcard
+    * zcount
+    * zremrangebyrank
+    * zrangebyscore
+    * zremrangebyscore
+    * zunion
+    * zinter
+
+    * hset
+    * hget
+    * hdel
+    * hexists
+    * hlen
+    * hkeys
+    * hvals
+    * hgetall
+    * hincrby
+
+Functions not implemented
+
+    * subscribe
+    * unsubscribe
+    * publish

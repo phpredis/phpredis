@@ -264,7 +264,7 @@ PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
     }
-	ret = response[1];
+    ret = response[1];
     efree(response);
 
 	zval *object = getThis();

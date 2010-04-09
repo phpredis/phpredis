@@ -440,10 +440,10 @@ PHP_METHOD(Redis, set)
 	REDIS_PROCESS_REQUEST("SET");
 	
 	IF_ATOMIC() {
-		redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
 	
-	REDIS_PROCESS_RESPONSE("SET", redis_1_response);
+	REDIS_PROCESS_RESPONSE("SET", redis_boolean_response);
 	
 	
 }
@@ -1683,9 +1683,8 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     efree(keys_len);
     if(z_args) efree(z_args);
 
- 	php_printf("[DEBUG : problem here ] ==> cmd [%s][%d]", cmd, cmd_len); 
 	object = getThis();
-    //REDIS_PROCESS_REQUEST("__generic__");
+    REDIS_PROCESS_REQUEST("__generic__");
 
 }
 
