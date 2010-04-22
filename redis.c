@@ -336,7 +336,7 @@ PHPAPI int get_flag(zval *object)
 	return flag;
 }
 
-PHPAPI int set_flag(zval *object, int new_flag)
+PHPAPI void set_flag(zval *object, int new_flag)
 {
 	zval **multi_flag;
 	int flag_result;
@@ -437,13 +437,13 @@ PHP_METHOD(Redis, set)
 
     cmd_len = redis_cmd_format(&cmd, "SET %s %d\r\n%s\r\n", key, key_len, val_len, val, val_len);
 
-	REDIS_PROCESS_REQUEST("SET");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	
 	IF_ATOMIC() {
 		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
 	
-	REDIS_PROCESS_RESPONSE("SET", redis_boolean_response);
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 	
 	
 }
@@ -470,13 +470,13 @@ PHP_METHOD(Redis, setnx)
 
     cmd_len = redis_cmd_format(&cmd, "SETNX %s %d\r\n%s\r\n", key, key_len, val_len, val, val_len);
 	
-    REDIS_PROCESS_REQUEST("SETNX");
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
     IF_ATOMIC() {
 	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
     }
 
-    REDIS_PROCESS_RESPONSE("SETNX", redis_1_response);
+    REDIS_PROCESS_RESPONSE(redis_1_response);
 
 }
 /* }}} */
@@ -502,11 +502,11 @@ PHP_METHOD(Redis, getSet)
 
     cmd_len = redis_cmd_format(&cmd, "GETSET %s %d\r\n%s\r\n", key, key_len, val_len, val, val_len);
 	
-	REDIS_PROCESS_REQUEST("GETSET");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("GETSET", redis_string_response);
+	REDIS_PROCESS_RESPONSE(redis_string_response);
 
 }
 /* }}} */
@@ -532,18 +532,11 @@ PHP_METHOD(Redis, randomKey)
 
     cmd_len = redis_cmd_format(&cmd, "RANDOMKEY\r\n");
 
-	REDIS_PROCESS_REQUEST("RANDOMKEY");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
-    	if(response[0] == '+') {
-        	ret = estrndup(response+1, response_len-1);
-	        efree(response);
-    	    RETURN_STRINGL(ret, response_len-1, 0);  // need to remove the '+'
-	    } else {
-    	    efree(response);
-        	RETURN_FALSE;
-	    }
+	  redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("RANDMOKEY", redis_string_response);
+	REDIS_PROCESS_RESPONSE(redis_string_response);
 }
 /* }}} */
 
@@ -573,11 +566,11 @@ PHP_METHOD(Redis, renameKey)
                                dst, dst_len);
 
 
-	REDIS_PROCESS_REQUEST("RENAMEKEY");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("RENAMEKEY", redis_boolean_response);
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 
 }
 /* }}} */
@@ -607,11 +600,11 @@ PHP_METHOD(Redis, renameNx)
                                src, src_len,
                                dst, dst_len);
 
-	REDIS_PROCESS_REQUEST("RENAMENX");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("RENAMENX", redis_boolean_response);
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 
 }
 /* }}} */
@@ -637,11 +630,11 @@ PHP_METHOD(Redis, get)
 
     cmd_len = spprintf(&cmd, 0, "GET %s\r\n", key);
 
-	REDIS_PROCESS_REQUEST("GET");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
 	  redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
     }
-    REDIS_PROCESS_RESPONSE("GET", redis_string_response);
+    REDIS_PROCESS_RESPONSE(redis_string_response);
 
 }
 /* }}} */
@@ -670,11 +663,11 @@ PHP_METHOD(Redis, add)
                     val_len,
                     val, val_len);
 
-	REDIS_PROCESS_REQUEST("SADD");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
 	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
     }
-    REDIS_PROCESS_RESPONSE("SADD", redis_1_response);
+    REDIS_PROCESS_RESPONSE(redis_1_response);
 
 }
 /* }}} */
@@ -712,10 +705,10 @@ PHP_METHOD(Redis, ping)
 		}
 	}
 	IF_PIPELINE() {
-		PIPELINE_ENQUEUE_COMMAND("PING");
+		PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len);
 	}	
 
-	MULTI_RESPONSE("PING", redis_string_response);
+	MULTI_RESPONSE(redis_string_response);
 	IF_ATOMIC() {
 		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
@@ -748,11 +741,11 @@ PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword T
         cmd_len = spprintf(&cmd, 0, "%sBY %s %d\r\n", keyword, key, (int)val);
     }
 
-	REDIS_PROCESS_REQUEST("*INCR");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
 		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
     }
-    REDIS_PROCESS_RESPONSE("*INCR", redis_long_response);
+    REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 
 /* {{{ proto boolean Redis::incr(string key [,int value])
@@ -820,14 +813,14 @@ PHP_METHOD(Redis, getMultiple)
 
     efree(old_cmd);
 
-	REDIS_PROCESS_REQUEST("MGET");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
 	    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
 											redis_sock, NULL TSRMLS_CC) < 0) {
     	    RETURN_FALSE;
 	    }
     }
-    REDIS_PROCESS_RESPONSE("MGET", redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 
 }
 /* }}} */
@@ -846,14 +839,17 @@ PHP_METHOD(Redis, exists)
                                      &key, &key_len) == FAILURE) {
         RETURN_FALSE;
     }
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
 
     cmd_len = spprintf(&cmd, 0, "EXISTS %s\r\n", key);
 
-    REDIS_PROCESS_REQUEST("EXISTS");
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
 	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
     }
-    REDIS_PROCESS_RESPONSE("EXISTS", redis_1_response);
+    REDIS_PROCESS_RESPONSE(redis_1_response);
 
 }
 /* }}} */
@@ -870,11 +866,10 @@ PHP_METHOD(Redis, delete)
 	zval * object = getThis();
 
 
-	//	MULTI_RESPONSE("DELETE", redis_long_response);
     IF_ATOMIC() {
-	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
     }
-	REDIS_PROCESS_RESPONSE("SET", redis_1_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 
 }
 /* }}} */
@@ -976,14 +971,14 @@ PHP_METHOD(Redis, type)
     cmd_len = spprintf(&cmd, 0, "TYPE %s\r\n", key);
 
 	IF_MULTI_OR_ATOMIC() {
-		SOCKET_WRITE_COMMAND();
+		SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len);
 	}
 	IF_PIPELINE() {
-		PIPELINE_ENQUEUE_COMMAND("TYPE");
+		PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len);
 	}	
     efree(cmd);
 
-	MULTI_RESPONSE("TYPE", redis_long_response);
+	MULTI_RESPONSE(redis_long_response);
 	IF_ATOMIC() {
 	    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
     	    RETURN_FALSE;
@@ -1033,11 +1028,11 @@ PHP_METHOD(Redis, lPush)
                                val_len,
                                val, val_len);
 
-	REDIS_PROCESS_REQUEST("LPUSH");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("LPUSH", redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 
 /* {{{ proto boolean Redis::rPush(string key , string value)
@@ -1064,11 +1059,11 @@ PHP_METHOD(Redis, rPush)
                                val_len,
                                val, val_len);
 
-	REDIS_PROCESS_REQUEST("RPUSH");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("RPUSH", redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 /* }}} */
 
@@ -1094,11 +1089,11 @@ PHP_METHOD(Redis, lPop)
 
     cmd_len = spprintf(&cmd, 0, "LPOP %s\r\n", key);
 
-	REDIS_PROCESS_REQUEST("LPOP");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("LPOP", redis_string_response);
+	REDIS_PROCESS_RESPONSE(redis_string_response);
 }
 
 /* {{{ proto string Redis::rPOP(string key)
@@ -1123,11 +1118,11 @@ PHP_METHOD(Redis, rPop)
 
     cmd_len = spprintf(&cmd, 0, "RPOP %s\r\n", key);
 
-	REDIS_PROCESS_REQUEST("RPOP");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("RPOP", redis_string_response);
+	REDIS_PROCESS_RESPONSE(redis_string_response);
 
 }
 /* }}} */
@@ -1153,11 +1148,11 @@ PHP_METHOD(Redis, lSize)
 
     cmd_len = spprintf(&cmd, 0, "LLEN %s\r\n", key);
 
-	REDIS_PROCESS_REQUEST("LLEN");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("LLEN", redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 
 }
 /* }}} */
@@ -1189,11 +1184,11 @@ PHP_METHOD(Redis, lRemove)
                        val_len,
                        val, val_len);
 
-	REDIS_PROCESS_REQUEST("LREMOVE");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("LREMOVE", redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 /* }}} */
 
@@ -1219,11 +1214,11 @@ PHP_METHOD(Redis, listTrim)
 
     cmd_len = spprintf(&cmd, 0, "LTRIM %s %d %d\r\n", key, (int)start, (int)end);
 
-	REDIS_PROCESS_REQUEST("LISTTRIM");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("LISTTRIM", redis_boolean_response);
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 
 }
 /* }}} */
@@ -1250,11 +1245,11 @@ PHP_METHOD(Redis, lGet)
 
     cmd_len = spprintf(&cmd, 0, "LINDEX %s %d\r\n", key, (int)index);
 
-	REDIS_PROCESS_REQUEST("LGET");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("LGET", redis_string_response);
+	REDIS_PROCESS_RESPONSE(redis_string_response);
 }
 /* }}} */
 
@@ -1280,11 +1275,11 @@ PHP_METHOD(Redis, lGetRange)
 
     cmd_len = spprintf(&cmd, 0, "LRANGE %s %d %d\r\n\r\n", key, (int)start, (int)end);
 
-	REDIS_PROCESS_REQUEST("LGETRANGE");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("LGETRANGE", redis_sock_read_multibulk_reply);
+	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 
 }
 /* }}} */
@@ -1313,11 +1308,11 @@ PHP_METHOD(Redis, sAdd)
                     val_len, 
                     val, val_len);
 
-	REDIS_PROCESS_REQUEST("SADD");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);	
 	} 
-	REDIS_PROCESS_RESPONSE("SADD", redis_1_response);
+	REDIS_PROCESS_RESPONSE(redis_1_response);
 }
 /* }}} */
 
@@ -1342,11 +1337,11 @@ PHP_METHOD(Redis, sSize)
 
     cmd_len = spprintf(&cmd, 0, "SCARD %s\r\n", key);
 
-	REDIS_PROCESS_REQUEST("SCARD");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
-	REDIS_PROCESS_RESPONSE("SCARD", redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 /* }}} */
 
@@ -1374,11 +1369,11 @@ PHP_METHOD(Redis, sRemove)
                                val_len, 
                                val, val_len);
 
-	REDIS_PROCESS_REQUEST("SREM");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("SREM", redis_1_response);
+	REDIS_PROCESS_RESPONSE(redis_1_response);
 }
 /* }}} */
 /* {{{ proto boolean Redis::sMove(string set_src, string set_dst, string value)
@@ -1408,11 +1403,11 @@ PHP_METHOD(Redis, sMove)
                                val_len,
                                val, val_len);
 
-	REDIS_PROCESS_REQUEST("SMOVE");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
-	REDIS_PROCESS_RESPONSE("SMOVE", redis_1_response);
+	REDIS_PROCESS_RESPONSE(redis_1_response);
 }
 /* }}} */
 
@@ -1438,11 +1433,11 @@ PHP_METHOD(Redis, sPop)
 
     cmd_len = redis_cmd_format(&cmd, "SPOP %s\r\n", key, key_len);
 
-	REDIS_PROCESS_REQUEST("SPOP");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("SPOP", redis_string_response);
+	REDIS_PROCESS_RESPONSE(redis_string_response);
 }
 /* }}} */
 
@@ -1470,11 +1465,11 @@ PHP_METHOD(Redis, sContains)
                                val_len, 
                                val, val_len);
 
-	REDIS_PROCESS_REQUEST("SISMEMBER");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("SISMEBER", redis_1_response);
+	REDIS_PROCESS_RESPONSE(redis_1_response);
 }
 /* }}} */
 
@@ -1499,26 +1494,27 @@ PHP_METHOD(Redis, sMembers)
 
     cmd_len = spprintf(&cmd, 0, "SMEMBERS %s\r\n", key);
 
-	REDIS_PROCESS_REQUEST("sMembers");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 	    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
     	                                    redis_sock, NULL TSRMLS_CC) < 0) {
         	RETURN_FALSE;
 	    }
 	}
-    REDIS_PROCESS_RESPONSE("sMembers", redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
 
 PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
-                int min_argc, RedisSock **redis_sock TSRMLS_DC)
+                int min_argc, RedisSock **out_sock TSRMLS_DC)
 {
     zval *object, **z_args, *z_array;
     char **keys, *cmd;
     int cmd_len, *keys_len;
     int i, argc = ZEND_NUM_ARGS();
     int single_array = 0;
+    RedisSock *redis_sock;
 
     if(argc < min_argc) {
         WRONG_PARAM_COUNT;
@@ -1580,12 +1576,13 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     }
 
     /* get redis socket */
-    if (redis_sock_get(getThis(), redis_sock TSRMLS_CC) < 0) {
+    if (redis_sock_get(getThis(), out_sock TSRMLS_CC) < 0) {
         efree(keys);
         efree(keys_len);
         if(z_args) efree(z_args);
         RETURN_FALSE;
     }
+    redis_sock = *out_sock;
 
     cmd_len += sizeof("\r\n") - 1;
     cmd = emalloc(cmd_len);
@@ -1606,7 +1603,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     if(z_args) efree(z_args);
 
 	object = getThis();
-    REDIS_PROCESS_REQUEST("__generic__");
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
 }
 
@@ -1629,7 +1626,7 @@ PHP_METHOD(Redis, sInter) {
         	RETURN_FALSE;
 	    }
     }
-    REDIS_PROCESS_RESPONSE("sInter", redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
@@ -1645,11 +1642,10 @@ PHP_METHOD(Redis, sInterStore) {
 
 	zval *object = getThis();
 
-	//	MULTI_RESPONSE("SINTERSTORE", redis_long_response);
 	IF_ATOMIC() {
 		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
-    REDIS_PROCESS_RESPONSE("sInterStore", redis_long_response);
+    REDIS_PROCESS_RESPONSE(redis_long_response);
 
 
 }
@@ -1673,7 +1669,7 @@ PHP_METHOD(Redis, sUnion) {
 	        RETURN_FALSE;
     	}
 	} 
-	REDIS_PROCESS_RESPONSE("SUNION", redis_sock_read_multibulk_reply);
+	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 }
 /* }}} */
 /* {{{ proto array Redis::sUnionStore(string destination, string key0, ... string keyN)
@@ -1690,7 +1686,7 @@ PHP_METHOD(Redis, sUnionStore) {
 	IF_ATOMIC() {
 		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
-	REDIS_PROCESS_RESPONSE("SUNIONSTORE", redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 
 /* }}} */
@@ -1715,7 +1711,7 @@ PHP_METHOD(Redis, sDiff) {
         	RETURN_FALSE;
 	    }
 	}
-	REDIS_PROCESS_RESPONSE("SDIFF", redis_sock_read_multibulk_reply);
+	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 
 
 }
@@ -1735,7 +1731,7 @@ PHP_METHOD(Redis, sDiffStore) {
 	IF_ATOMIC() {
 	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
-	REDIS_PROCESS_RESPONSE("SDIFFSTORE", redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 /* }}} */
 
@@ -1813,14 +1809,14 @@ PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_a
         efree(limit);
     }
 
-	REDIS_PROCESS_REQUEST("_SORT_");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
     	if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
 											redis_sock, NULL TSRMLS_CC) < 0) {
         	RETURN_FALSE;
 	    }
 	}
-	REDIS_PROCESS_RESPONSE("_SORT_", redis_sock_read_multibulk_reply);
+	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 
 }
 
@@ -1878,11 +1874,11 @@ PHPAPI void generic_expire_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int 
         key, key_len,
         (int)t);
 
-	REDIS_PROCESS_REQUEST("_TIMEOUT_");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("_TIMEOUT_", redis_1_response);
+	REDIS_PROCESS_RESPONSE(redis_1_response);
 }
 
 /* {{{ proto array Redis::setTimeout(string key, int timeout)
@@ -1927,11 +1923,11 @@ PHP_METHOD(Redis, lSet) {
                                val_len,
                                val, val_len);
 
-	REDIS_PROCESS_REQUEST("LSET");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
-	REDIS_PROCESS_RESPONSE("LSET", redis_boolean_response);
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 /* }}} */
 
@@ -1957,14 +1953,14 @@ PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_l
 		}
 	}
 	IF_PIPELINE() {
-		PIPELINE_ENQUEUE_COMMAND("_GENERIC_");
+		PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len);
 	}	
 
-	MULTI_RESPONSE("generic_empty_command", redis_boolean_response);
+	MULTI_RESPONSE(redis_boolean_response);
 	IF_ATOMIC() {
 	  redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
-	REDIS_PROCESS_RESPONSE("GENERIC", redis_boolean_response);
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 
 /* {{{ proto string Redis::save()
@@ -2006,10 +2002,10 @@ PHPAPI void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int 
 		}
 	}
 	IF_PIPELINE() {
-		PIPELINE_ENQUEUE_COMMAND("_generic_empty_long_");
+		PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len);
 	}	
 
-	MULTI_RESPONSE("generic_empty_long_command", redis_long_response);
+	MULTI_RESPONSE(redis_long_response);
 	IF_ATOMIC() {
 		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
@@ -2072,11 +2068,11 @@ PHP_METHOD(Redis, auth) {
 
     cmd_len = redis_cmd_format(&cmd, "AUTH %s\r\n", password, password_len);
 
-	REDIS_PROCESS_REQUEST("AUTH");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
-	REDIS_PROCESS_RESPONSE("AUTH", redis_boolean_response);
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 /* }}} */
 
@@ -2101,11 +2097,11 @@ PHP_METHOD(Redis, ttl) {
 
     cmd_len = redis_cmd_format(&cmd, "TTL %s\r\n", key, key_len);
 
-	REDIS_PROCESS_REQUEST("TTL");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("TTL", redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 /* }}} */
 
@@ -2210,11 +2206,11 @@ PHP_METHOD(Redis, select) {
 
     cmd_len = redis_cmd_format(&cmd, "SELECT %d\r\n", dbNumber);
 
-	REDIS_PROCESS_REQUEST("SELECT");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("SELECT", redis_boolean_response);
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 /* }}} */
 
@@ -2241,11 +2237,11 @@ PHP_METHOD(Redis, move) {
     cmd_len = redis_cmd_format(&cmd, "MOVE %s %d\r\n",
                                key, key_len, dbNumber);
 
-	REDIS_PROCESS_REQUEST("MOVE");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("MOVE", redis_1_response);
+	REDIS_PROCESS_RESPONSE(redis_1_response);
 
 }
 /* }}} */
@@ -2273,17 +2269,7 @@ PHP_METHOD(Redis, mset) {
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format(&cmd, "*%d\r\n", 1 + 2 * zend_hash_num_elements(Z_ARRVAL_P(z_array)));
-
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
-        efree(cmd);
-        RETURN_FALSE;
-    }
-    efree(cmd);
-
-    if (redis_sock_write(redis_sock, "$4\r\nMSET\r\n", 10) < 0) {
-        RETURN_FALSE;
-    }
+    cmd_len = redis_cmd_format(&cmd, "*%d\r\n$4\r\nMSET\r\n", 1 + 2 * zend_hash_num_elements(Z_ARRVAL_P(z_array)));
 
     HashTable *keytable = Z_ARRVAL_P(z_array);
     for(zend_hash_internal_pointer_reset(keytable);
@@ -2312,13 +2298,23 @@ PHP_METHOD(Redis, mset) {
             key_len--;
         }
 
-		REDIS_PROCESS_REQUEST("MSET");
+        cmd_len = redis_cmd_format(&cmd, 
+                                   "%s"
+                                   "$%d" "\r\n" /* key_len */
+                                   "%s" "\r\n"  /* key */
+                                   "$%d" "\r\n" /* val_len */
+                                   "%s" "\r\n"  /* val */
+                                   , cmd, cmd_len
+                                   , key_len, key, key_len
+                                   , val_len, val, val_len);
+
     }
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
 	IF_ATOMIC() {
 		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
-	REDIS_PROCESS_RESPONSE("MSET", redis_boolean_response);
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 /* }}} */
 
@@ -2346,11 +2342,11 @@ PHP_METHOD(Redis, rpoplpush)
                                srckey, srckey_len,
                                dstkey, dstkey_len);
 
-	REDIS_PROCESS_REQUEST("RPOPLPUSH");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("RPOPLPUSH", redis_string_response);
+	REDIS_PROCESS_RESPONSE(redis_string_response);
 }
 /* }}} */
 /* {{{ proto long Redis::zAdd(string key, int score, string value)
@@ -2380,11 +2376,11 @@ PHP_METHOD(Redis, zAdd) {
                                val_len,
                                val, val_len);
 
-	REDIS_PROCESS_REQUEST("ZADD");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("ZADD", redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 
 }
 /* }}} */
@@ -2396,9 +2392,9 @@ PHP_METHOD(Redis, zRange)
     RedisSock *redis_sock;
     char *key = NULL, *cmd;
     int key_len, cmd_len, response_len;
-    double start, end;
+    long start, end;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osdd",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll",
                                      &object, redis_ce,
                                      &key, &key_len, &start, &end) == FAILURE) {
         RETURN_FALSE;
@@ -2408,16 +2404,16 @@ PHP_METHOD(Redis, zRange)
         RETURN_FALSE;
     }
 
-    cmd_len = spprintf(&cmd, 0, "ZRANGE %s %f %f\r\n\r\n", key, start, end);
+    cmd_len = redis_cmd_format(&cmd, "ZRANGE %s %d %d\r\n\r\n", key, key_len, start, end);
 
-	REDIS_PROCESS_REQUEST("ZRANGE");	
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);	
 	IF_ATOMIC() {
 	    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
     	                                    redis_sock, NULL TSRMLS_CC) < 0) {
 	       	RETURN_FALSE;
     	}
 	} 
-	REDIS_PROCESS_RESPONSE("ZRANGE", redis_sock_read_multibulk_reply);
+	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 }
 /* }}} */
 /* {{{ proto long Redis::zDelete(string key, string member)
@@ -2441,11 +2437,11 @@ PHP_METHOD(Redis, zDelete)
 
     cmd_len = redis_cmd_format(&cmd, "ZREM %s %d\r\n%s\r\n", key, key_len, member_len, member, member_len);
 
-	REDIS_PROCESS_REQUEST("ZDELETE");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("ZDELETE", redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 
 
 }
@@ -2472,11 +2468,11 @@ PHP_METHOD(Redis, zDeleteRangeByScore)
 
     cmd_len = spprintf(&cmd, 0, "ZREMRANGEBYSCORE %s %f %f\r\n\r\n", key, start, end);
 
-	REDIS_PROCESS_REQUEST("ZREMRANGEBYSCORE");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
-	REDIS_PROCESS_RESPONSE("ZREMRANGEBYSCORE", redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 
 }
 /* }}} */
@@ -2502,14 +2498,14 @@ PHP_METHOD(Redis, zReverseRange)
 
     cmd_len = spprintf(&cmd, 0, "ZREVRANGE %s %f %f\r\n\r\n", key, start, end);
 
-	REDIS_PROCESS_REQUEST("ZREVRANGE");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 	    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
     	                                    redis_sock, NULL TSRMLS_CC) < 0) {
         	RETURN_FALSE;
 	    }
 	}
-	REDIS_PROCESS_RESPONSE("ZREVRANGE", redis_sock_read_multibulk_reply);
+	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 
 }
 /* }}} */
@@ -2613,11 +2609,11 @@ PHP_METHOD(Redis, zCard)
 
     cmd_len = spprintf(&cmd, 0, "ZCARD %s\r\n", key);
 
-	REDIS_PROCESS_REQUEST("ZCARD");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("ZCARD", redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 
 }
 /* }}} */
@@ -2642,11 +2638,11 @@ PHP_METHOD(Redis, zScore)
 
     cmd_len = redis_cmd_format(&cmd, "ZSCORE %s %d\r\n%s\r\n", key, key_len, member_len, member, member_len);
 
-	REDIS_PROCESS_REQUEST("ZSCORE");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 	    redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("ZSCORE", redis_bulk_double_response);
+	REDIS_PROCESS_RESPONSE(redis_bulk_double_response);
 
 }
 
@@ -2670,11 +2666,11 @@ PHPAPI void generic_incrby_method(INTERNAL_FUNCTION_PARAMETERS, char *keyword, i
                     keyword, keyword_len,
                     key, key_len, val, member_len, member, member_len);
 
-	REDIS_PROCESS_REQUEST("ZINCRBY");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 	    redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("ZINCRBY", redis_bulk_double_response);
+	REDIS_PROCESS_RESPONSE(redis_bulk_double_response);
 
 }
 
@@ -2781,11 +2777,11 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command TSRMLS
 	cmd_len = spprintf(&cmd, 0, "%s \r\n", cmd);
 	efree(old_cmd);
 
-	REDIS_PROCESS_REQUEST("ZSCORE");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("ZSCORE", redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 
 }
 
@@ -2836,11 +2832,11 @@ PHP_METHOD(Redis, hSet)
                     member_len, member, member_len,
                     val_len, val, val_len);
 
-	REDIS_PROCESS_REQUEST("HSET");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
-	REDIS_PROCESS_RESPONSE("HSET", redis_1_response);
+	REDIS_PROCESS_RESPONSE(redis_1_response);
 }
 /* }}} */
 
@@ -2875,11 +2871,11 @@ PHP_METHOD(Redis, hGet)
                     key_len, key, key_len,
                     member_len, member, member_len);
 
-	REDIS_PROCESS_REQUEST("HGET");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("HGET", redis_string_response);
+	REDIS_PROCESS_RESPONSE(redis_string_response);
 
 }
 /* }}} */
@@ -2911,17 +2907,17 @@ PHP_METHOD(Redis, hLen)
                     ,
                     key_len, key, key_len);
 
-	REDIS_PROCESS_REQUEST("HLEN");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
-	REDIS_PROCESS_RESPONSE("HLEN", redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 
 }
 /* }}} */
 
 PHPAPI RedisSock*
-generic_hash_command_2(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len TSRMLS_DC) {
+generic_hash_command_2(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len, char **out_cmd, int *out_len TSRMLS_DC) {
 
     zval *object;
     RedisSock *redis_sock;
@@ -2954,34 +2950,41 @@ generic_hash_command_2(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_
                     key_len, key, key_len,
                     member_len, member, member_len);
 
-	//REDIS_PROCESS_RESPONSE("_GENERIC_");
+    *out_cmd = cmd;
+    *out_len = cmd_len;
     return redis_sock;
 }
 
 /* hDel */
 PHP_METHOD(Redis, hDel)
 {
-    RedisSock *redis_sock = generic_hash_command_2(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HDEL", 4 TSRMLS_CC);
+    char *cmd;
+    int cmd_len;
+    RedisSock *redis_sock = generic_hash_command_2(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HDEL", 4, &cmd, &cmd_len TSRMLS_CC);
 	zval *object = getThis();
 
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
-	REDIS_PROCESS_RESPONSE("HDEL", redis_1_response);
+	REDIS_PROCESS_RESPONSE(redis_1_response);
 
 }
 
 /* hExists */
 PHP_METHOD(Redis, hExists)
 {
-    RedisSock *redis_sock = generic_hash_command_2(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HEXISTS", 7 TSRMLS_CC);
+    char *cmd;
+    int cmd_len;
+    RedisSock *redis_sock = generic_hash_command_2(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HEXISTS", 7, &cmd, &cmd_len TSRMLS_CC);
 
 	zval *object = getThis();
 
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	REDIS_PROCESS_RESPONSE("HEXISTS", redis_1_response);
+	REDIS_PROCESS_RESPONSE(redis_1_response);
 
 }
 
@@ -3015,7 +3018,7 @@ generic_hash_command_1(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_
                     keyword, keyword_len,
                     key_len, key, key_len);
 
-	REDIS_PROCESS_REQUEST("generic2");
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     return redis_sock;
 }
 
@@ -3031,7 +3034,7 @@ PHP_METHOD(Redis, hKeys)
     	    RETURN_FALSE;
 	    }
 	}
-	REDIS_PROCESS_RESPONSE("HKEYS", redis_sock_read_multibulk_reply);
+	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 
 
 }
@@ -3047,7 +3050,7 @@ PHP_METHOD(Redis, hVals)
         	RETURN_FALSE;
 	    }
 	} 
-	REDIS_PROCESS_RESPONSE("HVALS", redis_sock_read_multibulk_reply);
+	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 
 }
 
@@ -3071,7 +3074,7 @@ PHP_METHOD(Redis, hGetAll) {
     	 */
 	    array_zip_values_and_scores(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0);
 	} 
-	REDIS_PROCESS_RESPONSE("HGETALL", array_zip_values_and_scores);
+	REDIS_PROCESS_RESPONSE(array_zip_values_and_scores);
 }
 
 PHPAPI void array_zip_values_and_scores(INTERNAL_FUNCTION_PARAMETERS, int use_atof TSRMLS_DC) {
@@ -3181,9 +3184,12 @@ PHP_METHOD(Redis, multi)
 		exit(-1);
 	}
 
+    /*
 	head = malloc(sizeof(fold_item));
 	current = head;
 	current->function_name = strdup("__begin__");
+    */
+    current = NULL;
 	
 	IF_MULTI() {
 	    cmd_len = redis_cmd_format(&cmd, "MULTI \r\n");
@@ -3204,10 +3210,13 @@ PHP_METHOD(Redis, multi)
 		RETURN_FALSE;
 	}
 	IF_PIPELINE() {
+            /*
 		head_request = malloc(sizeof(request_item));
 		current_request = head_request;		
 		current_request->function_name = strdup("__begin__");
 		current_request->request_str = NULL;
+        */
+        head_request = current_request = NULL;
 		RETURN_ZVAL(getThis(), 1, 0);
 	}
 }
@@ -3272,12 +3281,12 @@ PHPAPI int redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS
 		free(tmp1);
 	}
 	
-	request_item *tmp2;
+	request_item *tmp;
 	current_request = head_request;
 	while(current_request) {
-		tmp2 = current_request;
+		tmp = current_request;
 		current_request = current_request->next;
-		free(tmp2);
+		free(tmp);
 	}
 	
     return 0;
@@ -3331,11 +3340,14 @@ PHP_METHOD(Redis, exec)
 
 	IF_MULTI() {
 
+        /*
 		fold_item *f1 = malloc(sizeof(fold_item));
 		f1->function_name = strdup("___end___");
 		f1->fun = (void *)NULL;
 		f1->next = NULL;
 		current = f1;	
+        */
+        current = NULL;
 
 
 
@@ -3355,14 +3367,16 @@ PHP_METHOD(Redis, exec)
 
 	IF_PIPELINE() {
 	  
+        /*
 		fold_item *f1 = malloc(sizeof(fold_item));
 		f1->function_name = strdup("___end___");
 		f1->fun = (void *)NULL;
 		f1->next = NULL;
 		current->next = f1;
 		current = current->next;
+        */
+        current = NULL;
 	
-		//request_item *tmp2 = head_request;
 		current_request = head_request;
 		char *request;
 		int total = 0;
@@ -3424,20 +3438,20 @@ PHPAPI int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETE
 
 	zval *z_response;
 	current = head;
-	if(numElems == NULL) {
-		numElems = 0;
+	if(numElems == 0) {
 		while(current != NULL) {
 			numElems ++;
 			current = current->next;
 		}
-		numElems -= 2;
 	}
 	current = head;
 
     while(numElems > 0) {		
+            /*
 		if(strcmp(current->function_name, "__begin__") == 0) {
 			current = current->next;
-		}		
+		}	
+        */
 		fold_this_item(INTERNAL_FUNCTION_PARAM_PASSTHRU, current, redis_sock, z_tab TSRMLS_DC);	
 		current  = current->next;
         numElems --;
@@ -3468,10 +3482,13 @@ PHP_METHOD(Redis, pipeline)
 		NB : we keep the function fold, to detect the last function . 
 		We need the response format of the n - 1 command. So, we can delete when n > 2, the { 1 .. n - 2} commands
 	*/
-		
+	
+    /*
 	head = malloc(sizeof(fold_item));
 	current = head;
 	current->function_name = strdup("__begin__");	
+    */
+    current = NULL;
 
 	RETURN_ZVAL(getThis(), 1, 0);
 }

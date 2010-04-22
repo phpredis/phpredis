@@ -32,44 +32,41 @@
 	} else {\
 		RETURN_FALSE;\
 	}				 \
-}				 \
+}
 
 #define ELSE_IF_PIPELINE() else IF_PIPELINE() {	\
 	RETURN_ZVAL(getThis(), 1, 0);\
-}				\
+}
 
 
-#define MULTI_RESPONSE(string, callback) IF_MULTI_OR_PIPELINE() { \
+#define MULTI_RESPONSE(callback) IF_MULTI_OR_PIPELINE() { \
 	fold_item *f1 = malloc(sizeof(fold_item)); \
-	f1->function_name = strdup(string); \
 	f1->fun = (void *)callback; \
 	f1->next = NULL; \
 	current->next = f1; \
 	current = f1; \
-  }				  \
+  }
 
-#define PIPELINE_ENQUEUE_COMMAND(string) request_item *tmp; \
+#define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) request_item *tmp; \
 	tmp = malloc(sizeof(request_item));\
-	tmp->function_name = strdup(string);\
 	tmp->request_str = strdup(cmd);\
 	tmp->request_size = cmd_len;\
 	tmp->next = NULL;\
 	current_request->next = tmp;\
-	current_request = tmp;\
+	current_request = tmp;
 
-#define SOCKET_WRITE_COMMAND() if(redis_sock_write(redis_sock, cmd, cmd_len) < 0) { \
+#define SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len) if(redis_sock_write(redis_sock, cmd, cmd_len) < 0) { \
 	efree(cmd); \
     RETURN_FALSE; \
-}\
+}
 
-#define REDIS_MULTI_RESPONSE(string, callback) IF_MULTI_OR_PIPELINE() { \
+#define REDIS_MULTI_RESPONSE(callback) IF_MULTI_OR_PIPELINE() { \
 	fold_item *f1 = malloc(sizeof(fold_item)); \
-	f1->function_name = strdup(string); \
 	f1->fun = (void *)callback; \
 	f1->next = NULL; \
 	current->next = f1; \
 	current = f1; \
-}\
+}
 
 #define REDIS_ELSE_IF_MULTI() \
 else if(get_flag(object) == REDIS_MULTI) { \
@@ -78,27 +75,27 @@ else if(get_flag(object) == REDIS_MULTI) { \
 	} else {\
 		RETURN_FALSE;\
 	}\
-}\
+}
 
-#define REDIS_ELSE_IF_PIPELINE(command, function) else IF_PIPELINE() {	\
-	REDIS_MULTI_RESPONSE(command, function); \
+#define REDIS_ELSE_IF_PIPELINE(function) else IF_PIPELINE() {	\
+	REDIS_MULTI_RESPONSE(function); \
 	RETURN_ZVAL(getThis(), 1, 0);\
-}				\
+}
 
-#define REDIS_PROCESS_REQUEST(command) 	\
+#define REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len) 	\
 	IF_MULTI_OR_ATOMIC() { \
-		SOCKET_WRITE_COMMAND(); \
+		SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len); \
 	}\
 	IF_PIPELINE() { \
-		PIPELINE_ENQUEUE_COMMAND(command); \
+		PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len); \
 	}	\
 	if(cmd != NULL) { \
 	  /*efree(cmd);*/ \
-	}\
+	}
 
-#define REDIS_PROCESS_RESPONSE(command, function) \
+#define REDIS_PROCESS_RESPONSE(function) \
 	REDIS_ELSE_IF_MULTI() \
-	REDIS_ELSE_IF_PIPELINE(command, function);\
+	REDIS_ELSE_IF_PIPELINE(function);
 
 /* {{{ struct RedisSock */
 typedef struct RedisSock_ {
@@ -112,14 +109,12 @@ typedef struct RedisSock_ {
 /* }}} */
 
 typedef struct fold_item {
-	char *function_name;
 	zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, ...);
 	struct fold_item *next;
 } fold_item;
 fold_item *head, *current;
 
 typedef struct request_item {
-	char *function_name;
 	char *request_str; 
 	int request_size; /* size_t */
 	struct request_item *next;

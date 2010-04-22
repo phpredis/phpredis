@@ -30,7 +30,6 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->setUp();
         $this->tearDown();
     }
-
     public function testPing()
     {
 
@@ -286,12 +285,10 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->set('key', 'abc');
 
 	$this->redis->incr('key');
-
-	$this->assertTrue("1" === $this->redis->get('key'));
+	$this->assertTrue("abc" === $this->redis->get('key'));
 
 	$this->redis->incr('key');
-
-	$this->assertTrue("2" === $this->redis->get('key'));
+	$this->assertTrue("abc" === $this->redis->get('key'));
 
     }
 
@@ -1311,7 +1308,6 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(array() === $this->redis->lgetRange('y', 0, -1));
 
     }
-
     public function testZX() {
 
 	$this->redis->delete('key');
@@ -1379,17 +1375,17 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(4 === $this->redis->zUnion('keyU', array('key1', 'key3')));
 	$this->assertTrue(array('val0', 'val1', 'val4', 'val5') === $this->redis->zRange('keyU', 0, -1));
 
-	/* Union on non existing keys */
+	// Union on non existing keys
 	$this->redis->delete('keyU');
 	$this->assertTrue(0 === $this->redis->zUnion('keyU', array('X', 'Y')));
 	$this->assertTrue(array() === $this->redis->zRange('keyU', 0, -1));
 
-	/* !Exist U Exist */
+	// !Exist U Exist
 	$this->redis->delete('keyU');
 	$this->assertTrue(2 === $this->redis->zUnion('keyU', array('key1', 'X')));
 	$this->assertTrue($this->redis->zRange('key1', 0, -1) === $this->redis->zRange('keyU', 0, -1));
 
-	/* test weighted zUnion*/
+	// test weighted zUnion
 	$this->redis->delete('keyZ');
 	$this->assertTrue(4 === $this->redis->zUnion('keyZ', array('key1', 'key2'), array(1, 1)));
 	$this->assertTrue(array('val0', 'val1', 'val2', 'val3') === $this->redis->zRange('keyZ', 0, -1));
@@ -1402,7 +1398,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->delete('key2');
 	$this->redis->delete('key3');
 
-	/* zInter */
+	// zInter
 
 	$this->redis->zAdd('key1', 0, 'val0');
 	$this->redis->zAdd('key1', 1, 'val1');
@@ -1418,16 +1414,16 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(2 === $this->redis->zInter('keyI', array('key1', 'key2')));
 	$this->assertTrue(array('val1', 'val3') === $this->redis->zRange('keyI', 0, -1));
 
-	/* Union on non existing keys */
+	// Union on non existing keys
 	$this->assertTrue(0 === $this->redis->zInter('keyX', array('X', 'Y')));
 	$this->assertTrue(array() === $this->redis->zRange('keyX', 0, -1));
 
-	/* !Exist U Exist */
+	// !Exist U Exist
 	$this->assertTrue(0 === $this->redis->zInter('keyY', array('key1', 'X')));
 	$this->assertTrue(array() === $this->redis->zRange('keyY', 0, -1));
 
 
-	/* test weighted zInter*/
+	// test weighted zInter
 	$this->redis->delete('key1');
 	$this->redis->delete('key2');
 	$this->redis->delete('key3');
@@ -1452,11 +1448,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(array('val1', 'val3') === $this->redis->zRange('keyI', 0, -1));
 	$this->redis->delete('keyI');
 	$this->assertTrue( 2 === $this->redis->zInter('keyI', array('key1', 'key2', 'key3'), array(1, 5, 1), 'max'));
-	$this->assertTrue(array('val3', 'val1') === $this->redis->zRange('keyI', 0, -1));	
+	$this->assertTrue(array('val3', 'val1') === $this->redis->zRange('keyI', 0, -1));
 
-
-    }
-
+}
     public function testHashes() {
 	$this->redis->delete('h', 'key');
 
@@ -1503,18 +1497,17 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->delete('h');
 	$this->assertTrue(FALSE === $this->redis->hExists('h', 'x'));
 
-	// hIncrBy - not even in redis yet.
+	// hIncrBy
 	/*
 	$this->redis->delete('h');
-	$this->assertTrue(2.5 === $this->redis->hIncrBy('h', 2.5, 'x'));
-	$this->assertTrue(3.5 === $this->redis->hIncrBy('h', 1, 'x'));
+	$this->assertTrue(2 === $this->redis->hIncrBy('h', 2, 'x'));
+	$this->assertTrue(3 === $this->redis->hIncrBy('h', 1, 'x'));
 
 	$this->redis->hSet('h', 'y', 'not-a-number');
 	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 1, 'y'));
 	*/
 
     }
-
 }
 
 ?>
