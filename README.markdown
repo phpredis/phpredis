@@ -1164,6 +1164,7 @@ Returns a range of elements from the ordered set stored at the specified key, wi
 *key*  
 *start*: long  
 *end*: long  
+*withscores*: bool = false  
 
 ##### *Return value*
 *Array* containing the values in specified range. 
@@ -1173,6 +1174,9 @@ $redis->zAdd('key1', 0, 'val0');
 $redis->zAdd('key1', 2, 'val2');
 $redis->zAdd('key1', 10, 'val10');
 $redis->zRange('key1', 0, -1); /* array('val0', 'val2', 'val10') */
+
+// with scores
+$redis->zRange('key1', 0, -1, true); /* array('val0' => 0, 'val2' => 2, 'val10' => 10) */
 </pre>
 
 ## zDelete, zRemove
@@ -1201,7 +1205,9 @@ Returns the elements of the sorted set stored at the specified key in the range 
 
 ##### *Parameters*
 *key*  
-*member*  
+*start*: long  
+*end*: long  
+*withscores*: bool = false  
 
 ##### *Return value*
 *Array* containing the values in specified range. 
@@ -1211,6 +1217,9 @@ $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
 $redis->zReverseRange('key', 0, -1); /* array('val10', 'val2', 'val0') */
+
+// with scores
+$redis->zReverseRange('key', 0, -1, true); /* array('val10' => 10, 'val2' => 2, 'val0' => 0) */
 </pre>
 
 ## zRangeByScore

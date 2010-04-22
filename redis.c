@@ -2748,7 +2748,7 @@ PHP_METHOD(Redis, zAdd) {
     redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
 /* }}} */
-/* {{{ proto array Redis::zRange(string key, int start , int end)
+/* {{{ proto array Redis::zRange(string key, int start , int end, bool withscores = FALSE)
  */
 PHP_METHOD(Redis, zRange)
 {
@@ -2757,10 +2757,11 @@ PHP_METHOD(Redis, zRange)
     char *key = NULL, *cmd;
     int key_len, cmd_len, response_len;
     long start, end;
+    long withscores = 0;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll|b",
                                      &object, redis_ce,
-                                     &key, &key_len, &start, &end) == FAILURE) {
+                                     &key, &key_len, &start, &end, &withscores) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -2768,7 +2769,11 @@ PHP_METHOD(Redis, zRange)
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format(&cmd, "ZRANGE %s %d %d\r\n\r\n", key, key_len, start, end);
+    if(withscores) {
+        cmd_len = redis_cmd_format(&cmd, "ZRANGE %s %d %d WITHSCORES\r\n", key, key_len, start, end);
+    } else {
+        cmd_len = redis_cmd_format(&cmd, "ZRANGE %s %d %d\r\n", key, key_len, start, end);
+    }
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
         efree(cmd);
@@ -2779,6 +2784,10 @@ PHP_METHOD(Redis, zRange)
     if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                         redis_sock TSRMLS_CC) < 0) {
         RETURN_FALSE;
+    }
+
+    if(withscores) {
+        array_zip_values_and_scores(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
     }
 }
 /* }}} */
@@ -2841,7 +2850,7 @@ PHP_METHOD(Redis, zDeleteRangeByScore)
     redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
 }
 /* }}} */
-/* {{{ proto array Redis::zReverseRange(string key, int start , int end)
+/* {{{ proto array Redis::zReverseRange(string key, int start , int end, bool withscores = FALSE)
  */
 PHP_METHOD(Redis, zReverseRange)
 {
@@ -2850,10 +2859,11 @@ PHP_METHOD(Redis, zReverseRange)
     char *key = NULL, *cmd;
     int key_len, cmd_len, response_len;
     long start, end;
+    long withscores = 0;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll|b",
                                      &object, redis_ce,
-                                     &key, &key_len, &start, &end) == FAILURE) {
+                                     &key, &key_len, &start, &end, &withscores) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -2861,7 +2871,11 @@ PHP_METHOD(Redis, zReverseRange)
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format(&cmd, "ZREVRANGE %s %d %d\r\n\r\n", key, key_len, start, end);
+    if(withscores) {
+        cmd_len = redis_cmd_format(&cmd, "ZREVRANGE %s %d %d WITHSCORES\r\n", key, key_len, start, end);
+    } else {
+        cmd_len = redis_cmd_format(&cmd, "ZREVRANGE %s %d %d\r\n", key, key_len, start, end);
+    }
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
         efree(cmd);
@@ -2872,6 +2886,10 @@ PHP_METHOD(Redis, zReverseRange)
     if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                         redis_sock TSRMLS_CC) < 0) {
         RETURN_FALSE;
+    }
+
+    if(withscores) {
+        array_zip_values_and_scores(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
     }
 }
 /* }}} */
