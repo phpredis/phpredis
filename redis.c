@@ -1562,7 +1562,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
                 continue; 	/* this should never happen, according to the PHP people. */
             }
 
-            // get current value
+            /* get current value */
             keys[i] = Z_STRVAL_PP(z_value_pp);
             keys_len[i] = Z_STRLEN_PP(z_value_pp);
             cmd_len += keys_len[i] + 1; /* +1 for the preceding space. */
@@ -2543,7 +2543,7 @@ PHP_METHOD(Redis, zRangeByScore)
         if(zend_hash_find(Z_ARRVAL_P(z_options), "limit", sizeof("limit"), (void**)&z_limit_val_pp)== SUCCESS) {;
             if(zend_hash_num_elements(Z_ARRVAL_PP(z_limit_val_pp)) == 2) {
                 zval **z_offset_pp, **z_count_pp;
-                // get the two values from the table, check that they are indeed of LONG type
+                /* get the two values from the table, check that they are indeed of LONG type */
                 if(SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_limit_val_pp), 0, (void**)&z_offset_pp) &&
                   SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_limit_val_pp), 1, (void**)&z_count_pp) &&
                   Z_TYPE_PP(z_offset_pp) == IS_LONG &&
@@ -3101,20 +3101,20 @@ PHPAPI void array_zip_values_and_scores(INTERNAL_FUNCTION_PARAMETERS, int use_at
             continue; 	/* this should never happen, according to the PHP people. */
         }
 
-        // get current value, a key
+        /* get current value, a key */
         hkey = Z_STRVAL_PP(z_value_pp);
         hkey_len = Z_STRLEN_PP(z_value_pp);
 
-        // move forward
+        /* move forward */
         zend_hash_move_forward(keytable);
 
-        // fetch again
+        /* fetch again */
         type = zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
         if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
             continue; 	/* this should never happen, according to the PHP people. */
         }
 
-        // get current value, a hash value now.
+        /* get current value, a hash value now. */
         hval = Z_STRVAL_PP(z_value_pp);
         hval_len = Z_STRLEN_PP(z_value_pp);
 
@@ -3171,7 +3171,7 @@ PHP_METHOD(Redis, multi)
         RETURN_FALSE;
     }
 
-	// if the flag is activated, send the command, the reply will be "QUEUED" or -ERR
+    /* if the flag is activated, send the command, the reply will be "QUEUED" or -ERR */
 
     if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
         RETURN_FALSE;
@@ -3271,7 +3271,7 @@ PHPAPI int redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS
 
     *return_value = *z_tab;
 
-	// free allocated function/request memory	
+    /* free allocated function/request memory */
 	fold_item *tmp1;
 	current = head;
 
@@ -3472,7 +3472,7 @@ PHP_METHOD(Redis, pipeline)
         RETURN_FALSE;
     }
 
-	// if the flag is activated, send the command, the reply will be "QUEUED" or -ERR
+    /* if the flag is activated, send the command, the reply will be "QUEUED" or -ERR */
     if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
         RETURN_FALSE;
     }
