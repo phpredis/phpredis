@@ -3293,24 +3293,23 @@ PHPAPI int redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS
     efree(z_tab);
 
     /* free allocated function/request memory */
-	fold_item *tmp1;
-	current = head;
-
-	while(current) {
-		tmp1 = current;
-		current = current->next;
-		free(tmp1);
-	}
+	fold_item *fi;
+    for(fi = head; fi; ) {
+        fold_item *fi_next = fi->next;
+        free(fi);
+        fi = fi_next;
+    }
 	
-	request_item *tmp;
-	current_request = head_request;
-	while(current_request) {
-		tmp = current_request;
-		current_request = current_request->next;
-		free(tmp);
-	}
+	request_item *ri;
+    for(ri = head_request; ri; ) {
+        struct request_item *ri_next = ri->next;
+        free(ri->request_str);
+        free(ri);
+        ri = ri_next;
+    }
 	
     current = head = NULL;
+    current_request = head_request = NULL;
 
     return 0;
 	
@@ -3403,6 +3402,7 @@ PHP_METHOD(Redis, exec)
 		if(request != NULL) {
 		    if (redis_sock_write(redis_sock, request, total) < 0) {
     		    free(request);
+                /* TODO: free data structures */
         		RETURN_FALSE;
 		    }
 		   	free(request);
@@ -3410,6 +3410,7 @@ PHP_METHOD(Redis, exec)
 
 	    if (redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC) < 0) {
 			set_flag(object, REDIS_ATOMIC);
+            /* TODO: free data structures */
 			RETURN_FALSE;
 	    }
 		set_flag(object, REDIS_ATOMIC);
