@@ -482,7 +482,7 @@ redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *re
 PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz)
 {
     redis_check_eof(redis_sock TSRMLS_CC);
-	return php_stream_write(redis_sock->stream, cmd, sz);
+    return php_stream_write(redis_sock->stream, cmd, sz);
 }
 
 /**

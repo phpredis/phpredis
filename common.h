@@ -43,16 +43,17 @@
 	fold_item *f1 = malloc(sizeof(fold_item)); \
 	f1->fun = (void *)callback; \
 	f1->next = NULL; \
-	current->next = f1; \
+	if(current) current->next = f1; \
 	current = f1; \
   }
 
 #define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) request_item *tmp; \
 	tmp = malloc(sizeof(request_item));\
-	tmp->request_str = strdup(cmd);\
+	tmp->request_str = calloc(cmd_len, 1);\
+	memcpy(tmp->request_str, cmd, cmd_len);\
 	tmp->request_size = cmd_len;\
 	tmp->next = NULL;\
-	current_request->next = tmp;\
+	if(current_request) current_request->next = tmp;\
 	current_request = tmp;
 
 #define SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len) if(redis_sock_write(redis_sock, cmd, cmd_len) < 0) { \
@@ -64,7 +65,7 @@
 	fold_item *f1 = malloc(sizeof(fold_item)); \
 	f1->fun = (void *)callback; \
 	f1->next = NULL; \
-	current->next = f1; \
+	if(current) current->next = f1; \
 	current = f1; \
 }
 
