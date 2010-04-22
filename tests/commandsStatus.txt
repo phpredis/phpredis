@@ -14,17 +14,17 @@ get : {1, 1}
     * decrby	{0, 1}
     * rename	{0, 1}
     * renameNx	{0, 1}
-    * ttl
+    * ttl		{0, 1}
     * ping	{0, 1}
     * setnx	{0, 1}
     * exists	{0, 1}
     * randomkey	{0, 1}
     * del	{0, 1}
-    * mget
-    * mset
-    * msetnx
-    * expire
-    * expireat
+    * mget	{0, 1}
+    * mset	{0, 0}
+    * msetnx {0, 0}
+    * expire {0, 1}
+    * expireat {0, 0}
     * info
     * multi
     * exec
@@ -46,19 +46,19 @@ get : {1, 1}
     * substr
     * config (get and set, not resetstat)
 
-    * lpush
-    * rpush
-    * rpoplpush
-    * llen
-    * lpop
-    * rpop
+    * lpush {0, 1}
+    * rpush {0, 1}
+    * rpoplpush {0, 1}
+    * llen {0, 1}
+    * lpop {0, 1}
+    * rpop {0, 1}
     * blpop
     * brpop
-    * ltrim
-    * lindex
-    * lrem
-    * lset
-    * lrange
+    * ltrim {0, 1}
+    * lindex {0, 1}
+    * lrem {0, 1}
+    * lset {0, 1}
+    * lrange {0, 1}
 
     * sadd
     * srem

@@ -62,9 +62,6 @@
     RETURN_FALSE; \
 }\
 
-/**************/
-/* new macros */
-/**************/
 #define REDIS_MULTI_RESPONSE(string, callback) IF_MULTI_OR_PIPELINE() { \
 	fold_item *f1 = malloc(sizeof(fold_item)); \
 	f1->function_name = strdup(string); \
@@ -101,7 +98,7 @@ else if(get_flag(object) == REDIS_MULTI) { \
 
 #define REDIS_PROCESS_RESPONSE(command, function) \
 	REDIS_ELSE_IF_MULTI() \
-	REDIS_ELSE_IF_PIPELINE(command, function);			\
+	REDIS_ELSE_IF_PIPELINE(command, function);\
 
 /* {{{ struct RedisSock */
 typedef struct RedisSock_ {

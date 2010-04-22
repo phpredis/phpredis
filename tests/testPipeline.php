@@ -44,10 +44,48 @@ function test1($r, $type) {
     $ret = $r->multi($type)
 	->randomKey()
 	->exec();
-    var_dump($ret);
+    //var_dump($ret);
+	
+	/* ttl, mget, mset, msetnx, expire, expireAt */
+    $ret = $r->multi($type)
+			->ttl('key')
+			->mget(array('key1', 'key2', 'key3'))
+			//->mset(array('key3' => 'value3', 'key4' => 'value4'))
+			->set('key', 'value')
+			->expire('key', 5)			
+			->ttl('key')
+			->expireAt('key', '0000')
+			->exec();	
+	var_dump($ret);
+	/* lpush, rpush, rpop, llen, lpop, rpop */
+	/*rpoplpush, lRemove, ... */
+	/* LGET, lGetRange */
+	/* LSET, ... */
 
+    $ret = $r->multi($type)
+			->rpush('lkey', 'lvalue')
+			->lpush('lkey', 'lvalue')
+			->lpush('lkey', 'lvalue')
+			->lpush('lkey', 'lvalue')
+			->lpush('lkey', 'lvalue')
+			->lpush('lkey', 'lvalue')
+			->rpoplpush('lkey', 'lDest')
+	  		->lGetRange('lDest', 0, -1)
+	  		->lpop('lkey')
+			->llen('lkey')
+			->lRemove('lkey', 'lvalue', 3)
+			->llen('lkey')
+	  		->lget('lkey', 0)
+			->lGetRange('lkey', 0, -1)
+			->lSet('lkey', 1, "newValue")	 /* check errors on key not exists */
+			->lGetRange('lkey', 0, -1)
+			->llen('lkey')
+			->exec();
+		
+	var_dump($ret);
 
 }
+
 //test1($r, Redis::MULTI);
 test1($r, Redis::PIPELINE);
 ?>
