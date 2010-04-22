@@ -287,11 +287,11 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$this->redis->incr('key');
 
-	$this->assertTrue("1" === $this->redis->get('key'));
+	$this->assertTrue("abc" === $this->redis->get('key'));
 
 	$this->redis->incr('key');
 
-	$this->assertTrue("2" === $this->redis->get('key'));
+	$this->assertTrue("abc" === $this->redis->get('key'));
 
     }
 
@@ -1503,7 +1503,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->delete('h');
 	$this->assertTrue(FALSE === $this->redis->hExists('h', 'x'));
 
-	// hIncrBy - not even in redis yet.
+	// hIncrBy
 	/*
 	$this->redis->delete('h');
 	$this->assertTrue(2.5 === $this->redis->hIncrBy('h', 2.5, 'x'));
