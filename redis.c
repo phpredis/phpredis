@@ -2484,9 +2484,9 @@ PHP_METHOD(Redis, zReverseRange)
     RedisSock *redis_sock;
     char *key = NULL, *cmd;
     int key_len, cmd_len, response_len;
-    double start, end;
+    long start, end;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osdd",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll",
                                      &object, redis_ce,
                                      &key, &key_len, &start, &end) == FAILURE) {
         RETURN_FALSE;
@@ -2496,7 +2496,7 @@ PHP_METHOD(Redis, zReverseRange)
         RETURN_FALSE;
     }
 
-    cmd_len = spprintf(&cmd, 0, "ZREVRANGE %s %f %f\r\n\r\n", key, start, end);
+    cmd_len = redis_cmd_format(&cmd, "ZREVRANGE %s %d %d\r\n\r\n", key, key_len, start, end);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {

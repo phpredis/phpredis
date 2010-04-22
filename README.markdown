@@ -1162,8 +1162,8 @@ Returns a range of elements from the ordered set stored at the specified key, wi
 -1 the last element, -2 the penultimate ...
 ##### *Parameters*
 *key*  
-*start*  
-*end*  
+*start*: long  
+*end*: long  
 
 ##### *Return value*
 *Array* containing the values in specified range. 
