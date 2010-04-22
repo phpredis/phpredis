@@ -5,6 +5,7 @@ $r->connect('127.0.0.1', 6379);
 
 /* get, set, getSet, incr, incrby, decr, rename, renameNx */
 function test1($r, $type) {
+
     $ret = $r->multi($type)
 	->delete('key1')
 	->set('key1', 'value1')
@@ -70,25 +71,33 @@ function test1($r, $type) {
     $ret = $r->multi($type)
 	->randomKey()
 	->exec();
-    var_dump($ret);
+    $ret = $r->multi($type)
+	->exec();
+    assert($ret == array());
 	
-	/* ttl, mget, mset, msetnx, expire, expireAt */
+    // ttl, mget, mset, msetnx, expire, expireAt
     $ret = $r->multi($type)
 			->ttl('key')
-	//		->mget(array('key1', 'key2', 'key3'))
-	//		->mset(array('key3' => 'value3', 'key4' => 'value4'))
+			->mget(array('key1', 'key2', 'key3'))
+			->mset(array('key3' => 'value3', 'key4' => 'value4'))
 			->set('key', 'value')
 			->expire('key', 5)			
 			->ttl('key')
 			->expireAt('key', '0000')
-			->exec();	
-	var_dump($ret);
-	/* lpush, rpush, rpop, llen, lpop, rpop */
-	/*rpoplpush, lRemove, ... */
-	/* LGET, lGetRange */
-	/* LSET, ... */
+			->exec();
+    assert(is_array($ret));
+    $i = 0;
+    assert($ret[$i++] == -1);
+    assert($ret[$i++] === array('val1', 'valX', FALSE)); // mget
+    assert($ret[$i++] === TRUE); // mset
+    assert($ret[$i++] === TRUE); // set
+    assert($ret[$i++] === TRUE); // expire
+    assert($ret[$i++] === 5);    // ttl
+    assert($ret[$i++] === TRUE); // expireAt
+    assert(count($ret) == $i);
 
     $ret = $r->multi($type)
+			->delete('lkey', 'lDest')
 			->rpush('lkey', 'lvalue')
 			->lpush('lkey', 'lvalue')
 			->lpush('lkey', 'lvalue')
@@ -103,15 +112,58 @@ function test1($r, $type) {
 			->llen('lkey')
 	  		->lget('lkey', 0)
 			->lGetRange('lkey', 0, -1)
-			->lSet('lkey', 1, "newValue")	 /* check errors on key not exists */
+			->lSet('lkey', 1, "newValue")	 // check errors on key not exists
 			->lGetRange('lkey', 0, -1)
 			->llen('lkey')
 			->exec();
 		
-	var_dump($ret);
+    assert(is_array($ret));
+    $i = 0;
+    assert($ret[$i++] === 2); // deleting 2 keys
+    assert($ret[$i++] === 1); // rpush, now 1 element
+    assert($ret[$i++] === 2); // lpush, now 2 elements
+    assert($ret[$i++] === 3); // lpush, now 3 elements
+    assert($ret[$i++] === 4); // lpush, now 4 elements
+    assert($ret[$i++] === 5); // lpush, now 5 elements
+    assert($ret[$i++] === 6); // lpush, now 6 elements
+    assert($ret[$i++] === 'lvalue'); // rpoplpush returns the element: "lvalue"
+    assert($ret[$i++] === array('lvalue')); // lDest contains only that one element.
+    assert($ret[$i++] === 'lvalue'); // removing a second element from lkey, now 4 elements left ↓
+    assert($ret[$i++] === 4); // 4 elements left, after 2 pops.
+    assert($ret[$i++] === 3); // removing 3 elements, now 1 left.
+    assert($ret[$i++] === 1); // 1 element left
+    assert($ret[$i++] === "lvalue"); // this is the current head.
+    assert($ret[$i++] === array("lvalue")); // this is the current list.
+    assert($ret[$i++] === FALSE); // updating a non-existent element fails.
+    assert($ret[$i++] === array("lvalue")); // this is the current list.
+    assert($ret[$i++] === 1); // 1 element left
+    assert(count($ret) == $i);
+
+
+    $ret = $r->multi(Redis::PIPELINE)
+	    ->delete('lkey', 'lDest')
+	    ->rpush('lkey', 'lvalue')
+	    ->lpush('lkey', 'lvalue')
+	    ->lpush('lkey', 'lvalue')
+	    ->rpoplpush('lkey', 'lDest')
+	    ->lGetRange('lDest', 0, -1)
+	    ->lpop('lkey')
+	    ->exec();
+    assert(is_array($ret));
+    $i = 0;
+    assert($ret[$i++] <= 2); // deleted 0, 1, or 2 items
+    assert($ret[$i++] === 1); // 1 element in the list
+    assert($ret[$i++] === 2); // 2 elements in the list
+    assert($ret[$i++] === 3); // 3 elements in the list
+    assert($ret[$i++] === 'lvalue'); // rpoplpush returns the element: "lvalue"
+    assert($ret[$i++] === array('lvalue')); // rpoplpush returns the element: "lvalue"
+    assert($ret[$i++] === 'lvalue'); // pop returns the front element: "lvalue"
+    assert(count($ret) == $i);
 
 }
 
 // test1($r, Redis::MULTI);
 test1($r, Redis::PIPELINE);
+
+
 ?>

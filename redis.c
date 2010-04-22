@@ -3399,7 +3399,6 @@ PHP_METHOD(Redis, exec)
 			memcpy(request + offset, ri->request_str, ri->request_size);
 			offset += ri->request_size;
 		}
-		request[offset] = '\0';
 
 		if(request != NULL) {
 		    if (redis_sock_write(redis_sock, request, total) < 0) {
@@ -3418,7 +3417,7 @@ PHP_METHOD(Redis, exec)
 }
 
 PHPAPI void fold_this_item(INTERNAL_FUNCTION_PARAMETERS, fold_item *item, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
-	item->fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_DC, z_tab);
+	item->fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab TSRMLS_CC);
 }
 
 PHPAPI int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS, 
