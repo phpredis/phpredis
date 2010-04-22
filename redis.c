@@ -1603,6 +1603,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     if(z_args) efree(z_args);
 
 	object = getThis();
+    printf("cmd=%p\n", (void*)cmd);
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
 }
