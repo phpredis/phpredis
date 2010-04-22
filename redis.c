@@ -3270,6 +3270,8 @@ PHPAPI int redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS
                     redis_sock, z_tab, NULL);
 
     *return_value = *z_tab;
+    zval_copy_ctor(z_tab);
+    efree(z_tab);
 
     /* free allocated function/request memory */
 	fold_item *tmp1;
@@ -3289,6 +3291,8 @@ PHPAPI int redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS
 		free(tmp);
 	}
 	
+    current = head = NULL;
+
     return 0;
 	
 }
@@ -3317,6 +3321,8 @@ PHPAPI int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS,
                     redis_sock, z_tab, numElems);
 
     *return_value = *z_tab;
+    zval_copy_ctor(z_tab);
+    efree(z_tab);
     return 0;
 }
 
@@ -3329,6 +3335,7 @@ PHP_METHOD(Redis, exec)
 	int response_len, cmd_len;
 	char * response;
 	zval *object;
+    struct request_item *ri;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
                                      &object, redis_ce) == FAILURE) {
@@ -3340,17 +3347,8 @@ PHP_METHOD(Redis, exec)
 
 	IF_MULTI() {
 
-        /*
-		fold_item *f1 = malloc(sizeof(fold_item));
-		f1->function_name = strdup("___end___");
-		f1->fun = (void *)NULL;
-		f1->next = NULL;
-		current = f1;	
-        */
         current = NULL;
-
-
-
+        head = NULL;
 		cmd_len = redis_cmd_format(&cmd, "EXEC \r\n");
 
 		if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
@@ -3367,45 +3365,20 @@ PHP_METHOD(Redis, exec)
 
 	IF_PIPELINE() {
 	  
-        /*
-		fold_item *f1 = malloc(sizeof(fold_item));
-		f1->function_name = strdup("___end___");
-		f1->fun = (void *)NULL;
-		f1->next = NULL;
-		current->next = f1;
-		current = current->next;
-        */
-        current = NULL;
-	
-		current_request = head_request;
 		char *request;
 		int total = 0;
 		int offset = 0;
 		
-	
-		/** il faut calculer au préalable la taille de request */
-		/* compute the total request size */
-		current_request = head_request;
-		while(current_request != NULL) {
-			if(current_request->request_str == NULL) {
-				current_request = current_request->next;
-				continue;
-			}
-		  	total += current_request->request_size;
-			current_request = current_request->next;
-
+        /* compute the total request size */
+		for(ri = head_request; ri; ri = ri->next) {
+            total += ri->request_size;
 		}
-		request = malloc(total * sizeof(char *));
+		request = malloc(total);
 
-		current_request = head_request;		
-		while(current_request != NULL) {
-			if(current_request->request_str == NULL) {
-				current_request = current_request->next;
-				continue;
-			}
-			memcpy(request + offset, current_request->request_str, current_request->request_size);
-			offset += current_request->request_size;
-			current_request = current_request->next;
+        /* concatenate individual elements one by one in the target buffer */
+		for(ri = head_request; ri; ri = ri->next) {
+			memcpy(request + offset, ri->request_str, ri->request_size);
+			offset += ri->request_size;
 		}
 		request[offset] = '\0';
 
@@ -3425,11 +3398,8 @@ PHP_METHOD(Redis, exec)
 	}
 }
 
-zval *fold_this_item(INTERNAL_FUNCTION_PARAMETERS, fold_item *item, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) 
-{
-	zval *ret = malloc(sizeof(zval *));
-	ret = item->fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_DC, z_tab);	
-	return ret;
+PHPAPI void fold_this_item(INTERNAL_FUNCTION_PARAMETERS, fold_item *item, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
+	item->fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_DC, z_tab);
 }
 
 PHPAPI int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS, 
@@ -3444,17 +3414,9 @@ PHPAPI int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETE
 			current = current->next;
 		}
 	}
-	current = head;
 
-    while(numElems > 0) {		
-            /*
-		if(strcmp(current->function_name, "__begin__") == 0) {
-			current = current->next;
-		}	
-        */
+    for(current = head; current; current = current->next) {
 		fold_this_item(INTERNAL_FUNCTION_PARAM_PASSTHRU, current, redis_sock, z_tab TSRMLS_DC);	
-		current  = current->next;
-        numElems --;
     }
     return 0;
 }
@@ -3483,12 +3445,8 @@ PHP_METHOD(Redis, pipeline)
 		We need the response format of the n - 1 command. So, we can delete when n > 2, the { 1 .. n - 2} commands
 	*/
 	
-    /*
-	head = malloc(sizeof(fold_item));
-	current = head;
-	current->function_name = strdup("__begin__");	
-    */
-    current = NULL;
+    /* TODO: free list. */
+    head = current = NULL;
 
 	RETURN_ZVAL(getThis(), 1, 0);
 }

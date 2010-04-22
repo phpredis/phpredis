@@ -53,8 +53,13 @@
 	memcpy(tmp->request_str, cmd, cmd_len);\
 	tmp->request_size = cmd_len;\
 	tmp->next = NULL;\
-	if(current_request) current_request->next = tmp;\
-	current_request = tmp;
+	if(current_request) {\
+		current_request->next = tmp;\
+	} \
+	current_request = tmp; \
+	if(NULL == head_request) { \
+		head_request = current_request; \
+	}
 
 #define SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len) if(redis_sock_write(redis_sock, cmd, cmd_len) < 0) { \
 	efree(cmd); \
@@ -67,6 +72,9 @@
 	f1->next = NULL; \
 	if(current) current->next = f1; \
 	current = f1; \
+	if(NULL == head) { \
+		head = current; \
+	}\
 }
 
 #define REDIS_ELSE_IF_MULTI() \

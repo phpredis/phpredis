@@ -26,7 +26,25 @@ function test1($r, $type) {
 	->get('key2')
 	->exec();
 
-    assert($ret == array(TRUE, TRUE, 'value1', 'value1', 'value2', TRUE, 5, 5, 4, 4, TRUE, 4, FALSE, TRUE, TRUE, 9, TRUE, 4 ));
+    assert(is_array($ret));
+    assert($ret[0] == TRUE);
+    assert($ret[1] == TRUE);
+    assert($ret[2] == 'value1');
+    assert($ret[3] == 'value1');
+    assert($ret[4] == 'value2');
+    assert($ret[5] == TRUE);
+    assert($ret[6] == 5);
+    assert($ret[7] == 5);
+    assert($ret[8] == 4);
+    assert($ret[9] == 4);
+    assert($ret[10] == TRUE);
+    assert($ret[11] == 4);
+    assert($ret[12] == FALSE);
+    assert($ret[13] == TRUE);
+    assert($ret[14] == TRUE);
+    assert($ret[15] == 9);
+    assert($ret[16] == TRUE);
+    assert($ret[17] == 4);
 
     $ret = $r->multi($type)
 	->delete('key1')
@@ -38,19 +56,27 @@ function test1($r, $type) {
 	->exists('key3')
 	->ping()
 	->exec();
-    var_dump($ret);
-    assert($ret == array(TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, FALSE, '+PONG'));
+
+    assert(is_array($ret));
+    assert($ret[0] == TRUE);
+    assert($ret[1] == TRUE);
+    assert($ret[2] == TRUE);
+    assert($ret[3] == FALSE);
+    assert($ret[4] == TRUE);
+    assert($ret[5] == TRUE);
+    assert($ret[6] == FALSE);
+    assert($ret[7] == '+PONG');
 
     $ret = $r->multi($type)
 	->randomKey()
 	->exec();
-    //var_dump($ret);
+    var_dump($ret);
 	
 	/* ttl, mget, mset, msetnx, expire, expireAt */
     $ret = $r->multi($type)
 			->ttl('key')
-			->mget(array('key1', 'key2', 'key3'))
-			//->mset(array('key3' => 'value3', 'key4' => 'value4'))
+	//		->mget(array('key1', 'key2', 'key3'))
+	//		->mset(array('key3' => 'value3', 'key4' => 'value4'))
 			->set('key', 'value')
 			->expire('key', 5)			
 			->ttl('key')
@@ -86,6 +112,6 @@ function test1($r, $type) {
 
 }
 
-//test1($r, Redis::MULTI);
+// test1($r, Redis::MULTI);
 test1($r, Redis::PIPELINE);
 ?>
