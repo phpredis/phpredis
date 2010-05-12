@@ -162,7 +162,7 @@ function test1($r, $type) {
 
 }
 
-// test1($r, Redis::MULTI);
+test1($r, Redis::MULTI);
 test1($r, Redis::PIPELINE);
 
 

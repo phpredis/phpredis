@@ -77,9 +77,10 @@
 	}\
 }
 
-#define REDIS_ELSE_IF_MULTI() \
+#define REDIS_ELSE_IF_MULTI(function) \
 else if(get_flag(object) == REDIS_MULTI) { \
 	if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) {\
+		REDIS_MULTI_RESPONSE(function); \
 		RETURN_ZVAL(getThis(), 1, 0);\
 	} else {\
 		RETURN_FALSE;\
@@ -103,7 +104,7 @@ else if(get_flag(object) == REDIS_MULTI) { \
 	}
 
 #define REDIS_PROCESS_RESPONSE(function) \
-	REDIS_ELSE_IF_MULTI() \
+	REDIS_ELSE_IF_MULTI(function) \
 	REDIS_ELSE_IF_PIPELINE(function);
 
 /* {{{ struct RedisSock */
