@@ -338,7 +338,7 @@ PHPAPI int get_flag(zval *object)
 
 PHPAPI void set_flag(zval *object, int new_flag)
 {
-	zval **multi_flag;
+	zval **multi_flag = NULL;
 	int flag_result;
 
 	zend_hash_find(Z_OBJPROP_P(object), "multi_flag", sizeof("multi_flag"), (void **) &multi_flag);
@@ -1585,7 +1585,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     redis_sock = *out_sock;
 
     cmd_len += sizeof("\r\n") - 1;
-    cmd = emalloc(cmd_len);
+    cmd = emalloc(cmd_len+1);
 
     memcpy(cmd, keyword, keyword_len);
     int pos = keyword_len;
@@ -1597,7 +1597,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     }
     /* add the final new line. */
     memcpy(cmd + pos, "\r\n", 2);
-	cmd[cmd_len] = '\0';
+    cmd[cmd_len] = '\0'; /* just in case we want to print it... */
     efree(keys);
     efree(keys_len);
     if(z_args) efree(z_args);
@@ -3226,7 +3226,7 @@ PHP_METHOD(Redis, multi)
 		RETURN_FALSE;
 	}
 	IF_PIPELINE() {
-        head_request = current_request = NULL;
+        free_reply_callbacks();
 		RETURN_ZVAL(getThis(), 1, 0);
 	}
 }
@@ -3271,7 +3271,6 @@ PHP_METHOD(Redis, discard)
 PHPAPI int redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS,
                                       RedisSock *redis_sock TSRMLS_DC)
 {
-
     zval *z_tab;
     MAKE_STD_ZVAL(z_tab);
     array_init(z_tab);
@@ -3280,27 +3279,11 @@ PHPAPI int redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS
                     redis_sock, z_tab, NULL);
 
     *return_value = *z_tab;
-    zval_copy_ctor(z_tab);
+    zval_copy_ctor(return_value);
     efree(z_tab);
 
     /* free allocated function/request memory */
-	fold_item *fi;
-    for(fi = head; fi; ) {
-        fold_item *fi_next = fi->next;
-        free(fi);
-        fi = fi_next;
-    }
-	
-	request_item *ri;
-    for(ri = head_request; ri; ) {
-        struct request_item *ri_next = ri->next;
-        free(ri->request_str);
-        free(ri);
-        ri = ri_next;
-    }
-	
-    current = head = NULL;
-    current_request = head_request = NULL;
+    free_reply_callbacks();
 
     return 0;
 	
@@ -3322,6 +3305,9 @@ PHPAPI int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS,
 
 	/* number of responses */
     int numElems = atoi(inbuf+1);
+
+    zval_dtor(return_value);
+
     zval *z_tab;
     MAKE_STD_ZVAL(z_tab);
     array_init(z_tab);
@@ -3330,9 +3316,33 @@ PHPAPI int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS,
                     redis_sock, z_tab, numElems);
 
     *return_value = *z_tab;
-    zval_copy_ctor(z_tab);
+    zval_copy_ctor(return_value);
     efree(z_tab);
+
     return 0;
+}
+
+void
+free_reply_callbacks() {
+
+	fold_item *fi;
+    for(fi = head; fi; ) {
+        fold_item *fi_next = fi->next;
+        free(fi);
+        fi = fi_next;
+    }
+    head = current = NULL;
+
+
+	request_item *ri;
+    for(ri = head_request; ri; ) {
+        struct request_item *ri_next = ri->next;
+        free(ri->request_str);
+        free(ri);
+        ri = ri_next;
+    }
+    current_request = head_request = NULL;
+
 }
 
 /* exec */
@@ -3356,7 +3366,7 @@ PHP_METHOD(Redis, exec)
 
 	IF_MULTI() {
 
-		cmd_len = redis_cmd_format(&cmd, "EXEC \r\n");
+		cmd_len = redis_cmd_format(&cmd, "EXEC\r\n");
 
 		if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
 			efree(cmd);
@@ -3365,18 +3375,17 @@ PHP_METHOD(Redis, exec)
 		efree(cmd);
 
 	    if (redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC) < 0) {
-            current = NULL;
-            head = NULL;
+            zval_dtor(return_value);
+            free_reply_callbacks();
 			RETURN_FALSE;
 	    }
-        current = NULL;
-        head = NULL;
+        free_reply_callbacks();
 		set_flag(object, REDIS_ATOMIC);
 	}
 
 	IF_PIPELINE() {
 	  
-		char *request;
+		char *request = NULL;
 		int total = 0;
 		int offset = 0;
 		
@@ -3384,7 +3393,9 @@ PHP_METHOD(Redis, exec)
 		for(ri = head_request; ri; ri = ri->next) {
             total += ri->request_size;
 		}
-		request = malloc(total);
+        if(total) {
+		    request = malloc(total);
+        }
 
         /* concatenate individual elements one by one in the target buffer */
 		for(ri = head_request; ri; ri = ri->next) {
@@ -3395,18 +3406,25 @@ PHP_METHOD(Redis, exec)
 		if(request != NULL) {
 		    if (redis_sock_write(redis_sock, request, total) < 0) {
     		    free(request);
-                /* TODO: free data structures */
+                free_reply_callbacks();
+                set_flag(object, REDIS_ATOMIC);
         		RETURN_FALSE;
 		    }
 		   	free(request);
-		}
+		} else {
+                set_flag(object, REDIS_ATOMIC);
+                free_reply_callbacks();
+                array_init(return_value); /* empty array when no command was run. */
+                return;
+        }
 
 	    if (redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC) < 0) {
 			set_flag(object, REDIS_ATOMIC);
-            /* TODO: free data structures */
+            free_reply_callbacks();
 			RETURN_FALSE;
 	    }
 		set_flag(object, REDIS_ATOMIC);
+        free_reply_callbacks();
 	}
 }
 
@@ -3418,19 +3436,8 @@ PHPAPI int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETE
 							RedisSock *redis_sock, zval *z_tab, int numElems TSRMLS_DC) 
 {
 
-    /*
-	zval *z_response;
-	current = head;
-	if(numElems == 0) {
-		while(current != NULL) {
-			numElems ++;
-			current = current->next;
-		}
-	}
-    */
-
     for(current = head; current; current = current->next) {
-		fold_this_item(INTERNAL_FUNCTION_PARAM_PASSTHRU, current, redis_sock, z_tab TSRMLS_DC);	
+		fold_this_item(INTERNAL_FUNCTION_PARAM_PASSTHRU, current, redis_sock, z_tab TSRMLS_CC);	
     }
     return 0;
 }
@@ -3459,8 +3466,7 @@ PHP_METHOD(Redis, pipeline)
 		We need the response format of the n - 1 command. So, we can delete when n > 2, the { 1 .. n - 2} commands
 	*/
 	
-    /* TODO: free list. */
-    head = current = NULL;
+    free_reply_callbacks();
 
 	RETURN_ZVAL(getThis(), 1, 0);
 }

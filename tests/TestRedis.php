@@ -62,7 +62,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     public function testSet()
     {
-      	$this->assertEquals(TRUE, $this->redis->set('key', 'nil'));
+	$this->assertEquals(TRUE, $this->redis->set('key', 'nil'));
 	$this->assertEquals('nil', $this->redis->get('key'));
 
       	$this->assertEquals(TRUE, $this->redis->set('key', 'val'));

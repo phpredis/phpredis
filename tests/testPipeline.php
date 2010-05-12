@@ -28,24 +28,26 @@ function test1($r, $type) {
 	->exec();
 
     assert(is_array($ret));
-    assert($ret[0] == TRUE);
-    assert($ret[1] == TRUE);
-    assert($ret[2] == 'value1');
-    assert($ret[3] == 'value1');
-    assert($ret[4] == 'value2');
-    assert($ret[5] == TRUE);
-    assert($ret[6] == 5);
-    assert($ret[7] == 5);
-    assert($ret[8] == 4);
-    assert($ret[9] == 4);
-    assert($ret[10] == TRUE);
-    assert($ret[11] == 4);
-    assert($ret[12] == FALSE);
-    assert($ret[13] == TRUE);
-    assert($ret[14] == TRUE);
-    assert($ret[15] == 9);
-    assert($ret[16] == TRUE);
-    assert($ret[17] == 4);
+    $i = 0;
+    assert($ret[$i++] == TRUE);
+    assert($ret[$i++] == TRUE);
+    assert($ret[$i++] == 'value1');
+    assert($ret[$i++] == 'value1');
+    assert($ret[$i++] == 'value2');
+    assert($ret[$i++] == TRUE);
+    assert($ret[$i++] == 5);
+    assert($ret[$i++] == 5);
+    assert($ret[$i++] == 4);
+    assert($ret[$i++] == 4);
+    assert($ret[$i++] == TRUE);
+    assert($ret[$i++] == 4);
+    assert($ret[$i++] == FALSE);
+    assert($ret[$i++] == TRUE);
+    assert($ret[$i++] == TRUE);
+    assert($ret[$i++] == 9);
+    assert($ret[$i++] == TRUE);
+    assert($ret[$i++] == 4);
+    assert(count($ret) == $i);
 
     $ret = $r->multi($type)
 	->delete('key1')
@@ -162,8 +164,20 @@ function test1($r, $type) {
 
 }
 
-test1($r, Redis::MULTI);
-test1($r, Redis::PIPELINE);
+
+$count = 1000000;
+// $count = 10;
+
+for($i = 1; $i <= $count; $i++) {
+	test1($r, Redis::MULTI);
+	test1($r, Redis::PIPELINE);
+	$r->multi(Redis::MULTI)
+		->get('x')
+		->exec();
+	if($i >= 1000 && $i % ($count/1000) == 0) {
+		echo sprintf("%0.1f", 100 * $i/$count)."% (sent ". number_format($i) ." commands)\n";
+	}
+}
 
 
 ?>

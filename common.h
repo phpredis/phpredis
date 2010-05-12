@@ -95,12 +95,11 @@ else if(get_flag(object) == REDIS_MULTI) { \
 #define REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len) 	\
 	IF_MULTI_OR_ATOMIC() { \
 		SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len); \
+		efree(cmd); \
 	}\
 	IF_PIPELINE() { \
 		PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len); \
-	}	\
-	if(cmd != NULL) { \
-	  /*efree(cmd);*/ \
+		efree(cmd); \
 	}
 
 #define REDIS_PROCESS_RESPONSE(function) \
@@ -130,3 +129,6 @@ typedef struct request_item {
 	struct request_item *next;
 } request_item;
 request_item *head_request, *current_request;
+
+void
+free_reply_callbacks();
