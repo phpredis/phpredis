@@ -3279,7 +3279,6 @@ PHPAPI int redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS
                     redis_sock, z_tab, NULL);
 
     *return_value = *z_tab;
-    zval_copy_ctor(return_value);
     efree(z_tab);
 
     /* free allocated function/request memory */
@@ -3316,7 +3315,6 @@ PHPAPI int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS,
                     redis_sock, z_tab, numElems);
 
     *return_value = *z_tab;
-    zval_copy_ctor(return_value);
     efree(z_tab);
 
     return 0;

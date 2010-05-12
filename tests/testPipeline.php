@@ -99,6 +99,8 @@ function test1($r, $type) {
     assert(count($ret) == $i);
 
     $ret = $r->multi($type)
+			->set('lkey', 'x')
+			->set('lDest', 'y')
 			->delete('lkey', 'lDest')
 			->rpush('lkey', 'lvalue')
 			->lpush('lkey', 'lvalue')
@@ -121,6 +123,8 @@ function test1($r, $type) {
 		
     assert(is_array($ret));
     $i = 0;
+    assert($ret[$i++] === TRUE); // SET
+    assert($ret[$i++] === TRUE); // SET
     assert($ret[$i++] === 2); // deleting 2 keys
     assert($ret[$i++] === 1); // rpush, now 1 element
     assert($ret[$i++] === 2); // lpush, now 2 elements
