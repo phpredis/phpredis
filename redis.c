@@ -438,11 +438,9 @@ PHP_METHOD(Redis, set)
     cmd_len = redis_cmd_format(&cmd, "SET %s %d\r\n%s\r\n", key, key_len, val_len, val, val_len);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	
 	IF_ATOMIC() {
 		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
-	
 	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 	
 	
@@ -1967,7 +1965,7 @@ PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_l
  */
 PHP_METHOD(Redis, save)
 {
-    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SAVE\r\n", sizeof("SAVE\r\n")-1 TSRMLS_CC);
+    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, estrdup("SAVE\r\n"), sizeof("SAVE\r\n")-1 TSRMLS_CC);
 
 }
 /* }}} */
@@ -1976,7 +1974,7 @@ PHP_METHOD(Redis, save)
  */
 PHP_METHOD(Redis, bgSave)
 {
-    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "BGSAVE\r\n", sizeof("BGSAVE\r\n")-1 TSRMLS_CC);
+    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, estrdup("BGSAVE\r\n"), sizeof("BGSAVE\r\n")-1 TSRMLS_CC);
 
 }
 /* }}} */
@@ -1995,30 +1993,18 @@ PHPAPI void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int 
         RETURN_FALSE;
     }
 
-	IF_MULTI_OR_ATOMIC() {
-		if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
-			/* no efree here, cmd is an argument. */
-			RETURN_FALSE;
-		}
-	}
-	IF_PIPELINE() {
-		PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len);
-	}	
-
-	MULTI_RESPONSE(redis_long_response);
-	IF_ATOMIC() {
-		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
-	} 
-	ELSE_IF_MULTI()
-	ELSE_IF_PIPELINE();
-
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+    }
+    REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 
 /* {{{ proto integer Redis::lastSave()
  */
 PHP_METHOD(Redis, lastSave)
 {
-    generic_empty_long_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "LASTSAVE\r\n", sizeof("LASTSAVE\r\n") TSRMLS_CC);
+    generic_empty_long_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, estrdup("LASTSAVE\r\n"), sizeof("LASTSAVE\r\n")-1 TSRMLS_CC);
 }
 /* }}} */
 
@@ -2027,7 +2013,7 @@ PHP_METHOD(Redis, lastSave)
  */
 PHP_METHOD(Redis, flushDB)
 {
-    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHDB\r\n", sizeof("FLUSHDB\r\n")-1 TSRMLS_CC);
+    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, estrdup("FLUSHDB\r\n"), sizeof("FLUSHDB\r\n")-1 TSRMLS_CC);
 }
 /* }}} */
 
@@ -2035,7 +2021,7 @@ PHP_METHOD(Redis, flushDB)
  */
 PHP_METHOD(Redis, flushAll)
 {
-    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHALL\r\n", sizeof("FLUSHALL\r\n")-1 TSRMLS_CC);
+    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, estrdup("FLUSHALL\r\n"), sizeof("FLUSHALL\r\n")-1 TSRMLS_CC);
 }
 /* }}} */
 
@@ -2043,7 +2029,7 @@ PHP_METHOD(Redis, flushAll)
  */
 PHP_METHOD(Redis, dbSize)
 {
-    generic_empty_long_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DBSIZE\r\n", sizeof("DBSIZE\r\n") TSRMLS_CC);
+    generic_empty_long_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, estrdup("DBSIZE\r\n"), sizeof("DBSIZE\r\n")-1 TSRMLS_CC);
 }
 /* }}} */
 
@@ -3460,7 +3446,7 @@ PHP_METHOD(Redis, pipeline)
 	set_flag(object, REDIS_PIPELINE);	
 
 	/* 
-		NB : we keep the function fold, to detect the last function . 
+		NB : we keep the function fold, to detect the last function.
 		We need the response format of the n - 1 command. So, we can delete when n > 2, the { 1 .. n - 2} commands
 	*/
 	
