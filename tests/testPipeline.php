@@ -17,10 +17,10 @@ function test1($r, $type) {
 	->get('key2')
 	->decr('key2')
 	->get('key2')
-	->renameKey('key2', 'key3')	
+	->renameKey('key2', 'key3')
 	->get('key3')
-	->renameNx('key3', 'key1')	
-	->renameKey('key3', 'key2')	
+	->renameNx('key3', 'key1')
+	->renameKey('key3', 'key2')
 	->incr('key2', 5)
 	->get('key2')
 	->decr('key2', 5)
@@ -76,14 +76,14 @@ function test1($r, $type) {
     $ret = $r->multi($type)
 	->exec();
     assert($ret == array());
-	
+
     // ttl, mget, mset, msetnx, expire, expireAt
     $ret = $r->multi($type)
 			->ttl('key')
 			->mget(array('key1', 'key2', 'key3'))
 			->mset(array('key3' => 'value3', 'key4' => 'value4'))
 			->set('key', 'value')
-			->expire('key', 5)			
+			->expire('key', 5)
 			->ttl('key')
 			->expireAt('key', '0000')
 			->exec();
@@ -120,7 +120,7 @@ function test1($r, $type) {
 			->lGetRange('lkey', 0, -1)
 			->llen('lkey')
 			->exec();
-		
+
     assert(is_array($ret));
     $i = 0;
     assert($ret[$i++] === TRUE); // SET
@@ -169,7 +169,7 @@ function test1($r, $type) {
 }
 
 function test2($r, $type) {
-		
+
 	// general command
 	$ret = $r->multi($type)
 			->select(3)
@@ -199,10 +199,10 @@ function test2($r, $type) {
 	->get('key2')
 	->decr('key2')
 	->get('key2')
-	->renameKey('key2', 'key3')	
+	->renameKey('key2', 'key3')
 	->get('key3')
-	->renameNx('key3', 'key1')	
-	->renameKey('key3', 'key2')	
+	->renameNx('key3', 'key1')
+	->renameKey('key3', 'key2')
 	->incr('key2', 5)
 	->get('key2')
 	->decr('key2', 5)
@@ -253,7 +253,7 @@ function test2($r, $type) {
     $ret = $r->multi($type)
 	->randomKey()
 	->exec();
-	
+
     assert(is_array($ret) && count($ret) === 1);
     assert(is_string($ret[0]));
 
@@ -270,7 +270,6 @@ function test2($r, $type) {
     $i = 0;
     assert(is_array($ret));
     assert(is_long($ret[$i++]));
-    var_dump($ret);
     assert(is_array($ret[$i]) && count($ret[$i]) === 3); // mget
     $i++;
     assert($ret[$i++] === TRUE); // mset always returns TRUE
@@ -282,29 +281,53 @@ function test2($r, $type) {
 
 	/* lists */
     $ret = $r->multi($type)
-			->rpush('lkey', 'lvalue')
-			->lpush('lkey', 'lvalue')
-			->lpush('lkey', 'lvalue')
-			->lpush('lkey', 'lvalue')
-			->lpush('lkey', 'lvalue')
-			->lpush('lkey', 'lvalue')
-			->rpoplpush('lkey', 'lDest')
-	  		->lGetRange('lDest', 0, -1)
-	  		->lpop('lkey')
-			->llen('lkey')
-			->lRemove('lkey', 'lvalue', 3)
-			->llen('lkey')
-	  		->lget('lkey', 0)
-			->lGetRange('lkey', 0, -1)
-			->lSet('lkey', 1, "newValue")	 /* check errors on key not exists */
-			->lGetRange('lkey', 0, -1)
-			->llen('lkey')
-			->exec();
-		
-	var_dump($ret);
+	    ->delete('lkey', 'lDest')
+	    ->rpush('lkey', 'lvalue')
+	    ->lpush('lkey', 'lvalue')
+	    ->lpush('lkey', 'lvalue')
+	    ->lpush('lkey', 'lvalue')
+	    ->lpush('lkey', 'lvalue')
+	    ->lpush('lkey', 'lvalue')
+	    ->rpoplpush('lkey', 'lDest')
+	    ->lGetRange('lDest', 0, -1)
+	    ->lpop('lkey')
+	    ->llen('lkey')
+	    ->lRemove('lkey', 'lvalue', 3)
+	    ->llen('lkey')
+	    ->lget('lkey', 0)
+	    ->lGetRange('lkey', 0, -1)
+	    ->lSet('lkey', 1, "newValue")	 /* check errors on key not exists */
+	    ->lGetRange('lkey', 0, -1)
+	    ->llen('lkey')
+	    ->exec();
+
+    assert(is_array($ret));
+    $i = 0;
+    assert($ret[$i] >= 0 && $ret[$i] <= 2); // delete
+    $i++;
+    assert($ret[$i++] === 1); // 1 value
+    assert($ret[$i++] === 2); // 2 values
+    assert($ret[$i++] === 3); // 3 values
+    assert($ret[$i++] === 4); // 4 values
+    assert($ret[$i++] === 5); // 5 values
+    assert($ret[$i++] === 6); // 6 values
+    assert($ret[$i++] === 'lvalue');
+    assert($ret[$i++] === array('lvalue')); // 1 value only in lDest
+    assert($ret[$i++] === 'lvalue'); // now 4 values left
+    assert($ret[$i++] === 4);
+    assert($ret[$i++] === 3); // removing 3 elements.
+    assert($ret[$i++] === 1); // length is now 1
+    assert($ret[$i++] === 'lvalue'); // this is the head
+    assert($ret[$i++] === array('lvalue')); // 1 value only in lkey
+    assert($ret[$i++] === FALSE); // can't set list[1] if we only have a single value in it.
+    assert($ret[$i++] === array('lvalue')); // the previous error didn't touch anything.
+    assert($ret[$i++] === 1); // the previous error didn't change the length
+    assert(count($ret) === $i);
+
 
 	/* sets */
     $ret = $r->multi($type)
+	  ->delete('skey1', 'skey2', 'skeydest', 'skeyUnion', 'sDiffDest')
 	  ->sadd('skey1', 'sValue1')
 	  ->sadd('skey1', 'sValue2')
 	  ->sadd('skey1', 'sValue3')
@@ -314,7 +337,7 @@ function test2($r, $type) {
 	  ->sadd('skey2', 'sValue2')
 
 	  ->sSize('skey1')
-	  ->sremove('skey1', 'sValue2')
+	  ->sRemove('skey1', 'sValue2')
 	  ->sSize('skey1')
 	  ->sMove('skey1', 'skey2', 'sValue4')
 	  ->sSize('skey2')
@@ -324,17 +347,66 @@ function test2($r, $type) {
 	  ->sInter('skey1', 'skey2')
 	  ->sInterStore('skeydest', 'skey1', 'skey2')
 	  ->sMembers('skeydest')
-	  ->sPop('skey2')
-	  ->sSize('skey2')
 	  ->sUnion('skey2', 'skeydest')
 	  ->sUnionStore('skeyUnion', 'skey2', 'skeydest')
 	  ->sMembers('skeyUnion')
 	  ->sDiff('skey1', 'skey2')
 	  ->sDiffStore('sDiffDest', 'skey1', 'skey2')
 	  ->sMembers('sDiffDest')
+	  ->sPop('skey2')
+	  ->sSize('skey2')
 	  ->exec();
-	var_dump($ret);
 
+    $i = 0;
+    assert(is_array($ret));
+    assert(is_long($ret[$i]) && $ret[$i] >= 0 && $ret[$i] <= 5); $i++; // deleted at most 5 values.
+    assert($ret[$i++] === TRUE); // skey1 now has 1 element.
+    assert($ret[$i++] === TRUE); // skey1 now has 2 elements.
+    assert($ret[$i++] === TRUE); // skey1 now has 3 elements.
+    assert($ret[$i++] === TRUE); // skey1 now has 4 elements.
+
+    assert($ret[$i++] === TRUE); // skey2 now has 1 element.
+    assert($ret[$i++] === TRUE); // skey2 now has 2 elements.
+
+    assert($ret[$i++] === 4);
+    assert($ret[$i++] === TRUE); // we did remove that value.
+    assert($ret[$i++] === 3); // now 3 values only.
+    assert($ret[$i++] === TRUE); // the move did succeed.
+    assert($ret[$i++] === 3); // sKey2 now has 3 values.
+    assert($ret[$i++] === TRUE); // sKey2 does contain sValue4.
+    foreach(array('sValue1', 'sValue3') as $k) { // sKey1 contains sValue1 and sValue3.
+	    assert(in_array($k, $ret[$i]));
+    }
+    assert(count($ret[$i++]) === 2);
+    foreach(array('sValue1', 'sValue2', 'sValue4') as $k) { // sKey2 contains sValue1, sValue2, and sValue4.
+	    assert(in_array($k, $ret[$i]));
+    }
+    assert(count($ret[$i++]) === 3);
+    assert($ret[$i++] === array('sValue1')); // intersection
+    assert($ret[$i++] === 1); // intersection + store → 1 value in the destination set.
+    assert($ret[$i++] === array('sValue1')); // sinterstore destination contents
+
+    foreach(array('sValue1', 'sValue2', 'sValue4') as $k) { // (skeydest U sKey2) contains sValue1, sValue2, and sValue4.
+	    assert(in_array($k, $ret[$i]));
+    }
+    assert(count($ret[$i++]) === 3); // union size
+
+    assert($ret[$i++] === 3); // unionstore size
+    foreach(array('sValue1', 'sValue2', 'sValue4') as $k) { // (skeyUnion) contains sValue1, sValue2, and sValue4.
+	    assert(in_array($k, $ret[$i]));
+    }
+    assert(count($ret[$i++]) === 3); // skeyUnion size
+
+    assert($ret[$i++] === array('sValue3')); // diff skey1, skey2 : only sValue3 is not shared.
+    assert($ret[$i++] === 1); // sdiffstore size == 1
+    assert($ret[$i++] === array('sValue3')); // contents of sDiffDest
+
+    assert(in_array($ret[$i++], array('sValue1', 'sValue2', 'sValue4'))); // we removed an element from sKey2
+    assert($ret[$i++] === 2); // sKey2 now has 2 elements only.
+
+    assert(count($ret) === $i);
+
+    return;
 	/* sets */
     $ret = $r->multi($type)
 	  ->zadd('zkey1', 1, 'zValue1')
@@ -357,17 +429,17 @@ function test2($r, $type) {
 	  ->zadd('zkey2', 5, 'zValue5')
 	  ->zadd('zkey2', 2, 'zValue2')
 	  //->zRange('zkey1', 'zkey2')
-	  ->zInter('zInter', array('zkey1', 'zkey2'))	  
+	  ->zInter('zInter', array('zkey1', 'zkey2'))
 	  ->zRange('zkey1', 0, -1)
 	  ->zRange('zkey2', 0, -1)
 	  ->zRange('zInter', 0, -1)
-	  ->zInter('zUnion', array('zkey1', 'zkey2'))	  
+	  ->zInter('zUnion', array('zkey1', 'zkey2'))
 	  ->zRange('zUnion', 0, -1)
 	  ->zadd('zkey5', 5, 'zValue5')
 	  ->zIncrBy('zkey5', 3, 'zValue5') /* fix this */
 	  ->zScore('zkey5', 'zValue5')
 		->exec();
-	var_dump($ret);	
+//	var_dump($ret);
 
 	/* hash */
     $ret = $r->multi($type)
@@ -383,19 +455,20 @@ function test2($r, $type) {
 	  ->hgetall('hkey1') /* bug */
 	  //->hincrby()
 	  ->exec();
-	var_dump($ret);	
+//	var_dump($ret);
+
 }
 
 
 $count = 10000;
-$count = 1;
+$count = 10;
 
 for($i = 1; $i <= $count; $i++) {
-	//test1($r, Redis::MULTI);
-	//test1($r, Redis::PIPELINE);
+	test1($r, Redis::MULTI);
+	test1($r, Redis::PIPELINE);
 
 	test2($r, Redis::MULTI);
-	//test2($r, Redis::PIPELINE);
+	test2($r, Redis::PIPELINE);
 	/*
 	$r->multi(Redis::MULTI)
 		->get('x')
