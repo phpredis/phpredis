@@ -2569,27 +2569,22 @@ PHP_METHOD(Redis, zRangeByScore)
         efree(limit);
     }
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
-        efree(cmd);
-        RETURN_FALSE;
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    if(withscores) {
+            /* with scores! we have to transform the return array.
+             * return_value currently holds this: [elt0, val0, elt1, val1 ... ]
+             * we want [elt0 => val0, elt1 => val1], etc.
+             */
+            IF_ATOMIC() {
+              redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+            } 
+            REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_zipped);
+    } else {
+            IF_ATOMIC() {
+              redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+            } 
+            REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
     }
-    efree(cmd);
-
-    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                        redis_sock, NULL TSRMLS_CC) < 0) {
-        RETURN_FALSE;
-    }
-
-    if(!withscores) {
-        return;
-    }
-    /* with scores! we have to transform the return array.
-     * return_value currently holds this: [elt0, val0, elt1, val1 ... ]
-     * we want [elt0 => val0, elt1 => val1], etc.
-     */
-	IF_NOT_MULTI() {
-	    array_zip_values_and_scores(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
-	} ELSE_IF_MULTI()
 }
 /* }}} */
 
@@ -2645,10 +2640,9 @@ PHP_METHOD(Redis, zScore)
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
-	    redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
+	    redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
 	REDIS_PROCESS_RESPONSE(redis_bulk_double_response);
-
 }
 
 PHPAPI void generic_incrby_method(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len TSRMLS_DC) {
@@ -2673,7 +2667,7 @@ PHPAPI void generic_incrby_method(INTERNAL_FUNCTION_PARAMETERS, char *keyword, i
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
-	    redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC);
+	    redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	} 
 	REDIS_PROCESS_RESPONSE(redis_bulk_double_response);
 

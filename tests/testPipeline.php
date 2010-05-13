@@ -257,7 +257,7 @@ function test2($r, $type) {
     assert(is_array($ret) && count($ret) === 1);
     assert(is_string($ret[0]));
 
-	/* ttl, mget, mset, msetnx, expire, expireAt */
+    // ttl, mget, mset, msetnx, expire, expireAt
     $ret = $r->multi($type)
 			->ttl('key')
 			->mget(array('key1', 'key2', 'key3'))
@@ -279,7 +279,7 @@ function test2($r, $type) {
     assert($ret[$i++] === TRUE); // expireAt returns TRUE for an existing key
     assert(count($ret) === $i);
 
-	/* lists */
+    // lists
     $ret = $r->multi($type)
 	    ->delete('lkey', 'lDest')
 	    ->rpush('lkey', 'lvalue')
@@ -296,7 +296,7 @@ function test2($r, $type) {
 	    ->llen('lkey')
 	    ->lget('lkey', 0)
 	    ->lGetRange('lkey', 0, -1)
-	    ->lSet('lkey', 1, "newValue")	 /* check errors on key not exists */
+	    ->lSet('lkey', 1, "newValue")	 // check errors on missing key
 	    ->lGetRange('lkey', 0, -1)
 	    ->llen('lkey')
 	    ->exec();
@@ -325,7 +325,7 @@ function test2($r, $type) {
     assert(count($ret) === $i);
 
 
-	/* sets */
+    // sets
     $ret = $r->multi($type)
 	  ->delete('skey1', 'skey2', 'skeydest', 'skeyUnion', 'sDiffDest')
 	  ->sadd('skey1', 'sValue1')
@@ -406,40 +406,63 @@ function test2($r, $type) {
 
     assert(count($ret) === $i);
 
-    return;
-	/* sets */
+    // sorted sets
     $ret = $r->multi($type)
-	  ->zadd('zkey1', 1, 'zValue1')
-	  ->zadd('zkey1', 5, 'zValue5')
-	  ->zadd('zkey1', 2, 'zValue2')
-	  ->zrange('zkey1', 0, -1)
-	  ->zDelete('zkey1', 'zValue2')
-	  ->zrange('zkey1', 0, -1)
-	  ->zadd('zkey1', 11, 'zValue11')
-	  ->zadd('zkey1', 12, 'zValue12')
-	  ->zadd('zkey1', 13, 'zValue13')
-	  ->zadd('zkey1', 14, 'zValue14')
-	  ->zadd('zkey1', 15, 'zValue15')
-	  ->zDeleteRangeByScore('zkey1', 11, 13)
-	  ->zrange('zkey1', 0, -1)
-	  ->zReverseRange('zkey1', 0, -1)
-	  //->zRangeByScore('zkey1', 1, 6) /* seg fault */
-	  ->zCard('zkey1')
-	  //->zScore('zkey1', 'zValue15') /* no result */
-	  ->zadd('zkey2', 5, 'zValue5')
-	  ->zadd('zkey2', 2, 'zValue2')
-	  //->zRange('zkey1', 'zkey2')
-	  ->zInter('zInter', array('zkey1', 'zkey2'))
-	  ->zRange('zkey1', 0, -1)
-	  ->zRange('zkey2', 0, -1)
-	  ->zRange('zInter', 0, -1)
-	  ->zInter('zUnion', array('zkey1', 'zkey2'))
-	  ->zRange('zUnion', 0, -1)
-	  ->zadd('zkey5', 5, 'zValue5')
-	  ->zIncrBy('zkey5', 3, 'zValue5') /* fix this */
-	  ->zScore('zkey5', 'zValue5')
-		->exec();
-//	var_dump($ret);
+	    ->delete('zkey1', 'zkey2', 'zkey5')
+	    ->zadd('zkey1', 1, 'zValue1')
+	    ->zadd('zkey1', 5, 'zValue5')
+	    ->zadd('zkey1', 2, 'zValue2')
+	    ->zRange('zkey1', 0, -1)
+	    ->zDelete('zkey1', 'zValue2')
+	    ->zRange('zkey1', 0, -1)
+	    ->zadd('zkey1', 11, 'zValue11')
+	    ->zadd('zkey1', 12, 'zValue12')
+	    ->zadd('zkey1', 13, 'zValue13')
+	    ->zadd('zkey1', 14, 'zValue14')
+	    ->zadd('zkey1', 15, 'zValue15')
+	    ->zDeleteRangeByScore('zkey1', 11, 13)
+	    ->zrange('zkey1', 0, -1)
+	    ->zReverseRange('zkey1', 0, -1)
+	    ->zRangeByScore('zkey1', 1, 6)
+	    ->zCard('zkey1')
+	    ->zScore('zkey1', 'zValue15')
+//	    ->zadd('zkey2', 5, 'zValue5')
+//	    ->zadd('zkey2', 2, 'zValue2')
+//	    //->zRange('zkey1', 'zkey2')
+//	    ->zInter('zInter', array('zkey1', 'zkey2'))
+//	    ->zRange('zkey1', 0, -1)
+//	    ->zRange('zkey2', 0, -1)
+//	    ->zRange('zInter', 0, -1)
+//	    ->zInter('zUnion', array('zkey1', 'zkey2'))
+//	    ->zRange('zUnion', 0, -1)
+//	    ->zadd('zkey5', 5, 'zValue5')
+//	    ->zIncrBy('zkey5', 3, 'zValue5') /* fix this */
+//	    ->zScore('zkey5', 'zValue5')
+	    ->exec();
+  //  var_dump($ret);
+
+    $i = 0;
+    assert(is_array($ret));
+    assert(is_long($ret[$i]) && $ret[$i] >= 0 && $ret[$i] <= 3); $i++; // deleting at most 3 keys
+    assert($ret[$i++] === 1);
+    assert($ret[$i++] === 1);
+    assert($ret[$i++] === 1);
+    assert($ret[$i++] === array('zValue1', 'zValue2', 'zValue5'));
+    assert($ret[$i++] === 1);
+    assert($ret[$i++] === array('zValue1', 'zValue5'));
+    assert($ret[$i++] === 1); // adding zValue11
+    assert($ret[$i++] === 1); // adding zValue12
+    assert($ret[$i++] === 1); // adding zValue13
+    assert($ret[$i++] === 1); // adding zValue14
+    assert($ret[$i++] === 1); // adding zValue15
+    assert($ret[$i++] === 3); // deleted zValue11, zValue12, zValue13
+    assert($ret[$i++] === array('zValue1', 'zValue5', 'zValue14', 'zValue15'));
+    assert($ret[$i++] === array('zValue15', 'zValue14', 'zValue5', 'zValue1'));
+    assert($ret[$i++] === array('zValue1', 'zValue5'));
+    assert($ret[$i++] === 4); // 4 elements
+    assert($ret[$i++] === 15.0);
+
+    return;
 
 	/* hash */
     $ret = $r->multi($type)
@@ -461,7 +484,7 @@ function test2($r, $type) {
 
 
 $count = 10000;
-$count = 10;
+$count = 100;
 
 for($i = 1; $i <= $count; $i++) {
 	test1($r, Redis::MULTI);

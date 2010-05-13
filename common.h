@@ -66,7 +66,7 @@
     RETURN_FALSE; \
 }
 
-#define REDIS_MULTI_RESPONSE(callback) IF_MULTI_OR_PIPELINE() { \
+#define REDIS_SAVE_CALLBACK(callback) IF_MULTI_OR_PIPELINE() { \
 	fold_item *f1 = malloc(sizeof(fold_item)); \
 	f1->fun = (void *)callback; \
 	f1->next = NULL; \
@@ -80,7 +80,7 @@
 #define REDIS_ELSE_IF_MULTI(function) \
 else if(get_flag(object) == REDIS_MULTI) { \
 	if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) {\
-		REDIS_MULTI_RESPONSE(function); \
+		REDIS_SAVE_CALLBACK(function); \
 		RETURN_ZVAL(getThis(), 1, 0);\
 	} else {\
 		RETURN_FALSE;\
@@ -88,7 +88,7 @@ else if(get_flag(object) == REDIS_MULTI) { \
 }
 
 #define REDIS_ELSE_IF_PIPELINE(function) else IF_PIPELINE() {	\
-	REDIS_MULTI_RESPONSE(function); \
+	REDIS_SAVE_CALLBACK(function); \
 	RETURN_ZVAL(getThis(), 1, 0);\
 }
 

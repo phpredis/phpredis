@@ -186,7 +186,7 @@ redis_cmd_format(char **ret, char *format, ...) {
     }
 }
 
-PHPAPI void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock TSRMLS_DC) {
+PHPAPI void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
 
     char *response;
     int response_len;    
@@ -198,7 +198,11 @@ PHPAPI void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
 
     double ret = atof(response);
     efree(response);
-    RETURN_DOUBLE(ret);
+    IF_MULTI_OR_PIPELINE() {
+	add_next_index_double(z_tab, ret);
+    } else {
+    	RETURN_DOUBLE(ret);
+    }
 }
 
 PHPAPI void redis_boolean_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
@@ -262,34 +266,41 @@ PHPAPI void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
         RETURN_FALSE;
     }
 }
-    
+
+
+PHPAPI void redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
+
+	redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+	array_zip_values_and_scores(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1);
+}
+
 PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
 
-    char *response;
-    int response_len;
-    char ret;
+	char *response;
+	int response_len;
+	char ret;
 
-    zval *object = getThis();
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-	IF_MULTI_OR_PIPELINE() {
-            add_next_index_bool(z_tab, 0);
-	    return;
+	zval *object = getThis();
+	if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+		IF_MULTI_OR_PIPELINE() {
+			add_next_index_bool(z_tab, 0);
+			return;
+		}
+		RETURN_FALSE;
 	}
-        RETURN_FALSE;
-    }
-    ret = response[1];
-    efree(response);
+	ret = response[1];
+	efree(response);
 
-    IF_MULTI_OR_PIPELINE() {
-        if(ret == '1') {
-            add_next_index_bool(z_tab, 1);
-        } else {
-            add_next_index_bool(z_tab, 0);
-        }
-    }
+	IF_MULTI_OR_PIPELINE() {
+		if(ret == '1') {
+			add_next_index_bool(z_tab, 1);
+		} else {
+			add_next_index_bool(z_tab, 0);
+		}
+	}
 
-    if (ret == '1') {
-        RETURN_TRUE;
+	if (ret == '1') {
+		RETURN_TRUE;
     } else {
         RETURN_FALSE;
     }
