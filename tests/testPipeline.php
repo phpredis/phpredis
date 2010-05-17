@@ -483,7 +483,7 @@ function test2($r, $type) {
 
 
 $count = 10000;
-$count = 10000;
+$count = 10;
 
 for($i = 1; $i <= $count; $i++) {
 	test1($r, Redis::MULTI);

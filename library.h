@@ -18,6 +18,7 @@ PHPAPI char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes);
 PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *_z_tab TSRMLS_DC);
 PHPAPI int redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, int numElems TSRMLS_DC);
 PHPAPI int redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC);
+PHPAPI int redis_sock_read_multibulk_reply_zipped_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC);
 PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz);
 PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC);
 //PHPAPI int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC);
