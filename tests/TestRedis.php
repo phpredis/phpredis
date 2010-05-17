@@ -33,7 +33,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     public function testPing()
     {
 
-    	$this->assertEquals('+PONG', $this->redis->ping());
+	$this->assertEquals('+PONG', $this->redis->ping());
 
 	$count = 1000;
 	while($count --) {
@@ -256,14 +256,6 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    $this->assertTrue($this->redis->get('key') === '42');
     }
 
-    public function testAdd()
-    {
-        $key = 'key' . rand();
-
-        $this->assertTrue($this->redis->add($key, 'val'));
-        $this->assertFalse($this->redis->add($key, 'val'));
-    }
-
     public function testIncr()
     {
         $this->redis->set('key', 0);
@@ -328,7 +320,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->redis->delete($pattern.'3');
         $keys = $this->redis->getKeys($pattern.'*');
 
-        $this->redis->add($pattern.'3', 'something');
+	$this->redis->set($pattern.'3', 'something');
 
         $keys2 = $this->redis->getKeys($pattern.'*');
 

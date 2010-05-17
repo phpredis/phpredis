@@ -97,6 +97,30 @@ void add_constant_long(zend_class_entry *ce, char *name, int value) {
         (void*)&constval, sizeof(zval*), NULL);
 }
 
+int
+integer_length(int i) {
+    int sz = 0;
+    int ci = abs(i);
+    while (ci>0) {
+            ci = (ci/10);
+            sz += 1;
+    }
+    if(i == 0) { /* log 0 doesn't make sense. */
+            sz = 1;
+    } else if(i < 0) { /* allow for neg sign as well. */
+            sz++;
+    }
+    return sz;
+}
+
+int
+double_length(double d) {
+        char *s;
+        int ret = spprintf(&s, 0, "%f", d);
+        efree(s);
+        return ret;
+}
+
 /**
  * This command behave somehow like printf, except that strings need 2 arguments:
  * Their data and their size (strlen).

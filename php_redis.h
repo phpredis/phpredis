@@ -32,7 +32,6 @@ PHP_METHOD(Redis, getSet);
 PHP_METHOD(Redis, randomKey);
 PHP_METHOD(Redis, renameKey);
 PHP_METHOD(Redis, renameNx);
-PHP_METHOD(Redis, add);
 PHP_METHOD(Redis, getMultiple);
 PHP_METHOD(Redis, exists);
 PHP_METHOD(Redis, delete);
