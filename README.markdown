@@ -1571,13 +1571,13 @@ $this->hExists('h', 'NonExistingKey'); /* FALSE */
 Increments the value of a member from a hash by a given amount.
 ##### Parameters
 *key*  
-*value*: (double) value that will be added to the member's value  
 *member*  
+*value*: (integer) value that will be added to the member's value  
 ##### Return value
-*DOUBLE* the new value
+*LONG* the new value
 ##### Examples
 <pre>
 $redis->delete('h');
-$redis->hIncrBy('h', 2.5, 'x'); /* returns 2.5: h[x] = 2.5 now. */
-$redis->zIncrBy('h', 1, 'x'); /* h[x] ← 2.5 + 1. Returns 3.5 */
+$redis->hIncrBy('h', 'x', 2); /* returns 2: h[x] = 2 now. */
+$redis->zIncrBy('h', 'x', 1); /* h[x] ← 2 + 1. Returns 3 */
 </pre>

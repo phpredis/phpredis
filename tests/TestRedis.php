@@ -1450,8 +1450,8 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->delete('keyI');
 	$this->assertTrue( 2 === $this->redis->zInter('keyI', array('key1', 'key2', 'key3'), array(1, 5, 1), 'max'));
 	$this->assertTrue(array('val3', 'val1') === $this->redis->zRange('keyI', 0, -1));
-
 }
+
     public function testHashes() {
 	$this->redis->delete('h', 'key');
 
@@ -1499,14 +1499,12 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(FALSE === $this->redis->hExists('h', 'x'));
 
 	// hIncrBy
-	/*
 	$this->redis->delete('h');
-	$this->assertTrue(2 === $this->redis->hIncrBy('h', 2, 'x'));
-	$this->assertTrue(3 === $this->redis->hIncrBy('h', 1, 'x'));
+	$this->assertTrue(2 === $this->redis->hIncrBy('h', 'x', 2));
+	$this->assertTrue(3 === $this->redis->hIncrBy('h', 'x', 1));
 
 	$this->redis->hSet('h', 'y', 'not-a-number');
-	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 1, 'y'));
-	*/
+	$this->assertTrue(1 === $this->redis->hIncrBy('h', 'y', 1));
 
     }
 }

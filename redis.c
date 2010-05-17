@@ -3642,7 +3642,47 @@ PHPAPI void array_zip_values_and_scores(INTERNAL_FUNCTION_PARAMETERS, int use_at
 
 PHP_METHOD(Redis, hIncrBy)
 {
-    generic_incrby_method(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HINCRBY", sizeof("HINCRBY")-1 TSRMLS_CC);
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd, *member, *response;
+    int key_len, member_len, cmd_len, response_len;
+    long val;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ossl",
+                                     &object, redis_ce,
+                                     &key, &key_len, &member, &member_len, &val) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    /* HINCRBY key member amount */
+    cmd_len = redis_cmd_format(&cmd,
+                    "*4" _NL
+                    "$7" _NL
+                    "HINCRBY" _NL
+
+                    "$%d" _NL /* key_len */
+                    "%s" _NL  /* key */
+
+                    "$%d" _NL /* member_len */
+                    "%s" _NL  /* member */
+
+                    "$%d" _NL /* val_len */
+                    "%d" _NL  /* val */
+
+                    , key_len, key, key_len
+                    , member_len, member, member_len
+                    , integer_length(val), val);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
+
 }
 
 PHPAPI int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC) {
