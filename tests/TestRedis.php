@@ -1505,8 +1505,20 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$this->redis->hSet('h', 'y', 'not-a-number');
 	$this->assertTrue(1 === $this->redis->hIncrBy('h', 'y', 1));
+    }
+
+    public function testMultiExec() {
+	$this->testSequence(Redis::MULTI);
+    }
+
+    public function testPipeline() {
+	$this->testSequence(Redis::PIPELINE);
+    }
+
+    private function testSequence($mode) {
 
     }
+
 }
 
 ?>
