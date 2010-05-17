@@ -855,7 +855,6 @@ PHP_METHOD(Redis, delete)
                     1, &redis_sock TSRMLS_CC);
 	zval * object = getThis();
 
-
     IF_ATOMIC() {
 	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
     }
@@ -2670,7 +2669,10 @@ PHP_METHOD(Redis, zRange)
             REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_zipped);
     } else {
             IF_ATOMIC() {
-                redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+                if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                                    redis_sock, NULL TSRMLS_CC) < 0) {
+                    RETURN_FALSE;
+                }
             } 
             REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
     }
@@ -2790,9 +2792,9 @@ PHP_METHOD(Redis, zReverseRange)
                     "$%d" _NL\
                     "%s" _NL\
                     "$%d" _NL\
-                    "%f" _NL\
+                    "%d" _NL\
                     "$%d" _NL\
-                    "%f" _NL
+                    "%d" _NL
 
     if(withscores) {
         cmd_len = redis_cmd_format(&cmd,
@@ -2801,15 +2803,15 @@ PHP_METHOD(Redis, zReverseRange)
                     "$10" _NL
                     "WITHSCORES" _NL
                     , key_len, key, key_len
-                    , double_length(start), start
-                    , double_length(end), end);
+                    , integer_length(start), start
+                    , integer_length(end), end);
     } else {
         cmd_len = redis_cmd_format(&cmd,
                     "*4" _NL
                     ZREVRANGE_FORMAT
                     , key_len, key, key_len
-                    , double_length(start), start
-                    , double_length(end), end);
+                    , integer_length(start), start
+                    , integer_length(end), end);
 
 
     }
@@ -2823,7 +2825,10 @@ PHP_METHOD(Redis, zReverseRange)
     	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_zipped);
     } else {
     	IF_ATOMIC() {
-    		redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+            if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                                redis_sock, NULL TSRMLS_CC) < 0) {
+                RETURN_FALSE;
+            }
     	}
     	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
     }
@@ -2840,6 +2845,8 @@ PHP_METHOD(Redis, zRangeByScore)
     int key_len, cmd_len, response_len;
     zend_bool withscores = 0;
     double start, end;
+    int has_limit = 0;
+    long limit_low, limit_high;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osdd|a",
                                      &object, redis_ce,
@@ -2863,26 +2870,87 @@ PHP_METHOD(Redis, zRangeByScore)
         if(zend_hash_find(Z_ARRVAL_P(z_options), "limit", sizeof("limit"), (void**)&z_limit_val_pp)== SUCCESS) {;
             if(zend_hash_num_elements(Z_ARRVAL_PP(z_limit_val_pp)) == 2) {
                 zval **z_offset_pp, **z_count_pp;
-                /* get the two values from the table, check that they are indeed of LONG type */
+                // get the two values from the table, check that they are indeed of LONG type
                 if(SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_limit_val_pp), 0, (void**)&z_offset_pp) &&
                   SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_limit_val_pp), 1, (void**)&z_count_pp) &&
                   Z_TYPE_PP(z_offset_pp) == IS_LONG &&
                   Z_TYPE_PP(z_count_pp) == IS_LONG) {
 
-                    spprintf(&limit, 0, " LIMIT %ld %ld", Z_LVAL_PP(z_offset_pp), Z_LVAL_PP(z_count_pp));
+                    has_limit = 1;
+                    limit_low = Z_LVAL_PP(z_offset_pp);
+                    limit_high = Z_LVAL_PP(z_count_pp);
                 }
             }
         }
     }
 
+#define BASIC_FORMAT\
+                       "$13" _NL\
+                       "ZRANGEBYSCORE" _NL\
+                       \
+                       "$%d" _NL /* key_len */\
+                       "%s" _NL  /* key */\
+                       \
+                       "$%d" _NL /* start_len */\
+                       "%f" _NL  /* start */\
+                       \
+                       "$%d" _NL /* end_len */\
+                       "%f" _NL  /* end */
+#define BASIC_FORMAT_WITH_LIMIT BASIC_FORMAT\
+                       "$5" _NL\
+                       "LIMIT" _NL\
+                       \
+                       "$%d" _NL /* limit_low_len */\
+                       "%d" _NL  /* limit_low */\
+                       \
+                       "$%d" _NL /* limit_high_len */\
+                       "%d" _NL  /* limit_high */
+
     if(withscores) {
-        cmd_len = spprintf(&cmd, 0, "ZRANGEBYSCORE %s %f %f%s WITHSCORES\r\n", key, start, end, limit?limit:"");
+        if(has_limit) {
+            cmd_len = redis_cmd_format(&cmd,
+                            "*8" _NL
+                            BASIC_FORMAT_WITH_LIMIT
+                            "$10" _NL
+                            "WITHSCORES" _NL
+                            , key_len, key, key_len
+                            , double_length(start), start
+                            , double_length(end), end
+                            , integer_length(limit_low), limit_low
+                            , integer_length(limit_high), limit_high);
+        } else {
+            cmd_len = redis_cmd_format(&cmd,
+                            "*5" _NL
+                            BASIC_FORMAT
+                            "$10" _NL
+                            "WITHSCORES" _NL
+                            , key_len, key, key_len
+                            , double_length(start), start
+                            , double_length(end), end);
+        }
     } else {
-        cmd_len = spprintf(&cmd, 0, "ZRANGEBYSCORE %s %f %f%s\r\n", key, start, end, limit?limit:"");
+
+        if(has_limit) {
+
+            cmd_len = redis_cmd_format(&cmd,
+                            "*7" _NL
+                            BASIC_FORMAT_WITH_LIMIT
+                            , key_len, key, key_len
+                            , double_length(start), start
+                            , double_length(end), end
+                            , integer_length(limit_low), limit_low
+                            , integer_length(limit_high), limit_high);
+        } else {
+            cmd_len = redis_cmd_format(&cmd,
+                            "*4" _NL
+                            BASIC_FORMAT
+                            , key_len, key, key_len
+                            , double_length(start), start
+                            , double_length(end), end);
+        }
     }
-    if(limit) {
-        efree(limit);
-    }
+#undef BASIC_FORMAT
+#undef BASIC_FORMAT_WITH_LIMIT
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     if(withscores) {
@@ -2891,12 +2959,17 @@ PHP_METHOD(Redis, zRangeByScore)
              * we want [elt0 => val0, elt1 => val1], etc.
              */
             IF_ATOMIC() {
-              redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+                if(redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC) < 0) {
+                    RETURN_FALSE;
+                }
             } 
             REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_zipped);
     } else {
             IF_ATOMIC() {
-              redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+                if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                                    redis_sock, NULL TSRMLS_CC) < 0) {
+                    RETURN_FALSE;
+                }
             } 
             REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
     }
@@ -3560,7 +3633,7 @@ PHP_METHOD(Redis, multi)
     current = NULL;
 	
 	IF_MULTI() {
-	    cmd_len = redis_cmd_format(&cmd, "MULTI \r\n");
+	    cmd_len = redis_cmd_format(&cmd, "*1" _NL "$5" _NL "MULTI" _NL);
 
     	if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
         	efree(cmd);

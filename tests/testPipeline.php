@@ -169,7 +169,6 @@ function test1($r, $type) {
 }
 
 function test2($r, $type) {
-
 	// general command
 	$ret = $r->multi($type)
 			->select(3)
@@ -426,18 +425,18 @@ function test2($r, $type) {
 	    ->zRangeByScore('zkey1', 1, 6)
 	    ->zCard('zkey1')
 	    ->zScore('zkey1', 'zValue15')
-//	    ->zadd('zkey2', 5, 'zValue5')
-//	    ->zadd('zkey2', 2, 'zValue2')
-//	    //->zRange('zkey1', 'zkey2')
-//	    ->zInter('zInter', array('zkey1', 'zkey2'))
-//	    ->zRange('zkey1', 0, -1)
-//	    ->zRange('zkey2', 0, -1)
-//	    ->zRange('zInter', 0, -1)
-//	    ->zInter('zUnion', array('zkey1', 'zkey2'))
-//	    ->zRange('zUnion', 0, -1)
-//	    ->zadd('zkey5', 5, 'zValue5')
-//	    ->zIncrBy('zkey5', 3, 'zValue5') /* fix this */
-//	    ->zScore('zkey5', 'zValue5')
+	    ->zadd('zkey2', 5, 'zValue5')
+	    ->zadd('zkey2', 2, 'zValue2')
+	    //->zRange('zkey1', 'zkey2')
+	    ->zInter('zInter', array('zkey1', 'zkey2'))
+	    ->zRange('zkey1', 0, -1)
+	    ->zRange('zkey2', 0, -1)
+	    ->zRange('zInter', 0, -1)
+	    ->zInter('zUnion', array('zkey1', 'zkey2'))
+	    ->zRange('zUnion', 0, -1)
+	    ->zadd('zkey5', 5, 'zValue5')
+	    ->zIncrBy('zkey5', 3, 'zValue5') /* fix this */
+	    ->zScore('zkey5', 'zValue5')
 	    ->exec();
   //  var_dump($ret);
 
@@ -484,7 +483,7 @@ function test2($r, $type) {
 
 
 $count = 10000;
-$count = 100;
+$count = 10000;
 
 for($i = 1; $i <= $count; $i++) {
 	test1($r, Redis::MULTI);
