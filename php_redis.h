@@ -133,7 +133,7 @@ PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_a
 PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len TSRMLS_DC, ...);
 PHPAPI void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len TSRMLS_DC, ...);
 
-PHPAPI void array_zip_values_and_scores(INTERNAL_FUNCTION_PARAMETERS, int use_atof TSRMLS_DC);
+PHPAPI void array_zip_values_and_scores(zval *z_tab, int use_atof TSRMLS_DC);
 PHPAPI int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC);
 
 PHPAPI int get_flag(zval *object);

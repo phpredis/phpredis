@@ -30,6 +30,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->setUp();
         $this->tearDown();
     }
+    /*
     public function testPing()
     {
 
@@ -1506,16 +1507,515 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->hSet('h', 'y', 'not-a-number');
 	$this->assertTrue(1 === $this->redis->hIncrBy('h', 'y', 1));
     }
+*/
 
     public function testMultiExec() {
-	$this->testSequence(Redis::MULTI);
+	$this->sequence(Redis::MULTI);
     }
 
     public function testPipeline() {
-	$this->testSequence(Redis::PIPELINE);
+	$this->sequence(Redis::PIPELINE);
     }
 
-    private function testSequence($mode) {
+    protected function sequence($mode) {
+
+	    $ret = $this->redis->multi($mode)
+		    ->delete('key1')
+		    ->set('key1', 'value1')
+		    ->get('key1')
+		    ->getSet('key1', 'value2')
+		    ->get('key1')
+		    ->set('key2', 4)
+		    ->incr('key2')
+		    ->get('key2')
+		    ->decr('key2')
+		    ->get('key2')
+		    ->renameKey('key2', 'key3')
+		    ->get('key3')
+		    ->renameNx('key3', 'key1')
+		    ->renameKey('key3', 'key2')
+		    ->incr('key2', 5)
+		    ->get('key2')
+		    ->decr('key2', 5)
+		    ->get('key2')
+		    ->exec();
+
+	    $this->assertTrue(is_array($ret));
+	    $i = 0;
+	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue($ret[$i++] == 'value1');
+	    $this->assertTrue($ret[$i++] == 'value1');
+	    $this->assertTrue($ret[$i++] == 'value2');
+	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue($ret[$i++] == 5);
+	    $this->assertTrue($ret[$i++] == 5);
+	    $this->assertTrue($ret[$i++] == 4);
+	    $this->assertTrue($ret[$i++] == 4);
+	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue($ret[$i++] == 4);
+	    $this->assertTrue($ret[$i++] == FALSE);
+	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue($ret[$i++] == 9);
+	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue($ret[$i++] == 4);
+	    $this->assertTrue(count($ret) == $i);
+
+	    $ret = $this->redis->multi($mode)
+		    ->delete('key1')
+		    ->delete('key2')
+		    ->set('key1', 'val1')
+		    ->setnx('key1', 'valX')
+		    ->setnx('key2', 'valX')
+		    ->exists('key1')
+		    ->exists('key3')
+		    ->ping()
+		    ->exec();
+
+	    $this->assertTrue(is_array($ret));
+	    $this->assertTrue($ret[0] == TRUE);
+	    $this->assertTrue($ret[1] == TRUE);
+	    $this->assertTrue($ret[2] == TRUE);
+	    $this->assertTrue($ret[3] == FALSE);
+	    $this->assertTrue($ret[4] == TRUE);
+	    $this->assertTrue($ret[5] == TRUE);
+	    $this->assertTrue($ret[6] == FALSE);
+	    $this->assertTrue($ret[7] == '+PONG');
+
+	    $ret = $this->redis->multi($mode)
+		    ->randomKey()
+		    ->exec();
+	    $ret = $this->redis->multi($mode)
+		    ->exec();
+	    $this->assertTrue($ret == array());
+
+	    // ttl, mget, mset, msetnx, expire, expireAt
+	    $ret = $this->redis->multi($mode)
+		    ->ttl('key')
+		    ->mget(array('key1', 'key2', 'key3'))
+		    ->mset(array('key3' => 'value3', 'key4' => 'value4'))
+		    ->set('key', 'value')
+		    ->expire('key', 5)
+		    ->ttl('key')
+		    ->expireAt('key', '0000')
+		    ->exec();
+	    $this->assertTrue(is_array($ret));
+	    $i = 0;
+	    $this->assertTrue($ret[$i++] == -1);
+	    $this->assertTrue($ret[$i++] === array('val1', 'valX', FALSE)); // mget
+	    $this->assertTrue($ret[$i++] === TRUE); // mset
+	    $this->assertTrue($ret[$i++] === TRUE); // set
+	    $this->assertTrue($ret[$i++] === TRUE); // expire
+	    $this->assertTrue($ret[$i++] === 5);    // ttl
+	    $this->assertTrue($ret[$i++] === TRUE); // expireAt
+	    $this->assertTrue(count($ret) == $i);
+
+	    $ret = $this->redis->multi($mode)
+		    ->set('lkey', 'x')
+		    ->set('lDest', 'y')
+		    ->delete('lkey', 'lDest')
+		    ->rpush('lkey', 'lvalue')
+		    ->lpush('lkey', 'lvalue')
+		    ->lpush('lkey', 'lvalue')
+		    ->lpush('lkey', 'lvalue')
+		    ->lpush('lkey', 'lvalue')
+		    ->lpush('lkey', 'lvalue')
+		    ->rpoplpush('lkey', 'lDest')
+		    ->lGetRange('lDest', 0, -1)
+		    ->lpop('lkey')
+		    ->llen('lkey')
+		    ->lRemove('lkey', 'lvalue', 3)
+		    ->llen('lkey')
+		    ->lget('lkey', 0)
+		    ->lGetRange('lkey', 0, -1)
+		    ->lSet('lkey', 1, "newValue")	 // check errors on key not exists
+		    ->lGetRange('lkey', 0, -1)
+		    ->llen('lkey')
+		    ->exec();
+
+	    $this->assertTrue(is_array($ret));
+	    $i = 0;
+	    $this->assertTrue($ret[$i++] === TRUE); // SET
+	    $this->assertTrue($ret[$i++] === TRUE); // SET
+	    $this->assertTrue($ret[$i++] === 2); // deleting 2 keys
+	    $this->assertTrue($ret[$i++] === 1); // rpush, now 1 element
+	    $this->assertTrue($ret[$i++] === 2); // lpush, now 2 elements
+	    $this->assertTrue($ret[$i++] === 3); // lpush, now 3 elements
+	    $this->assertTrue($ret[$i++] === 4); // lpush, now 4 elements
+	    $this->assertTrue($ret[$i++] === 5); // lpush, now 5 elements
+	    $this->assertTrue($ret[$i++] === 6); // lpush, now 6 elements
+	    $this->assertTrue($ret[$i++] === 'lvalue'); // rpoplpush returns the element: "lvalue"
+	    $this->assertTrue($ret[$i++] === array('lvalue')); // lDest contains only that one element.
+	    $this->assertTrue($ret[$i++] === 'lvalue'); // removing a second element from lkey, now 4 elements left ↓
+	    $this->assertTrue($ret[$i++] === 4); // 4 elements left, after 2 pops.
+	    $this->assertTrue($ret[$i++] === 3); // removing 3 elements, now 1 left.
+	    $this->assertTrue($ret[$i++] === 1); // 1 element left
+	    $this->assertTrue($ret[$i++] === "lvalue"); // this is the current head.
+	    $this->assertTrue($ret[$i++] === array("lvalue")); // this is the current list.
+	    $this->assertTrue($ret[$i++] === FALSE); // updating a non-existent element fails.
+	    $this->assertTrue($ret[$i++] === array("lvalue")); // this is the current list.
+	    $this->assertTrue($ret[$i++] === 1); // 1 element left
+	    $this->assertTrue(count($ret) == $i);
+
+
+	    $ret = $this->redis->multi(Redis::PIPELINE)
+		    ->delete('lkey', 'lDest')
+		    ->rpush('lkey', 'lvalue')
+		    ->lpush('lkey', 'lvalue')
+		    ->lpush('lkey', 'lvalue')
+		    ->rpoplpush('lkey', 'lDest')
+		    ->lGetRange('lDest', 0, -1)
+		    ->lpop('lkey')
+		    ->exec();
+	    $this->assertTrue(is_array($ret));
+	    $i = 0;
+	    $this->assertTrue($ret[$i++] <= 2); // deleted 0, 1, or 2 items
+	    $this->assertTrue($ret[$i++] === 1); // 1 element in the list
+	    $this->assertTrue($ret[$i++] === 2); // 2 elements in the list
+	    $this->assertTrue($ret[$i++] === 3); // 3 elements in the list
+	    $this->assertTrue($ret[$i++] === 'lvalue'); // rpoplpush returns the element: "lvalue"
+	    $this->assertTrue($ret[$i++] === array('lvalue')); // rpoplpush returns the element: "lvalue"
+	    $this->assertTrue($ret[$i++] === 'lvalue'); // pop returns the front element: "lvalue"
+	    $this->assertTrue(count($ret) == $i);
+
+
+	    // general command
+	    $ret = $this->redis->multi($mode)
+		    ->select(3)
+		    ->set('keyAAA', 'value')
+		    ->set('keyAAB', 'value')
+		    ->dbSize()
+		    ->lastsave()
+		    ->exec();
+	    $i = 0;
+	    $this->assertTrue(is_array($ret));
+	    $this->assertTrue($ret[$i++] === TRUE); // select
+	    $this->assertTrue($ret[$i++] === TRUE); // set
+	    $this->assertTrue($ret[$i++] === TRUE); // set
+	    $this->assertTrue(is_long($ret[$i++])); // dbsize
+	    $this->assertTrue(is_long($ret[$i++])); // lastsave
+
+	    $this->assertTrue(count($ret) === $i);
+
+	    $ret = $this->redis->multi($mode)
+		    ->delete('key1')
+		    ->set('key1', 'value1')
+		    ->get('key1')
+		    ->getSet('key1', 'value2')
+		    ->get('key1')
+		    ->set('key2', 4)
+		    ->incr('key2')
+		    ->get('key2')
+		    ->decr('key2')
+		    ->get('key2')
+		    ->renameKey('key2', 'key3')
+		    ->get('key3')
+		    ->renameNx('key3', 'key1')
+		    ->renameKey('key3', 'key2')
+		    ->incr('key2', 5)
+		    ->get('key2')
+		    ->decr('key2', 5)
+		    ->get('key2')
+		    ->exec();
+
+	    $i = 0;
+	    $this->assertTrue(is_array($ret));
+	    $this->assertTrue(is_long($ret[$i]) && $ret[$i] <= 1); $i++;
+	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue($ret[$i++] == 'value1');
+	    $this->assertTrue($ret[$i++] == 'value1');
+	    $this->assertTrue($ret[$i++] == 'value2');
+	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue($ret[$i++] == 5);
+	    $this->assertTrue($ret[$i++] == 5);
+	    $this->assertTrue($ret[$i++] == 4);
+	    $this->assertTrue($ret[$i++] == 4);
+	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue($ret[$i++] == 4);
+	    $this->assertTrue($ret[$i++] == FALSE);
+	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue($ret[$i++] == 9);
+	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue($ret[$i++] == 4);
+
+	    $ret = $this->redis->multi($mode)
+		    ->delete('key1')
+		    ->delete('key2')
+		    ->set('key1', 'val1')
+		    ->setnx('key1', 'valX')
+		    ->setnx('key2', 'valX')
+		    ->exists('key1')
+		    ->exists('key3')
+		    ->ping()
+		    ->exec();
+
+	    $this->assertTrue(is_array($ret));
+	    $this->assertTrue($ret[0] == TRUE);
+	    $this->assertTrue($ret[1] == TRUE);
+	    $this->assertTrue($ret[2] == TRUE);
+	    $this->assertTrue($ret[3] == FALSE);
+	    $this->assertTrue($ret[4] == TRUE);
+	    $this->assertTrue($ret[5] == TRUE);
+	    $this->assertTrue($ret[6] == FALSE);
+	    $this->assertTrue($ret[7] == '+PONG');
+
+	    $ret = $this->redis->multi($mode)
+		    ->randomKey()
+		    ->exec();
+
+	    $this->assertTrue(is_array($ret) && count($ret) === 1);
+	    $this->assertTrue(is_string($ret[0]));
+
+	    // ttl, mget, mset, msetnx, expire, expireAt
+	    $ret = $this->redis->multi($mode)
+		    ->ttl('key')
+		    ->mget(array('key1', 'key2', 'key3'))
+		    ->mset(array('key3' => 'value3', 'key4' => 'value4'))
+		    ->set('key', 'value')
+		    ->expire('key', 5)
+		    ->ttl('key')
+		    ->expireAt('key', '0000')
+		    ->exec();
+	    $i = 0;
+	    $this->assertTrue(is_array($ret));
+	    $this->assertTrue(is_long($ret[$i++]));
+	    $this->assertTrue(is_array($ret[$i]) && count($ret[$i]) === 3); // mget
+	    $i++;
+	    $this->assertTrue($ret[$i++] === TRUE); // mset always returns TRUE
+	    $this->assertTrue($ret[$i++] === TRUE); // set always returns TRUE
+	    $this->assertTrue($ret[$i++] === TRUE); // expire always returns TRUE
+	    $this->assertTrue($ret[$i++] === 5); // TTL was just set.
+	    $this->assertTrue($ret[$i++] === TRUE); // expireAt returns TRUE for an existing key
+	    $this->assertTrue(count($ret) === $i);
+
+	    // lists
+	    $ret = $this->redis->multi($mode)
+		    ->delete('lkey', 'lDest')
+		    ->rpush('lkey', 'lvalue')
+		    ->lpush('lkey', 'lvalue')
+		    ->lpush('lkey', 'lvalue')
+		    ->lpush('lkey', 'lvalue')
+		    ->lpush('lkey', 'lvalue')
+		    ->lpush('lkey', 'lvalue')
+		    ->rpoplpush('lkey', 'lDest')
+		    ->lGetRange('lDest', 0, -1)
+		    ->lpop('lkey')
+		    ->llen('lkey')
+		    ->lRemove('lkey', 'lvalue', 3)
+		    ->llen('lkey')
+		    ->lget('lkey', 0)
+		    ->lGetRange('lkey', 0, -1)
+		    ->lSet('lkey', 1, "newValue")	 // check errors on missing key
+		    ->lGetRange('lkey', 0, -1)
+		    ->llen('lkey')
+		    ->exec();
+
+	    $this->assertTrue(is_array($ret));
+	    $i = 0;
+	    $this->assertTrue($ret[$i] >= 0 && $ret[$i] <= 2); // delete
+	    $i++;
+	    $this->assertTrue($ret[$i++] === 1); // 1 value
+	    $this->assertTrue($ret[$i++] === 2); // 2 values
+	    $this->assertTrue($ret[$i++] === 3); // 3 values
+	    $this->assertTrue($ret[$i++] === 4); // 4 values
+	    $this->assertTrue($ret[$i++] === 5); // 5 values
+	    $this->assertTrue($ret[$i++] === 6); // 6 values
+	    $this->assertTrue($ret[$i++] === 'lvalue');
+	    $this->assertTrue($ret[$i++] === array('lvalue')); // 1 value only in lDest
+	    $this->assertTrue($ret[$i++] === 'lvalue'); // now 4 values left
+	    $this->assertTrue($ret[$i++] === 4);
+	    $this->assertTrue($ret[$i++] === 3); // removing 3 elements.
+	    $this->assertTrue($ret[$i++] === 1); // length is now 1
+	    $this->assertTrue($ret[$i++] === 'lvalue'); // this is the head
+	    $this->assertTrue($ret[$i++] === array('lvalue')); // 1 value only in lkey
+	    $this->assertTrue($ret[$i++] === FALSE); // can't set list[1] if we only have a single value in it.
+	    $this->assertTrue($ret[$i++] === array('lvalue')); // the previous error didn't touch anything.
+	    $this->assertTrue($ret[$i++] === 1); // the previous error didn't change the length
+	    $this->assertTrue(count($ret) === $i);
+
+
+	    // sets
+	    $ret = $this->redis->multi($mode)
+		    ->delete('skey1', 'skey2', 'skeydest', 'skeyUnion', 'sDiffDest')
+		    ->sadd('skey1', 'sValue1')
+		    ->sadd('skey1', 'sValue2')
+		    ->sadd('skey1', 'sValue3')
+		    ->sadd('skey1', 'sValue4')
+
+		    ->sadd('skey2', 'sValue1')
+		    ->sadd('skey2', 'sValue2')
+
+		    ->sSize('skey1')
+		    ->sRemove('skey1', 'sValue2')
+		    ->sSize('skey1')
+		    ->sMove('skey1', 'skey2', 'sValue4')
+		    ->sSize('skey2')
+		    ->sContains('skey2', 'sValue4')
+		    ->sMembers('skey1')
+		    ->sMembers('skey2')
+		    ->sInter('skey1', 'skey2')
+		    ->sInterStore('skeydest', 'skey1', 'skey2')
+		    ->sMembers('skeydest')
+		    ->sUnion('skey2', 'skeydest')
+		    ->sUnionStore('skeyUnion', 'skey2', 'skeydest')
+		    ->sMembers('skeyUnion')
+		    ->sDiff('skey1', 'skey2')
+		    ->sDiffStore('sDiffDest', 'skey1', 'skey2')
+		    ->sMembers('sDiffDest')
+		    ->sPop('skey2')
+		    ->sSize('skey2')
+		    ->exec();
+
+	    $i = 0;
+	    $this->assertTrue(is_array($ret));
+	    $this->assertTrue(is_long($ret[$i]) && $ret[$i] >= 0 && $ret[$i] <= 5); $i++; // deleted at most 5 values.
+	    $this->assertTrue($ret[$i++] === TRUE); // skey1 now has 1 element.
+	    $this->assertTrue($ret[$i++] === TRUE); // skey1 now has 2 elements.
+	    $this->assertTrue($ret[$i++] === TRUE); // skey1 now has 3 elements.
+	    $this->assertTrue($ret[$i++] === TRUE); // skey1 now has 4 elements.
+
+	    $this->assertTrue($ret[$i++] === TRUE); // skey2 now has 1 element.
+	    $this->assertTrue($ret[$i++] === TRUE); // skey2 now has 2 elements.
+
+	    $this->assertTrue($ret[$i++] === 4);
+	    $this->assertTrue($ret[$i++] === TRUE); // we did remove that value.
+	    $this->assertTrue($ret[$i++] === 3); // now 3 values only.
+	    $this->assertTrue($ret[$i++] === TRUE); // the move did succeed.
+	    $this->assertTrue($ret[$i++] === 3); // sKey2 now has 3 values.
+	    $this->assertTrue($ret[$i++] === TRUE); // sKey2 does contain sValue4.
+	    foreach(array('sValue1', 'sValue3') as $k) { // sKey1 contains sValue1 and sValue3.
+		    $this->assertTrue(in_array($k, $ret[$i]));
+	    }
+	    $this->assertTrue(count($ret[$i++]) === 2);
+	    foreach(array('sValue1', 'sValue2', 'sValue4') as $k) { // sKey2 contains sValue1, sValue2, and sValue4.
+		    $this->assertTrue(in_array($k, $ret[$i]));
+	    }
+	    $this->assertTrue(count($ret[$i++]) === 3);
+	    $this->assertTrue($ret[$i++] === array('sValue1')); // intersection
+	    $this->assertTrue($ret[$i++] === 1); // intersection + store → 1 value in the destination set.
+	    $this->assertTrue($ret[$i++] === array('sValue1')); // sinterstore destination contents
+
+	    foreach(array('sValue1', 'sValue2', 'sValue4') as $k) { // (skeydest U sKey2) contains sValue1, sValue2, and sValue4.
+		    $this->assertTrue(in_array($k, $ret[$i]));
+	    }
+	    $this->assertTrue(count($ret[$i++]) === 3); // union size
+
+	    $this->assertTrue($ret[$i++] === 3); // unionstore size
+	    foreach(array('sValue1', 'sValue2', 'sValue4') as $k) { // (skeyUnion) contains sValue1, sValue2, and sValue4.
+		    $this->assertTrue(in_array($k, $ret[$i]));
+	    }
+	    $this->assertTrue(count($ret[$i++]) === 3); // skeyUnion size
+
+	    $this->assertTrue($ret[$i++] === array('sValue3')); // diff skey1, skey2 : only sValue3 is not shared.
+	    $this->assertTrue($ret[$i++] === 1); // sdiffstore size == 1
+	    $this->assertTrue($ret[$i++] === array('sValue3')); // contents of sDiffDest
+
+	    $this->assertTrue(in_array($ret[$i++], array('sValue1', 'sValue2', 'sValue4'))); // we removed an element from sKey2
+	    $this->assertTrue($ret[$i++] === 2); // sKey2 now has 2 elements only.
+
+	    $this->assertTrue(count($ret) === $i);
+
+	    // sorted sets
+	    $ret = $this->redis->multi($mode)
+		    ->delete('zkey1', 'zkey2', 'zkey5')
+		    ->zadd('zkey1', 1, 'zValue1')
+		    ->zadd('zkey1', 5, 'zValue5')
+		    ->zadd('zkey1', 2, 'zValue2')
+		    ->zRange('zkey1', 0, -1)
+		    ->zDelete('zkey1', 'zValue2')
+		    ->zRange('zkey1', 0, -1)
+		    ->zadd('zkey1', 11, 'zValue11')
+		    ->zadd('zkey1', 12, 'zValue12')
+		    ->zadd('zkey1', 13, 'zValue13')
+		    ->zadd('zkey1', 14, 'zValue14')
+		    ->zadd('zkey1', 15, 'zValue15')
+		    ->zDeleteRangeByScore('zkey1', 11, 13)
+		    ->zrange('zkey1', 0, -1)
+		    ->zReverseRange('zkey1', 0, -1)
+		    ->zRangeByScore('zkey1', 1, 6)
+		    ->zCard('zkey1')
+		    ->zScore('zkey1', 'zValue15')
+		    ->zadd('zkey2', 5, 'zValue5')
+		    ->zadd('zkey2', 2, 'zValue2')
+		    ->zInter('zInter', array('zkey1', 'zkey2'))
+		    ->zRange('zkey1', 0, -1)
+		    ->zRange('zkey2', 0, -1)
+		    ->zRange('zInter', 0, -1)
+		    ->zUnion('zUnion', array('zkey1', 'zkey2'))
+		    ->zRange('zUnion', 0, -1)
+		    ->zadd('zkey5', 5, 'zValue5')
+		    ->zIncrBy('zkey5', 3, 'zValue5') /* fix this */
+		    ->zScore('zkey5', 'zValue5')
+		    ->exec();
+
+	    $i = 0;
+	    $this->assertTrue(is_array($ret));
+	    $this->assertTrue(is_long($ret[$i]) && $ret[$i] >= 0 && $ret[$i] <= 3); $i++; // deleting at most 3 keys
+	    $this->assertTrue($ret[$i++] === 1);
+	    $this->assertTrue($ret[$i++] === 1);
+	    $this->assertTrue($ret[$i++] === 1);
+	    $this->assertTrue($ret[$i++] === array('zValue1', 'zValue2', 'zValue5'));
+	    $this->assertTrue($ret[$i++] === 1);
+	    $this->assertTrue($ret[$i++] === array('zValue1', 'zValue5'));
+	    $this->assertTrue($ret[$i++] === 1); // adding zValue11
+	    $this->assertTrue($ret[$i++] === 1); // adding zValue12
+	    $this->assertTrue($ret[$i++] === 1); // adding zValue13
+	    $this->assertTrue($ret[$i++] === 1); // adding zValue14
+	    $this->assertTrue($ret[$i++] === 1); // adding zValue15
+	    $this->assertTrue($ret[$i++] === 3); // deleted zValue11, zValue12, zValue13
+	    $this->assertTrue($ret[$i++] === array('zValue1', 'zValue5', 'zValue14', 'zValue15'));
+	    $this->assertTrue($ret[$i++] === array('zValue15', 'zValue14', 'zValue5', 'zValue1'));
+	    $this->assertTrue($ret[$i++] === array('zValue1', 'zValue5'));
+	    $this->assertTrue($ret[$i++] === 4); // 4 elements
+	    $this->assertTrue($ret[$i++] === 15.0);
+	    $this->assertTrue($ret[$i++] === 1); // added value
+	    $this->assertTrue($ret[$i++] === 1); // added value
+	    $this->assertTrue($ret[$i++] === 1); // zinter only has 1 value
+	    $this->assertTrue($ret[$i++] === array('zValue1', 'zValue5', 'zValue14', 'zValue15')); // zkey1 contents
+	    $this->assertTrue($ret[$i++] === array('zValue2', 'zValue5')); // zkey2 contents
+	    $this->assertTrue($ret[$i++] === array('zValue5')); // zinter contents
+	    $this->assertTrue($ret[$i++] === 5); // zUnion has 5 values (1,2,5,14,15)
+	    $this->assertTrue($ret[$i++] === array('zValue1', 'zValue2', 'zValue5', 'zValue14', 'zValue15')); // zunion contents
+	    $this->assertTrue($ret[$i++] === 1); // added value to zkey5, with score 5
+	    $this->assertTrue($ret[$i++] === 8.0); // incremented score by 3 → it is now 8.
+	    $this->assertTrue($ret[$i++] === 8.0); // current score is 8.
+
+	    $this->assertTrue(count($ret) === $i);
+
+	    /* hash */
+	    $ret = $this->redis->multi($mode)
+		    ->delete('hkey1')
+		    ->hset('hkey1', 'key1', 'value1')
+		    ->hset('hkey1', 'key2', 'value2')
+		    ->hset('hkey1', 'key3', 'value3')
+		    ->hget('hkey1', 'key1')
+		    ->hlen('hkey1')
+		    ->hdel('hkey1', 'key2')
+		    ->hdel('hkey1', 'key2')
+		    ->hexists('hkey1', 'key2')
+		    ->hkeys('hkey1')
+		    ->hvals('hkey1')
+	//	    ->hgetall('hkey1')
+		    //->hincrby()
+		    ->exec();
+
+	    $i = 0;
+	    $this->assertTrue(is_array($ret));
+	    $this->assertTrue($ret[$i++] <= 1); // delete
+	    $this->assertTrue($ret[$i++] === TRUE); // added 1 element
+	    $this->assertTrue($ret[$i++] === TRUE); // added 1 element
+	    $this->assertTrue($ret[$i++] === TRUE); // added 1 element
+	    $this->assertTrue($ret[$i++] === 'value1'); // hget
+	    $this->assertTrue($ret[$i++] === 3); // hlen
+	    $this->assertTrue($ret[$i++] === TRUE); // hdel succeeded
+	    $this->assertTrue($ret[$i++] === FALSE); // hdel failed
+	    $this->assertTrue($ret[$i++] === FALSE); // hexists didn't find the deleted key
+	    $this->assertTrue($ret[$i] === array('key1', 'key3') || $ret[$i] === array('key3', 'key1')); $i++; // hkeys
+	    $this->assertTrue($ret[$i] === array('value1', 'value3') || $ret[$i] === array('value3', 'value1')); $i++; // hvals
+	    //$this->assertTrue($ret[$i] === array('key1' => 'value1', 'key3' => 'value3') || $ret[$i] === array('key3' => 'value3', 'key1' => 'value1')); $i++; // hgetall
+	    $this->assertTrue(count($ret) === $i);
 
     }
 

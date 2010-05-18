@@ -3589,14 +3589,13 @@ PHP_METHOD(Redis, hGetAll) {
 	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_zipped_strings);
 }
 
-PHPAPI void array_zip_values_and_scores(INTERNAL_FUNCTION_PARAMETERS, int use_atof TSRMLS_DC) {
+PHPAPI void array_zip_values_and_scores(zval *z_tab, int use_atof TSRMLS_DC) {
 
     zval *z_ret;
     MAKE_STD_ZVAL(z_ret);
-    *z_ret = *return_value; /* copy */
-    array_init(return_value);
+    array_init(z_ret);
 
-    HashTable *keytable = Z_ARRVAL_P(z_ret);
+    HashTable *keytable = Z_ARRVAL_P(z_tab);
 	int i = 0;
     for(zend_hash_internal_pointer_reset(keytable);
         zend_hash_has_more_elements(keytable) == SUCCESS;
@@ -3631,12 +3630,16 @@ PHPAPI void array_zip_values_and_scores(INTERNAL_FUNCTION_PARAMETERS, int use_at
         hval_len = Z_STRLEN_PP(z_value_pp);
 
         if(use_atof) {
-            add_assoc_double_ex(return_value, hkey, 1+hkey_len, atof(hval));
+            add_assoc_double_ex(z_ret, hkey, 1+hkey_len, atof(hval));
         } else {
-            add_assoc_stringl_ex(return_value, hkey, 1+hkey_len, hval, hval_len, 1);
+            add_assoc_stringl_ex(z_ret, hkey, 1+hkey_len, hval, hval_len, 1);
         }
     }
-    zval_dtor(z_ret);
+    /* replace */
+    zval_dtor(z_tab);
+    *z_tab = *z_ret;
+    zval_copy_ctor(z_tab);
+
     efree(z_ret);
 }
 
