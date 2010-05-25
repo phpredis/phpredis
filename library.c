@@ -7,7 +7,9 @@ PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
     while(eof) {
         redis_sock->stream = NULL;
         redis_sock_connect(redis_sock TSRMLS_CC);
-        eof = php_stream_eof(redis_sock->stream);
+	if(redis_sock->stream) {
+            eof = php_stream_eof(redis_sock->stream);
+	}
     }
 }
 
