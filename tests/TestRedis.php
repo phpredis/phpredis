@@ -246,6 +246,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals(FALSE, $this->redis->get('key'));
     }
 
+
     public function testSetNX() {
 
 	    $this->redis->set('key', 42);
@@ -1945,7 +1946,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 		    ->zUnion('zUnion', array('zkey1', 'zkey2'))
 		    ->zRange('zUnion', 0, -1)
 		    ->zadd('zkey5', 5, 'zValue5')
-		    ->zIncrBy('zkey5', 3, 'zValue5') /* fix this */
+		    ->zIncrBy('zkey5', 3, 'zValue5') // fix this
 		    ->zScore('zkey5', 'zValue5')
 		    ->exec();
 
@@ -1983,7 +1984,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	    $this->assertTrue(count($ret) === $i);
 
-	    /* hash */
+	    // hash
 	    $ret = $this->redis->multi($mode)
 		    ->delete('hkey1')
 		    ->hset('hkey1', 'key1', 'value1')

@@ -1,6 +1,6 @@
 #include "common.h"
 
-PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC) 
+PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 {
 
     int eof = php_stream_eof(redis_sock->stream);
@@ -63,8 +63,8 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
             return NULL;
 
         case '+':
-        case ':':    
-            // Single Line Reply 
+        case ':':
+	    // Single Line Reply
             /* :123\r\n */
             *buf_len = strlen(inbuf) - 2;
             if(*buf_len >= 2) {
@@ -188,7 +188,7 @@ redis_cmd_format(char **ret, char *format, ...) {
                         }
                         if(stage == 1) {
                             sprintf((*ret) + total, "%d", i);
-                        } 
+                        }
                         total += sz;
                         break;
                 }
@@ -215,7 +215,7 @@ redis_cmd_format(char **ret, char *format, ...) {
 PHPAPI void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
 
     char *response;
-    int response_len;    
+    int response_len;
 
     zval *object = getThis();
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
@@ -293,21 +293,51 @@ PHPAPI void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
     }
 }
 
+PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, int flag TSRMLS_DC) {
+
+	/*
+	int ret = redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab TSRMLS_CC);
+	array_zip_values_and_scores(return_value, 0);
+	*/
+
+    char inbuf[1024], *response;
+    int response_len;
+
+    redis_check_eof(redis_sock TSRMLS_CC);
+    php_stream_gets(redis_sock->stream, inbuf, 1024);
+
+    if(inbuf[0] != '*') {
+        return -1;
+    }
+    int numElems = atoi(inbuf+1);
+    zval *z_multi_result;
+    MAKE_STD_ZVAL(z_multi_result);
+    array_init(z_multi_result); /* pre-allocate array for multi's results. */
+
+    redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                    redis_sock, z_multi_result, numElems);
+
+    array_zip_values_and_scores(z_multi_result, 0);
+
+    zval *object = getThis();
+    IF_MULTI_OR_PIPELINE() {
+        add_next_index_zval(z_tab, z_multi_result);
+    } else {
+	    *return_value = *z_multi_result;
+	    zval_copy_ctor(return_value);
+	    efree(z_multi_result);
+    }
+
+	return 0;
+}
 
 PHPAPI int redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
 
-	int ret = redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab TSRMLS_CC);
-	array_zip_values_and_scores(return_value, 1);
-
-	return ret;
+	return redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, 1);
 }
 
 PHPAPI int redis_sock_read_multibulk_reply_zipped_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
-
-	int ret = redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab TSRMLS_CC);
-	array_zip_values_and_scores(return_value, 0);
-
-	return ret;
+	return redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, 0);
 }
 
 PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
@@ -487,7 +517,7 @@ PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
  * redis_sock_read_multibulk_reply
  */
 PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
-                                           RedisSock *redis_sock, zval *_z_tab TSRMLS_DC)
+                                           RedisSock *redis_sock, zval *z_tab TSRMLS_DC)
 {
     char inbuf[1024], *response;
     int response_len;
@@ -499,18 +529,21 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
         return -1;
     }
     int numElems = atoi(inbuf+1);
-    zval *z_tab;
-    MAKE_STD_ZVAL(z_tab);
-    array_init(z_tab);
+    zval *z_multi_result;
+    MAKE_STD_ZVAL(z_multi_result);
+    array_init(z_multi_result); /* pre-allocate array for multi's results. */
 
     redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    redis_sock, z_tab, numElems);
+                    redis_sock, z_multi_result, numElems);
 
     zval *object = getThis();
     IF_MULTI_OR_PIPELINE() {
-        add_next_index_zval(_z_tab, z_tab);
+        add_next_index_zval(z_tab, z_multi_result);
     }
-    *return_value = *z_tab;
+
+    *return_value = *z_multi_result;
+    //zval_copy_ctor(return_value);
+    // efree(z_multi_result);
     return 0;
 }
 
