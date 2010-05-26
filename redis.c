@@ -140,6 +140,8 @@ static zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, sGetMembers, sMembers, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, mget, getMultiple, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, expire, setTimeout, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zunionstore, zUnion, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zinterstore, zInter, NULL, ZEND_ACC_PUBLIC)
 
      PHP_MALIAS(Redis, zRemove, zDelete, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zRemoveRangeByScore, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
@@ -1870,7 +1872,7 @@ PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_a
     RedisSock *redis_sock;
     char *key = NULL, *pattern = NULL, *get = NULL, *store = NULL, *cmd;
     int key_len, pattern_len = -1, get_len = -1, store_len = -1, cmd_len, response_len;
-    long start = -1, end = -1;
+    long sort_start = -1, sort_count = -1;
 
     int cmd_elements;
 
@@ -1893,7 +1895,7 @@ PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_a
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|sslls",
                                      &object, redis_ce,
                                      &key, &key_len, &pattern, &pattern_len,
-                                     &get, &get_len, &start, &end, &store, &store_len) == FAILURE) {
+                                     &get, &get_len, &sort_start, &sort_count, &store, &store_len) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -1936,7 +1938,7 @@ PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_a
             cmd_sizes[cmd_elements] = pattern_len;
             cmd_elements++;
     }
-    if(start >= 0 && end >= start) {
+    if(sort_start >= 0 && sort_count >= 0) {
             /* LIMIT */
             cmd_lines[cmd_elements] = estrdup("$5");
             cmd_sizes[cmd_elements] = 2;
@@ -1946,15 +1948,15 @@ PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_a
             cmd_elements++;
 
             /* start */
-            cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements], "$%d", integer_length(start));
+            cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements], "$%d", integer_length(sort_start));
             cmd_elements++;
-            cmd_sizes[cmd_elements] = spprintf(&cmd_lines[cmd_elements], 0, "%d", (int)start);
+            cmd_sizes[cmd_elements] = spprintf(&cmd_lines[cmd_elements], 0, "%d", (int)sort_start);
             cmd_elements++;
 
-            /* end */
-            cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements], "$%d", integer_length(end));
+            /* count */
+            cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements], "$%d", integer_length(sort_count));
             cmd_elements++;
-            cmd_sizes[cmd_elements] = spprintf(&cmd_lines[cmd_elements], 0, "%d", (int)end);
+            cmd_sizes[cmd_elements] = spprintf(&cmd_lines[cmd_elements], 0, "%d", (int)sort_count);
             cmd_elements++;
     }
     if(get && get_len) {
@@ -3306,12 +3308,12 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
 
 /* zInter */
 PHP_METHOD(Redis, zInter) {
-	generic_z_command(INTERNAL_FUNCTION_PARAM_PASSTHRU, "zInter", 6 TSRMLS_CC);
+	generic_z_command(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZINTERSTORE", 11 TSRMLS_CC);
 }
 
 /* zUnion */
 PHP_METHOD(Redis, zUnion) {
-	generic_z_command(INTERNAL_FUNCTION_PARAM_PASSTHRU, "zUnion", 6 TSRMLS_CC);
+	generic_z_command(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZUNIONSTORE", 11 TSRMLS_CC);
 }
 
 /* hashes */

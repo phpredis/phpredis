@@ -30,7 +30,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->setUp();
         $this->tearDown();
     }
-    /*
+    
     public function testPing()
     {
 
@@ -557,7 +557,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals(array_slice($byAgeAsc, 0, 2), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 0, 2));
 	$this->assertEquals(array_slice($byAgeAsc, 1, 2), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 1, 2));
 	$this->assertEquals(array_slice($byAgeAsc, 0, 3), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', NULL, 3)); // NULL is transformed to 0 if there is something after it.
-	$this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 1, NULL));
+	$this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 0, 4));
 	$this->assertEquals(array(), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', NULL, NULL)); // NULL, NULL is the same as (0,0). That returns no element.
 
 	// sort by salary and get ages
@@ -1505,9 +1505,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(3 === $this->redis->hIncrBy('h', 'x', 1));
 
 	$this->redis->hSet('h', 'y', 'not-a-number');
-	$this->assertTrue(1 === $this->redis->hIncrBy('h', 'y', 1));
+	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'y', 1));
     }
-*/
+
 
     public function testMultiExec() {
 	$this->sequence(Redis::MULTI);
