@@ -1457,15 +1457,15 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->delete('h', 'key');
 
 	$this->assertTrue(0 === $this->redis->hLen('h'));
-	$this->assertTrue(TRUE === $this->redis->hSet('h', 'a', 'a-value'));
+	$this->assertTrue(1 === $this->redis->hSet('h', 'a', 'a-value'));
 	$this->assertTrue(1 === $this->redis->hLen('h'));
-	$this->assertTrue(TRUE === $this->redis->hSet('h', 'b', 'b-value'));
+	$this->assertTrue(1 === $this->redis->hSet('h', 'b', 'b-value'));
 	$this->assertTrue(2 === $this->redis->hLen('h'));
 
 	$this->assertTrue('a-value' === $this->redis->hGet('h', 'a')); 	// simple get
 	$this->assertTrue('b-value' === $this->redis->hGet('h', 'b')); 	// simple get
 
-	$this->assertTrue(FALSE === $this->redis->hSet('h', 'a', 'another-value')); // replacement
+	$this->assertTrue(0 === $this->redis->hSet('h', 'a', 'another-value')); // replacement
 	$this->assertTrue('another-value' === $this->redis->hGet('h', 'a')); 	// get the new value
 
 	$this->assertTrue('b-value' === $this->redis->hGet('h', 'b')); 	// simple get
@@ -1507,7 +1507,6 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->hSet('h', 'y', 'not-a-number');
 	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'y', 1));
     }
-
 
     public function testMultiExec() {
 	$this->sequence(Redis::MULTI);
@@ -1997,16 +1996,21 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 		    ->hexists('hkey1', 'key2')
 		    ->hkeys('hkey1')
 		    ->hvals('hkey1')
-	//	    ->hgetall('hkey1')
-		    //->hincrby()
+		    ->hgetall('hkey1')
+		    ->hset('hkey1', 'valn', 1)
+		    ->hincrby('hkey1', 'valn', 4)
+		    ->hincrby('hkey1', 'val-fail', 42)
+		    ->hset('hkey1', 'val-fail', 'non-string')
+		    ->hget('hkey1', 'val-fail')
+		    ->hincrby('hkey1', 'val-fail', 42)
 		    ->exec();
 
 	    $i = 0;
 	    $this->assertTrue(is_array($ret));
 	    $this->assertTrue($ret[$i++] <= 1); // delete
-	    $this->assertTrue($ret[$i++] === TRUE); // added 1 element
-	    $this->assertTrue($ret[$i++] === TRUE); // added 1 element
-	    $this->assertTrue($ret[$i++] === TRUE); // added 1 element
+	    $this->assertTrue($ret[$i++] === 1); // added 1 element
+	    $this->assertTrue($ret[$i++] === 1); // added 1 element
+	    $this->assertTrue($ret[$i++] === 1); // added 1 element
 	    $this->assertTrue($ret[$i++] === 'value1'); // hget
 	    $this->assertTrue($ret[$i++] === 3); // hlen
 	    $this->assertTrue($ret[$i++] === TRUE); // hdel succeeded
@@ -2014,7 +2018,13 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    $this->assertTrue($ret[$i++] === FALSE); // hexists didn't find the deleted key
 	    $this->assertTrue($ret[$i] === array('key1', 'key3') || $ret[$i] === array('key3', 'key1')); $i++; // hkeys
 	    $this->assertTrue($ret[$i] === array('value1', 'value3') || $ret[$i] === array('value3', 'value1')); $i++; // hvals
-	    //$this->assertTrue($ret[$i] === array('key1' => 'value1', 'key3' => 'value3') || $ret[$i] === array('key3' => 'value3', 'key1' => 'value1')); $i++; // hgetall
+	    $this->assertTrue($ret[$i] === array('key1' => 'value1', 'key3' => 'value3') || $ret[$i] === array('key3' => 'value3', 'key1' => 'value1')); $i++; // hgetall
+	    $this->assertTrue($ret[$i++] === 1); // added 1 element
+	    $this->assertTrue($ret[$i++] === 5); // added 4 to value 1 → 5
+	    $this->assertTrue($ret[$i++] === 42); // member doesn't exist → assume 0, and then add.
+	    $this->assertTrue($ret[$i++] === 0); // didn't add the element, already present, so 0.
+	    $this->assertTrue($ret[$i++] === 'non-string'); // hset succeeded
+	    $this->assertTrue($ret[$i++] === FALSE); // member isn't a number → fail.
 	    $this->assertTrue(count($ret) === $i);
 
     }

@@ -1396,14 +1396,14 @@ Adds a value to the hash stored at key. If this value is already in the hash, `F
 *value*
 
 ##### *Return value*
-*BOOL* `TRUE` if value didn't exist and was added successfully, `FALSE` if the value was already present and was replaced.
+*LONG* `1` if value didn't exist and was added successfully, `0` if the value was already present and was replaced, `FALSE` if there was an error.
 ##### *Example*
 <pre>
 $redis->delete('h')
-$redis->hSet('h', 'key1', 'hello'); /* TRUE, 'key1' => 'hello' in the hash at "h" */
+$redis->hSet('h', 'key1', 'hello'); /* 1, 'key1' => 'hello' in the hash at "h" */
 $redis->hGet('h', 'key1'); /* returns "hello" */
 
-$redis->hSet('h', 'key1', 'plop'); /* FALSE, value was replaced. */
+$redis->hSet('h', 'key1', 'plop'); /* 0, value was replaced. */
 $redis->hGet('h', 'key1'); /* returns "plop" */
 </pre>
 
