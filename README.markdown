@@ -196,12 +196,14 @@ Adds the string value to the head (left) of the list. Creates the list if the ke
 *key*  
 *value* String, value to push in key
 ##### Return value
-*BOOL* `TRUE` in case of success, `FALSE` in case of Failure.
+*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
 ##### Examples
 <pre>
-$redis->lPush('key1', 'C');
-$redis->lPush('key1', 'B');
-$redis->lPush('key1', 'A'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->delete('key1');
+$redis->lPush('key1', 'C'); // returns 1
+$redis->lPush('key1', 'B'); // returns 2
+$redis->lPush('key1', 'A'); // returns 3
+/* key1 now points to the following list: [ 'A', 'B', 'C' ] */
 </pre>
 
 ## rPush
@@ -211,12 +213,14 @@ Adds the string value to the tail (right) of the list. Creates the list if the k
 *key*  
 *value* String, value to push in key
 ##### Return value
-*BOOL* `TRUE` in case of success, `FALSE` in case of Failure.
+*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
 ##### Examples
 <pre>
-$redis->rPush('key1', 'A');
-$redis->rPush('key1', 'B');
-$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->delete('key1');
+$redis->rPush('key1', 'A'); // returns 1
+$redis->rPush('key1', 'B'); // returns 2
+$redis->rPush('key1', 'C'); // returns 3
+/* key1 now points to the following list: [ 'A', 'B', 'C' ] */
 </pre>
 
 ## lPop
