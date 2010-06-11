@@ -13,6 +13,28 @@ PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
     }
 }
 
+PHPAPI zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
+												  RedisSock *redis_sock TSRMLS_DC) {
+    char inbuf[1024], *response;
+    int response_len;
+
+    redis_check_eof(redis_sock TSRMLS_CC);
+    php_stream_gets(redis_sock->stream, inbuf, 1024);
+
+    if(inbuf[0] != '*') {
+        return NULL;
+    }
+    int numElems = atoi(inbuf+1);
+
+    zval *z_tab;
+    MAKE_STD_ZVAL(z_tab);
+    array_init(z_tab);
+
+    redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                    redis_sock, z_tab, numElems);
+	return z_tab;
+}
+
 /**
  * redis_sock_read_bulk_reply
  */

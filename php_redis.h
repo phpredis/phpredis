@@ -110,6 +110,10 @@ PHP_METHOD(Redis, exec);
 
 PHP_METHOD(Redis, pipeline);
 
+PHP_METHOD(Redis, publish);
+PHP_METHOD(Redis, subscribe);
+PHP_METHOD(Redis, unsubscribe);
+
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
 #else
