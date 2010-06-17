@@ -51,6 +51,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, ping, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, get, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, set, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setex, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setnx, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getSet, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, randomKey, NULL, ZEND_ACC_PUBLIC)
@@ -461,8 +462,51 @@ PHP_METHOD(Redis, set)
 		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
 	}
 	REDIS_PROCESS_RESPONSE(redis_boolean_response);
+}
 
+/* {{{ proto boolean Redis::setex(string key, long expire, string value)
+ */
+PHP_METHOD(Redis, setex)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *val = NULL, *cmd;
+    int key_len, val_len, cmd_len;
+    long expire;
 
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osls",
+                                     &object, redis_ce, &key, &key_len,
+                                     &expire, &val, &val_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd,
+                    "*4" _NL
+                    "$5" _NL
+                    "SETEX" _NL
+
+                    "$%d" _NL   /* key_len */
+                    "%s" _NL    /* key */
+
+                    "$%d" _NL   /* expire_len */
+                    "%d" _NL    /* expire */
+
+                    "$%d" _NL   /* val_len */
+                    "%s" _NL    /* val */
+
+                    , key_len, key, key_len
+                    , integer_length(expire), expire
+                    , val_len, val, val_len);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+	}
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 
 /* {{{ proto boolean Redis::setnx(string key, string value)

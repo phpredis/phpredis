@@ -89,6 +89,24 @@ Set the string value in argument as value of the key.
 $redis->set('key', 'value')
 </pre>
 
+## setex
+##### Description
+
+Set the string value in argument as value of the key, with a time to live.
+
+##### Parameters
+*Key*
+*TTL*
+*Value*
+
+##### Return value
+*Bool* `TRUE` if the command is successful.
+
+##### Examples
+
+<pre>
+$redis->setex('key', 3600, 'value'); // sets key → value, with 1h TTL.
+</pre>
 ## setnx
 ##### Description
 Set the string value in argument as value of the key if the key doesn't already exist in the database.

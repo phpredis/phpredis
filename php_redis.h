@@ -27,6 +27,7 @@ PHP_METHOD(Redis, close);
 PHP_METHOD(Redis, ping);
 PHP_METHOD(Redis, get);
 PHP_METHOD(Redis, set);
+PHP_METHOD(Redis, setex);
 PHP_METHOD(Redis, setnx);
 PHP_METHOD(Redis, getSet);
 PHP_METHOD(Redis, randomKey);
