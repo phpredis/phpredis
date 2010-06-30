@@ -130,6 +130,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, hGetAll, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hExists, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hIncrBy, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hMset, NULL, ZEND_ACC_PUBLIC)
 
      PHP_ME(Redis, multi, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, discard, NULL, ZEND_ACC_PUBLIC)
@@ -3722,6 +3723,94 @@ PHP_METHOD(Redis, hIncrBy)
 	REDIS_PROCESS_RESPONSE(redis_long_response);
 
 }
+
+PHP_METHOD(Redis, hMset)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd, *member;
+    int key_len, member_len, cmd_len;
+    zval *z_hash, *data;
+    HashTable *ht_hash;
+    HashPosition pointer;
+    int i;
+    int element_count = 2;
+    char *old_cmd = NULL;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa",
+                                     &object, redis_ce,
+                                     &key, &key_len, &z_hash) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    ht_hash = Z_ARRVAL_P(z_hash);
+
+    if (zend_hash_num_elements(ht_hash) == 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd, 
+                    "$5" _NL "HMSET" _NL
+                    "$%d" _NL "%s" _NL
+                    , key_len, key, key_len);
+
+    /* looping on each item of the array */
+	for(i =0, zend_hash_internal_pointer_reset(ht_hash);
+		zend_hash_has_more_elements(ht_hash) == SUCCESS;
+		i++, zend_hash_move_forward(ht_hash)) {
+
+		char *hkey;
+		unsigned int hkey_len;
+		unsigned long idx;
+		int type;
+		zval *z_value, **z_value_p;
+
+		type = zend_hash_get_current_key_ex(ht_hash, &hkey, &hkey_len, &idx, 0, NULL);
+
+		if(zend_hash_get_current_data(ht_hash, (void**)&z_value_p) == FAILURE) {
+			continue; 	/* this should never happen */
+		}
+
+		if(type != HASH_KEY_IS_STRING) {
+                continue;
+        }
+        element_count += 2;
+
+        /* key is set. */
+        if (Z_TYPE_PP(z_value_p) != IS_STRING) {
+            convert_to_string(*z_value_p);
+        }
+        if(*cmd) {
+            old_cmd = cmd;
+        }
+        cmd_len = redis_cmd_format(&cmd, "%s"
+                        "$%d" _NL "%s" _NL
+                        "$%d" _NL "%s" _NL
+                        , cmd, cmd_len
+                        , hkey_len-1, hkey, hkey_len-1
+                        , Z_STRLEN_PP(z_value_p), Z_STRVAL_PP(z_value_p), Z_STRLEN_PP(z_value_p));
+        if(old_cmd) {
+            efree(old_cmd);
+        }
+    }
+
+    old_cmd = cmd;
+    cmd_len = redis_cmd_format(&cmd, "*%d" _NL "%s"
+                    , element_count, cmd, cmd_len);
+    efree(old_cmd);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+	}
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
+}
+
+
 
 PHPAPI int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC) {
 

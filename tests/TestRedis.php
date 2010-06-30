@@ -1514,6 +1514,15 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$this->redis->hSet('h', 'y', 'not-a-number');
 	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'y', 1));
+
+	// hmset
+	$this->redis->delete('h');
+	$this->assertTrue(TRUE === $this->redis->hMset('h', array('x' => 123, 'y' => 456, 'z' => 'abc')));
+	$this->assertTrue('123' === $this->redis->hGet('h', 'x'));
+	$this->assertTrue('456' === $this->redis->hGet('h', 'y'));
+	$this->assertTrue('abc' === $this->redis->hGet('h', 'z'));
+	$this->assertTrue(FALSE === $this->redis->hGet('h', 't'));
+
     }
 
     public function testMultiExec() {

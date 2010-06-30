@@ -1601,5 +1601,20 @@ Increments the value of a member from a hash by a given amount.
 <pre>
 $redis->delete('h');
 $redis->hIncrBy('h', 'x', 2); /* returns 2: h[x] = 2 now. */
-$redis->zIncrBy('h', 'x', 1); /* h[x] ← 2 + 1. Returns 3 */
+$redis->hIncrBy('h', 'x', 1); /* h[x] ← 2 + 1. Returns 3 */
+</pre>
+
+## hMset
+##### Description
+Fills in a whole hash.
+##### Parameters
+*key*  
+*members*: key → value array  
+##### Return value
+*BOOL*  
+##### Examples
+<pre>
+$redis->delete('user:1');
+$redis->hMset('user:1', array('name' => 'Joe', 'salary' => 2000));
+$redis->hIncrBy('user:1', 'salary', 100); // Joe earns 100 more now.
 </pre>

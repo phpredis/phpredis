@@ -104,6 +104,7 @@ PHP_METHOD(Redis, hVals);
 PHP_METHOD(Redis, hGetAll);
 PHP_METHOD(Redis, hExists);
 PHP_METHOD(Redis, hIncrBy);
+PHP_METHOD(Redis, hMset);
 
 PHP_METHOD(Redis, multi);
 PHP_METHOD(Redis, discard);
