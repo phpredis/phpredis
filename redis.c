@@ -2687,7 +2687,7 @@ PHP_METHOD(Redis, zAdd) {
                                "%s" _NL     /* key */
 
                                "$%d" _NL    /* score_len */
-                               "%f" _NL     /* score */
+                               "%F" _NL     /* score */
 
                                "$%d" _NL    /* val_len */
                                "%s" _NL     /* val */
@@ -2842,10 +2842,10 @@ PHP_METHOD(Redis, zDeleteRangeByScore)
                     "%s" _NL  /* key */
 
                     "$%d" _NL /* start_len */
-                    "%f" _NL  /* start */
+                    "%F" _NL  /* start */
 
                     "$%d" _NL /* end_len */
-                    "%f" _NL  /* end */
+                    "%F" _NL  /* end */
 
                     , key_len, key, key_len
                     , double_length(start), start
@@ -2985,10 +2985,10 @@ PHP_METHOD(Redis, zRangeByScore)
                        "%s" _NL  /* key */\
                        \
                        "$%d" _NL /* start_len */\
-                       "%f" _NL  /* start */\
+                       "%F" _NL  /* start */\
                        \
                        "$%d" _NL /* end_len */\
-                       "%f" _NL  /* end */
+                       "%F" _NL  /* end */
 #define BASIC_FORMAT_WITH_LIMIT BASIC_FORMAT\
                        "$5" _NL\
                        "LIMIT" _NL\
@@ -3167,7 +3167,7 @@ PHPAPI void generic_incrby_method(INTERNAL_FUNCTION_PARAMETERS, char *keyword, i
                         "%s" _NL /* key */
 
                         "$%d" _NL
-                        "%f" _NL /* val */
+                        "%F" _NL /* val */
 
                         "$%d" _NL
                         "%s" _NL /* member */

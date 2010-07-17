@@ -140,7 +140,7 @@ integer_length(int i) {
 int
 double_length(double d) {
         char *s;
-        int ret = spprintf(&s, 0, "%f", d);
+        int ret = spprintf(&s, 0, "%F", d);
         efree(s);
         return ret;
 }
@@ -182,10 +182,11 @@ redis_cmd_format(char **ret, char *format, ...) {
                         total += sz;
                         break;
 
+                    case 'F':
                     case 'f':
                         /* use spprintf here */
                         dbl = va_arg(ap, double);
-                        double_len = spprintf(&double_str, 0, "%f", dbl);
+                        double_len = spprintf(&double_str, 0, "%F", dbl);
                         if(stage == 1) {
                             memcpy((*ret) + total, double_str, double_len);
                         }
