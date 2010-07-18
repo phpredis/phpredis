@@ -1,4 +1,8 @@
 #include "common.h"
+#include "php_network.h"
+#include <sys/types.h>
+#include <netinet/tcp.h>  /* TCP_NODELAY */
+#include <sys/socket.h>
 
 PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 {
@@ -468,6 +472,11 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
                                                 );
 
     efree(host);
+
+    /* set TCP_NODELAY */
+    php_netstream_data_t *sock = (php_netstream_data_t*)redis_sock->stream->abstract;
+    int tcp_flag = 1;
+    int result = setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag, sizeof(int));
 
     if (!redis_sock->stream) {
         efree(errstr);
