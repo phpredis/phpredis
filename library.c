@@ -473,15 +473,15 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     efree(host);
 
-    /* set TCP_NODELAY */
-    php_netstream_data_t *sock = (php_netstream_data_t*)redis_sock->stream->abstract;
-    int tcp_flag = 1;
-    int result = setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag, sizeof(int));
-
     if (!redis_sock->stream) {
         efree(errstr);
         return -1;
     }
+
+    /* set TCP_NODELAY */
+    php_netstream_data_t *sock = (php_netstream_data_t*)redis_sock->stream->abstract;
+    int tcp_flag = 1;
+    int result = setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag, sizeof(int));
 
     php_stream_auto_cleanup(redis_sock->stream);
 
