@@ -760,11 +760,33 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->redis->sAdd('set0', 'val2');
 
 	$v0 = $this->redis->sPop('set0');
+	$this->assertTrue(1 === $this->redis->sSize('set0'));
 	$this->assertTrue($v0 === 'val' || $v0 === 'val2');
 	$v1 = $this->redis->sPop('set0');
+	$this->assertTrue(0 === $this->redis->sSize('set0'));
 	$this->assertTrue(($v0 === 'val' && $v1 === 'val2') || ($v1 === 'val' && $v0 === 'val2'));
 
 	$this->assertTrue($this->redis->sPop('set0') === FALSE);
+    }
+
+    public function testsRandMember() {
+	$this->redis->delete('set0');
+	$this->assertTrue($this->redis->sRandMember('set0') === FALSE);
+
+	$this->redis->sAdd('set0', 'val');
+	$this->redis->sAdd('set0', 'val2');
+
+	$got = array();
+	while(true) {
+	    $v = $this->redis->sRandMember('set0');
+	    $this->assertTrue(2 === $this->redis->sSize('set0')); // no change.
+	    $this->assertTrue($v === 'val' || $v === 'val2');
+
+	    $got[$v] = $v;
+	    if(count($got) == 2) {
+	        break;
+	    }
+	}
     }
 
     public function testsContains()

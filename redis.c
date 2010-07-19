@@ -83,6 +83,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sRemove, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sMove, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sPop, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sRandMember, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sContains, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sMembers, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sInter, NULL, ZEND_ACC_PUBLIC)
@@ -1598,6 +1599,15 @@ PHP_METHOD(Redis, sMove)
 PHP_METHOD(Redis, sPop)
 {
     generic_pop_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SPOP", 4 TSRMLS_CC);
+}
+/* }}} */
+
+/* }}} */
+/* {{{ proto string Redis::sRandMember(string key)
+ */
+PHP_METHOD(Redis, sRandMember)
+{
+    generic_pop_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SRANDMEMBER", 11 TSRMLS_CC);
 }
 /* }}} */
 

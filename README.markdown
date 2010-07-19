@@ -502,7 +502,23 @@ $redis->sAdd('key1' , 'set2');
 $redis->sAdd('key1' , 'set3'); /* 'key1' => {'set3', 'set1', 'set2'}*/
 $redis->sPop('key1'); /* 'set1', 'key1' => {'set3', 'set2'} */
 $redis->sPop('key1'); /* 'set3', 'key1' => {'set2'} */
+</pre>
 
+## sRandMember
+##### *Description*
+Returns a random element from the set value at Key, without removing it.
+##### *Parameters*
+*key*
+##### *Return value*
+*String* value from the set  
+*Bool* `FALSE` if set identified by key is empty or doesn't exist.
+##### *Example*
+<pre>
+$redis->sAdd('key1' , 'set1'); 
+$redis->sAdd('key1' , 'set2'); 
+$redis->sAdd('key1' , 'set3'); /* 'key1' => {'set3', 'set1', 'set2'}*/
+$redis->sRandMember('key1'); /* 'set1', 'key1' => {'set3', 'set1', 'set2'} */
+$redis->sRandMember('key1'); /* 'set3', 'key1' => {'set3', 'set1', 'set2'} */
 </pre>
 
 ## sInter
