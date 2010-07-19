@@ -116,6 +116,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCard, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRank, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRevRank, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zInter, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zUnion, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zIncrBy, NULL, ZEND_ACC_PUBLIC)
@@ -3114,6 +3116,7 @@ PHP_METHOD(Redis, zCard)
 
 }
 /* }}} */
+
 /* {{{ proto double Redis::zScore(string key, string member)
  */
 PHP_METHOD(Redis, zScore)
@@ -3150,6 +3153,60 @@ PHP_METHOD(Redis, zScore)
 	}
 	REDIS_PROCESS_RESPONSE(redis_bulk_double_response);
 }
+/* }}} */
+
+
+PHPAPI void generic_rank_method(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len TSRMLS_DC) {
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *member = NULL, *cmd;
+    int key_len, member_len, cmd_len;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
+                                     &object, redis_ce, &key, &key_len,
+                                     &member, &member_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd,
+                    "*3" _NL
+                    "$%d" _NL
+                    "%s" _NL
+                    "$%d" _NL /* key_len */
+                    "%s" _NL  /* key */
+                    "$%d" _NL /* member_len */
+                    "%s" _NL  /* member */
+                    , keyword_len, keyword, keyword_len
+                    , key_len, key, key_len
+                    , member_len, member, member_len);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+	    redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
+}
+
+
+/* {{{ proto long Redis::zRank(string key, string member)
+ */
+PHP_METHOD(Redis, zRank) {
+
+        generic_rank_method(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANK", 5 TSRMLS_CC);
+}
+/* }}} */
+
+/* {{{ proto long Redis::zRevRank(string key, string member)
+ */
+PHP_METHOD(Redis, zRevRank) {
+
+        generic_rank_method(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANK", 8 TSRMLS_CC);
+}
+/* }}} */
 
 PHPAPI void generic_incrby_method(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len TSRMLS_DC) {
     zval *object;

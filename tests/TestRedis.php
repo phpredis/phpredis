@@ -1481,6 +1481,20 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->delete('keyI');
 	$this->assertTrue( 2 === $this->redis->zInter('keyI', array('key1', 'key2', 'key3'), array(1, 5, 1), 'max'));
 	$this->assertTrue(array('val3', 'val1') === $this->redis->zRange('keyI', 0, -1));
+
+	// zrank, zrevrank
+	$this->redis->delete('z');
+	$this->redis->zadd('z', 1, 'one');
+	$this->redis->zadd('z', 2, 'two');
+	$this->redis->zadd('z', 5, 'five');
+
+	$this->assertTrue(0 === $this->redis->zRank('z', 'one'));
+	$this->assertTrue(1 === $this->redis->zRank('z', 'two'));
+	$this->assertTrue(2 === $this->redis->zRank('z', 'five'));
+
+	$this->assertTrue(2 === $this->redis->zRevRank('z', 'one'));
+	$this->assertTrue(1 === $this->redis->zRevRank('z', 'two'));
+	$this->assertTrue(0 === $this->redis->zRevRank('z', 'five'));
 }
 
     public function testHashes() {

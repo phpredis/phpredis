@@ -1333,6 +1333,25 @@ $redis->zAdd('key', 2.5, 'val2');
 $redis->zScore('key', 'val2'); /* 2.5 */
 </pre>
 
+## zRank, zRevRank
+##### *Description*
+Returns the rank of a given member in the specified sorted set, starting at 0 for the item with the smallest score. zRevRank starts at 0 for the item with the *largest* score.
+##### *Parameters*
+*key*  
+*member*  
+##### *Return value*
+*Long*, the item's score.
+##### *Example*
+<pre>
+$redis->delete('z');
+$redis->zAdd('key', 1, 'one');
+$redis->zAdd('key', 2, 'two');
+$redis->zRank('key', 'one'); /* 0 */
+$redis->zRank('key', 'two'); /* 1 */
+$redis->zRevRank('key', 'one'); /* 1 */
+$redis->zRevRank('key', 'two'); /* 0 */
+</pre>
+
 ## zIncrBy
 ##### Description
 Increments the score of a member from a sorted set by a given amount.
