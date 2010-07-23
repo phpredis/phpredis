@@ -1365,11 +1365,13 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$zero_to_three = $this->redis->zRangeByScore('key', 0, 3);
 	$this->assertTrue(array('val0', 'val1', 'val2', 'aal3', 'val3') === $zero_to_three || array('val0', 'val1', 'val2', 'val3', 'aal3') === $zero_to_three);
+	$this->assertTrue(5 === $this->redis->zCount('key', 0, 3));
 
 	// withscores
 	$this->redis->zRemove('key', 'aal3');
 	$zero_to_three = $this->redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE));
 	$this->assertTrue(array('val0' => 0, 'val1' => 1, 'val2' => 2, 'val3' => 3) == $zero_to_three);
+	$this->assertTrue(4 === $this->redis->zCount('key', 0, 3));
 
 	// limit
 	$this->assertTrue(array('val0') === $this->redis->zRangeByScore('key', 0, 3, array('limit' => array(0, 1))));

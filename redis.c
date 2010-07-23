@@ -113,6 +113,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zRange, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zReverseRange, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRangeByScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zCount, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCard, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zScore, NULL, ZEND_ACC_PUBLIC)
@@ -3078,6 +3079,54 @@ PHP_METHOD(Redis, zRangeByScore)
             }
             REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
     }
+}
+/* }}} */
+
+/* {{{ proto array Redis::zCount(string key, int start , int end)
+ */
+PHP_METHOD(Redis, zCount)
+{
+    zval *object;
+
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd;
+    int key_len, cmd_len, response_len;
+    double start, end;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osdd",
+                                     &object, redis_ce,
+                                     &key, &key_len, &start, &end) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd,
+                    "*4" _NL
+
+                    "$6" _NL
+                    "ZCOUNT" _NL
+
+                    "$%d" _NL /* key_len */
+                    "%s" _NL  /* key */
+
+                    "$%d" _NL /* start_len */
+                    "%F" _NL  /* start */
+
+                    "$%d" _NL /* end_len */
+                    "%F" _NL  /* end */
+
+                    , key_len, key, key_len
+                    , double_length(start), start
+                    , double_length(end), end);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL TSRMLS_CC);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 /* }}} */
 

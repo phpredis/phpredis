@@ -1284,6 +1284,24 @@ $redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1)); /* array('val2
 $redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(1, 1)); /* array('val2' => 2) */
 </pre>
 
+## zCount
+##### *Description*
+Returns the *number* of elements of the sorted set stored at the specified key which have scores in the range [start,end].
+##### *Parameters*
+*key*  
+*start*: double  
+*end*: double  
+
+##### *Return value*
+*LONG* the size of a corresponding zRangeByScore.  
+##### *Example*
+<pre>
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 2, 'val2');
+$redis->zAdd('key', 10, 'val10');
+$redis->zCount('key', 0, 3); /* 2, corresponding to array('val0', 'val2') */
+</pre>
+
 ## zDeleteRangeByScore, zRemoveRangeByScore
 ##### *Description*
 Deletes the elements of the sorted set stored at the specified key which have scores in the range [start,end].

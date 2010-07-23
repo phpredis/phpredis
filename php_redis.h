@@ -85,6 +85,7 @@ PHP_METHOD(Redis, zDelete);
 PHP_METHOD(Redis, zRange);
 PHP_METHOD(Redis, zReverseRange);
 PHP_METHOD(Redis, zRangeByScore);
+PHP_METHOD(Redis, zCount);
 PHP_METHOD(Redis, zDeleteRangeByScore);
 PHP_METHOD(Redis, zCard);
 PHP_METHOD(Redis, zScore);
