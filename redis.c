@@ -3970,8 +3970,7 @@ PHP_METHOD(Redis, multi)
 	if(multi_value == REDIS_MULTI || multi_value == REDIS_PIPELINE) {
 		set_flag(object, multi_value);
 	} else {
-        /* php_printf("error[%f] !! \n", multi_value); */
-		exit(-1);
+        RETURN_FALSE;
 	}
 
     current = NULL;
@@ -4394,7 +4393,7 @@ PHP_METHOD(Redis, subscribe)
 													 redis_sock TSRMLS_CC);
 		zval **type, **channel, **data;
 		
-		if(Z_TYPE_P(z_tab) == IS_NULL) {
+		if(Z_TYPE_P(z_tab) != IS_ARRAY) {
 			//ERROR
 			break;
 		}
@@ -4468,7 +4467,7 @@ PHP_METHOD(Redis, subscribe)
  * response format :
  * array(
  * 	channel_0 => TRUE|FALSE,
- *	channel_1 => TRUE_FALSE,
+ *	channel_1 => TRUE|FALSE,
  *	...
  *	channel_n => TRUE|FALSE
  * );
