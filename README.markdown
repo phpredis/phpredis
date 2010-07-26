@@ -142,6 +142,30 @@ $redis->delete('key1', 'key2'); /* return 2 */
 $redis->delete(array('key3', 'key4')); /* return 2 */
 </pre>
 
+## multi, exec.
+##### Description
+Enter and exit transactional mode.  
+##### Parameters
+(optional) `Redis::MULTI` or `Redis::PIPELINE`. Defaults to `Redis::MULTI`. A `Redis::MULTI` block of commands runs as a single transaction; a `Redis::PIPELINE` block is simply transmitted faster to the server, but without any guarantee of atomicity.  
+##### Return value
+`multi()` returns the Redis instance and enters multi-mode. Once in multi-mode, all subsequent method calls return the same object until `exec()` is called.
+##### Example
+<pre>
+$ret = $redis->multi()
+    ->set('key1', 'val1')
+    ->get('key1')
+    ->set('key2', 'val2')
+    ->get('key2')
+    ->exec();
+
+/*
+$ret == array(
+    0 => TRUE,
+    1 => 'val1',
+    2 => TRUE,
+    3 => 'val2');
+*/
+</pre>
 
 ## exists
 ##### Description

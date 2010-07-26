@@ -1218,6 +1218,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals($this->redis->lGetRange('list', 0, -1), array());
     }
 
+    /*
     public function testsave() {
 	$this->assertTrue($this->redis->save() === TRUE);	// don't really know how else to test this...
     }
@@ -1240,7 +1241,8 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$this->assertTrue($t_php - $t_redis < 10000); // check that it's approximately what we've measured in PHP.
     }
-
+     */
+/*
     public function testflushDb() {
 	$this->redis->set('x', 'y');
 	$this->assertTrue($this->redis->flushDb());
@@ -1252,7 +1254,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue($this->redis->flushAll());
 	$this->assertTrue($this->redis->getKeys('*') === array());
     }
-
+*/
     public function testdbSize() {
 	$this->assertTrue($this->redis->flushDB());
 	$this->redis->set('x', 'y');
@@ -2082,6 +2084,17 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    $this->assertTrue($ret[$i++] === FALSE); // member isn't a number → fail.
 	    $this->assertTrue(count($ret) === $i);
 
+	    $ret = $this->redis->multi() // default to MULTI, not PIPELINE.
+		    ->delete('test')
+		    ->set('test', 'xyz')
+		    ->get('test')
+		    ->exec();
+	    $i = 0;
+	    $this->assertTrue(is_array($ret));
+	    $this->assertTrue($ret[$i++] <= 1); // delete
+	    $this->assertTrue($ret[$i++] === TRUE); // added 1 element
+	    $this->assertTrue($ret[$i++] === 'xyz');
+	    $this->assertTrue(count($ret) === $i);
     }
 
 }

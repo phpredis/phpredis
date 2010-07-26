@@ -3954,9 +3954,9 @@ PHP_METHOD(Redis, multi)
 	int response_len, cmd_len;
 	char * response;
 	zval *object;
-	double multi_value;
+	long multi_value = REDIS_MULTI;
 
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Od",
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|l",
                                      &object, redis_ce, &multi_value) == FAILURE) {
         RETURN_FALSE;
     }
@@ -3974,11 +3974,6 @@ PHP_METHOD(Redis, multi)
 		exit(-1);
 	}
 
-    /*
-	head = malloc(sizeof(fold_item));
-	current = head;
-	current->function_name = strdup("__begin__");
-    */
     current = NULL;
 
 	IF_MULTI() {
