@@ -127,14 +127,12 @@ typedef struct fold_item {
 	zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, ...);
 	struct fold_item *next;
 } fold_item;
-//fold_item *head, *current;
 
 typedef struct request_item {
 	char *request_str; 
 	int request_size; /* size_t */
 	struct request_item *next;
 } request_item;
-// request_item *head_request, *current_request;
 
 void
-free_reply_callbacks();
+free_reply_callbacks(zval *z_this);
