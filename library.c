@@ -22,8 +22,7 @@ PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
     }
 }
 
-PHPAPI zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
-												  RedisSock *redis_sock TSRMLS_DC) {
+PHPAPI zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     char inbuf[1024], *response;
     int response_len;
 
@@ -47,7 +46,7 @@ PHPAPI zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
 /**
  * redis_sock_read_bulk_reply
  */
-PHPAPI char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
+PHPAPI char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_DC)
 {
     int offset = 0;
     size_t got;
@@ -110,7 +109,7 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
 
         case '$':
             *buf_len = atoi(inbuf + 1);
-            resp = redis_sock_read_bulk_reply(redis_sock, *buf_len);
+            resp = redis_sock_read_bulk_reply(redis_sock, *buf_len TSRMLS_CC);
             return resp;
 
         default:
@@ -244,7 +243,7 @@ redis_cmd_format(char **ret, char *format, ...) {
     }
 }
 
-PHPAPI void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
+PHPAPI void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab) {
 
     char *response;
     int response_len;
@@ -263,7 +262,7 @@ PHPAPI void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
     }
 }
 
-PHPAPI void redis_boolean_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
+PHPAPI void redis_boolean_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab) {
 
     char *response;
     int response_len;
@@ -295,7 +294,7 @@ PHPAPI void redis_boolean_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redi
     }
 }
 
-PHPAPI void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval * z_tab TSRMLS_DC) {
+PHPAPI void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval * z_tab) {
 
     char *response;
     int response_len;
@@ -325,7 +324,7 @@ PHPAPI void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
     }
 }
 
-PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, int flag TSRMLS_DC) {
+PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, int flag) {
 
 	/*
 	int ret = redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab TSRMLS_CC);
@@ -363,16 +362,16 @@ PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PA
 	return 0;
 }
 
-PHPAPI int redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
+PHPAPI int redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab) {
 
 	return redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, 1);
 }
 
-PHPAPI int redis_sock_read_multibulk_reply_zipped_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
+PHPAPI int redis_sock_read_multibulk_reply_zipped_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab) {
 	return redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, 0);
 }
 
-PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
+PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab) {
 
 	char *response;
 	int response_len;
@@ -404,7 +403,7 @@ PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock
     }
 }
 
-PHPAPI void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab TSRMLS_DC) {
+PHPAPI void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab) {
 
     char *response;
     int response_len;
@@ -538,7 +537,7 @@ PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
     int res = 0;
 
     if (redis_sock->stream != NULL) {
-        redis_sock_write(redis_sock, "QUIT", sizeof("QUIT") - 1);
+        redis_sock_write(redis_sock, "QUIT", sizeof("QUIT") - 1 TSRMLS_CC);
 
         redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
         php_stream_close(redis_sock->stream);
@@ -553,8 +552,7 @@ PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
 /**
  * redis_sock_read_multibulk_reply
  */
-PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
-                                           RedisSock *redis_sock, zval *z_tab TSRMLS_DC)
+PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab)
 {
     char inbuf[1024], *response;
     int response_len;
@@ -586,7 +584,7 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
 
 PHPAPI int
 redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                                     zval *z_tab, int numElems TSRMLS_DC)
+                                     zval *z_tab, int numElems)
 {
     char *response;
     int response_len;
@@ -607,7 +605,7 @@ redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *re
 /**
  * redis_sock_write
  */
-PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz)
+PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz TSRMLS_DC)
 {
     redis_check_eof(redis_sock TSRMLS_CC);
     return php_stream_write(redis_sock->stream, cmd, sz);
@@ -623,7 +621,7 @@ PHPAPI void redis_free_socket(RedisSock *redis_sock)
 }
 
 
-PHPAPI fold_item* get_multi_head(zval *object) {
+PHPAPI fold_item* get_multi_head(zval *object TSRMLS_DC) {
 
     zval **multi_head = NULL;
     int type;
@@ -632,7 +630,7 @@ PHPAPI fold_item* get_multi_head(zval *object) {
     return zend_list_find(Z_LVAL_PP(multi_head), &type);
 }
 
-PHPAPI void set_multi_head(zval *object, fold_item *head) {
+PHPAPI void set_multi_head(zval *object, fold_item *head TSRMLS_DC) {
 
     zval **multi_head = NULL;
 
@@ -645,7 +643,7 @@ PHPAPI void set_multi_head(zval *object, fold_item *head) {
     add_property_resource(object, "multi_head", list_id);
 }
 
-PHPAPI fold_item* get_multi_current(zval *object) {
+PHPAPI fold_item* get_multi_current(zval *object TSRMLS_DC) {
 
     zval **multi_current = NULL;
     int type;
@@ -654,7 +652,7 @@ PHPAPI fold_item* get_multi_current(zval *object) {
     return zend_list_find(Z_LVAL_PP(multi_current), &type);
 }
 
-PHPAPI void set_multi_current(zval *object, fold_item *current) {
+PHPAPI void set_multi_current(zval *object, fold_item *current TSRMLS_DC) {
 
     zval **multi_current = NULL;
 
@@ -667,7 +665,7 @@ PHPAPI void set_multi_current(zval *object, fold_item *current) {
     add_property_resource(object, "multi_current", list_id);
 }
 
-PHPAPI request_item* get_pipeline_head(zval *object) {
+PHPAPI request_item* get_pipeline_head(zval *object TSRMLS_DC) {
 
     zval **pipeline_head = NULL;
     int type;
@@ -676,7 +674,7 @@ PHPAPI request_item* get_pipeline_head(zval *object) {
     return zend_list_find(Z_LVAL_PP(pipeline_head), &type);
 }
 
-PHPAPI void set_pipeline_head(zval *object, request_item *head) {
+PHPAPI void set_pipeline_head(zval *object, request_item *head TSRMLS_DC) {
 
     zval **pipeline_head = NULL;
 
@@ -689,7 +687,7 @@ PHPAPI void set_pipeline_head(zval *object, request_item *head) {
     add_property_resource(object, "pipeline_head", list_id);
 }
 
-PHPAPI request_item* get_pipeline_current(zval *object) {
+PHPAPI request_item* get_pipeline_current(zval *object TSRMLS_DC) {
 
     zval **pipeline_current = NULL;
     int type;
@@ -698,7 +696,7 @@ PHPAPI request_item* get_pipeline_current(zval *object) {
     return zend_list_find(Z_LVAL_PP(pipeline_current), &type);
 }
 
-PHPAPI void set_pipeline_current(zval *object, request_item *current) {
+PHPAPI void set_pipeline_current(zval *object, request_item *current TSRMLS_DC) {
 
     zval **pipeline_current = NULL;
 

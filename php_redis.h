@@ -136,18 +136,18 @@ PHP_RINIT_FUNCTION(redis);
 PHP_RSHUTDOWN_FUNCTION(redis);
 PHP_MINFO_FUNCTION(redis);
 
-PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword TSRMLS_DC);
+PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword);
 PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
-                int min_argc, RedisSock **redis_sock TSRMLS_DC);
-PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_alpha TSRMLS_DC);
-PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len TSRMLS_DC, ...);
-PHPAPI void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len TSRMLS_DC, ...);
+                int min_argc, RedisSock **redis_sock);
+PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_alpha);
+PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...);
+PHPAPI void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...);
 
 PHPAPI void array_zip_values_and_scores(zval *z_tab, int use_atof TSRMLS_DC);
 PHPAPI int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC);
 
-PHPAPI int get_flag(zval *object);
-PHPAPI void set_flag(zval *object, int new_flag);
+PHPAPI int get_flag(zval *object TSRMLS_DC);
+PHPAPI void set_flag(zval *object, int new_flag TSRMLS_DC);
 
 /* MULTI/EXEC */
 PHPAPI fold_item* get_multi_head(zval *object);
