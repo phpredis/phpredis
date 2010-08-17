@@ -30,7 +30,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->setUp();
         $this->tearDown();
     }
-    
+
     public function testPing()
     {
 
@@ -1218,43 +1218,42 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals($this->redis->lGetRange('list', 0, -1), array());
     }
 
-    /*
-    public function testsave() {
-	$this->assertTrue($this->redis->save() === TRUE);	// don't really know how else to test this...
-    }
-    public function testbgSave() {
-	// let's try to fill the DB and then bgSave twice. We expect the second one to fail.
-	for($i = 0; $i < 10e+4; $i++) {
-	    $s = md5($i);
-	    $this->redis->set($s, $s);
-	}
-	$this->assertTrue($this->redis->bgSave() === TRUE);	// the first one should work.
-	$this->assertTrue($this->redis->bgSave() === FALSE);	// the second one should fail (still working on the first one)
-    }
 
-    public function testlastSave() {
-	while(!$this->redis->save()) {
-	    sleep(1);
-	}
-	$t_php = microtime(TRUE);
-	$t_redis = $this->redis->lastSave();
+//    public function testsave() {
+//	$this->assertTrue($this->redis->save() === TRUE);	// don't really know how else to test this...
+//    }
+//    public function testbgSave() {
+//	// let's try to fill the DB and then bgSave twice. We expect the second one to fail.
+//	for($i = 0; $i < 10e+4; $i++) {
+//	    $s = md5($i);
+//	    $this->redis->set($s, $s);
+//	}
+//	$this->assertTrue($this->redis->bgSave() === TRUE);	// the first one should work.
+//	$this->assertTrue($this->redis->bgSave() === FALSE);	// the second one should fail (still working on the first one)
+//    }
+//
+//    public function testlastSave() {
+//	while(!$this->redis->save()) {
+//	    sleep(1);
+//	}
+//	$t_php = microtime(TRUE);
+//	$t_redis = $this->redis->lastSave();
+//
+//	$this->assertTrue($t_php - $t_redis < 10000); // check that it's approximately what we've measured in PHP.
+//    }
+//
+//    public function testflushDb() {
+//	$this->redis->set('x', 'y');
+//	$this->assertTrue($this->redis->flushDb());
+//	$this->assertTrue($this->redis->getKeys('*') === array());
+//    }
+//
+//    public function testflushAll() {
+//	$this->redis->set('x', 'y');
+//	$this->assertTrue($this->redis->flushAll());
+//	$this->assertTrue($this->redis->getKeys('*') === array());
+//    }
 
-	$this->assertTrue($t_php - $t_redis < 10000); // check that it's approximately what we've measured in PHP.
-    }
-     */
-/*
-    public function testflushDb() {
-	$this->redis->set('x', 'y');
-	$this->assertTrue($this->redis->flushDb());
-	$this->assertTrue($this->redis->getKeys('*') === array());
-    }
-
-    public function testflushAll() {
-	$this->redis->set('x', 'y');
-	$this->assertTrue($this->redis->flushAll());
-	$this->assertTrue($this->redis->getKeys('*') === array());
-    }
-*/
     public function testdbSize() {
 	$this->assertTrue($this->redis->flushDB());
 	$this->redis->set('x', 'y');
@@ -1499,7 +1498,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(2 === $this->redis->zRevRank('z', 'one'));
 	$this->assertTrue(1 === $this->redis->zRevRank('z', 'two'));
 	$this->assertTrue(0 === $this->redis->zRevRank('z', 'five'));
-}
+    }
 
     public function testHashes() {
 	$this->redis->delete('h', 'key');

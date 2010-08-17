@@ -4,6 +4,11 @@
 #include <netinet/tcp.h>  /* TCP_NODELAY */
 #include <sys/socket.h>
 
+extern int le_redis_multi_head;
+extern int le_redis_multi_current;
+extern int le_redis_pipeline_head;
+extern int le_redis_pipeline_current;
+
 PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 {
 
@@ -615,4 +620,93 @@ PHPAPI void redis_free_socket(RedisSock *redis_sock)
 {
     efree(redis_sock->host);
     efree(redis_sock);
+}
+
+
+PHPAPI fold_item* get_multi_head(zval *object) {
+
+    zval **multi_head = NULL;
+    int type;
+
+    zend_hash_find(Z_OBJPROP_P(object), "multi_head", sizeof("multi_head"), (void **) &multi_head);
+    return zend_list_find(Z_LVAL_PP(multi_head), &type);
+}
+
+PHPAPI void set_multi_head(zval *object, fold_item *head) {
+
+    zval **multi_head = NULL;
+
+    zend_hash_find(Z_OBJPROP_P(object), "multi_head", sizeof("multi_head"), (void **) &multi_head);
+    if(multi_head) { /* replace */
+        zend_list_delete(Z_LVAL_PP(multi_head));
+    }
+
+    int list_id = zend_list_insert(head, le_redis_multi_head);
+    add_property_resource(object, "multi_head", list_id);
+}
+
+PHPAPI fold_item* get_multi_current(zval *object) {
+
+    zval **multi_current = NULL;
+    int type;
+
+    zend_hash_find(Z_OBJPROP_P(object), "multi_current", sizeof("multi_current"), (void **) &multi_current);
+    return zend_list_find(Z_LVAL_PP(multi_current), &type);
+}
+
+PHPAPI void set_multi_current(zval *object, fold_item *current) {
+
+    zval **multi_current = NULL;
+
+    zend_hash_find(Z_OBJPROP_P(object), "multi_current", sizeof("multi_current"), (void **) &multi_current);
+    if(multi_current) { /* replace */
+        zend_list_delete(Z_LVAL_PP(multi_current));
+    }
+
+    int list_id = zend_list_insert(current, le_redis_multi_current);
+    add_property_resource(object, "multi_current", list_id);
+}
+
+PHPAPI request_item* get_pipeline_head(zval *object) {
+
+    zval **pipeline_head = NULL;
+    int type;
+
+    zend_hash_find(Z_OBJPROP_P(object), "pipeline_head", sizeof("pipeline_head"), (void **) &pipeline_head);
+    return zend_list_find(Z_LVAL_PP(pipeline_head), &type);
+}
+
+PHPAPI void set_pipeline_head(zval *object, request_item *head) {
+
+    zval **pipeline_head = NULL;
+
+    zend_hash_find(Z_OBJPROP_P(object), "pipeline_head", sizeof("pipeline_head"), (void **) &pipeline_head);
+    if(pipeline_head) { /* replace */
+        zend_list_delete(Z_LVAL_PP(pipeline_head));
+    }
+
+    int list_id = zend_list_insert(head, le_redis_pipeline_head);
+    add_property_resource(object, "pipeline_head", list_id);
+}
+
+PHPAPI request_item* get_pipeline_current(zval *object) {
+
+    zval **pipeline_current = NULL;
+    int type;
+
+    zend_hash_find(Z_OBJPROP_P(object), "pipeline_current", sizeof("pipeline_current"), (void **) &pipeline_current);
+    return zend_list_find(Z_LVAL_PP(pipeline_current), &type);
+}
+
+PHPAPI void set_pipeline_current(zval *object, request_item *current) {
+
+    zval **pipeline_current = NULL;
+
+    zend_hash_find(Z_OBJPROP_P(object), "pipeline_current", sizeof("pipeline_current"), (void **) &pipeline_current);
+    if(pipeline_current) { /* replace */
+        zend_list_delete(Z_LVAL_PP(pipeline_current));
+    }
+
+    int list_id = zend_list_insert(current, le_redis_pipeline_current);
+    add_property_resource(object, "pipeline_current", list_id);
 }

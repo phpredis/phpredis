@@ -36,6 +36,10 @@
 
 static int le_redis_sock;
 static int le_redis_multi_access_type;
+int le_redis_multi_head;
+int le_redis_multi_current;
+int le_redis_pipeline_head;
+int le_redis_pipeline_current;
 
 static zend_class_entry *redis_ce;
 static zend_class_entry *redis_exception_ce;
@@ -274,6 +278,30 @@ PHP_MINIT_FUNCTION(redis)
 		redis_multi_access_type_name, module_number
 	);
 
+	le_redis_multi_head = zend_register_list_destructors_ex(
+		redis_destructor_multi_access,
+		NULL,
+		redis_multi_access_type_name, module_number
+	);
+
+	le_redis_multi_current = zend_register_list_destructors_ex(
+		redis_destructor_multi_access,
+		NULL,
+		redis_multi_access_type_name, module_number
+	);
+
+	le_redis_pipeline_head = zend_register_list_destructors_ex(
+		redis_destructor_multi_access,
+		NULL,
+		redis_multi_access_type_name, module_number
+	);
+
+	le_redis_pipeline_current = zend_register_list_destructors_ex(
+		redis_destructor_multi_access,
+		NULL,
+		redis_multi_access_type_name, module_number
+	);
+
 	add_constant_long(redis_ce, "REDIS_NOT_FOUND", REDIS_NOT_FOUND);
 	add_constant_long(redis_ce, "REDIS_STRING", REDIS_STRING);
 	add_constant_long(redis_ce, "REDIS_SET", REDIS_SET);
@@ -336,6 +364,10 @@ PHP_METHOD(Redis, __construct)
     add_property_resource(object, "multi_flag", id);
 
 	set_flag(object, REDIS_ATOMIC);
+	set_multi_head(object, NULL);
+	set_multi_current(object, NULL);
+    set_pipeline_head(object, NULL);
+    set_pipeline_current(object, NULL);
 
 }
 /* }}} */
@@ -361,6 +393,7 @@ PHPAPI void set_flag(zval *object, int new_flag)
     add_property_resource(object, "multi_flag", id);
 
 }
+
 /* {{{ proto boolean Redis::connect(string host, int port [, int timeout])
  */
 PHP_METHOD(Redis, connect)
@@ -3973,7 +4006,7 @@ PHP_METHOD(Redis, multi)
         RETURN_FALSE;
 	}
 
-    current = NULL;
+    set_multi_current(getThis(), NULL); /* current = NULL; */
 
 	IF_MULTI() {
 	    cmd_len = redis_cmd_format(&cmd, "*1" _NL "$5" _NL "MULTI" _NL);
@@ -3996,7 +4029,7 @@ PHP_METHOD(Redis, multi)
 		RETURN_FALSE;
 	}
 	IF_PIPELINE() {
-        free_reply_callbacks();
+        free_reply_callbacks(getThis());
 		RETURN_ZVAL(getThis(), 1, 0);
 	}
 }
@@ -4052,7 +4085,7 @@ PHPAPI int redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS
     efree(z_tab);
 
     /* free allocated function/request memory */
-    free_reply_callbacks();
+    free_reply_callbacks(getThis());
 
     return 0;
 
@@ -4090,25 +4123,28 @@ PHPAPI int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS,
 }
 
 void
-free_reply_callbacks() {
+free_reply_callbacks(zval *z_this) {
 
 	fold_item *fi;
+    fold_item *head = get_multi_head(z_this);
     for(fi = head; fi; ) {
         fold_item *fi_next = fi->next;
         free(fi);
         fi = fi_next;
     }
-    head = current = NULL;
+    set_multi_head(z_this, NULL);
+    set_multi_current(z_this, NULL);
 
 
 	request_item *ri;
-    for(ri = head_request; ri; ) {
+    for(ri = get_pipeline_head(z_this); ri; ) {
         struct request_item *ri_next = ri->next;
         free(ri->request_str);
         free(ri);
         ri = ri_next;
     }
-    current_request = head_request = NULL;
+    set_pipeline_head(z_this, NULL);
+    set_pipeline_current(z_this, NULL);
 
 }
 
@@ -4142,10 +4178,10 @@ PHP_METHOD(Redis, exec)
 
 	    if (redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC) < 0) {
             zval_dtor(return_value);
-            free_reply_callbacks();
+            free_reply_callbacks(object);
 			RETURN_FALSE;
 	    }
-        free_reply_callbacks();
+        free_reply_callbacks(object);
 		set_flag(object, REDIS_ATOMIC);
 	}
 
@@ -4156,7 +4192,7 @@ PHP_METHOD(Redis, exec)
 		int offset = 0;
 
         /* compute the total request size */
-		for(ri = head_request; ri; ri = ri->next) {
+		for(ri = get_pipeline_head(object); ri; ri = ri->next) {
             total += ri->request_size;
 		}
         if(total) {
@@ -4164,7 +4200,7 @@ PHP_METHOD(Redis, exec)
         }
 
         /* concatenate individual elements one by one in the target buffer */
-		for(ri = head_request; ri; ri = ri->next) {
+		for(ri = get_pipeline_head(object); ri; ri = ri->next) {
 			memcpy(request + offset, ri->request_str, ri->request_size);
 			offset += ri->request_size;
 		}
@@ -4172,25 +4208,25 @@ PHP_METHOD(Redis, exec)
 		if(request != NULL) {
 		    if (redis_sock_write(redis_sock, request, total) < 0) {
     		    free(request);
-                free_reply_callbacks();
+                free_reply_callbacks(object);
                 set_flag(object, REDIS_ATOMIC);
         		RETURN_FALSE;
 		    }
 		   	free(request);
 		} else {
                 set_flag(object, REDIS_ATOMIC);
-                free_reply_callbacks();
+                free_reply_callbacks(object);
                 array_init(return_value); /* empty array when no command was run. */
                 return;
         }
 
 	    if (redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock TSRMLS_CC) < 0) {
 			set_flag(object, REDIS_ATOMIC);
-            free_reply_callbacks();
+            free_reply_callbacks(object);
 			RETURN_FALSE;
 	    }
 		set_flag(object, REDIS_ATOMIC);
-        free_reply_callbacks();
+        free_reply_callbacks(object);
 	}
 }
 
@@ -4202,9 +4238,12 @@ PHPAPI int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETE
 							RedisSock *redis_sock, zval *z_tab, int numElems TSRMLS_DC)
 {
 
+    fold_item *head = get_multi_head(getThis());
+    fold_item *current = get_multi_current(getThis());
     for(current = head; current; current = current->next) {
 		fold_this_item(INTERNAL_FUNCTION_PARAM_PASSTHRU, current, redis_sock, z_tab TSRMLS_CC);
     }
+    set_multi_current(getThis(), current);
     return 0;
 }
 
@@ -4229,7 +4268,7 @@ PHP_METHOD(Redis, pipeline)
 		We need the response format of the n - 1 command. So, we can delete when n > 2, the { 1 .. n - 2} commands
 	*/
 
-    free_reply_callbacks();
+    free_reply_callbacks(getThis());
 
 	RETURN_ZVAL(getThis(), 1, 0);
 }

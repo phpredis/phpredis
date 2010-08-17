@@ -43,8 +43,9 @@
 	fold_item *f1 = malloc(sizeof(fold_item)); \
 	f1->fun = (void *)callback; \
 	f1->next = NULL; \
+	fold_item *current = get_multi_current(getThis());\
 	if(current) current->next = f1; \
-	current = f1; \
+	set_multi_current(getThis(), f1); \
   }
 
 #define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) request_item *tmp; \
@@ -53,12 +54,15 @@
 	memcpy(tmp->request_str, cmd, cmd_len);\
 	tmp->request_size = cmd_len;\
 	tmp->next = NULL;\
+	zval *z_this = getThis(); \
+	struct request_item *current_request = get_pipeline_current(z_this); \
 	if(current_request) {\
 		current_request->next = tmp;\
 	} \
-	current_request = tmp; \
-	if(NULL == head_request) { \
-		head_request = current_request; \
+	set_pipeline_current(z_this, tmp); \
+	if(NULL == get_pipeline_head(z_this)) { \
+		set_pipeline_head(z_this, get_pipeline_current(z_this)); \
+		/* head_request = current_request;*/ \
 	}
 
 #define SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len) if(redis_sock_write(redis_sock, cmd, cmd_len) < 0) { \
@@ -70,10 +74,12 @@
 	fold_item *f1 = malloc(sizeof(fold_item)); \
 	f1->fun = (void *)callback; \
 	f1->next = NULL; \
+	fold_item *current = get_multi_current(getThis());\
 	if(current) current->next = f1; \
-	current = f1; \
-	if(NULL == head) { \
-		head = current; \
+	set_multi_current(getThis(), f1); \
+	if(NULL == get_multi_head(getThis())) { \
+		/* head = current;*/ \
+		set_multi_head(getThis(), get_multi_current(getThis()));\
 	}\
 }
 
@@ -121,14 +127,14 @@ typedef struct fold_item {
 	zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, ...);
 	struct fold_item *next;
 } fold_item;
-fold_item *head, *current;
+//fold_item *head, *current;
 
 typedef struct request_item {
 	char *request_str; 
 	int request_size; /* size_t */
 	struct request_item *next;
 } request_item;
-request_item *head_request, *current_request;
+// request_item *head_request, *current_request;
 
 void
 free_reply_callbacks();
