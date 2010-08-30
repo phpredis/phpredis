@@ -120,8 +120,8 @@ Set the string value in argument as value of the key if the key doesn't already 
 
 ##### Examples
 <pre>
-$this->redis->setnx('key', 'value'); /* return TRUE */
-$this->redis->setnx('key', 'value'); /* return FALSE */
+$redis->setnx('key', 'value'); /* return TRUE */
+$redis->setnx('key', 'value'); /* return FALSE */
 </pre>
 
 ## delete
@@ -176,9 +176,9 @@ Verify if the specified key exists.
 *BOOL*: If the key exists, return `TRUE`, otherwise return `FALSE`.
 ##### Examples
 <pre>
-$this->set('key', 'value');
-$this->exists('key'); /*  TRUE */
-$this->exists('NonExistingKey'); /* FALSE */
+$redis->set('key', 'value');
+$redis->exists('key'); /*  TRUE */
+$redis->exists('NonExistingKey'); /* FALSE */
 </pre>
 
 ## incr
@@ -914,7 +914,7 @@ Sets an expiration date (a timeout) on an item.
 $redis->set('x', '42');
 $redis->setTimeout('x', 3);	// x will disappear in 3 seconds.
 sleep(5);				// wait 5 seconds
-$this->get('x'); 		// will return `FALSE`, as 'x' has expired.
+$redis->get('x'); 		// will return `FALSE`, as 'x' has expired.
 </pre>
 
 ## expireAt
@@ -934,7 +934,7 @@ $redis->set('x', '42');
 $now = time(NULL); // current timestamp
 $redis->setTimeout('x', $now + 3);	// x will disappear in 3 seconds.
 sleep(5);				// wait 5 seconds
-$this->get('x'); 		// will return `FALSE`, as 'x' has expired.
+$redis->get('x'); 		// will return `FALSE`, as 'x' has expired.
 </pre>
 
 ## getKeys
@@ -1660,9 +1660,9 @@ Verify if the specified member exists in a key.
 *BOOL*: If the member exists in the hash table, return `TRUE`, otherwise return `FALSE`.
 ##### Examples
 <pre>
-$this->hSet('h', 'a', 'x');
-$this->hExists('h', 'a'); /*  TRUE */
-$this->hExists('h', 'NonExistingKey'); /* FALSE */
+$redis->hSet('h', 'a', 'x');
+$redis->hExists('h', 'a'); /*  TRUE */
+$redis->hExists('h', 'NonExistingKey'); /* FALSE */
 </pre>
 
 ## hIncrBy
