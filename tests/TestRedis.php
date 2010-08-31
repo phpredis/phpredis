@@ -1385,6 +1385,23 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertFalse($this->redis->zScore('key', 'val'));
 	$this->assertFalse($this->redis->zScore(3, 2));
 
+	// with () and +inf, -inf
+	$this->redis->delete('zset');
+	$this->redis->zAdd('zset', 1, 'foo');
+	$this->redis->zAdd('zset', 2, 'bar');
+	$this->redis->zAdd('zset', 3, 'biz');
+	$this->redis->zAdd('zset', 4, 'foz');
+	$this->assertTrue(array('foo' => 1, 'bar' => 2, 'biz' => 3, 'foz' => 4) == $this->redis->zRangeByScore('zset', '-inf', '+inf', array('withscores' => TRUE)));
+	$this->assertTrue(array('foo' => 1, 'bar' => 2) == $this->redis->zRangeByScore('zset', 1, 2, array('withscores' => TRUE)));
+	$this->assertTrue(array('bar' => 2) == $this->redis->zRangeByScore('zset', '(1', 2, array('withscores' => TRUE)));
+	$this->assertTrue(array() == $this->redis->zRangeByScore('zset', '(1', '(2', array('withscores' => TRUE)));
+
+	$this->assertTrue(4 == $this->redis->zCount('zset', '-inf', '+inf'));
+	$this->assertTrue(2 == $this->redis->zCount('zset', 1, 2));
+	$this->assertTrue(1 == $this->redis->zCount('zset', '(1', 2));
+	$this->assertTrue(0 == $this->redis->zCount('zset', '(1', '(2'));
+
+
 	// zincrby
 	$this->redis->delete('key');
 	$this->assertTrue(1.0 === $this->redis->zIncrBy('key', 1, 'val1'));

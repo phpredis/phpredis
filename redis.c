@@ -2973,7 +2973,7 @@ PHP_METHOD(Redis, zReverseRange)
     }
 }
 /* }}} */
-/* {{{ proto array Redis::zRangeByScore(string key, int start , int end [,array options = NULL])
+/* {{{ proto array Redis::zRangeByScore(string key, string start , string end [,array options = NULL])
  */
 PHP_METHOD(Redis, zRangeByScore)
 {
@@ -2983,13 +2983,17 @@ PHP_METHOD(Redis, zRangeByScore)
     char *key = NULL, *limit = NULL, *cmd;
     int key_len, cmd_len, response_len;
     zend_bool withscores = 0;
-    double start, end;
+    char *start, *end;
+    int start_len, end_len;
     int has_limit = 0;
     long limit_low, limit_high;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osdd|a",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osss|a",
                                      &object, redis_ce,
-                                     &key, &key_len, &start, &end, &z_options) == FAILURE) {
+                                     &key, &key_len,
+                                     &start, &start_len,
+                                     &end, &end_len,
+                                     &z_options) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -3031,10 +3035,10 @@ PHP_METHOD(Redis, zRangeByScore)
                        "%s" _NL  /* key */\
                        \
                        "$%d" _NL /* start_len */\
-                       "%F" _NL  /* start */\
+                       "%s" _NL  /* start */\
                        \
                        "$%d" _NL /* end_len */\
-                       "%F" _NL  /* end */
+                       "%s" _NL  /* end */
 #define BASIC_FORMAT_WITH_LIMIT BASIC_FORMAT\
                        "$5" _NL\
                        "LIMIT" _NL\
@@ -3053,8 +3057,8 @@ PHP_METHOD(Redis, zRangeByScore)
                             "$10" _NL
                             "WITHSCORES" _NL
                             , key_len, key, key_len
-                            , double_length(start), start
-                            , double_length(end), end
+                            , start_len, start, start_len
+                            , end_len, end, end_len
                             , integer_length(limit_low), limit_low
                             , integer_length(limit_high), limit_high);
         } else {
@@ -3064,8 +3068,8 @@ PHP_METHOD(Redis, zRangeByScore)
                             "$10" _NL
                             "WITHSCORES" _NL
                             , key_len, key, key_len
-                            , double_length(start), start
-                            , double_length(end), end);
+                            , start_len, start, start_len
+                            , end_len, end, end_len);
         }
     } else {
 
@@ -3075,8 +3079,8 @@ PHP_METHOD(Redis, zRangeByScore)
                             "*7" _NL
                             BASIC_FORMAT_WITH_LIMIT
                             , key_len, key, key_len
-                            , double_length(start), start
-                            , double_length(end), end
+                            , start_len, start, start_len
+                            , end_len, end, end_len
                             , integer_length(limit_low), limit_low
                             , integer_length(limit_high), limit_high);
         } else {
@@ -3084,8 +3088,8 @@ PHP_METHOD(Redis, zRangeByScore)
                             "*4" _NL
                             BASIC_FORMAT
                             , key_len, key, key_len
-                            , double_length(start), start
-                            , double_length(end), end);
+                            , start_len, start, start_len
+                            , end_len, end, end_len);
         }
     }
 #undef BASIC_FORMAT
@@ -3115,7 +3119,7 @@ PHP_METHOD(Redis, zRangeByScore)
 }
 /* }}} */
 
-/* {{{ proto array Redis::zCount(string key, int start , int end)
+/* {{{ proto array Redis::zCount(string key, string start , string end)
  */
 PHP_METHOD(Redis, zCount)
 {
@@ -3124,11 +3128,14 @@ PHP_METHOD(Redis, zCount)
     RedisSock *redis_sock;
     char *key = NULL, *cmd;
     int key_len, cmd_len, response_len;
-    double start, end;
+    char *start, *end;
+    int start_len, end_len;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osdd",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osss",
                                      &object, redis_ce,
-                                     &key, &key_len, &start, &end) == FAILURE) {
+                                     &key, &key_len,
+                                     &start, &start_len,
+                                     &end, &end_len) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -3146,14 +3153,14 @@ PHP_METHOD(Redis, zCount)
                     "%s" _NL  /* key */
 
                     "$%d" _NL /* start_len */
-                    "%F" _NL  /* start */
+                    "%s" _NL  /* start */
 
                     "$%d" _NL /* end_len */
-                    "%F" _NL  /* end */
+                    "%s" _NL  /* end */
 
                     , key_len, key, key_len
-                    , double_length(start), start
-                    , double_length(end), end);
+                    , start_len, start, start_len
+                    , end_len, end, end_len);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {

@@ -1286,11 +1286,11 @@ $redis->zReverseRange('key', 0, -1, true); /* array('val10' => 10, 'val2' => 2, 
 
 ## zRangeByScore
 ##### *Description*
-Returns the elements of the sorted set stored at the specified key which have scores in the range [start,end].
+Returns the elements of the sorted set stored at the specified key which have scores in the range [start,end]. Adding a parenthesis before `start` or `end` excludes it from the range. +inf and -inf are also valid limits.
 ##### *Parameters*
 *key*  
-*start*: double  
-*end*: double  
+*start*: string  
+*end*: string  
 *options*: array  
 
 Two options are available: `withscores => TRUE`, and `limit => array($offset, $count)`
@@ -1310,11 +1310,11 @@ $redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(
 
 ## zCount
 ##### *Description*
-Returns the *number* of elements of the sorted set stored at the specified key which have scores in the range [start,end].
+Returns the *number* of elements of the sorted set stored at the specified key which have scores in the range [start,end]. Adding a parenthesis before `start` or `end` excludes it from the range. +inf and -inf are also valid limits.
 ##### *Parameters*
 *key*  
-*start*: double  
-*end*: double  
+*start*: string  
+*end*: string  
 
 ##### *Return value*
 *LONG* the size of a corresponding zRangeByScore.  
