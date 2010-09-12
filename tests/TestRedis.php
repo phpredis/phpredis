@@ -12,11 +12,17 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-	$this->redis = new Redis();
-	$this->redis->connect('127.0.0.1', 6379);
+	$this->redis = $this->newInstance();
+    }
+
+    private function newInstance() {
+	$r = new Redis();
+	$r->connect('127.0.0.1', 6379);
 
 	// uncomment the following if you want to use authentication
-	// $this->assertTrue($this->redis->auth('foobared'));
+	// $this->assertTrue($r->auth('foobared'));
+
+	return $r;
     }
 
     public function tearDown()
@@ -1592,6 +1598,37 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     public function testMultiExec() {
 	$this->sequence(Redis::MULTI);
+
+	$this->redis->set('x', '42');
+
+	$this->assertTrue(TRUE === $this->redis->watch('x'));
+	$ret = $this->redis->multi()
+		->get('x')
+		->exec();
+
+	// successful transaction
+	$this->assertTrue($ret === array('42'));
+
+	// failed transaction
+	$this->redis->watch('x');
+
+	$r = $this->newInstance(); // new instance, modifying `x'.
+	$r->incr('x');
+
+	$ret = $this->redis->multi()
+		->get('x')
+		->exec();
+	$this->assertTrue($ret === FALSE); // failed because another client changed our watched key between WATCH and EXEC.
+
+	// watch and unwatch
+	$this->redis->watch('x');
+	$r->incr('x'); // other instance
+	$this->redis->unwatch(); // cancel transaction watch
+
+	$ret = $this->redis->multi()
+		->get('x')
+		->exec();
+	$this->assertTrue($ret === array('44')); // succeeded since we've cancel the WATCH command.
     }
 
     public function testPipeline() {
@@ -1769,6 +1806,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 		    ->dbSize()
 		    ->lastsave()
 		    ->exec();
+
+	    $this->redis->select(0); // back to normal
+
 	    $i = 0;
 	    $this->assertTrue(is_array($ret));
 	    $this->assertTrue($ret[$i++] === TRUE); // select

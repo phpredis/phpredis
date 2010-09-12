@@ -113,6 +113,8 @@ PHP_METHOD(Redis, hMset);
 PHP_METHOD(Redis, multi);
 PHP_METHOD(Redis, discard);
 PHP_METHOD(Redis, exec);
+PHP_METHOD(Redis, watch);
+PHP_METHOD(Redis, unwatch);
 
 PHP_METHOD(Redis, pipeline);
 

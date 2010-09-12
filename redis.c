@@ -144,6 +144,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, discard, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, exec, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, pipeline, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, watch, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, unwatch, NULL, ZEND_ACC_PUBLIC)
 
 	 PHP_ME(Redis, publish, NULL, ZEND_ACC_PUBLIC)
 	 PHP_ME(Redis, subscribe, NULL, ZEND_ACC_PUBLIC)
@@ -1003,6 +1005,35 @@ PHP_METHOD(Redis, delete)
 	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL);
     }
 	REDIS_PROCESS_RESPONSE(redis_long_response);
+
+}
+/* }}} */
+
+/* {{{ proto boolean Redis::watch(string key1, string key2...)
+ */
+PHP_METHOD(Redis, watch)
+{
+    RedisSock *redis_sock;
+
+    generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                    "WATCH", sizeof("WATCH") - 1,
+                    1, &redis_sock);
+	zval * object = getThis();
+
+    IF_ATOMIC() {
+	  redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL);
+    }
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
+
+}
+/* }}} */
+
+/* {{{ proto boolean Redis::unwatch()
+ */
+PHP_METHOD(Redis, unwatch)
+{
+    char cmd[] = "*1" _NL "$7" _NL "UNWATCH" _NL;
+    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, estrdup(cmd), sizeof(cmd)-1);
 
 }
 /* }}} */
@@ -4128,8 +4159,11 @@ PHPAPI int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS,
 	/* number of responses */
     int numElems = atoi(inbuf+1);
 
-    zval_dtor(return_value);
+    if(numElems < 0) {
+        return -1;
+    }
 
+    zval_dtor(return_value);
     zval *z_tab;
     MAKE_STD_ZVAL(z_tab);
     array_init(z_tab);
@@ -4200,6 +4234,7 @@ PHP_METHOD(Redis, exec)
 	    if (redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock) < 0) {
             zval_dtor(return_value);
             free_reply_callbacks(object);
+            set_flag(object, REDIS_ATOMIC TSRMLS_CC);
 			RETURN_FALSE;
 	    }
         free_reply_callbacks(object);
