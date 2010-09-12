@@ -3937,21 +3937,36 @@ PHP_METHOD(Redis, hMset)
         element_count += 2;
 
         /* key is set. */
-        if (Z_TYPE_PP(z_value_p) != IS_STRING) {
-            convert_to_string(*z_value_p);
+        zval *z_copy;
+        MAKE_STD_ZVAL(z_copy);
+        switch(Z_TYPE_PP(z_value_p)) {
+
+            case IS_OBJECT:
+                ZVAL_STRINGL(z_copy, "Object", 6, 1);
+                break;
+
+            case IS_ARRAY:
+                ZVAL_STRINGL(z_copy, "Array", 5, 1);
+                break;
+
+            default:
+                *z_copy = **z_value_p;
+                zval_copy_ctor(z_copy);
+                if(Z_TYPE_PP(z_value_p) != IS_STRING) {
+                    convert_to_string(z_copy);
+                }
         }
-        if(*cmd) {
-            old_cmd = cmd;
-        }
+
+        old_cmd = cmd;
         cmd_len = redis_cmd_format(&cmd, "%s"
                         "$%d" _NL "%s" _NL
                         "$%d" _NL "%s" _NL
                         , cmd, cmd_len
                         , hkey_len-1, hkey, hkey_len-1
-                        , Z_STRLEN_PP(z_value_p), Z_STRVAL_PP(z_value_p), Z_STRLEN_PP(z_value_p));
-        if(old_cmd) {
-            efree(old_cmd);
-        }
+                        , Z_STRLEN_P(z_copy), Z_STRVAL_P(z_copy), Z_STRLEN_P(z_copy));
+        efree(old_cmd);
+        zval_dtor(z_copy);
+        efree(z_copy);
     }
 
     old_cmd = cmd;

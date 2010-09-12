@@ -1683,7 +1683,7 @@ $redis->hIncrBy('h', 'x', 1); /* h[x] ← 2 + 1. Returns 3 */
 
 ## hMset
 ##### Description
-Fills in a whole hash.
+Fills in a whole hash. Non-string values are converted to string, using the standard `(string)` cast. NULL values are stored as empty strings.
 ##### Parameters
 *key*  
 *members*: key → value array  

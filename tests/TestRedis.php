@@ -1579,6 +1579,15 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue('abc' === $this->redis->hGet('h', 'z'));
 	$this->assertTrue(FALSE === $this->redis->hGet('h', 't'));
 
+	// check non-string types.
+	$this->redis->delete('h1');
+	$this->assertTrue(TRUE === $this->redis->hMSet('h1', array('x' => 0, 'y' => array(), 'z' => new stdclass(), 't' => NULL)));
+	$h1 = $this->redis->hGetAll('h1');
+	$this->assertTrue('0' === $h1['x']);
+	$this->assertTrue('Array' === $h1['y']);
+	$this->assertTrue('Object' === $h1['z']);
+	$this->assertTrue('' === $h1['t']);
+
     }
 
     public function testMultiExec() {
