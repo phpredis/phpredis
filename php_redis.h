@@ -40,6 +40,7 @@ PHP_METHOD(Redis, incr);
 PHP_METHOD(Redis, decr);
 PHP_METHOD(Redis, type);
 PHP_METHOD(Redis, getKeys);
+PHP_METHOD(Redis, sort);
 PHP_METHOD(Redis, sortAsc);
 PHP_METHOD(Redis, sortAscAlpha);
 PHP_METHOD(Redis, sortDesc);

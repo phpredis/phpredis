@@ -68,6 +68,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, decr, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, type, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getKeys, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sort, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sortAsc, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sortAscAlpha, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sortDesc, NULL, ZEND_ACC_PUBLIC)
@@ -1986,6 +1987,107 @@ PHP_METHOD(Redis, sDiffStore) {
 }
 /* }}} */
 
+PHP_METHOD(Redis, sort) {
+
+    zval *object = getThis(), **z_args;
+    char *cmd, *old_cmd = NULL;
+    int cmd_len, elements = 1;
+    int i, argc = ZEND_NUM_ARGS();
+    int using_store = 0;
+    RedisSock *redis_sock;
+
+    if(argc < 1) {
+        WRONG_PARAM_COUNT;
+        RETURN_FALSE;
+    }
+
+    z_args = emalloc(argc * sizeof(zval*));
+    if(zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
+        efree(z_args);
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd = estrdup("$4" _NL "SORT" _NL);
+    cmd_len = strlen(cmd);
+
+    for(i = 0; i < argc; i++) {
+
+        zval *z_cur = z_args[i];
+
+        switch(Z_TYPE_P(z_cur)) {
+            case IS_STRING:
+                if(strncasecmp(Z_STRVAL_P(z_cur), "STORE", 5) == 0) {
+                    using_store = 1;
+                }
+                elements++;
+                old_cmd = cmd;
+                cmd_len = redis_cmd_format(&cmd, "%s"
+                                                 "$%d" _NL
+                                                 "%s" _NL
+                                                 , cmd, cmd_len
+                                                 , Z_STRLEN_P(z_cur), Z_STRVAL_P(z_cur), Z_STRLEN_P(z_cur));
+                break;
+
+            case IS_LONG:
+                elements++;
+                old_cmd = cmd;
+                cmd_len = redis_cmd_format(&cmd, "%s"
+                                                 "$%d" _NL
+                                                 "%d" _NL
+                                                 , cmd, cmd_len
+                                                 , integer_length(Z_LVAL_P(z_cur)), Z_LVAL_P(z_cur));
+                break;
+
+            case IS_DOUBLE:
+                elements++;
+                old_cmd = cmd;
+                cmd_len = redis_cmd_format(&cmd, "%s"
+                                                 "$%d" _NL
+                                                 "%f" _NL
+                                                 , cmd, cmd_len
+                                                 , double_length(Z_DVAL_P(z_cur)), Z_DVAL_P(z_cur));
+                break;
+            default:
+                continue;
+
+        }
+        if(old_cmd) {
+            efree(old_cmd);
+        }
+    }
+
+    if(elements == 1) {
+        RETURN_FALSE;
+    }
+
+
+    /* complete with prefix */
+    old_cmd = cmd;
+    cmd_len = redis_cmd_format(&cmd, "*%d" _NL "%s",
+                    elements, cmd, cmd_len);
+    efree(old_cmd);
+
+    /* run command */
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    if(using_store) {
+        IF_ATOMIC() {
+            redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL);
+        }
+        REDIS_PROCESS_RESPONSE(redis_long_response);
+    } else {
+        IF_ATOMIC() {
+            if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                                redis_sock, NULL) < 0) {
+                RETURN_FALSE;
+            }
+        }
+        REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+    }
+}
 
 PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_alpha) {
 
