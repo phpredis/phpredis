@@ -2107,9 +2107,9 @@ PHP_METHOD(Redis, sort) {
                                                      "$5" _NL
                                                      "LIMIT" _NL
                                                      "$%d" _NL
-                                                     "%ld" _NL
+                                                     "%d" _NL
                                                      "$%d" _NL
-                                                     "%ld" _NL
+                                                     "%d" _NL
                                                      , cmd, cmd_len
                                                      , integer_length(limit_low), limit_low
                                                      , integer_length(limit_high), limit_high);
