@@ -1103,7 +1103,35 @@ $redis->flushAll();
 </pre>
 
 ## sort
-Documentation for this method will be added shortly.
+##### *Description*
+##### *Parameters*
+*Key*: key
+*Options*: array(key => value, ...) - optional, with the following keys and values:
+<pre>
+    'by' => 'some_pattern_*',
+    'limit' => array(0, 1),
+    'get' => 'some_other_pattern_*',
+    'sort' => 'asc' or 'desc',
+    'alpha' => TRUE,
+    'store' => 'external-key'
+</pre>
+##### *Return value*
+An array of values, or a number corresponding to the number of elements stored if that was used.
+
+##### *Example*
+<pre>
+$redis->delete('s');
+$redis->sadd('s', 5);
+$redis->sadd('s', 4);
+$redis->sadd('s', 2);
+$redis->sadd('s', 1);
+$redis->sadd('s', 3);
+
+var_dump($redis->sort('s')); // 1,2,3,4,5
+var_dump($redis->sort('s', array('sort' => 'desc'))); // 5,4,3,2,1
+var_dump($redis->sort('s', array('sort' => 'desc', 'store' => 'out'))); // (int)5
+</pre>
+
 
 ## info
 ##### *Description*
