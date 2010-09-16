@@ -1989,21 +1989,16 @@ PHP_METHOD(Redis, sDiffStore) {
 
 PHP_METHOD(Redis, sort) {
 
-    zval *object = getThis(), **z_args;
-    char *cmd, *old_cmd = NULL;
-    int cmd_len, elements = 1;
+    zval *object = getThis(), *z_array = NULL, **z_cur;
+    char *cmd, *old_cmd = NULL, *key;
+    int cmd_len, elements = 2, key_len;
     int i, argc = ZEND_NUM_ARGS();
     int using_store = 0;
     RedisSock *redis_sock;
 
-    if(argc < 1) {
-        WRONG_PARAM_COUNT;
-        RETURN_FALSE;
-    }
-
-    z_args = emalloc(argc * sizeof(zval*));
-    if(zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
-        efree(z_args);
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|a",
+                                     &object, redis_ce,
+                                     &key, &key_len, &z_array) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -2011,59 +2006,120 @@ PHP_METHOD(Redis, sort) {
         RETURN_FALSE;
     }
 
-    cmd = estrdup("$4" _NL "SORT" _NL);
-    cmd_len = strlen(cmd);
+    cmd_len = redis_cmd_format(&cmd, "$4" _NL "SORT" _NL "$%d" _NL "%s" _NL
+                            , key_len, key, key_len);
 
-    for(i = 0; i < argc; i++) {
+    if(z_array) {
+        if ((zend_hash_find(Z_ARRVAL_P(z_array), "by", sizeof("by"), (void **) &z_cur) == SUCCESS
+         || zend_hash_find(Z_ARRVAL_P(z_array), "BY", sizeof("BY"), (void **) &z_cur) == SUCCESS)
+                        && Z_TYPE_PP(z_cur) == IS_STRING) {
 
-        zval *z_cur = z_args[i];
-
-        switch(Z_TYPE_P(z_cur)) {
-            case IS_STRING:
-                if(strncasecmp(Z_STRVAL_P(z_cur), "STORE", 5) == 0) {
-                    using_store = 1;
-                }
-                elements++;
-                old_cmd = cmd;
-                cmd_len = redis_cmd_format(&cmd, "%s"
-                                                 "$%d" _NL
-                                                 "%s" _NL
-                                                 , cmd, cmd_len
-                                                 , Z_STRLEN_P(z_cur), Z_STRVAL_P(z_cur), Z_STRLEN_P(z_cur));
-                break;
-
-            case IS_LONG:
-                elements++;
-                old_cmd = cmd;
-                cmd_len = redis_cmd_format(&cmd, "%s"
-                                                 "$%d" _NL
-                                                 "%d" _NL
-                                                 , cmd, cmd_len
-                                                 , integer_length(Z_LVAL_P(z_cur)), Z_LVAL_P(z_cur));
-                break;
-
-            case IS_DOUBLE:
-                elements++;
-                old_cmd = cmd;
-                cmd_len = redis_cmd_format(&cmd, "%s"
-                                                 "$%d" _NL
-                                                 "%f" _NL
-                                                 , cmd, cmd_len
-                                                 , double_length(Z_DVAL_P(z_cur)), Z_DVAL_P(z_cur));
-                break;
-            default:
-                continue;
+            old_cmd = cmd;
+            cmd_len = redis_cmd_format(&cmd, "%s"
+                                             "$2" _NL
+                                             "BY" _NL
+                                             "$%d" _NL
+                                             "%s" _NL
+                                             , cmd, cmd_len
+                                             , Z_STRLEN_PP(z_cur), Z_STRVAL_PP(z_cur), Z_STRLEN_PP(z_cur));
+            elements += 2;
+            efree(old_cmd);
 
         }
-        if(old_cmd) {
+
+        if ((zend_hash_find(Z_ARRVAL_P(z_array), "sort", sizeof("sort"), (void **) &z_cur) == SUCCESS
+         || zend_hash_find(Z_ARRVAL_P(z_array), "SORT", sizeof("SORT"), (void **) &z_cur) == SUCCESS)
+                        && Z_TYPE_PP(z_cur) == IS_STRING) {
+
+            old_cmd = cmd;
+            cmd_len = redis_cmd_format(&cmd, "%s"
+                                             "$%d" _NL
+                                             "%s" _NL
+                                             , cmd, cmd_len
+                                             , Z_STRLEN_PP(z_cur), Z_STRVAL_PP(z_cur), Z_STRLEN_PP(z_cur));
+            elements += 1;
             efree(old_cmd);
         }
-    }
 
-    if(elements == 1) {
-        RETURN_FALSE;
-    }
+        if ((zend_hash_find(Z_ARRVAL_P(z_array), "store", sizeof("store"), (void **) &z_cur) == SUCCESS
+         || zend_hash_find(Z_ARRVAL_P(z_array), "STORE", sizeof("STORE"), (void **) &z_cur) == SUCCESS)
+                        && Z_TYPE_PP(z_cur) == IS_STRING) {
 
+            using_store = 1;
+            old_cmd = cmd;
+            cmd_len = redis_cmd_format(&cmd, "%s"
+                                             "$5" _NL
+                                             "STORE" _NL
+                                             "$%d" _NL
+                                             "%s" _NL
+                                             , cmd, cmd_len
+                                             , Z_STRLEN_PP(z_cur), Z_STRVAL_PP(z_cur), Z_STRLEN_PP(z_cur));
+            elements += 2;
+            efree(old_cmd);
+        }
+
+        if ((zend_hash_find(Z_ARRVAL_P(z_array), "get", sizeof("get"), (void **) &z_cur) == SUCCESS
+         || zend_hash_find(Z_ARRVAL_P(z_array), "GET", sizeof("GET"), (void **) &z_cur) == SUCCESS)
+                        && Z_TYPE_PP(z_cur) == IS_STRING) {
+
+            old_cmd = cmd;
+            cmd_len = redis_cmd_format(&cmd, "%s"
+                                             "$3" _NL
+                                             "GET" _NL
+                                             "$%d" _NL
+                                             "%s" _NL
+                                             , cmd, cmd_len
+                                             , Z_STRLEN_PP(z_cur), Z_STRVAL_PP(z_cur), Z_STRLEN_PP(z_cur));
+            elements += 2;
+            efree(old_cmd);
+        }
+
+        if ((zend_hash_find(Z_ARRVAL_P(z_array), "alpha", sizeof("alpha"), (void **) &z_cur) == SUCCESS
+         || zend_hash_find(Z_ARRVAL_P(z_array), "ALPHA", sizeof("ALPHA"), (void **) &z_cur) == SUCCESS)
+                        && Z_TYPE_PP(z_cur) == IS_BOOL && Z_BVAL_PP(z_cur) == 1) {
+
+            old_cmd = cmd;
+            cmd_len = redis_cmd_format(&cmd, "%s"
+                                             "$5" _NL
+                                             "ALPHA" _NL
+                                             , cmd, cmd_len);
+            elements += 1;
+            efree(old_cmd);
+        }
+
+        if ((zend_hash_find(Z_ARRVAL_P(z_array), "limit", sizeof("limit"), (void **) &z_cur) == SUCCESS
+         || zend_hash_find(Z_ARRVAL_P(z_array), "LIMIT", sizeof("LIMIT"), (void **) &z_cur) == SUCCESS)
+                        && Z_TYPE_PP(z_cur) == IS_ARRAY) {
+
+            if(zend_hash_num_elements(Z_ARRVAL_PP(z_cur)) == 2) {
+                zval **z_offset_pp, **z_count_pp;
+                // get the two values from the table, check that they are indeed of LONG type
+                if(SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_cur), 0, (void**)&z_offset_pp) &&
+                  SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_cur), 1, (void**)&z_count_pp) &&
+                  Z_TYPE_PP(z_offset_pp) == IS_LONG &&
+                  Z_TYPE_PP(z_count_pp) == IS_LONG) {
+
+                    long limit_low = Z_LVAL_PP(z_offset_pp);
+                    long limit_high = Z_LVAL_PP(z_count_pp);
+
+                    old_cmd = cmd;
+                    cmd_len = redis_cmd_format(&cmd, "%s"
+                                                     "$5" _NL
+                                                     "LIMIT" _NL
+                                                     "$%d" _NL
+                                                     "%ld" _NL
+                                                     "$%d" _NL
+                                                     "%ld" _NL
+                                                     , cmd, cmd_len
+                                                     , integer_length(limit_low), limit_low
+                                                     , integer_length(limit_high), limit_high);
+                    elements += 3;
+                    efree(old_cmd);
+                }
+            }
+        }
+
+    }
 
     /* complete with prefix */
     old_cmd = cmd;
