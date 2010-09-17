@@ -148,6 +148,124 @@ double_length(double d) {
         return ret;
 }
 
+
+int
+redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
+
+    char *p, *s;
+    va_list ap;
+
+    int total = 0, sz, ret_sz;
+    int i, ci;
+    unsigned int u;
+    double dbl;
+    char *double_str;
+    int double_len;
+
+    int stage; /* 0: count & alloc. 1: copy. */
+    int elements = strlen(format);
+    int keyword_len = strlen(keyword);
+    int header_sz = 1 + integer_length(1 + elements) + 2	/* star + elements + CRLF */
+            + 1 + integer_length(keyword_len) + 2		/* dollar + command length + CRLF */
+            + keyword_len + 2;					/* command + CRLF */
+
+    for(stage = 0; stage < 2; ++stage) {
+        va_start(ap, format);
+	if(stage == 0) {
+	    total = 0;
+	} else {
+	    total = header_sz;
+	}
+        for(p = format; *p; ) {
+            switch(*p) {
+                case 's':
+                    s = va_arg(ap, char*);
+                    sz = va_arg(ap, int);
+                    if(stage == 1) {
+                        memcpy((*ret) + total, "$", 1);		/* dollar */
+			total++;
+
+			sprintf((*ret) + total, "%d", sz);	/* size */
+			total += integer_length(sz);
+
+			memcpy((*ret) + total, _NL, 2);		/* CRLF */
+			total += 2;
+
+                        memcpy((*ret) + total, s, sz);		/* string */
+			total += sz;
+
+			memcpy((*ret) + total, _NL, 2);		/* CRLF */
+			total += 2;
+                    } else {
+                        total += 1 + integer_length(sz) + 2 + sz + 2;
+		    }
+                    break;
+
+                case 'F':
+                case 'f':
+                    /* use spprintf here */
+                    dbl = va_arg(ap, double);
+                    sz = double_length(dbl);
+		    if(stage == 1) {
+		        memcpy((*ret) + total, "$", 1); 	/* dollar */
+			total++;
+
+			sprintf((*ret) + total, "%d", sz);	/* size */
+			total += integer_length(sz);
+
+			memcpy((*ret) + total, _NL, 2);		/* CRLF */
+			total += 2;
+
+			sprintf((*ret) + total, "%F", dbl);	/* float */
+			total += sz;
+
+			memcpy((*ret) + total, _NL, 2);		/* CRLF */
+			total += 2;
+		    } else {
+                        total += 1 + integer_length(sz) + 2 + sz + 2;
+		    }
+                    break;
+
+                case 'i':
+                case 'd':
+                    i = va_arg(ap, int);
+                    /* compute display size of integer value */
+                    sz = integer_length(i);
+		    if(stage == 1) {
+		        memcpy((*ret) + total, "$", 1); 	/* dollar */
+			total++;
+
+			sprintf((*ret) + total, "%d", sz);	/* size */
+			total += integer_length(sz);
+
+			memcpy((*ret) + total, _NL, 2);		/* CRLF */
+			total += 2;
+
+			sprintf((*ret) + total, "%d", i);	/* int */
+			total += sz;
+
+			memcpy((*ret) + total, _NL, 2);		/* CRLF */
+			total += 2;
+		    } else {
+                        total += 1 + integer_length(sz) + 2 + sz + 2;
+		    }
+                    break;
+            }
+            p++;
+        }
+        if(stage == 0) {
+            ret_sz = total + header_sz;
+            (*ret) = emalloc(ret_sz+1);
+	    sprintf(*ret, "*%d" _NL "$%d" _NL "%s" _NL, elements + 1, keyword_len, keyword);
+        } else {
+            (*ret)[ret_sz] = 0;
+	//    printf("cmd(%d)=[%s]\n", ret_sz, *ret);
+            return ret_sz;
+        }
+    }
+
+}
+
 /**
  * This command behave somehow like printf, except that strings need 2 arguments:
  * Their data and their size (strlen).

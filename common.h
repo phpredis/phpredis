@@ -9,6 +9,8 @@
 
 #define redis_multi_access_type_name "Redis Multi type access"
 
+#define _NL "\r\n"
+
 /* properties */
 #define REDIS_NOT_FOUND 0
 #define REDIS_STRING 1
