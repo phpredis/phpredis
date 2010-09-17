@@ -437,6 +437,9 @@ PHP_METHOD(Redis, connect)
     id = zend_list_insert(redis_sock, le_redis_sock);
     add_property_resource(object, "socket", id);
 
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    printf("fd=%d\n", fd);
+
     RETURN_TRUE;
 }
 /* }}} */

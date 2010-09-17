@@ -167,7 +167,27 @@ PHPAPI void set_pipeline_current(zval *object, request_item *current);
 ZEND_BEGIN_MODULE_GLOBALS(redis)
 ZEND_END_MODULE_GLOBALS(redis)
 
-#define PHP_REDIS_VERSION "0.1"
+typedef enum {ATOMIC, MULTI, PIPELINE} redis_mode;
+
+struct redis_queued_item {
+
+	/* reading function */
+	zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, ...);
+
+	char *cmd; 
+	int cmd_len;
+
+	struct redis_queued_item *next;
+};
+
+struct redis {
+	int fd;
+	redis_mode mode;
+	struct redis_queued_item *head;
+};
+
+
+#define PHP_REDIS_VERSION "2.0"
 
 #endif
 
