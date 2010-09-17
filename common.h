@@ -15,18 +15,14 @@
 #define REDIS_SET 2
 #define REDIS_LIST 3
 
-#define REDIS_ATOMIC 0
-#define REDIS_MULTI 1
-#define REDIS_PIPELINE 2
+#define IF_MULTI() if(redis_sock->mode == MULTI)
+#define IF_MULTI_OR_ATOMIC() if(redis_sock->mode == MULTI || redis_sock->mode == ATOMIC)\
 
-#define IF_MULTI() if(get_flag(object TSRMLS_CC) == REDIS_MULTI)
-#define IF_MULTI_OR_ATOMIC() if(get_flag(object TSRMLS_CC) == REDIS_MULTI || get_flag(object TSRMLS_CC) == REDIS_ATOMIC)\
-
-#define IF_MULTI_OR_PIPELINE() if(get_flag(object TSRMLS_CC) == REDIS_MULTI || get_flag(object TSRMLS_CC) == REDIS_PIPELINE)
-#define IF_PIPELINE() if(get_flag(object TSRMLS_CC) == REDIS_PIPELINE)
-#define IF_NOT_MULTI() if(get_flag(object TSRMLS_CC) != REDIS_MULTI)
-#define IF_ATOMIC() if(get_flag(object TSRMLS_CC) == REDIS_ATOMIC)
-#define ELSE_IF_MULTI() else if(get_flag(object TSRMLS_CC) == REDIS_MULTI) { \
+#define IF_MULTI_OR_PIPELINE() if(redis_sock->mode == MULTI || redis_sock->mode == PIPELINE)
+#define IF_PIPELINE() if(redis_sock->mode == PIPELINE)
+#define IF_NOT_MULTI() if(redis_sock->mode != MULTI)
+#define IF_ATOMIC() if(redis_sock->mode == ATOMIC)
+#define ELSE_IF_MULTI() else if(redis_sock->mode == MULTI) { \
 	if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) {\
 		RETURN_ZVAL(getThis(), 1, 0);\
 	} else {\
@@ -84,7 +80,7 @@
 }
 
 #define REDIS_ELSE_IF_MULTI(function) \
-else if(get_flag(object TSRMLS_CC) == REDIS_MULTI) { \
+else if(redis_sock->mode == MULTI) { \
 	if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) {\
 		REDIS_SAVE_CALLBACK(function); \
 		RETURN_ZVAL(getThis(), 1, 0);\

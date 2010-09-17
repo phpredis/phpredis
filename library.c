@@ -4,11 +4,6 @@
 #include <netinet/tcp.h>  /* TCP_NODELAY */
 #include <sys/socket.h>
 
-extern int le_redis_multi_head;
-extern int le_redis_multi_current;
-extern int le_redis_pipeline_head;
-extern int le_redis_pipeline_current;
-
 PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 {
 

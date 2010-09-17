@@ -35,7 +35,6 @@
 #define R_SUB_CALLBACK_FT_TYPE 2
 
 static int le_redis_sock;
-static int le_redis_multi_access_type;
 
 static zend_class_entry *redis_ce;
 static zend_class_entry *redis_exception_ce;
@@ -271,20 +270,14 @@ PHP_MINIT_FUNCTION(redis)
         redis_sock_name, module_number
     );
 
-	le_redis_multi_access_type = zend_register_list_destructors_ex(
-		redis_destructor_multi_access,
-		NULL,
-		redis_multi_access_type_name, module_number
-	);
-
 	add_constant_long(redis_ce, "REDIS_NOT_FOUND", REDIS_NOT_FOUND);
 	add_constant_long(redis_ce, "REDIS_STRING", REDIS_STRING);
 	add_constant_long(redis_ce, "REDIS_SET", REDIS_SET);
 	add_constant_long(redis_ce, "REDIS_LIST", REDIS_LIST);
 
-	add_constant_long(redis_ce, "ATOMIC", REDIS_ATOMIC);
-	add_constant_long(redis_ce, "MULTI", REDIS_MULTI);
-	add_constant_long(redis_ce, "PIPELINE", REDIS_PIPELINE);
+	add_constant_long(redis_ce, "ATOMIC", ATOMIC);
+	add_constant_long(redis_ce, "MULTI", MULTI);
+	add_constant_long(redis_ce, "PIPELINE", PIPELINE);
 
     return SUCCESS;
 }
@@ -333,37 +326,8 @@ PHP_METHOD(Redis, __construct)
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
         RETURN_FALSE;
     }
-	int multi_flag = 0, id;
-	object = getThis();
-    id = zend_list_insert(&multi_flag,  le_redis_multi_access_type);
-    add_property_resource(object, "multi_flag", id);
-
-	set_flag(object, REDIS_ATOMIC TSRMLS_CC);
-
 }
 /* }}} */
-PHPAPI int get_flag(zval *object TSRMLS_DC)
-{
-	zval **multi_flag;
-	int flag, flag_result;
-
-	zend_hash_find(Z_OBJPROP_P(object), "multi_flag", sizeof("multi_flag"), (void **) &multi_flag);
-	flag = (int)(long)zend_list_find(Z_LVAL_PP(multi_flag), &flag_result);
-
-	return flag;
-}
-
-PHPAPI void set_flag(zval *object, int new_flag TSRMLS_DC)
-{
-	zval **multi_flag = NULL;
-
-	zend_hash_find(Z_OBJPROP_P(object), "multi_flag", sizeof("multi_flag"), (void **) &multi_flag);
-	zend_list_delete(Z_LVAL_PP(multi_flag));
-
-	int id = zend_list_insert((void *)(long)new_flag, le_redis_multi_access_type);
-    add_property_resource(object, "multi_flag", id);
-
-}
 
 /* {{{ proto boolean Redis::connect(string host, int port [, int timeout])
  */
@@ -4193,7 +4157,7 @@ PHPAPI int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC) {
     return ret;
 }
 
-/* flag : get, set {REDIS_ATOMIC, REDIS_MULTI, REDIS_PIPELINE} */
+/* flag : get, set {ATOMIC, MULTI, PIPELINE} */
 
 PHP_METHOD(Redis, multi)
 {
@@ -4203,7 +4167,7 @@ PHP_METHOD(Redis, multi)
 	int response_len, cmd_len;
 	char * response;
 	zval *object;
-	long multi_value = REDIS_MULTI;
+	long multi_value = MULTI;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|l",
                                      &object, redis_ce, &multi_value) == FAILURE) {
@@ -4216,8 +4180,8 @@ PHP_METHOD(Redis, multi)
         RETURN_FALSE;
     }
 
-	if(multi_value == REDIS_MULTI || multi_value == REDIS_PIPELINE) {
-		set_flag(object, multi_value TSRMLS_CC);
+	if(multi_value == MULTI || multi_value == PIPELINE) {
+		redis_sock->mode = multi_value;
 	} else {
         RETURN_FALSE;
 	}
@@ -4264,7 +4228,7 @@ PHP_METHOD(Redis, discard)
         RETURN_FALSE;
     }
 
-	set_flag(object, 0 TSRMLS_CC);
+	redis_sock->mode = ATOMIC;
 
     if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
         RETURN_FALSE;
@@ -4395,11 +4359,11 @@ PHP_METHOD(Redis, exec)
 	    if (redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock) < 0) {
             zval_dtor(return_value);
             free_reply_callbacks(object, redis_sock);
-            set_flag(object, REDIS_ATOMIC TSRMLS_CC);
+            redis_sock->mode = ATOMIC;
 			RETURN_FALSE;
 	    }
         free_reply_callbacks(object, redis_sock);
-		set_flag(object, REDIS_ATOMIC TSRMLS_CC);
+		redis_sock->mode = ATOMIC;
 	}
 
 	IF_PIPELINE() {
@@ -4426,23 +4390,23 @@ PHP_METHOD(Redis, exec)
 		    if (redis_sock_write(redis_sock, request, total) < 0) {
     		    free(request);
                 free_reply_callbacks(object, redis_sock);
-                set_flag(object, REDIS_ATOMIC TSRMLS_CC);
+                redis_sock->mode = ATOMIC;
         		RETURN_FALSE;
 		    }
 		   	free(request);
 		} else {
-                set_flag(object, REDIS_ATOMIC TSRMLS_CC);
+                redis_sock->mode = ATOMIC;
                 free_reply_callbacks(object, redis_sock);
                 array_init(return_value); /* empty array when no command was run. */
                 return;
         }
 
 	    if (redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock) < 0) {
-			set_flag(object, REDIS_ATOMIC TSRMLS_CC);
+			redis_sock->mode = ATOMIC;
             free_reply_callbacks(object, redis_sock);
 			RETURN_FALSE;
 	    }
-		set_flag(object, REDIS_ATOMIC TSRMLS_CC);
+		redis_sock->mode = ATOMIC;
         free_reply_callbacks(object, redis_sock);
 	}
 }
@@ -4478,7 +4442,7 @@ PHP_METHOD(Redis, pipeline)
     if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
         RETURN_FALSE;
     }
-	set_flag(object, REDIS_PIPELINE TSRMLS_CC);
+	redis_sock->mode = PIPELINE;
 
 	/*
 		NB : we keep the function fold, to detect the last function.
