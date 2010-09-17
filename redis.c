@@ -2060,18 +2060,51 @@ PHP_METHOD(Redis, sort) {
 
         if ((zend_hash_find(Z_ARRVAL_P(z_array), "get", sizeof("get"), (void **) &z_cur) == SUCCESS
          || zend_hash_find(Z_ARRVAL_P(z_array), "GET", sizeof("GET"), (void **) &z_cur) == SUCCESS)
-                        && Z_TYPE_PP(z_cur) == IS_STRING) {
+                        && (Z_TYPE_PP(z_cur) == IS_STRING || Z_TYPE_PP(z_cur) == IS_ARRAY)) {
 
-            old_cmd = cmd;
-            cmd_len = redis_cmd_format(&cmd, "%s"
-                                             "$3" _NL
-                                             "GET" _NL
-                                             "$%d" _NL
-                                             "%s" _NL
-                                             , cmd, cmd_len
-                                             , Z_STRLEN_PP(z_cur), Z_STRVAL_PP(z_cur), Z_STRLEN_PP(z_cur));
-            elements += 2;
-            efree(old_cmd);
+            if(Z_TYPE_PP(z_cur) == IS_STRING) {
+                old_cmd = cmd;
+                cmd_len = redis_cmd_format(&cmd, "%s"
+                                                 "$3" _NL
+                                                 "GET" _NL
+                                                 "$%d" _NL
+                                                 "%s" _NL
+                                                 , cmd, cmd_len
+                                                 , Z_STRLEN_PP(z_cur), Z_STRVAL_PP(z_cur), Z_STRLEN_PP(z_cur));
+                elements += 2;
+                efree(old_cmd);
+            } else if(Z_TYPE_PP(z_cur) == IS_ARRAY) { // loop over the strings in that array and add them as patterns
+
+                HashTable *keytable = Z_ARRVAL_PP(z_cur);
+                for(zend_hash_internal_pointer_reset(keytable);
+                    zend_hash_has_more_elements(keytable) == SUCCESS;
+                    zend_hash_move_forward(keytable)) {
+
+                    char *key, *val;
+                    int key_len, val_len;
+                    unsigned long idx;
+                    int type;
+                    zval **z_value_pp;
+
+                    type = zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx, 0, NULL);
+                    if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
+                        continue; 	/* this should never happen, according to the PHP people. */
+                    }
+
+                    if(Z_TYPE_PP(z_value_pp) == IS_STRING) {
+                        old_cmd = cmd;
+                        cmd_len = redis_cmd_format(&cmd, "%s"
+                                                         "$3" _NL
+                                                         "GET" _NL
+                                                         "$%d" _NL
+                                                         "%s" _NL
+                                                         , cmd, cmd_len
+                                                         , Z_STRLEN_PP(z_value_pp), Z_STRVAL_PP(z_value_pp), Z_STRLEN_PP(z_value_pp));
+                        elements += 2;
+                        efree(old_cmd);
+                    }
+                }
+            }
         }
 
         if ((zend_hash_find(Z_ARRVAL_P(z_array), "alpha", sizeof("alpha"), (void **) &z_cur) == SUCCESS
@@ -2122,6 +2155,7 @@ PHP_METHOD(Redis, sort) {
     }
 
     /* complete with prefix */
+
     old_cmd = cmd;
     cmd_len = redis_cmd_format(&cmd, "*%d" _NL "%s",
                     elements, cmd, cmd_len);

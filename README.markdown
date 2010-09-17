@@ -1110,7 +1110,7 @@ $redis->flushAll();
 <pre>
     'by' => 'some_pattern_*',
     'limit' => array(0, 1),
-    'get' => 'some_other_pattern_*',
+    'get' => 'some_other_pattern_*' or an array of patterns,
     'sort' => 'asc' or 'desc',
     'alpha' => TRUE,
     'store' => 'external-key'
