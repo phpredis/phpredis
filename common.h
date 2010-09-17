@@ -43,9 +43,9 @@
 	fold_item *f1 = malloc(sizeof(fold_item)); \
 	f1->fun = (void *)callback; \
 	f1->next = NULL; \
-	fold_item *current = get_multi_current(getThis());\
+	fold_item *current = redis_sock->current;\
 	if(current) current->next = f1; \
-	set_multi_current(getThis(), f1); \
+	redis_sock->current = f1; \
   }
 
 #define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) request_item *tmp; \
@@ -55,13 +55,13 @@
 	tmp->request_size = cmd_len;\
 	tmp->next = NULL;\
 	zval *z_this = getThis(); \
-	struct request_item *current_request = get_pipeline_current(z_this); \
+	struct request_item *current_request = redis_sock->pipeline_current; \
 	if(current_request) {\
 		current_request->next = tmp;\
 	} \
-	set_pipeline_current(z_this, tmp); \
-	if(NULL == get_pipeline_head(z_this)) { \
-		set_pipeline_head(z_this, get_pipeline_current(z_this)); \
+	redis_sock->pipeline_current = tmp; \
+	if(NULL == redis_sock->pipeline_head) { \
+		redis_sock->pipeline_head = redis_sock->pipeline_current;\
 		/* head_request = current_request;*/ \
 	}
 
@@ -74,12 +74,12 @@
 	fold_item *f1 = malloc(sizeof(fold_item)); \
 	f1->fun = (void *)callback; \
 	f1->next = NULL; \
-	fold_item *current = get_multi_current(getThis());\
+	fold_item *current = redis_sock->current;\
 	if(current) current->next = f1; \
-	set_multi_current(getThis(), f1); \
-	if(NULL == get_multi_head(getThis())) { \
+	redis_sock->current = f1; \
+	if(NULL == redis_sock->head) { \
 		/* head = current;*/ \
-		set_multi_head(getThis(), get_multi_current(getThis()));\
+		redis_sock->head = redis_sock->current;\
 	}\
 }
 
@@ -112,19 +112,10 @@ else if(get_flag(object TSRMLS_CC) == REDIS_MULTI) { \
 	REDIS_ELSE_IF_MULTI(function) \
 	REDIS_ELSE_IF_PIPELINE(function);
 
-/* {{{ struct RedisSock */
-typedef struct RedisSock_ {
-    php_stream     *stream;
-    char           *host;
-    unsigned short port;
-    long           timeout;
-    int            failed;
-    int            status;
-} RedisSock;
-/* }}} */
+typedef enum {ATOMIC, MULTI, PIPELINE} redis_mode;
 
 typedef struct fold_item {
-	zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, ...);
+	zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, void *, ...);
 	struct fold_item *next;
 } fold_item;
 
@@ -134,5 +125,23 @@ typedef struct request_item {
 	struct request_item *next;
 } request_item;
 
+/* {{{ struct RedisSock */
+typedef struct {
+    php_stream     *stream;
+    char           *host;
+    unsigned short port;
+    long           timeout;
+    int            failed;
+    int            status;
+
+    redis_mode     mode;
+    fold_item      *head;
+    fold_item      *current;
+
+    request_item   *pipeline_head;
+    request_item   *pipeline_current;
+} RedisSock;
+/* }}} */
+
 void
-free_reply_callbacks(zval *z_this);
+free_reply_callbacks(zval *z_this, RedisSock *redis_sock);

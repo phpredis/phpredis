@@ -152,12 +152,6 @@ PHPAPI int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC);
 PHPAPI int get_flag(zval *object TSRMLS_DC);
 PHPAPI void set_flag(zval *object, int new_flag TSRMLS_DC);
 
-/* MULTI/EXEC */
-PHPAPI fold_item* get_multi_head(zval *object);
-PHPAPI void set_multi_head(zval *object, fold_item *head);
-PHPAPI fold_item* get_multi_current(zval *object);
-PHPAPI void set_multi_current(zval *object, fold_item *current);
-
 /* pipeline */
 PHPAPI request_item* get_pipeline_head(zval *object);
 PHPAPI void set_pipeline_head(zval *object, request_item *head);
@@ -167,7 +161,6 @@ PHPAPI void set_pipeline_current(zval *object, request_item *current);
 ZEND_BEGIN_MODULE_GLOBALS(redis)
 ZEND_END_MODULE_GLOBALS(redis)
 
-typedef enum {ATOMIC, MULTI, PIPELINE} redis_mode;
 
 struct redis_queued_item {
 
