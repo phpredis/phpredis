@@ -2818,73 +2818,22 @@ PHP_METHOD(Redis, zRangeByScore)
         }
     }
 
-#define BASIC_FORMAT\
-                       "$13" _NL\
-                       "ZRANGEBYSCORE" _NL\
-                       \
-                       "$%d" _NL /* key_len */\
-                       "%s" _NL  /* key */\
-                       \
-                       "$%d" _NL /* start_len */\
-                       "%s" _NL  /* start */\
-                       \
-                       "$%d" _NL /* end_len */\
-                       "%s" _NL  /* end */
-#define BASIC_FORMAT_WITH_LIMIT BASIC_FORMAT\
-                       "$5" _NL\
-                       "LIMIT" _NL\
-                       \
-                       "$%d" _NL /* limit_low_len */\
-                       "%d" _NL  /* limit_low */\
-                       \
-                       "$%d" _NL /* limit_high_len */\
-                       "%d" _NL  /* limit_high */
-
     if(withscores) {
         if(has_limit) {
-            cmd_len = redis_cmd_format(&cmd,
-                            "*8" _NL
-                            BASIC_FORMAT_WITH_LIMIT
-                            "$10" _NL
-                            "WITHSCORES" _NL
-                            , key_len, key, key_len
-                            , start_len, start, start_len
-                            , end_len, end, end_len
-                            , integer_length(limit_low), limit_low
-                            , integer_length(limit_high), limit_high);
+            cmd_len = redis_cmd_format_static(&cmd, "ZRANGEBYSCORE", "ssssdds",
+                            key, key_len, start, start_len, end, end_len, "LIMIT", 5, limit_low, limit_high, "WITHSCORES", 10);
         } else {
-            cmd_len = redis_cmd_format(&cmd,
-                            "*5" _NL
-                            BASIC_FORMAT
-                            "$10" _NL
-                            "WITHSCORES" _NL
-                            , key_len, key, key_len
-                            , start_len, start, start_len
-                            , end_len, end, end_len);
+            cmd_len = redis_cmd_format_static(&cmd, "ZRANGEBYSCORE", "ssss",
+                            key, key_len, start, start_len, end, end_len, "WITHSCORES", 10);
         }
     } else {
-
         if(has_limit) {
-
-            cmd_len = redis_cmd_format(&cmd,
-                            "*7" _NL
-                            BASIC_FORMAT_WITH_LIMIT
-                            , key_len, key, key_len
-                            , start_len, start, start_len
-                            , end_len, end, end_len
-                            , integer_length(limit_low), limit_low
-                            , integer_length(limit_high), limit_high);
+            cmd_len = redis_cmd_format_static(&cmd, "ZRANGEBYSCORE", "ssssdd",
+                            key, key_len, start, start_len, end, end_len, "LIMIT", 5, limit_low, limit_high);
         } else {
-            cmd_len = redis_cmd_format(&cmd,
-                            "*4" _NL
-                            BASIC_FORMAT
-                            , key_len, key, key_len
-                            , start_len, start, start_len
-                            , end_len, end, end_len);
+            cmd_len = redis_cmd_format_static(&cmd, "ZRANGEBYSCORE", "sss", key, key_len, start, start_len, end, end_len);
         }
     }
-#undef BASIC_FORMAT
-#undef BASIC_FORMAT_WITH_LIMIT
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     if(withscores) {
