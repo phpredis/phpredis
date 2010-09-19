@@ -60,7 +60,6 @@
 	redis_sock->pipeline_current = tmp; \
 	if(NULL == redis_sock->pipeline_head) { \
 		redis_sock->pipeline_head = redis_sock->pipeline_current;\
-		/* head_request = current_request;*/ \
 	}
 
 #define SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len) if(redis_sock_write(redis_sock, cmd, cmd_len) < 0) { \
@@ -76,7 +75,6 @@
 	if(current) current->next = f1; \
 	redis_sock->current = f1; \
 	if(NULL == redis_sock->head) { \
-		/* head = current;*/ \
 		redis_sock->head = redis_sock->current;\
 	}\
 }

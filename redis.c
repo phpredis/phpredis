@@ -784,7 +784,7 @@ PHP_METHOD(Redis, getMultiple)
     HashPosition pointer;
     RedisSock *redis_sock;
     char *cmd = "", *old_cmd = NULL;
-    int cmd_len, array_count;
+    int cmd_len = 0, array_count, elements = 1;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
                                      &object, redis_ce, &array) == FAILURE) {
@@ -812,16 +812,18 @@ PHP_METHOD(Redis, getMultiple)
             if(*cmd) {
                 old_cmd = cmd;
             }
-            cmd_len = spprintf(&cmd, 0, "%s %s", cmd, Z_STRVAL_PP(data));
+            cmd_len = redis_cmd_format(&cmd, "%s$%d" _NL "%s" _NL
+                            , cmd, cmd_len
+                            , Z_STRLEN_PP(data), Z_STRVAL_PP(data), Z_STRLEN_PP(data));
             if(old_cmd) {
                 efree(old_cmd);
             }
+            elements++;
         }
     }
 
     old_cmd = cmd;
-    cmd_len = spprintf(&cmd, 0, "MGET %s\r\n", cmd);
-
+    cmd_len = redis_cmd_format(&cmd, "*%d" _NL "$4" _NL "MGET" _NL "%s", elements, cmd, cmd_len);
     efree(old_cmd);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
