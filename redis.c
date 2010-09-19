@@ -3775,8 +3775,8 @@ PHP_METHOD(Redis, subscribe)
     int cmd_len, array_count, callback_ft_name_len;
 
 	
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oasz", 
-									 &object, redis_ce, &array, &callback_ft_name, &callback_ft_name_len, &z_callback) == FAILURE) {
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oaz|z", 
+									 &object, redis_ce, &array, &z_callback) == FAILURE) {
 		RETURN_FALSE;	
 	}
 
@@ -3840,33 +3840,20 @@ PHP_METHOD(Redis, subscribe)
 	char *class_name, *method_name;
 	zend_class_entry **class_entry_pp, *ce;
 
-	MAKE_STD_ZVAL(z_ret);	
-
 	/* verify the callback */
 	if(Z_TYPE_P(z_callback) == IS_ARRAY) {
 
+        /* object */
 		if (zend_hash_index_find(Z_ARRVAL_P(z_callback), 0, (void**)&tmp) == FAILURE) {
 			RETURN_FALSE;
 		}
+		z_o = *tmp;
 
-		class_name = Z_STRVAL_PP(tmp);
-
+        /* method name */
 		if (zend_hash_index_find(Z_ARRVAL_P(z_callback), 1, (void**)&tmp) == FAILURE) {
 			RETURN_FALSE;
 		}
-
 		method_name = Z_STRVAL_PP(tmp);	
-		if(zend_lookup_class(class_name, strlen(class_name), &class_entry_pp TSRMLS_CC) == FAILURE) {
-			/* The class didn't exist */
-			/* generate error */
-			RETURN_FALSE;
-		}
-
-
-		ce = *class_entry_pp;
-		// create an empty object.                                                                                                                                                                                                               
-		MAKE_STD_ZVAL(z_o);
-		object_init_ex(z_o, ce);
 
 		ALLOC_INIT_ZVAL(z_fun);
 		ZVAL_STRING(z_fun, method_name, 1);
@@ -3897,7 +3884,11 @@ PHP_METHOD(Redis, subscribe)
 		}		
 		if (zend_hash_index_find(Z_ARRVAL_P(z_tab), 2, (void**)&data) == FAILURE) {
 			break;
-		}		
+		}
+
+        if(Z_TYPE_PP(type) == IS_STRING && strncmp(Z_STRVAL_PP(type), "message", 7) != 0) {
+                continue; /* only forwarding published messages */
+        }
 		
 		z_args[0] = getThis();
 		z_args[1] = *channel;
@@ -3905,51 +3896,24 @@ PHP_METHOD(Redis, subscribe)
 	
 		switch(callback_type) {
 			case R_SUB_CALLBACK_CLASS_TYPE:
+		       	MAKE_STD_ZVAL(z_ret);
 				call_user_function(&ce->function_table, &z_o, z_fun, z_ret, 3, z_args TSRMLS_CC);							
-				//efree(z_o);				
-		        //efree(z_fun);
-				//zval_dtor(z_ret); efree(z_ret);
-				//free(z_args[0]); free(z_args[1]); free(z_args[2]);
-				//free(z_args);
-				
+		        efree(z_ret);
 				break;
+
 			case R_SUB_CALLBACK_FT_TYPE:
 		       	MAKE_STD_ZVAL(z_ret);
 				MAKE_STD_ZVAL(z_fun);	
 				ZVAL_STRINGL(z_fun, callback_ft_name, callback_ft_name_len, 0);
 	        	call_user_function(EG(function_table), NULL, z_fun, z_ret, 3, z_args TSRMLS_CC);
 		        efree(z_fun);
-				//free(z_args[0]); free(z_args[1]); free(z_args[2]);
-				//free(z_args);
+		        efree(z_ret);
 				break;
 		}
-
-		if(Z_TYPE_P(z_ret) == IS_BOOL) {
-			// the callback function return TRUE if we want to continue listening on the channel
-			// or FALSE if we need to stop listeneing		
-			if(!Z_BVAL_P(z_ret)) {
-				efree(z_o);				
-		        efree(z_fun);
-				zval_dtor(z_tab);
-				efree(z_tab);
-				zval_dtor(z_ret);
-				efree(z_ret);
-				break;	
-			}
-		} else {
-			//error : the callback must return BOOL reponse
-			efree(z_o);				
-	        efree(z_fun);
-			zval_dtor(z_tab);
-			efree(z_tab);
-			zval_dtor(z_ret);
-			efree(z_ret);			
-			RETURN_FALSE;
-		}
+        /* TODO: provide a way to break out of the loop. */
 		zval_dtor(z_tab);
 		efree(z_tab);
 	}	
-	/*@TODO : collect all the returned data and return it */
 }
 
 /** 
