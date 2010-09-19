@@ -184,6 +184,46 @@ $ret = FALSE if x has been modified between the call to WATCH and the call to EX
 */
 </pre>
 
+## subscribe
+##### Description
+Subscribe to channels. Warning: this function will probably change in the future.
+##### Parameters
+*channels*: an array of channels to subscribe to  
+*callback*: either a string or an array($instance, 'method_name'). The callback function receives 3 parameters: the redis instance, the channel name, and the message.  
+##### Example
+<pre>
+function f($redis, $chan, $msg) {
+	switch($chan) {
+		case 'chan-1':
+			...
+			break;
+
+		case 'chan-2':
+			...
+			break;
+
+		case 'chan-2':
+			...
+			break;
+	}
+}
+
+$redis->subscribe(array('chan-1', 'chan-2', 'chan-3'), 'f'); // subscribe to 3 chans
+</pre>
+
+
+## publish
+##### Description
+Publish messages to channels. Warning: this function will probably change in the future.
+##### Parameters
+*channel*: a channel to publish to  
+*messsage*: string  
+##### Example
+<pre>
+$redis->publish('chan-1', 'hello, world!'); // send message.
+</pre>
+
+
 ## exists
 ##### Description
 Verify if the specified key exists.
