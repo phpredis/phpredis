@@ -1651,6 +1651,20 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     protected function sequence($mode) {
 
 	    $ret = $this->redis->multi($mode)
+		    ->set('x', 42)
+		    ->info()
+		    ->type('x')
+		    ->get('x')
+		    ->exec();
+
+	    $this->assertTrue(is_array($ret));
+	    $i = 0;
+	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue(is_array($ret[$i++]));
+	    $this->assertTrue($ret[$i++] === Redis::REDIS_STRING);
+	    $this->assertTrue($ret[$i++] === '42');
+
+	    $ret = $this->redis->multi($mode)
 		    ->delete('key1')
 		    ->set('key1', 'value1')
 		    ->get('key1')
@@ -1673,7 +1687,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	    $this->assertTrue(is_array($ret));
 	    $i = 0;
-	    $this->assertTrue($ret[$i++] == TRUE);
+	    $this->assertTrue(is_long($ret[$i++]));
 	    $this->assertTrue($ret[$i++] == TRUE);
 	    $this->assertTrue($ret[$i++] == 'value1');
 	    $this->assertTrue($ret[$i++] == 'value1');

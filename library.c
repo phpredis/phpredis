@@ -375,6 +375,106 @@ PHPAPI void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
     }
 }
 
+PHPAPI void redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab) {
+    char *response;
+    int response_len;
+    char ret;
+
+    zval *object = getThis();
+
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    long l;
+    if (strncmp(response, "+string", 7) == 0) {
+	l = REDIS_STRING;
+    } else if (strncmp(response, "+set", 4) == 0){
+	l = REDIS_SET;
+    } else if (strncmp(response, "+list", 5) == 0){
+	l = REDIS_LIST;
+    } else {
+	l = REDIS_NOT_FOUND;
+    }
+
+    efree(response);
+    IF_MULTI_OR_PIPELINE() {
+	add_next_index_long(z_tab, l);
+    } else {
+    	RETURN_LONG(l);
+    }
+}
+
+PHPAPI void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab) {
+    char *response;
+    int response_len;
+    char ret;
+
+    zval *object = getThis();
+
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    zval *z_multi_result;
+    MAKE_STD_ZVAL(z_multi_result);
+    array_init(z_multi_result); /* pre-allocate array for multi's results. */
+    /* response :: [response_line]
+     * response_line :: key ':' value CRLF
+     */
+
+    char *pos, *cur = response;
+    while(1) {
+	char *key, *value, *p;
+	int is_numeric;
+        /* key */
+        pos = strchr(cur, ':');
+        if(pos == NULL) {
+            break;
+        }
+        key = emalloc(pos - cur + 1);
+        memcpy(key, cur, pos-cur);
+        key[pos-cur] = 0;
+
+        /* value */
+        cur = pos + 1;
+        pos = strchr(cur, '\r');
+        if(pos == NULL) {
+            break;
+        }
+        value = emalloc(pos - cur + 1);
+        memcpy(value, cur, pos-cur);
+        value[pos-cur] = 0;
+        pos += 2; /* \r, \n */
+        cur = pos;
+
+        is_numeric = 1;
+        for(p = value; *p; ++p) {
+            if(*p < '0' || *p > '9') {
+                is_numeric = 0;
+                break;
+            }
+        }
+
+        if(is_numeric == 1) {
+            add_assoc_long(z_multi_result, key, atol(value));
+            efree(value);
+        } else {
+            add_assoc_string(z_multi_result, key, value, 0);
+        }
+        efree(key);
+    }
+    efree(response);
+
+    IF_MULTI_OR_PIPELINE() {
+        add_next_index_zval(z_tab, z_multi_result);
+    } else {
+	    *return_value = *z_multi_result;
+	    zval_copy_ctor(return_value);
+	    efree(z_multi_result);
+    }
+}
+
 PHPAPI void redis_boolean_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab) {
 
     char *response;
@@ -472,7 +572,7 @@ PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PA
 	    efree(z_multi_result);
     }
 
-	return 0;
+    return 0;
 }
 
 PHPAPI int redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab) {

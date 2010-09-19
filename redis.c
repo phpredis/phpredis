@@ -916,37 +916,11 @@ PHP_METHOD(Redis, type)
 
     cmd_len = redis_cmd_format_static(&cmd, "TYPE", "s", key, key_len);
 
-	IF_MULTI_OR_ATOMIC() {
-		SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len);
-	}
-	IF_PIPELINE() {
-		PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len);
-	}
-    efree(cmd);
-
-	MULTI_RESPONSE(redis_long_response);
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
-	    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-    	    RETURN_FALSE;
-	    }
-
-    	long l;
-	    if (strncmp(response, "+string", 7) == 0) {
-    	   l = REDIS_STRING;
-	    } else if (strncmp(response, "+set", 4) == 0){
-    	   l = REDIS_SET;
-	    } else if (strncmp(response, "+list", 5) == 0){
-    	   l = REDIS_LIST;
-	    } else {
-    	   l = REDIS_NOT_FOUND;
-	    }
-    	efree(response);
-	    RETURN_LONG(l);
+	  redis_type_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL);
 	}
-	ELSE_IF_MULTI()
-	ELSE_IF_PIPELINE();
-
-
+	REDIS_PROCESS_RESPONSE(redis_type_response);
 }
 /* }}} */
 
@@ -1592,8 +1566,6 @@ PHP_METHOD(Redis, sDiff) {
 	    }
 	}
 	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
-
-
 }
 /* }}} */
 
@@ -1785,8 +1757,7 @@ PHP_METHOD(Redis, sort) {
     /* complete with prefix */
 
     old_cmd = cmd;
-    cmd_len = redis_cmd_format(&cmd, "*%d" _NL "%s",
-                    elements, cmd, cmd_len);
+    cmd_len = redis_cmd_format(&cmd, "*%d" _NL "%s", elements, cmd, cmd_len);
     efree(old_cmd);
 
     /* run command */
@@ -2274,59 +2245,12 @@ PHP_METHOD(Redis, info) {
         RETURN_FALSE;
     }
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
-        /* no efree(cmd) here, it's on the stack. */
-        RETURN_FALSE;
-    }
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+	  redis_info_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_info_response);
 
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    array_init(return_value);
-    /* response :: [response_line]
-     * response_line :: key ':' value CRLF
-     */
-
-    cur = response;
-    while(1) {
-        /* key */
-        pos = strchr(cur, ':');
-        if(pos == NULL) {
-            break;
-        }
-        key = emalloc(pos - cur + 1);
-        memcpy(key, cur, pos-cur);
-        key[pos-cur] = 0;
-
-        /* value */
-        cur = pos + 1;
-        pos = strchr(cur, '\r');
-        if(pos == NULL) {
-            break;
-        }
-        value = emalloc(pos - cur + 1);
-        memcpy(value, cur, pos-cur);
-        value[pos-cur] = 0;
-        pos += 2; /* \r, \n */
-        cur = pos;
-
-        is_numeric = 1;
-        for(p = value; *p; ++p) {
-            if(*p < '0' || *p > '9') {
-                is_numeric = 0;
-                break;
-            }
-        }
-
-        if(is_numeric == 1) {
-            add_assoc_long(return_value, key, atol(value));
-            efree(value);
-        } else {
-            add_assoc_string(return_value, key, value, 0);
-        }
-        efree(key);
-    }
 }
 /* }}} */
 
@@ -2414,7 +2338,7 @@ PHP_METHOD(Redis, mset) {
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format(&cmd, "*%d\r\n$4\r\nMSET\r\n", 1 + 2 * zend_hash_num_elements(Z_ARRVAL_P(z_array)));
+    cmd_len = redis_cmd_format(&cmd, "*%d" _NL "$4" _NL "MSET" _NL, 1 + 2 * zend_hash_num_elements(Z_ARRVAL_P(z_array)));
 
     HashTable *keytable = Z_ARRVAL_P(z_array);
     for(zend_hash_internal_pointer_reset(keytable);
@@ -2445,10 +2369,10 @@ PHP_METHOD(Redis, mset) {
 
         cmd_len = redis_cmd_format(&cmd,
                                    "%s"
-                                   "$%d" "\r\n" /* key_len */
-                                   "%s" "\r\n"  /* key */
-                                   "$%d" "\r\n" /* val_len */
-                                   "%s" "\r\n"  /* val */
+                                   "$%d" _NL /* key_len */
+                                   "%s" _NL  /* key */
+                                   "$%d" _NL /* val_len */
+                                   "%s" _NL  /* val */
                                    , cmd, cmd_len
                                    , key_len, key, key_len
                                    , val_len, val, val_len);
