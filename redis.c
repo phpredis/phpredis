@@ -415,19 +415,7 @@ PHP_METHOD(Redis, set)
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format(&cmd,
-                    "*3" _NL
-                    "$3" _NL
-                    "SET" _NL
-
-                    "$%d" _NL   /* key_len */
-                    "%s" _NL    /* key */
-
-                    "$%d" _NL   /* val_len */
-                    "%s" _NL    /* val */
-
-                    , key_len, key, key_len
-                    , val_len, val, val_len);
+    cmd_len = redis_cmd_format_static(&cmd, "SET", "ss", key, key_len, val, val_len);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
@@ -456,23 +444,7 @@ PHP_METHOD(Redis, setex)
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format(&cmd,
-                    "*4" _NL
-                    "$5" _NL
-                    "SETEX" _NL
-
-                    "$%d" _NL   /* key_len */
-                    "%s" _NL    /* key */
-
-                    "$%d" _NL   /* expire_len */
-                    "%d" _NL    /* expire */
-
-                    "$%d" _NL   /* val_len */
-                    "%s" _NL    /* val */
-
-                    , key_len, key, key_len
-                    , integer_length(expire), expire
-                    , val_len, val, val_len);
+    cmd_len = redis_cmd_format_static(&cmd, "SETEX", "sds", key, key_len, expire, val, val_len);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
@@ -501,19 +473,7 @@ PHP_METHOD(Redis, setnx)
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format(&cmd,
-                    "*3" _NL
-                    "$5" _NL
-                    "SETNX" _NL
-
-                    "$%d" _NL   /* key_len */
-                    "%s" _NL    /* key */
-
-                    "$%d" _NL   /* val_len */
-                    "%s" _NL    /* val */
-
-                    , key_len, key, key_len
-                    , val_len, val, val_len);
+    cmd_len = redis_cmd_format_static(&cmd, "SETNX", "ss", key, key_len, val, val_len);
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
@@ -545,19 +505,7 @@ PHP_METHOD(Redis, getSet)
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format(&cmd,
-                    "*3" _NL
-                    "$6" _NL
-                    "GETSET" _NL
-
-                    "$%d" _NL   /* key_len */
-                    "%s" _NL    /* key */
-
-                    "$%d" _NL   /* val_len */
-                    "%s" _NL    /* val */
-
-                    , key_len, key, key_len
-                    , val_len, val, val_len);
+    cmd_len = redis_cmd_format_static(&cmd, "GETSET", "ss", key, key_len, val, val_len);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
@@ -923,7 +871,6 @@ PHP_METHOD(Redis, getKeys)
     RedisSock *redis_sock;
     char *pattern = NULL, *cmd, *response;
     int pattern_len, cmd_len, response_len, count;
-    char inbuf[1024];
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
                                      &object, redis_ce,
@@ -937,56 +884,14 @@ PHP_METHOD(Redis, getKeys)
 
     cmd_len = redis_cmd_format_static(&cmd, "KEYS", "s", pattern, pattern_len);
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
-        efree(cmd);
-        RETURN_FALSE;
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+	    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+											redis_sock, NULL) < 0) {
+    	    RETURN_FALSE;
+	    }
     }
-    efree(cmd);
-
-    /* two cases:
-     * 1 - old versions of redis (before 1st of March 2010): one space-separated line
-     * 2 - newer versions of redis: multi-bulk data.
-     *
-     * The following code supports both.
-     **/
-
-    /* prepare for php_explode */
-    array_init(return_value);
-
-    /* read a first line. */
-    redis_check_eof(redis_sock TSRMLS_CC);
-    php_stream_gets(redis_sock->stream, inbuf, 1024);
-
-    switch(inbuf[0]) { /* check what character it starts with. */
-        case '$':
-            response_len = atoi(inbuf + 1);
-            response = redis_sock_read_bulk_reply(redis_sock, response_len);
-            if(!response_len) { /* empty array in case of an empty string */
-                efree(response);
-                return;
-            }
-            zval *delimiter; /* delimiter */
-            MAKE_STD_ZVAL(delimiter);
-            ZVAL_STRING(delimiter, " ", 1);
-
-            zval *keys; /* keys */
-            MAKE_STD_ZVAL(keys);
-            ZVAL_STRING(keys, response, 1);
-            php_explode(delimiter, keys, return_value, -1);
-
-            /* free memory */
-            zval_dtor(keys);
-            efree(keys);
-            zval_dtor(delimiter);
-            efree(delimiter);
-            break;
-
-        case '*':
-            count = atoi(inbuf + 1);
-            redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                            redis_sock, return_value, count);
-            break;
-    }
+    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
