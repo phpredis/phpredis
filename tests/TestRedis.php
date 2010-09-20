@@ -2143,6 +2143,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 		    ->hset('hkey1', 'key1', 'value1')
 		    ->hset('hkey1', 'key2', 'value2')
 		    ->hset('hkey1', 'key3', 'value3')
+		    ->hmget('hkey1', array('key1', 'key2', 'key3'))
 		    ->hget('hkey1', 'key1')
 		    ->hlen('hkey1')
 		    ->hdel('hkey1', 'key2')
@@ -2165,6 +2166,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    $this->assertTrue($ret[$i++] === 1); // added 1 element
 	    $this->assertTrue($ret[$i++] === 1); // added 1 element
 	    $this->assertTrue($ret[$i++] === 1); // added 1 element
+	    $this->assertTrue($ret[$i++] === array('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')); // hmget, 3 elements
 	    $this->assertTrue($ret[$i++] === 'value1'); // hget
 	    $this->assertTrue($ret[$i++] === 3); // hlen
 	    $this->assertTrue($ret[$i++] === TRUE); // hdel succeeded
