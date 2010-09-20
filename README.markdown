@@ -1780,3 +1780,19 @@ $redis->delete('user:1');
 $redis->hMset('user:1', array('name' => 'Joe', 'salary' => 2000));
 $redis->hIncrBy('user:1', 'salary', 100); // Joe earns 100 more now.
 </pre>
+
+## hMGet
+##### Description
+Retirieve the values associated to the specified fields in the hash.
+##### Parameters
+*key*  
+*memberKeys* Array  
+##### Return value
+*Array* An array of elements, the values of the specified fields in the hash, with the hash keys as array keys.
+##### Examples
+<pre>
+$redis->delete('h');
+$redis->hSet('h', 'field1', 'value1');
+$redis->hSet('h', 'field2', 'value2');
+$redis->hmGet('h', array('field1', 'field2')); /* returns array('field1' => 'value1', 'field2' => 'value2') */
+</pre>

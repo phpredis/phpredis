@@ -67,9 +67,10 @@
     RETURN_FALSE; \
 }
 
-#define REDIS_SAVE_CALLBACK(callback) IF_MULTI_OR_PIPELINE() { \
+#define REDIS_SAVE_CALLBACK(callback, closure_context) IF_MULTI_OR_PIPELINE() { \
 	fold_item *f1 = malloc(sizeof(fold_item)); \
 	f1->fun = (void *)callback; \
+	f1->ctx = closure_context; \
 	f1->next = NULL; \
 	fold_item *current = redis_sock->current;\
 	if(current) current->next = f1; \
@@ -79,18 +80,18 @@
 	}\
 }
 
-#define REDIS_ELSE_IF_MULTI(function) \
+#define REDIS_ELSE_IF_MULTI(function, closure_context) \
 else if(redis_sock->mode == MULTI) { \
 	if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) {\
-		REDIS_SAVE_CALLBACK(function); \
+		REDIS_SAVE_CALLBACK(function, closure_context); \
 		RETURN_ZVAL(getThis(), 1, 0);\
 	} else {\
 		RETURN_FALSE;\
 	}\
 }
 
-#define REDIS_ELSE_IF_PIPELINE(function) else IF_PIPELINE() {	\
-	REDIS_SAVE_CALLBACK(function); \
+#define REDIS_ELSE_IF_PIPELINE(function, closure_context) else IF_PIPELINE() {	\
+	REDIS_SAVE_CALLBACK(function, closure_context); \
 	RETURN_ZVAL(getThis(), 1, 0);\
 }
 
@@ -104,14 +105,17 @@ else if(redis_sock->mode == MULTI) { \
 		efree(cmd); \
 	}
 
-#define REDIS_PROCESS_RESPONSE(function) \
-	REDIS_ELSE_IF_MULTI(function) \
-	REDIS_ELSE_IF_PIPELINE(function);
+#define REDIS_PROCESS_RESPONSE_CLOSURE(function, closure_context) \
+	REDIS_ELSE_IF_MULTI(function, closure_context) \
+	REDIS_ELSE_IF_PIPELINE(function, closure_context);
+
+#define REDIS_PROCESS_RESPONSE(function) REDIS_PROCESS_RESPONSE_CLOSURE(function, NULL)
 
 typedef enum {ATOMIC, MULTI, PIPELINE} redis_mode;
 
 typedef struct fold_item {
 	zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, void *, ...);
+	void *ctx;
 	struct fold_item *next;
 } fold_item;
 
