@@ -2360,13 +2360,23 @@ PHP_METHOD(Redis, mset) {
             continue;
         }
 
-        val = Z_STRVAL_PP(z_value_pp);
-        val_len = Z_STRLEN_PP(z_value_pp);
+        zval *z_copy;
+        MAKE_STD_ZVAL(z_copy);
+        *z_copy = **z_value_pp;
+        zval_copy_ctor(z_copy);
+
+        if(Z_TYPE_P(z_copy) != IS_STRING) {
+            convert_to_string(z_copy);
+        }
+
+        val = Z_STRVAL_P(z_copy);
+        val_len = Z_STRLEN_P(z_copy);
 
         if(key_len > 0) {
             key_len--;
         }
 
+        char *old_cmd = cmd;
         cmd_len = redis_cmd_format(&cmd,
                                    "%s"
                                    "$%d" _NL /* key_len */
@@ -2376,6 +2386,10 @@ PHP_METHOD(Redis, mset) {
                                    , cmd, cmd_len
                                    , key_len, key, key_len
                                    , val_len, val, val_len);
+
+        efree(old_cmd);
+        zval_dtor(z_copy);
+        efree(z_copy);
 
     }
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
