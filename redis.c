@@ -1370,7 +1370,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     zval *object, **z_args, *z_array;
     char **keys, *cmd;
     int cmd_len, *keys_len;
-    int i, argc = ZEND_NUM_ARGS();
+    int i, j, argc = ZEND_NUM_ARGS(), real_argc = 0;
     int single_array = 0;
     RedisSock *redis_sock;
 
@@ -1400,12 +1400,12 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     keys = emalloc(argc * sizeof(char*));
     keys_len = emalloc(argc * sizeof(int));
 
-    cmd_len = keyword_len; /* start computing the command length */
+    cmd_len = 1 + integer_length(keyword_len) + 2 +keyword_len + 2; /* start computing the command length */
 
     if(single_array) { /* loop over the array */
         HashTable *keytable = Z_ARRVAL_P(z_array);
 
-        for(i = 0, zend_hash_internal_pointer_reset(keytable);
+        for(i = 0, j = 0, zend_hash_internal_pointer_reset(keytable);
             zend_hash_has_more_elements(keytable) == SUCCESS;
             zend_hash_move_forward(keytable), i++) {
 
@@ -1420,16 +1420,24 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
                 continue; 	/* this should never happen, according to the PHP people. */
             }
 
-            /* get current value */
-            keys[i] = Z_STRVAL_PP(z_value_pp);
-            keys_len[i] = Z_STRLEN_PP(z_value_pp);
-            cmd_len += keys_len[i] + 1; /* +1 for the preceding space. */
+            if(Z_TYPE_PP(z_value_pp) == IS_STRING) {
+                /* get current value */
+                keys[j] = Z_STRVAL_PP(z_value_pp);
+                keys_len[j] = Z_STRLEN_PP(z_value_pp);
+                cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; /* $ + size + NL + string + NL */
+                j++;
+                real_argc++;
+            }
         }
     } else {
-        for(i = 0; i < argc; ++i) { /* store each key */
-            keys[i] = Z_STRVAL_P(z_args[i]);
-            keys_len[i] = Z_STRLEN_P(z_args[i]);
-            cmd_len += keys_len[i] + 1; /* +1 for the preceding space. */
+        for(i = 0, j = 0; i < argc; ++i) { /* store each key */
+            if(Z_TYPE_P(z_args[i]) == IS_STRING) {
+                keys[j] = Z_STRVAL_P(z_args[i]);
+                keys_len[j] = Z_STRLEN_P(z_args[i]);
+                cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; /* $ + size + NL + string + NL */
+                j++;
+                real_argc++;
+            }
         }
     }
 
@@ -1442,20 +1450,24 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     }
     redis_sock = *out_sock;
 
-    cmd_len += sizeof("\r\n") - 1;
+    cmd_len += 1 + integer_length(real_argc+1) + 2; // *count NL 
     cmd = emalloc(cmd_len+1);
 
-    memcpy(cmd, keyword, keyword_len);
-    int pos = keyword_len;
+    sprintf(cmd, "*%d" _NL "$%d" _NL "%s" _NL, 1+real_argc, keyword_len, keyword);
+    int pos = 1 +integer_length(real_argc + 1) + 2
+            + 1 + integer_length(keyword_len) + 2
+            + keyword_len + 2;
+
     /* copy each key to its destination */
-    for(i = 0; i < argc; ++i) {
-        cmd[pos] = ' ';
-        memcpy(cmd + pos + 1, keys[i], keys_len[i]);
-        pos += 1+keys_len[i];
+    for(i = 0; i < real_argc; ++i) {
+        sprintf(cmd + pos, "$%d" _NL, keys_len[i]);     // size
+        pos += 1 + integer_length(keys_len[i]) + 2;
+        memcpy(cmd + pos, keys[i], keys_len[i]);
+        pos += keys_len[i];
+        memcpy(cmd + pos, _NL, 2);
+        pos += 2;
     }
-    /* add the final new line. */
-    memcpy(cmd + pos, "\r\n", 2);
-    cmd[cmd_len] = '\0'; /* just in case we want to print it... */
+
     efree(keys);
     efree(keys_len);
     if(z_args) efree(z_args);
