@@ -1,3 +1,9 @@
+phpredis (2.0.2) unstable; urgency=low
+
+  * Fixed version number
+
+ -- Nicolas Favre-Felix <n.favre-felix@owlient.eu>  Thu, 23 Sep 2010 14:28:00 +0100
+
 phpredis (1.0.0-2) unstable; urgency=low
 
   * Fix some little debian/* problems.
