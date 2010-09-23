@@ -1,0 +1,11 @@
+phpredis (1.0.0-2) unstable; urgency=low
+
+  * Fix some little debian/* problems.
+
+ -- Simon Effenberg <se@plista.com>  Thu, 23 Sep 2010 11:50:59 +0200
+
+phpredis (1.0.0-1) unstable; urgency=low
+
+  * Initial release.
+
+ -- Simon Effenberg <se@plista.com>  Wed, 22 Sep 2010 16:04:53 +0200
