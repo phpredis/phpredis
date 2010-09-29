@@ -69,6 +69,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sortDescAlpha, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPush, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, rPush, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lPushx, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, rPushx, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPop, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, rPop, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lSize, NULL, ZEND_ACC_PUBLIC)
@@ -77,6 +79,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, lGet, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lGetRange, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lSet, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lInsert, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sAdd, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sSize, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sRemove, NULL, ZEND_ACC_PUBLIC)
@@ -278,6 +281,9 @@ PHP_MINIT_FUNCTION(redis)
 	add_constant_long(redis_ce, "ATOMIC", ATOMIC);
 	add_constant_long(redis_ce, "MULTI", MULTI);
 	add_constant_long(redis_ce, "PIPELINE", PIPELINE);
+
+	zend_declare_class_constant_stringl(redis_ce, "AFTER", 5, "after", 5 TSRMLS_CC);
+	zend_declare_class_constant_stringl(redis_ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
 
     return SUCCESS;
 }
@@ -967,6 +973,52 @@ PHP_METHOD(Redis, rPush)
     generic_push_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "RPUSH", sizeof("RPUSH")-1);
 }
 /* }}} */
+
+PHP_METHOD(Redis, lInsert)
+{
+
+	zval *object;
+	RedisSock *redis_sock;
+	zval *z_array, **z_curr;
+	char *pivot, *position, *key, *val, *cmd;
+	int pivot_len, position_len, key_len, val_len, cmd_len;
+	
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ossss",
+					&object, redis_ce,
+					&key, &key_len, 
+					&position, &position_len,
+					&pivot, &pivot_len,
+					&val, &val_len) == FAILURE) {
+		RETURN_NULL();
+	}
+
+	if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+	
+	if(strncasecmp(position, "after", 5) == 0 || strncasecmp(position, "before", 6) == 0) {
+		cmd_len = redis_cmd_format_static(&cmd, "LINSERT", "ssss", key, key_len, position, position_len, pivot, pivot_len, val, val_len);
+		REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); 
+		IF_ATOMIC() { 
+			redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL); 
+		} 
+		REDIS_PROCESS_RESPONSE(redis_long_response); 
+	} else {
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Error on position");
+	}
+	
+}
+
+PHP_METHOD(Redis, lPushx)
+{
+	generic_push_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "LPUSHX", sizeof("LPUSHX")-1);
+}
+
+PHP_METHOD(Redis, rPushx)
+{
+	generic_push_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "RPUSHX", sizeof("RPUSHX")-1);
+}
 
 PHPAPI void
 generic_pop_function(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {

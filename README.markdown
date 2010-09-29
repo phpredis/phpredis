@@ -336,6 +336,42 @@ $redis->rPush('key1', 'C'); // returns 3
 /* key1 now points to the following list: [ 'A', 'B', 'C' ] */
 </pre>
 
+## lPushx
+##### Description
+Adds the string value to the head (left) of the list if the list exists.
+##### Parameters
+*key*  
+*value* String, value to push in key
+##### Return value
+*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
+##### Examples
+<pre>
+$redis->delete('key1');
+$redis->lPushx('key1', 'A'); // returns 0
+$redis->lPush('key1', 'A'); // returns 1
+$redis->lPushx('key1', 'B'); // returns 2
+$redis->lPushx('key1', 'C'); // returns 3
+/* key1 now points to the following list: [ 'A', 'B', 'C' ] */
+</pre>
+
+## rPushx
+##### Description
+Adds the string value to the tail (right) of the list if the ist exists. `FALSE` in case of Failure.
+##### Parameters
+*key*  
+*value* String, value to push in key
+##### Return value
+*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
+##### Examples
+<pre>
+$redis->delete('key1');
+$redis->rPushx('key1', 'A'); // returns 0
+$redis->rPush('key1', 'A'); // returns 1
+$redis->rPushx('key1', 'B'); // returns 2
+$redis->rPushx('key1', 'C'); // returns 3
+/* key1 now points to the following list: [ 'A', 'B', 'C' ] */
+</pre>
+
 ## lPop
 ##### *Description*
 Return and remove the first element of the list.
@@ -491,6 +527,38 @@ $redis->lPush('key1', 'A');
 $redis->lGetRange('key1', 0, -1); /* array('A', 'A', 'C', 'B', 'A') */
 $redis->lRemove('key1', 'A', 2); /* 2 */
 $redis->lGetRange('key1', 0, -1); /* array('C', 'B', 'A') */
+</pre>
+
+## lInsert
+##### *Description*
+Insert value in the list before or after the pivot value. the parameter options specify the position of the insert (before or after).
+If the list didn't exists, or the pivot didn't exists, the value is not inserted.
+##### *Parameters*
+*key*
+*position*  Redis::BEFORE | Redis::AFTER
+*pivot*
+*value*
+
+##### *Return value*
+The number of the elements in the list, -1 if the pivot didn't exists.
+
+##### *Example*
+<pre>
+$redis->delete('key1');
+$redis->lInsert('key1', Redis::AFTER, 'A', 'X'); /* 0 */
+
+$redis->lPush('key1', 'A');
+$redis->lPush('key1', 'B');
+$redis->lPush('key1', 'C');
+
+$redis->lInsert('key1', Redis::BEFORE, 'C', 'X'); /* 4 */
+$redis->lGetRange('key1', 0, -1); /* array('A', 'B', 'X', 'C') */
+
+$redis->lInsert('key1', Redis::AFTER, 'C', 'Y'); /* 5 */
+$redis->lGetRange('key1', 0, -1); /* array('A', 'B', 'X', 'C', 'Y') */
+
+$redis->lInsert('key1', Redis::AFTER, 'W', 'value'); /* -1 */
+
 </pre>
 
 ## sAdd

@@ -498,6 +498,29 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(FALSE, $this->redis->lSize('list'));// not a list returns FALSE
     }
 
+    //lInsert, lPopx, rPopx
+    public function testlPopx() {	
+		//test lPushx/rPushx  
+		$this->redis->delete('keyNotExists');
+		$this->assertTrue($this->redis->lPushx('keyNotExists', 'value') === 0);
+		$this->assertTrue($this->redis->rPushx('keyNotExists', 'value') === 0);
+
+		$this->redis->delete('key');
+		$this->redis->lPush('key', 'val0');
+		$this->assertTrue($this->redis->lPushx('key', 'val1') === 2);
+		$this->assertTrue($this->redis->rPushx('key', 'val2') === 3);
+		$this->assertTrue($this->redis->lGetRange('key', 0, -1) === array('val1', 'val0', 'val2'));
+
+		//test linsert
+		$this->redis->delete('key');
+		$this->redis->lPush('key', 'val0');
+		$this->assertTrue($this->redis->lInsert('keyNotExists', Redis::AFTER, 'val1', 'val2') === 0);
+		$this->assertTrue($this->redis->lInsert('key', Redis::BEFORE, 'valX', 'val2') === -1);
+
+		$this->assertTrue($this->redis->lInsert('key', Redis::AFTER, 'val0', 'val1') === 2);
+		$this->assertTrue($this->redis->lInsert('key', Redis::BEFORE, 'val0', 'val2') === 3);
+		$this->assertTrue($this->redis->lGetRange('key', 0, -1) === array('val2', 'val0', 'val1'));
+    }
 
     // ltrim, lsize, lpop
     public function testlistTrim()
