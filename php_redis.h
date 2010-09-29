@@ -184,7 +184,7 @@ struct redis {
 };
 
 
-#define PHP_REDIS_VERSION "2.0.2"
+#define PHP_REDIS_VERSION "2.0.3"
 
 #endif
 
