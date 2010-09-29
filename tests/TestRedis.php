@@ -405,6 +405,32 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals(Redis::REDIS_NOT_FOUND, $this->redis->type('keyNotExists'));
     }
 
+	public function testStr() {
+
+		$this->redis->set('key', 'val1');
+		$this->assertTrue($this->redis->append('key', 'val2') === 8);
+		$this->assertTrue($this->redis->get('key') === 'val1val2');
+
+		$this->assertTrue($this->redis->append('keyNotExist', 'value') === 5);
+		$this->assertTrue($this->redis->get('keyNotExist') === 'value');
+
+		$this->redis->set('key', 'This is a string') ;
+		$this->assertTrue($this->redis->substr('key', 0, 3) === 'This');
+		$this->assertTrue($this->redis->substr('key', -6, -1) === 'string');
+		$this->assertTrue($this->redis->substr('key', -6, 100000) === 'string');
+		$this->assertTrue($this->redis->get('key') === 'This is a string');
+
+		$this->redis->set('key', 'This is a string') ;
+		$this->assertTrue($this->redis->strlen('key') === 16);
+
+		$this->redis->set('key', 10) ;
+		$this->assertTrue($this->redis->strlen('key') === 2);
+		$this->redis->set('key', '') ;
+		$this->assertTrue($this->redis->strlen('key') === 0);
+		$this->redis->set('key', '000') ;
+		$this->assertTrue($this->redis->strlen('key') === 3);
+	}
+
     // PUSH, POP : LPUSH, LPOP
     public function testlPop()
     {

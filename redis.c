@@ -61,6 +61,9 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, incr, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, decr, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, type, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, append, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, substr, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, strlen, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getKeys, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sort, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sortAsc, NULL, ZEND_ACC_PUBLIC)
@@ -931,6 +934,85 @@ PHP_METHOD(Redis, type)
 }
 /* }}} */
 
+PHP_METHOD(Redis, append)
+{
+	zval *object;
+	RedisSock *redis_sock;
+	char *cmd;
+	int cmd_len, key_len, val_len;
+	char *key, *val;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
+                                     &object, redis_ce,
+                                     &key, &key_len, &val, &val_len) == FAILURE) {
+		RETURN_NULL();
+	}
+
+	if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	cmd_len = redis_cmd_format_static(&cmd, "APPEND", "ss", key, key_len, val, val_len);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
+}
+
+PHP_METHOD(Redis, substr)
+{
+	zval *object;
+	RedisSock *redis_sock;
+	char *key = NULL, *val = NULL, *cmd;
+	int key_len, cmd_len;
+	long start, end;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll",
+                                     &object, redis_ce, &key, &key_len,
+                                     &start, &end) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	cmd_len = redis_cmd_format_static(&cmd, "SUBSTR", "sdd", key, key_len, (int)start, (int)end);
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_string_response);
+}
+
+PHP_METHOD(Redis, strlen)
+{
+	zval *object;
+	RedisSock *redis_sock;
+	char *cmd;
+	int cmd_len, key_len;
+	char *key;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
+                                     &object, redis_ce,
+                                     &key, &key_len) == FAILURE) {
+		RETURN_NULL();
+	}
+
+	if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	cmd_len = redis_cmd_format_static(&cmd, "STRLEN", "s", key, key_len);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
+}
 
 PHPAPI void
 generic_push_function(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {

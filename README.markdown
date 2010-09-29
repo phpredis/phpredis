@@ -1192,6 +1192,59 @@ other: Redis::REDIS_NOT_FOUND
 $redis->type('key');
 </pre>
 
+## append
+##### *Description*
+Append specified string to the string stored in specified key.
+
+##### *Parameters*
+*Key*
+*Value*
+
+##### *Return value*
+*INTEGER*: Size of the value after the append
+
+##### *Example*
+<pre>
+$redis->set('key', 'value1');
+$redis->append('key', 'value2'); /* 12 */
+$redis->get('key'); /* 'value1value2' */
+</pre>
+
+## substr
+##### *Description*
+Return a substring of a larger string 
+
+##### *Parameters*
+*key*
+*start*
+*end*
+
+##### *Return value*
+*STRING*: the substring 
+
+##### *Example*
+<pre>
+$redis->set('key', 'string value');
+$redis->substr('key', 0, 5); /* 'string' */
+$redis->substr('key', -5, -1); /* 'value' */
+</pre>
+
+## strlen
+##### *Description*
+Get the length of a string value.
+
+##### *Parameters*
+*key*
+
+##### *Return value*
+*INTEGER*
+
+##### *Example*
+<pre>
+$redis->set('key', 'value');
+$redis->strlen('key'); /* 5 */
+</pre>
+
 ## flushDB
 
 ##### *Description*
