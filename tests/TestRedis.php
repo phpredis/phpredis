@@ -901,12 +901,22 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         }
 
         $xy = $this->redis->sInter('x', 'y');	// odd prime numbers
-        foreach($xy as $i) {
+	foreach($xy as $i) {
 	    $i = (int)$i;
             $this->assertTrue(in_array($i, array_intersect($x, $y)));
-        }
+	}
+	$xy = $this->redis->sInter(array('x', 'y'));	// odd prime numbers, as array.
+	foreach($xy as $i) {
+	    $i = (int)$i;
+            $this->assertTrue(in_array($i, array_intersect($x, $y)));
+	}
 
         $yz = $this->redis->sInter('y', 'z');	// set of odd squares
+        foreach($yz as $i) {
+	    $i = (int)$i;
+            $this->assertTrue(in_array($i, array_intersect($y, $z)));
+        }
+	$yz = $this->redis->sInter(array('y', 'z'));	// set of odd squares, as array
         foreach($yz as $i) {
 	    $i = (int)$i;
             $this->assertTrue(in_array($i, array_intersect($y, $z)));
@@ -914,11 +924,18 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
         $zt = $this->redis->sInter('z', 't');	// prime squares
         $this->assertTrue($zt === array());
+	$zt = $this->redis->sInter(array('z', 't'));	// prime squares, as array
+        $this->assertTrue($zt === array());
 
         $xyz = $this->redis->sInter('x', 'y', 'z');// odd prime squares
         $this->assertTrue($xyz === array('1'));
 
+	$xyz = $this->redis->sInter(array('x', 'y', 'z'));// odd prime squares, with an array as a parameter
+        $this->assertTrue($xyz === array('1'));
+
         $nil = $this->redis->sInter();
+        $this->assertTrue($nil === FALSE);
+	$nil = $this->redis->sInter(array());
         $this->assertTrue($nil === FALSE);
     }
 
