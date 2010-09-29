@@ -24,6 +24,20 @@ You can generate a debian package for PHP5, accessible from Apache 2 by running 
 
 This extension exports a single class, `Redis`.
 
+Install on OSX
+==============
+
+If the install fails on OSX, type the following commands in your shell before trying again:
+<pre>
+MACOSX_DEPLOYMENT_TARGET=10.6
+CFLAGS="-arch i386 -arch x86_64 -g -Os -pipe -no-cpp-precomp"
+CCFLAGS="-arch i386 -arch x86_64 -g -Os -pipe"
+CXXFLAGS="-arch i386 -arch x86_64 -g -Os -pipe"
+LDFLAGS="-arch i386 -arch x86_64 -bind_at_load"
+export CFLAGS CXXFLAGS LDFLAGS CCFLAGS MACOSX_DEPLOYMENT_TARGET
+</pre>
+
+
 Methods
 =========
 
