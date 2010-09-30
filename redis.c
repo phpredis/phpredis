@@ -324,7 +324,7 @@ PHP_MINFO_FUNCTION(redis)
 {
     php_info_print_table_start();
     php_info_print_table_header(2, "Redis Support", "enabled");
-    php_info_print_table_row(2, "Version", PHP_REDIS_VERSION);
+    php_info_print_table_row(2, "Redis Version", PHP_REDIS_VERSION);
     php_info_print_table_end();
 }
 
