@@ -1125,6 +1125,21 @@ Authenticate the connection using a password.
 $redis->auth('foobared');
 </pre>
 
+## bgrewriteaof
+##### *Description*
+Starts the background rewrite of AOF (Append-Only File)
+
+##### *Parameters*
+None.
+
+##### *Return value*
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
+
+##### *Example*
+<pre>
+$redis->bgrewriteaof();
+</pre>
+
 ## save
 ##### *Description*
 Performs a synchronous save.

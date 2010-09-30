@@ -109,6 +109,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, info, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, select, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, move, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, bgrewriteaof, NULL, ZEND_ACC_PUBLIC)
 
      /* 1.1 */
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
@@ -4239,6 +4240,17 @@ PHP_METHOD(Redis, unsubscribe)
 		i ++;
 	}
 }
+
+/* {{{ proto string Redis::bgrewriteaof()
+ */
+PHP_METHOD(Redis, bgrewriteaof)
+{
+    char *cmd;
+    int cmd_len = redis_cmd_format_static(&cmd, "BGREWRITEAOF", "");
+    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, cmd, cmd_len);
+
+}
+/* }}} */
 
 /* vim: set tabstop=4 expandtab: */
 
