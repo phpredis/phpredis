@@ -1354,6 +1354,17 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	}
     }
 
+    public function testPersist() {
+	$this->redis->set('x', 'y');
+	$this->redis->setTimeout('x', 100);
+	$this->assertTrue(TRUE === $this->redis->persist('x'));		// true if there is a timeout
+	$this->assertTrue(-1 === $this->redis->ttl('x'));		// -1: timeout has been removed.
+	$this->assertTrue(FALSE === $this->redis->persist('x'));	// false if there is no timeout
+
+	$this->redis->delete('x');
+	$this->assertTrue(FALSE === $this->redis->persist('x'));	// false if the key doesn’t exist.
+    }
+
     public function testinfo() {
 	$info = $this->redis->info();
 

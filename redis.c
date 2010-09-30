@@ -106,6 +106,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, dbSize, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, auth, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, ttl, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, persist, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, info, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, select, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, move, NULL, ZEND_ACC_PUBLIC)
@@ -2336,6 +2337,35 @@ PHP_METHOD(Redis, auth) {
 		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
 	REDIS_PROCESS_RESPONSE(redis_boolean_response);
+}
+/* }}} */
+
+/* {{{ proto long Redis::persist(string key)
+ */
+PHP_METHOD(Redis, persist) {
+
+    zval *object;
+    RedisSock *redis_sock;
+
+    char *cmd, *key;
+    int cmd_len, key_len;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
+                                     &object, redis_ce, &key, &key_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format_static(&cmd, "PERSIST", "s", key, key_len);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 /* }}} */
 

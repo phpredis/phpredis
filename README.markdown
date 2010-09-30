@@ -1365,6 +1365,21 @@ Long, the time left to live in seconds.
 $redis->ttl('key');
 </pre>
 
+## persist
+##### *Description*
+Remove the expiration timer from a key.
+
+##### *Parameters*
+*Key*: key
+
+##### *Return value*
+*BOOL*: `TRUE` if a timeout was removed, `FALSE` if the key didn’t exist or didn’t have an expiration timer.
+
+##### *Example*
+<pre>
+$redis->persist('key');
+</pre>
+
 ## mset (redis >= 1.1)
 ##### *Description*
 Sets multiple key-value pairs in one atomic command
