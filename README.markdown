@@ -404,6 +404,53 @@ $redis->rPush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
 $redis->rPop('key1'); /* key1 => [ 'C', 'B' ] */
 </pre>
 
+## blPop, brPop
+##### *Description*
+Is a blocking lPop(rPop) primitive. If at least one of the lists contains at least one element, the element will be popped from the head of the list and returned to the caller.
+Il all the list identified by the keys passed in arguments are empty, blPop will block during the specified timeout until an element is pushed to one of those lists. This element will be popped.
+
+##### *Parameters*
+*ARRAY* Array containing the keys of the lists
+*INTEGER* Timeout
+Or
+*STRING* Key1
+*STRING* Key2
+*STRING* Key3
+...
+*STRING* Keyn
+*INTEGER* Timeout
+##### *Return value*
+*ARRAY* array('listName' => 'element')
+
+##### *Example*
+<pre>
+/* Non blocking feature */
+$redis->lPush('key1', 'A');
+$redis->delete('key2');
+
+$redis->blPop('key1', 'key2', 10); /* array('key1', 'A') */
+/* OR */
+$redis->blPop(array('key1', 'key2'), 10); /* array('key1', 'A') */
+
+$redis->brPop('key1', 'key2', 10); /* array('key1', 'A') */
+/* OR */
+$redis->brPop(array('key1', 'key2'), 10); /* array('key1', 'A') */
+
+/* Blocking feature */
+
+/* process 1 */
+$redis->delete('key1');
+$redis->blPop('key1', 10);
+/* blocking for 10 seconds */
+
+/* process 2 */
+$redis->lPush('key1', 'A');
+
+/* process 1 */
+/* array('key1', 'A') is returned*/
+
+</pre>
+
 ## lSize
 ##### *Description*
 Returns the size of a list identified by Key. If the list didn't exist or is empty, the command returns 0. If the data type identified by Key is not a list, the command return `FALSE`.

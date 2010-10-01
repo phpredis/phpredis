@@ -497,6 +497,51 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     }
 
+	public function testblockingPop() {
+
+		/* non blocking blPop, brPop */
+        $this->redis->delete('list');
+        $this->redis->lPush('list', 'val1');
+        $this->redis->lPush('list', 'val2');
+		$this->assertTrue($this->redis->blPop(array('list'), 2) === array('list', 'val2'));
+		$this->assertTrue($this->redis->blPop(array('list'), 2) === array('list', 'val1'));
+
+        $this->redis->delete('list');
+        $this->redis->lPush('list', 'val1');
+        $this->redis->lPush('list', 'val2');
+		$this->assertTrue($this->redis->brPop(array('list'), 2) === array('list', 'val1'));
+		$this->assertTrue($this->redis->brPop(array('list'), 2) === array('list', 'val2'));
+
+		/* blocking blpop, brpop */
+        $this->redis->delete('list');
+		$this->assertTrue($this->redis->blPop(array('list'), 2) === array());
+		$this->assertTrue($this->redis->brPop(array('list'), 2) === array());
+
+		$this->redis->delete('list');
+		$params = array(
+			0 => array("pipe", "r"), 
+			1 => array("pipe", "w"),
+			2 => array("file", "/tmp/error_log", "a") // stderr est un fichier
+		);
+		$env = array('key' =>'list', 'value' => 'value');
+		$process = proc_open('php', $params, $pipes, '/tmp', $env);
+
+		if (is_resource($process)) {
+			fwrite($pipes[0], '<?php 
+sleep(2);
+$r = new Redis;
+$r->connect("127.0.0.1", 6379);
+$r->lPush($_ENV["key"], $_ENV["value"]);
+?>');
+			fclose($pipes[0]);
+			fclose($pipes[1]);
+			$re = proc_close($process);
+		}
+		//$this->assertEquals($this->redis->blPop(array('list'), 2) === array());		
+		$this->assertTrue($this->redis->blPop(array('list'), 5) === array("list", "value"));		
+
+	}
+
     public function testlSize()
     {
 
@@ -1360,7 +1405,6 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(TRUE === $this->redis->persist('x'));		// true if there is a timeout
 	$this->assertTrue(-1 === $this->redis->ttl('x'));		// -1: timeout has been removed.
 	$this->assertTrue(FALSE === $this->redis->persist('x'));	// false if there is no timeout
-
 	$this->redis->delete('x');
 	$this->assertTrue(FALSE === $this->redis->persist('x'));	// false if the key doesn’t exist.
     }

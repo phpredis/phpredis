@@ -76,6 +76,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, rPushx, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPop, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, rPop, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, blPop, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, brPop, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lSize, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lRemove, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, listTrim, NULL, ZEND_ACC_PUBLIC)
@@ -835,7 +837,7 @@ PHP_METHOD(Redis, delete)
 
     generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "DEL", sizeof("DEL") - 1,
-                    1, &redis_sock);
+					1, &redis_sock, 0);
 	zval * object = getThis();
 
     IF_ATOMIC() {
@@ -854,7 +856,7 @@ PHP_METHOD(Redis, watch)
 
     generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "WATCH", sizeof("WATCH") - 1,
-                    1, &redis_sock);
+					1, &redis_sock, 0);
 	zval * object = getThis();
 
     IF_ATOMIC() {
@@ -1146,6 +1148,52 @@ PHP_METHOD(Redis, rPop)
         generic_pop_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "RPOP", sizeof("RPOP")-1);
 }
 /* }}} */
+
+/* {{{ proto string Redis::blPop(string key1, string key2, ..., int timeout)
+ */
+PHP_METHOD(Redis, blPop)
+{
+
+    RedisSock *redis_sock;
+
+    generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                    "BLPOP", sizeof("BLPOP") - 1,
+					2, &redis_sock, 1);
+
+	zval *object = getThis();
+
+    IF_ATOMIC() {
+    	if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+											redis_sock, NULL, NULL) < 0) {
+        	RETURN_FALSE;
+	    }
+    }
+    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+}
+/* }}} */
+
+/* {{{ proto string Redis::brPop(string key1, string key2, ..., int timeout)
+ */
+PHP_METHOD(Redis, brPop)
+{
+    RedisSock *redis_sock;
+
+    generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                    "BRPOP", sizeof("BRPOP") - 1,
+					2, &redis_sock, 1);
+
+	zval *object = getThis();
+
+    IF_ATOMIC() {
+    	if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+											redis_sock, NULL, NULL) < 0) {
+        	RETURN_FALSE;
+	    }
+    }
+    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+}
+/* }}} */
+
 
 /* {{{ proto int Redis::lSize(string key)
  */
@@ -1501,13 +1549,15 @@ PHP_METHOD(Redis, sMembers)
 
 
 PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
-                int min_argc, RedisSock **out_sock)
+									 int min_argc, RedisSock **out_sock, int has_timeout)
 {
     zval *object, **z_args, *z_array;
     char **keys, *cmd;
     int cmd_len, *keys_len;
     int i, j, argc = ZEND_NUM_ARGS(), real_argc = 0;
     int single_array = 0;
+	int timeout;
+
     RedisSock *redis_sock;
 
     if(argc < min_argc) {
@@ -1522,19 +1572,37 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     }
 
     /* case of a single array */
-    if(argc == 1 && Z_TYPE_P(z_args[0]) == IS_ARRAY) {
-        single_array = 1;
-        z_array = z_args[0];
-        efree(z_args);
-        z_args = NULL;
+	if(has_timeout == 0) {
+	    if(argc == 1 && Z_TYPE_P(z_args[0]) == IS_ARRAY) {
+    	    single_array = 1;
+        	z_array = z_args[0];
+	        efree(z_args);
+    	    z_args = NULL;
 
-        /* new count */
-        argc = zend_hash_num_elements(Z_ARRVAL_P(z_array));
-    }
+        	/* new count */
+	        argc = zend_hash_num_elements(Z_ARRVAL_P(z_array));
+    	}
+	} else if(has_timeout == 1) {
+		if(argc == 2 && Z_TYPE_P(z_args[0]) == IS_ARRAY && Z_TYPE_P(z_args[1]) == IS_LONG) {
+    	    single_array = 1;
+        	z_array = z_args[0];
+			timeout = Z_LVAL_P(z_args[1]);
+	        efree(z_args);
+    	    z_args = NULL;
+        	/* new count */
+	        argc = zend_hash_num_elements(Z_ARRVAL_P(z_array));
+    	}
+	}
 
     /* prepare an array for the keys, and one for their lengths */
-    keys = emalloc(argc * sizeof(char*));
-    keys_len = emalloc(argc * sizeof(int));
+	if(!has_timeout) {
+	    keys = emalloc(argc * sizeof(char*));
+    	keys_len = emalloc(argc * sizeof(int));
+	} else {
+		keys = emalloc((argc+1) * sizeof(char*));
+    	keys_len = emalloc((argc + 1) * sizeof(int));
+	}
+
 
     cmd_len = 1 + integer_length(keyword_len) + 2 +keyword_len + 2; /* start computing the command length */
 
@@ -1565,16 +1633,37 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
                 real_argc++;
             }
         }
+		if(has_timeout) {
+			keys_len[j] = spprintf(&keys[j], 0, "%d", timeout);
+			cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; // $ + size + NL + string + NL 
+			j++;
+			real_argc++;
+		}
     } else {
+		int nb_keys;
+		if(!has_timeout) {
+			nb_keys = argc;
+		} else if(has_timeout && Z_TYPE_P(z_args[argc - 1]) == IS_LONG) {
+			nb_keys = argc - 1;
+		} else {
+			php_error_docref(NULL TSRMLS_CC, E_ERROR, "Syntax error on timeout");
+		}
+			
         for(i = 0, j = 0; i < argc; ++i) { /* store each key */
-            if(Z_TYPE_P(z_args[i]) == IS_STRING) {
-                keys[j] = Z_STRVAL_P(z_args[i]);
-                keys_len[j] = Z_STRLEN_P(z_args[i]);
-                cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; /* $ + size + NL + string + NL */
+   	        if(Z_TYPE_P(z_args[i]) == IS_STRING) {
+       	        keys[j] = Z_STRVAL_P(z_args[i]);
+           	    keys_len[j] = Z_STRLEN_P(z_args[i]);
+               	cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; /* $ + size + NL + string + NL */
                 j++;
-                real_argc++;
-            }
-        }
+   	            real_argc++;
+       	    } 
+		}
+		if(has_timeout) {
+			keys_len[j] = spprintf(&keys[j], 0, "%ld", Z_LVAL_P(z_args[j]));
+			cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; // $ + size + NL + string + NL 
+			j++;
+			real_argc++;
+		}
     }
 
     /* get redis socket */
@@ -1590,6 +1679,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     cmd = emalloc(cmd_len+1);
 
     sprintf(cmd, "*%d" _NL "$%d" _NL "%s" _NL, 1+real_argc, keyword_len, keyword);
+	
     int pos = 1 +integer_length(real_argc + 1) + 2
             + 1 + integer_length(keyword_len) + 2
             + keyword_len + 2;
@@ -1605,9 +1695,10 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     }
 
     efree(keys);
-    efree(keys_len);
-    if(z_args) efree(z_args);
+	efree(keys_len);
 
+    if(z_args) efree(z_args);
+	
 	object = getThis();
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
@@ -1621,7 +1712,7 @@ PHP_METHOD(Redis, sInter) {
 
     generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SINTER", sizeof("SINTER") - 1,
-                    0, &redis_sock);
+					0, &redis_sock, 0);
 
 	zval *object = getThis();
 
@@ -1643,7 +1734,7 @@ PHP_METHOD(Redis, sInterStore) {
 
     generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SINTERSTORE", sizeof("SINTERSTORE") - 1,
-                    1, &redis_sock);
+					1, &redis_sock, 0);
 
 	zval *object = getThis();
 
@@ -1664,7 +1755,7 @@ PHP_METHOD(Redis, sUnion) {
 
     generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SUNION", sizeof("SUNION") - 1,
-                    0, &redis_sock);
+							  0, &redis_sock, 0);
 	zval *object = getThis();
 
 	IF_ATOMIC() {
@@ -1684,7 +1775,7 @@ PHP_METHOD(Redis, sUnionStore) {
 
     generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SUNIONSTORE", sizeof("SUNIONSTORE") - 1,
-                    1, &redis_sock);
+					1, &redis_sock, 0);
 	zval *object = getThis();
 
 	IF_ATOMIC() {
@@ -1703,7 +1794,7 @@ PHP_METHOD(Redis, sDiff) {
 
     generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SDIFF", sizeof("SDIFF") - 1,
-                    0, &redis_sock);
+					0, &redis_sock, 0);
 
 	zval *object = getThis();
 
@@ -1726,7 +1817,7 @@ PHP_METHOD(Redis, sDiffStore) {
 
     generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SDIFFSTORE", sizeof("SDIFFSTORE") - 1,
-                    1, &redis_sock);
+					1, &redis_sock, 0);
 	zval *object = getThis();
 
 	IF_ATOMIC() {
@@ -2363,9 +2454,9 @@ PHP_METHOD(Redis, persist) {
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
-	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
+	REDIS_PROCESS_RESPONSE(redis_1_response);
 }
 /* }}} */
 
@@ -2392,9 +2483,9 @@ PHP_METHOD(Redis, ttl) {
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
-	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
-	REDIS_PROCESS_RESPONSE(redis_1_response);
+	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 /* }}} */
 
