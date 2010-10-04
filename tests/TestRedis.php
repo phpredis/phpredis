@@ -7,7 +7,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 {
 	const HOST = '127.0.0.1';
 	const PORT = 6379;
-	const AUTH = 'password';
+	const AUTH = "password"; //replace with a string to use Redis authentication
 
     /**
      * @var Redis
@@ -22,12 +22,10 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     private function newInstance() {
 	$r = new Redis();
 	$r->connect(self::HOST, self::PORT);
-	if(self::AUTH) {
-		$r->auth(self::AUTH);
-	}
-	// uncomment the following if you want to use authentication
-	// $this->assertTrue($r->auth('foobared'));
 
+	if(self::AUTH) {
+		$this->assertTrue($r->auth(self::AUTH));
+	}
 	return $r;
     }
 
@@ -534,15 +532,16 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 			$process = proc_open('php', $params, $pipes, '/tmp', $env);
 
 			if (is_resource($process)) {
-				fwrite($pipes[0], '<?php 
+				fwrite($pipes[0],  '<?php 
 sleep(2);
 $r = new Redis;
 $r->connect("'.self::HOST.'", '.self::PORT.');
-if('.self::AUTH.') {
-	$r->auth('.self::AUTH.');
+if("'.addslashes(self::AUTH).'") {
+	$r->auth("'.addslashes(self::AUTH).'");
 }
 $r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
 ?>');
+
 				fclose($pipes[0]);
 				fclose($pipes[1]);
 				$re = proc_close($process);
