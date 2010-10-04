@@ -7,6 +7,8 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 {
 	const HOST = '127.0.0.1';
 	const PORT = 6379;
+	const AUTH = 'password';
+
     /**
      * @var Redis
      */
@@ -20,7 +22,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     private function newInstance() {
 	$r = new Redis();
 	$r->connect(self::HOST, self::PORT);
-
+	if(self::AUTH) {
+		$r->auth(self::AUTH);
+	}
 	// uncomment the following if you want to use authentication
 	// $this->assertTrue($r->auth('foobared'));
 
@@ -534,6 +538,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 sleep(2);
 $r = new Redis;
 $r->connect("'.self::HOST.'", '.self::PORT.');
+if('.self::AUTH.') {
+	$r->auth('.self::AUTH.');
+}
 $r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
 ?>');
 				fclose($pipes[0]);
