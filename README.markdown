@@ -420,7 +420,7 @@ Or
 *STRING* Keyn
 *INTEGER* Timeout
 ##### *Return value*
-*ARRAY* array('listName' => 'element')
+*ARRAY* array('listName', 'element')
 
 ##### *Example*
 <pre>

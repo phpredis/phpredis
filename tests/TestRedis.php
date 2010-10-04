@@ -5,6 +5,8 @@ echo "Note: these tests might take up to a minute. Don't worry :-)\n";
 
 class Redis_Test extends PHPUnit_Framework_TestCase
 {
+	const HOST = '127.0.0.1';
+	const PORT = 6379;
     /**
      * @var Redis
      */
@@ -17,7 +19,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     private function newInstance() {
 	$r = new Redis();
-	$r->connect('127.0.0.1', 6379);
+	$r->connect(self::HOST, self::PORT);
 
 	// uncomment the following if you want to use authentication
 	// $this->assertTrue($r->auth('foobared'));
@@ -521,24 +523,25 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 		$params = array(
 			0 => array("pipe", "r"), 
 			1 => array("pipe", "w"),
-			2 => array("file", "/tmp/error_log", "a") // stderr est un fichier
+			2 => array("file", "/dev/null", "a") // stderr est un fichier
 		);
-		$env = array('key' =>'list', 'value' => 'value');
-		$process = proc_open('php', $params, $pipes, '/tmp', $env);
+		if(function_exists('proc_open')) {
+			$env = array('PHPREDIS_key' =>'list', 'PHPREDIS_value' => 'value');
+			$process = proc_open('php', $params, $pipes, '/tmp', $env);
 
-		if (is_resource($process)) {
-			fwrite($pipes[0], '<?php 
+			if (is_resource($process)) {
+				fwrite($pipes[0], '<?php 
 sleep(2);
 $r = new Redis;
-$r->connect("127.0.0.1", 6379);
-$r->lPush($_ENV["key"], $_ENV["value"]);
+$r->connect("'.self::HOST.'", '.self::PORT.');
+$r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
 ?>');
-			fclose($pipes[0]);
-			fclose($pipes[1]);
-			$re = proc_close($process);
+				fclose($pipes[0]);
+				fclose($pipes[1]);
+				$re = proc_close($process);
+			}
+			$this->assertTrue($this->redis->blPop(array('list'), 5) === array("list", "value"));		
 		}
-		//$this->assertEquals($this->redis->blPop(array('list'), 2) === array());		
-		$this->assertTrue($this->redis->blPop(array('list'), 5) === array("list", "value"));		
 
 	}
 
