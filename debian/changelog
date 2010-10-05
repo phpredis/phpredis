@@ -1,3 +1,9 @@
+phpredis (2.0.4) unstable; urgency=low
+
+  * Merged with upstream
+
+ -- Simon Effenberg <se@plista.com>  Tue, 05 Oct 2010 09:47:48 +0200
+
 phpredis (2.0.2) unstable; urgency=low
 
   * Fixed version number
