@@ -681,9 +681,7 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     }
 
     tv.tv_sec  = (time_t)redis_sock->timeout;
-    tv.tv_usec = (redis_sock->timeout - tv.tv_sec) * 1000000;
-
-    printf("tv_sec=%d, tv_usec=%d\n", (int)tv.tv_sec, (int)tv.tv_usec);
+    tv.tv_usec = ((int)(redis_sock->timeout - tv.tv_sec)) * 1000000;
 
     host_len = spprintf(&host, 0, "%s:%d", redis_sock->host, redis_sock->port);
 
