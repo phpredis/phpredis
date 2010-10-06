@@ -7,7 +7,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 {
 	const HOST = '127.0.0.1';
 	const PORT = 6379;
-	const AUTH = "password"; //replace with a string to use Redis authentication
+	const AUTH = NULL; //replace with a string to use Redis authentication
 
     /**
      * @var Redis
