@@ -130,7 +130,7 @@ typedef struct {
     php_stream     *stream;
     char           *host;
     unsigned short port;
-    long           timeout;
+    double         timeout;
     int            failed;
     int            status;
 

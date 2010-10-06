@@ -643,7 +643,7 @@ PHPAPI void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis
  * redis_sock_create
  */
 PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port,
-                                                                       long timeout)
+                                                                       double timeout)
 {
     RedisSock *redis_sock;
 
@@ -680,8 +680,10 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
         redis_sock_disconnect(redis_sock TSRMLS_CC);
     }
 
-    tv.tv_sec  = redis_sock->timeout;
-    tv.tv_usec = 0;
+    tv.tv_sec  = (time_t)redis_sock->timeout;
+    tv.tv_usec = (redis_sock->timeout - tv.tv_sec) * 1000000;
+
+    printf("tv_sec=%d, tv_usec=%d\n", (int)tv.tv_sec, (int)tv.tv_usec);
 
     host_len = spprintf(&host, 0, "%s:%d", redis_sock->host, redis_sock->port);
 
