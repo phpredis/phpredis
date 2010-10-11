@@ -190,8 +190,12 @@ struct redis {
 	struct redis_queued_item *head;
 };
 
+extern zend_module_entry redis_module_entry;
+#define redis_module_ptr &redis_module_entry
 
-#define PHP_REDIS_VERSION "2.0.5"
+#define phpext_redis_ptr redis_module_ptr
+
+#define PHP_REDIS_VERSION "2.0.7"
 
 #endif
 
