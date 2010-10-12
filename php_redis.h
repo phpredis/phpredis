@@ -18,6 +18,8 @@
   +----------------------------------------------------------------------+
 */
 
+#include "common.h"
+
 #ifndef PHP_REDIS_H
 #define PHP_REDIS_H
 

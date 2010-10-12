@@ -1,6 +1,9 @@
 #include "php.h"
 #include "php_ini.h"
 
+#ifndef REDIS_COMMON_H
+#define REDIS_COMMON_H
+
 #define redis_sock_name "Redis Socket Buffer"
 #define REDIS_SOCK_STATUS_FAILED 0
 #define REDIS_SOCK_STATUS_DISCONNECTED 1
@@ -145,3 +148,5 @@ typedef struct {
 
 void
 free_reply_callbacks(zval *z_this, RedisSock *redis_sock);
+
+#endif
