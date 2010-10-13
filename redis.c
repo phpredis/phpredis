@@ -35,9 +35,6 @@
 
 static int le_redis_sock;
 
-static zend_class_entry *redis_ce;
-static zend_class_entry *redis_exception_ce;
-static zend_class_entry *spl_ce_RuntimeException = NULL;
 
 
 ZEND_DECLARE_MODULE_GLOBALS(redis)

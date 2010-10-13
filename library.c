@@ -87,6 +87,11 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
         case '-':
             return NULL;
 
+        case '$':
+            *buf_len = atoi(inbuf + 1);
+            resp = redis_sock_read_bulk_reply(redis_sock, *buf_len TSRMLS_CC);
+            return resp;
+
         case '+':
         case ':':
 	    // Single Line Reply
@@ -97,18 +102,15 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
                 memcpy(resp, inbuf, *buf_len);
                 resp[*buf_len] = 0;
                 return resp;
-            } else {
-                printf("protocol error \n");
-                return NULL;
             }
 
-        case '$':
-            *buf_len = atoi(inbuf + 1);
-            resp = redis_sock_read_bulk_reply(redis_sock, *buf_len TSRMLS_CC);
-            return resp;
-
         default:
-            printf("protocol error, got '%c' as reply type byte\n", inbuf[0]);
+			zend_throw_exception_ex(
+				redis_exception_ce,
+				0 TSRMLS_CC,
+				"protocol error, got '%c' as reply type byte\n",
+				inbuf[0]
+			);
     }
 
     return NULL;

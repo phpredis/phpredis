@@ -4,6 +4,10 @@
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
 
+static zend_class_entry *redis_ce;
+static zend_class_entry *redis_exception_ce;
+static zend_class_entry *spl_ce_RuntimeException = NULL;
+
 #define redis_sock_name "Redis Socket Buffer"
 #define REDIS_SOCK_STATUS_FAILED 0
 #define REDIS_SOCK_STATUS_DISCONNECTED 1
