@@ -11,9 +11,9 @@ PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
     while(eof) {
         redis_sock->stream = NULL;
         redis_sock_connect(redis_sock TSRMLS_CC);
-	if(redis_sock->stream) {
+        if(redis_sock->stream) {
             eof = php_stream_eof(redis_sock->stream);
-	}
+        }
     }
 }
 
@@ -872,6 +872,10 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, R
  */
 PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz TSRMLS_DC)
 {
+	if(redis_sock && redis_sock->status == REDIS_SOCK_STATUS_DISCONNECTED) {
+		zend_throw_exception(redis_exception_ce, "Connection closed", 0 TSRMLS_CC);
+		return -1;
+	}
     redis_check_eof(redis_sock TSRMLS_CC);
     return php_stream_write(redis_sock->stream, cmd, sz);
 }
