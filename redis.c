@@ -35,9 +35,6 @@
 
 static int le_redis_sock;
 
-static zend_class_entry *redis_ce;
-static zend_class_entry *redis_exception_ce;
-static zend_class_entry *spl_ce_RuntimeException = NULL;
 
 
 ZEND_DECLARE_MODULE_GLOBALS(redis)
@@ -342,7 +339,7 @@ PHP_METHOD(Redis, __construct)
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::connect(string host, int port [, int timeout])
+/* {{{ proto boolean Redis::connect(string host, int port [, double timeout])
  */
 PHP_METHOD(Redis, connect)
 {
@@ -351,21 +348,21 @@ PHP_METHOD(Redis, connect)
     char *host = NULL;
     long port;
 
-    struct timeval timeout = {0L, 0L};
+    double timeout = 0.0;
     RedisSock *redis_sock  = NULL;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl|l",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl|d",
                                      &object, redis_ce, &host, &host_len, &port,
-                                     &timeout.tv_sec) == FAILURE) {
+                                     &timeout) == FAILURE) {
        RETURN_FALSE;
     }
 
-    if (timeout.tv_sec < 0L || timeout.tv_sec > INT_MAX) {
+    if (timeout < 0L || timeout > INT_MAX) {
         zend_throw_exception(redis_exception_ce, "Invalid timeout", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
 
-    redis_sock = redis_sock_create(host, host_len, port, timeout.tv_sec);
+    redis_sock = redis_sock_create(host, host_len, port, timeout);
 
     if (redis_sock_server_open(redis_sock, 1 TSRMLS_CC) < 0) {
         redis_free_socket(redis_sock);

@@ -59,6 +59,7 @@ Connects to a Redis instance.
 
 *host*: string  
 *port*: int  
+*timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
 
 ##### *Return Value*
 
@@ -67,6 +68,7 @@ Connects to a Redis instance.
 ##### *Example*
 
 $redis->connect('127.0.0.1', 6379);
+$redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 
 ## get
 ##### *Description*

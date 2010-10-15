@@ -11,9 +11,9 @@ PHPAPI void redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
     while(eof) {
         redis_sock->stream = NULL;
         redis_sock_connect(redis_sock TSRMLS_CC);
-	if(redis_sock->stream) {
+        if(redis_sock->stream) {
             eof = php_stream_eof(redis_sock->stream);
-	}
+        }
     }
 }
 
@@ -87,6 +87,11 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
         case '-':
             return NULL;
 
+        case '$':
+            *buf_len = atoi(inbuf + 1);
+            resp = redis_sock_read_bulk_reply(redis_sock, *buf_len TSRMLS_CC);
+            return resp;
+
         case '+':
         case ':':
 	    // Single Line Reply
@@ -97,18 +102,15 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
                 memcpy(resp, inbuf, *buf_len);
                 resp[*buf_len] = 0;
                 return resp;
-            } else {
-                printf("protocol error \n");
-                return NULL;
             }
 
-        case '$':
-            *buf_len = atoi(inbuf + 1);
-            resp = redis_sock_read_bulk_reply(redis_sock, *buf_len TSRMLS_CC);
-            return resp;
-
         default:
-            printf("protocol error, got '%c' as reply type byte\n", inbuf[0]);
+			zend_throw_exception_ex(
+				redis_exception_ce,
+				0 TSRMLS_CC,
+				"protocol error, got '%c' as reply type byte\n",
+				inbuf[0]
+			);
     }
 
     return NULL;
@@ -643,7 +645,7 @@ PHPAPI void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis
  * redis_sock_create
  */
 PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port,
-                                                                       long timeout)
+                                                                       double timeout)
 {
     RedisSock *redis_sock;
 
@@ -680,8 +682,8 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
         redis_sock_disconnect(redis_sock TSRMLS_CC);
     }
 
-    tv.tv_sec  = redis_sock->timeout;
-    tv.tv_usec = 0;
+    tv.tv_sec  = (time_t)redis_sock->timeout;
+    tv.tv_usec = ((int)(redis_sock->timeout - tv.tv_sec)) * 1000000;
 
     host_len = spprintf(&host, 0, "%s:%d", redis_sock->host, redis_sock->port);
 
@@ -870,6 +872,10 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, R
  */
 PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz TSRMLS_DC)
 {
+	if(redis_sock && redis_sock->status == REDIS_SOCK_STATUS_DISCONNECTED) {
+		zend_throw_exception(redis_exception_ce, "Connection closed", 0 TSRMLS_CC);
+		return -1;
+	}
     redis_check_eof(redis_sock TSRMLS_CC);
     return php_stream_write(redis_sock->stream, cmd, sz);
 }

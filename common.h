@@ -1,6 +1,13 @@
 #include "php.h"
 #include "php_ini.h"
 
+#ifndef REDIS_COMMON_H
+#define REDIS_COMMON_H
+
+static zend_class_entry *redis_ce;
+static zend_class_entry *redis_exception_ce;
+static zend_class_entry *spl_ce_RuntimeException = NULL;
+
 #define redis_sock_name "Redis Socket Buffer"
 #define REDIS_SOCK_STATUS_FAILED 0
 #define REDIS_SOCK_STATUS_DISCONNECTED 1
@@ -130,7 +137,7 @@ typedef struct {
     php_stream     *stream;
     char           *host;
     unsigned short port;
-    long           timeout;
+    double         timeout;
     int            failed;
     int            status;
 
@@ -145,3 +152,5 @@ typedef struct {
 
 void
 free_reply_callbacks(zval *z_this, RedisSock *redis_sock);
+
+#endif
