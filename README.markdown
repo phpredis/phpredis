@@ -558,9 +558,9 @@ $redis->lGetRange('key1', 0, -1); /* array('A', 'B') */
 ##### *Description*
 Removes the first `count` occurences of the value element from the list. If count is zero, all the matching elements are removed. If count is negative, elements are removed from tail to head.
 ##### *Parameters*
-*key*
-*count*
-*value*
+*key*  
+*value*  
+*count*  
 
 ##### *Return value*
 *LONG* the number of elements to remove  
