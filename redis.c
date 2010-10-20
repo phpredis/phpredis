@@ -3561,6 +3561,7 @@ PHPAPI void array_zip_values_and_scores(zval *z_tab, int use_atof TSRMLS_DC) {
     zval_dtor(z_tab);
     *z_tab = *z_ret;
     zval_copy_ctor(z_tab);
+    zval_dtor(z_ret);
 
     efree(z_ret);
 }

@@ -571,6 +571,7 @@ PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PA
     } else {
 	    *return_value = *z_multi_result;
 	    zval_copy_ctor(return_value);
+	    zval_dtor(z_multi_result);
 	    efree(z_multi_result);
     }
 
