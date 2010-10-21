@@ -254,12 +254,12 @@ $redis->exists('key'); /*  TRUE */
 $redis->exists('NonExistingKey'); /* FALSE */
 </pre>
 
-## incr
+## incr, incrby
 ##### Description
 Increment the number stored at key by one. If the second argument is filled, it will be used as the integer value of the increment.
 ##### Parameters
-*key*
-*value*: value that will be added to key
+*key*  
+*value*: value that will be added to key (only for incrby)
 ##### Return value
 *INT* the new value
 ##### Examples
@@ -270,13 +270,15 @@ $redis->incr('key1'); /* key1 didn't exists, set to 0 before the increment */
 $redis->incr('key1'); /* 2 */
 $redis->incr('key1'); /* 3 */
 $redis->incr('key1'); /* 4 */
+$redis->incrBy('key1', 10); /* 14 */
 </pre>
 
-## decr
+## decr, decrby
 ##### Description
 Decrement the number stored at key by one. If the second argument is filled, it will be used as the integer value of the decrement.
 ##### Parameters
-*key*  *value*: value that will be substracted to key
+*key*  
+*value*: value that will be substracted to key (only for decrby)
 ##### Return value
 *INT* the new value
 ##### Examples
@@ -286,6 +288,7 @@ $redis->decr('key1'); /* key1 didn't exists, set to 0 before the increment */
 
 $redis->decr('key1'); /* -2 */
 $redis->decr('key1'); /* -3 */
+$redis->decrBy('key1', 10); /* -13 */
 </pre>
 
 ## getMultiple
