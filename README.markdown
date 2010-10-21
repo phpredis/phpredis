@@ -1189,6 +1189,23 @@ None.
 $redis->bgrewriteaof();
 </pre>
 
+## slaveof
+##### *Description*
+Changes the slave status
+
+##### *Parameters*
+Either host (string) and port (int), or no parameter to stop being a slave.
+
+##### *Return value*
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
+
+##### *Example*
+<pre>
+$redis->slaveof('10.0.1.7', 6379);
+/* ... */
+$redis->slaveof();
+</pre>
+
 ## save
 ##### *Description*
 Performs a synchronous save.

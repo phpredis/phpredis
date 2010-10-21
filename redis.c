@@ -110,6 +110,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, select, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, move, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, bgrewriteaof, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, slaveof, NULL, ZEND_ACC_PUBLIC)
 
      /* 1.1 */
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
@@ -4368,6 +4369,38 @@ PHP_METHOD(Redis, bgrewriteaof)
     int cmd_len = redis_cmd_format_static(&cmd, "BGREWRITEAOF", "");
     generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, cmd, cmd_len);
 
+}
+/* }}} */
+
+/* {{{ proto string Redis::slaveof([host, port])
+ */
+PHP_METHOD(Redis, slaveof)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *cmd = "", *host = NULL;
+    int cmd_len, host_len;
+    long port = 6379;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|sl",
+									 &object, redis_ce, &host, &host_len, &port) == FAILURE) {
+		RETURN_FALSE;
+	}
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    if(host) {
+        cmd_len = redis_cmd_format_static(&cmd, "SLAVEOF", "sd", host, host_len, (int)port);
+    } else {
+        cmd_len = redis_cmd_format_static(&cmd, "SLAVEOF", "ss", "NO", 2, "ONE", 3);
+    }
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+	  redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 /* }}} */
 

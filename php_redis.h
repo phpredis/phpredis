@@ -108,6 +108,7 @@ PHP_METHOD(Redis, zInter);
 PHP_METHOD(Redis, zUnion);
 PHP_METHOD(Redis, expireAt);
 PHP_METHOD(Redis, bgrewriteaof);
+PHP_METHOD(Redis, slaveof);
 
 PHP_METHOD(Redis, mset);
 PHP_METHOD(Redis, rpoplpush);
