@@ -4390,7 +4390,7 @@ PHP_METHOD(Redis, slaveof)
         RETURN_FALSE;
     }
 
-    if(host) {
+    if(host && host_len) {
         cmd_len = redis_cmd_format_static(&cmd, "SLAVEOF", "sd", host, host_len, (int)port);
     } else {
         cmd_len = redis_cmd_format_static(&cmd, "SLAVEOF", "ss", "NO", 2, "ONE", 3);
