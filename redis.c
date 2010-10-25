@@ -56,7 +56,9 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, exists, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, delete, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, incr, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, incrBy, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, decr, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, decrBy, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, type, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, append, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, substr, NULL, ZEND_ACC_PUBLIC)
@@ -685,14 +687,13 @@ PHP_METHOD(Redis, ping)
 }
 /* }}} */
 
-PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword) {
+PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int count) {
 
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *cmd;
     int key_len, cmd_len;
     long val = 1;
-    int keyword_len = strlen(keyword);
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
                                      &object, redis_ce,
@@ -703,13 +704,10 @@ PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword) 
     if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
         RETURN_FALSE;
     }
-    if (val <= 1) {
+    if (val == 1) {
         cmd_len = redis_cmd_format_static(&cmd, keyword, "s", key, key_len);
     } else {
-        char *keyword_by = emalloc(strlen(keyword) + 3);
-        sprintf(keyword_by, "%sBY", keyword);
-        cmd_len = redis_cmd_format_static(&cmd, keyword_by, "sd", key, key_len, (int)val);
-        efree(keyword_by);
+        cmd_len = redis_cmd_format_static(&cmd, keyword, "sd", key, key_len, (int)val);
     }
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -721,9 +719,43 @@ PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword) 
 
 /* {{{ proto boolean Redis::incr(string key [,int value])
  */
-PHP_METHOD(Redis, incr)
-{
-    redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCR");
+PHP_METHOD(Redis, incr){
+
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL;
+    int key_len;
+    long val = 1;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
+                                     &object, redis_ce,
+                                     &key, &key_len, &val) == FAILURE) {
+        RETURN_FALSE;
+    }
+    if(val == 1) {
+        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCR", 1);
+    } else {
+        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCRBY", val);
+    }
+}
+/* }}} */
+
+/* {{{ proto boolean Redis::incrBy(string key ,int value)
+ */
+PHP_METHOD(Redis, incrBy){
+
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL;
+    int key_len;
+    long val = 1;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl",
+                                     &object, redis_ce,
+                                     &key, &key_len, &val) == FAILURE) {
+        RETURN_FALSE;
+    }
+    redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCRBY", val);
 }
 /* }}} */
 
@@ -731,7 +763,41 @@ PHP_METHOD(Redis, incr)
  */
 PHP_METHOD(Redis, decr)
 {
-    redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECR");
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL;
+    int key_len;
+    long val = 1;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
+                                     &object, redis_ce,
+                                     &key, &key_len, &val) == FAILURE) {
+        RETURN_FALSE;
+    }
+    if(val == 1) {
+        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECR", 1);
+    } else {
+        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECRBY", val);
+    }
+}
+/* }}} */
+
+/* {{{ proto boolean Redis::decrBy(string key ,int value)
+ */
+PHP_METHOD(Redis, decrBy){
+
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL;
+    int key_len;
+    long val = 1;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl",
+                                     &object, redis_ce,
+                                     &key, &key_len, &val) == FAILURE) {
+        RETURN_FALSE;
+    }
+    redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECRBY", val);
 }
 /* }}} */
 

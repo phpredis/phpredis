@@ -39,7 +39,9 @@ PHP_METHOD(Redis, getMultiple);
 PHP_METHOD(Redis, exists);
 PHP_METHOD(Redis, delete);
 PHP_METHOD(Redis, incr);
+PHP_METHOD(Redis, incrBy);
 PHP_METHOD(Redis, decr);
+PHP_METHOD(Redis, decrBy);
 PHP_METHOD(Redis, type);
 PHP_METHOD(Redis, append);
 PHP_METHOD(Redis, substr);
@@ -153,7 +155,7 @@ PHP_RINIT_FUNCTION(redis);
 PHP_RSHUTDOWN_FUNCTION(redis);
 PHP_MINFO_FUNCTION(redis);
 
-PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword);
+PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int count);
 PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
 									 int min_argc, RedisSock **redis_sock, int has_timeout);
 PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_alpha);
