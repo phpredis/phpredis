@@ -1,3 +1,10 @@
+phpredis (2.0.8-1) unstable; urgency=low
+
+  * Merged with upstream but there seems to be no new version.
+  * incrBy/decrBy added
+
+ -- Simon Effenberg <se@plista.com>  Wed, 27 Oct 2010 10:36:35 +0200
+
 phpredis (2.0.8) unstable; urgency=low
 
   * Merged with upstream
