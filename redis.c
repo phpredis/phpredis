@@ -737,6 +737,7 @@ PHP_METHOD(Redis, incr){
                                      &key, &key_len, &val) == FAILURE) {
         RETURN_FALSE;
     }
+
     if(val == 1) {
         redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCR", 1);
     } else {
@@ -760,7 +761,12 @@ PHP_METHOD(Redis, incrBy){
                                      &key, &key_len, &val) == FAILURE) {
         RETURN_FALSE;
     }
-    redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCRBY", val);
+
+    if(val == 1) {
+        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCR", 1);
+    } else {
+        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCRBY", val);
+    }
 }
 /* }}} */
 
@@ -779,6 +785,7 @@ PHP_METHOD(Redis, decr)
                                      &key, &key_len, &val) == FAILURE) {
         RETURN_FALSE;
     }
+
     if(val == 1) {
         redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECR", 1);
     } else {
@@ -802,7 +809,12 @@ PHP_METHOD(Redis, decrBy){
                                      &key, &key_len, &val) == FAILURE) {
         RETURN_FALSE;
     }
-    redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECRBY", val);
+
+    if(val == 1) {
+        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECR", 1);
+    } else {
+        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECRBY", val);
+    }
 }
 /* }}} */
 
