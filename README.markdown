@@ -254,12 +254,12 @@ $redis->exists('key'); /*  TRUE */
 $redis->exists('NonExistingKey'); /* FALSE */
 </pre>
 
-## incr
+## incr, incrby
 ##### Description
 Increment the number stored at key by one. If the second argument is filled, it will be used as the integer value of the increment.
 ##### Parameters
-*key*
-*value*: value that will be added to key
+*key*  
+*value*: value that will be added to key (only for incrby)
 ##### Return value
 *INT* the new value
 ##### Examples
@@ -270,13 +270,15 @@ $redis->incr('key1'); /* key1 didn't exists, set to 0 before the increment */
 $redis->incr('key1'); /* 2 */
 $redis->incr('key1'); /* 3 */
 $redis->incr('key1'); /* 4 */
+$redis->incrBy('key1', 10); /* 14 */
 </pre>
 
-## decr
+## decr, decrby
 ##### Description
 Decrement the number stored at key by one. If the second argument is filled, it will be used as the integer value of the decrement.
 ##### Parameters
-*key*  *value*: value that will be substracted to key
+*key*  
+*value*: value that will be substracted to key (only for decrby)
 ##### Return value
 *INT* the new value
 ##### Examples
@@ -286,6 +288,7 @@ $redis->decr('key1'); /* key1 didn't exists, set to 0 before the increment */
 
 $redis->decr('key1'); /* -2 */
 $redis->decr('key1'); /* -3 */
+$redis->decrBy('key1', 10); /* -13 */
 </pre>
 
 ## getMultiple
@@ -558,9 +561,9 @@ $redis->lGetRange('key1', 0, -1); /* array('A', 'B') */
 ##### *Description*
 Removes the first `count` occurences of the value element from the list. If count is zero, all the matching elements are removed. If count is negative, elements are removed from tail to head.
 ##### *Parameters*
-*key*
-*count*
-*value*
+*key*  
+*value*  
+*count*  
 
 ##### *Return value*
 *LONG* the number of elements to remove  
@@ -1187,6 +1190,23 @@ None.
 ##### *Example*
 <pre>
 $redis->bgrewriteaof();
+</pre>
+
+## slaveof
+##### *Description*
+Changes the slave status
+
+##### *Parameters*
+Either host (string) and port (int), or no parameter to stop being a slave.
+
+##### *Return value*
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
+
+##### *Example*
+<pre>
+$redis->slaveof('10.0.1.7', 6379);
+/* ... */
+$redis->slaveof();
 </pre>
 
 ## save

@@ -31,7 +31,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     public function tearDown()
     {
-        $this->redis->close();
+	if($this->redis) {
+	    $this->redis->close();
+	}
         unset($this->redis);
     }
 
@@ -280,16 +282,19 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->redis->set('key', 0);
 
         $this->redis->incr('key');
-
-        $this->assertEquals(1, $this->redis->get('key'));
+	$this->assertEquals(1, $this->redis->get('key'));
 
         $this->redis->incr('key');
-
-        $this->assertEquals(2, $this->redis->get('key'));
+	$this->assertEquals(2, $this->redis->get('key'));
 
         $this->redis->incr('key', 3);
+	$this->assertEquals(5, $this->redis->get('key'));
 
-        $this->assertEquals(5, $this->redis->get('key'));
+	$this->redis->incrBy('key', 3);
+	$this->assertEquals(8, $this->redis->get('key'));
+
+	$this->redis->incrBy('key', -1);
+	$this->assertEquals(7, $this->redis->get('key'));
 
 	$this->redis->delete('key');
 
@@ -308,16 +313,19 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->redis->set('key', 5);
 
         $this->redis->decr('key');
-
-        $this->assertEquals(4, $this->redis->get('key'));
+	$this->assertEquals(4, $this->redis->get('key'));
 
         $this->redis->decr('key');
-
-        $this->assertEquals(3, $this->redis->get('key'));
+	$this->assertEquals(3, $this->redis->get('key'));
 
         $this->redis->decr('key', 2);
+	$this->assertEquals(1, $this->redis->get('key'));
 
-        $this->assertEquals(1, $this->redis->get('key'));
+	$this->redis->decr('key', 2);
+	$this->assertEquals(-1, $this->redis->get('key'));
+
+	$this->redis->decr('key', -10);
+	$this->assertEquals(9, $this->redis->get('key'));
     }
 
     public function testExists()
