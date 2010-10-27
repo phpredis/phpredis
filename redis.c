@@ -418,10 +418,11 @@ PHP_METHOD(Redis, set)
     RedisSock *redis_sock;
     char *key = NULL, *val = NULL, *cmd;
     int key_len, val_len, cmd_len;
+    long expire = -1;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss|l",
                                      &object, redis_ce, &key, &key_len,
-                                     &val, &val_len) == FAILURE) {
+                                     &val, &val_len, &expire) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -429,7 +430,11 @@ PHP_METHOD(Redis, set)
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format_static(&cmd, "SET", "ss", key, key_len, val, val_len);
+    if(expire > 0) {
+            cmd_len = redis_cmd_format_static(&cmd, "SETEX", "sds", key, key_len, expire, val, val_len);
+    } else {
+            cmd_len = redis_cmd_format_static(&cmd, "SET", "ss", key, key_len, val, val_len);
+    }
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {

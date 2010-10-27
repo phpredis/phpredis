@@ -93,8 +93,9 @@ $redis->get('key');
 Set the string value in argument as value of the key.
 
 ##### Parameters
-*Key*
-*Value*
+*Key*  
+*Value*  
+*Timeout* (optional). Calling `SETEX` is preferred if you want a timeout.  
 
 ##### Return value
 *Bool* `TRUE` if the command is successful.
@@ -102,7 +103,7 @@ Set the string value in argument as value of the key.
 ##### Examples
 
 <pre>
-$redis->set('key', 'value')
+$redis->set('key', 'value');
 </pre>
 
 ## setex
