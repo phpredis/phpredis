@@ -777,7 +777,9 @@ PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
         redis_sock_write(redis_sock, "QUIT", sizeof("QUIT") - 1 TSRMLS_CC);
 
         redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
-        php_stream_close(redis_sock->stream);
+        if(redis_sock->stream) { /* still valid after the write? */
+		php_stream_close(redis_sock->stream);
+	}
         redis_sock->stream = NULL;
 
         res = 1;
