@@ -1124,7 +1124,7 @@ Sets an expiration date (a timestamp) on an item.
 <pre>
 $redis->set('x', '42');
 $now = time(NULL); // current timestamp
-$redis->setTimeout('x', $now + 3);	// x will disappear in 3 seconds.
+$redis->expireAt('x', $now + 3);	// x will disappear in 3 seconds.
 sleep(5);				// wait 5 seconds
 $redis->get('x'); 		// will return `FALSE`, as 'x' has expired.
 </pre>
