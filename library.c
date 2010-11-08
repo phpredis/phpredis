@@ -706,11 +706,11 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     }
 
     tv.tv_sec  = (time_t)redis_sock->timeout;
-    tv.tv_usec = ((int)(redis_sock->timeout - tv.tv_sec)) * 1000000;
+    tv.tv_usec = (int)((redis_sock->timeout - tv.tv_sec) * 1000000);
 
     host_len = spprintf(&host, 0, "%s:%d", redis_sock->host, redis_sock->port);
 
-    if(tv.tv_sec != 0) {
+    if(tv.tv_sec != 0 || tv.tv_usec != 0) {
         tv_ptr = &tv;
     }
     redis_sock->stream = php_stream_xport_create(host, host_len, ENFORCE_SAFE_MODE,
