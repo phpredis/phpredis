@@ -163,9 +163,15 @@ integer_length(int i) {
 }
 
 int
-double_length(double d) {
+double_length(double d, int *has_F) {
         char *s;
         int ret = spprintf(&s, 0, "%F", d);
+	*has_F = 1;
+	if(ret == 2 && strncmp(s, "%F", 2) == 0) { /* we don't have the 'F' format, get back to 'f' */
+		efree(s);
+		ret = spprintf(&s, 0, "%f", d);
+		*has_F = 0;
+	}
         efree(s);
         return ret;
 }
@@ -227,7 +233,8 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
                 case 'f':
                     /* use spprintf here */
                     dbl = va_arg(ap, double);
-                    sz = double_length(dbl);
+		    int has_F;
+                    sz = double_length(dbl, &has_F);
 		    if(stage == 1) {
 		        memcpy((*ret) + total, "$", 1); 	/* dollar */
 			total++;
@@ -238,7 +245,11 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 			memcpy((*ret) + total, _NL, 2);		/* CRLF */
 			total += 2;
 
-			sprintf((*ret) + total, "%F", dbl);	/* float */
+			if(has_F) {
+				sprintf((*ret) + total, "%F", dbl);	/* float */
+			} else {
+				sprintf((*ret) + total, "%f", dbl);	/* float */
+			}
 			total += sz;
 
 			memcpy((*ret) + total, _NL, 2);		/* CRLF */
