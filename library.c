@@ -426,6 +426,10 @@ PHPAPI void redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
 	l = REDIS_SET;
     } else if (strncmp(response, "+list", 5) == 0){
 	l = REDIS_LIST;
+    } else if (strncmp(response, "+zset", 5) == 0){
+	l = REDIS_ZSET;
+    } else if (strncmp(response, "+hash", 5) == 0){
+	l = REDIS_HASH;
     } else {
 	l = REDIS_NOT_FOUND;
     }

@@ -405,22 +405,36 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	// 0 => none, (key didn't exist)
 	// 1=> string,
 	// 2 => set,
-	// 3 => list
+	// 3 => list,
+	// 4 => zset,
+	// 5 => hash
 
 	// string
 	$this->redis->set('key', 'val');
 	$this->assertEquals(Redis::REDIS_STRING, $this->redis->type('key'));
 
 	// list
-	$this->redis->lPush('keyList', "val0");
-	$this->redis->lPush('keyList', "val1");
+	$this->redis->lPush('keyList', 'val0');
+	$this->redis->lPush('keyList', 'val1');
 	$this->assertEquals(Redis::REDIS_LIST, $this->redis->type('keyList'));
 
 	// set
 	$this->redis->delete('keySet');
-	$this->redis->sAdd('keySet', "val0");
-	$this->redis->sAdd('keySet', "val1");
+	$this->redis->sAdd('keySet', 'val0');
+	$this->redis->sAdd('keySet', 'val1');
 	$this->assertEquals(Redis::REDIS_SET, $this->redis->type('keySet'));
+
+	// zset
+	$this->redis->delete('keyZSet');
+	$this->redis->zAdd('keyZSet', 0, 'val0');
+	$this->redis->zAdd('keyZSet', 1, 'val1');
+	$this->assertEquals(Redis::REDIS_ZSET, $this->redis->type('keyZSet'));
+
+	// hash
+	$this->redis->delete('keyHash');
+	$this->redis->hSet('keyHash', 'key0', 'val0');
+	$this->redis->hSet('keyHash', 'key1', 'val1');
+	$this->assertEquals(Redis::REDIS_HASH, $this->redis->type('keyHash'));
 
 	//None
 	$this->assertEquals(Redis::REDIS_NOT_FOUND, $this->redis->type('keyNotExists'));

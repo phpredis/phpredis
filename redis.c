@@ -284,6 +284,8 @@ PHP_MINIT_FUNCTION(redis)
 	add_constant_long(redis_ce, "REDIS_STRING", REDIS_STRING);
 	add_constant_long(redis_ce, "REDIS_SET", REDIS_SET);
 	add_constant_long(redis_ce, "REDIS_LIST", REDIS_LIST);
+	add_constant_long(redis_ce, "REDIS_ZSET", REDIS_ZSET);
+	add_constant_long(redis_ce, "REDIS_HASH", REDIS_HASH);
 
 	add_constant_long(redis_ce, "ATOMIC", ATOMIC);
 	add_constant_long(redis_ce, "MULTI", MULTI);

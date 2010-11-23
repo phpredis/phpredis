@@ -23,6 +23,8 @@ static zend_class_entry *spl_ce_RuntimeException = NULL;
 #define REDIS_STRING 1
 #define REDIS_SET 2
 #define REDIS_LIST 3
+#define REDIS_ZSET 4
+#define REDIS_HASH 5
 
 #define IF_MULTI() if(redis_sock->mode == MULTI)
 #define IF_MULTI_OR_ATOMIC() if(redis_sock->mode == MULTI || redis_sock->mode == ATOMIC)\
