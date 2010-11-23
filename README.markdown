@@ -40,7 +40,7 @@ export CFLAGS CXXFLAGS LDFLAGS CCFLAGS MACOSX_DEPLOYMENT_TARGET
 Error handling
 ==============
 
-phpredis throws a `RedisException` object if it can't reach the Redis server. That can happen in case of network problems, or if the Redis server is unreachable for some reason. in any other problematic case (a key not existing, an invalid command, etc), phpredis will return `FALSE`.
+phpredis throws a `RedisException` object if it can't reach the Redis server. That can happen in case of connectivity issues, if the Redis service is down, or if the redis host is overloaded. In any other problematic case that does not involve an unreachable server (such as a key not existing, an invalid command, etc), phpredis will return `FALSE`.
 
 Methods
 =========
