@@ -37,6 +37,10 @@ LDFLAGS="-arch i386 -arch x86_64 -bind_at_load"
 export CFLAGS CXXFLAGS LDFLAGS CCFLAGS MACOSX_DEPLOYMENT_TARGET
 </pre>
 
+Error handling
+==============
+
+phpredis throws a `RedisException` object if it can't reach the Redis server. That can happen in case of network problems, or if the Redis server is unreachable for some reason. in any other problematic case (a key not existing, an invalid command, etc), phpredis will return `FALSE`.
 
 Methods
 =========
