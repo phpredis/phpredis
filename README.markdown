@@ -1274,6 +1274,8 @@ Depending on the type of the data pointed by the key, this method will return th
 string: Redis::REDIS_STRING  
 set: Redis::REDIS_SET  
 list: Redis::REDIS_LIST  
+zset: Redis::REDIS_ZSET  
+hash: Redis::REDIS_HASH  
 other: Redis::REDIS_NOT_FOUND  
 
 ##### *Example*
