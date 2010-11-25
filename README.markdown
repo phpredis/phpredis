@@ -1746,7 +1746,7 @@ The forth argument defines the `AGGREGATE` option which specify how the results 
 *keyOutput*  
 *arrayZSetKeys*  
 *arrayWeights*  
-*aggregateFunction*  
+*aggregateFunction* Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zUnion.  
 
 ##### *Return value*
 *LONG* The number of values in the new sorted set.
@@ -1781,7 +1781,7 @@ The forth argument defines the `AGGREGATE` option which specify how the results 
 *keyOutput*  
 *arrayZSetKeys*  
 *arrayWeights*  
-*aggregateFunction*  
+*aggregateFunction* Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zInter.  
 
 ##### *Return value*
 *LONG* The number of values in the new sorted set.
