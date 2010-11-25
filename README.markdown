@@ -74,6 +74,20 @@ Connects to a Redis instance.
 $redis->connect('127.0.0.1', 6379);
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 
+## ping
+##### *Description*
+
+Check the current connection status
+
+##### *Parameters*
+
+(none)
+
+##### *Return Value*
+
+*STRING*: `+PONG` on success. Throws a RedisException object on connectivity error, as described above.
+
+
 ## get
 ##### *Description*
 
