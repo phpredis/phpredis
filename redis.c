@@ -852,18 +852,36 @@ PHP_METHOD(Redis, getMultiple)
                                        &pointer) == SUCCESS;
          zend_hash_move_forward_ex(arr_hash, &pointer)) {
 
+        char *key;
+        int key_len;
+        zval *z_tmp = NULL;
+
         if (Z_TYPE_PP(data) == IS_STRING) {
-            char *old_cmd = NULL;
-            if(*cmd) {
-                old_cmd = cmd;
-            }
-            cmd_len = redis_cmd_format(&cmd, "%s$%d" _NL "%s" _NL
-                            , cmd, cmd_len
-                            , Z_STRLEN_PP(data), Z_STRVAL_PP(data), Z_STRLEN_PP(data));
-            if(old_cmd) {
-                efree(old_cmd);
-            }
-            elements++;
+            key = Z_STRVAL_PP(data);
+            key_len = Z_STRLEN_PP(data);
+        } else { /* not a string, copy and convert. */
+            MAKE_STD_ZVAL(z_tmp);
+            *z_tmp = **data;
+            zval_copy_ctor(z_tmp);
+            convert_to_string(z_tmp);
+
+            key = Z_STRVAL_P(z_tmp);
+            key_len = Z_STRLEN_P(z_tmp);
+        }
+        char *old_cmd = NULL;
+        if(*cmd) {
+            old_cmd = cmd;
+        }
+        cmd_len = redis_cmd_format(&cmd, "%s$%d" _NL "%s" _NL
+                        , cmd, cmd_len
+                        , key_len, key, key_len);
+        if(old_cmd) {
+            efree(old_cmd);
+        }
+        elements++;
+        if(z_tmp) {
+            zval_dtor(z_tmp);
+            efree(z_tmp);
         }
     }
 
