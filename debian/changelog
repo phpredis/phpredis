@@ -1,3 +1,9 @@
+phpredis (2.0.11) unstable; urgency=low
+
+  * Merged with upstream
+
+ -- Simon Effenberg <se@plista.com>  Tue, 30 Nov 2010 09:20:40 +0100
+
 phpredis (2.0.10-1) unstable; urgency=low
 
   * Fixed wrong timeout option when setting timeout to lower then 1s.
