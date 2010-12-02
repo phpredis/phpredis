@@ -2887,7 +2887,7 @@ PHP_METHOD(Redis, zDelete)
 
 }
 /* }}} */
-/* {{{ proto long Redis::zDeleteRangeByScore(string key, int start, int end)
+/* {{{ proto long Redis::zDeleteRangeByScore(string key, string start, string end)
  */
 PHP_METHOD(Redis, zDeleteRangeByScore)
 {
@@ -2895,11 +2895,12 @@ PHP_METHOD(Redis, zDeleteRangeByScore)
     RedisSock *redis_sock;
     char *key = NULL, *cmd;
     int key_len, cmd_len, response_len;
-    double start, end;
+    char *start, *end;
+    int start_len, end_len;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osdd",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osss",
                                      &object, redis_ce,
-                                     &key, &key_len, &start, &end) == FAILURE) {
+                                     &key, &key_len, &start, &start_len, &end, &end_len) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -2907,7 +2908,7 @@ PHP_METHOD(Redis, zDeleteRangeByScore)
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format_static(&cmd, "ZREMRANGEBYSCORE", "sff", key, key_len, start, end);
+    cmd_len = redis_cmd_format_static(&cmd, "ZREMRANGEBYSCORE", "sss", key, key_len, start, start_len, end, end_len);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {

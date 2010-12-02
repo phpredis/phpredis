@@ -1671,8 +1671,8 @@ $redis->zCount('key', 0, 3); /* 2, corresponding to array('val0', 'val2') */
 Deletes the elements of the sorted set stored at the specified key which have scores in the range [start,end].
 ##### *Parameters*
 *key*  
-*start*: double  
-*end*: double  
+*start*: double or "+inf" or "-inf" string  
+*end*: double or "+inf" or "-inf" string  
 
 ##### *Return value*
 *LONG* The number of values deleted from the sorted set
