@@ -28,6 +28,8 @@
 #include "php_redis.h"
 #include <zend_exceptions.h>
 
+#include "ext/session/php_session.h"
+
 #include "library.h"
 
 #define R_SUB_CALLBACK_CLASS_TYPE 1
@@ -35,6 +37,7 @@
 
 static int le_redis_sock;
 
+extern ps_module ps_mod_redis;
 
 
 ZEND_DECLARE_MODULE_GLOBALS(redis)
@@ -293,6 +296,9 @@ PHP_MINIT_FUNCTION(redis)
 
 	zend_declare_class_constant_stringl(redis_ce, "AFTER", 5, "after", 5 TSRMLS_CC);
 	zend_declare_class_constant_stringl(redis_ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
+
+    /* declare session handler */
+    php_session_register_module(&ps_mod_redis);
 
     return SUCCESS;
 }

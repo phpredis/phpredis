@@ -37,6 +37,17 @@ LDFLAGS="-arch i386 -arch x86_64 -bind_at_load"
 export CFLAGS CXXFLAGS LDFLAGS CCFLAGS MACOSX_DEPLOYMENT_TARGET
 </pre>
 
+Session handler (not production ready yet, preview only)
+==============
+
+phpredis can be used to store PHP sessions. To do this, configure `session.save_handler` and `session.save_path` in your php.ini to tell phpredis where to store the sessions:
+<pre>
+session.save_handler = redis
+session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2, tcp://host3:6379?weight=2"
+</pre>
+
+`session.save_path` can have a simple `host:port` format too, but you need to provide the `tcp://` scheme if you want to use the weight parameter.
+
 Error handling
 ==============
 
