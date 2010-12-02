@@ -211,6 +211,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->set('k1', 'v1');
 	$this->redis->set('k2', 'v2');
 	$this->redis->set('k3', 'v3');
+	$this->redis->set(1, 'test');
 
 	$this->assertEquals(array('v1'), $this->redis->getMultiple(array('k1')));
 	$this->assertEquals(array('v1', 'v3', false), $this->redis->getMultiple(array('k1', 'k3', 'NoKey')));
@@ -219,6 +220,8 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$this->redis->set('k5', '$1111111111');
 	$this->assertEquals(array(0 => '$1111111111'), $this->redis->getMultiple(array('k5')));
+
+	$this->assertEquals(array(0 => 'test'), $this->redis->getMultiple(array(1))); // non-string
     }
 
     public function testMultipleBin() {
