@@ -793,7 +793,9 @@ PHPAPI int redis_sock_server_open(RedisSock *redis_sock, int force_connect TSRML
  */
 PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
 {
-    int res = 0;
+    if (redis_sock == NULL) {
+	    return 1;
+    }
 
     if (redis_sock->stream != NULL) {
         redis_sock_write(redis_sock, "QUIT", sizeof("QUIT") - 1 TSRMLS_CC);
@@ -804,10 +806,10 @@ PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
 	}
         redis_sock->stream = NULL;
 
-        res = 1;
+        return 1;
     }
 
-    return res;
+    return 0;
 }
 
 /**
