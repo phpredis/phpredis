@@ -80,6 +80,7 @@ PHPAPI void
 redis_pool_free(redis_pool *pool TSRMLS_DC) {
 
 	redis_pool_member *rpm, *next;
+    rpm = pool->head;
 	while(rpm) {
 		next = rpm->next;
 		redis_sock_disconnect(rpm->redis_sock);
@@ -322,7 +323,7 @@ PS_DESTROY_FUNC(redis)
 		return FAILURE;
 	}
 
-	/* send SET command */
+    /* send DEL command */
 	session = redis_session_key(key, strlen(key), &session_len);
 	cmd_len = redis_cmd_format_static(&cmd, "DEL", "s", session, session_len);
 	efree(session);
