@@ -72,8 +72,8 @@ Connects to a Redis instance.
 
 ##### *Parameters*
 
-*host*: string  
-*port*: int  
+*host*: string. can be a host, or the path to a unix domain socket  
+*port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
 
 ##### *Return Value*
@@ -83,7 +83,9 @@ Connects to a Redis instance.
 ##### *Example*
 
 $redis->connect('127.0.0.1', 6379);
+$redis->connect('127.0.0.1'); // port 6379 by default
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
+$redis->connect('/tmp/redis.sock'); // unix domain socket.
 
 ## ping
 ##### *Description*

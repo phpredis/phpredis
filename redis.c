@@ -357,12 +357,12 @@ PHP_METHOD(Redis, connect)
     zval *object;
     int host_len, id;
     char *host = NULL;
-    long port;
+    long port = -1;
 
     double timeout = 0.0;
     RedisSock *redis_sock  = NULL;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl|d",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|ld",
                                      &object, redis_ce, &host, &host_len, &port,
                                      &timeout) == FAILURE) {
        RETURN_FALSE;
@@ -371,6 +371,10 @@ PHP_METHOD(Redis, connect)
     if (timeout < 0L || timeout > INT_MAX) {
         zend_throw_exception(redis_exception_ce, "Invalid timeout", 0 TSRMLS_CC);
         RETURN_FALSE;
+    }
+
+    if(port == -1 && host_len && host[0] != '/') { /* not unix socket, set to default value */
+            port = 6379;
     }
 
     redis_sock = redis_sock_create(host, host_len, port, timeout);

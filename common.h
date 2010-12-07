@@ -138,7 +138,7 @@ typedef struct request_item {
 typedef struct {
     php_stream     *stream;
     char           *host;
-    unsigned short port;
+    short          port;
     double         timeout;
     int            failed;
     int            status;
