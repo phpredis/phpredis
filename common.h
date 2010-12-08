@@ -26,6 +26,14 @@ static zend_class_entry *spl_ce_RuntimeException = NULL;
 #define REDIS_ZSET 4
 #define REDIS_HASH 5
 
+/* options */
+#define REDIS_OPT_SERIALIZER		1
+
+/* serializers */
+#define REDIS_SERIALIZER_NONE		0
+#define REDIS_SERIALIZER_PHP 		1
+#define REDIS_SERIALIZER_IGBINARY 	2
+
 #define IF_MULTI() if(redis_sock->mode == MULTI)
 #define IF_MULTI_OR_ATOMIC() if(redis_sock->mode == MULTI || redis_sock->mode == ATOMIC)\
 
@@ -142,6 +150,8 @@ typedef struct {
     double         timeout;
     int            failed;
     int            status;
+
+    int            serializer;
 
     redis_mode     mode;
     fold_item      *head;

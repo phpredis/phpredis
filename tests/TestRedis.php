@@ -537,7 +537,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	public function testblockingPop() {
 
-		/* non blocking blPop, brPop */
+	// non blocking blPop, brPop
         $this->redis->delete('list');
         $this->redis->lPush('list', 'val1');
         $this->redis->lPush('list', 'val2');
@@ -550,7 +550,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 		$this->assertTrue($this->redis->brPop(array('list'), 2) === array('list', 'val1'));
 		$this->assertTrue($this->redis->brPop(array('list'), 2) === array('list', 'val2'));
 
-		/* blocking blpop, brpop */
+	// blocking blpop, brpop
         $this->redis->delete('list');
 		$this->assertTrue($this->redis->blPop(array('list'), 2) === array());
 		$this->assertTrue($this->redis->brPop(array('list'), 2) === array());
@@ -2358,6 +2358,17 @@ $r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
 	    $this->assertTrue($ret[$i++] === TRUE); // added 1 element
 	    $this->assertTrue($ret[$i++] === 'xyz');
 	    $this->assertTrue(count($ret) === $i);
+    }
+
+
+    public function testSerializerPHP() {
+
+	    $this->redis->delete('key');
+	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE); 	// default
+
+	    $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP) === TRUE); 	// set ok
+	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_PHP);	// get ok
+
     }
 
 }

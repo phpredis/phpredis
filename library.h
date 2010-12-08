@@ -27,3 +27,9 @@ PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz);
 PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC);
 //PHPAPI int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC);
 PHPAPI void redis_free_socket(RedisSock *redis_sock);
+
+PHPAPI int
+redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_CC);
+
+PHPAPI void
+redis_unserialize(RedisSock *redis_sock, char *val, int val_len, zval *return_value TSRMLS_CC);

@@ -160,6 +160,11 @@ static zend_function_entry redis_functions[] = {
 	 PHP_ME(Redis, subscribe, NULL, ZEND_ACC_PUBLIC)
 	 PHP_ME(Redis, unsubscribe, NULL, ZEND_ACC_PUBLIC)
 
+     /* options */
+     PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setOptions, NULL, ZEND_ACC_PUBLIC)
+
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, lLen, lSize, NULL, ZEND_ACC_PUBLIC)
@@ -294,6 +299,14 @@ PHP_MINIT_FUNCTION(redis)
 	add_constant_long(redis_ce, "MULTI", MULTI);
 	add_constant_long(redis_ce, "PIPELINE", PIPELINE);
 
+    /* options */
+    add_constant_long(redis_ce, "OPT_SERIALIZER", REDIS_OPT_SERIALIZER);
+
+    /* serializer */
+    add_constant_long(redis_ce, "SERIALIZER_NONE", REDIS_SERIALIZER_NONE);
+    add_constant_long(redis_ce, "SERIALIZER_PHP", REDIS_SERIALIZER_PHP);
+    add_constant_long(redis_ce, "SERIALIZER_IGBINARY", REDIS_SERIALIZER_IGBINARY);
+
 	zend_declare_class_constant_stringl(redis_ce, "AFTER", 5, "after", 5 TSRMLS_CC);
 	zend_declare_class_constant_stringl(redis_ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
 
@@ -422,7 +435,7 @@ PHP_METHOD(Redis, close)
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::set(string key, string value)
+/* {{{ proto boolean Redis::set(string key, mixed value)
  */
 PHP_METHOD(Redis, set)
 {
@@ -431,10 +444,12 @@ PHP_METHOD(Redis, set)
     char *key = NULL, *val = NULL, *cmd;
     int key_len, val_len, cmd_len;
     long expire = -1;
+    int val_free = 0;
+    zval *z_value;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss|l",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osz|l",
                                      &object, redis_ce, &key, &key_len,
-                                     &val, &val_len, &expire) == FAILURE) {
+                                     &z_value, &expire) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -442,11 +457,14 @@ PHP_METHOD(Redis, set)
         RETURN_FALSE;
     }
 
+    val_free = redis_serialize(redis_sock, z_value, &val, &val_len);
+
     if(expire > 0) {
             cmd_len = redis_cmd_format_static(&cmd, "SETEX", "sds", key, key_len, expire, val, val_len);
     } else {
             cmd_len = redis_cmd_format_static(&cmd, "SET", "ss", key, key_len, val, val_len);
     }
+    if(val_free) efree(val);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
@@ -4515,6 +4533,73 @@ PHP_METHOD(Redis, slaveof)
 	  redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
     REDIS_PROCESS_RESPONSE(redis_boolean_response);
+}
+/* }}} */
+
+/* {{{ proto string Redis::getOption($option)
+ */
+PHP_METHOD(Redis, getOption)  {
+    RedisSock *redis_sock;
+    zval *object;
+    long option;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol",
+									 &object, redis_ce, &option) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    switch(option) {
+
+            case REDIS_OPT_SERIALIZER:
+                    RETURN_LONG(redis_sock->serializer);
+
+            default:
+                    RETURN_FALSE;
+
+    }
+}
+/* }}} */
+
+/* {{{ proto string Redis::setOption(string $option, mixed $value)
+ */
+PHP_METHOD(Redis, setOption) {
+    RedisSock *redis_sock;
+    zval *object;
+    long option, value;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oll",
+									 &object, redis_ce, &option, &value) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    switch(option) {
+            case REDIS_OPT_SERIALIZER:
+                    if(value == REDIS_SERIALIZER_NONE || value == REDIS_SERIALIZER_IGBINARY || value == REDIS_SERIALIZER_PHP) {
+                            redis_sock->serializer = value;
+                            RETURN_TRUE;
+                    } else {
+                            RETURN_FALSE;
+                    }
+                    break;
+
+            default:
+                    RETURN_FALSE;
+    }
+}
+/* }}} */
+
+/* {{{ proto string Redis::setOptions(array $options)
+ */
+PHP_METHOD(Redis, setOptions) {
+
 }
 /* }}} */
 

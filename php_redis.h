@@ -139,6 +139,10 @@ PHP_METHOD(Redis, publish);
 PHP_METHOD(Redis, subscribe);
 PHP_METHOD(Redis, unsubscribe);
 
+PHP_METHOD(Redis, getOption);
+PHP_METHOD(Redis, setOption);
+PHP_METHOD(Redis, setOptions);
+
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
 #else
@@ -187,12 +191,6 @@ struct redis_queued_item {
 	int cmd_len;
 
 	struct redis_queued_item *next;
-};
-
-struct redis {
-	int fd;
-	redis_mode mode;
-	struct redis_queued_item *head;
 };
 
 extern zend_module_entry redis_module_entry;

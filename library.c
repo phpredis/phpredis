@@ -3,6 +3,8 @@
 #include <sys/types.h>
 #include <netinet/tcp.h>  /* TCP_NODELAY */
 #include <sys/socket.h>
+#include <ext/standard/php_smart_str_public.h>
+#include <ext/standard/php_var.h>
 
 PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 {
@@ -672,10 +674,17 @@ PHPAPI void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis
         RETURN_FALSE;
     }
     IF_MULTI_OR_PIPELINE() {
-        add_next_index_stringl(z_tab, response, response_len, 0);
+	zval *z = NULL;
+	if(redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
+		add_next_index_zval(z_tab, z);
+	} else {
+        	add_next_index_stringl(z_tab, response, response_len, 0);
+	}
     }
 
-    RETURN_STRINGL(response, response_len, 0);
+    if(redis_unserialize(redis_sock, response, response_len, &return_value TSRMLS_CC) == 0) {
+	    RETURN_STRINGL(response, response_len, 0);
+    }
 }
 
 
@@ -698,6 +707,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     redis_sock->port    = port;
     redis_sock->timeout = timeout;
 
+    redis_sock->serializer = REDIS_SERIALIZER_NONE;
     redis_sock->mode = ATOMIC;
     redis_sock->head = NULL;
     redis_sock->current = NULL;
@@ -938,5 +948,65 @@ PHPAPI void redis_free_socket(RedisSock *redis_sock)
 {
     efree(redis_sock->host);
     efree(redis_sock);
+}
+
+PHPAPI int
+redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_CC) {
+	HashTable ht;
+	smart_str sstr = {0};
+
+	switch(redis_sock->serializer) {
+		case REDIS_SERIALIZER_NONE:
+			if(Z_TYPE_P(z) == IS_STRING) {
+				*val = Z_STRVAL_P(z);
+				*val_len = Z_STRLEN_P(z);
+				return 0;
+			}
+			/* copy */
+			zval *z_copy;
+			MAKE_STD_ZVAL(z_copy);
+			*z_copy = *z;
+			zval_copy_ctor(z_copy);
+
+			/* return string */
+			convert_to_string(z_copy);
+			*val = Z_STRVAL_P(z_copy);
+			*val_len = Z_STRLEN_P(z_copy);
+			efree(z_copy);
+			return 1;
+
+		case REDIS_SERIALIZER_PHP:
+
+			zend_hash_init(&ht, 10, NULL, NULL, 0);
+			php_var_serialize(&sstr, &z, &ht TSRMLS_CC);
+			*val = sstr.c;
+			*val_len = (int)sstr.len;
+			zend_hash_destroy(&ht);
+
+			return 1;
+	}
+}
+
+PHPAPI int
+redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_CC) {
+
+	php_unserialize_data_t var_hash;
+
+	switch(redis_sock->serializer) {
+		case REDIS_SERIALIZER_NONE:
+			return 0;
+
+		case REDIS_SERIALIZER_PHP:
+			if(!*return_value) {
+				MAKE_STD_ZVAL(*return_value);
+			}
+			var_hash.first = 0;
+			var_hash.first_dtor = 0;
+			php_var_unserialize(return_value, (const unsigned char**)&val,
+					(const unsigned char*)val + val_len, &var_hash TSRMLS_CC);
+			var_destroy(&var_hash);
+
+			return 1;
+	}
 }
 
