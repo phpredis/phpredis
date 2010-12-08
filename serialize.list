@@ -1,0 +1,66 @@
+This file lists which methods support serialization. Only indented methods have been ported.
+
+	get
+	set
+	setex
+	setnx
+	getSet
+getMultiple
+append
+substr
+strlen
+	lPush
+	lPushx
+	rPush
+	rPushx
+	lPop
+	rPop
+blPop
+brPop
+lSize
+lRemove
+listTrim
+lGet
+lGetRange
+lSet
+lInsert
+sAdd
+sRemove
+sMove
+sContains
+sInter
+sInterStore
+sUnion
+sUnionStore
+sDiff
+sDiffStore
+
+zAdd
+zDelete
+zRange
+zReverseRange
+zRangeByScore
+zCount
+zDeleteRangeByScore
+zCard
+zScore
+zRank
+zRevRank
+zIncrBy
+zInter
+zUnion
+
+mset
+rpoplpush
+
+hGet
+hSet
+hGetAll
+hExists
+hIncrBy
+hMset
+hMget
+
+publish
+subscribe
+unsubscribe
