@@ -83,7 +83,7 @@ redis_pool_free(redis_pool *pool TSRMLS_DC) {
     rpm = pool->head;
 	while(rpm) {
 		next = rpm->next;
-		redis_sock_disconnect(rpm->redis_sock);
+		redis_sock_disconnect(rpm->redis_sock TSRMLS_CC);
 		efree(rpm->redis_sock);
 		efree(rpm);
 		rpm = next;
@@ -195,7 +195,7 @@ PS_OPEN_FUNC(redis)
 			}
 
 			RedisSock *redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout);
-			redis_pool_add(pool, redis_sock, weight);
+			redis_pool_add(pool, redis_sock, weight TSRMLS_CC);
 
 			php_url_free(url);
 		}
