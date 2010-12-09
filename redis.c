@@ -28,6 +28,8 @@
 #include "php_redis.h"
 #include <zend_exceptions.h>
 
+#include "ext/session/php_session.h"
+
 #include "library.h"
 
 #define R_SUB_CALLBACK_CLASS_TYPE 1
@@ -35,6 +37,7 @@
 
 static int le_redis_sock;
 
+extern ps_module ps_mod_redis;
 
 
 ZEND_DECLARE_MODULE_GLOBALS(redis)
@@ -294,6 +297,9 @@ PHP_MINIT_FUNCTION(redis)
 	zend_declare_class_constant_stringl(redis_ce, "AFTER", 5, "after", 5 TSRMLS_CC);
 	zend_declare_class_constant_stringl(redis_ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
 
+    /* declare session handler */
+    php_session_register_module(&ps_mod_redis);
+
     return SUCCESS;
 }
 
@@ -351,12 +357,12 @@ PHP_METHOD(Redis, connect)
     zval *object;
     int host_len, id;
     char *host = NULL;
-    long port;
+    long port = -1;
 
     double timeout = 0.0;
     RedisSock *redis_sock  = NULL;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl|d",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|ld",
                                      &object, redis_ce, &host, &host_len, &port,
                                      &timeout) == FAILURE) {
        RETURN_FALSE;
@@ -365,6 +371,10 @@ PHP_METHOD(Redis, connect)
     if (timeout < 0L || timeout > INT_MAX) {
         zend_throw_exception(redis_exception_ce, "Invalid timeout", 0 TSRMLS_CC);
         RETURN_FALSE;
+    }
+
+    if(port == -1 && host_len && host[0] != '/') { /* not unix socket, set to default value */
+            port = 6379;
     }
 
     redis_sock = redis_sock_create(host, host_len, port, timeout);
@@ -2905,7 +2915,7 @@ PHP_METHOD(Redis, zDelete)
 
 }
 /* }}} */
-/* {{{ proto long Redis::zDeleteRangeByScore(string key, int start, int end)
+/* {{{ proto long Redis::zDeleteRangeByScore(string key, string start, string end)
  */
 PHP_METHOD(Redis, zDeleteRangeByScore)
 {
@@ -2913,11 +2923,12 @@ PHP_METHOD(Redis, zDeleteRangeByScore)
     RedisSock *redis_sock;
     char *key = NULL, *cmd;
     int key_len, cmd_len, response_len;
-    double start, end;
+    char *start, *end;
+    int start_len, end_len;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osdd",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osss",
                                      &object, redis_ce,
-                                     &key, &key_len, &start, &end) == FAILURE) {
+                                     &key, &key_len, &start, &start_len, &end, &end_len) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -2925,7 +2936,7 @@ PHP_METHOD(Redis, zDeleteRangeByScore)
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format_static(&cmd, "ZREMRANGEBYSCORE", "sff", key, key_len, start, end);
+    cmd_len = redis_cmd_format_static(&cmd, "ZREMRANGEBYSCORE", "sss", key, key_len, start, start_len, end, end_len);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {

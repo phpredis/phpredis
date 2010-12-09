@@ -722,17 +722,20 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     tv.tv_sec  = (time_t)redis_sock->timeout;
     tv.tv_usec = (int)((redis_sock->timeout - tv.tv_sec) * 1000000);
-
-    host_len = spprintf(&host, 0, "%s:%d", redis_sock->host, redis_sock->port);
-
     if(tv.tv_sec != 0 || tv.tv_usec != 0) {
-        tv_ptr = &tv;
+	    tv_ptr = &tv;
+    }
+
+    if(redis_sock->host[0] == '/' && redis_sock->port < 1) {
+	    host_len = spprintf(&host, 0, "unix://%s", redis_sock->host);
+    } else {
+	    host_len = spprintf(&host, 0, "%s:%d", redis_sock->host, redis_sock->port);
     }
     redis_sock->stream = php_stream_xport_create(host, host_len, ENFORCE_SAFE_MODE,
-                                                 STREAM_XPORT_CLIENT
-                                                 | STREAM_XPORT_CONNECT,
-                                                 hash_key, tv_ptr, NULL, &errstr, &err
-                                                );
+							 STREAM_XPORT_CLIENT
+							 | STREAM_XPORT_CONNECT,
+							 hash_key, tv_ptr, NULL, &errstr, &err
+							);
 
     efree(host);
 
@@ -793,7 +796,9 @@ PHPAPI int redis_sock_server_open(RedisSock *redis_sock, int force_connect TSRML
  */
 PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
 {
-    int res = 0;
+    if (redis_sock == NULL) {
+	    return 1;
+    }
 
     if (redis_sock->stream != NULL) {
         redis_sock_write(redis_sock, "QUIT", sizeof("QUIT") - 1 TSRMLS_CC);
@@ -804,10 +809,10 @@ PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
 	}
         redis_sock->stream = NULL;
 
-        res = 1;
+        return 1;
     }
 
-    return res;
+    return 0;
 }
 
 /**

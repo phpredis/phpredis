@@ -37,6 +37,17 @@ LDFLAGS="-arch i386 -arch x86_64 -bind_at_load"
 export CFLAGS CXXFLAGS LDFLAGS CCFLAGS MACOSX_DEPLOYMENT_TARGET
 </pre>
 
+Session handler (new)
+==============
+
+phpredis can be used to store PHP sessions. To do this, configure `session.save_handler` and `session.save_path` in your php.ini to tell phpredis where to store the sessions:
+<pre>
+session.save_handler = redis
+session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2, tcp://host3:6379?weight=2"
+</pre>
+
+`session.save_path` can have a simple `host:port` format too, but you need to provide the `tcp://` scheme if you want to use the weight parameter.
+
 Error handling
 ==============
 
@@ -61,8 +72,8 @@ Connects to a Redis instance.
 
 ##### *Parameters*
 
-*host*: string  
-*port*: int  
+*host*: string. can be a host, or the path to a unix domain socket  
+*port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
 
 ##### *Return Value*
@@ -72,7 +83,9 @@ Connects to a Redis instance.
 ##### *Example*
 
 $redis->connect('127.0.0.1', 6379);
+$redis->connect('127.0.0.1'); // port 6379 by default
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
+$redis->connect('/tmp/redis.sock'); // unix domain socket.
 
 ## ping
 ##### *Description*
@@ -1671,8 +1684,8 @@ $redis->zCount('key', 0, 3); /* 2, corresponding to array('val0', 'val2') */
 Deletes the elements of the sorted set stored at the specified key which have scores in the range [start,end].
 ##### *Parameters*
 *key*  
-*start*: double  
-*end*: double  
+*start*: double or "+inf" or "-inf" string  
+*end*: double or "+inf" or "-inf" string  
 
 ##### *Return value*
 *LONG* The number of values deleted from the sorted set
