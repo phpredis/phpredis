@@ -5,7 +5,7 @@ This file lists which methods support serialization. Only indented methods have 
 	setex
 	setnx
 	getSet
-getMultiple
+	getMultiple
 append
 substr
 strlen
@@ -15,8 +15,8 @@ strlen
 	rPushx
 	lPop
 	rPop
-blPop
-brPop
+	blPop
+	brPop
 	lRemove
 	lGet
 	lGetRange
