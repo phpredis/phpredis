@@ -872,7 +872,12 @@ redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *re
         int response_len;
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
         if(response != NULL) {
-            add_next_index_stringl(z_tab, response, response_len, 0);
+		zval *z = NULL;
+		if(redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
+			add_next_index_zval(z_tab, z);
+		} else {
+			add_next_index_stringl(z_tab, response, response_len, 0);
+		}
         } else {
             add_next_index_bool(z_tab, 0);
         }

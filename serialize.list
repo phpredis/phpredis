@@ -17,23 +17,16 @@ strlen
 	rPop
 blPop
 brPop
-lSize
-lRemove
-listTrim
-lGet
-lGetRange
-lSet
-lInsert
-sAdd
-sRemove
-sMove
-sContains
-sInter
-sInterStore
-sUnion
-sUnionStore
-sDiff
-sDiffStore
+	lRemove
+	lGet
+	lGetRange
+	lSet
+	lInsert
+
+	sAdd
+	sRemove
+	sMove
+	sContains
 
 zAdd
 zDelete

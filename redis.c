@@ -1213,14 +1213,16 @@ PHP_METHOD(Redis, lInsert)
 	zval *z_array, **z_curr;
 	char *pivot, *position, *key, *val, *cmd;
 	int pivot_len, position_len, key_len, val_len, cmd_len;
+    int val_free, pivot_free;
+    zval *z_value, *z_pivot;
 	
 
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ossss",
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osszz",
 					&object, redis_ce,
 					&key, &key_len, 
 					&position, &position_len,
-					&pivot, &pivot_len,
-					&val, &val_len) == FAILURE) {
+					&z_pivot,
+					&z_value) == FAILURE) {
 		RETURN_NULL();
 	}
 
@@ -1229,7 +1231,13 @@ PHP_METHOD(Redis, lInsert)
 	}
 	
 	if(strncasecmp(position, "after", 5) == 0 || strncasecmp(position, "before", 6) == 0) {
-		cmd_len = redis_cmd_format_static(&cmd, "LINSERT", "ssss", key, key_len, position, position_len, pivot, pivot_len, val, val_len);
+
+        val_free = redis_serialize(redis_sock, z_value, &val, &val_len);
+        pivot_free = redis_serialize(redis_sock, z_pivot, &pivot, &pivot_len);
+        cmd_len = redis_cmd_format_static(&cmd, "LINSERT", "ssss", key, key_len, position, position_len, pivot, pivot_len, val, val_len);
+        if(val_free) efree(val);
+        if(pivot_free) efree(pivot);
+
 		REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); 
 		IF_ATOMIC() { 
 			redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL); 
@@ -1380,10 +1388,12 @@ PHP_METHOD(Redis, lRemove)
     int cmd_len, key_len, val_len;
     char *key, *val;
     long count = 0;
+    zval *z_value;
+    int val_free;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss|l",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osz|l",
                                      &object, redis_ce,
-                                     &key, &key_len, &val, &val_len, &count) == FAILURE) {
+                                     &key, &key_len, &z_value, &count) == FAILURE) {
         RETURN_NULL();
     }
 
@@ -1391,8 +1401,11 @@ PHP_METHOD(Redis, lRemove)
         RETURN_FALSE;
     }
 
+
     /* LREM key count value */
+    val_free = redis_serialize(redis_sock, z_value, &val, &val_len);
     cmd_len = redis_cmd_format_static(&cmd, "LREM", "sds", key, key_len, count, val, val_len);
+    if(val_free) efree(val);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
@@ -1496,7 +1509,7 @@ PHP_METHOD(Redis, lGetRange)
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::sAdd(string key , string value)
+/* {{{ proto boolean Redis::sAdd(string key , mixed value)
  */
 PHP_METHOD(Redis, sAdd)
 {
@@ -1504,10 +1517,12 @@ PHP_METHOD(Redis, sAdd)
     RedisSock *redis_sock;
     char *key = NULL, *val = NULL, *cmd;
     int key_len, val_len, cmd_len;
+    int val_free;
+    zval *z_value;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osz",
                                      &object, redis_ce, &key, &key_len,
-                                     &val, &val_len) == FAILURE) {
+                                     &z_value) == FAILURE) {
         RETURN_NULL();
     }
 
@@ -1515,7 +1530,9 @@ PHP_METHOD(Redis, sAdd)
         RETURN_FALSE;
     }
 
+    val_free = redis_serialize(redis_sock, z_value, &val, &val_len);
     cmd_len = redis_cmd_format_static(&cmd, "SADD", "ss", key, key_len, val, val_len);
+    if(val_free) efree(val);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
@@ -1562,10 +1579,12 @@ PHP_METHOD(Redis, sRemove)
     RedisSock *redis_sock;
     char *key = NULL, *val = NULL, *cmd;
     int key_len, val_len, cmd_len;
+    int val_free;
+    zval *z_value;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osz",
                                      &object, redis_ce,
-                                     &key, &key_len, &val, &val_len) == FAILURE) {
+                                     &key, &key_len, &z_value) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -1573,7 +1592,9 @@ PHP_METHOD(Redis, sRemove)
         RETURN_FALSE;
     }
 
+    val_free = redis_serialize(redis_sock, z_value, &val, &val_len);
     cmd_len = redis_cmd_format_static(&cmd, "SREM", "ss", key, key_len, val, val_len);
+    if(val_free) efree(val);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
@@ -1582,7 +1603,7 @@ PHP_METHOD(Redis, sRemove)
 	REDIS_PROCESS_RESPONSE(redis_1_response);
 }
 /* }}} */
-/* {{{ proto boolean Redis::sMove(string set_src, string set_dst, string value)
+/* {{{ proto boolean Redis::sMove(string set_src, string set_dst, mixed value)
  */
 PHP_METHOD(Redis, sMove)
 {
@@ -1590,12 +1611,14 @@ PHP_METHOD(Redis, sMove)
     RedisSock *redis_sock;
     char *src = NULL, *dst = NULL, *val = NULL, *cmd;
     int src_len, dst_len, val_len, cmd_len;
+    int val_free;
+    zval *z_value;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osss",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ossz",
                                      &object, redis_ce,
                                      &src, &src_len,
                                      &dst, &dst_len,
-                                     &val, &val_len) == FAILURE) {
+                                     &z_value) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -1603,7 +1626,9 @@ PHP_METHOD(Redis, sMove)
         RETURN_FALSE;
     }
 
+    val_free = redis_serialize(redis_sock, z_value, &val, &val_len);
     cmd_len = redis_cmd_format_static(&cmd, "SMOVE", "sss", src, src_len, dst, dst_len, val, val_len);
+    if(val_free) efree(val);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
@@ -1639,10 +1664,12 @@ PHP_METHOD(Redis, sContains)
     RedisSock *redis_sock;
     char *key = NULL, *val = NULL, *cmd;
     int key_len, val_len, cmd_len;
+    int val_free;
+    zval *z_value;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osz",
                                      &object, redis_ce,
-                                     &key, &key_len, &val, &val_len) == FAILURE) {
+                                     &key, &key_len, &z_value) == FAILURE) {
         return;
     }
 
@@ -1650,7 +1677,9 @@ PHP_METHOD(Redis, sContains)
         RETURN_FALSE;
     }
 
+    val_free = redis_serialize(redis_sock, z_value, &val, &val_len);
     cmd_len = redis_cmd_format_static(&cmd, "SISMEMBER", "ss", key, key_len, val, val_len);
+    if(val_free) efree(val);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
@@ -2421,9 +2450,11 @@ PHP_METHOD(Redis, lSet) {
     int cmd_len, key_len, val_len;
     long index;
     char *key, *val;
+    int val_free;
+    zval *z_value;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osls",
-                                     &object, redis_ce, &key, &key_len, &index, &val, &val_len) == FAILURE) {
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oslz",
+                                     &object, redis_ce, &key, &key_len, &index, &z_value) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -2431,7 +2462,9 @@ PHP_METHOD(Redis, lSet) {
         RETURN_FALSE;
     }
 
+    val_free = redis_serialize(redis_sock, z_value, &val, &val_len);
     cmd_len = redis_cmd_format_static(&cmd, "LSET", "sds", key, key_len, index, val, val_len);
+    if(val_free) efree(val);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {

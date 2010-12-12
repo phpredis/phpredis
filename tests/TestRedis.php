@@ -2369,6 +2369,67 @@ $r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
 	    $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP) === TRUE); 	// set ok
 	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_PHP);	// get ok
 
+	    // lPush, rPush
+	    $a = array('hello world', 42, TRUE, array('<tag>' => 1729));
+	    $this->redis->delete('key');
+	    $this->redis->lPush('key', $a[0]);
+	    $this->redis->rPush('key', $a[1]);
+	    $this->redis->rPush('key', $a[2]);
+	    $this->redis->rPush('key', $a[3]);
+
+	    // lGetRange
+	    $this->assertTrue($a === $this->redis->lGetRange('key', 0, -1));
+
+	    // lGet
+	    $this->assertTrue($a[0] === $this->redis->lGet('key', 0));
+	    $this->assertTrue($a[1] === $this->redis->lGet('key', 1));
+	    $this->assertTrue($a[2] === $this->redis->lGet('key', 2));
+	    $this->assertTrue($a[3] === $this->redis->lGet('key', 3));
+
+	    // lRemove
+	    $this->assertTrue($this->redis->lRemove('key', $a[3]) === 1);
+	    $this->assertTrue(array_slice($a, 0, 3) === $this->redis->lGetRange('key', 0, -1));
+
+	    // lSet
+	    $a[0] = array('k' => 'v'); // update
+	    $this->assertTrue(TRUE === $this->redis->lSet('key', 0, $a[0]));
+	    $this->assertTrue($a[0] === $this->redis->lGet('key', 0));
+
+	    // lInsert
+	    $this->assertTrue($this->redis->lInsert('key', Redis::BEFORE, $a[0], array(1,2,3)) === 4);
+	    $this->assertTrue($this->redis->lInsert('key', Redis::AFTER, $a[0], array(4,5,6)) === 5);
+
+	    $a = array(array(1,2,3), $a[0], array(4,5,6), $a[1], $a[2]);
+	    $this->assertTrue($a === $this->redis->lGetRange('key', 0, -1));
+
+	    // sAdd
+	    $this->redis->delete('key');
+	    $s = array(1,'a', array(1,2,3), array('k' => 'v'));
+
+	    $this->assertTrue(TRUE === $this->redis->sAdd('key', $s[0]));
+	    $this->assertTrue(TRUE === $this->redis->sAdd('key', $s[1]));
+	    $this->assertTrue(TRUE === $this->redis->sAdd('key', $s[2]));
+	    $this->assertTrue(TRUE === $this->redis->sAdd('key', $s[3]));
+
+	    // sRemove
+	    $this->assertTrue(TRUE === $this->redis->sRemove('key', $s[3]));
+	    $this->assertTrue(FALSE === $this->redis->sRemove('key', $s[3]));
+
+	    // sContains
+	    $this->assertTrue(TRUE === $this->redis->sContains('key', $s[0]));
+	    $this->assertTrue(TRUE === $this->redis->sContains('key', $s[1]));
+	    $this->assertTrue(TRUE === $this->redis->sContains('key', $s[2]));
+	    $this->assertTrue(FALSE === $this->redis->sContains('key', $s[3]));
+	    unset($s[3]);
+
+	    // sMove
+	    $this->redis->delete('tmp');
+	    $this->redis->sMove('key', 'tmp', $s[0]);
+	    $this->assertTrue(FALSE === $this->redis->sContains('key', $s[0]));
+	    $this->assertTrue(TRUE === $this->redis->sContains('tmp', $s[0]));
+	    unset($s[0]);
+
+
     }
 
 }
