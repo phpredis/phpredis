@@ -28,22 +28,14 @@ brPop
 	sMove
 	sContains
 
-zAdd
-zDelete
-zRange
-zReverseRange
-zRangeByScore
-zCount
-zDeleteRangeByScore
-zCard
-zScore
-zRank
-zRevRank
-zIncrBy
-zInter
-zUnion
+	zAdd
+	zDelete
+	zScore
+	zRank
+	zRevRank
+	zIncrBy
 
-mset
+	mset
 rpoplpush
 
 hGet

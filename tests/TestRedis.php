@@ -2430,6 +2430,58 @@ $r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
 	    unset($s[0]);
 
 
+	    // sorted sets
+	    $z = array('z0', array('k' => 'v'), FALSE, NULL);
+	    $this->redis->delete('key');
+
+	    // zAdd
+	    $this->assertTrue(1 === $this->redis->zAdd('key', 0, $z[0]));
+	    $this->assertTrue(1 === $this->redis->zAdd('key', 1, $z[1]));
+	    $this->assertTrue(1 === $this->redis->zAdd('key', 2, $z[2]));
+	    $this->assertTrue(1 === $this->redis->zAdd('key', 3, $z[3]));
+
+	    // zDelete
+	    $this->assertTrue(1 === $this->redis->zDelete('key', $z[3]));
+	    $this->assertTrue(0 === $this->redis->zDelete('key', $z[3]));
+	    unset($z[3]);
+
+	    // zRange
+	    $this->assertTrue($z === $this->redis->zRange('key', 0, -1));
+
+	    // zScore
+	    $this->assertTrue(0.0 === $this->redis->zScore('key', $z[0]));
+	    $this->assertTrue(1.0 === $this->redis->zScore('key', $z[1]));
+	    $this->assertTrue(2.0 === $this->redis->zScore('key', $z[2]));
+
+	    // zRank
+	    $this->assertTrue(0 === $this->redis->zRank('key', $z[0]));
+	    $this->assertTrue(1 === $this->redis->zRank('key', $z[1]));
+	    $this->assertTrue(2 === $this->redis->zRank('key', $z[2]));
+
+	    // zRevRank
+	    $this->assertTrue(2 === $this->redis->zRevRank('key', $z[0]));
+	    $this->assertTrue(1 === $this->redis->zRevRank('key', $z[1]));
+	    $this->assertTrue(0 === $this->redis->zRevRank('key', $z[2]));
+
+	    // zIncrBy
+	    $this->assertTrue(3.0 === $this->redis->zIncrBy('key', 1.0, $z[2]));
+	    $this->assertTrue(3.0 === $this->redis->zScore('key', $z[2]));
+
+	    $this->assertTrue(5.0 === $this->redis->zIncrBy('key', 2.0, $z[2]));
+	    $this->assertTrue(5.0 === $this->redis->zScore('key', $z[2]));
+
+	    $this->assertTrue(2.0 === $this->redis->zIncrBy('key', -3.0, $z[2]));
+	    $this->assertTrue(2.0 === $this->redis->zScore('key', $z[2]));
+
+	    // mset
+	    $a = array('k0' => 1, 'k1' => 42, 'k2' => NULL, 'k3' => FALSE, 'k4' => array('a' => 'b'));
+	    $this->assertTrue(TRUE === $this->redis->mset($a));
+	    foreach($a as $k => $v) {
+		    $this->assertTrue($this->redis->get($k) === $v);
+	    }
+
+
+
     }
 
 }
