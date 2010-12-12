@@ -4011,11 +4011,11 @@ PHP_METHOD(Redis, discard)
         RETURN_FALSE;
     }
 
-	redis_sock->mode = ATOMIC;
-
     if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
         RETURN_FALSE;
     }
+
+	redis_sock->mode = ATOMIC;
 
     cmd_len = redis_cmd_format_static(&cmd, "DISCARD", "");
 

@@ -9,13 +9,14 @@
 PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 {
 
-    int eof = php_stream_eof(redis_sock->stream);
+    int eof = redis_sock->stream == NULL ? 1 : php_stream_eof(redis_sock->stream);
     int count = 0;
     while(eof) {
 	if(count++ == 10) { /* too many failures */
 	    if(redis_sock->stream) { /* close stream if still here */
                 php_stream_close(redis_sock->stream);
                 redis_sock->stream = NULL;
+                redis_sock->status = REDIS_SOCK_STATUS_FAILED;
 	    }
             zend_throw_exception(redis_exception_ce, "Connection lost", 0 TSRMLS_CC);
 	    return -1;
