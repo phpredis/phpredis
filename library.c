@@ -6,6 +6,8 @@
 #include <ext/standard/php_smart_str_public.h>
 #include <ext/standard/php_var.h>
 
+#include "igbinary/igbinary.h"
+
 PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 {
 
@@ -966,6 +968,8 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 	HashTable ht;
 	smart_str sstr = {0};
 	zval *z_copy;
+	size_t sz;
+	uint8_t *val8;
 
 	switch(redis_sock->serializer) {
 		case REDIS_SERIALIZER_NONE:
@@ -1009,6 +1013,14 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 			zend_hash_destroy(&ht);
 
 			return 1;
+
+		case REDIS_SERIALIZER_IGBINARY:
+			if(igbinary_serialize(&val8, (size_t *)&sz, z TSRMLS_CC) == 0) { /* ok */
+				*val = (char*)val8;
+				*val_len = (int)sz;
+				return 1;
+			}
+			return 0;
 	}
 }
 
@@ -1037,6 +1049,16 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 			var_destroy(&var_hash);
 
 			return ret;
+
+		case REDIS_SERIALIZER_IGBINARY:
+			if(!*return_value) {
+				MAKE_STD_ZVAL(*return_value);
+			}
+			if(igbinary_unserialize((const uint8_t *)val, (size_t)val_len, return_value TSRMLS_CC) == 0) {
+				return 1;
+			}
+			return 0;
+			break;
 	}
 }
 

@@ -46,5 +46,5 @@ if test "$PHP_REDIS" != "no"; then
   dnl
   dnl PHP_SUBST(REDIS_SHARED_LIBADD)
 
-  PHP_NEW_EXTENSION(redis, redis.c library.c redis_session.c, $ext_shared)
+  PHP_NEW_EXTENSION(redis, redis.c library.c redis_session.c igbinary/igbinary.c igbinary/hash_si.c igbinary/hash_function.c, $ext_shared)
 fi

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package packagerversion="1.4.11" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0
+http://pear.php.net/dtd/tasks-1.0.xsd
+http://pear.php.net/dtd/package-2.0
+http://pear.php.net/dtd/package-2.0.xsd">
+<name>igbinary</name>
+  <channel>pecl.php.net</channel> <!-- doesn't allow empty channel -->
+  <summary>igbinary extension</summary>
+  <description>
+	Igbinary is a drop in replacement for the standard php serializer. Instead of
+	time and space consuming textual representation, igbinary stores php data
+	structures in a compact binary form. Savings are significant when using
+	memcached or similar memory based storages for serialized data.
+  </description>
+  <lead>
+    <name>Oleg Grenrus</name>
+    <user></user>
+    <email>oleg.grenrus@dynamoid.com</email>
+    <active>yes</active>
+  </lead>
+  <date>2009-09-02</date>
+  <version>
+    <release>1.0.2</release>
+    <api>1.0.2</api>
+  </version>
+  <stability>
+    <release>stable</release>
+    <api>stable</api>
+  </stability>
+  <license uri="http://opensource.dynamoid.com/#license">PHP like license</license>
+  <notes>
+   - Use Z_ADDREF_PP or Z_ADDREF et al. when increasing refcount.
+  </notes>
+  <contents>
+    <dir name="/">
+      <file name="config.m4" role="src" />
+      <file name="hash.h" role="src" />
+      <file name="hash_function.c" role="src" />
+      <file name="hash_function.h" role="src" />
+      <file name="hash_si.c" role="src" />
+      <file name="igbinary.c" role="src" />
+      <file name="igbinary.h" role="src" />
+      <file name="php_igbinary.h" role="src" />
+
+      <file name="igbinary.php" role="doc" />
+      <file name="igbinary.php.ini" role="doc" />
+      <file name="tags.sh" role="doc" />
+      <file name="igbinary.spec" role="doc" />
+	
+      <file name="ChangeLog" role="doc" />
+      <file name="COPYING" role="doc" />
+      <file name="CREDITS" role="doc" />
+      <file name="EXPERIMENTAL" role="doc" />
+      <file name="README" role="doc" />
+      <file name="NEWS" role="doc" />
+     </dir>
+  </contents>
+  <dependencies>
+    <required>
+      <php>
+        <min>5.2.0</min>
+      </php>
+      <pearinstaller>
+        <min>1.4.0b1</min>
+      </pearinstaller>
+    </required>
+  </dependencies>
+  <providesextension>igbinary</providesextension>
+  <extsrcrelease>
+  </extsrcrelease>
+
+</package>

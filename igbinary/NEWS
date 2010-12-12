@@ -1,0 +1,8 @@
+1.0.1 2008-07-05
+========
+* unserialize_callback_func support
+* slight speedup when serializing scalars
+
+1.0.0 2008-06-25
+========
+* Public version

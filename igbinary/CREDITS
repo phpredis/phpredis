@@ -1,0 +1,8 @@
+igbinary is produced for IRC-Galleria (http://irc-galleria.net, a finnish community site)
+by Sulake Dynamoid Oy and its employees.
+
+- Igbinary
+Oleg Grenrus <oleg.grenrus@dynamoid.com>
+
+- Hash functions
+Bob Jenkins <bob_jenkins@burtleburtle.net>

@@ -1,0 +1,10 @@
+2008-06-29	Oleg Grenrus	<oleg.grenrus@dynamoid.com>
+	* config.m4: fixed CFLAGS
+	* igbinary.c: do not init object & string hashes if serializing scalars.
+	unserialize_callback_func support.
+	igbinary_serialize and igbinary_unserialize for the external use.
+	* intbinary.h: header for external use
+	* tests/022.phpt: unserialize_callback_func test
+	* tests/023.phpt: resource serializes to null test
+	* tests/002.phpt tests/003.phpt tests/004.phpt tests/005.phpt tests/006.phpt: == -> ===
+	* tests/015b.phpt: pointed out http://bugs.net/bug.php?id=45406

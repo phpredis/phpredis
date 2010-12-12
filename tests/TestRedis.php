@@ -557,36 +557,34 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue($this->redis->brPop(array('list'), 1) === array());
 
 	// TODO: fix this broken test.
-	/*
-	$this->redis->delete('list');
-	$params = array(
-		0 => array("pipe", "r"), 
-		1 => array("pipe", "w"),
-		2 => array("file", "/dev/null", "w")
-	);
-	if(function_exists('proc_open')) {
-		$env = array('PHPREDIS_key' =>'list', 'PHPREDIS_value' => 'value');
-		$process = proc_open('php', $params, $pipes, '/tmp', $env);
-
-		if (is_resource($process)) {
-			fwrite($pipes[0],  '<?php 
-sleep(2);
-$r = new Redis;
-$r->connect("'.self::HOST.'", '.self::PORT.');
-if("'.addslashes(self::AUTH).'") {
-	$r->auth("'.addslashes(self::AUTH).'");
-}
-$r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
-?>');
-
-			fclose($pipes[0]);
-			fclose($pipes[1]);
-			$re = proc_close($process);
-
-			$this->assertTrue($this->redis->blPop(array('list'), 5) === array("list", "value"));
-		}
-	}
-	 */
+//		$this->redis->delete('list');
+//		$params = array(
+//			0 => array("pipe", "r"), 
+//			1 => array("pipe", "w"),
+//			2 => array("file", "/dev/null", "w")
+//		);
+//		if(function_exists('proc_open')) {
+//			$env = array('PHPREDIS_key' =>'list', 'PHPREDIS_value' => 'value');
+//			$process = proc_open('php', $params, $pipes, '/tmp', $env);
+//	
+//			if (is_resource($process)) {
+//				fwrite($pipes[0],  '<?php 
+//	sleep(2);
+//	$r = new Redis;
+//	$r->connect("'.self::HOST.'", '.self::PORT.');
+//	if("'.addslashes(self::AUTH).'") {
+//		$r->auth("'.addslashes(self::AUTH).'");
+//	}
+//	$r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
+//	?' . '>');
+//	
+//				fclose($pipes[0]);
+//				fclose($pipes[1]);
+//				$re = proc_close($process);
+//	
+//				$this->assertTrue($this->redis->blPop(array('list'), 5) === array("list", "value"));
+//			}
+//		}
 
     }
 
@@ -2366,11 +2364,22 @@ $r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
     }
 
     public function testSerializerPHP() {
+
+	    $this->checkSerializer(Redis::SERIALIZER_PHP);
+    }
+
+    public function testSerializerIGBinary() {
+
+	    $this->checkSerializer(Redis::SERIALIZER_IGBINARY);
+    }
+
+    private function checkSerializer($mode) {
+
 	    $this->redis->delete('key');
 	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE); 	// default
 
-	    $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP) === TRUE); 	// set ok
-	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_PHP);	// get ok
+	    $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, $mode) === TRUE); 	// set ok
+	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === $mode);	// get ok
 
 	    // lPush, rPush
 	    $a = array('hello world', 42, TRUE, array('<tag>' => 1729));
