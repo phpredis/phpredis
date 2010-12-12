@@ -2360,9 +2360,7 @@ $r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
 	    $this->assertTrue(count($ret) === $i);
     }
 
-
     public function testSerializerPHP() {
-
 	    $this->redis->delete('key');
 	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE); 	// default
 
@@ -2480,8 +2478,6 @@ $r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
 		    $this->assertTrue($this->redis->get($k) === $v);
 	    }
 
-*/
-
 	    $a = array('k0' => 1, 'k1' => 42, 'k2' => NULL, 'k3' => FALSE, 'k4' => array('a' => 'b'));
 
 	    // hSet
@@ -2497,7 +2493,29 @@ $r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
 
 	    // hGetAll
 	    $this->assertTrue($a === $this->redis->hGetAll('key'));
+	    $this->assertTrue(TRUE === $this->redis->hExists('key', 'k0'));
+	    $this->assertTrue(TRUE === $this->redis->hExists('key', 'k1'));
+	    $this->assertTrue(TRUE === $this->redis->hExists('key', 'k2'));
+	    $this->assertTrue(TRUE === $this->redis->hExists('key', 'k3'));
+	    $this->assertTrue(TRUE === $this->redis->hExists('key', 'k4'));
 
+	    // hMSet
+	    $this->redis->delete('key');
+	    $this->redis->hMSet('key', $a);
+	    foreach($a as $k => $v) {
+		    $this->assertTrue($v === $this->redis->hGet('key', $k));
+	    }
+
+	    // hMget
+	    $hmget = $this->redis->hMget('key', array_keys($a));
+	    foreach($hmget as $k => $v) {
+		    $this->assertTrue($v === $a[$k]);
+	    }
+
+
+	    // revert
+	    $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE) === TRUE); 	// set ok
+	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE);		// get ok
 
     }
 

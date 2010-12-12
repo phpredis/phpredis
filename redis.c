@@ -3594,7 +3594,7 @@ generic_hash_command_2(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *cmd, *member;
-    int key_len, cmd_len, *member_len;
+    int key_len, cmd_len, member_len;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
                                      &object, redis_ce,
@@ -3938,25 +3938,9 @@ PHP_METHOD(Redis, hMset)
         element_count += 2;
 
         /* key is set. */
-        zval *z_copy;
-        MAKE_STD_ZVAL(z_copy);
-        switch(Z_TYPE_PP(z_value_p)) {
-
-            case IS_OBJECT:
-                ZVAL_STRINGL(z_copy, "Object", 6, 1);
-                break;
-
-            case IS_ARRAY:
-                ZVAL_STRINGL(z_copy, "Array", 5, 1);
-                break;
-
-            default:
-                *z_copy = **z_value_p;
-                zval_copy_ctor(z_copy);
-                if(Z_TYPE_PP(z_value_p) != IS_STRING) {
-                    convert_to_string(z_copy);
-                }
-        }
+        char *hval;
+        int hval_len;
+        int hval_free = redis_serialize(redis_sock, *z_value_p, &hval, &hval_len);
 
         old_cmd = cmd;
         cmd_len = redis_cmd_format(&cmd, "%s"
@@ -3964,10 +3948,9 @@ PHP_METHOD(Redis, hMset)
                         "$%d" _NL "%s" _NL
                         , cmd, cmd_len
                         , hkey_len-1, hkey, hkey_len-1
-                        , Z_STRLEN_P(z_copy), Z_STRVAL_P(z_copy), Z_STRLEN_P(z_copy));
+                        , hval_len, hval, hval_len);
         efree(old_cmd);
-        zval_dtor(z_copy);
-        efree(z_copy);
+        if(hval_free) efree(hval);
     }
 
     old_cmd = cmd;

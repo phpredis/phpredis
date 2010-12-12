@@ -912,7 +912,12 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, R
     for(i = 0; i < numElems; ++i) {
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
         if(response != NULL) {
-            add_assoc_stringl_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), response, response_len, 1);
+	    zval *z = NULL;
+	    if(redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
+	    	add_assoc_zval_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), z);
+	    } else {
+		add_assoc_stringl_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), response, response_len, 1);
+	    }
         } else {
             add_assoc_bool_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), 0);
         }
@@ -960,19 +965,33 @@ PHPAPI int
 redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_CC) {
 	HashTable ht;
 	smart_str sstr = {0};
+	zval *z_copy;
 
 	switch(redis_sock->serializer) {
 		case REDIS_SERIALIZER_NONE:
-			if(Z_TYPE_P(z) == IS_STRING) {
-				*val = Z_STRVAL_P(z);
-				*val_len = Z_STRLEN_P(z);
-				return 0;
+			switch(Z_TYPE_P(z)) {
+
+				case IS_STRING:
+					*val = Z_STRVAL_P(z);
+					*val_len = Z_STRLEN_P(z);
+					return 0;
+
+				case IS_OBJECT:
+					MAKE_STD_ZVAL(z_copy);
+					ZVAL_STRINGL(z_copy, "Object", 6, 1);
+					break;
+
+				case IS_ARRAY:
+					MAKE_STD_ZVAL(z_copy);
+					ZVAL_STRINGL(z_copy, "Array", 5, 1);
+					break;
+
+				default: /* copy */
+					MAKE_STD_ZVAL(z_copy);
+					*z_copy = *z;
+					zval_copy_ctor(z_copy);
+					break;
 			}
-			/* copy */
-			zval *z_copy;
-			MAKE_STD_ZVAL(z_copy);
-			*z_copy = *z;
-			zval_copy_ctor(z_copy);
 
 			/* return string */
 			convert_to_string(z_copy);

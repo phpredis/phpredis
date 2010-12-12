@@ -40,10 +40,9 @@ brPop
 	hGet
 	hSet
 	hGetAll
-hExists
-hIncrBy
-hMset
-hMget
+	hExists
+	hMset
+	hMget
 
 publish
 subscribe
