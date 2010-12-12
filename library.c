@@ -603,7 +603,7 @@ PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PA
     redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     redis_sock, z_multi_result, numElems);
 
-    array_zip_values_and_scores(z_multi_result, 0);
+    array_zip_values_and_scores(redis_sock, z_multi_result, 0);
 
     zval *object = getThis();
     IF_MULTI_OR_PIPELINE() {
@@ -997,6 +997,7 @@ PHPAPI int
 redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_CC) {
 
 	php_unserialize_data_t var_hash;
+	int ret;
 
 	switch(redis_sock->serializer) {
 		case REDIS_SERIALIZER_NONE:
@@ -1008,11 +1009,15 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 			}
 			var_hash.first = 0;
 			var_hash.first_dtor = 0;
-			php_var_unserialize(return_value, (const unsigned char**)&val,
-					(const unsigned char*)val + val_len, &var_hash TSRMLS_CC);
+			if(!php_var_unserialize(return_value, (const unsigned char**)&val,
+					(const unsigned char*)val + val_len, &var_hash TSRMLS_CC)) {
+				ret = 0;
+			} else {
+				ret = 1;
+			}
 			var_destroy(&var_hash);
 
-			return 1;
+			return ret;
 	}
 }
 

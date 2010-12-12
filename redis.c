@@ -3506,17 +3506,22 @@ PHP_METHOD(Redis, hSet)
     RedisSock *redis_sock;
     char *key = NULL, *cmd, *member, *val;
     int key_len, member_len, cmd_len, val_len;
+    int val_free;
+    zval *z_value;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osss",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ossz",
                                      &object, redis_ce,
-                                     &key, &key_len, &member, &member_len, &val, &val_len) == FAILURE) {
+                                     &key, &key_len, &member, &member_len, &z_value) == FAILURE) {
         RETURN_FALSE;
     }
 
     if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
         RETURN_FALSE;
     }
+
+    val_free = redis_serialize(redis_sock, z_value, &val, &val_len);
     cmd_len = redis_cmd_format_static(&cmd, "HSET", "sss", key, key_len, member, member_len, val, val_len);
+    if(val_free) efree(val);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
@@ -3711,7 +3716,7 @@ PHP_METHOD(Redis, hGetAll) {
 	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_zipped_strings);
 }
 
-PHPAPI void array_zip_values_and_scores(zval *z_tab, int use_atof TSRMLS_DC) {
+PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int use_atof TSRMLS_DC) {
 
     zval *z_ret;
     MAKE_STD_ZVAL(z_ret);
@@ -3751,10 +3756,14 @@ PHPAPI void array_zip_values_and_scores(zval *z_tab, int use_atof TSRMLS_DC) {
         hval = Z_STRVAL_PP(z_value_pp);
         hval_len = Z_STRLEN_PP(z_value_pp);
 
-        if(use_atof) {
+        if(use_atof) { /* zipping a score */
             add_assoc_double_ex(z_ret, hkey, 1+hkey_len, atof(hval));
-        } else {
-            add_assoc_stringl_ex(z_ret, hkey, 1+hkey_len, hval, hval_len, 1);
+        } else { /* add raw copy */
+            zval *z = NULL;
+            MAKE_STD_ZVAL(z);
+            *z = **z_value_pp;
+            zval_copy_ctor(z);
+            add_assoc_zval_ex(z_ret, hkey, 1+hkey_len, z);
         }
     }
     /* replace */

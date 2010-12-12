@@ -2480,6 +2480,23 @@ $r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
 		    $this->assertTrue($this->redis->get($k) === $v);
 	    }
 
+*/
+
+	    $a = array('k0' => 1, 'k1' => 42, 'k2' => NULL, 'k3' => FALSE, 'k4' => array('a' => 'b'));
+
+	    // hSet
+	    $this->redis->delete('key');
+	    foreach($a as $k => $v) {
+		    $this->assertTrue(1 === $this->redis->hSet('key', $k, $v));
+	    }
+
+	    // hGet
+	    foreach($a as $k => $v) {
+		    $this->assertTrue($v === $this->redis->hGet('key', $k));
+	    }
+
+	    // hGetAll
+	    $this->assertTrue($a === $this->redis->hGetAll('key'));
 
 
     }

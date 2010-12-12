@@ -36,11 +36,10 @@ brPop
 	zIncrBy
 
 	mset
-rpoplpush
 
-hGet
-hSet
-hGetAll
+	hGet
+	hSet
+	hGetAll
 hExists
 hIncrBy
 hMset
