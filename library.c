@@ -186,17 +186,13 @@ integer_length(int i) {
 }
 
 int
-double_length(double d, int *has_F) {
+double_length(double d) {
         char *s;
-        int ret = spprintf(&s, 0, "%F", d);
-	*has_F = 1;
-	if(ret == 2 && strncmp(s, "%F", 2) == 0) { /* we don't have the 'F' format, get back to 'f' */
-		efree(s);
-		ret = spprintf(&s, 0, "%f", d);
-		*has_F = 0;
-	}
-        efree(s);
-        return ret;
+        int ret;
+	s = _php_math_number_format(d, 8, '.', '\x00');
+	ret = strlen(s);
+	efree(s);
+	return ret;
 }
 
 
@@ -253,8 +249,8 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
                 case 'f':
                     /* use spprintf here */
                     dbl = va_arg(ap, double);
-		    int has_F;
-                    sz = double_length(dbl, &has_F);
+                    sz = double_length(dbl);
+		    char *dbl_str;
 		    if(stage == 1) {
 		        memcpy((*ret) + total, "$", 1); 	/* dollar */
 			total++;
@@ -265,11 +261,10 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 			memcpy((*ret) + total, _NL, 2);		/* CRLF */
 			total += 2;
 
-			if(has_F) {
-				sprintf((*ret) + total, "%F", dbl);	/* float */
-			} else {
-				sprintf((*ret) + total, "%f", dbl);	/* float */
-			}
+			/* float value */
+			dbl_str = _php_math_number_format(dbl, 8, '.', '\x00');
+			memcpy((*ret) + total, dbl_str, sz);
+			efree(dbl_str);
 			total += sz;
 
 			memcpy((*ret) + total, _NL, 2);		/* CRLF */
@@ -359,9 +354,14 @@ redis_cmd_format(char **ret, char *format, ...) {
                     case 'f':
                         /* use spprintf here */
                         dbl = va_arg(ap, double);
-                        double_len = spprintf(&double_str, 0, "%F", dbl);
+                        double_len = double_length(dbl);
+
                         if(stage == 1) {
-                            memcpy((*ret) + total, double_str, double_len);
+				/* float value */
+				char *dbl_str = _php_math_number_format(dbl, 8, '.', '\x00');
+				memcpy((*ret) + total, dbl_str, sz);
+				total += sz;
+				efree(dbl_str);
                         }
                         total += double_len;
                         efree(double_str);
