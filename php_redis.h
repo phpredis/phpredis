@@ -168,6 +168,8 @@ PHPAPI int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC);
 PHPAPI int get_flag(zval *object TSRMLS_DC);
 PHPAPI void set_flag(zval *object, int new_flag TSRMLS_DC);
 
+PHPAPI int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, int numElems);
+
 /* pipeline */
 PHPAPI request_item* get_pipeline_head(zval *object);
 PHPAPI void set_pipeline_head(zval *object, request_item *head);
