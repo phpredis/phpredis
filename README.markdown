@@ -87,6 +87,42 @@ $redis->connect('127.0.0.1'); // port 6379 by default
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
 
+
+## setOption
+##### *Description*
+Set client option.
+
+##### *Parameters*
+*parameter name*  
+*parameter value*  
+
+##### *Return value*
+*BOOL*: `TRUE` on success, `FALSE` on error.
+
+##### *Example*
+<pre>
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);	// don't serialize data
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);	// use built-in serialize/unserialize
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_IGBINARY);	// use igBinary serialize/unserialize
+</pre>
+
+
+## getOption
+##### *Description*
+Get client option.
+
+##### *Parameters*
+*parameter name*  
+
+##### *Return value*
+Parameter value.
+
+##### *Example*
+<pre>
+$redis->getOption(Redis::OPT_SERIALIZER);	// return Redis::SERIALIZER_NONE, Redis::SERIALIZER_PHP, or Redis::SERIALIZER_IGBINARY.
+</pre>
+
+
 ## ping
 ##### *Description*
 
