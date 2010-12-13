@@ -3268,17 +3268,12 @@ PHP_METHOD(Redis, zRevRank) {
 PHPAPI void generic_incrby_method(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
     zval *object;
     RedisSock *redis_sock;
-<<<<<<< HEAD
-    char *key = NULL, *cmd, *val, *response;
-    int key_len, val_len, cmd_len, response_len;
+
+    char *key = NULL, *cmd, *val;
+    int key_len, val_len, cmd_len;
     double add;
     int val_free;
     zval *z_value;
-=======
-    char *key = NULL, *cmd, *member;
-    int key_len, member_len, cmd_len;
-    double val;
->>>>>>> master
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osdz",
                                      &object, redis_ce,

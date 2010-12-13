@@ -33,4 +33,4 @@ PHPAPI int
 redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_CC);
 
 PHPAPI int
-redis_unserialize(RedisSock *redis_sock, char *val, int val_len, zval **return_value TSRMLS_CC);
+redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_CC);

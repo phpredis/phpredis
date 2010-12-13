@@ -1006,6 +1006,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 			}
 			return 0;
 	}
+	return 0;
 }
 
 PHPAPI int
@@ -1044,5 +1045,6 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 			return 0;
 			break;
 	}
+	return 0;
 }
 
