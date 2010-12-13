@@ -2,6 +2,7 @@ void add_constant_long(zend_class_entry *ce, char *name, int value);
 int integer_length(int i);
 int double_length(double d, int *has_F);
 int redis_cmd_format(char **ret, char *format, ...);
+int redis_cmd_format_static(char **ret, char *keyword, char *format, ...);
 
 PHPAPI char * redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC);
 

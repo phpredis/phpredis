@@ -4,10 +4,6 @@
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
 
-static zend_class_entry *redis_ce;
-static zend_class_entry *redis_exception_ce;
-static zend_class_entry *spl_ce_RuntimeException = NULL;
-
 #define redis_sock_name "Redis Socket Buffer"
 #define REDIS_SOCK_STATUS_FAILED 0
 #define REDIS_SOCK_STATUS_DISCONNECTED 1
@@ -69,7 +65,6 @@ static zend_class_entry *spl_ce_RuntimeException = NULL;
 	memcpy(tmp->request_str, cmd, cmd_len);\
 	tmp->request_size = cmd_len;\
 	tmp->next = NULL;\
-	zval *z_this = getThis(); \
 	struct request_item *current_request = redis_sock->pipeline_current; \
 	if(current_request) {\
 		current_request->next = tmp;\
