@@ -6,6 +6,7 @@
 #include <zend_exceptions.h>
 #include "php_redis.h"
 #include "library.h"
+#include <ext/standard/php_math.h>
 
 extern zend_class_entry *redis_ce;
 extern zend_class_entry *redis_exception_ce;
