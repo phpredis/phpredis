@@ -1908,6 +1908,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    $this->assertTrue($ret == array());
 
 	    // ttl, mget, mset, msetnx, expire, expireAt
+	    $this->redis->delete('key');
 	    $ret = $this->redis->multi($mode)
 		    ->ttl('key')
 		    ->mget(array('key1', 'key2', 'key3'))
