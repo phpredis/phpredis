@@ -690,6 +690,7 @@ PHPAPI void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis
     IF_MULTI_OR_PIPELINE() {
 	zval *z = NULL;
 	if(redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
+		efree(response);
 		add_next_index_zval(z_tab, z);
 	} else {
         	add_next_index_stringl(z_tab, response, response_len, 0);
@@ -698,6 +699,8 @@ PHPAPI void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis
 
     if(redis_unserialize(redis_sock, response, response_len, &return_value TSRMLS_CC) == 0) {
 	    RETURN_STRINGL(response, response_len, 0);
+    } else {
+	    efree(response);
     }
 }
 
@@ -891,6 +894,7 @@ redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *re
         if(response != NULL) {
 		zval *z = NULL;
 		if(redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
+			efree(response);
 			add_next_index_zval(z_tab, z);
 		} else {
 			add_next_index_stringl(z_tab, response, response_len, 0);
@@ -938,6 +942,7 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, R
         if(response != NULL) {
 	    zval *z = NULL;
 	    if(redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
+		efree(response);
 	    	add_assoc_zval_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), z);
 	    } else {
 		add_assoc_stringl_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), response, response_len, 1);
@@ -956,7 +961,7 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, R
 
     *return_value = *z_multi_result;
     //zval_copy_ctor(return_value);
-    // efree(z_multi_result);
+    efree(z_multi_result);
     return 0;
 }
 
@@ -1064,6 +1069,7 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 			var_hash.first_dtor = 0;
 			if(!php_var_unserialize(return_value, (const unsigned char**)&val,
 					(const unsigned char*)val + val_len, &var_hash TSRMLS_CC)) {
+				efree(*return_value);
 				ret = 0;
 			} else {
 				ret = 1;
@@ -1079,6 +1085,7 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 			if(igbinary_unserialize((const uint8_t *)val, (size_t)val_len, return_value TSRMLS_CC) == 0) {
 				return 1;
 			}
+			efree(*return_value);
 			return 0;
 			break;
 	}
