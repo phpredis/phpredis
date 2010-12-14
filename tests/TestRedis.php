@@ -537,7 +537,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	public function testblockingPop() {
 
-		/* non blocking blPop, brPop */
+	// non blocking blPop, brPop
         $this->redis->delete('list');
         $this->redis->lPush('list', 'val1');
         $this->redis->lPush('list', 'val2');
@@ -550,7 +550,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 		$this->assertTrue($this->redis->brPop(array('list'), 2) === array('list', 'val1'));
 		$this->assertTrue($this->redis->brPop(array('list'), 2) === array('list', 'val2'));
 
-		/* blocking blpop, brpop */
+	// blocking blpop, brpop
         $this->redis->delete('list');
 		$this->assertTrue($this->redis->blPop(array('list'), 2) === array());
 		$this->assertTrue($this->redis->brPop(array('list'), 2) === array());
@@ -1905,6 +1905,7 @@ $r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
 	    $this->assertTrue($ret == array());
 
 	    // ttl, mget, mset, msetnx, expire, expireAt
+	    $this->redis->delete('key');
 	    $ret = $this->redis->multi($mode)
 		    ->ttl('key')
 		    ->mget(array('key1', 'key2', 'key3'))

@@ -860,11 +860,11 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
 
     IF_MULTI_OR_PIPELINE() {
         add_next_index_zval(z_tab, z_multi_result);
+    } else {
+        *return_value = *z_multi_result;
+        efree(z_multi_result);
     }
-
-    *return_value = *z_multi_result;
     //zval_copy_ctor(return_value);
-    efree(z_multi_result);
     return 0;
 }
 
