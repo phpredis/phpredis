@@ -372,15 +372,15 @@ PHP_METHOD(Redis, connect)
             port = 6379;
     }
 
-    /* if there is a redis sock already we have to remove it from the list */
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC) > 0) {
-	  if (zend_hash_find(Z_OBJPROP_P(object), "socket",
-              sizeof("socket"), (void **) &socket) == FAILURE) {
-		/* maybe there is a socket but the id isn't known.. what to do? */
-	  } else {
-		zend_list_delete(Z_LVAL_PP(socket)); /* the refcount should be decreased and the detructor called */
-	  }
-    }
+	/* if there is a redis sock already we have to remove it from the list */
+	if (redis_sock_get(object, &redis_sock TSRMLS_CC) > 0) {
+		if (zend_hash_find(Z_OBJPROP_P(object), "socket",
+					sizeof("socket"), (void **) &socket) == FAILURE) {
+			/* maybe there is a socket but the id isn't known.. what to do? */
+		} else {
+			zend_list_delete(Z_LVAL_PP(socket)); /* the refcount should be decreased and the detructor called */
+		}
+	}
 
     redis_sock = redis_sock_create(host, host_len, port, timeout);
 
@@ -4490,5 +4490,5 @@ PHP_METHOD(Redis, slaveof)
 }
 /* }}} */
 
-/* vim: set tabstop=4 noexpandtab: */
+/* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
 
