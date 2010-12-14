@@ -4568,7 +4568,6 @@ PHP_METHOD(Redis, slaveof)
 }
 /* }}} */
 
-<<<<<<< HEAD
 /* {{{ proto string Redis::getOption($option)
  */
 PHP_METHOD(Redis, getOption)  {
