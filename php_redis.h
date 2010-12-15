@@ -25,6 +25,7 @@
 
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, connect);
+PHP_METHOD(Redis, pconnect);
 PHP_METHOD(Redis, close);
 PHP_METHOD(Redis, ping);
 PHP_METHOD(Redis, get);
@@ -159,6 +160,7 @@ PHP_RINIT_FUNCTION(redis);
 PHP_RSHUTDOWN_FUNCTION(redis);
 PHP_MINFO_FUNCTION(redis);
 
+PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
 PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int count);
 PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
 									 int min_argc, RedisSock **redis_sock, int has_timeout);

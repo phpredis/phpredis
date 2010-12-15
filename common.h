@@ -145,6 +145,7 @@ typedef struct {
     double         timeout;
     int            failed;
     int            status;
+    int            persistent;
 
     int            serializer;
 

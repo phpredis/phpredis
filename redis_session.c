@@ -106,6 +106,7 @@ redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
 			return rpm->redis_sock;
 		}
 		i += rpm->weight;
+        rpm = rpm->next;
 	}
 
 	return NULL;
@@ -133,7 +134,8 @@ PS_OPEN_FUNC(redis)
 			 j++;
 
 		if (i < j) {
-			int weight = 1, timeout = 86400;
+			int weight = 1;
+			double timeout = 86400.0;
 
 			/* unix: isn't supported yet. */
 			if (!strncmp(save_path+i, "unix:", sizeof("unix:")-1)) {
@@ -173,8 +175,7 @@ PS_OPEN_FUNC(redis)
 				}
 
 				if (zend_hash_find(Z_ARRVAL_P(params), "timeout", sizeof("timeout"), (void **) &param) != FAILURE) {
-					convert_to_long_ex(param);
-					timeout = Z_LVAL_PP(param);
+					timeout = atof(Z_STRVAL_PP(param));
 				}
 
 				/* // not supported yet
@@ -194,7 +195,7 @@ PS_OPEN_FUNC(redis)
 				return FAILURE;
 			}
 
-			RedisSock *redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout);
+			RedisSock *redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, 0);
 			redis_pool_add(pool, redis_sock, weight TSRMLS_CC);
 
 			php_url_free(url);
@@ -257,7 +258,7 @@ PS_READ_FUNC(redis)
 	session = redis_session_key(key, strlen(key), &session_len);
 	cmd_len = redis_cmd_format_static(&cmd, "GET", "s", session, session_len);
 	efree(session);
-	if(redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+	if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
 		efree(cmd);
 		return FAILURE;
 	}
@@ -287,9 +288,9 @@ PS_WRITE_FUNC(redis)
 
 	/* send SET command */
 	session = redis_session_key(key, strlen(key), &session_len);
-	cmd_len = redis_cmd_format_static(&cmd, "SET", "ss", session, session_len, val, vallen);
+	cmd_len = redis_cmd_format_static(&cmd, "SETEX", "sds", session, session_len, INI_INT("session.gc_maxlifetime"), val, vallen);
 	efree(session);
-	if(redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+	if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
 		efree(cmd);
 		return FAILURE;
 	}
@@ -327,7 +328,7 @@ PS_DESTROY_FUNC(redis)
 	session = redis_session_key(key, strlen(key), &session_len);
 	cmd_len = redis_cmd_format_static(&cmd, "DEL", "s", session, session_len);
 	efree(session);
-	if(redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+	if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
 		efree(cmd);
 		return FAILURE;
 	}

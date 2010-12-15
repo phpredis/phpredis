@@ -1834,8 +1834,10 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    $this->assertTrue($ret[$i++] == TRUE);
 	    $this->assertTrue(is_array($ret[$i++]));
 	    $this->assertTrue($ret[$i++] === Redis::REDIS_STRING);
-	    $this->assertTrue($ret[$i++] === '42');
+	    $this->assertTrue($ret[$i] === '42' || $ret[$i] === 42);
 
+	    $serializer = $this->redis->getOption(Redis::OPT_SERIALIZER);
+	    $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE); // testing incr, which doesn't work with the serializer
 	    $ret = $this->redis->multi($mode)
 		    ->delete('key1')
 		    ->set('key1', 'value1')
@@ -1878,6 +1880,8 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    $this->assertTrue($ret[$i++] == TRUE);
 	    $this->assertTrue($ret[$i++] == 4);
 	    $this->assertTrue(count($ret) == $i);
+
+	    $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
 
 	    $ret = $this->redis->multi($mode)
 		    ->delete('key1')
@@ -2019,6 +2023,8 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	    $this->assertTrue(count($ret) === $i);
 
+	    $serializer = $this->redis->getOption(Redis::OPT_SERIALIZER);
+	    $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE); // testing incr, which doesn't work with the serializer
 	    $ret = $this->redis->multi($mode)
 		    ->delete('key1')
 		    ->set('key1', 'value1')
@@ -2060,6 +2066,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    $this->assertTrue($ret[$i++] == 9);
 	    $this->assertTrue($ret[$i++] == TRUE);
 	    $this->assertTrue($ret[$i++] == 4);
+	    $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
 
 	    $ret = $this->redis->multi($mode)
 		    ->delete('key1')
@@ -2305,6 +2312,8 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	    $this->assertTrue(count($ret) === $i);
 
+	    $serializer = $this->redis->getOption(Redis::OPT_SERIALIZER);
+	    $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE); // testing incr, which doesn't work with the serializer
 	    // hash
 	    $ret = $this->redis->multi($mode)
 		    ->delete('hkey1')
@@ -2350,6 +2359,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    $this->assertTrue($ret[$i++] === 'non-string'); // hset succeeded
 	    $this->assertTrue($ret[$i++] === FALSE); // member isn't a number → fail.
 	    $this->assertTrue(count($ret) === $i);
+	    $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
 
 	    $ret = $this->redis->multi() // default to MULTI, not PIPELINE.
 		    ->delete('test')
@@ -2534,6 +2544,12 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    $this->redis->set('c', 42);
 	    $this->redis->set('d', array('x' => 'y'));
 	    $this->assertTrue(array(NULL, FALSE, 42, array('x' => 'y')) === $this->redis->getMultiple(array('a', 'b', 'c', 'd')));
+
+	    // pipeline
+	    $this->sequence(Redis::PIPELINE);
+
+	    // multi-exec
+	    $this->sequence(Redis::MULTI);
 
 	    // revert
 	    $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE) === TRUE); 	// set ok
