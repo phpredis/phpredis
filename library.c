@@ -25,6 +25,7 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
                 php_stream_close(redis_sock->stream);
 			}
                 redis_sock->stream = NULL;
+				redis_sock->mode   = ATOMIC;
                 redis_sock->status = REDIS_SOCK_STATUS_FAILED;
 	    }
             zend_throw_exception(redis_exception_ce, "Connection lost", 0 TSRMLS_CC);
@@ -35,6 +36,7 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 				php_stream_close(redis_sock->stream);
 			}
             redis_sock->stream = NULL;
+			redis_sock->mode   = ATOMIC;
 	}
         redis_sock_connect(redis_sock TSRMLS_CC); /* reconnect */
         if(redis_sock->stream) { /*  check for EOF again. */
