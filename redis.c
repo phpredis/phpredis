@@ -3939,7 +3939,7 @@ PHP_METHOD(Redis, multi)
 	IF_MULTI() {
         cmd_len = redis_cmd_format_static(&cmd, "MULTI", "");
 
-    	if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+		if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         	efree(cmd);
 	        RETURN_FALSE;
     	}
@@ -3984,7 +3984,7 @@ PHP_METHOD(Redis, discard)
 
     cmd_len = redis_cmd_format_static(&cmd, "DISCARD", "");
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
         RETURN_FALSE;
     }
@@ -4098,7 +4098,7 @@ PHP_METHOD(Redis, exec)
 
         cmd_len = redis_cmd_format_static(&cmd, "EXEC", "");
 
-		if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+		if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
 			efree(cmd);
 			RETURN_FALSE;
 		}
@@ -4135,7 +4135,7 @@ PHP_METHOD(Redis, exec)
 		}
 
 		if(request != NULL) {
-		    if (redis_sock_write(redis_sock, request, total) < 0) {
+		    if (redis_sock_write(redis_sock, request, total TSRMLS_CC) < 0) {
     		    free(request);
                 free_reply_callbacks(object, redis_sock);
                 redis_sock->mode = ATOMIC;
@@ -4225,7 +4225,7 @@ PHP_METHOD(Redis, publish)
 
     cmd_len = redis_cmd_format_static(&cmd, "PUBLISH", "ss", key, key_len, val, val_len);
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
         RETURN_FALSE;
     }
@@ -4282,7 +4282,7 @@ PHP_METHOD(Redis, subscribe)
     old_cmd = cmd;
     cmd_len = spprintf(&cmd, 0, "SUBSCRIBE %s\r\n", cmd);
     efree(old_cmd);
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
         RETURN_FALSE;
     }
@@ -4445,7 +4445,7 @@ PHP_METHOD(Redis, unsubscribe)
     cmd_len = spprintf(&cmd, 0, "UNSUBSCRIBE %s\r\n", cmd);
     efree(old_cmd);
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
         RETURN_FALSE;
     }

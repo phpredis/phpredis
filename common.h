@@ -66,7 +66,7 @@
 		redis_sock->pipeline_head = redis_sock->pipeline_current;\
 	}
 
-#define SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len) if(redis_sock_write(redis_sock, cmd, cmd_len) < 0) { \
+#define SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len) if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) { \
 	efree(cmd); \
     RETURN_FALSE; \
 }
