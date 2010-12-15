@@ -257,7 +257,7 @@ PS_READ_FUNC(redis)
 	session = redis_session_key(key, strlen(key), &session_len);
 	cmd_len = redis_cmd_format_static(&cmd, "GET", "s", session, session_len);
 	efree(session);
-	if(redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+	if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
 		efree(cmd);
 		return FAILURE;
 	}
@@ -289,7 +289,7 @@ PS_WRITE_FUNC(redis)
 	session = redis_session_key(key, strlen(key), &session_len);
 	cmd_len = redis_cmd_format_static(&cmd, "SET", "ss", session, session_len, val, vallen);
 	efree(session);
-	if(redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+	if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
 		efree(cmd);
 		return FAILURE;
 	}
@@ -327,7 +327,7 @@ PS_DESTROY_FUNC(redis)
 	session = redis_session_key(key, strlen(key), &session_len);
 	cmd_len = redis_cmd_format_static(&cmd, "DEL", "s", session, session_len);
 	efree(session);
-	if(redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+	if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
 		efree(cmd);
 		return FAILURE;
 	}

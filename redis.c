@@ -167,6 +167,7 @@ static zend_function_entry redis_functions[] = {
 
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, popen, pconnect, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, lLen, lSize, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, sGetMembers, sMembers, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, mget, getMultiple, NULL, ZEND_ACC_PUBLIC)
@@ -375,6 +376,11 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 	int host_len, id;
 	char *host = NULL;
 	long port = -1;
+
+#ifdef ZTS
+	/* not sure how in threaded mode this works so disabled persistents at first */
+    persistent = 0;
+#endif
 
 	double timeout = 0.0;
 	RedisSock *redis_sock  = NULL;

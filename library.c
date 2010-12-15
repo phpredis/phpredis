@@ -618,7 +618,7 @@ PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PA
     redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     redis_sock, z_multi_result, numElems);
 
-    array_zip_values_and_scores(z_multi_result, 0);
+    array_zip_values_and_scores(z_multi_result, 0 TSRMLS_CC);
 
     IF_MULTI_OR_PIPELINE() {
         add_next_index_zval(z_tab, z_multi_result);
