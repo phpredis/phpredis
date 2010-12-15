@@ -21,7 +21,9 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
     while(eof) {
 	if(count++ == 10) { /* too many failures */
 	    if(redis_sock->stream) { /* close stream if still here */
+			if (!redis_sock->persistent) { /* never ever close persistent streams by ourself */
                 php_stream_close(redis_sock->stream);
+			}
                 redis_sock->stream = NULL;
                 redis_sock->status = REDIS_SOCK_STATUS_FAILED;
 	    }
@@ -29,7 +31,9 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 	    return -1;
 	}
 	if(redis_sock->stream) { /* close existing stream before reconnecting */
-            php_stream_close(redis_sock->stream);
+			if (!redis_sock->persistent) {
+				php_stream_close(redis_sock->stream);
+			}
             redis_sock->stream = NULL;
 	}
         redis_sock_connect(redis_sock TSRMLS_CC); /* reconnect */
@@ -48,7 +52,9 @@ PHPAPI zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, 
     }
 
     if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
-        php_stream_close(redis_sock->stream);
+		if (!redis_sock->persistent) {
+			php_stream_close(redis_sock->stream);
+		}
         redis_sock->stream = NULL;
         redis_sock->status = REDIS_SOCK_STATUS_FAILED;
         redis_sock->mode = ATOMIC;
@@ -118,7 +124,9 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
     }
 
     if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
-        php_stream_close(redis_sock->stream);
+		if (!redis_sock->persistent) {
+			php_stream_close(redis_sock->stream);
+		}
         redis_sock->stream = NULL;
         redis_sock->status = REDIS_SOCK_STATUS_FAILED;
         redis_sock->mode = ATOMIC;
@@ -599,7 +607,9 @@ PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PA
         return -1;
     }
     if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
-        php_stream_close(redis_sock->stream);
+		if (!redis_sock->persistent) {
+			php_stream_close(redis_sock->stream);
+		}
         redis_sock->stream = NULL;
         redis_sock->status = REDIS_SOCK_STATUS_FAILED;
         redis_sock->mode = ATOMIC;
@@ -852,7 +862,9 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
         return -1;
     }
     if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
-        php_stream_close(redis_sock->stream);
+		if (!redis_sock->persistent) {
+			php_stream_close(redis_sock->stream);
+		}
         redis_sock->stream = NULL;
         redis_sock->status = REDIS_SOCK_STATUS_FAILED;
         redis_sock->mode = ATOMIC;
@@ -914,7 +926,9 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, R
         return -1;
     }
     if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
-        php_stream_close(redis_sock->stream);
+		if (!redis_sock->persistent) {
+			php_stream_close(redis_sock->stream);
+		}
         redis_sock->stream = NULL;
         redis_sock->status = REDIS_SOCK_STATUS_FAILED;
         redis_sock->mode = ATOMIC;
@@ -975,4 +989,6 @@ PHPAPI void redis_free_socket(RedisSock *redis_sock)
     efree(redis_sock->host);
     efree(redis_sock);
 }
+
+/* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
 
