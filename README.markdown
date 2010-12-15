@@ -20,9 +20,9 @@ phpize
 make && make install
 </pre>
 
-You can generate a debian package for PHP5, accessible from Apache 2 by running `./mkdeb-apache2.sh`.
+You can generate a debian package for PHP5, accessible from Apache 2 by running `./mkdeb-apache2.sh` or with `dpkg-buildpackage` or `svn-buildpackage`.
 
-This extension exports a single class, `Redis`.
+This extension exports a single class, `Redis` (and `RedisException` used in case of errors).
 
 Install on OSX
 ==============
@@ -63,7 +63,9 @@ Creates a Redis client
 
 ##### *Example*
 
+<pre>
 $redis = new Redis();
+</pre>
 
 ## connect, open
 ##### *Description*
@@ -82,10 +84,46 @@ Connects to a Redis instance.
 
 ##### *Example*
 
+<pre>
 $redis->connect('127.0.0.1', 6379);
 $redis->connect('127.0.0.1'); // port 6379 by default
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
+</pre>
+
+## pconnect, popen
+##### *Description*
+
+Connects to a Redis instance or reuse a connection already established with `pconnect`/`popen`.
+
+The connection will not be closed on `close` or end of request until the php process ends.
+So be patient on to many open FD's (specially on redis server side) when using persistent
+connections on many servers connecting to one redis server.
+
+Also more than one persistent connection can be made identified by either host + port + timeout
+or unix socket + timeout.
+
+This feature is not available in threaded versions. `pconnect` and `popen` then working like their non
+persistent equivalents.
+
+##### *Parameters*
+
+*host*: string. can be a host, or the path to a unix domain socket  
+*port*: int, optional  
+*timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
+
+##### *Return Value*
+
+*BOOL*: `TRUE` on success, `FALSE` on error.
+
+##### *Example*
+
+<pre>
+$redis->pconnect('127.0.0.1', 6379);
+$redis->pconnect('127.0.0.1'); // port 6379 by default - same connection like before.
+$redis->pconnect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout and would be another connection then the two before.
+$redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another connection then the three before.
+</pre>
 
 ## ping
 ##### *Description*
@@ -116,7 +154,9 @@ Get the value related to the specified key
 
 ##### *Examples*
 
+<pre>
 $redis->get('key');
+</pre>
 
 ## set
 ##### Description

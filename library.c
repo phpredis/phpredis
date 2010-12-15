@@ -618,7 +618,7 @@ PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PA
     redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     redis_sock, z_multi_result, numElems);
 
-    array_zip_values_and_scores(z_multi_result, 0);
+    array_zip_values_and_scores(z_multi_result, 0 TSRMLS_CC);
 
     IF_MULTI_OR_PIPELINE() {
         add_next_index_zval(z_tab, z_multi_result);
@@ -696,7 +696,7 @@ PHPAPI void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis
  * redis_sock_create
  */
 PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port,
-                                                                       double timeout)
+                                    double timeout, int persistent)
 {
     RedisSock *redis_sock;
 
@@ -704,6 +704,8 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     redis_sock->host   = emalloc(host_len + 1);
     redis_sock->stream = NULL;
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
+
+    redis_sock->persistent = persistent;
 
     memcpy(redis_sock->host, host, host_len);
     redis_sock->host[host_len] = '\0';
@@ -726,7 +728,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
 PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 {
     struct timeval tv, *tv_ptr = NULL;
-    char *host = NULL, *hash_key = NULL, *errstr = NULL;
+    char *host = NULL, *persistent_id = NULL, *errstr = NULL;
     int host_len, err = 0;
 
     if (redis_sock->stream != NULL) {
@@ -744,11 +746,20 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     } else {
 	    host_len = spprintf(&host, 0, "%s:%d", redis_sock->host, redis_sock->port);
     }
+
+    if (redis_sock->persistent) {
+      spprintf(&persistent_id, 0, "%s:%f", host, redis_sock->timeout);
+    }
+
     redis_sock->stream = php_stream_xport_create(host, host_len, ENFORCE_SAFE_MODE,
 							 STREAM_XPORT_CLIENT
 							 | STREAM_XPORT_CONNECT,
-							 hash_key, tv_ptr, NULL, &errstr, &err
+							 persistent_id, tv_ptr, NULL, &errstr, &err
 							);
+
+    if (persistent_id) {
+      efree(persistent_id);
+    }
 
     efree(host);
 
@@ -814,15 +825,17 @@ PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
     }
 
     if (redis_sock->stream != NULL) {
-        redis_sock_write(redis_sock, "QUIT", sizeof("QUIT") - 1 TSRMLS_CC);
+			if (!redis_sock->persistent) {
+				redis_sock_write(redis_sock, "QUIT", sizeof("QUIT") - 1 TSRMLS_CC);
+			}
 
-        redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
-        if(redis_sock->stream) { /* still valid after the write? */
-		php_stream_close(redis_sock->stream);
-	}
-        redis_sock->stream = NULL;
+			redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
+			if(redis_sock->stream && !redis_sock->persistent) { /* still valid after the write? */
+				php_stream_close(redis_sock->stream);
+			}
+			redis_sock->stream = NULL;
 
-        return 1;
+			return 1;
     }
 
     return 0;

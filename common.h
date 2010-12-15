@@ -137,6 +137,7 @@ typedef struct {
     double         timeout;
     int            failed;
     int            status;
+    int            persistent;
 
     redis_mode     mode;
     fold_item      *head;
