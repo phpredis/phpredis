@@ -94,7 +94,7 @@ Connects to a Redis instance or reuse a connection already established with `pco
 
 The connection will not be closed on `close` or end of request until the php process ends.
 So be patient on to many open FD's (specially on redis server side) when using persistent
-connections on many servers connection to one redis server.
+connections on many servers connecting to one redis server.
 
 Also more than one persistent connection can be made identified by either host + port + timeout
 or unix socket + timeout.
@@ -115,7 +115,7 @@ persistent equivalents.
 ##### *Example*
 
 $redis->pconnect('127.0.0.1', 6379);
-$redis->pconnect('127.0.0.1'); // port 6379 by default
+$redis->pconnect('127.0.0.1'); // port 6379 by default - same connection like before.
 $redis->pconnect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout and would be another connection then the two before.
 $redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another connection then the three before.
 
