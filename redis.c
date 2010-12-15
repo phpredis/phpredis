@@ -49,6 +49,7 @@ ZEND_DECLARE_MODULE_GLOBALS(redis)
 static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, __construct, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, connect, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pconnect, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, close, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, ping, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, get, NULL, ZEND_ACC_PUBLIC)
@@ -348,29 +349,50 @@ PHP_METHOD(Redis, __construct)
  */
 PHP_METHOD(Redis, connect)
 {
-    zval *object;
+	if (redis_connect(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0) == FAILURE) {
+		RETURN_FALSE;
+	} else {
+		RETURN_TRUE;
+	}
+}
+/* }}} */
+
+/* {{{ proto boolean Redis::pconnect(string host, int port [, double timeout])
+ */
+PHP_METHOD(Redis, pconnect)
+{
+	if (redis_connect(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1) == FAILURE) {
+		RETURN_FALSE;
+	} else {
+		RETURN_TRUE;
+	}
+}
+/* }}} */
+
+PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
+	zval *object;
 	zval **socket;
-    int host_len, id;
-    char *host = NULL;
-    long port = -1;
+	int host_len, id;
+	char *host = NULL;
+	long port = -1;
 
-    double timeout = 0.0;
-    RedisSock *redis_sock  = NULL;
+	double timeout = 0.0;
+	RedisSock *redis_sock  = NULL;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|ld",
-                                     &object, redis_ce, &host, &host_len, &port,
-                                     &timeout) == FAILURE) {
-       RETURN_FALSE;
-    }
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|ld",
+				&object, redis_ce, &host, &host_len, &port,
+				&timeout) == FAILURE) {
+		return FAILURE;
+	}
 
-    if (timeout < 0L || timeout > INT_MAX) {
-        zend_throw_exception(redis_exception_ce, "Invalid timeout", 0 TSRMLS_CC);
-        RETURN_FALSE;
-    }
+	if (timeout < 0L || timeout > INT_MAX) {
+		zend_throw_exception(redis_exception_ce, "Invalid timeout", 0 TSRMLS_CC);
+		return FAILURE;
+	}
 
-    if(port == -1 && host_len && host[0] != '/') { /* not unix socket, set to default value */
-            port = 6379;
-    }
+	if(port == -1 && host_len && host[0] != '/') { /* not unix socket, set to default value */
+		port = 6379;
+	}
 
 	/* if there is a redis sock already we have to remove it from the list */
 	if (redis_sock_get(object, &redis_sock TSRMLS_CC) > 0) {
@@ -382,26 +404,25 @@ PHP_METHOD(Redis, connect)
 		}
 	}
 
-    redis_sock = redis_sock_create(host, host_len, port, timeout);
+	redis_sock = redis_sock_create(host, host_len, port, timeout, persistent);
 
-    if (redis_sock_server_open(redis_sock, 1 TSRMLS_CC) < 0) {
-        redis_free_socket(redis_sock);
-        zend_throw_exception_ex(
-            redis_exception_ce,
-            0 TSRMLS_CC,
-            "Can't connect to %s:%d",
-            host,
-            port
-        );
-        RETURN_FALSE;
-    }
+	if (redis_sock_server_open(redis_sock, 1 TSRMLS_CC) < 0) {
+		redis_free_socket(redis_sock);
+		zend_throw_exception_ex(
+				redis_exception_ce,
+				0 TSRMLS_CC,
+				"Can't connect to %s:%d",
+				host,
+				port
+				);
+		return FAILURE;
+	}
 
-    id = zend_list_insert(redis_sock, le_redis_sock);
-    add_property_resource(object, "socket", id);
+	id = zend_list_insert(redis_sock, le_redis_sock);
+	add_property_resource(object, "socket", id);
 
-    RETURN_TRUE;
+	return SUCCESS;
 }
-/* }}} */
 
 /* {{{ proto boolean Redis::close()
  */

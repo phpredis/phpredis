@@ -194,7 +194,7 @@ PS_OPEN_FUNC(redis)
 				return FAILURE;
 			}
 
-			RedisSock *redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout);
+			RedisSock *redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, 0);
 			redis_pool_add(pool, redis_sock, weight TSRMLS_CC);
 
 			php_url_free(url);
