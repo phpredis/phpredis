@@ -63,7 +63,9 @@ Creates a Redis client
 
 ##### *Example*
 
+<pre>
 $redis = new Redis();
+</pre>
 
 ## connect, open
 ##### *Description*
@@ -82,10 +84,12 @@ Connects to a Redis instance.
 
 ##### *Example*
 
+<pre>
 $redis->connect('127.0.0.1', 6379);
 $redis->connect('127.0.0.1'); // port 6379 by default
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
+</pre>
 
 ## pconnect, popen
 ##### *Description*
@@ -114,10 +118,12 @@ persistent equivalents.
 
 ##### *Example*
 
+<pre>
 $redis->pconnect('127.0.0.1', 6379);
 $redis->pconnect('127.0.0.1'); // port 6379 by default - same connection like before.
 $redis->pconnect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout and would be another connection then the two before.
 $redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another connection then the three before.
+</pre>
 
 ## ping
 ##### *Description*
@@ -148,7 +154,9 @@ Get the value related to the specified key
 
 ##### *Examples*
 
+<pre>
 $redis->get('key');
+</pre>
 
 ## set
 ##### Description
