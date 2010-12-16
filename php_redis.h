@@ -46,6 +46,7 @@ PHP_METHOD(Redis, decrBy);
 PHP_METHOD(Redis, type);
 PHP_METHOD(Redis, append);
 PHP_METHOD(Redis, getRange);
+PHP_METHOD(Redis, setRange);
 PHP_METHOD(Redis, strlen);
 PHP_METHOD(Redis, getKeys);
 PHP_METHOD(Redis, sort);
