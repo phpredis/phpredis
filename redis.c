@@ -69,7 +69,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, decrBy, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, type, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, append, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, substr, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getRange, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, strlen, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getKeys, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sort, NULL, ZEND_ACC_PUBLIC)
@@ -178,6 +178,7 @@ static zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, zRemove, zDelete, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zRemoveRangeByScore, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zSize, zCard, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, substr, getRange, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
@@ -1100,7 +1101,7 @@ PHP_METHOD(Redis, append)
 	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 
-PHP_METHOD(Redis, substr)
+PHP_METHOD(Redis, getRange)
 {
 	zval *object;
 	RedisSock *redis_sock;
@@ -1118,7 +1119,7 @@ PHP_METHOD(Redis, substr)
 		RETURN_FALSE;
 	}
 
-	cmd_len = redis_cmd_format_static(&cmd, "SUBSTR", "sdd", key, key_len, (int)start, (int)end);
+	cmd_len = redis_cmd_format_static(&cmd, "GETRANGE", "sdd", key, key_len, (int)start, (int)end);
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);

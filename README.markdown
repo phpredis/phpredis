@@ -1373,7 +1373,7 @@ $redis->append('key', 'value2'); /* 12 */
 $redis->get('key'); /* 'value1value2' */
 </pre>
 
-## substr
+## getRange (substr also supported but deprecated in redis)
 ##### *Description*
 Return a substring of a larger string 
 
@@ -1388,8 +1388,8 @@ Return a substring of a larger string
 ##### *Example*
 <pre>
 $redis->set('key', 'string value');
-$redis->substr('key', 0, 5); /* 'string' */
-$redis->substr('key', -5, -1); /* 'value' */
+$redis->getRange('key', 0, 5); /* 'string' */
+$redis->getRange('key', -5, -1); /* 'value' */
 </pre>
 
 ## strlen
