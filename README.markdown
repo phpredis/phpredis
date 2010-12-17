@@ -1392,6 +1392,25 @@ $redis->getRange('key', 0, 5); /* 'string' */
 $redis->getRange('key', -5, -1); /* 'value' */
 </pre>
 
+## setRange
+##### *Description*
+Changes a substring of a larger string.
+
+##### *Parameters*
+*key*  
+*offset*  
+*value*  
+
+##### *Return value*
+*STRING*: the length of the string after it was modified.
+
+##### *Example*
+<pre>
+$redis->set('key', 'Hello world');
+$redis->setRange('key', 6, "redis"); /* returns 11 */
+$redis->get('key'); /* "Hello redis" */
+</pre>
+
 ## strlen
 ##### *Description*
 Get the length of a string value.

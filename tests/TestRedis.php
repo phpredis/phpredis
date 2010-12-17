@@ -453,9 +453,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 		$this->assertTrue($this->redis->get('keyNotExist') === 'value');
 
 		$this->redis->set('key', 'This is a string') ;
-		$this->assertTrue($this->redis->substr('key', 0, 3) === 'This');
-		$this->assertTrue($this->redis->substr('key', -6, -1) === 'string');
-		$this->assertTrue($this->redis->substr('key', -6, 100000) === 'string');
+		$this->assertTrue($this->redis->getRange('key', 0, 3) === 'This');
+		$this->assertTrue($this->redis->getRange('key', -6, -1) === 'string');
+		$this->assertTrue($this->redis->getRange('key', -6, 100000) === 'string');
 		$this->assertTrue($this->redis->get('key') === 'This is a string');
 
 		$this->redis->set('key', 'This is a string') ;
@@ -1775,6 +1775,25 @@ $r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
 	$this->assertTrue('Array' === $h1['y']);
 	$this->assertTrue('Object' === $h1['z']);
 	$this->assertTrue('' === $h1['t']);
+
+    }
+
+    public function testSetRange() {
+
+	    $this->redis->delete('key');
+	    $this->redis->set('key', 'hello world');
+	    $this->redis->setRange('key', 6, 'redis');
+	    $this->assertTrue('hello redis' === $this->redis->get('key'));
+	    $this->redis->setRange('key', 6, 'you'); // don't cut off the end
+	    $this->assertTrue('hello youis' === $this->redis->get('key'));
+
+	    $this->assertTrue(FALSE === $this->redis->setRange('key', -1, 'plop')); // doesn't work with negative offsets
+
+	    // fill with zeros if needed
+	    $this->redis->delete('key');
+	    $this->redis->setRange('key', 6, 'foo');
+	    $this->assertTrue("\x00\x00\x00\x00\x00\x00foo" === $this->redis->get('key'));
+
 
     }
 
