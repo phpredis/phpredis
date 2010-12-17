@@ -1427,6 +1427,44 @@ $redis->set('key', 'value');
 $redis->strlen('key'); /* 5 */
 </pre>
 
+## getBit
+##### *Description*
+Return a single bit out of a larger string
+
+##### *Parameters*
+*key*  
+*offset*  
+
+##### *Return value*
+*LONG*: the bit value (0 or 1)
+
+##### *Example*
+<pre>
+$redis->set('key', "\x7f"); // this is 0111 1111
+$redis->getBit('key', 0); /* 0 */
+$redis->getBit('key', 1); /* 1 */
+</pre>
+
+## setBit
+##### *Description*
+Changes a single bit of a string.
+
+##### *Parameters*
+*key*  
+*offset*  
+*value*: bool or int (1 or 0)  
+
+##### *Return value*
+*LONG*: 0 or 1, the value of the bit before it was set.
+
+##### *Example*
+<pre>
+$redis->set('key', "*");	// ord("*") = 42 = 0x2f = "0010 1010"
+$redis->setBit('key', 5, 1); /* returns 0 */
+$redis->setBit('key', 7, 1); /* returns 0 */
+$redis->get('key'); /* chr(0x2f) = "/" = b("0010 1111") */
+</pre>
+
 ## flushDB
 
 ##### *Description*

@@ -71,6 +71,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, append, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getRange, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getBit, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setBit, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, strlen, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getKeys, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sort, NULL, ZEND_ACC_PUBLIC)
@@ -1153,6 +1155,60 @@ PHP_METHOD(Redis, setRange)
 	}
 	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
+
+PHP_METHOD(Redis, getBit)
+{
+	zval *object;
+	RedisSock *redis_sock;
+	char *key = NULL, *cmd;
+	int key_len, cmd_len;
+	long offset;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl",
+                                     &object, redis_ce, &key, &key_len,
+                                     &offset) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	cmd_len = redis_cmd_format_static(&cmd, "GETBIT", "sd", key, key_len, (int)offset);
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
+}
+
+PHP_METHOD(Redis, setBit)
+{
+	zval *object;
+	RedisSock *redis_sock;
+	char *key = NULL, *cmd;
+	int key_len, cmd_len;
+	long offset;
+	zend_bool val;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oslb",
+                                     &object, redis_ce, &key, &key_len,
+                                     &offset, &val) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	cmd_len = redis_cmd_format_static(&cmd, "SETBIT", "sdd", key, key_len, (int)offset, (int)val);
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
+}
+
 
 PHP_METHOD(Redis, strlen)
 {

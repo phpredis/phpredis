@@ -55,6 +55,46 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     }
 
+    public function testBitsets() {
+
+	    $this->redis->delete('key');
+	    $this->assertTrue(0 === $this->redis->getBit('key', 0));
+	    $this->assertTrue(FALSE === $this->redis->getBit('key', -1));
+	    $this->assertTrue(0 === $this->redis->getBit('key', 100000));
+
+	    $this->redis->set('key', "\xff");
+	    for($i = 0; $i < 8; $i++) {
+		    $this->assertTrue(1 === $this->redis->getBit('key', $i));
+	    }
+	    $this->assertTrue(0 === $this->redis->getBit('key', 8));
+
+	    // negative offset doesn't work
+	    $this->assertTrue(FALSE === $this->redis->setBit('key', -1, 0));
+	    $this->assertTrue(1 === $this->redis->getBit('key', 0));
+
+	    // change bit 0
+	    $this->assertTrue(1 === $this->redis->setBit('key', 0, 0));
+	    $this->assertTrue(0 === $this->redis->setBit('key', 0, 0));
+	    $this->assertTrue(0 === $this->redis->getBit('key', 0));
+	    $this->assertTrue("\x7f" === $this->redis->get('key'));
+
+	    // change bit 1
+	    $this->assertTrue(1 === $this->redis->setBit('key', 1, 0));
+	    $this->assertTrue(0 === $this->redis->setBit('key', 1, 0));
+	    $this->assertTrue(0 === $this->redis->getBit('key', 1));
+	    $this->assertTrue("\x3f" === $this->redis->get('key'));
+
+	    // change bit > 1
+	    $this->assertTrue(1 === $this->redis->setBit('key', 2, 0));
+	    $this->assertTrue(0 === $this->redis->setBit('key', 2, 0));
+	    $this->assertTrue(0 === $this->redis->getBit('key', 2));
+	    $this->assertTrue("\x1f" === $this->redis->get('key'));
+
+	    // values above 1 are changed to 1 but don't overflow on bits to the right.
+	    $this->assertTrue(0 === $this->redis->setBit('key', 0, 0xff));
+	    $this->assertTrue("\x9f" === $this->redis->get('key'));
+    }
+
     public function test1000() {
 
 	 $s = str_repeat('A', 1000);
@@ -1793,8 +1833,6 @@ $r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
 	    $this->redis->delete('key');
 	    $this->redis->setRange('key', 6, 'foo');
 	    $this->assertTrue("\x00\x00\x00\x00\x00\x00foo" === $this->redis->get('key'));
-
-
     }
 
     public function testMultiExec() {
