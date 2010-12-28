@@ -24,6 +24,7 @@
 
 /* options */
 #define REDIS_OPT_SERIALIZER		1
+#define REDIS_OPT_PREFIX		2
 
 /* serializers */
 #define REDIS_SERIALIZER_NONE		0
@@ -148,6 +149,9 @@ typedef struct {
     int            persistent;
 
     int            serializer;
+
+    char           *prefix;
+    int            prefix_len;
 
     redis_mode     mode;
     fold_item      *head;

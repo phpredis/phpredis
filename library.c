@@ -749,8 +749,8 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
 {
     RedisSock *redis_sock;
 
-    redis_sock         = emalloc(sizeof *redis_sock);
-    redis_sock->host   = emalloc(host_len + 1);
+    redis_sock         = ecalloc(1, sizeof(RedisSock));
+    redis_sock->host   = ecalloc(host_len + 1, 1);
     redis_sock->stream = NULL;
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
 
@@ -1034,6 +1034,9 @@ PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz TSRMLS_D
  */
 PHPAPI void redis_free_socket(RedisSock *redis_sock)
 {
+    if(redis_sock->prefix) {
+		efree(redis_sock->prefix);
+	}
     efree(redis_sock->host);
     efree(redis_sock);
 }
@@ -1140,5 +1143,22 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 	}
 	return 0;
 }
+
+PHPAPI int
+redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len TSRMLS_CC) {
+	if(redis_sock->prefix == NULL || redis_sock->prefix_len == 0) {
+		return 0;
+	}
+
+	int ret_len = redis_sock->prefix_len + *key_len;
+	char *ret = ecalloc(1 + ret_len, 1);
+	memcpy(ret, redis_sock->prefix, redis_sock->prefix_len);
+	memcpy(ret + redis_sock->prefix_len, *key, *key_len);
+
+	*key = ret;
+	*key_len = ret_len;
+	return 1;
+}
+
 /* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
 
