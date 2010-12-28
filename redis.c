@@ -1915,6 +1915,12 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
         RETURN_FALSE;
     }
 
+	/* get redis socket */
+    if (redis_sock_get(getThis(), out_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+    redis_sock = *out_sock;
+
     z_args = emalloc(argc * sizeof(zval*));
     if(zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
@@ -1979,6 +1985,9 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
                 /* get current value */
                 keys[j] = Z_STRVAL_PP(z_value_pp);
                 keys_len[j] = Z_STRLEN_PP(z_value_pp);
+
+				redis_key_prefix(redis_sock, &keys[j], &keys_len[j] TSRMLS_CC); /* add optional prefix */
+
                 cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; /* $ + size + NL + string + NL */
                 j++;
                 real_argc++;
@@ -2004,6 +2013,9 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
    	        if(Z_TYPE_P(z_args[i]) == IS_STRING) {
        	        keys[j] = Z_STRVAL_P(z_args[i]);
            	    keys_len[j] = Z_STRLEN_P(z_args[i]);
+
+				redis_key_prefix(redis_sock, &keys[j], &keys_len[j] TSRMLS_CC); /* add optional prefix */
+
                	cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; /* $ + size + NL + string + NL */
                 j++;
    	            real_argc++;
@@ -2016,15 +2028,6 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 			real_argc++;
 		}
     }
-
-    /* get redis socket */
-    if (redis_sock_get(getThis(), out_sock TSRMLS_CC) < 0) {
-        efree(keys);
-        efree(keys_len);
-        if(z_args) efree(z_args);
-        RETURN_FALSE;
-    }
-    redis_sock = *out_sock;
 
     cmd_len += 1 + integer_length(real_argc+1) + 2; // *count NL 
     cmd = emalloc(cmd_len+1);
@@ -2044,6 +2047,13 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
         memcpy(cmd + pos, _NL, 2);
         pos += 2;
     }
+
+	/* cleanup prefixed keys. */
+	if(redis_sock->prefix && redis_sock->prefix_len) {
+		for(i = 0; i < real_argc + (has_timeout?-1:0); ++i) {
+			efree(keys[i]);
+		}
+	}
 
     efree(keys);
 	efree(keys_len);
