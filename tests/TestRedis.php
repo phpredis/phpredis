@@ -1592,6 +1592,10 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
 	$zero_to_three = $this->redis->zRangeByScore('key', 0, 3);
 	$this->assertTrue(array('val0', 'val1', 'val2', 'aal3', 'val3') === $zero_to_three || array('val0', 'val1', 'val2', 'val3', 'aal3') === $zero_to_three);
+
+	$three_to_zero = $this->redis->zRevRangeByScore('key', 3, 0);
+	$this->assertTrue(array_reverse(array('val0', 'val1', 'val2', 'aal3', 'val3')) === $three_to_zero || array_reverse(array('val0', 'val1', 'val2', 'val3', 'aal3')) === $three_to_zero);
+
 	$this->assertTrue(5 === $this->redis->zCount('key', 0, 3));
 
 	// withscores
@@ -1605,6 +1609,11 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(array('val0', 'val1') === $this->redis->zRangeByScore('key', 0, 3, array('limit' => array(0, 2))));
 	$this->assertTrue(array('val1', 'val2') === $this->redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 2))));
 	$this->assertTrue(array('val0', 'val1') === $this->redis->zRangeByScore('key', 0, 1, array('limit' => array(0, 100))));
+
+	$this->assertTrue(array('val3') === $this->redis->zRevRangeByScore('key', 3, 0, array('limit' => array(0, 1))));
+	$this->assertTrue(array('val3', 'val2') === $this->redis->zRevRangeByScore('key', 3, 0, array('limit' => array(0, 2))));
+	$this->assertTrue(array('val2', 'val1') === $this->redis->zRevRangeByScore('key', 3, 0, array('limit' => array(1, 2))));
+	$this->assertTrue(array('val1', 'val0') === $this->redis->zRevRangeByScore('key', 1, 0, array('limit' => array(0, 100))));
 
 	$this->assertTrue(4 === $this->redis->zSize('key'));
 	$this->assertTrue(1.0 === $this->redis->zScore('key', 'val1'));

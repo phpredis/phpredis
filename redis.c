@@ -133,6 +133,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zRange, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zReverseRange, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRangeByScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRevRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCount, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCard, NULL, ZEND_ACC_PUBLIC)
@@ -3257,10 +3258,10 @@ PHP_METHOD(Redis, zReverseRange)
     }
 }
 /* }}} */
-/* {{{ proto array Redis::zRangeByScore(string key, string start , string end [,array options = NULL])
- */
-PHP_METHOD(Redis, zRangeByScore)
-{
+
+PHPAPI void
+redis_generic_zrange_by_score(INTERNAL_FUNCTION_PARAMETERS, char *keyword TSRMLS_DC) {
+
     zval *object, *z_options = NULL, **z_limit_val_pp = NULL, **z_withscores_val_pp = NULL;
 
     RedisSock *redis_sock;
@@ -3314,18 +3315,18 @@ PHP_METHOD(Redis, zRangeByScore)
 	int key_free = redis_key_prefix(redis_sock, &key, &key_len);
     if(withscores) {
         if(has_limit) {
-            cmd_len = redis_cmd_format_static(&cmd, "ZRANGEBYSCORE", "ssssdds",
+            cmd_len = redis_cmd_format_static(&cmd, keyword, "ssssdds",
                             key, key_len, start, start_len, end, end_len, "LIMIT", 5, limit_low, limit_high, "WITHSCORES", 10);
         } else {
-            cmd_len = redis_cmd_format_static(&cmd, "ZRANGEBYSCORE", "ssss",
+            cmd_len = redis_cmd_format_static(&cmd, keyword, "ssss",
                             key, key_len, start, start_len, end, end_len, "WITHSCORES", 10);
         }
     } else {
         if(has_limit) {
-            cmd_len = redis_cmd_format_static(&cmd, "ZRANGEBYSCORE", "ssssdd",
+            cmd_len = redis_cmd_format_static(&cmd, keyword, "ssssdd",
                             key, key_len, start, start_len, end, end_len, "LIMIT", 5, limit_low, limit_high);
         } else {
-            cmd_len = redis_cmd_format_static(&cmd, "ZRANGEBYSCORE", "sss", key, key_len, start, start_len, end, end_len);
+            cmd_len = redis_cmd_format_static(&cmd, keyword, "sss", key, key_len, start, start_len, end, end_len);
         }
     }
 	if(key_free) efree(key);
@@ -3352,7 +3353,20 @@ PHP_METHOD(Redis, zRangeByScore)
             REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
     }
 }
+
+/* {{{ proto array Redis::zRangeByScore(string key, string start , string end [,array options = NULL])
+ */
+PHP_METHOD(Redis, zRangeByScore)
+{
+	redis_generic_zrange_by_score(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGEBYSCORE" TSRMLS_CC);
+}
 /* }}} */
+/* {{{ proto array Redis::zRevRangeByScore(string key, string start , string end [,array options = NULL])
+ */
+PHP_METHOD(Redis, zRevRangeByScore)
+{
+	redis_generic_zrange_by_score(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGEBYSCORE" TSRMLS_CC);
+}
 
 /* {{{ proto array Redis::zCount(string key, string start , string end)
  */
