@@ -55,6 +55,46 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     }
 
+    public function testBitsets() {
+
+	    $this->redis->delete('key');
+	    $this->assertTrue(0 === $this->redis->getBit('key', 0));
+	    $this->assertTrue(FALSE === $this->redis->getBit('key', -1));
+	    $this->assertTrue(0 === $this->redis->getBit('key', 100000));
+
+	    $this->redis->set('key', "\xff");
+	    for($i = 0; $i < 8; $i++) {
+		    $this->assertTrue(1 === $this->redis->getBit('key', $i));
+	    }
+	    $this->assertTrue(0 === $this->redis->getBit('key', 8));
+
+	    // negative offset doesn't work
+	    $this->assertTrue(FALSE === $this->redis->setBit('key', -1, 0));
+	    $this->assertTrue(1 === $this->redis->getBit('key', 0));
+
+	    // change bit 0
+	    $this->assertTrue(1 === $this->redis->setBit('key', 0, 0));
+	    $this->assertTrue(0 === $this->redis->setBit('key', 0, 0));
+	    $this->assertTrue(0 === $this->redis->getBit('key', 0));
+	    $this->assertTrue("\x7f" === $this->redis->get('key'));
+
+	    // change bit 1
+	    $this->assertTrue(1 === $this->redis->setBit('key', 1, 0));
+	    $this->assertTrue(0 === $this->redis->setBit('key', 1, 0));
+	    $this->assertTrue(0 === $this->redis->getBit('key', 1));
+	    $this->assertTrue("\x3f" === $this->redis->get('key'));
+
+	    // change bit > 1
+	    $this->assertTrue(1 === $this->redis->setBit('key', 2, 0));
+	    $this->assertTrue(0 === $this->redis->setBit('key', 2, 0));
+	    $this->assertTrue(0 === $this->redis->getBit('key', 2));
+	    $this->assertTrue("\x1f" === $this->redis->get('key'));
+
+	    // values above 1 are changed to 1 but don't overflow on bits to the right.
+	    $this->assertTrue(0 === $this->redis->setBit('key', 0, 0xff));
+	    $this->assertTrue("\x9f" === $this->redis->get('key'));
+    }
+
     public function test1000() {
 
 	 $s = str_repeat('A', 1000);
@@ -454,9 +494,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 		$this->assertTrue($this->redis->get('keyNotExist') === 'value');
 
 		$this->redis->set('key', 'This is a string') ;
-		$this->assertTrue($this->redis->substr('key', 0, 3) === 'This');
-		$this->assertTrue($this->redis->substr('key', -6, -1) === 'string');
-		$this->assertTrue($this->redis->substr('key', -6, 100000) === 'string');
+		$this->assertTrue($this->redis->getRange('key', 0, 3) === 'This');
+		$this->assertTrue($this->redis->getRange('key', -6, -1) === 'string');
+		$this->assertTrue($this->redis->getRange('key', -6, 100000) === 'string');
 		$this->assertTrue($this->redis->get('key') === 'This is a string');
 
 		$this->redis->set('key', 'This is a string') ;
@@ -1779,6 +1819,23 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue('Object' === $h1['z']);
 	$this->assertTrue('' === $h1['t']);
 
+    }
+
+    public function testSetRange() {
+
+	    $this->redis->delete('key');
+	    $this->redis->set('key', 'hello world');
+	    $this->redis->setRange('key', 6, 'redis');
+	    $this->assertTrue('hello redis' === $this->redis->get('key'));
+	    $this->redis->setRange('key', 6, 'you'); // don't cut off the end
+	    $this->assertTrue('hello youis' === $this->redis->get('key'));
+
+	    $this->assertTrue(FALSE === $this->redis->setRange('key', -1, 'plop')); // doesn't work with negative offsets
+
+	    // fill with zeros if needed
+	    $this->redis->delete('key');
+	    $this->redis->setRange('key', 6, 'foo');
+	    $this->assertTrue("\x00\x00\x00\x00\x00\x00foo" === $this->redis->get('key'));
     }
 
     public function testMultiExec() {

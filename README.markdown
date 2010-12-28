@@ -1409,7 +1409,7 @@ $redis->append('key', 'value2'); /* 12 */
 $redis->get('key'); /* 'value1value2' */
 </pre>
 
-## substr
+## getRange (substr also supported but deprecated in redis)
 ##### *Description*
 Return a substring of a larger string 
 
@@ -1424,8 +1424,27 @@ Return a substring of a larger string
 ##### *Example*
 <pre>
 $redis->set('key', 'string value');
-$redis->substr('key', 0, 5); /* 'string' */
-$redis->substr('key', -5, -1); /* 'value' */
+$redis->getRange('key', 0, 5); /* 'string' */
+$redis->getRange('key', -5, -1); /* 'value' */
+</pre>
+
+## setRange
+##### *Description*
+Changes a substring of a larger string.
+
+##### *Parameters*
+*key*  
+*offset*  
+*value*  
+
+##### *Return value*
+*STRING*: the length of the string after it was modified.
+
+##### *Example*
+<pre>
+$redis->set('key', 'Hello world');
+$redis->setRange('key', 6, "redis"); /* returns 11 */
+$redis->get('key'); /* "Hello redis" */
 </pre>
 
 ## strlen
@@ -1442,6 +1461,44 @@ Get the length of a string value.
 <pre>
 $redis->set('key', 'value');
 $redis->strlen('key'); /* 5 */
+</pre>
+
+## getBit
+##### *Description*
+Return a single bit out of a larger string
+
+##### *Parameters*
+*key*  
+*offset*  
+
+##### *Return value*
+*LONG*: the bit value (0 or 1)
+
+##### *Example*
+<pre>
+$redis->set('key', "\x7f"); // this is 0111 1111
+$redis->getBit('key', 0); /* 0 */
+$redis->getBit('key', 1); /* 1 */
+</pre>
+
+## setBit
+##### *Description*
+Changes a single bit of a string.
+
+##### *Parameters*
+*key*  
+*offset*  
+*value*: bool or int (1 or 0)  
+
+##### *Return value*
+*LONG*: 0 or 1, the value of the bit before it was set.
+
+##### *Example*
+<pre>
+$redis->set('key', "*");	// ord("*") = 42 = 0x2f = "0010 1010"
+$redis->setBit('key', 5, 1); /* returns 0 */
+$redis->setBit('key', 7, 1); /* returns 0 */
+$redis->get('key'); /* chr(0x2f) = "/" = b("0010 1111") */
 </pre>
 
 ## flushDB

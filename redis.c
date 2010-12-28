@@ -69,7 +69,10 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, decrBy, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, type, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, append, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, substr, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getBit, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setBit, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, strlen, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getKeys, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sort, NULL, ZEND_ACC_PUBLIC)
@@ -183,6 +186,7 @@ static zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, zRemove, zDelete, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zRemoveRangeByScore, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zSize, zCard, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, substr, getRange, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
@@ -1130,7 +1134,7 @@ PHP_METHOD(Redis, append)
 	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 
-PHP_METHOD(Redis, substr)
+PHP_METHOD(Redis, getRange)
 {
 	zval *object;
 	RedisSock *redis_sock;
@@ -1148,13 +1152,93 @@ PHP_METHOD(Redis, substr)
 		RETURN_FALSE;
 	}
 
-	cmd_len = redis_cmd_format_static(&cmd, "SUBSTR", "sdd", key, key_len, (int)start, (int)end);
+	cmd_len = redis_cmd_format_static(&cmd, "GETRANGE", "sdd", key, key_len, (int)start, (int)end);
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
 	REDIS_PROCESS_RESPONSE(redis_string_response);
 }
+
+PHP_METHOD(Redis, setRange)
+{
+	zval *object;
+	RedisSock *redis_sock;
+	char *key = NULL, *val, *cmd;
+	int key_len, val_len, cmd_len;
+	long offset;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osls",
+                                     &object, redis_ce, &key, &key_len,
+                                     &offset, &val, &val_len) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	cmd_len = redis_cmd_format_static(&cmd, "SETRANGE", "sds", key, key_len, (int)offset, val, val_len);
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
+}
+
+PHP_METHOD(Redis, getBit)
+{
+	zval *object;
+	RedisSock *redis_sock;
+	char *key = NULL, *cmd;
+	int key_len, cmd_len;
+	long offset;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl",
+                                     &object, redis_ce, &key, &key_len,
+                                     &offset) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	cmd_len = redis_cmd_format_static(&cmd, "GETBIT", "sd", key, key_len, (int)offset);
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
+}
+
+PHP_METHOD(Redis, setBit)
+{
+	zval *object;
+	RedisSock *redis_sock;
+	char *key = NULL, *cmd;
+	int key_len, cmd_len;
+	long offset;
+	zend_bool val;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oslb",
+                                     &object, redis_ce, &key, &key_len,
+                                     &offset, &val) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	cmd_len = redis_cmd_format_static(&cmd, "SETBIT", "sdd", key, key_len, (int)offset, (int)val);
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
+}
+
 
 PHP_METHOD(Redis, strlen)
 {
@@ -4017,7 +4101,7 @@ PHP_METHOD(Redis, multi)
 	IF_MULTI() {
         cmd_len = redis_cmd_format_static(&cmd, "MULTI", "");
 
-    	if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+		if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         	efree(cmd);
 	        RETURN_FALSE;
     	}
@@ -4062,7 +4146,7 @@ PHP_METHOD(Redis, discard)
 
     cmd_len = redis_cmd_format_static(&cmd, "DISCARD", "");
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
         RETURN_FALSE;
     }
@@ -4176,7 +4260,7 @@ PHP_METHOD(Redis, exec)
 
         cmd_len = redis_cmd_format_static(&cmd, "EXEC", "");
 
-		if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+		if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
 			efree(cmd);
 			RETURN_FALSE;
 		}
@@ -4213,7 +4297,7 @@ PHP_METHOD(Redis, exec)
 		}
 
 		if(request != NULL) {
-		    if (redis_sock_write(redis_sock, request, total) < 0) {
+		    if (redis_sock_write(redis_sock, request, total TSRMLS_CC) < 0) {
     		    free(request);
                 free_reply_callbacks(object, redis_sock);
                 redis_sock->mode = ATOMIC;
@@ -4303,7 +4387,7 @@ PHP_METHOD(Redis, publish)
 
     cmd_len = redis_cmd_format_static(&cmd, "PUBLISH", "ss", key, key_len, val, val_len);
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
         RETURN_FALSE;
     }
@@ -4360,7 +4444,7 @@ PHP_METHOD(Redis, subscribe)
     old_cmd = cmd;
     cmd_len = spprintf(&cmd, 0, "SUBSCRIBE %s\r\n", cmd);
     efree(old_cmd);
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
         RETURN_FALSE;
     }
@@ -4523,7 +4607,7 @@ PHP_METHOD(Redis, unsubscribe)
     cmd_len = spprintf(&cmd, 0, "UNSUBSCRIBE %s\r\n", cmd);
     efree(old_cmd);
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
         RETURN_FALSE;
     }
