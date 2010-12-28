@@ -147,6 +147,8 @@ Set client option.
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);	// don't serialize data
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);	// use built-in serialize/unserialize
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_IGBINARY);	// use igBinary serialize/unserialize
+
+$redis->setOption(Redis::OPT_PREFIX, 'myAppName:');	// use custom prefix on all keys
 </pre>
 
 

@@ -4897,9 +4897,14 @@ PHP_METHOD(Redis, setOption) {
 					if(redis_sock->prefix) {
 						efree(redis_sock->prefix);
 					}
-					redis_sock->prefix_len = val_len;
-					redis_sock->prefix = ecalloc(1+val_len, 1);
-					memcpy(redis_sock->prefix, val_str, val_len);
+					if(val_len == 0) {
+						redis_sock->prefix = NULL;
+						redis_sock->prefix_len = 0;
+					} else {
+						redis_sock->prefix_len = val_len;
+						redis_sock->prefix = ecalloc(1+val_len, 1);
+						memcpy(redis_sock->prefix, val_str, val_len);
+					}
 					RETURN_TRUE;
 
             default:
