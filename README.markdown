@@ -256,7 +256,7 @@ $redis->setnx('key', 'value'); /* return TRUE */
 $redis->setnx('key', 'value'); /* return FALSE */
 </pre>
 
-## delete
+## del, delete
 ##### Description
 Remove specified keys.
 ##### Parameters
@@ -591,7 +591,7 @@ $redis->rPop('key1');
 $redis->lSize('key1');/* 2 */
 </pre>
 
-## lGet
+## lIndex, lGet
 ##### *Description*
 Return the specified element of the list stored at the specified key.
 0 the first element, 1 the second ...
@@ -633,7 +633,7 @@ $redis->lSet('key1', 0, 'X');
 $redis->lGet('key1', 0); /* 'X' */ 
 </pre>
 
-## lGetRange
+## lRange, lGetRange
 ##### *Description*
 Returns the specified elements of the list stored at the specified key in the range [start, end]. start and stop are interpretated as indices:
 0 the first element, 1 the second ...
@@ -649,11 +649,11 @@ Returns the specified elements of the list stored at the specified key in the ra
 <pre>
 $redis->rPush('key1', 'A');
 $redis->rPush('key1', 'B');
-$redis->rPush('key1', 'C'); 
-$redis->lGetRange('key1', 0, -1); /* array('A', 'B', 'C') */
+$redis->rPush('key1', 'C');
+$redis->lRange('key1', 0, -1); /* array('A', 'B', 'C') */
 </pre>
 
-## listTrim
+## lTrim, listTrim
 ##### *Description*
 Trims an existing list so that it will contain only a specified range of elements.
 ##### *Parameters*
@@ -667,13 +667,13 @@ Trims an existing list so that it will contain only a specified range of element
 <pre>
 $redis->rPush('key1', 'A');
 $redis->rPush('key1', 'B');
-$redis->rPush('key1', 'C'); 
-$redis->lGetRange('key1', 0, -1); /* array('A', 'B', 'C') */
-$redis->listTrim('key1', 0, 1);
-$redis->lGetRange('key1', 0, -1); /* array('A', 'B') */
+$redis->rPush('key1', 'C');
+$redis->lRange('key1', 0, -1); /* array('A', 'B', 'C') */
+$redis->lTrim('key1', 0, 1);
+$redis->lRange('key1', 0, -1); /* array('A', 'B') */
 </pre>
 
-## lRemove
+## lRem, lRemove
 ##### *Description*
 Removes the first `count` occurences of the value element from the list. If count is zero, all the matching elements are removed. If count is negative, elements are removed from tail to head.
 ##### *Parameters*
@@ -692,9 +692,9 @@ $redis->lPush('key1', 'C');
 $redis->lPush('key1', 'A'); 
 $redis->lPush('key1', 'A'); 
 
-$redis->lGetRange('key1', 0, -1); /* array('A', 'A', 'C', 'B', 'A') */
-$redis->lRemove('key1', 'A', 2); /* 2 */
-$redis->lGetRange('key1', 0, -1); /* array('C', 'B', 'A') */
+$redis->lRange('key1', 0, -1); /* array('A', 'A', 'C', 'B', 'A') */
+$redis->lRem('key1', 'A', 2); /* 2 */
+$redis->lRange('key1', 0, -1); /* array('C', 'B', 'A') */
 </pre>
 
 ## lInsert
@@ -720,10 +720,10 @@ $redis->lPush('key1', 'B');
 $redis->lPush('key1', 'C');
 
 $redis->lInsert('key1', Redis::BEFORE, 'C', 'X'); /* 4 */
-$redis->lGetRange('key1', 0, -1); /* array('A', 'B', 'X', 'C') */
+$redis->lRange('key1', 0, -1); /* array('A', 'B', 'X', 'C') */
 
 $redis->lInsert('key1', Redis::AFTER, 'C', 'Y'); /* 5 */
-$redis->lGetRange('key1', 0, -1); /* array('A', 'B', 'X', 'C', 'Y') */
+$redis->lRange('key1', 0, -1); /* array('A', 'B', 'X', 'C', 'Y') */
 
 $redis->lInsert('key1', Redis::AFTER, 'W', 'value'); /* -1 */
 
@@ -745,7 +745,7 @@ $redis->sAdd('key1' , 'set2'); /* TRUE, 'key1' => {'set1', 'set2'}*/
 $redis->sAdd('key1' , 'set2'); /* FALSE, 'key1' => {'set1', 'set2'}*/
 </pre>
 
-## sRemove
+## sRem, sRemove
 ##### *Description*
 Removes the specified member from the set value stored at key.
 ##### *Parameters*
@@ -758,7 +758,7 @@ Removes the specified member from the set value stored at key.
 $redis->sAdd('key1' , 'set1'); 
 $redis->sAdd('key1' , 'set2'); 
 $redis->sAdd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
-$redis->sRemove('key1', 'set2'); /* 'key1' => {'set1', 'set3'} */
+$redis->sRem('key1', 'set2'); /* 'key1' => {'set1', 'set3'} */
 </pre>
 
 ## sMove
@@ -782,7 +782,7 @@ $redis->sMove('key1', 'key2', 'set13'); /* 'key1' =>  {'set11', 'set12'} */
 
 </pre>
 
-## sContains
+## sIsMember, sContains
 ##### *Description*
 Checks if `value` is a member of the set stored at the key `key`.
 ##### *Parameters*
@@ -797,12 +797,12 @@ $redis->sAdd('key1' , 'set1');
 $redis->sAdd('key1' , 'set2'); 
 $redis->sAdd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
 
-$redis->sContains('key1', 'set1'); /* TRUE */
-$redis->sContains('key1', 'setX'); /* FALSE */
+$redis->sIsMember('key1', 'set1'); /* TRUE */
+$redis->sIsMember('key1', 'setX'); /* FALSE */
 
 </pre>
 
-## sSize
+## sCard, sSize
 ##### *Description*
 Returns the cardinality of the set identified by key.
 ##### *Parameters*
@@ -814,8 +814,8 @@ Returns the cardinality of the set identified by key.
 $redis->sAdd('key1' , 'set1'); 
 $redis->sAdd('key1' , 'set2'); 
 $redis->sAdd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
-$redis->sSize('key1'); /* 3 */
-$redis->sSize('keyX'); /* 0 */
+$redis->sCard('key1'); /* 3 */
+$redis->sCard('keyX'); /* 0 */
 </pre>
 
 ## sPop
@@ -1183,7 +1183,7 @@ $redis->select(1);	// switch to DB 1
 $redis->get('x');	// will return 42
 </pre>
 
-## renameKey
+## rename, renameKey
 ##### *Description*
 Renames a key.
 ##### *Parameters*
@@ -1196,7 +1196,7 @@ Renames a key.
 ##### *Example*
 <pre>
 $redis->set('x', '42');
-$redis->renameKey('x', 'y');
+$redis->rename('x', 'y');
 $redis->get('y'); 	// → 42
 $redis->get('x'); 	// → `FALSE`
 </pre>
@@ -1244,7 +1244,7 @@ sleep(5);				// wait 5 seconds
 $redis->get('x'); 		// will return `FALSE`, as 'x' has expired.
 </pre>
 
-## getKeys
+## keys, getKeys
 ##### *Description*
 Returns the keys that match a certain pattern.
 ##### *Description*
@@ -1257,8 +1257,8 @@ Returns the keys that match a certain pattern.
 
 ##### *Example*
 <pre>
-$allKeys = $redis->getKeys('*');	// all keys will match this.
-$keyWithUserPrefix = $redis->getKeys('user*');
+$allKeys = $redis->keys('*');	// all keys will match this.
+$keyWithUserPrefix = $redis->keys('user*');
 </pre>
 
 ## dbSize
@@ -1671,8 +1671,8 @@ $redis->lPush('y', '456');
 
 // move the last of x to the front of y.
 var_dump($redis->rpoplpush('x', 'y'));
-var_dump($redis->lGetRange('x', 0, -1));
-var_dump($redis->lGetRange('y', 0, -1));
+var_dump($redis->lRange('x', 0, -1));
+var_dump($redis->lRange('y', 0, -1));
 
 </pre>
 Output:
@@ -1735,7 +1735,7 @@ $redis->zRange('key1', 0, -1); /* array('val0', 'val2', 'val10') */
 $redis->zRange('key1', 0, -1, true); /* array('val0' => 0, 'val2' => 2, 'val10' => 10) */
 </pre>
 
-## zDelete, zRemove
+## zDelete, zRem
 ##### *Description*
 Deletes a specified member from the ordered set.
 ##### *Parameters*
@@ -1753,7 +1753,7 @@ $redis->zDelete('key', 'val2');
 $redis->zRange('key', 0, -1); /* array('val0', 'val10') */
 </pre>
 
-## zReverseRange
+## zRevRange
 ##### *Description*
 Returns the elements of the sorted set stored at the specified key in the range [start, end] in reverse order. start and stop are interpretated as zero-based indices:
 0 the first element, 1 the second ...
@@ -1772,10 +1772,10 @@ Returns the elements of the sorted set stored at the specified key in the range 
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
-$redis->zReverseRange('key', 0, -1); /* array('val10', 'val2', 'val0') */
+$redis->zRevRange('key', 0, -1); /* array('val10', 'val2', 'val0') */
 
 // with scores
-$redis->zReverseRange('key', 0, -1, true); /* array('val10' => 10, 'val2' => 2, 'val0' => 0) */
+$redis->zRevRange('key', 0, -1, true); /* array('val10' => 10, 'val2' => 2, 'val0' => 0) */
 </pre>
 
 ## zRangeByScore, zRevRangeByScore
@@ -1820,7 +1820,7 @@ $redis->zAdd('key', 10, 'val10');
 $redis->zCount('key', 0, 3); /* 2, corresponding to array('val0', 'val2') */
 </pre>
 
-## zDeleteRangeByScore, zRemoveRangeByScore
+## zRemRangeByScore, zDeleteRangeByScore
 ##### *Description*
 Deletes the elements of the sorted set stored at the specified key which have scores in the range [start,end].
 ##### *Parameters*
@@ -1835,7 +1835,7 @@ Deletes the elements of the sorted set stored at the specified key which have sc
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
-$redis->zDeleteRangeByScore('key', 0, 3); /* 2 */
+$redis->zRemRangeByScore('key', 0, 3); /* 2 */
 </pre>
 
 ## zSize, zCard

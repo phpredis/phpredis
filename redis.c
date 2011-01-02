@@ -185,9 +185,22 @@ static zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, zinterstore, zInter, NULL, ZEND_ACC_PUBLIC)
 
      PHP_MALIAS(Redis, zRemove, zDelete, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zRem, zDelete, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zRemoveRangeByScore, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zRemRangeByScore, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zSize, zCard, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, substr, getRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, rename, renameKey, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, del, delete, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, keys, getKeys, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, lrem, lRemove, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, ltrim, listTrim, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, lindex, lGet, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, lrange, lGetRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, scard, sSize, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, srem, sRemove, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, sismember, sContains, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zrevrange, zReverseRange, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
@@ -3721,7 +3734,7 @@ PHP_METHOD(Redis, zUnion) {
 
 /* hashes */
 
-/* hGet */
+/* hSet */
 PHP_METHOD(Redis, hSet)
 {
     zval *object;
@@ -3755,7 +3768,7 @@ PHP_METHOD(Redis, hSet)
 }
 /* }}} */
 
-/* hSet */
+/* hGet */
 PHP_METHOD(Redis, hGet)
 {
     zval *object;
