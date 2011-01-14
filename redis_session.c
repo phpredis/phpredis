@@ -136,6 +136,7 @@ PS_OPEN_FUNC(redis)
 		if (i < j) {
 			int weight = 1;
 			double timeout = 86400.0;
+			int persistent = 0;
 
             /* translate unix: into file: */
 			if (!strncmp(save_path+i, "unix:", sizeof("unix:")-1)) {
@@ -174,6 +175,9 @@ PS_OPEN_FUNC(redis)
 				if (zend_hash_find(Z_ARRVAL_P(params), "timeout", sizeof("timeout"), (void **) &param) != FAILURE) {
 					timeout = atof(Z_STRVAL_PP(param));
 				}
+				if (zend_hash_find(Z_ARRVAL_P(params), "persistent", sizeof("persistent"), (void **) &param) != FAILURE) {
+					persistent = (atol(Z_STRVAL_PP(param)) == 1 ? 1 : 0);
+				}
 
 				/* // not supported yet
 				if (zend_hash_find(Z_ARRVAL_P(params), "retry_interval", sizeof("retry_interval"), (void **) &param) != FAILURE) {
@@ -194,9 +198,9 @@ PS_OPEN_FUNC(redis)
 
 			RedisSock *redis_sock;
             if(url->path) { /* unix */
-                    redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, 0);
+                    redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, persistent);
             } else {
-                    redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, 0);
+                    redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, persistent);
             }
 			redis_pool_add(pool, redis_sock, weight TSRMLS_CC);
 
