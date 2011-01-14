@@ -137,17 +137,14 @@ PS_OPEN_FUNC(redis)
 			int weight = 1;
 			double timeout = 86400.0;
 
-			/* unix: isn't supported yet. */
+            /* translate unix: into file: */
 			if (!strncmp(save_path+i, "unix:", sizeof("unix:")-1)) {
-				char *path = estrndup(save_path+i, j-i);
-				php_error_docref(NULL TSRMLS_CC, E_WARNING,
-					"Failed to parse session.save_path (error at offset %d, url was '%s')", i, path);
+				int len = j-i;
+				char *path = estrndup(save_path+i, len);
+				memcpy(path, "file:", sizeof("file:")-1);
+				url = php_url_parse_ex(path, len);
 				efree(path);
-				redis_pool_free(pool TSRMLS_CC);
-				PS_SET_MOD_DATA(NULL);
-				return FAILURE;
-			}
-			else {
+			} else {
 				url = php_url_parse_ex(save_path+i, j-i);
 			}
 
@@ -188,14 +185,19 @@ PS_OPEN_FUNC(redis)
 				zval_ptr_dtor(&params);
 			}
 
-			if (url->host == NULL || weight <= 0 || timeout <= 0) {
+			if ((url->path == NULL && url->host == NULL) || weight <= 0 || timeout <= 0) {
 				php_url_free(url);
 				redis_pool_free(pool TSRMLS_CC);
 				PS_SET_MOD_DATA(NULL);
 				return FAILURE;
 			}
 
-			RedisSock *redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, 0);
+			RedisSock *redis_sock;
+            if(url->path) { /* unix */
+                    redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, 0);
+            } else {
+                    redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, 0);
+            }
 			redis_pool_add(pool, redis_sock, weight TSRMLS_CC);
 
 			php_url_free(url);
