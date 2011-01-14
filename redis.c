@@ -3615,7 +3615,8 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
 
 	}
 
-    cmd_elements = 3;
+    int free_key_output = redis_key_prefix(redis_sock, &key_output, &key_output_len);
+	cmd_elements = 3;
 	cmd_len = redis_cmd_format(&cmd,
                     "$%d" _NL /* command_len */
                     "%s" _NL  /* command */
@@ -3629,6 +3630,7 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
                     , command_len, command, command_len
                     , key_output_len, key_output, key_output_len
                     , integer_length(array_keys_count), array_keys_count);
+	if(free_key_output) efree(key_output);
 
 	/* keys */
     for (zend_hash_internal_pointer_reset_ex(arr_keys_hash, &pointer);
@@ -3641,6 +3643,10 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
             if(*cmd) {
                 old_cmd = cmd;
             }
+			char *data_str = Z_STRVAL_PP(data);
+			int data_len = Z_STRLEN_PP(data);
+
+			int free_data = redis_key_prefix(redis_sock, &data_str, &data_len);
             cmd_len = redis_cmd_format(&cmd,
                             "%s" /* cmd */
                             "$%d" _NL
@@ -3648,6 +3654,7 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
                             , cmd, cmd_len
                             , Z_STRLEN_PP(data), Z_STRVAL_PP(data), Z_STRLEN_PP(data));
             cmd_elements++;
+			if(free_data) efree(data_str);
             if(old_cmd) {
                 efree(old_cmd);
             }
@@ -3920,12 +3927,12 @@ PHP_METHOD(Redis, hKeys)
     RedisSock *redis_sock = generic_hash_command_1(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HKEYS", sizeof("HKEYS")-1);
 
 	IF_ATOMIC() {
-	    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+	    if (redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU,
 											redis_sock, NULL, NULL) < 0) {
     	    RETURN_FALSE;
 	    }
 	}
-	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_raw);
 
 
 }
@@ -4078,6 +4085,7 @@ PHP_METHOD(Redis, hMget) {
     for(i = 0; i < nb_fields; ++i) {
             z_keys[i] = NULL;
     }
+	int key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
     cmd_len = redis_cmd_format(&cmd,
                     "*%d" _NL
@@ -4088,6 +4096,7 @@ PHP_METHOD(Redis, hMget) {
                     "%s" _NL
                     , nb_fields + 2
                     , key_len, key, key_len);
+	if(key_free) efree(key);
 
     char *old_cmd = NULL;	
 
@@ -4154,10 +4163,12 @@ PHP_METHOD(Redis, hMset)
         RETURN_FALSE;
     }
 
+	int key_free = redis_key_prefix(redis_sock, &key, &key_len);
     cmd_len = redis_cmd_format(&cmd, 
                     "$5" _NL "HMSET" _NL
                     "$%d" _NL "%s" _NL
                     , key_len, key, key_len);
+	if(key_free) efree(key);
 
     /* looping on each item of the array */
 	for(i =0, zend_hash_internal_pointer_reset(ht_hash);
@@ -4185,7 +4196,6 @@ PHP_METHOD(Redis, hMset)
         char *hval;
         int hval_len;
         int hval_free = redis_serialize(redis_sock, *z_value_p, &hval, &hval_len TSRMLS_CC);
-		int hkey_free = redis_key_prefix(redis_sock, &hkey, &hkey_len);
 
         old_cmd = cmd;
         cmd_len = redis_cmd_format(&cmd, "%s"
@@ -4196,7 +4206,6 @@ PHP_METHOD(Redis, hMset)
                         , hval_len, hval, hval_len);
         efree(old_cmd);
         if(hval_free) efree(hval);
-        if(hkey_free) efree(hkey);
     }
 
     old_cmd = cmd;

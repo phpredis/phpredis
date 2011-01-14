@@ -1850,6 +1850,11 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     public function testMultiExec() {
 	$this->sequence(Redis::MULTI);
 
+	// with prefix as well
+	$this->redis->setOption(Redis::OPT_PREFIX, "test:");
+	$this->sequence(Redis::MULTI);
+	$this->redis->setOption(Redis::OPT_PREFIX, "");
+
 	$this->redis->set('x', '42');
 
 	$this->assertTrue(TRUE === $this->redis->watch('x'));
@@ -1884,6 +1889,11 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     public function testPipeline() {
 	$this->sequence(Redis::PIPELINE);
+
+	// with prefix as well
+	$this->redis->setOption(Redis::OPT_PREFIX, "test:");
+	$this->sequence(Redis::PIPELINE);
+	$this->redis->setOption(Redis::OPT_PREFIX, "");
     }
 
     protected function sequence($mode) {
@@ -2443,11 +2453,21 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     public function testSerializerPHP() {
 
 	    $this->checkSerializer(Redis::SERIALIZER_PHP);
+
+	    // with prefix
+	    $this->redis->setOption(Redis::OPT_PREFIX, "test:");
+	    $this->checkSerializer(Redis::SERIALIZER_PHP);
+	    $this->redis->setOption(Redis::OPT_PREFIX, "");
     }
 
     public function testSerializerIGBinary() {
 
 	    $this->checkSerializer(Redis::SERIALIZER_IGBINARY);
+
+	    // with prefix
+	    $this->redis->setOption(Redis::OPT_PREFIX, "test:");
+	    $this->checkSerializer(Redis::SERIALIZER_IGBINARY);
+	    $this->redis->setOption(Redis::OPT_PREFIX, "");
     }
 
     private function checkSerializer($mode) {

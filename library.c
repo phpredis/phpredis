@@ -79,7 +79,7 @@ PHPAPI zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, 
     array_init(z_tab);
 
     redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    redis_sock, z_tab, numElems);
+                    redis_sock, z_tab, numElems, 1);
 	return z_tab;
 }
 
@@ -633,7 +633,7 @@ PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PA
     array_init(z_multi_result); /* pre-allocate array for multi's results. */
 
     redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    redis_sock, z_multi_result, numElems);
+                    redis_sock, z_multi_result, numElems, 1);
 
     array_zip_values_and_scores(redis_sock, z_multi_result, 0 TSRMLS_CC);
 
@@ -919,7 +919,47 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
     array_init(z_multi_result); /* pre-allocate array for multi's results. */
 
     redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    redis_sock, z_multi_result, numElems);
+                    redis_sock, z_multi_result, numElems, 1);
+
+    IF_MULTI_OR_PIPELINE() {
+        add_next_index_zval(z_tab, z_multi_result);
+    } else {
+        *return_value = *z_multi_result;
+        efree(z_multi_result);
+    }
+    //zval_copy_ctor(return_value);
+    return 0;
+}
+
+/**
+ * Like multibulk reply, but don't touch the values, they won't be compressed. (this is used by HKEYS).
+ */
+PHPAPI int redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    char inbuf[1024];
+
+    if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
+        return -1;
+    }
+    if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
+		redis_stream_close(redis_sock TSRMLS_CC);
+        redis_sock->stream = NULL;
+        redis_sock->status = REDIS_SOCK_STATUS_FAILED;
+        redis_sock->mode = ATOMIC;
+        zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
+        return -1;
+    }
+
+    if(inbuf[0] != '*') {
+        return -1;
+    }
+    int numElems = atoi(inbuf+1);
+    zval *z_multi_result;
+    MAKE_STD_ZVAL(z_multi_result);
+    array_init(z_multi_result); /* pre-allocate array for multi's results. */
+
+    redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                    redis_sock, z_multi_result, numElems, 0);
 
     IF_MULTI_OR_PIPELINE() {
         add_next_index_zval(z_tab, z_multi_result);
@@ -933,7 +973,7 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
 
 PHPAPI int
 redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                                     zval *z_tab, int numElems)
+                                     zval *z_tab, int numElems, int unwrap_key)
 {
     char *response;
     int response_len;
@@ -942,7 +982,7 @@ redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *re
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
         if(response != NULL) {
 		zval *z = NULL;
-		if(redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
+		if(unwrap_key && redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
 			efree(response);
 			add_next_index_zval(z_tab, z);
 		} else {
