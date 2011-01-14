@@ -131,6 +131,9 @@ $redis->pconnect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout and would be anothe
 $redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another connection then the three before.
 </pre>
 
+## close
+##### *Description*
+Disconnects from the Redis instance, except when `pconnect` is used.
 
 ## setOption
 ##### *Description*
