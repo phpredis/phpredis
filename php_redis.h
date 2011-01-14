@@ -206,7 +206,7 @@ extern zend_module_entry redis_module_entry;
 
 #define phpext_redis_ptr redis_module_ptr
 
-#define PHP_REDIS_VERSION "2.0.11"
+#define PHP_REDIS_VERSION "2.1.0"
 
 #endif
 
