@@ -1802,6 +1802,8 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->delete('h');
 	$this->assertTrue(2 === $this->redis->hIncrBy('h', 'x', 2));
 	$this->assertTrue(3 === $this->redis->hIncrBy('h', 'x', 1));
+	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'x', "not-a-number"));
+	$this->assertTrue("3" === $this->redis->hGet('h', 'x'));
 
 	$this->redis->hSet('h', 'y', 'not-a-number');
 	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'y', 1));
@@ -1839,7 +1841,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    $this->redis->setRange('key', 6, 'you'); // don't cut off the end
 	    $this->assertTrue('hello youis' === $this->redis->get('key'));
 
-	    $this->assertTrue(FALSE === $this->redis->setRange('key', -1, 'plop')); // doesn't work with negative offsets
+	    $this->redis->set('key', 'hello world');
+	    $this->assertTrue(11 === $this->redis->setRange('key', -6, 'redis')); // works with negative offsets too!
+	    $this->assertTrue('hello redis' === $this->redis->get('key'));
 
 	    // fill with zeros if needed
 	    $this->redis->delete('key');

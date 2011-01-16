@@ -4029,13 +4029,13 @@ PHP_METHOD(Redis, hIncrBy)
 {
     zval *object;
     RedisSock *redis_sock;
-    char *key = NULL, *cmd, *member;
-    int key_len, member_len, cmd_len;
-    long val;
+    char *key = NULL, *cmd, *member, *val;
+    int key_len, member_len, cmd_len, val_len;
+	int i;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ossl",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osss",
                                      &object, redis_ce,
-                                     &key, &key_len, &member, &member_len, &val) == FAILURE) {
+                                     &key, &key_len, &member, &member_len, &val, &val_len) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -4043,9 +4043,22 @@ PHP_METHOD(Redis, hIncrBy)
         RETURN_FALSE;
     }
 
+	/* check for validity of numeric string */
+	i = 0;
+	if(val_len && val[0] == '-') { /* negative case */
+		i++;
+	}
+	for(i = 0; i < val_len; ++i) {
+		if(val[i] < '0' || val[i] > '9') {
+			RETURN_FALSE;
+		}
+	}
+
+
+
     /* HINCRBY key member amount */
 	int key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "HINCRBY", "ssd", key, key_len, member, member_len, val);
+    cmd_len = redis_cmd_format_static(&cmd, "HINCRBY", "sss", key, key_len, member, member_len, val, val_len);
 	if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
