@@ -180,39 +180,8 @@ inline static int igbinary_unserialize_ref(struct igbinary_unserialize_data *igs
 static int igbinary_unserialize_zval(struct igbinary_unserialize_data *igsd, zval **z TSRMLS_DC);
 /* }}} */
 /* {{{ igbinary_functions[] */
-/** Exported php functions. */
-zend_function_entry igbinary_functions[] = {
-	PHP_FE(igbinary_serialize,                NULL)
-	PHP_FE(igbinary_unserialize,              NULL)
-	{NULL, NULL, NULL}
-};
-/* }}} */
-/* {{{ igbinary_module_entry */
-zend_module_entry igbinary_module_entry = {
-#if ZEND_MODULE_API_NO >= 20010901
-	STANDARD_MODULE_HEADER,
-#endif
-	"igbinary",
-	igbinary_functions,
-	PHP_MINIT(igbinary),
-	PHP_MSHUTDOWN(igbinary),
-	NULL,
-	NULL,
-	PHP_MINFO(igbinary),
-#if ZEND_MODULE_API_NO >= 20010901
-	IGBINARY_VERSION, /* Replace with version number for your extension */
-#endif
-	STANDARD_MODULE_PROPERTIES
-};
-/* }}} */
 
 ZEND_DECLARE_MODULE_GLOBALS(igbinary)
-
-/* {{{ ZEND_GET_MODULE */
-#ifdef COMPILE_DL_IGBINARY
-ZEND_GET_MODULE(igbinary)
-#endif
-/* }}} */
 
 /* {{{ INI entries */
 PHP_INI_BEGIN()
