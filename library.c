@@ -1092,7 +1092,11 @@ PHPAPI void redis_free_socket(RedisSock *redis_sock)
 
 PHPAPI int
 redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_CC) {
+#if ZEND_MODULE_API_NO >= 20100000
+	php_serialize_data_t ht;
+#else
 	HashTable ht;
+#endif
 	smart_str sstr = {0};
 	zval *z_copy;
 	size_t sz;
@@ -1133,11 +1137,17 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 
 		case REDIS_SERIALIZER_PHP:
 
+#if ZEND_MODULE_API_NO >= 20100000
+#else
 			zend_hash_init(&ht, 10, NULL, NULL, 0);
+#endif
 			php_var_serialize(&sstr, &z, &ht TSRMLS_CC);
 			*val = sstr.c;
 			*val_len = (int)sstr.len;
+#if ZEND_MODULE_API_NO >= 20100000
+#else
 			zend_hash_destroy(&ht);
+#endif
 
 			return 1;
 
@@ -1166,8 +1176,7 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 			if(!*return_value) {
 				MAKE_STD_ZVAL(*return_value);
 			}
-			var_hash.first = 0;
-			var_hash.first_dtor = 0;
+			memset(&var_hash, 0, sizeof(var_hash));
 			if(!php_var_unserialize(return_value, (const unsigned char**)&val,
 					(const unsigned char*)val + val_len, &var_hash TSRMLS_CC)) {
 				efree(*return_value);
