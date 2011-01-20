@@ -1628,9 +1628,9 @@ Remove the expiration timer from a key.
 $redis->persist('key');
 </pre>
 
-## mset (redis >= 1.1)
+## mset, msetnx
 ##### *Description*
-Sets multiple key-value pairs in one atomic command
+Sets multiple key-value pairs in one atomic command. MSETNX only returns TRUE if all the keys were set (see SETNX).
 
 ##### *Parameters*
 *Pairs*: array(key => value, ...)

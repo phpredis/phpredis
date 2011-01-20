@@ -127,6 +127,7 @@ static zend_function_entry redis_functions[] = {
 
      /* 1.1 */
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, msetnx, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, rpoplpush, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zAdd, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zDelete, NULL, ZEND_ACC_PUBLIC)
@@ -2954,9 +2955,9 @@ PHP_METHOD(Redis, move) {
 }
 /* }}} */
 
-/* {{{ proto bool Redis::mset(array (key => value, ...))
- */
-PHP_METHOD(Redis, mset) {
+PHPAPI void
+generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *, zval *, void *)) {
+
     zval *object;
     RedisSock *redis_sock;
 
@@ -2977,7 +2978,7 @@ PHP_METHOD(Redis, mset) {
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format(&cmd, "*%d" _NL "$4" _NL "MSET" _NL, 1 + 2 * zend_hash_num_elements(Z_ARRVAL_P(z_array)));
+    cmd_len = redis_cmd_format(&cmd, kw, 1 + 2 * zend_hash_num_elements(Z_ARRVAL_P(z_array)));
 
     HashTable *keytable = Z_ARRVAL_P(z_array);
     for(zend_hash_internal_pointer_reset(keytable);
@@ -3034,9 +3035,24 @@ PHP_METHOD(Redis, mset) {
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
 	IF_ATOMIC() {
-		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+		fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
-	REDIS_PROCESS_RESPONSE(redis_boolean_response);
+	REDIS_PROCESS_RESPONSE(fun);
+}
+
+/* {{{ proto bool Redis::mset(array (key => value, ...))
+ */
+PHP_METHOD(Redis, mset) {
+	RedisSock *redis_sock;
+	generic_mset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "*%d" _NL "$4" _NL "MSET" _NL, redis_boolean_response);
+}
+/* }}} */
+
+
+/* {{{ proto bool Redis::msetnx(array (key => value, ...))
+ */
+PHP_METHOD(Redis, msetnx) {
+	generic_mset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "*%d" _NL "$6" _NL "MSETNX" _NL, redis_1_response);
 }
 /* }}} */
 

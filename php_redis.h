@@ -118,6 +118,7 @@ PHP_METHOD(Redis, bgrewriteaof);
 PHP_METHOD(Redis, slaveof);
 
 PHP_METHOD(Redis, mset);
+PHP_METHOD(Redis, msetnx);
 PHP_METHOD(Redis, rpoplpush);
 
 PHP_METHOD(Redis, hGet);
