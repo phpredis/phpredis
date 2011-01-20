@@ -1842,8 +1842,8 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    $this->assertTrue('hello youis' === $this->redis->get('key'));
 
 	    $this->redis->set('key', 'hello world');
-	    $this->assertTrue(11 === $this->redis->setRange('key', -6, 'redis')); // works with negative offsets too!
-	    $this->assertTrue('hello redis' === $this->redis->get('key'));
+	    // $this->assertTrue(11 === $this->redis->setRange('key', -6, 'redis')); // works with negative offsets too! (disabled because not all versions support this)
+	    // $this->assertTrue('hello redis' === $this->redis->get('key'));
 
 	    // fill with zeros if needed
 	    $this->redis->delete('key');
