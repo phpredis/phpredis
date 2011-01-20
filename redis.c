@@ -173,7 +173,6 @@ static zend_function_entry redis_functions[] = {
      /* options */
      PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, setOptions, NULL, ZEND_ACC_PUBLIC)
 
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
@@ -4961,13 +4960,6 @@ PHP_METHOD(Redis, setOption) {
             default:
                     RETURN_FALSE;
     }
-}
-/* }}} */
-
-/* {{{ proto string Redis::setOptions(array $options)
- */
-PHP_METHOD(Redis, setOptions) {
-
 }
 /* }}} */
 
