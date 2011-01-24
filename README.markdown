@@ -509,8 +509,8 @@ Return and remove the first element of the list.
 <pre>
 $redis->rPush('key1', 'A');
 $redis->rPush('key1', 'B');
-$redis->rPush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
-$redis->lPop('key1'); /* key1 => [ 'B', 'A' ] */
+$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->lPop('key1'); /* key1 => [ 'B', 'C' ] */
 </pre>
 
 ## rPop
@@ -525,8 +525,8 @@ Returns and removes the first element of the list.
 <pre>
 $redis->rPush('key1', 'A');
 $redis->rPush('key1', 'B');
-$redis->rPush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
-$redis->rPop('key1'); /* key1 => [ 'C', 'B' ] */
+$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->rPop('key1'); /* key1 => [ 'A', 'B' ] */
 </pre>
 
 ## blPop, brPop
@@ -589,7 +589,7 @@ Returns the size of a list identified by Key. If the list didn't exist or is emp
 <pre>
 $redis->rPush('key1', 'A');
 $redis->rPush('key1', 'B');
-$redis->rPush('key1', 'C'); /* key1 => [ 'C', 'B', 'A' ] */
+$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
 $redis->lSize('key1');/* 3 */
 $redis->rPop('key1'); 
 $redis->lSize('key1');/* 2 */
