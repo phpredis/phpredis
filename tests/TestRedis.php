@@ -1792,6 +1792,15 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->hSet('h', 'x', 'a');
 	$this->redis->hSet('h', 'y', 'b');
 
+	// hsetnx
+	$this->redis->delete('h');
+	$this->assertTrue(TRUE === $this->redis->hSetNx('h', 'x', 'a'));
+	$this->assertTrue(TRUE === $this->redis->hSetNx('h', 'y', 'b'));
+	$this->assertTrue(FALSE === $this->redis->hSetNx('h', 'x', '?'));
+	$this->assertTrue(FALSE === $this->redis->hSetNx('h', 'y', '?'));
+	$this->assertTrue('a' === $this->redis->hGet('h', 'x'));
+	$this->assertTrue('b' === $this->redis->hGet('h', 'y'));
+
 	// keys
 	$keys = $this->redis->hKeys('h');
 	$this->assertTrue($keys === array('x', 'y') || $keys === array('y', 'x'));

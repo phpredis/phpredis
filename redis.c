@@ -149,6 +149,7 @@ static zend_function_entry redis_functions[] = {
      /* 1.2 */
      PHP_ME(Redis, hGet, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hSet, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hSetNx, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hDel, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hLen, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hKeys, NULL, ZEND_ACC_PUBLIC)
@@ -3756,9 +3757,8 @@ PHP_METHOD(Redis, zUnion) {
 
 /* hashes */
 
-/* hSet */
-PHP_METHOD(Redis, hSet)
-{
+PHPAPI void
+generic_hset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *, zval *, void *)) {
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *cmd, *member, *val;
@@ -3778,17 +3778,29 @@ PHP_METHOD(Redis, hSet)
 
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "HSET", "sss", key, key_len, member, member_len, val, val_len);
+    cmd_len = redis_cmd_format_static(&cmd, kw, "sss", key, key_len, member, member_len, val, val_len);
     if(val_free) efree(val);
     if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
-	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	  fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
+	REDIS_PROCESS_RESPONSE(fun);
+}
+/* hSet */
+PHP_METHOD(Redis, hSet)
+{
+	generic_hset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HSET", redis_long_response);
 }
 /* }}} */
+/* hSetNx */
+PHP_METHOD(Redis, hSetNx)
+{
+	generic_hset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HSETNX", redis_1_response);
+}
+/* }}} */
+
 
 /* hGet */
 PHP_METHOD(Redis, hGet)

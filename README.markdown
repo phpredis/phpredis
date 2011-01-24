@@ -2004,6 +2004,21 @@ $redis->hSet('h', 'key1', 'plop'); /* 0, value was replaced. */
 $redis->hGet('h', 'key1'); /* returns "plop" */
 </pre>
 
+## hSetNx
+##### *Description*
+Adds a value to the hash stored at key only if this field isn't already in the hash.
+
+##### *Return value*
+*BOOL* `TRUE` if the field was set, `FALSE` if it was already present.
+
+##### *Example*
+<pre>
+$redis->delete('h')
+$redis->hSetNx('h', 'key1', 'hello'); /* TRUE, 'key1' => 'hello' in the hash at "h" */
+$redis->hSetNx('h', 'key1', 'world'); /* FALSE, 'key1' => 'hello' in the hash at "h". No change since the field wasn't replaced. */
+</pre>
+
+
 ## hGet
 ##### *Description*
 Gets a value from the hash stored at key. If the hash table doesn't exist, or the key doesn't exist, `FALSE` is returned.  
