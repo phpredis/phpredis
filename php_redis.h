@@ -106,6 +106,7 @@ PHP_METHOD(Redis, zRangeByScore);
 PHP_METHOD(Redis, zRevRangeByScore);
 PHP_METHOD(Redis, zCount);
 PHP_METHOD(Redis, zDeleteRangeByScore);
+PHP_METHOD(Redis, zDeleteRangeByRank);
 PHP_METHOD(Redis, zCard);
 PHP_METHOD(Redis, zScore);
 PHP_METHOD(Redis, zRank);

@@ -137,6 +137,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zRevRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCount, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zDeleteRangeByRank, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCard, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zScore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRank, NULL, ZEND_ACC_PUBLIC)
@@ -189,6 +190,7 @@ static zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, zRem, zDelete, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zRemoveRangeByScore, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zRemRangeByScore, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zRemRangeByRank, zDeleteRangeByRank, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zSize, zCard, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, substr, getRange, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, rename, renameKey, NULL, ZEND_ACC_PUBLIC)
@@ -3241,6 +3243,40 @@ PHP_METHOD(Redis, zDeleteRangeByScore)
 
 }
 /* }}} */
+
+/* {{{ proto long Redis::zDeleteRangeByRank(string key, long start, long end)
+ */
+PHP_METHOD(Redis, zDeleteRangeByRank)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd;
+    int key_len, cmd_len;
+    long start, end;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll",
+                                     &object, redis_ce,
+                                     &key, &key_len, &start, &end) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+	int key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    cmd_len = redis_cmd_format_static(&cmd, "ZREMRANGEBYRANK", "sdd", key, key_len, (int)start, (int)end);
+	if(key_free) efree(key);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
+
+}
+/* }}} */
+
 /* {{{ proto array Redis::zReverseRange(string key, int start , int end, bool withscores = FALSE)
  */
 PHP_METHOD(Redis, zReverseRange)

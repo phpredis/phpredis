@@ -1842,6 +1842,24 @@ $redis->zAdd('key', 10, 'val10');
 $redis->zRemRangeByScore('key', 0, 3); /* 2 */
 </pre>
 
+## zRemRangeByRank, zDeleteRangeByRank
+##### *Description*
+Deletes the elements of the sorted set stored at the specified key which have rank in the range [start,end].
+##### *Parameters*
+*key*  
+*start*: LONG  
+*end*: LONG  
+##### *Return value*
+*LONG* The number of values deleted from the sorted set
+##### *Example*
+<pre>
+$redis->zAdd('key', 1, 'one');
+$redis->zAdd('key', 2, 'two');
+$redis->zAdd('key', 3, 'three');
+$redis->zRemRangeByRank('key', 0, 1); /* 2 */
+$redis->zRange('key', 0, -1, array('withscores' => TRUE)); /* array('three' => 3) */
+</pre>
+
 ## zSize, zCard
 ##### *Description*
 Returns the cardinality of an ordered set.

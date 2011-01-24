@@ -1698,6 +1698,16 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->delete('key2');
 	$this->redis->delete('key3');
 
+
+	// ZREMRANGEBYRANK
+	$this->redis->zAdd('key1', 1, 'one');
+	$this->redis->zAdd('key1', 2, 'two');
+	$this->redis->zAdd('key1', 3, 'three');
+	$this->assertTrue(2 === $this->redis->zremrangebyrank('key1', 0, 1));
+	$this->assertTrue(array('three' => 3) == $this->redis->zRange('key1', 0, -1, TRUE));
+
+	$this->redis->delete('key1');
+
 	// zInter
 
 	$this->redis->zAdd('key1', 0, 'val0');
