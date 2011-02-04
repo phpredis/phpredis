@@ -816,9 +816,9 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     if (redis_sock->persistent) {
       if (redis_sock->persistent_id) {
-        spprintf(&persistent_id, 0, "%s:%s", host, redis_sock->persistent_id);
+        spprintf(&persistent_id, 0, "phpredis:%s:%s", host, redis_sock->persistent_id);
       } else {
-        spprintf(&persistent_id, 0, "%s:%f", host, redis_sock->timeout);
+        spprintf(&persistent_id, 0, "phpredis:%s:%f", host, redis_sock->timeout);
       }
     }
 
