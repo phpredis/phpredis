@@ -108,7 +108,7 @@ So be patient on to many open FD's (specially on redis server side) when using p
 connections on many servers connecting to one redis server.
 
 Also more than one persistent connection can be made identified by either host + port + timeout
-or unix socket + timeout.
+or host + persistent_id or unix socket + timeout.
 
 This feature is not available in threaded versions. `pconnect` and `popen` then working like their non
 persistent equivalents.
@@ -118,6 +118,7 @@ persistent equivalents.
 *host*: string. can be a host, or the path to a unix domain socket  
 *port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
+*persistent_id*: string. identity for the requested persistent connection
 
 ##### *Return Value*
 
@@ -128,8 +129,9 @@ persistent equivalents.
 <pre>
 $redis->pconnect('127.0.0.1', 6379);
 $redis->pconnect('127.0.0.1'); // port 6379 by default - same connection like before.
-$redis->pconnect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout and would be another connection then the two before.
-$redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another connection then the three before.
+$redis->pconnect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout and would be another connection than the two before.
+$redis->pconnect('127.0.0.1', 6379, 2.5, 'x'); // x is sent as persistent_id and would be another connection the the three before.
+$redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another connection than the four before.
 </pre>
 
 ## close
