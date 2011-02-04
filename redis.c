@@ -424,7 +424,7 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 	RedisSock *redis_sock  = NULL;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|lds",
-				&object, redis_ce, &host, &host_len, &port
+				&object, redis_ce, &host, &host_len, &port,
 				&timeout, &persistent_id, &persistent_id_len) == FAILURE) {
 		return FAILURE;
 	}
