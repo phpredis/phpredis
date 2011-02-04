@@ -412,6 +412,9 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 	char *host = NULL;
 	long port = -1;
 
+	char *persistent_id = NULL;
+	int persistent_id_len = -1;
+
 #ifdef ZTS
 	/* not sure how in threaded mode this works so disabled persistents at first */
     persistent = 0;
@@ -420,9 +423,9 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 	double timeout = 0.0;
 	RedisSock *redis_sock  = NULL;
 
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|ld",
-				&object, redis_ce, &host, &host_len, &port,
-				&timeout) == FAILURE) {
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|lds",
+				&object, redis_ce, &host, &host_len, &port
+				&timeout, &persistent_id, &persistent_id_len) == FAILURE) {
 		return FAILURE;
 	}
 
@@ -445,7 +448,7 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 		}
 	}
 
-	redis_sock = redis_sock_create(host, host_len, port, timeout, persistent);
+	redis_sock = redis_sock_create(host, host_len, port, timeout, persistent, persistent_id, persistent_id_len);
 
 	if (redis_sock_server_open(redis_sock, 1 TSRMLS_CC) < 0) {
 		redis_free_socket(redis_sock);
