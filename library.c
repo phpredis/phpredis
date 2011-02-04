@@ -755,7 +755,7 @@ PHPAPI void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
  */
 PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port,
                                     double timeout, int persistent, char *persistent_id,
-				    int persistent_id_len)
+                                    int persistent_id_len)
 {
     RedisSock *redis_sock;
 
@@ -767,6 +767,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     redis_sock->persistent = persistent;
 
     if (persistent_id) {
+      redis_sock->persistent_id = ecalloc(persistent_id_len + 1, 1);
       memcpy(redis_sock->persistent_id, persistent_id, persistent_id_len);
       redis_sock->persistent_id[persistent_id_len] = '\0';
     } else {
