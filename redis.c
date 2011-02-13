@@ -4187,19 +4187,25 @@ PHP_METHOD(Redis, hMget) {
                             &pointer) == SUCCESS;
                     zend_hash_move_forward_ex(arr_hash, &pointer)) {
 
-            if (Z_TYPE_PP(data) == IS_STRING) {
-                    old_cmd = cmd;
-                    cmd_len = redis_cmd_format(&cmd, "%s" "$%d" _NL "%s" _NL
+			if (Z_TYPE_PP(data) == IS_LONG || Z_TYPE_PP(data) == IS_STRING) {
+
+				old_cmd = cmd;
+				if (Z_TYPE_PP(data) == IS_LONG) {
+				    cmd_len = redis_cmd_format(&cmd, "%s" "$%d" _NL "%d" _NL
+                                    , cmd, cmd_len
+                                    , integer_length(Z_LVAL_PP(data)), (int)Z_LVAL_PP(data));
+				} else if (Z_TYPE_PP(data) == IS_STRING) {
+				    cmd_len = redis_cmd_format(&cmd, "%s" "$%d" _NL "%s" _NL
                                     , cmd, cmd_len
                                     , Z_STRLEN_PP(data), Z_STRVAL_PP(data), Z_STRLEN_PP(data));
-                    efree(old_cmd);
+				}
+				efree(old_cmd);
+                /* save context */
+                MAKE_STD_ZVAL(z_keys[i]);
+                *z_keys[i] = **data;
+                zval_copy_ctor(z_keys[i]);
 
-                    /* save context */
-                    MAKE_STD_ZVAL(z_keys[i]);
-                    *z_keys[i] = **data;
-                    zval_copy_ctor(z_keys[i]);
-
-                    i++;
+                i++;
             }
     }
 
@@ -4255,6 +4261,7 @@ PHP_METHOD(Redis, hMset)
 		unsigned int hkey_len;
 		unsigned long idx;
 		int type;
+		int hkey_free = 0;
 		zval **z_value_p;
 
 		type = zend_hash_get_current_key_ex(ht_hash, &hkey, &hkey_len, &idx, 0, NULL);
@@ -4263,8 +4270,10 @@ PHP_METHOD(Redis, hMset)
 			continue; 	/* this should never happen */
 		}
 
-		if(type != HASH_KEY_IS_STRING) {
-                continue;
+		if(type != HASH_KEY_IS_STRING) { /* convert to string */
+			hkey_free = 1;
+			hkey = emalloc(40);
+			hkey_len = 1 + sprintf(hkey, "%ld", idx);
         }
         element_count += 2;
 
@@ -4282,6 +4291,7 @@ PHP_METHOD(Redis, hMset)
                         , hval_len, hval, hval_len);
         efree(old_cmd);
         if(hval_free) efree(hval);
+        if(hkey_free) efree(hkey);
     }
 
     old_cmd = cmd;

@@ -1853,6 +1853,14 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(array('z' => 'abc') === $this->redis->hMget('h', array('z')));
 	$this->assertTrue(array('x' => '123', 't' => FALSE, 'y' => '456') === $this->redis->hMget('h', array('x', 't', 'y')));
 
+	// hmget/hmset with numeric fields
+	$this->redis->del('h');
+	$this->assertTrue(TRUE === $this->redis->hMset('h', array(123 => 'x', 'y' => 456)));
+	$this->assertTrue('x' === $this->redis->hGet('h', 123));
+	$this->assertTrue('x' === $this->redis->hGet('h', '123'));
+	$this->assertTrue('456' === $this->redis->hGet('h', 'y'));
+	$this->assertTrue(array(123 => 'x', 'y' => '456') === $this->redis->hMget('h', array('123', 'y')));
+
 	// check non-string types.
 	$this->redis->delete('h1');
 	$this->assertTrue(TRUE === $this->redis->hMSet('h1', array('x' => 0, 'y' => array(), 'z' => new stdclass(), 't' => NULL)));
