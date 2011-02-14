@@ -4203,6 +4203,7 @@ PHP_METHOD(Redis, hMget) {
                 /* save context */
                 MAKE_STD_ZVAL(z_keys[i]);
                 *z_keys[i] = **data;
+                convert_to_string(z_keys[i]);
                 zval_copy_ctor(z_keys[i]);
 
                 i++;
