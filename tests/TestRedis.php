@@ -1834,8 +1834,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->delete('h');
 	$this->assertTrue(2 === $this->redis->hIncrBy('h', 'x', 2));
 	$this->assertTrue(3 === $this->redis->hIncrBy('h', 'x', 1));
+	$this->assertTrue(2 === $this->redis->hIncrBy('h', 'x', -1));
 	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'x', "not-a-number"));
-	$this->assertTrue("3" === $this->redis->hGet('h', 'x'));
+	$this->assertTrue("2" === $this->redis->hGet('h', 'x'));
 
 	$this->redis->hSet('h', 'y', 'not-a-number');
 	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'y', 1));

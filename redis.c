@@ -4111,7 +4111,7 @@ PHP_METHOD(Redis, hIncrBy)
 	if(val_len && val[0] == '-') { /* negative case */
 		i++;
 	}
-	for(i = 0; i < val_len; ++i) {
+	for(; i < val_len; ++i) {
 		if(val[i] < '0' || val[i] > '9') {
 			RETURN_FALSE;
 		}
