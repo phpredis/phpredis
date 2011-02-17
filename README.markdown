@@ -20,6 +20,8 @@ phpize
 make && make install
 </pre>
 
+`make install` copies `redis.so` to an appropriate location, but you still need to enable the module in the PHP config file. To do so, either edit your php.ini or add a redis.ini file in `/etc/php5/conf.d` with the following contents: `extension=redis.so`.
+
 You can generate a debian package for PHP5, accessible from Apache 2 by running `./mkdeb-apache2.sh` or with `dpkg-buildpackage` or `svn-buildpackage`.
 
 This extension exports a single class, `Redis` (and `RedisException` used in case of errors).
