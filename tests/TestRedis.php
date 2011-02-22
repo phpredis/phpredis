@@ -2685,6 +2685,9 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    // multi-exec
 	    $this->sequence(Redis::MULTI);
 
+	    // keys
+	    $this->assertTrue(is_array($this->redis->keys('*')));
+
 	    // revert
 	    $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE) === TRUE); 	// set ok
 	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE);		// get ok
