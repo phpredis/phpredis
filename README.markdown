@@ -8,7 +8,7 @@ This code is maintained by [Owlient](http://owlient.eu/).
 You can send comments, patches, questions here on github or to:  
 
 * n.bouafif@owlient.eu
-* n.favre-felix@owlient.eu ([@yowgi](http://twitter.com/yowgi))
+* n.favrefelix@gmail.com ([@yowgi](http://twitter.com/yowgi))
 
 
 Installing/Configuring
