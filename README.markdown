@@ -4,10 +4,9 @@ This extension provides an API for communicating with Redis database, a persiste
 
 It is a fork of alfonsojimenez's phpredis, adding many methods and fixing a lot of issues.
 
-This code is maintained by [Owlient](http://owlient.eu/).
+This code has been maintained by [Owlient](http://owlient.eu/) from November 2009 to March 2011.
 You can send comments, patches, questions here on github or to:  
 
-* n.bouafif@owlient.eu
 * n.favrefelix@gmail.com ([@yowgi](http://twitter.com/yowgi))
 
 
