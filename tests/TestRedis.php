@@ -218,7 +218,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
     public function testRenameNx() {
 
 	// strings
-	$this->redis->delete('key0');
+	$this->redis->delete('key0', 'key1');
 	$this->redis->set('key0', 'val0');
 	$this->redis->set('key1', 'val1');
 	$this->assertTrue($this->redis->renameNx('key0', 'key1') === FALSE);
@@ -232,12 +232,12 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->redis->lPush('key0', 'val1');
 	$this->redis->lPush('key1', 'val1-0');
 	$this->redis->lPush('key1', 'val1-1');
-	$this->redis->renameNx('key0', 'key1');
+	$this->assertTrue($this->redis->renameNx('key0', 'key1') === FALSE);
 	$this->assertTrue($this->redis->lGetRange('key0', 0, -1) === array('val1', 'val0'));
 	$this->assertTrue($this->redis->lGetRange('key1', 0, -1) === array('val1-1', 'val1-0'));
 
 	$this->redis->delete('key2');
-	$this->redis->renameNx('key0', 'key2');
+	$this->assertTrue($this->redis->renameNx('key0', 'key2') === TRUE);
 	$this->assertTrue($this->redis->lGetRange('key0', 0, -1) === array());
 	$this->assertTrue($this->redis->lGetRange('key2', 0, -1) === array('val1', 'val0'));
 
