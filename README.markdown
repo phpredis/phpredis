@@ -1,5 +1,10 @@
 PhpRedis
 =============
+The phpredis extension provides an API for communicating with Redis database, a persistent key-value database with built-in net interface written in ANSI-C for Posix systems.
+This code has been developed and maintained by Owlient from November 2009 to March 2011.
+
+You can send comments, patches, questions [here on github](https://github.com/nicolasff/phpredis/issues) or to n.favrefelix@gmail.com ([@yowgi](http://twitter.com/yowgi)).
+
 
 Installing/Configuring
 ======================
