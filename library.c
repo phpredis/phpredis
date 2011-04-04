@@ -1091,7 +1091,7 @@ PHPAPI void redis_free_socket(RedisSock *redis_sock)
 }
 
 PHPAPI int
-redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_CC) {
+redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_DC) {
 #if ZEND_MODULE_API_NO >= 20100000
 	php_serialize_data_t ht;
 #else
@@ -1163,7 +1163,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 }
 
 PHPAPI int
-redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_CC) {
+redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_DC) {
 
 	php_unserialize_data_t var_hash;
 	int ret;
@@ -1203,7 +1203,7 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 }
 
 PHPAPI int
-redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len TSRMLS_CC) {
+redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len TSRMLS_DC) {
 	if(redis_sock->prefix == NULL || redis_sock->prefix_len == 0) {
 		return 0;
 	}

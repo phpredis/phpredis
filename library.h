@@ -33,9 +33,9 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC);
 PHPAPI void redis_free_socket(RedisSock *redis_sock);
 
 PHPAPI int
-redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_CC);
+redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_DC);
 PHPAPI int
-redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len TSRMLS_CC);
+redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len TSRMLS_DC);
 
 PHPAPI int
-redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_CC);
+redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_DC);
