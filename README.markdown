@@ -1334,7 +1334,8 @@ $redis->slaveof();
 Describes the object pointed to by a key.
 
 ##### *Parameters*
-The information to retrieve (string) and the key (string). Info can be one of the following:  
+The information to retrieve (string) and the key (string). Info can be one of the following:
+
 * "encoding"
 * "refcount"
 * "idletime"
