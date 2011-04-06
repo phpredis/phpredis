@@ -124,6 +124,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, move, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, bgrewriteaof, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, slaveof, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, object, NULL, ZEND_ACC_PUBLIC)
 
      /* 1.1 */
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
@@ -4936,6 +4937,46 @@ PHP_METHOD(Redis, slaveof)
 	  redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
     REDIS_PROCESS_RESPONSE(redis_boolean_response);
+}
+/* }}} */
+
+/* {{{ proto string Redis::object(key)
+ */
+PHP_METHOD(Redis, object)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *cmd = "", *info = NULL, *key = NULL;
+    int cmd_len, info_len, key_len;
+    long port = 6379;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
+									 &object, redis_ce, &info, &info_len, &key, &key_len) == FAILURE) {
+		RETURN_FALSE;
+	}
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format_static(&cmd, "OBJECT", "ss", info, info_len, key, key_len);
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+
+	if(info_len == 8 && (strncasecmp(info, "refcount", 8) == 0 || strncasecmp(info, "idletime", 8) == 0)) {
+		IF_ATOMIC() {
+		  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+		}
+		REDIS_PROCESS_RESPONSE(redis_long_response);
+	} else if(info_len == 8 && strncasecmp(info, "encoding", 8) == 0) {
+		IF_ATOMIC() {
+		  redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+		}
+		REDIS_PROCESS_RESPONSE(redis_string_response);
+	} else { /* fail */
+		IF_ATOMIC() {
+		  redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+		}
+		REDIS_PROCESS_RESPONSE(redis_boolean_response);
+	}
 }
 /* }}} */
 

@@ -1329,6 +1329,26 @@ $redis->slaveof('10.0.1.7', 6379);
 $redis->slaveof();
 </pre>
 
+## object
+##### *Description*
+Describes the object pointed to by a key.
+
+##### *Parameters*
+The information to retrieve (string) and the key (string). Info can be one of the following:  
+* "encoding"
+* "refcount"
+* "idletime"
+
+##### *Return value*
+*STRING* for "encoding", *LONG* for "refcount" and "idletime", `FALSE` if the key doesn't exist.
+
+##### *Example*
+<pre>
+$redis->object("encoding", "l"); // → ziplist
+$redis->object("refcount", "l"); // → 1
+$redis->object("idletime", "l"); // → 400 (in seconds, with a precision of 10 seconds).
+</pre>
+
 ## save
 ##### *Description*
 Performs a synchronous save.

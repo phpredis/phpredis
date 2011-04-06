@@ -1895,6 +1895,43 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    $this->assertTrue("\x00\x00\x00\x00\x00\x00foo" === $this->redis->get('key'));
     }
 
+    public function testObject() {
+	    $this->redis->del('key');
+	    $this->assertTrue($this->redis->object('encoding', 'key') === FALSE);
+	    $this->assertTrue($this->redis->object('refcount', 'key') === FALSE);
+	    $this->assertTrue($this->redis->object('idletime', 'key') === FALSE);
+
+	    $this->redis->set('key', 'value');
+	    $this->assertTrue($this->redis->object('encoding', 'key') === "raw");
+	    $this->assertTrue($this->redis->object('refcount', 'key') === 1);
+	    $this->assertTrue($this->redis->object('idletime', 'key') === 0);
+
+	    $this->redis->del('key');
+	    $this->redis->lpush('key', 'value');
+	    $this->assertTrue($this->redis->object('encoding', 'key') === "ziplist");
+	    $this->assertTrue($this->redis->object('refcount', 'key') === 1);
+	    $this->assertTrue($this->redis->object('idletime', 'key') === 0);
+
+	    $this->redis->del('key');
+	    $this->redis->sadd('key', 'value');
+	    $this->assertTrue($this->redis->object('encoding', 'key') === "hashtable");
+	    $this->assertTrue($this->redis->object('refcount', 'key') === 1);
+	    $this->assertTrue($this->redis->object('idletime', 'key') === 0);
+
+	    $this->redis->del('key');
+	    $this->redis->sadd('key', 42);
+	    $this->redis->sadd('key', 1729);
+	    $this->assertTrue($this->redis->object('encoding', 'key') === "intset");
+	    $this->assertTrue($this->redis->object('refcount', 'key') === 1);
+	    $this->assertTrue($this->redis->object('idletime', 'key') === 0);
+
+	    $this->redis->del('key');
+	    $this->redis->lpush('key', str_repeat('A', pow(10,6))); // 1M elements, too big for a ziplist.
+	    $this->assertTrue($this->redis->object('encoding', 'key') === "linkedlist");
+	    $this->assertTrue($this->redis->object('refcount', 'key') === 1);
+	    $this->assertTrue($this->redis->object('idletime', 'key') === 0);
+    }
+
     public function testMultiExec() {
 	$this->sequence(Redis::MULTI);
 
