@@ -2004,7 +2004,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
                 keys[j] = Z_STRVAL_PP(z_value_pp);
                 keys_len[j] = Z_STRLEN_PP(z_value_pp);
 
-				redis_key_prefix(redis_sock, &keys[j], &keys_len[j] TSRMLS_CC); /* add optional prefix  TSRMLS_CC*/
+				redis_key_prefix(redis_sock, &keys[j], &keys_len[j] TSRMLS_CC); /* add optional prefix */
 
                 cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; /* $ + size + NL + string + NL */
                 j++;
@@ -2071,6 +2071,9 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 		for(i = 0; i < real_argc + (has_timeout?-1:0); ++i) {
 			efree(keys[i]);
 		}
+	}
+	if(has_timeout) { /* cleanup string created to contain timeout value */
+		efree(keys[real_argc-1]);
 	}
 
     efree(keys);
