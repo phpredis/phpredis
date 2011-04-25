@@ -759,6 +759,8 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertEquals(array_slice($byAgeAsc, 0, 3), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', NULL, 3)); // NULL is transformed to 0 if there is something after it.
 	$this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 0, 4));
 	$this->assertEquals($byAgeAsc, $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => array(0, 4))));
+	$this->assertEquals($byAgeAsc, $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => array(0, "4")))); // with strings
+	$this->assertEquals($byAgeAsc, $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => array("0", 4))));
 	$this->assertEquals(array(), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', NULL, NULL)); // NULL, NULL is the same as (0,0). That returns no element.
 
 	// sort by salary and get ages
@@ -2547,12 +2549,14 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 
     public function testSerializerIGBinary() {
 
-	    $this->checkSerializer(Redis::SERIALIZER_IGBINARY);
+	    if(defined('Redis::SERIALIZER_IGBINARY')) {
+		    $this->checkSerializer(Redis::SERIALIZER_IGBINARY);
 
-	    // with prefix
-	    $this->redis->setOption(Redis::OPT_PREFIX, "test:");
-	    $this->checkSerializer(Redis::SERIALIZER_IGBINARY);
-	    $this->redis->setOption(Redis::OPT_PREFIX, "");
+		    // with prefix
+		    $this->redis->setOption(Redis::OPT_PREFIX, "test:");
+		    $this->checkSerializer(Redis::SERIALIZER_IGBINARY);
+		    $this->redis->setOption(Redis::OPT_PREFIX, "");
+	    }
     }
 
     private function checkSerializer($mode) {

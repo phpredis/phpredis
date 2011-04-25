@@ -2341,26 +2341,38 @@ PHP_METHOD(Redis, sort) {
                 zval **z_offset_pp, **z_count_pp;
                 // get the two values from the table, check that they are indeed of LONG type
                 if(SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_cur), 0, (void**)&z_offset_pp) &&
-                  SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_cur), 1, (void**)&z_count_pp) &&
-                  Z_TYPE_PP(z_offset_pp) == IS_LONG &&
-                  Z_TYPE_PP(z_count_pp) == IS_LONG) {
+                  SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_cur), 1, (void**)&z_count_pp)) {
 
-                    long limit_low = Z_LVAL_PP(z_offset_pp);
-                    long limit_high = Z_LVAL_PP(z_count_pp);
+                    long limit_low, limit_high;
+					if((Z_TYPE_PP(z_offset_pp) == IS_LONG || Z_TYPE_PP(z_offset_pp) == IS_STRING) &&
+						(Z_TYPE_PP(z_count_pp) == IS_LONG || Z_TYPE_PP(z_count_pp) == IS_STRING)) {
 
-                    old_cmd = cmd;
-                    cmd_len = redis_cmd_format(&cmd, "%s"
-                                                     "$5" _NL
-                                                     "LIMIT" _NL
-                                                     "$%d" _NL
-                                                     "%d" _NL
-                                                     "$%d" _NL
-                                                     "%d" _NL
-                                                     , cmd, cmd_len
-                                                     , integer_length(limit_low), limit_low
-                                                     , integer_length(limit_high), limit_high);
-                    elements += 3;
-                    efree(old_cmd);
+
+						if(Z_TYPE_PP(z_offset_pp) == IS_LONG) {
+							limit_low = Z_LVAL_PP(z_offset_pp);
+						} else {
+							limit_low = atol(Z_STRVAL_PP(z_offset_pp));
+						}
+						if(Z_TYPE_PP(z_count_pp) == IS_LONG) {
+							limit_high = Z_LVAL_PP(z_count_pp);
+						} else {
+							limit_high = atol(Z_STRVAL_PP(z_count_pp));
+						}
+
+						old_cmd = cmd;
+						cmd_len = redis_cmd_format(&cmd, "%s"
+														 "$5" _NL
+														 "LIMIT" _NL
+														 "$%d" _NL
+														 "%d" _NL
+														 "$%d" _NL
+														 "%d" _NL
+														 , cmd, cmd_len
+														 , integer_length(limit_low), limit_low
+														 , integer_length(limit_high), limit_high);
+						elements += 3;
+						efree(old_cmd);
+					}
                 }
             }
         }
