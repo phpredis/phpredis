@@ -122,6 +122,7 @@ PHP_METHOD(Redis, object);
 PHP_METHOD(Redis, mset);
 PHP_METHOD(Redis, msetnx);
 PHP_METHOD(Redis, rpoplpush);
+PHP_METHOD(Redis, brpoplpush);
 
 PHP_METHOD(Redis, hGet);
 PHP_METHOD(Redis, hSet);

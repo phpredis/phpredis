@@ -1718,6 +1718,18 @@ array(3) {
 }
 </pre>
 
+## brpoplpush
+##### *Description*
+A blocking version of `rpoplpush`, with an integral timeout in the third parameter.
+
+##### *Parameters*
+*Key*: srckey  
+*Key*: dstkey  
+*Long*: timeout
+
+##### *Return value*
+*STRING* The element that was moved in case of success, `FALSE` in case of timeout.
+
 
 ## zAdd
 ##### *Description*
