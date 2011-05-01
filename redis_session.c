@@ -236,6 +236,10 @@ PS_OPEN_FUNC(redis)
 				}
 				*/
 
+				/* // not suported yet
+				   // Extract persistent id from params, and send to redis_sock_create
+				*/
+
 				zval_ptr_dtor(&params);
 			}
 
@@ -248,9 +252,9 @@ PS_OPEN_FUNC(redis)
 
 			RedisSock *redis_sock;
             if(url->path) { /* unix */
-                    redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, persistent);
+                    redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, persistent, NULL, -1);
             } else {
-                    redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, persistent);
+                    redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, persistent, NULL, -1);
             }
 			redis_pool_add(pool, redis_sock, weight, prefix, auth TSRMLS_CC);
 

@@ -147,6 +147,7 @@ typedef struct {
     int            failed;
     int            status;
     int            persistent;
+    char           *persistent_id;
 
     int            serializer;
 
