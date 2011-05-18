@@ -3,7 +3,7 @@
 #include <sys/types.h>
 #include <netinet/tcp.h>  /* TCP_NODELAY */
 #include <sys/socket.h>
-#include <ext/standard/php_smart_str_public.h>
+#include <ext/standard/php_smart_str.h>
 #include <ext/standard/php_var.h>
 
 #include "igbinary/igbinary.h"
@@ -185,147 +185,83 @@ void add_constant_long(zend_class_entry *ce, char *name, int value) {
 
 int
 integer_length(int i) {
-    int sz = 0;
-    int ci = abs(i);
-    while (ci>0) {
-            ci = (ci/10);
-            sz += 1;
-    }
-    if(i == 0) { /* log 0 doesn't make sense. */
-            sz = 1;
-    } else if(i < 0) { /* allow for neg sign as well. */
-            sz++;
-    }
-    return sz;
+	int sz = 0;
+	int ci = abs(i);
+	while (ci > 0) {
+		ci /= 10;
+		sz++;
+	}
+	if (i == 0) { /* log 0 doesn't make sense. */
+		sz = 1;
+	} else if (i < 0) { /* allow for neg sign as well. */
+		sz++;
+	}
+	return sz;
 }
-
-int
-double_length(double d) {
-        char *s;
-        int ret;
-	s = _php_math_number_format(d, 8, '.', '\x00');
-	ret = strlen(s);
-	efree(s);
-	return ret;
-}
-
 
 int
 redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 
-    char *p, *s;
+    char *p = format;
     va_list ap;
+    smart_str buf = {0};
+    int l = strlen(keyword);
 
-    int total = 0, sz, ret_sz;
-    int i;
-    double dbl;
+	va_start(ap, format);
 
-    int stage; /* 0: count & alloc. 1: copy. */
-    int elements = strlen(format);
-    int keyword_len = strlen(keyword);
-    int header_sz = 1 + integer_length(1 + elements) + 2	/* star + elements + CRLF */
-            + 1 + integer_length(keyword_len) + 2		/* dollar + command length + CRLF */
-            + keyword_len + 2;					/* command + CRLF */
+	/* add header */
+	smart_str_appendc(&buf, '*');
+	smart_str_append_long(&buf, strlen(format) + 1);
+	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	smart_str_appendc(&buf, '$');
+	smart_str_append_long(&buf, l);
+	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	smart_str_appendl(&buf, keyword, l);
+	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
 
-    for(stage = 0; stage < 2; ++stage) {
-        va_start(ap, format);
-	if(stage == 0) {
-	    total = 0;
-	} else {
-	    total = header_sz;
+	while (*p) {
+		smart_str_appendc(&buf, '$');
+
+		switch(*p) {
+			case 's': {
+					char *val = va_arg(ap, char*);
+					int val_len = va_arg(ap, int);
+					smart_str_append_long(&buf, val_len);
+					smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+					smart_str_appendl(&buf, val, val_len);
+				}
+				break;
+
+			case 'f':
+			case 'F': {
+				char tmp[100];
+				double d = va_arg(ap, double);
+				int tmp_len = snprintf(tmp, sizeof(tmp), "%.8f", d);
+				smart_str_append_long(&buf, tmp_len);
+				smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+				smart_str_appendl(&buf, tmp, tmp_len);
+			}
+				break;
+
+			case 'i':
+			case 'd': {
+				int i = va_arg(ap, int);
+				char tmp[32];
+				int tmp_len = snprintf(tmp, sizeof(tmp), "%d", i);
+				smart_str_append_long(&buf, tmp_len);
+				smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+				smart_str_appendl(&buf, tmp, tmp_len);
+			}
+				break;
+		}
+		p++;
+		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
 	}
-        for(p = format; *p; ) {
-            switch(*p) {
-                case 's':
-                    s = va_arg(ap, char*);
-                    sz = va_arg(ap, int);
-                    if(stage == 1) {
-                        memcpy((*ret) + total, "$", 1);		/* dollar */
-			total++;
+	smart_str_0(&buf);
 
-			sprintf((*ret) + total, "%d", sz);	/* size */
-			total += integer_length(sz);
+	*ret = buf.c;
 
-			memcpy((*ret) + total, _NL, 2);		/* CRLF */
-			total += 2;
-
-                        memcpy((*ret) + total, s, sz);		/* string */
-			total += sz;
-
-			memcpy((*ret) + total, _NL, 2);		/* CRLF */
-			total += 2;
-                    } else {
-                        total += 1 + integer_length(sz) + 2 + sz + 2;
-		    }
-                    break;
-
-                case 'F':
-                case 'f':
-                    /* use spprintf here */
-                    dbl = va_arg(ap, double);
-                    sz = double_length(dbl);
-		    char *dbl_str;
-		    if(stage == 1) {
-		        memcpy((*ret) + total, "$", 1); 	/* dollar */
-			total++;
-
-			sprintf((*ret) + total, "%d", sz);	/* size */
-			total += integer_length(sz);
-
-			memcpy((*ret) + total, _NL, 2);		/* CRLF */
-			total += 2;
-
-			/* float value */
-			dbl_str = _php_math_number_format(dbl, 8, '.', '\x00');
-			memcpy((*ret) + total, dbl_str, sz);
-			efree(dbl_str);
-			total += sz;
-
-			memcpy((*ret) + total, _NL, 2);		/* CRLF */
-			total += 2;
-		    } else {
-                        total += 1 + integer_length(sz) + 2 + sz + 2;
-		    }
-                    break;
-
-                case 'i':
-                case 'd':
-                    i = va_arg(ap, int);
-                    /* compute display size of integer value */
-                    sz = integer_length(i);
-		    if(stage == 1) {
-		        memcpy((*ret) + total, "$", 1); 	/* dollar */
-			total++;
-
-			sprintf((*ret) + total, "%d", sz);	/* size */
-			total += integer_length(sz);
-
-			memcpy((*ret) + total, _NL, 2);		/* CRLF */
-			total += 2;
-
-			sprintf((*ret) + total, "%d", i);	/* int */
-			total += sz;
-
-			memcpy((*ret) + total, _NL, 2);		/* CRLF */
-			total += 2;
-		    } else {
-                        total += 1 + integer_length(sz) + 2 + sz + 2;
-		    }
-                    break;
-            }
-            p++;
-        }
-        if(stage == 0) {
-            ret_sz = total + header_sz;
-            (*ret) = emalloc(ret_sz+1);
-	    sprintf(*ret, "*%d" _NL "$%d" _NL "%s" _NL, elements + 1, keyword_len, keyword);
-        } else {
-            (*ret)[ret_sz] = 0;
-	//    printf("cmd(%d)=[%s]\n", ret_sz, *ret);
-            return ret_sz;
-        }
-    }
-    return 0;
+	return buf.len;
 }
 
 /**
@@ -333,94 +269,53 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
  * Their data and their size (strlen).
  * Supported formats are: %d, %i, %s
  */
-//static  /!\ problem with static commands !!
 int
 redis_cmd_format(char **ret, char *format, ...) {
 
-    char *p, *s;
-    va_list ap;
+	smart_str buf = {0};
+	va_list ap;
+	char *p = format;
 
-    int total = 0, sz, ret_sz;
-    int i, ci;
-    double dbl;
-    char *double_str;
-    int double_len;
+	while (*p) {
+		if (*p == '%') {
+			switch (*(++p)) {
+				case 's': {
+					char *tmp = va_arg(ap, char*);
+					int tmp_len = va_arg(ap, int);
+					smart_str_appendl(&buf, tmp, tmp_len);
+				}
+					break;
 
-    int stage; /* 0: count & alloc. 1: copy. */
+				case 'F':
+				case 'f': {
+					char tmp[100];
+					double d = va_arg(ap, double);
+					int tmp_len = snprintf(tmp, sizeof(tmp), "%.8f", d);
+					smart_str_appendl(&buf, tmp, tmp_len);
+				}
+					break;
 
-    for(stage = 0; stage < 2; ++stage) {
-        va_start(ap, format);
-        total = 0;
-        for(p = format; *p; ) {
+				case 'd':
+				case 'i': {
+					int i = va_arg(ap, int);
+					char tmp[32];
+					int tmp_len = snprintf(tmp, sizeof(tmp), "%d", i);
+					smart_str_appendl(&buf, tmp, tmp_len);
+				}
+					break;
+			}
+		} else {
+			smart_str_appendc(&buf, *p);
+		}
 
-            if(*p == '%') {
-                switch(*(p+1)) {
-                    case 's':
-                        s = va_arg(ap, char*);
-                        sz = va_arg(ap, int);
-                        if(stage == 1) {
-                            memcpy((*ret) + total, s, sz);
-                        }
-                        total += sz;
-                        break;
+		p++;
+	}
 
-                    case 'F':
-                    case 'f':
-                        /* use spprintf here */
-                        dbl = va_arg(ap, double);
-                        double_len = double_length(dbl);
+	smart_str_0(&buf);
 
-                        if(stage == 1) {
-				/* float value */
-				char *dbl_str = _php_math_number_format(dbl, 8, '.', '\x00');
-				memcpy((*ret) + total, dbl_str, sz);
-				total += sz;
-				efree(dbl_str);
-                        }
-                        total += double_len;
-                        efree(double_str);
-                        break;
+	*ret = buf.c;
 
-                    case 'i':
-                    case 'd':
-                        i = va_arg(ap, int);
-                        /* compute display size of integer value */
-                        sz = 0;
-                        ci = abs(i);
-                        while (ci>0) {
-                                ci = (ci/10);
-                                sz += 1;
-                        }
-                        if(i == 0) { /* log 0 doesn't make sense. */
-                                sz = 1;
-                        } else if(i < 0) { /* allow for neg sign as well. */
-                                sz++;
-                        }
-                        if(stage == 1) {
-                            sprintf((*ret) + total, "%d", i);
-                        }
-                        total += sz;
-                        break;
-                }
-                p++;
-            } else {
-                if(stage == 1) {
-                    (*ret)[total] = *p;
-                }
-                total++;
-            }
-
-            p++;
-        }
-        if(stage == 0) {
-            ret_sz = total;
-            (*ret) = emalloc(ret_sz+1);
-        } else {
-            (*ret)[ret_sz] = 0;
-            return ret_sz;
-        }
-    }
-    return 0;
+	return buf.len;
 }
 
 PHPAPI void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
@@ -742,7 +637,6 @@ PHPAPI void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
         RETURN_FALSE;
     }
     IF_MULTI_OR_PIPELINE() {
-		zval *z = NULL;
 		add_next_index_stringl(z_tab, response, response_len, 0);
     } else {
 		RETURN_STRINGL(response, response_len, 0);
@@ -759,14 +653,11 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     RedisSock *redis_sock;
 
     redis_sock         = ecalloc(1, sizeof(RedisSock));
-    redis_sock->host   = ecalloc(host_len + 1, 1);
+    redis_sock->host   = strndup(host, host_len);
     redis_sock->stream = NULL;
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
 
     redis_sock->persistent = persistent;
-
-    memcpy(redis_sock->host, host, host_len);
-    redis_sock->host[host_len] = '\0';
 
     redis_sock->port    = port;
     redis_sock->timeout = timeout;
