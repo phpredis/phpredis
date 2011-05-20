@@ -655,7 +655,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     RedisSock *redis_sock;
 
     redis_sock         = ecalloc(1, sizeof(RedisSock));
-    redis_sock->host   = strndup(host, host_len);
+    redis_sock->host   = estrndup(host, host_len);
     redis_sock->stream = NULL;
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
 
