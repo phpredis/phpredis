@@ -276,6 +276,8 @@ redis_cmd_format(char **ret, char *format, ...) {
 	va_list ap;
 	char *p = format;
 
+	va_start(ap, format);
+
 	while (*p) {
 		if (*p == '%') {
 			switch (*(++p)) {
