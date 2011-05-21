@@ -453,17 +453,9 @@ PHPAPI void redis_boolean_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redi
     efree(response);
 
     IF_MULTI_OR_PIPELINE() {
-        if (ret == '+') {
-            add_next_index_bool(z_tab, 1);
-        } else {
-            add_next_index_bool(z_tab, 0);
-        }
+    	add_next_index_bool(z_tab, (ret == '+'));
     } else {
-		if (ret == '+') {
-			RETURN_TRUE;
-		} else {
-			RETURN_FALSE;
-		}
+    	RETURN_BOOL((ret == '+'));
 	}
 }
 
