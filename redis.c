@@ -232,9 +232,9 @@ zend_module_entry redis_module_entry = {
      "redis",
      NULL,
      PHP_MINIT(redis),
-     PHP_MSHUTDOWN(redis),
-     PHP_RINIT(redis),
-     PHP_RSHUTDOWN(redis),
+     NULL,
+     NULL,
+     NULL,
      PHP_MINFO(redis),
 #if ZEND_MODULE_API_NO >= 20010901
      PHP_REDIS_VERSION,
@@ -356,30 +356,6 @@ PHP_MINIT_FUNCTION(redis)
     /* declare session handler */
     php_session_register_module(&ps_mod_redis);
 
-    return SUCCESS;
-}
-
-/**
- * PHP_MSHUTDOWN_FUNCTION
- */
-PHP_MSHUTDOWN_FUNCTION(redis)
-{
-    return SUCCESS;
-}
-
-/**
- * PHP_RINIT_FUNCTION
- */
-PHP_RINIT_FUNCTION(redis)
-{
-    return SUCCESS;
-}
-
-/**
- * PHP_RSHUTDOWN_FUNCTION
- */
-PHP_RSHUTDOWN_FUNCTION(redis)
-{
     return SUCCESS;
 }
 

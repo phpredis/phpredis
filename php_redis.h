@@ -163,9 +163,6 @@ PHP_METHOD(Redis, setOption);
 #endif
 
 PHP_MINIT_FUNCTION(redis);
-PHP_MSHUTDOWN_FUNCTION(redis);
-PHP_RINIT_FUNCTION(redis);
-PHP_RSHUTDOWN_FUNCTION(redis);
 PHP_MINFO_FUNCTION(redis);
 
 PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
