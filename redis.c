@@ -60,407 +60,6 @@ zend_class_entry *spl_ce_RuntimeException = NULL;
 	}
 
 
-ZEND_DECLARE_MODULE_GLOBALS(redis)
-
-static zend_function_entry redis_functions[] = {
-     PHP_ME(Redis, __construct, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, connect, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, pconnect, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, close, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, ping, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, get, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, set, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, setex, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, setnx, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, getSet, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, randomKey, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, renameKey, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, renameNx, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, getMultiple, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, exists, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, delete, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, incr, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, incrBy, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, decr, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, decrBy, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, type, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, append, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, getRange, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, setRange, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, getBit, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, setBit, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, strlen, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, getKeys, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sort, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sortAsc, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sortAscAlpha, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sortDesc, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sortDescAlpha, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lPush, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, rPush, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lPushx, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, rPushx, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lPop, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, rPop, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, blPop, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, brPop, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lSize, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lRemove, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, listTrim, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lGet, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lGetRange, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lSet, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lInsert, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sAdd, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sSize, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sRemove, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sMove, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sPop, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sRandMember, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sContains, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sMembers, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sInter, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sInterStore, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sUnion, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sUnionStore, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sDiff, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sDiffStore, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, setTimeout, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, save, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, bgSave, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lastSave, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, flushDB, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, flushAll, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, dbSize, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, auth, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, ttl, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, persist, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, info, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, select, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, move, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, bgrewriteaof, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, slaveof, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, object, NULL, ZEND_ACC_PUBLIC)
-
-     /* 1.1 */
-     PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, msetnx, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, rpoplpush, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, brpoplpush, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zAdd, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zDelete, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zRange, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zReverseRange, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zRangeByScore, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zRevRangeByScore, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zCount, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zDeleteRangeByRank, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zCard, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zScore, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zRank, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zRevRank, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zInter, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zUnion, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zIncrBy, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, expireAt, NULL, ZEND_ACC_PUBLIC)
-
-     /* 1.2 */
-     PHP_ME(Redis, hGet, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, hSet, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, hSetNx, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, hDel, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, hLen, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, hKeys, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, hVals, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, hGetAll, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, hExists, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, hIncrBy, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, hMset, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, hMget, NULL, ZEND_ACC_PUBLIC)
-
-     PHP_ME(Redis, multi, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, discard, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, exec, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, pipeline, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, watch, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, unwatch, NULL, ZEND_ACC_PUBLIC)
-
-	 PHP_ME(Redis, publish, NULL, ZEND_ACC_PUBLIC)
-	 PHP_ME(Redis, subscribe, NULL, ZEND_ACC_PUBLIC)
-	 PHP_ME(Redis, unsubscribe, NULL, ZEND_ACC_PUBLIC)
-
-     /* options */
-     PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)
-
-     /* aliases */
-     PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, popen, pconnect, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, lLen, lSize, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, sGetMembers, sMembers, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, mget, getMultiple, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, expire, setTimeout, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zunionstore, zUnion, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zinterstore, zInter, NULL, ZEND_ACC_PUBLIC)
-
-     PHP_MALIAS(Redis, zRemove, zDelete, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zRem, zDelete, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zRemoveRangeByScore, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zRemRangeByScore, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zRemRangeByRank, zDeleteRangeByRank, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zSize, zCard, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, substr, getRange, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, rename, renameKey, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, del, delete, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, keys, getKeys, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, lrem, lRemove, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, ltrim, listTrim, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, lindex, lGet, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, lrange, lGetRange, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, scard, sSize, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, srem, sRemove, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, sismember, sContains, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zrevrange, zReverseRange, NULL, ZEND_ACC_PUBLIC)
-     {NULL, NULL, NULL}
-};
-
-zend_module_entry redis_module_entry = {
-#if ZEND_MODULE_API_NO >= 20010901
-     STANDARD_MODULE_HEADER,
-#endif
-     "redis",
-     NULL,
-     PHP_MINIT(redis),
-     NULL,
-     NULL,
-     NULL,
-     PHP_MINFO(redis),
-#if ZEND_MODULE_API_NO >= 20010901
-     PHP_REDIS_VERSION,
-#endif
-     STANDARD_MODULE_PROPERTIES
-};
-
-#ifdef COMPILE_DL_REDIS
-ZEND_GET_MODULE(redis)
-#endif
-
-PHPAPI zend_class_entry *redis_get_exception_base(int root TSRMLS_DC)
-{
-#if HAVE_SPL
-        if (!root) {
-                if (!spl_ce_RuntimeException) {
-                        zend_class_entry **pce;
-
-                        if (zend_hash_find(CG(class_table), "runtimeexception",
-                                                           sizeof("RuntimeException"), (void **) &pce) == SUCCESS) {
-                                spl_ce_RuntimeException = *pce;
-                                return *pce;
-                        }
-                } else {
-                        return spl_ce_RuntimeException;
-                }
-        }
-#endif
-#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
-        return zend_exception_get_default();
-#else
-        return zend_exception_get_default(TSRMLS_C);
-#endif
-}
-
-/**
- * redis_destructor_redis_sock
- */
-static void redis_destructor_redis_sock(zend_rsrc_list_entry * rsrc TSRMLS_DC)
-{
-    RedisSock *redis_sock = (RedisSock *) rsrc->ptr;
-    redis_sock_disconnect(redis_sock TSRMLS_CC);
-    redis_free_socket(redis_sock);
-}
-
-static zend_object_handlers redis_object_handlers;
-
-static zend_object_value redis_object_new(zend_class_entry *class_type TSRMLS_DC)
-{
-	redis_object *intern;
-	zend_object_value retval;
-	zval *tmp;
-
-	intern = emalloc(sizeof(redis_object));
-	memset(intern, 0, sizeof(redis_object));
-
-	zend_object_std_init(&intern->std, class_type TSRMLS_CC);
-#ifdef ZEND_ENGINE_2_4
-	object_properties_init(&intern->std, class_type);
-#else
-	zend_hash_copy(intern->std.properties, &class_type->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
-#endif
-
-	(&retval)->handle = zend_objects_store_put(intern, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t) zend_objects_free_object_storage, NULL TSRMLS_CC);
-	(&retval)->handlers = &redis_object_handlers;
-
-	return retval;
-}
-
-/**
- * PHP_MINIT_FUNCTION
- */
-PHP_MINIT_FUNCTION(redis)
-{
-    zend_class_entry redis_class_entry;
-
-	INIT_CLASS_ENTRY(redis_class_entry, "Redis", redis_functions);
-	redis_class_entry.create_object = redis_object_new;
-	redis_ce = zend_register_internal_class_ex(&redis_class_entry, NULL, NULL TSRMLS_CC);
-	memcpy(&redis_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
-
-    zend_class_entry redis_exception_class_entry;
-    INIT_CLASS_ENTRY(redis_exception_class_entry, "RedisException", NULL);
-    redis_exception_ce = zend_register_internal_class_ex(
-        &redis_exception_class_entry,
-        redis_get_exception_base(0 TSRMLS_CC),
-        NULL TSRMLS_CC
-    );
-
-    le_redis_sock = zend_register_list_destructors_ex(
-        redis_destructor_redis_sock,
-        NULL,
-        redis_sock_name, module_number
-    );
-
-	add_constant_long(redis_ce, "REDIS_NOT_FOUND", REDIS_NOT_FOUND);
-	add_constant_long(redis_ce, "REDIS_STRING", REDIS_STRING);
-	add_constant_long(redis_ce, "REDIS_SET", REDIS_SET);
-	add_constant_long(redis_ce, "REDIS_LIST", REDIS_LIST);
-	add_constant_long(redis_ce, "REDIS_ZSET", REDIS_ZSET);
-	add_constant_long(redis_ce, "REDIS_HASH", REDIS_HASH);
-
-	add_constant_long(redis_ce, "ATOMIC", ATOMIC);
-	add_constant_long(redis_ce, "MULTI", MULTI);
-	add_constant_long(redis_ce, "PIPELINE", PIPELINE);
-
-    /* options */
-    add_constant_long(redis_ce, "OPT_SERIALIZER", REDIS_OPT_SERIALIZER);
-    add_constant_long(redis_ce, "OPT_PREFIX", REDIS_OPT_PREFIX);
-
-    /* serializer */
-    add_constant_long(redis_ce, "SERIALIZER_NONE", REDIS_SERIALIZER_NONE);
-    add_constant_long(redis_ce, "SERIALIZER_PHP", REDIS_SERIALIZER_PHP);
-    add_constant_long(redis_ce, "SERIALIZER_IGBINARY", REDIS_SERIALIZER_IGBINARY);
-
-	zend_declare_class_constant_stringl(redis_ce, "AFTER", 5, "after", 5 TSRMLS_CC);
-	zend_declare_class_constant_stringl(redis_ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
-
-    /* declare session handler */
-    php_session_register_module(&ps_mod_redis);
-
-    return SUCCESS;
-}
-
-/**
- * PHP_MINFO_FUNCTION
- */
-PHP_MINFO_FUNCTION(redis)
-{
-    php_info_print_table_start();
-    php_info_print_table_header(2, "Redis Support", "enabled");
-    php_info_print_table_row(2, "Redis Version", PHP_REDIS_VERSION);
-    php_info_print_table_end();
-}
-
-/* {{{ proto Redis Redis::__construct()
-    Public constructor */
-PHP_METHOD(Redis, __construct)
-{
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
-        RETURN_FALSE;
-    }
-}
-/* }}} */
-
-/* {{{ proto boolean Redis::connect(string host, int port [, double timeout])
- */
-PHP_METHOD(Redis, connect)
-{
-	if (redis_connect(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0) == FAILURE) {
-		RETURN_FALSE;
-	} else {
-		RETURN_TRUE;
-	}
-}
-/* }}} */
-
-/* {{{ proto boolean Redis::pconnect(string host, int port [, double timeout])
- */
-PHP_METHOD(Redis, pconnect)
-{
-	if (redis_connect(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1) == FAILURE) {
-		RETURN_FALSE;
-	} else {
-		RETURN_TRUE;
-	}
-}
-/* }}} */
-
-PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
-	zval *object;
-	int host_len;
-	char *host = NULL;
-	long port = -1;
-
-#ifdef ZTS
-	/* not sure how in threaded mode this works so disabled persistents at first */
-    persistent = 0;
-#endif
-
-	double timeout = 0.0;
-	RedisSock *redis_sock  = NULL;
-	redis_object *obj;
-
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|ld",
-				&object, redis_ce, &host, &host_len, &port,
-				&timeout) == FAILURE) {
-		return FAILURE;
-	}
-
-	if (timeout < 0L || timeout > INT_MAX) {
-		zend_throw_exception(redis_exception_ce, "Invalid timeout", 0 TSRMLS_CC);
-		return FAILURE;
-	}
-
-	if(port == -1 && host_len && host[0] != '/') { /* not unix socket, set to default value */
-		port = 6379;
-	}
-
-	obj = (redis_object*) zend_object_store_get_object(object TSRMLS_CC);
-
-	/* if there is a redis sock already we have to remove it from the list */
-	if (obj->sock_id) {
-		zend_list_delete(obj->sock_id); /* the refcount should be decreased and the detructor called */
-	}
-
-	redis_sock = redis_sock_create(host, host_len, port, timeout, persistent);
-
-	if (redis_sock_server_open(redis_sock, 1 TSRMLS_CC) < 0) {
-		redis_free_socket(redis_sock);
-		zend_throw_exception_ex(
-				redis_exception_ce,
-				0 TSRMLS_CC,
-				"Can't connect to %s:%d",
-				host,
-				port
-				);
-		return FAILURE;
-	}
-
-	obj->sock_id = zend_list_insert(redis_sock, le_redis_sock);
-	obj->sock = redis_sock;
-
-	return SUCCESS;
-}
-
 /* {{{ proto boolean Redis::close()
  */
 PHP_METHOD(Redis, close)
@@ -4964,6 +4563,409 @@ PHP_METHOD(Redis, setOption) {
     }
 }
 /* }}} */
+
+/* {{{ proto Redis Redis::__construct()
+    Public constructor */
+PHP_METHOD(Redis, __construct)
+{
+    if (zend_parse_parameters_none() == FAILURE) {
+        RETURN_FALSE;
+    }
+}
+/* }}} */
+
+/* {{{ proto boolean Redis::connect(string host, int port [, double timeout])
+ */
+PHP_METHOD(Redis, connect)
+{
+	if (redis_connect(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0) == FAILURE) {
+		RETURN_FALSE;
+	} else {
+		RETURN_TRUE;
+	}
+}
+/* }}} */
+
+/* {{{ proto boolean Redis::pconnect(string host, int port [, double timeout])
+ */
+PHP_METHOD(Redis, pconnect)
+{
+	if (redis_connect(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1) == FAILURE) {
+		RETURN_FALSE;
+	} else {
+		RETURN_TRUE;
+	}
+}
+/* }}} */
+
+ZEND_DECLARE_MODULE_GLOBALS(redis)
+
+static zend_function_entry redis_functions[] = {
+     PHP_ME(Redis, __construct, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, connect, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pconnect, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, close, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, ping, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, get, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, set, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setex, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setnx, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getSet, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, randomKey, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, renameKey, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, renameNx, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getMultiple, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, exists, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, delete, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, incr, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, incrBy, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, decr, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, decrBy, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, type, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, append, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getBit, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setBit, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, strlen, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getKeys, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sort, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sortAsc, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sortAscAlpha, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sortDesc, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sortDescAlpha, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lPush, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, rPush, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lPushx, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, rPushx, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lPop, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, rPop, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, blPop, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, brPop, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lSize, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lRemove, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, listTrim, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lGet, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lGetRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lSet, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lInsert, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sAdd, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sSize, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sRemove, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sMove, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sPop, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sRandMember, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sContains, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sMembers, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sInter, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sInterStore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sUnion, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sUnionStore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sDiff, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sDiffStore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setTimeout, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, save, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, bgSave, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lastSave, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, flushDB, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, flushAll, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, dbSize, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, auth, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, ttl, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, persist, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, info, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, select, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, move, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, bgrewriteaof, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, slaveof, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, object, NULL, ZEND_ACC_PUBLIC)
+
+     /* 1.1 */
+     PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, msetnx, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, rpoplpush, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, brpoplpush, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zAdd, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zDelete, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zReverseRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRangeByScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRevRangeByScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zCount, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zDeleteRangeByRank, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zCard, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRank, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRevRank, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zInter, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zUnion, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zIncrBy, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, expireAt, NULL, ZEND_ACC_PUBLIC)
+
+     /* 1.2 */
+     PHP_ME(Redis, hGet, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hSet, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hSetNx, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hDel, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hLen, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hKeys, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hVals, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hGetAll, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hExists, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hIncrBy, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hMset, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hMget, NULL, ZEND_ACC_PUBLIC)
+
+     PHP_ME(Redis, multi, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, discard, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, exec, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pipeline, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, watch, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, unwatch, NULL, ZEND_ACC_PUBLIC)
+
+	 PHP_ME(Redis, publish, NULL, ZEND_ACC_PUBLIC)
+	 PHP_ME(Redis, subscribe, NULL, ZEND_ACC_PUBLIC)
+	 PHP_ME(Redis, unsubscribe, NULL, ZEND_ACC_PUBLIC)
+
+     /* options */
+     PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)
+
+     /* aliases */
+     PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, popen, pconnect, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, lLen, lSize, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, sGetMembers, sMembers, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, mget, getMultiple, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, expire, setTimeout, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zunionstore, zUnion, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zinterstore, zInter, NULL, ZEND_ACC_PUBLIC)
+
+     PHP_MALIAS(Redis, zRemove, zDelete, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zRem, zDelete, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zRemoveRangeByScore, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zRemRangeByScore, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zRemRangeByRank, zDeleteRangeByRank, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zSize, zCard, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, substr, getRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, rename, renameKey, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, del, delete, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, keys, getKeys, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, lrem, lRemove, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, ltrim, listTrim, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, lindex, lGet, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, lrange, lGetRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, scard, sSize, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, srem, sRemove, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, sismember, sContains, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zrevrange, zReverseRange, NULL, ZEND_ACC_PUBLIC)
+     {NULL, NULL, NULL}
+};
+
+zend_module_entry redis_module_entry = {
+#if ZEND_MODULE_API_NO >= 20010901
+     STANDARD_MODULE_HEADER,
+#endif
+     "redis",
+     NULL,
+     PHP_MINIT(redis),
+     NULL,
+     NULL,
+     NULL,
+     PHP_MINFO(redis),
+#if ZEND_MODULE_API_NO >= 20010901
+     PHP_REDIS_VERSION,
+#endif
+     STANDARD_MODULE_PROPERTIES
+};
+
+#ifdef COMPILE_DL_REDIS
+ZEND_GET_MODULE(redis)
+#endif
+
+PHPAPI zend_class_entry *redis_get_exception_base(int root TSRMLS_DC)
+{
+#if HAVE_SPL
+        if (!root) {
+                if (!spl_ce_RuntimeException) {
+                        zend_class_entry **pce;
+
+                        if (zend_hash_find(CG(class_table), "runtimeexception",
+                                                           sizeof("RuntimeException"), (void **) &pce) == SUCCESS) {
+                                spl_ce_RuntimeException = *pce;
+                                return *pce;
+                        }
+                } else {
+                        return spl_ce_RuntimeException;
+                }
+        }
+#endif
+#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
+        return zend_exception_get_default();
+#else
+        return zend_exception_get_default(TSRMLS_C);
+#endif
+}
+
+/**
+ * redis_destructor_redis_sock
+ */
+static void redis_destructor_redis_sock(zend_rsrc_list_entry * rsrc TSRMLS_DC)
+{
+    RedisSock *redis_sock = (RedisSock *) rsrc->ptr;
+    redis_sock_disconnect(redis_sock TSRMLS_CC);
+    redis_free_socket(redis_sock);
+}
+
+static zend_object_handlers redis_object_handlers;
+
+static zend_object_value redis_object_new(zend_class_entry *class_type TSRMLS_DC)
+{
+	redis_object *intern;
+	zend_object_value retval;
+	zval *tmp;
+
+	intern = emalloc(sizeof(redis_object));
+	memset(intern, 0, sizeof(redis_object));
+
+	zend_object_std_init(&intern->std, class_type TSRMLS_CC);
+#ifdef ZEND_ENGINE_2_4
+	object_properties_init(&intern->std, class_type);
+#else
+	zend_hash_copy(intern->std.properties, &class_type->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+#endif
+
+	(&retval)->handle = zend_objects_store_put(intern, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t) zend_objects_free_object_storage, NULL TSRMLS_CC);
+	(&retval)->handlers = &redis_object_handlers;
+
+	return retval;
+}
+
+/**
+ * PHP_MINIT_FUNCTION
+ */
+PHP_MINIT_FUNCTION(redis)
+{
+    zend_class_entry redis_class_entry;
+
+	INIT_CLASS_ENTRY(redis_class_entry, "Redis", redis_functions);
+	redis_class_entry.create_object = redis_object_new;
+	redis_ce = zend_register_internal_class_ex(&redis_class_entry, NULL, NULL TSRMLS_CC);
+	memcpy(&redis_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+
+    zend_class_entry redis_exception_class_entry;
+    INIT_CLASS_ENTRY(redis_exception_class_entry, "RedisException", NULL);
+    redis_exception_ce = zend_register_internal_class_ex(
+        &redis_exception_class_entry,
+        redis_get_exception_base(0 TSRMLS_CC),
+        NULL TSRMLS_CC
+    );
+
+    le_redis_sock = zend_register_list_destructors_ex(
+        redis_destructor_redis_sock,
+        NULL,
+        redis_sock_name, module_number
+    );
+
+	add_constant_long(redis_ce, "REDIS_NOT_FOUND", REDIS_NOT_FOUND);
+	add_constant_long(redis_ce, "REDIS_STRING", REDIS_STRING);
+	add_constant_long(redis_ce, "REDIS_SET", REDIS_SET);
+	add_constant_long(redis_ce, "REDIS_LIST", REDIS_LIST);
+	add_constant_long(redis_ce, "REDIS_ZSET", REDIS_ZSET);
+	add_constant_long(redis_ce, "REDIS_HASH", REDIS_HASH);
+
+	add_constant_long(redis_ce, "ATOMIC", ATOMIC);
+	add_constant_long(redis_ce, "MULTI", MULTI);
+	add_constant_long(redis_ce, "PIPELINE", PIPELINE);
+
+    /* options */
+    add_constant_long(redis_ce, "OPT_SERIALIZER", REDIS_OPT_SERIALIZER);
+    add_constant_long(redis_ce, "OPT_PREFIX", REDIS_OPT_PREFIX);
+
+    /* serializer */
+    add_constant_long(redis_ce, "SERIALIZER_NONE", REDIS_SERIALIZER_NONE);
+    add_constant_long(redis_ce, "SERIALIZER_PHP", REDIS_SERIALIZER_PHP);
+    add_constant_long(redis_ce, "SERIALIZER_IGBINARY", REDIS_SERIALIZER_IGBINARY);
+
+	zend_declare_class_constant_stringl(redis_ce, "AFTER", 5, "after", 5 TSRMLS_CC);
+	zend_declare_class_constant_stringl(redis_ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
+
+    /* declare session handler */
+    php_session_register_module(&ps_mod_redis);
+
+    return SUCCESS;
+}
+
+/**
+ * PHP_MINFO_FUNCTION
+ */
+PHP_MINFO_FUNCTION(redis)
+{
+    php_info_print_table_start();
+    php_info_print_table_header(2, "Redis Support", "enabled");
+    php_info_print_table_row(2, "Redis Version", PHP_REDIS_VERSION);
+    php_info_print_table_end();
+}
+
+
+PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
+	zval *object;
+	int host_len;
+	char *host = NULL;
+	long port = -1;
+
+#ifdef ZTS
+	/* not sure how in threaded mode this works so disabled persistents at first */
+    persistent = 0;
+#endif
+
+	double timeout = 0.0;
+	RedisSock *redis_sock  = NULL;
+	redis_object *obj;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|ld",
+				&object, redis_ce, &host, &host_len, &port,
+				&timeout) == FAILURE) {
+		return FAILURE;
+	}
+
+	if (timeout < 0L || timeout > INT_MAX) {
+		zend_throw_exception(redis_exception_ce, "Invalid timeout", 0 TSRMLS_CC);
+		return FAILURE;
+	}
+
+	if(port == -1 && host_len && host[0] != '/') { /* not unix socket, set to default value */
+		port = 6379;
+	}
+
+	obj = (redis_object*) zend_object_store_get_object(object TSRMLS_CC);
+
+	/* if there is a redis sock already we have to remove it from the list */
+	if (obj->sock_id) {
+		zend_list_delete(obj->sock_id); /* the refcount should be decreased and the detructor called */
+	}
+
+	redis_sock = redis_sock_create(host, host_len, port, timeout, persistent);
+
+	if (redis_sock_server_open(redis_sock, 1 TSRMLS_CC) < 0) {
+		redis_free_socket(redis_sock);
+		zend_throw_exception_ex(
+				redis_exception_ce,
+				0 TSRMLS_CC,
+				"Can't connect to %s:%d",
+				host,
+				port
+				);
+		return FAILURE;
+	}
+
+	obj->sock_id = zend_list_insert(redis_sock, le_redis_sock);
+	obj->sock = redis_sock;
+
+	return SUCCESS;
+}
+
 
 /* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
 
