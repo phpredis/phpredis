@@ -180,7 +180,7 @@ PS_OPEN_FUNC(redis)
 			int weight = 1;
 			double timeout = 86400.0;
 			int persistent = 0;
-            char *prefix = NULL, *auth = NULL;
+            char *prefix = NULL, *auth = NULL, *persistent_id = NULL;
 
             /* translate unix: into file: */
 			if (!strncmp(save_path+i, "unix:", sizeof("unix:")-1)) {
@@ -222,6 +222,9 @@ PS_OPEN_FUNC(redis)
 				if (zend_hash_find(Z_ARRVAL_P(params), "persistent", sizeof("persistent"), (void **) &param) != FAILURE) {
 					persistent = (atol(Z_STRVAL_PP(param)) == 1 ? 1 : 0);
 				}
+				if (zend_hash_find(Z_ARRVAL_P(params), "persistent_id", sizeof("persistent_id"), (void **) &param) != FAILURE) {
+					persistent_id = estrndup(Z_STRVAL_PP(param), Z_STRLEN_PP(param));
+				}
 				if (zend_hash_find(Z_ARRVAL_P(params), "prefix", sizeof("prefix"), (void **) &param) != FAILURE) {
 					prefix = estrndup(Z_STRVAL_PP(param), Z_STRLEN_PP(param));
 				}
@@ -248,9 +251,9 @@ PS_OPEN_FUNC(redis)
 
 			RedisSock *redis_sock;
             if(url->path) { /* unix */
-                    redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, persistent);
+                    redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, persistent, persistent_id);
             } else {
-                    redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, persistent);
+                    redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, persistent, persistent_id);
             }
 			redis_pool_add(pool, redis_sock, weight, prefix, auth TSRMLS_CC);
 

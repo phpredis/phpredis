@@ -650,7 +650,7 @@ PHPAPI void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
  * redis_sock_create
  */
 PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port,
-                                    double timeout, int persistent)
+                                    double timeout, int persistent, char *persistent_id)
 {
     RedisSock *redis_sock;
 
@@ -660,6 +660,17 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
 
     redis_sock->persistent = persistent;
+
+    if(persistent_id) {
+		size_t persistent_id_len = strlen(persistent_id);
+        redis_sock->persistent_id = ecalloc(persistent_id_len + 1, 1);
+        memcpy(redis_sock->persistent_id, persistent_id, persistent_id_len);
+    } else {
+        redis_sock->persistent_id = NULL;
+    }
+
+    memcpy(redis_sock->host, host, host_len);
+    redis_sock->host[host_len] = '\0';
 
     redis_sock->port    = port;
     redis_sock->timeout = timeout;
@@ -700,7 +711,11 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     }
 
     if (redis_sock->persistent) {
-      spprintf(&persistent_id, 0, "%s:%f", host, redis_sock->timeout);
+      if (redis_sock->persistent_id) {
+        spprintf(&persistent_id, 0, "phpredis:%s:%s", host, redis_sock->persistent_id);
+      } else {
+        spprintf(&persistent_id, 0, "phpredis:%s:%f", host, redis_sock->timeout);
+      }
     }
 
     redis_sock->stream = php_stream_xport_create(host, host_len, ENFORCE_SAFE_MODE,
