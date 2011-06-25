@@ -23,6 +23,7 @@
 #include "config.h"
 #endif
 
+#ifdef PHP_SESSION
 #include "common.h"
 #include "ext/standard/info.h"
 #include "php_redis.h"
@@ -426,5 +427,6 @@ PS_GC_FUNC(redis)
 }
 /* }}} */
 
+#endif
 /* vim: set tabstop=4 expandtab: */
 

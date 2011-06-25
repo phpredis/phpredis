@@ -5,7 +5,16 @@ PHP_ARG_ENABLE(redis, whether to enable redis support,
 dnl Make sure that the comment is aligned:
 [  --enable-redis           Enable redis support])
 
+PHP_ARG_ENABLE(redis-session, whether to enable sessions,
+[  --disable-redis-session      Disable session support], yes, no)
+
+
+
 if test "$PHP_REDIS" != "no"; then
+
+  if test "$PHP_REDIS_SESSION" != "no"; then
+    AC_DEFINE(PHP_SESSION,1,[redis sessions])
+  fi
 
   dnl # --with-redis -> check with-path
   dnl SEARCH_PATH="/usr/local /usr"     # you might want to change this
