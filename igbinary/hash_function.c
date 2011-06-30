@@ -3,7 +3,10 @@
 lookup3.c, by Bob Jenkins, May 2006, Public Domain.
 */
 
+#ifndef _MSC_VER
 #include <sys/param.h>  /* attempt to define endianness */
+#endif
+
 #ifdef linux
 # include <endian.h>    /* attempt to define endianness */
 #endif

@@ -1,0 +1,15 @@
+// vim: ft=javascript:
+
+ARG_ENABLE("redis", "whether to enable redis support", "yes");
+ARG_ENABLE("redis-session", "whether to enable sessions", "yes");
+
+if (PHP_REDIS != "no") {
+	var sources = "redis.c library.c igbinary\\igbinary.c igbinary\\hash_si.c igbinary\\hash_function.c";
+	if (PHP_REDIS_SESSION != "no") {
+		AC_DEFINE('PHP_SESSION', 1);
+		sources += " redis_session.c";
+	}
+	
+	AC_DEFINE("PHP_EXPORTS", 1);
+	EXTENSION("redis", sources);
+}

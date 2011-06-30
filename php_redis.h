@@ -190,9 +190,10 @@ PHPAPI void set_pipeline_head(zval *object, request_item *head);
 PHPAPI request_item* get_pipeline_current(zval *object);
 PHPAPI void set_pipeline_current(zval *object, request_item *current);
 
+#ifndef _MSC_VER
 ZEND_BEGIN_MODULE_GLOBALS(redis)
 ZEND_END_MODULE_GLOBALS(redis)
-
+#endif
 
 struct redis_queued_item {
 
