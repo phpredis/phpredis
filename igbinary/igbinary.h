@@ -13,6 +13,10 @@
 
 #define IGBINARY_VERSION "1.0.2"
 
+#ifdef _MSC_VER
+#define __func__ __FUNCTION__
+#endif
+
 /** Serialize zval.
  * Return buffer is allocated by this function with emalloc.
  * @param[out] ret Return buffer

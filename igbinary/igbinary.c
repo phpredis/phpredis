@@ -294,12 +294,12 @@ int igbinary_unserialize(const uint8_t *buf, size_t buf_len, zval **z TSRMLS_DC)
 /* }}} */
 /* {{{ proto string igbinary_unserialize(mixed value) */
 PHP_FUNCTION(igbinary_unserialize) {
+	char *string;
+	int string_len;
+	
 	(void) return_value_ptr;
 	(void) this_ptr;
 	(void) return_value_used;
-
-	char *string;
-	int string_len;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &string, &string_len) == FAILURE) {
 		RETURN_NULL();
@@ -316,12 +316,12 @@ PHP_FUNCTION(igbinary_unserialize) {
 /* }}} */
 /* {{{ proto mixed igbinary_serialize(string value) */
 PHP_FUNCTION(igbinary_serialize) {
+	zval *z;
+	struct igbinary_serialize_data igsd;
+	
 	(void) return_value_ptr;
 	(void) this_ptr;
 	(void) return_value_used;
-
-	zval *z;
-	struct igbinary_serialize_data igsd;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &z) == FAILURE) {
 		RETURN_NULL();
@@ -608,13 +608,14 @@ inline static int igbinary_serialize_long(struct igbinary_serialize_data *igsd, 
 /* }}} */
 /* {{{ igbinary_serialize_double */
 /** Serializes double. */
-inline static int igbinary_serialize_double(struct igbinary_serialize_data *igsd, double d TSRMLS_DC) {
-	igbinary_serialize8(igsd, igbinary_type_double TSRMLS_CC);
-
+inline static int igbinary_serialize_double(struct igbinary_serialize_data *igsd, double d TSRMLS_DC) 
+{
 	union {
 		double d;
 		uint64_t u;
 	} u;
+	
+	igbinary_serialize8(igsd, igbinary_type_double TSRMLS_CC);
 
 	u.d = d;
 
@@ -1295,17 +1296,17 @@ inline static int igbinary_unserialize_long(struct igbinary_unserialize_data *ig
 /* {{{ igbinary_unserialize_double */
 /** Unserializes double. */
 inline static int igbinary_unserialize_double(struct igbinary_unserialize_data *igsd, enum igbinary_type t, double *ret TSRMLS_DC) {
+	union {
+		double d;
+		uint64_t u;
+	} u;
+	
 	(void) t;
 
 	if (igsd->buffer_offset + 8 > igsd->buffer_size) {
 		zend_error(E_WARNING, "igbinary_unserialize_double: end-of-data");
 		return 1;
 	}
-
-	union {
-		double d;
-		uint64_t u;
-	} u;
 
 	u.u = igbinary_unserialize64(igsd TSRMLS_CC);
 
