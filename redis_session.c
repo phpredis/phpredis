@@ -66,12 +66,12 @@ typedef struct {
 
 } redis_pool;
 
-PHPAPI redis_pool*
+redis_pool*
 redis_pool_new(TSRMLS_D) {
 	return ecalloc(1, sizeof(redis_pool));
 }
 
-PHPAPI void
+void
 redis_pool_add(redis_pool *pool, RedisSock *redis_sock, int weight,
                 char *prefix, char *auth TSRMLS_DC) {
 
@@ -91,7 +91,7 @@ redis_pool_add(redis_pool *pool, RedisSock *redis_sock, int weight,
 	pool->totalWeight += weight;
 }
 
-PHPAPI void
+void
 redis_pool_free(redis_pool *pool TSRMLS_DC) {
 
 	redis_pool_member *rpm, *next;
@@ -127,14 +127,16 @@ redis_pool_member_auth(redis_pool_member *rpm TSRMLS_DC) {
     efree(cmd);
 }
 
-PHPAPI redis_pool_member *
+redis_pool_member *
 redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
 
 	unsigned int pos, i;
+    redis_pool_member *rpm;
+
 	memcpy(&pos, key, sizeof(pos));
 	pos %= pool->totalWeight;
 
-	redis_pool_member *rpm = pool->head;
+	rpm = pool->head;
 
 	for(i = 0; i < pool->totalWeight;) {
 		if(pos >= i && pos < i + rpm->weight) {
@@ -182,6 +184,7 @@ PS_OPEN_FUNC(redis)
 			double timeout = 86400.0;
 			int persistent = 0;
             char *prefix = NULL, *auth = NULL, *persistent_id = NULL;
+			RedisSock *redis_sock;
 
             /* translate unix: into file: */
 			if (!strncmp(save_path+i, "unix:", sizeof("unix:")-1)) {
@@ -250,7 +253,6 @@ PS_OPEN_FUNC(redis)
 				return FAILURE;
 			}
 
-			RedisSock *redis_sock;
             if(url->path) { /* unix */
                     redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, persistent, persistent_id);
             } else {
