@@ -1383,6 +1383,7 @@ None.
 <pre>
 $redis->bgSave();
 </pre>
+
 ## lastSave
 
 ##### *Description*
@@ -1620,6 +1621,30 @@ None.
 ##### *Example*
 <pre>
 $redis->info();
+</pre>
+
+## resetStat
+##### *Description*
+Resets the statistics reported by Redis using the INFO command (`info()` function).
+
+These are the counters that are reset:
+
+* Keyspace hits
+* Keyspace misses
+* Number of commands processed
+* Number of connections received
+* Number of expired keys
+
+
+##### *Parameters*
+None.
+
+##### *Return value*
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
+
+##### *Example*
+<pre>
+$redis->resetStat();
 </pre>
 
 ## ttl

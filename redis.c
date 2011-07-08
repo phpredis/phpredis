@@ -124,6 +124,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, ttl, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, persist, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, info, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, resetStat, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, select, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, move, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, bgrewriteaof, NULL, ZEND_ACC_PUBLIC)
@@ -2928,6 +2929,16 @@ PHP_METHOD(Redis, info) {
 	}
 	REDIS_PROCESS_RESPONSE(redis_info_response);
 
+}
+/* }}} */
+
+/* {{{ proto string Redis::resetStat()
+ */
+PHP_METHOD(Redis, resetStat)
+{
+	char *cmd;
+	int cmd_len = redis_cmd_format_static(&cmd, "CONFIG", "s", "RESETSTAT", 9);
+	generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, cmd, cmd_len);
 }
 /* }}} */
 
