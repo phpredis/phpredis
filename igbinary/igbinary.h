@@ -14,7 +14,13 @@
 #define IGBINARY_VERSION "1.0.2"
 
 #ifdef _MSC_VER
-#define __func__ __FUNCTION__
+#  if _MSC_VER >= 1300
+//   MSVC 7
+#    define __func__ __FUNCTION__
+#  else
+//   MSVC 6
+#    define __func__ "Function name not available"
+#  endif
 #endif
 
 /** Serialize zval.
