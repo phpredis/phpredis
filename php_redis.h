@@ -96,6 +96,7 @@ PHP_METHOD(Redis, auth);
 PHP_METHOD(Redis, ttl);
 PHP_METHOD(Redis, persist);
 PHP_METHOD(Redis, info);
+PHP_METHOD(Redis, resetStat);
 PHP_METHOD(Redis, select);
 PHP_METHOD(Redis, move);
 PHP_METHOD(Redis, zAdd);
