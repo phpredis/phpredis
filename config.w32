@@ -1,6 +1,6 @@
 // vim: ft=javascript:
 
-ARG_ENABLE("redis", "whether to enable redis support", "yes");
+ARG_ENABLE("redis", "whether to enable redis support", "no");
 ARG_ENABLE("redis-session", "whether to enable sessions", "yes");
 
 if (PHP_REDIS != "no") {
@@ -8,5 +8,7 @@ if (PHP_REDIS != "no") {
 		ADD_FLAG("CFLAGS_REDIS", "/D PHP_SESSION=1");
 	}
 
-	EXTENSION("redis","redis.c library.c redis_session.c igbinary\\igbinary.c igbinary\\hash_si.c igbinary\\hash_function.c");
+	EXTENSION("redis","redis.c library.c redis_session.c");
+	ADD_EXTENSION_DEP("redis", "session");
+	ADD_EXTENSION_DEP("redis", "igbinary");
 }
