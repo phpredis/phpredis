@@ -4820,6 +4820,9 @@ PHP_METHOD(Redis, subscribe)
 	/* read the status of the execution of the command `subscribe` */
 	
     z_tab = redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+	if(z_tab == NULL) {
+		RETURN_FALSE;
+	}
 
 	if (zend_hash_index_find(Z_ARRVAL_P(z_tab), 0, (void**)&tmp) == SUCCESS) {
 		type_response = Z_STRVAL_PP(tmp);
@@ -4865,7 +4868,7 @@ PHP_METHOD(Redis, subscribe)
 		zval **type, **channel, **data;
 	    z_tab = redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 		
-		if(Z_TYPE_P(z_tab) != IS_ARRAY) {
+		if(z_tab == NULL || Z_TYPE_P(z_tab) != IS_ARRAY) {
 			//ERROR
 			break;
 		}
