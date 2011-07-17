@@ -169,27 +169,27 @@ PHP_RINIT_FUNCTION(redis);
 PHP_RSHUTDOWN_FUNCTION(redis);
 PHP_MINFO_FUNCTION(redis);
 
-PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
-PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int count);
-PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
+int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
+void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int count);
+int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
 									 int min_argc, RedisSock **redis_sock, int has_timeout);
-PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_alpha);
-PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...);
-PHPAPI void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...);
+void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_alpha);
+void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...);
+void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...);
 
-PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int use_atof TSRMLS_DC);
-PHPAPI int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC);
+void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int use_atof TSRMLS_DC);
+int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC);
 
-PHPAPI int get_flag(zval *object TSRMLS_DC);
-PHPAPI void set_flag(zval *object, int new_flag TSRMLS_DC);
+int get_flag(zval *object TSRMLS_DC);
+void set_flag(zval *object, int new_flag TSRMLS_DC);
 
-PHPAPI int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, int numElems);
+int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, int numElems);
 
 /* pipeline */
-PHPAPI request_item* get_pipeline_head(zval *object);
-PHPAPI void set_pipeline_head(zval *object, request_item *head);
-PHPAPI request_item* get_pipeline_current(zval *object);
-PHPAPI void set_pipeline_current(zval *object, request_item *current);
+request_item* get_pipeline_head(zval *object);
+void set_pipeline_head(zval *object, request_item *head);
+request_item* get_pipeline_current(zval *object);
+void set_pipeline_current(zval *object, request_item *current);
 
 #ifndef _MSC_VER
 ZEND_BEGIN_MODULE_GLOBALS(redis)

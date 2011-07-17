@@ -235,7 +235,7 @@ zend_module_entry redis_module_entry = {
 ZEND_GET_MODULE(redis)
 #endif
 
-PHPAPI zend_class_entry *redis_get_exception_base(int root TSRMLS_DC)
+zend_class_entry *redis_get_exception_base(int root TSRMLS_DC)
 {
 #if HAVE_SPL
         if (!root) {
@@ -271,7 +271,7 @@ static void redis_destructor_redis_sock(zend_rsrc_list_entry * rsrc TSRMLS_DC)
 /**
  * redis_sock_get
  */
-PHPAPI int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC)
+int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC)
 {
 
     zval **socket;
@@ -415,7 +415,7 @@ PHP_METHOD(Redis, pconnect)
 }
 /* }}} */
 
-PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
+int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 	zval *object;
 	zval **socket;
 	int host_len, id;
@@ -822,7 +822,7 @@ PHP_METHOD(Redis, ping)
 }
 /* }}} */
 
-PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int count) {
+void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int count) {
 
     zval *object;
     RedisSock *redis_sock;
@@ -1347,7 +1347,7 @@ PHP_METHOD(Redis, strlen)
 	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 
-PHPAPI void
+void
 generic_push_function(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
     zval *object;
     RedisSock *redis_sock;
@@ -1450,7 +1450,7 @@ PHP_METHOD(Redis, rPushx)
 	generic_push_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "RPUSHX", sizeof("RPUSHX")-1);
 }
 
-PHPAPI void
+void
 generic_pop_function(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
 
     zval *object;
@@ -1935,7 +1935,7 @@ PHP_METHOD(Redis, sMembers)
 /* }}} */
 
 
-PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
+int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
 									 int min_argc, RedisSock **out_sock, int has_timeout)
 {
     zval *object, **z_args, *z_array;
@@ -2423,7 +2423,7 @@ PHP_METHOD(Redis, sort) {
     }
 }
 
-PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_alpha) {
+void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_alpha) {
 
     zval *object;
     RedisSock *redis_sock;
@@ -2628,7 +2628,7 @@ PHP_METHOD(Redis, sortDescAlpha)
 }
 /* }}} */
 
-PHPAPI void generic_expire_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
+void generic_expire_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *cmd;
@@ -2709,7 +2709,7 @@ PHP_METHOD(Redis, lSet) {
 /* }}} */
 
 
-PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...) {
+void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...) {
     zval *object;
     RedisSock *redis_sock;
 
@@ -2751,7 +2751,7 @@ PHP_METHOD(Redis, bgSave)
 }
 /* }}} */
 
-PHPAPI void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...) {
+void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...) {
 
     zval *object;
     RedisSock *redis_sock;
@@ -3005,7 +3005,7 @@ PHP_METHOD(Redis, move) {
 }
 /* }}} */
 
-PHPAPI void
+void
 generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *, zval *, void *)) {
 
     zval *object;
@@ -3110,7 +3110,7 @@ PHP_METHOD(Redis, msetnx) {
 }
 /* }}} */
 
-PHPAPI void common_rpoplpush(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+void common_rpoplpush(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 		char *srckey, int srckey_len, char *dstkey, int dstkey_len, int timeout) {
 
 	char *cmd;
@@ -3414,7 +3414,7 @@ PHP_METHOD(Redis, zReverseRange)
 }
 /* }}} */
 
-PHPAPI void
+void
 redis_generic_zrange_by_score(INTERNAL_FUNCTION_PARAMETERS, char *keyword) {
 
     zval *object, *z_options = NULL, **z_limit_val_pp = NULL, **z_withscores_val_pp = NULL;
@@ -3627,7 +3627,7 @@ PHP_METHOD(Redis, zScore)
 /* }}} */
 
 
-PHPAPI void generic_rank_method(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
+void generic_rank_method(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *val = NULL, *cmd;
@@ -3675,7 +3675,7 @@ PHP_METHOD(Redis, zRevRank) {
 }
 /* }}} */
 
-PHPAPI void generic_incrby_method(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
+void generic_incrby_method(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
     zval *object;
     RedisSock *redis_sock;
 
@@ -3716,7 +3716,7 @@ PHP_METHOD(Redis, zIncrBy)
     generic_incrby_method(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZINCRBY", sizeof("ZINCRBY")-1);
 }
 /* }}} */
-PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int command_len) {
+void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int command_len) {
 
 	zval *object, *keys_array, *weights_array = NULL, **data;
 	HashTable *arr_weights_hash, *arr_keys_hash;
@@ -3889,7 +3889,7 @@ PHP_METHOD(Redis, zUnion) {
 
 /* hashes */
 
-PHPAPI void
+void
 generic_hset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *, zval *, void *)) {
     zval *object;
     RedisSock *redis_sock;
@@ -3995,7 +3995,7 @@ PHP_METHOD(Redis, hLen)
 }
 /* }}} */
 
-PHPAPI RedisSock*
+RedisSock*
 generic_hash_command_2(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len, char **out_cmd, int *out_len) {
 
     zval *object;
@@ -4053,7 +4053,7 @@ PHP_METHOD(Redis, hExists)
 
 }
 
-PHPAPI RedisSock*
+RedisSock*
 generic_hash_command_1(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
 
     zval *object;
@@ -4124,7 +4124,7 @@ PHP_METHOD(Redis, hGetAll) {
 	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_zipped_strings);
 }
 
-PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int use_atof TSRMLS_DC) {
+void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int use_atof TSRMLS_DC) {
 
     zval *z_ret;
 	HashTable *keytable;
@@ -4406,7 +4406,7 @@ PHP_METHOD(Redis, hMset)
 
 
 
-PHPAPI int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC) {
+int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC) {
 
 	char *response;
 	int response_len, ret = 0;
@@ -4516,7 +4516,7 @@ PHP_METHOD(Redis, discard)
 	}
 	RETURN_FALSE;
 }
-PHPAPI int redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
+int redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 {
     zval *z_tab;
     MAKE_STD_ZVAL(z_tab);
@@ -4535,7 +4535,7 @@ PHPAPI int redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS
 
 }
 /* redis_sock_read_multibulk_multi_reply */
-PHPAPI int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS,
+int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS,
                                       RedisSock *redis_sock)
 {
 
@@ -4679,11 +4679,11 @@ PHP_METHOD(Redis, exec)
 	}
 }
 
-PHPAPI void fold_this_item(INTERNAL_FUNCTION_PARAMETERS, fold_item *item, RedisSock *redis_sock, zval *z_tab) {
+void fold_this_item(INTERNAL_FUNCTION_PARAMETERS, fold_item *item, RedisSock *redis_sock, zval *z_tab) {
 	item->fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, item->ctx TSRMLS_CC);
 }
 
-PHPAPI int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
+int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
 							RedisSock *redis_sock, zval *z_tab, int numElems)
 {
 
