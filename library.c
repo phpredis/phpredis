@@ -152,6 +152,7 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
             return resp;
 
         case '+':
+		case '*':
         case ':':
 	    // Single Line Reply
             /* :123\r\n */
