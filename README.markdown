@@ -19,7 +19,7 @@ make && make install
 
 You can generate a debian package for PHP5, accessible from Apache 2 by running `./mkdeb-apache2.sh` or with `dpkg-buildpackage` or `svn-buildpackage`.
 
-This extension exports a single class, `Redis` (and `RedisException` used in case of errors).
+This extension exports a single class, `Redis` (and `RedisException` used in case of errors). Check out https://github.com/ukko/phpredis-phpdoc for a PHP stub that you can use in your IDE for code completion.
 
 Install on OSX
 ==============
