@@ -208,6 +208,8 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
     va_list ap;
     smart_str buf = {0};
     int l = strlen(keyword);
+	char *dbl_str;
+	int dbl_len;
 
 	va_start(ap, format);
 
@@ -236,12 +238,13 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 
 			case 'f':
 			case 'F': {
-				char tmp[100];
 				double d = va_arg(ap, double);
-				int tmp_len = snprintf(tmp, sizeof(tmp), "%.8f", d);
-				smart_str_append_long(&buf, tmp_len);
+				dbl_str = _php_math_number_format(d, 8, '.', '\x00');
+				dbl_len = strlen(dbl_str);
+				smart_str_append_long(&buf, dbl_len);
 				smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
-				smart_str_appendl(&buf, tmp, tmp_len);
+				smart_str_appendl(&buf, dbl_str, dbl_len);
+				efree(dbl_str);
 			}
 				break;
 
@@ -277,6 +280,8 @@ redis_cmd_format(char **ret, char *format, ...) {
 	smart_str buf = {0};
 	va_list ap;
 	char *p = format;
+	char *dbl_str;
+	int dbl_len;
 
 	va_start(ap, format);
 
@@ -292,10 +297,13 @@ redis_cmd_format(char **ret, char *format, ...) {
 
 				case 'F':
 				case 'f': {
-					char tmp[100];
 					double d = va_arg(ap, double);
-					int tmp_len = snprintf(tmp, sizeof(tmp), "%.8f", d);
-					smart_str_appendl(&buf, tmp, tmp_len);
+					dbl_str = _php_math_number_format(d, 8, '.', '\x00');
+					dbl_len = strlen(dbl_str);
+					smart_str_append_long(&buf, dbl_len);
+					smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+					smart_str_appendl(&buf, dbl_str, dbl_len);
+					efree(dbl_str);
 				}
 					break;
 
