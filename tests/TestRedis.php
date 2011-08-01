@@ -1,9 +1,9 @@
 <?php
-require_once 'PHPUnit/Framework/TestCase.php';
+require_once 'PHPUnit.php';
 
 echo "Note: these tests might take up to a minute. Don't worry :-)\n";
 
-class Redis_Test extends PHPUnit_Framework_TestCase
+class Redis_Test extends PHPUnit_TestCase
 {
 	const HOST = '127.0.0.1';
 	const PORT = 6379;
@@ -34,7 +34,7 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	if($this->redis) {
 	    $this->redis->close();
 	}
-        unset($this->redis);
+   //     unset($this->redis);
     }
 
     public function reset()
@@ -52,7 +52,6 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	while($count --) {
 	    	$this->assertEquals('+PONG', $this->redis->ping());
 	}
-
     }
 
     public function testBitsets() {
@@ -416,27 +415,27 @@ class Redis_Test extends PHPUnit_Framework_TestCase
         $this->redis->set($key, 'val');
         $this->assertEquals('val', $this->redis->get($key));
 	$this->assertEquals(1, $this->redis->delete($key));
-        $this->assertEquals(null, $this->redis->get($key));
+        $this->assertEquals(false, $this->redis->get($key));
 
 	// multiple, all existing
 	$this->redis->set('x', 0);
 	$this->redis->set('y', 1);
 	$this->redis->set('z', 2);
 	$this->assertEquals(3, $this->redis->delete('x', 'y', 'z'));
-	$this->assertEquals(NULL, $this->redis->get('x'));
-	$this->assertEquals(NULL, $this->redis->get('y'));
-	$this->assertEquals(NULL, $this->redis->get('z'));
+	$this->assertEquals(false, $this->redis->get('x'));
+	$this->assertEquals(false, $this->redis->get('y'));
+	$this->assertEquals(false, $this->redis->get('z'));
 
 	// multiple, none existing
 	$this->assertEquals(0, $this->redis->delete('x', 'y', 'z'));
-	$this->assertEquals(NULL, $this->redis->get('x'));
-	$this->assertEquals(NULL, $this->redis->get('y'));
-	$this->assertEquals(NULL, $this->redis->get('z'));
+	$this->assertEquals(false, $this->redis->get('x'));
+	$this->assertEquals(false, $this->redis->get('y'));
+	$this->assertEquals(false, $this->redis->get('z'));
 
 	// multiple, some existing
 	$this->redis->set('y', 1);
 	$this->assertEquals(1, $this->redis->delete('x', 'y', 'z'));
-	$this->assertEquals(NULL, $this->redis->get('y'));
+	$this->assertEquals(false, $this->redis->get('y'));
 
 	$this->redis->set('x', 0);
 	$this->redis->set('y', 1);
@@ -1682,10 +1681,10 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	$this->assertTrue(0 === $this->redis->zUnion('keyU', array('X', 'Y')));
 	$this->assertTrue(array() === $this->redis->zRange('keyU', 0, -1));
 
-	// !Exist U Exist
-	$this->redis->delete('keyU');
-	$this->assertTrue(2 === $this->redis->zUnion('keyU', array('key1', 'X')));
-	$this->assertTrue($this->redis->zRange('key1', 0, -1) === $this->redis->zRange('keyU', 0, -1));
+	// !Exist U Exist → 0
+	$this->redis->delete('keyU', 'X');
+	var_dump($this->redis->zUnion('keyU', array('key1', 'X')));
+	$this->assertTrue(0 === $this->redis->zUnion('keyU', array('key1', 'X')));
 
 	// test weighted zUnion
 	$this->redis->delete('keyZ');
@@ -2733,7 +2732,12 @@ class Redis_Test extends PHPUnit_Framework_TestCase
 	    $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE) === TRUE); 	// set ok
 	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE);		// get ok
     }
-
 }
+
+$suite  = new PHPUnit_TestSuite("Redis_Test");
+$result = PHPUnit::run($suite);
+
+echo $result->toString();
+
 
 ?>
