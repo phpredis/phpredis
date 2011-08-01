@@ -1681,10 +1681,9 @@ class Redis_Test extends PHPUnit_TestCase
 	$this->assertTrue(0 === $this->redis->zUnion('keyU', array('X', 'Y')));
 	$this->assertTrue(array() === $this->redis->zRange('keyU', 0, -1));
 
-	// !Exist U Exist → 0
+	// !Exist U Exist → copy of existing zset.
 	$this->redis->delete('keyU', 'X');
-	var_dump($this->redis->zUnion('keyU', array('key1', 'X')));
-	$this->assertTrue(0 === $this->redis->zUnion('keyU', array('key1', 'X')));
+	$this->assertTrue(2 === $this->redis->zUnion('keyU', array('key1', 'X')));
 
 	// test weighted zUnion
 	$this->redis->delete('keyZ');
@@ -1796,12 +1795,13 @@ class Redis_Test extends PHPUnit_TestCase
 	$this->assertTrue(FALSE === $this->redis->hGet('key', 'c'));	// unknownkey
 
 	// hDel
-	$this->assertTrue(TRUE === $this->redis->hDel('h', 'a')); // TRUE on success
-	$this->assertTrue(FALSE === $this->redis->hDel('h', 'a')); // FALSE on failure
+	$this->assertTrue(1 === $this->redis->hDel('h', 'a')); // 1 on success
+	$this->assertTrue(0 === $this->redis->hDel('h', 'a')); // 0 on failure
 
 	$this->redis->delete('h');
 	$this->redis->hSet('h', 'x', 'a');
 	$this->redis->hSet('h', 'y', 'b');
+	$this->assertTrue(2 === $this->redis->hDel('h', 'x', 'y')); // variadic
 
 	// hsetnx
 	$this->redis->delete('h');
@@ -2508,8 +2508,8 @@ class Redis_Test extends PHPUnit_TestCase
 	    $this->assertTrue($ret[$i++] === array('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')); // hmget, 3 elements
 	    $this->assertTrue($ret[$i++] === 'value1'); // hget
 	    $this->assertTrue($ret[$i++] === 3); // hlen
-	    $this->assertTrue($ret[$i++] === TRUE); // hdel succeeded
-	    $this->assertTrue($ret[$i++] === FALSE); // hdel failed
+	    $this->assertTrue($ret[$i++] === 1); // hdel succeeded
+	    $this->assertTrue($ret[$i++] === 0); // hdel failed
 	    $this->assertTrue($ret[$i++] === FALSE); // hexists didn't find the deleted key
 	    $this->assertTrue($ret[$i] === array('key1', 'key3') || $ret[$i] === array('key3', 'key1')); $i++; // hkeys
 	    $this->assertTrue($ret[$i] === array('value1', 'value3') || $ret[$i] === array('value3', 'value1')); $i++; // hvals
