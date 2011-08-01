@@ -2370,7 +2370,7 @@ class Redis_Test extends PHPUnit_TestCase
 	    $this->assertTrue($ret[$i++] === 1); // skey2 now has 2 elements.
 
 	    $this->assertTrue($ret[$i++] === 4);
-	    $this->assertTrue($ret[$i++] === TRUE); // we did remove that value.
+	    $this->assertTrue($ret[$i++] === 1); // we did remove that value.
 	    $this->assertTrue($ret[$i++] === 3); // now 3 values only.
 	    $this->assertTrue($ret[$i++] === TRUE); // the move did succeed.
 	    $this->assertTrue($ret[$i++] === 3); // sKey2 now has 3 values.
@@ -2614,8 +2614,14 @@ class Redis_Test extends PHPUnit_TestCase
 	    $this->assertTrue(1 === $this->redis->sAdd('k', 'a', 'b', 'c', 'd'));
 
 	    // sRemove
-	    $this->assertTrue(TRUE === $this->redis->sRemove('key', $s[3]));
-	    $this->assertTrue(FALSE === $this->redis->sRemove('key', $s[3]));
+	    $this->assertTrue(1 === $this->redis->sRemove('key', $s[3]));
+	    $this->assertTrue(0 === $this->redis->sRemove('key', $s[3]));
+	    // variadic
+	    $this->redis->delete('k');
+	    $this->redis->sAdd('k', 'a', 'b', 'c', 'd');
+	    $this->assertTrue(2 === $this->redis->sRem('k', 'a', 'd'));
+	    $this->assertTrue(2 === $this->redis->sRem('k', 'b', 'c', 'e'));
+	    $this->assertTrue(FALSE === $this->redis->exists('k'));
 
 	    // sContains
 	    $this->assertTrue(TRUE === $this->redis->sContains('key', $s[0]));
