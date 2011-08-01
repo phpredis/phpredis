@@ -2652,6 +2652,14 @@ class Redis_Test extends PHPUnit_TestCase
 	    $this->assertTrue(1 === $this->redis->zDelete('key', $z[3]));
 	    $this->assertTrue(0 === $this->redis->zDelete('key', $z[3]));
 	    unset($z[3]);
+	    // variadic
+	    $this->redis->delete('k');
+	    $this->redis->zAdd('k', 0, 'a');
+	    $this->redis->zAdd('k', 1, 'b');
+	    $this->redis->zAdd('k', 2, 'c');
+	    $this->assertTrue(2 === $this->redis->zDelete('k', 'a', 'c'));
+	    $this->assertTrue(1.0 === $this->redis->zScore('k', 'b'));
+	    $this->assertTrue($this->redis->zRange('k', 0, -1, true) == array('b' => 1.0));
 
 	    // zRange
 	    $this->assertTrue($z === $this->redis->zRange('key', 0, -1));
