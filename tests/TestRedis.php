@@ -212,6 +212,14 @@ class Redis_Test extends PHPUnit_TestCase
 	$this->assertTrue($this->redis->lGetRange('key0', 0, -1) === array());
 	$this->assertTrue($this->redis->lGetRange('key1', 0, -1) === array('val1', 'val0'));
 
+	// variadic
+	$this->redis->delete('key0');
+	$this->assertTrue(3 === $this->redis->lPush('key0', 'val0', 'val1', 'val2'));
+	$this->assertTrue(array('val2', 'val1', 'val0') === $this->redis->lrange('key0', 0, -1));
+
+	$this->redis->delete('key0');
+	$this->assertTrue(3 === $this->redis->rPush('key0', 'val0', 'val1', 'val2'));
+	$this->assertTrue(array('val0', 'val1', 'val2') === $this->redis->lrange('key0', 0, -1));
     }
 
     public function testRenameNx() {
