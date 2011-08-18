@@ -25,6 +25,7 @@ zend_function_entry redis_array_functions[] = {
 
      PHP_ME(RedisArray, _hosts, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _target, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, _function, NULL, ZEND_ACC_PUBLIC)
 
      /* special implementation for a few functions */
      PHP_ME(RedisArray, info, NULL, ZEND_ACC_PUBLIC)
@@ -410,6 +411,29 @@ PHP_METHOD(RedisArray, _target)
 	redis_inst = ra_find_node(ra, key, key_len, &i);
 	if(redis_inst) {
 		ZVAL_STRING(return_value, ra->hosts[i], 1);
+	} else {
+		RETURN_NULL();
+	}
+}
+
+PHP_METHOD(RedisArray, _function)
+{
+	zval *object;
+	int i;
+	RedisArray *ra;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
+				&object, redis_array_ce) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	if(ra->z_fun) {
+		*return_value = *ra->z_fun;
+		zval_copy_ctor(return_value);
 	} else {
 		RETURN_NULL();
 	}
