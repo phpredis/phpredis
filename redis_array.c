@@ -106,6 +106,9 @@ ra_make_array(HashTable *hosts, const char *fun_name) {
 		/* create socket */
 		redis_sock = redis_sock_create(host, host_len, port, 0, 0, NULL); /* TODO: persistence? */
 
+		/* connect */
+		redis_sock_server_open(redis_sock, 1 TSRMLS_CC);
+
 		/* attach */
 		id = zend_list_insert(redis_sock, le_redis_sock);
 		add_property_resource(ra->redis[i], "socket", id);
@@ -233,9 +236,13 @@ PHP_METHOD(RedisArray, __call)
 
 	char *cmd, *key;
 	int cmd_len, key_len;
-	int key_pos;
+	int key_pos, i;
 	RedisArray *ra;
 	zval *redis_inst;
+	zval z_fun, **z_callargs;
+	HashPosition pointer;
+	HashTable *h_args;
+	int argc;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa",
 				&object, redis_array_ce, &cmd, &cmd_len, &z_args) == FAILURE) {
@@ -246,7 +253,9 @@ PHP_METHOD(RedisArray, __call)
 		RETURN_FALSE;
 	}
 
-	printf("function=%s, %d args\n", cmd, zend_hash_num_elements(Z_ARRVAL_P(z_args)));
+	h_args = Z_ARRVAL_P(z_args);
+	argc = zend_hash_num_elements(h_args);
+	printf("function=%s, %d args\n", cmd, argc);
 
 	/* get key and hash it. */
 	key_pos = 0; /* TODO: change this depending on the command */
@@ -262,7 +271,24 @@ PHP_METHOD(RedisArray, __call)
 	key = Z_STRVAL_PP(zp_tmp);
 	key_len = Z_STRLEN_PP(zp_tmp);
 
+	/* find node */
 	redis_inst = ra_find_node(ra, key, key_len);
 	printf("redis_inst=%p\n", redis_inst);
+
+	/* pass call through */
+	ZVAL_STRING(&z_fun, cmd, 0);	/* method name */
+	z_callargs = emalloc(argc * sizeof(zval*));
+	/* copy args to */
+	for (i = 0, zend_hash_internal_pointer_reset_ex(h_args, &pointer);
+			zend_hash_get_current_data_ex(h_args, (void**) &zp_tmp,
+				&pointer) == SUCCESS;
+			++i, zend_hash_move_forward_ex(h_args, &pointer)) {
+
+		z_callargs[i] = *zp_tmp;
+	}
+
+	/* CALL! */
+	call_user_function(&redis_ce->function_table, &redis_inst,
+			&z_fun, return_value, argc, z_callargs TSRMLS_CC);
 }
 
