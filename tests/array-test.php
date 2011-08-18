@@ -37,4 +37,8 @@ var_dump(array('x', 'y', 'z') === $ra->mget(array('a', 'b', 'c')));
 $ra->mset(array('a' => 'X', 'b' => 'Y', 'c' => 'Z'));
 var_dump(array('X', 'Y', 'Z') === $ra->mget(array('a', 'b', 'c')));
 
+$ra->del(array('a','c'));
+$ra->del('a','c');
+
+var_dump($ra->mget(array('a', 'b', 'c')));
 ?>
