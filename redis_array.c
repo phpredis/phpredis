@@ -25,6 +25,8 @@ zend_function_entry redis_array_functions[] = {
 
      PHP_ME(RedisArray, _hosts, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _target, NULL, ZEND_ACC_PUBLIC)
+
+     PHP_ME(RedisArray, info, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
@@ -407,5 +409,36 @@ PHP_METHOD(RedisArray, _target)
 		ZVAL_STRING(return_value, ra->hosts[i], 1);
 	} else {
 		RETURN_NULL();
+	}
+}
+
+PHP_METHOD(RedisArray, info)
+{
+	zval *object, z_fun, *z_tmp;
+	int i;
+	RedisArray *ra;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
+				&object, redis_array_ce) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	/* prepare call */
+	ZVAL_STRING(&z_fun, "INFO", 0);
+
+	array_init(return_value);
+	for(i = 0; i < ra->count; ++i) {
+
+		MAKE_STD_ZVAL(z_tmp);
+
+		/* Call each node in turn */
+		call_user_function(&redis_ce->function_table, &ra->redis[i],
+				&z_fun, z_tmp, 0, NULL TSRMLS_CC);
+
+		add_assoc_zval(return_value, ra->hosts[i], z_tmp);
 	}
 }
