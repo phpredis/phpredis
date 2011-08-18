@@ -105,11 +105,14 @@ RedisSock *
 ra_find_node(RedisArray *ra, const char *key, int key_len) {
 
 	uint32_t hash;
+	int pos;
 
 	/* TODO: extract relevant part of the key */
 	hash = crc32(key, key_len);
-	printf("hash=%x\n", hash);
 
+	pos = (int)((((uint64_t)hash) * ra->count) / 0xffffffff);
+
+	return ra->cx[pos];
 }
 
 uint32_t crc32(const char *s, size_t sz) {
@@ -242,5 +245,6 @@ PHP_METHOD(RedisArray, __call)
 	key_len = Z_STRLEN_PP(zp_tmp);
 
 	redis_sock = ra_find_node(ra, key, key_len);
+	printf("redis_sock=%p\n", redis_sock);
 }
 
