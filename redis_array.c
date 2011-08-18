@@ -22,6 +22,8 @@ ZEND_END_ARG_INFO()
 zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, __construct, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, __call, __redis_array_call_args, ZEND_ACC_PUBLIC)
+
+     PHP_ME(RedisArray, _hosts, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
@@ -72,6 +74,7 @@ ra_make_array(HashTable *hosts, zval *z_fun) {
 
 	/* create object */
 	RedisArray *ra = emalloc(sizeof(RedisArray));
+	ra->hosts = emalloc(count * sizeof(char*));
 	ra->redis = emalloc(count * sizeof(zval*));
 	ra->count = count;
 	ra->z_fun = NULL;
@@ -86,6 +89,8 @@ ra_make_array(HashTable *hosts, zval *z_fun) {
 			efree(ra);
 			return NULL;
 		}
+
+		ra->hosts[i] = estrdup(Z_STRVAL_PP(zpData));
 
 		/* default values */
 		host = Z_STRVAL_PP(zpData);
@@ -359,3 +364,23 @@ PHP_METHOD(RedisArray, __call)
 			&z_fun, return_value, argc, z_callargs TSRMLS_CC);
 }
 
+PHP_METHOD(RedisArray, _hosts)
+{
+	zval *object;
+	int i;
+	RedisArray *ra;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
+				&object, redis_array_ce) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	array_init(return_value);
+	for(i = 0; i < ra->count; ++i) {
+		add_next_index_string(return_value, ra->hosts[i], 1);
+	}
+}

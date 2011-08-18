@@ -16,4 +16,6 @@ $ra = new RedisArray(array('localhost:6379', 'localhost:6380', 'localhost:6381')
 var_dump($ra->set('hello', 'world'));
 var_dump($ra->get('hello'));
 
+var_dump($ra->_hosts());
+
 ?>

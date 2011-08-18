@@ -9,11 +9,13 @@ void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC);
 
 PHP_METHOD(RedisArray, __construct);
 PHP_METHOD(RedisArray, __call);
+PHP_METHOD(RedisArray, _hosts);
 
 
 typedef struct RedisArray_ {
 	
 	int count;
+	char **hosts;
 	zval **redis;
 	zval *z_fun;	/* key extractor */
 
