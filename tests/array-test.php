@@ -36,6 +36,6 @@ $r2->set('a', 'x');
 //var_dump($ra->mget(array('a', 'b', 'c')));
 $ret = $ra->mget(array('a', 'b', 'c'));
 var_dump(array('x', 'y', 'z') === $ret);
-//var_dump(array('x', 'y', 'z') === $ra->mget(array('a', 'b', 'c')));
+while(array('x', 'y', 'z') === $ra->mget(array('a', 'b', 'c')));
 
 ?>
