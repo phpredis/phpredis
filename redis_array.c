@@ -524,9 +524,6 @@ PHP_METHOD(RedisArray, mget)
 		call_user_function(&redis_ce->function_table, &ra->redis[n],
 				&z_fun, z_ret, 1, &z_argarray TSRMLS_CC);
 
-		//php_printf("n=%d: ", n);
-		//php_var_dump(&z_ret, 0 TSRMLS_CC);
-
 		for(i = 0, j = 0; i < argc; ++i) {
 			if(pos[i] != n) continue;
 
@@ -537,9 +534,6 @@ PHP_METHOD(RedisArray, mget)
 			*z_tmp = **z_cur;
 			zval_copy_ctor(z_tmp);
 			add_index_zval(z_tmp_array, i, z_tmp);
-
-			//printf("Added this at index %d:", i);
-			//php_var_dump(&z_tmp, 0 TSRMLS_CC);
 		}
 		zval_dtor(z_ret);
 		efree(z_ret);
@@ -547,8 +541,6 @@ PHP_METHOD(RedisArray, mget)
 		zval_dtor(z_argarray);
 		efree(z_argarray);
 	}
-	//php_printf("z_tmp_array="); php_var_dump(&z_tmp_array, 0 TSRMLS_CC);
-	//while(1);
 
 	/* copy temp array in the right order to return_value */
 	for(i = 0; i < argc; ++i) {
@@ -559,16 +551,12 @@ PHP_METHOD(RedisArray, mget)
 		zval_copy_ctor(z_tmp);
 		add_next_index_zval(return_value, z_tmp);
 	}
-	//php_printf("return_value="); php_var_dump(&return_value, 0 TSRMLS_CC);
 
 	/* cleanup */
 	zval_dtor(z_tmp_array);
 	efree(z_tmp_array);
-
 	efree(argv);
 	efree(pos);
 	efree(redis_instances);
 	efree(argc_each);
-
-	//php_printf("return_value="); php_var_dump(&return_value, 0 TSRMLS_CC);
 }
