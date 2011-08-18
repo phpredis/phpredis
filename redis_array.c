@@ -61,7 +61,7 @@ PHPAPI int redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
 }
 
 RedisArray *
-ra_make_array(HashTable *hosts, const char *fun_name) {
+ra_make_array(HashTable *hosts, zval *z_fun) {
 
 	int i, host_len, id;
 	int count = zend_hash_num_elements(hosts);
@@ -74,7 +74,7 @@ ra_make_array(HashTable *hosts, const char *fun_name) {
 	RedisArray *ra = emalloc(sizeof(RedisArray));
 	ra->redis = emalloc(count * sizeof(zval*));
 	ra->count = count;
-	ra->fun = NULL;
+	ra->z_fun = NULL;
 
 	/* function calls on the Redis object */
 	ZVAL_STRING(&z_cons, "__construct", 0);
@@ -116,8 +116,10 @@ ra_make_array(HashTable *hosts, const char *fun_name) {
 	}
 
 	/* copy function if provided */
-	if(fun_name) {
-		ra->fun = estrdup(fun_name);
+	if(z_fun) {
+		MAKE_STD_ZVAL(ra->z_fun);
+		*ra->z_fun = *z_fun;
+		zval_copy_ctor(ra->z_fun);
 	}
 
 	return ra;
@@ -127,8 +129,33 @@ ra_make_array(HashTable *hosts, const char *fun_name) {
 char *
 ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len) {
 
-	/* TODO */
-	return NULL;
+	char *error = NULL, *out;
+	zval z_ret;
+	zval *z_argv0;
+
+	/* check that we can call the extractor function */
+	if(!zend_is_callable_ex(ra->z_fun, NULL, 0, NULL, NULL, NULL, &error TSRMLS_CC)) {
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call extractor function");
+		return NULL;
+	}
+	convert_to_string(ra->z_fun);
+
+	/* call extraction function */
+	MAKE_STD_ZVAL(z_argv0);
+	ZVAL_STRINGL(z_argv0, key, key_len, 0);
+	call_user_function(EG(function_table), NULL, ra->z_fun, &z_ret, 1, &z_argv0 TSRMLS_CC);
+	efree(z_argv0);
+
+	if(Z_TYPE(z_ret) != IS_STRING) {
+		zval_dtor(&z_ret);
+		return NULL;
+	}
+
+	*out_len = Z_STRLEN(z_ret);
+	out = estrndup(Z_STRVAL(z_ret), Z_STRLEN(z_ret));
+
+	zval_dtor(&z_ret);
+	return out;
 }
 
 char *
@@ -137,7 +164,7 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len) {
 	char *start, *end;
 	*out_len = key_len;
 
-	if(ra->fun)
+	if(ra->z_fun)
 		return ra_call_extractor(ra, key, key_len, out_len);
 
 	/* look for '{' */
@@ -229,16 +256,16 @@ uint32_t crc32(const char *s, size_t sz) {
     Public constructor */
 PHP_METHOD(RedisArray, __construct)
 {
-	zval *z0;
-	char *fun = NULL, *name = NULL;
-	int fun_len, id;
+	zval *z0, *z_fun = NULL;
+	char *name = NULL;
+	int id;
 	RedisArray *ra = NULL;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|s", &z0, &fun, &fun_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|z", &z0, &z_fun) == FAILURE) {
 		RETURN_FALSE;
 	}
 
-	if(!fun || !fun_len) { /* either an array name or a list of hosts */
+	if(!z_fun) { /* either an array name or a list of hosts */
 		switch(Z_TYPE_P(z0)) {
 			case IS_STRING:
 				name = Z_STRVAL_P(z0);
@@ -259,7 +286,7 @@ PHP_METHOD(RedisArray, __construct)
 			WRONG_PARAM_COUNT;
 		}
 		// printf("ARRAY OF HOSTS, fun=%s\n", fun);
-		ra = ra_make_array(Z_ARRVAL_P(z0), fun);
+		ra = ra_make_array(Z_ARRVAL_P(z0), z_fun);
 	}
 
 	if(ra) {

@@ -15,14 +15,14 @@ typedef struct RedisArray_ {
 	
 	int count;
 	zval **redis;
-	char *fun;	/* key extractor */
+	zval *z_fun;	/* key extractor */
 
 	struct RedisArray_ *prev;
 } RedisArray;
 
 uint32_t crc32(const char *s, size_t sz);
 
-RedisArray *ra_make_array(HashTable *hosts, const char *fun_name);
+RedisArray *ra_make_array(HashTable *hosts, zval *z_fun);
 zval *ra_find_node(RedisArray *ra, const char *key, int key_len);
 
 #endif
