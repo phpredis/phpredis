@@ -543,6 +543,7 @@ PHP_METHOD(RedisArray, mget)
 		//efree(z_argarray);
 	}
 	php_printf("z_tmp_array="); php_var_dump(&z_tmp_array, 0 TSRMLS_CC);
+	return;
 	//while(1);
 
 	/* copy temp array in the right order to return_value */
