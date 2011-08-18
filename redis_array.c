@@ -320,7 +320,6 @@ PHP_METHOD(RedisArray, __call)
 
 	h_args = Z_ARRVAL_P(z_args);
 	argc = zend_hash_num_elements(h_args);
-	printf("function=%s, %d args\n", cmd, argc);
 
 	/* get key and hash it. */
 	key_pos = 0; /* TODO: change this depending on the command */
@@ -337,8 +336,11 @@ PHP_METHOD(RedisArray, __call)
 	key_len = Z_STRLEN_PP(zp_tmp);
 
 	/* find node */
-	redis_inst = ra_find_node(ra, key, key_len); /* TODO: handle failure. */
-	printf("redis_inst=%p\n", redis_inst);
+	redis_inst = ra_find_node(ra, key, key_len);
+	if(!redis_inst) {
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not find any redis servers for this key.");
+		RETURN_FALSE;
+	}
 
 	/* pass call through */
 	ZVAL_STRING(&z_fun, cmd, 0);	/* method name */
