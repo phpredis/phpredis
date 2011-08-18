@@ -17,5 +17,6 @@ var_dump($ra->set('hello', 'world'));
 var_dump($ra->get('hello'));
 
 var_dump($ra->_hosts());
+var_dump($ra->_target('hello'));
 
 ?>

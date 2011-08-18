@@ -10,6 +10,7 @@ void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC);
 PHP_METHOD(RedisArray, __construct);
 PHP_METHOD(RedisArray, __call);
 PHP_METHOD(RedisArray, _hosts);
+PHP_METHOD(RedisArray, _target);
 
 
 typedef struct RedisArray_ {
@@ -25,6 +26,6 @@ typedef struct RedisArray_ {
 uint32_t crc32(const char *s, size_t sz);
 
 RedisArray *ra_make_array(HashTable *hosts, zval *z_fun);
-zval *ra_find_node(RedisArray *ra, const char *key, int key_len);
+zval *ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos);
 
 #endif

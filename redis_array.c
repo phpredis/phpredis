@@ -24,6 +24,7 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, __call, __redis_array_call_args, ZEND_ACC_PUBLIC)
 
      PHP_ME(RedisArray, _hosts, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, _target, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
@@ -101,7 +102,6 @@ ra_make_array(HashTable *hosts, zval *z_fun) {
 			host_len = p - host;
 			port = (short)atoi(p+1);
 		}
-		// printf("host(%d)=%s, port=%d\n", host_len, host,  (int)port);
 
 		/* create Redis object */
 		MAKE_STD_ZVAL(ra->redis[i]);
@@ -186,7 +186,7 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len) {
 }
 
 zval *
-ra_find_node(RedisArray *ra, const char *key, int key_len) {
+ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos) {
 
 	uint32_t hash;
 	char *out;
@@ -201,7 +201,9 @@ ra_find_node(RedisArray *ra, const char *key, int key_len) {
 	hash = crc32(out, out_len);
 	efree(out);
 
+	/* get position on ring */
 	pos = (int)((((uint64_t)hash) * ra->count) / 0xffffffff);
+	if(out_pos) *out_pos = pos;
 
 	return ra->redis[pos];
 }
@@ -274,11 +276,9 @@ PHP_METHOD(RedisArray, __construct)
 		switch(Z_TYPE_P(z0)) {
 			case IS_STRING:
 				name = Z_STRVAL_P(z0);
-				// printf("name=%s\n", name);
 				break;
 
 			case IS_ARRAY:
-				// printf("ARRAY OF HOSTS\n");
 				ra = ra_make_array(Z_ARRVAL_P(z0), NULL);
 				break;
 
@@ -341,7 +341,7 @@ PHP_METHOD(RedisArray, __call)
 	key_len = Z_STRLEN_PP(zp_tmp);
 
 	/* find node */
-	redis_inst = ra_find_node(ra, key, key_len);
+	redis_inst = ra_find_node(ra, key, key_len, NULL);
 	if(!redis_inst) {
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not find any redis servers for this key.");
 		RETURN_FALSE;
@@ -382,5 +382,30 @@ PHP_METHOD(RedisArray, _hosts)
 	array_init(return_value);
 	for(i = 0; i < ra->count; ++i) {
 		add_next_index_string(return_value, ra->hosts[i], 1);
+	}
+}
+
+PHP_METHOD(RedisArray, _target)
+{
+	zval *object;
+	RedisArray *ra;
+	char *key;
+	int key_len, i;
+	zval *redis_inst;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
+				&object, redis_array_ce, &key, &key_len) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	redis_inst = ra_find_node(ra, key, key_len, &i);
+	if(redis_inst) {
+		ZVAL_STRING(return_value, ra->hosts[i], 1);
+	} else {
+		RETURN_NULL();
 	}
 }
