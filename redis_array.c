@@ -29,6 +29,7 @@ zend_function_entry redis_array_functions[] = {
      /* special implementation for a few functions */
      PHP_ME(RedisArray, info, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, mget, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, mset, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
@@ -559,4 +560,107 @@ PHP_METHOD(RedisArray, mget)
 	efree(pos);
 	efree(redis_instances);
 	efree(argc_each);
+}
+
+
+/* MSET will distribute the call to several nodes and regroup the values. */
+PHP_METHOD(RedisArray, mset)
+{
+	zval *object, *z_keys, z_fun, *z_argarray, **data, *z_ret, **z_cur, *z_tmp_array, *z_tmp;
+	int i, j, n;
+	RedisArray *ra;
+	int *pos, argc, *argc_each;
+	HashTable *h_keys;
+	HashPosition pointer;
+	zval **redis_instances, *redis_inst, **argv;
+	char *key, **keys;
+	int key_len, type, *key_lens;
+	long idx;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
+				&object, redis_array_ce, &z_keys) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	/* init data structures */
+	h_keys = Z_ARRVAL_P(z_keys);
+	argc = zend_hash_num_elements(h_keys);
+	argv = emalloc(argc * sizeof(zval*));
+	pos = emalloc(argc * sizeof(int));
+	keys = emalloc(argc * sizeof(char*));
+	key_lens = emalloc(argc * sizeof(int));
+	redis_instances = emalloc(argc * sizeof(zval*));
+	memset(redis_instances, 0, argc * sizeof(zval*));
+
+	argc_each = emalloc(ra->count * sizeof(int));
+	memset(argc_each, 0, ra->count * sizeof(int));
+
+	/* associate each key to a redis node */
+	for(i = 0, zend_hash_internal_pointer_reset(h_keys);
+			zend_hash_has_more_elements(h_keys) == SUCCESS;
+			zend_hash_move_forward(h_keys), i++) {
+
+		type = zend_hash_get_current_key_ex(h_keys, &key, &key_len, &idx, 0, NULL);
+		if(type != HASH_KEY_IS_STRING) { /* ignore non-string keys */
+			continue;
+		}
+		if(zend_hash_get_current_data(h_keys, (void**)&data) == FAILURE) {
+			continue;
+		}
+		if (Z_TYPE_PP(data) != IS_STRING) {
+			php_error_docref(NULL TSRMLS_CC, E_ERROR, "MSET: all keys must be string.");
+			efree(pos);
+			RETURN_FALSE;
+		}
+
+		redis_instances[i] = ra_find_node(ra, key, key_len - 1, &pos[i]); /* -1 because of PHP assoc keys which count \0... */
+		argc_each[pos[i]]++;	/* count number of keys per node */
+		argv[i] = *data;
+		keys[i] = key;
+		key_lens[i] = key_len - 1;
+	}
+
+	/* prepare call */
+	ZVAL_STRING(&z_fun, "MSET", 0);
+
+	/* calls */
+	for(n = 0; n < ra->count; ++n) { /* for each node */
+
+		redis_inst = ra->redis[n];
+
+		/* copy args */
+		MAKE_STD_ZVAL(z_argarray);
+		array_init(z_argarray);
+		for(i = 0; i < argc; ++i) {
+			if(pos[i] != n) continue;
+
+			MAKE_STD_ZVAL(z_tmp);
+			*z_tmp = *argv[i];
+			zval_copy_ctor(z_tmp);
+
+			add_assoc_zval_ex(z_argarray, keys[i], key_lens[i] + 1, z_tmp); /* +1 to count the \0 here */
+		}
+
+		/* call */
+		MAKE_STD_ZVAL(z_ret);
+		call_user_function(&redis_ce->function_table, &ra->redis[n],
+				&z_fun, z_ret, 1, &z_argarray TSRMLS_CC);
+
+		zval_dtor(z_ret);
+		efree(z_ret);
+
+		zval_dtor(z_argarray);
+		efree(z_argarray);
+	}
+
+	/* cleanup */
+	efree(argv);
+	efree(pos);
+	efree(redis_instances);
+	efree(argc_each);
+	RETURN_TRUE;
 }

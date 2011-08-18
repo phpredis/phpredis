@@ -34,6 +34,7 @@ $r2->connect('127.0.0.1', 6381);
 $r2->set('a', 'x');
 
 var_dump(array('x', 'y', 'z') === $ra->mget(array('a', 'b', 'c')));
-var_dump(array('x', 'y', 'z') === $ra->mget(array('a', 'b', 'c')));
+$ra->mset(array('a' => 'X', 'b' => 'Y', 'c' => 'Z'));
+var_dump(array('X', 'Y', 'Z') === $ra->mget(array('a', 'b', 'c')));
 
 ?>
