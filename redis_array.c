@@ -32,6 +32,10 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, mget, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, mset, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, del, NULL, ZEND_ACC_PUBLIC)
+
+     /* Aliases */
+     PHP_MALIAS(RedisArray, delete, del, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(RedisArray, getMultiple, mget, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
