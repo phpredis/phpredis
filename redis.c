@@ -40,6 +40,7 @@
 #define R_SUB_CALLBACK_FT_TYPE 2
 
 static int le_redis_sock;
+extern int le_redis_array;
 
 #ifdef PHP_SESSION
 extern ps_module ps_mod_redis;
@@ -319,6 +320,12 @@ PHP_MINIT_FUNCTION(redis)
 	/* RedisArray class */
 	INIT_CLASS_ENTRY(redis_array_class_entry, "RedisArray", redis_array_functions);
     redis_array_ce = zend_register_internal_class(&redis_array_class_entry TSRMLS_CC);
+
+    le_redis_array = zend_register_list_destructors_ex(
+        redis_destructor_redis_array,
+        NULL,
+        "Redis Array", module_number
+    );
 
 	/* RedisException class */
     INIT_CLASS_ENTRY(redis_exception_class_entry, "RedisException", NULL);

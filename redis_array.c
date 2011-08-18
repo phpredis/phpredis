@@ -8,7 +8,6 @@
 #include "php_redis.h"
 #include "redis_array.h"
 #include <zend_exceptions.h>
-#include <stdint.h>
 
 #include "library.h"
 #include "redis_array.h"
@@ -23,6 +22,40 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, __call, __redis_array_call_args, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
+
+int le_redis_array;
+void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
+{
+	/* TODO */
+	/*
+	   RedisSock *redis_sock = (RedisSock *) rsrc->ptr;
+	   redis_sock_disconnect(redis_sock TSRMLS_CC);
+	   redis_free_socket(redis_sock);
+	 */
+}
+
+/**
+ * redis_array_get
+ */
+PHPAPI int redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
+{
+
+    zval **socket;
+    int resource_type;
+
+    if (Z_TYPE_P(id) != IS_OBJECT || zend_hash_find(Z_OBJPROP_P(id), "socket",
+                                  sizeof("socket"), (void **) &socket) == FAILURE) {
+        return -1;
+    }
+
+    *ra = (RedisArray *) zend_list_find(Z_LVAL_PP(socket), &resource_type);
+
+    if (!*ra || resource_type != le_redis_array) {
+            return -1;
+    }
+
+    return Z_LVAL_PP(socket);
+}
 
 RedisArray *
 ra_make_array(HashTable *hosts, const char *fun_name) {
@@ -45,7 +78,7 @@ ra_make_array(HashTable *hosts, const char *fun_name) {
 			efree(ra);
 			return NULL;
 		}
-		
+
 		/* default values */
 		host = Z_STRVAL_PP(zpData);
 		host_len = Z_STRLEN_PP(zpData);
@@ -66,6 +99,17 @@ ra_make_array(HashTable *hosts, const char *fun_name) {
 	}
 
 	return ra;
+}
+
+RedisSock *
+ra_find_node(RedisArray *ra, const char *key, int key_len) {
+
+	uint32_t hash;
+
+	/* TODO: extract relevant part of the key */
+	hash = crc32(key, key_len);
+	printf("hash=%x\n", hash);
+
 }
 
 uint32_t crc32(const char *s, size_t sz) {
@@ -125,7 +169,7 @@ PHP_METHOD(RedisArray, __construct)
 {
 	zval *z0;
 	char *fun = NULL, *name = NULL;
-	int fun_len;
+	int fun_len, id;
 	RedisArray *ra = NULL;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|s", &z0, &fun, &fun_len) == FAILURE) {
@@ -155,20 +199,48 @@ PHP_METHOD(RedisArray, __construct)
 		// printf("ARRAY OF HOSTS, fun=%s\n", fun);
 		ra = ra_make_array(Z_ARRVAL_P(z0), fun);
 	}
+
+	if(ra) {
+		id = zend_list_insert(ra, le_redis_array);
+		add_property_resource(getThis(), "socket", id);
+	}
 }
 
 PHP_METHOD(RedisArray, __call)
 {
-    zval *object, *z_array;
+	zval *object, *z_args, **zp_tmp;
 
-    char *cmd;
-    int cmd_len;
+	char *cmd, *key;
+	int cmd_len, key_len;
+	int key_pos;
+	RedisArray *ra;
+	RedisSock *redis_sock;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa",
-                                     &object, redis_array_ce, &cmd, &cmd_len, &z_array) == FAILURE) {
-        RETURN_FALSE;
-    }
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa",
+				&object, redis_array_ce, &cmd, &cmd_len, &z_args) == FAILURE) {
+		RETURN_FALSE;
+	}
 
-    printf("function=%s, %d args\n", cmd, zend_hash_num_elements(Z_ARRVAL_P(z_array)));
+	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	printf("function=%s, %d args\n", cmd, zend_hash_num_elements(Z_ARRVAL_P(z_args)));
+
+	/* get key and hash it. */
+	key_pos = 0; /* TODO: change this depending on the command */
+
+	if(	zend_hash_num_elements(Z_ARRVAL_P(z_args)) == 0
+		|| zend_hash_quick_find(Z_ARRVAL_P(z_args), NULL, 0, key_pos, (void**)&zp_tmp) == FAILURE
+		|| Z_TYPE_PP(zp_tmp) != IS_STRING) {
+
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not find key");
+		RETURN_FALSE;
+	}
+
+	key = Z_STRVAL_PP(zp_tmp);
+	key_len = Z_STRLEN_PP(zp_tmp);
+
+	redis_sock = ra_find_node(ra, key, key_len);
 }
 
