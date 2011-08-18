@@ -74,6 +74,7 @@ ra_make_array(HashTable *hosts, const char *fun_name) {
 	RedisArray *ra = emalloc(sizeof(RedisArray));
 	ra->redis = emalloc(count * sizeof(zval*));
 	ra->count = count;
+	ra->fun = NULL;
 
 	/* function calls on the Redis object */
 	ZVAL_STRING(&z_cons, "__construct", 0);
@@ -122,14 +123,51 @@ ra_make_array(HashTable *hosts, const char *fun_name) {
 	return ra;
 }
 
+/* call userland key extraction function */
+char *
+ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len) {
+
+	/* TODO */
+	return NULL;
+}
+
+char *
+ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len) {
+
+	char *start, *end;
+	*out_len = key_len;
+
+	if(ra->fun)
+		return ra_call_extractor(ra, key, key_len, out_len);
+
+	/* look for '{' */
+	start = strchr(key, '{');
+	if(!start) return estrndup(key, key_len);
+
+	/* look for '}' */
+	end = strchr(start+1, '}');
+	if(!end) return estrndup(key, key_len);
+
+	/* found substring */
+	*out_len = end - start - 1;
+	return estrndup(start + 1, *out_len);
+}
+
 zval *
 ra_find_node(RedisArray *ra, const char *key, int key_len) {
 
 	uint32_t hash;
-	int pos;
+	char *out;
+	int pos, out_len;
 
-	/* TODO: extract relevant part of the key */
-	hash = crc32(key, key_len);
+	/* extract relevant part of the key */
+	out = ra_extract_key(ra, key, key_len, &out_len);
+	if(!out)
+		return NULL;
+
+	/* hash */
+	hash = crc32(out, out_len);
+	efree(out);
 
 	pos = (int)((((uint64_t)hash) * ra->count) / 0xffffffff);
 
@@ -272,7 +310,7 @@ PHP_METHOD(RedisArray, __call)
 	key_len = Z_STRLEN_PP(zp_tmp);
 
 	/* find node */
-	redis_inst = ra_find_node(ra, key, key_len);
+	redis_inst = ra_find_node(ra, key, key_len); /* TODO: handle failure. */
 	printf("redis_inst=%p\n", redis_inst);
 
 	/* pass call through */

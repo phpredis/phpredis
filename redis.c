@@ -411,7 +411,6 @@ PHP_MINFO_FUNCTION(redis)
     Public constructor */
 PHP_METHOD(Redis, __construct)
 {
-	printf("NEW REDIS\n");
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
         RETURN_FALSE;
     }
