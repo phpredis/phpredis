@@ -448,7 +448,7 @@ PHP_METHOD(RedisArray, info)
 /* MGET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mget)
 {
-	zval *object, *z_keys, z_fun, *z_arg, **data, z_ret, **z_cur, *z_tmp_array, *z_tmp;
+	zval *object, *z_keys, z_fun, *z_argarray, **data, *z_ret, **z_cur, *z_tmp_array, *z_tmp;
 	int i, j, n;
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
@@ -507,48 +507,64 @@ PHP_METHOD(RedisArray, mget)
 		redis_inst = ra->redis[n];
 
 		/* copy args */
-		MAKE_STD_ZVAL(z_arg);
-		array_init(z_arg);
+		MAKE_STD_ZVAL(z_argarray);
+		array_init(z_argarray);
 		for(i = 0; i < argc; ++i) {
 			if(pos[i] != n) continue;
 
-			add_next_index_zval(z_arg, argv[i]);
+			add_next_index_zval(z_argarray, argv[i]);
 		}
 
 		/* call */
+		MAKE_STD_ZVAL(z_ret);
 		call_user_function(&redis_ce->function_table, &ra->redis[n],
-				&z_fun, &z_ret, 1, &z_arg TSRMLS_CC);
+				&z_fun, z_ret, 1, &z_argarray TSRMLS_CC);
+
+		php_printf("n=%d: ", n);
+		php_var_dump(&z_ret, 0 TSRMLS_CC);
 
 		for(i = 0, j = 0; i < argc; ++i) {
 			if(pos[i] != n) continue;
 
-			zend_hash_quick_find(Z_ARRVAL(z_ret), NULL, 0, j++, (void**)&z_cur);
+			zend_hash_quick_find(Z_ARRVAL_P(z_ret), NULL, 0, j++, (void**)&z_cur);
 
 			MAKE_STD_ZVAL(z_tmp);
 			*z_tmp = **z_cur;
 			zval_copy_ctor(z_tmp);
 			add_index_zval(z_tmp_array, i, z_tmp);
+
+			printf("Added this at index %d:", i);
+			php_var_dump(&z_tmp, 0 TSRMLS_CC);
 		}
 		zval_dtor(&z_ret);
+		efree(&z_ret);
+
+		//zval_dtor(z_argarray);
+		//efree(z_argarray);
 	}
+	php_printf("z_tmp_array="); php_var_dump(&z_tmp_array, 0 TSRMLS_CC);
+	//while(1);
 
 	/* copy temp array in the right order to return_value */
 	for(i = 0; i < argc; ++i) {
 		zend_hash_quick_find(Z_ARRVAL_P(z_tmp_array), NULL, 0, i, (void**)&z_cur);
-		//add_next_index_zval(return_value, *z_cur);
 
 		MAKE_STD_ZVAL(z_tmp);
 		*z_tmp = **z_cur;
 		zval_copy_ctor(z_tmp);
 		add_next_index_zval(return_value, z_tmp);
 	}
+	php_printf("return_value="); php_var_dump(&return_value, 0 TSRMLS_CC);
+	//while(1);
 
 	/* cleanup */
-	zval_dtor(z_tmp_array);
+	//zval_dtor(z_tmp_array);
 	//efree(z_tmp_array);
 
 	efree(argv);
 	efree(pos);
 	efree(redis_instances);
 	efree(argc_each);
+
+	php_printf("return_value="); php_var_dump(&return_value, 0 TSRMLS_CC);
 }
