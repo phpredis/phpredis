@@ -11,7 +11,9 @@ var_dump(ini_get('redis.arrays.functions'));
 // different redis arrays
 $ra = new RedisArray('users');
 $ra = new RedisArray(array('localhost:6379', 'localhost:6380'));
-$ra = new RedisArray(array('localhost:6379', 'localhost:6380'), 'hash_key');
+$ra = new RedisArray(array('localhost', 'localhost:6380'), 'hash_key');
 
+var_dump($ra->set('hello', 'world'));
+var_dump($ra->get('hello'));
 
 ?>
