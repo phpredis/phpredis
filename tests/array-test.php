@@ -17,8 +17,23 @@ var_dump($ra->set('hello', 'world'));
 var_dump($ra->get('hello'));
 
 var_dump($ra->_hosts());
-var_dump($ra->_target('hello'));
+var_dump($ra->_target('a'));
+var_dump($ra->_target('b'));
+var_dump($ra->_target('c'));
 
-var_dump($ra->info());
+$r0 = new Redis;
+$r0->connect('127.0.0.1', 6379);
+$r0->set('c', 'z');
+
+$r1 = new Redis;
+$r1->connect('127.0.0.1', 6380);
+$r1->set('b', 'y');
+
+$r2 = new Redis;
+$r2->connect('127.0.0.1', 6381);
+$r2->set('a', 'x');
+
+var_dump($ra->mget(array('a', 'b', 'c')));
+var_dump($ra->mget(array('a', 'b', 'c')));
 
 ?>

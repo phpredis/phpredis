@@ -12,6 +12,7 @@ PHP_METHOD(RedisArray, __call);
 PHP_METHOD(RedisArray, _hosts);
 PHP_METHOD(RedisArray, _target);
 PHP_METHOD(RedisArray, info);
+PHP_METHOD(RedisArray, mget);
 
 
 typedef struct RedisArray_ {

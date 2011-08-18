@@ -26,7 +26,9 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, _hosts, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _target, NULL, ZEND_ACC_PUBLIC)
 
+     /* special implementation for a few functions */
      PHP_ME(RedisArray, info, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, mget, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
@@ -110,7 +112,7 @@ ra_make_array(HashTable *hosts, zval *z_fun) {
 		object_init_ex(ra->redis[i], redis_ce);
 		INIT_PZVAL(ra->redis[i]);
 		call_user_function(&redis_ce->function_table, &ra->redis[i], &z_cons, &z_ret, 0, NULL TSRMLS_CC);
-		
+
 		/* create socket */
 		redis_sock = redis_sock_create(host, host_len, port, 0, 0, NULL); /* TODO: persistence? */
 
@@ -441,4 +443,112 @@ PHP_METHOD(RedisArray, info)
 
 		add_assoc_zval(return_value, ra->hosts[i], z_tmp);
 	}
+}
+
+/* MGET will distribute the call to several nodes and regroup the values. */
+PHP_METHOD(RedisArray, mget)
+{
+	zval *object, *z_keys, z_fun, *z_arg, **data, z_ret, **z_cur, *z_tmp_array, *z_tmp;
+	int i, j, n;
+	RedisArray *ra;
+	int *pos, argc, *argc_each;
+	HashTable *h_keys;
+	HashPosition pointer;
+	zval **redis_instances, *redis_inst, **argv;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
+				&object, redis_array_ce, &z_keys) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	/* prepare call */
+	ZVAL_STRING(&z_fun, "MGET", 0);
+
+	/* init data structures */
+	h_keys = Z_ARRVAL_P(z_keys);
+	argc = zend_hash_num_elements(h_keys);
+	argv = emalloc(argc * sizeof(zval*));
+	pos = emalloc(argc * sizeof(int));
+	redis_instances = emalloc(argc * sizeof(zval*));
+	memset(redis_instances, 0, argc * sizeof(zval*));
+
+	argc_each = emalloc(ra->count * sizeof(int));
+	memset(argc_each, 0, ra->count * sizeof(int));
+
+	/* associate each key to a redis node */
+	for (i = 0, zend_hash_internal_pointer_reset_ex(h_keys, &pointer);
+			zend_hash_get_current_data_ex(h_keys, (void**) &data,
+				&pointer) == SUCCESS;
+			zend_hash_move_forward_ex(h_keys, &pointer), ++i) {
+
+		if (Z_TYPE_PP(data) != IS_STRING) {
+			php_error_docref(NULL TSRMLS_CC, E_ERROR, "MGET: all keys must be string.");
+			efree(pos);
+			RETURN_FALSE;
+		}
+
+		redis_instances[i] = ra_find_node(ra, Z_STRVAL_PP(data), Z_STRLEN_PP(data), &pos[i]);
+		argc_each[pos[i]]++;	/* count number of keys per node */
+		argv[i] = *data;
+	}
+
+	/* prepare return value */
+	array_init(return_value);
+	MAKE_STD_ZVAL(z_tmp_array);
+	array_init(z_tmp_array);
+
+	/* calls */
+	for(n = 0; n < ra->count; ++n) { /* for each node */
+
+		redis_inst = ra->redis[n];
+
+		/* copy args */
+		MAKE_STD_ZVAL(z_arg);
+		array_init(z_arg);
+		for(i = 0; i < argc; ++i) {
+			if(pos[i] != n) continue;
+
+			add_next_index_zval(z_arg, argv[i]);
+		}
+
+		/* call */
+		call_user_function(&redis_ce->function_table, &ra->redis[n],
+				&z_fun, &z_ret, 1, &z_arg TSRMLS_CC);
+
+		for(i = 0, j = 0; i < argc; ++i) {
+			if(pos[i] != n) continue;
+
+			zend_hash_quick_find(Z_ARRVAL(z_ret), NULL, 0, j++, (void**)&z_cur);
+
+			MAKE_STD_ZVAL(z_tmp);
+			*z_tmp = **z_cur;
+			zval_copy_ctor(z_tmp);
+			add_index_zval(z_tmp_array, i, z_tmp);
+		}
+		zval_dtor(&z_ret);
+	}
+
+	/* copy temp array in the right order to return_value */
+	for(i = 0; i < argc; ++i) {
+		zend_hash_quick_find(Z_ARRVAL_P(z_tmp_array), NULL, 0, i, (void**)&z_cur);
+		//add_next_index_zval(return_value, *z_cur);
+
+		MAKE_STD_ZVAL(z_tmp);
+		*z_tmp = **z_cur;
+		zval_copy_ctor(z_tmp);
+		add_next_index_zval(return_value, z_tmp);
+	}
+
+	/* cleanup */
+	zval_dtor(z_tmp_array);
+	//efree(z_tmp_array);
+
+	efree(argv);
+	efree(pos);
+	efree(redis_instances);
+	efree(argc_each);
 }
