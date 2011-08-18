@@ -25,7 +25,9 @@
 
 #include "common.h"
 #include "ext/standard/info.h"
+#include "php_ini.h"
 #include "php_redis.h"
+#include "redis_array.h"
 #include <zend_exceptions.h>
 
 #ifdef PHP_SESSION
@@ -47,6 +49,14 @@ zend_class_entry *redis_ce;
 zend_class_entry *redis_exception_ce;
 zend_class_entry *spl_ce_RuntimeException = NULL;
 
+extern zend_function_entry redis_array_functions[];
+
+PHP_INI_BEGIN()
+	/* redis arrays */
+	PHP_INI_ENTRY("redis.arrays.names", "", PHP_INI_ALL, NULL)
+	PHP_INI_ENTRY("redis.arrays.hosts", "", PHP_INI_ALL, NULL)
+	PHP_INI_ENTRY("redis.arrays.functions", "", PHP_INI_ALL, NULL)
+PHP_INI_END()
 
 ZEND_DECLARE_MODULE_GLOBALS(redis)
 
@@ -297,11 +307,20 @@ PHPAPI int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC)
 PHP_MINIT_FUNCTION(redis)
 {
     zend_class_entry redis_class_entry;
+    zend_class_entry redis_array_class_entry;
     zend_class_entry redis_exception_class_entry;
+
+	REGISTER_INI_ENTRIES();
     
+	/* Redis class */
 	INIT_CLASS_ENTRY(redis_class_entry, "Redis", redis_functions);
     redis_ce = zend_register_internal_class(&redis_class_entry TSRMLS_CC);
 
+	/* RedisArray class */
+	INIT_CLASS_ENTRY(redis_array_class_entry, "RedisArray", redis_array_functions);
+    redis_array_ce = zend_register_internal_class(&redis_array_class_entry TSRMLS_CC);
+
+	/* RedisException class */
     INIT_CLASS_ENTRY(redis_exception_class_entry, "RedisException", NULL);
     redis_exception_ce = zend_register_internal_class_ex(
         &redis_exception_class_entry,
