@@ -12,6 +12,8 @@
 #include "library.h"
 #include "redis_array.h"
 
+extern zend_class_entry *redis_ce;
+
 ZEND_BEGIN_ARG_INFO_EX(__redis_array_call_args, 0, 0, 2)
 	ZEND_ARG_INFO(0, function_name)
 	ZEND_ARG_INFO(0, arguments)
@@ -24,6 +26,7 @@ zend_function_entry redis_array_functions[] = {
 };
 
 int le_redis_array;
+extern int le_redis_sock;
 void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
 {
 	/* TODO */
@@ -60,21 +63,25 @@ PHPAPI int redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
 RedisArray *
 ra_make_array(HashTable *hosts, const char *fun_name) {
 
-	int i, host_len;
+	int i, host_len, id;
 	int count = zend_hash_num_elements(hosts);
 	char *host, *p;
 	short port;
-	zval **zpData;
+	zval **zpData, z_cons, *z_args, z_ret;
+	RedisSock *redis_sock  = NULL;
 
 	/* create object */
 	RedisArray *ra = emalloc(sizeof(RedisArray));
-	ra->cx = emalloc(count * sizeof(RedisSock*));
+	ra->redis = emalloc(count * sizeof(zval*));
 	ra->count = count;
+
+	/* function calls on the Redis object */
+	ZVAL_STRING(&z_cons, "__construct", 0);
+
 
 	/* init connections */
 	for(i = 0; i < count; ++i) {
 		if(FAILURE == zend_hash_quick_find(hosts, NULL, 0, i, (void**)&zpData)) {
-			efree(ra->cx);
 			efree(ra);
 			return NULL;
 		}
@@ -89,8 +96,19 @@ ra_make_array(HashTable *hosts, const char *fun_name) {
 			port = (short)atoi(p+1);
 		}
 		// printf("host(%d)=%s, port=%d\n", host_len, host,  (int)port);
-		ra->cx[i] = redis_sock_create(host, host_len, port, 0, 0, NULL); /* TODO: persistence */
- 
+
+		/* create Redis object */
+		MAKE_STD_ZVAL(ra->redis[i]);
+		object_init_ex(ra->redis[i], redis_ce);
+		INIT_PZVAL(ra->redis[i]);
+		call_user_function(&redis_ce->function_table, &ra->redis[i], &z_cons, &z_ret, 0, NULL TSRMLS_CC);
+		
+		/* create socket */
+		redis_sock = redis_sock_create(host, host_len, port, 0, 0, NULL); /* TODO: persistence? */
+
+		/* attach */
+		id = zend_list_insert(redis_sock, le_redis_sock);
+		add_property_resource(ra->redis[i], "socket", id);
 	}
 
 	/* copy function if provided */
@@ -101,7 +119,7 @@ ra_make_array(HashTable *hosts, const char *fun_name) {
 	return ra;
 }
 
-RedisSock *
+zval *
 ra_find_node(RedisArray *ra, const char *key, int key_len) {
 
 	uint32_t hash;
@@ -112,7 +130,7 @@ ra_find_node(RedisArray *ra, const char *key, int key_len) {
 
 	pos = (int)((((uint64_t)hash) * ra->count) / 0xffffffff);
 
-	return ra->cx[pos];
+	return ra->redis[pos];
 }
 
 uint32_t crc32(const char *s, size_t sz) {
@@ -217,7 +235,7 @@ PHP_METHOD(RedisArray, __call)
 	int cmd_len, key_len;
 	int key_pos;
 	RedisArray *ra;
-	RedisSock *redis_sock;
+	zval *redis_inst;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa",
 				&object, redis_array_ce, &cmd, &cmd_len, &z_args) == FAILURE) {
@@ -244,7 +262,7 @@ PHP_METHOD(RedisArray, __call)
 	key = Z_STRVAL_PP(zp_tmp);
 	key_len = Z_STRLEN_PP(zp_tmp);
 
-	redis_sock = ra_find_node(ra, key, key_len);
-	printf("redis_sock=%p\n", redis_sock);
+	redis_inst = ra_find_node(ra, key, key_len);
+	printf("redis_inst=%p\n", redis_inst);
 }
 

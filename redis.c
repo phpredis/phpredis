@@ -39,7 +39,7 @@
 #define R_SUB_CALLBACK_CLASS_TYPE 1
 #define R_SUB_CALLBACK_FT_TYPE 2
 
-static int le_redis_sock;
+int le_redis_sock;
 extern int le_redis_array;
 
 #ifdef PHP_SESSION
@@ -411,6 +411,7 @@ PHP_MINFO_FUNCTION(redis)
     Public constructor */
 PHP_METHOD(Redis, __construct)
 {
+	printf("NEW REDIS\n");
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
         RETURN_FALSE;
     }

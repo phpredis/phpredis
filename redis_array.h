@@ -14,7 +14,7 @@ PHP_METHOD(RedisArray, __call);
 typedef struct RedisArray_ {
 	
 	int count;
-	RedisSock **cx;
+	zval **redis;
 	char *fun;
 
 	struct RedisArray_ *prev;
@@ -23,6 +23,6 @@ typedef struct RedisArray_ {
 uint32_t crc32(const char *s, size_t sz);
 
 RedisArray *ra_make_array(HashTable *hosts, const char *fun_name);
-RedisSock *ra_find_node(RedisArray *ra, const char *key, int key_len);
+zval *ra_find_node(RedisArray *ra, const char *key, int key_len);
 
 #endif
