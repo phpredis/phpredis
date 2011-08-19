@@ -31,15 +31,23 @@ echo "Distributing $n keys around the ring.\n";
 // first, distribute the keys to the original ring
 $ra = new RedisArray($firstRing, NULL, array(), TRUE);
 foreach($data as $k => $v) {
-	$ra->set($k, $v);
+	$ra->set($k, $v); // strings
 }
+
+// sets
 $ra->sadd('sx', 'a', 'b', 'c');
 $ra->sadd('sy', 'd', 'e', 'f');
 $ra->sadd('sz', 'g', 'h', 'i');
 
+// lists
 $ra->rpush('lx', 'a', 'b', 'c');
 $ra->rpush('ly', 'd', 'e', 'f');
 $ra->rpush('lz', 'g', 'h', 'i');
+
+// hashes
+$ra->hmset('hx', array('a' => 'A', 'b' => 'B', 'c' => 'C'));
+$ra->hmset('hy', array('d' => 'D', 'e' => 'E', 'f' => 'F'));
+$ra->hmset('hz', array('g' => 'G', 'h' => 'H', 'i' => 'I'));
 report_info($ra);
 
 echo "Reading back all the values.\n";

@@ -454,6 +454,35 @@ ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to) {
 }
 
 static zend_bool
+ra_move_hash(const char *key, int key_len, zval *z_from, zval *z_to) {
+
+	zval z_fun_hgetall, z_fun_hmset, z_ret, *z_args[2];
+
+	/* run HGETALL on source */
+	MAKE_STD_ZVAL(z_args[0]);
+	ZVAL_STRINGL(&z_fun_hgetall, "HGETALL", 7, 0);
+	ZVAL_STRINGL(z_args[0], key, key_len, 0);
+	call_user_function(&redis_ce->function_table, &z_from, &z_fun_hgetall, &z_ret, 1, z_args TSRMLS_CC);
+
+	if(Z_TYPE(z_ret) != IS_ARRAY) { /* key not found or replaced */
+		/* TODO: report? */
+		efree(z_args[0]);
+		return 0;
+	}
+
+	/* run HMSET on target */
+	ZVAL_STRINGL(&z_fun_hmset, "HMSET", 5, 0);
+	ZVAL_STRINGL(z_args[0], key, key_len, 0);
+	z_args[1] = &z_ret; // copy z_ret to arg 1
+	call_user_function(&redis_ce->function_table, &z_to, &z_fun_hmset, &z_ret, 2, z_args TSRMLS_CC);
+
+	/* cleanup */
+	efree(z_args[0]);
+
+	return 1;
+}
+
+static zend_bool
 ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 		int list_count, const char **cmd_list,
 		int add_count, const char **cmd_add) {
@@ -489,7 +518,7 @@ ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 		return 0;
 	}
 
-	/* run SADD on target */
+	/* run SADD/RPUSH on target */
 	h_set_vals = Z_ARRVAL(z_ret);
 	count = zend_hash_num_elements(h_set_vals);
 	z_sadd_args = emalloc((1 + count) * sizeof(zval*));
