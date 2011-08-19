@@ -26,12 +26,14 @@ typedef struct RedisArray_ {
 	zval **redis;
 	zend_bool index;
 	zval *z_fun;	/* key extractor */
+	zval *z_pure_cmds;	/* hash table */
 
 	struct RedisArray_ *prev;
 } RedisArray;
 
 uint32_t crc32(const char *s, size_t sz);
 
+void redis_array_init(RedisArray *ra);
 RedisArray *ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev);
 zval *ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos);
 

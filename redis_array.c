@@ -53,6 +53,46 @@ void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
 	 */
 }
 
+/* List pure functions */
+void redis_array_init(RedisArray *ra) {
+
+	MAKE_STD_ZVAL(ra->z_pure_cmds);
+	array_init(ra->z_pure_cmds);
+
+	add_assoc_bool(ra->z_pure_cmds, "HGET", 1);
+	add_assoc_bool(ra->z_pure_cmds, "HGETALL", 1);
+	add_assoc_bool(ra->z_pure_cmds, "HKEYS", 1);
+	add_assoc_bool(ra->z_pure_cmds, "HLEN", 1);
+	add_assoc_bool(ra->z_pure_cmds, "SRANDMEMBER", 1);
+	add_assoc_bool(ra->z_pure_cmds, "HMGET", 1);
+	add_assoc_bool(ra->z_pure_cmds, "STRLEN", 1);
+	add_assoc_bool(ra->z_pure_cmds, "SUNION", 1);
+	add_assoc_bool(ra->z_pure_cmds, "HVALS", 1);
+	add_assoc_bool(ra->z_pure_cmds, "TYPE", 1);
+	add_assoc_bool(ra->z_pure_cmds, "LINDEX", 1);
+	add_assoc_bool(ra->z_pure_cmds, "SCARD", 1);
+	add_assoc_bool(ra->z_pure_cmds, "LLEN", 1);
+	add_assoc_bool(ra->z_pure_cmds, "SDIFF", 1);
+	add_assoc_bool(ra->z_pure_cmds, "ZCARD", 1);
+	add_assoc_bool(ra->z_pure_cmds, "ZCOUNT", 1);
+	add_assoc_bool(ra->z_pure_cmds, "LRANGE", 1);
+	add_assoc_bool(ra->z_pure_cmds, "ZRANGE", 1);
+	add_assoc_bool(ra->z_pure_cmds, "ZRANK", 1);
+	add_assoc_bool(ra->z_pure_cmds, "GET", 1);
+	add_assoc_bool(ra->z_pure_cmds, "GETBIT", 1);
+	add_assoc_bool(ra->z_pure_cmds, "SINTER", 1);
+	add_assoc_bool(ra->z_pure_cmds, "GETRANGE", 1);
+	add_assoc_bool(ra->z_pure_cmds, "ZREVRANGE", 1);
+	add_assoc_bool(ra->z_pure_cmds, "SISMEMBER", 1);
+	add_assoc_bool(ra->z_pure_cmds, "ZREVRANGEBYSCORE", 1);
+	add_assoc_bool(ra->z_pure_cmds, "ZREVRANK", 1);
+	add_assoc_bool(ra->z_pure_cmds, "HEXISTS", 1);
+	add_assoc_bool(ra->z_pure_cmds, "ZSCORE", 1);
+	add_assoc_bool(ra->z_pure_cmds, "HGET", 1);
+	add_assoc_bool(ra->z_pure_cmds, "OBJECT", 1);
+	add_assoc_bool(ra->z_pure_cmds, "SMEMBERS", 1);
+}
+
 /**
  * redis_array_get
  */
@@ -140,6 +180,9 @@ ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev) {
 	ra->count = count;
 	ra->z_fun = NULL;
 	ra->index = 1;
+
+	/* init array data structures */
+	redis_array_init(ra);
 
 	if(NULL == ra_load_hosts(ra, hosts)) {
 		return NULL;
@@ -394,6 +437,23 @@ ra_index_exec(RedisArray *ra, zval *z_redis, zval *return_value) {
 	}
 }
 
+static zend_bool
+is_write_cmd(RedisArray *ra, const char *cmd, int cmd_len) {
+
+	zend_bool ret;
+	int i;
+	char *cmd_up = emalloc(1 + cmd_len);
+	/* convert to uppercase */
+	for(i = 0; i < cmd_len; ++i)
+		cmd_up[i] = toupper(cmd[i]);
+	cmd_up[cmd_len] = 0;
+
+	ret = zend_hash_exists(Z_ARRVAL_P(ra->z_pure_cmds), cmd_up, cmd_len+1);
+
+	efree(cmd_up);
+	return !ret;
+}
+
 static void
 ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args) {
 
@@ -407,7 +467,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	HashTable *h_args;
 
 	int argc;
-
+	zend_bool b_write_cmd = 0;
 
 	h_args = Z_ARRVAL_P(z_args);
 	argc = zend_hash_num_elements(h_args);
@@ -425,8 +485,13 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 		RETURN_FALSE;
 	}
 
-	if(ra->index) { // add MULTI + SADD
-		ra_index_multi(ra, redis_inst);
+	if(ra->index) {
+		/* check if write cmd */
+		b_write_cmd = is_write_cmd(ra, cmd, cmd_len);
+
+		if(b_write_cmd) { // add MULTI + SADD
+			ra_index_multi(ra, redis_inst);
+		}
 	}
 
 	/* pass call through */
@@ -443,9 +508,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	}
 
 	/* CALL! */
-	if(!ra->index) { // call directly through.
-		call_user_function(&redis_ce->function_table, &redis_inst, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
-	} else {
+	if(ra->index && b_write_cmd) {
 		// call using discarded temp value and extract exec results after.
 		call_user_function(&redis_ce->function_table, &redis_inst, &z_fun, &z_tmp, argc, z_callargs TSRMLS_CC);
 		zval_dtor(&z_tmp);
@@ -455,6 +518,17 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
 		// call EXEC
 		ra_index_exec(ra, redis_inst, return_value);
+	} else { // call directly through.
+		call_user_function(&redis_ce->function_table, &redis_inst, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
+
+		// check if we have an error.
+		if(Z_TYPE_P(return_value) == IS_BOOL
+			&& Z_BVAL_P(return_value) == 0
+			&& ra->prev) { // there was an error, try with prev ring.
+
+			php_printf("ERROR, FALLBACK TO PREVIOUS RING.\n");
+
+		}
 	}
 
 	/* cleanup */
