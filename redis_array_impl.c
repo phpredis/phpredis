@@ -452,6 +452,58 @@ ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to) {
 
 	return 1;
 }
+static zend_bool
+ra_move_set(const char *key, int key_len, zval *z_from, zval *z_to) {
+
+	zval z_fun_get, z_fun_sadd, z_ret, *z_args[2], **z_sadd_args, **z_data_pp;
+	int count, i;
+	HashTable *h_set_vals;
+
+	/* run GET on source */
+	MAKE_STD_ZVAL(z_args[0]);
+	ZVAL_STRINGL(&z_fun_get, "SMEMBERS", 8, 0);
+	ZVAL_STRINGL(z_args[0], key, key_len, 0);
+	call_user_function(&redis_ce->function_table, &z_from, &z_fun_get, &z_ret, 1, z_args TSRMLS_CC);
+
+	if(Z_TYPE(z_ret) != IS_ARRAY) { /* key not found or replaced */
+		/* TODO: report? */
+		efree(z_args[0]);
+		return 0;
+	}
+
+	/* run SADD on target */
+	h_set_vals = Z_ARRVAL(z_ret);
+	count = zend_hash_num_elements(h_set_vals);
+	z_sadd_args = emalloc((1 + count) * sizeof(zval*));
+	ZVAL_STRINGL(&z_fun_sadd, "SADD", 4, 0);
+	MAKE_STD_ZVAL(z_sadd_args[0]);	/* add key */
+	ZVAL_STRINGL(z_sadd_args[0], key, key_len, 0);
+
+	for(i = 0, zend_hash_internal_pointer_reset(h_set_vals);
+			zend_hash_has_more_elements(h_set_vals) == SUCCESS;
+			zend_hash_move_forward(h_set_vals), i++) {
+
+		if(zend_hash_get_current_data(h_set_vals, (void**)&z_data_pp) == FAILURE) {
+			continue;
+		}
+
+		/* add set elements */
+		MAKE_STD_ZVAL(z_sadd_args[i+1]);
+		*(z_sadd_args[i+1]) = **z_data_pp;
+		zval_copy_ctor(z_sadd_args[i+1]);
+	}
+	call_user_function(&redis_ce->function_table, &z_to, &z_fun_sadd, &z_ret, count+1, z_sadd_args TSRMLS_CC);
+
+	/* cleanup */
+	efree(z_sadd_args[0]);
+
+	for(i = 0; i < count; ++i) {
+		zval_dtor(z_sadd_args[i + 1]);
+		efree(z_sadd_args[i + 1]);
+	}
+
+	return 1;
+}
 
 static void
 ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to) {
@@ -513,9 +565,7 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 		count = ra_rehash_scan_keys(z_redis, &keys, &key_lens);
 	}
 
-	php_printf("%s has %ld keys to redistribute.\n", hostname, count);
 	/* for each key, redistribute */
-
 	for(i = 0; i < count; ++i) {
 
 		/* TODO: check that we're not moving to the same node. */

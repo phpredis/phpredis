@@ -19,6 +19,7 @@ function report_info($ra) {
 	}
 }
 
+// initial key distribution
 $n = 10;
 $data = array();
 for($i = 0; $i < $n; $i++) {
@@ -32,6 +33,9 @@ $ra = new RedisArray($firstRing, NULL, array(), TRUE);
 foreach($data as $k => $v) {
 	$ra->set($k, $v);
 }
+$ra->sadd('sx', 'a', 'b', 'c');
+$ra->sadd('sy', 'd', 'e', 'f');
+$ra->sadd('sz', 'g', 'h', 'i');
 report_info($ra);
 
 echo "Reading back all the values.\n";
