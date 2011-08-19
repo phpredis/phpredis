@@ -212,7 +212,7 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos) {
 
 char *
 ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len) {
-	
+
 	zval **zp_tmp;
 	int key_pos = 0; /* TODO: change this depending on the command */
 
@@ -239,23 +239,27 @@ ra_index_multi(RedisArray *ra, zval *z_redis) {
 }
 
 void
-ra_index_key(RedisArray *ra, zval *z_redis, const char *key, int key_len) {
+ra_index_key(RedisArray *ra, zval *z_redis, const char *key, int key_len TSRMLS_DC) {
 
 	int i;
 	zval z_fun_sadd, z_ret, *z_args[2];
-
-	for(i = 0; i < 2; ++i) MAKE_STD_ZVAL(z_args[i]);
+	MAKE_STD_ZVAL(z_args[0]);
+	MAKE_STD_ZVAL(z_args[1]);
 
 	/* prepare args */
-	ZVAL_STRING(&z_fun_sadd, "SADD", 0);
+	ZVAL_STRINGL(&z_fun_sadd, "SADD", 4, 0);
+
 	ZVAL_STRING(z_args[0], PHPREDIS_INDEX_NAME, 0);
 	ZVAL_STRINGL(z_args[1], key, key_len, 1);
 
+
 	/* run SADD */
 	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_sadd, &z_ret, 2, z_args TSRMLS_CC);
-	zval_dtor(&z_ret);
+
+	/* don't dtor z_ret, since we're returning z_redis */
 
 	efree(z_args[0]);
+	efree(z_args[1]);
 }
 
 void
@@ -292,5 +296,88 @@ ra_is_write_cmd(RedisArray *ra, const char *cmd, int cmd_len) {
 
 	efree(cmd_up);
 	return !ret;
+}
+
+/* list keys from array index */
+static long
+ra_rehash_scan_index(zval *z_redis, char ***keys, int **key_lens) {
+
+	long count, i;
+	zval z_fun_smembers, z_ret, *z_arg, **z_data_pp;
+	HashTable *h_keys;
+	HashPosition pointer;
+
+	/* arg */
+	MAKE_STD_ZVAL(z_arg);
+	ZVAL_STRING(z_arg, PHPREDIS_INDEX_NAME, 0);
+
+	/* run SMEMBERS */
+	ZVAL_STRING(&z_fun_smembers, "SMEMBERS", 0);
+	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_smembers, &z_ret, 1, &z_arg TSRMLS_CC);
+	efree(z_arg);
+	if(Z_TYPE(z_ret) != IS_ARRAY) { /* failure */
+		return -1;	/* TODO: log error. */
+	}
+	h_keys = Z_ARRVAL(z_ret);
+
+	/* allocate key array */
+	count = zend_hash_num_elements(h_keys);
+	*keys = emalloc(count * sizeof(char*));
+	*key_lens = emalloc(count * sizeof(int));
+
+	php_printf("Got %ld keys to redistribute\n", count);
+
+	for (i = 0, zend_hash_internal_pointer_reset_ex(h_keys, &pointer);
+			zend_hash_get_current_data_ex(h_keys, (void**) &z_data_pp, &pointer) == SUCCESS;
+			zend_hash_move_forward_ex(h_keys, &pointer), ++i) {
+
+		(*keys)[i] = emalloc(1 + Z_STRLEN_PP(z_data_pp));
+		(*key_lens)[i] = Z_STRLEN_PP(z_data_pp);
+		(*keys)[i][(*key_lens)[i]] = 0; /* null-terminate string */
+	}
+
+	/* cleanup */
+	zval_dtor(&z_ret);
+
+	return count;
+}
+
+/* list keys using KEYS command */
+static long
+ra_rehash_scan_keys(zval *z_redis, char ***keys, int **key_lens) {
+
+	/* TODO */
+	return 0;
+}
+
+static void
+ra_rehash_server(RedisArray *ra, zval *z_redis, zend_bool b_index) {
+
+	char **keys;
+	int *key_lens;
+	int count;
+
+	/* list all keys */
+	if(b_index) {
+		count = ra_rehash_scan_index(z_redis, &keys, &key_lens);
+	} else {
+		count = ra_rehash_scan_keys(z_redis, &keys, &key_lens);
+	}
+
+	/* for each key, redistribute */
+}
+
+void
+ra_rehash(RedisArray *ra) {
+
+	int i;
+
+	/* redistribute the data, server by server. */
+	if(!ra->prev)
+		return;	/* TODO: compare the two rings for equality */
+
+	for(i = 0; i < ra->prev->count; ++i) {
+		ra_rehash_server(ra, ra->prev->redis[i], ra->index);
+	}
 }
 

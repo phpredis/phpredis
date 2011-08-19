@@ -140,6 +140,10 @@ PHP_METHOD(RedisArray, __construct)
 		RETURN_FALSE;
 	}
 
+	// consider previous array as non-existent if empty.
+	if(z_prev && zend_hash_num_elements(Z_ARRVAL_P(z_prev)) == 0)
+		z_prev = NULL;
+
 	if(!z_fun || Z_TYPE_P(z_fun) == IS_NULL) { /* either an array name or a list of hosts */
 		switch(Z_TYPE_P(z0)) {
 			case IS_STRING:
@@ -226,7 +230,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 		zval_dtor(&z_tmp);
 
 		// add keys to index.
-		ra_index_key(ra, redis_inst, key, key_len);
+		ra_index_key(ra, redis_inst, key, key_len TSRMLS_CC);
 
 		// call EXEC
 		ra_index_exec(ra, redis_inst, return_value);
@@ -341,7 +345,6 @@ PHP_METHOD(RedisArray, _function)
 PHP_METHOD(RedisArray, _rehash)
 {
 	zval *object;
-	int i;
 	RedisArray *ra;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",

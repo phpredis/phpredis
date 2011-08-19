@@ -47,4 +47,6 @@ $ra->del(array('a','c'));
 $ra->del('a','c');
 
 var_dump($ra->mget(array('a', 'b', 'c')));
+
+$ra->_rehash();
 ?>
