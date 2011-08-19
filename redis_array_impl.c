@@ -422,6 +422,80 @@ ra_del_key(const char *key, int key_len, zval *z_from) {
 }
 
 static zend_bool
+ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to) {
+
+	zval z_fun_zrange, z_fun_zadd, z_ret, *z_args[4], **z_zadd_args, **z_score_pp;
+	int count;
+	HashTable *h_zset_vals;
+	char *val;
+	int val_len, i;
+	long idx;
+
+	/* run ZRANGE key 0 -1 WITHSCORES on source */
+	ZVAL_STRINGL(&z_fun_zrange, "ZRANGE", 6, 0);
+	for(i = 0; i < 4; ++i) {
+		MAKE_STD_ZVAL(z_args[i]);
+	}
+	ZVAL_STRINGL(z_args[0], key, key_len, 0);
+	ZVAL_STRINGL(z_args[1], "0", 1, 0);
+	ZVAL_STRINGL(z_args[2], "-1", 2, 0);
+	ZVAL_BOOL(z_args[3], 1);
+	call_user_function(&redis_ce->function_table, &z_from, &z_fun_zrange, &z_ret, 4, z_args TSRMLS_CC);
+
+	/* cleanup zrange args */
+	for(i = 0; i < 4; ++i) {
+		efree(z_args[i]); /* FIXME */
+	}
+
+	if(Z_TYPE(z_ret) != IS_ARRAY) { /* key not found or replaced */
+		/* TODO: report? */
+		return 0;
+	}
+
+	/* we now have an array of value → score pairs in z_ret. */
+	h_zset_vals = Z_ARRVAL(z_ret);
+
+	/* allocate argument array for ZADD */
+	count = zend_hash_num_elements(h_zset_vals);
+	z_zadd_args = emalloc((1 + 2*count) * sizeof(zval*));
+
+	for(i = 1, zend_hash_internal_pointer_reset(h_zset_vals);
+			zend_hash_has_more_elements(h_zset_vals) == SUCCESS;
+			zend_hash_move_forward(h_zset_vals)) {
+
+		if(zend_hash_get_current_data(h_zset_vals, (void**)&z_score_pp) == FAILURE) {
+			continue;
+		}
+
+		zend_hash_get_current_key_ex(h_zset_vals, &val, &val_len, &idx, 0, NULL);
+
+		/* add score */
+		convert_to_double(*z_score_pp);
+		MAKE_STD_ZVAL(z_zadd_args[i]);
+		ZVAL_DOUBLE(z_zadd_args[i], Z_DVAL_PP(z_score_pp));
+
+		/* add value */
+		MAKE_STD_ZVAL(z_zadd_args[i+1]);
+		ZVAL_STRINGL(z_zadd_args[i+1], val, val_len-1, 0); /* we have to remove 1 because it is an array key. */
+
+		i += 2;
+	}
+
+	/* run ZADD on target */
+	ZVAL_STRINGL(&z_fun_zadd, "ZADD", 4, 0);
+	MAKE_STD_ZVAL(z_zadd_args[0]);
+	ZVAL_STRINGL(z_zadd_args[0], key, key_len, 0);
+	call_user_function(&redis_ce->function_table, &z_to, &z_fun_zadd, &z_ret, 1 + 2 * count, z_zadd_args TSRMLS_CC);
+
+	/* cleanup */
+	for(i = 0; i < 1 + 2 * count; ++i) {
+		efree(z_zadd_args[i]);
+	}
+
+	return 1;
+}
+
+static zend_bool
 ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to) {
 
 	zval z_fun_get, z_fun_set, z_ret, *z_args[2];

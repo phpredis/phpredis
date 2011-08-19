@@ -48,6 +48,12 @@ $ra->rpush('lz', 'g', 'h', 'i');
 $ra->hmset('hx', array('a' => 'A', 'b' => 'B', 'c' => 'C'));
 $ra->hmset('hy', array('d' => 'D', 'e' => 'E', 'f' => 'F'));
 $ra->hmset('hz', array('g' => 'G', 'h' => 'H', 'i' => 'I'));
+
+// sorted sets.
+$ra->zadd('zx', 1.0, 'a', 2.0, 'b', 3.0, 'c');
+$ra->zadd('zy', 1.0, 'd', 5.0, 'e', 6.0, 'f');
+$ra->zadd('zz', 1.0, 'g', 8.0, 'h', 6.0, 'i');
+
 report_info($ra);
 
 echo "Reading back all the values.\n";
