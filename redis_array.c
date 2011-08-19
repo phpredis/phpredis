@@ -395,7 +395,7 @@ ra_index_exec(RedisArray *ra, zval *z_redis, zval *return_value) {
 }
 
 static void
-ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args, zend_bool use_index) {
+ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args) {
 
 	zval **zp_tmp, z_tmp;
 	char *key;
@@ -425,7 +425,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 		RETURN_FALSE;
 	}
 
-	if(use_index) { // add MULTI + SADD
+	if(ra->index) { // add MULTI + SADD
 		ra_index_multi(ra, redis_inst);
 	}
 
@@ -443,7 +443,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	}
 
 	/* CALL! */
-	if(!use_index) { // call directly through.
+	if(!ra->index) { // call directly through.
 		call_user_function(&redis_ce->function_table, &redis_inst, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
 	} else {
 		// call using discarded temp value and extract exec results after.
@@ -479,7 +479,7 @@ PHP_METHOD(RedisArray, __call)
 		RETURN_FALSE;
 	}
 
-	ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, cmd_len, z_args, (ra->index?1:0));
+	ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, cmd_len, z_args);
 }
 
 PHP_METHOD(RedisArray, _hosts)
