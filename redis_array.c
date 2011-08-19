@@ -372,7 +372,7 @@ ra_index_key(RedisArray *ra, zval *z_redis, const char *key, int key_len) {
 	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_sadd, &z_ret, 2, z_args TSRMLS_CC);
 	zval_dtor(&z_ret);
 
-	for(i = 0; i < 2; ++i) efree(z_args[i]);
+	efree(z_args[0]);
 }
 
 static void
@@ -385,11 +385,13 @@ ra_index_exec(RedisArray *ra, zval *z_redis, zval *return_value) {
 	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_exec, &z_ret, 0, NULL TSRMLS_CC);
 
 	/* extract first element of exec array and put into return_value. */
-	if(Z_TYPE(z_ret) == IS_ARRAY && zend_hash_quick_find(Z_ARRVAL(z_ret), NULL, 0, 0, (void**)&zp_tmp) != FAILURE) {
-		*return_value = **zp_tmp;
-		zval_copy_ctor(return_value);
+	if(Z_TYPE(z_ret) == IS_ARRAY) {
+		if(zend_hash_quick_find(Z_ARRVAL(z_ret), NULL, 0, 0, (void**)&zp_tmp) != FAILURE) {
+			*return_value = **zp_tmp;
+			zval_copy_ctor(return_value);
+		}
+		zval_dtor(&z_ret);
 	}
-	//zval_dtor(&z_ret);
 }
 
 static void
