@@ -230,7 +230,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 		zval_dtor(&z_tmp);
 
 		// add keys to index.
-		ra_index_key(key, key_len, redis_inst, 1 TSRMLS_CC);
+		ra_index_key(key, key_len, redis_inst TSRMLS_CC);
 
 		// call EXEC
 		ra_index_exec(redis_inst, return_value);
