@@ -19,7 +19,7 @@ function report_info($ra) {
 	}
 }
 
-$n = 10000;
+$n = 10;
 $data = array();
 for($i = 0; $i < $n; $i++) {
 	$tmp = $i; //rand();

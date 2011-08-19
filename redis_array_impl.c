@@ -228,7 +228,7 @@ ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len) {
 }
 
 void
-ra_index_multi(RedisArray *ra, zval *z_redis) {
+ra_index_multi(zval *z_redis) {
 
 	zval z_fun_multi, z_ret;
 
@@ -239,7 +239,7 @@ ra_index_multi(RedisArray *ra, zval *z_redis) {
 }
 
 void
-ra_index_key(RedisArray *ra, zval *z_redis, const char *key, int key_len TSRMLS_DC) {
+ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC) {
 
 	int i;
 	zval z_fun_sadd, z_ret, *z_args[2];
@@ -263,7 +263,7 @@ ra_index_key(RedisArray *ra, zval *z_redis, const char *key, int key_len TSRMLS_
 }
 
 void
-ra_index_exec(RedisArray *ra, zval *z_redis, zval *return_value) {
+ra_index_exec(zval *z_redis, zval *return_value) {
 
 	zval z_fun_exec, z_ret, **zp_tmp;
 
@@ -273,7 +273,7 @@ ra_index_exec(RedisArray *ra, zval *z_redis, zval *return_value) {
 
 	/* extract first element of exec array and put into return_value. */
 	if(Z_TYPE(z_ret) == IS_ARRAY) {
-		if(zend_hash_quick_find(Z_ARRVAL(z_ret), NULL, 0, 0, (void**)&zp_tmp) != FAILURE) {
+		if(return_value && zend_hash_quick_find(Z_ARRVAL(z_ret), NULL, 0, 0, (void**)&zp_tmp) != FAILURE) {
 			*return_value = **zp_tmp;
 			zval_copy_ctor(return_value);
 		}
@@ -376,16 +376,49 @@ ra_get_key_type(zval *z_redis, const char *key, int key_len) {
 	return Z_LVAL(z_ret);
 }
 
+/* delete key from source server index during rehashing */
+static void
+ra_remove_from_index(zval *z_redis, const char *key, int key_len) {
+
+	int i;
+	zval z_fun_get, z_fun_srem, z_ret, *z_args[2];
+
+	/* run SREM on source index */
+	ZVAL_STRINGL(&z_fun_srem, "SREM", 4, 0);
+	MAKE_STD_ZVAL(z_args[0]);
+	ZVAL_STRING(z_args[0], PHPREDIS_INDEX_NAME, 0);
+	MAKE_STD_ZVAL(z_args[1]);
+	ZVAL_STRINGL(z_args[1], key, key_len, 0);
+
+	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_srem, &z_ret, 2, z_args TSRMLS_CC);
+
+	/* cleanup */
+	efree(z_args[0]);
+	efree(z_args[1]);
+}
+
+
+/* delete key from source server during rehashing */
 static zend_bool
 ra_del_key(const char *key, int key_len, zval *z_from) {
 
-	zval z_fun_del, z_ret, *z_args[2];
+	zval z_fun_del, z_ret, *z_args;
 
-	/* run GET on source */
-	MAKE_STD_ZVAL(z_args[0]);
+	/* in a transaction */
+	ra_index_multi(z_from);
+
+	/* run DEL on source */
+	MAKE_STD_ZVAL(z_args);
 	ZVAL_STRINGL(&z_fun_del, "DEL", 3, 0);
-	ZVAL_STRINGL(z_args[0], key, key_len, 0);
-	call_user_function(&redis_ce->function_table, &z_from, &z_fun_del, &z_ret, 1, z_args TSRMLS_CC);
+	ZVAL_STRINGL(z_args, key, key_len, 0);
+	call_user_function(&redis_ce->function_table, &z_from, &z_fun_del, &z_ret, 1, &z_args TSRMLS_CC);
+	efree(z_args);
+
+	/* remove key from index */
+	ra_remove_from_index(z_from, key, key_len);
+
+	/* close transaction */
+	ra_index_exec(z_from, NULL);
 }
 
 static zend_bool
@@ -426,6 +459,9 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to) {
 	long type = ra_get_key_type(z_from, key, key_len);
 	zend_bool success = 0;
 
+	/* open transaction on target server */
+	ra_index_multi(z_to);
+
 	switch(type) {
 		case REDIS_STRING:
 			success = ra_move_string(key, key_len, z_from, z_to);
@@ -454,34 +490,11 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to) {
 
 	if(success) {
 		ra_del_key(key, key_len, z_from);
-	}
-}
-
-void
-ra_remove_from_index(zval *z_redis, const char **keys, int *key_lens, int count) {
-
-	int i;
-	zval z_fun_get, z_fun_srem, z_ret, **z_args;
-
-	z_args = emalloc((count+1) * sizeof(zval*));
-
-	/* run SREM on source index */
-	ZVAL_STRINGL(&z_fun_srem, "SREM", 4, 0);
-	MAKE_STD_ZVAL(z_args[0]);
-	ZVAL_STRING(z_args[0], PHPREDIS_INDEX_NAME, 0);
-
-	for(i = 0; i < count; ++i) {
-		MAKE_STD_ZVAL(z_args[i+1]);
-		ZVAL_STRINGL(z_args[i+1], keys[i], key_lens[i], 0);
+		ra_index_key(key, key_len, z_to TSRMLS_CC);
 	}
 
-	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_srem, &z_ret, count+1, z_args TSRMLS_CC);
-
-	/* cleanup */
-	for(i = 0; i < count; ++i) {
-		efree(z_args[i+1]);
-	}
-	efree(z_args);
+	/* close transaction */
+	ra_index_exec(z_to, NULL);
 }
 
 static void
@@ -509,17 +522,9 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 		z_target = ra_find_node(ra, keys[i], key_lens[i], &target_pos);
 
 		if(strcmp(hostname, ra->hosts[target_pos])) { /* different host */
-
 			/* php_printf("move [%s] from [%s] to [%s]\n", keys[i], hostname, ra->hosts[target_pos]); */
-
 			ra_move_key(keys[i], key_lens[i], z_redis, z_target);
-		} else {
-			// php_printf("key [%s] stays on [%s]\n", keys[i], hostname);
 		}
-	}
-
-	if(b_index) {
-		ra_remove_from_index(z_redis, (const char**)keys, key_lens, count);
 	}
 
 	// cleanup

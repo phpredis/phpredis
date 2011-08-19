@@ -207,7 +207,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	b_write_cmd = ra_is_write_cmd(ra, cmd, cmd_len);
 
 	if(ra->index && b_write_cmd) { // add MULTI + SADD
-		ra_index_multi(ra, redis_inst);
+		ra_index_multi(redis_inst);
 	}
 
 	/* pass call through */
@@ -230,10 +230,10 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 		zval_dtor(&z_tmp);
 
 		// add keys to index.
-		ra_index_key(ra, redis_inst, key, key_len TSRMLS_CC);
+		ra_index_key(key, key_len, redis_inst, 1 TSRMLS_CC);
 
 		// call EXEC
-		ra_index_exec(ra, redis_inst, return_value);
+		ra_index_exec(redis_inst, return_value);
 	} else { // call directly through.
 		call_user_function(&redis_ce->function_table, &redis_inst, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
 
