@@ -74,9 +74,9 @@ PHPAPI int redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
     return Z_LVAL_PP(socket);
 }
 
-RedisArray *
-ra_make_array(HashTable *hosts, zval *z_fun) {
-
+static RedisArray*
+ra_load_hosts(RedisArray *ra, HashTable *hosts)
+{
 	int i, host_len, id;
 	int count = zend_hash_num_elements(hosts);
 	char *host, *p;
@@ -84,16 +84,8 @@ ra_make_array(HashTable *hosts, zval *z_fun) {
 	zval **zpData, z_cons, *z_args, z_ret;
 	RedisSock *redis_sock  = NULL;
 
-	/* create object */
-	RedisArray *ra = emalloc(sizeof(RedisArray));
-	ra->hosts = emalloc(count * sizeof(char*));
-	ra->redis = emalloc(count * sizeof(zval*));
-	ra->count = count;
-	ra->z_fun = NULL;
-
 	/* function calls on the Redis object */
 	ZVAL_STRING(&z_cons, "__construct", 0);
-
 
 	/* init connections */
 	for(i = 0; i < count; ++i) {
@@ -131,6 +123,27 @@ ra_make_array(HashTable *hosts, zval *z_fun) {
 		add_property_resource(ra->redis[i], "socket", id);
 	}
 
+	return ra;
+}
+
+RedisArray *
+ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev) {
+
+	int count = zend_hash_num_elements(hosts);
+
+	/* create object */
+	RedisArray *ra = emalloc(sizeof(RedisArray));
+	ra->hosts = emalloc(count * sizeof(char*));
+	ra->redis = emalloc(count * sizeof(zval*));
+	ra->count = count;
+	ra->z_fun = NULL;
+	ra->prev = NULL;
+
+	if(NULL == ra_load_hosts(ra, hosts)) {
+		return NULL;
+	}
+	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, NULL) : NULL;
+
 	/* copy function if provided */
 	if(z_fun) {
 		MAKE_STD_ZVAL(ra->z_fun);
@@ -140,6 +153,7 @@ ra_make_array(HashTable *hosts, zval *z_fun) {
 
 	return ra;
 }
+
 
 /* call userland key extraction function */
 char *
@@ -274,23 +288,23 @@ uint32_t crc32(const char *s, size_t sz) {
     Public constructor */
 PHP_METHOD(RedisArray, __construct)
 {
-	zval *z0, *z_fun = NULL;
+	zval *z0, *z_fun = NULL, *z_prev = NULL;
 	char *name = NULL;
 	int id;
 	RedisArray *ra = NULL;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|z", &z0, &z_fun) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|za", &z0, &z_fun, &z_prev) == FAILURE) {
 		RETURN_FALSE;
 	}
 
-	if(!z_fun) { /* either an array name or a list of hosts */
+	if(!z_fun || Z_TYPE_P(z_fun) == IS_NULL) { /* either an array name or a list of hosts */
 		switch(Z_TYPE_P(z0)) {
 			case IS_STRING:
 				name = Z_STRVAL_P(z0);
 				break;
 
 			case IS_ARRAY:
-				ra = ra_make_array(Z_ARRVAL_P(z0), NULL);
+				ra = ra_make_array(Z_ARRVAL_P(z0), NULL, z_prev ? Z_ARRVAL_P(z_prev):NULL);
 				break;
 
 			default:
@@ -302,7 +316,7 @@ PHP_METHOD(RedisArray, __construct)
 			WRONG_PARAM_COUNT;
 		}
 		// printf("ARRAY OF HOSTS, fun=%s\n", fun);
-		ra = ra_make_array(Z_ARRVAL_P(z0), z_fun);
+		ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_prev ? Z_ARRVAL_P(z_prev):NULL);
 	}
 
 	if(ra) {
