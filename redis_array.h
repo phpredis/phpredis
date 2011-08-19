@@ -34,7 +34,7 @@ typedef struct RedisArray_ {
 uint32_t crc32(const char *s, size_t sz);
 
 void redis_array_init(RedisArray *ra);
-RedisArray *ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev);
+RedisArray *ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev, zend_bool b_index);
 zval *ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos);
 
 #endif

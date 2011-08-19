@@ -3,6 +3,7 @@
 // can't set anything that hasn't been declared when the extension loads.
 ini_set('redis.array.names', 'users,friends');
 ini_set('redis.array.hosts', 'users=localhost:6379,localhost:6380,localhost:6381,localhost:6382');
+ini_set('redis.array.index', 'users=1,friends=0');
 
 // var_dump(ini_get('redis.arrays.names'));
 // var_dump(ini_get('redis.arrays.hosts'));
@@ -17,7 +18,7 @@ $ra = new RedisArray(array('localhost'));
 var_dump($ra->set('hello', 'world'));
 var_dump($ra->get('hello'));
 
-$ra = new RedisArray(array('localhost:6380', 'localhost:6381', 'localhost:6382'), NULL, array('localhost')); // after resizing
+$ra = new RedisArray(array('localhost:6380', 'localhost:6381', 'localhost:6382'), NULL, array('localhost'), TRUE); // after resizing
 var_dump($ra->get('hello'));
 
 

@@ -169,7 +169,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts)
 }
 
 RedisArray *
-ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev) {
+ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev, zend_bool b_index) {
 
 	int count = zend_hash_num_elements(hosts);
 
@@ -179,7 +179,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev) {
 	ra->redis = emalloc(count * sizeof(zval*));
 	ra->count = count;
 	ra->z_fun = NULL;
-	ra->index = 1;
+	ra->index = b_index;
 
 	/* init array data structures */
 	redis_array_init(ra);
@@ -187,7 +187,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev) {
 	if(NULL == ra_load_hosts(ra, hosts)) {
 		return NULL;
 	}
-	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, NULL) : NULL;
+	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, NULL, b_index) : NULL;
 
 	/* copy function if provided */
 	if(z_fun) {
@@ -337,8 +337,9 @@ PHP_METHOD(RedisArray, __construct)
 	char *name = NULL;
 	int id;
 	RedisArray *ra = NULL;
+	zend_bool b_index = 0;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|za", &z0, &z_fun, &z_prev) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|zab", &z0, &z_fun, &z_prev, &b_index) == FAILURE) {
 		RETURN_FALSE;
 	}
 
@@ -349,7 +350,7 @@ PHP_METHOD(RedisArray, __construct)
 				break;
 
 			case IS_ARRAY:
-				ra = ra_make_array(Z_ARRVAL_P(z0), NULL, z_prev ? Z_ARRVAL_P(z_prev):NULL);
+				ra = ra_make_array(Z_ARRVAL_P(z0), NULL, z_prev ? Z_ARRVAL_P(z_prev):NULL, b_index);
 				break;
 
 			default:
@@ -361,7 +362,7 @@ PHP_METHOD(RedisArray, __construct)
 			WRONG_PARAM_COUNT;
 		}
 		// printf("ARRAY OF HOSTS, fun=%s\n", fun);
-		ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_prev ? Z_ARRVAL_P(z_prev):NULL);
+		ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_prev ? Z_ARRVAL_P(z_prev):NULL, b_index);
 	}
 
 	if(ra) {
