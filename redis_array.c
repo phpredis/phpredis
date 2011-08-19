@@ -485,13 +485,11 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 		RETURN_FALSE;
 	}
 
-	if(ra->index) {
-		/* check if write cmd */
-		b_write_cmd = is_write_cmd(ra, cmd, cmd_len);
+	/* check if write cmd */
+	b_write_cmd = is_write_cmd(ra, cmd, cmd_len);
 
-		if(b_write_cmd) { // add MULTI + SADD
-			ra_index_multi(ra, redis_inst);
-		}
+	if(ra->index && b_write_cmd) { // add MULTI + SADD
+		ra_index_multi(ra, redis_inst);
 	}
 
 	/* pass call through */
@@ -524,10 +522,11 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 		// check if we have an error.
 		if(Z_TYPE_P(return_value) == IS_BOOL
 			&& Z_BVAL_P(return_value) == 0
-			&& ra->prev) { // there was an error, try with prev ring.
+			&& ra->prev
+			&& !b_write_cmd) { // there was an error reading, try with prev ring.
 
-			php_printf("ERROR, FALLBACK TO PREVIOUS RING.\n");
-
+			/* php_printf("ERROR, FALLBACK TO PREVIOUS RING.\n"); */
+			ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra->prev, cmd, cmd_len, z_args);
 		}
 	}
 

@@ -11,12 +11,16 @@ ini_set('redis.array.hosts', 'users=localhost:6379,localhost:6380,localhost:6381
 // different redis arrays
 $ra = new RedisArray('users');
 $ra = new RedisArray(array('localhost:6379', 'localhost:6380', 'localhost:6381'));
-$ra = new RedisArray(array('localhost', 'localhost:6380', 'localhost:6381')/*, 'hash_key' */);
 
+// before resizing the array
+$ra = new RedisArray(array('localhost'));
 var_dump($ra->set('hello', 'world'));
 var_dump($ra->get('hello'));
 
-die;
+$ra = new RedisArray(array('localhost:6380', 'localhost:6381', 'localhost:6382'), NULL, array('localhost')); // after resizing
+var_dump($ra->get('hello'));
+
+
 var_dump($ra->_hosts());
 var_dump($ra->_target('a'));
 var_dump($ra->_target('b'));
