@@ -457,6 +457,33 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to) {
 	}
 }
 
+void
+ra_remove_from_index(zval *z_redis, const char **keys, int *key_lens, int count) {
+
+	int i;
+	zval z_fun_get, z_fun_srem, z_ret, **z_args;
+
+	z_args = emalloc((count+1) * sizeof(zval*));
+
+	/* run SREM on source index */
+	ZVAL_STRINGL(&z_fun_srem, "SREM", 4, 0);
+	MAKE_STD_ZVAL(z_args[0]);
+	ZVAL_STRING(z_args[0], PHPREDIS_INDEX_NAME, 0);
+
+	for(i = 0; i < count; ++i) {
+		MAKE_STD_ZVAL(z_args[i+1]);
+		ZVAL_STRINGL(z_args[i+1], keys[i], key_lens[i], 0);
+	}
+
+	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_srem, &z_ret, count+1, z_args TSRMLS_CC);
+
+	/* cleanup */
+	for(i = 0; i < count; ++i) {
+		efree(z_args[i+1]);
+	}
+	efree(z_args);
+}
+
 static void
 ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool b_index) {
 
@@ -489,11 +516,16 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 		} else {
 			// php_printf("key [%s] stays on [%s]\n", keys[i], hostname);
 		}
+	}
 
-		efree(keys[i]);
+	if(b_index) {
+		ra_remove_from_index(z_redis, (const char**)keys, key_lens, count);
 	}
 
 	// cleanup
+	for(i = 0; i < count; ++i) {
+		efree(keys[i]);
+	}
 	efree(keys);
 	efree(key_lens);
 }
