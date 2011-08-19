@@ -172,7 +172,7 @@ PHP_MINFO_FUNCTION(redis);
 PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
 PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int count);
 PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
-									 int min_argc, RedisSock **redis_sock, int has_timeout);
+									 int min_argc, RedisSock **redis_sock, int has_timeout, int all_keys);
 PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_alpha);
 PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...);
 PHPAPI void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...);
