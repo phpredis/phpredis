@@ -4,9 +4,9 @@
 ini_set('redis.array.names', 'users,friends');
 ini_set('redis.array.hosts', 'users=localhost:6379,localhost:6380,localhost:6381,localhost:6382');
 
-var_dump(ini_get('redis.arrays.names'));
-var_dump(ini_get('redis.arrays.hosts'));
-var_dump(ini_get('redis.arrays.functions'));
+// var_dump(ini_get('redis.arrays.names'));
+// var_dump(ini_get('redis.arrays.hosts'));
+// var_dump(ini_get('redis.arrays.functions'));
 
 // different redis arrays
 $ra = new RedisArray('users');

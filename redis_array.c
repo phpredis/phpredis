@@ -137,7 +137,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev) {
 	ra->redis = emalloc(count * sizeof(zval*));
 	ra->count = count;
 	ra->z_fun = NULL;
-	ra->prev = NULL;
+	ra->index = 1;
 
 	if(NULL == ra_load_hosts(ra, hosts)) {
 		return NULL;
@@ -202,7 +202,7 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len) {
 	if(!start) return estrndup(key, key_len);
 
 	/* look for '}' */
-	end = strchr(start+1, '}');
+	end = strchr(start + 1, '}');
 	if(!end) return estrndup(key, key_len);
 
 	/* found substring */
@@ -325,19 +325,134 @@ PHP_METHOD(RedisArray, __construct)
 	}
 }
 
-PHP_METHOD(RedisArray, __call)
-{
-	zval *object, *z_args, **zp_tmp;
+static char *
+ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len) {
+	
+	zval **zp_tmp;
+	int key_pos = 0; /* TODO: change this depending on the command */
 
-	char *cmd, *key;
-	int cmd_len, key_len;
-	int key_pos, i;
-	RedisArray *ra;
+	if(	zend_hash_num_elements(Z_ARRVAL_P(z_args)) == 0
+		|| zend_hash_quick_find(Z_ARRVAL_P(z_args), NULL, 0, key_pos, (void**)&zp_tmp) == FAILURE
+		|| Z_TYPE_PP(zp_tmp) != IS_STRING) {
+
+		return NULL;
+	}
+
+	*key_len = Z_STRLEN_PP(zp_tmp);
+	return Z_STRVAL_PP(zp_tmp);
+}
+
+static void
+ra_index_multi(RedisArray *ra, zval *z_redis, const char *key, int key_len) {
+
+	zval z_fun_multi, z_ret;
+
+	/* run MULTI */
+	ZVAL_STRING(&z_fun_multi, "MULTI", 0);
+	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_multi, &z_ret, 0, NULL TSRMLS_CC);
+	zval_dtor(&z_ret);
+}
+
+void lol() {
+#if 0
+	/* run SADD */
+	MAKE_STD_ZVAL(z_arg[0]);
+	ZVAL_STRING(z_arg[0], "SADD", 0);
+	MAKE_STD_ZVAL(z_arg[1]);
+
+
+	efree(z_arg[0]);
+	zval_dtor(z_arg[1]);
+	efree(z_arg[1]);
+#endif
+}
+
+static void
+ra_index_exec(RedisArray *ra, zval *z_redis, zval *return_value) {
+
+	zval z_fun_exec, z_ret, **zp_tmp;
+
+	/* run EXEC */
+	ZVAL_STRING(&z_fun_exec, "EXEC", 0);
+	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_exec, &z_ret, 0, NULL TSRMLS_CC);
+
+	/* extract first element of exec array and put into return_value. */
+	if(Z_TYPE(z_ret) == IS_ARRAY && zend_hash_quick_find(Z_ARRVAL(z_ret), NULL, 0, 0, (void**)&zp_tmp) != FAILURE) {
+		*return_value = **zp_tmp;
+		zval_copy_ctor(return_value);
+	}
+	zval_dtor(&z_ret);
+}
+
+static void
+ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args, zend_bool use_index) {
+
+	zval **zp_tmp, z_tmp;
+	char *key;
+	int key_len;
+	int i;
 	zval *redis_inst;
 	zval z_fun, **z_callargs;
 	HashPosition pointer;
 	HashTable *h_args;
+
 	int argc;
+
+
+	h_args = Z_ARRVAL_P(z_args);
+	argc = zend_hash_num_elements(h_args);
+
+	/* extract key and hash it. */
+	if(!(key = ra_find_key(ra, z_args, cmd, &key_len))) {
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not find key");
+		RETURN_FALSE;
+	}
+
+	/* find node */
+	redis_inst = ra_find_node(ra, key, key_len, NULL);
+	if(!redis_inst) {
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not find any redis servers for this key.");
+		RETURN_FALSE;
+	}
+
+	if(use_index) { // add MULTI + SADD
+		ra_index_multi(ra, redis_inst, key, key_len);
+	}
+
+	/* pass call through */
+	ZVAL_STRING(&z_fun, cmd, 0);	/* method name */
+	z_callargs = emalloc(argc * sizeof(zval*));
+
+	/* copy args to array */
+	for (i = 0, zend_hash_internal_pointer_reset_ex(h_args, &pointer);
+			zend_hash_get_current_data_ex(h_args, (void**) &zp_tmp,
+				&pointer) == SUCCESS;
+			++i, zend_hash_move_forward_ex(h_args, &pointer)) {
+
+		z_callargs[i] = *zp_tmp;
+	}
+
+	/* CALL! */
+	if(!use_index) { // call directly through.
+		call_user_function(&redis_ce->function_table, &redis_inst, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
+	} else {
+		// call using discarded temp value and extract exec results after.
+		call_user_function(&redis_ce->function_table, &redis_inst, &z_fun, &z_tmp, argc, z_callargs TSRMLS_CC);
+		zval_dtor(&z_tmp);
+
+		// call EXEC
+		ra_index_exec(ra, redis_inst, return_value);
+	}
+}
+
+PHP_METHOD(RedisArray, __call)
+{
+	zval *object;
+	RedisArray *ra;
+	zval *z_args;
+
+	char *cmd;
+	int cmd_len;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa",
 				&object, redis_array_ce, &cmd, &cmd_len, &z_args) == FAILURE) {
@@ -348,45 +463,7 @@ PHP_METHOD(RedisArray, __call)
 		RETURN_FALSE;
 	}
 
-	h_args = Z_ARRVAL_P(z_args);
-	argc = zend_hash_num_elements(h_args);
-
-	/* get key and hash it. */
-	key_pos = 0; /* TODO: change this depending on the command */
-
-	if(	zend_hash_num_elements(Z_ARRVAL_P(z_args)) == 0
-		|| zend_hash_quick_find(Z_ARRVAL_P(z_args), NULL, 0, key_pos, (void**)&zp_tmp) == FAILURE
-		|| Z_TYPE_PP(zp_tmp) != IS_STRING) {
-
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not find key");
-		RETURN_FALSE;
-	}
-
-	key = Z_STRVAL_PP(zp_tmp);
-	key_len = Z_STRLEN_PP(zp_tmp);
-
-	/* find node */
-	redis_inst = ra_find_node(ra, key, key_len, NULL);
-	if(!redis_inst) {
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not find any redis servers for this key.");
-		RETURN_FALSE;
-	}
-
-	/* pass call through */
-	ZVAL_STRING(&z_fun, cmd, 0);	/* method name */
-	z_callargs = emalloc(argc * sizeof(zval*));
-	/* copy args to */
-	for (i = 0, zend_hash_internal_pointer_reset_ex(h_args, &pointer);
-			zend_hash_get_current_data_ex(h_args, (void**) &zp_tmp,
-				&pointer) == SUCCESS;
-			++i, zend_hash_move_forward_ex(h_args, &pointer)) {
-
-		z_callargs[i] = *zp_tmp;
-	}
-
-	/* CALL! */
-	call_user_function(&redis_ce->function_table, &redis_inst,
-			&z_fun, return_value, argc, z_callargs TSRMLS_CC);
+	ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, cmd_len, z_args, (ra->index?1:0));
 }
 
 PHP_METHOD(RedisArray, _hosts)

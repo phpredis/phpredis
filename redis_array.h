@@ -24,6 +24,7 @@ typedef struct RedisArray_ {
 	int count;
 	char **hosts;
 	zval **redis;
+	zend_bool index;
 	zval *z_fun;	/* key extractor */
 
 	struct RedisArray_ *prev;
