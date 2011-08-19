@@ -32,6 +32,10 @@
 #include "ext/session/php_session.h"
 #endif
 
+#include <ext/standard/php_smart_str.h>
+#include <ext/standard/php_var.h>
+#include <ext/standard/php_math.h>
+
 #include "library.h"
 
 #define R_SUB_CALLBACK_CLASS_TYPE 1
@@ -3191,9 +3195,14 @@ PHP_METHOD(Redis, zAdd) {
     char *key, *val;
     int val_free, key_free = 0;
     zval *z_value;
+	char *dbl_str;
+	int dbl_len;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osdz",
-                                     &object, redis_ce, &key, &key_len, &score, &z_value) == FAILURE) {
+	zval ***args;
+	int argc, i;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os*",
+                                     &object, redis_ce, &key, &key_len, &args, &argc) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -3201,11 +3210,67 @@ PHP_METHOD(Redis, zAdd) {
         RETURN_FALSE;
     }
 
-    val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
+	/* need (score, value, score, value...) */
+    if (argc % 2 != 0) {
+        RETURN_FALSE;
+    }
+
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
-    cmd_len = redis_cmd_format_static(&cmd, "ZADD", "sfs", key, key_len, score, val, val_len);
-    if(val_free) efree(val);
+
+	/* start building the command */
+    smart_str buf = {0};
+	smart_str_appendc(&buf, '*');
+	smart_str_append_long(&buf, argc + 2); /* +1 for command and +1 for key */
+	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+
+	/* add command name */
+	smart_str_appendc(&buf, '$');
+	smart_str_append_long(&buf, 4);
+	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	smart_str_appendl(&buf, "ZADD", 4);
+	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+
+	/* add key */
+	smart_str_appendc(&buf, '$');
+	smart_str_append_long(&buf, key_len);
+	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	smart_str_appendl(&buf, key, key_len);
+	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+
+	for(i = 0; i < argc; i +=2) {
+		convert_to_double(*args[i]); // convert score to double
+		val_free = redis_serialize(redis_sock, *args[i+1], &val, &val_len TSRMLS_CC); // possibly serialize value.
+
+		/* add score */
+		score = Z_DVAL_PP(args[i]);
+		dbl_str = _php_math_number_format(score, 8, '.', '\x00');
+		dbl_len = strlen(dbl_str);
+		smart_str_appendc(&buf, '$');
+		smart_str_append_long(&buf, dbl_len);
+		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+		smart_str_appendl(&buf, dbl_str, dbl_len);
+		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+		efree(dbl_str);
+
+		/* add value */
+		smart_str_appendc(&buf, '$');
+		smart_str_append_long(&buf, val_len);
+		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+		smart_str_appendl(&buf, val, val_len);
+		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+
+		if(val_free) efree(val);
+	}
+
+	/* end string */
+	smart_str_0(&buf);
+	cmd = buf.c;
+	cmd_len = buf.len;
     if(key_free) efree(key);
+
+	if(args) {
+		efree(args);
+	}
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
