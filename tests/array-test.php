@@ -15,6 +15,10 @@ $ra = new RedisArray(array('localhost', 'localhost:6380', 'localhost:6381')/*, '
 
 var_dump($ra->set('hello', 'world'));
 var_dump($ra->get('hello'));
+while(true) {
+	($ra->set('hello', 'world'));
+	($ra->get('hello'));
+}
 
 var_dump($ra->_hosts());
 var_dump($ra->_target('a'));

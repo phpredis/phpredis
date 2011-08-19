@@ -12,6 +12,8 @@
 #include "library.h"
 #include "redis_array.h"
 
+#define PHPREDIS_INDEX_NAME	"__phpredis_array_index__"
+
 extern zend_class_entry *redis_ce;
 
 ZEND_BEGIN_ARG_INFO_EX(__redis_array_call_args, 0, 0, 2)
@@ -343,7 +345,7 @@ ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len) {
 }
 
 static void
-ra_index_multi(RedisArray *ra, zval *z_redis, const char *key, int key_len) {
+ra_index_multi(RedisArray *ra, zval *z_redis) {
 
 	zval z_fun_multi, z_ret;
 
@@ -353,18 +355,24 @@ ra_index_multi(RedisArray *ra, zval *z_redis, const char *key, int key_len) {
 	zval_dtor(&z_ret);
 }
 
-void lol() {
-#if 0
+static void
+ra_index_key(RedisArray *ra, zval *z_redis, const char *key, int key_len) {
+
+	int i;
+	zval z_fun_sadd, z_ret, *z_args[2];
+
+	for(i = 0; i < 2; ++i) MAKE_STD_ZVAL(z_args[i]);
+
+	/* prepare args */
+	ZVAL_STRING(&z_fun_sadd, "SADD", 0);
+	ZVAL_STRING(z_args[0], PHPREDIS_INDEX_NAME, 0);
+	ZVAL_STRINGL(z_args[1], key, key_len, 1);
+
 	/* run SADD */
-	MAKE_STD_ZVAL(z_arg[0]);
-	ZVAL_STRING(z_arg[0], "SADD", 0);
-	MAKE_STD_ZVAL(z_arg[1]);
+	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_sadd, &z_ret, 2, z_args TSRMLS_CC);
+	zval_dtor(&z_ret);
 
-
-	efree(z_arg[0]);
-	zval_dtor(z_arg[1]);
-	efree(z_arg[1]);
-#endif
+	for(i = 0; i < 2; ++i) efree(z_args[i]);
 }
 
 static void
@@ -381,7 +389,7 @@ ra_index_exec(RedisArray *ra, zval *z_redis, zval *return_value) {
 		*return_value = **zp_tmp;
 		zval_copy_ctor(return_value);
 	}
-	zval_dtor(&z_ret);
+	//zval_dtor(&z_ret);
 }
 
 static void
@@ -416,7 +424,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	}
 
 	if(use_index) { // add MULTI + SADD
-		ra_index_multi(ra, redis_inst, key, key_len);
+		ra_index_multi(ra, redis_inst);
 	}
 
 	/* pass call through */
@@ -440,9 +448,15 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 		call_user_function(&redis_ce->function_table, &redis_inst, &z_fun, &z_tmp, argc, z_callargs TSRMLS_CC);
 		zval_dtor(&z_tmp);
 
+		// add keys to index.
+		ra_index_key(ra, redis_inst, key, key_len);
+
 		// call EXEC
 		ra_index_exec(ra, redis_inst, return_value);
 	}
+
+	/* cleanup */
+	efree(z_callargs);
 }
 
 PHP_METHOD(RedisArray, __call)
