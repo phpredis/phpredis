@@ -36,6 +36,10 @@ foreach($data as $k => $v) {
 $ra->sadd('sx', 'a', 'b', 'c');
 $ra->sadd('sy', 'd', 'e', 'f');
 $ra->sadd('sz', 'g', 'h', 'i');
+
+$ra->rpush('lx', 'a', 'b', 'c');
+$ra->rpush('ly', 'd', 'e', 'f');
+$ra->rpush('lz', 'g', 'h', 'i');
 report_info($ra);
 
 echo "Reading back all the values.\n";

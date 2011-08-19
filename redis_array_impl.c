@@ -452,22 +452,40 @@ ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to) {
 
 	return 1;
 }
-static zend_bool
-ra_move_set(const char *key, int key_len, zval *z_from, zval *z_to) {
 
-	zval z_fun_get, z_fun_sadd, z_ret, *z_args[2], **z_sadd_args, **z_data_pp;
+static zend_bool
+ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
+		int list_count, const char **cmd_list,
+		int add_count, const char **cmd_add) {
+
+	zval z_fun_retrieve, z_fun_sadd, z_ret, **z_retrieve_args, **z_sadd_args, **z_data_pp;
 	int count, i;
 	HashTable *h_set_vals;
 
-	/* run GET on source */
-	MAKE_STD_ZVAL(z_args[0]);
-	ZVAL_STRINGL(&z_fun_get, "SMEMBERS", 8, 0);
-	ZVAL_STRINGL(z_args[0], key, key_len, 0);
-	call_user_function(&redis_ce->function_table, &z_from, &z_fun_get, &z_ret, 1, z_args TSRMLS_CC);
+	/* run retrieval command on source */
+	z_retrieve_args = emalloc((1+list_count) * sizeof(zval*));
+	ZVAL_STRING(&z_fun_retrieve, cmd_list[0], 0);	/* set the command */
+
+	/* set the key */
+	MAKE_STD_ZVAL(z_retrieve_args[0]);
+	ZVAL_STRINGL(z_retrieve_args[0], key, key_len, 0);
+
+	/* possibly add some other args if they were provided. */
+	for(i = 1; i < list_count; ++i) {
+		MAKE_STD_ZVAL(z_retrieve_args[i]);
+		ZVAL_STRING(z_retrieve_args[i], cmd_list[i], 0);
+	}
+
+	call_user_function(&redis_ce->function_table, &z_from, &z_fun_retrieve, &z_ret, list_count, z_retrieve_args TSRMLS_CC);
+
+	/* cleanup */
+	for(i = 0; i < list_count; ++i) {
+		efree(z_retrieve_args[i]);
+	}
+	efree(z_retrieve_args);
 
 	if(Z_TYPE(z_ret) != IS_ARRAY) { /* key not found or replaced */
 		/* TODO: report? */
-		efree(z_args[0]);
 		return 0;
 	}
 
@@ -475,7 +493,7 @@ ra_move_set(const char *key, int key_len, zval *z_from, zval *z_to) {
 	h_set_vals = Z_ARRVAL(z_ret);
 	count = zend_hash_num_elements(h_set_vals);
 	z_sadd_args = emalloc((1 + count) * sizeof(zval*));
-	ZVAL_STRINGL(&z_fun_sadd, "SADD", 4, 0);
+	ZVAL_STRING(&z_fun_sadd, cmd_add[0], 0);
 	MAKE_STD_ZVAL(z_sadd_args[0]);	/* add key */
 	ZVAL_STRINGL(z_sadd_args[0], key, key_len, 0);
 
@@ -495,14 +513,31 @@ ra_move_set(const char *key, int key_len, zval *z_from, zval *z_to) {
 	call_user_function(&redis_ce->function_table, &z_to, &z_fun_sadd, &z_ret, count+1, z_sadd_args TSRMLS_CC);
 
 	/* cleanup */
-	efree(z_sadd_args[0]);
+	efree(z_sadd_args[0]); /* no dtor at [0] */
 
 	for(i = 0; i < count; ++i) {
 		zval_dtor(z_sadd_args[i + 1]);
 		efree(z_sadd_args[i + 1]);
 	}
+	efree(z_sadd_args);
 
 	return 1;
+}
+
+static zend_bool
+ra_move_set(const char *key, int key_len, zval *z_from, zval *z_to) {
+
+	const char *cmd_list[] = {"SMEMBERS"};
+	const char *cmd_add[] = {"SADD"};
+	return ra_move_collection(key, key_len, z_from, z_to, 1, cmd_list, 1, cmd_add);
+}
+
+static zend_bool
+ra_move_list(const char *key, int key_len, zval *z_from, zval *z_to) {
+
+	const char *cmd_list[] = {"LRANGE", "0", "-1"};
+	const char *cmd_add[] = {"RPUSH"};
+	return ra_move_collection(key, key_len, z_from, z_to, 3, cmd_list, 1, cmd_add);
 }
 
 static void
