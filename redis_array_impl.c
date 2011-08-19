@@ -306,6 +306,8 @@ ra_rehash_scan_index(zval *z_redis, char ***keys, int **key_lens) {
 	zval z_fun_smembers, z_ret, *z_arg, **z_data_pp;
 	HashTable *h_keys;
 	HashPosition pointer;
+	char *key;
+	int key_len;
 
 	/* arg */
 	MAKE_STD_ZVAL(z_arg);
@@ -325,15 +327,18 @@ ra_rehash_scan_index(zval *z_redis, char ***keys, int **key_lens) {
 	*keys = emalloc(count * sizeof(char*));
 	*key_lens = emalloc(count * sizeof(int));
 
-	php_printf("Got %ld keys to redistribute\n", count);
-
 	for (i = 0, zend_hash_internal_pointer_reset_ex(h_keys, &pointer);
 			zend_hash_get_current_data_ex(h_keys, (void**) &z_data_pp, &pointer) == SUCCESS;
 			zend_hash_move_forward_ex(h_keys, &pointer), ++i) {
 
-		(*keys)[i] = emalloc(1 + Z_STRLEN_PP(z_data_pp));
-		(*key_lens)[i] = Z_STRLEN_PP(z_data_pp);
-		(*keys)[i][(*key_lens)[i]] = 0; /* null-terminate string */
+		key = Z_STRVAL_PP(z_data_pp);
+		key_len = Z_STRLEN_PP(z_data_pp);
+
+		/* copy key and length */
+		(*keys)[i] = emalloc(1 + key_len);
+		memcpy((*keys)[i], key, key_len);
+		(*key_lens)[i] = key_len;
+		(*keys)[i][key_len] = 0; /* null-terminate string */
 	}
 
 	/* cleanup */
@@ -350,12 +355,116 @@ ra_rehash_scan_keys(zval *z_redis, char ***keys, int **key_lens) {
 	return 0;
 }
 
+/* run TYPE to find the type */
+static long
+ra_get_key_type(zval *z_redis, const char *key, int key_len) {
+
+	int i;
+	zval z_fun_type, z_ret, *z_arg;
+	MAKE_STD_ZVAL(z_arg);
+
+	/* prepare args */
+	ZVAL_STRINGL(&z_fun_type, "TYPE", 4, 0);
+	ZVAL_STRINGL(z_arg, key, key_len, 0);
+
+	/* run TYPE */
+	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_type, &z_ret, 1, &z_arg TSRMLS_CC);
+
+	/* cleanup */
+	efree(z_arg);
+
+	return Z_LVAL(z_ret);
+}
+
+static zend_bool
+ra_del_key(const char *key, int key_len, zval *z_from) {
+
+	zval z_fun_del, z_ret, *z_args[2];
+
+	/* run GET on source */
+	MAKE_STD_ZVAL(z_args[0]);
+	ZVAL_STRINGL(&z_fun_del, "DEL", 3, 0);
+	ZVAL_STRINGL(z_args[0], key, key_len, 0);
+	call_user_function(&redis_ce->function_table, &z_from, &z_fun_del, &z_ret, 1, z_args TSRMLS_CC);
+}
+
+static zend_bool
+ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to) {
+
+	zval z_fun_get, z_fun_set, z_ret, *z_args[2];
+
+	/* run GET on source */
+	MAKE_STD_ZVAL(z_args[0]);
+	ZVAL_STRINGL(&z_fun_get, "GET", 3, 0);
+	ZVAL_STRINGL(z_args[0], key, key_len, 0);
+	call_user_function(&redis_ce->function_table, &z_from, &z_fun_get, &z_ret, 1, z_args TSRMLS_CC);
+
+	if(Z_TYPE(z_ret) != IS_STRING) { /* key not found or replaced */
+		/* TODO: report? */
+		efree(z_args[0]);
+		return 0;
+	}
+
+	/* run SET on target */
+	MAKE_STD_ZVAL(z_args[1]);
+	ZVAL_STRINGL(&z_fun_set, "SET", 3, 0);
+	ZVAL_STRINGL(z_args[0], key, key_len, 0);
+	ZVAL_STRINGL(z_args[1], Z_STRVAL(z_ret), Z_STRLEN(z_ret), 1); // copy z_ret to arg 1
+	call_user_function(&redis_ce->function_table, &z_to, &z_fun_set, &z_ret, 2, z_args TSRMLS_CC);
+
+	/* cleanup */
+	efree(z_args[0]);
+	zval_dtor(z_args[1]);
+	efree(z_args[1]);
+
+	return 1;
+}
+
 static void
-ra_rehash_server(RedisArray *ra, zval *z_redis, zend_bool b_index) {
+ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to) {
+
+	long type = ra_get_key_type(z_from, key, key_len);
+	zend_bool success = 0;
+
+	switch(type) {
+		case REDIS_STRING:
+			success = ra_move_string(key, key_len, z_from, z_to);
+			break;
+
+		case REDIS_SET:
+			success = ra_move_set(key, key_len, z_from, z_to);
+			break;
+
+		case REDIS_LIST:
+			success = ra_move_list(key, key_len, z_from, z_to);
+			break;
+
+		case REDIS_ZSET:
+			success = ra_move_zset(key, key_len, z_from, z_to);
+			break;
+
+		case REDIS_HASH:
+			success = ra_move_hash(key, key_len, z_from, z_to);
+			break;
+
+		default:
+			/* TODO: report? */
+			break;
+	}
+
+	if(success) {
+		ra_del_key(key, key_len, z_from);
+	}
+}
+
+static void
+ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool b_index) {
 
 	char **keys;
 	int *key_lens;
-	int count;
+	long count, i;
+	int target_pos;
+	zval *z_target;
 
 	/* list all keys */
 	if(b_index) {
@@ -364,7 +473,29 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, zend_bool b_index) {
 		count = ra_rehash_scan_keys(z_redis, &keys, &key_lens);
 	}
 
+	php_printf("%s has %ld keys to redistribute.\n", hostname, count);
 	/* for each key, redistribute */
+
+	for(i = 0; i < count; ++i) {
+
+		/* TODO: check that we're not moving to the same node. */
+		z_target = ra_find_node(ra, keys[i], key_lens[i], &target_pos);
+
+		if(strcmp(hostname, ra->hosts[target_pos])) { /* different host */
+
+			/* php_printf("move [%s] from [%s] to [%s]\n", keys[i], hostname, ra->hosts[target_pos]); */
+
+			ra_move_key(keys[i], key_lens[i], z_redis, z_target);
+		} else {
+			// php_printf("key [%s] stays on [%s]\n", keys[i], hostname);
+		}
+
+		efree(keys[i]);
+	}
+
+	// cleanup
+	efree(keys);
+	efree(key_lens);
 }
 
 void
@@ -377,7 +508,7 @@ ra_rehash(RedisArray *ra) {
 		return;	/* TODO: compare the two rings for equality */
 
 	for(i = 0; i < ra->prev->count; ++i) {
-		ra_rehash_server(ra, ra->prev->redis[i], ra->index);
+		ra_rehash_server(ra, ra->prev->redis[i], ra->prev->hosts[i], ra->index);
 	}
 }
 
