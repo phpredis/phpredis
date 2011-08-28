@@ -31,6 +31,7 @@ zend_function_entry redis_array_functions[] = {
 
      /* special implementation for a few functions */
      PHP_ME(RedisArray, info, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, ping, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, mget, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, mset, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, del, NULL, ZEND_ACC_PUBLIC)
@@ -359,7 +360,7 @@ PHP_METHOD(RedisArray, _rehash)
 	ra_rehash(ra, z_cb);
 }
 
-PHP_METHOD(RedisArray, info)
+static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
 {
 	zval *object, z_fun, *z_tmp;
 	int i;
@@ -375,7 +376,7 @@ PHP_METHOD(RedisArray, info)
 	}
 
 	/* prepare call */
-	ZVAL_STRING(&z_fun, "INFO", 0);
+	ZVAL_STRING(&z_fun, method_name, 0);
 
 	array_init(return_value);
 	for(i = 0; i < ra->count; ++i) {
@@ -388,6 +389,16 @@ PHP_METHOD(RedisArray, info)
 
 		add_assoc_zval(return_value, ra->hosts[i], z_tmp);
 	}
+}
+
+PHP_METHOD(RedisArray, info)
+{
+	multihost_distribute(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INFO");
+}
+
+PHP_METHOD(RedisArray, ping)
+{
+	multihost_distribute(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PING");
 }
 
 /* MGET will distribute the call to several nodes and regroup the values. */
