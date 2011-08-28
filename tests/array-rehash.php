@@ -79,7 +79,11 @@ echo "All key/value pairs read successfuly using the new setup with a fallback\n
 report_info($ra);
 
 echo "Rehash array.\n";
-$ra->_rehash();
+
+function rehash_callback($host, $count) {
+	echo "Now rehashing $count keys on node $host\n";
+}
+$ra->_rehash('rehash_callback');
 
 echo "Creating a new ring without fallback and reading back all the values.\n";
 $ra = new RedisArray($secondRing);

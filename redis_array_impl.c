@@ -690,8 +690,25 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to) {
 	ra_index_exec(z_to, NULL);
 }
 
+/* callback with the current progress, with hostname and count */
+static void zval_rehash_callback(zval *z_cb, const char *hostname, long count) {
+
+	zval z_ret, *z_args[2];
+
+	/* run cb(hostname, count) */
+	MAKE_STD_ZVAL(z_args[0]);
+	ZVAL_STRING(z_args[0], hostname, 0);
+	MAKE_STD_ZVAL(z_args[1]);
+	ZVAL_LONG(z_args[1], count);
+	call_user_function(EG(function_table), NULL, z_cb, &z_ret, 2, z_args TSRMLS_CC);
+
+	/* cleanup */
+	efree(z_args[0]);
+	efree(z_args[1]);
+}
+
 static void
-ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool b_index) {
+ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool b_index, zval *z_cb) {
 
 	char **keys;
 	int *key_lens;
@@ -706,10 +723,15 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 		count = ra_rehash_scan_keys(z_redis, &keys, &key_lens);
 	}
 
+	/* callback */
+	if(z_cb) {
+		zval_rehash_callback(z_cb, hostname, count);
+	}
+
 	/* for each key, redistribute */
 	for(i = 0; i < count; ++i) {
 
-		/* TODO: check that we're not moving to the same node. */
+		/* check that we're not moving to the same node. */
 		z_target = ra_find_node(ra, keys[i], key_lens[i], &target_pos);
 
 		if(strcmp(hostname, ra->hosts[target_pos])) { /* different host */
@@ -727,7 +749,7 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 }
 
 void
-ra_rehash(RedisArray *ra) {
+ra_rehash(RedisArray *ra, zval *z_cb) {
 
 	int i;
 
@@ -736,7 +758,7 @@ ra_rehash(RedisArray *ra) {
 		return;	/* TODO: compare the two rings for equality */
 
 	for(i = 0; i < ra->prev->count; ++i) {
-		ra_rehash_server(ra, ra->prev->redis[i], ra->prev->hosts[i], ra->index);
+		ra_rehash_server(ra, ra->prev->redis[i], ra->prev->hosts[i], ra->index, z_cb);
 	}
 }
 

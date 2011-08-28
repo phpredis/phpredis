@@ -17,6 +17,6 @@ void ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC);
 void ra_index_exec(zval *z_redis, zval *return_value);
 zend_bool ra_is_write_cmd(RedisArray *ra, const char *cmd, int cmd_len);
 
-void ra_rehash(RedisArray *ra);
+void ra_rehash(RedisArray *ra, zval *z_cb);
 
 #endif

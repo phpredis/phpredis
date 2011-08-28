@@ -344,11 +344,11 @@ PHP_METHOD(RedisArray, _function)
 
 PHP_METHOD(RedisArray, _rehash)
 {
-	zval *object;
+	zval *object, *z_cb = NULL;
 	RedisArray *ra;
 
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
-				&object, redis_array_ce) == FAILURE) {
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|z",
+				&object, redis_array_ce, &z_cb) == FAILURE) {
 		RETURN_FALSE;
 	}
 
@@ -356,7 +356,7 @@ PHP_METHOD(RedisArray, _rehash)
 		RETURN_FALSE;
 	}
 
-	ra_rehash(ra);
+	ra_rehash(ra, z_cb);
 }
 
 PHP_METHOD(RedisArray, info)
