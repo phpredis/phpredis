@@ -131,40 +131,55 @@ uint32_t crc32(const char *s, size_t sz) {
     Public constructor */
 PHP_METHOD(RedisArray, __construct)
 {
-	zval *z0, *z_fun = NULL, *z_prev = NULL;
+	zval *z0, *z_fun = NULL, **zpData, *z_opts = NULL;
 	char *name = NULL;
 	int id;
 	RedisArray *ra = NULL;
 	zend_bool b_index = 0;
+	HashTable *hPrev = NULL, *hOpts = NULL;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|zab", &z0, &z_fun, &z_prev, &b_index) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|a", &z0, &z_opts) == FAILURE) {
 		RETURN_FALSE;
 	}
 
-	// consider previous array as non-existent if empty.
-	if(z_prev && zend_hash_num_elements(Z_ARRVAL_P(z_prev)) == 0)
-		z_prev = NULL;
+	/* extract options */
+	if(z_opts) {
 
-	if(!z_fun || Z_TYPE_P(z_fun) == IS_NULL) { /* either an array name or a list of hosts */
-		switch(Z_TYPE_P(z0)) {
-			case IS_STRING:
-				name = Z_STRVAL_P(z0);
-				break;
+		hOpts = Z_ARRVAL_P(z_opts);
 
-			case IS_ARRAY:
-				ra = ra_make_array(Z_ARRVAL_P(z0), NULL, z_prev ? Z_ARRVAL_P(z_prev):NULL, b_index);
-				break;
-
-			default:
-				WRONG_PARAM_COUNT;
-				break;
+		/* extract previous ring. */
+		if(FAILURE != zend_hash_find(hOpts, "previous", sizeof("previous"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_ARRAY
+			&& zend_hash_num_elements(Z_ARRVAL_PP(zpData)) != 0) {
+			// consider previous array as non-existent if empty.
+				hPrev = Z_ARRVAL_PP(zpData);
 		}
-	} else {
-		if(Z_TYPE_P(z0) != IS_ARRAY) {
+
+		/* extract function name. */
+		if(FAILURE != zend_hash_find(hOpts, "function", sizeof("function"), (void**)&zpData)) {
+			MAKE_STD_ZVAL(z_fun);
+			*z_fun = **zpData;
+			zval_copy_ctor(z_fun);
+		}
+
+		/* extract index option. */
+		if(FAILURE != zend_hash_find(hOpts, "index", sizeof("index"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_BOOL) {
+			b_index = Z_BVAL_PP(zpData);
+		}
+	}
+
+	/* extract either name of list of hosts from z0 */
+	switch(Z_TYPE_P(z0)) {
+		case IS_STRING:
+			name = Z_STRVAL_P(z0);
+			break;
+
+		case IS_ARRAY:
+			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, hPrev, b_index);
+			break;
+
+		default:
 			WRONG_PARAM_COUNT;
-		}
-		// printf("ARRAY OF HOSTS, fun=%s\n", fun);
-		ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_prev ? Z_ARRVAL_P(z_prev):NULL, b_index);
+			break;
 	}
 
 	if(ra) {

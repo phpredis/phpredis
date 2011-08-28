@@ -18,7 +18,7 @@ $ra = new RedisArray(array('localhost'));
 var_dump($ra->set('hello', 'world'));
 var_dump($ra->get('hello'));
 
-$ra = new RedisArray(array('localhost:6380', 'localhost:6381', 'localhost:6382'), NULL, array('localhost'), TRUE); // after resizing
+$ra = new RedisArray(array('localhost:6380', 'localhost:6381', 'localhost:6382'), array('previous' => array('localhost'), 'index' => TRUE)); // after resizing
 var_dump($ra->get('hello'));
 
 

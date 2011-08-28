@@ -24,7 +24,7 @@ class Redis_Rehashing_Test extends PHPUnit_TestCase
 	public function setUp()
 	{
 		// initialize strings.
-		$n = 10;
+		$n = 1;
 		$this->strings = array();
 		for($i = 0; $i < $n; $i++) {
 			$this->strings['key-'.$i] = 'val-'.$i;
@@ -57,7 +57,7 @@ class Redis_Rehashing_Test extends PHPUnit_TestCase
 		global $newRing, $oldRing;
 
 		// create array
-		$this->ra = new RedisArray($newRing, NULL, $oldRing, $this->useIndex);
+		$this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $this->useIndex));
 	}
 
 	public function testFlush() {
