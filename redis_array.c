@@ -52,6 +52,8 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, mget, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, mset, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, del, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, getOption, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, setOption, NULL, ZEND_ACC_PUBLIC)
 
      /* Aliases */
      PHP_MALIAS(RedisArray, delete, del, NULL, ZEND_ACC_PUBLIC)
@@ -433,6 +435,89 @@ PHP_METHOD(RedisArray, info)
 PHP_METHOD(RedisArray, ping)
 {
 	multihost_distribute(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PING");
+}
+
+PHP_METHOD(RedisArray, getOption)
+{
+	zval *object, z_fun, *z_tmp, *z_args[1];
+	int i;
+	RedisArray *ra;
+	long opt;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol",
+				&object, redis_array_ce, &opt) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	/* prepare call */
+	ZVAL_STRING(&z_fun, "getOption", 0);
+
+	/* copy arg */
+	MAKE_STD_ZVAL(z_args[0]);
+	ZVAL_LONG(z_args[0], opt);
+
+	array_init(return_value);
+	for(i = 0; i < ra->count; ++i) {
+
+		MAKE_STD_ZVAL(z_tmp);
+
+		/* Call each node in turn */
+		call_user_function(&redis_ce->function_table, &ra->redis[i],
+				&z_fun, z_tmp, 1, z_args TSRMLS_CC);
+
+		add_assoc_zval(return_value, ra->hosts[i], z_tmp);
+	}
+
+	/* cleanup */
+	efree(z_args[0]);
+}
+
+PHP_METHOD(RedisArray, setOption)
+{
+	zval *object, z_fun, *z_tmp, *z_args[2];
+	int i;
+	RedisArray *ra;
+	long opt;
+	char *val_str;
+	int val_len;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ols",
+				&object, redis_array_ce, &opt, &val_str, &val_len) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	/* prepare call */
+	ZVAL_STRING(&z_fun, "setOption", 0);
+
+	/* copy args */
+	MAKE_STD_ZVAL(z_args[0]);
+	ZVAL_LONG(z_args[0], opt);
+	MAKE_STD_ZVAL(z_args[1]);
+	ZVAL_STRINGL(z_args[1], val_str, val_len, 0);
+
+	array_init(return_value);
+	for(i = 0; i < ra->count; ++i) {
+
+		MAKE_STD_ZVAL(z_tmp);
+
+		/* Call each node in turn */
+		call_user_function(&redis_ce->function_table, &ra->redis[i],
+				&z_fun, z_tmp, 2, z_args TSRMLS_CC);
+
+		add_assoc_zval(return_value, ra->hosts[i], z_tmp);
+	}
+
+	/* cleanup */
+	efree(z_args[0]);
+	efree(z_args[1]);
 }
 
 /* MGET will distribute the call to several nodes and regroup the values. */
