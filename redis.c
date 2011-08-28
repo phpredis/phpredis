@@ -60,7 +60,9 @@ PHP_INI_BEGIN()
 	/* redis arrays */
 	PHP_INI_ENTRY("redis.arrays.names", "", PHP_INI_ALL, NULL)
 	PHP_INI_ENTRY("redis.arrays.hosts", "", PHP_INI_ALL, NULL)
+	PHP_INI_ENTRY("redis.arrays.previous", "", PHP_INI_ALL, NULL)
 	PHP_INI_ENTRY("redis.arrays.functions", "", PHP_INI_ALL, NULL)
+	PHP_INI_ENTRY("redis.arrays.index", "", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
 ZEND_DECLARE_MODULE_GLOBALS(redis)

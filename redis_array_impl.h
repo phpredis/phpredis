@@ -6,6 +6,7 @@
 #include "redis_array.h"
 
 RedisArray* ra_load_hosts(RedisArray *ra, HashTable *hosts);
+RedisArray *ra_load_array(const char *name);
 RedisArray *ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev, zend_bool b_index);
 zval *ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos);
 void ra_init_function_table(RedisArray *ra);

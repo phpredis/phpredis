@@ -1,13 +1,10 @@
 <?php
 
 // can't set anything that hasn't been declared when the extension loads.
-ini_set('redis.array.names', 'users,friends');
-ini_set('redis.array.hosts', 'users=localhost:6379,localhost:6380,localhost:6381,localhost:6382');
-ini_set('redis.array.index', 'users=1,friends=0');
-
-// var_dump(ini_get('redis.arrays.names'));
-// var_dump(ini_get('redis.arrays.hosts'));
-// var_dump(ini_get('redis.arrays.functions'));
+ini_set('redis.arrays.names', 'users,friends');
+ini_set('redis.arrays.hosts', 'users[]=localhost:6379&users[]=localhost:6380&users[]=localhost:6381&users[]=localhost:6382&friends[]=localhost');
+ini_set('redis.arrays.functions', 'users=user_hash');
+ini_set('redis.arrays.index', 'users=1,friends=0');
 
 // different redis arrays
 $ra = new RedisArray('users');

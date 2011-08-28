@@ -1,6 +1,28 @@
+/*
+  +----------------------------------------------------------------------+
+  | PHP Version 5                                                        |
+  +----------------------------------------------------------------------+
+  | Copyright (c) 1997-2009 The PHP Group                                |
+  +----------------------------------------------------------------------+
+  | This source file is subject to version 3.01 of the PHP license,      |
+  | that is bundled with this package in the file LICENSE, and is        |
+  | available through the world-wide-web at the following url:           |
+  | http://www.php.net/license/3_01.txt                                  |
+  | If you did not receive a copy of the PHP license and are unable to   |
+  | obtain it through the world-wide-web, please send a note to          |
+  | license@php.net so we can mail you a copy immediately.               |
+  +----------------------------------------------------------------------+
+  | Author: Nicolas Favre-Felix <n.favre-felix@owlient.eu>               |
+  +----------------------------------------------------------------------+
+*/
+
 #include "redis_array_impl.h"
 #include "php_redis.h"
 #include "library.h"
+
+#include "php_variables.h"
+#include "SAPI.h"
+#include "ext/standard/url.h"
 
 #define PHPREDIS_INDEX_NAME	"__phpredis_array_index__"
 
@@ -97,6 +119,85 @@ void ra_init_function_table(RedisArray *ra) {
 	add_assoc_bool(ra->z_pure_cmds, "HGET", 1);
 	add_assoc_bool(ra->z_pure_cmds, "OBJECT", 1);
 	add_assoc_bool(ra->z_pure_cmds, "SMEMBERS", 1);
+}
+
+static int
+ra_find_name(const char *name) {
+
+	const char *ini_names, *p, *next;
+	/* php_printf("Loading redis array with name=[%s]\n", name); */
+
+	ini_names = INI_STR("redis.arrays.names");
+	for(p = ini_names; p;) {
+		next = strchr(p, ',');
+		if(next) {
+			if(strncmp(p, name, next - p) == 0) {
+				return 1;
+			}
+		} else {
+			if(strcmp(p, name) == 0) {
+				return 1;
+			}
+			break;
+		}
+		p = next + 1;
+	}
+
+	return 0;
+}
+
+/* laod array from INI settings */
+RedisArray *ra_load_array(const char *name) {
+
+	zval *z_params_hosts, **z_hosts;
+	zval *z_params_prev, **z_prev;
+	zval *z_params_funs, **z_data_pp, *z_fun = NULL;
+	zval *z_params_index;
+
+	zend_bool b_index = 0;
+	HashTable *hHosts = NULL, *hPrev = NULL;
+
+	/* find entry */
+	if(!ra_find_name(name))
+		return NULL;
+
+	/* find hosts */
+	MAKE_STD_ZVAL(z_params_hosts);
+	array_init(z_params_hosts);
+	sapi_module.treat_data(PARSE_STRING, estrdup(INI_STR("redis.arrays.hosts")), z_params_hosts TSRMLS_CC);
+	if (zend_hash_find(Z_ARRVAL_P(z_params_hosts), name, strlen(name) + 1, (void **) &z_hosts) != FAILURE) {
+		hHosts = Z_ARRVAL_PP(z_hosts);
+	}
+
+	/* find previous hosts */
+	MAKE_STD_ZVAL(z_params_prev);
+	array_init(z_params_prev);
+	sapi_module.treat_data(PARSE_STRING, estrdup(INI_STR("redis.arrays.previous")), z_params_prev TSRMLS_CC);
+	if (zend_hash_find(Z_ARRVAL_P(z_params_prev), name, strlen(name) + 1, (void **) &z_prev) != FAILURE) {
+		hPrev = Z_ARRVAL_PP(z_prev);
+	}
+
+	/* find function */
+	MAKE_STD_ZVAL(z_params_funs);
+	array_init(z_params_funs);
+	sapi_module.treat_data(PARSE_STRING, estrdup(INI_STR("redis.arrays.functions")), z_params_funs TSRMLS_CC);
+	if (zend_hash_find(Z_ARRVAL_P(z_params_funs), name, strlen(name) + 1, (void **) &z_data_pp) != FAILURE) {
+		MAKE_STD_ZVAL(z_fun);
+		*z_fun = **z_data_pp;
+		zval_copy_ctor(z_fun);
+	}
+
+	/* find index option */
+	MAKE_STD_ZVAL(z_params_index);
+	array_init(z_params_index);
+	sapi_module.treat_data(PARSE_STRING, estrdup(INI_STR("redis.arrays.index")), z_params_index TSRMLS_CC);
+	if (zend_hash_find(Z_ARRVAL_P(z_params_index), name, strlen(name) + 1, (void **) &z_data_pp) != FAILURE) {
+		if(Z_TYPE_PP(z_data_pp) == IS_STRING && strncmp(Z_STRVAL_PP(z_data_pp), "1", 1) == 0) {
+			b_index = 1;
+		}
+	}
+
+	return ra_make_array(hHosts, z_fun, hPrev, b_index);
 }
 
 RedisArray *
