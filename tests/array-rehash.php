@@ -3,8 +3,8 @@ require_once 'PHPUnit.php';
 
 echo "Redis Array rehashing tests.\n";
 
-$firstRing = array('localhost:6379', 'localhost:6380', 'localhost:6381');
-$secondRing = array();
+$newRing = array('localhost:6379', 'localhost:6380', 'localhost:6381');
+$oldRing = array();
 $serverList = array('localhost:6379', 'localhost:6380', 'localhost:6381', 'localhost:6382');
 
 
@@ -54,11 +54,10 @@ class Redis_Rehashing_Test extends PHPUnit_TestCase
 			$this->zsets['zset-'.$i] = array($i, 'A', $i+1, 'B', $i+2, 'C', $i+3, 'D', $i+4, 'E');
 		}
 
-		global $firstRing, $secondRing;
+		global $newRing, $oldRing;
 
 		// create array
-		var_dump($firstRing, $secondRing);
-		$this->ra = new RedisArray($firstRing, NULL, $secondRing, $this->useIndex);
+		$this->ra = new RedisArray($newRing, NULL, $oldRing, $this->useIndex);
 	}
 
 	public function testFlush() {
@@ -161,9 +160,9 @@ class Redis_Rehashing_Test extends PHPUnit_TestCase
 	// add a new node.
 	public function testCreateSecondRing() {
 
-		global $firstRing, $secondRing;
-		$secondRing = $firstRing; // back up the original.
-		$firstRing []= 'localhost:6282'; // add a new node to the main ring.
+		global $newRing, $oldRing;
+		$oldRing = $newRing; // back up the original.
+		$newRing []= 'localhost:6382'; // add a new node to the main ring.
 	}
 
 	public function testReadThrough() {
@@ -186,7 +185,7 @@ report_info($ra);
 
 
 echo "Creating a new, larger ring and reading back all the values.\n";
-$ra = new RedisArray($secondRing, NULL, $firstRing, TRUE);
+$ra = new RedisArray($oldRing, NULL, $newRing, TRUE);
 foreach($data as $k => $v) {
 	$ret = $ra->get($k);
 	if($ret !== $v) {
@@ -205,7 +204,7 @@ function rehash_callback($host, $count) {
 $ra->_rehash('rehash_callback');
 
 echo "Creating a new ring without fallback and reading back all the values.\n";
-$ra = new RedisArray($secondRing);
+$ra = new RedisArray($oldRing);
 foreach($data as $k => $v) {
 	$ret = $ra->get($k);
 	if($ret !== $v) {
