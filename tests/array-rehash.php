@@ -1,7 +1,7 @@
 <?php
 require_once 'PHPUnit.php';
 
-echo "Redis Array rehashing tests.\n";
+echo "Redis Array rehashing tests.\n\n";
 
 $newRing = array('localhost:6379', 'localhost:6380', 'localhost:6381');
 $oldRing = array();
@@ -165,56 +165,18 @@ class Redis_Rehashing_Test extends PHPUnit_TestCase
 		$newRing []= 'localhost:6382'; // add a new node to the main ring.
 	}
 
-	public function testReadThrough() {
-		$this->readAllvalues();
+	public function testReadUsingFallbackMechanism() {
+		$this->readAllvalues();	// some of the reads will fail and will go to another target node.
+	}
+
+	public function testRehash() {
+		$this->ra->_rehash(); // this will redistribute the keys
+	}
+
+	public function testReadRedistributedKeys() {
+		$this->readAllvalues(); // we shouldn't have any missed reads now.
 	}
 }
-
-/*
-function report_info($ra) {
-	$infos = $ra->info();
-	foreach($infos as $host => $info) {
-		echo "Host $host: ".(isset($info['db0'])?$info['db0']:0)."\n";
-	}
-}
-
-
-echo "Distributing $n keys around the ring.\n";
-
-report_info($ra);
-
-
-echo "Creating a new, larger ring and reading back all the values.\n";
-$ra = new RedisArray($oldRing, NULL, $newRing, TRUE);
-foreach($data as $k => $v) {
-	$ret = $ra->get($k);
-	if($ret !== $v) {
-		echo "Could not match expected value $v for key $k, instead got:"; var_dump($ret);
-		die;
-	}
-}
-echo "All key/value pairs read successfuly using the new setup with a fallback\n";
-report_info($ra);
-
-echo "Rehash array.\n";
-
-function rehash_callback($host, $count) {
-	echo "Now rehashing $count keys on node $host\n";
-}
-$ra->_rehash('rehash_callback');
-
-echo "Creating a new ring without fallback and reading back all the values.\n";
-$ra = new RedisArray($oldRing);
-foreach($data as $k => $v) {
-	$ret = $ra->get($k);
-	if($ret !== $v) {
-		echo "Could not match expected value $v for key $k, instead got:"; var_dump($ret);
-		die;
-	}
-}
-echo "All key/value pairs read successfuly using the new setup without a fallback\n";
-report_info($ra);
- */
 
 $suite  = new PHPUnit_TestSuite("Redis_Rehashing_Test");
 $result = PHPUnit::run($suite);
