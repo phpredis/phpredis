@@ -64,12 +64,32 @@ zend_function_entry redis_array_functions[] = {
 int le_redis_array;
 void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
 {
-	/* TODO */
-	/*
-	   RedisSock *redis_sock = (RedisSock *) rsrc->ptr;
-	   redis_sock_disconnect(redis_sock TSRMLS_CC);
-	   redis_free_socket(redis_sock);
-	 */
+	int i;
+	RedisArray *ra = (RedisArray*)rsrc->ptr;
+
+	/* delete Redis objects */
+	for(i = 0; i < ra->count; ++i) {
+		zval_dtor(ra->redis[i]);
+		efree(ra->redis[i]);
+
+		// remove host to
+		efree(ra->hosts[i]);
+	}
+	efree(ra->redis);
+	efree(ra->hosts);
+
+	/* delete function */
+	if(ra->z_fun) {
+		zval_dtor(ra->z_fun);
+		efree(ra->z_fun);
+	}
+
+	/* delete list of pure commands */
+	zval_dtor(ra->z_pure_cmds);
+	efree(ra->z_pure_cmds);
+
+	/* free container */
+	efree(ra);
 }
 
 /**

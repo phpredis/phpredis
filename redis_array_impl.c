@@ -153,13 +153,14 @@ RedisArray *ra_load_array(const char *name) {
 	zval *z_params_prev, **z_prev;
 	zval *z_params_funs, **z_data_pp, *z_fun = NULL;
 	zval *z_params_index;
+	RedisArray *ra = NULL;
 
 	zend_bool b_index = 0;
 	HashTable *hHosts = NULL, *hPrev = NULL;
 
 	/* find entry */
 	if(!ra_find_name(name))
-		return NULL;
+		return ra;
 
 	/* find hosts */
 	MAKE_STD_ZVAL(z_params_hosts);
@@ -197,7 +198,20 @@ RedisArray *ra_load_array(const char *name) {
 		}
 	}
 
-	return ra_make_array(hHosts, z_fun, hPrev, b_index);
+	/* create RedisArray object */
+	ra = ra_make_array(hHosts, z_fun, hPrev, b_index);
+
+	/* cleanup */
+	zval_dtor(z_params_hosts);
+	efree(z_params_hosts);
+	zval_dtor(z_params_prev);
+	efree(z_params_prev);
+	zval_dtor(z_params_funs);
+	efree(z_params_funs);
+	zval_dtor(z_params_index);
+	efree(z_params_index);
+
+	return ra;
 }
 
 RedisArray *
