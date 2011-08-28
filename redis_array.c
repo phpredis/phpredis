@@ -15,6 +15,7 @@
   | Author: Nicolas Favre-Felix <n.favre-felix@owlient.eu>               |
   +----------------------------------------------------------------------+
 */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -209,11 +210,11 @@ PHP_METHOD(RedisArray, __construct)
 	/* extract either name of list of hosts from z0 */
 	switch(Z_TYPE_P(z0)) {
 		case IS_STRING:
-			ra = ra_load_array(Z_STRVAL_P(z0));
+			ra = ra_load_array(Z_STRVAL_P(z0) TSRMLS_CC);
 			break;
 
 		case IS_ARRAY:
-			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, hPrev, b_index);
+			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, hPrev, b_index TSRMLS_CC);
 			break;
 
 		default:
@@ -253,7 +254,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	}
 
 	/* find node */
-	redis_inst = ra_find_node(ra, key, key_len, NULL);
+	redis_inst = ra_find_node(ra, key, key_len, NULL TSRMLS_CC);
 	if(!redis_inst) {
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not find any redis servers for this key.");
 		RETURN_FALSE;
@@ -263,7 +264,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	b_write_cmd = ra_is_write_cmd(ra, cmd, cmd_len);
 
 	if(ra->index && b_write_cmd) { // add MULTI + SADD
-		ra_index_multi(redis_inst);
+		ra_index_multi(redis_inst TSRMLS_CC);
 	}
 
 	/* pass call through */
@@ -289,7 +290,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 		ra_index_key(key, key_len, redis_inst TSRMLS_CC);
 
 		// call EXEC
-		ra_index_exec(redis_inst, return_value);
+		ra_index_exec(redis_inst, return_value TSRMLS_CC);
 	} else { // call directly through.
 		call_user_function(&redis_ce->function_table, &redis_inst, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
 
@@ -368,7 +369,7 @@ PHP_METHOD(RedisArray, _target)
 		RETURN_FALSE;
 	}
 
-	redis_inst = ra_find_node(ra, key, key_len, &i);
+	redis_inst = ra_find_node(ra, key, key_len, &i TSRMLS_CC);
 	if(redis_inst) {
 		ZVAL_STRING(return_value, ra->hosts[i], 1);
 	} else {
@@ -413,7 +414,7 @@ PHP_METHOD(RedisArray, _rehash)
 		RETURN_FALSE;
 	}
 
-	ra_rehash(ra, z_cb);
+	ra_rehash(ra, z_cb TSRMLS_CC);
 }
 
 static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
@@ -586,7 +587,7 @@ PHP_METHOD(RedisArray, mget)
 			RETURN_FALSE;
 		}
 
-		redis_instances[i] = ra_find_node(ra, Z_STRVAL_PP(data), Z_STRLEN_PP(data), &pos[i]);
+		redis_instances[i] = ra_find_node(ra, Z_STRVAL_PP(data), Z_STRLEN_PP(data), &pos[i] TSRMLS_CC);
 		argc_each[pos[i]]++;	/* count number of keys per node */
 		argv[i] = *data;
 	}
@@ -711,7 +712,7 @@ PHP_METHOD(RedisArray, mset)
 			RETURN_FALSE;
 		}
 
-		redis_instances[i] = ra_find_node(ra, key, key_len - 1, &pos[i]); /* -1 because of PHP assoc keys which count \0... */
+		redis_instances[i] = ra_find_node(ra, key, key_len - 1, &pos[i] TSRMLS_CC); /* -1 because of PHP assoc keys which count \0... */
 		argc_each[pos[i]]++;	/* count number of keys per node */
 		argv[i] = *data;
 		keys[i] = key;
@@ -828,7 +829,7 @@ PHP_METHOD(RedisArray, del)
 			RETURN_FALSE;
 		}
 
-		redis_instances[i] = ra_find_node(ra, Z_STRVAL_PP(data), Z_STRLEN_PP(data), &pos[i]);
+		redis_instances[i] = ra_find_node(ra, Z_STRVAL_PP(data), Z_STRLEN_PP(data), &pos[i] TSRMLS_CC);
 		argc_each[pos[i]]++;	/* count number of keys per node */
 		argv[i] = *data;
 	}
