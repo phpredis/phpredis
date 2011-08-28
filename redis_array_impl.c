@@ -300,7 +300,7 @@ ra_is_write_cmd(RedisArray *ra, const char *cmd, int cmd_len) {
 
 /* list keys from array index */
 static long
-ra_rehash_scan_index(zval *z_redis, char ***keys, int **key_lens) {
+ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, const char *arg) {
 
 	long count, i;
 	zval z_fun_smembers, z_ret, *z_arg, **z_data_pp;
@@ -311,10 +311,10 @@ ra_rehash_scan_index(zval *z_redis, char ***keys, int **key_lens) {
 
 	/* arg */
 	MAKE_STD_ZVAL(z_arg);
-	ZVAL_STRING(z_arg, PHPREDIS_INDEX_NAME, 0);
+	ZVAL_STRING(z_arg, arg, 0);
 
 	/* run SMEMBERS */
-	ZVAL_STRING(&z_fun_smembers, "SMEMBERS", 0);
+	ZVAL_STRING(&z_fun_smembers, cmd, 0);
 	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_smembers, &z_ret, 1, &z_arg TSRMLS_CC);
 	efree(z_arg);
 	if(Z_TYPE(z_ret) != IS_ARRAY) { /* failure */
@@ -347,12 +347,15 @@ ra_rehash_scan_index(zval *z_redis, char ***keys, int **key_lens) {
 	return count;
 }
 
+static long
+ra_rehash_scan_index(zval *z_redis, char ***keys, int **key_lens) {
+	return ra_rehash_scan(z_redis, keys, key_lens, "SMEMBERS", PHPREDIS_INDEX_NAME);
+}
+
 /* list keys using KEYS command */
 static long
 ra_rehash_scan_keys(zval *z_redis, char ***keys, int **key_lens) {
-
-	/* TODO */
-	return 0;
+	return ra_rehash_scan(z_redis, keys, key_lens, "KEYS", "*");
 }
 
 /* run TYPE to find the type */
