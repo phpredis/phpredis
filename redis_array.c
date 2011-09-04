@@ -754,11 +754,13 @@ PHP_METHOD(RedisArray, mset)
 		if(zend_hash_get_current_data(h_keys, (void**)&data) == FAILURE) {
 			continue;
 		}
+		/*
 		if (Z_TYPE_PP(data) != IS_STRING) {
 			php_error_docref(NULL TSRMLS_CC, E_ERROR, "MSET: all keys must be string.");
 			efree(pos);
 			RETURN_FALSE;
 		}
+		*/
 
 		redis_instances[i] = ra_find_node(ra, key, key_len - 1, &pos[i] TSRMLS_CC); /* -1 because of PHP assoc keys which count \0... */
 		argc_each[pos[i]]++;	/* count number of keys per node */

@@ -3,6 +3,15 @@ require_once 'PHPUnit.php';
 
 echo "Redis Array tests.\n\n";
 
+function custom_hash($str) {
+	// str has the following format: $APPID_fb$FACEBOOKID_$key.
+	$pos = strpos($str, '_fb');
+	if(preg_match("#\w+_fb(?<facebook_id>\d+)_\w+#", $str, $out)) {
+			return $out['facebook_id'];
+	}
+	return $str;
+}
+
 class Redis_Array_Test extends PHPUnit_TestCase
 {
 	private $strings;
@@ -44,6 +53,46 @@ class Redis_Array_Test extends PHPUnit_TestCase
 	public function testMGet() {
 		$this->assertTrue(array_values($this->strings) === $this->ra->mget(array_keys($this->strings)));
 	}
+
+	private function addData($commonString) {
+		$this->data = array();
+		for($i = 0; $i < REDIS_ARRAY_DATA_SIZE; $i++) {
+			$k = rand().'_'.$commonString.'_'.rand();
+			$this->data[$k] = rand();
+		}
+		$this->ra->mset($this->data);
+	}
+
+	private function checkCommonLocality() {
+		// check that they're all on the same node.
+		$lastNode = NULL;
+		foreach($this->data as $k => $v) {
+				$node = $this->ra->_target($k);
+				if($lastNode) {
+					$this->assertTrue($node === $lastNode);
+				}
+				$this->assertTrue($this->ra->get($k) == $v);
+				$lastNode = $node;
+		}
+	}
+
+	public function testKeyLocality() {
+
+		// basic key locality with default hash
+		$this->addData('{hashed part of the key}');
+		$this->checkCommonLocality();
+
+		// with common hashing function
+		global $newRing, $oldRing, $useIndex;
+		$this->ra = new RedisArray($newRing, array('previous' => $oldRing,
+				'index' => $useIndex,
+				'function' => 'custom_hash'));
+
+		// basic key locality with custom hash
+		$this->addData('fb'.rand());
+		$this->checkCommonLocality();
+	}
+
 }
 
 class Redis_Rehashing_Test extends PHPUnit_TestCase
@@ -299,8 +348,8 @@ class Redis_Multi_Exec_Test extends PHPUnit_TestCase {
 	}
 
 	public function testInit() {
-		$this->ra->set('group:managers', 2);
-		$this->ra->set('group:executives', 3);
+		$this->ra->set('{groups}:managers', 2);
+		$this->ra->set('{groups}:executives', 3);
 
 		$this->ra->set('1_{employee:joe}_name', 'joe');
 		$this->ra->set('1_{employee:joe}_group', 2);
@@ -322,7 +371,7 @@ class Redis_Multi_Exec_Test extends PHPUnit_TestCase {
 	public function testMultiExec() {
 
 		// Joe gets a promotion
-		$newGroup = $this->ra->get('group:executives');
+		$newGroup = $this->ra->get('{groups}:executives');
 		$newSalary = 4000;
 
 		// change both in a transaction.
@@ -350,7 +399,6 @@ class Redis_Multi_Exec_Test extends PHPUnit_TestCase {
 				->exec();
 
 		$this->assertTrue($out[0] === TRUE);
-
 	}
 
 	public function testMultiExecMGet() {
@@ -394,7 +442,7 @@ function run_tests($className) {
 		echo $result->toString();
 }
 
-define('REDIS_ARRAY_DATA_SIZE', 10);
+define('REDIS_ARRAY_DATA_SIZE', 1000);
 
 global $useIndex;
 foreach(array(true, false) as $useIndex) {
