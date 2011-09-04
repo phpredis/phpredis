@@ -77,7 +77,7 @@ void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
 		zval_dtor(ra->redis[i]);
 		efree(ra->redis[i]);
 
-		// remove host to
+		/* remove host too */
 		efree(ra->hosts[i]);
 	}
 	efree(ra->redis);
@@ -194,7 +194,7 @@ PHP_METHOD(RedisArray, __construct)
 		/* extract previous ring. */
 		if(FAILURE != zend_hash_find(hOpts, "previous", sizeof("previous"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_ARRAY
 			&& zend_hash_num_elements(Z_ARRVAL_PP(zpData)) != 0) {
-			// consider previous array as non-existent if empty.
+			/* consider previous array as non-existent if empty. */
 				hPrev = Z_ARRVAL_PP(zpData);
 		}
 
@@ -271,7 +271,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	/* check if write cmd */
 	b_write_cmd = ra_is_write_cmd(ra, cmd, cmd_len);
 
-	if(ra->index && b_write_cmd && !ra->z_multi_exec) { // add MULTI + SADD
+	if(ra->index && b_write_cmd && !ra->z_multi_exec) { /* add MULTI + SADD */
 		ra_index_multi(redis_inst TSRMLS_CC);
 	}
 
@@ -297,16 +297,16 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
 	/* CALL! */
 	if(ra->index && b_write_cmd) {
-		// call using discarded temp value and extract exec results after.
+		/* call using discarded temp value and extract exec results after. */
 		call_user_function(&redis_ce->function_table, &redis_inst, &z_fun, &z_tmp, argc, z_callargs TSRMLS_CC);
 		zval_dtor(&z_tmp);
 
-		// add keys to index.
+		/* add keys to index. */
 		ra_index_key(key, key_len, redis_inst TSRMLS_CC);
 
-		// call EXEC
+		/* call EXEC */
 		ra_index_exec(redis_inst, return_value, 0 TSRMLS_CC);
-	} else { // call directly through.
+	} else { /* call directly through. */
 		call_user_function(&redis_ce->function_table, &redis_inst, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
 
 		failed = 0;
@@ -314,8 +314,8 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 			failed = 1;
 		}
 
-		// check if we have an error.
-		if(failed && ra->prev && !b_write_cmd) { // there was an error reading, try with prev ring.
+		/* check if we have an error. */
+		if(failed && ra->prev && !b_write_cmd) { /* there was an error reading, try with prev ring. */
 			/* ERROR, FALLBACK TO PREVIOUS RING and forward a reference to the first redis instance we were looking at. */
 			ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra->prev, cmd, cmd_len, z_args, z_new_target?z_new_target:redis_inst);
 		}

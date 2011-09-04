@@ -667,7 +667,7 @@ ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC)
 	MAKE_STD_ZVAL(z_args[1]);
 	ZVAL_STRINGL(&z_fun_set, "SET", 3, 0);
 	ZVAL_STRINGL(z_args[0], key, key_len, 0);
-	ZVAL_STRINGL(z_args[1], Z_STRVAL(z_ret), Z_STRLEN(z_ret), 1); // copy z_ret to arg 1
+	ZVAL_STRINGL(z_args[1], Z_STRVAL(z_ret), Z_STRLEN(z_ret), 1); /* copy z_ret to arg 1 */
 	call_user_function(&redis_ce->function_table, &z_to, &z_fun_set, &z_ret, 2, z_args TSRMLS_CC);
 
 	/* cleanup */
@@ -698,7 +698,7 @@ ra_move_hash(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 	/* run HMSET on target */
 	ZVAL_STRINGL(&z_fun_hmset, "HMSET", 5, 0);
 	ZVAL_STRINGL(z_args[0], key, key_len, 0);
-	z_args[1] = &z_ret; // copy z_ret to arg 1
+	z_args[1] = &z_ret; /* copy z_ret to arg 1 */
 	call_user_function(&redis_ce->function_table, &z_to, &z_fun_hmset, &z_ret, 2, z_args TSRMLS_CC);
 
 	/* cleanup */
@@ -888,7 +888,7 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 		}
 	}
 
-	// cleanup
+	/* cleanup */
 	for(i = 0; i < count; ++i) {
 		efree(keys[i]);
 	}
