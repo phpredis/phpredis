@@ -229,7 +229,7 @@ PHP_METHOD(RedisArray, __construct)
 }
 
 static void
-ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args) {
+ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args, zval *z_new_target) {
 
 	zval **zp_tmp, z_tmp;
 	char *key;
@@ -301,8 +301,12 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
 		// check if we have an error.
 		if(failed && ra->prev && !b_write_cmd) { // there was an error reading, try with prev ring.
-			/* php_printf("ERROR, FALLBACK TO PREVIOUS RING.\n"); */
-			ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra->prev, cmd, cmd_len, z_args);
+			/* ERROR, FALLBACK TO PREVIOUS RING and forward a reference to the first redis instance we were looking at. */
+			ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra->prev, cmd, cmd_len, z_args, z_new_target?z_new_target:redis_inst);
+		}
+
+		if(!failed && !b_write_cmd && z_new_target && ra->auto_rehash) { /* move key from old ring to new ring */
+				ra_move_key(key, key_len, redis_inst, z_new_target TSRMLS_CC);
 		}
 	}
 
@@ -328,7 +332,7 @@ PHP_METHOD(RedisArray, __call)
 		RETURN_FALSE;
 	}
 
-	ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, cmd_len, z_args);
+	ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, cmd_len, z_args, NULL);
 }
 
 PHP_METHOD(RedisArray, _hosts)

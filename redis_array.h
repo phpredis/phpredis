@@ -32,6 +32,7 @@ typedef struct RedisArray_ {
 	zval *z_fun;	/* key extractor */
 	zval *z_pure_cmds;	/* hash table */
 
+	int auto_rehash; /* migrate keys on read operations */
 	struct RedisArray_ *prev;
 } RedisArray;
 

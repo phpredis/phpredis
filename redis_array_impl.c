@@ -152,9 +152,10 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 	zval *z_params_prev, **z_prev;
 	zval *z_params_funs, **z_data_pp, *z_fun = NULL;
 	zval *z_params_index;
+	zval *z_params_autorehash;
 	RedisArray *ra = NULL;
 
-	zend_bool b_index = 0;
+	zend_bool b_index = 0, b_autorehash = 0;
 	HashTable *hHosts = NULL, *hPrev = NULL;
 
 	/* find entry */
@@ -197,8 +198,19 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 		}
 	}
 
+	/* find autorehash option */
+	MAKE_STD_ZVAL(z_params_autorehash);
+	array_init(z_params_autorehash);
+	sapi_module.treat_data(PARSE_STRING, estrdup(INI_STR("redis.arrays.autorehash")), z_params_autorehash TSRMLS_CC);
+	if (zend_hash_find(Z_ARRVAL_P(z_params_autorehash), name, strlen(name) + 1, (void **) &z_data_pp) != FAILURE) {
+		if(Z_TYPE_PP(z_data_pp) == IS_STRING && strncmp(Z_STRVAL_PP(z_data_pp), "1", 1) == 0) {
+			b_autorehash = 1;
+		}
+	}
+
 	/* create RedisArray object */
 	ra = ra_make_array(hHosts, z_fun, hPrev, b_index TSRMLS_CC);
+	ra->auto_rehash = b_autorehash;
 
 	/* cleanup */
 	zval_dtor(z_params_hosts);
@@ -209,6 +221,8 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 	efree(z_params_funs);
 	zval_dtor(z_params_index);
 	efree(z_params_index);
+	zval_dtor(z_params_autorehash);
+	efree(z_params_autorehash);
 
 	return ra;
 }
@@ -760,7 +774,7 @@ ra_move_list(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 	return ra_move_collection(key, key_len, z_from, z_to, 3, cmd_list, 1, cmd_add TSRMLS_CC);
 }
 
-static void
+void
 ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 
 	long type = ra_get_key_type(z_from, key, key_len TSRMLS_CC);
