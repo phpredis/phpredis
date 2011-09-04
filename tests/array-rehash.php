@@ -31,7 +31,6 @@ class Redis_Array_Test extends PHPUnit_TestCase
 	}
 
 	public function testMSet() {
-
 		// run mset
 		$this->assertTrue(TRUE === $this->ra->mset($this->strings));
 
@@ -45,7 +44,7 @@ class Redis_Array_Test extends PHPUnit_TestCase
 			list($host, $port) = split(':', $this->ra->_target($k));
 
 			$r = new Redis;
-			$r->connect($host, (int)$port);
+			$r->pconnect($host, (int)$port);
 			$this->assertTrue($v === $r->get($k));
 		}
 	}
@@ -59,6 +58,7 @@ class Redis_Array_Test extends PHPUnit_TestCase
 		for($i = 0; $i < REDIS_ARRAY_DATA_SIZE; $i++) {
 			$k = rand().'_'.$commonString.'_'.rand();
 			$this->data[$k] = rand();
+		//	$this->ra->set($k, $this->data[$k]);
 		}
 		$this->ra->mset($this->data);
 	}
@@ -155,7 +155,7 @@ class Redis_Rehashing_Test extends PHPUnit_TestCase
 			list($host, $port) = explode(':', $s);
 
 			$r = new Redis;
-			$r->connect($host, (int)$port);
+			$r->pconnect($host, (int)$port);
 			$r->flushdb();
 		}
 	}
@@ -328,7 +328,7 @@ class Redis_Auto_Rehashing_Test extends PHPUnit_TestCase {
 			// connect to the target host
 			list($host,$port) = split(':', $target);
 			$r = new Redis;
-			$r->connect($host, $port);
+			$r->pconnect($host, $port);
 
 			$this->assertTrue($v === $r->get($k));	// check that the key has actually been migrated to the new node.
 		}
@@ -442,7 +442,7 @@ function run_tests($className) {
 		echo $result->toString();
 }
 
-define('REDIS_ARRAY_DATA_SIZE', 1000);
+define('REDIS_ARRAY_DATA_SIZE', 10000);
 
 global $useIndex;
 foreach(array(true, false) as $useIndex) {

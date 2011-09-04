@@ -377,7 +377,7 @@ ra_index_multi(zval *z_redis TSRMLS_DC) {
 	/* run MULTI */
 	ZVAL_STRING(&z_fun_multi, "MULTI", 0);
 	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_multi, &z_ret, 0, NULL TSRMLS_CC);
-	zval_dtor(&z_ret);
+	//zval_dtor(&z_ret);
 }
 
 void
@@ -427,6 +427,9 @@ ra_index_exec(zval *z_redis, zval *return_value, int keep_all TSRMLS_DC) {
 		}
 		zval_dtor(&z_ret);
 	}
+
+	//zval *zptr = &z_ret;
+	//php_var_dump(&zptr, 0 TSRMLS_CC);
 }
 
 zend_bool
