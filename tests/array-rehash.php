@@ -3,11 +3,6 @@ require_once 'PHPUnit.php';
 
 echo "Redis Array rehashing tests.\n\n";
 
-$newRing = array('localhost:6379', 'localhost:6380', 'localhost:6381');
-$oldRing = array();
-$serverList = array('localhost:6379', 'localhost:6380', 'localhost:6381', 'localhost:6382');
-
-
 class Redis_Rehashing_Test extends PHPUnit_TestCase
 {
 
@@ -24,7 +19,7 @@ class Redis_Rehashing_Test extends PHPUnit_TestCase
 	public function setUp()
 	{
 		// initialize strings.
-		$n = 1;
+		$n = 1000;
 		$this->strings = array();
 		for($i = 0; $i < $n; $i++) {
 			$this->strings['key-'.$i] = 'val-'.$i;
@@ -160,9 +155,9 @@ class Redis_Rehashing_Test extends PHPUnit_TestCase
 	// add a new node.
 	public function testCreateSecondRing() {
 
-		global $newRing, $oldRing;
+		global $newRing, $oldRing, $serverList;
 		$oldRing = $newRing; // back up the original.
-		$newRing []= 'localhost:6382'; // add a new node to the main ring.
+		$newRing = $serverList; // add a new node to the main ring.
 	}
 
 	public function testReadUsingFallbackMechanism() {
@@ -178,9 +173,145 @@ class Redis_Rehashing_Test extends PHPUnit_TestCase
 	}
 }
 
-$suite  = new PHPUnit_TestSuite("Redis_Rehashing_Test");
-$result = PHPUnit::run($suite);
+// Test auto-migration of keys
+class Redis_Auto_Rehashing_Test extends PHPUnit_TestCase {
 
-echo $result->toString();
+	public $ra = NULL;
+
+	// data
+	private $strings;
+
+	public function setUp()
+	{
+		// initialize strings.
+		$n = 1000;
+		$this->strings = array();
+		for($i = 0; $i < $n; $i++) {
+			$this->strings['key-'.$i] = 'val-'.$i;
+		}
+
+		global $newRing, $oldRing;
+
+		// create array
+		$this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => TRUE, 'autorehash' => TRUE));
+	}
+
+	public function testDistribute() {
+		// strings
+		foreach($this->strings as $k => $v) {
+			$this->ra->set($k, $v);
+		}
+	}
+
+	private function readAllvalues() {
+		foreach($this->strings as $k => $v) {
+			$this->assertTrue($this->ra->get($k) === $v);
+		}
+	}
+
+
+	public function testReadAll() {
+		$this->readAllvalues();
+	}
+
+	// add a new node.
+	public function testCreateSecondRing() {
+
+		global $newRing, $oldRing, $serverList;
+		$oldRing = $newRing; // back up the original.
+		$newRing = $serverList; // add a new node to the main ring.
+	}
+
+	// Read and migrate keys on fallback, causing the whole ring to be rehashed.
+	public function testReadAndMigrateAll() {
+		$this->readAllvalues();
+	}
+
+	// Read and migrate keys on fallback, causing the whole ring to be rehashed.
+	public function testAllKeysHaveBeenMigrated() {
+		foreach($this->strings as $k => $v) {
+			// get the target for each key
+			$target = $this->ra->_target($k);
+
+			// connect to the target host
+			list($host,$port) = split(':', $target);
+			$r = new Redis;
+			$r->connect($host, $port);
+
+			$this->assertTrue($v === $r->get($k));	// check that the key has actually been migrated to the new node.
+		}
+	}
+}
+
+// Test node-specific multi/exec
+class Redis_Multi_Exec_Test extends PHPUnit_TestCase {
+
+	public $ra = NULL;
+
+	public function setUp()
+	{
+		global $newRing, $oldRing;
+		// create array
+		$this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => FALSE));
+	}
+
+	public function testInit() {
+		$this->ra->set('group:managers', 2);
+		$this->ra->set('group:executives', 3);
+
+		$this->ra->set('1_{employee:joe}_name', 'joe');
+		$this->ra->set('1_{employee:joe}_group', 2);
+		$this->ra->set('1_{employee:joe}_salary', 2000);
+	}
+
+	public function testKeyDistribution() {
+		// check that all of joe's keys are on the same instance
+		$lastNode = NULL;
+		foreach(array('name', 'group', 'salary') as $field) {
+				$node = $this->ra->_target('1_{employee:joe}_'.$field);
+				if($lastNode) {
+					$this->assertTrue($node === $lastNode);
+				}
+				$lastNode = $node;
+		}
+	}
+
+	public function testMultiExec() {
+
+		$newGroup = $this->ra->get('group:executives');
+		$newSalary = 4000;
+
+		// change both in a transaction.
+		$host = $this->ra->_target('{employee:joe}');	// transactions are per-node, so we need a reference to it.
+		$tr = $this->ra->multi($host)
+				->set('1_{employee:joe}_group', $newGroup)
+				->set('1_{employee:joe}_salary', $newSalary)
+				->exec();
+
+		// check that the group and salary have been changed
+		$this->assertTrue($this->ra->get('1_{employee:joe}_group') === $newGroup);
+		$this->assertTrue($this->ra->get('1_{employee:joe}_salary') == $newSalary);
+	}
+
+}
+
+
+function run_tests($className) {
+		// reset rings
+		global $newRing, $oldRing, $serverList;
+		$newRing = array('localhost:6379', 'localhost:6380', 'localhost:6381');
+		$oldRing = array();
+		$serverList = array('localhost:6379', 'localhost:6380', 'localhost:6381', 'localhost:6382');
+
+		// run
+		$suite  = new PHPUnit_TestSuite($className);
+		$result = PHPUnit::run($suite);
+		echo $result->toString();
+		echo "\n";
+}
+
+run_tests('Redis_Rehashing_Test');
+run_tests('Redis_Auto_Rehashing_Test');
+run_tests('Redis_Multi_Exec_Test');
 
 ?>

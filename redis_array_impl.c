@@ -238,7 +238,9 @@ ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev, zend_bool b_
 	ra->redis = emalloc(count * sizeof(zval*));
 	ra->count = count;
 	ra->z_fun = NULL;
+	ra->z_multi_exec = NULL;
 	ra->index = b_index;
+	ra->auto_rehash = 0;
 
 	/* init array data structures */
 	ra_init_function_table(ra);
@@ -337,6 +339,18 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 	return ra->redis[pos];
 }
 
+zval *
+ra_find_node_by_name(RedisArray *ra, const char *host, int host_len TSRMLS_DC) {
+
+	int i;
+	for(i = 0; i < ra->count; ++i) {
+		if(strncmp(ra->hosts[i], host, host_len) == 0) {
+			return ra->redis[i];
+		}
+	}
+	return NULL;
+}
+
 
 char *
 ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len) {
@@ -391,7 +405,7 @@ ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC) {
 }
 
 void
-ra_index_exec(zval *z_redis, zval *return_value TSRMLS_DC) {
+ra_index_exec(zval *z_redis, zval *return_value, int keep_all TSRMLS_DC) {
 
 	zval z_fun_exec, z_ret, **zp_tmp;
 
@@ -399,11 +413,17 @@ ra_index_exec(zval *z_redis, zval *return_value TSRMLS_DC) {
 	ZVAL_STRING(&z_fun_exec, "EXEC", 0);
 	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_exec, &z_ret, 0, NULL TSRMLS_CC);
 
+
 	/* extract first element of exec array and put into return_value. */
 	if(Z_TYPE(z_ret) == IS_ARRAY) {
-		if(return_value && zend_hash_quick_find(Z_ARRVAL(z_ret), NULL, 0, 0, (void**)&zp_tmp) != FAILURE) {
-			*return_value = **zp_tmp;
-			zval_copy_ctor(return_value);
+		if(return_value) {
+				if(keep_all) {
+						*return_value = z_ret;
+						zval_copy_ctor(return_value);
+				} else if(zend_hash_quick_find(Z_ARRVAL(z_ret), NULL, 0, 0, (void**)&zp_tmp) != FAILURE) {
+						*return_value = **zp_tmp;
+						zval_copy_ctor(return_value);
+				}
 		}
 		zval_dtor(&z_ret);
 	}
@@ -549,7 +569,7 @@ ra_del_key(const char *key, int key_len, zval *z_from TSRMLS_DC) {
 	ra_remove_from_index(z_from, key, key_len TSRMLS_CC);
 
 	/* close transaction */
-	ra_index_exec(z_from, NULL TSRMLS_CC);
+	ra_index_exec(z_from, NULL, 0 TSRMLS_CC);
 }
 
 static zend_bool
@@ -815,7 +835,7 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 	}
 
 	/* close transaction */
-	ra_index_exec(z_to, NULL TSRMLS_CC);
+	ra_index_exec(z_to, NULL, 0 TSRMLS_CC);
 }
 
 /* callback with the current progress, with hostname and count */

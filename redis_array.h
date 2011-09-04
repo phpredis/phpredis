@@ -22,17 +22,21 @@ PHP_METHOD(RedisArray, del);
 PHP_METHOD(RedisArray, getOption);
 PHP_METHOD(RedisArray, setOption);
 
+PHP_METHOD(RedisArray, multi);
+PHP_METHOD(RedisArray, exec);
+
 
 typedef struct RedisArray_ {
 	
 	int count;
-	char **hosts;
-	zval **redis;
-	zend_bool index;
-	zval *z_fun;	/* key extractor */
-	zval *z_pure_cmds;	/* hash table */
+	char **hosts;			/* array of host:port strings */
+	zval **redis;			/* array of Redis instances */
+	zval *z_multi_exec;		/* Redis instance to be used in multi-exec */
+	zend_bool index;		/* use per-node index */
+	zend_bool auto_rehash; 	/* migrate keys on read operations */
+	zval *z_fun;			/* key extractor, callable */
+	zval *z_pure_cmds;		/* hash table */
 
-	int auto_rehash; /* migrate keys on read operations */
 	struct RedisArray_ *prev;
 } RedisArray;
 
