@@ -797,6 +797,8 @@ PHP_METHOD(RedisArray, mset)
 	}
 
 	/* cleanup */
+	efree(keys);
+	efree(key_lens);
 	efree(argv);
 	efree(pos);
 	efree(redis_instances);
