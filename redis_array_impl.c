@@ -274,7 +274,7 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call extractor function");
 		return NULL;
 	}
-	convert_to_string(ra->z_fun);
+	//convert_to_string(ra->z_fun);
 
 	/* call extraction function */
 	MAKE_STD_ZVAL(z_argv0);
@@ -288,7 +288,9 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 	}
 
 	*out_len = Z_STRLEN(z_ret);
-	out = estrndup(Z_STRVAL(z_ret), Z_STRLEN(z_ret));
+	out = emalloc(*out_len + 1);
+	out[*out_len] = 0;
+	memcpy(out, Z_STRVAL(z_ret), *out_len);
 
 	zval_dtor(&z_ret);
 	return out;
@@ -297,7 +299,7 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 static char *
 ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS_DC) {
 
-	char *start, *end;
+	char *start, *end, *out;
 	*out_len = key_len;
 
 	if(ra->z_fun)
@@ -313,7 +315,11 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS
 
 	/* found substring */
 	*out_len = end - start - 1;
-	return estrndup(start + 1, *out_len);
+	out = emalloc(*out_len + 1);
+	out[*out_len] = 0;
+	memcpy(out, start+1, *out_len);
+
+	return out;
 }
 
 zval *

@@ -3075,7 +3075,6 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTI
         zval **z_value_pp;
 		int val_free, key_free;
 		char *old_cmd;
-        zval *z_copy;
 
         type = zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx, 0, NULL);
         if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
@@ -3086,17 +3085,12 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTI
             continue;
         }
 
-        MAKE_STD_ZVAL(z_copy);
-        *z_copy = **z_value_pp;
-        zval_copy_ctor(z_copy);
-
-
-        val_free = redis_serialize(redis_sock, *z_value_pp, &val, &val_len TSRMLS_CC);
-		key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
-
         if(key_len > 0) {
             key_len--;
         }
+
+        val_free = redis_serialize(redis_sock, *z_value_pp, &val, &val_len TSRMLS_CC);
+		key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
 
         old_cmd = cmd;
         cmd_len = redis_cmd_format(&cmd,
@@ -3112,10 +3106,8 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTI
 		if(key_free) efree(key);
 
         efree(old_cmd);
-        zval_dtor(z_copy);
-        efree(z_copy);
-
     }
+
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
 	IF_ATOMIC() {
@@ -3127,7 +3119,6 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTI
 /* {{{ proto bool Redis::mset(array (key => value, ...))
  */
 PHP_METHOD(Redis, mset) {
-	RedisSock *redis_sock;
 	generic_mset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "*%d" _NL "$4" _NL "MSET" _NL, redis_boolean_response);
 }
 /* }}} */

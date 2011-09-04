@@ -676,11 +676,11 @@ PHP_METHOD(RedisArray, mget)
 			zval_copy_ctor(z_tmp);
 			add_index_zval(z_tmp_array, i, z_tmp);
 		}
-		zval_dtor(z_ret);
-		efree(z_ret);
+		//zval_dtor(z_ret);
+		//efree(z_ret);
 
-		zval_dtor(z_argarray);
-		efree(z_argarray);
+		//zval_dtor(z_argarray);
+		//efree(z_argarray);
 	}
 
 	/* copy temp array in the right order to return_value */
@@ -706,7 +706,7 @@ PHP_METHOD(RedisArray, mget)
 /* MSET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mset)
 {
-	zval *object, *z_keys, z_fun, *z_argarray, **data, *z_ret, **z_cur, *z_tmp;
+	zval *object, *z_keys, z_fun, *z_argarray, **data, z_ret, **z_cur, *z_tmp;
 	int i, j, n;
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
@@ -762,12 +762,12 @@ PHP_METHOD(RedisArray, mset)
 		key_lens[i] = key_len - 1;
 	}
 
-	/* prepare call */
-	ZVAL_STRING(&z_fun, "MSET", 0);
 
 	/* calls */
 	for(n = 0; n < ra->count; ++n) { /* for each node */
 
+		/* prepare call */
+		ZVAL_STRING(&z_fun, "MSET", 0);
 		redis_inst = ra->redis[n];
 
 		/* copy args */
@@ -780,20 +780,19 @@ PHP_METHOD(RedisArray, mset)
 			*z_tmp = *argv[i];
 			zval_copy_ctor(z_tmp);
 
-			//Z_ADDREF_P(argv[i]);
 			add_assoc_zval_ex(z_argarray, keys[i], key_lens[i] + 1, z_tmp); /* +1 to count the \0 here */
 		}
 
 		/* call */
-		MAKE_STD_ZVAL(z_ret);
 		call_user_function(&redis_ce->function_table, &ra->redis[n],
-				&z_fun, z_ret, 1, &z_argarray TSRMLS_CC);
+				&z_fun, &z_ret, 1, &z_argarray TSRMLS_CC);
 
-		zval_dtor(z_ret);
-		efree(z_ret);
+#if 0
+		//zval_dtor(&z_ret);
 
-		zval_dtor(z_argarray);
-		efree(z_argarray);
+		//zval_dtor(z_argarray);
+		//efree(z_argarray);
+#endif
 	}
 
 	/* cleanup */
@@ -803,6 +802,7 @@ PHP_METHOD(RedisArray, mset)
 	efree(pos);
 	efree(redis_instances);
 	efree(argc_each);
+
 	RETURN_TRUE;
 }
 

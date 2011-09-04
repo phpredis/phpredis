@@ -16,6 +16,7 @@ class Redis_Array_Test extends PHPUnit_TestCase
 {
 	private $strings;
 	public $ra = NULL;
+	private $data = NULL;
 
 	public function setUp() {
 
@@ -58,7 +59,6 @@ class Redis_Array_Test extends PHPUnit_TestCase
 		for($i = 0; $i < REDIS_ARRAY_DATA_SIZE; $i++) {
 			$k = rand().'_'.$commonString.'_'.rand();
 			$this->data[$k] = rand();
-		//	$this->ra->set($k, $this->data[$k]);
 		}
 		$this->ra->mset($this->data);
 	}
