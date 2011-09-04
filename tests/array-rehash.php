@@ -1,7 +1,50 @@
 <?php
 require_once 'PHPUnit.php';
 
-echo "Redis Array rehashing tests.\n\n";
+echo "Redis Array tests.\n\n";
+
+class Redis_Array_Test extends PHPUnit_TestCase
+{
+	private $strings;
+	public $ra = NULL;
+
+	public function setUp() {
+
+		// initialize strings.
+		$n = REDIS_ARRAY_DATA_SIZE;
+		$this->strings = array();
+		for($i = 0; $i < $n; $i++) {
+			$this->strings['key-'.$i] = 'val-'.$i;
+		}
+
+		global $newRing, $oldRing, $useIndex;
+		$this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex));
+	}
+
+	public function testMSet() {
+
+		// run mset
+		$this->assertTrue(TRUE === $this->ra->mset($this->strings));
+
+		// check each key individually using the array
+		foreach($this->strings as $k => $v) {
+			$this->assertTrue($v === $this->ra->get($k));
+		}
+
+		// check each key individually using a new connection
+		foreach($this->strings as $k => $v) {
+			list($host, $port) = split(':', $this->ra->_target($k));
+
+			$r = new Redis;
+			$r->connect($host, (int)$port);
+			$this->assertTrue($v === $r->get($k));
+		}
+	}
+
+	public function testMGet() {
+		$this->assertTrue(array_values($this->strings) === $this->ra->mget(array_keys($this->strings)));
+	}
+}
 
 class Redis_Rehashing_Test extends PHPUnit_TestCase
 {
@@ -16,10 +59,10 @@ class Redis_Rehashing_Test extends PHPUnit_TestCase
 	private $hashes;
 	private $zsets;
 
-	public function setUp()
-	{
+	public function setUp() {
+
 		// initialize strings.
-		$n = 1000;
+		$n = REDIS_ARRAY_DATA_SIZE;
 		$this->strings = array();
 		for($i = 0; $i < $n; $i++) {
 			$this->strings['key-'.$i] = 'val-'.$i;
@@ -49,10 +92,10 @@ class Redis_Rehashing_Test extends PHPUnit_TestCase
 			$this->zsets['zset-'.$i] = array($i, 'A', $i+1, 'B', $i+2, 'C', $i+3, 'D', $i+4, 'E');
 		}
 
-		global $newRing, $oldRing;
+		global $newRing, $oldRing, $useIndex;
 
 		// create array
-		$this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $this->useIndex));
+		$this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex));
 	}
 
 	public function testFlush() {
@@ -181,19 +224,19 @@ class Redis_Auto_Rehashing_Test extends PHPUnit_TestCase {
 	// data
 	private $strings;
 
-	public function setUp()
-	{
+	public function setUp() {
+
 		// initialize strings.
-		$n = 1000;
+		$n = REDIS_ARRAY_DATA_SIZE;
 		$this->strings = array();
 		for($i = 0; $i < $n; $i++) {
 			$this->strings['key-'.$i] = 'val-'.$i;
 		}
 
-		global $newRing, $oldRing;
+		global $newRing, $oldRing, $useIndex;
 
 		// create array
-		$this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => TRUE, 'autorehash' => TRUE));
+		$this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex, 'autorehash' => TRUE));
 	}
 
 	public function testDistribute() {
@@ -248,11 +291,11 @@ class Redis_Multi_Exec_Test extends PHPUnit_TestCase {
 
 	public $ra = NULL;
 
-	public function setUp()
-	{
-		global $newRing, $oldRing;
+	public function setUp() {
+
+		global $newRing, $oldRing, $useIndex;
 		// create array
-		$this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => FALSE));
+		$this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex));
 	}
 
 	public function testInit() {
@@ -349,11 +392,19 @@ function run_tests($className) {
 		$suite  = new PHPUnit_TestSuite($className);
 		$result = PHPUnit::run($suite);
 		echo $result->toString();
-		echo "\n";
 }
 
-run_tests('Redis_Rehashing_Test');
-run_tests('Redis_Auto_Rehashing_Test');
-run_tests('Redis_Multi_Exec_Test');
+define('REDIS_ARRAY_DATA_SIZE', 10);
+
+global $useIndex;
+foreach(array(true, false) as $useIndex) {
+
+	echo "\n".($useIndex?"WITH":"WITHOUT"). " per-node index:\n";
+
+	run_tests('Redis_Array_Test');
+	run_tests('Redis_Rehashing_Test');
+	run_tests('Redis_Auto_Rehashing_Test');
+	run_tests('Redis_Multi_Exec_Test');
+}
 
 ?>
