@@ -278,6 +278,7 @@ class Redis_Multi_Exec_Test extends PHPUnit_TestCase {
 
 	public function testMultiExec() {
 
+		// Joe gets a promotion
 		$newGroup = $this->ra->get('group:executives');
 		$newSalary = 4000;
 
@@ -291,6 +292,47 @@ class Redis_Multi_Exec_Test extends PHPUnit_TestCase {
 		// check that the group and salary have been changed
 		$this->assertTrue($this->ra->get('1_{employee:joe}_group') === $newGroup);
 		$this->assertTrue($this->ra->get('1_{employee:joe}_salary') == $newSalary);
+
+	}
+
+	public function testMultiExecMSet() {
+
+		global $newGroup, $newSalary;
+		$newGroup = 1;
+		$newSalary = 10000;
+
+		// test MSET, making Joe a top-level executive
+		$out = $this->ra->multi($this->ra->_target('{employee:joe}'))
+				->mset(array('1_{employee:joe}_group' => $newGroup, '1_{employee:joe}_salary' => $newSalary))
+				->exec();
+
+		$this->assertTrue($out[0] === TRUE);
+
+	}
+
+	public function testMultiExecMGet() {
+
+		global $newGroup, $newSalary;
+
+		// test MGET
+		$out = $this->ra->multi($this->ra->_target('{employee:joe}'))
+				->mget(array('1_{employee:joe}_group', '1_{employee:joe}_salary'))
+				->exec();
+
+		$this->assertTrue($out[0][0] == $newGroup);
+		$this->assertTrue($out[0][1] == $newSalary);
+	}
+
+	public function testMultiExecDel() {
+
+		// test DEL
+		$out = $this->ra->multi($this->ra->_target('{employee:joe}'))
+				->del('1_{employee:joe}_group', '1_{employee:joe}_salary')
+				->exec();
+
+		$this->assertTrue($out[0] === 2);
+		$this->assertTrue($this->ra->exists('1_{employee:joe}_group') === FALSE);
+		$this->assertTrue($this->ra->exists('1_{employee:joe}_salary') === FALSE);
 	}
 
 }

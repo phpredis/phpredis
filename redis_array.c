@@ -559,6 +559,29 @@ PHP_METHOD(RedisArray, setOption)
 	efree(z_args[0]);
 	efree(z_args[1]);
 }
+#define HANDLE_MULTI_EXEC(cmd) do {\
+	if (redis_array_get(getThis(), &ra TSRMLS_CC) >= 0 && ra->z_multi_exec) {\
+		int i, num_varargs;\
+		zval ***varargs = NULL;\
+		zval z_arg_array;\
+		if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O*",\
+								&object, redis_array_ce, &varargs, &num_varargs) == FAILURE) {\
+				RETURN_FALSE;\
+		}\
+		/* copy all args into a zval hash table */\
+		array_init(&z_arg_array);\
+		for(i = 0; i < num_varargs; ++i) {\
+				add_next_index_zval(&z_arg_array, *varargs[i]);\
+		}\
+		/* call */\
+		ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, sizeof(cmd)-1, &z_arg_array, NULL);\
+		zval_dtor(&z_arg_array);\
+		if(varargs) {\
+			efree(varargs);\
+		}\
+		return;\
+	}\
+}while(0)
 
 /* MGET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mget)
@@ -570,6 +593,9 @@ PHP_METHOD(RedisArray, mget)
 	HashTable *h_keys;
 	HashPosition pointer;
 	zval **redis_instances, *redis_inst, **argv;
+
+	/* Multi/exec support */
+	HANDLE_MULTI_EXEC("MGET");
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
 				&object, redis_array_ce, &z_keys) == FAILURE) {
@@ -691,6 +717,9 @@ PHP_METHOD(RedisArray, mset)
 	int key_len, type, *key_lens;
 	long idx;
 
+	/* Multi/exec support */
+	HANDLE_MULTI_EXEC("MSET");
+
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
 				&object, redis_array_ce, &z_keys) == FAILURE) {
 		RETURN_FALSE;
@@ -791,6 +820,9 @@ PHP_METHOD(RedisArray, del)
 	zval **redis_instances, *redis_inst, **argv;
 	long total = 0;
 	int free_zkeys = 0;
+
+	/* Multi/exec support */
+	HANDLE_MULTI_EXEC("DEL");
 
 	/* get all args in z_args */
 	z_args = emalloc(ZEND_NUM_ARGS() * sizeof(zval*));
