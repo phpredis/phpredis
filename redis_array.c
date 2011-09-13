@@ -892,6 +892,7 @@ PHP_METHOD(RedisArray, del)
 	/* calls */
 	for(n = 0; n < ra->count; ++n) { /* for each node */
 
+		int found = 0;
 		redis_inst = ra->redis[n];
 
 		/* copy args */
@@ -906,14 +907,32 @@ PHP_METHOD(RedisArray, del)
 			INIT_PZVAL(z_tmp);
 
 			add_next_index_zval(z_argarray, z_tmp);
+			found++;
+		}
+
+		if(!found) {	// don't run empty DELs
+			zval_dtor(z_argarray);
+			efree(z_argarray);
+			continue;
+		}
+
+		if(ra->index) { /* add MULTI */
+			ra_index_multi(redis_inst TSRMLS_CC);
 		}
 
 		/* call */
 		MAKE_STD_ZVAL(z_ret);
-		call_user_function(&redis_ce->function_table, &ra->redis[n],
+		call_user_function(&redis_ce->function_table, &redis_inst,
 				&z_fun, z_ret, 1, &z_argarray TSRMLS_CC);
 
-		total += Z_LVAL_P(z_ret);	/* increment total */
+		if(ra->index) {
+			ra_index_del(z_argarray, redis_inst TSRMLS_CC); /* use SREM to remove keys from node index */
+			ra_index_exec(redis_inst, z_tmp, 0 TSRMLS_CC); /* run EXEC */
+			total += Z_LVAL_P(z_tmp);	/* increment total from multi/exec block */
+		} else {
+			total += Z_LVAL_P(z_ret);	/* increment total from single command */
+		}
+
 		zval_dtor(z_ret);
 		efree(z_ret);
 

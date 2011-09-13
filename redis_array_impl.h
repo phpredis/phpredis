@@ -17,6 +17,7 @@ char * ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len);
 void ra_index_multi(zval *z_redis TSRMLS_DC);
 
 void ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC);
+void ra_index_del(zval *z_keys, zval *z_redis TSRMLS_DC);
 void ra_index_exec(zval *z_redis, zval *return_value, int keep_all TSRMLS_DC);
 zend_bool ra_is_write_cmd(RedisArray *ra, const char *cmd, int cmd_len);
 

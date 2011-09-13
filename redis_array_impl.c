@@ -387,6 +387,36 @@ ra_index_multi(zval *z_redis TSRMLS_DC) {
 }
 
 void
+ra_index_del(zval *z_keys, zval *z_redis TSRMLS_DC) {
+
+	int i, argc;
+	zval z_fun_srem, z_ret, **z_args;
+
+	/* alloc */
+	argc = 1 + zend_hash_num_elements(Z_ARRVAL_P(z_keys));
+	z_args = emalloc(argc * sizeof(zval*));
+
+	/* prepare first parameters */
+	ZVAL_STRINGL(&z_fun_srem, "SREM", 4, 0);
+	MAKE_STD_ZVAL(z_args[0]);
+	ZVAL_STRING(z_args[0], PHPREDIS_INDEX_NAME, 0);
+
+	/* prepare keys */
+	for(i = 0; i < argc - 1; ++i) {
+		zval **zpp;
+		zend_hash_quick_find(Z_ARRVAL_P(z_keys), NULL, 0, i, (void**)&zpp);
+		z_args[i+1] = *zpp;
+	}
+
+	/* run SREM */
+	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_srem, &z_ret, argc, z_args TSRMLS_CC);
+
+	/* don't dtor z_ret, since we're returning z_redis */
+	efree(z_args[0]); 	/* free index name zval */
+	efree(z_args);		/* free container */
+}
+
+void
 ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC) {
 
 	int i;
@@ -400,12 +430,10 @@ ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC) {
 	ZVAL_STRING(z_args[0], PHPREDIS_INDEX_NAME, 0);
 	ZVAL_STRINGL(z_args[1], key, key_len, 1);
 
-
 	/* run SADD */
 	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_sadd, &z_ret, 2, z_args TSRMLS_CC);
 
 	/* don't dtor z_ret, since we're returning z_redis */
-
 	efree(z_args[0]);
 	efree(z_args[1]);
 }
