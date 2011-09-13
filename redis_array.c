@@ -777,6 +777,7 @@ PHP_METHOD(RedisArray, mset)
 		redis_inst = ra->redis[n];
 
 		/* copy args */
+		int found = 0;
 		MAKE_STD_ZVAL(z_argarray);
 		array_init(z_argarray);
 		for(i = 0; i < argc; ++i) {
@@ -789,11 +790,28 @@ PHP_METHOD(RedisArray, mset)
 			INIT_PZVAL(z_tmp);
 
 			add_assoc_zval_ex(z_argarray, keys[i], key_lens[i] + 1, z_tmp); /* +1 to count the \0 here */
+			found++;
+		}
+
+		if(!found)
+		{
+			zval_dtor(z_argarray);
+			efree(z_argarray);
+			continue;				/* don't run empty MSETs */
+		}
+
+		if(ra->index) { /* add MULTI */
+			ra_index_multi(redis_inst TSRMLS_CC);
 		}
 
 		/* call */
 		call_user_function(&redis_ce->function_table, &ra->redis[n],
 				&z_fun, &z_ret, 1, &z_argarray TSRMLS_CC);
+
+		if(ra->index) {
+			ra_index_keys(z_argarray, redis_inst TSRMLS_CC); /* use SADD to add keys to node index */
+			ra_index_exec(redis_inst, NULL, 0 TSRMLS_CC); /* run EXEC */
+		}
 
 		zval_dtor(&z_ret);
 

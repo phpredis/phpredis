@@ -386,18 +386,18 @@ ra_index_multi(zval *z_redis TSRMLS_DC) {
 	//zval_dtor(&z_ret);
 }
 
-void
-ra_index_del(zval *z_keys, zval *z_redis TSRMLS_DC) {
+static void
+ra_index_change_keys(const char *cmd, zval *z_keys, zval *z_redis TSRMLS_DC) {
 
 	int i, argc;
-	zval z_fun_srem, z_ret, **z_args;
+	zval z_fun, z_ret, **z_args;
 
 	/* alloc */
 	argc = 1 + zend_hash_num_elements(Z_ARRVAL_P(z_keys));
 	z_args = emalloc(argc * sizeof(zval*));
 
 	/* prepare first parameters */
-	ZVAL_STRINGL(&z_fun_srem, "SREM", 4, 0);
+	ZVAL_STRING(&z_fun, cmd, 0);
 	MAKE_STD_ZVAL(z_args[0]);
 	ZVAL_STRING(z_args[0], PHPREDIS_INDEX_NAME, 0);
 
@@ -408,12 +408,58 @@ ra_index_del(zval *z_keys, zval *z_redis TSRMLS_DC) {
 		z_args[i+1] = *zpp;
 	}
 
-	/* run SREM */
-	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_srem, &z_ret, argc, z_args TSRMLS_CC);
+	/* run cmd */
+	call_user_function(&redis_ce->function_table, &z_redis, &z_fun, &z_ret, argc, z_args TSRMLS_CC);
 
 	/* don't dtor z_ret, since we're returning z_redis */
 	efree(z_args[0]); 	/* free index name zval */
 	efree(z_args);		/* free container */
+}
+
+void
+ra_index_del(zval *z_keys, zval *z_redis TSRMLS_DC) {
+	ra_index_change_keys("SREM", z_keys, z_redis TSRMLS_CC);
+}
+
+void
+ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
+
+	/* Initialize key array */
+	zval *z_keys, **z_entry_pp;
+	MAKE_STD_ZVAL(z_keys);
+	array_init_size(z_keys, zend_hash_num_elements(Z_ARRVAL_P(z_pairs)));
+	HashPosition pos;
+
+	/* Go through input array and add values to the key array */
+	zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(z_pairs), &pos);
+	while (zend_hash_get_current_data_ex(Z_ARRVAL_P(z_pairs), (void **)&z_entry_pp, &pos) == SUCCESS) {
+			char *key;
+			int key_len;
+			long num_key;
+			zval *z_new;
+			MAKE_STD_ZVAL(z_new);
+
+			switch (zend_hash_get_current_key_ex(Z_ARRVAL_P(z_pairs), &key, &key_len, &num_key, 1, &pos)) {
+				case HASH_KEY_IS_STRING:
+					ZVAL_STRINGL(z_new, key, key_len - 1, 0);
+					zend_hash_next_index_insert(Z_ARRVAL_P(z_keys), &z_new, sizeof(zval *), NULL);
+					break;
+
+				case HASH_KEY_IS_LONG:
+					Z_TYPE_P(z_new) = IS_LONG;
+					Z_LVAL_P(z_new) = num_key;
+					zend_hash_next_index_insert(Z_ARRVAL_P(z_keys), &z_new, sizeof(zval *), NULL);
+					break;
+			}
+			zend_hash_move_forward_ex(Z_ARRVAL_P(z_pairs), &pos);
+	}
+
+	/* add keys to index */
+	ra_index_change_keys("SADD", z_keys, z_redis TSRMLS_CC);
+
+	/* cleanup */
+	zval_dtor(z_keys);
+	efree(z_keys);
 }
 
 void
