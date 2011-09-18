@@ -968,7 +968,7 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, R
 				efree(response);
 				add_assoc_zval_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), z);
 			} else {
-				add_assoc_stringl_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), response, response_len, 1);
+				add_assoc_stringl_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), response, response_len, 0);
 			}
 		} else {
 			add_assoc_bool_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), 0);
@@ -982,7 +982,9 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, R
         add_next_index_zval(z_tab, z_multi_result);
     } else {
 		*return_value = *z_multi_result;
-		//zval_copy_ctor(return_value);
+		zval_copy_ctor(return_value);
+		INIT_PZVAL(return_value);
+		zval_dtor(z_multi_result);
 		efree(z_multi_result);
 	}
     return 0;
