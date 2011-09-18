@@ -442,7 +442,7 @@ function run_tests($className) {
 		echo $result->toString();
 }
 
-define('REDIS_ARRAY_DATA_SIZE', 10000);
+define('REDIS_ARRAY_DATA_SIZE', 1000);
 
 global $useIndex;
 foreach(array(true, false) as $useIndex) {
