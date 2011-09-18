@@ -68,7 +68,7 @@ $ra->set("user2:name", "Mike");
 ## Key hashing
 By default and in order to be compatible with other libraries, phpredis will try to find a substring enclosed in curly braces within the key name, and use it to distribute the data.
 
-For instance, the keys “{user:1}:name” and “{user:1}:email” will be stored on the same server as only “user:1” will be hashed. You can provide a custom function name in your redis array with the "function" option; this function will be called every time a key needs to be hashed.
+For instance, the keys “{user:1}:name” and “{user:1}:email” will be stored on the same server as only “user:1” will be hashed. You can provide a custom function name in your redis array with the "function" option; this function will be called every time a key needs to be hashed. It should take a string and return a string.
 
 
 ## Migrating keys
