@@ -212,6 +212,14 @@ class Redis_Test extends PHPUnit_TestCase
 	$this->assertTrue($this->redis->lGetRange('key0', 0, -1) === array());
 	$this->assertTrue($this->redis->lGetRange('key1', 0, -1) === array('val1', 'val0'));
 
+	// variadic
+	$this->redis->delete('key0');
+	$this->assertTrue(3 === $this->redis->lPush('key0', 'val0', 'val1', 'val2'));
+	$this->assertTrue(array('val2', 'val1', 'val0') === $this->redis->lrange('key0', 0, -1));
+
+	$this->redis->delete('key0');
+	$this->assertTrue(3 === $this->redis->rPush('key0', 'val0', 'val1', 'val2'));
+	$this->assertTrue(array('val0', 'val1', 'val2') === $this->redis->lrange('key0', 0, -1));
     }
 
     public function testRenameNx() {
@@ -893,13 +901,13 @@ class Redis_Test extends PHPUnit_TestCase
     {
         $this->redis->delete('set');
 
-	$this->assertEquals(TRUE, $this->redis->sAdd('set', 'val'));
-	$this->assertEquals(FALSE, $this->redis->sAdd('set', 'val'));
+	$this->assertEquals(1, $this->redis->sAdd('set', 'val'));
+	$this->assertEquals(0, $this->redis->sAdd('set', 'val'));
 
         $this->assertTrue($this->redis->sContains('set', 'val'));
         $this->assertFalse($this->redis->sContains('set', 'val2'));
 
-	$this->assertEquals(TRUE, $this->redis->sAdd('set', 'val2'));
+	$this->assertEquals(1, $this->redis->sAdd('set', 'val2'));
 
         $this->assertTrue($this->redis->sContains('set', 'val2'));
     }
@@ -907,11 +915,11 @@ class Redis_Test extends PHPUnit_TestCase
     {
         $this->redis->delete('set');
 
-	$this->assertEquals(TRUE, $this->redis->sAdd('set', 'val'));
+	$this->assertEquals(1, $this->redis->sAdd('set', 'val'));
 
         $this->assertEquals(1, $this->redis->sSize('set'));
 
-	$this->assertEquals(TRUE, $this->redis->sAdd('set', 'val2'));
+	$this->assertEquals(1, $this->redis->sAdd('set', 'val2'));
 
         $this->assertEquals(2, $this->redis->sSize('set'));
     }
@@ -1681,10 +1689,9 @@ class Redis_Test extends PHPUnit_TestCase
 	$this->assertTrue(0 === $this->redis->zUnion('keyU', array('X', 'Y')));
 	$this->assertTrue(array() === $this->redis->zRange('keyU', 0, -1));
 
-	// !Exist U Exist → 0
+	// !Exist U Exist → copy of existing zset.
 	$this->redis->delete('keyU', 'X');
-	var_dump($this->redis->zUnion('keyU', array('key1', 'X')));
-	$this->assertTrue(0 === $this->redis->zUnion('keyU', array('key1', 'X')));
+	$this->assertTrue(2 === $this->redis->zUnion('keyU', array('key1', 'X')));
 
 	// test weighted zUnion
 	$this->redis->delete('keyZ');
@@ -1796,12 +1803,13 @@ class Redis_Test extends PHPUnit_TestCase
 	$this->assertTrue(FALSE === $this->redis->hGet('key', 'c'));	// unknownkey
 
 	// hDel
-	$this->assertTrue(TRUE === $this->redis->hDel('h', 'a')); // TRUE on success
-	$this->assertTrue(FALSE === $this->redis->hDel('h', 'a')); // FALSE on failure
+	$this->assertTrue(1 === $this->redis->hDel('h', 'a')); // 1 on success
+	$this->assertTrue(0 === $this->redis->hDel('h', 'a')); // 0 on failure
 
 	$this->redis->delete('h');
 	$this->redis->hSet('h', 'x', 'a');
 	$this->redis->hSet('h', 'y', 'b');
+	$this->assertTrue(2 === $this->redis->hDel('h', 'x', 'y')); // variadic
 
 	// hsetnx
 	$this->redis->delete('h');
@@ -2361,16 +2369,16 @@ class Redis_Test extends PHPUnit_TestCase
 	    $i = 0;
 	    $this->assertTrue(is_array($ret));
 	    $this->assertTrue(is_long($ret[$i]) && $ret[$i] >= 0 && $ret[$i] <= 5); $i++; // deleted at most 5 values.
-	    $this->assertTrue($ret[$i++] === TRUE); // skey1 now has 1 element.
-	    $this->assertTrue($ret[$i++] === TRUE); // skey1 now has 2 elements.
-	    $this->assertTrue($ret[$i++] === TRUE); // skey1 now has 3 elements.
-	    $this->assertTrue($ret[$i++] === TRUE); // skey1 now has 4 elements.
+	    $this->assertTrue($ret[$i++] === 1); // skey1 now has 1 element.
+	    $this->assertTrue($ret[$i++] === 1); // skey1 now has 2 elements.
+	    $this->assertTrue($ret[$i++] === 1); // skey1 now has 3 elements.
+	    $this->assertTrue($ret[$i++] === 1); // skey1 now has 4 elements.
 
-	    $this->assertTrue($ret[$i++] === TRUE); // skey2 now has 1 element.
-	    $this->assertTrue($ret[$i++] === TRUE); // skey2 now has 2 elements.
+	    $this->assertTrue($ret[$i++] === 1); // skey2 now has 1 element.
+	    $this->assertTrue($ret[$i++] === 1); // skey2 now has 2 elements.
 
 	    $this->assertTrue($ret[$i++] === 4);
-	    $this->assertTrue($ret[$i++] === TRUE); // we did remove that value.
+	    $this->assertTrue($ret[$i++] === 1); // we did remove that value.
 	    $this->assertTrue($ret[$i++] === 3); // now 3 values only.
 	    $this->assertTrue($ret[$i++] === TRUE); // the move did succeed.
 	    $this->assertTrue($ret[$i++] === 3); // sKey2 now has 3 values.
@@ -2508,8 +2516,8 @@ class Redis_Test extends PHPUnit_TestCase
 	    $this->assertTrue($ret[$i++] === array('key1' => 'value1', 'key2' => 'value2', 'key3' => 'value3')); // hmget, 3 elements
 	    $this->assertTrue($ret[$i++] === 'value1'); // hget
 	    $this->assertTrue($ret[$i++] === 3); // hlen
-	    $this->assertTrue($ret[$i++] === TRUE); // hdel succeeded
-	    $this->assertTrue($ret[$i++] === FALSE); // hdel failed
+	    $this->assertTrue($ret[$i++] === 1); // hdel succeeded
+	    $this->assertTrue($ret[$i++] === 0); // hdel failed
 	    $this->assertTrue($ret[$i++] === FALSE); // hexists didn't find the deleted key
 	    $this->assertTrue($ret[$i] === array('key1', 'key3') || $ret[$i] === array('key3', 'key1')); $i++; // hkeys
 	    $this->assertTrue($ret[$i] === array('value1', 'value3') || $ret[$i] === array('value3', 'value1')); $i++; // hvals
@@ -2603,14 +2611,25 @@ class Redis_Test extends PHPUnit_TestCase
 	    $this->redis->delete('key');
 	    $s = array(1,'a', array(1,2,3), array('k' => 'v'));
 
-	    $this->assertTrue(TRUE === $this->redis->sAdd('key', $s[0]));
-	    $this->assertTrue(TRUE === $this->redis->sAdd('key', $s[1]));
-	    $this->assertTrue(TRUE === $this->redis->sAdd('key', $s[2]));
-	    $this->assertTrue(TRUE === $this->redis->sAdd('key', $s[3]));
+	    $this->assertTrue(1 === $this->redis->sAdd('key', $s[0]));
+	    $this->assertTrue(1 === $this->redis->sAdd('key', $s[1]));
+	    $this->assertTrue(1 === $this->redis->sAdd('key', $s[2]));
+	    $this->assertTrue(1 === $this->redis->sAdd('key', $s[3]));
+
+	    // variadic sAdd
+	    $this->redis->delete('k');
+	    $this->assertTrue(3 === $this->redis->sAdd('k', 'a', 'b', 'c'));
+	    $this->assertTrue(1 === $this->redis->sAdd('k', 'a', 'b', 'c', 'd'));
 
 	    // sRemove
-	    $this->assertTrue(TRUE === $this->redis->sRemove('key', $s[3]));
-	    $this->assertTrue(FALSE === $this->redis->sRemove('key', $s[3]));
+	    $this->assertTrue(1 === $this->redis->sRemove('key', $s[3]));
+	    $this->assertTrue(0 === $this->redis->sRemove('key', $s[3]));
+	    // variadic
+	    $this->redis->delete('k');
+	    $this->redis->sAdd('k', 'a', 'b', 'c', 'd');
+	    $this->assertTrue(2 === $this->redis->sRem('k', 'a', 'd'));
+	    $this->assertTrue(2 === $this->redis->sRem('k', 'b', 'c', 'e'));
+	    $this->assertTrue(FALSE === $this->redis->exists('k'));
 
 	    // sContains
 	    $this->assertTrue(TRUE === $this->redis->sContains('key', $s[0]));
@@ -2641,6 +2660,14 @@ class Redis_Test extends PHPUnit_TestCase
 	    $this->assertTrue(1 === $this->redis->zDelete('key', $z[3]));
 	    $this->assertTrue(0 === $this->redis->zDelete('key', $z[3]));
 	    unset($z[3]);
+	    // variadic
+	    $this->redis->delete('k');
+	    $this->redis->zAdd('k', 0, 'a');
+	    $this->redis->zAdd('k', 1, 'b');
+	    $this->redis->zAdd('k', 2, 'c');
+	    $this->assertTrue(2 === $this->redis->zDelete('k', 'a', 'c'));
+	    $this->assertTrue(1.0 === $this->redis->zScore('k', 'b'));
+	    $this->assertTrue($this->redis->zRange('k', 0, -1, true) == array('b' => 1.0));
 
 	    // zRange
 	    $this->assertTrue($z === $this->redis->zRange('key', 0, -1));
