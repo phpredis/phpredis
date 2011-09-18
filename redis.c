@@ -4321,10 +4321,8 @@ PHP_METHOD(Redis, hMget) {
         RETURN_FALSE;
     }
 
-    z_keys = emalloc(nb_fields * sizeof(zval *));
-    for(i = 0; i < nb_fields; ++i) {
-            z_keys[i] = NULL;
-    }
+    z_keys = ecalloc(nb_fields, sizeof(zval *));
+
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
 
     cmd_len = redis_cmd_format(&cmd,
@@ -4361,8 +4359,8 @@ PHP_METHOD(Redis, hMget) {
                 /* save context */
                 MAKE_STD_ZVAL(z_keys[i]);
                 *z_keys[i] = **data;
-                convert_to_string(z_keys[i]);
                 zval_copy_ctor(z_keys[i]);
+                convert_to_string(z_keys[i]);
 
                 i++;
             }
