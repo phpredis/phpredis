@@ -32,6 +32,7 @@
 #include "redis_array_impl.h"
 
 extern zend_class_entry *redis_ce;
+zend_class_entry *redis_array_ce;
 
 ZEND_BEGIN_ARG_INFO_EX(__redis_array_call_args, 0, 0, 2)
 	ZEND_ARG_INFO(0, function_name)

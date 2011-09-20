@@ -50,6 +50,7 @@ extern int le_redis_array;
 extern ps_module ps_mod_redis;
 #endif
 
+extern zend_class_entry *redis_array_ce;
 zend_class_entry *redis_ce;
 zend_class_entry *redis_exception_ce;
 zend_class_entry *spl_ce_RuntimeException = NULL;
