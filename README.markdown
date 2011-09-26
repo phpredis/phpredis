@@ -690,6 +690,9 @@ $redis->lRange('key1', 0, -1); /* array('A', 'B') */
 ## lRem, lRemove
 ##### *Description*
 Removes the first `count` occurences of the value element from the list. If count is zero, all the matching elements are removed. If count is negative, elements are removed from tail to head.
+
+**Note**: The argument order is not the same as in the Redis documentation. This difference is kept for compatibility reasons.
+
 ##### *Parameters*
 *key*  
 *value*  
