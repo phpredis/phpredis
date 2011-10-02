@@ -1591,19 +1591,26 @@ class Redis_Test extends PHPUnit_TestCase
 	$this->assertTrue(1 === $this->redis->zAdd('key', 2, 'val2'));
 	$this->assertTrue(1 === $this->redis->zAdd('key', 1, 'val1'));
 	$this->assertTrue(1 === $this->redis->zAdd('key', 3, 'val3'));
+	$this->assertTrue(FALSE === $this->redis->zAdd('key'));	// min number of parameters
+	$this->assertTrue(FALSE === $this->redis->zAdd(42, 123, 'aa'));	// string key
+	$this->assertTrue(2 === $this->redis->zAdd('key', 4, 'val4', 5, 'val5')); // multiple parameters
 
-	$this->assertTrue(array('val0', 'val1', 'val2', 'val3') === $this->redis->zRange('key', 0, -1));
+	$this->assertTrue(array('val0', 'val1', 'val2', 'val3', 'val4', 'val5') === $this->redis->zRange('key', 0, -1));
 
 	// withscores
 	$ret = $this->redis->zRange('key', 0, -1, true);
-	$this->assertTrue(count($ret) == 4);
+	$this->assertTrue(count($ret) == 6);
 	$this->assertTrue($ret['val0'] == 0);
 	$this->assertTrue($ret['val1'] == 1);
 	$this->assertTrue($ret['val2'] == 2);
 	$this->assertTrue($ret['val3'] == 3);
+	$this->assertTrue($ret['val4'] == 4);
+	$this->assertTrue($ret['val5'] == 5);
 
 	$this->assertTrue(0 === $this->redis->zDelete('key', 'valX'));
 	$this->assertTrue(1 === $this->redis->zDelete('key', 'val3'));
+	$this->assertTrue(1 === $this->redis->zDelete('key', 'val4'));
+	$this->assertTrue(1 === $this->redis->zDelete('key', 'val5'));
 
 	$this->assertTrue(array('val0', 'val1', 'val2') === $this->redis->zRange('key', 0, -1));
 
