@@ -3219,29 +3219,35 @@ PHP_METHOD(Redis, zAdd) {
 	char *dbl_str;
 	int dbl_len;
 
-	zval ***args;
-	int argc, i;
+	zval **z_args;
+	int argc = ZEND_NUM_ARGS(), i;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os*",
-                                     &object, redis_ce, &key, &key_len, &args, &argc) == FAILURE) {
+	/* get redis socket */
+    if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC) < 0) {
         RETURN_FALSE;
     }
 
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
-        RETURN_FALSE;
+    z_args = emalloc(argc * sizeof(zval*));
+    if(zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
+        efree(z_args);
+		RETURN_FALSE;
     }
 
-	/* need (score, value, score, value...) */
-    if (argc % 2 != 0) {
-        RETURN_FALSE;
-    }
+	/* need key, score, value, [score, value...] */
+	if(argc < 3 || Z_TYPE_P(z_args[0]) != IS_STRING || (argc-1) % 2 != 0) {
+		efree(z_args);
+		RETURN_FALSE;
+	}
 
+	/* possibly serialize key */
+	key = Z_STRVAL_P(z_args[0]);
+	key_len = Z_STRLEN_P(z_args[0]);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
 
 	/* start building the command */
     smart_str buf = {0};
 	smart_str_appendc(&buf, '*');
-	smart_str_append_long(&buf, argc + 2); /* +1 for command and +1 for key */
+	smart_str_append_long(&buf, argc + 1); /* +1 for ZADD command */
 	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
 
 	/* add command name */
@@ -3258,12 +3264,12 @@ PHP_METHOD(Redis, zAdd) {
 	smart_str_appendl(&buf, key, key_len);
 	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
 
-	for(i = 0; i < argc; i +=2) {
-		convert_to_double(*args[i]); // convert score to double
-		val_free = redis_serialize(redis_sock, *args[i+1], &val, &val_len TSRMLS_CC); // possibly serialize value.
+	for(i = 1; i < argc; i +=2) {
+		convert_to_double(z_args[i]); // convert score to double
+		val_free = redis_serialize(redis_sock, z_args[i+1], &val, &val_len TSRMLS_CC); // possibly serialize value.
 
 		/* add score */
-		score = Z_DVAL_PP(args[i]);
+		score = Z_DVAL_P(z_args[i]);
 		dbl_str = _php_math_number_format(score, 8, '.', '\x00');
 		dbl_len = strlen(dbl_str);
 		smart_str_appendc(&buf, '$');
@@ -3289,16 +3295,14 @@ PHP_METHOD(Redis, zAdd) {
 	cmd_len = buf.len;
     if(key_free) efree(key);
 
-	if(args) {
-		efree(args);
-	}
+	/* cleanup */
+	efree(z_args);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
 	REDIS_PROCESS_RESPONSE(redis_long_response);
-
 }
 /* }}} */
 /* {{{ proto array Redis::zRange(string key, int start , int end, bool withscores = FALSE)
