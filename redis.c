@@ -496,13 +496,6 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 
 	if (redis_sock_server_open(redis_sock, 1 TSRMLS_CC) < 0) {
 		redis_free_socket(redis_sock);
-		zend_throw_exception_ex(
-				redis_exception_ce,
-				0 TSRMLS_CC,
-				"Can't connect to %s:%d",
-				host,
-				port
-				);
 		return FAILURE;
 	}
 
