@@ -2038,14 +2038,19 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 
 				redis_serialize(redis_sock, *z_value_pp, &keys[j], &keys_len[j] TSRMLS_CC);
 
-			} else if(Z_TYPE_PP(z_value_pp) == IS_STRING) {
+			} else {
+
+				/* only accept strings */
+				if(Z_TYPE_PP(z_value_pp) != IS_STRING) {
+					php_printf("Convert to string\n");
+					convert_to_string(*z_value_pp);
+				}
+
                 /* get current value */
                 keys[j] = Z_STRVAL_PP(z_value_pp);
                 keys_len[j] = Z_STRLEN_PP(z_value_pp);
 
 				redis_key_prefix(redis_sock, &keys[j], &keys_len[j] TSRMLS_CC); /* add optional prefix */
-            } else {
-				continue;
 			}
 
             cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; /* $ + size + NL + string + NL */
@@ -2073,14 +2078,16 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 
 				redis_serialize(redis_sock, z_args[i], &keys[j], &keys_len[j] TSRMLS_CC);
 
-			} else if(Z_TYPE_P(z_args[i]) == IS_STRING) {
+			} else {
+				
+				if(Z_TYPE_P(z_args[i]) != IS_STRING) {
+					convert_to_string(z_args[i]);
+				}
+
        	        keys[j] = Z_STRVAL_P(z_args[i]);
            	    keys_len[j] = Z_STRLEN_P(z_args[i]);
 
 				redis_key_prefix(redis_sock, &keys[j], &keys_len[j] TSRMLS_CC); /* add optional prefix  TSRMLS_CC*/
-
-       	    } else {
-				continue;
 			}
 
             cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; /* $ + size + NL + string + NL */
@@ -2132,7 +2139,10 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     if(z_args) efree(z_args);
 	
 	object = getThis();
-	//php_printf("cmd=[%s]\n", cmd);
+	/*
+	cmd[cmd_len] = 0;
+	php_printf("cmd=[%s]\n", cmd);
+	*/
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
     return 0;

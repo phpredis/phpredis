@@ -475,6 +475,11 @@ class Redis_Test extends PHPUnit_TestCase
 	$this->redis->sAdd('keySet', 'val1');
 	$this->assertEquals(Redis::REDIS_SET, $this->redis->type('keySet'));
 
+    // sadd with numeric key
+	$this->redis->delete(123);
+	$this->assertTrue(1 === $this->redis->sAdd(123, 'val0'));
+	$this->assertTrue(array('val0') === $this->redis->sMembers(123));
+
 	// zset
 	$this->redis->delete('keyZSet');
 	$this->redis->zAdd('keyZSet', 0, 'val0');
@@ -1591,7 +1596,6 @@ class Redis_Test extends PHPUnit_TestCase
 	$this->assertTrue(1 === $this->redis->zAdd('key', 2, 'val2'));
 	$this->assertTrue(1 === $this->redis->zAdd('key', 1, 'val1'));
 	$this->assertTrue(1 === $this->redis->zAdd('key', 3, 'val3'));
-	$this->assertTrue(FALSE === $this->redis->zAdd('key'));	// min number of parameters
 	$this->assertTrue(FALSE === $this->redis->zAdd(42, 123, 'aa'));	// string key
 	$this->assertTrue(2 === $this->redis->zAdd('key', 4, 'val4', 5, 'val5')); // multiple parameters
 
