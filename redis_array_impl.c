@@ -427,7 +427,11 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
 	/* Initialize key array */
 	zval *z_keys, **z_entry_pp;
 	MAKE_STD_ZVAL(z_keys);
+#if PHP_VERSION_ID > 50300
 	array_init_size(z_keys, zend_hash_num_elements(Z_ARRVAL_P(z_pairs)));
+#else
+	array_init(z_keys);
+#endif
 	HashPosition pos;
 
 	/* Go through input array and add values to the key array */
