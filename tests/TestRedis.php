@@ -1,13 +1,16 @@
 <?php
-require_once 'PHPUnit.php';
+
+// phpunit is such a pain to install, we're going with pure-PHP here.
 
 echo "Note: these tests might take up to a minute. Don't worry :-)\n";
 
-class Redis_Test extends PHPUnit_TestCase
+class Redis_Test
 {
 	const HOST = '127.0.0.1';
 	const PORT = 6379;
 	const AUTH = NULL; //replace with a string to use Redis authentication
+
+	public static $errors = array();
 
     /**
      * @var Redis
@@ -18,6 +21,31 @@ class Redis_Test extends PHPUnit_TestCase
     {
 	$this->redis = $this->newInstance();
     }
+
+	private function assertFalse($bool) {
+		$this->assertTrue(!$bool);
+	}
+
+	private function assertTrue($bool) {
+		if($bool)
+			return;
+
+		$bt = debug_backtrace(false);
+		$count = count($bt);
+		self::$errors []= sprintf("Assertion failed: %s:%d (%s)\n",
+			$bt[$count - 2]["file"], $bt[$count - 3]["line"], $bt[$count - 1]["function"]);
+	}
+
+	private function assertEquals($a, $b) {
+		if($a === $b)
+			return;
+
+		$bt = debug_backtrace(false);
+		$count = count($bt);
+		self::$errors []= sprintf("Assertion failed (%s !== %s): %s:%d (%s)\n",
+			print_r($a, true), print_r($b, true),
+			$bt[$count - 2]["file"], $bt[$count - 3]["line"], $bt[$count - 1]["function"]);
+	}
 
     private function newInstance() {
 	$r = new Redis();
@@ -333,22 +361,22 @@ class Redis_Test extends PHPUnit_TestCase
         $this->redis->set('key', 0);
 
         $this->redis->incr('key');
-	$this->assertEquals(1, $this->redis->get('key'));
+	$this->assertEquals(1, (int)$this->redis->get('key'));
 
         $this->redis->incr('key');
-	$this->assertEquals(2, $this->redis->get('key'));
+	$this->assertEquals(2, (int)$this->redis->get('key'));
 
         $this->redis->incr('key', 3);
-	$this->assertEquals(5, $this->redis->get('key'));
+	$this->assertEquals(5, (int)$this->redis->get('key'));
 
 	$this->redis->incrBy('key', 3);
-	$this->assertEquals(8, $this->redis->get('key'));
+	$this->assertEquals(8, (int)$this->redis->get('key'));
 
 	$this->redis->incrBy('key', 1);
-	$this->assertEquals(9, $this->redis->get('key'));
+	$this->assertEquals(9, (int)$this->redis->get('key'));
 
 	$this->redis->incrBy('key', -1);
-	$this->assertEquals(8, $this->redis->get('key'));
+	$this->assertEquals(8, (int)$this->redis->get('key'));
 
 	$this->redis->delete('key');
 
@@ -367,25 +395,25 @@ class Redis_Test extends PHPUnit_TestCase
         $this->redis->set('key', 5);
 
         $this->redis->decr('key');
-	$this->assertEquals(4, $this->redis->get('key'));
+	$this->assertEquals(4, (int)$this->redis->get('key'));
 
         $this->redis->decr('key');
-	$this->assertEquals(3, $this->redis->get('key'));
+	$this->assertEquals(3, (int)$this->redis->get('key'));
 
         $this->redis->decr('key', 2);
-	$this->assertEquals(1, $this->redis->get('key'));
+	$this->assertEquals(1, (int)$this->redis->get('key'));
 
 	$this->redis->decr('key', 2);
-	$this->assertEquals(-1, $this->redis->get('key'));
+	$this->assertEquals(-1, (int)$this->redis->get('key'));
 
 	$this->redis->decrBy('key', 2);
-	$this->assertEquals(-3, $this->redis->get('key'));
+	$this->assertEquals(-3, (int)$this->redis->get('key'));
 
 	$this->redis->decrBy('key', 1);
-	$this->assertEquals(-4, $this->redis->get('key'));
+	$this->assertEquals(-4, (int)$this->redis->get('key'));
 
 	$this->redis->decr('key', -10);
-	$this->assertEquals(6, $this->redis->get('key'));
+	$this->assertEquals(6, (int)$this->redis->get('key'));
     }
 
     public function testExists()
@@ -2766,16 +2794,42 @@ class Redis_Test extends PHPUnit_TestCase
 	    // keys
 	    $this->assertTrue(is_array($this->redis->keys('*')));
 
+		// issue #62, hgetall
+		$this->redis->del('hash1');
+		$this->redis->hSet('hash1','data', 'test 1');
+		$this->redis->hSet('hash1','session_id', 'test 2');
+
+		$data = $this->redis->hGetAll('hash1');
+		$this->assertTrue($data['data'] === 'test 1');
+		$this->assertTrue($data['session_id'] === 'test 2');
+
 	    // revert
 	    $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE) === TRUE); 	// set ok
 	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE);		// get ok
     }
 }
 
-$suite  = new PHPUnit_TestSuite("Redis_Test");
-$result = PHPUnit::run($suite);
+$rc = new ReflectionClass("Redis_Test");
+$methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
 
-echo $result->toString();
+foreach($methods as $m) {
 
+	$name = $m->name;
+	if(substr($name, 0, 4) !== 'test')
+		continue;
 
+	$count = count(Redis_Test::$errors);
+	$rt = new Redis_Test;
+	$rt->setUp();
+	$rt->$name();
+	echo ($count === count(Redis_Test::$errors)) ? "." : "F";
+}
+echo "\n";
+
+if(empty(Redis_Test::$errors)) {
+	echo "All tests passed.\n";
+	exit(0);
+}
+
+echo implode('', Redis_Test::$errors);
 ?>

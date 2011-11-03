@@ -14,6 +14,9 @@
 #include "library.h"
 #include <ext/standard/php_math.h>
 
+#define UNSERIALIZE_ONLY_VALUES 0
+#define UNSERIALIZE_ALL 1
+
 extern zend_class_entry *redis_ce;
 extern zend_class_entry *redis_exception_ce;
 extern zend_class_entry *spl_ce_RuntimeException;
@@ -82,7 +85,7 @@ PHPAPI zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, 
     array_init(z_tab);
 
     redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    redis_sock, z_tab, numElems, 1);
+                    redis_sock, z_tab, numElems, 1, UNSERIALIZE_ALL);
 	return z_tab;
 }
 
@@ -556,7 +559,7 @@ PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PA
     array_init(z_multi_result); /* pre-allocate array for multi's results. */
 
     redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    redis_sock, z_multi_result, numElems, 1);
+                    redis_sock, z_multi_result, numElems, 1, flag ? UNSERIALIZE_ALL : UNSERIALIZE_ONLY_VALUES);
 
     array_zip_values_and_scores(redis_sock, z_multi_result, 0 TSRMLS_CC);
 
@@ -855,7 +858,7 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
     array_init(z_multi_result); /* pre-allocate array for multi's results. */
 
     redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    redis_sock, z_multi_result, numElems, 1);
+                    redis_sock, z_multi_result, numElems, 1, UNSERIALIZE_ALL);
 
     IF_MULTI_OR_PIPELINE() {
         add_next_index_zval(z_tab, z_multi_result);
@@ -896,7 +899,7 @@ PHPAPI int redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, Red
     array_init(z_multi_result); /* pre-allocate array for multi's results. */
 
     redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    redis_sock, z_multi_result, numElems, 0);
+                    redis_sock, z_multi_result, numElems, 0, UNSERIALIZE_ALL);
 
     IF_MULTI_OR_PIPELINE() {
         add_next_index_zval(z_tab, z_multi_result);
@@ -910,7 +913,7 @@ PHPAPI int redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, Red
 
 PHPAPI int
 redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                                     zval *z_tab, int numElems, int unwrap_key)
+                                     zval *z_tab, int numElems, int unwrap_key, int unserialize_even_only)
 {
     char *response;
     int response_len;
@@ -919,7 +922,11 @@ redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *re
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
         if(response != NULL) {
 		zval *z = NULL;
-		if(unwrap_key && redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
+		int can_unserialize = unwrap_key;
+		if(unserialize_even_only == UNSERIALIZE_ONLY_VALUES && numElems % 2 == 0)
+			can_unserialize = 0;
+
+		if(can_unserialize && redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
 			efree(response);
 			add_next_index_zval(z_tab, z);
 		} else {
