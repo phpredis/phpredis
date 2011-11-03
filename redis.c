@@ -834,11 +834,6 @@ PHP_METHOD(Redis, ping)
         RETURN_FALSE;
     }
 
-    if (!redis_sock->stream) {
-       php_error_docref(NULL TSRMLS_CC, E_ERROR, "The object is not connected");
-       RETURN_FALSE;
-    }
-
     cmd_len = redis_cmd_format_static(&cmd, "PING", "");
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -2035,7 +2030,6 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 
 				/* only accept strings */
 				if(Z_TYPE_PP(z_value_pp) != IS_STRING) {
-					php_printf("Convert to string\n");
 					convert_to_string(*z_value_pp);
 				}
 
