@@ -1942,11 +1942,12 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 {
     zval *object, **z_args, *z_array;
     char **keys, *cmd;
-    int cmd_len, *keys_len;
+    int cmd_len, *keys_len, *keys_to_free;
     int i, j, argc = ZEND_NUM_ARGS(), real_argc = 0;
     int single_array = 0;
 	int timeout;
 	int pos;
+	int array_size;
 
     RedisSock *redis_sock;
 
@@ -1991,14 +1992,15 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     	}
 	}
 
-    /* prepare an array for the keys, and one for their lengths */
-	if(!has_timeout) {
-	    keys = emalloc(argc * sizeof(char*));
-    	keys_len = emalloc(argc * sizeof(int));
-	} else {
-		keys = emalloc((argc+1) * sizeof(char*));
-    	keys_len = emalloc((argc + 1) * sizeof(int));
-	}
+	/* prepare an array for the keys, one for their lengths, one to mark the keys to free. */
+	array_size = argc;
+	if(has_timeout)
+		array_size++;
+
+	keys = emalloc(array_size * sizeof(char*));
+	keys_len = emalloc(array_size * sizeof(int));
+	keys_to_free = emalloc(array_size * sizeof(int));
+	memset(keys_to_free, 0, array_size * sizeof(int));
 
 
     cmd_len = 1 + integer_length(keyword_len) + 2 +keyword_len + 2; /* start computing the command length */
@@ -2024,7 +2026,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 
 			if(!all_keys && j != 0) { /* not just operating on keys */
 
-				redis_serialize(redis_sock, *z_value_pp, &keys[j], &keys_len[j] TSRMLS_CC);
+				keys_to_free[j] = redis_serialize(redis_sock, *z_value_pp, &keys[j], &keys_len[j] TSRMLS_CC);
 
 			} else {
 
@@ -2037,7 +2039,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
                 keys[j] = Z_STRVAL_PP(z_value_pp);
                 keys_len[j] = Z_STRLEN_PP(z_value_pp);
 
-				redis_key_prefix(redis_sock, &keys[j], &keys_len[j] TSRMLS_CC); /* add optional prefix */
+				keys_to_free[j] = redis_key_prefix(redis_sock, &keys[j], &keys_len[j] TSRMLS_CC); /* add optional prefix */
 			}
 
             cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; /* $ + size + NL + string + NL */
@@ -2063,7 +2065,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
         for(i = 0, j = 0; i < argc; ++i) { /* store each key */
 			if(!all_keys && j != 0) { /* not just operating on keys */
 
-				redis_serialize(redis_sock, z_args[i], &keys[j], &keys_len[j] TSRMLS_CC);
+				keys_to_free[j] = redis_serialize(redis_sock, z_args[i], &keys[j], &keys_len[j] TSRMLS_CC);
 
 			} else {
 				
@@ -2074,7 +2076,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
        	        keys[j] = Z_STRVAL_P(z_args[i]);
            	    keys_len[j] = Z_STRLEN_P(z_args[i]);
 
-				redis_key_prefix(redis_sock, &keys[j], &keys_len[j] TSRMLS_CC); /* add optional prefix  TSRMLS_CC*/
+				keys_to_free[j] = redis_key_prefix(redis_sock, &keys[j], &keys_len[j] TSRMLS_CC); /* add optional prefix  TSRMLS_CC*/
 			}
 
             cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; /* $ + size + NL + string + NL */
@@ -2109,12 +2111,9 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     }
 
 	/* cleanup prefixed keys. */
-	if(redis_sock->prefix && redis_sock->prefix_len) {
-		for(i = 0; i < real_argc + (has_timeout?-1:0); ++i) {
-			if(all_keys || i == 0) {
-				efree(keys[i]);
-			}
-		}
+	for(i = 0; i < real_argc + (has_timeout?-1:0); ++i) {
+		if(keys_to_free[i])
+			efree(keys[i]);
 	}
 	if(has_timeout) { /* cleanup string created to contain timeout value */
 		efree(keys[real_argc-1]);
@@ -2122,6 +2121,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 
     efree(keys);
 	efree(keys_len);
+	efree(keys_to_free);
 
     if(z_args) efree(z_args);
 	
