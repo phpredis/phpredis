@@ -144,6 +144,10 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
 
     switch(inbuf[0]) {
         case '-':
+			/* stale data */
+			if(memcmp(inbuf + 1, "-ERR SYNC ", 10) == 0) {
+				zend_throw_exception(redis_exception_ce, "SYNC with master in progress", 0 TSRMLS_CC);
+			}
             return NULL;
 
         case '$':
