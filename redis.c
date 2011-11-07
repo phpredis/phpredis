@@ -3039,8 +3039,9 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTI
     zval *object;
     RedisSock *redis_sock;
 
-    char *cmd;
-    int cmd_len;
+    char *cmd, *p;
+    int cmd_len = 0, argc = 0, kw_len = strlen(kw);
+	int step = 0;	// 0: compute size; 1: copy strings.
     zval *z_array;
 
 	HashTable *keytable;
@@ -3058,53 +3059,67 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTI
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format(&cmd, kw, 1 + 2 * zend_hash_num_elements(Z_ARRVAL_P(z_array)));
+	for(step = 0; step < 2; ++step) {
+		if(step == 1) {
+			cmd_len += 1 + integer_length(1 + 2 * argc) + 2;	/* star + arg count + NL */
+			cmd_len += 1 + integer_length(kw_len) + 2;			/* dollar + strlen(kw) + NL */
+			cmd_len += kw_len + 2;								/* kw + NL */
 
-    keytable = Z_ARRVAL_P(z_array);
-    for(zend_hash_internal_pointer_reset(keytable);
-        zend_hash_has_more_elements(keytable) == SUCCESS;
-        zend_hash_move_forward(keytable)) {
+			p = cmd = emalloc(cmd_len + 1);	/* alloc */
+			p += sprintf(cmd, "*%d" _NL "$%d" _NL "%s" _NL, 1 + 2 * argc, kw_len, kw); /* copy header */
+		}
 
-        char *key, *val;
-        unsigned int key_len;
-        int val_len;
-        unsigned long idx;
-        int type;
-        zval **z_value_pp;
-		int val_free, key_free;
-		char *old_cmd;
+		keytable = Z_ARRVAL_P(z_array);
+		for(zend_hash_internal_pointer_reset(keytable);
+				zend_hash_has_more_elements(keytable) == SUCCESS;
+				zend_hash_move_forward(keytable)) {
 
-        type = zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx, 0, NULL);
-        if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
-            continue; 	/* this should never happen, according to the PHP people. */
-        }
+			char *key, *val;
+			unsigned int key_len;
+			int val_len;
+			unsigned long idx;
+			int type;
+			zval **z_value_pp;
+			int val_free, key_free;
 
-        if(type != HASH_KEY_IS_STRING) { /* ignore non-string keys */
-            continue;
-        }
+			type = zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx, 0, NULL);
+			if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
+				continue; 	/* this should never happen, according to the PHP people. */
+			}
 
-        if(key_len > 0) {
-            key_len--;
-        }
+			if(type != HASH_KEY_IS_STRING) { /* ignore non-string keys */
+				continue;
+			}
 
-        val_free = redis_serialize(redis_sock, *z_value_pp, &val, &val_len TSRMLS_CC);
-		key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+			if(step == 0)
+				argc++; /* found a valid arg */
 
-        old_cmd = cmd;
-        cmd_len = redis_cmd_format(&cmd,
-                                   "%s"
-                                   "$%d" _NL /* key_len */
-                                   "%s" _NL  /* key */
-                                   "$%d" _NL /* val_len */
-                                   "%s" _NL  /* val */
-                                   , cmd, cmd_len
-                                   , key_len, key, key_len
-                                   , val_len, val, val_len);
-        if(val_free) efree(val);
-		if(key_free) efree(key);
+			if(key_len > 0) {	/* string lengths include \0 when taken from array keys */
+				key_len--;
+			}
 
-        efree(old_cmd);
-    }
+			val_free = redis_serialize(redis_sock, *z_value_pp, &val, &val_len TSRMLS_CC);
+			key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+
+			if(step == 0) { /* counting */
+				cmd_len += 1 + integer_length(key_len) + 2
+						+ key_len + 2
+						+ 1 + integer_length(val_len) + 2
+						+ val_len + 2;
+			} else {
+				p += sprintf(p, "$%d" _NL, key_len);	/* key len */
+				memcpy(p, key, key_len); p += key_len;	/* key */
+				memcpy(p, _NL, 2); p += 2;
+
+				p += sprintf(p, "$%d" _NL, val_len);	/* val len */
+				memcpy(p, val, val_len); p += val_len;	/* val */
+				memcpy(p, _NL, 2); p += 2;
+			}
+
+			if(val_free) efree(val);
+			if(key_free) efree(key);
+		}
+	}
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
@@ -3117,7 +3132,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTI
 /* {{{ proto bool Redis::mset(array (key => value, ...))
  */
 PHP_METHOD(Redis, mset) {
-	generic_mset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "*%d" _NL "$4" _NL "MSET" _NL, redis_boolean_response);
+	generic_mset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "MSET", redis_boolean_response);
 }
 /* }}} */
 
@@ -3125,7 +3140,7 @@ PHP_METHOD(Redis, mset) {
 /* {{{ proto bool Redis::msetnx(array (key => value, ...))
  */
 PHP_METHOD(Redis, msetnx) {
-	generic_mset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "*%d" _NL "$6" _NL "MSETNX" _NL, redis_1_response);
+	generic_mset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "MSETNX", redis_1_response);
 }
 /* }}} */
 
