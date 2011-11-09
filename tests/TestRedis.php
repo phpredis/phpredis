@@ -2581,6 +2581,20 @@ class Redis_Test
 	    $this->assertTrue($ret[$i++] === TRUE); // added 1 element
 	    $this->assertTrue($ret[$i++] === 'xyz');
 	    $this->assertTrue(count($ret) === $i);
+
+        // GitHub issue 78
+        $this->redis->del('test');
+        for($i = 1; $i <= 5; $i++)
+            $this->redis->zadd('test', $i, (string)$i);
+
+        $result = $this->redis->multi($mode)
+            ->zscore('test', "1")
+            ->zscore('test', "6")
+            ->zscore('test', "8")
+            ->zscore('test', "2")
+            ->exec();
+
+        $this->assertTrue($result === array(1.0, FALSE, FALSE, 2.0));
     }
 
     public function testSerializerPHP() {
