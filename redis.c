@@ -2083,12 +2083,6 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
             j++;
    	        real_argc++;
 		}
-		if(has_timeout) {
-			keys_len[j] = spprintf(&keys[j], 0, "%ld", Z_LVAL_P(z_args[j]));
-			cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; // $ + size + NL + string + NL 
-			j++;
-			real_argc++;
-		}
     }
 
     cmd_len += 1 + integer_length(real_argc+1) + 2; // *count NL 
