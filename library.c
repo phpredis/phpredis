@@ -344,13 +344,18 @@ PHPAPI void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
 	double ret;
 
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-        RETURN_FALSE;
+		IF_MULTI_OR_PIPELINE() {
+			add_next_index_bool(z_tab, 0);
+		} else {
+			RETURN_FALSE;
+		}
+		return;
     }
 
     ret = atof(response);
     efree(response);
     IF_MULTI_OR_PIPELINE() {
-	add_next_index_double(z_tab, ret);
+		add_next_index_double(z_tab, ret);
     } else {
     	RETURN_DOUBLE(ret);
     }
@@ -362,7 +367,11 @@ PHPAPI void redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
     long l;
 
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-        RETURN_FALSE;
+		IF_MULTI_OR_PIPELINE() {
+			add_next_index_bool(z_tab, 0);
+		} else {
+			RETURN_FALSE;
+		}
     }
 
     if (strncmp(response, "+string", 7) == 0) {
