@@ -2077,9 +2077,9 @@ $redis->zInter('ko4', array('k1', 'k2'), array(1, 5), 'max'); /* 2, 'ko4' => arr
 ##### *Description*
 Adds a value to the hash stored at key. If this value is already in the hash, `FALSE` is returned.  
 ##### *Parameters*
-*key*
-*hashKey*
-*value*
+*key*  
+*hashKey*  
+*value*  
 
 ##### *Return value*
 *LONG* `1` if value didn't exist and was added successfully, `0` if the value was already present and was replaced, `FALSE` if there was an error.
@@ -2112,8 +2112,8 @@ $redis->hSetNx('h', 'key1', 'world'); /* FALSE, 'key1' => 'hello' in the hash at
 ##### *Description*
 Gets a value from the hash stored at key. If the hash table doesn't exist, or the key doesn't exist, `FALSE` is returned.  
 ##### *Parameters*
-*key*
-*hashKey*
+*key*  
+*hashKey*  
 
 ##### *Return value*
 *STRING* The value, if the command executed successfully
@@ -2140,8 +2140,8 @@ $redis->hLen('h'); /* returns 2 */
 ##### *Description*
 Removes a value from the hash stored at key. If the hash table doesn't exist, or the key doesn't exist, `FALSE` is returned.  
 ##### *Parameters*
-*key*
-*hashKey*
+*key*  
+*hashKey*  
 
 ##### *Return value*
 *BOOL* `TRUE` in case of success, `FALSE` in case of failure
