@@ -24,6 +24,7 @@ PHP_METHOD(RedisArray, setOption);
 PHP_METHOD(RedisArray, multi);
 PHP_METHOD(RedisArray, exec);
 PHP_METHOD(RedisArray, discard);
+PHP_METHOD(RedisArray, unwatch);
 
 
 typedef struct RedisArray_ {

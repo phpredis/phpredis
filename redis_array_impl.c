@@ -528,6 +528,18 @@ ra_index_discard(zval *z_redis, zval *return_value TSRMLS_DC) {
 	zval_dtor(&z_ret);
 }
 
+void
+ra_index_unwatch(zval *z_redis, zval *return_value TSRMLS_DC) {
+
+	zval z_fun_unwatch, z_ret;
+
+	/* run UNWATCH */
+	ZVAL_STRING(&z_fun_unwatch, "UNWATCH", 0);
+	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_unwatch, &z_ret, 0, NULL TSRMLS_CC);
+
+	zval_dtor(&z_ret);
+}
+
 zend_bool
 ra_is_write_cmd(RedisArray *ra, const char *cmd, int cmd_len) {
 

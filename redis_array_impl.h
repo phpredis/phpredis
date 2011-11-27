@@ -21,6 +21,7 @@ void ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC);
 void ra_index_del(zval *z_keys, zval *z_redis TSRMLS_DC);
 void ra_index_exec(zval *z_redis, zval *return_value, int keep_all TSRMLS_DC);
 void ra_index_discard(zval *z_redis, zval *return_value TSRMLS_DC);
+void ra_index_unwatch(zval *z_redis, zval *return_value TSRMLS_DC);
 zend_bool ra_is_write_cmd(RedisArray *ra, const char *cmd, int cmd_len);
 
 void ra_rehash(RedisArray *ra, zval *z_cb TSRMLS_DC);
