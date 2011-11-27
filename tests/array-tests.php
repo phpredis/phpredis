@@ -426,6 +426,38 @@ class Redis_Multi_Exec_Test extends TestSuite {
 		$this->assertTrue($this->ra->exists('1_{employee:joe}_salary') === FALSE);
 	}
 
+	public function testDiscard() {
+		/* phpredis issue #87 */
+		$key = 'test_err';
+
+		$this->assertTrue($this->ra->set($key, 'test'));
+		$this->assertTrue('test' === $this->ra->get($key));
+
+		$this->ra->watch($key);
+
+		// After watch, same
+		$this->assertTrue('test' === $this->ra->get($key));
+
+		// change in a multi/exec block.
+		$ret = $this->ra->multi($this->ra->_target($key))->set($key, 'test1')->exec();
+		$this->assertTrue($ret === array(true));
+
+		// Get after exec, 'test1':
+		$this->assertTrue($this->ra->get($key) === 'test1');
+
+		$this->ra->watch($key);
+
+		// After second watch, still test1.
+		$this->assertTrue($this->ra->get($key) === 'test1');
+
+		$ret = $this->ra->multi($this->ra->_target($key))->set($key, 'test2')->discard();
+		// Ret after discard: NULL";
+		$this->assertTrue($ret === NULL);
+
+		// Get after discard, unchanged:
+		$this->assertTrue($this->ra->get($key) === 'test1');
+	}
+
 }
 
 

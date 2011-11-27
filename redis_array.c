@@ -60,6 +60,7 @@ zend_function_entry redis_array_functions[] = {
 	 /* Multi/Exec */
      PHP_ME(RedisArray, multi, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, exec, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, discard, NULL, ZEND_ACC_PUBLIC)
 
      /* Aliases */
      PHP_MALIAS(RedisArray, delete, del, NULL, ZEND_ACC_PUBLIC)
@@ -1023,6 +1024,27 @@ PHP_METHOD(RedisArray, exec)
 
 	/* switch redis instance out of multi/exec mode. */
 	ra_index_exec(ra->z_multi_exec, return_value, 1 TSRMLS_CC);
+
+	/* remove multi object */
+	ra->z_multi_exec = NULL;
+}
+
+PHP_METHOD(RedisArray, discard)
+{
+	zval *object;
+	RedisArray *ra;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
+				&object, redis_array_ce) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_array_get(object, &ra TSRMLS_CC) < 0 || !ra->z_multi_exec) {
+		RETURN_FALSE;
+	}
+
+	/* switch redis instance out of multi/exec mode. */
+	ra_index_discard(ra->z_multi_exec, return_value TSRMLS_CC);
 
 	/* remove multi object */
 	ra->z_multi_exec = NULL;
