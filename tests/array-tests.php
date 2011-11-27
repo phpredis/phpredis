@@ -1,6 +1,6 @@
 <?php
-require_once 'PHPUnit.php';
 
+require_once(dirname($_SERVER['PHP_SELF'])."/test.php");
 echo "Redis Array tests.\n\n";
 
 function custom_hash($str) {
@@ -12,7 +12,7 @@ function custom_hash($str) {
 	return $str;
 }
 
-class Redis_Array_Test extends PHPUnit_TestCase
+class Redis_Array_Test extends TestSuite
 {
 	private $strings;
 	public $ra = NULL;
@@ -95,7 +95,7 @@ class Redis_Array_Test extends PHPUnit_TestCase
 
 }
 
-class Redis_Rehashing_Test extends PHPUnit_TestCase
+class Redis_Rehashing_Test extends TestSuite
 {
 
 	public $ra = NULL;
@@ -266,7 +266,7 @@ class Redis_Rehashing_Test extends PHPUnit_TestCase
 }
 
 // Test auto-migration of keys
-class Redis_Auto_Rehashing_Test extends PHPUnit_TestCase {
+class Redis_Auto_Rehashing_Test extends TestSuite {
 
 	public $ra = NULL;
 
@@ -336,7 +336,7 @@ class Redis_Auto_Rehashing_Test extends PHPUnit_TestCase {
 }
 
 // Test node-specific multi/exec
-class Redis_Multi_Exec_Test extends PHPUnit_TestCase {
+class Redis_Multi_Exec_Test extends TestSuite {
 
 	public $ra = NULL;
 
@@ -437,9 +437,7 @@ function run_tests($className) {
 		$serverList = array('localhost:6379', 'localhost:6380', 'localhost:6381', 'localhost:6382');
 
 		// run
-		$suite  = new PHPUnit_TestSuite($className);
-		$result = PHPUnit::run($suite);
-		echo $result->toString();
+		TestSuite::run($className);
 }
 
 define('REDIS_ARRAY_DATA_SIZE', 1000);
