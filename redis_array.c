@@ -182,7 +182,7 @@ PHP_METHOD(RedisArray, __construct)
 	char *name = NULL;
 	int id;
 	RedisArray *ra = NULL;
-	zend_bool b_index = 0;
+	zend_bool b_index = 0, b_autorehash = 0;
 	HashTable *hPrev = NULL, *hOpts = NULL;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|a", &z0, &z_opts) == FAILURE) {
@@ -212,6 +212,11 @@ PHP_METHOD(RedisArray, __construct)
 		if(FAILURE != zend_hash_find(hOpts, "index", sizeof("index"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_BOOL) {
 			b_index = Z_BVAL_PP(zpData);
 		}
+
+		/* extract autorehash option. */
+		if(FAILURE != zend_hash_find(hOpts, "autorehash", sizeof("autorehash"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_BOOL) {
+			b_autorehash = Z_BVAL_PP(zpData);
+		}
 	}
 
 	/* extract either name of list of hosts from z0 */
@@ -230,6 +235,7 @@ PHP_METHOD(RedisArray, __construct)
 	}
 
 	if(ra) {
+		ra->auto_rehash = b_autorehash;
 		id = zend_list_insert(ra, le_redis_array);
 		add_property_resource(getThis(), "socket", id);
 	}
