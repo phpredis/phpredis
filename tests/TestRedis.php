@@ -1,16 +1,14 @@
 <?php
 
-// phpunit is such a pain to install, we're going with pure-PHP here.
+require_once(dirname($_SERVER['PHP_SELF'])."/test.php");
 
 echo "Note: these tests might take up to a minute. Don't worry :-)\n";
 
-class Redis_Test
+class Redis_Test extends TestSuite
 {
 	const HOST = '127.0.0.1';
 	const PORT = 6379;
 	const AUTH = NULL; //replace with a string to use Redis authentication
-
-	public static $errors = array();
 
     /**
      * @var Redis
@@ -22,32 +20,7 @@ class Redis_Test
 	$this->redis = $this->newInstance();
     }
 
-	private function assertFalse($bool) {
-		$this->assertTrue(!$bool);
-	}
-
-	private function assertTrue($bool) {
-		if($bool)
-			return;
-
-		$bt = debug_backtrace(false);
-		$count = count($bt);
-		self::$errors []= sprintf("Assertion failed: %s:%d (%s)\n",
-			$bt[$count - 2]["file"], $bt[$count - 3]["line"], $bt[$count - 1]["function"]);
-	}
-
-	private function assertEquals($a, $b) {
-		if($a === $b)
-			return;
-
-		$bt = debug_backtrace(false);
-		$count = count($bt);
-		self::$errors []= sprintf("Assertion failed (%s !== %s): %s:%d (%s)\n",
-			print_r($a, true), print_r($b, true),
-			$bt[$count - 2]["file"], $bt[$count - 3]["line"], $bt[$count - 1]["function"]);
-	}
-
-    private function newInstance() {
+	private function newInstance() {
 	$r = new Redis();
 	$r->connect(self::HOST, self::PORT);
 
@@ -2823,27 +2796,6 @@ class Redis_Test
     }
 }
 
-$rc = new ReflectionClass("Redis_Test");
-$methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
+TestSuite::run("Redis_Test");
 
-foreach($methods as $m) {
-
-	$name = $m->name;
-	if(substr($name, 0, 4) !== 'test')
-		continue;
-
-	$count = count(Redis_Test::$errors);
-	$rt = new Redis_Test;
-	$rt->setUp();
-	$rt->$name();
-	echo ($count === count(Redis_Test::$errors)) ? "." : "F";
-}
-echo "\n";
-
-if(empty(Redis_Test::$errors)) {
-	echo "All tests passed.\n";
-	exit(0);
-}
-
-echo implode('', Redis_Test::$errors);
 ?>
