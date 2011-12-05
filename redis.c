@@ -2125,7 +2125,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 		if(keys_to_free[i])
 			efree(keys[i]);
 	}
-	if(has_timeout) { /* cleanup string created to contain timeout value */
+	if(single_array && has_timeout) { /* cleanup string created to contain timeout value */
 		efree(keys[real_argc-1]);
 	}
 
