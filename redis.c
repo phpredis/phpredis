@@ -446,6 +446,14 @@ PHP_METHOD(Redis, pconnect)
 	if (redis_connect(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1) == FAILURE) {
 		RETURN_FALSE;
 	} else {
+		/* reset multi/exec state if there is one. */
+		RedisSock *redis_sock;
+		if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC) < 0) {
+			RETURN_FALSE;
+		}
+		/* clean up eventual residual state from previous request */
+		redis_send_discard(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+
 		RETURN_TRUE;
 	}
 }
@@ -4586,9 +4594,6 @@ PHP_METHOD(Redis, multi)
 PHP_METHOD(Redis, discard)
 {
     RedisSock *redis_sock;
-    char *cmd;
-	int response_len, cmd_len;
-	char * response;
 	zval *object;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
@@ -4601,24 +4606,9 @@ PHP_METHOD(Redis, discard)
     }
 
 	redis_sock->mode = ATOMIC;
-
-    cmd_len = redis_cmd_format_static(&cmd, "DISCARD", "");
-
-    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
-        efree(cmd);
-        RETURN_FALSE;
-    }
-    efree(cmd);
-
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-        RETURN_FALSE;
-    }
-
-	if(response_len == 3 && strncmp(response, "+OK", 3) == 0) {
-		RETURN_TRUE;
-	}
-	RETURN_FALSE;
+	redis_send_discard(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 }
+
 PHPAPI int redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock)
 {
     zval *z_tab;
