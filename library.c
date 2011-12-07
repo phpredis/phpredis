@@ -115,7 +115,7 @@ PHPAPI char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_
             got = php_stream_read(redis_sock->stream, reply + offset, bytes-offset);
             if (got <= 0) {
                 /* Error or EOF */
-                zend_throw_exception_ex(redis_exception_ce, 0 TSRMLS_CC, "socket error \n");
+				zend_throw_exception(redis_exception_ce, "socket error on read socket", 0 TSRMLS_CC);
                 break;
             }
             offset += got;
