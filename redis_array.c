@@ -281,7 +281,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	b_write_cmd = ra_is_write_cmd(ra, cmd, cmd_len);
 
 	if(ra->index && b_write_cmd && !ra->z_multi_exec) { /* add MULTI + SADD */
-		ra_index_multi(redis_inst TSRMLS_CC);
+		ra_index_multi(redis_inst TSRMLS_CC, MULTI);
 	}
 
 	/* pass call through */
@@ -810,7 +810,7 @@ PHP_METHOD(RedisArray, mset)
 		}
 
 		if(ra->index) { /* add MULTI */
-			ra_index_multi(redis_inst TSRMLS_CC);
+			ra_index_multi(redis_inst TSRMLS_CC, MULTI);
 		}
 
 		/* call */
@@ -944,7 +944,7 @@ PHP_METHOD(RedisArray, del)
 		}
 
 		if(ra->index) { /* add MULTI */
-			ra_index_multi(redis_inst TSRMLS_CC);
+			ra_index_multi(redis_inst TSRMLS_CC, MULTI);
 		}
 
 		/* call */
@@ -989,9 +989,10 @@ PHP_METHOD(RedisArray, multi)
 	zval *z_redis;
 	char *host;
 	int host_len;
+	long multi_value = MULTI;
 
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
-				&object, redis_array_ce, &host, &host_len) == FAILURE) {
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
+				&object, redis_array_ce, &host, &host_len, &multi_value) == FAILURE) {
 		RETURN_FALSE;
 	}
 
@@ -1005,11 +1006,15 @@ PHP_METHOD(RedisArray, multi)
 		RETURN_FALSE;
 	}
 
+	if(multi_value != MULTI && multi_value != PIPELINE) {
+		RETURN_FALSE;
+	}
+
 	/* save multi object */
 	ra->z_multi_exec = z_redis;
 
 	/* switch redis instance to multi/exec mode. */
-	ra_index_multi(z_redis TSRMLS_CC);
+	ra_index_multi(z_redis TSRMLS_CC, multi_value);
 
 	/* return this. */
 	RETURN_ZVAL(object, 1, 0);

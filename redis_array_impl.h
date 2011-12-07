@@ -14,7 +14,7 @@ void ra_init_function_table(RedisArray *ra);
 
 void ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC);
 char * ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len);
-void ra_index_multi(zval *z_redis TSRMLS_DC);
+void ra_index_multi(zval *z_redis TSRMLS_DC, long multi_value);
 
 void ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC);
 void ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC);
