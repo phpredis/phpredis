@@ -34,6 +34,10 @@ LDFLAGS="-arch i386 -arch x86_64 -bind_at_load"
 export CFLAGS CXXFLAGS LDFLAGS CCFLAGS MACOSX_DEPLOYMENT_TARGET
 </pre>
 
+If that still fails and you are running Zend Server CE, try this right before "make":
+<pre>./configure CFLAGS="-arch i386"</pre>
+Taken from [Compiling phpredis on Zend Server CE/OSX ](http://www.tumblr.com/tagged/phpredis).
+
 See also: [Install Redis & PHP Extension PHPRedis with Macports](http://www.lecloud.net/post/3378834922/install-redis-php-extension-phpredis-with-macports).
 
 Session handler (new)
