@@ -41,7 +41,7 @@ typedef struct RedisArray_ {
 	struct RedisArray_ *prev;
 } RedisArray;
 
-uint32_t crc32(const char *s, size_t sz);
+uint32_t rcrc32(const char *s, size_t sz);
 
 
 #endif

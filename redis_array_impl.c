@@ -335,7 +335,7 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 		return NULL;
 
 	/* hash */
-	hash = crc32(out, out_len);
+	hash = rcrc32(out, out_len);
 	efree(out);
 
 	/* get position on ring */
