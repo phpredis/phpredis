@@ -46,6 +46,7 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, _hosts, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _target, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _function, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, _distributor, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _rehash, NULL, ZEND_ACC_PUBLIC)
 
      /* special implementation for a few functions */
@@ -92,6 +93,12 @@ void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
 		efree(ra->z_fun);
 	}
 
+	/* delete distributor */
+	if(ra->z_dist) {
+		zval_dtor(ra->z_dist);
+		efree(ra->z_dist);
+	}
+
 	/* delete list of pure commands */
 	zval_dtor(ra->z_pure_cmds);
 	efree(ra->z_pure_cmds);
@@ -123,7 +130,7 @@ PHPAPI int redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
     return Z_LVAL_PP(socket);
 }
 
-uint32_t crc32(const char *s, size_t sz) {
+uint32_t rcrc32(const char *s, size_t sz) {
 
 	static const uint32_t table[256] = {
 		0x00000000,0x77073096,0xEE0E612C,0x990951BA,0x076DC419,0x706AF48F,0xE963A535,
@@ -178,7 +185,7 @@ uint32_t crc32(const char *s, size_t sz) {
     Public constructor */
 PHP_METHOD(RedisArray, __construct)
 {
-	zval *z0, *z_fun = NULL, **zpData, *z_opts = NULL;
+	zval *z0, *z_fun = NULL, *z_dist = NULL, **zpData, *z_opts = NULL;
 	char *name = NULL;
 	int id;
 	RedisArray *ra = NULL;
@@ -208,6 +215,13 @@ PHP_METHOD(RedisArray, __construct)
 			zval_copy_ctor(z_fun);
 		}
 
+		/* extract function name. */
+		if(FAILURE != zend_hash_find(hOpts, "distributor", sizeof("distributor"), (void**)&zpData)) {
+			MAKE_STD_ZVAL(z_dist);
+			*z_dist = **zpData;
+			zval_copy_ctor(z_dist);
+		}
+
 		/* extract index option. */
 		if(FAILURE != zend_hash_find(hOpts, "index", sizeof("index"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_BOOL) {
 			b_index = Z_BVAL_PP(zpData);
@@ -226,7 +240,7 @@ PHP_METHOD(RedisArray, __construct)
 			break;
 
 		case IS_ARRAY:
-			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, hPrev, b_index TSRMLS_CC);
+			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_dist, hPrev, b_index TSRMLS_CC);
 			break;
 
 		default:
@@ -281,7 +295,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	b_write_cmd = ra_is_write_cmd(ra, cmd, cmd_len);
 
 	if(ra->index && b_write_cmd && !ra->z_multi_exec) { /* add MULTI + SADD */
-		ra_index_multi(redis_inst TSRMLS_CC);
+		ra_index_multi(redis_inst TSRMLS_CC, MULTI);
 	}
 
 	/* pass call through */
@@ -406,6 +420,29 @@ PHP_METHOD(RedisArray, _target)
 }
 
 PHP_METHOD(RedisArray, _function)
+{
+	zval *object;
+	int i;
+	RedisArray *ra;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
+				&object, redis_array_ce) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	if(ra->z_fun) {
+		*return_value = *ra->z_fun;
+		zval_copy_ctor(return_value);
+	} else {
+		RETURN_NULL();
+	}
+}
+
+PHP_METHOD(RedisArray, _distributor)
 {
 	zval *object;
 	int i;
@@ -810,7 +847,7 @@ PHP_METHOD(RedisArray, mset)
 		}
 
 		if(ra->index) { /* add MULTI */
-			ra_index_multi(redis_inst TSRMLS_CC);
+			ra_index_multi(redis_inst TSRMLS_CC, MULTI);
 		}
 
 		/* call */
@@ -944,7 +981,7 @@ PHP_METHOD(RedisArray, del)
 		}
 
 		if(ra->index) { /* add MULTI */
-			ra_index_multi(redis_inst TSRMLS_CC);
+			ra_index_multi(redis_inst TSRMLS_CC, MULTI);
 		}
 
 		/* call */
@@ -989,9 +1026,10 @@ PHP_METHOD(RedisArray, multi)
 	zval *z_redis;
 	char *host;
 	int host_len;
+	long multi_value = MULTI;
 
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
-				&object, redis_array_ce, &host, &host_len) == FAILURE) {
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
+				&object, redis_array_ce, &host, &host_len, &multi_value) == FAILURE) {
 		RETURN_FALSE;
 	}
 
@@ -1005,11 +1043,15 @@ PHP_METHOD(RedisArray, multi)
 		RETURN_FALSE;
 	}
 
+	if(multi_value != MULTI && multi_value != PIPELINE) {
+		RETURN_FALSE;
+	}
+
 	/* save multi object */
 	ra->z_multi_exec = z_redis;
 
 	/* switch redis instance to multi/exec mode. */
-	ra_index_multi(z_redis TSRMLS_CC);
+	ra_index_multi(z_redis TSRMLS_CC, multi_value);
 
 	/* return this. */
 	RETURN_ZVAL(object, 1, 0);
