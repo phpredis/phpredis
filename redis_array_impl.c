@@ -696,7 +696,8 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 	char *val;
 	int val_len, i;
 	long idx;
-
+	int type;
+	
 	/* run ZRANGE key 0 -1 WITHSCORES on source */
 	ZVAL_STRINGL(&z_fun_zrange, "ZRANGE", 6, 0);
 	for(i = 0; i < 4; ++i) {
@@ -733,8 +734,6 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 			continue;
 		}
 
-		zend_hash_get_current_key_ex(h_zset_vals, &val, &val_len, &idx, 0, NULL);
-
 		/* add score */
 		convert_to_double(*z_score_pp);
 		MAKE_STD_ZVAL(z_zadd_args[i]);
@@ -742,8 +741,17 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 
 		/* add value */
 		MAKE_STD_ZVAL(z_zadd_args[i+1]);
-		ZVAL_STRINGL(z_zadd_args[i+1], val, val_len-1, 0); /* we have to remove 1 because it is an array key. */
-
+		switch (zend_hash_get_current_key_ex(h_zset_vals, &val, &val_len, &idx, 0, NULL)) {
+			case HASH_KEY_IS_STRING:
+				ZVAL_STRINGL(z_zadd_args[i+1], val, val_len-1, 0); /* we have to remove 1 because it is an array key. */
+				break;
+			case HASH_KEY_IS_LONG:
+				ZVAL_LONG(z_zadd_args[i+1], idx);
+				break;
+			default:
+				return -1; // Todo: log error
+				break;
+		}
 		i += 2;
 	}
 
