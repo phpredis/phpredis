@@ -93,6 +93,35 @@ class Redis_Array_Test extends TestSuite
 		$this->checkCommonLocality();
 	}
 
+	public function customDistributor($key)
+	{
+		$a = unpack("N*", md5($key, true));;
+		global $newRing;
+		$pos = $a[1] % count($newRing);
+
+		return $pos;
+	}
+
+	public function testKeyDistributor()
+	{
+		global $newRing, $useIndex;
+		$this->ra = new RedisArray($newRing, array(
+				'index' => $useIndex,
+				'function' => 'custom_hash',
+				'distributor' => array($this, "customDistributor")));
+
+		// custom key distribution function.
+		$this->addData('fb'.rand());
+
+		// check that they're all on the expected node.
+		$lastNode = NULL;
+		foreach($this->data as $k => $v) {
+			$node = $this->ra->_target($k);
+			$pos = $this->customDistributor($k);
+			$this->assertTrue($node === $newRing[$pos]);
+		}
+	}
+
 }
 
 class Redis_Rehashing_Test extends TestSuite

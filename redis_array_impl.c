@@ -150,7 +150,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 
 	zval *z_params_hosts, **z_hosts;
 	zval *z_params_prev, **z_prev;
-	zval *z_params_funs, **z_data_pp, *z_fun = NULL;
+	zval *z_params_funs, **z_data_pp, *z_fun = NULL, *z_dist = NULL;
 	zval *z_params_index;
 	zval *z_params_autorehash;
 	RedisArray *ra = NULL;
@@ -188,6 +188,16 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 		zval_copy_ctor(z_fun);
 	}
 
+	/* find distributor */
+	MAKE_STD_ZVAL(z_params_funs);
+	array_init(z_params_funs);
+	sapi_module.treat_data(PARSE_STRING, estrdup(INI_STR("redis.arrays.distributor")), z_params_funs TSRMLS_CC);
+	if (zend_hash_find(Z_ARRVAL_P(z_params_funs), name, strlen(name) + 1, (void **) &z_data_pp) != FAILURE) {
+		MAKE_STD_ZVAL(z_dist);
+		*z_dist = **z_data_pp;
+		zval_copy_ctor(z_dist);
+	}
+
 	/* find index option */
 	MAKE_STD_ZVAL(z_params_index);
 	array_init(z_params_index);
@@ -209,7 +219,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 	}
 
 	/* create RedisArray object */
-	ra = ra_make_array(hHosts, z_fun, hPrev, b_index TSRMLS_CC);
+	ra = ra_make_array(hHosts, z_fun, z_dist, hPrev, b_index TSRMLS_CC);
 	ra->auto_rehash = b_autorehash;
 
 	/* cleanup */
@@ -228,7 +238,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 }
 
 RedisArray *
-ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev, zend_bool b_index TSRMLS_DC) {
+ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index TSRMLS_DC) {
 
 	int count = zend_hash_num_elements(hosts);
 
@@ -238,6 +248,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev, zend_bool b_
 	ra->redis = emalloc(count * sizeof(zval*));
 	ra->count = count;
 	ra->z_fun = NULL;
+	ra->z_dist = NULL;
 	ra->z_multi_exec = NULL;
 	ra->index = b_index;
 	ra->auto_rehash = 0;
@@ -248,13 +259,20 @@ ra_make_array(HashTable *hosts, zval *z_fun, HashTable *hosts_prev, zend_bool b_
 	if(NULL == ra_load_hosts(ra, hosts TSRMLS_CC)) {
 		return NULL;
 	}
-	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, NULL, b_index TSRMLS_CC) : NULL;
+	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index TSRMLS_CC) : NULL;
 
 	/* copy function if provided */
 	if(z_fun) {
 		MAKE_STD_ZVAL(ra->z_fun);
 		*ra->z_fun = *z_fun;
 		zval_copy_ctor(ra->z_fun);
+	}
+
+	/* copy distributor if provided */
+	if(z_dist) {
+		MAKE_STD_ZVAL(ra->z_dist);
+		*ra->z_dist = *z_dist;
+		zval_copy_ctor(ra->z_dist);
 	}
 
 	return ra;
@@ -322,6 +340,37 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS
 	return out;
 }
 
+/* call userland key distributor function */
+zend_bool
+ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRMLS_DC) {
+
+	char *error = NULL;
+	zval z_ret;
+	zval *z_argv0;
+
+	/* check that we can call the extractor function */
+	if(!zend_is_callable_ex(ra->z_dist, NULL, 0, NULL, NULL, NULL, &error TSRMLS_CC)) {
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call distributor function");
+		return 0;
+	}
+	//convert_to_string(ra->z_fun);
+
+	/* call extraction function */
+	MAKE_STD_ZVAL(z_argv0);
+	ZVAL_STRINGL(z_argv0, key, key_len, 0);
+	call_user_function(EG(function_table), NULL, ra->z_dist, &z_ret, 1, &z_argv0 TSRMLS_CC);
+	efree(z_argv0);
+
+	if(Z_TYPE(z_ret) != IS_LONG) {
+		zval_dtor(&z_ret);
+		return 0;
+	}
+
+	*pos = Z_LVAL(z_ret);
+	zval_dtor(&z_ret);
+	return 1;
+}
+
 zval *
 ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_DC) {
 
@@ -334,12 +383,19 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 	if(!out)
 		return NULL;
 
-	/* hash */
-	hash = crc32(out, out_len);
-	efree(out);
-
-	/* get position on ring */
-	pos = (int)((((uint64_t)hash) * ra->count) / 0xffffffff);
+	if(ra->z_dist) {
+		if (!ra_call_distributor(ra, key, key_len, &pos TSRMLS_CC)) {
+			return NULL;
+		}
+	}
+	else {
+		/* hash */
+		hash = rcrc32(out, out_len);
+		efree(out);
+	
+		/* get position on ring */
+		pos = (int)((((uint64_t)hash) * ra->count) / 0xffffffff);
+	}
 	if(out_pos) *out_pos = pos;
 
 	return ra->redis[pos];
@@ -376,13 +432,17 @@ ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len) {
 }
 
 void
-ra_index_multi(zval *z_redis TSRMLS_DC) {
+ra_index_multi(zval *z_redis, long multi_value TSRMLS_DC) {
 
 	zval z_fun_multi, z_ret;
+	zval *z_args[1];
 
 	/* run MULTI */
 	ZVAL_STRING(&z_fun_multi, "MULTI", 0);
-	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_multi, &z_ret, 0, NULL TSRMLS_CC);
+	MAKE_STD_ZVAL(z_args[0]);
+	ZVAL_LONG(z_args[0], multi_value);
+	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_multi, &z_ret, 1, z_args TSRMLS_CC);
+	efree(z_args[0]);
 	//zval_dtor(&z_ret);
 }
 
@@ -667,7 +727,7 @@ ra_del_key(const char *key, int key_len, zval *z_from TSRMLS_DC) {
 	zval z_fun_del, z_ret, *z_args;
 
 	/* in a transaction */
-	ra_index_multi(z_from TSRMLS_CC);
+	ra_index_multi(z_from, MULTI TSRMLS_CC);
 
 	/* run DEL on source */
 	MAKE_STD_ZVAL(z_args);
@@ -692,7 +752,8 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 	char *val;
 	int val_len, i;
 	long idx;
-
+	int type;
+	
 	/* run ZRANGE key 0 -1 WITHSCORES on source */
 	ZVAL_STRINGL(&z_fun_zrange, "ZRANGE", 6, 0);
 	for(i = 0; i < 4; ++i) {
@@ -729,8 +790,6 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 			continue;
 		}
 
-		zend_hash_get_current_key_ex(h_zset_vals, &val, &val_len, &idx, 0, NULL);
-
 		/* add score */
 		convert_to_double(*z_score_pp);
 		MAKE_STD_ZVAL(z_zadd_args[i]);
@@ -738,8 +797,17 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 
 		/* add value */
 		MAKE_STD_ZVAL(z_zadd_args[i+1]);
-		ZVAL_STRINGL(z_zadd_args[i+1], val, val_len-1, 0); /* we have to remove 1 because it is an array key. */
-
+		switch (zend_hash_get_current_key_ex(h_zset_vals, &val, &val_len, &idx, 0, NULL)) {
+			case HASH_KEY_IS_STRING:
+				ZVAL_STRINGL(z_zadd_args[i+1], val, val_len-1, 0); /* we have to remove 1 because it is an array key. */
+				break;
+			case HASH_KEY_IS_LONG:
+				ZVAL_LONG(z_zadd_args[i+1], idx);
+				break;
+			default:
+				return -1; // Todo: log error
+				break;
+		}
 		i += 2;
 	}
 
@@ -912,7 +980,7 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 	zend_bool success = 0;
 
 	/* open transaction on target server */
-	ra_index_multi(z_to TSRMLS_CC);
+	ra_index_multi(z_to, MULTI TSRMLS_CC);
 
 	switch(type) {
 		case REDIS_STRING:
