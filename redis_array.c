@@ -46,6 +46,7 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, _hosts, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _target, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _function, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, _distributor, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _rehash, NULL, ZEND_ACC_PUBLIC)
 
      /* special implementation for a few functions */
@@ -90,6 +91,12 @@ void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
 	if(ra->z_fun) {
 		zval_dtor(ra->z_fun);
 		efree(ra->z_fun);
+	}
+
+	/* delete distributor */
+	if(ra->z_dist) {
+		zval_dtor(ra->z_dist);
+		efree(ra->z_dist);
 	}
 
 	/* delete list of pure commands */
@@ -178,7 +185,7 @@ uint32_t rcrc32(const char *s, size_t sz) {
     Public constructor */
 PHP_METHOD(RedisArray, __construct)
 {
-	zval *z0, *z_fun = NULL, **zpData, *z_opts = NULL;
+	zval *z0, *z_fun = NULL, *z_dist = NULL, **zpData, *z_opts = NULL;
 	char *name = NULL;
 	int id;
 	RedisArray *ra = NULL;
@@ -208,6 +215,13 @@ PHP_METHOD(RedisArray, __construct)
 			zval_copy_ctor(z_fun);
 		}
 
+		/* extract function name. */
+		if(FAILURE != zend_hash_find(hOpts, "distributor", sizeof("distributor"), (void**)&zpData)) {
+			MAKE_STD_ZVAL(z_dist);
+			*z_dist = **zpData;
+			zval_copy_ctor(z_dist);
+		}
+
 		/* extract index option. */
 		if(FAILURE != zend_hash_find(hOpts, "index", sizeof("index"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_BOOL) {
 			b_index = Z_BVAL_PP(zpData);
@@ -226,7 +240,7 @@ PHP_METHOD(RedisArray, __construct)
 			break;
 
 		case IS_ARRAY:
-			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, hPrev, b_index TSRMLS_CC);
+			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_dist, hPrev, b_index TSRMLS_CC);
 			break;
 
 		default:
@@ -406,6 +420,29 @@ PHP_METHOD(RedisArray, _target)
 }
 
 PHP_METHOD(RedisArray, _function)
+{
+	zval *object;
+	int i;
+	RedisArray *ra;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
+				&object, redis_array_ce) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	if(ra->z_fun) {
+		*return_value = *ra->z_fun;
+		zval_copy_ctor(return_value);
+	} else {
+		RETURN_NULL();
+	}
+}
+
+PHP_METHOD(RedisArray, _distributor)
 {
 	zval *object;
 	int i;

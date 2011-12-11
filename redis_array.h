@@ -11,6 +11,7 @@ PHP_METHOD(RedisArray, __call);
 PHP_METHOD(RedisArray, _hosts);
 PHP_METHOD(RedisArray, _target);
 PHP_METHOD(RedisArray, _function);
+PHP_METHOD(RedisArray, _distributor);
 PHP_METHOD(RedisArray, _rehash);
 
 PHP_METHOD(RedisArray, info);
@@ -36,6 +37,7 @@ typedef struct RedisArray_ {
 	zend_bool index;		/* use per-node index */
 	zend_bool auto_rehash; 	/* migrate keys on read operations */
 	zval *z_fun;			/* key extractor, callable */
+	zval *z_dist;			/* key distributor, callable */
 	zval *z_pure_cmds;		/* hash table */
 
 	struct RedisArray_ *prev;
