@@ -2686,6 +2686,10 @@ class Redis_Test extends TestSuite
 	    $this->assertTrue(1 === $this->redis->zDelete('key', $z[3]));
 	    $this->assertTrue(0 === $this->redis->zDelete('key', $z[3]));
 	    unset($z[3]);
+
+		// check that zDelete doesn't crash with a missing parameter (GitHub issue #102):
+		$this->assertTrue(FALSE === @$this->redis->zDelete('key'));
+
 	    // variadic
 	    $this->redis->delete('k');
 	    $this->redis->zAdd('k', 0, 'a');

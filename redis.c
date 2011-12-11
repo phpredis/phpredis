@@ -1974,7 +1974,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
     RedisSock *redis_sock;
 
     if(argc < min_argc) {
-        WRONG_PARAM_COUNT;
+		zend_wrong_param_count();
 		ZVAL_BOOL(return_value, 0);
 		return FAILURE;
     }
