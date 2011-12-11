@@ -432,7 +432,7 @@ ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len) {
 }
 
 void
-ra_index_multi(zval *z_redis TSRMLS_DC, long multi_value) {
+ra_index_multi(zval *z_redis, long multi_value TSRMLS_DC) {
 
 	zval z_fun_multi, z_ret;
 	zval *z_args[1];
@@ -727,7 +727,7 @@ ra_del_key(const char *key, int key_len, zval *z_from TSRMLS_DC) {
 	zval z_fun_del, z_ret, *z_args;
 
 	/* in a transaction */
-	ra_index_multi(z_from TSRMLS_CC, MULTI);
+	ra_index_multi(z_from, MULTI TSRMLS_CC);
 
 	/* run DEL on source */
 	MAKE_STD_ZVAL(z_args);
@@ -980,7 +980,7 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 	zend_bool success = 0;
 
 	/* open transaction on target server */
-	ra_index_multi(z_to TSRMLS_CC, MULTI);
+	ra_index_multi(z_to, MULTI TSRMLS_CC);
 
 	switch(type) {
 		case REDIS_STRING:

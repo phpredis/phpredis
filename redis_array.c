@@ -295,7 +295,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	b_write_cmd = ra_is_write_cmd(ra, cmd, cmd_len);
 
 	if(ra->index && b_write_cmd && !ra->z_multi_exec) { /* add MULTI + SADD */
-		ra_index_multi(redis_inst TSRMLS_CC, MULTI);
+		ra_index_multi(redis_inst, MULTI TSRMLS_CC);
 	}
 
 	/* pass call through */
@@ -847,7 +847,7 @@ PHP_METHOD(RedisArray, mset)
 		}
 
 		if(ra->index) { /* add MULTI */
-			ra_index_multi(redis_inst TSRMLS_CC, MULTI);
+			ra_index_multi(redis_inst, MULTI TSRMLS_CC);
 		}
 
 		/* call */
@@ -981,7 +981,7 @@ PHP_METHOD(RedisArray, del)
 		}
 
 		if(ra->index) { /* add MULTI */
-			ra_index_multi(redis_inst TSRMLS_CC, MULTI);
+			ra_index_multi(redis_inst, MULTI TSRMLS_CC);
 		}
 
 		/* call */
@@ -1051,7 +1051,7 @@ PHP_METHOD(RedisArray, multi)
 	ra->z_multi_exec = z_redis;
 
 	/* switch redis instance to multi/exec mode. */
-	ra_index_multi(z_redis TSRMLS_CC, multi_value);
+	ra_index_multi(z_redis, multi_value TSRMLS_CC);
 
 	/* return this. */
 	RETURN_ZVAL(object, 1, 0);
