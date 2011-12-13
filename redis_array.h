@@ -10,7 +10,7 @@ PHP_METHOD(RedisArray, __construct);
 PHP_METHOD(RedisArray, __call);
 PHP_METHOD(RedisArray, _hosts);
 PHP_METHOD(RedisArray, _target);
-PHP_METHOD(RedisArray, _specified);
+PHP_METHOD(RedisArray, _instance);
 PHP_METHOD(RedisArray, _function);
 PHP_METHOD(RedisArray, _distributor);
 PHP_METHOD(RedisArray, _rehash);

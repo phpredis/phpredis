@@ -45,7 +45,7 @@ zend_function_entry redis_array_functions[] = {
 
      PHP_ME(RedisArray, _hosts, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _target, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, _specified, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, _instance, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _function, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _distributor, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _rehash, NULL, ZEND_ACC_PUBLIC)
@@ -420,7 +420,7 @@ PHP_METHOD(RedisArray, _target)
 	}
 }
 
-PHP_METHOD(RedisArray, _specified)
+PHP_METHOD(RedisArray, _instance)
 {
 	zval *object;
 	RedisArray *ra;
