@@ -55,6 +55,15 @@ class Redis_Test extends TestSuite
 	}
     }
 
+	public function testPipelinePublish() {
+
+		$ret = $this->redis->pipeline()
+			->publish('chan', 'msg')
+			->exec();
+
+		$this->assertTrue(is_array($ret) && count($ret) === 1 && $ret[0] >= 0);
+	}
+
     public function testBitsets() {
 
 	    $this->redis->delete('key');
