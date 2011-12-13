@@ -114,6 +114,7 @@ RedisArray objects provide several methods to help understand the state of the c
 * `$ra->_hosts()` → returns a list of hosts for the selected array.
 * `$ra->_function()` → returns the name of the function used to extract key parts during consistent hashing.
 * `$ra->_target($key)` → returns the host to be used for a certain key.
+* `$ra->_instance($host)` → returns a redis instance connected to a specific node; use with `_target` to get a single Redis object.
 
 ## Running the unit tests
 <pre>
