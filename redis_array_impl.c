@@ -394,7 +394,10 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 		efree(out);
 	
 		/* get position on ring */
-		pos = (int)((((uint64_t)hash) * ra->count) / 0xffffffff);
+		uint64_t h64 = hash;
+		h64 *= ra->count;
+		h64 /= 0xffffffff;
+		pos = (int)h64;
 	}
 	if(out_pos) *out_pos = pos;
 
