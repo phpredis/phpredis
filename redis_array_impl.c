@@ -976,6 +976,41 @@ ra_move_list(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 	return ra_move_collection(key, key_len, z_from, z_to, 3, cmd_list, 1, cmd_add TSRMLS_CC);
 }
 
+static zend_bool
+ra_expire_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
+
+	zval z_fun_ttl, z_fun_expire, z_ret, *z_args[2];
+	long ttl;
+
+	/* run TTL on source */
+	MAKE_STD_ZVAL(z_args[0]);
+	ZVAL_STRINGL(&z_fun_ttl, "TTL", 3, 0);
+	ZVAL_STRINGL(z_args[0], key, key_len, 0);
+	call_user_function(&redis_ce->function_table, &z_from, &z_fun_ttl, &z_ret, 1, z_args TSRMLS_CC);
+
+	if(Z_TYPE(z_ret) != IS_LONG) {
+		efree(z_args[0]);
+		return 0;
+	}
+
+	ttl = Z_LVAL(z_ret);
+	zval_dtor(&z_ret);
+	if (ttl > 0)
+	{
+		/* run EXPIRE on target */
+		MAKE_STD_ZVAL(z_args[1]);
+		ZVAL_STRINGL(&z_fun_expire, "EXPIRE", 6, 0);
+		ZVAL_STRINGL(z_args[0], key, key_len, 0);
+		ZVAL_LONG(z_args[1], ttl);
+		call_user_function(&redis_ce->function_table, &z_to, &z_fun_expire, &z_ret, 2, z_args TSRMLS_CC);
+		efree(z_args[1]);
+	}
+	/* cleanup */
+	efree(z_args[0]);
+
+	return 1;
+}
+
 void
 ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 
@@ -1012,6 +1047,7 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 	}
 
 	if(success) {
+		ra_expire_key(key, key_len, z_from, z_to TSRMLS_CC);
 		ra_del_key(key, key_len, z_from TSRMLS_CC);
 		ra_index_key(key, key_len, z_to TSRMLS_CC);
 	}
