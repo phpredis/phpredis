@@ -1119,6 +1119,16 @@ PHP_METHOD(Redis, delete)
 }
 /* }}} */
 
+PHPAPI void redis_set_watch(RedisSock *redis_sock)
+{
+    redis_sock->watching = 1;
+}
+
+PHPAPI void redis_watch_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, ctx, redis_set_watch);
+}
+
 /* {{{ proto boolean Redis::watch(string key1, string key2...)
  */
 PHP_METHOD(Redis, watch)
@@ -1128,20 +1138,31 @@ PHP_METHOD(Redis, watch)
     generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "WATCH", sizeof("WATCH") - 1,
 					1, &redis_sock, 0, 1);
+    redis_sock->watching = 1;
     IF_ATOMIC() {
-	  redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        redis_watch_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
-	REDIS_PROCESS_RESPONSE(redis_boolean_response);
+    REDIS_PROCESS_RESPONSE(redis_watch_response);
 
 }
 /* }}} */
+
+PHPAPI void redis_clear_watch(RedisSock *redis_sock)
+{
+    redis_sock->watching = 0;
+}
+
+PHPAPI void redis_unwatch_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, ctx, redis_clear_watch);
+}
 
 /* {{{ proto boolean Redis::unwatch()
  */
 PHP_METHOD(Redis, unwatch)
 {
     char cmd[] = "*1" _NL "$7" _NL "UNWATCH" _NL;
-    generic_empty_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, estrdup(cmd), sizeof(cmd)-1);
+    generic_empty_cmdi_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, estrdup(cmd), sizeof(cmd)-1, redis_unwatch_response);
 
 }
 /* }}} */
@@ -2760,8 +2781,7 @@ PHP_METHOD(Redis, lSet) {
 }
 /* }}} */
 
-
-PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...) {
+PHPAPI void generic_empty_cmd_impl(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ResultCallback result_callback) {
     zval *object;
     RedisSock *redis_sock;
 
@@ -2776,9 +2796,13 @@ PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_l
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
-	  redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        result_callback(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
-    REDIS_PROCESS_RESPONSE(redis_boolean_response);
+    REDIS_PROCESS_RESPONSE(result_callback);
+}
+
+PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...) {
+    generic_empty_cmd_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, cmd, cmd_len, redis_boolean_response);
 }
 
 /* {{{ proto string Redis::save()
@@ -4721,10 +4745,12 @@ PHP_METHOD(Redis, exec)
             zval_dtor(return_value);
             free_reply_callbacks(object, redis_sock);
             redis_sock->mode = ATOMIC;
+            redis_sock->watching = 0;
 			RETURN_FALSE;
 	    }
         free_reply_callbacks(object, redis_sock);
 		redis_sock->mode = ATOMIC;
+        redis_sock->watching = 0;
 	}
 
 	IF_PIPELINE() {
