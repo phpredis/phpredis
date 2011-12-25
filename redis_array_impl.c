@@ -681,24 +681,55 @@ ra_rehash_scan_keys(zval *z_redis, char ***keys, int **key_lens TSRMLS_DC) {
 }
 
 /* run TYPE to find the type */
-static long
-ra_get_key_type(zval *z_redis, const char *key, int key_len TSRMLS_DC) {
+static zend_bool
+ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long *res TSRMLS_DC) {
 
 	int i;
 	zval z_fun_type, z_ret, *z_arg;
+	zval **z_data;
+	long success = 1;
+
 	MAKE_STD_ZVAL(z_arg);
+	/* Pipelined */
+	ra_index_multi(z_from, PIPELINE TSRMLS_CC);
 
 	/* prepare args */
 	ZVAL_STRINGL(&z_fun_type, "TYPE", 4, 0);
 	ZVAL_STRINGL(z_arg, key, key_len, 0);
+	/* run TYPE */
+	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_type, &z_ret, 1, &z_arg TSRMLS_CC);
 
+	ZVAL_STRINGL(&z_fun_type, "TTL", 3, 0);
+	ZVAL_STRINGL(z_arg, key, key_len, 0);
 	/* run TYPE */
 	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_type, &z_ret, 1, &z_arg TSRMLS_CC);
 
 	/* cleanup */
 	efree(z_arg);
 
-	return Z_LVAL(z_ret);
+	/* Get the result from the pipeline. */
+	ra_index_exec(z_from, &z_ret, 1 TSRMLS_CC);
+	if(Z_TYPE(z_ret) == IS_ARRAY) {
+        HashTable *retHash = Z_ARRVAL(z_ret);
+		for(i = 0, zend_hash_internal_pointer_reset(retHash);
+				zend_hash_has_more_elements(retHash) == SUCCESS;
+				zend_hash_move_forward(retHash)) {
+
+			if(zend_hash_get_current_data(retHash, (void**)&z_data) == FAILURE) {
+				success = 0;
+				break;
+			}	
+			if(Z_TYPE_PP(z_data) != IS_LONG) {
+				success = 0;
+				break;
+			}
+			/* Get the result - Might change in the future to handle doubles as well */
+			res[i] = Z_LVAL_PP(z_data);
+			i++;
+		}
+	}
+	zval_dtor(&z_ret);
+	return success;
 }
 
 /* delete key from source server index during rehashing */
@@ -747,7 +778,29 @@ ra_del_key(const char *key, int key_len, zval *z_from TSRMLS_DC) {
 }
 
 static zend_bool
-ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
+ra_expire_key(const char *key, int key_len, zval *z_to, long ttl TSRMLS_DC) {
+
+	zval z_fun_expire, z_ret, *z_args[2];
+
+	if (ttl > 0)
+	{
+		/* run EXPIRE on target */
+		MAKE_STD_ZVAL(z_args[0]);
+		MAKE_STD_ZVAL(z_args[1]);
+		ZVAL_STRINGL(&z_fun_expire, "EXPIRE", 6, 0);
+		ZVAL_STRINGL(z_args[0], key, key_len, 0);
+		ZVAL_LONG(z_args[1], ttl);
+		call_user_function(&redis_ce->function_table, &z_to, &z_fun_expire, &z_ret, 2, z_args TSRMLS_CC);
+		/* cleanup */
+		efree(z_args[0]);
+		efree(z_args[1]);
+	}
+
+	return 1;
+}
+
+static zend_bool
+ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
 
 	zval z_fun_zrange, z_fun_zadd, z_ret, *z_args[4], **z_zadd_args, **z_score_pp;
 	int count;
@@ -820,6 +873,9 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 	ZVAL_STRINGL(z_zadd_args[0], key, key_len, 0);
 	call_user_function(&redis_ce->function_table, &z_to, &z_fun_zadd, &z_ret, 1 + 2 * count, z_zadd_args TSRMLS_CC);
 
+	/* Expire if needed */
+	ra_expire_key(key, key_len, z_to, ttl);
+
 	/* cleanup */
 	for(i = 0; i < 1 + 2 * count; ++i) {
 		efree(z_zadd_args[i]);
@@ -829,9 +885,9 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 }
 
 static zend_bool
-ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
+ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
 
-	zval z_fun_get, z_fun_set, z_ret, *z_args[2];
+	zval z_fun_get, z_fun_set, z_ret, *z_args[3];
 
 	/* run GET on source */
 	MAKE_STD_ZVAL(z_args[0]);
@@ -847,21 +903,36 @@ ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC)
 
 	/* run SET on target */
 	MAKE_STD_ZVAL(z_args[1]);
-	ZVAL_STRINGL(&z_fun_set, "SET", 3, 0);
-	ZVAL_STRINGL(z_args[0], key, key_len, 0);
-	ZVAL_STRINGL(z_args[1], Z_STRVAL(z_ret), Z_STRLEN(z_ret), 1); /* copy z_ret to arg 1 */
-	call_user_function(&redis_ce->function_table, &z_to, &z_fun_set, &z_ret, 2, z_args TSRMLS_CC);
+	if (ttl > 0) {
+		MAKE_STD_ZVAL(z_args[2]);
+		ZVAL_STRINGL(&z_fun_set, "SETEX", 5, 0);
+		ZVAL_STRINGL(z_args[0], key, key_len, 0);
+		ZVAL_LONG(z_args[1], ttl);
+		ZVAL_STRINGL(z_args[2], Z_STRVAL(z_ret), Z_STRLEN(z_ret), 1); /* copy z_ret to arg 1 */
+		call_user_function(&redis_ce->function_table, &z_to, &z_fun_set, &z_ret, 3, z_args TSRMLS_CC);
+		/* cleanup */
+		efree(z_args[1]);
+		zval_dtor(z_args[2]);
+		efree(z_args[2]);
+	}
+	else {
+		ZVAL_STRINGL(&z_fun_set, "SET", 3, 0);
+		ZVAL_STRINGL(z_args[0], key, key_len, 0);
+		ZVAL_STRINGL(z_args[1], Z_STRVAL(z_ret), Z_STRLEN(z_ret), 1); /* copy z_ret to arg 1 */
+		call_user_function(&redis_ce->function_table, &z_to, &z_fun_set, &z_ret, 2, z_args TSRMLS_CC);
+		/* cleanup */
+		zval_dtor(z_args[1]);
+		efree(z_args[1]);
+	}
 
 	/* cleanup */
 	efree(z_args[0]);
-	zval_dtor(z_args[1]);
-	efree(z_args[1]);
 
 	return 1;
 }
 
 static zend_bool
-ra_move_hash(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
+ra_move_hash(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
 
 	zval z_fun_hgetall, z_fun_hmset, z_ret, *z_args[2];
 
@@ -883,6 +954,9 @@ ra_move_hash(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 	z_args[1] = &z_ret; /* copy z_ret to arg 1 */
 	call_user_function(&redis_ce->function_table, &z_to, &z_fun_hmset, &z_ret, 2, z_args TSRMLS_CC);
 
+	/* Expire if needed */
+	ra_expire_key(key, key_len, z_to, ttl);
+
 	/* cleanup */
 	efree(z_args[0]);
 
@@ -892,7 +966,7 @@ ra_move_hash(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 static zend_bool
 ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 		int list_count, const char **cmd_list,
-		int add_count, const char **cmd_add TSRMLS_DC) {
+		int add_count, const char **cmd_add, long ttl TSRMLS_DC) {
 
 	zval z_fun_retrieve, z_fun_sadd, z_ret, **z_retrieve_args, **z_sadd_args, **z_data_pp;
 	int count, i;
@@ -948,6 +1022,9 @@ ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 	}
 	call_user_function(&redis_ce->function_table, &z_to, &z_fun_sadd, &z_ret, count+1, z_sadd_args TSRMLS_CC);
 
+	/* Expire if needed */
+	ra_expire_key(key, key_len, z_to, ttl);
+
 	/* cleanup */
 	efree(z_sadd_args[0]); /* no dtor at [0] */
 
@@ -961,54 +1038,56 @@ ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 }
 
 static zend_bool
-ra_move_set(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
+ra_move_set(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
 
 	const char *cmd_list[] = {"SMEMBERS"};
 	const char *cmd_add[] = {"SADD"};
-	return ra_move_collection(key, key_len, z_from, z_to, 1, cmd_list, 1, cmd_add TSRMLS_CC);
+	return ra_move_collection(key, key_len, z_from, z_to, 1, cmd_list, 1, cmd_add, ttl TSRMLS_CC);
 }
 
 static zend_bool
-ra_move_list(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
+ra_move_list(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
 
 	const char *cmd_list[] = {"LRANGE", "0", "-1"};
 	const char *cmd_add[] = {"RPUSH"};
-	return ra_move_collection(key, key_len, z_from, z_to, 3, cmd_list, 1, cmd_add TSRMLS_CC);
+	return ra_move_collection(key, key_len, z_from, z_to, 3, cmd_list, 1, cmd_add, ttl TSRMLS_CC);
 }
 
 void
 ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 
-	long type = ra_get_key_type(z_from, key, key_len TSRMLS_CC);
+	long res[2], type, ttl;
 	zend_bool success = 0;
-
-	/* open transaction on target server */
-	ra_index_multi(z_to, MULTI TSRMLS_CC);
-
-	switch(type) {
-		case REDIS_STRING:
-			success = ra_move_string(key, key_len, z_from, z_to TSRMLS_CC);
-			break;
-
-		case REDIS_SET:
-			success = ra_move_set(key, key_len, z_from, z_to TSRMLS_CC);
-			break;
-
-		case REDIS_LIST:
-			success = ra_move_list(key, key_len, z_from, z_to TSRMLS_CC);
-			break;
-
-		case REDIS_ZSET:
-			success = ra_move_zset(key, key_len, z_from, z_to TSRMLS_CC);
-			break;
-
-		case REDIS_HASH:
-			success = ra_move_hash(key, key_len, z_from, z_to TSRMLS_CC);
-			break;
-
-		default:
-			/* TODO: report? */
-			break;
+	if (ra_get_key_type(z_from, key, key_len, z_from, res TSRMLS_CC)) {
+		type = res[0];
+		ttl = res[1];
+		/* open transaction on target server */
+		ra_index_multi(z_to, MULTI TSRMLS_CC);
+		switch(type) {
+			case REDIS_STRING:
+				success = ra_move_string(key, key_len, z_from, z_to, ttl TSRMLS_CC);
+				break;
+	
+			case REDIS_SET:
+				success = ra_move_set(key, key_len, z_from, z_to, ttl TSRMLS_CC);
+				break;
+	
+			case REDIS_LIST:
+				success = ra_move_list(key, key_len, z_from, z_to, ttl TSRMLS_CC);
+				break;
+	
+			case REDIS_ZSET:
+				success = ra_move_zset(key, key_len, z_from, z_to, ttl TSRMLS_CC);
+				break;
+	
+			case REDIS_HASH:
+				success = ra_move_hash(key, key_len, z_from, z_to, ttl TSRMLS_CC);
+				break;
+	
+			default:
+				/* TODO: report? */
+				break;
+		}
 	}
 
 	if(success) {
