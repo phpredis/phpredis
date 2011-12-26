@@ -1727,6 +1727,22 @@ class Redis_Test extends TestSuite
 	$this->redis->delete('key2');
 	$this->redis->delete('key3');
 
+	// test integer and float weights (GitHub issue #109).
+	$this->redis->del('key1', 'key2', 'key3');
+
+	$this->redis->zadd('key1', 1, 'one');
+	$this->redis->zadd('key1', 2, 'two');
+	$this->redis->zadd('key2', 1, 'one');
+	$this->redis->zadd('key2', 2, 'two');
+	$this->redis->zadd('key2', 3, 'three');
+
+	$this->assertTrue($this->redis->zunion('key3', array('key1', 'key2'), array(2, 3.0)) === 3);
+
+
+	$this->redis->delete('key1');
+	$this->redis->delete('key2');
+	$this->redis->delete('key3');
+
 
 	// ZREMRANGEBYRANK
 	$this->redis->zAdd('key1', 1, 'one');

@@ -3926,26 +3926,36 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
 			zend_hash_get_current_data_ex(arr_weights_hash, (void**) &data, &pointer) == SUCCESS;
 			zend_hash_move_forward_ex(arr_weights_hash, &pointer)) {
 
-			if (Z_TYPE_PP(data) == IS_LONG) {
-				char *old_cmd = NULL;
-				if(*cmd) {
-					old_cmd = cmd;
-				}
+			if (Z_TYPE_PP(data) != IS_LONG && Z_TYPE_PP(data) != IS_DOUBLE) {
+				continue;	// ignore non-numeric arguments.
+			}
+
+			old_cmd = NULL;
+			if(*cmd) {
+				old_cmd = cmd;
+			}
+
+			if(Z_TYPE_PP(data) == IS_LONG) {
+				cmd_len = redis_cmd_format(&cmd,
+						"%s" /* cmd */
+						"$%d" _NL /* data_len */
+						"%d" _NL  /* data */
+						, cmd, cmd_len
+						, integer_length(Z_LVAL_PP(data)), Z_LVAL_PP(data));
+
+			} else if(Z_TYPE_PP(data) == IS_DOUBLE) {
+
 				cmd_len = redis_cmd_format(&cmd,
                                 "%s" /* cmd */
-                                "$%d" _NL /* data_len */
-                                "%d" _NL  /* data */
-
+                                "$%f" _NL /* data, including size */
                                 , cmd, cmd_len
-                                , integer_length(Z_LVAL_PP(data)), Z_LVAL_PP(data));
-                cmd_elements++;
-				if(old_cmd) {
-					efree(old_cmd);
-				}
-			} else {
-				/* error */
-				efree(cmd);
-				RETURN_FALSE;
+                                , Z_DVAL_PP(data));
+			}
+
+			// keep track of elements added
+			cmd_elements++;
+			if(old_cmd) {
+				efree(old_cmd);
 			}
 		}
 	}
