@@ -421,6 +421,15 @@ PHPAPI void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
 
     cur = response;
     while(1) {
+
+		/* skip comments and empty lines */
+		if(*cur == '#' || *cur == '\r') {
+			if(!(cur = strchr(cur, '\n')))
+				break;
+			cur++;
+			continue;
+		}
+
         /* key */
         pos = strchr(cur, ':');
         if(pos == NULL) {
