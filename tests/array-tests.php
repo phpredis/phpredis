@@ -95,9 +95,9 @@ class Redis_Array_Test extends TestSuite
 
 	public function customDistributor($key)
 	{
-		$a = unpack("N*", md5($key, true));;
+		$a = unpack("N*", md5($key, true));
 		global $newRing;
-		$pos = $a[1] % count($newRing);
+		$pos = abs($a[1]) % count($newRing);
 
 		return $pos;
 	}
