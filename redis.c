@@ -202,6 +202,9 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)
 
+     /* config */
+     PHP_ME(Redis, config, NULL, ZEND_ACC_PUBLIC)
+
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, popen, pconnect, NULL, ZEND_ACC_PUBLIC)
@@ -5265,6 +5268,50 @@ PHP_METHOD(Redis, setOption) {
             default:
                     RETURN_FALSE;
     }
+}
+/* }}} */
+
+/* {{{ proto boolean Redis::config(string operation, string key [, mixed value])
+ */
+PHP_METHOD(Redis, config)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *val = NULL, *cmd, *operation = NULL;
+    int key_len, val_len, cmd_len, operation_len;
+    int val_free = 0, key_free = 0;
+    zval *z_value = NULL;
+    long expire = -1;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss|z",
+                                     &object, redis_ce, &operation, &operation_len, &key, &key_len,
+                                     &z_value) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+
+    if (z_value == NULL) {  
+        cmd_len = redis_cmd_format_static(&cmd, "CONFIG", "ss", operation, operation_len, key, key_len);
+    }
+    else {
+        val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
+        cmd_len = redis_cmd_format_static(&cmd, "CONFIG", "sss", operation, operation_len, key, key_len, val, val_len);
+        if(val_free) efree(val);
+    }
+
+    if(key_free) efree(key);
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len)
+
+    IF_ATOMIC() {
+        redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 /* }}} */
 
