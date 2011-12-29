@@ -2304,7 +2304,7 @@ $redis->hIncrBy('user:1', 'salary', 100); // Joe earns 100 more now.
 
 ## hMGet
 ##### Description
-Retirieve the values associated to the specified fields in the hash.
+Retrieve the values associated to the specified fields in the hash.
 ##### Parameters
 *key*  
 *memberKeys* Array  
@@ -2316,4 +2316,20 @@ $redis->delete('h');
 $redis->hSet('h', 'field1', 'value1');
 $redis->hSet('h', 'field2', 'value2');
 $redis->hmGet('h', array('field1', 'field2')); /* returns array('field1' => 'value1', 'field2' => 'value2') */
+</pre>
+
+## config
+##### Description
+Get or Set the redis config keys.
+##### Parameters
+*operation* (string) either `GET` or `SET`  
+*key* string for `SET`, glob-pattern for `GET`. See http://redis.io/commands/config-get for examples.  
+*value* optional string (only for `SET`)
+##### Return value
+*Associative array* for `GET`, key -> value  
+*bool* for `SET`
+##### Examples
+<pre>
+$redis->config("GET", "*max-*-entries*");
+$redis->config("SET", "dir", "/var/run/redis/dumps/");
 </pre>

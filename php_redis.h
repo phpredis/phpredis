@@ -153,6 +153,8 @@ PHP_METHOD(Redis, unsubscribe);
 PHP_METHOD(Redis, getOption);
 PHP_METHOD(Redis, setOption);
 
+PHP_METHOD(Redis, config);
+
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
 #else

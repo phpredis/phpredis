@@ -202,6 +202,9 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)
 
+     /* config */
+     PHP_ME(Redis, config, NULL, ZEND_ACC_PUBLIC)
+
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, popen, pconnect, NULL, ZEND_ACC_PUBLIC)
@@ -5265,6 +5268,58 @@ PHP_METHOD(Redis, setOption) {
             default:
                     RETURN_FALSE;
     }
+}
+/* }}} */
+
+/* {{{ proto boolean Redis::config(string op, string key [, mixed value])
+ */
+PHP_METHOD(Redis, config)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *val = NULL, *cmd, *op = NULL;
+    int key_len, val_len, cmd_len, op_len;
+	enum {CFG_GET, CFG_SET} mode;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss|s",
+                                     &object, redis_ce, &op, &op_len, &key, &key_len,
+                                     &val, &val_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+	/* op must be GET or SET */
+	if(strncasecmp(op, "GET", 3) == 0) {
+		mode = CFG_GET;
+	} else if(strncasecmp(op, "SET", 3) == 0) {
+		mode = CFG_SET;
+	} else {
+		RETURN_FALSE;
+	}
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+    if (mode == CFG_GET && val == NULL) {
+        cmd_len = redis_cmd_format_static(&cmd, "CONFIG", "ss", op, op_len, key, key_len);
+
+		REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len)
+		IF_ATOMIC() {
+			redis_sock_read_multibulk_reply_zipped_strings(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+		}
+		REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_zipped_strings);
+
+    } else if(mode == CFG_SET && val != NULL) {
+        cmd_len = redis_cmd_format_static(&cmd, "CONFIG", "sss", op, op_len, key, key_len, val, val_len);
+
+		REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len)
+		IF_ATOMIC() {
+			redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+		}
+		REDIS_PROCESS_RESPONSE(redis_boolean_response);
+    } else {
+		RETURN_FALSE;
+	}
 }
 /* }}} */
 
