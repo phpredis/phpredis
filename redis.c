@@ -1111,7 +1111,7 @@ PHP_METHOD(Redis, delete)
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "DEL", sizeof("DEL") - 1,
-					1, &redis_sock, 0, 1))
+					1, &redis_sock, 0, 1, 1))
 		return;
 
     IF_ATOMIC() {
@@ -1130,7 +1130,7 @@ PHP_METHOD(Redis, watch)
 
     generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "WATCH", sizeof("WATCH") - 1,
-					1, &redis_sock, 0, 1);
+					1, &redis_sock, 0, 1, 1);
     IF_ATOMIC() {
 	  redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
@@ -1426,7 +1426,7 @@ PHP_METHOD(Redis, lPush)
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "LPUSH", sizeof("LPUSH") - 1,
-                    2, &redis_sock, 0, 0))
+                    2, &redis_sock, 0, 0, 1))
 		return;
 
     IF_ATOMIC() {
@@ -1444,7 +1444,7 @@ PHP_METHOD(Redis, rPush)
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "RPUSH", sizeof("RPUSH") - 1,
-                    2, &redis_sock, 0, 0))
+                    2, &redis_sock, 0, 0, 1))
 		return;
 
     IF_ATOMIC() {
@@ -1563,7 +1563,7 @@ PHP_METHOD(Redis, blPop)
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "BLPOP", sizeof("BLPOP") - 1,
-					2, &redis_sock, 1, 1))
+					2, &redis_sock, 1, 1, 1))
 		return;
 
     IF_ATOMIC() {
@@ -1584,7 +1584,7 @@ PHP_METHOD(Redis, brPop)
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "BRPOP", sizeof("BRPOP") - 1,
-					2, &redis_sock, 1, 1))
+					2, &redis_sock, 1, 1, 1))
 		return;
 
     IF_ATOMIC() {
@@ -1777,7 +1777,7 @@ PHP_METHOD(Redis, sAdd)
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SADD", sizeof("SADD") - 1,
-					2, &redis_sock, 0, 0))
+					2, &redis_sock, 0, 0, 1))
 		return;
 
 	IF_ATOMIC() {
@@ -1826,7 +1826,7 @@ PHP_METHOD(Redis, sRemove)
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SREM", sizeof("SREM") - 1,
-					2, &redis_sock, 0, 0))
+					2, &redis_sock, 0, 0, 1))
 		return;
 
 	IF_ATOMIC() {
@@ -1963,7 +1963,7 @@ PHP_METHOD(Redis, sMembers)
 
 
 PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
-									 int min_argc, RedisSock **out_sock, int has_timeout, int all_keys)
+									 int min_argc, RedisSock **out_sock, int has_timeout, int all_keys, int can_serialize)
 {
     zval *object, **z_args, *z_array;
     char **keys, *cmd;
@@ -2053,7 +2053,14 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 
 			if(!all_keys && j != 0) { /* not just operating on keys */
 
-				keys_to_free[j] = redis_serialize(redis_sock, *z_value_pp, &keys[j], &keys_len[j] TSRMLS_CC);
+				if(can_serialize) {
+					keys_to_free[j] = redis_serialize(redis_sock, *z_value_pp, &keys[j], &keys_len[j] TSRMLS_CC);
+				} else {
+					convert_to_string(*z_value_pp);
+					keys[j] = Z_STRVAL_PP(z_value_pp);
+					keys_len[j] = Z_STRLEN_PP(z_value_pp);
+					keys_to_free[j] = 0;
+				}
 
 			} else {
 
@@ -2092,7 +2099,14 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
         for(i = 0, j = 0; i < argc; ++i) { /* store each key */
 			if(!all_keys && j != 0) { /* not just operating on keys */
 
-				keys_to_free[j] = redis_serialize(redis_sock, z_args[i], &keys[j], &keys_len[j] TSRMLS_CC);
+				if(can_serialize) {
+					keys_to_free[j] = redis_serialize(redis_sock, z_args[i], &keys[j], &keys_len[j] TSRMLS_CC);
+				} else {
+					convert_to_string(z_args[i]);
+					keys[j] = Z_STRVAL_P(z_args[i]);
+					keys_len[j] = Z_STRLEN_P(z_args[i]);
+					keys_to_free[j] = 0;
+				}
 
 			} else {
 				
@@ -2164,7 +2178,7 @@ PHP_METHOD(Redis, sInter) {
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SINTER", sizeof("SINTER") - 1,
-					0, &redis_sock, 0, 1))
+					0, &redis_sock, 0, 1, 1))
 		return;
 
     IF_ATOMIC() {
@@ -2185,7 +2199,7 @@ PHP_METHOD(Redis, sInterStore) {
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SINTERSTORE", sizeof("SINTERSTORE") - 1,
-					1, &redis_sock, 0, 1))
+					1, &redis_sock, 0, 1, 1))
 		return;
 
 	IF_ATOMIC() {
@@ -2205,7 +2219,7 @@ PHP_METHOD(Redis, sUnion) {
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SUNION", sizeof("SUNION") - 1,
-							  0, &redis_sock, 0, 1))
+							  0, &redis_sock, 0, 1, 1))
 		return;
 
 	IF_ATOMIC() {
@@ -2225,7 +2239,7 @@ PHP_METHOD(Redis, sUnionStore) {
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SUNIONSTORE", sizeof("SUNIONSTORE") - 1,
-					1, &redis_sock, 0, 1))
+					1, &redis_sock, 0, 1, 1))
 		return;
 
 	IF_ATOMIC() {
@@ -2244,7 +2258,7 @@ PHP_METHOD(Redis, sDiff) {
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SDIFF", sizeof("SDIFF") - 1,
-					0, &redis_sock, 0, 1))
+					0, &redis_sock, 0, 1, 1))
 		return;
 
 	IF_ATOMIC() {
@@ -2266,7 +2280,7 @@ PHP_METHOD(Redis, sDiffStore) {
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "SDIFFSTORE", sizeof("SDIFFSTORE") - 1,
-					1, &redis_sock, 0, 1))
+					1, &redis_sock, 0, 1, 1))
 		return;
 
 	IF_ATOMIC() {
@@ -3398,7 +3412,7 @@ PHP_METHOD(Redis, zDelete)
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "ZREM", sizeof("ZREM") - 1,
-					2, &redis_sock, 0, 0))
+					2, &redis_sock, 0, 0, 1))
 		return;
 
 	IF_ATOMIC() {
@@ -4147,7 +4161,7 @@ PHP_METHOD(Redis, hDel)
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                     "HDEL", sizeof("HDEL") - 1,
-					2, &redis_sock, 0, 0))
+					2, &redis_sock, 0, 0, 0))
 		return;
 
 	IF_ATOMIC() {

@@ -2519,9 +2519,7 @@ class Redis_Test extends TestSuite
 
 	    $this->assertTrue(count($ret) === $i);
 
-	    $serializer = $this->redis->getOption(Redis::OPT_SERIALIZER);
-	    $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE); // testing incr, which doesn't work with the serializer
-	    // hash
+		// hash
 	    $ret = $this->redis->multi($mode)
 		    ->delete('hkey1')
 		    ->hset('hkey1', 'key1', 'value1')
@@ -2537,12 +2535,9 @@ class Redis_Test extends TestSuite
 		    ->hvals('hkey1')
 		    ->hgetall('hkey1')
 		    ->hset('hkey1', 'valn', 1)
-		    ->hincrby('hkey1', 'valn', 4)
-		    ->hincrby('hkey1', 'val-fail', 42)
-		    ->hset('hkey1', 'val-fail', 'non-string')
+			->hset('hkey1', 'val-fail', 'non-string')
 		    ->hget('hkey1', 'val-fail')
-		    ->hincrby('hkey1', 'val-fail', 42)
-		    ->exec();
+			->exec();
 
 	    $i = 0;
 	    $this->assertTrue(is_array($ret));
@@ -2560,15 +2555,11 @@ class Redis_Test extends TestSuite
 	    $this->assertTrue($ret[$i] === array('value1', 'value3') || $ret[$i] === array('value3', 'value1')); $i++; // hvals
 	    $this->assertTrue($ret[$i] === array('key1' => 'value1', 'key3' => 'value3') || $ret[$i] === array('key3' => 'value3', 'key1' => 'value1')); $i++; // hgetall
 	    $this->assertTrue($ret[$i++] === 1); // added 1 element
-	    $this->assertTrue($ret[$i++] === 5); // added 4 to value 1 → 5
-	    $this->assertTrue($ret[$i++] === 42); // member doesn't exist → assume 0, and then add.
-	    $this->assertTrue($ret[$i++] === 0); // didn't add the element, already present, so 0.
+		$this->assertTrue($ret[$i++] === 1); // added the element, so 1.
 	    $this->assertTrue($ret[$i++] === 'non-string'); // hset succeeded
-	    $this->assertTrue($ret[$i++] === FALSE); // member isn't a number → fail.
-	    $this->assertTrue(count($ret) === $i);
-	    $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+		$this->assertTrue(count($ret) === $i);
 
-	    $ret = $this->redis->multi() // default to MULTI, not PIPELINE.
+		$ret = $this->redis->multi($mode) // default to MULTI, not PIPELINE.
 		    ->delete('test')
 		    ->set('test', 'xyz')
 		    ->get('test')
