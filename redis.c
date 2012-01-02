@@ -1165,7 +1165,7 @@ PHPAPI void redis_unwatch_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redi
 PHP_METHOD(Redis, unwatch)
 {
     char cmd[] = "*1" _NL "$7" _NL "UNWATCH" _NL;
-    generic_empty_cmdi_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, estrdup(cmd), sizeof(cmd)-1, redis_unwatch_response);
+    generic_empty_cmd_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, estrdup(cmd), sizeof(cmd)-1, redis_unwatch_response);
 
 }
 /* }}} */
