@@ -150,6 +150,7 @@ typedef struct {
     int            failed;
     int            status;
     int            persistent;
+    int            watching;
     char           *persistent_id;
 
     int            serializer;
