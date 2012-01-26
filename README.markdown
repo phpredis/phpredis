@@ -1691,6 +1691,39 @@ Remove the expiration timer from a key.
 $redis->persist('key');
 </pre>
 
+## mget
+##### *Description*
+Returns the values of all specified keys.
+For every key that does not hold a string value or does not exist,
+the special value `FALSE` is returned. Because of this, the operation never fails.
+
+##### *Parameters*
+*Array* $keys array(key1, key2, key3)
+
+##### *Return value*
+*Array* array(value1, value2, value3)
+
+##### *Example*
+<pre>
+$redis->delete('x', 'y', 'z', 'h');	// remove x y z
+$redis->mset(array('x' => 'a', 'y' => 'b', 'z' => 'c'));
+$redis->hset('h', 'field', 'value');
+var_dump($redis->mget(array('x', 'y', 'z', 'h')));
+</pre>
+Output:
+<pre>
+array(3) {
+    [0]=>
+    string(1) "a"
+    [1]=>
+    string(1) "b"
+    [2]=>
+    string(1) "c"
+    [3]=>
+    bool(false)
+}
+</pre>
+
 ## mset, msetnx
 ##### *Description*
 Sets multiple key-value pairs in one atomic command. MSETNX only returns TRUE if all the keys were set (see SETNX).
