@@ -874,7 +874,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	call_user_function(&redis_ce->function_table, &z_to, &z_fun_zadd, &z_ret, 1 + 2 * count, z_zadd_args TSRMLS_CC);
 
 	/* Expire if needed */
-	ra_expire_key(key, key_len, z_to, ttl);
+	ra_expire_key(key, key_len, z_to, ttl TSRMLS_CC);
 
 	/* cleanup */
 	for(i = 0; i < 1 + 2 * count; ++i) {
@@ -955,7 +955,7 @@ ra_move_hash(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	call_user_function(&redis_ce->function_table, &z_to, &z_fun_hmset, &z_ret, 2, z_args TSRMLS_CC);
 
 	/* Expire if needed */
-	ra_expire_key(key, key_len, z_to, ttl);
+	ra_expire_key(key, key_len, z_to, ttl TSRMLS_CC);
 
 	/* cleanup */
 	efree(z_args[0]);
@@ -1023,7 +1023,7 @@ ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 	call_user_function(&redis_ce->function_table, &z_to, &z_fun_sadd, &z_ret, count+1, z_sadd_args TSRMLS_CC);
 
 	/* Expire if needed */
-	ra_expire_key(key, key_len, z_to, ttl);
+	ra_expire_key(key, key_len, z_to, ttl TSRMLS_CC);
 
 	/* cleanup */
 	efree(z_sadd_args[0]); /* no dtor at [0] */
