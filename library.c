@@ -475,9 +475,7 @@ PHPAPI void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
     IF_MULTI_OR_PIPELINE() {
         add_next_index_zval(z_tab, z_multi_result);
     } else {
-	    *return_value = *z_multi_result;
-	    zval_copy_ctor(return_value);
-	    efree(z_multi_result);
+        RETVAL_ZVAL(z_multi_result, 0, 1);
     }
 }
 
