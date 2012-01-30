@@ -2186,7 +2186,19 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 	cmd[cmd_len] = 0;
 	php_printf("cmd=[%s]\n", cmd);
 	*/
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+
+	/* call REDIS_PROCESS_REQUEST and skip void returns */
+	IF_MULTI_OR_ATOMIC() {
+		if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
+			efree(cmd);
+			return FAILURE;
+		}
+		efree(cmd);
+	}
+	IF_PIPELINE() {
+		PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len);
+		efree(cmd);
+	}
 
     return SUCCESS;
 }
@@ -3164,7 +3176,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTI
 			}
 
 			val_free = redis_serialize(redis_sock, *z_value_pp, &val, &val_len TSRMLS_CC);
-			key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+			key_free = redis_key_prefix(redis_sock, &key, (int*)&key_len TSRMLS_CC);
 
 			if(step == 0) { /* counting */
 				cmd_len += 1 + integer_length(key_len) + 2
@@ -4234,7 +4246,18 @@ generic_hash_command_1(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_
     cmd_len = redis_cmd_format_static(&cmd, keyword, "s", key, key_len);
 	if(key_free) efree(key);
 
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	/* call REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len) without breaking the return value */
+	IF_MULTI_OR_ATOMIC() {
+		if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
+			efree(cmd);
+			return NULL;
+		}
+		efree(cmd);
+	}
+	IF_PIPELINE() {
+		PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len);
+		efree(cmd);
+	}
     return redis_sock;
 }
 

@@ -792,8 +792,9 @@ PHP_METHOD(RedisArray, mset)
 	HashPosition pointer;
 	zval **redis_instances, *redis_inst, **argv;
 	char *key, **keys;
-	int key_len, type, *key_lens;
-	long idx;
+	unsigned int key_len;
+	int type, *key_lens;
+	unsigned long idx;
 
 	/* Multi/exec support */
 	HANDLE_MULTI_EXEC("MSET");
@@ -833,11 +834,11 @@ PHP_METHOD(RedisArray, mset)
 			continue;
 		}
 
-		redis_instances[i] = ra_find_node(ra, key, key_len - 1, &pos[i] TSRMLS_CC); /* -1 because of PHP assoc keys which count \0... */
+		redis_instances[i] = ra_find_node(ra, key, (int)key_len - 1, &pos[i] TSRMLS_CC); /* -1 because of PHP assoc keys which count \0... */
 		argc_each[pos[i]]++;	/* count number of keys per node */
 		argv[i] = *data;
 		keys[i] = key;
-		key_lens[i] = key_len - 1;
+		key_lens[i] = (int)key_len - 1;
 	}
 
 

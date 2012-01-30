@@ -501,20 +501,20 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
 	zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(z_pairs), &pos);
 	while (zend_hash_get_current_data_ex(Z_ARRVAL_P(z_pairs), (void **)&z_entry_pp, &pos) == SUCCESS) {
 			char *key;
-			int key_len;
-			long num_key;
+			unsigned int key_len;
+			unsigned long num_key;
 			zval *z_new;
 			MAKE_STD_ZVAL(z_new);
 
 			switch (zend_hash_get_current_key_ex(Z_ARRVAL_P(z_pairs), &key, &key_len, &num_key, 1, &pos)) {
 				case HASH_KEY_IS_STRING:
-					ZVAL_STRINGL(z_new, key, key_len - 1, 0);
+					ZVAL_STRINGL(z_new, key, (int)key_len - 1, 0);
 					zend_hash_next_index_insert(Z_ARRVAL_P(z_keys), &z_new, sizeof(zval *), NULL);
 					break;
 
 				case HASH_KEY_IS_LONG:
 					Z_TYPE_P(z_new) = IS_LONG;
-					Z_LVAL_P(z_new) = num_key;
+					Z_LVAL_P(z_new) = (long)num_key;
 					zend_hash_next_index_insert(Z_ARRVAL_P(z_keys), &z_new, sizeof(zval *), NULL);
 					break;
 			}
@@ -775,6 +775,8 @@ ra_del_key(const char *key, int key_len, zval *z_from TSRMLS_DC) {
 
 	/* close transaction */
 	ra_index_exec(z_from, NULL, 0 TSRMLS_CC);
+
+	return 1;
 }
 
 static zend_bool
@@ -806,8 +808,9 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	int count;
 	HashTable *h_zset_vals;
 	char *val;
-	int val_len, i;
-	long idx;
+	unsigned int val_len;
+	int i;
+	unsigned long idx;
 	int type;
 	
 	/* run ZRANGE key 0 -1 WITHSCORES on source */
@@ -855,10 +858,10 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 		MAKE_STD_ZVAL(z_zadd_args[i+1]);
 		switch (zend_hash_get_current_key_ex(h_zset_vals, &val, &val_len, &idx, 0, NULL)) {
 			case HASH_KEY_IS_STRING:
-				ZVAL_STRINGL(z_zadd_args[i+1], val, val_len-1, 0); /* we have to remove 1 because it is an array key. */
+				ZVAL_STRINGL(z_zadd_args[i+1], val, (int)val_len-1, 0); /* we have to remove 1 because it is an array key. */
 				break;
 			case HASH_KEY_IS_LONG:
-				ZVAL_LONG(z_zadd_args[i+1], idx);
+				ZVAL_LONG(z_zadd_args[i+1], (long)idx);
 				break;
 			default:
 				return -1; // Todo: log error
