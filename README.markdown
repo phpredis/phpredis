@@ -425,7 +425,7 @@ $redis->decr('key1'); /* -3 */
 $redis->decrBy('key1', 10); /* -13 */
 </pre>
 
-## getMultiple
+## mGet, getMultiple
 ##### Description
 Get the values of all the specified keys. If one or more keys dont exist, the array will contain `FALSE` at the position of the key.
 ##### Parameters
@@ -437,8 +437,8 @@ Get the values of all the specified keys. If one or more keys dont exist, the ar
 $redis->set('key1', 'value1');
 $redis->set('key2', 'value2');
 $redis->set('key3', 'value3');
-$redis->getMultiple(array('key1', 'key2', 'key3')); /* array('value1', 'value2', 'value3');
-$redis->getMultiple(array('key0', 'key1', 'key5')); /* array(`FALSE`, 'value2', `FALSE`);
+$redis->mGet(array('key1', 'key2', 'key3')); /* array('value1', 'value2', 'value3');
+$redis->mGet(array('key0', 'key1', 'key5')); /* array(`FALSE`, 'value2', `FALSE`);
 </pre>
 
 ## lPush
