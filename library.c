@@ -765,6 +765,8 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     if(redis_sock->host[0] == '/' && redis_sock->port < 1) {
 	    host_len = spprintf(&host, 0, "unix://%s", redis_sock->host);
     } else {
+	    if(redis_sock->port == 0)
+	    	redis_sock->port = 6379;
 	    host_len = spprintf(&host, 0, "%s:%d", redis_sock->host, redis_sock->port);
     }
 
