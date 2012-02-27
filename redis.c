@@ -71,6 +71,7 @@ ZEND_DECLARE_MODULE_GLOBALS(redis)
 
 static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, __construct, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, __destruct, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, pconnect, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, close, NULL, ZEND_ACC_PUBLIC)
@@ -322,12 +323,6 @@ int send_discard_static(RedisSock *redis_sock) {
 static void redis_destructor_redis_sock(zend_rsrc_list_entry * rsrc TSRMLS_DC)
 {
     RedisSock *redis_sock = (RedisSock *) rsrc->ptr;
-
-    // If we're in MULTI mode, try to send a standalone discard here
-    if(redis_sock->mode == MULTI) {
-    	send_discard_static(redis_sock);
-    }
-
     redis_sock_disconnect(redis_sock TSRMLS_CC);
     redis_free_socket(redis_sock);
 }
@@ -471,6 +466,28 @@ PHP_METHOD(Redis, __construct)
 }
 /* }}} */
 
+/* {{{ proto Redis Redis::__destruct()
+    Public Destructor
+ */
+PHP_METHOD(Redis,__destruct) {
+	if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	// Grab our socket
+	RedisSock *redis_sock;
+	if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	// If we think we're in MULTI mode, send a discard
+	if(redis_sock->mode == MULTI) {
+		// Discard any multi commands, and free any callbacks that have been queued
+		send_discard_static(redis_sock);
+		free_reply_callbacks(getThis(), redis_sock);
+	}
+}
+
 /* {{{ proto boolean Redis::connect(string host, int port [, double timeout])
  */
 PHP_METHOD(Redis, connect)
@@ -495,8 +512,6 @@ PHP_METHOD(Redis, pconnect)
 		if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC) < 0) {
 			RETURN_FALSE;
 		}
-		/* clean up eventual residual state from previous request */
-		//redis_send_discard(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 
 		RETURN_TRUE;
 	}
