@@ -496,7 +496,7 @@ PHP_METHOD(Redis, pconnect)
 			RETURN_FALSE;
 		}
 		/* clean up eventual residual state from previous request */
-		redis_send_discard(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+		//redis_send_discard(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 
 		RETURN_TRUE;
 	}
