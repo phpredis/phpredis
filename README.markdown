@@ -529,7 +529,7 @@ $redis->lPop('key1'); /* key1 => [ 'B', 'C' ] */
 
 ## rPop
 ##### *Description*
-Returns and removes the first element of the list.
+Returns and removes the last element of the list.
 ##### *Parameters*
 *key*
 ##### *Return value*
