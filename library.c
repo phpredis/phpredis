@@ -31,8 +31,13 @@ PHPAPI void redis_stream_close(RedisSock *redis_sock TSRMLS_DC) {
 
 PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 {
-    int eof = php_stream_eof(redis_sock->stream);
+    int eof;
     int count = 0;
+
+	if (!redis_sock->stream)
+		return -1;
+
+	eof = php_stream_eof(redis_sock->stream);
     while(eof) {
         if((MULTI == redis_sock->mode) || redis_sock->watching || count++ == 10) { /* too many failures */
 	    if(redis_sock->stream) { /* close stream if still here */
