@@ -514,7 +514,11 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 		return FAILURE;
 	}
 
+#if PHP_VERSION_ID >= 50400
+	id = zend_list_insert(redis_sock, le_redis_sock TSRMLS_CC);
+#else
 	id = zend_list_insert(redis_sock, le_redis_sock);
+#endif
 	add_property_resource(object, "socket", id);
 
 	return SUCCESS;
