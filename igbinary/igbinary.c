@@ -13,7 +13,9 @@
 #include "zend_dynamic_array.h"
 #include "zend_alloc.h"
 #include "ext/standard/info.h"
+#ifdef PHP_SESSION
 #include "ext/session/php_session.h"
+#endif
 #include "ext/standard/php_incomplete_class.h"
 #include "php_igbinary.h"
 
