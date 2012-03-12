@@ -73,7 +73,11 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts TSRMLS_DC)
 		redis_sock_server_open(redis_sock, 1 TSRMLS_CC);
 
 		/* attach */
+#if PHP_VERSION_ID >= 50400
+		id = zend_list_insert(redis_sock, le_redis_sock TSRMLS_CC);
+#else
 		id = zend_list_insert(redis_sock, le_redis_sock);
+#endif
 		add_property_resource(ra->redis[i], "socket", id);
 	}
 

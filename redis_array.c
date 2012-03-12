@@ -251,7 +251,11 @@ PHP_METHOD(RedisArray, __construct)
 
 	if(ra) {
 		ra->auto_rehash = b_autorehash;
+#if PHP_VERSION_ID >= 50400
+		id = zend_list_insert(ra, le_redis_array TSRMLS_CC);
+#else
 		id = zend_list_insert(ra, le_redis_array);
+#endif
 		add_property_resource(getThis(), "socket", id);
 	}
 }
