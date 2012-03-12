@@ -31,7 +31,9 @@
 #include "hash.h"
 
 /** Session serializer function prototypes. */
+#if HAVE_PHP_SESSION
 PS_SERIALIZER_FUNCS(igbinary);
+#endif
 
 /* {{{ Types */
 enum igbinary_type {
@@ -343,6 +345,7 @@ PHP_FUNCTION(igbinary_serialize) {
 }
 /* }}} */
 /* {{{ Serializer encode function */
+#if HAVE_PHP_SESSION
 PS_SERIALIZER_ENCODE_FUNC(igbinary)
 {
 	struct igbinary_serialize_data igsd;
@@ -367,7 +370,9 @@ PS_SERIALIZER_ENCODE_FUNC(igbinary)
 
 	return SUCCESS;
 }
+#endif
 /* }}} */
+#if HAVE_PHP_SESSION
 /* {{{ Serializer decode function */
 PS_SERIALIZER_DECODE_FUNC(igbinary) {
 	HashPosition tmp_hash_pos;
@@ -426,6 +431,7 @@ PS_SERIALIZER_DECODE_FUNC(igbinary) {
 
 	return SUCCESS;
 }
+#endif
 /* }}} */
 /* {{{ igbinary_serialize_data_init */
 /** Inits igbinary_serialize_data. */
