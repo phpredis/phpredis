@@ -2810,6 +2810,13 @@ class Redis_Test extends TestSuite
 		$this->assertTrue($data['data'] === 'test 1');
 		$this->assertTrue($data['session_id'] === 'test 2');
 
+		// issue #145, serializer with objects.
+		$this->redis->set('x', array(new stdClass, new stdClass));
+		$x = $this->redis->get('x');
+		$this->assertTrue(is_array($x));
+		$this->assertTrue(is_object($x[0]) && get_class($x[0]) === 'stdClass');
+		$this->assertTrue(is_object($x[1]) && get_class($x[1]) === 'stdClass');
+
 	    // revert
 	    $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE) === TRUE); 	// set ok
 	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE);		// get ok

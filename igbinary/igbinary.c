@@ -454,7 +454,7 @@ inline static int igbinary_serialize_data_init(struct igbinary_serialize_data *i
 		hash_si_init(&igsd->objects, 16);
 	}
 
-	igsd->compact_strings = (bool)IGBINARY_G(compact_strings);
+	igsd->compact_strings = 1; // PHPHREDIS WARNING: DO NOT CHANGE.
 
 	return r;
 }
