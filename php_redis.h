@@ -24,6 +24,7 @@
 #define PHP_REDIS_H
 
 PHP_METHOD(Redis, __construct);
+PHP_METHOD(Redis, __destruct);
 PHP_METHOD(Redis, connect);
 PHP_METHOD(Redis, pconnect);
 PHP_METHOD(Redis, close);
