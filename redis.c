@@ -71,6 +71,7 @@ ZEND_DECLARE_MODULE_GLOBALS(redis)
 
 static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, __construct, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, __destruct, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, pconnect, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, close, NULL, ZEND_ACC_PUBLIC)
@@ -282,6 +283,41 @@ PHPAPI zend_class_entry *redis_get_exception_base(int root TSRMLS_DC)
 }
 
 /**
+ * Send a static DISCARD in case we're in MULTI mode
+ * I don't know quite where to put this.  :)
+ */
+int send_discard_static(RedisSock *redis_sock) {
+	// Assume failure
+	int result = FAILURE;
+
+   	// Command, len, and response len
+	char *cmd, *response;
+   	int response_len, cmd_len;
+
+   	// Format our discard command
+   	cmd_len = redis_cmd_format_static(&cmd, "DISCARD", "");
+
+   	// Send our DISCARD command
+   	if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) >= 0 &&
+   	   (response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) != NULL)
+   	{
+   		// Success if we get OK
+   		result = response_len == 3 && strncmp(response,"+OK", 3) == 0
+   			? SUCCESS
+   			: FAILURE;
+
+   		// Free our response
+   		efree(response);
+   	}
+
+   	// Free our command
+   	efree(cmd);
+
+   	// Return success/failure
+   	return result;
+}
+
+/**
  * redis_destructor_redis_sock
  */
 static void redis_destructor_redis_sock(zend_rsrc_list_entry * rsrc TSRMLS_DC)
@@ -430,6 +466,28 @@ PHP_METHOD(Redis, __construct)
 }
 /* }}} */
 
+/* {{{ proto Redis Redis::__destruct()
+    Public Destructor
+ */
+PHP_METHOD(Redis,__destruct) {
+	if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	// Grab our socket
+	RedisSock *redis_sock;
+	if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	// If we think we're in MULTI mode, send a discard
+	if(redis_sock->mode == MULTI) {
+		// Discard any multi commands, and free any callbacks that have been queued
+		send_discard_static(redis_sock);
+		free_reply_callbacks(getThis(), redis_sock);
+	}
+}
+
 /* {{{ proto boolean Redis::connect(string host, int port [, double timeout])
  */
 PHP_METHOD(Redis, connect)
@@ -454,8 +512,6 @@ PHP_METHOD(Redis, pconnect)
 		if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC) < 0) {
 			RETURN_FALSE;
 		}
-		/* clean up eventual residual state from previous request */
-		redis_send_discard(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 
 		RETURN_TRUE;
 	}
