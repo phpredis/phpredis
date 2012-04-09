@@ -3,14 +3,14 @@
 %global php_version %(php-config --version 2>/dev/null || echo 0)
 
 Name:           php-redis
-Version:        2.1.3
+Version:        2.2.1
 Release:        1%{?dist}
 Summary:        The phpredis extension provides an API for communicating with the Redis key-value store.
 
 Group:          Development/Languages
 License:        PHP
 URL:            https://github.com/nicolasff/phpredis
-Source0:        https://download.github.com/nicolasff-phpredis-2.1.3-0-g43bc590.tar.gz
+Source0:        https://github.com/nicolasff/phpredis/tarball/master
 Source1:	redis.ini
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
