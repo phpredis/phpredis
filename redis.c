@@ -283,37 +283,32 @@ PHPAPI zend_class_entry *redis_get_exception_base(int root TSRMLS_DC)
 }
 
 /**
- * Send a static DISCARD in case we're in MULTI mode
- * I don't know quite where to put this.  :)
+ * Send a static DISCARD in case we're in MULTI mode.
  */
-int send_discard_static(RedisSock *redis_sock) {
-	// Assume failure
-	int result = FAILURE;
+static int send_discard_static(RedisSock *redis_sock) {
 
-   	// Command, len, and response len
+	int result = FAILURE;
 	char *cmd, *response;
    	int response_len, cmd_len;
 
-   	// Format our discard command
+   	/* format our discard command */
    	cmd_len = redis_cmd_format_static(&cmd, "DISCARD", "");
 
-   	// Send our DISCARD command
+   	/* send our DISCARD command */
    	if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) >= 0 &&
-   	   (response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) != NULL)
-   	{
-   		// Success if we get OK
-   		result = response_len == 3 && strncmp(response,"+OK", 3) == 0
-   			? SUCCESS
-   			: FAILURE;
+   	   (response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) != NULL) {
 
-   		// Free our response
+   		/* success if we get OK */
+   		result = (response_len == 3 && strncmp(response,"+OK", 3) == 0) ? SUCCESS : FAILURE;
+
+   		/* free our response */
    		efree(response);
    	}
 
-   	// Free our command
+   	/* free our command */
    	efree(cmd);
 
-   	// Return success/failure
+   	/* return success/failure */
    	return result;
 }
 

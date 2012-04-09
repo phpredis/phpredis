@@ -1032,8 +1032,13 @@ class Redis_Test extends TestSuite
 
         $array = array('val', 'val2', 'val3');
 
-        $this->assertEquals($array, $this->redis->sGetMembers('set'));
-	$this->assertEquals($array, $this->redis->sMembers('set'));	// test alias
+		$sGetMembers = $this->redis->sGetMembers('set');
+		sort($sGetMembers);
+		$this->assertEquals($array, $sGetMembers);
+
+		$sMembers = $this->redis->sMembers('set');
+		sort($sMembers);
+		$this->assertEquals($array, $sMembers);	// test alias
     }
 
     public function testlSet() {
