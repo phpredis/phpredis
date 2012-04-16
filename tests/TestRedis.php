@@ -115,6 +115,12 @@ class Redis_Test extends TestSuite
 	 $this->assertEquals($s, $this->redis->get('x'));
     }
 
+	public function testEcho() {
+		$this->assertEquals($this->redis->echo("hello"), "hello");
+		$this->assertEquals($this->redis->echo(""), "");
+		$this->assertEquals($this->redis->echo(" 0123 "), " 0123 ");
+	}
+
     public function testErr() {
 
 	 $this->redis->set('x', '-ERR');

@@ -76,6 +76,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, pconnect, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, close, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, ping, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, echo, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, get, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, set, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setex, NULL, ZEND_ACC_PUBLIC)
@@ -775,6 +776,39 @@ PHP_METHOD(Redis, randomKey)
 	  redis_ping_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
 	REDIS_PROCESS_RESPONSE(redis_ping_response);
+}
+/* }}} */
+
+/* {{{ proto string Redis::echo(string key)
+ */
+PHP_METHOD(Redis, echo)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd;
+    int key_len, cmd_len;
+	int key_free;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
+                                     &object, redis_ce,
+                                     &key, &key_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
+	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+    cmd_len = redis_cmd_format_static(&cmd, "ECHO", "s", key, key_len);
+	if(key_free) efree(key);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+	  redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_string_response);
+
 }
 /* }}} */
 

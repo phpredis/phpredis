@@ -29,6 +29,7 @@ PHP_METHOD(Redis, connect);
 PHP_METHOD(Redis, pconnect);
 PHP_METHOD(Redis, close);
 PHP_METHOD(Redis, ping);
+PHP_METHOD(Redis, echo);
 PHP_METHOD(Redis, get);
 PHP_METHOD(Redis, set);
 PHP_METHOD(Redis, setex);
