@@ -186,7 +186,6 @@ Parameter value.
 $redis->getOption(Redis::OPT_SERIALIZER);	// return Redis::SERIALIZER_NONE, Redis::SERIALIZER_PHP, or Redis::SERIALIZER_IGBINARY.
 </pre>
 
-
 ## ping
 ##### *Description*
 
@@ -199,6 +198,20 @@ Check the current connection status
 ##### *Return Value*
 
 *STRING*: `+PONG` on success. Throws a RedisException object on connectivity error, as described above.
+
+
+## echo
+##### *Description*
+
+Sends a string to Redis, which replies with the same string
+
+##### *Parameters*
+
+*STRING*: The message to send.
+
+##### *Return Value*
+
+*STRING*: the same message.
 
 
 ## get
