@@ -774,9 +774,9 @@ Adds a value to the set value stored at key. If this value is already in the set
 *BOOL* `TRUE` if value didn't exist and was added successfully, `FALSE` if the value is already present.
 ##### *Example*
 <pre>
-$redis->sAdd('key1' , 'set1'); /* TRUE, 'key1' => {'set1'} */
-$redis->sAdd('key1' , 'set2'); /* TRUE, 'key1' => {'set1', 'set2'}*/
-$redis->sAdd('key1' , 'set2'); /* FALSE, 'key1' => {'set1', 'set2'}*/
+$redis->sAdd('key1' , 'member1'); /* TRUE, 'key1' => {'member1'} */
+$redis->sAdd('key1' , 'member2'); /* TRUE, 'key1' => {'member1', 'member2'}*/
+$redis->sAdd('key1' , 'member2'); /* FALSE, 'key1' => {'member1', 'member2'}*/
 </pre>
 
 ## sRem, sRemove
@@ -789,10 +789,10 @@ Removes the specified member from the set value stored at key.
 *BOOL* `TRUE` if the member was present in the set, `FALSE` if it didn't.
 ##### *Example*
 <pre>
-$redis->sAdd('key1' , 'set1'); 
-$redis->sAdd('key1' , 'set2'); 
-$redis->sAdd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
-$redis->sRem('key1', 'set2'); /* 'key1' => {'set1', 'set3'} */
+$redis->sAdd('key1' , 'member1');
+$redis->sAdd('key1' , 'member2');
+$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member1', 'member2', 'member3'}*/
+$redis->sRem('key1', 'member2'); /* 'key1' => {'member1', 'member3'} */
 </pre>
 
 ## sMove
@@ -806,13 +806,13 @@ Moves the specified member from the set at srcKey to the set at dstKey.
 *BOOL* If the operation is successful, return `TRUE`. If the srcKey and/or dstKey didn't exist, and/or the member didn't exist in srcKey, `FALSE` is returned.
 ##### *Example*
 <pre>
-$redis->sAdd('key1' , 'set11'); 
-$redis->sAdd('key1' , 'set12'); 
-$redis->sAdd('key1' , 'set13'); /* 'key1' => {'set11', 'set12', 'set13'}*/
-$redis->sAdd('key2' , 'set21'); 
-$redis->sAdd('key2' , 'set22'); /* 'key2' => {'set21', 'set22'}*/
-$redis->sMove('key1', 'key2', 'set13'); /* 'key1' =>  {'set11', 'set12'} */
-					/* 'key2' =>  {'set21', 'set22', 'set13'} */
+$redis->sAdd('key1' , 'member11');
+$redis->sAdd('key1' , 'member12');
+$redis->sAdd('key1' , 'member13'); /* 'key1' => {'member11', 'member12', 'member13'}*/
+$redis->sAdd('key2' , 'member21');
+$redis->sAdd('key2' , 'member22'); /* 'key2' => {'member21', 'member22'}*/
+$redis->sMove('key1', 'key2', 'member13'); /* 'key1' =>  {'member11', 'member12'} */
+					/* 'key2' =>  {'member21', 'member22', 'member13'} */
 
 </pre>
 
@@ -827,12 +827,12 @@ Checks if `value` is a member of the set stored at the key `key`.
 *BOOL* `TRUE` if `value` is a member of the set at key `key`, `FALSE` otherwise.
 ##### *Example*
 <pre>
-$redis->sAdd('key1' , 'set1'); 
-$redis->sAdd('key1' , 'set2'); 
-$redis->sAdd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
+$redis->sAdd('key1' , 'member1');
+$redis->sAdd('key1' , 'member2');
+$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member1', 'member2', 'member3'}*/
 
-$redis->sIsMember('key1', 'set1'); /* TRUE */
-$redis->sIsMember('key1', 'setX'); /* FALSE */
+$redis->sIsMember('key1', 'member1'); /* TRUE */
+$redis->sIsMember('key1', 'memberX'); /* FALSE */
 
 </pre>
 
@@ -845,9 +845,9 @@ Returns the cardinality of the set identified by key.
 *LONG* the cardinality of the set identified by key, 0 if the set doesn't exist.
 ##### *Example*
 <pre>
-$redis->sAdd('key1' , 'set1'); 
-$redis->sAdd('key1' , 'set2'); 
-$redis->sAdd('key1' , 'set3'); /* 'key1' => {'set1', 'set2', 'set3'}*/
+$redis->sAdd('key1' , 'member1');
+$redis->sAdd('key1' , 'member2');
+$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member1', 'member2', 'member3'}*/
 $redis->sCard('key1'); /* 3 */
 $redis->sCard('keyX'); /* 0 */
 </pre>
@@ -862,11 +862,11 @@ Removes and returns a random element from the set value at Key.
 *Bool* `FALSE` if set identified by key is empty or doesn't exist.
 ##### *Example*
 <pre>
-$redis->sAdd('key1' , 'set1'); 
-$redis->sAdd('key1' , 'set2'); 
-$redis->sAdd('key1' , 'set3'); /* 'key1' => {'set3', 'set1', 'set2'}*/
-$redis->sPop('key1'); /* 'set1', 'key1' => {'set3', 'set2'} */
-$redis->sPop('key1'); /* 'set3', 'key1' => {'set2'} */
+$redis->sAdd('key1' , 'member1');
+$redis->sAdd('key1' , 'member2');
+$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member3', 'member1', 'member2'}*/
+$redis->sPop('key1'); /* 'member1', 'key1' => {'member3', 'member2'} */
+$redis->sPop('key1'); /* 'member3', 'key1' => {'member2'} */
 </pre>
 
 ## sRandMember
@@ -879,11 +879,11 @@ Returns a random element from the set value at Key, without removing it.
 *Bool* `FALSE` if set identified by key is empty or doesn't exist.
 ##### *Example*
 <pre>
-$redis->sAdd('key1' , 'set1'); 
-$redis->sAdd('key1' , 'set2'); 
-$redis->sAdd('key1' , 'set3'); /* 'key1' => {'set3', 'set1', 'set2'}*/
-$redis->sRandMember('key1'); /* 'set1', 'key1' => {'set3', 'set1', 'set2'} */
-$redis->sRandMember('key1'); /* 'set3', 'key1' => {'set3', 'set1', 'set2'} */
+$redis->sAdd('key1' , 'member1');
+$redis->sAdd('key1' , 'member2');
+$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member3', 'member1', 'member2'}*/
+$redis->sRandMember('key1'); /* 'member1', 'key1' => {'member3', 'member1', 'member2'} */
+$redis->sRandMember('key1'); /* 'member3', 'key1' => {'member3', 'member1', 'member2'} */
 </pre>
 
 ## sInter
