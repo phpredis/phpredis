@@ -1606,6 +1606,18 @@ class Redis_Test extends TestSuite
 	$this->assertTrue(array() === $this->redis->lgetRange('y', 0, -1));
 
     }
+
+	public function testZAddFirstArg() {
+
+		$this->redis->delete('key');
+
+		$zsetName = 100; // not a string!
+		$this->assertTrue(1 === $this->redis->zAdd($zsetName, 0, 'val0'));
+		$this->assertTrue(1 === $this->redis->zAdd($zsetName, 1, 'val1'));
+
+		$this->assertTrue(array('val0', 'val1') === $this->redis->zRange($zsetName, 0, -1));
+	}
+
     public function testZX() {
 
 	$this->redis->delete('key');
@@ -1617,7 +1629,6 @@ class Redis_Test extends TestSuite
 	$this->assertTrue(1 === $this->redis->zAdd('key', 2, 'val2'));
 	$this->assertTrue(1 === $this->redis->zAdd('key', 1, 'val1'));
 	$this->assertTrue(1 === $this->redis->zAdd('key', 3, 'val3'));
-	$this->assertTrue(FALSE === $this->redis->zAdd(42, 123, 'aa'));	// string key
 	$this->assertTrue(2 === $this->redis->zAdd('key', 4, 'val4', 5, 'val5')); // multiple parameters
 
 	$this->assertTrue(array('val0', 'val1', 'val2', 'val3', 'val4', 'val5') === $this->redis->zRange('key', 0, -1));

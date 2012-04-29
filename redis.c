@@ -3448,6 +3448,9 @@ PHP_METHOD(Redis, zAdd) {
     }
 
 	/* need key, score, value, [score, value...] */
+	if(argc > 1) {
+		convert_to_string(z_args[0]); // required string
+	}
 	if(argc < 3 || Z_TYPE_P(z_args[0]) != IS_STRING || (argc-1) % 2 != 0) {
 		efree(z_args);
 		RETURN_FALSE;
