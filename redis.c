@@ -2865,6 +2865,10 @@ PHPAPI void generic_expire_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int 
 PHP_METHOD(Redis, setTimeout) {
     generic_expire_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "EXPIRE", sizeof("EXPIRE")-1);
 }
+
+PHP_METHOD(Redis, pexpire) {
+    generic_expire_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PEXPIRE", sizeof("PEXPIRE")-1);
+}
 /* }}} */
 
 /* {{{ proto array Redis::expireAt(string key, int timestamp)

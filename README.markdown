@@ -1240,9 +1240,9 @@ $redis->get('x'); 	// → `FALSE`
 ##### *Description*
 Same as rename, but will not replace a key if the destination already exists. This is the same behaviour as setNx.
 
-## setTimeout, expire
+## setTimeout, expire, pexpire
 ##### *Description*
-Sets an expiration date (a timeout) on an item.
+Sets an expiration date (a timeout) on an item. pexpire requires a TTL in milliseconds.
 
 ##### *Parameters*
 *Key*: key. The key that will disappear.

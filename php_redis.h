@@ -89,6 +89,7 @@ PHP_METHOD(Redis, sUnionStore);
 PHP_METHOD(Redis, sDiff);
 PHP_METHOD(Redis, sDiffStore);
 PHP_METHOD(Redis, setTimeout);
+PHP_METHOD(Redis, pexpire);
 PHP_METHOD(Redis, save);
 PHP_METHOD(Redis, bgSave);
 PHP_METHOD(Redis, lastSave);
