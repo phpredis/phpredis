@@ -252,10 +252,10 @@ Set the string value in argument as value of the key.
 $redis->set('key', 'value');
 </pre>
 
-## setex
+## setex, psetex
 ##### Description
 
-Set the string value in argument as value of the key, with a time to live.
+Set the string value in argument as value of the key, with a time to live. PSETEX uses a TTL in milliseconds.
 
 ##### Parameters
 *Key*
@@ -269,6 +269,7 @@ Set the string value in argument as value of the key, with a time to live.
 
 <pre>
 $redis->setex('key', 3600, 'value'); // sets key → value, with 1h TTL.
+$redis->psetex('key', 100, 'value'); // sets key → value, with 0.1 sec TTL.
 </pre>
 ## setnx
 ##### Description

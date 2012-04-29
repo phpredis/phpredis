@@ -33,6 +33,7 @@ PHP_METHOD(Redis, echo);
 PHP_METHOD(Redis, get);
 PHP_METHOD(Redis, set);
 PHP_METHOD(Redis, setex);
+PHP_METHOD(Redis, psetex);
 PHP_METHOD(Redis, setnx);
 PHP_METHOD(Redis, getSet);
 PHP_METHOD(Redis, randomKey);

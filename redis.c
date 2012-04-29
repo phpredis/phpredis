@@ -80,6 +80,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, get, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, set, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setex, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, psetex, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setnx, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getSet, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, randomKey, NULL, ZEND_ACC_PUBLIC)
@@ -639,10 +640,8 @@ PHP_METHOD(Redis, set)
 	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 
-/* {{{ proto boolean Redis::setex(string key, long expire, string value)
- */
-PHP_METHOD(Redis, setex)
-{
+PHPAPI void redis_setex(INTERNAL_FUNCTION_PARAMETERS, char *keyword) {
+
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *val = NULL, *cmd;
@@ -663,7 +662,7 @@ PHP_METHOD(Redis, setex)
 
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
-    cmd_len = redis_cmd_format_static(&cmd, "SETEX", "sds", key, key_len, expire, val, val_len);
+    cmd_len = redis_cmd_format_static(&cmd, keyword, "sds", key, key_len, expire, val, val_len);
     if(val_free) efree(val);
     if(key_free) efree(key);
 
@@ -672,6 +671,20 @@ PHP_METHOD(Redis, setex)
 		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
 	REDIS_PROCESS_RESPONSE(redis_boolean_response);
+}
+
+/* {{{ proto boolean Redis::setex(string key, long expire, string value)
+ */
+PHP_METHOD(Redis, setex)
+{
+	redis_generic_setex(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SETEX");
+}
+
+/* {{{ proto boolean Redis::psetex(string key, long expire, string value)
+ */
+PHP_METHOD(Redis, psetex)
+{
+	redis_generic_setex(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PSETEX");
 }
 
 /* {{{ proto boolean Redis::setnx(string key, string value)
