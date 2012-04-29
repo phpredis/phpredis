@@ -1259,9 +1259,9 @@ sleep(5);				// wait 5 seconds
 $redis->get('x'); 		// will return `FALSE`, as 'x' has expired.
 </pre>
 
-## expireAt
+## expireAt, pexpireAt
 ##### *Description*
-Sets an expiration date (a timestamp) on an item.
+Sets an expiration date (a timestamp) on an item. pexpireAt requires a timestamp in milliseconds.
 
 ##### *Parameters*
 *Key*: key. The key that will disappear.

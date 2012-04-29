@@ -176,6 +176,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zUnion, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zIncrBy, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, expireAt, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pexpireAt, NULL, ZEND_ACC_PUBLIC)
 
      /* 1.2 */
      PHP_ME(Redis, hGet, NULL, ZEND_ACC_PUBLIC)
@@ -2876,6 +2877,13 @@ PHP_METHOD(Redis, pexpire) {
  */
 PHP_METHOD(Redis, expireAt) {
     generic_expire_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "EXPIREAT", sizeof("EXPIREAT")-1);
+}
+/* }}} */
+
+/* {{{ proto array Redis::pexpireAt(string key, int timestamp)
+ */
+PHP_METHOD(Redis, pexpireAt) {
+    generic_expire_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PEXPIREAT", sizeof("PEXPIREAT")-1);
 }
 /* }}} */
 
