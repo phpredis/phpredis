@@ -2505,6 +2505,7 @@ class Redis_Test extends TestSuite
 		    ->zadd('zkey5', 5, 'zValue5')
 		    ->zIncrBy('zkey5', 3, 'zValue5') // fix this
 		    ->zScore('zkey5', 'zValue5')
+			->zScore('zkey5', 'unknown')
 		    ->exec();
 
 	    $i = 0;
@@ -2538,6 +2539,7 @@ class Redis_Test extends TestSuite
 	    $this->assertTrue($ret[$i++] === 1); // added value to zkey5, with score 5
 	    $this->assertTrue($ret[$i++] === 8.0); // incremented score by 3 → it is now 8.
 	    $this->assertTrue($ret[$i++] === 8.0); // current score is 8.
+		$this->assertTrue($ret[$i++] === FALSE); // score for unknown element.
 
 	    $this->assertTrue(count($ret) === $i);
 
