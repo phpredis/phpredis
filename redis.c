@@ -642,7 +642,7 @@ PHP_METHOD(Redis, set)
 	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 
-PHPAPI void redis_setex(INTERNAL_FUNCTION_PARAMETERS, char *keyword) {
+PHPAPI void redis_generic_setex(INTERNAL_FUNCTION_PARAMETERS, char *keyword) {
 
     zval *object;
     RedisSock *redis_sock;
