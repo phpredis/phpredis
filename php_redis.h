@@ -98,6 +98,7 @@ PHP_METHOD(Redis, flushAll);
 PHP_METHOD(Redis, dbSize);
 PHP_METHOD(Redis, auth);
 PHP_METHOD(Redis, ttl);
+PHP_METHOD(Redis, pttl);
 PHP_METHOD(Redis, persist);
 PHP_METHOD(Redis, info);
 PHP_METHOD(Redis, resetStat);

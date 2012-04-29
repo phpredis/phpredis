@@ -1675,9 +1675,9 @@ None.
 $redis->resetStat();
 </pre>
 
-## ttl
+## ttl, pttl
 ##### *Description*
-Returns the time to live left for a given key, in seconds. If the key doesn't exist, `FALSE` is returned.
+Returns the time to live left for a given key, in seconds. If the key doesn't exist, `FALSE` is returned. pttl returns a time in milliseconds.
 
 ##### *Parameters*
 *Key*: key

@@ -144,6 +144,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, dbSize, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, auth, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, ttl, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pttl, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, persist, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, info, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, resetStat, NULL, ZEND_ACC_PUBLIC)
@@ -3084,10 +3085,7 @@ PHP_METHOD(Redis, persist) {
 }
 /* }}} */
 
-/* {{{ proto long Redis::ttl(string key)
- */
-PHP_METHOD(Redis, ttl) {
-
+PHPAPI void generic_ttl(INTERNAL_FUNCTION_PARAMETERS, char *keyword) {
     zval *object;
     RedisSock *redis_sock;
 
@@ -3104,7 +3102,7 @@ PHP_METHOD(Redis, ttl) {
     }
 
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
-    cmd_len = redis_cmd_format_static(&cmd, "TTL", "s", key, key_len);
+    cmd_len = redis_cmd_format_static(&cmd, keyword, "s", key, key_len);
 	if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -3112,6 +3110,19 @@ PHP_METHOD(Redis, ttl) {
 	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
 	REDIS_PROCESS_RESPONSE(redis_long_response);
+}
+
+/* {{{ proto long Redis::ttl(string key)
+ */
+PHP_METHOD(Redis, ttl) {
+	generic_ttl(INTERNAL_FUNCTION_PARAM_PASSTHRU, "TTL");
+}
+/* }}} */
+
+/* {{{ proto long Redis::pttl(string key)
+ */
+PHP_METHOD(Redis, pttl) {
+	generic_ttl(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PTTL");
 }
 /* }}} */
 
