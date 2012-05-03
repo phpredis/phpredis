@@ -289,7 +289,7 @@ PHPAPI zend_class_entry *redis_get_exception_base(int root TSRMLS_DC)
 /**
  * Send a static DISCARD in case we're in MULTI mode.
  */
-static int send_discard_static(RedisSock *redis_sock) {
+static int send_discard_static(RedisSock *redis_sock TSRMLS_DC) {
 
 	int result = FAILURE;
 	char *cmd, *response;
@@ -488,7 +488,7 @@ PHP_METHOD(Redis,__destruct) {
 	// If we think we're in MULTI mode, send a discard
 	if(redis_sock->mode == MULTI) {
 		// Discard any multi commands, and free any callbacks that have been queued
-		send_discard_static(redis_sock);
+		send_discard_static(redis_sock TSRMLS_CC);
 		free_reply_callbacks(getThis(), redis_sock);
 	}
 }
