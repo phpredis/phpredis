@@ -1933,9 +1933,9 @@ class Redis_Test extends TestSuite
 
 	// hIncrByFloat
 	$this->redis->delete('h');
-	$this->assertTrue('1.5' === $this->redis->hIncrByFloat('h','x', 1.5));
-	$this->assertTrue('3.0' === $this->redis->hincrByFloat('h','x', 1.5));
-	$this->assertTrue('1.5' === $this->redis->hincrByFloat('h','x', -1.5));
+	$this->assertTrue(1.5 === $this->redis->hIncrByFloat('h','x', 1.5));
+	$this->assertTrue(3.0 === $this->redis->hincrByFloat('h','x', 1.5));
+	$this->assertTrue(1.5 === $this->redis->hincrByFloat('h','x', -1.5));
 
 	$this->redis->hset('h','y','not-a-number');
 	$this->assertTrue(FALSE === $this->redis->hIncrByFloat('h', 'y', 1.5));
