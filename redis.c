@@ -91,6 +91,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, delete, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, incr, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, incrBy, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, incrByFloat, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, decr, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, decrBy, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, type, NULL, ZEND_ACC_PUBLIC)
@@ -189,6 +190,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, hGetAll, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hExists, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hIncrBy, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hIncrByFloat, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hMset, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hMget, NULL, ZEND_ACC_PUBLIC)
 
@@ -1047,6 +1049,38 @@ PHP_METHOD(Redis, incrBy){
     }
 }
 /* }}} */
+
+/* {{{ proto float Redis::incrByFloat(string key, float value)
+ */
+PHP_METHOD(Redis, incrByFloat) {
+	zval *object;
+	RedisSock *redis_sock;
+	char *key = NULL, *cmd;
+	int key_len, cmd_len, key_free;
+	double val;
+
+	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osd",
+									&object, redis_ce, &key, &key_len, &val) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+		RETURN_FALSE;
+	}
+
+	// Prefix our key, free it if we have
+	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+	if(key_free) efree(key);
+
+	// Format our INCRBYFLOAT command
+	cmd_len = redis_cmd_format_static(&cmd, "INCRBYFLOAT", "sf", key, key_len, val);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_bulk_double_response);
+}
 
 /* {{{ proto boolean Redis::decr(string key [,int value])
  */
@@ -4506,6 +4540,59 @@ PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int 
     efree(z_ret);
 }
 
+PHP_METHOD(Redis, hIncrByFloat)
+{
+	zval *object;
+	RedisSock *redis_sock;
+	char *key = NULL, *cmd, *member;
+	int key_len, member_len, cmd_len, val_len, key_free;
+	double val;
+	int i, dcount;
+
+	// Validate we have the right number of arguments
+	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ossd",
+									&object, redis_ce,
+									&key, &key_len, &member, &member_len, &val) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	// Grab our socket
+	if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+		RETURN_FALSE;
+	}
+
+	// Start at the begining unless the first character is '-'
+	/*i = val_len && val[0] == '-' ? 1 : 0;
+
+	// Initially we have no '.' characters
+	dcount = 0;
+
+	// Iterate our string
+	for(; i<val_len; ++i) {
+		// Increment our decimal count and skip this iteration if we're on one
+		if(val[i] == '.') {
+			++dcount;
+			continue;
+		}
+
+		// We're invalid if this character isn't numeric, or if we have too many decimals
+		if((val[i] < '0' || val[i] > '9') || dcount > 1) {
+			RETURN_FALSE;
+		}
+	}
+	*/
+
+	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+	cmd_len = redis_cmd_format_static(&cmd, "HINCRBYFLOAT", "ssf", key, key_len, member, member_len, val);
+	if(key_free) efree(key);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+	    redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_bulk_double_response);
+}
+
 PHP_METHOD(Redis, hIncrBy)
 {
     zval *object;
@@ -4534,8 +4621,6 @@ PHP_METHOD(Redis, hIncrBy)
 			RETURN_FALSE;
 		}
 	}
-
-
 
     /* HINCRBY key member amount */
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
