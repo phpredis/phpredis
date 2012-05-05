@@ -278,6 +278,16 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 				smart_str_appendl(&buf, tmp, tmp_len);
 			}
 				break;
+			case 'l':
+			case 'L': {
+				long l = va_arg(ap, long);
+				char tmp[32];
+				int tmp_len = snprintf(tmp, sizeof(tmp), "%ld", l);
+				smart_str_append_long(&buf, tmp_len);
+				smart_str_appendl(&buf, _NL, sizeof(_NL) -1);
+				smart_str_appendl(&buf, tmp, tmp_len);
+			}
+				break;
 		}
 		p++;
 		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
@@ -565,6 +575,8 @@ PHPAPI void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
 		}
     }
 }
+
+
 
 PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, int flag) {
 
