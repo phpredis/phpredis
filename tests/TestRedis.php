@@ -1862,6 +1862,7 @@ class Redis_Test extends TestSuite
 	$this->assertTrue(2 === $this->redis->zRevRank('z', 'one'));
 	$this->assertTrue(1 === $this->redis->zRevRank('z', 'two'));
 	$this->assertTrue(0 === $this->redis->zRevRank('z', 'five'));
+
     }
 
     public function testHashes() {

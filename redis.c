@@ -4545,9 +4545,8 @@ PHP_METHOD(Redis, hIncrByFloat)
 	zval *object;
 	RedisSock *redis_sock;
 	char *key = NULL, *cmd, *member;
-	int key_len, member_len, cmd_len, val_len, key_free;
+	int key_len, member_len, cmd_len, key_free;
 	double val;
-	int i, dcount;
 
 	// Validate we have the right number of arguments
 	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ossd",
@@ -4560,27 +4559,6 @@ PHP_METHOD(Redis, hIncrByFloat)
 	if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
 		RETURN_FALSE;
 	}
-
-	// Start at the begining unless the first character is '-'
-	/*i = val_len && val[0] == '-' ? 1 : 0;
-
-	// Initially we have no '.' characters
-	dcount = 0;
-
-	// Iterate our string
-	for(; i<val_len; ++i) {
-		// Increment our decimal count and skip this iteration if we're on one
-		if(val[i] == '.') {
-			++dcount;
-			continue;
-		}
-
-		// We're invalid if this character isn't numeric, or if we have too many decimals
-		if((val[i] < '0' || val[i] > '9') || dcount > 1) {
-			RETURN_FALSE;
-		}
-	}
-	*/
 
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
 	cmd_len = redis_cmd_format_static(&cmd, "HINCRBYFLOAT", "ssf", key, key_len, member, member_len, val);
