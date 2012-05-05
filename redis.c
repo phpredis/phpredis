@@ -177,6 +177,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zUnion, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zIncrBy, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, expireAt, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pexpire, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, pexpireAt, NULL, ZEND_ACC_PUBLIC)
 
      /* 1.2 */
@@ -2892,7 +2893,7 @@ PHPAPI void generic_expire_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int 
     }
 
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
-    cmd_len = redis_cmd_format_static(&cmd, keyword, "sd", key, key_len, t);
+    cmd_len = redis_cmd_format_static(&cmd, keyword, "sl", key, key_len, t);
 	if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
