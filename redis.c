@@ -3175,18 +3175,43 @@ PHP_METHOD(Redis, pttl) {
 }
 /* }}} */
 
-/* {{{ proto array Redis::info()
+PHPAPI void info_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock TSRMLS_DC) {
+	char *cmd;
+	int cmd_len;
+
+	// Standard INFO command
+	cmd_len = redis_cmd_format_static(&cmd, "INFO", "");
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_info_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_info_response);
+}
+
+PHPAPI void info_commandstats_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock TSRMLS_DC) {
+	char *cmd;
+	int cmd_len;
+
+	// INFO COMMANDSTATS command
+	cmd_len = redis_cmd_format_static(&cmd, "INFO", "s", "COMMANDSTATS", 12);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_info_commandstats_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_info_commandstats_response);
+}
+
+/* {{{ proto array Redis::info(bool commandstats = false)
  */
 PHP_METHOD(Redis, info) {
-
     zval *object;
     RedisSock *redis_sock;
+    zend_bool cmd_stats = 0;
 
-    char *cmd;
-    int cmd_len = redis_cmd_format_static(&cmd, "INFO", "");
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
-                                     &object, redis_ce) == FAILURE) {
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|b",
+                                     &object, redis_ce, &cmd_stats) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -3194,12 +3219,11 @@ PHP_METHOD(Redis, info) {
         RETURN_FALSE;
     }
 
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-	  redis_info_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_info_response);
-
+    if(!cmd_stats) {
+    	info_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+    } else {
+    	info_commandstats_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+    }
 }
 /* }}} */
 

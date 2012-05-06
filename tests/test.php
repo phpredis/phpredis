@@ -36,7 +36,6 @@ class TestSuite {
 		$methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
 
 		foreach($methods as $m) {
-
 			$name = $m->name;
 			if(substr($name, 0, 4) !== 'test')
 				continue;

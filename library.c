@@ -115,7 +115,7 @@ PHPAPI char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_
     } else {
         char c;
         int i;
-        
+
 		reply = emalloc(bytes+1);
 
         while(offset < bytes) {
@@ -416,6 +416,193 @@ PHPAPI void redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
 	add_next_index_long(z_tab, l);
     } else {
     	RETURN_LONG(l);
+    }
+}
+
+/*
+ * Split a string by a seperator string
+ */
+char **str_split(const char *str, const char *sep, int *count) {
+	// Null check
+	if(str == NULL || sep == NULL || count == NULL)
+		return NULL;
+
+	// Iterator, initial counts
+	int i, start = 0, elements = 0, buckets = 5;
+
+	// String, seperator lengths
+	int len    = strlen(str);
+	int seplen = strlen(sep);
+
+	// Allocate initial number of buckets
+	char **result = (char**)emalloc(buckets*sizeof(char*));
+
+	// Iterate our string
+	for(i=0;i<(len-(seplen-1));i++) {
+		// Reallocate if we need more buckets
+		if(buckets < elements+2) {
+			// Double the number of buckets
+			buckets *=2;
+
+			// Reallocate
+			result = erealloc(result, sizeof(char*)*buckets);
+		}
+
+		// Search for the token
+		if(!memcmp(str+i,sep,seplen)) {
+			// We found it, set this element
+			result[elements] = str_duplen(str+start,i-start);
+
+			// Increment counters
+			elements++;
+			start = i+seplen;
+			i = i + seplen -1;
+		}
+	}
+
+	// Allocate last bucket
+	result[elements] = str_duplen(str+start,len-start);
+
+	// Set our count
+	*count = elements+1;
+
+	// Return our array of strings
+	return result;
+}
+
+char *str_dup(const char *str) {
+	// Null check
+	if(str == NULL)
+		return NULL;
+
+	// Return duplicated string
+	return str_duplen(str,strlen(str));
+}
+
+char *str_duplen(const char *str, size_t len) {
+	// Null check
+	if(str == NULL)
+		return NULL;
+
+	// Allocate memory for our new string
+	char *result = (char*)emalloc(len+1);
+
+	// Copy over len bytes and null terminate
+	strncpy(result, str, len); *(result+len)='\0';
+
+	// Return our copied string
+	return result;
+}
+
+void str_free_array(char **arr, unsigned int size) {
+	// Null check
+	if(arr == NULL)
+		return;
+
+	// Iterator for our elements
+	int i;
+
+	// Iterate our elements, freeing each one
+	for(i=0;i<size;i++) {
+		// Free an element
+		if(arr[i] != NULL) {
+			efree(arr[i]);
+		}
+	}
+
+	// Free the array itself
+	efree(arr);
+}
+
+PHPAPI void redis_info_commandstats_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
+	char *response, *key_sep, *line, *us_pos, *col_pos, *key, **values, *value;
+	int response_len, line_count, val_count, i, j;
+
+	// Return array zvals
+	zval *z_multi_result, *z_line_result;
+
+	// Make sure we can read from the socket
+	if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+		RETURN_FALSE;
+	}
+
+	// Split by "\r\n"
+	char **lines = str_split(response, "\r\n", &line_count);
+
+	// If we don't get any lines, or there is some crazy problem with the split, fail
+	if(!lines) {
+		RETURN_FALSE;
+	}
+
+	// Initialize our array zval
+	MAKE_STD_ZVAL(z_multi_result);
+	array_init(z_multi_result);
+
+	// Iterate our lines
+	for(i=0;i<line_count;i++) {
+		// Grab a pointer to the line
+		line = lines[i];
+
+		// Skip comments, empty lines
+		if(*line == '#' || *line == '\0')
+			continue;
+
+		// We'll need to find an underscore, and a colon or this line is munged, so abort
+		if(!(col_pos = strchr(line, ':')) || !(us_pos = strchr(line, '_')) || us_pos>=col_pos) {
+			break;
+		}
+
+		// Allocate, extract our key
+		key = emalloc(col_pos - us_pos);
+		memcpy(key, us_pos+1, col_pos - us_pos - 1);
+		key[col_pos-us_pos-1] = '\0';
+
+		// Now split the value portion of this response line by comma
+		values = str_split(col_pos+1, ",", &val_count);
+
+		// Make sure we have values
+		if(values) {
+			// Array for the info on this commandstats line
+			MAKE_STD_ZVAL(z_line_result);
+			array_init(z_line_result);
+
+			// Iterate our values
+			for(j=0;j<val_count;j++) {
+				// Grab the value line
+				value = values[j];
+
+				// Needs to be in the form of key=value
+				if(!(key_sep = strchr(value, '='))) {
+					break;
+				}
+
+				// Null terminate at our equals sign
+				*key_sep = '\0';
+
+				// Add this to our values k=>v array
+				add_assoc_string(z_line_result, value, key_sep+1, 1);
+			}
+
+			// Now add this commands values to our overall return array
+			add_assoc_zval(z_multi_result, key, z_line_result);
+
+			// Free our values array
+			str_free_array(values, val_count);
+		}
+
+		// Free our key
+		efree(key);
+	}
+
+	// Free our lines, and our response
+	str_free_array(lines, line_count);
+	efree(response);
+
+    // Add our parsed result to our pipeline or return it
+	IF_MULTI_OR_PIPELINE() {
+        add_next_index_zval(z_tab, z_multi_result);
+    } else {
+        RETVAL_ZVAL(z_multi_result, 0, 1);
     }
 }
 
@@ -1227,7 +1414,7 @@ PHPAPI int
 redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len TSRMLS_DC) {
 	int ret_len;
 	char *ret;
-	
+
 	if(redis_sock->prefix == NULL || redis_sock->prefix_len == 0) {
 		return 0;
 	}

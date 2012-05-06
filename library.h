@@ -14,6 +14,7 @@ PHPAPI void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
 PHPAPI void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHPAPI void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHPAPI void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
+PHPAPI void redis_info_commandstats_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHPAPI void redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port, double timeout, int persistent, char *persistent_id);
 PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC);
@@ -42,3 +43,16 @@ redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len TSRMLS_DC);
 PHPAPI int
 redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_DC);
 
+/*
+ * Some generic string splitting routines
+ */
+
+// Split a string by token
+char **str_split(const char *str, const char *sep, int *count);
+
+// Strdup methods
+char *str_duplen(const char *str, size_t len);
+char *str_dup(const char *str);
+
+// Free an array of strings
+void str_free_array(char **arr, unsigned int size);
