@@ -354,7 +354,7 @@ class Redis_Test extends TestSuite
         $this->redis->incr('key');
 	$this->assertEquals(2, (int)$this->redis->get('key'));
 
-        $this->redis->incr('key', 3);
+       $this->redis->incr('key', 3);
 	$this->assertEquals(5, (int)$this->redis->get('key'));
 
 	$this->redis->incrBy('key', 3);
@@ -376,6 +376,28 @@ class Redis_Test extends TestSuite
 	$this->redis->incr('key');
 	$this->assertTrue("abc" === $this->redis->get('key'));
 
+	// incrbyfloat
+
+	$this->redis->delete('key');
+
+	$this->redis->set('key', 0);
+
+	$this->redis->incrbyfloat('key', 1.5);
+	$this->assertEquals('1.5', $this->redis->get('key'));
+
+	$this->redis->incrbyfloat('key', 2.25);
+	$this->assertEquals('3.75', $this->redis->get('key'));
+
+	$this->redis->incrbyfloat('key', -2.25);
+	$this->assertEquals('1.5', $this->redis->get('key'));
+
+	$this->redis->set('key', 'abc');
+
+	$this->redis->incrbyfloat('key', 1.5);
+	$this->assertTrue("abc" === $this->redis->get('key'));
+
+	$this->redis->incrbyfloat('key', -1.5);
+	$this->assertTrue("abc" === $this->redis->get('key'));
     }
 
     public function testDecr()
@@ -627,16 +649,16 @@ class Redis_Test extends TestSuite
 	// TODO: fix this broken test.
 //		$this->redis->delete('list');
 //		$params = array(
-//			0 => array("pipe", "r"), 
+//			0 => array("pipe", "r"),
 //			1 => array("pipe", "w"),
 //			2 => array("file", "/dev/null", "w")
 //		);
 //		if(function_exists('proc_open')) {
 //			$env = array('PHPREDIS_key' =>'list', 'PHPREDIS_value' => 'value');
 //			$process = proc_open('php', $params, $pipes, '/tmp', $env);
-//	
+//
 //			if (is_resource($process)) {
-//				fwrite($pipes[0],  '<?php 
+//				fwrite($pipes[0],  '<?php
 //	sleep(2);
 //	$r = new Redis;
 //	$r->connect("'.self::HOST.'", '.self::PORT.');
@@ -645,11 +667,11 @@ class Redis_Test extends TestSuite
 //	}
 //	$r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
 //	?' . '>');
-//	
+//
 //				fclose($pipes[0]);
 //				fclose($pipes[1]);
 //				$re = proc_close($process);
-//	
+//
 //				$this->assertTrue($this->redis->blPop(array('list'), 5) === array("list", "value"));
 //			}
 //		}
@@ -684,8 +706,8 @@ class Redis_Test extends TestSuite
     }
 
     //lInsert, lPopx, rPopx
-    public function testlPopx() {	
-		//test lPushx/rPushx  
+    public function testlPopx() {
+		//test lPushx/rPushx
 		$this->redis->delete('keyNotExists');
 		$this->assertTrue($this->redis->lPushx('keyNotExists', 'value') === 0);
 		$this->assertTrue($this->redis->rPushx('keyNotExists', 'value') === 0);
@@ -1840,6 +1862,7 @@ class Redis_Test extends TestSuite
 	$this->assertTrue(2 === $this->redis->zRevRank('z', 'one'));
 	$this->assertTrue(1 === $this->redis->zRevRank('z', 'two'));
 	$this->assertTrue(0 === $this->redis->zRevRank('z', 'five'));
+
     }
 
     public function testHashes() {
@@ -1908,6 +1931,15 @@ class Redis_Test extends TestSuite
 
 	$this->redis->hSet('h', 'y', 'not-a-number');
 	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'y', 1));
+
+	// hIncrByFloat
+	$this->redis->delete('h');
+	$this->assertTrue(1.5 === $this->redis->hIncrByFloat('h','x', 1.5));
+	$this->assertTrue(3.0 === $this->redis->hincrByFloat('h','x', 1.5));
+	$this->assertTrue(1.5 === $this->redis->hincrByFloat('h','x', -1.5));
+
+	$this->redis->hset('h','y','not-a-number');
+	$this->assertTrue(FALSE === $this->redis->hIncrByFloat('h', 'y', 1.5));
 
 	// hmset
 	$this->redis->delete('h');
