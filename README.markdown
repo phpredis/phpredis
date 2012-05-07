@@ -1671,7 +1671,7 @@ returned.
 ##### *Example*
 <pre>
 $redis->info(); /* standard redis INFO command */
-$redis->info("COMMANDSTATS"); /* Statistical information on the commands that have been run (>=2.6 only)
+$redis->info("COMMANDSTATS"); /* Information on the commands that have been run (>=2.6 only)
 $redis->info("CPU"); /* just CPU information from Redis INFO */
 </pre>
 
