@@ -1574,6 +1574,13 @@ class Redis_Test extends TestSuite
 	foreach($keys as $k) {
 	    $this->assertTrue(in_array($k, array_keys($info)));
 	}
+
+	// INFO COMMANDSTATS
+	$info = $this->redis->info("COMMANDSTATS");
+
+	foreach($info as $k => $value) {
+		$this->assertTrue(strpos($k, 'cmdstat_') !== false);
+    }
     }
 
     public function testSelect() {

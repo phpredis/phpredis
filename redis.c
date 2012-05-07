@@ -3181,17 +3181,23 @@ PHP_METHOD(Redis, info) {
 
     zval *object;
     RedisSock *redis_sock;
+    char *cmd, *opt = NULL;
+    int cmd_len, opt_len;
 
-    char *cmd;
-    int cmd_len = redis_cmd_format_static(&cmd, "INFO", "");
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
-                                     &object, redis_ce) == FAILURE) {
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|s",
+                                     &object, redis_ce, &opt, &opt_len) == FAILURE) {
         RETURN_FALSE;
     }
 
     if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;
+    }
+
+    // Build a standalone INFO command or one with an option
+    if(opt != NULL) {
+    	cmd_len = redis_cmd_format_static(&cmd, "INFO", "s", opt, opt_len);
+    } else {
+    	cmd_len = redis_cmd_format_static(&cmd, "INFO", "");
     }
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
