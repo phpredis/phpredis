@@ -421,6 +421,24 @@ $redis->incr('key1'); /* 4 */
 $redis->incrBy('key1', 10); /* 14 */
 </pre>
 
+## incrByFloat
+##### Description
+Increment the key with floating point precision.
+##### Parameters
+*key*
+*value*: (float) value that will be added to the key
+##### Return value
+*FLOAT* the new value
+##### Examples
+<pre>
+$redis->incrByFloat('key1', 1.5); /* key1 didn't exist, so it will now be 1.5 */
+
+
+$redis->incrByFloat('key1', 1.5); /* 3 */
+$redis->incrByFloat('key1', -1.5); /* 1.5 */
+$redis->incrByFloat('key1', 2.5); /* 3.5 */
+</pre>
+
 ## decr, decrBy
 ##### Description
 Decrement the number stored at key by one. If the second argument is filled, it will be used as the integer value of the decrement.
@@ -1626,7 +1644,9 @@ var_dump($redis->sort('s', array('sort' => 'desc', 'store' => 'out'))); // (int)
 
 ## info
 ##### *Description*
-Returns an associative array of strings and integers, with the following keys:
+Returns an associative array from REDIS that provides information about the server.  Passing
+no arguments to INFO will call the standard REDIS INFO command, which returns information such
+as the following:
 
 * redis_version
 * arch_bits
@@ -1642,13 +1662,17 @@ Returns an associative array of strings and integers, with the following keys:
 * total_commands_processed
 * role
 
+You can pass a variety of options to INFO (per the Redis documentation), which will modify what is
+returned.
 
 ##### *Parameters*
-None.
+*option*: The option to provide redis (e.g. "COMMANDSTATS", "CPU")
 
 ##### *Example*
 <pre>
-$redis->info();
+$redis->info(); /* standard redis INFO command */
+$redis->info("COMMANDSTATS"); /* Information on the commands that have been run (>=2.6 only)
+$redis->info("CPU"); /* just CPU information from Redis INFO */
 </pre>
 
 ## resetStat
@@ -2299,6 +2323,23 @@ Increments the value of a member from a hash by a given amount.
 $redis->delete('h');
 $redis->hIncrBy('h', 'x', 2); /* returns 2: h[x] = 2 now. */
 $redis->hIncrBy('h', 'x', 1); /* h[x] ← 2 + 1. Returns 3 */
+</pre>
+
+## hIncrByFloat
+##### Description
+Increments the value of a hash member by the provided float value
+##### Parameters
+*key*
+*member*
+*value*: (float) value that will be added to the member's value
+##### Return value
+*FLOAT* the new value
+##### Examples
+<pre>
+$redis->delete('h');
+$redis->hIncrByFloat('h','x', 1.5); /* returns 1.5: h[x] = 1.5 now */
+$redis->hIncrByFLoat('h', 'x', 1.5); /* returns 3.0: h[x] = 3.0 now */
+$redis->hIncrByFloat('h', 'x', -3.0); /* returns 0.0: h[x] = 0.0 now */
 </pre>
 
 ## hMset
