@@ -38,8 +38,8 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 		return -1;
 
 	eof = php_stream_eof(redis_sock->stream);
-    while(eof) {
-        if((MULTI == redis_sock->mode) || redis_sock->watching || count++ == 10) { /* too many failures */
+    for (; eof; count++) {
+        if((MULTI == redis_sock->mode) || redis_sock->watching || count == 10) { /* too many failures */
 	    if(redis_sock->stream) { /* close stream if still here */
                 php_stream_close(redis_sock->stream);
                 redis_sock->stream = NULL;
@@ -61,6 +61,31 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
             eof = php_stream_eof(redis_sock->stream);
         }
     }
+
+    // Reselect the DB.
+    if (count && redis_sock->dbNumber) {
+        char *cmd, *response;
+        int cmd_len, response_len;
+
+        cmd_len = redis_cmd_format_static(&cmd, "SELECT", "d", redis_sock->dbNumber);
+
+        if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
+            efree(cmd);
+            return -1;
+        }
+        efree(cmd);
+
+        if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+            return -1;
+        }
+
+        if (strncmp(response, "+OK", 3)) {
+            efree(response);
+            return -1;
+        }
+        efree(response);
+    }
+
     return 0;
 }
 
@@ -731,6 +756,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     redis_sock->stream = NULL;
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->watching = 0;
+    redis_sock->dbNumber = 0;
 
     redis_sock->persistent = persistent;
 

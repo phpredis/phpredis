@@ -3239,6 +3239,8 @@ PHP_METHOD(Redis, select) {
         RETURN_FALSE;
     }
 
+    redis_sock->dbNumber = dbNumber;
+
     cmd_len = redis_cmd_format_static(&cmd, "SELECT", "d", dbNumber);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
