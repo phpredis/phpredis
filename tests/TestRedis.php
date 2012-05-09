@@ -2877,6 +2877,35 @@ class Redis_Test extends TestSuite
 	    $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE) === TRUE); 	// set ok
 	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE);		// get ok
     }
+
+	public function testReconnectSelect() {
+		$key = 'reconnect-select';
+		$value = 'Has been set!';
+
+		$original_cfg = $this->redis->config('GET', 'timeout');
+
+		// Make sure the default DB doesn't have the key.
+		$this->redis->select(0);
+		$this->redis->delete($key);
+
+		// Set the key on a different DB.
+		$this->redis->select(5);
+		$this->redis->set($key, $value);
+
+		// Time out after 1 second.
+		$this->redis->config('SET', 'timeout', '1');
+
+		// Wait for the timeout. With Redis 2.4, we have to wait up to 10 s
+		// for the server to close the connection, regardless of the timeout
+		// setting.
+		sleep(11);
+
+		// Make sure we're still using the same DB.
+		$this->assertEquals($value, $this->redis->get($key));
+
+		// Revert the setting.
+		$this->redis->config('SET', 'timeout', $original_cfg['timeout']);
+	}
 }
 
 TestSuite::run("Redis_Test");
