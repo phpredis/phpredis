@@ -156,6 +156,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, object, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, eval, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, evalsha, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, script, NULL, ZEND_ACC_PUBLIC)
 
      /* 1.1 */
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
@@ -5653,7 +5654,6 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword, char *val
 
 				// Free our key, old command if we need to
 				if(key_free) efree(key);
-				//if(old_cmd) efree(old_cmd);
 
 				// Free our temporary zval (converted from non string) if we've got one
 				if(z_tmp) {
@@ -5702,7 +5702,6 @@ PHP_METHOD(Redis, evalsha)
 	REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
 }
 
-
 /* {{{ proto variant Redis::eval(string script, [array keys, int num_key_args])
  */
 PHP_METHOD(Redis, eval)
@@ -5733,6 +5732,114 @@ PHP_METHOD(Redis, eval)
     	}
     }
     REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+}
+
+// Validate that we've been provided a proper SCRIPT sub command
+PHPAPI int
+validate_script_directive(char *directive) {
+	// Valid SCRIPT sub commands
+	char **valid_cmds = {"flush", "kill", "load", "exists"};
+	int cmd_count = 4, i;
+
+	// Iterate our valid commands
+	for(i=0;i<cmd_count;i++) {
+		// If we found a match, return success
+		if(!strcasecmp(directive, valid_cmds[i])) {
+			return 0;
+		}
+	}
+
+	// Return failure
+	return -1;
+}
+
+PHPAPI int
+redis_build_script_exists_cmd(char **ret, zval **argv, int argc) {
+	// Our command length and iterator
+	int cmd_len = 0, i;
+
+	// Start building our command
+	cmd_len = redis_cmd_format_header(ret, "SCRIPT", argc + 1); // +1 for "EXISTS"
+	cmd_len = redis_cmd_append_str(ret, cmd_len, "EXISTS", 6);
+
+	// Iterate our arguments
+	for(i=0;i<argc;i++) {
+		// If the argument isn't a string, convert it
+		if(Z_TYPE_P(argv[i]) != IS_STRING) {
+			convert_to_string(argv[i]);
+		}
+
+		// Append this script sha to our SCRIPT EXISTS command
+		cmd_len = redis_cmd_append_str(ret, cmd_len, Z_STRVAL_P(argv[i]), Z_STRLEN_P(argv[i]));
+	}
+
+	// Success
+	return cmd_len;
+}
+
+/* {{{ proto status Redis::script('flush')
+ * {{{ proto status Redis::script('kill')
+ * {{{ proto string Redis::script('load', lua_script)
+ * {{{ proto int Reids::script('exists', script_sha1 [, script_sha2, ...])
+ */
+PHP_METHOD(Redis, script) {
+	zval *object, **z_args;
+	RedisSock *redis_sock;
+	int cmd_len, argc;
+	char *cmd;
+
+	// Attempt to grab our socket
+	if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
+		RETURN_FALSE;
+	}
+
+	// Grab the number of arguments
+	argc = ZEND_NUM_ARGS();
+
+	// Allocate aan array big enough to store our arguments, and grab them
+	z_args = emalloc(argc * sizeof(zval*));
+
+	// Make sure we can grab our arguments, we have a directive (that is a string), and the directive is one we know about
+	if(zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
+	   (argc < 1 || Z_TYPE_P(z_args[0]) != IS_STRING))
+	{
+		efree(z_args);
+		RETURN_FALSE;
+	}
+
+	// Branch based on the directive
+	if(!strcasecmp(Z_STRVAL_P(z_args[0]), "flush") || !strcasecmp(Z_STRVAL_P(z_args[0]), "kill")) {
+		// Simple SCRIPT FLUSH, or SCRIPT_KILL command
+		cmd_len = redis_cmd_format_static(&cmd, "SCRIPT", "s", Z_STRVAL_P(z_args[0]), Z_STRLEN_P(z_args[0]));
+	} else if(!strcasecmp(Z_STRVAL_P(z_args[0]), "load")) {
+		// Make sure we have a second argument, and it's not empty.  If it is
+		// empty, we can just return an empty array (which is what Redis does)
+		if(argc < 2 || Z_TYPE_P(z_args[1]) != IS_STRING || Z_STRLEN_P(z_args[1]) < 1) {
+			// Free our args
+			efree(z_args);
+			RETURN_FALSE;
+		}
+
+		// Format our SCRIPT LOAD command
+		cmd_len = redis_cmd_format_static(&cmd, "SCRIPT", "ss", "LOAD", 4, Z_STRVAL_P(z_args[1]), Z_STRLEN_P(z_args[1]));
+	} else if(!strcasecmp(Z_STRVAL_P(z_args[0]), "exists")) {
+		// Construct our SCRIPT EXISTS command
+		cmd_len = redis_build_script_exists_cmd(&cmd, &(z_args[1]), argc-1);
+	} else {
+		// Unknown directive
+		efree(z_args);
+		zend_throw_exception(redis_exception_ce, "Unknown SCRIPT sub command", 0 TSRMLS_CC);
+		RETURN_FALSE;
+	}
+
+	// Kick off our request
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL) < 0) {
+			RETURN_FALSE;
+		}
+	}
+	REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
 }
 
 /* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
