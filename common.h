@@ -22,6 +22,26 @@
 #define REDIS_ZSET 4
 #define REDIS_HASH 5
 
+/* reply types */
+typedef enum _REDIS_REPLY_TYPE {
+	TYPE_LINE      = '+',
+	TYPE_INT       = ':',
+	TYPE_ERR       = '-',
+	TYPE_BULK      = '$',
+	TYPE_MULTIBULK = '*'
+} REDIS_REPLY_TYPE;
+
+/*#define REDIS_REPLY_LINE 0
+#define REDIS_REPLY_ERR  1
+#define REDIS_REPLY_BULK 2
+#define REDIS_REPLY_MULTIBULK 3
+
+#define REDIS_REPLY_LINE_CHR '+'
+#define REDIS_REPLY_ERR_CHR '-'
+#define REDIS_REPLY_BULK_CHR '$'
+#define REDIS_REPLY_MULTIBULK_CHR '*'
+*/
+
 /* options */
 #define REDIS_OPT_SERIALIZER		1
 #define REDIS_OPT_PREFIX		2
