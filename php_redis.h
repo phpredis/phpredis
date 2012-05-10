@@ -133,6 +133,9 @@ PHP_METHOD(Redis, script);
 PHP_METHOD(Redis, dump);
 PHP_METHOD(Redis, restore);
 
+PHP_METHOD(Redis, _prefix);
+PHP_METHOD(Redis, _unserialize);
+
 PHP_METHOD(Redis, mset);
 PHP_METHOD(Redis, msetnx);
 PHP_METHOD(Redis, rpoplpush);

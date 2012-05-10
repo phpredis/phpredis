@@ -161,6 +161,9 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, dump, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, restore, NULL, ZEND_ACC_PUBLIC)
 
+     PHP_ME(Redis, _prefix, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, _unserialize, NULL, ZEND_ACC_PUBLIC)
+
      /* 1.1 */
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, msetnx, NULL, ZEND_ACC_PUBLIC)
@@ -5861,7 +5864,7 @@ PHP_METHOD(Redis, dump) {
 }
 
 /*
- * {{{ proto RESTORE ttl key value
+ * {{{ proto Redis::restore(ttl, key, value)
  */
 PHP_METHOD(Redis, restore) {
 	zval *object;
@@ -5892,6 +5895,65 @@ PHP_METHOD(Redis, restore) {
 		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
 	REDIS_PROCESS_RESPONSE(redis_boolean_response);
+}
+
+/*
+ * {{{ proto Redis::_prefix(key)
+ */
+PHP_METHOD(Redis, _prefix) {
+	zval *object;
+	RedisSock *redis_sock;
+	char *key;
+	int key_len;
+
+	// Parse our arguments
+	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os", &object, redis_ce,
+								    &key, &key_len) == FAILURE) {
+		RETURN_FALSE;
+	}
+	// Grab socket
+	if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+		RETURN_FALSE;
+	}
+
+	// Prefix our key if we need to
+	if(redis_sock->prefix != NULL && redis_sock->prefix_len > 0) {
+		redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+		RETURN_STRINGL(key, key_len, 0);
+	} else {
+		RETURN_STRINGL(key, key_len, 1);
+	}
+}
+
+/*
+ * {{{ proto Redis::_unserialize(value)
+ */
+PHP_METHOD(Redis, _unserialize) {
+	zval *object;
+	RedisSock *redis_sock;
+	char *value;
+	int value_len;
+
+	// Parse our arguments
+	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os", &object, redis_ce,
+									&value, &value_len) == FAILURE) {
+		RETURN_FALSE;
+	}
+	// Grab socket
+	if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+		RETURN_FALSE;
+	}
+
+	// We only need to attempt unserialization if we have a serializer running
+	if(redis_sock->serializer != REDIS_SERIALIZER_NONE) {
+		if(redis_unserialize(redis_sock, value, value_len, &return_value TSRMLS_CC) == 0) {
+			zend_throw_exception(redis_exception_ce, "Invalid serialized data, or unserialization error", 0 TSRMLS_CC);
+			RETURN_FALSE;
+		}
+	} else {
+		// Just return the value that was passed to us
+		RETURN_STRINGL(value, value_len, 1);
+	}
 }
 
 /* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
