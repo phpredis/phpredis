@@ -5429,7 +5429,7 @@ PHP_METHOD(Redis, object)
     RedisSock *redis_sock;
     char *cmd = "", *info = NULL, *key = NULL;
     int cmd_len, info_len, key_len;
-    long port = 6379;
+    //long port = 6379;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
 									 &object, redis_ce, &info, &info_len, &key, &key_len) == FAILURE) {
@@ -5672,6 +5672,8 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword, char *val
 		cmd_len = redis_cmd_format_static(ret, keyword, "sd", value, val_len, 0);
 	}
 
+	// Return our command length
+	return cmd_len;
 }
 
 /* {{{ proto variant Redis::evalsha(string script_sha1, [array keys, int num_key_args])
@@ -5737,25 +5739,6 @@ PHP_METHOD(Redis, eval)
     REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
 }
 
-// Validate that we've been provided a proper SCRIPT sub command
-PHPAPI int
-validate_script_directive(char *directive) {
-	// Valid SCRIPT sub commands
-	char **valid_cmds = {"flush", "kill", "load", "exists"};
-	int cmd_count = 4, i;
-
-	// Iterate our valid commands
-	for(i=0;i<cmd_count;i++) {
-		// If we found a match, return success
-		if(!strcasecmp(directive, valid_cmds[i])) {
-			return 0;
-		}
-	}
-
-	// Return failure
-	return -1;
-}
-
 PHPAPI int
 redis_build_script_exists_cmd(char **ret, zval **argv, int argc) {
 	// Our command length and iterator
@@ -5786,7 +5769,7 @@ redis_build_script_exists_cmd(char **ret, zval **argv, int argc) {
  * {{{ proto int Reids::script('exists', script_sha1 [, script_sha2, ...])
  */
 PHP_METHOD(Redis, script) {
-	zval *object, **z_args;
+	zval **z_args;
 	RedisSock *redis_sock;
 	int cmd_len, argc;
 	char *cmd;
