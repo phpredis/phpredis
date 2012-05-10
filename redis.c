@@ -154,9 +154,12 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, bgrewriteaof, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, slaveof, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, object, NULL, ZEND_ACC_PUBLIC)
+
      PHP_ME(Redis, eval, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, evalsha, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, script, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, dump, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, restore, NULL, ZEND_ACC_PUBLIC)
 
      /* 1.1 */
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
@@ -5796,10 +5799,10 @@ PHP_METHOD(Redis, script) {
 	// Grab the number of arguments
 	argc = ZEND_NUM_ARGS();
 
-	// Allocate aan array big enough to store our arguments, and grab them
+	// Allocate an array big enough to store our arguments
 	z_args = emalloc(argc * sizeof(zval*));
 
-	// Make sure we can grab our arguments, we have a directive (that is a string), and the directive is one we know about
+	// Make sure we can grab our arguments, we have a string directive
 	if(zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
 	   (argc < 1 || Z_TYPE_P(z_args[0]) != IS_STRING))
 	{
@@ -5840,6 +5843,72 @@ PHP_METHOD(Redis, script) {
 		}
 	}
 	REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+}
+
+/* {{{ proto DUMP key
+ */
+PHP_METHOD(Redis, dump) {
+	zval *object;
+	RedisSock *redis_sock;
+	char *cmd, *key;
+	int cmd_len, key_len, key_free;
+
+	// Parse our arguments
+	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os", &object, redis_ce,
+									&key, &key_len) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	// Grab our socket
+	if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+		RETURN_FALSE;
+	}
+
+	// Prefix our key if we need to
+	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+	cmd_len = redis_cmd_format_static(&cmd, "DUMP", "s", key, key_len);
+	if(key_free) efree(key);
+
+	// Kick off our request
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_string_response);
+}
+
+/*
+ * {{{ proto RESTORE ttl key value
+ */
+PHP_METHOD(Redis, restore) {
+	zval *object;
+	RedisSock *redis_sock;
+	char *cmd, *key, *value;
+	int cmd_len, key_len, value_len, key_free;
+	long ttl;
+
+	// Parse our arguments
+	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osls", &object, redis_ce,
+									&key, &key_len, &ttl, &value, &value_len) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	// Grab our socket
+	if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+		RETURN_FALSE;
+	}
+
+	// Prefix the key if we need to
+	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+	cmd_len = redis_cmd_format_static(&cmd, "RESTORE", "sls", key, key_len, ttl, value, value_len);
+	if(key_free) efree(key);
+
+	// Kick off our restore request
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 
 /* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */

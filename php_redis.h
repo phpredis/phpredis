@@ -130,6 +130,8 @@ PHP_METHOD(Redis, object);
 PHP_METHOD(Redis, eval);
 PHP_METHOD(Redis, evalsha);
 PHP_METHOD(Redis, script);
+PHP_METHOD(Redis, dump);
+PHP_METHOD(Redis, restore);
 
 PHP_METHOD(Redis, mset);
 PHP_METHOD(Redis, msetnx);
