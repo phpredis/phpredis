@@ -818,6 +818,9 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     redis_sock->pipeline_head = NULL;
     redis_sock->pipeline_current = NULL;
 
+    redis_sock->err = NULL;
+    redis_sock->err_len = 0;
+
     return redis_sock;
 }
 
@@ -970,6 +973,37 @@ PHPAPI void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_so
 		RETURN_TRUE;
 	}
 	RETURN_FALSE;
+}
+
+/**
+ * redis_sock_set_err
+ */
+PHPAPI int redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len) {
+	// Allocate/Reallocate our last error member
+	if(msg != NULL && msg_len > 0) {
+		if(redis_sock->err == NULL) {
+			redis_sock->err = emalloc(msg_len + 1);
+		} else if(msg_len > redis_sock->err_len) {
+			redis_sock->err = erealloc(redis_sock->err, msg_len +1);
+		}
+
+		// Copy in our new error message, set new length, and null terminate
+		memcpy(redis_sock->err, msg, msg_len);
+		redis_sock->err[msg_len] = '\0';
+		redis_sock->err_len = msg_len;
+	} else {
+		// Free our last error
+		if(redis_sock->err != NULL) {
+			efree(redis_sock->err);
+		}
+
+		// Set to null, with zero length
+		redis_sock->err = NULL;
+		redis_sock->err_len = 0;
+	}
+
+	// Success
+	return 0;
 }
 
 /**
@@ -1170,6 +1204,9 @@ PHPAPI void redis_free_socket(RedisSock *redis_sock)
     if(redis_sock->prefix) {
 		efree(redis_sock->prefix);
 	}
+    if(redis_sock->err) {
+    	efree(redis_sock->err);
+    }
     efree(redis_sock->host);
     efree(redis_sock);
 }
@@ -1310,7 +1347,7 @@ redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len TSRMLS_DC) {
  */
 
 PHPAPI int
-redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, int *line_size) {
+redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t *line_size) {
     // Handle EOF
 	if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
         return -1;
@@ -1327,6 +1364,11 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, int *line_size) 
 		// Throw a read error exception
 		zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
 	}
+
+	// We don't need \r\n
+	*line_size-=2;
+	buf[*line_size]='\0';
+
 
 	// Success!
 	return 0;
@@ -1370,7 +1412,7 @@ PHPAPI int
 redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type, zval **z_ret) {
 	// Buffer to read our single line reply
 	char inbuf[1024];
-	int line_size;
+	size_t line_size;
 
 	// Attempt to read our single line reply
 	if(redis_sock_gets(redis_sock, inbuf, sizeof(inbuf), &line_size) < 0) {
@@ -1382,6 +1424,9 @@ redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type, zval
 		if(memcmp(inbuf, "ERR SYNC", 9) == 0) {
 			zend_throw_exception(redis_exception_ce, "SYNC with master in progress", 0 TSRMLS_CC);
 		}
+
+		// Set our last error
+		redis_sock_set_err(redis_sock, inbuf, line_size);
 
 		// Set our response to FALSE
 		ZVAL_FALSE(*z_ret);

@@ -161,6 +161,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, dump, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, restore, NULL, ZEND_ACC_PUBLIC)
 
+     PHP_ME(Redis, getLastError, NULL, ZEND_ACC_PUBLIC)
+
      PHP_ME(Redis, _prefix, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _unserialize, NULL, ZEND_ACC_PUBLIC)
 
@@ -5607,7 +5609,7 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword, char *val
 	zval **elem;
 	HashTable *args_hash;
 	HashPosition hash_pos;
-	int cmd_len, args_count;
+	int cmd_len, args_count = 0;
 	int eval_cmd_count = 2;
 
 	// If we've been provided arguments, we'll want to include those in our eval command
@@ -5946,13 +5948,40 @@ PHP_METHOD(Redis, _unserialize) {
 
 	// We only need to attempt unserialization if we have a serializer running
 	if(redis_sock->serializer != REDIS_SERIALIZER_NONE) {
-		if(redis_unserialize(redis_sock, value, value_len, &return_value TSRMLS_CC) == 0) {
+		zval *z_ret = NULL;
+		if(redis_unserialize(redis_sock, value, value_len, &z_ret TSRMLS_CC) == 0) {
 			zend_throw_exception(redis_exception_ce, "Invalid serialized data, or unserialization error", 0 TSRMLS_CC);
 			RETURN_FALSE;
 		}
+		RETURN_ZVAL(z_ret, 0, 0);
 	} else {
 		// Just return the value that was passed to us
 		RETURN_STRINGL(value, value_len, 1);
+	}
+}
+
+/*
+ * {{{ proto Redis::getLastError()
+ */
+PHP_METHOD(Redis, getLastError) {
+	zval *object;
+	RedisSock *redis_sock;
+
+	// Grab our object
+	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O", &object, redis_ce) == FAILURE) {
+		RETURN_FALSE;
+	}
+	// Grab socket
+	if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+		RETURN_FALSE;
+	}
+
+	// Return our last error or NULL if we don't have one
+	if(redis_sock->err != NULL && redis_sock->err_len > 0) {
+		RETURN_STRING(redis_sock->err, 1);
+		//RETURN_STRING(redis_sock->err); // , redis_sock->err_len-1, 1);
+	} else {
+		RETURN_NULL();
 	}
 }
 

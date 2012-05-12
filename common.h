@@ -184,6 +184,9 @@ typedef struct {
 
     request_item   *pipeline_head;
     request_item   *pipeline_current;
+
+    char           *err;
+    int            err_len;
 } RedisSock;
 /* }}} */
 
