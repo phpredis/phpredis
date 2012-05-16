@@ -5860,9 +5860,11 @@ PHP_METHOD(Redis, dump) {
 	// Kick off our request
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
-		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+		redis_ping_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+		//redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
-	REDIS_PROCESS_RESPONSE(redis_string_response);
+	REDIS_PROCESS_RESPONSE(redis_ping_response);
+	//REDIS_PROCESS_RESPONSE(redis_string_response);
 }
 
 /*
