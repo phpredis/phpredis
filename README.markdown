@@ -1592,6 +1592,16 @@ Bitwise operation on multiple keys.
 ##### *Return value*
 *LONG*: The size of the string stored in the destination key.
 
+## bitcount
+##### *Description*
+Count bits in a string.
+
+##### *Parameters*
+*key*  
+
+##### *Return value*
+*LONG*: The number of bits set to 1 in the value behind the input key.
+
 ## flushDB
 
 ##### *Description*

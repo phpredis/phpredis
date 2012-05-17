@@ -155,6 +155,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, slaveof, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, object, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, bitop, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, bitcount, NULL, ZEND_ACC_PUBLIC)
 
      /* 1.1 */
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
@@ -673,6 +674,40 @@ PHP_METHOD(Redis, bitop)
 		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
 	REDIS_PROCESS_RESPONSE(redis_long_response);
+}
+/* }}} */
+
+/* {{{ proto boolean Redis::bitcount(string key, [int start], [int end])
+ */
+PHP_METHOD(Redis, bitcount)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd;
+    int key_len, cmd_len, key_free;
+    long start = 0, end = -1;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|ll",
+                                     &object, redis_ce,
+                                     &key, &key_len, &start, &end) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+	/* BITCOUNT key start end */
+	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+    cmd_len = redis_cmd_format_static(&cmd, "BITCOUNT", "sdd", key, key_len, (int)start, (int)end);
+	if(key_free) efree(key);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
+
 }
 /* }}} */
 
