@@ -3001,13 +3001,13 @@ PHP_METHOD(Redis, sortDescAlpha)
 PHPAPI void generic_expire_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
     zval *object;
     RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len, key_free;
-    long t;
+    char *key = NULL, *cmd, *t;
+    int key_len, cmd_len, key_free, t_len;
+	int i;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
                                      &object, redis_ce, &key, &key_len,
-                                     &t) == FAILURE) {
+                                     &t, &t_len) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -3015,8 +3015,13 @@ PHPAPI void generic_expire_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int 
         RETURN_FALSE;
     }
 
+	/* check that we have a number */
+	for(i = 0; i < t_len; ++i)
+		if(t[i] < '0' || t[i] > '9')
+			RETURN_FALSE;
+
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
-    cmd_len = redis_cmd_format_static(&cmd, keyword, "sl", key, key_len, t);
+    cmd_len = redis_cmd_format_static(&cmd, keyword, "ss", key, key_len, t, t_len);
 	if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -3278,10 +3283,17 @@ PHPAPI void generic_ttl(INTERNAL_FUNCTION_PARAMETERS, char *keyword) {
 	if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+#ifdef PHP64
 	IF_ATOMIC() {
 	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
 	REDIS_PROCESS_RESPONSE(redis_long_response);
+#else
+	IF_ATOMIC() {
+	  redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_bulk_double_response);
+#endif
 }
 
 /* {{{ proto long Redis::ttl(string key)

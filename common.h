@@ -4,6 +4,24 @@
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
 
+/* Check windows */
+#if _WIN32 || _WIN64
+#if _WIN64
+#define PHP64
+#else
+#define PHP32
+#endif
+#endif
+
+/* Check GCC and Clang */
+#if __GNUC__
+#if __x86_64__ || __ppc64__
+#define PHP64
+#else
+#define PHP32
+#endif
+#endif
+
 #define redis_sock_name "Redis Socket Buffer"
 #define REDIS_SOCK_STATUS_FAILED 0
 #define REDIS_SOCK_STATUS_DISCONNECTED 1
