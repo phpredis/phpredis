@@ -3283,17 +3283,10 @@ PHPAPI void generic_ttl(INTERNAL_FUNCTION_PARAMETERS, char *keyword) {
 	if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-#ifdef PHP64
 	IF_ATOMIC() {
 	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
 	REDIS_PROCESS_RESPONSE(redis_long_response);
-#else
-	IF_ATOMIC() {
-	  redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_bulk_double_response);
-#endif
 }
 
 /* {{{ proto long Redis::ttl(string key)
