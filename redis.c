@@ -154,6 +154,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, bgrewriteaof, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, slaveof, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, object, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, bitop, NULL, ZEND_ACC_PUBLIC)
 
      /* 1.1 */
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
@@ -587,6 +588,93 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 
 	return SUCCESS;
 }
+
+/* {{{ proto boolean Redis::bitop(string op, string key, ...)
+ */
+PHP_METHOD(Redis, bitop)
+{
+    char *cmd;
+    int cmd_len;
+
+	zval **z_args;
+	char **keys;
+	int *keys_len;
+	int argc = ZEND_NUM_ARGS(), i;
+    RedisSock *redis_sock = NULL;
+    smart_str buf = {0};
+	int key_free = 0;
+
+	/* get redis socket */
+    if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+	/* fetch args */
+    z_args = emalloc(argc * sizeof(zval*));
+    if(zend_get_parameters_array(ht, argc, z_args) == FAILURE
+			|| argc < 3 /* 3 args min. */
+			|| Z_TYPE_P(z_args[0]) != IS_STRING /* operation must be a string. */
+			) {
+        efree(z_args);
+		RETURN_FALSE;
+    }
+
+
+	keys = emalloc(argc * sizeof(char*));
+	keys_len = emalloc(argc * sizeof(int));
+
+	/* prefix keys */
+	for(i = 0; i < argc; ++i) {
+		convert_to_string(z_args[i]);
+
+		keys[i] = Z_STRVAL_P(z_args[i]);
+		keys_len[i] = Z_STRLEN_P(z_args[i]);
+		if(i != 0)
+			key_free = redis_key_prefix(redis_sock, &keys[i], &keys_len[i] TSRMLS_CC);
+	}
+
+	/* start building the command */
+	smart_str_appendc(&buf, '*');
+	smart_str_append_long(&buf, argc + 1); /* +1 for BITOP command */
+	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+
+	/* add command name */
+	smart_str_appendc(&buf, '$');
+	smart_str_append_long(&buf, 5);
+	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	smart_str_appendl(&buf, "BITOP", 5);
+	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+
+	/* add keys */
+	for(i = 0; i < argc; ++i) {
+		smart_str_appendc(&buf, '$');
+		smart_str_append_long(&buf, keys_len[i]);
+		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+		smart_str_appendl(&buf, keys[i], keys_len[i]);
+		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	}
+	/* end string */
+	smart_str_0(&buf);
+	cmd = buf.c;
+	cmd_len = buf.len;
+
+	/* cleanup */
+    if(key_free)
+	for(i = 1; i < argc; ++i) {
+		efree(keys[i]);
+	}
+	efree(keys);
+	efree(keys_len);
+	efree(z_args);
+
+	/* send */
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
+}
+/* }}} */
 
 /* {{{ proto boolean Redis::close()
  */

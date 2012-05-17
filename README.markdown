@@ -1579,6 +1579,19 @@ $redis->setBit('key', 7, 1); /* returns 0 */
 $redis->get('key'); /* chr(0x2f) = "/" = b("0010 1111") */
 </pre>
 
+## bitop
+##### *Description*
+Bitwise operation on multiple keys.
+
+##### *Parameters*
+*operation*: either "AND", "OR", "NOT", "XOR"  
+*ret_key*: return key  
+*key1*  
+*key2...*  
+
+##### *Return value*
+*LONG*: The size of the string stored in the destination key.
+
 ## flushDB
 
 ##### *Description*
