@@ -126,6 +126,8 @@ PHP_METHOD(Redis, pexpireAt);
 PHP_METHOD(Redis, bgrewriteaof);
 PHP_METHOD(Redis, slaveof);
 PHP_METHOD(Redis, object);
+PHP_METHOD(Redis, bitop);
+PHP_METHOD(Redis, bitcount);
 
 PHP_METHOD(Redis, eval);
 PHP_METHOD(Redis, evalsha);

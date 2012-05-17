@@ -614,16 +614,16 @@ PHPAPI void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
     }
 
     if(response[0] == ':') {
-        long ret = atol(response + 1);
+        long long ret = atoll(response + 1);
         IF_MULTI_OR_PIPELINE() {
-			if(ret > (long)LONG_MAX) { /* overflow */
+			if(ret > LONG_MAX) { /* overflow */
 				add_next_index_stringl(z_tab, response+1, response_len-1, 1);
 			} else {
 				efree(response);
 				add_next_index_long(z_tab, (long)ret);
 			}
         } else {
-			if(ret > (long)LONG_MAX) { /* overflow */
+			if(ret > LONG_MAX) { /* overflow */
 				RETURN_STRINGL(response+1, response_len-1, 1);
 			} else {
 				efree(response);
