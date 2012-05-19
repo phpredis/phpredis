@@ -2995,9 +2995,7 @@ class Redis_Test extends TestSuite
 		$this->redis->sadd('myset', 'f');
 
 		// Basic keys
-		$this->redis->del('key1');
 		$this->redis->set('key1', 'hello, world');
-		$this->redis->del('key2');
 		$this->redis->set('key2', 'hello again!');
 
 		// Use a script to return our list, and verify its response
@@ -3077,7 +3075,7 @@ class Redis_Test extends TestSuite
     	$this->assertFalse($this->redis->evalsha('some-random-data'));
 
     	// Load a script
-    	$cb  = uniqid();
+    	$cb  = uniqid(); // To ensure the script is new
     	$scr = "local cb='$cb' return 1";
     	$sha = sha1($scr);
 

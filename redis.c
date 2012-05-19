@@ -5951,6 +5951,9 @@ PHP_METHOD(Redis, script) {
 		RETURN_FALSE;
 	}
 
+	// Free our alocated arguments
+	efree(z_args);
+
 	// Kick off our request
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
@@ -6080,10 +6083,11 @@ PHP_METHOD(Redis, _unserialize) {
 	if(redis_sock->serializer != REDIS_SERIALIZER_NONE) {
 		zval *z_ret = NULL;
 		if(redis_unserialize(redis_sock, value, value_len, &z_ret TSRMLS_CC) == 0) {
+			// Badly formed input, throw an execption
 			zend_throw_exception(redis_exception_ce, "Invalid serialized data, or unserialization error", 0 TSRMLS_CC);
 			RETURN_FALSE;
 		}
-		RETURN_ZVAL(z_ret, 0, 0);
+		RETURN_ZVAL(z_ret, 0, 1);
 	} else {
 		// Just return the value that was passed to us
 		RETURN_STRINGL(value, value_len, 1);
@@ -6109,7 +6113,6 @@ PHP_METHOD(Redis, getLastError) {
 	// Return our last error or NULL if we don't have one
 	if(redis_sock->err != NULL && redis_sock->err_len > 0) {
 		RETURN_STRING(redis_sock->err, 1);
-		//RETURN_STRING(redis_sock->err); // , redis_sock->err_len-1, 1);
 	} else {
 		RETURN_NULL();
 	}
