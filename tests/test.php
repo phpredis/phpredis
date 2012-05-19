@@ -35,24 +35,8 @@ class TestSuite {
 		$rc = new ReflectionClass($className);
 		$methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
 
-$sub_scr = array('Eval','Unserialize','Dump','Script');
-
-
 		foreach($methods as $m) {
 
-$do_run = false;
-foreach($sub_scr as $sub) {
-	if(strpos($m->name, $sub) !== false) {
-		$do_run = true;
-		break;
-	}
-}
-if(!$do_run) continue;
-/*if(strpos($m->name, 'Eval') === false && strpos($m->name, 'Unserialize') === false &&
-   strpos($m->name, 'Dump') === false strpos($m->name, 'Script') === false) {
-	echo $m->name . "\n";
-	continue;
-}*/
 			$name = $m->name;
 			if(substr($name, 0, 4) !== 'test')
 				continue;
