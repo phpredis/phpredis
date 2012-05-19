@@ -2884,6 +2884,253 @@ class Redis_Test extends TestSuite
 	    $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE) === TRUE); 	// set ok
 	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE);		// get ok
     }
+
+    public function testDumpRestore() {
+    	$this->redis->del('foo');
+    	$this->redis->del('bar');
+
+    	$this->redis->set('foo', 'this-is-foo');
+    	$this->redis->set('bar', 'this-is-bar');
+
+    	$d_foo = $this->redis->dump('foo');
+    	$d_bar = $this->redis->dump('bar');
+
+    	$this->redis->del('foo');
+    	$this->redis->del('bar');
+
+    	// Assert returns from restore
+    	$this->assertTrue($this->redis->restore('foo', 0, $d_bar));
+    	$this->assertTrue($this->redis->restore('bar', 0, $d_foo));
+
+    	// Now check that the keys have switched
+    	$this->assertTrue($this->redis->get('foo') == 'this-is-bar');
+    	$this->assertTrue($this->redis->get('bar') == 'this-is-foo');
+
+    	$this->redis->del('foo');
+    	$this->redis->del('bar');
+    }
+
+    public function testGetLastError() {
+    	// We shouldn't have any errors now
+    	$this->assertTrue($this->redis->getLastError() == NULL);
+
+    	// Throw some invalid lua at redis
+    	$this->redis->eval("not-a-lua-script");
+
+    	// Now we should have an error
+    	$this->assertTrue(strlen($this->redis->getLastError()) > 0);
+    }
+
+    // Helper function to compare nested results -- from the php.net array_diff page, I believe
+    private function array_diff_recursive($aArray1, $aArray2) {
+    	$aReturn = array();
+
+    	foreach ($aArray1 as $mKey => $mValue) {
+    		if (array_key_exists($mKey, $aArray2)) {
+    			if (is_array($mValue)) {
+    				$aRecursiveDiff = $this->array_diff_recursive($mValue, $aArray2[$mKey]);
+    				if (count($aRecursiveDiff)) {
+    					$aReturn[$mKey] = $aRecursiveDiff;
+    				}
+    			} else {
+    				if ($mValue != $aArray2[$mKey]) {
+    					$aReturn[$mKey] = $mValue;
+    				}
+    			}
+    		} else {
+    			$aReturn[$mKey] = $mValue;
+    		}
+    	}
+
+    	return $aReturn;
+    }
+
+    public function testScript() {
+		// Flush any scripts we have
+		$this->assertTrue($this->redis->script('flush'));
+
+		// Silly scripts to test against
+		$s1_src = 'return 1';
+		$s1_sha = sha1($s1_src);
+		$s2_src = 'return 2';
+		$s2_sha = sha1($s2_src);
+		$s3_src = 'return 3';
+		$s3_sha = sha1($s3_src);
+
+    	// None should exist
+		$result = $this->redis->script('exists', $s1_sha, $s2_sha, $s3_sha);
+		$this->assertTrue(is_array($result) && count($result) == 3);
+		$this->assertTrue(count(array_filter($result)) == 0);
+
+		// Load them up
+		$this->assertTrue($this->redis->script('load', $s1_src) == $s1_sha);
+		$this->assertTrue($this->redis->script('load', $s2_src) == $s2_sha);
+		$this->assertTrue($this->redis->script('load', $s3_src) == $s3_sha);
+
+		// They should all exist
+		$result = $this->redis->script('exists', $s1_sha, $s2_sha, $s3_sha);
+		$this->assertTrue(count(array_filter($result)) == 3);
+    }
+
+    public function testEval() {
+    	// Basic single line response tests
+    	$this->assertTrue(1 == $this->redis->eval('return 1'));
+    	$this->assertTrue(1.55 == $this->redis->eval("return '1.55'"));
+    	$this->assertTrue("hello, world" == $this->redis->eval("return 'hello, world'"));
+
+    	/*
+    	 * Keys to be incorporated into lua results
+    	 */
+
+		// Make a list
+		$this->redis->del('mylist');
+		$this->redis->rpush('mylist', 'a');
+		$this->redis->rpush('mylist', 'b');
+		$this->redis->rpush('mylist', 'c');
+
+		// Make a set
+		$this->redis->del('myset');
+		$this->redis->sadd('myset', 'd');
+		$this->redis->sadd('myset', 'e');
+		$this->redis->sadd('myset', 'f');
+
+		// Basic keys
+		$this->redis->del('key1');
+		$this->redis->set('key1', 'hello, world');
+		$this->redis->del('key2');
+		$this->redis->set('key2', 'hello again!');
+
+		// Use a script to return our list, and verify its response
+		$list = $this->redis->eval("return redis.call('lrange', 'mylist', 0, -1)");
+		$this->assertTrue($list === Array('a','b','c'));
+
+		// Use a script to return our set
+		$set = $this->redis->eval("return redis.call('smembers', 'myset')");
+		$this->assertTrue($set == Array('d','e','f'));
+
+		// Test an empty MULTI BULK response
+		$empty_resp = $this->redis->eval("return redis.call('lrange', 'not-any-kind-of-set', 0, -1)");
+		$this->assertTrue(is_array($empty_resp) && empty($empty_resp));
+
+		// Now test a nested reply
+		$nested_script = "
+			return {
+				1,2,3, {
+					redis.call('get', 'key1'),
+					redis.call('get', 'key2'),
+					redis.call('lrange', 'not-any-kind-of-list', 0, -1),
+					{
+						redis.call('smembers','myset'),
+						redis.call('lrange', 'mylist', 0, -1)
+					}
+				}
+			}
+		";
+
+		$expected = Array(
+			1, 2, 3, Array(
+				'hello, world',
+				'hello again!',
+				Array(),
+				Array(
+					Array('d','e','f'),
+					Array('a','b','c')
+				)
+			)
+		);
+
+		// Now run our script, and check our values against each other
+		$eval_result = $this->redis->eval($nested_script);
+		$this->assertTrue(count($this->array_diff_recursive($eval_result, $expected)) == 0);
+
+		/*
+		 * KEYS/ARGV
+		 */
+
+		$args_script = "return {KEYS[1],KEYS[2],KEYS[3],ARGV[1],ARGV[2],ARGV[3]}";
+		$args_args   = Array('k1','k2','k3','v1','v2','v3');
+		$args_result = $this->redis->eval($args_script, $args_args, 3);
+		$this->assertTrue($args_result === $args_args);
+
+		// turn on key prefixing
+		$this->redis->setOption(Redis::OPT_PREFIX, 'prefix:');
+		$args_result = $this->redis->eval($args_script, $args_args, 3);
+
+		// Make sure our first three are prefixed
+		for($i=0;$i<count($args_result);$i++) {
+			if($i<3) {
+				// Should be prefixed
+				$this->assertTrue($args_result[$i] == 'prefix:' . $args_args[$i]);
+			} else {
+				// Should not be prefixed
+				$this->assertTrue($args_result[$i] == $args_args[$i]);
+			}
+		}
+    }
+
+    public function testEvalSHA() {
+    	// Flush any loaded scripts
+    	$this->redis->script('flush');
+
+    	// Non existant script (but proper sha1), and a random (not) sha1 string
+    	$this->assertFalse($this->redis->evalsha(sha1(uniqid())));
+    	$this->assertFalse($this->redis->evalsha('some-random-data'));
+
+    	// Load a script
+    	$cb  = uniqid();
+    	$scr = "local cb='$cb' return 1";
+    	$sha = sha1($scr);
+
+    	// Run it when it doesn't exist, run it with eval, and then run it with sha1
+    	$this->assertTrue(false == $this->redis->evalsha($scr));
+    	$this->assertTrue(1 == $this->redis->eval($scr));
+    	$this->assertTrue(1 == $this->redis->evalsha($sha));
+    }
+
+    public function testUnserialize() {
+    	$vals = Array(
+    		1,1.5,'one',Array('this','is','an','array')
+    	);
+
+    	foreach(Array(Redis::SERIALIZER_PHP, Redis::SERIALIZER_IGBINARY) as $mode) {
+    		$vals_enc = Array();
+
+    		// Pass them through redis so they're serialized
+    		foreach($vals as $key => $val) {
+    			$this->redis->setOption(Redis::OPT_SERIALIZER, $mode);
+
+    			$key = "key" . ++$key;
+    			$this->redis->del($key);
+    			$this->redis->set($key, $val);
+
+    			// Clear serializer, get serialized value
+    			$this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+    			$vals_enc[] = $this->redis->get($key);
+    		}
+
+    		// Run through our array comparing values
+    		for($i=0;$i<count($vals);$i++) {
+    			// reset serializer
+    			$this->redis->setOption(Redis::OPT_SERIALIZER, $mode);
+    			$this->assertTrue($vals[$i] == $this->redis->_unserialize($vals_enc[$i]));
+    			$this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+    		}
+    	}
+    }
+
+    public function testPrefix() {
+    	// no prefix
+    	$this->redis->setOption(Redis::OPT_PREFIX, '');
+    	$this->assertTrue('key' == $this->redis->_prefix('key'));
+
+    	// with a prefix
+    	$this->redis->setOption(Redis::OPT_PREFIX, 'some-prefix:');
+    	$this->assertTrue('some-prefix:key' == $this->redis->_prefix('key'));
+
+    	// Clear prefix
+    	$this->redis->setOption(Redis::OPT_PREFIX, '');
+
+    }
 }
 
 TestSuite::run("Redis_Test");
