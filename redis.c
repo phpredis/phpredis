@@ -5562,7 +5562,6 @@ PHP_METHOD(Redis, object)
     RedisSock *redis_sock;
     char *cmd = "", *info = NULL, *key = NULL;
     int cmd_len, info_len, key_len;
-    //long port = 6379;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
 									 &object, redis_ce, &info, &info_len, &key, &key_len) == FAILURE) {
@@ -5883,10 +5882,8 @@ redis_build_script_exists_cmd(char **ret, zval **argv, int argc) {
 
 	// Iterate our arguments
 	for(i=0;i<argc;i++) {
-		// If the argument isn't a string, convert it
-		if(Z_TYPE_P(argv[i]) != IS_STRING) {
-			convert_to_string(argv[i]);
-		}
+		// Convert our argument to a string if we need to
+		convert_to_string(argv[i]);
 
 		// Append this script sha to our SCRIPT EXISTS command
 		cmd_len = redis_cmd_append_str(ret, cmd_len, Z_STRVAL_P(argv[i]), Z_STRLEN_P(argv[i]));
@@ -5947,7 +5944,6 @@ PHP_METHOD(Redis, script) {
 	} else {
 		// Unknown directive
 		efree(z_args);
-		zend_throw_exception(redis_exception_ce, "Unknown SCRIPT sub command", 0 TSRMLS_CC);
 		RETURN_FALSE;
 	}
 
@@ -5992,10 +5988,8 @@ PHP_METHOD(Redis, dump) {
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_ping_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-		//redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
 	REDIS_PROCESS_RESPONSE(redis_ping_response);
-	//REDIS_PROCESS_RESPONSE(redis_string_response);
 }
 
 /*
@@ -6112,7 +6106,7 @@ PHP_METHOD(Redis, getLastError) {
 
 	// Return our last error or NULL if we don't have one
 	if(redis_sock->err != NULL && redis_sock->err_len > 0) {
-		RETURN_STRING(redis_sock->err, 1);
+		RETURN_STRINGL(redis_sock->err, redis_sock->err_len, 1);
 	} else {
 		RETURN_NULL();
 	}

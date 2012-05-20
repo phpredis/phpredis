@@ -2903,8 +2903,8 @@ class Redis_Test extends TestSuite
     	$this->assertTrue($this->redis->restore('bar', 0, $d_foo));
 
     	// Now check that the keys have switched
-    	$this->assertTrue($this->redis->get('foo') == 'this-is-bar');
-    	$this->assertTrue($this->redis->get('bar') == 'this-is-foo');
+    	$this->assertTrue($this->redis->get('foo') === 'this-is-bar');
+    	$this->assertTrue($this->redis->get('bar') === 'this-is-foo');
 
     	$this->redis->del('foo');
     	$this->redis->del('bar');
@@ -2912,7 +2912,7 @@ class Redis_Test extends TestSuite
 
     public function testGetLastError() {
     	// We shouldn't have any errors now
-    	$this->assertTrue($this->redis->getLastError() == NULL);
+    	$this->assertTrue($this->redis->getLastError() === NULL);
 
     	// Throw some invalid lua at redis
     	$this->redis->eval("not-a-lua-script");
@@ -3099,9 +3099,9 @@ class Redis_Test extends TestSuite
     	$sha = sha1($scr);
 
     	// Run it when it doesn't exist, run it with eval, and then run it with sha1
-    	$this->assertTrue(false == $this->redis->evalsha($scr));
-    	$this->assertTrue(1 == $this->redis->eval($scr));
-    	$this->assertTrue(1 == $this->redis->evalsha($sha));
+    	$this->assertTrue(false === $this->redis->evalsha($scr));
+    	$this->assertTrue(1 === $this->redis->eval($scr));
+    	$this->assertTrue(1 === $this->redis->evalsha($sha));
     }
 
     public function testUnserialize() {
