@@ -3007,7 +3007,8 @@ class Redis_Test extends TestSuite
 		$this->assertTrue($set == Array('d','e','f'));
 
 		// Test an empty MULTI BULK response
-		$empty_resp = $this->redis->eval("return redis.call('lrange', 'not-any-kind-of-set', 0, -1)");
+		$this->redis->del('not-any-kind-of-list');
+		$empty_resp = $this->redis->eval("return redis.call('lrange', 'not-any-kind-of-list', 0, -1)");
 		$this->assertTrue(is_array($empty_resp) && empty($empty_resp));
 
 		// Now test a nested reply
@@ -3040,6 +3041,24 @@ class Redis_Test extends TestSuite
 		// Now run our script, and check our values against each other
 		$eval_result = $this->redis->eval($nested_script);
 		$this->assertTrue(count($this->array_diff_recursive($eval_result, $expected)) == 0);
+
+		/*
+		 * Nested reply wihin a multi/pipeline block
+		 */
+
+		$num_scripts = 10;
+
+		foreach(Array(Redis::PIPELINE, Redis::MULTI) as $mode) {
+			$this->redis->multi($mode);
+			for($i=0;$i<$num_scripts;$i++) {
+				$this->redis->eval($nested_script);
+			}
+			$replies = $this->redis->exec();
+
+			foreach($replies as $reply) {
+				$this->assertTrue(count($this->array_diff_recursive($reply, $expected)) == 0);
+			}
+		}
 
 		/*
 		 * KEYS/ARGV
