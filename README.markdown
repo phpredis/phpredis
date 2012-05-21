@@ -425,8 +425,8 @@ $redis->incrBy('key1', 10); /* 14 */
 ##### Description
 Increment the key with floating point precision.
 ##### Parameters
-*key*
-*value*: (float) value that will be added to the key
+*key*  
+*value*: (float) value that will be added to the key  
 ##### Return value
 *FLOAT* the new value
 ##### Examples
@@ -2352,9 +2352,9 @@ $redis->hIncrBy('h', 'x', 1); /* h[x] ← 2 + 1. Returns 3 */
 ##### Description
 Increments the value of a hash member by the provided float value
 ##### Parameters
-*key*
-*member*
-*value*: (float) value that will be added to the member's value
+*key*  
+*member*  
+*value*: (float) value that will be added to the member's value  
 ##### Return value
 *FLOAT* the new value
 ##### Examples
@@ -2416,9 +2416,9 @@ $redis->config("SET", "dir", "/var/run/redis/dumps/");
 ##### Description
 Evaluate a LUA script serverside
 ##### Parameters
-*script* string. 
-*args* array, optional.
-*num_keys* int, optional.
+*script* string.  
+*args* array, optional.  
+*num_keys* int, optional.  
 ##### Return value
 Mixed.  What is returned depends on what the LUA script itself returns, which could be a scalar value (int/string), or an array.
 Arrays that are returned can also contain other arrays, if that's how it was set up in your LUA script.  If there is an error
@@ -2440,9 +2440,9 @@ $redis->eval("return {1,2,3,redis.call('lrange','mylist',0,-1)}}");
 Evaluate a LUA script serverside, from the SHA1 hash of the script instead of the script itself.  In order to run this command Redis
 will have to have already loaded the script, either by running it or via the SCRIPT LOAD command.
 ##### Parameters
-*script_sha* string.  The sha1 encoded hash of the script you want to run.<br>
-*args* array, optional.  Arguments to pass to the LUA script.<br>
-*num_keys* int, optional.  The number of arguments that should go into the KEYS array, vs. the ARGV array when Redis spins the script
+*script_sha* string.  The sha1 encoded hash of the script you want to run.  
+*args* array, optional.  Arguments to pass to the LUA script.  
+*num_keys* int, optional.  The number of arguments that should go into the KEYS array, vs. the ARGV array when Redis spins the script  
 ##### Return value
 Mixed.  See EVAL
 ##### Examples
@@ -2472,7 +2472,7 @@ $redis->script('exists', $script1, [$script2, $script3, ...]);
 ##### Description
 The last error message (if any) returned from a SCRIPT call
 ##### Parameters
-*none*
+*none*  
 ##### Return Value
 A string with the last returned script based error message, or NULL if there is no error
 ##### Examples
@@ -2486,7 +2486,7 @@ $err = $redis->getLastError();
 ##### Description
 A utility method to prefix the value with the prefix setting for phpredis.
 ##### Parameters
-*value* string.  The value you wish to prefix
+*value* string.  The value you wish to prefix  
 ##### Return value
 If a prefix is set up, the value now prefixed.  If there is no prefix, the value will be returned unchanged.
 ##### Examples
@@ -2501,7 +2501,7 @@ A utility method to unserialize data with whatever serializer is set up.  If the
 returned unchanged.  If there is a serializer set up, and the data passed in is malformed, an exception will be thrown.
 This can be useful if phpredis is serializing values, and you return something from redis in a LUA script that is serialized.
 ##### Parameters
-*value* string.  The value to be unserialized
+*value* string.  The value to be unserialized  
 ##### Examples
 <pre>
 $redis->setOpt(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
@@ -2513,7 +2513,7 @@ $redis->_unserialize('a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}'); // Will return Array(1,2
 Dump a key out of a redis database, the value of which can later be passed into redis using the RESTORE command.  The data
 that comes out of DUMP is a binary representation of the key as Redis stores it.
 ##### Parameters
-*key* string
+*key* string  
 ##### Return value
 The Redis encoded value of the key, or FALSE if the key doesn't exist
 ##### Examples
@@ -2526,9 +2526,9 @@ $val = $redis->dump('foo'); // $val will be the Redis encoded key value
 ##### Description
 Restore a key from the result of a DUMP operation.
 ##### Parameters
-*key* string.  The key name
-*ttl* integer.  How long the key should live (if zero, no expire will be set on the key)
-*value* string (binary).  The Redis encoded key value (from DUMP)
+*key* string.  The key name  
+*ttl* integer.  How long the key should live (if zero, no expire will be set on the key)  
+*value* string (binary).  The Redis encoded key value (from DUMP)  
 ##### Examples
 <pre>
 $redis->set('foo', 'bar');
