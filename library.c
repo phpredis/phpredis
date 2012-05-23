@@ -259,8 +259,7 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 			case 'f':
 			case 'F': {
 				double d = va_arg(ap, double);
-				dbl_str = _php_math_number_format(d, 8, '.', '\x00');
-				dbl_len = strlen(dbl_str);
+				dbl_len = spprintf(&dbl_str, 0, "%.8f", d);
 				smart_str_append_long(&buf, dbl_len);
 				smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
 				smart_str_appendl(&buf, dbl_str, dbl_len);
@@ -328,8 +327,7 @@ redis_cmd_format(char **ret, char *format, ...) {
 				case 'F':
 				case 'f': {
 					double d = va_arg(ap, double);
-					dbl_str = _php_math_number_format(d, 8, '.', '\x00');
-					dbl_len = strlen(dbl_str);
+					dbl_len = spprintf(&dbl_str, 0, "%.8f", d);
 					smart_str_append_long(&buf, dbl_len);
 					smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
 					smart_str_appendl(&buf, dbl_str, dbl_len);
