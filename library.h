@@ -42,3 +42,15 @@ redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len TSRMLS_DC);
 PHPAPI int
 redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_DC);
 
+#if ZEND_MODULE_API_NO >= 20100000
+#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) \
+	char dbl_decsep; \
+	dbl_decsep = '.'; \
+	dbl_str = _php_math_number_format_ex(dbl, 8, &dbl_decsep, 1, NULL, 0); \
+	dbl_len = strlen(dbl_str);
+#else
+#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) \
+	dbl_str = _php_math_number_format(dbl, 8, '.', '\x00'); \
+	dbl_len = strlen(dbl_str);
+#endif
+
