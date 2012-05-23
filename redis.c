@@ -3662,7 +3662,7 @@ PHP_METHOD(Redis, zAdd) {
 
 		/* add score */
 		score = Z_DVAL_P(z_args[i]);
-		dbl_len = spprintf(&dbl_str, 0, "%.8f", score);
+		REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, score)
 		smart_str_appendc(&buf, '$');
 		smart_str_append_long(&buf, dbl_len);
 		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
