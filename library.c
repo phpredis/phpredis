@@ -1157,6 +1157,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 		case REDIS_SERIALIZER_PHP:
 
 #if ZEND_MODULE_API_NO >= 20100000
+			PHP_VAR_SERIALIZE_INIT(ht);
 #else
 			zend_hash_init(&ht, 10, NULL, NULL, 0);
 #endif
@@ -1164,6 +1165,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 			*val = sstr.c;
 			*val_len = (int)sstr.len;
 #if ZEND_MODULE_API_NO >= 20100000
+			PHP_VAR_SERIALIZE_DESTROY(ht);
 #else
 			zend_hash_destroy(&ht);
 #endif
@@ -1195,7 +1197,11 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 			if(!*return_value) {
 				MAKE_STD_ZVAL(*return_value);
 			}
+#if ZEND_MODULE_API_NO >= 20100000
+			PHP_VAR_UNSERIALIZE_INIT(var_hash);
+#else
 			memset(&var_hash, 0, sizeof(var_hash));
+#endif
 			if(!php_var_unserialize(return_value, (const unsigned char**)&val,
 					(const unsigned char*)val + val_len, &var_hash TSRMLS_CC)) {
 				efree(*return_value);
@@ -1203,7 +1209,11 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 			} else {
 				ret = 1;
 			}
+#if ZEND_MODULE_API_NO >= 20100000
+			PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+#else
 			var_destroy(&var_hash);
+#endif
 
 			return ret;
 
