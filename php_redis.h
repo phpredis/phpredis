@@ -44,6 +44,7 @@ PHP_METHOD(Redis, exists);
 PHP_METHOD(Redis, delete);
 PHP_METHOD(Redis, incr);
 PHP_METHOD(Redis, incrBy);
+PHP_METHOD(Redis, incrByFloat);
 PHP_METHOD(Redis, decr);
 PHP_METHOD(Redis, decrBy);
 PHP_METHOD(Redis, type);
@@ -125,6 +126,19 @@ PHP_METHOD(Redis, pexpireAt);
 PHP_METHOD(Redis, bgrewriteaof);
 PHP_METHOD(Redis, slaveof);
 PHP_METHOD(Redis, object);
+PHP_METHOD(Redis, bitop);
+PHP_METHOD(Redis, bitcount);
+
+PHP_METHOD(Redis, eval);
+PHP_METHOD(Redis, evalsha);
+PHP_METHOD(Redis, script);
+PHP_METHOD(Redis, dump);
+PHP_METHOD(Redis, restore);
+
+PHP_METHOD(Redis, getLastError);
+
+PHP_METHOD(Redis, _prefix);
+PHP_METHOD(Redis, _unserialize);
 
 PHP_METHOD(Redis, mset);
 PHP_METHOD(Redis, msetnx);
@@ -141,6 +155,7 @@ PHP_METHOD(Redis, hVals);
 PHP_METHOD(Redis, hGetAll);
 PHP_METHOD(Redis, hExists);
 PHP_METHOD(Redis, hIncrBy);
+PHP_METHOD(Redis, hIncrByFloat);
 PHP_METHOD(Redis, hMset);
 PHP_METHOD(Redis, hMget);
 
