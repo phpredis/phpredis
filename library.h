@@ -2,6 +2,10 @@ void add_constant_long(zend_class_entry *ce, char *name, int value);
 int integer_length(int i);
 int redis_cmd_format(char **ret, char *format, ...);
 int redis_cmd_format_static(char **ret, char *keyword, char *format, ...);
+int redis_cmd_format_header(char **ret, char *keyword, int arg_count);
+int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len);
+int redis_cmd_append_int(char **cmd, int cmd_len, int append);
+
 
 PHPAPI char * redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC);
 
@@ -33,6 +37,7 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC);
 //PHPAPI int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC);
 PHPAPI void redis_free_socket(RedisSock *redis_sock);
 PHPAPI void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
+PHPAPI int redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len);
 
 PHPAPI int
 redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_DC);
@@ -42,3 +47,13 @@ redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len TSRMLS_DC);
 PHPAPI int
 redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_DC);
 
+/*
+ * Variant Read methods, mostly to implement eval
+ */
+
+PHPAPI int redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, int *reply_info);
+PHPAPI int redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, int *reply_info);
+PHPAPI int redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type, zval **z_ret);
+PHPAPI int redis_read_variant_bulk(RedisSock *redis_sock, int size, zval **z_ret);
+PHPAPI int redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval **z_ret);
+PHPAPI int redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);

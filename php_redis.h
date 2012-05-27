@@ -129,6 +129,17 @@ PHP_METHOD(Redis, object);
 PHP_METHOD(Redis, bitop);
 PHP_METHOD(Redis, bitcount);
 
+PHP_METHOD(Redis, eval);
+PHP_METHOD(Redis, evalsha);
+PHP_METHOD(Redis, script);
+PHP_METHOD(Redis, dump);
+PHP_METHOD(Redis, restore);
+
+PHP_METHOD(Redis, getLastError);
+
+PHP_METHOD(Redis, _prefix);
+PHP_METHOD(Redis, _unserialize);
+
 PHP_METHOD(Redis, mset);
 PHP_METHOD(Redis, msetnx);
 PHP_METHOD(Redis, rpoplpush);
