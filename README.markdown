@@ -2535,3 +2535,17 @@ $redis->set('foo', 'bar');
 $val = $redis->dump('foo');
 $redis->restore('bar', 0, $val); // The key 'bar', will now be equal to the key 'foo'
 </pre>
+
+## migrate
+##### Description
+Migrates a key to a different Redis instance.
+##### Parameters
+*host* string.  The destination host  
+*port* integer.  The TCP port to connect to.  
+*key* string. The key to migrate.  
+*destination-db* integer.  The target DB.  
+*timeout* integer.  The maximum amount of time given to this transfer.  
+##### Examples
+<pre>
+$redis->migrate('backup', 6379, 'foo', 0, 3600);
+</pre>
