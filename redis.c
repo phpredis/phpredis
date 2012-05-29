@@ -162,6 +162,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, script, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dump, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, restore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, migrate, NULL, ZEND_ACC_PUBLIC)
 
      PHP_ME(Redis, getLastError, NULL, ZEND_ACC_PUBLIC)
 
@@ -6021,6 +6022,39 @@ PHP_METHOD(Redis, restore) {
 	if(key_free) efree(key);
 
 	// Kick off our restore request
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
+}
+
+/*
+ * {{{ proto Redis::migrate(host port key dest-db timeout)
+ */
+PHP_METHOD(Redis, migrate) {
+	zval *object;
+	RedisSock *redis_sock;
+	char *cmd, *host, *key;
+	int cmd_len, host_len, key_len, port, dest_db, timeout, key_free;
+
+	// Parse arguments
+	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oslsll", &object, redis_ce,
+									&host, &host_len, &port, &key, &key_len, &dest_db, &timeout) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	// Grabg our socket
+	if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+		RETURN_FALSE;
+	}
+
+	// Prefix our key if we need to, build our command
+	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+	cmd_len = redis_cmd_format_static(&cmd, "MIGRATE", "sdsdd", host, host_len, port, key, key_len, dest_db, timeout);
+	if(key_free) efree(key);
+
+	// Kick off our MIGRATE request
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
