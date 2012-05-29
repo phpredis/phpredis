@@ -3379,6 +3379,8 @@ PHP_METHOD(Redis, select) {
         RETURN_FALSE;
     }
 
+    redis_sock->dbNumber = dbNumber;
+
     cmd_len = redis_cmd_format_static(&cmd, "SELECT", "d", dbNumber);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -5733,7 +5735,7 @@ PHP_METHOD(Redis, config)
 
 // Construct an EVAL or EVALSHA command, with option argument array and number of arguments that are keys parameter
 PHPAPI int
-redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword, char *value, int val_len, zval *args, int keys_count) {
+redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword, char *value, int val_len, zval *args, int keys_count TSRMLS_DC) {
 	zval **elem;
 	HashTable *args_hash;
 	HashPosition hash_pos;
@@ -5829,7 +5831,7 @@ PHP_METHOD(Redis, evalsha)
 	}
 
 	// Construct our EVALSHA command
-	cmd_len = redis_build_eval_cmd(redis_sock, &cmd, "EVALSHA", sha, sha_len, args, keys_count);
+	cmd_len = redis_build_eval_cmd(redis_sock, &cmd, "EVALSHA", sha, sha_len, args, keys_count TSRMLS_CC);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
@@ -5861,7 +5863,7 @@ PHP_METHOD(Redis, eval)
     }
 
     // Construct our EVAL command
-    cmd_len = redis_build_eval_cmd(redis_sock, &cmd, "EVAL", script, script_len, args, keys_count);
+    cmd_len = redis_build_eval_cmd(redis_sock, &cmd, "EVAL", script, script_len, args, keys_count TSRMLS_CC);
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {

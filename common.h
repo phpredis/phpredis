@@ -163,6 +163,7 @@ typedef struct {
     char           *persistent_id;
 
     int            serializer;
+    long           dbNumber;
 
     char           *prefix;
     int            prefix_len;
