@@ -6039,7 +6039,7 @@ PHP_METHOD(Redis, migrate) {
 	int cmd_len, host_len, key_len, port, dest_db, timeout, key_free;
 
 	// Parse arguments
-	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_C, getThis(), "Oslsll", &object, redis_ce,
+	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oslsll", &object, redis_ce,
 									&host, &host_len, &port, &key, &key_len, &dest_db, &timeout) == FAILURE) {
 		RETURN_FALSE;
 	}
