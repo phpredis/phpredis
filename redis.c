@@ -4654,6 +4654,7 @@ PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int 
         }
 
         /* get current value, a key */
+        convert_to_string(*z_key_pp);
         hkey = Z_STRVAL_PP(z_key_pp);
         hkey_len = Z_STRLEN_PP(z_key_pp);
 
