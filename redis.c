@@ -220,6 +220,8 @@ static zend_function_entry redis_functions[] = {
 	 PHP_ME(Redis, subscribe, NULL, ZEND_ACC_PUBLIC)
 	 PHP_ME(Redis, unsubscribe, NULL, ZEND_ACC_PUBLIC)
 
+     PHP_ME(Redis, isConnected, NULL, ZEND_ACC_PUBLIC)
+
      /* options */
      PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)
@@ -537,6 +539,23 @@ PHP_METHOD(Redis, pconnect)
 
 		RETURN_TRUE;
 	}
+}
+/* }}} */
+
+/* {{{ proto boolean Redis::isConnected()
+ */
+PHP_METHOD(Redis, isConnected)
+{
+	RedisSock *redis_sock = NULL;
+
+	if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 1) < 0) {
+		RETURN_FALSE;
+	}
+	
+	if (redis_sock && redis_sock->status == REDIS_SOCK_STATUS_CONNECTED) {
+		RETURN_TRUE;
+	}
+	RETURN_FALSE;
 }
 /* }}} */
 
