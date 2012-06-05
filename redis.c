@@ -3472,22 +3472,26 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTI
 			int type;
 			zval **z_value_pp;
 			int val_free, key_free;
+			char buf[32];
 
 			type = zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx, 0, NULL);
 			if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
 				continue; 	/* this should never happen, according to the PHP people. */
 			}
 
-			if(type != HASH_KEY_IS_STRING) { /* ignore non-string keys */
-				continue;
+			// If the key isn't a string, use the index value returned when grabbing the
+			// key.  We typecast to long, because they could actually be negative.
+			if(type != HASH_KEY_IS_STRING) {
+				// Create string representation of our index
+				key_len = snprintf(buf, sizeof(buf), "%ld", (long)idx);
+				key = (char*)buf;
+			} else if(key_len > 0) {
+				// When not an integer key, the length will include the \0
+				key_len--;
 			}
 
 			if(step == 0)
 				argc++; /* found a valid arg */
-
-			if(key_len > 0) {	/* string lengths include \0 when taken from array keys */
-				key_len--;
-			}
 
 			val_free = redis_serialize(redis_sock, *z_value_pp, &val, &val_len TSRMLS_CC);
 			key_free = redis_key_prefix(redis_sock, &key, (int*)&key_len TSRMLS_CC);

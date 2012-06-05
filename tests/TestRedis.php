@@ -1599,6 +1599,26 @@ class Redis_Test extends TestSuite
 	$this->assertEquals($this->redis->mget(array('x', 'y', 'z')), array('a', 'b', 'c'));	// check x y z
 
 	$this->assertFalse($this->redis->mset(array())); // set ø → FALSE
+
+
+	/*
+	 * Integer keys
+	 */
+
+	// No prefix
+	$set_array = Array(-1 => 'neg1', -2 => 'neg2', -3 => 'neg3', 1 => 'one', 2 => 'two', '3' => 'three');
+	$this->redis->delete(array_keys($set_array));
+	$this->assertTrue($this->redis->mset($set_array));
+	$this->assertEquals($this->redis->mget(array_keys($set_array)), array_values($set_array));
+	$this->redis->delete(array_keys($set_array));
+
+	// With a prefix
+	$this->redis->setOption(Redis::OPT_PREFIX, 'pfx:');
+	$this->redis->delete(array_keys($set_array));
+	$this->assertTrue($this->redis->mset($set_array));
+	$this->assertEquals($this->redis->mget(array_keys($set_array)), array_values($set_array));
+	$this->redis->delete(array_keys($set_array));
+	$this->redis->setOption(Redis::OPT_PREFIX, '');
     }
 
     public function testMsetNX() {
