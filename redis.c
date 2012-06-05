@@ -157,18 +157,6 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, bitop, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, bitcount, NULL, ZEND_ACC_PUBLIC)
 
-     PHP_ME(Redis, eval, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, evalsha, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, script, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, dump, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, restore, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, migrate, NULL, ZEND_ACC_PUBLIC)
-
-     PHP_ME(Redis, getLastError, NULL, ZEND_ACC_PUBLIC)
-
-     PHP_ME(Redis, _prefix, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, _unserialize, NULL, ZEND_ACC_PUBLIC)
-
      /* 1.1 */
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, msetnx, NULL, ZEND_ACC_PUBLIC)
@@ -219,6 +207,22 @@ static zend_function_entry redis_functions[] = {
 	 PHP_ME(Redis, publish, NULL, ZEND_ACC_PUBLIC)
 	 PHP_ME(Redis, subscribe, NULL, ZEND_ACC_PUBLIC)
 	 PHP_ME(Redis, unsubscribe, NULL, ZEND_ACC_PUBLIC)
+
+	 PHP_ME(Redis, time, NULL, ZEND_ACC_PUBLIC)
+
+     PHP_ME(Redis, eval, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, evalsha, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, script, NULL, ZEND_ACC_PUBLIC)
+
+     PHP_ME(Redis, dump, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, restore, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, migrate, NULL, ZEND_ACC_PUBLIC)
+
+     PHP_ME(Redis, getLastError, NULL, ZEND_ACC_PUBLIC)
+
+     PHP_ME(Redis, _prefix, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, _unserialize, NULL, ZEND_ACC_PUBLIC)
+
 
      /* options */
      PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
@@ -6151,6 +6155,37 @@ PHP_METHOD(Redis, getLastError) {
 	} else {
 		RETURN_NULL();
 	}
+}
+
+/*
+ * {{{ proto Redis::time()
+ */
+PHP_METHOD(Redis, time) {
+	zval *object;
+	RedisSock *redis_sock;
+	char *cmd;
+	int cmd_len;
+
+	// Grab our object
+	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O", &object, redis_ce) == FAILURE) {
+		RETURN_FALSE;
+	}
+	// Grab socket
+	if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+		RETURN_FALSE;
+	}
+
+	// Build TIME command
+	cmd_len = redis_cmd_format_static(&cmd, "TIME", "");
+
+	// Execute or queue command
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	IF_ATOMIC() {
+		if(redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL) < 0) {
+			RETURN_FALSE;
+		}
+	}
+	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_raw);
 }
 
 /* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */

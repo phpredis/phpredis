@@ -2549,3 +2549,16 @@ Migrates a key to a different Redis instance.
 <pre>
 $redis->migrate('backup', 6379, 'foo', 0, 3600);
 </pre>
+
+## time
+##### Description
+Return the current Redis server time.
+##### Parameters
+(none)  
+##### Return value
+If successfull, the time will come back as an associative array with element zero being
+the unix timestamp, and element one being microseconds.
+##### Examples
+<pre>
+$redis->time();
+</pre>

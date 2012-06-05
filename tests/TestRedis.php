@@ -3197,6 +3197,13 @@ class Redis_Test extends TestSuite
 		// Revert the setting.
 		$this->redis->config('SET', 'timeout', $original_cfg['timeout']);
 	}
+
+	public function testTime() {
+		$time_arr = $this->redis->time();
+		$this->assertTrue(is_array($time_arr) && count($time_arr) == 2 &&
+				          strval(intval($time_arr[0])) === strval($time_arr[0]) &&
+						  strval(intval($time_arr[1])) === strval($time_arr[1]));
+	}
 }
 
 TestSuite::run("Redis_Test");
