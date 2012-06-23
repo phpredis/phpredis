@@ -20,6 +20,7 @@ PHP_METHOD(RedisArray, ping);
 PHP_METHOD(RedisArray, mget);
 PHP_METHOD(RedisArray, mset);
 PHP_METHOD(RedisArray, del);
+PHP_METHOD(RedisArray, keys);
 PHP_METHOD(RedisArray, getOption);
 PHP_METHOD(RedisArray, setOption);
 
