@@ -1814,6 +1814,22 @@ class Redis_Test extends TestSuite
 	$this->redis->delete('key2');
 	$this->redis->delete('key3');
 
+	$this->redis->zadd('key1', 2000.1, 'one');
+	$this->redis->zadd('key1', 3000.1, 'two');
+	$this->redis->zadd('key1', 4000.1, 'three');
+
+	$ret = $this->redis->zRange('key1', 0, -1, TRUE);
+	$this->assertTrue(count($ret) === 3);
+	$retValues = array_keys($ret);
+
+	$this->assertTrue(array('one', 'two', 'three') === $retValues);
+
+	// + 0 converts from string to float OR integer
+	$this->assertTrue(is_float($ret['one'] + 0));
+	$this->assertTrue(is_float($ret['two'] + 0));
+	$this->assertTrue(is_float($ret['three'] + 0));
+
+	$this->redis->delete('key1');
 
 	// ZREMRANGEBYRANK
 	$this->redis->zAdd('key1', 1, 'one');
