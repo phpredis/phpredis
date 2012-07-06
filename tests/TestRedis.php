@@ -366,6 +366,9 @@ class Redis_Test extends TestSuite
 	$this->redis->incrBy('key', -1);
 	$this->assertEquals(8, (int)$this->redis->get('key'));
 
+	$this->redis->incrBy('key', 40000000000);
+	$this->assertEquals("40000000008", $this->redis->get('key'));
+
 	$this->redis->delete('key');
 
 	$this->redis->set('key', 'abc');
