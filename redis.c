@@ -1133,7 +1133,7 @@ PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword, 
     if (val == 1) {
         cmd_len = redis_cmd_format_static(&cmd, keyword, "s", key, key_len);
     } else {
-        cmd_len = redis_cmd_format_static(&cmd, keyword, "sd", key, key_len, (int)val);
+        cmd_len = redis_cmd_format_static(&cmd, keyword, "sl", key, key_len, val);
     }
 	if(key_free) efree(key);
 
