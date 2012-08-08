@@ -782,6 +782,23 @@ class Redis_Test extends TestSuite
 
     }
 
+    public function testSortPrefix() {
+	// Make sure that sorting works with a prefix
+        $this->redis->setOption(Redis::OPT_PREFIX, 'some-prefix:');
+        $this->redis->del('some-item');
+        $this->redis->sadd('some-item', 1);
+        $this->redis->sadd('some-item', 2);
+        $this->redis->sadd('some-item', 3);
+
+        $this->assertEquals(array('1','2','3'), $this->redis->sortAsc('some-item'));
+	$this->assertEquals(array('3','2','1'), $this->redis->sortDesc('some-item'));
+	$this->assertEquals(array('1','2','3'), $this->redis->sort('some-item'));
+
+	// Kill our set/prefix
+	$this->redis->del('some-item');
+	$this->redis->setOption(Redis::OPT_PREFIX, '');
+    }
+
     public function testSortAsc() {
 
 	$this->setupSort();

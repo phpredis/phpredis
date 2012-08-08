@@ -2611,7 +2611,7 @@ PHP_METHOD(Redis, sort) {
 
     zval *object = getThis(), *z_array = NULL, **z_cur;
     char *cmd, *old_cmd = NULL, *key;
-    int cmd_len, elements = 2, key_len;
+    int cmd_len, elements = 2, key_len, key_free;
     int using_store = 0;
     RedisSock *redis_sock;
 
@@ -2625,8 +2625,9 @@ PHP_METHOD(Redis, sort) {
         RETURN_FALSE;
     }
 
-    cmd_len = redis_cmd_format(&cmd, "$4" _NL "SORT" _NL "$%d" _NL "%s" _NL
-                            , key_len, key, key_len);
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+    cmd_len = redis_cmd_format(&cmd, "$4" _NL "SORT" _NL "$%d" _NL "%s" _NL, key_len, key, key_len);
+    if(key_free) efree(key);
 
     if(z_array) {
         if ((zend_hash_find(Z_ARRVAL_P(z_array), "by", sizeof("by"), (void **) &z_cur) == SUCCESS
@@ -2814,7 +2815,7 @@ PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_a
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *pattern = NULL, *get = NULL, *store = NULL, *cmd;
-    int key_len, pattern_len = -1, get_len = -1, store_len = -1, cmd_len;
+    int key_len, pattern_len = -1, get_len = -1, store_len = -1, cmd_len, key_free;
     long sort_start = -1, sort_count = -1;
 
     int cmd_elements;
@@ -2845,12 +2846,18 @@ PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_a
     cmd_lines[2] = estrdup("SORT");
     cmd_sizes[2] = 4;
 
+    // Prefix our key if we need to
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+
     /* second line, key */
     cmd_sizes[3] = redis_cmd_format(&cmd_lines[3], "$%d", key_len);
     cmd_lines[4] = emalloc(key_len + 1);
     memcpy(cmd_lines[4], key, key_len);
     cmd_lines[4][key_len] = 0;
     cmd_sizes[4] = key_len;
+
+    // If we prefixed our key, free it
+    if(key_free) efree(key);
 
     cmd_elements = 5;
     if(pattern && pattern_len) {
