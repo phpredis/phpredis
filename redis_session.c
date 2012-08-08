@@ -251,10 +251,10 @@ PS_OPEN_FUNC(redis)
 			}
 
 			RedisSock *redis_sock;
-            if(url->path) { /* unix */
-                    redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, persistent, persistent_id);
-            } else {
+            if(url->host) {
                     redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, persistent, persistent_id);
+            } else { /* unix */
+                    redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, persistent, persistent_id);
             }
 			redis_pool_add(pool, redis_sock, weight, prefix, auth TSRMLS_CC);
 
