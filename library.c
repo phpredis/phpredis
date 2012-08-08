@@ -1276,8 +1276,6 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 					break;
 			}
 
-			int tvar = EG(precision);
-
 			/* return string */
 			convert_to_string(z_copy);
 			*val = Z_STRVAL_P(z_copy);
