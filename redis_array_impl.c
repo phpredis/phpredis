@@ -100,6 +100,7 @@ void ra_init_function_table(RedisArray *ra) {
 	add_assoc_bool(ra->z_pure_cmds, "SUNION", 1);
 	add_assoc_bool(ra->z_pure_cmds, "HVALS", 1);
 	add_assoc_bool(ra->z_pure_cmds, "TYPE", 1);
+	add_assoc_bool(ra->z_pure_cmds, "EXISTS", 1);
 	add_assoc_bool(ra->z_pure_cmds, "LINDEX", 1);
 	add_assoc_bool(ra->z_pure_cmds, "SCARD", 1);
 	add_assoc_bool(ra->z_pure_cmds, "LLEN", 1);
