@@ -790,7 +790,7 @@ Adds a value to the set value stored at key. If this value is already in the set
 *value*
 
 ##### *Return value*
-*LONG* `0` if value didn't exist and was added successfully, `1` if the value is already present.
+*LONG* `1` if value didn't exist and was added successfully, `0` if the value is already present.
 ##### *Example*
 <pre>
 $redis->sAdd('key1' , 'member1'); /* TRUE, 'key1' => {'member1'} */
