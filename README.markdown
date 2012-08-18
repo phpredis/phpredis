@@ -790,7 +790,7 @@ Adds a value to the set value stored at key. If this value is already in the set
 *value*
 
 ##### *Return value*
-*BOOL* `TRUE` if value didn't exist and was added successfully, `FALSE` if the value is already present.
+*LONG* `0` if value didn't exist and was added successfully, `1` if the value is already present.
 ##### *Example*
 <pre>
 $redis->sAdd('key1' , 'member1'); /* TRUE, 'key1' => {'member1'} */
@@ -805,7 +805,7 @@ Removes the specified member from the set value stored at key.
 *key*
 *member*
 ##### *Return value*
-*BOOL* `TRUE` if the member was present in the set, `FALSE` if it didn't.
+*LONG* `1` if the member was present in the set, `0` if it didn't.
 ##### *Example*
 <pre>
 $redis->sAdd('key1' , 'member1');
