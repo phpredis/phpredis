@@ -5832,7 +5832,8 @@ PHP_METHOD(Redis, evalsha)
 {
 	zval *object, *args= NULL;
 	char *cmd, *sha;
-	int cmd_len, sha_len, keys_count = 0;
+	int cmd_len, sha_len;
+	long keys_count = 0;
 	RedisSock *redis_sock;
 
 	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|al",
@@ -5864,7 +5865,8 @@ PHP_METHOD(Redis, eval)
 	zval *object, *args = NULL;
 	RedisSock *redis_sock;
 	char *script, *cmd = "";
-	int script_len, cmd_len, keys_count = 0;
+	int script_len, cmd_len;
+	long keys_count = 0;
 
 	// Attempt to parse parameters
 	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|al",
@@ -6051,7 +6053,8 @@ PHP_METHOD(Redis, migrate) {
 	zval *object;
 	RedisSock *redis_sock;
 	char *cmd, *host, *key;
-	int cmd_len, host_len, key_len, port, dest_db, timeout, key_free;
+	int cmd_len, host_len, key_len, key_free;
+	long port, dest_db, timeout;
 
 	// Parse arguments
 	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oslsll", &object, redis_ce,
