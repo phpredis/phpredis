@@ -48,6 +48,7 @@ typedef struct redis_pool_member_ {
 
 	RedisSock *redis_sock;
 	int weight;
+	int database;
 
     char *prefix;
     size_t prefix_len;
@@ -75,11 +76,12 @@ redis_pool_new(TSRMLS_D) {
 
 PHPAPI void
 redis_pool_add(redis_pool *pool, RedisSock *redis_sock, int weight,
-                char *prefix, char *auth TSRMLS_DC) {
+                int database, char *prefix, char *auth TSRMLS_DC) {
 
 	redis_pool_member *rpm = ecalloc(1, sizeof(redis_pool_member));
 	rpm->redis_sock = redis_sock;
 	rpm->weight = weight;
+	rpm->database = database;
 
     rpm->prefix = prefix;
     rpm->prefix_len = (prefix?strlen(prefix):0);
@@ -129,6 +131,22 @@ redis_pool_member_auth(redis_pool_member *rpm TSRMLS_DC) {
     efree(cmd);
 }
 
+static void
+redis_pool_member_select(redis_pool_member *rpm TSRMLS_DC) {
+    RedisSock *redis_sock = rpm->redis_sock;
+    char *response, *cmd;
+    int response_len, cmd_len;
+
+    cmd_len = redis_cmd_format_static(&cmd, "SELECT", "d", rpm->database);
+
+    if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) >= 0) {
+        if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC))) {
+            efree(response);
+        }
+    }
+    efree(cmd);
+}
+
 PHPAPI redis_pool_member *
 redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
 
@@ -147,6 +165,9 @@ redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
             redis_sock_server_open(rpm->redis_sock, 0 TSRMLS_CC);
             if(needs_auth) {
                 redis_pool_member_auth(rpm TSRMLS_CC);
+            }
+            if(rpm->database >= 0) { /* default is -1 which leaves the choice to redis. */
+                redis_pool_member_select(rpm TSRMLS_CC);
             }
 
 			return rpm;
@@ -183,6 +204,7 @@ PS_OPEN_FUNC(redis)
 			int weight = 1;
 			double timeout = 86400.0;
 			int persistent = 0;
+            int database = -1;
             char *prefix = NULL, *auth = NULL, *persistent_id = NULL;
 
             /* translate unix: into file: */
@@ -234,6 +256,10 @@ PS_OPEN_FUNC(redis)
 				if (zend_hash_find(Z_ARRVAL_P(params), "auth", sizeof("auth"), (void **) &param) != FAILURE) {
 					auth = estrndup(Z_STRVAL_PP(param), Z_STRLEN_PP(param));
 				}
+				if (zend_hash_find(Z_ARRVAL_P(params), "database", sizeof("database"), (void **) &param) != FAILURE) {
+					convert_to_long_ex(param);
+					database = Z_LVAL_PP(param);
+				}
 
 				/* // not supported yet
 				if (zend_hash_find(Z_ARRVAL_P(params), "retry_interval", sizeof("retry_interval"), (void **) &param) != FAILURE) {
@@ -258,7 +284,7 @@ PS_OPEN_FUNC(redis)
             } else { /* unix */
                     redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, persistent, persistent_id);
             }
-			redis_pool_add(pool, redis_sock, weight, prefix, auth TSRMLS_CC);
+			redis_pool_add(pool, redis_sock, weight, database, prefix, auth TSRMLS_CC);
 
 			php_url_free(url);
 		}
