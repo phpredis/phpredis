@@ -41,7 +41,7 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
     for (; eof; count++) {
         if((MULTI == redis_sock->mode) || redis_sock->watching || count == 10) { /* too many failures */
 	    if(redis_sock->stream) { /* close stream if still here */
-                php_stream_close(redis_sock->stream);
+                redis_stream_close(redis_sock);
                 redis_sock->stream = NULL;
 				redis_sock->mode   = ATOMIC;
                 redis_sock->status = REDIS_SOCK_STATUS_FAILED;
@@ -51,7 +51,7 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 	    return -1;
 	}
 	if(redis_sock->stream) { /* close existing stream before reconnecting */
-            php_stream_close(redis_sock->stream);
+            redis_stream_close(redis_sock);
             redis_sock->stream = NULL;
 			redis_sock->mode   = ATOMIC;
             redis_sock->watching = 0;
