@@ -3625,7 +3625,6 @@ PHP_METHOD(Redis, brpoplpush)
  */
 PHP_METHOD(Redis, zAdd) {
 
-    zval *object;
     RedisSock *redis_sock;
 
     char *cmd;
@@ -3633,7 +3632,6 @@ PHP_METHOD(Redis, zAdd) {
     double score;
     char *key, *val;
     int val_free, key_free = 0;
-    zval *z_value;
 	char *dbl_str;
 	int dbl_len;
 

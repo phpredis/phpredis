@@ -35,7 +35,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts TSRMLS_DC)
 	int count = zend_hash_num_elements(hosts);
 	char *host, *p;
 	short port;
-	zval **zpData, z_cons, *z_args, z_ret;
+	zval **zpData, z_cons, z_ret;
 	RedisSock *redis_sock  = NULL;
 
 	/* function calls on the Redis object */
@@ -537,7 +537,6 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
 void
 ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC) {
 
-	int i;
 	zval z_fun_sadd, z_ret, *z_args[2];
 	MAKE_STD_ZVAL(z_args[0]);
 	MAKE_STD_ZVAL(z_args[1]);
@@ -741,8 +740,7 @@ ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long 
 static void
 ra_remove_from_index(zval *z_redis, const char *key, int key_len TSRMLS_DC) {
 
-	int i;
-	zval z_fun_get, z_fun_srem, z_ret, *z_args[2];
+	zval z_fun_srem, z_ret, *z_args[2];
 
 	/* run SREM on source index */
 	ZVAL_STRINGL(&z_fun_srem, "SREM", 4, 0);
@@ -816,7 +814,6 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	unsigned int val_len;
 	int i;
 	unsigned long idx;
-	int type;
 	
 	/* run ZRANGE key 0 -1 WITHSCORES on source */
 	ZVAL_STRINGL(&z_fun_zrange, "ZRANGE", 6, 0);
