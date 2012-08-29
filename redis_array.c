@@ -188,7 +188,6 @@ uint32_t rcrc32(const char *s, size_t sz) {
 PHP_METHOD(RedisArray, __construct)
 {
 	zval *z0, *z_fun = NULL, *z_dist = NULL, **zpData, *z_opts = NULL;
-	char *name = NULL;
 	int id;
 	RedisArray *ra = NULL;
 	zend_bool b_index = 0, b_autorehash = 0;
@@ -457,7 +456,6 @@ PHP_METHOD(RedisArray, _instance)
 PHP_METHOD(RedisArray, _function)
 {
 	zval *object;
-	int i;
 	RedisArray *ra;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
@@ -480,7 +478,6 @@ PHP_METHOD(RedisArray, _function)
 PHP_METHOD(RedisArray, _distributor)
 {
 	zval *object;
-	int i;
 	RedisArray *ra;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
@@ -838,12 +835,11 @@ PHP_METHOD(RedisArray, mget)
 /* MSET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mset)
 {
-	zval *object, *z_keys, z_fun, *z_argarray, **data, z_ret, **z_cur, *z_tmp;
-	int i, j, n;
+	zval *object, *z_keys, z_fun, *z_argarray, **data, z_ret;
+	int i, n;
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
 	HashTable *h_keys;
-	HashPosition pointer;
 	zval **redis_instances, *redis_inst, **argv;
 	char *key, **keys;
 	unsigned int key_len;
@@ -959,8 +955,8 @@ PHP_METHOD(RedisArray, mset)
 /* DEL will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, del)
 {
-	zval *object, *z_keys, z_fun, *z_argarray, **data, *z_ret, **z_cur, *z_tmp_array, *z_tmp, **z_args;
-	int i, j, n;
+	zval *object, *z_keys, z_fun, *z_argarray, **data, *z_ret, *z_tmp, **z_args;
+	int i, n;
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
 	HashTable *h_keys;
