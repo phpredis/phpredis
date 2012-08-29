@@ -3,7 +3,7 @@
 %global php_version %(php-config --version 2>/dev/null || echo 0)
 
 Name:           php-redis
-Version:        2.2.1
+Version:        2.2.2
 Release:        1%{?dist}
 Summary:        The phpredis extension provides an API for communicating with the Redis key-value store.
 
