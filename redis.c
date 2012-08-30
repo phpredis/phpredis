@@ -2270,7 +2270,7 @@ PHP_METHOD(Redis, sMembers)
 PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
 									 int min_argc, RedisSock **out_sock, int has_timeout, int all_keys, int can_serialize)
 {
-    zval *object, **z_args, *z_array;
+    zval **z_args, *z_array;
     char **keys, *cmd;
     int cmd_len, *keys_len, *keys_to_free;
     int i, j, argc = ZEND_NUM_ARGS(), real_argc = 0;
@@ -2459,7 +2459,6 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 
     if(z_args) efree(z_args);
 	
-	object = getThis();
 	/*
 	cmd[cmd_len] = 0;
 	php_printf("cmd=[%s]\n", cmd);
