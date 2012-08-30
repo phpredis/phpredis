@@ -4197,7 +4197,7 @@ PHP_METHOD(Redis, zIncrBy)
 PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int command_len) {
 
 	zval *object, *keys_array, *weights_array = NULL, **data;
-	HashTable *arr_weights_hash, *arr_keys_hash;
+	HashTable *arr_weights_hash = NULL, *arr_keys_hash;
 	int key_output_len, array_weights_count, array_keys_count, operation_len = 0;
 	char *key_output, *operation;
 	RedisSock *redis_sock;
