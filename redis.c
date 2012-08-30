@@ -4649,10 +4649,9 @@ PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int 
         unsigned int tablekey_len;
         int hkey_len, hval_len;
         unsigned long idx;
-        int type;
         zval **z_key_pp, **z_value_pp;
 
-        type = zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
+        zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
         if(zend_hash_get_current_data(keytable, (void**)&z_key_pp) == FAILURE) {
             continue; 	/* this should never happen, according to the PHP people. */
         }
@@ -4666,7 +4665,7 @@ PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int 
         zend_hash_move_forward(keytable);
 
         /* fetch again */
-        type = zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
+        zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
         if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
             continue; 	/* this should never happen, according to the PHP people. */
         }
