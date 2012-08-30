@@ -2347,10 +2347,9 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
             char *key;
             unsigned int key_len;
             unsigned long idx;
-            int type;
             zval **z_value_pp;
 
-            type = zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx, 0, NULL);
+            zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx, 0, NULL);
             if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
                 continue; 	/* this should never happen, according to the PHP people. */
             }
