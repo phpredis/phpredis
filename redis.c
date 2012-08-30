@@ -5291,7 +5291,6 @@ PHP_METHOD(Redis, subscribe)
 	int callback_type;
 	zval *z_o, *z_fun,*z_ret, *z_args[3];
 	char *method_name;
-	zend_class_entry *ce;
 	
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oaz|z", 
 									 &object, redis_ce, &array, &z_callback) == FAILURE) {
@@ -5411,7 +5410,7 @@ PHP_METHOD(Redis, subscribe)
 		switch(callback_type) {
 			case R_SUB_CALLBACK_CLASS_TYPE:
 		       	MAKE_STD_ZVAL(z_ret);
-				call_user_function(&ce->function_table, &z_o, z_fun, z_ret, 3, z_args TSRMLS_CC);							
+				call_user_function(&redis_ce->function_table, &z_o, z_fun, z_ret, 3, z_args TSRMLS_CC);
 		        efree(z_ret);
 				break;
 
