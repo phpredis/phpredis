@@ -1595,9 +1595,12 @@ class Redis_Test extends TestSuite
 	// INFO COMMANDSTATS
 	$info = $this->redis->info("COMMANDSTATS");
 
-	foreach($info as $k => $value) {
-		$this->assertTrue(strpos($k, 'cmdstat_') !== false);
-    }
+	$this->assertTrue(is_array($info));
+	if (is_array($info)) {
+		foreach($info as $k => $value) {
+			$this->assertTrue(strpos($k, 'cmdstat_') !== false);
+	    }
+	}
     }
 
     public function testSelect() {
@@ -3013,7 +3016,7 @@ class Redis_Test extends TestSuite
     	// None should exist
 		$result = $this->redis->script('exists', $s1_sha, $s2_sha, $s3_sha);
 		$this->assertTrue(is_array($result) && count($result) == 3);
-		$this->assertTrue(count(array_filter($result)) == 0);
+		$this->assertTrue(is_array($result) && count(array_filter($result)) == 0);
 
 		// Load them up
 		$this->assertTrue($this->redis->script('load', $s1_src) == $s1_sha);
@@ -3022,7 +3025,7 @@ class Redis_Test extends TestSuite
 
 		// They should all exist
 		$result = $this->redis->script('exists', $s1_sha, $s2_sha, $s3_sha);
-		$this->assertTrue(count(array_filter($result)) == 3);
+		$this->assertTrue(is_array($result) && count(array_filter($result)) == 3);
     }
 
     public function testEval() {
@@ -3093,7 +3096,7 @@ class Redis_Test extends TestSuite
 
 		// Now run our script, and check our values against each other
 		$eval_result = $this->redis->eval($nested_script);
-		$this->assertTrue(count($this->array_diff_recursive($eval_result, $expected)) == 0);
+		$this->assertTrue(is_array($eval_result) && count($this->array_diff_recursive($eval_result, $expected)) == 0);
 
 		/*
 		 * Nested reply wihin a multi/pipeline block
@@ -3109,7 +3112,7 @@ class Redis_Test extends TestSuite
 			$replies = $this->redis->exec();
 
 			foreach($replies as $reply) {
-				$this->assertTrue(count($this->array_diff_recursive($reply, $expected)) == 0);
+				$this->assertTrue(is_array($reply) && count($this->array_diff_recursive($reply, $expected)) == 0);
 			}
 		}
 
