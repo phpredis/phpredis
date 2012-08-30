@@ -2391,12 +2391,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 			real_argc++;
 		}
     } else {
-		int nb_keys;
-		if(!has_timeout) {
-			nb_keys = argc;
-		} else if(has_timeout && Z_TYPE_P(z_args[argc - 1]) == IS_LONG) {
-			nb_keys = argc - 1;
-		} else {
+		if(has_timeout && Z_TYPE_P(z_args[argc - 1]) != IS_LONG) {
 			php_error_docref(NULL TSRMLS_CC, E_ERROR, "Syntax error on timeout");
 		}
 			
