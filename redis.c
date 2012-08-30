@@ -5288,7 +5288,7 @@ PHP_METHOD(Redis, subscribe)
 	zval *z_tab, **tmp;
 	char *type_response;
 	
-	int callback_type;
+	int callback_type = 0;
 	zval *z_o, *z_fun = NULL,*z_ret, *z_args[3];
 	char *method_name;
 	
@@ -5376,6 +5376,8 @@ PHP_METHOD(Redis, subscribe)
 		callback_ft_name = Z_STRVAL_P(z_callback);
 		callback_ft_name_len = strlen(callback_ft_name);
 		callback_type = R_SUB_CALLBACK_FT_TYPE;
+		MAKE_STD_ZVAL(z_fun);
+		ZVAL_STRINGL(z_fun, callback_ft_name, callback_ft_name_len, 0);
 	}
 
 	/* Multibulk Response, format : {message type, originating channel, message payload} */
@@ -5416,8 +5418,6 @@ PHP_METHOD(Redis, subscribe)
 
 			case R_SUB_CALLBACK_FT_TYPE:
 		       	MAKE_STD_ZVAL(z_ret);
-				MAKE_STD_ZVAL(z_fun);	
-				ZVAL_STRINGL(z_fun, callback_ft_name, callback_ft_name_len, 0);
 	        	call_user_function(EG(function_table), NULL, z_fun, z_ret, 3, z_args TSRMLS_CC);
 		        efree(z_fun);
 		        efree(z_ret);
