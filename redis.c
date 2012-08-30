@@ -5289,7 +5289,7 @@ PHP_METHOD(Redis, subscribe)
 	char *type_response;
 	
 	int callback_type;
-	zval *z_o, *z_fun,*z_ret, *z_args[3];
+	zval *z_o, *z_fun = NULL,*z_ret, *z_args[3];
 	char *method_name;
 	
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oaz|z", 
