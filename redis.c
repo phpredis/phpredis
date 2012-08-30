@@ -3433,7 +3433,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTI
     zval *object;
     RedisSock *redis_sock;
 
-    char *cmd, *p;
+    char *cmd = NULL, *p = NULL;
     int cmd_len = 0, argc = 0, kw_len = strlen(kw);
 	int step = 0;	// 0: compute size; 1: copy strings.
     zval *z_array;
