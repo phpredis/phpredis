@@ -264,7 +264,7 @@ static void
 ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args, zval *z_new_target) {
 
 	zval **zp_tmp, z_tmp;
-	char *key;
+	char *key = NULL; // set to avoid "unused-but-set-variable"
 	int key_len;
 	int i;
 	zval *redis_inst;
