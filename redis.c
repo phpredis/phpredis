@@ -4647,7 +4647,7 @@ PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int 
 
         char *tablekey, *hkey, *hval;
         unsigned int tablekey_len;
-        int hkey_len, hval_len;
+        int hkey_len;
         unsigned long idx;
         zval **z_key_pp, **z_value_pp;
 
@@ -4672,7 +4672,6 @@ PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int 
 
         /* get current value, a hash value now. */
         hval = Z_STRVAL_PP(z_value_pp);
-        hval_len = Z_STRLEN_PP(z_value_pp);
 
         if(use_atof) { /* zipping a score */
             add_assoc_double_ex(z_ret, hkey, 1+hkey_len, atof(hval));
