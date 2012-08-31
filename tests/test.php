@@ -51,9 +51,11 @@ class TestSuite {
 
 		if(empty($className::$errors)) {
 			echo "All tests passed.\n";
+			return 0;
 		}
 
 		echo implode('', $className::$errors);
+		return 1;
 	}
 }
 

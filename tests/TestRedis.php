@@ -3271,6 +3271,6 @@ class Redis_Test extends TestSuite
 	}
 }
 
-TestSuite::run("Redis_Test");
+exit(TestSuite::run("Redis_Test"));
 
 ?>
