@@ -2037,6 +2037,7 @@ class Redis_Test extends TestSuite
 	$this->redis->hSet('h', 'y', 'not-a-number');
 	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'y', 1));
 
+	if (version_compare($this->version, "2.5.0", "ge")) {
 	// hIncrByFloat
 	$this->redis->delete('h');
 	$this->assertTrue(1.5 === $this->redis->hIncrByFloat('h','x', 1.5));
@@ -2045,6 +2046,7 @@ class Redis_Test extends TestSuite
 
 	$this->redis->hset('h','y','not-a-number');
 	$this->assertTrue(FALSE === $this->redis->hIncrByFloat('h', 'y', 1.5));
+	}
 
 	// hmset
 	$this->redis->delete('h');
