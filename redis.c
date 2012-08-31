@@ -2270,12 +2270,12 @@ PHP_METHOD(Redis, sMembers)
 PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
 									 int min_argc, RedisSock **out_sock, int has_timeout, int all_keys, int can_serialize)
 {
-    zval *object, **z_args, *z_array;
+    zval **z_args, *z_array;
     char **keys, *cmd;
     int cmd_len, *keys_len, *keys_to_free;
     int i, j, argc = ZEND_NUM_ARGS(), real_argc = 0;
     int single_array = 0;
-	int timeout;
+	int timeout = 0;
 	int pos;
 	int array_size;
 
@@ -2347,10 +2347,9 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
             char *key;
             unsigned int key_len;
             unsigned long idx;
-            int type;
             zval **z_value_pp;
 
-            type = zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx, 0, NULL);
+            zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx, 0, NULL);
             if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
                 continue; 	/* this should never happen, according to the PHP people. */
             }
@@ -2392,12 +2391,7 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 			real_argc++;
 		}
     } else {
-		int nb_keys;
-		if(!has_timeout) {
-			nb_keys = argc;
-		} else if(has_timeout && Z_TYPE_P(z_args[argc - 1]) == IS_LONG) {
-			nb_keys = argc - 1;
-		} else {
+		if(has_timeout && Z_TYPE_P(z_args[argc - 1]) != IS_LONG) {
 			php_error_docref(NULL TSRMLS_CC, E_ERROR, "Syntax error on timeout");
 		}
 			
@@ -2465,7 +2459,6 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 
     if(z_args) efree(z_args);
 	
-	object = getThis();
 	/*
 	cmd[cmd_len] = 0;
 	php_printf("cmd=[%s]\n", cmd);
@@ -2703,10 +2696,9 @@ PHP_METHOD(Redis, sort) {
                     char *key;
                     unsigned int key_len;
                     unsigned long idx;
-                    int type;
                     zval **z_value_pp;
 
-                    type = zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx, 0, NULL);
+                    zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx, 0, NULL);
                     if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
                         continue; 	/* this should never happen, according to the PHP people. */
                     }
@@ -3441,7 +3433,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTI
     zval *object;
     RedisSock *redis_sock;
 
-    char *cmd, *p;
+    char *cmd = NULL, *p = NULL;
     int cmd_len = 0, argc = 0, kw_len = strlen(kw);
 	int step = 0;	// 0: compute size; 1: copy strings.
     zval *z_array;
@@ -4205,7 +4197,7 @@ PHP_METHOD(Redis, zIncrBy)
 PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int command_len) {
 
 	zval *object, *keys_array, *weights_array = NULL, **data;
-	HashTable *arr_weights_hash, *arr_keys_hash;
+	HashTable *arr_weights_hash = NULL, *arr_keys_hash;
 	int key_output_len, array_weights_count, array_keys_count, operation_len = 0;
 	char *key_output, *operation;
 	RedisSock *redis_sock;
@@ -4655,12 +4647,11 @@ PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int 
 
         char *tablekey, *hkey, *hval;
         unsigned int tablekey_len;
-        int hkey_len, hval_len;
+        int hkey_len;
         unsigned long idx;
-        int type;
         zval **z_key_pp, **z_value_pp;
 
-        type = zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
+        zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
         if(zend_hash_get_current_data(keytable, (void**)&z_key_pp) == FAILURE) {
             continue; 	/* this should never happen, according to the PHP people. */
         }
@@ -4674,14 +4665,13 @@ PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int 
         zend_hash_move_forward(keytable);
 
         /* fetch again */
-        type = zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
+        zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
         if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
             continue; 	/* this should never happen, according to the PHP people. */
         }
 
         /* get current value, a hash value now. */
         hval = Z_STRVAL_PP(z_value_pp);
-        hval_len = Z_STRLEN_PP(z_value_pp);
 
         if(use_atof) { /* zipping a score */
             add_assoc_double_ex(z_ret, hkey, 1+hkey_len, atof(hval));
@@ -5298,10 +5288,9 @@ PHP_METHOD(Redis, subscribe)
 	zval *z_tab, **tmp;
 	char *type_response;
 	
-	int callback_type;
-	zval *z_o, *z_fun,*z_ret, *z_args[3];
+	int callback_type = 0;
+	zval *z_o, *z_fun = NULL,*z_ret, *z_args[3];
 	char *method_name;
-	zend_class_entry *ce;
 	
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oaz|z", 
 									 &object, redis_ce, &array, &z_callback) == FAILURE) {
@@ -5387,6 +5376,8 @@ PHP_METHOD(Redis, subscribe)
 		callback_ft_name = Z_STRVAL_P(z_callback);
 		callback_ft_name_len = strlen(callback_ft_name);
 		callback_type = R_SUB_CALLBACK_FT_TYPE;
+		MAKE_STD_ZVAL(z_fun);
+		ZVAL_STRINGL(z_fun, callback_ft_name, callback_ft_name_len, 0);
 	}
 
 	/* Multibulk Response, format : {message type, originating channel, message payload} */
@@ -5421,14 +5412,12 @@ PHP_METHOD(Redis, subscribe)
 		switch(callback_type) {
 			case R_SUB_CALLBACK_CLASS_TYPE:
 		       	MAKE_STD_ZVAL(z_ret);
-				call_user_function(&ce->function_table, &z_o, z_fun, z_ret, 3, z_args TSRMLS_CC);							
+				call_user_function(&redis_ce->function_table, &z_o, z_fun, z_ret, 3, z_args TSRMLS_CC);
 		        efree(z_ret);
 				break;
 
 			case R_SUB_CALLBACK_FT_TYPE:
 		       	MAKE_STD_ZVAL(z_ret);
-				MAKE_STD_ZVAL(z_fun);	
-				ZVAL_STRINGL(z_fun, callback_ft_name, callback_ft_name_len, 0);
 	        	call_user_function(EG(function_table), NULL, z_fun, z_ret, 3, z_args TSRMLS_CC);
 		        efree(z_fun);
 		        efree(z_ret);
