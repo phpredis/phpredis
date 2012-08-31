@@ -383,8 +383,14 @@ class Redis_Test extends TestSuite
 
 	$this->redis->incr('key');
 	$this->assertTrue("abc" === $this->redis->get('key'));
+	}
 
-	// incrbyfloat
+    public function testIncrByFloat()
+    {
+	// incrbyfloat is new in 2.6.0
+	if (version_compare($this->version, "2.5.0", "lt")) {
+		return;
+	}
 
 	$this->redis->delete('key');
 
@@ -1620,8 +1626,15 @@ class Redis_Test extends TestSuite
 	foreach($keys as $k) {
 	    $this->assertTrue(in_array($k, array_keys($info)));
 	}
+	}
 
-	// INFO COMMANDSTATS
+    public function testInfoCommandStats() {
+
+	// INFO COMMANDSTATS is new in 2.6.0
+	if (version_compare($this->version, "2.5.0", "lt")) {
+		return;
+	}
+
 	$info = $this->redis->info("COMMANDSTATS");
 
 	$this->assertTrue(is_array($info));
@@ -2024,6 +2037,7 @@ class Redis_Test extends TestSuite
 	$this->redis->hSet('h', 'y', 'not-a-number');
 	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'y', 1));
 
+	if (version_compare($this->version, "2.5.0", "ge")) {
 	// hIncrByFloat
 	$this->redis->delete('h');
 	$this->assertTrue(1.5 === $this->redis->hIncrByFloat('h','x', 1.5));
@@ -2032,6 +2046,7 @@ class Redis_Test extends TestSuite
 
 	$this->redis->hset('h','y','not-a-number');
 	$this->assertTrue(FALSE === $this->redis->hIncrByFloat('h', 'y', 1.5));
+	}
 
 	// hmset
 	$this->redis->delete('h');
@@ -2971,6 +2986,11 @@ class Redis_Test extends TestSuite
     }
 
     public function testDumpRestore() {
+
+		if (version_compare($this->version, "2.5.0", "lt")) {
+			return;
+		}
+
     	$this->redis->del('foo');
     	$this->redis->del('bar');
 
@@ -3031,6 +3051,11 @@ class Redis_Test extends TestSuite
     }
 
     public function testScript() {
+
+		if (version_compare($this->version, "2.5.0", "lt")) {
+			return;
+		}
+
 		// Flush any scripts we have
 		$this->assertTrue($this->redis->script('flush'));
 
@@ -3058,6 +3083,11 @@ class Redis_Test extends TestSuite
     }
 
     public function testEval() {
+
+		if (version_compare($this->version, "2.5.0", "lt")) {
+			return;
+		}
+
     	// Basic single line response tests
     	$this->assertTrue(1 == $this->redis->eval('return 1'));
     	$this->assertTrue(1.55 == $this->redis->eval("return '1.55'"));
@@ -3171,6 +3201,11 @@ class Redis_Test extends TestSuite
     }
 
     public function testEvalSHA() {
+
+		if (version_compare($this->version, "2.5.0", "lt")) {
+			return;
+		}
+
     	// Flush any loaded scripts
     	$this->redis->script('flush');
 
@@ -3264,6 +3299,11 @@ class Redis_Test extends TestSuite
 	}
 
 	public function testTime() {
+
+		if (version_compare($this->version, "2.5.0", "lt")) {
+			return;
+		}
+
 		$time_arr = $this->redis->time();
 		$this->assertTrue(is_array($time_arr) && count($time_arr) == 2 &&
 				          strval(intval($time_arr[0])) === strval($time_arr[0]) &&
