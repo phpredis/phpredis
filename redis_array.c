@@ -264,7 +264,7 @@ static void
 ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args, zval *z_new_target) {
 
 	zval **zp_tmp, z_tmp;
-	char *key;
+	char *key = NULL; // set to avoid "unused-but-set-variable"
 	int key_len;
 	int i;
 	zval *redis_inst;
@@ -715,7 +715,7 @@ PHP_METHOD(RedisArray, mget)
 	int *pos, argc, *argc_each;
 	HashTable *h_keys;
 	HashPosition pointer;
-	zval **redis_instances, *redis_inst, **argv;
+	zval **redis_instances, **argv;
 
 	/* Multi/exec support */
 	HANDLE_MULTI_EXEC("MGET");
@@ -770,8 +770,6 @@ PHP_METHOD(RedisArray, mget)
 
 	/* calls */
 	for(n = 0; n < ra->count; ++n) { /* for each node */
-
-		redis_inst = ra->redis[n];
 
 		/* copy args for MGET call on node. */
 		MAKE_STD_ZVAL(z_argarray);
