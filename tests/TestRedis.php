@@ -1626,8 +1626,15 @@ class Redis_Test extends TestSuite
 	foreach($keys as $k) {
 	    $this->assertTrue(in_array($k, array_keys($info)));
 	}
+	}
 
-	// INFO COMMANDSTATS
+    public function testInfoCommandStats() {
+
+	// INFO COMMANDSTATS is new in 2.6.0
+	if (version_compare($this->version, "2.5.0", "lt")) {
+		return;
+	}
+
 	$info = $this->redis->info("COMMANDSTATS");
 
 	$this->assertTrue(is_array($info));
