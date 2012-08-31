@@ -18,6 +18,8 @@ class Redis_Test extends TestSuite
     public function setUp()
     {
 	$this->redis = $this->newInstance();
+	$info = $this->redis->info();
+	$this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
     }
 
 	private function newInstance() {
@@ -42,6 +44,12 @@ class Redis_Test extends TestSuite
     {
         $this->setUp();
         $this->tearDown();
+    }
+
+    public function testMinimumVersion()
+    {
+	// Minimum server version required for tests
+	$this->assertTrue(version_compare($this->version, "2.4.0", "ge"));
     }
 
     public function testPing()
@@ -848,8 +856,14 @@ class Redis_Test extends TestSuite
 	}
 
 	// SORT list → [ghi, def, abc]
-	$this->assertEquals(array_reverse($list), $this->redis->sortAsc('list'));
-	$this->assertEquals(array_reverse($list), $this->redis->sort('list', array('sort' => 'asc')));
+	if (version_compare($this->version, "2.5.0", "lt")) {
+		$this->assertEquals(array_reverse($list), $this->redis->sortAsc('list'));
+		$this->assertEquals(array_reverse($list), $this->redis->sort('list', array('sort' => 'asc')));
+	} else {
+		// TODO rewrite, from 2.6.0 release notes:
+		// SORT now will refuse to sort in numerical mode elements that can't be parsed
+		// as numbers
+	}
 
 	// SORT list ALPHA → [abc, def, ghi]
 	$this->assertEquals($list, $this->redis->sortAscAlpha('list'));
@@ -883,7 +897,13 @@ class Redis_Test extends TestSuite
 	}
 
 	// SORT list → [ghi, abc, def]
-	$this->assertEquals(array_reverse($list), $this->redis->sortDesc('list'));
+	if (version_compare($this->version, "2.5.0", "lt")) {
+		$this->assertEquals(array_reverse($list), $this->redis->sortDesc('list'));
+	} else {
+		// TODO rewrite, from 2.6.0 release notes:
+		// SORT now will refuse to sort in numerical mode elements that can't be parsed
+		// as numbers
+	}
 
 	// SORT list ALPHA → [abc, def, ghi]
 	$this->assertEquals(array('ghi', 'def', 'abc'), $this->redis->sortDescAlpha('list'));
@@ -1580,13 +1600,22 @@ class Redis_Test extends TestSuite
 	    "connected_clients",
 	    "connected_slaves",
 	    "used_memory",
-	    "changes_since_last_save",
-	    "bgsave_in_progress",
-	    "last_save_time",
 	    "total_connections_received",
 	    "total_commands_processed",
 	    "role");
-
+	if (version_compare($this->version, "2.5.0", "lt")) {
+		array_push($keys,
+		    "changes_since_last_save",
+		    "bgsave_in_progress",
+		    "last_save_time"
+		);
+	} else {
+		array_push($keys,
+		    "rdb_changes_since_last_save",
+		    "rdb_bgsave_in_progress",
+		    "rdb_last_save_time"
+		);
+	}
 
 	foreach($keys as $k) {
 	    $this->assertTrue(in_array($k, array_keys($info)));
