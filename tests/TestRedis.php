@@ -2986,6 +2986,11 @@ class Redis_Test extends TestSuite
     }
 
     public function testDumpRestore() {
+
+		if (version_compare($this->version, "2.5.0", "lt")) {
+			return;
+		}
+
     	$this->redis->del('foo');
     	$this->redis->del('bar');
 
@@ -3046,6 +3051,11 @@ class Redis_Test extends TestSuite
     }
 
     public function testScript() {
+
+		if (version_compare($this->version, "2.5.0", "lt")) {
+			return;
+		}
+
 		// Flush any scripts we have
 		$this->assertTrue($this->redis->script('flush'));
 
@@ -3073,6 +3083,11 @@ class Redis_Test extends TestSuite
     }
 
     public function testEval() {
+
+		if (version_compare($this->version, "2.5.0", "lt")) {
+			return;
+		}
+
     	// Basic single line response tests
     	$this->assertTrue(1 == $this->redis->eval('return 1'));
     	$this->assertTrue(1.55 == $this->redis->eval("return '1.55'"));
@@ -3186,6 +3201,11 @@ class Redis_Test extends TestSuite
     }
 
     public function testEvalSHA() {
+
+		if (version_compare($this->version, "2.5.0", "lt")) {
+			return;
+		}
+
     	// Flush any loaded scripts
     	$this->redis->script('flush');
 
@@ -3279,6 +3299,11 @@ class Redis_Test extends TestSuite
 	}
 
 	public function testTime() {
+
+		if (version_compare($this->version, "2.5.0", "lt")) {
+			return;
+		}
+
 		$time_arr = $this->redis->time();
 		$this->assertTrue(is_array($time_arr) && count($time_arr) == 2 &&
 				          strval(intval($time_arr[0])) === strval($time_arr[0]) &&
