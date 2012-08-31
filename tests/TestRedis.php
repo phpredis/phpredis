@@ -383,8 +383,14 @@ class Redis_Test extends TestSuite
 
 	$this->redis->incr('key');
 	$this->assertTrue("abc" === $this->redis->get('key'));
+	}
 
-	// incrbyfloat
+    public function testIncrByFloat()
+    {
+	// incrbyfloat is new in 2.6.0
+	if (version_compare($this->version, "2.5.0", "lt")) {
+		return;
+	}
 
 	$this->redis->delete('key');
 
