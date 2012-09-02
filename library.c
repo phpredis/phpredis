@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #include "common.h"
 #include "php_network.h"
 #include <sys/types.h>
@@ -7,8 +10,9 @@
 #endif
 #include <ext/standard/php_smart_str.h>
 #include <ext/standard/php_var.h>
-
+#ifdef HAVE_REDIS_IGBINARY
 #include "igbinary/igbinary.h"
+#endif
 #include <zend_exceptions.h>
 #include "php_redis.h"
 #include "library.h"
@@ -1300,11 +1304,13 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 			return 1;
 
 		case REDIS_SERIALIZER_IGBINARY:
+#ifdef HAVE_REDIS_IGBINARY
 			if(igbinary_serialize(&val8, (size_t *)&sz, z TSRMLS_CC) == 0) { /* ok */
 				*val = (char*)val8;
 				*val_len = (int)sz;
 				return 1;
 			}
+#endif
 			return 0;
 	}
 	return 0;
@@ -1345,6 +1351,7 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 			return ret;
 
 		case REDIS_SERIALIZER_IGBINARY:
+#ifdef HAVE_REDIS_IGBINARY
 			if(!*return_value) {
 				MAKE_STD_ZVAL(*return_value);
 			}
@@ -1352,6 +1359,7 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 				return 1;
 			}
 			efree(*return_value);
+#endif
 			return 0;
 			break;
 	}
