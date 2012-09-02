@@ -389,7 +389,7 @@ class Redis_Test extends TestSuite
     {
 	// incrbyfloat is new in 2.6.0
 	if (version_compare($this->version, "2.5.0", "lt")) {
-		return;
+		$this->markTestSkipped();
 	}
 
 	$this->redis->delete('key');
@@ -1632,7 +1632,7 @@ class Redis_Test extends TestSuite
 
 	// INFO COMMANDSTATS is new in 2.6.0
 	if (version_compare($this->version, "2.5.0", "lt")) {
-		return;
+		$this->markTestSkipped();
 	}
 
 	$info = $this->redis->info("COMMANDSTATS");
@@ -2988,7 +2988,7 @@ class Redis_Test extends TestSuite
     public function testDumpRestore() {
 
 		if (version_compare($this->version, "2.5.0", "lt")) {
-			return;
+			$this->markTestSkipped();
 		}
 
     	$this->redis->del('foo');
@@ -3053,7 +3053,7 @@ class Redis_Test extends TestSuite
     public function testScript() {
 
 		if (version_compare($this->version, "2.5.0", "lt")) {
-			return;
+			$this->markTestSkipped();
 		}
 
 		// Flush any scripts we have
@@ -3085,7 +3085,7 @@ class Redis_Test extends TestSuite
     public function testEval() {
 
 		if (version_compare($this->version, "2.5.0", "lt")) {
-			return;
+			$this->markTestSkipped();
 		}
 
     	// Basic single line response tests
@@ -3203,7 +3203,7 @@ class Redis_Test extends TestSuite
     public function testEvalSHA() {
 
 		if (version_compare($this->version, "2.5.0", "lt")) {
-			return;
+			$this->markTestSkipped();
 		}
 
     	// Flush any loaded scripts
@@ -3301,7 +3301,7 @@ class Redis_Test extends TestSuite
 	public function testTime() {
 
 		if (version_compare($this->version, "2.5.0", "lt")) {
-			return;
+			$this->markTestSkipped();
 		}
 
 		$time_arr = $this->redis->time();

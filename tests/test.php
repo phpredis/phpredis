@@ -4,6 +4,7 @@
 class TestSuite {
 
 	public static $errors = array();
+	public static $warnings = array();
 
 	protected function assertFalse($bool) {
 		$this->assertTrue(!$bool);
@@ -14,7 +15,6 @@ class TestSuite {
 			return;
 
 		$bt = debug_backtrace(false);
-		$count = count($bt);
 		self::$errors []= sprintf("Assertion failed: %s:%d (%s)\n",
 			$bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
 	}
@@ -24,10 +24,17 @@ class TestSuite {
 			return;
 
 		$bt = debug_backtrace(false);
-		$count = count($bt);
 		self::$errors []= sprintf("Assertion failed (%s !== %s): %s:%d (%s)\n",
 			print_r($a, true), print_r($b, true),
 			$bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+	}
+
+	protected function markTestSkipped($msg='') {
+		$bt = debug_backtrace(false);
+		self::$warnings []= sprintf("Skipped test: %s:%d (%s) %s\n",
+			$bt[0]["file"], $bt[0]["line"], $bt[1]["function"], $msg);
+
+		throw new Exception($msg);
 	}
 
 	public static function run($className) {
@@ -43,11 +50,21 @@ class TestSuite {
 
 			$count = count($className::$errors);
 			$rt = new $className;
-			$rt->setUp();
-			$rt->$name();
-			echo ($count === count($className::$errors)) ? "." : "F";
+			try {
+				$rt->setUp();
+				$rt->$name();
+				echo ($count === count($className::$errors)) ? "." : "F";
+			} catch (Exception $e) {
+				if ($e instanceof RedisException) {
+					$className::$errors[] = "Uncaught exception '".$e->getMessage()."' ($name)\n";
+					echo 'F';
+				} else {
+					echo 'S';
+				}
+			}
 		}
 		echo "\n";
+		echo implode('', $className::$warnings);
 
 		if(empty($className::$errors)) {
 			echo "All tests passed.\n";
