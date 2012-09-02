@@ -792,12 +792,12 @@ Adds a value to the set value stored at key. If this value is already in the set
 *value*
 
 ##### *Return value*
-*BOOL* `TRUE` if value didn't exist and was added successfully, `FALSE` if the value is already present.
+*LONG* the number of elements added to the set.
 ##### *Example*
 <pre>
-$redis->sAdd('key1' , 'member1'); /* TRUE, 'key1' => {'member1'} */
-$redis->sAdd('key1' , 'member2'); /* TRUE, 'key1' => {'member1', 'member2'}*/
-$redis->sAdd('key1' , 'member2'); /* FALSE, 'key1' => {'member1', 'member2'}*/
+$redis->sAdd('key1' , 'member1'); /* 1, 'key1' => {'member1'} */
+$redis->sAdd('key1' , 'member2', 'member3'); /* 2, 'key1' => {'member1', 'member2', 'member3'}*/
+$redis->sAdd('key1' , 'member2'); /* 0, 'key1' => {'member1', 'member2', 'member3'}*/
 </pre>
 
 ## sRem, sRemove
@@ -807,13 +807,13 @@ Removes the specified member from the set value stored at key.
 *key*
 *member*
 ##### *Return value*
-*BOOL* `TRUE` if the member was present in the set, `FALSE` if it didn't.
+*LONG* The number of elements removed from the set.
 ##### *Example*
 <pre>
 $redis->sAdd('key1' , 'member1');
 $redis->sAdd('key1' , 'member2');
 $redis->sAdd('key1' , 'member3'); /* 'key1' => {'member1', 'member2', 'member3'}*/
-$redis->sRem('key1', 'member2'); /* 'key1' => {'member1', 'member3'} */
+$redis->sRem('key1', 'member2', 'member3'); /*return 2. 'key1' => {'member1'} */
 </pre>
 
 ## sMove
