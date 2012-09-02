@@ -434,7 +434,9 @@ PHP_MINIT_FUNCTION(redis)
     /* serializer */
     add_constant_long(redis_ce, "SERIALIZER_NONE", REDIS_SERIALIZER_NONE);
     add_constant_long(redis_ce, "SERIALIZER_PHP", REDIS_SERIALIZER_PHP);
+#ifdef HAVE_REDIS_IGBINARY
     add_constant_long(redis_ce, "SERIALIZER_IGBINARY", REDIS_SERIALIZER_IGBINARY);
+#endif
 
 	zend_declare_class_constant_stringl(redis_ce, "AFTER", 5, "after", 5 TSRMLS_CC);
 	zend_declare_class_constant_stringl(redis_ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
@@ -5653,7 +5655,11 @@ PHP_METHOD(Redis, setOption) {
     switch(option) {
             case REDIS_OPT_SERIALIZER:
 					val_long = atol(val_str);
-                    if(val_long == REDIS_SERIALIZER_NONE || val_long == REDIS_SERIALIZER_IGBINARY || val_long == REDIS_SERIALIZER_PHP) {
+                    if(val_long == REDIS_SERIALIZER_NONE
+#ifdef HAVE_REDIS_IGBINARY
+						 	|| val_long == REDIS_SERIALIZER_IGBINARY
+#endif
+							|| val_long == REDIS_SERIALIZER_PHP) {
                             redis_sock->serializer = val_long;
                             RETURN_TRUE;
                     } else {
