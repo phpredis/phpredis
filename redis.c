@@ -5421,14 +5421,16 @@ PHP_METHOD(Redis, subscribe)
 			case R_SUB_CALLBACK_FT_TYPE:
 		       	MAKE_STD_ZVAL(z_ret);
 	        	call_user_function(EG(function_table), NULL, z_fun, z_ret, 3, z_args TSRMLS_CC);
-		        efree(z_fun);
 		        efree(z_ret);
 				break;
 		}
         /* TODO: provide a way to break out of the loop. */
 		zval_dtor(z_tab);
 		efree(z_tab);
-	}	
+	}
+
+	// Free our function
+	efree(z_fun);
 }
 
 /** 
