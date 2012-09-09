@@ -2484,6 +2484,24 @@ $err = $redis->getLastError();
 // "ERR Error compiling script (new function): user_script:1: '=' expected near '-'"
 </pre>
 
+## clearLastError
+##### Description
+Clear the last error message  
+##### Parameters
+*none*  
+##### Return Value
+*BOOL* TRUE  
+##### Examples
+<pre>
+$redis->set('x', 'a');
+$redis->incr('x');
+$err = $redis->getLastError();
+// "ERR value is not an integer or out of range"
+$redis->clearLastError();
+$err = $redis->getLastError();
+// NULL
+</pre>
+
 ## _prefix
 ##### Description
 A utility method to prefix the value with the prefix setting for phpredis.

@@ -3032,6 +3032,10 @@ class Redis_Test extends TestSuite
 		$incrError = $this->redis->getLastError();
 		$this->assertTrue($incrError !== $evalError); // error has changed
 		$this->assertTrue(strlen($incrError) > 0);
+
+		// clear error
+		$this->redis->clearLastError();
+		$this->assertTrue($this->redis->getLastError() === NULL);
 	}
 
     // Helper function to compare nested results -- from the php.net array_diff page, I believe
