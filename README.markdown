@@ -2472,7 +2472,7 @@ $redis->script('exists', $script1, [$script2, $script3, ...]);
 
 ## getLastError
 ##### Description
-The last error message (if any) returned from a SCRIPT call
+The last error message (if any)
 ##### Parameters
 *none*  
 ##### Return Value
