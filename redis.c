@@ -42,6 +42,7 @@
 
 #define R_SUB_CALLBACK_CLASS_TYPE 1
 #define R_SUB_CALLBACK_FT_TYPE 2
+#define R_SUB_CLOSURE_TYPE 3
 
 int le_redis_sock;
 extern int le_redis_array;
@@ -5278,21 +5279,23 @@ PHP_METHOD(Redis, publish)
 
 PHPAPI void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd)
 {
-	zval *z_callback,*object, *array, **data;
+	zval *object, *array, **data;
     HashTable *arr_hash;
     HashPosition pointer;
     RedisSock *redis_sock;
-    char *cmd = "", *old_cmd = NULL, *callback_ft_name;
-    int cmd_len, array_count, callback_ft_name_len;
+    char *cmd = "", *old_cmd = NULL;
+    int cmd_len, array_count;
 	zval *z_tab, **tmp;
 	char *type_response;
 	
-	int callback_type = 0;
-	zval *z_o, *z_fun = NULL,*z_ret, *z_args[4];
-	char *method_name;
+	// Function call information
+	zend_fcall_info z_callback;
+	zend_fcall_info_cache z_callback_cache;
+
+	zval *z_ret, **z_args[4];
 	
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oaz|z", 
-									 &object, redis_ce, &array, &z_callback) == FAILURE) {
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oaf",
+									 &object, redis_ce, &array, &z_callback, &z_callback_cache) == FAILURE) {
 		RETURN_FALSE;	
 	}
 
@@ -5352,32 +5355,10 @@ PHPAPI void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd)
 	}
 	efree(z_tab);	
 
-	/* verify the callback */
-	if(Z_TYPE_P(z_callback) == IS_ARRAY) {
-
-        /* object */
-		if (zend_hash_index_find(Z_ARRVAL_P(z_callback), 0, (void**)&tmp) == FAILURE) {
-			RETURN_FALSE;
-		}
-		z_o = *tmp;
-
-        /* method name */
-		if (zend_hash_index_find(Z_ARRVAL_P(z_callback), 1, (void**)&tmp) == FAILURE) {
-			RETURN_FALSE;
-		}
-		method_name = Z_STRVAL_PP(tmp);	
-
-		ALLOC_INIT_ZVAL(z_fun);
-		ZVAL_STRING(z_fun, method_name, 1);
-		callback_type = R_SUB_CALLBACK_CLASS_TYPE;
-
-	} else if(Z_TYPE_P(z_callback) == IS_STRING) {
-		callback_ft_name = Z_STRVAL_P(z_callback);
-		callback_ft_name_len = strlen(callback_ft_name);
-		callback_type = R_SUB_CALLBACK_FT_TYPE;
-		MAKE_STD_ZVAL(z_fun);
-		ZVAL_STRINGL(z_fun, callback_ft_name, callback_ft_name_len, 0);
-	}
+	// Set a pointer to our return value and to our arguments.
+	z_callback.retval_ptr_ptr = &z_ret;
+	z_callback.params = z_args;
+	z_callback.no_separation = 0;
 
 	/* Multibulk Response, format : {message type, originating channel, message payload} */
 	while(1) {		
@@ -5420,48 +5401,43 @@ PHPAPI void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd)
 		}
 
 		// Always pass the Redis object through
-		z_args[0] = getThis();
+		z_args[0] = &getThis();
 
 		// Set up our callback args depending on the message type
 		if(is_pmsg) {
-			z_args[1] = *pattern;
-			z_args[2] = *channel;
-			z_args[3] = *data;
+			z_args[1] = pattern;
+			z_args[2] = channel;
+			z_args[3] = data;
 		} else {
-			z_args[1] = *channel;
-			z_args[2] = *data;
+			z_args[1] = channel;
+			z_args[2] = data;
 		}
-	
-		switch(callback_type) {
-			case R_SUB_CALLBACK_CLASS_TYPE:
-		       	MAKE_STD_ZVAL(z_ret);
-				call_user_function(&redis_ce->function_table, &z_o, z_fun, z_ret, tab_idx, z_args TSRMLS_CC);
-		        efree(z_ret);
-				break;
 
-			case R_SUB_CALLBACK_FT_TYPE:
-		       	MAKE_STD_ZVAL(z_ret);
-	        	call_user_function(EG(function_table), NULL, z_fun, z_ret, tab_idx, z_args TSRMLS_CC);
-		        efree(z_ret);
-				break;
+		// Set our argument information
+		z_callback.param_count = tab_idx;
+
+		// Break if we can't call the function
+		if(zend_call_function(&z_callback, &z_callback_cache TSRMLS_CC) != SUCCESS) {
+			break;
 		}
+
+		// If we have a return value, free it.  Note, we could use the return value to break the subscribe loop
+		if(z_ret) zval_ptr_dtor(&z_ret);
+
         /* TODO: provide a way to break out of the loop. */
 		zval_dtor(z_tab);
 		efree(z_tab);
 	}
-
-	// Free our function
-	efree(z_fun);
 }
 
-/* {{{ proto void Redis::psubscribe(Array(channel1, channel2, ... channelN))
+/* {{{ proto void Redis::psubscribe(Array(pattern1, pattern2, ... patternN))
  */
 PHP_METHOD(Redis, psubscribe)
 {
 	generic_subscribe_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "psubscribe");
 }
 
-/* {{{ proto void Redis::psubscribe(Array(channel1, channel2, ... channelN))
+/* {{{ proto void Redis::subscribe(Array(channel1, channel2, ... channelN))
  */
 PHP_METHOD(Redis, subscribe) {
 	generic_subscribe_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "subscribe");
