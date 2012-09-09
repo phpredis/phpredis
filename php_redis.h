@@ -171,7 +171,9 @@ PHP_METHOD(Redis, pipeline);
 
 PHP_METHOD(Redis, publish);
 PHP_METHOD(Redis, subscribe);
+PHP_METHOD(Redis, psubscribe);
 PHP_METHOD(Redis, unsubscribe);
+PHP_METHOD(Redis, punsubscribe);
 
 PHP_METHOD(Redis, getOption);
 PHP_METHOD(Redis, setOption);
@@ -203,6 +205,9 @@ typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_so
 PHPAPI void generic_empty_cmd_impl(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ResultCallback result_callback);
 PHPAPI void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...);
 PHPAPI void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...);
+
+PHPAPI void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd);
+PHPAPI void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *unsub_cmd);
 
 PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int use_atof TSRMLS_DC);
 PHPAPI int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC);

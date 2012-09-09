@@ -377,6 +377,20 @@ function f($redis, $chan, $msg) {
 $redis->subscribe(array('chan-1', 'chan-2', 'chan-3'), 'f'); // subscribe to 3 chans
 </pre>
 
+## psubscribe
+##### Description
+Subscribe to channels by pattern
+##### Parameters
+*patterns*: An array of patterns to match
+*callback*: Either a string or an array with an object and method.  The callback will get four arguments ($redis, $pattern, $channel, $message)
+##### Example
+<pre>
+function psubscribe($redis, $pattern, $chan, $msg) {
+	echo "Pattern: $pattern\n";
+	echo "Channel: $chan\n";
+	echo "Payload: $msg\n";
+}
+</pre>
 
 ## publish
 ##### Description
