@@ -499,11 +499,13 @@ PHP_METHOD(RedisArray, _distributor)
 
 PHP_METHOD(RedisArray, _rehash)
 {
-	zval *object, *z_cb = NULL;
+	zval *object;
 	RedisArray *ra;
+	zend_fcall_info z_cb;
+	zend_fcall_info_cache z_cb_cache;
 
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|z",
-				&object, redis_array_ce, &z_cb) == FAILURE) {
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|f",
+				&object, redis_array_ce, &z_cb, &z_cb_cache) == FAILURE) {
 		RETURN_FALSE;
 	}
 
@@ -511,7 +513,11 @@ PHP_METHOD(RedisArray, _rehash)
 		RETURN_FALSE;
 	}
 
-	ra_rehash(ra, z_cb TSRMLS_CC);
+	if (ZEND_NUM_ARGS() == 0) {
+		ra_rehash(ra, NULL, NULL TSRMLS_CC);
+	} else {
+		ra_rehash(ra, &z_cb, &z_cb_cache TSRMLS_CC);
+	}
 }
 
 static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
