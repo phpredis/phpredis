@@ -24,6 +24,6 @@ void ra_index_discard(zval *z_redis, zval *return_value TSRMLS_DC);
 void ra_index_unwatch(zval *z_redis, zval *return_value TSRMLS_DC);
 zend_bool ra_is_write_cmd(RedisArray *ra, const char *cmd, int cmd_len);
 
-void ra_rehash(RedisArray *ra, zval *z_cb TSRMLS_DC);
+void ra_rehash(RedisArray *ra, zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache TSRMLS_DC);
 
 #endif

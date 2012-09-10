@@ -73,7 +73,7 @@ For instance, the keys “{user:1}:name” and “{user:1}:email” will be stor
 
 ## Migrating keys
 
-When a node is added or removed from a ring, RedisArray instances must be instanciated with a “previous” list of nodes. A single call to `$ra->_rehash()` causes all the keys to be redistributed according to the new list of nodes. Passing a callback function to `_rehash()` makes it possible to track the progress of that operation: the function is called with a node name and a number of keys that will be examined.
+When a node is added or removed from a ring, RedisArray instances must be instanciated with a “previous” list of nodes. A single call to `$ra->_rehash()` causes all the keys to be redistributed according to the new list of nodes. Passing a callback function to `_rehash()` makes it possible to track the progress of that operation: the function is called with a node name and a number of keys that will be examined, e.g. `_rehash(function ($host, $count){ ... });`.
 
 It is possible to automate this process, by setting `'autorehash' => TRUE` in the constructor options. This will cause keys to be migrated when they need to be read from the previous array.
 

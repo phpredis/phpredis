@@ -289,6 +289,14 @@ class Redis_Rehashing_Test extends TestSuite
 		$this->ra->_rehash(); // this will redistribute the keys
 	}
 
+	public function testRehashWithCallback() {
+		$total = 0;
+		$this->ra->_rehash(function ($host, $count) use (&$total) {
+			$total += $count;
+		});
+		$this->assertTrue($total > 0);
+	}
+
 	public function testReadRedistributedKeys() {
 		$this->readAllvalues(); // we shouldn't have any missed reads now.
 	}

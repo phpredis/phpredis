@@ -222,6 +222,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, migrate, NULL, ZEND_ACC_PUBLIC)
 
      PHP_ME(Redis, getLastError, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, clearLastError, NULL, ZEND_ACC_PUBLIC)
 
      PHP_ME(Redis, _prefix, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _unserialize, NULL, ZEND_ACC_PUBLIC)
@@ -6180,6 +6181,32 @@ PHP_METHOD(Redis, getLastError) {
 		RETURN_NULL();
 	}
 }
+
+/*
+ * {{{ proto Redis::clearLastError()
+ */
+PHP_METHOD(Redis, clearLastError) {
+	zval *object;
+	RedisSock *redis_sock;
+
+	// Grab our object
+	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O", &object, redis_ce) == FAILURE) {
+		RETURN_FALSE;
+	}
+	// Grab socket
+	if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+		RETURN_FALSE;
+	}
+
+	// Clear error message
+	if(redis_sock->err) {
+		efree(redis_sock->err);
+	}
+	redis_sock->err = NULL;
+
+	RETURN_TRUE;
+}
+
 
 /*
  * {{{ proto Redis::time()

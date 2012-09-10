@@ -139,6 +139,7 @@ PHP_METHOD(Redis, migrate);
 PHP_METHOD(Redis, time);
 
 PHP_METHOD(Redis, getLastError);
+PHP_METHOD(Redis, clearLastError);
 PHP_METHOD(Redis, _prefix);
 PHP_METHOD(Redis, _unserialize);
 

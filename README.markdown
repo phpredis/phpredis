@@ -2486,7 +2486,7 @@ $redis->script('exists', $script1, [$script2, $script3, ...]);
 
 ## getLastError
 ##### Description
-The last error message (if any) returned from a SCRIPT call
+The last error message (if any)
 ##### Parameters
 *none*  
 ##### Return Value
@@ -2496,6 +2496,24 @@ A string with the last returned script based error message, or NULL if there is 
 $redis->eval('this-is-not-lua');
 $err = $redis->getLastError(); 
 // "ERR Error compiling script (new function): user_script:1: '=' expected near '-'"
+</pre>
+
+## clearLastError
+##### Description
+Clear the last error message  
+##### Parameters
+*none*  
+##### Return Value
+*BOOL* TRUE  
+##### Examples
+<pre>
+$redis->set('x', 'a');
+$redis->incr('x');
+$err = $redis->getLastError();
+// "ERR value is not an integer or out of range"
+$redis->clearLastError();
+$err = $redis->getLastError();
+// NULL
 </pre>
 
 ## _prefix

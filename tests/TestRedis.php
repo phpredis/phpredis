@@ -3023,8 +3023,20 @@ class Redis_Test extends TestSuite
     	$this->redis->eval("not-a-lua-script");
 
     	// Now we should have an error
-    	$this->assertTrue(strlen($this->redis->getLastError()) > 0);
-    }
+		$evalError = $this->redis->getLastError();
+		$this->assertTrue(strlen($evalError) > 0);
+
+		// test getLastError with a regular command
+		$this->redis->set('x', 'a');
+		$this->assertFalse($this->redis->incr('x'));
+		$incrError = $this->redis->getLastError();
+		$this->assertTrue($incrError !== $evalError); // error has changed
+		$this->assertTrue(strlen($incrError) > 0);
+
+		// clear error
+		$this->redis->clearLastError();
+		$this->assertTrue($this->redis->getLastError() === NULL);
+	}
 
     // Helper function to compare nested results -- from the php.net array_diff page, I believe
     private function array_diff_recursive($aArray1, $aArray2) {

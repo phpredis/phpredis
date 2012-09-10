@@ -172,6 +172,7 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
 {
     char inbuf[1024];
     char *resp = NULL;
+    size_t err_len;
 
     if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
         return NULL;
@@ -189,6 +190,8 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
 
     switch(inbuf[0]) {
         case '-':
+			err_len = strlen(inbuf+1) - 2;
+			redis_sock_set_err(redis_sock, inbuf+1, err_len);
 			/* stale data */
 			if(memcmp(inbuf + 1, "-ERR SYNC ", 10) == 0) {
 				zend_throw_exception(redis_exception_ce, "SYNC with master in progress", 0 TSRMLS_CC);
