@@ -4284,7 +4284,7 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
                             "$%d" _NL
                             "%s" _NL
                             , cmd, cmd_len
-                            , Z_STRLEN_PP(data), Z_STRVAL_PP(data), Z_STRLEN_PP(data));
+                            , data_len, data_str, data_len);
             cmd_elements++;
 			if(free_data) efree(data_str);
             if(old_cmd) {

@@ -2615,7 +2615,7 @@ class Redis_Test extends TestSuite
 
 	    // sorted sets
 	    $ret = $this->redis->multi($mode)
-		    ->delete('zkey1', 'zkey2', 'zkey5')
+			->delete('zkey1', 'zkey2', 'zkey5', 'zInter', 'zUnion')
 		    ->zadd('zkey1', 1, 'zValue1')
 		    ->zadd('zkey1', 5, 'zValue5')
 		    ->zadd('zkey1', 2, 'zValue2')
