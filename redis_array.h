@@ -1,7 +1,7 @@
 #ifndef REDIS_ARRAY_H
 #define REDIS_ARRAY_H
 
-#include <stdint.h>
+#include "stdint.h"
 #include "common.h"
 
 void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC);

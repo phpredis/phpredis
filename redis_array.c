@@ -112,7 +112,7 @@ void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
 /**
  * redis_array_get
  */
-PHPAPI int redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
+PHP_REDIS_API int redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
 {
 
     zval **socket;
@@ -898,19 +898,20 @@ PHP_METHOD(RedisArray, mset)
 
 	/* calls */
 	for(n = 0; n < ra->count; ++n) { /* for each node */
+		int found = 0;
 
 		/* prepare call */
 		ZVAL_STRING(&z_fun, "MSET", 0);
 		redis_inst = ra->redis[n];
 
 		/* copy args */
-		int found = 0;
 		MAKE_STD_ZVAL(z_argarray);
 		array_init(z_argarray);
 		for(i = 0; i < argc; ++i) {
+			zval *z_tmp;
+
 			if(pos[i] != n) continue;
 
-			zval *z_tmp;
 			ALLOC_ZVAL(z_tmp);
 			*z_tmp = *argv[i];
 			zval_copy_ctor(z_tmp);
