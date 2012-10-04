@@ -34,6 +34,7 @@ typedef enum _REDIS_REPLY_TYPE {
 /* options */
 #define REDIS_OPT_SERIALIZER		1
 #define REDIS_OPT_PREFIX		    2
+#define REDIS_OPT_READ_TIMEOUT		3
 
 /* serializers */
 #define REDIS_SERIALIZER_NONE		0
@@ -156,6 +157,7 @@ typedef struct {
     char           *host;
     short          port;
     double         timeout;
+    double         read_timeout;
     int            failed;
     int            status;
     int            persistent;

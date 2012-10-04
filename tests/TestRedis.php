@@ -3321,6 +3321,15 @@ class Redis_Test extends TestSuite
 				          strval(intval($time_arr[0])) === strval($time_arr[0]) &&
 						  strval(intval($time_arr[1])) === strval($time_arr[1]));
 	}
+
+	public function testReadTimeoutOption() {
+
+		$this->assertTrue(defined('Redis::OPT_READ_TIMEOUT'));
+
+		$this->redis->setOption(Redis::OPT_READ_TIMEOUT, "12.3");
+		$this->assertEquals(12.3, $this->redis->getOption(Redis::OPT_READ_TIMEOUT));
+	}
+
 }
 
 exit(TestSuite::run("Redis_Test"));
