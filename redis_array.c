@@ -700,7 +700,12 @@ PHP_METHOD(RedisArray, setOption)
 		/* copy all args into a zval hash table */\
 		array_init(&z_arg_array);\
 		for(i = 0; i < num_varargs; ++i) {\
-				add_next_index_zval(&z_arg_array, *varargs[i]);\
+			zval *z_tmp;\
+			MAKE_STD_ZVAL(z_tmp);\
+			*z_tmp = **varargs[i];\
+			zval_copy_ctor(z_tmp);\
+			INIT_PZVAL(z_tmp);\
+			add_next_index_zval(&z_arg_array, z_tmp);\
 		}\
 		/* call */\
 		ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, sizeof(cmd)-1, &z_arg_array, NULL);\
