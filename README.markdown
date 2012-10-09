@@ -2525,7 +2525,7 @@ A utility method to prefix the value with the prefix setting for phpredis.
 If a prefix is set up, the value now prefixed.  If there is no prefix, the value will be returned unchanged.
 ##### Examples
 <pre>
-$redis->setOpt(Redis::OPT_PREFIX, 'my-prefix:');
+$redis->setOption(Redis::OPT_PREFIX, 'my-prefix:');
 $redis->_prefix('my-value'); // Will return 'my-prefix:my-value'
 </pre>
 
@@ -2538,7 +2538,7 @@ This can be useful if phpredis is serializing values, and you return something f
 *value* string.  The value to be unserialized  
 ##### Examples
 <pre>
-$redis->setOpt(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
 $redis->_unserialize('a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}'); // Will return Array(1,2,3)
 </pre>
 
