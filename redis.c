@@ -5322,8 +5322,8 @@ PHPAPI void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd)
     HashTable *arr_hash;
     HashPosition pointer;
     RedisSock *redis_sock;
-    char *cmd = "", *old_cmd = NULL;
-    int cmd_len, array_count;
+    char *cmd = "", *old_cmd = NULL, *key;
+    int cmd_len, array_count, key_len, key_free;
 	zval *z_tab, **tmp;
 	char *type_response;
 	
@@ -5358,9 +5358,23 @@ PHPAPI void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd)
             if(*cmd) {
                 old_cmd = cmd;
             }
-            cmd_len = spprintf(&cmd, 0, "%s %s", cmd, Z_STRVAL_PP(data));
+
+            // Grab our key and len
+            key = Z_STRVAL_PP(data);
+            key_len = Z_STRLEN_PP(data);
+
+            // Prefix our key if neccisary
+            key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+
+            cmd_len = spprintf(&cmd, 0, "%s %s", cmd, key);
+
             if(old_cmd) {
                 efree(old_cmd);
+            }
+
+            // Free our key if it was prefixed
+            if(key_free) {
+            	efree(key);
             }
         }
     }
