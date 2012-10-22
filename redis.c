@@ -2422,7 +2422,10 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
        	        keys[j] = Z_STRVAL_P(z_args[i]);
            	    keys_len[j] = Z_STRLEN_P(z_args[i]);
 
-				keys_to_free[j] = redis_key_prefix(redis_sock, &keys[j], &keys_len[j] TSRMLS_CC); /* add optional prefix  TSRMLS_CC*/
+           	    // If we have a timeout it should be the last argument, which we do not want to prefix
+				if(!has_timeout || i < argc-1) {
+					keys_to_free[j] = redis_key_prefix(redis_sock, &keys[j], &keys_len[j] TSRMLS_CC); /* add optional prefix  TSRMLS_CC*/
+				}
 			}
 
             cmd_len += 1 + integer_length(keys_len[j]) + 2 + keys_len[j] + 2; /* $ + size + NL + string + NL */
