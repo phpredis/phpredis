@@ -1083,6 +1083,61 @@ class Redis_Test extends TestSuite
 	}
     }
 
+    public function testSRandMemberWithCount() {
+        // Make sure the set is nuked
+        $this->redis->delete('set0');
+        
+        // Run with a count (positive and negative) on an empty set
+        $ret_pos = $this->redis->sRandMember('set0', 10);
+        $ret_neg = $this->redis->sRandMember('set0', -10);
+        
+        // Should both be empty arrays
+        $this->assertTrue(is_array($ret_pos) && empty($ret_pos));
+        $this->assertTrue(is_array($ret_neg) && empty($ret_neg));
+
+        // Add a few items to the set
+        for($i=0;$i<100;$i++) {
+            $this->redis->sadd('set0', "member$i");
+        }
+
+        // Get less than the size of the list
+        $ret_slice = $this->redis->srandmember('set0', 20);
+
+        // Should be an array with 20 items
+        $this->assertTrue(is_array($ret_slice) && count($ret_slice) == 20);
+
+        // Ask for more items than are in the list (but with a positive count)
+        $ret_slice = $this->redis->srandmember('set0', 200);
+
+        // Should be an array, should be however big the set is, exactly
+        $this->assertTrue(is_array($ret_slice) && count($ret_slice) == $i);
+
+        // Now ask for too many items but negative
+        $ret_slice = $this->redis->srandmember('set0', -200);
+
+        // Should be an array, should have exactly the # of items we asked for (will be dups)
+        $this->assertTrue(is_array($ret_slice) && count($ret_slice) == 200);
+
+        //
+        // Test in a pipeline
+        //
+
+        $pipe = $this->redis->pipeline();
+
+        $pipe->srandmember('set0', 20);
+        $pipe->srandmember('set0', 200);
+        $pipe->srandmember('set0', -200);
+
+        $ret = $this->redis->exec();
+
+        $this->assertTrue(is_array($ret[0]) && count($ret[0]) == 20);
+        $this->assertTrue(is_array($ret[1]) && count($ret[1]) == $i);
+        $this->assertTrue(is_array($ret[2]) && count($ret[2]) == 200);
+
+        // Kill the set
+        $this->redis->del('set0');
+    }
+
     public function testsContains()
     {
         $this->redis->delete('set');
@@ -3241,7 +3296,12 @@ class Redis_Test extends TestSuite
     		1,1.5,'one',Array('this','is','an','array')
     	);
 
-    	foreach(Array(Redis::SERIALIZER_PHP, Redis::SERIALIZER_IGBINARY) as $mode) {
+    	$serializers = Array(Redis::SERIALIZER_PHP);
+    	if(defined('Redis::SERIALIZER_IGBINARY')) {
+    		$serializers[] = Redis::SERIALIZER_IGBINARY;
+    	}
+
+    	foreach($serializers as $mode) {
     		$vals_enc = Array();
 
     		// Pass them through redis so they're serialized
