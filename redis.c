@@ -2202,29 +2202,26 @@ PHP_METHOD(Redis, sRandMember)
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *cmd;
-    int key_len, cmd_len, key_free = 0, have_count = 0;
+    int key_len, cmd_len, key_free = 0;
     long count;
 
     // Parse our params
     if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
                                     &object, redis_ce, &key, &key_len, &count) == FAILURE) {
         RETURN_FALSE;
-	}
+    }
 
     // Get our redis socket
     if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;
-	}
+    }
 
     // Prefix our key if necissary
     key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
 
-    // Do we have a count
-    have_count = ZEND_NUM_ARGS() == 2;
-
     // If we have two arguments, we're running with an optional COUNT, which will return
     // a multibulk reply.  Without the argument we'll return a string response
-    if(have_count) {
+    if(ZEND_NUM_ARGS() == 2) {
         // Construct our command with count
         cmd_len = redis_cmd_format_static(&cmd, "SRANDMEMBER", "sl", key, key_len, count);
     } else {
