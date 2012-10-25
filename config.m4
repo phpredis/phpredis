@@ -49,10 +49,12 @@ dnl Check for igbinary
     AC_MSG_RESULT([enabled])
     AC_DEFINE(HAVE_REDIS_IGBINARY,1,[Whether redis igbinary serializer is enabled])
     IGBINARY_INCLUDES="-I$igbinary_inc_path"
+    IGBINARY_EXT_DIR="$igbinary_inc_path/ext"
     ifdef([PHP_ADD_EXTENSION_DEP],
     [
       PHP_ADD_EXTENSION_DEP(redis, igbinary)
     ])
+    PHP_ADD_INCLUDE($IGBINARY_EXT_DIR)
   else
     IGBINARY_INCLUDES=""
     AC_MSG_RESULT([disabled])
