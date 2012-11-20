@@ -434,6 +434,7 @@ PHP_MINIT_FUNCTION(redis)
     /* options */
     add_constant_long(redis_ce, "OPT_SERIALIZER", REDIS_OPT_SERIALIZER);
     add_constant_long(redis_ce, "OPT_PREFIX", REDIS_OPT_PREFIX);
+    add_constant_long(redis_ce, "OPT_READ_TIMEOUT", REDIS_OPT_READ_TIMEOUT);
 
     /* serializer */
     add_constant_long(redis_ce, "SERIALIZER_NONE", REDIS_SERIALIZER_NONE);
@@ -5653,6 +5654,9 @@ PHP_METHOD(Redis, getOption)  {
 					}
                     RETURN_NULL();
 
+            case REDIS_OPT_READ_TIMEOUT:
+                    RETURN_DOUBLE(redis_sock->read_timeout);
+
             default:
                     RETURN_FALSE;
 
@@ -5668,6 +5672,7 @@ PHP_METHOD(Redis, setOption) {
     long option, val_long;
 	char *val_str;
 	int val_len;
+    struct timeval read_tv;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ols",
 									 &object, redis_ce, &option, &val_str, &val_len) == FAILURE) {
@@ -5706,6 +5711,16 @@ PHP_METHOD(Redis, setOption) {
 						memcpy(redis_sock->prefix, val_str, val_len);
 					}
 					RETURN_TRUE;
+
+            case REDIS_OPT_READ_TIMEOUT:
+                    redis_sock->read_timeout = atof(val_str);
+                    if(redis_sock->stream) {
+                        read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
+                        read_tv.tv_usec = (int)((redis_sock->read_timeout - read_tv.tv_sec) * 1000000);
+                        php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_READ_TIMEOUT,
+                                              0, &read_tv);
+                    }
+                    RETURN_TRUE;
 
             default:
                     RETURN_FALSE;
