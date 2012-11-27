@@ -6,6 +6,25 @@ This code has been developed and maintained by Owlient from November 2009 to Mar
 You can send comments, patches, questions [here on github](https://github.com/nicolasff/phpredis/issues) or to n.favrefelix@gmail.com ([@yowgi](http://twitter.com/yowgi)).
 
 
+Table of contents
+=================
+
+1. Installing/Configuring
+   * [Installing/Configuring](#installingconfiguring)
+   * [Install on OSX](#install-on-osx)
+   * [PHP Session handler](#php-session-handler)
+1. Usage
+   * Connection
+   * Server
+   * Keys and strings
+   * Hashes
+   * Lists
+   * Sets
+   * Sorted sets
+   * Pub/sub
+   * Transactions
+
+
 Installing/Configuring
 ======================
 
@@ -41,8 +60,8 @@ Taken from [Compiling phpredis on Zend Server CE/OSX ](http://www.tumblr.com/tag
 
 See also: [Install Redis & PHP Extension PHPRedis with Macports](http://www.lecloud.net/post/3378834922/install-redis-php-extension-phpredis-with-macports).
 
-Session handler (new)
-==============
+PHP Session handler
+===================
 
 phpredis can be used to store PHP sessions. To do this, configure `session.save_handler` and `session.save_path` in your php.ini to tell phpredis where to store the sessions:
 <pre>
