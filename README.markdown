@@ -115,7 +115,7 @@ $redis = new Redis();
 
 ### RedisException
 -----
-phpredis throws a `RedisException` object if it can't reach the Redis server. That can happen in case of connectivity issues,
+phpredis throws a [RedisException](#redisexception) object if it can't reach the Redis server. That can happen in case of connectivity issues,
 if the Redis service is down, or if the redis host is overloaded. In any other problematic case that does not involve an
 unreachable server (such as a key not existing, an invalid command, etc), phpredis will return `FALSE`.
 
@@ -137,13 +137,15 @@ Redis::REDIS_NOT_FOUND - Not found / other
 
 ## Connection
 
-1. [connect, open](#connect-open)
-1. [pconnect, popen](#pconnect-popen)
-1. [close](#close)
-1. [setOption](#setoption)
-1. [getOption](#getoption)
-1. [ping](#ping)
-1. [echo](#echo)
+1. [connect, open](#connect-open) - Connect to a server
+1. [pconnect, popen](#pconnect-popen) - Connect to a server (persistent)
+1. [auth](#auth) - Authenticate to the server
+1. [select](#select) - Change the selected database for the current connection
+1. [close](#close) - Close the connection
+1. [setOption](#setoption) - Set client option
+1. [getOption](#getoption) - Get client option
+1. [ping](#ping) - Ping the server
+1. [echo](#echo) - Echo the given string
 
 ### connect, open
 -----
@@ -202,6 +204,34 @@ $redis->pconnect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout and would be anothe
 $redis->pconnect('127.0.0.1', 6379, 2.5, 'x'); // x is sent as persistent_id and would be another connection the the three before.
 $redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another connection than the four before.
 </pre>
+
+### auth
+-----
+_**Description**_: Authenticate the connection using a password.
+*Warning*: The password is sent in plain-text over the network.
+
+##### *Parameters*
+*STRING*: password
+
+##### *Return value*
+*BOOL*: `TRUE` if the connection is authenticated, `FALSE` otherwise.
+
+##### *Example*
+<pre>
+$redis->auth('foobared');
+</pre>
+
+### select
+-----
+_**Description**_: Change the selected database for the current connection.
+
+##### *Parameters*
+*INTEGER*: dbindex, the database number to switch to.
+
+##### *Return value*
+`TRUE` in case of success, `FALSE` in case of failure.
+##### *Example*
+See method for example: [move](#move)
 
 ### close
 -----
@@ -1329,18 +1359,6 @@ $key = $redis->randomKey();
 $surprise = $redis->get($key);	// who knows what's in there.
 </pre>
 
-### select
------
-_**Description**_: Switches to a given database.
-
-##### *Parameters*
-*INTEGER*: dbindex, the database number to switch to.
-
-##### *Return value*
-`TRUE` in case of success, `FALSE` in case of failure.
-##### *Example*
-(See following function)
-
 ### move
 -----
 _**Description**_: Moves a key to a different database.
@@ -1455,21 +1473,6 @@ $count = $redis->dbSize();
 echo "Redis has $count keys\n";
 </pre>
 
-### auth
------
-_**Description**_: Authenticate the connection using a password.
-*Warning*: The password is sent in plain-text over the network.
-
-##### *Parameters*
-*STRING*: password
-
-##### *Return value*
-*BOOL*: `TRUE` if the connection is authenticated, `FALSE` otherwise.
-
-##### *Example*
-<pre>
-$redis->auth('foobared');
-</pre>
 
 ### bgrewriteaof
 -----
