@@ -17,7 +17,7 @@ You can send comments, patches, questions [here on github](https://github.com/ni
    * [Usage](#usage)
    * [Connection](#connection)
    * [Server](#server)
-   * Keys and strings
+   * [Keys and strings](#keys-and-strings)
    * [Hashes](#hashes)
    * [Lists](#lists)
    * [Sets](#sets)
@@ -917,9 +917,11 @@ $redis->append('key', 'value2'); /* 12 */
 $redis->get('key'); /* 'value1value2' */
 ~~~
 
-### getRange (substr also supported but deprecated in redis)
+### getRange
 -----
 _**Description**_: Return a substring of a larger string 
+
+*Note*: substr also supported but deprecated in redis.
 
 ##### *Parameters*
 *key*
