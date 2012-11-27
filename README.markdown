@@ -533,6 +533,49 @@ $redis->time();
 
 ## Keys and Strings
 
+### Strings
+-----
+
+* [append](#append) - Append a value to a key
+* [bitcount](#bitcount) - Count set bits in a string
+* [bitop](#bitop) - Perform bitwise operations between strings
+* [decr, decrBy](#decr-decrby) - Decrement the value of a key
+* [get](#get) - Get the value of a key
+* [getBit](#getbit) - Returns the bit value at offset in the string value stored at key
+* [getRange](#getrange) - Get a substring of the string stored at a key
+* [getSet](#getset) - Set the string value of a key and return its old value
+* [incr, incrBy](#incr-incrby) - Increment the value of a key
+* [incrByFloat](#incrbyfloat) - Increment the float value of a key by the given amount
+* [mGet, getMultiple](#mget-getmultiple) - Get the values of all the given keys
+* [mSet, mSetNX](#mset-msetnx) - Set multiple keys to multiple values
+* [set](#set) - Set the string value of a key
+* [setBit](#setbit) - Sets or clears the bit at offset in the string value stored at key
+* [setex, psetex](#setex-psetex) - Set the value and expiration of a key
+* [setnx](#setnx) - Set the value of a key, only if the key does not exist
+* [setRange](#setrange) - Overwrite part of a string at key starting at the specified offset
+* [strlen](#strlen) - Get the length of the value stored in a key
+
+### Keys
+-----
+
+* [del, delete](#del-delete) - Delete a key
+* [dump](#dump) - Return a serialized version of the value stored at the specified key.
+* [exists](#exists) - Determine if a key exists
+* [expire, setTimeout, pexpire](#expire-settimeout-pexpire) - Set a key's time to live in seconds
+* [expireAt, pexpireAt](#expireat-pexpireat) - Set the expiration for a key as a UNIX timestamp
+* [keys, getKeys](#keys-getkeys) - Find all keys matching the given pattern
+* [migrate](#migrate) - Atomically transfer a key from a Redis instance to another one
+* [move](#move) - Move a key to another database
+* [object](#object) - Inspect the internals of Redis objects
+* [persist](#persist) - Remove the expiration from a key
+* [randomKey](#randomkey) - Return a random key from the keyspace
+* [rename, renameKey](#rename-renamekey) - Rename a key
+* [renameNx](#renamenx) - Rename a key, only if the new key does not exist
+* [type](#type) - Determine the type stored at key
+* [sort](#sort) - Sort the elements in a list, set or sorted set
+* [ttl, pttl](#ttl-pttl) - Get the time to live for a key
+* [restore](#restore) - Create a key using the provided serialized value, previously obtained with [dump](#dump).
+
 ### get
 -----
 _**Description**_: Get the value related to the specified key
@@ -799,7 +842,7 @@ $redis->get('x'); 	// → `FALSE`
 -----
 _**Description**_: Same as rename, but will not replace a key if the destination already exists. This is the same behaviour as setNx.
 
-### setTimeout, expire, pexpire
+### expire, setTimeout, pexpire
 -----
 _**Description**_: Sets an expiration date (a timeout) on an item. pexpire requires a TTL in milliseconds.
 
