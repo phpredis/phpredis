@@ -18,12 +18,13 @@ You can send comments, patches, questions [here on github](https://github.com/ni
    * [Connection](#connection)
    * [Server](#server)
    * Keys and strings
-   * Hashes
-   * Lists
-   * Sets
+   * [Hashes](#hashes)
+   * [Lists](#lists)
+   * [Sets](#sets)
    * [Sorted sets](#sorted-sets)
    * Pub/sub
    * Transactions
+   * [Scripting](#scripting)
 
 -----
 
@@ -1621,6 +1622,66 @@ _**Description**_: A blocking version of `rpoplpush`, with an integral timeout i
 *STRING* The element that was moved in case of success, `FALSE` in case of timeout.
 
 
+### dump
+-----
+_**Description**_: Dump a key out of a redis database, the value of which can later be passed into redis using the RESTORE command.  The data
+that comes out of DUMP is a binary representation of the key as Redis stores it.
+##### *Parameters*
+*key* string  
+##### *Return value*
+The Redis encoded value of the key, or FALSE if the key doesn't exist
+##### *Examples*
+~~~
+$redis->set('foo', 'bar');
+$val = $redis->dump('foo'); // $val will be the Redis encoded key value
+~~~
+
+### restore
+-----
+_**Description**_: Restore a key from the result of a DUMP operation.
+##### *Parameters*
+*key* string.  The key name  
+*ttl* integer.  How long the key should live (if zero, no expire will be set on the key)  
+*value* string (binary).  The Redis encoded key value (from DUMP)  
+##### *Examples*
+~~~
+$redis->set('foo', 'bar');
+$val = $redis->dump('foo');
+$redis->restore('bar', 0, $val); // The key 'bar', will now be equal to the key 'foo'
+~~~
+
+### migrate
+-----
+_**Description**_: Migrates a key to a different Redis instance.
+##### *Parameters*
+*host* string.  The destination host  
+*port* integer.  The TCP port to connect to.  
+*key* string. The key to migrate.  
+*destination-db* integer.  The target DB.  
+*timeout* integer.  The maximum amount of time given to this transfer.  
+##### *Examples*
+~~~
+$redis->migrate('backup', 6379, 'foo', 0, 3600);
+~~~
+
+
+
+## Hashes
+
+* [hDel](#hdel) - Delete one or more hash fields
+* [hExists](#hexists) - Determine if a hash field exists
+* [hGet](#hget) - Get the value of a hash field
+* [hGetAll](#hgetall) - Get all the fields and values in a hash
+* [hIncrBy](#hincrby) - Increment the integer value of a hash field by the given number
+* [hIncrByFloat](#hincrbyfloat) - Increment the float value of a hash field by the given amount
+* [hKeys](#hkeys) - Get all the fields in a hash
+* [hLen](#hlen) - Get the number of fields in a hash
+* [hMGet](#hmget) - Get the values of all the given hash fields
+* [hMSet](#hmset) - Set multiple hash fields to multiple values
+* [hSet](#hset) - Set the string value of a hash field
+* [hSetNx](#hsetnx) - Set the value of a hash field, only if the field does not exist
+* [hVals](#hvals) - Get all the values in a hash
+
 ### hSet
 -----
 _**Description**_: Adds a value to the hash stored at key. If this value is already in the hash, `FALSE` is returned.  
@@ -1848,7 +1909,7 @@ $redis->hIncrByFLoat('h', 'x', 1.5); /* returns 3.0: h[x] = 3.0 now */
 $redis->hIncrByFloat('h', 'x', -3.0); /* returns 0.0: h[x] = 0.0 now */
 ~~~
 
-### hMset
+### hMSet
 -----
 _**Description**_: Fills in a whole hash. Non-string values are converted to string, using the standard `(string)` cast. NULL values are stored as empty strings.
 ##### *Parameters*
@@ -1879,51 +1940,7 @@ $redis->hSet('h', 'field2', 'value2');
 $redis->hmGet('h', array('field1', 'field2')); /* returns array('field1' => 'value1', 'field2' => 'value2') */
 ~~~
 
-### dump
------
-_**Description**_: Dump a key out of a redis database, the value of which can later be passed into redis using the RESTORE command.  The data
-that comes out of DUMP is a binary representation of the key as Redis stores it.
-##### *Parameters*
-*key* string  
-##### *Return value*
-The Redis encoded value of the key, or FALSE if the key doesn't exist
-##### *Examples*
-~~~
-$redis->set('foo', 'bar');
-$val = $redis->dump('foo'); // $val will be the Redis encoded key value
-~~~
 
-### restore
------
-_**Description**_: Restore a key from the result of a DUMP operation.
-##### *Parameters*
-*key* string.  The key name  
-*ttl* integer.  How long the key should live (if zero, no expire will be set on the key)  
-*value* string (binary).  The Redis encoded key value (from DUMP)  
-##### *Examples*
-~~~
-$redis->set('foo', 'bar');
-$val = $redis->dump('foo');
-$redis->restore('bar', 0, $val); // The key 'bar', will now be equal to the key 'foo'
-~~~
-
-### migrate
------
-_**Description**_: Migrates a key to a different Redis instance.
-##### *Parameters*
-*host* string.  The destination host  
-*port* integer.  The TCP port to connect to.  
-*key* string. The key to migrate.  
-*destination-db* integer.  The target DB.  
-*timeout* integer.  The maximum amount of time given to this transfer.  
-##### *Examples*
-~~~
-$redis->migrate('backup', 6379, 'foo', 0, 3600);
-~~~
-
-
-
-## Hashes
 
 ## Lists
 
