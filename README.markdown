@@ -7,17 +7,17 @@ You can send comments, patches, questions [here on github](https://github.com/ni
 
 
 # Table of contents
-
+-----
 1. [Installing/Configuring](#installingconfiguring)
    * [Installation](#installation)
    * [Installation on OSX](#installation-on-osx)
    * [PHP Session handler](#php-session-handler)
    * [Distributed Redis Array](#distributed-redis-array)
    * [Error handling](#error-handling)
-1. [Methods](#methods)
-   * [Usage](#general)
+1. [Classes and methods](#classes-and-methods)
+   * [Usage](#usage)
    * [Connection](#connection)
-   * Server
+   * [Server](#server)
    * Keys and strings
    * Hashes
    * Lists
@@ -25,9 +25,10 @@ You can send comments, patches, questions [here on github](https://github.com/ni
    * Sorted sets
    * Pub/sub
    * Transactions
-
+-----
 
 # Installing/Configuring
+-----
 
 1. [Installation](#installation)
 1. [Installation on OSX](#installation-on-osx)
@@ -38,34 +39,33 @@ You can send comments, patches, questions [here on github](https://github.com/ni
 
 ## Installation
 
-<pre>
+~~~
 phpize
 ./configure [--enable-redis-igbinary]
 make && make install
-</pre>
+~~~
 
 If you would like phpredis to serialize your data using the igbinary library, run configure with `--enable-redis-igbinary`.
 `make install` copies `redis.so` to an appropriate location, but you still need to enable the module in the PHP config file. To do so, either edit your php.ini or add a redis.ini file in `/etc/php5/conf.d` with the following contents: `extension=redis.so`.
 
 You can generate a debian package for PHP5, accessible from Apache 2 by running `./mkdeb-apache2.sh` or with `dpkg-buildpackage` or `svn-buildpackage`.
 
-This extension exports a single class, [Redis](#redis) (and [RedisException](#redisexception) used in case of errors). Check out https://github.com/ukko/phpredis-phpdoc for a PHP stub that you can use in your IDE for code completion.
+This extension exports a single class, [Redis](#class-redis) (and [RedisException](#class-redisexception) used in case of errors). Check out https://github.com/ukko/phpredis-phpdoc for a PHP stub that you can use in your IDE for code completion.
 
 
 ## Installation on OSX
 
 If the install fails on OSX, type the following commands in your shell before trying again:
-<pre>
+~~~
 MACOSX_DEPLOYMENT_TARGET=10.6
 CFLAGS="-arch i386 -arch x86_64 -g -Os -pipe -no-cpp-precomp"
 CCFLAGS="-arch i386 -arch x86_64 -g -Os -pipe"
 CXXFLAGS="-arch i386 -arch x86_64 -g -Os -pipe"
 LDFLAGS="-arch i386 -arch x86_64 -bind_at_load"
 export CFLAGS CXXFLAGS LDFLAGS CCFLAGS MACOSX_DEPLOYMENT_TARGET
-</pre>
+~~~
 
-If that still fails and you are running Zend Server CE, try this right before "make":
-<pre>./configure CFLAGS="-arch i386"</pre>
+If that still fails and you are running Zend Server CE, try this right before "make": `./configure CFLAGS="-arch i386"`.
 Taken from [Compiling phpredis on Zend Server CE/OSX ](http://www.tumblr.com/tagged/phpredis).
 
 See also: [Install Redis & PHP Extension PHPRedis with Macports](http://www.lecloud.net/post/3378834922/install-redis-php-extension-phpredis-with-macports).
@@ -74,10 +74,10 @@ See also: [Install Redis & PHP Extension PHPRedis with Macports](http://www.lecl
 ## PHP Session handler
 
 phpredis can be used to store PHP sessions. To do this, configure `session.save_handler` and `session.save_path` in your php.ini to tell phpredis where to store the sessions:
-<pre>
+~~~
 session.save_handler = redis
 session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeout=2.5, tcp://host3:6379?weight=2"
-</pre>
+~~~
 
 `session.save_path` can have a simple `host:port` format too, but you need to provide the `tcp://` scheme if you want to use the parameters. The following parameters are available:
 
@@ -85,7 +85,7 @@ session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeou
 * timeout (float): the connection timeout to a redis host, expressed in seconds. If the host is unreachable in that amount of time, the session storage will be unavailable for the client. The default timeout is very high (86400 seconds).
 * persistent (integer, should be 1 or 0): defines if a persistent connection should be used. **(experimental setting)**
 * prefix (string, defaults to "PHPREDIS_SESSION:"): used as a prefix to the Redis key in which the session is stored. The key is composed of the prefix followed by the session ID.
-* auth (string, empty by default): used to authenticate with the Redis server prior to sending commands.
+* auth (string, empty by default): used to authenticate with the server prior to sending commands.
 * database (integer): selects a different database.
 
 Sessions have a lifetime expressed in seconds and stored in the INI variable "session.gc_maxlifetime". You can change it with [`ini_set()`](http://php.net/ini_set).
@@ -98,24 +98,28 @@ See [dedicated page](https://github.com/nicolasff/phpredis/blob/master/arrays.ma
 
 
 
-
-# Methods
+# Classes and methods
+-----
 
 ## Usage
 
-### Redis
+1. [Class Redis](#class-redis)
+1. [Class RedisException](#class-redisexception)
+1. [Predefined constants](#predefined-constants)
+
+### Class Redis
 -----
 _**Description**_: Creates a Redis client
 
 ##### *Example*
 
-<pre>
+~~~
 $redis = new Redis();
-</pre>
+~~~
 
-### RedisException
+### Class RedisException
 -----
-phpredis throws a [RedisException](#redisexception) object if it can't reach the Redis server. That can happen in case of connectivity issues,
+phpredis throws a [RedisException](#class-redisexception) object if it can't reach the Redis server. That can happen in case of connectivity issues,
 if the Redis service is down, or if the redis host is overloaded. In any other problematic case that does not involve an
 unreachable server (such as a key not existing, an invalid command, etc), phpredis will return `FALSE`.
 
@@ -283,7 +287,7 @@ _**Description**_: Check the current connection status
 
 ##### *Return value*
 
-*STRING*: `+PONG` on success. Throws a [RedisException](#redisexception) object on connectivity error, as described above.
+*STRING*: `+PONG` on success. Throws a [RedisException](#class-redisexception) object on connectivity error, as described above.
 
 
 ### echo
@@ -299,7 +303,42 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 *STRING*: the same message.
 
 
-## Strings
+## Server
+
+1. [slaveof](#slaveof) - Make the server a slave of another instance, or promote it to master
+1. [time](#time) - Return the current server time
+
+### slaveof
+-----
+_**Description**_: Changes the slave status
+
+##### *Parameters*
+Either host (string) and port (int), or no parameter to stop being a slave.
+
+##### *Return value*
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
+
+##### *Example*
+<pre>
+$redis->slaveof('10.0.1.7', 6379);
+/* ... */
+$redis->slaveof();
+</pre>
+
+### time
+-----
+_**Description**_: Return the current server time.
+##### *Parameters*
+(none)  
+##### *Return value*
+If successfull, the time will come back as an associative array with element zero being
+the unix timestamp, and element one being microseconds.
+##### *Examples*
+<pre>
+$redis->time();
+</pre>
+
+
 
 ### get
 -----
@@ -1487,23 +1526,6 @@ None.
 ##### *Example*
 <pre>
 $redis->bgrewriteaof();
-</pre>
-
-### slaveof
------
-_**Description**_: Changes the slave status
-
-##### *Parameters*
-Either host (string) and port (int), or no parameter to stop being a slave.
-
-##### *Return value*
-*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
-
-##### *Example*
-<pre>
-$redis->slaveof('10.0.1.7', 6379);
-/* ... */
-$redis->slaveof();
 </pre>
 
 ### object
@@ -2694,15 +2716,3 @@ _**Description**_: Migrates a key to a different Redis instance.
 $redis->migrate('backup', 6379, 'foo', 0, 3600);
 </pre>
 
-### time
------
-_**Description**_: Return the current Redis server time.
-##### *Parameters*
-(none)  
-##### *Return value*
-If successfull, the time will come back as an associative array with element zero being
-the unix timestamp, and element one being microseconds.
-##### *Examples*
-<pre>
-$redis->time();
-</pre>
