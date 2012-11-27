@@ -1,5 +1,6 @@
 PhpRedis
-=============
+========
+
 The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 This code has been developed and maintained by Owlient from November 2009 to March 2011.
 
@@ -9,11 +10,14 @@ You can send comments, patches, questions [here on github](https://github.com/ni
 Table of contents
 =================
 
-1. Installing/Configuring
-   1. [Installation](#installation)
-   1. [Installation on OSX](#installation-on-osx)
-   1. [PHP Session handler](#php-session-handler)
-1. Usage
+1. [Installing/Configuring](#installingconfiguring)
+   * [Installation](#installation)
+   * [Installation on OSX](#installation-on-osx)
+   * [PHP Session handler](#php-session-handler)
+   * [Distributed Redis Array](#distributed-redis-array)
+   * [Error handling](#error-handling)
+1. [Methods](#methods)
+   * General
    * Connection
    * Server
    * Keys and strings
@@ -31,6 +35,8 @@ Installing/Configuring
 1. [Installation](#installation)
 1. [Installation on OSX](#installation-on-osx)
 1. [PHP Session handler](#php-session-handler)
+1. [Distributed Redis Array](#distributed-redis-array)
+1. [Error handling](#error-handling)
 
 
 Installation
@@ -90,20 +96,21 @@ The session handler requires a version of Redis with the `SETEX` command (at lea
 
 
 Distributed Redis Array
-=======================
+-----------------------
 
 See [dedicated page](https://github.com/nicolasff/phpredis/blob/master/arrays.markdown#readme).
 
 
 Error handling
-==============
+--------------
 
 phpredis throws a `RedisException` object if it can't reach the Redis server. That can happen in case of connectivity issues, if the Redis service is down, or if the redis host is overloaded. In any other problematic case that does not involve an unreachable server (such as a key not existing, an invalid command, etc), phpredis will return `FALSE`.
 
-Methods
-=========
 
-## Redis::__construct
+Methods
+=======
+
+## Redis::__construct [redis-construct]
 ##### *Description*
 
 Creates a Redis client
