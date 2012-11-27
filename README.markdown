@@ -10,9 +10,9 @@ Table of contents
 =================
 
 1. Installing/Configuring
-   * [Installing/Configuring](#installingconfiguring)
-   * [Install on OSX](#install-on-osx)
-   * [PHP Session handler](#php-session-handler)
+   1. [Installation](#installation)
+   1. [Installation on OSX](#installation-on-osx)
+   1. [PHP Session handler](#php-session-handler)
 1. Usage
    * Connection
    * Server
@@ -28,6 +28,13 @@ Table of contents
 Installing/Configuring
 ======================
 
+1. [Installation](#installation)
+1. [Installation on OSX](#installation-on-osx)
+1. [PHP Session handler](#php-session-handler)
+
+
+Installation
+------------
 <pre>
 phpize
 ./configure [--enable-redis-igbinary]
@@ -41,8 +48,8 @@ You can generate a debian package for PHP5, accessible from Apache 2 by running 
 
 This extension exports a single class, `Redis` (and `RedisException` used in case of errors). Check out https://github.com/ukko/phpredis-phpdoc for a PHP stub that you can use in your IDE for code completion.
 
-Install on OSX
-==============
+Installation on OSX
+-------------------
 
 If the install fails on OSX, type the following commands in your shell before trying again:
 <pre>
@@ -61,7 +68,7 @@ Taken from [Compiling phpredis on Zend Server CE/OSX ](http://www.tumblr.com/tag
 See also: [Install Redis & PHP Extension PHPRedis with Macports](http://www.lecloud.net/post/3378834922/install-redis-php-extension-phpredis-with-macports).
 
 PHP Session handler
-===================
+-------------------
 
 phpredis can be used to store PHP sessions. To do this, configure `session.save_handler` and `session.save_path` in your php.ini to tell phpredis where to store the sessions:
 <pre>
