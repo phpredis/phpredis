@@ -22,8 +22,8 @@ You can send comments, patches, questions [here on github](https://github.com/ni
    * [Lists](#lists)
    * [Sets](#sets)
    * [Sorted sets](#sorted-sets)
-   * Pub/sub
-   * Transactions
+   * [Pub/sub](#pubsub)
+   * [Transactions](#transactions)
    * [Scripting](#scripting)
 
 -----
@@ -621,112 +621,6 @@ $redis->set('key4', 'val4');
 
 $redis->delete('key1', 'key2'); /* return 2 */
 $redis->delete(array('key3', 'key4')); /* return 2 */
-~~~
-
-### multi, exec, discard.
------
-_**Description**_: Enter and exit transactional mode.  
-
-##### *Parameters*
-(optional) `Redis::MULTI` or `Redis::PIPELINE`. Defaults to `Redis::MULTI`. A `Redis::MULTI` block of commands runs as a single transaction; a `Redis::PIPELINE` block is simply transmitted faster to the server, but without any guarantee of atomicity. `discard` cancels a transaction.  
-
-##### *Return value*
-`multi()` returns the Redis instance and enters multi-mode. Once in multi-mode, all subsequent method calls return the same object until `exec()` is called.
-
-##### *Example*
-~~~
-$ret = $redis->multi()
-    ->set('key1', 'val1')
-    ->get('key1')
-    ->set('key2', 'val2')
-    ->get('key2')
-    ->exec();
-
-/*
-$ret == array(
-    0 => TRUE,
-    1 => 'val1',
-    2 => TRUE,
-    3 => 'val2');
-*/
-~~~
-
-### watch, unwatch
------
-_**Description**_: Watches a key for modifications by another client. If the key is modified between `WATCH` and `EXEC`, the MULTI/EXEC transaction will fail (return `FALSE`). `unwatch` cancels all the watching of all keys by this client.
-
-##### *Parameters*
-*keys*: a list of keys
-
-##### *Example*
-~~~
-$redis->watch('x');
-/* long code here during the execution of which other clients could well modify `x` */
-$ret = $redis->multi()
-    ->incr('x')
-    ->exec();
-/*
-$ret = FALSE if x has been modified between the call to WATCH and the call to EXEC.
-*/
-~~~
-
-### subscribe
------
-_**Description**_: Subscribe to channels. Warning: this function will probably change in the future.
-
-##### *Parameters*
-*channels*: an array of channels to subscribe to  
-*callback*: either a string or an array($instance, 'method_name'). The callback function receives 3 parameters: the redis instance, the channel name, and the message.  
-
-##### *Example*
-~~~
-function f($redis, $chan, $msg) {
-	switch($chan) {
-		case 'chan-1':
-			...
-			break;
-
-		case 'chan-2':
-			...
-			break;
-
-		case 'chan-2':
-			...
-			break;
-	}
-}
-
-$redis->subscribe(array('chan-1', 'chan-2', 'chan-3'), 'f'); // subscribe to 3 chans
-~~~
-
-### psubscribe
------
-_**Description**_: Subscribe to channels by pattern
-
-##### *Parameters*
-*patterns*: An array of patterns to match
-*callback*: Either a string or an array with an object and method.  The callback will get four arguments ($redis, $pattern, $channel, $message)
-
-##### *Example*
-~~~
-function psubscribe($redis, $pattern, $chan, $msg) {
-	echo "Pattern: $pattern\n";
-	echo "Channel: $chan\n";
-	echo "Payload: $msg\n";
-}
-~~~
-
-### publish
------
-_**Description**_: Publish messages to channels. Warning: this function will probably change in the future.
-
-##### *Parameters*
-*channel*: a channel to publish to  
-*messsage*: string  
-
-##### *Example*
-~~~
-$redis->publish('chan-1', 'hello, world!'); // send message.
 ~~~
 
 
@@ -2703,6 +2597,127 @@ $redis->zUnion('ko1', array('k1', 'k2')); /* 4, 'ko1' => array('val0', 'val1', '
 $redis->zUnion('ko2', array('k1', 'k2'), array(1, 1)); /* 4, 'ko2' => array('val0', 'val1', 'val2', 'val3') */
 $redis->zUnion('ko3', array('k1', 'k2'), array(5, 1)); /* 4, 'ko3' => array('val0', 'val2', 'val3', 'val1') */
 ~~~
+
+## Pub/sub
+
+* [psubscribe](#psubscribe) - Subscribe to channels by pattern
+* [publish](#publish) - Post a message to a channel
+* [subscribe](#subscribe) - Subscribe to channels
+
+### psubscribe
+-----
+_**Description**_: Subscribe to channels by pattern
+
+##### *Parameters*
+*patterns*: An array of patterns to match
+*callback*: Either a string or an array with an object and method.  The callback will get four arguments ($redis, $pattern, $channel, $message)
+
+##### *Example*
+~~~
+function psubscribe($redis, $pattern, $chan, $msg) {
+	echo "Pattern: $pattern\n";
+	echo "Channel: $chan\n";
+	echo "Payload: $msg\n";
+}
+~~~
+
+### publish
+-----
+_**Description**_: Publish messages to channels. Warning: this function will probably change in the future.
+
+##### *Parameters*
+*channel*: a channel to publish to  
+*messsage*: string  
+
+##### *Example*
+~~~
+$redis->publish('chan-1', 'hello, world!'); // send message.
+~~~
+
+### subscribe
+-----
+_**Description**_: Subscribe to channels. Warning: this function will probably change in the future.
+
+##### *Parameters*
+*channels*: an array of channels to subscribe to  
+*callback*: either a string or an array($instance, 'method_name'). The callback function receives 3 parameters: the redis instance, the channel name, and the message.  
+
+##### *Example*
+~~~
+function f($redis, $chan, $msg) {
+	switch($chan) {
+		case 'chan-1':
+			...
+			break;
+
+		case 'chan-2':
+			...
+			break;
+
+		case 'chan-2':
+			...
+			break;
+	}
+}
+
+$redis->subscribe(array('chan-1', 'chan-2', 'chan-3'), 'f'); // subscribe to 3 chans
+~~~
+
+
+## Transactions
+
+1. [multi, exec, discard](#multi-exec-discard) - Enter and exit transactional mode
+2. [watch, unwatch](#watch-unwatch) - Watches a key for modifications by another client.
+
+### multi, exec, discard.
+-----
+_**Description**_: Enter and exit transactional mode.  
+
+##### *Parameters*
+(optional) `Redis::MULTI` or `Redis::PIPELINE`. Defaults to `Redis::MULTI`. A `Redis::MULTI` block of commands runs as a single transaction; a `Redis::PIPELINE` block is simply transmitted faster to the server, but without any guarantee of atomicity. `discard` cancels a transaction.  
+
+##### *Return value*
+`multi()` returns the Redis instance and enters multi-mode. Once in multi-mode, all subsequent method calls return the same object until `exec()` is called.
+
+##### *Example*
+~~~
+$ret = $redis->multi()
+    ->set('key1', 'val1')
+    ->get('key1')
+    ->set('key2', 'val2')
+    ->get('key2')
+    ->exec();
+
+/*
+$ret == array(
+    0 => TRUE,
+    1 => 'val1',
+    2 => TRUE,
+    3 => 'val2');
+*/
+~~~
+
+### watch, unwatch
+-----
+_**Description**_: Watches a key for modifications by another client.
+
+If the key is modified between `WATCH` and `EXEC`, the MULTI/EXEC transaction will fail (return `FALSE`). `unwatch` cancels all the watching of all keys by this client.
+
+##### *Parameters*
+*keys*: a list of keys
+
+##### *Example*
+~~~
+$redis->watch('x');
+/* long code here during the execution of which other clients could well modify `x` */
+$ret = $redis->multi()
+    ->incr('x')
+    ->exec();
+/*
+$ret = FALSE if x has been modified between the call to WATCH and the call to EXEC.
+*/
+~~~
+
 
 
 ## Scripting
