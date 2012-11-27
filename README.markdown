@@ -13,7 +13,6 @@ You can send comments, patches, questions [here on github](https://github.com/ni
    * [Installation on OSX](#installation-on-osx)
    * [PHP Session handler](#php-session-handler)
    * [Distributed Redis Array](#distributed-redis-array)
-   * [Error handling](#error-handling)
 1. [Classes and methods](#classes-and-methods)
    * [Usage](#usage)
    * [Connection](#connection)
@@ -22,7 +21,7 @@ You can send comments, patches, questions [here on github](https://github.com/ni
    * Hashes
    * Lists
    * Sets
-   * Sorted sets
+   * [Sorted sets](#sorted-sets)
    * Pub/sub
    * Transactions
 
@@ -31,12 +30,7 @@ You can send comments, patches, questions [here on github](https://github.com/ni
 # Installing/Configuring
 -----
 
-1. [Installation](#installation)
-1. [Installation on OSX](#installation-on-osx)
-1. [PHP Session handler](#php-session-handler)
-1. [Distributed Redis Array](#distributed-redis-array)
-1. [Error handling](#error-handling)
-
+Everything you should need to install PhpRedis on your system.
 
 ## Installation
 
@@ -2014,311 +2008,6 @@ _**Description**_: A blocking version of `rpoplpush`, with an integral timeout i
 *STRING* The element that was moved in case of success, `FALSE` in case of timeout.
 
 
-### zAdd
------
-_**Description**_: Adds the specified member with a given score to the sorted set stored at key.
-##### *Parameters*
-*key*  
-*score* : double  
-*value*: string  
-
-##### *Return value*
-*Long* 1 if the element is added. 0 otherwise.
-##### *Example*
-~~~
-$redis->zAdd('key', 1, 'val1');
-$redis->zAdd('key', 0, 'val0');
-$redis->zAdd('key', 5, 'val5');
-$redis->zRange('key', 0, -1); // array(val0, val1, val5)
-~~~
-
-### zRange
------
-_**Description**_: Returns a range of elements from the ordered set stored at the specified key, with values in the range [start, end]. start and stop are interpreted as zero-based indices:
-0 the first element, 1 the second ...
--1 the last element, -2 the penultimate ...
-##### *Parameters*
-*key*  
-*start*: long  
-*end*: long  
-*withscores*: bool = false  
-
-##### *Return value*
-*Array* containing the values in specified range. 
-##### *Example*
-~~~
-$redis->zAdd('key1', 0, 'val0');
-$redis->zAdd('key1', 2, 'val2');
-$redis->zAdd('key1', 10, 'val10');
-$redis->zRange('key1', 0, -1); /* array('val0', 'val2', 'val10') */
-
-// with scores
-$redis->zRange('key1', 0, -1, true); /* array('val0' => 0, 'val2' => 2, 'val10' => 10) */
-~~~
-
-### zDelete, zRem
------
-_**Description**_: Deletes a specified member from the ordered set.
-##### *Parameters*
-*key*  
-*member*  
-
-##### *Return value*
-*LONG* 1 on success, 0 on failure.
-##### *Example*
-~~~
-$redis->zAdd('key', 0, 'val0');
-$redis->zAdd('key', 2, 'val2');
-$redis->zAdd('key', 10, 'val10');
-$redis->zDelete('key', 'val2');
-$redis->zRange('key', 0, -1); /* array('val0', 'val10') */
-~~~
-
-### zRevRange
------
-_**Description**_: Returns the elements of the sorted set stored at the specified key in the range [start, end] in reverse order. start and stop are interpretated as zero-based indices:
-0 the first element, 1 the second ...
--1 the last element, -2 the penultimate ...
-
-##### *Parameters*
-*key*  
-*start*: long  
-*end*: long  
-*withscores*: bool = false  
-
-##### *Return value*
-*Array* containing the values in specified range. 
-##### *Example*
-~~~
-$redis->zAdd('key', 0, 'val0');
-$redis->zAdd('key', 2, 'val2');
-$redis->zAdd('key', 10, 'val10');
-$redis->zRevRange('key', 0, -1); /* array('val10', 'val2', 'val0') */
-
-// with scores
-$redis->zRevRange('key', 0, -1, true); /* array('val10' => 10, 'val2' => 2, 'val0' => 0) */
-~~~
-
-### zRangeByScore, zRevRangeByScore
------
-_**Description**_: Returns the elements of the sorted set stored at the specified key which have scores in the range [start,end]. Adding a parenthesis before `start` or `end` excludes it from the range. +inf and -inf are also valid limits. zRevRangeByScore returns the same items in reverse order, when the `start` and `end` parameters are swapped.
-##### *Parameters*
-*key*  
-*start*: string  
-*end*: string  
-*options*: array  
-
-Two options are available: `withscores => TRUE`, and `limit => array($offset, $count)`
-##### *Return value*
-*Array* containing the values in specified range. 
-##### *Example*
-~~~
-$redis->zAdd('key', 0, 'val0');
-$redis->zAdd('key', 2, 'val2');
-$redis->zAdd('key', 10, 'val10');
-$redis->zRangeByScore('key', 0, 3); /* array('val0', 'val2') */
-$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE); /* array('val0' => 0, 'val2' => 2) */
-$redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1)); /* array('val2' => 2) */
-$redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1)); /* array('val2') */
-$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(1, 1)); /* array('val2' => 2) */
-~~~
-
-### zCount
------
-_**Description**_: Returns the *number* of elements of the sorted set stored at the specified key which have scores in the range [start,end]. Adding a parenthesis before `start` or `end` excludes it from the range. +inf and -inf are also valid limits.
-##### *Parameters*
-*key*  
-*start*: string  
-*end*: string  
-
-##### *Return value*
-*LONG* the size of a corresponding zRangeByScore.  
-##### *Example*
-~~~
-$redis->zAdd('key', 0, 'val0');
-$redis->zAdd('key', 2, 'val2');
-$redis->zAdd('key', 10, 'val10');
-$redis->zCount('key', 0, 3); /* 2, corresponding to array('val0', 'val2') */
-~~~
-
-### zRemRangeByScore, zDeleteRangeByScore
------
-_**Description**_: Deletes the elements of the sorted set stored at the specified key which have scores in the range [start,end].
-##### *Parameters*
-*key*  
-*start*: double or "+inf" or "-inf" string  
-*end*: double or "+inf" or "-inf" string  
-
-##### *Return value*
-*LONG* The number of values deleted from the sorted set
-##### *Example*
-~~~
-$redis->zAdd('key', 0, 'val0');
-$redis->zAdd('key', 2, 'val2');
-$redis->zAdd('key', 10, 'val10');
-$redis->zRemRangeByScore('key', 0, 3); /* 2 */
-~~~
-
-### zRemRangeByRank, zDeleteRangeByRank
------
-_**Description**_: Deletes the elements of the sorted set stored at the specified key which have rank in the range [start,end].
-##### *Parameters*
-*key*  
-*start*: LONG  
-*end*: LONG  
-##### *Return value*
-*LONG* The number of values deleted from the sorted set
-##### *Example*
-~~~
-$redis->zAdd('key', 1, 'one');
-$redis->zAdd('key', 2, 'two');
-$redis->zAdd('key', 3, 'three');
-$redis->zRemRangeByRank('key', 0, 1); /* 2 */
-$redis->zRange('key', 0, -1, array('withscores' => TRUE)); /* array('three' => 3) */
-~~~
-
-### zSize, zCard
------
-_**Description**_: Returns the cardinality of an ordered set.
-##### *Parameters*
-*key*
-
-##### *Return value*
-*Long*, the set's cardinality
-##### *Example*
-~~~
-$redis->zAdd('key', 0, 'val0');
-$redis->zAdd('key', 2, 'val2');
-$redis->zAdd('key', 10, 'val10');
-$redis->zSize('key'); /* 3 */
-~~~
-
-### zScore
------
-_**Description**_: Returns the score of a given member in the specified sorted set.
-##### *Parameters*
-*key*  
-*member*  
-
-##### *Return value*
-*Double*
-##### *Example*
-~~~
-$redis->zAdd('key', 2.5, 'val2');
-$redis->zScore('key', 'val2'); /* 2.5 */
-~~~
-
-### zRank, zRevRank
------
-_**Description**_: Returns the rank of a given member in the specified sorted set, starting at 0 for the item with the smallest score. zRevRank starts at 0 for the item with the *largest* score.
-##### *Parameters*
-*key*  
-*member*  
-##### *Return value*
-*Long*, the item's score.
-##### *Example*
-~~~
-$redis->delete('z');
-$redis->zAdd('key', 1, 'one');
-$redis->zAdd('key', 2, 'two');
-$redis->zRank('key', 'one'); /* 0 */
-$redis->zRank('key', 'two'); /* 1 */
-$redis->zRevRank('key', 'one'); /* 1 */
-$redis->zRevRank('key', 'two'); /* 0 */
-~~~
-
-### zIncrBy
------
-_**Description**_: Increments the score of a member from a sorted set by a given amount.
-##### *Parameters*
-*key*  
-*value*: (double) value that will be added to the member's score  
-*member*  
-##### *Return value*
-*DOUBLE* the new value
-##### *Examples*
-~~~
-$redis->delete('key');
-$redis->zIncrBy('key', 2.5, 'member1'); /* key or member1 didn't exist, so member1's score is to 0 before the increment */
-					  /* and now has the value 2.5  */
-$redis->zIncrBy('key', 1, 'member1'); /* 3.5 */
-~~~
-
-### zUnion
------
-_**Description**_: Creates an union of sorted sets given in second argument. The result of the union will be stored in the sorted set defined by the first argument.
-The third optionnel argument defines `weights` to apply to the sorted sets in input. In this case, the `weights` will be multiplied by the score of each element in the sorted set before applying the aggregation.
-The forth argument defines the `AGGREGATE` option which specify how the results of the union are aggregated.
-##### *Parameters*
-*keyOutput*  
-*arrayZSetKeys*  
-*arrayWeights*  
-*aggregateFunction* Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zUnion.  
-
-##### *Return value*
-*LONG* The number of values in the new sorted set.
-##### *Example*
-~~~
-$redis->delete('k1');
-$redis->delete('k2');
-$redis->delete('k3');
-$redis->delete('ko1');
-$redis->delete('ko2');
-$redis->delete('ko3');
-
-$redis->zAdd('k1', 0, 'val0');
-$redis->zAdd('k1', 1, 'val1');
-
-$redis->zAdd('k2', 2, 'val2');
-$redis->zAdd('k2', 3, 'val3');
-
-$redis->zUnion('ko1', array('k1', 'k2')); /* 4, 'ko1' => array('val0', 'val1', 'val2', 'val3') */
-
-/* Weighted zUnion */
-$redis->zUnion('ko2', array('k1', 'k2'), array(1, 1)); /* 4, 'ko2' => array('val0', 'val1', 'val2', 'val3') */
-$redis->zUnion('ko3', array('k1', 'k2'), array(5, 1)); /* 4, 'ko3' => array('val0', 'val2', 'val3', 'val1') */
-~~~
-
-### zInter
------
-_**Description**_: Creates an intersection of sorted sets given in second argument. The result of the union will be stored in the sorted set defined by the first argument.
-The third optionnel argument defines `weights` to apply to the sorted sets in input. In this case, the `weights` will be multiplied by the score of each element in the sorted set before applying the aggregation.
-The forth argument defines the `AGGREGATE` option which specify how the results of the union are aggregated.
-##### *Parameters*
-*keyOutput*  
-*arrayZSetKeys*  
-*arrayWeights*  
-*aggregateFunction* Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zInter.  
-
-##### *Return value*
-*LONG* The number of values in the new sorted set.
-##### *Example*
-~~~
-$redis->delete('k1');
-$redis->delete('k2');
-$redis->delete('k3');
-
-$redis->delete('ko1');
-$redis->delete('ko2');
-$redis->delete('ko3');
-$redis->delete('ko4');
-
-$redis->zAdd('k1', 0, 'val0');
-$redis->zAdd('k1', 1, 'val1');
-$redis->zAdd('k1', 3, 'val3');
-
-$redis->zAdd('k2', 2, 'val1');
-$redis->zAdd('k2', 3, 'val3');
-
-$redis->zInter('ko1', array('k1', 'k2')); 				/* 2, 'ko1' => array('val1', 'val3') */
-$redis->zInter('ko2', array('k1', 'k2'), array(1, 1)); 	/* 2, 'ko2' => array('val1', 'val3') */
-
-/* Weighted zInter */
-$redis->zInter('ko3', array('k1', 'k2'), array(1, 5), 'min'); /* 2, 'ko3' => array('val1', 'val3') */
-$redis->zInter('ko4', array('k1', 'k2'), array(1, 5), 'max'); /* 2, 'ko4' => array('val3', 'val1') */
-
-~~~
-
 ### hSet
 -----
 _**Description**_: Adds a value to the hash stored at key. If this value is already in the hash, `FALSE` is returned.  
@@ -2731,5 +2420,335 @@ _**Description**_: Migrates a key to a different Redis instance.
 ##### *Examples*
 ~~~
 $redis->migrate('backup', 6379, 'foo', 0, 3600);
+~~~
+
+
+
+## Hashes
+
+## Lists
+
+## Sets
+
+
+## Sorted sets
+
+* [zAdd](#zadd) - Add one or more members to a sorted set or update its score if it already exists
+* [zCard, zSize](#zcard-zsize) - Get the number of members in a sorted set
+* [zCount](#zcount) - Count the members in a sorted set with scores within the given values
+* [zIncrBy](#zincrby) - Increment the score of a member in a sorted set
+* [zInter](#zinter) - Intersect multiple sorted sets and store the resulting sorted set in a new key
+* [zRange](#zrange) - Return a range of members in a sorted set, by index
+* [zRangeByScore, zRevRangeByScore](#zrangebyscore-zrevrangebyscore) - Return a range of members in a sorted set, by score
+* [zRank, zRevRank]() - Determine the index of a member in a sorted set
+* [zRem, zDelete](#zrem-zdelete) - Remove one or more members from a sorted set
+* [zRemRangeByRank, zDeleteRangeByRank](#zremrangebyrank-zdeleterangebyrank) - Remove all members in a sorted set within the given indexes
+* [zRemRangeByScore, zDeleteRangeByScore](#zremrangebyscore-zdeleterangebyscore) - Remove all members in a sorted set within the given scores
+* [zRevRange](#zrevrange) - Return a range of members in a sorted set, by index, with scores ordered from high to low
+* [zScore](#zscore) - Get the score associated with the given member in a sorted set
+* [zUnion](#zunion) - Add multiple sorted sets and store the resulting sorted set in a new key
+
+### zAdd
+-----
+_**Description**_: Add one or more members to a sorted set or update its score if it already exists
+##### *Parameters*
+*key*  
+*score* : double  
+*value*: string  
+
+##### *Return value*
+*Long* 1 if the element is added. 0 otherwise.
+##### *Example*
+~~~
+$redis->zAdd('key', 1, 'val1');
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 5, 'val5');
+$redis->zRange('key', 0, -1); // array(val0, val1, val5)
+~~~
+
+### zCard, zSize
+-----
+_**Description**_: Returns the cardinality of an ordered set.
+##### *Parameters*
+*key*
+
+##### *Return value*
+*Long*, the set's cardinality
+##### *Example*
+~~~
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 2, 'val2');
+$redis->zAdd('key', 10, 'val10');
+$redis->zSize('key'); /* 3 */
+~~~
+
+### zCount
+-----
+_**Description**_: Returns the *number* of elements of the sorted set stored at the specified key which have scores in the range [start,end]. Adding a parenthesis before `start` or `end` excludes it from the range. +inf and -inf are also valid limits.
+##### *Parameters*
+*key*  
+*start*: string  
+*end*: string  
+
+##### *Return value*
+*LONG* the size of a corresponding zRangeByScore.  
+##### *Example*
+~~~
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 2, 'val2');
+$redis->zAdd('key', 10, 'val10');
+$redis->zCount('key', 0, 3); /* 2, corresponding to array('val0', 'val2') */
+~~~
+
+### zIncrBy
+-----
+_**Description**_: Increments the score of a member from a sorted set by a given amount.
+##### *Parameters*
+*key*  
+*value*: (double) value that will be added to the member's score  
+*member*  
+##### *Return value*
+*DOUBLE* the new value
+##### *Examples*
+~~~
+$redis->delete('key');
+$redis->zIncrBy('key', 2.5, 'member1'); /* key or member1 didn't exist, so member1's score is to 0 before the increment */
+					  /* and now has the value 2.5  */
+$redis->zIncrBy('key', 1, 'member1'); /* 3.5 */
+~~~
+
+### zInter
+-----
+_**Description**_: Creates an intersection of sorted sets given in second argument. The result of the union will be stored in the sorted set defined by the first argument.
+The third optionnel argument defines `weights` to apply to the sorted sets in input. In this case, the `weights` will be multiplied by the score of each element in the sorted set before applying the aggregation.
+The forth argument defines the `AGGREGATE` option which specify how the results of the union are aggregated.
+##### *Parameters*
+*keyOutput*  
+*arrayZSetKeys*  
+*arrayWeights*  
+*aggregateFunction* Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zInter.  
+
+##### *Return value*
+*LONG* The number of values in the new sorted set.
+##### *Example*
+~~~
+$redis->delete('k1');
+$redis->delete('k2');
+$redis->delete('k3');
+
+$redis->delete('ko1');
+$redis->delete('ko2');
+$redis->delete('ko3');
+$redis->delete('ko4');
+
+$redis->zAdd('k1', 0, 'val0');
+$redis->zAdd('k1', 1, 'val1');
+$redis->zAdd('k1', 3, 'val3');
+
+$redis->zAdd('k2', 2, 'val1');
+$redis->zAdd('k2', 3, 'val3');
+
+$redis->zInter('ko1', array('k1', 'k2')); 				/* 2, 'ko1' => array('val1', 'val3') */
+$redis->zInter('ko2', array('k1', 'k2'), array(1, 1)); 	/* 2, 'ko2' => array('val1', 'val3') */
+
+/* Weighted zInter */
+$redis->zInter('ko3', array('k1', 'k2'), array(1, 5), 'min'); /* 2, 'ko3' => array('val1', 'val3') */
+$redis->zInter('ko4', array('k1', 'k2'), array(1, 5), 'max'); /* 2, 'ko4' => array('val3', 'val1') */
+~~~
+
+### zRange
+-----
+_**Description**_: Returns a range of elements from the ordered set stored at the specified key, with values in the range [start, end]. start and stop are interpreted as zero-based indices:
+0 the first element, 1 the second ...
+-1 the last element, -2 the penultimate ...
+##### *Parameters*
+*key*  
+*start*: long  
+*end*: long  
+*withscores*: bool = false  
+
+##### *Return value*
+*Array* containing the values in specified range. 
+##### *Example*
+~~~
+$redis->zAdd('key1', 0, 'val0');
+$redis->zAdd('key1', 2, 'val2');
+$redis->zAdd('key1', 10, 'val10');
+$redis->zRange('key1', 0, -1); /* array('val0', 'val2', 'val10') */
+
+// with scores
+$redis->zRange('key1', 0, -1, true); /* array('val0' => 0, 'val2' => 2, 'val10' => 10) */
+~~~
+
+### zRangeByScore, zRevRangeByScore
+-----
+_**Description**_: Returns the elements of the sorted set stored at the specified key which have scores in the range [start,end]. Adding a parenthesis before `start` or `end` excludes it from the range. +inf and -inf are also valid limits. zRevRangeByScore returns the same items in reverse order, when the `start` and `end` parameters are swapped.
+##### *Parameters*
+*key*  
+*start*: string  
+*end*: string  
+*options*: array  
+
+Two options are available: `withscores => TRUE`, and `limit => array($offset, $count)`
+##### *Return value*
+*Array* containing the values in specified range. 
+##### *Example*
+~~~
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 2, 'val2');
+$redis->zAdd('key', 10, 'val10');
+$redis->zRangeByScore('key', 0, 3); /* array('val0', 'val2') */
+$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE); /* array('val0' => 0, 'val2' => 2) */
+$redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1)); /* array('val2' => 2) */
+$redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1)); /* array('val2') */
+$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(1, 1)); /* array('val2' => 2) */
+~~~
+
+### zRank, zRevRank
+-----
+_**Description**_: Returns the rank of a given member in the specified sorted set, starting at 0 for the item with the smallest score. zRevRank starts at 0 for the item with the *largest* score.
+##### *Parameters*
+*key*  
+*member*  
+##### *Return value*
+*Long*, the item's score.
+##### *Example*
+~~~
+$redis->delete('z');
+$redis->zAdd('key', 1, 'one');
+$redis->zAdd('key', 2, 'two');
+$redis->zRank('key', 'one'); /* 0 */
+$redis->zRank('key', 'two'); /* 1 */
+$redis->zRevRank('key', 'one'); /* 1 */
+$redis->zRevRank('key', 'two'); /* 0 */
+~~~
+
+### zRem, zDelete
+-----
+_**Description**_: Deletes a specified member from the ordered set.
+##### *Parameters*
+*key*  
+*member*  
+
+##### *Return value*
+*LONG* 1 on success, 0 on failure.
+##### *Example*
+~~~
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 2, 'val2');
+$redis->zAdd('key', 10, 'val10');
+$redis->zDelete('key', 'val2');
+$redis->zRange('key', 0, -1); /* array('val0', 'val10') */
+~~~
+
+### zRemRangeByRank, zDeleteRangeByRank
+-----
+_**Description**_: Deletes the elements of the sorted set stored at the specified key which have rank in the range [start,end].
+##### *Parameters*
+*key*  
+*start*: LONG  
+*end*: LONG  
+##### *Return value*
+*LONG* The number of values deleted from the sorted set
+##### *Example*
+~~~
+$redis->zAdd('key', 1, 'one');
+$redis->zAdd('key', 2, 'two');
+$redis->zAdd('key', 3, 'three');
+$redis->zRemRangeByRank('key', 0, 1); /* 2 */
+$redis->zRange('key', 0, -1, array('withscores' => TRUE)); /* array('three' => 3) */
+~~~
+
+### zRemRangeByScore, zDeleteRangeByScore
+-----
+_**Description**_: Deletes the elements of the sorted set stored at the specified key which have scores in the range [start,end].
+##### *Parameters*
+*key*  
+*start*: double or "+inf" or "-inf" string  
+*end*: double or "+inf" or "-inf" string  
+
+##### *Return value*
+*LONG* The number of values deleted from the sorted set
+##### *Example*
+~~~
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 2, 'val2');
+$redis->zAdd('key', 10, 'val10');
+$redis->zRemRangeByScore('key', 0, 3); /* 2 */
+~~~
+
+### zRevRange
+-----
+_**Description**_: Returns the elements of the sorted set stored at the specified key in the range [start, end] in reverse order. start and stop are interpretated as zero-based indices:
+0 the first element, 1 the second ...
+-1 the last element, -2 the penultimate ...
+
+##### *Parameters*
+*key*  
+*start*: long  
+*end*: long  
+*withscores*: bool = false  
+
+##### *Return value*
+*Array* containing the values in specified range. 
+##### *Example*
+~~~
+$redis->zAdd('key', 0, 'val0');
+$redis->zAdd('key', 2, 'val2');
+$redis->zAdd('key', 10, 'val10');
+$redis->zRevRange('key', 0, -1); /* array('val10', 'val2', 'val0') */
+
+// with scores
+$redis->zRevRange('key', 0, -1, true); /* array('val10' => 10, 'val2' => 2, 'val0' => 0) */
+~~~
+
+### zScore
+-----
+_**Description**_: Returns the score of a given member in the specified sorted set.
+##### *Parameters*
+*key*  
+*member*  
+
+##### *Return value*
+*Double*
+##### *Example*
+~~~
+$redis->zAdd('key', 2.5, 'val2');
+$redis->zScore('key', 'val2'); /* 2.5 */
+~~~
+
+### zUnion
+-----
+_**Description**_: Creates an union of sorted sets given in second argument. The result of the union will be stored in the sorted set defined by the first argument.
+The third optionnel argument defines `weights` to apply to the sorted sets in input. In this case, the `weights` will be multiplied by the score of each element in the sorted set before applying the aggregation.
+The forth argument defines the `AGGREGATE` option which specify how the results of the union are aggregated.
+##### *Parameters*
+*keyOutput*  
+*arrayZSetKeys*  
+*arrayWeights*  
+*aggregateFunction* Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zUnion.  
+
+##### *Return value*
+*LONG* The number of values in the new sorted set.
+##### *Example*
+~~~
+$redis->delete('k1');
+$redis->delete('k2');
+$redis->delete('k3');
+$redis->delete('ko1');
+$redis->delete('ko2');
+$redis->delete('ko3');
+
+$redis->zAdd('k1', 0, 'val0');
+$redis->zAdd('k1', 1, 'val1');
+
+$redis->zAdd('k2', 2, 'val2');
+$redis->zAdd('k2', 3, 'val3');
+
+$redis->zUnion('ko1', array('k1', 'k2')); /* 4, 'ko1' => array('val0', 'val1', 'val2', 'val3') */
+
+/* Weighted zUnion */
+$redis->zUnion('ko2', array('k1', 'k2'), array(1, 1)); /* 4, 'ko2' => array('val0', 'val1', 'val2', 'val3') */
+$redis->zUnion('ko3', array('k1', 'k2'), array(5, 1)); /* 4, 'ko3' => array('val0', 'val2', 'val3', 'val1') */
 ~~~
 
