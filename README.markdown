@@ -1167,393 +1167,6 @@ $redis->lInsert('key1', Redis::AFTER, 'W', 'value'); /* -1 */
 
 ~~~
 
-### sAdd
------
-_**Description**_: Adds a value to the set value stored at key. If this value is already in the set, `FALSE` is returned.  
-##### *Parameters*
-*key*
-*value*
-
-##### *Return value*
-*LONG* the number of elements added to the set.
-##### *Example*
-~~~
-$redis->sAdd('key1' , 'member1'); /* 1, 'key1' => {'member1'} */
-$redis->sAdd('key1' , 'member2', 'member3'); /* 2, 'key1' => {'member1', 'member2', 'member3'}*/
-$redis->sAdd('key1' , 'member2'); /* 0, 'key1' => {'member1', 'member2', 'member3'}*/
-~~~
-
-### sRem, sRemove
------
-_**Description**_: Removes the specified member from the set value stored at key.
-##### *Parameters*
-*key*
-*member*
-##### *Return value*
-*LONG* The number of elements removed from the set.
-##### *Example*
-~~~
-$redis->sAdd('key1' , 'member1');
-$redis->sAdd('key1' , 'member2');
-$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member1', 'member2', 'member3'}*/
-$redis->sRem('key1', 'member2', 'member3'); /*return 2. 'key1' => {'member1'} */
-~~~
-
-### sMove
------
-_**Description**_: Moves the specified member from the set at srcKey to the set at dstKey.
-##### *Parameters*
-*srcKey*
-*dstKey*
-*member*
-##### *Return value*
-*BOOL* If the operation is successful, return `TRUE`. If the srcKey and/or dstKey didn't exist, and/or the member didn't exist in srcKey, `FALSE` is returned.
-##### *Example*
-~~~
-$redis->sAdd('key1' , 'member11');
-$redis->sAdd('key1' , 'member12');
-$redis->sAdd('key1' , 'member13'); /* 'key1' => {'member11', 'member12', 'member13'}*/
-$redis->sAdd('key2' , 'member21');
-$redis->sAdd('key2' , 'member22'); /* 'key2' => {'member21', 'member22'}*/
-$redis->sMove('key1', 'key2', 'member13'); /* 'key1' =>  {'member11', 'member12'} */
-					/* 'key2' =>  {'member21', 'member22', 'member13'} */
-
-~~~
-
-### sIsMember, sContains
------
-_**Description**_: Checks if `value` is a member of the set stored at the key `key`.
-##### *Parameters*
-*key*
-*value*
-
-##### *Return value*
-*BOOL* `TRUE` if `value` is a member of the set at key `key`, `FALSE` otherwise.
-##### *Example*
-~~~
-$redis->sAdd('key1' , 'member1');
-$redis->sAdd('key1' , 'member2');
-$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member1', 'member2', 'member3'}*/
-
-$redis->sIsMember('key1', 'member1'); /* TRUE */
-$redis->sIsMember('key1', 'memberX'); /* FALSE */
-
-~~~
-
-### sCard, sSize
------
-_**Description**_: Returns the cardinality of the set identified by key.
-##### *Parameters*
-*key*
-##### *Return value*
-*LONG* the cardinality of the set identified by key, 0 if the set doesn't exist.
-##### *Example*
-~~~
-$redis->sAdd('key1' , 'member1');
-$redis->sAdd('key1' , 'member2');
-$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member1', 'member2', 'member3'}*/
-$redis->sCard('key1'); /* 3 */
-$redis->sCard('keyX'); /* 0 */
-~~~
-
-### sPop
------
-_**Description**_: Removes and returns a random element from the set value at Key.
-##### *Parameters*
-*key*
-##### *Return value*
-*String* "popped" value  
-*Bool* `FALSE` if set identified by key is empty or doesn't exist.
-##### *Example*
-~~~
-$redis->sAdd('key1' , 'member1');
-$redis->sAdd('key1' , 'member2');
-$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member3', 'member1', 'member2'}*/
-$redis->sPop('key1'); /* 'member1', 'key1' => {'member3', 'member2'} */
-$redis->sPop('key1'); /* 'member3', 'key1' => {'member2'} */
-~~~
-
-### sRandMember
------
-_**Description**_: Returns a random element from the set value at Key, without removing it.
-##### *Parameters*
-*key*
-##### *Return value*
-*String* value from the set  
-*Bool* `FALSE` if set identified by key is empty or doesn't exist.
-##### *Example*
-~~~
-$redis->sAdd('key1' , 'member1');
-$redis->sAdd('key1' , 'member2');
-$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member3', 'member1', 'member2'}*/
-$redis->sRandMember('key1'); /* 'member1', 'key1' => {'member3', 'member1', 'member2'} */
-$redis->sRandMember('key1'); /* 'member3', 'key1' => {'member3', 'member1', 'member2'} */
-~~~
-
-### sInter
------
-_**Description**_: Returns the members of a set resulting from the intersection of all the sets held at the specified keys.
-
-If just a single key is specified, then this command produces the members of this set. If one of the keys
-is missing, `FALSE` is returned.
-
-##### *Parameters*
-
-key1, key2, keyN: keys identifying the different sets on which we will apply the intersection.
-		
-##### *Return value*
-
-Array, contain the result of the intersection between those keys. If the intersection beteen the different sets is empty, the return value will be empty array.
-
-##### *Examples*
-~~~
-$redis->sAdd('key1', 'val1');
-$redis->sAdd('key1', 'val2');
-$redis->sAdd('key1', 'val3');
-$redis->sAdd('key1', 'val4');
-
-$redis->sAdd('key2', 'val3');
-$redis->sAdd('key2', 'val4');
-
-$redis->sAdd('key3', 'val3');
-$redis->sAdd('key3', 'val4');
-
-var_dump($redis->sInter('key1', 'key2', 'key3'));
-~~~
-
-Output:
-
-~~~
-array(2) {
-  [0]=>
-  string(4) "val4"
-  [1]=>
-  string(4) "val3"
-}
-~~~
-
-### sInterStore
------
-_**Description**_: Performs a sInter command and stores the result in a new set.
-##### *Parameters*
-*Key*: dstkey, the key to store the diff into.
-
-*Keys*: key1, key2... keyN. key1..keyN are intersected as in sInter.
-
-##### *Return value*
-*INTEGER*: The cardinality of the resulting set, or `FALSE` in case of a missing key.
-
-##### *Example*
-~~~
-$redis->sAdd('key1', 'val1');
-$redis->sAdd('key1', 'val2');
-$redis->sAdd('key1', 'val3');
-$redis->sAdd('key1', 'val4');
-
-$redis->sAdd('key2', 'val3');
-$redis->sAdd('key2', 'val4');
-
-$redis->sAdd('key3', 'val3');
-$redis->sAdd('key3', 'val4');
-
-var_dump($redis->sInterStore('output', 'key1', 'key2', 'key3'));
-var_dump($redis->sMembers('output'));
-~~~
-
-Output:
-
-~~~
-int(2)
-
-array(2) {
-  [0]=>
-  string(4) "val4"
-  [1]=>
-  string(4) "val3"
-}
-~~~
-
-### sUnion
------
-_**Description**_: Performs the union between N sets and returns it.
-
-##### *Parameters*
-*Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis.
-
-##### *Return value*
-*Array of strings*: The union of all these sets.
-
-##### *Example*
-~~~
-$redis->delete('s0', 's1', 's2');
-
-$redis->sAdd('s0', '1');
-$redis->sAdd('s0', '2');
-$redis->sAdd('s1', '3');
-$redis->sAdd('s1', '1');
-$redis->sAdd('s2', '3');
-$redis->sAdd('s2', '4');
-
-var_dump($redis->sUnion('s0', 's1', 's2'));
-~~~
-Return value: all elements that are either in s0 or in s1 or in s2.
-~~~
-array(4) {
-  [0]=>
-  string(1) "3"
-  [1]=>
-  string(1) "4"
-  [2]=>
-  string(1) "1"
-  [3]=>
-  string(1) "2"
-}
-~~~
-
-### sUnionStore
------
-_**Description**_: Performs the same action as sUnion, but stores the result in the first key
-
-##### *Parameters*
-*Key*: dstkey, the key to store the diff into.
-
-*Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis.
-
-##### *Return value*
-*INTEGER*: The cardinality of the resulting set, or `FALSE` in case of a missing key.
-
-##### *Example*
-~~~
-$redis->delete('s0', 's1', 's2');
-
-$redis->sAdd('s0', '1');
-$redis->sAdd('s0', '2');
-$redis->sAdd('s1', '3');
-$redis->sAdd('s1', '1');
-$redis->sAdd('s2', '3');
-$redis->sAdd('s2', '4');
-
-var_dump($redis->sUnionStore('dst', 's0', 's1', 's2'));
-var_dump($redis->sMembers('dst'));
-~~~
-Return value: the number of elements that are either in s0 or in s1 or in s2.
-~~~
-int(4)
-array(4) {
-  [0]=>
-  string(1) "3"
-  [1]=>
-  string(1) "4"
-  [2]=>
-  string(1) "1"
-  [3]=>
-  string(1) "2"
-}
-~~~
-
-### sDiff
------
-_**Description**_: Performs the difference between N sets and returns it.
-
-##### *Parameters*
-*Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis.
-
-##### *Return value*
-*Array of strings*: The difference of the first set will all the others.
-
-##### *Example*
-~~~
-$redis->delete('s0', 's1', 's2');
-
-$redis->sAdd('s0', '1');
-$redis->sAdd('s0', '2');
-$redis->sAdd('s0', '3');
-$redis->sAdd('s0', '4');
-
-$redis->sAdd('s1', '1');
-$redis->sAdd('s2', '3');
-
-var_dump($redis->sDiff('s0', 's1', 's2'));
-~~~
-Return value: all elements of s0 that are neither in s1 nor in s2.
-~~~
-array(2) {
-  [0]=>
-  string(1) "4"
-  [1]=>
-  string(1) "2"
-}
-~~~
-
-### sDiffStore
------
-_**Description**_: Performs the same action as sDiff, but stores the result in the first key
-##### *Parameters*
-*Key*: dstkey, the key to store the diff into.
-
-*Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis
-##### *Return value*
-*INTEGER*: The cardinality of the resulting set, or `FALSE` in case of a missing key.
-
-##### *Example*
-~~~
-$redis->delete('s0', 's1', 's2');
-
-$redis->sAdd('s0', '1');
-$redis->sAdd('s0', '2');
-$redis->sAdd('s0', '3');
-$redis->sAdd('s0', '4');
-
-$redis->sAdd('s1', '1');
-$redis->sAdd('s2', '3');
-
-var_dump($redis->sDiffStore('dst', 's0', 's1', 's2'));
-var_dump($redis->sMembers('dst'));
-~~~
-Return value: the number of elements of s0 that are neither in s1 nor in s2.
-~~~
-int(2)
-array(2) {
-  [0]=>
-  string(1) "4"
-  [1]=>
-  string(1) "2"
-}
-~~~
-
-### sMembers, sGetMembers
------
-_**Description**_: Returns the contents of a set.
-
-##### *Parameters*
-*Key*: key
-
-##### *Return value*
-An array of elements, the contents of the set.
-
-##### *Example*
-~~~
-$redis->delete('s');
-$redis->sAdd('s', 'a');
-$redis->sAdd('s', 'b');
-$redis->sAdd('s', 'a');
-$redis->sAdd('s', 'c');
-var_dump($redis->sMembers('s'));
-~~~
-
-Output:
-~~~
-array(3) {
-  [0]=>
-  string(1) "c"
-  [1]=>
-  string(1) "a"
-  [2]=>
-  string(1) "b"
-}
-~~~
-The order is random and corresponds to redis' own internal representation of the set structure.
-
 ### getSet
 -----
 _**Description**_: Sets a value and returns the previous entry at that key.
@@ -2430,6 +2043,407 @@ $redis->migrate('backup', 6379, 'foo', 0, 3600);
 
 ## Sets
 
+* [sAdd](#sadd) - Add one or more members to a set
+* [sCard, sSize](#scard-ssize) - Get the number of members in a set
+* [sDiff](#sdiff) - Subtract multiple sets
+* [sDiffStore](#sdiffstore) - Subtract multiple sets and store the resulting set in a key
+* [sInter](#sinter) - Intersect multiple sets
+* [sInterStore](#sinterstore) - Intersect multiple sets and store the resulting set in a key
+* [sIsMember, sContains](#sismember-scontains) - Determine if a given value is a member of a set
+* [sMembers, sGetMembers](#smembers-sgetmembers) - Get all the members in a set
+* [sMove](#smove) - Move a member from one set to another
+* [sPop](#spop) - Remove and return a random member from a set
+* [sRandMember](#srandmember) - Get one or multiple random members from a set
+* [sRem, sRemove](#srem-sremove) - Remove one or more members from a set
+* [sUnion](#sunion) - Add multiple sets
+* [sUnionStore](#sunionstore) - Add multiple sets and store the resulting set in a key
+
+### sAdd
+-----
+_**Description**_: Adds a value to the set value stored at key. If this value is already in the set, `FALSE` is returned.  
+##### *Parameters*
+*key*
+*value*
+
+##### *Return value*
+*LONG* the number of elements added to the set.
+##### *Example*
+~~~
+$redis->sAdd('key1' , 'member1'); /* 1, 'key1' => {'member1'} */
+$redis->sAdd('key1' , 'member2', 'member3'); /* 2, 'key1' => {'member1', 'member2', 'member3'}*/
+$redis->sAdd('key1' , 'member2'); /* 0, 'key1' => {'member1', 'member2', 'member3'}*/
+~~~
+
+### sCard, sSize
+-----
+_**Description**_: Returns the cardinality of the set identified by key.
+##### *Parameters*
+*key*
+##### *Return value*
+*LONG* the cardinality of the set identified by key, 0 if the set doesn't exist.
+##### *Example*
+~~~
+$redis->sAdd('key1' , 'member1');
+$redis->sAdd('key1' , 'member2');
+$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member1', 'member2', 'member3'}*/
+$redis->sCard('key1'); /* 3 */
+$redis->sCard('keyX'); /* 0 */
+~~~
+
+### sDiff
+-----
+_**Description**_: Performs the difference between N sets and returns it.
+
+##### *Parameters*
+*Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis.
+
+##### *Return value*
+*Array of strings*: The difference of the first set will all the others.
+
+##### *Example*
+~~~
+$redis->delete('s0', 's1', 's2');
+
+$redis->sAdd('s0', '1');
+$redis->sAdd('s0', '2');
+$redis->sAdd('s0', '3');
+$redis->sAdd('s0', '4');
+
+$redis->sAdd('s1', '1');
+$redis->sAdd('s2', '3');
+
+var_dump($redis->sDiff('s0', 's1', 's2'));
+~~~
+Return value: all elements of s0 that are neither in s1 nor in s2.
+~~~
+array(2) {
+  [0]=>
+  string(1) "4"
+  [1]=>
+  string(1) "2"
+}
+~~~
+
+### sDiffStore
+-----
+_**Description**_: Performs the same action as sDiff, but stores the result in the first key
+##### *Parameters*
+*Key*: dstkey, the key to store the diff into.
+
+*Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis
+##### *Return value*
+*INTEGER*: The cardinality of the resulting set, or `FALSE` in case of a missing key.
+
+##### *Example*
+~~~
+$redis->delete('s0', 's1', 's2');
+
+$redis->sAdd('s0', '1');
+$redis->sAdd('s0', '2');
+$redis->sAdd('s0', '3');
+$redis->sAdd('s0', '4');
+
+$redis->sAdd('s1', '1');
+$redis->sAdd('s2', '3');
+
+var_dump($redis->sDiffStore('dst', 's0', 's1', 's2'));
+var_dump($redis->sMembers('dst'));
+~~~
+Return value: the number of elements of s0 that are neither in s1 nor in s2.
+~~~
+int(2)
+array(2) {
+  [0]=>
+  string(1) "4"
+  [1]=>
+  string(1) "2"
+}
+~~~
+
+### sInter
+-----
+_**Description**_: Returns the members of a set resulting from the intersection of all the sets held at the specified keys.
+
+If just a single key is specified, then this command produces the members of this set. If one of the keys
+is missing, `FALSE` is returned.
+
+##### *Parameters*
+
+key1, key2, keyN: keys identifying the different sets on which we will apply the intersection.
+		
+##### *Return value*
+
+Array, contain the result of the intersection between those keys. If the intersection beteen the different sets is empty, the return value will be empty array.
+
+##### *Examples*
+~~~
+$redis->sAdd('key1', 'val1');
+$redis->sAdd('key1', 'val2');
+$redis->sAdd('key1', 'val3');
+$redis->sAdd('key1', 'val4');
+
+$redis->sAdd('key2', 'val3');
+$redis->sAdd('key2', 'val4');
+
+$redis->sAdd('key3', 'val3');
+$redis->sAdd('key3', 'val4');
+
+var_dump($redis->sInter('key1', 'key2', 'key3'));
+~~~
+
+Output:
+
+~~~
+array(2) {
+  [0]=>
+  string(4) "val4"
+  [1]=>
+  string(4) "val3"
+}
+~~~
+
+### sInterStore
+-----
+_**Description**_: Performs a sInter command and stores the result in a new set.
+##### *Parameters*
+*Key*: dstkey, the key to store the diff into.
+
+*Keys*: key1, key2... keyN. key1..keyN are intersected as in sInter.
+
+##### *Return value*
+*INTEGER*: The cardinality of the resulting set, or `FALSE` in case of a missing key.
+
+##### *Example*
+~~~
+$redis->sAdd('key1', 'val1');
+$redis->sAdd('key1', 'val2');
+$redis->sAdd('key1', 'val3');
+$redis->sAdd('key1', 'val4');
+
+$redis->sAdd('key2', 'val3');
+$redis->sAdd('key2', 'val4');
+
+$redis->sAdd('key3', 'val3');
+$redis->sAdd('key3', 'val4');
+
+var_dump($redis->sInterStore('output', 'key1', 'key2', 'key3'));
+var_dump($redis->sMembers('output'));
+~~~
+
+Output:
+
+~~~
+int(2)
+
+array(2) {
+  [0]=>
+  string(4) "val4"
+  [1]=>
+  string(4) "val3"
+}
+~~~
+
+### sIsMember, sContains
+-----
+_**Description**_: Checks if `value` is a member of the set stored at the key `key`.
+##### *Parameters*
+*key*
+*value*
+
+##### *Return value*
+*BOOL* `TRUE` if `value` is a member of the set at key `key`, `FALSE` otherwise.
+##### *Example*
+~~~
+$redis->sAdd('key1' , 'member1');
+$redis->sAdd('key1' , 'member2');
+$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member1', 'member2', 'member3'}*/
+
+$redis->sIsMember('key1', 'member1'); /* TRUE */
+$redis->sIsMember('key1', 'memberX'); /* FALSE */
+~~~
+
+### sMembers, sGetMembers
+-----
+_**Description**_: Returns the contents of a set.
+
+##### *Parameters*
+*Key*: key
+
+##### *Return value*
+An array of elements, the contents of the set.
+
+##### *Example*
+~~~
+$redis->delete('s');
+$redis->sAdd('s', 'a');
+$redis->sAdd('s', 'b');
+$redis->sAdd('s', 'a');
+$redis->sAdd('s', 'c');
+var_dump($redis->sMembers('s'));
+~~~
+
+Output:
+~~~
+array(3) {
+  [0]=>
+  string(1) "c"
+  [1]=>
+  string(1) "a"
+  [2]=>
+  string(1) "b"
+}
+~~~
+The order is random and corresponds to redis' own internal representation of the set structure.
+
+### sMove
+-----
+_**Description**_: Moves the specified member from the set at srcKey to the set at dstKey.
+##### *Parameters*
+*srcKey*
+*dstKey*
+*member*
+##### *Return value*
+*BOOL* If the operation is successful, return `TRUE`. If the srcKey and/or dstKey didn't exist, and/or the member didn't exist in srcKey, `FALSE` is returned.
+##### *Example*
+~~~
+$redis->sAdd('key1' , 'member11');
+$redis->sAdd('key1' , 'member12');
+$redis->sAdd('key1' , 'member13'); /* 'key1' => {'member11', 'member12', 'member13'}*/
+$redis->sAdd('key2' , 'member21');
+$redis->sAdd('key2' , 'member22'); /* 'key2' => {'member21', 'member22'}*/
+$redis->sMove('key1', 'key2', 'member13'); /* 'key1' =>  {'member11', 'member12'} */
+					/* 'key2' =>  {'member21', 'member22', 'member13'} */
+
+~~~
+
+### sPop
+-----
+_**Description**_: Removes and returns a random element from the set value at Key.
+##### *Parameters*
+*key*
+##### *Return value*
+*String* "popped" value  
+*Bool* `FALSE` if set identified by key is empty or doesn't exist.
+##### *Example*
+~~~
+$redis->sAdd('key1' , 'member1');
+$redis->sAdd('key1' , 'member2');
+$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member3', 'member1', 'member2'}*/
+$redis->sPop('key1'); /* 'member1', 'key1' => {'member3', 'member2'} */
+$redis->sPop('key1'); /* 'member3', 'key1' => {'member2'} */
+~~~
+
+### sRandMember
+-----
+_**Description**_: Returns a random element from the set value at Key, without removing it.
+##### *Parameters*
+*key*
+##### *Return value*
+*String* value from the set  
+*Bool* `FALSE` if set identified by key is empty or doesn't exist.
+##### *Example*
+~~~
+$redis->sAdd('key1' , 'member1');
+$redis->sAdd('key1' , 'member2');
+$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member3', 'member1', 'member2'}*/
+$redis->sRandMember('key1'); /* 'member1', 'key1' => {'member3', 'member1', 'member2'} */
+$redis->sRandMember('key1'); /* 'member3', 'key1' => {'member3', 'member1', 'member2'} */
+~~~
+
+### sRem, sRemove
+-----
+_**Description**_: Removes the specified member from the set value stored at key.
+##### *Parameters*
+*key*
+*member*
+##### *Return value*
+*LONG* The number of elements removed from the set.
+##### *Example*
+~~~
+$redis->sAdd('key1' , 'member1');
+$redis->sAdd('key1' , 'member2');
+$redis->sAdd('key1' , 'member3'); /* 'key1' => {'member1', 'member2', 'member3'}*/
+$redis->sRem('key1', 'member2', 'member3'); /*return 2. 'key1' => {'member1'} */
+~~~
+
+### sUnion
+-----
+_**Description**_: Performs the union between N sets and returns it.
+
+##### *Parameters*
+*Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis.
+
+##### *Return value*
+*Array of strings*: The union of all these sets.
+
+##### *Example*
+~~~
+$redis->delete('s0', 's1', 's2');
+
+$redis->sAdd('s0', '1');
+$redis->sAdd('s0', '2');
+$redis->sAdd('s1', '3');
+$redis->sAdd('s1', '1');
+$redis->sAdd('s2', '3');
+$redis->sAdd('s2', '4');
+
+var_dump($redis->sUnion('s0', 's1', 's2'));
+~~~
+Return value: all elements that are either in s0 or in s1 or in s2.
+~~~
+array(4) {
+  [0]=>
+  string(1) "3"
+  [1]=>
+  string(1) "4"
+  [2]=>
+  string(1) "1"
+  [3]=>
+  string(1) "2"
+}
+~~~
+
+### sUnionStore
+-----
+_**Description**_: Performs the same action as sUnion, but stores the result in the first key
+
+##### *Parameters*
+*Key*: dstkey, the key to store the diff into.
+
+*Keys*: key1, key2, ... , keyN: Any number of keys corresponding to sets in redis.
+
+##### *Return value*
+*INTEGER*: The cardinality of the resulting set, or `FALSE` in case of a missing key.
+
+##### *Example*
+~~~
+$redis->delete('s0', 's1', 's2');
+
+$redis->sAdd('s0', '1');
+$redis->sAdd('s0', '2');
+$redis->sAdd('s1', '3');
+$redis->sAdd('s1', '1');
+$redis->sAdd('s2', '3');
+$redis->sAdd('s2', '4');
+
+var_dump($redis->sUnionStore('dst', 's0', 's1', 's2'));
+var_dump($redis->sMembers('dst'));
+~~~
+Return value: the number of elements that are either in s0 or in s1 or in s2.
+~~~
+int(4)
+array(4) {
+  [0]=>
+  string(1) "3"
+  [1]=>
+  string(1) "4"
+  [2]=>
+  string(1) "1"
+  [3]=>
+  string(1) "2"
+}
+~~~
+
 
 ## Sorted sets
 
@@ -2440,7 +2454,7 @@ $redis->migrate('backup', 6379, 'foo', 0, 3600);
 * [zInter](#zinter) - Intersect multiple sorted sets and store the resulting sorted set in a new key
 * [zRange](#zrange) - Return a range of members in a sorted set, by index
 * [zRangeByScore, zRevRangeByScore](#zrangebyscore-zrevrangebyscore) - Return a range of members in a sorted set, by score
-* [zRank, zRevRank]() - Determine the index of a member in a sorted set
+* [zRank, zRevRank](#zrank-zrevrank) - Determine the index of a member in a sorted set
 * [zRem, zDelete](#zrem-zdelete) - Remove one or more members from a sorted set
 * [zRemRangeByRank, zDeleteRangeByRank](#zremrangebyrank-zdeleterangebyrank) - Remove all members in a sorted set within the given indexes
 * [zRemRangeByScore, zDeleteRangeByScore](#zremrangebyscore-zdeleterangebyscore) - Remove all members in a sorted set within the given scores
@@ -2451,6 +2465,7 @@ $redis->migrate('backup', 6379, 'foo', 0, 3600);
 ### zAdd
 -----
 _**Description**_: Add one or more members to a sorted set or update its score if it already exists
+
 ##### *Parameters*
 *key*  
 *score* : double  
@@ -2458,6 +2473,7 @@ _**Description**_: Add one or more members to a sorted set or update its score i
 
 ##### *Return value*
 *Long* 1 if the element is added. 0 otherwise.
+
 ##### *Example*
 ~~~
 $redis->zAdd('key', 1, 'val1');
@@ -2469,11 +2485,13 @@ $redis->zRange('key', 0, -1); // array(val0, val1, val5)
 ### zCard, zSize
 -----
 _**Description**_: Returns the cardinality of an ordered set.
+
 ##### *Parameters*
 *key*
 
 ##### *Return value*
 *Long*, the set's cardinality
+
 ##### *Example*
 ~~~
 $redis->zAdd('key', 0, 'val0');
@@ -2485,6 +2503,7 @@ $redis->zSize('key'); /* 3 */
 ### zCount
 -----
 _**Description**_: Returns the *number* of elements of the sorted set stored at the specified key which have scores in the range [start,end]. Adding a parenthesis before `start` or `end` excludes it from the range. +inf and -inf are also valid limits.
+
 ##### *Parameters*
 *key*  
 *start*: string  
@@ -2492,6 +2511,7 @@ _**Description**_: Returns the *number* of elements of the sorted set stored at 
 
 ##### *Return value*
 *LONG* the size of a corresponding zRangeByScore.  
+
 ##### *Example*
 ~~~
 $redis->zAdd('key', 0, 'val0');
@@ -2503,12 +2523,15 @@ $redis->zCount('key', 0, 3); /* 2, corresponding to array('val0', 'val2') */
 ### zIncrBy
 -----
 _**Description**_: Increments the score of a member from a sorted set by a given amount.
+
 ##### *Parameters*
 *key*  
 *value*: (double) value that will be added to the member's score  
 *member*  
+
 ##### *Return value*
 *DOUBLE* the new value
+
 ##### *Examples*
 ~~~
 $redis->delete('key');
@@ -2520,8 +2543,10 @@ $redis->zIncrBy('key', 1, 'member1'); /* 3.5 */
 ### zInter
 -----
 _**Description**_: Creates an intersection of sorted sets given in second argument. The result of the union will be stored in the sorted set defined by the first argument.
+
 The third optionnel argument defines `weights` to apply to the sorted sets in input. In this case, the `weights` will be multiplied by the score of each element in the sorted set before applying the aggregation.
 The forth argument defines the `AGGREGATE` option which specify how the results of the union are aggregated.
+
 ##### *Parameters*
 *keyOutput*  
 *arrayZSetKeys*  
@@ -2530,6 +2555,7 @@ The forth argument defines the `AGGREGATE` option which specify how the results 
 
 ##### *Return value*
 *LONG* The number of values in the new sorted set.
+
 ##### *Example*
 ~~~
 $redis->delete('k1');
@@ -2558,9 +2584,12 @@ $redis->zInter('ko4', array('k1', 'k2'), array(1, 5), 'max'); /* 2, 'ko4' => arr
 
 ### zRange
 -----
-_**Description**_: Returns a range of elements from the ordered set stored at the specified key, with values in the range [start, end]. start and stop are interpreted as zero-based indices:
+_**Description**_: Returns a range of elements from the ordered set stored at the specified key, with values in the range [start, end].
+
+Start and stop are interpreted as zero-based indices:
 0 the first element, 1 the second ...
 -1 the last element, -2 the penultimate ...
+
 ##### *Parameters*
 *key*  
 *start*: long  
@@ -2569,6 +2598,7 @@ _**Description**_: Returns a range of elements from the ordered set stored at th
 
 ##### *Return value*
 *Array* containing the values in specified range. 
+
 ##### *Example*
 ~~~
 $redis->zAdd('key1', 0, 'val0');
@@ -2583,6 +2613,7 @@ $redis->zRange('key1', 0, -1, true); /* array('val0' => 0, 'val2' => 2, 'val10' 
 ### zRangeByScore, zRevRangeByScore
 -----
 _**Description**_: Returns the elements of the sorted set stored at the specified key which have scores in the range [start,end]. Adding a parenthesis before `start` or `end` excludes it from the range. +inf and -inf are also valid limits. zRevRangeByScore returns the same items in reverse order, when the `start` and `end` parameters are swapped.
+
 ##### *Parameters*
 *key*  
 *start*: string  
@@ -2590,8 +2621,10 @@ _**Description**_: Returns the elements of the sorted set stored at the specifie
 *options*: array  
 
 Two options are available: `withscores => TRUE`, and `limit => array($offset, $count)`
+
 ##### *Return value*
 *Array* containing the values in specified range. 
+
 ##### *Example*
 ~~~
 $redis->zAdd('key', 0, 'val0');
@@ -2607,11 +2640,14 @@ $redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(
 ### zRank, zRevRank
 -----
 _**Description**_: Returns the rank of a given member in the specified sorted set, starting at 0 for the item with the smallest score. zRevRank starts at 0 for the item with the *largest* score.
+
 ##### *Parameters*
 *key*  
 *member*  
+
 ##### *Return value*
 *Long*, the item's score.
+
 ##### *Example*
 ~~~
 $redis->delete('z');
@@ -2626,12 +2662,14 @@ $redis->zRevRank('key', 'two'); /* 0 */
 ### zRem, zDelete
 -----
 _**Description**_: Deletes a specified member from the ordered set.
+
 ##### *Parameters*
 *key*  
 *member*  
 
 ##### *Return value*
 *LONG* 1 on success, 0 on failure.
+
 ##### *Example*
 ~~~
 $redis->zAdd('key', 0, 'val0');
@@ -2644,12 +2682,15 @@ $redis->zRange('key', 0, -1); /* array('val0', 'val10') */
 ### zRemRangeByRank, zDeleteRangeByRank
 -----
 _**Description**_: Deletes the elements of the sorted set stored at the specified key which have rank in the range [start,end].
+
 ##### *Parameters*
 *key*  
 *start*: LONG  
 *end*: LONG  
+
 ##### *Return value*
 *LONG* The number of values deleted from the sorted set
+
 ##### *Example*
 ~~~
 $redis->zAdd('key', 1, 'one');
@@ -2662,6 +2703,7 @@ $redis->zRange('key', 0, -1, array('withscores' => TRUE)); /* array('three' => 3
 ### zRemRangeByScore, zDeleteRangeByScore
 -----
 _**Description**_: Deletes the elements of the sorted set stored at the specified key which have scores in the range [start,end].
+
 ##### *Parameters*
 *key*  
 *start*: double or "+inf" or "-inf" string  
@@ -2669,6 +2711,7 @@ _**Description**_: Deletes the elements of the sorted set stored at the specifie
 
 ##### *Return value*
 *LONG* The number of values deleted from the sorted set
+
 ##### *Example*
 ~~~
 $redis->zAdd('key', 0, 'val0');
@@ -2691,6 +2734,7 @@ _**Description**_: Returns the elements of the sorted set stored at the specifie
 
 ##### *Return value*
 *Array* containing the values in specified range. 
+
 ##### *Example*
 ~~~
 $redis->zAdd('key', 0, 'val0');
@@ -2705,12 +2749,14 @@ $redis->zRevRange('key', 0, -1, true); /* array('val10' => 10, 'val2' => 2, 'val
 ### zScore
 -----
 _**Description**_: Returns the score of a given member in the specified sorted set.
+
 ##### *Parameters*
 *key*  
 *member*  
 
 ##### *Return value*
 *Double*
+
 ##### *Example*
 ~~~
 $redis->zAdd('key', 2.5, 'val2');
@@ -2722,6 +2768,7 @@ $redis->zScore('key', 'val2'); /* 2.5 */
 _**Description**_: Creates an union of sorted sets given in second argument. The result of the union will be stored in the sorted set defined by the first argument.
 The third optionnel argument defines `weights` to apply to the sorted sets in input. In this case, the `weights` will be multiplied by the score of each element in the sorted set before applying the aggregation.
 The forth argument defines the `AGGREGATE` option which specify how the results of the union are aggregated.
+
 ##### *Parameters*
 *keyOutput*  
 *arrayZSetKeys*  
@@ -2730,6 +2777,7 @@ The forth argument defines the `AGGREGATE` option which specify how the results 
 
 ##### *Return value*
 *LONG* The number of values in the new sorted set.
+
 ##### *Example*
 ~~~
 $redis->delete('k1');
@@ -2751,4 +2799,3 @@ $redis->zUnion('ko1', array('k1', 'k2')); /* 4, 'ko1' => array('val0', 'val1', '
 $redis->zUnion('ko2', array('k1', 'k2'), array(1, 1)); /* 4, 'ko2' => array('val0', 'val1', 'val2', 'val3') */
 $redis->zUnion('ko3', array('k1', 'k2'), array(5, 1)); /* 4, 'ko3' => array('val0', 'val2', 'val3', 'val1') */
 ~~~
-
