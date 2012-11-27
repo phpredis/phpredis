@@ -49,7 +49,7 @@ If you would like phpredis to serialize your data using the igbinary library, ru
 
 You can generate a debian package for PHP5, accessible from Apache 2 by running `./mkdeb-apache2.sh` or with `dpkg-buildpackage` or `svn-buildpackage`.
 
-This extension exports a single class, `Redis` (and `RedisException` used in case of errors). Check out https://github.com/ukko/phpredis-phpdoc for a PHP stub that you can use in your IDE for code completion.
+This extension exports a single class, [Redis](#redis) (and [RedisException](#redisexception) used in case of errors). Check out https://github.com/ukko/phpredis-phpdoc for a PHP stub that you can use in your IDE for code completion.
 
 
 ## Installation on OSX
@@ -103,7 +103,7 @@ See [dedicated page](https://github.com/nicolasff/phpredis/blob/master/arrays.ma
 
 ## Usage
 
-### Redis::__construct
+### Redis
 -----
 _**Description**_: Creates a Redis client
 
@@ -114,12 +114,13 @@ $redis = new Redis();
 </pre>
 
 ### RedisException
-
+-----
 phpredis throws a `RedisException` object if it can't reach the Redis server. That can happen in case of connectivity issues,
 if the Redis service is down, or if the redis host is overloaded. In any other problematic case that does not involve an
 unreachable server (such as a key not existing, an invalid command, etc), phpredis will return `FALSE`.
 
 ### Predefined constants
+-----
 _**Description**_: Available Redis Constants
 
 Redis data types, as returned by [type](#type)
@@ -135,6 +136,14 @@ Redis::REDIS_NOT_FOUND - Not found / other
 @TODO: OPT_SERIALIZER, AFTER, BEFORE,...
 
 ## Connection
+
+1. [connect, open](#connect-open)
+1. [pconnect, popen](#pconnect-popen)
+1. [close](#close)
+1. [setOption](#setoption)
+1. [getOption](#getoption)
+1. [ping](#ping)
+1. [echo](#echo)
 
 ### connect, open
 -----
@@ -244,7 +253,7 @@ _**Description**_: Check the current connection status
 
 ##### *Return value*
 
-*STRING*: `+PONG` on success. Throws a RedisException object on connectivity error, as described above.
+*STRING*: `+PONG` on success. Throws a [RedisException](#redisexception) object on connectivity error, as described above.
 
 
 ### echo
@@ -259,6 +268,8 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 
 *STRING*: the same message.
 
+
+## Strings
 
 ### get
 -----
