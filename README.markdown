@@ -111,6 +111,7 @@ Methods
 =======
 
 ### Redis::__construct
+-----
 ##### *Description*
 
 Creates a Redis client
