@@ -15,7 +15,7 @@ You can send comments, patches, questions [here on github](https://github.com/ni
    * [Distributed Redis Array](#distributed-redis-array)
    * [Error handling](#error-handling)
 1. [Methods](#methods)
-   * [General](#general)
+   * [Usage](#general)
    * [Connection](#connection)
    * Server
    * Keys and strings
@@ -97,14 +97,11 @@ The session handler requires a version of Redis with the `SETEX` command (at lea
 See [dedicated page](https://github.com/nicolasff/phpredis/blob/master/arrays.markdown#readme).
 
 
-## Error handling
-
-phpredis throws a `RedisException` object if it can't reach the Redis server. That can happen in case of connectivity issues, if the Redis service is down, or if the redis host is overloaded. In any other problematic case that does not involve an unreachable server (such as a key not existing, an invalid command, etc), phpredis will return `FALSE`.
 
 
 # Methods
 
-## General
+## Usage
 
 ### Redis::__construct
 -----
@@ -115,6 +112,27 @@ _**Description**_: Creates a Redis client
 <pre>
 $redis = new Redis();
 </pre>
+
+### RedisException
+
+phpredis throws a `RedisException` object if it can't reach the Redis server. That can happen in case of connectivity issues,
+if the Redis service is down, or if the redis host is overloaded. In any other problematic case that does not involve an
+unreachable server (such as a key not existing, an invalid command, etc), phpredis will return `FALSE`.
+
+### Predefined constants
+_**Description**_: Available Redis Constants
+
+Redis data types, as returned by [type](#type)
+~~~
+Redis::REDIS_STRING - String
+Redis::REDIS_SET - Set
+Redis::REDIS_LIST - List
+Redis::REDIS_ZSET - Sorted set
+Redis::REDIS_HASH - Hash
+Redis::REDIS_NOT_FOUND - Not found / other
+~~~
+
+@TODO: OPT_SERIALIZER, AFTER, BEFORE,...
 
 ## Connection
 
