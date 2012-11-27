@@ -307,8 +307,201 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 
 ## Server
 
+1. [bgrewriteaof](#bgrewriteaof) - Asynchronously rewrite the append-only file
+1. [bgsave](#bgsave) - Asynchronously save the dataset to disk (in background)
+1. [config](#config) - Get or Set the Redis server configuration parameters
+1. [dbSize](#dbsize) - Return the number of keys in selected database
+1. [flushAll](#flushall) - Remove all keys from all databases
+1. [flushDB](#flushdb) - Remove all keys from the current database
+1. [info](#info) - Get information and statistics about the server
+1. [lastSave](#lastsave) - Get the timestamp of the last disk save
+1. [resetStat](#resetstat) - Reset the stats returned by [info](#info) method.
+1. [save](#save) - Synchronously save the dataset to disk (wait to complete)
 1. [slaveof](#slaveof) - Make the server a slave of another instance, or promote it to master
 1. [time](#time) - Return the current server time
+
+### bgrewriteaof
+-----
+_**Description**_: Start the background rewrite of AOF (Append-Only File)
+
+##### *Parameters*
+None.
+
+##### *Return value*
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
+
+##### *Example*
+~~~
+$redis->bgrewriteaof();
+~~~
+
+### bgsave
+-----
+_**Description**_: Asynchronously save the dataset to disk (in background)
+
+##### *Parameters*
+None.
+
+##### *Return value*
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure. If a save is already running, this command will fail and return `FALSE`.
+
+##### *Example*
+~~~
+$redis->bgSave();
+~~~
+
+### config
+-----
+_**Description**_: Get or Set the Redis server configuration parameters.
+
+##### *Parameters*
+*operation* (string) either `GET` or `SET`  
+*key* string for `SET`, glob-pattern for `GET`. See http://redis.io/commands/config-get for examples.  
+*value* optional string (only for `SET`)
+
+##### *Return value*
+*Associative array* for `GET`, key -> value  
+*bool* for `SET`
+
+##### *Examples*
+~~~
+$redis->config("GET", "*max-*-entries*");
+$redis->config("SET", "dir", "/var/run/redis/dumps/");
+~~~
+
+### dbSize
+-----
+_**Description**_: Return the number of keys in selected database.
+
+##### *Parameters*
+None.
+
+##### *Return value*
+*INTEGER*: DB size, in number of keys.
+
+##### *Example*
+~~~
+$count = $redis->dbSize();
+echo "Redis has $count keys\n";
+~~~
+
+### flushAll
+-----
+_**Description**_: Remove all keys from all databases.
+
+##### *Parameters*
+None.
+
+##### *Return value*
+*BOOL*: Always `TRUE`.
+
+##### *Example*
+~~~
+$redis->flushAll();
+~~~
+
+### flushDB
+-----
+_**Description**_: Remove all keys from the current database.
+
+##### *Parameters*
+None.
+
+##### *Return value*
+*BOOL*: Always `TRUE`.
+
+##### *Example*
+~~~
+$redis->flushDB();
+~~~
+
+### info
+-----
+_**Description**_: Get information and statistics about the server
+
+Returns an associative array that provides information about the server. Passing no arguments to
+INFO will call the standard REDIS INFO command, which returns information such as the following:
+
+* redis_version
+* arch_bits
+* uptime_in_seconds
+* uptime_in_days
+* connected_clients
+* connected_slaves
+* used_memory
+* changes_since_last_save
+* bgsave_in_progress
+* last_save_time
+* total_connections_received
+* total_commands_processed
+* role
+
+You can pass a variety of options to INFO ([per the Redis documentation](http://redis.io/commands/info)),
+which will modify what is returned.
+
+##### *Parameters*
+*option*: The option to provide redis (e.g. "COMMANDSTATS", "CPU")
+
+##### *Example*
+~~~
+$redis->info(); /* standard redis INFO command */
+$redis->info("COMMANDSTATS"); /* Information on the commands that have been run (>=2.6 only)
+$redis->info("CPU"); /* just CPU information from Redis INFO */
+~~~
+
+### lastSave
+-----
+_**Description**_: Returns the timestamp of the last disk save.
+
+##### *Parameters*
+None.
+
+##### *Return value*
+*INT*: timestamp.
+
+##### *Example*
+~~~
+$redis->lastSave();
+~~~
+
+### resetStat
+-----
+_**Description**_: Reset the stats returned by [info](#info) method.
+
+These are the counters that are reset:
+
+* Keyspace hits
+* Keyspace misses
+* Number of commands processed
+* Number of connections received
+* Number of expired keys
+
+
+##### *Parameters*
+None.
+
+##### *Return value*
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
+
+##### *Example*
+~~~
+$redis->resetStat();
+~~~
+
+### save
+-----
+_**Description**_: Synchronously save the dataset to disk (wait to complete)
+
+##### *Parameters*
+None.
+
+##### *Return value*
+*BOOL*: `TRUE` in case of success, `FALSE` in case of failure. If a save is already running, this command will fail and return `FALSE`.
+
+##### *Example*
+~~~
+$redis->save();
+~~~
 
 ### slaveof
 -----
@@ -330,28 +523,29 @@ $redis->slaveof();
 ### time
 -----
 _**Description**_: Return the current server time.
+
 ##### *Parameters*
 (none)  
+
 ##### *Return value*
 If successfull, the time will come back as an associative array with element zero being
 the unix timestamp, and element one being microseconds.
+
 ##### *Examples*
 ~~~
 $redis->time();
 ~~~
 
-
+## Keys and Strings
 
 ### get
 -----
 _**Description**_: Get the value related to the specified key
 
 ##### *Parameters*
-
 *key*
 
 ##### *Return value*
-
 *String* or *Bool*: If key didn't exist, `FALSE` is returned. Otherwise, the value related to this key is returned.
 
 ##### *Examples*
@@ -373,7 +567,6 @@ _**Description**_: Set the string value in argument as value of the key.
 *Bool* `TRUE` if the command is successful.
 
 ##### *Examples*
-
 ~~~
 $redis->set('key', 'value');
 ~~~
@@ -1497,37 +1690,7 @@ $allKeys = $redis->keys('*');	// all keys will match this.
 $keyWithUserPrefix = $redis->keys('user*');
 ~~~
 
-### dbSize
------
-_**Description**_: Returns the current database's size.
 
-##### *Parameters*
-None.
-
-##### *Return value*
-*INTEGER*: DB size, in number of keys.
-
-##### *Example*
-~~~
-$count = $redis->dbSize();
-echo "Redis has $count keys\n";
-~~~
-
-
-### bgrewriteaof
------
-_**Description**_: Starts the background rewrite of AOF (Append-Only File)
-
-##### *Parameters*
-None.
-
-##### *Return value*
-*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
-
-##### *Example*
-~~~
-$redis->bgrewriteaof();
-~~~
 
 ### object
 -----
@@ -1548,51 +1711,6 @@ The information to retrieve (string) and the key (string). Info can be one of th
 $redis->object("encoding", "l"); // → ziplist
 $redis->object("refcount", "l"); // → 1
 $redis->object("idletime", "l"); // → 400 (in seconds, with a precision of 10 seconds).
-~~~
-
-### save
------
-_**Description**_: Performs a synchronous save.
-
-##### *Parameters*
-None.
-
-##### *Return value*
-*BOOL*: `TRUE` in case of success, `FALSE` in case of failure. If a save is already running, this command will fail and return `FALSE`.
-
-##### *Example*
-~~~
-$redis->save();
-~~~
-
-### bgsave
------
-_**Description**_: Performs a background save.
-
-##### *Parameters*
-None.
-
-##### *Return value*
-*BOOL*: `TRUE` in case of success, `FALSE` in case of failure. If a save is already running, this command will fail and return `FALSE`.
-
-##### *Example*
-~~~
-$redis->bgSave();
-~~~
-
-### lastSave
------
-_**Description**_: Returns the timestamp of the last disk save.
-
-##### *Parameters*
-None.
-
-##### *Return value*
-*INT*: timestamp.
-
-##### *Example*
-~~~
-$redis->lastSave();
 ~~~
 
 ### type
@@ -1750,37 +1868,6 @@ _**Description**_: Count bits in a string.
 ##### *Return value*
 *LONG*: The number of bits set to 1 in the value behind the input key.
 
-### flushDB
------
-_**Description**_: Removes all entries from the current database.
-
-##### *Parameters*
-None.
-
-##### *Return value*
-*BOOL*: Always `TRUE`.
-
-##### *Example*
-~~~
-$redis->flushDB();
-~~~
-
-
-### flushAll
------
-_**Description**_: Removes all entries from all databases.
-
-##### *Parameters*
-None.
-
-##### *Return value*
-*BOOL*: Always `TRUE`.
-
-##### *Example*
-~~~
-$redis->flushAll();
-~~~
-
 ### sort
 -----
 _**Description**_: Sort the elements in a list, set or sorted set.
@@ -1814,62 +1901,7 @@ var_dump($redis->sort('s', array('sort' => 'desc', 'store' => 'out'))); // (int)
 ~~~
 
 
-### info
------
-_**Description**_: Returns an associative array from REDIS that provides information about the server.  Passing
-no arguments to INFO will call the standard REDIS INFO command, which returns information such
-as the following:
 
-* redis_version
-* arch_bits
-* uptime_in_seconds
-* uptime_in_days
-* connected_clients
-* connected_slaves
-* used_memory
-* changes_since_last_save
-* bgsave_in_progress
-* last_save_time
-* total_connections_received
-* total_commands_processed
-* role
-
-You can pass a variety of options to INFO (per the Redis documentation), which will modify what is
-returned.
-
-##### *Parameters*
-*option*: The option to provide redis (e.g. "COMMANDSTATS", "CPU")
-
-##### *Example*
-~~~
-$redis->info(); /* standard redis INFO command */
-$redis->info("COMMANDSTATS"); /* Information on the commands that have been run (>=2.6 only)
-$redis->info("CPU"); /* just CPU information from Redis INFO */
-~~~
-
-### resetStat
------
-_**Description**_: Resets the statistics reported by Redis using the INFO command (`info()` function).
-
-These are the counters that are reset:
-
-* Keyspace hits
-* Keyspace misses
-* Number of commands processed
-* Number of connections received
-* Number of expired keys
-
-
-##### *Parameters*
-None.
-
-##### *Return value*
-*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
-
-##### *Example*
-~~~
-$redis->resetStat();
-~~~
 
 ### ttl, pttl
 -----
@@ -2543,22 +2575,6 @@ $redis->delete('h');
 $redis->hSet('h', 'field1', 'value1');
 $redis->hSet('h', 'field2', 'value2');
 $redis->hmGet('h', array('field1', 'field2')); /* returns array('field1' => 'value1', 'field2' => 'value2') */
-~~~
-
-### config
------
-_**Description**_: Get or Set the redis config keys.
-##### *Parameters*
-*operation* (string) either `GET` or `SET`  
-*key* string for `SET`, glob-pattern for `GET`. See http://redis.io/commands/config-get for examples.  
-*value* optional string (only for `SET`)
-##### *Return value*
-*Associative array* for `GET`, key -> value  
-*bool* for `SET`
-##### *Examples*
-~~~
-$redis->config("GET", "*max-*-entries*");
-$redis->config("SET", "dir", "/var/run/redis/dumps/");
 ~~~
 
 ### eval
