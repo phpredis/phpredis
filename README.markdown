@@ -1449,6 +1449,7 @@ $redis->hmGet('h', array('field1', 'field2')); /* returns array('field1' => 'val
 * [brpoplpush](#brpoplpush) - Pop a value from a list, push it to another list and return it
 * [lIndex, lGet](#lindex-lget) - Get an element from a list by its index
 * [lInsert](#linsert) - Insert an element before or after another element in a list
+* [lLen, lSize](#llen-lsize) - Get the length/size of a list
 * [lPop](#lpop) - Remove and get the first element in a list
 * [lPush](#lpush) - Prepend one or multiple values to a list
 * [lPushx](#lpushx) - Prepend a value to a list, only if the list exists
@@ -1460,7 +1461,6 @@ $redis->hmGet('h', array('field1', 'field2')); /* returns array('field1' => 'val
 * [rpoplpush](#rpoplpush) - Remove the last element in a list, append it to another list and return it (redis >= 1.1)
 * [rPush](#rpush) - Append one or multiple values to a list
 * [rPushx](#rpushx) - Append a value to a list, only if the list exists
-* [lSize](#lsize) - Get the length/size of a list
 
 ### blPop, brPop
 -----
@@ -1840,12 +1840,15 @@ $redis->rPushx('key1', 'C'); // returns 3
 /* key1 now points to the following list: [ 'A', 'B', 'C' ] */
 ~~~
 
-### lSize
+### lLen, lSize
 -----
-_**Description**_: Returns the size of a list identified by Key. If the list didn't exist or is empty, the command returns 0. If the data type identified by Key is not a list, the command return `FALSE`.
+_**Description**_: Returns the size of a list identified by Key.
+
+If the list didn't exist or is empty, the command returns 0. If the data type identified by Key is not a list, the command return `FALSE`.
 
 ##### *Parameters*
 *Key*
+
 ##### *Return value*
 *LONG* The size of the list identified by Key exists.  
 *BOOL* `FALSE` if the data type identified by Key is not list
