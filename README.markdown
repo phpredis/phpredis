@@ -724,344 +724,6 @@ $redis->mGet(array('key1', 'key2', 'key3')); /* array('value1', 'value2', 'value
 $redis->mGet(array('key0', 'key1', 'key5')); /* array(`FALSE`, 'value2', `FALSE`);
 ~~~
 
-### lPush
------
-_**Description**_: Adds the string value to the head (left) of the list. Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
-
-##### *Parameters*
-*key*  
-*value* String, value to push in key
-
-##### *Return value*
-*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
-
-##### *Examples*
-~~~
-$redis->delete('key1');
-$redis->lPush('key1', 'C'); // returns 1
-$redis->lPush('key1', 'B'); // returns 2
-$redis->lPush('key1', 'A'); // returns 3
-/* key1 now points to the following list: [ 'A', 'B', 'C' ] */
-~~~
-
-### rPush
------
-_**Description**_: Adds the string value to the tail (right) of the list. Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
-
-##### *Parameters*
-*key*  
-*value* String, value to push in key
-
-##### *Return value*
-*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
-
-##### *Examples*
-~~~
-$redis->delete('key1');
-$redis->rPush('key1', 'A'); // returns 1
-$redis->rPush('key1', 'B'); // returns 2
-$redis->rPush('key1', 'C'); // returns 3
-/* key1 now points to the following list: [ 'A', 'B', 'C' ] */
-~~~
-
-### lPushx
------
-_**Description**_: Adds the string value to the head (left) of the list if the list exists.
-
-##### *Parameters*
-*key*  
-*value* String, value to push in key
-
-##### *Return value*
-*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
-
-##### *Examples*
-~~~
-$redis->delete('key1');
-$redis->lPushx('key1', 'A'); // returns 0
-$redis->lPush('key1', 'A'); // returns 1
-$redis->lPushx('key1', 'B'); // returns 2
-$redis->lPushx('key1', 'C'); // returns 3
-/* key1 now points to the following list: [ 'A', 'B', 'C' ] */
-~~~
-
-### rPushx
------
-_**Description**_: Adds the string value to the tail (right) of the list if the ist exists. `FALSE` in case of Failure.
-
-##### *Parameters*
-*key*  
-*value* String, value to push in key
-
-##### *Return value*
-*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
-
-##### *Examples*
-~~~
-$redis->delete('key1');
-$redis->rPushx('key1', 'A'); // returns 0
-$redis->rPush('key1', 'A'); // returns 1
-$redis->rPushx('key1', 'B'); // returns 2
-$redis->rPushx('key1', 'C'); // returns 3
-/* key1 now points to the following list: [ 'A', 'B', 'C' ] */
-~~~
-
-### lPop
------
-_**Description**_: Return and remove the first element of the list.
-
-##### *Parameters*
-*key*
-
-##### *Return value*
-*STRING* if command executed successfully
-*BOOL* `FALSE` in case of failure (empty list)
-
-##### *Example*
-~~~
-$redis->rPush('key1', 'A');
-$redis->rPush('key1', 'B');
-$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
-$redis->lPop('key1'); /* key1 => [ 'B', 'C' ] */
-~~~
-
-### rPop
------
-_**Description**_: Returns and removes the last element of the list.
-
-##### *Parameters*
-*key*
-
-##### *Return value*
-*STRING* if command executed successfully
-*BOOL* `FALSE` in case of failure (empty list)
-
-##### *Example*
-~~~
-$redis->rPush('key1', 'A');
-$redis->rPush('key1', 'B');
-$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
-$redis->rPop('key1'); /* key1 => [ 'A', 'B' ] */
-~~~
-
-### blPop, brPop
------
-_**Description**_: Is a blocking lPop(rPop) primitive. If at least one of the lists contains at least one element, the element will be popped from the head of the list and returned to the caller.
-Il all the list identified by the keys passed in arguments are empty, blPop will block during the specified timeout until an element is pushed to one of those lists. This element will be popped.
-
-##### *Parameters*
-*ARRAY* Array containing the keys of the lists
-*INTEGER* Timeout
-Or
-*STRING* Key1
-*STRING* Key2
-*STRING* Key3
-...
-*STRING* Keyn
-*INTEGER* Timeout
-
-##### *Return value*
-*ARRAY* array('listName', 'element')
-
-##### *Example*
-~~~
-/* Non blocking feature */
-$redis->lPush('key1', 'A');
-$redis->delete('key2');
-
-$redis->blPop('key1', 'key2', 10); /* array('key1', 'A') */
-/* OR */
-$redis->blPop(array('key1', 'key2'), 10); /* array('key1', 'A') */
-
-$redis->brPop('key1', 'key2', 10); /* array('key1', 'A') */
-/* OR */
-$redis->brPop(array('key1', 'key2'), 10); /* array('key1', 'A') */
-
-/* Blocking feature */
-
-/* process 1 */
-$redis->delete('key1');
-$redis->blPop('key1', 10);
-/* blocking for 10 seconds */
-
-/* process 2 */
-$redis->lPush('key1', 'A');
-
-/* process 1 */
-/* array('key1', 'A') is returned*/
-
-~~~
-
-### lSize
------
-_**Description**_: Returns the size of a list identified by Key. If the list didn't exist or is empty, the command returns 0. If the data type identified by Key is not a list, the command return `FALSE`.
-
-##### *Parameters*
-*Key*
-##### *Return value*
-*LONG* The size of the list identified by Key exists.  
-*BOOL* `FALSE` if the data type identified by Key is not list
-
-##### *Example*
-~~~
-$redis->rPush('key1', 'A');
-$redis->rPush('key1', 'B');
-$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
-$redis->lSize('key1');/* 3 */
-$redis->rPop('key1'); 
-$redis->lSize('key1');/* 2 */
-~~~
-
-### lIndex, lGet
------
-_**Description**_: Return the specified element of the list stored at the specified key.
-0 the first element, 1 the second ...
--1 the last element, -2 the penultimate ...
-Return `FALSE` in case of a bad index or a key that doesn't point to a list.
-##### *Parameters*
-*key*
-*index*
-
-##### *Return value*
-*String* the element at this index  
-*Bool* `FALSE` if the key identifies a non-string data type, or no value corresponds to this index in the list `Key`.
-##### *Example*
-~~~
-$redis->rPush('key1', 'A');
-$redis->rPush('key1', 'B');
-$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
-$redis->lGet('key1', 0); /* 'A' */
-$redis->lGet('key1', -1); /* 'C' */
-$redis->lGet('key1', 10); /* `FALSE` */
-~~~
-
-### lSet
------
-_**Description**_: Set the list at index with the new value.
-
-##### *Parameters*
-*key*
-*index*
-*value*
-
-##### *Return value*
-*BOOL* `TRUE` if the new value is setted. `FALSE` if the index is out of range, or data type identified by key is not a list.
-
-##### *Example*
-~~~
-$redis->rPush('key1', 'A');
-$redis->rPush('key1', 'B');
-$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
-$redis->lGet('key1', 0); /* 'A' */
-$redis->lSet('key1', 0, 'X');
-$redis->lGet('key1', 0); /* 'X' */ 
-~~~
-
-### lRange, lGetRange
------
-_**Description**_: Returns the specified elements of the list stored at the specified key in the range [start, end]. start and stop are interpretated as indices:
-0 the first element, 1 the second ...
--1 the last element, -2 the penultimate ...
-
-##### *Parameters*
-*key*
-*start*
-*end*
-
-##### *Return value*
-*Array* containing the values in specified range. 
-
-##### *Example*
-~~~
-$redis->rPush('key1', 'A');
-$redis->rPush('key1', 'B');
-$redis->rPush('key1', 'C');
-$redis->lRange('key1', 0, -1); /* array('A', 'B', 'C') */
-~~~
-
-### lTrim, listTrim
------
-_**Description**_: Trims an existing list so that it will contain only a specified range of elements.
-
-##### *Parameters*
-*key*
-*start*
-*stop*
-
-##### *Return value*
-*Array*  
-*Bool* return `FALSE` if the key identify a non-list value.
-
-##### *Example*
-~~~
-$redis->rPush('key1', 'A');
-$redis->rPush('key1', 'B');
-$redis->rPush('key1', 'C');
-$redis->lRange('key1', 0, -1); /* array('A', 'B', 'C') */
-$redis->lTrim('key1', 0, 1);
-$redis->lRange('key1', 0, -1); /* array('A', 'B') */
-~~~
-
-### lRem, lRemove
------
-_**Description**_: Removes the first `count` occurences of the value element from the list. If count is zero, all the matching elements are removed. If count is negative, elements are removed from tail to head.
-
-**Note**: The argument order is not the same as in the Redis documentation. This difference is kept for compatibility reasons.
-
-##### *Parameters*
-*key*  
-*value*  
-*count*  
-
-##### *Return value*
-*LONG* the number of elements to remove  
-*BOOL* `FALSE` if the value identified by key is not a list.
-
-##### *Example*
-~~~
-$redis->lPush('key1', 'A');
-$redis->lPush('key1', 'B');
-$redis->lPush('key1', 'C'); 
-$redis->lPush('key1', 'A'); 
-$redis->lPush('key1', 'A'); 
-
-$redis->lRange('key1', 0, -1); /* array('A', 'A', 'C', 'B', 'A') */
-$redis->lRem('key1', 'A', 2); /* 2 */
-$redis->lRange('key1', 0, -1); /* array('C', 'B', 'A') */
-~~~
-
-### lInsert
------
-_**Description**_: Insert value in the list before or after the pivot value. the parameter options specify the position of the insert (before or after).
-If the list didn't exists, or the pivot didn't exists, the value is not inserted.
-##### *Parameters*
-*key*
-*position*  Redis::BEFORE | Redis::AFTER
-*pivot*
-*value*
-
-##### *Return value*
-The number of the elements in the list, -1 if the pivot didn't exists.
-
-##### *Example*
-~~~
-$redis->delete('key1');
-$redis->lInsert('key1', Redis::AFTER, 'A', 'X'); /* 0 */
-
-$redis->lPush('key1', 'A');
-$redis->lPush('key1', 'B');
-$redis->lPush('key1', 'C');
-
-$redis->lInsert('key1', Redis::BEFORE, 'C', 'X'); /* 4 */
-$redis->lRange('key1', 0, -1); /* array('A', 'B', 'X', 'C') */
-
-$redis->lInsert('key1', Redis::AFTER, 'C', 'Y'); /* 5 */
-$redis->lRange('key1', 0, -1); /* array('A', 'B', 'X', 'C', 'Y') */
-
-$redis->lInsert('key1', Redis::AFTER, 'W', 'value'); /* -1 */
-
-~~~
-
 ### getSet
 -----
 _**Description**_: Sets a value and returns the previous entry at that key.
@@ -1460,61 +1122,6 @@ string(6) "value1"
 ~~~
 
 
-### rpoplpush (redis >= 1.1)
------
-_**Description**_: Pops a value from the tail of a list, and pushes it to the front of another list. Also return this value.
-
-##### *Parameters*
-*Key*: srckey  
-*Key*: dstkey
-
-##### *Return value*
-*STRING* The element that was moved in case of success, `FALSE` in case of failure.
-
-##### *Example*
-~~~
-$redis->delete('x', 'y');
-
-$redis->lPush('x', 'abc');
-$redis->lPush('x', 'def');
-$redis->lPush('y', '123');
-$redis->lPush('y', '456');
-
-// move the last of x to the front of y.
-var_dump($redis->rpoplpush('x', 'y'));
-var_dump($redis->lRange('x', 0, -1));
-var_dump($redis->lRange('y', 0, -1));
-
-~~~
-Output:
-~~~
-string(3) "abc"
-array(1) {
-  [0]=>
-  string(3) "def"
-}
-array(3) {
-  [0]=>
-  string(3) "abc"
-  [1]=>
-  string(3) "456"
-  [2]=>
-  string(3) "123"
-}
-~~~
-
-### brpoplpush
------
-_**Description**_: A blocking version of `rpoplpush`, with an integral timeout in the third parameter.
-
-##### *Parameters*
-*Key*: srckey  
-*Key*: dstkey  
-*Long*: timeout
-
-##### *Return value*
-*STRING* The element that was moved in case of success, `FALSE` in case of timeout.
-
 
 ### dump
 -----
@@ -1837,6 +1444,422 @@ $redis->hmGet('h', array('field1', 'field2')); /* returns array('field1' => 'val
 
 
 ## Lists
+
+* [blPop, brPop](#blpop-brpop) - Remove and get the first/last element in a list
+* [brpoplpush](#brpoplpush) - Pop a value from a list, push it to another list and return it
+* [lIndex, lGet](#lindex-lget) - Get an element from a list by its index
+* [lInsert](#linsert) - Insert an element before or after another element in a list
+* [lPop](#lpop) - Remove and get the first element in a list
+* [lPush](#lpush) - Prepend one or multiple values to a list
+* [lPushx](#lpushx) - Prepend a value to a list, only if the list exists
+* [lRange, lGetRange](#lrange-lgetrange) - Get a range of elements from a list
+* [lRem, lRemove](#lrem-lremove) - Remove elements from a list
+* [lSet](#lset) - Set the value of an element in a list by its index
+* [lTrim, listTrim](#ltrim-listtrim) - Trim a list to the specified range
+* [rPop](#rpop) - Remove and get the last element in a list
+* [rpoplpush](#rpoplpush) - Remove the last element in a list, append it to another list and return it (redis >= 1.1)
+* [rPush](#rpush) - Append one or multiple values to a list
+* [rPushx](#rpushx) - Append a value to a list, only if the list exists
+* [lSize](#lsize) - Get the length/size of a list
+
+### blPop, brPop
+-----
+_**Description**_: Is a blocking lPop(rPop) primitive. If at least one of the lists contains at least one element, the element will be popped from the head of the list and returned to the caller.
+Il all the list identified by the keys passed in arguments are empty, blPop will block during the specified timeout until an element is pushed to one of those lists. This element will be popped.
+
+##### *Parameters*
+*ARRAY* Array containing the keys of the lists
+*INTEGER* Timeout
+Or
+*STRING* Key1
+*STRING* Key2
+*STRING* Key3
+...
+*STRING* Keyn
+*INTEGER* Timeout
+
+##### *Return value*
+*ARRAY* array('listName', 'element')
+
+##### *Example*
+~~~
+/* Non blocking feature */
+$redis->lPush('key1', 'A');
+$redis->delete('key2');
+
+$redis->blPop('key1', 'key2', 10); /* array('key1', 'A') */
+/* OR */
+$redis->blPop(array('key1', 'key2'), 10); /* array('key1', 'A') */
+
+$redis->brPop('key1', 'key2', 10); /* array('key1', 'A') */
+/* OR */
+$redis->brPop(array('key1', 'key2'), 10); /* array('key1', 'A') */
+
+/* Blocking feature */
+
+/* process 1 */
+$redis->delete('key1');
+$redis->blPop('key1', 10);
+/* blocking for 10 seconds */
+
+/* process 2 */
+$redis->lPush('key1', 'A');
+
+/* process 1 */
+/* array('key1', 'A') is returned*/
+~~~
+
+### brpoplpush
+-----
+_**Description**_: A blocking version of `rpoplpush`, with an integral timeout in the third parameter.
+
+##### *Parameters*
+*Key*: srckey  
+*Key*: dstkey  
+*Long*: timeout
+
+##### *Return value*
+*STRING* The element that was moved in case of success, `FALSE` in case of timeout.
+
+### lIndex, lGet
+-----
+_**Description**_: Return the specified element of the list stored at the specified key.
+
+0 the first element, 1 the second ...
+-1 the last element, -2 the penultimate ...
+
+Return `FALSE` in case of a bad index or a key that doesn't point to a list.
+
+##### *Parameters*
+*key*
+*index*
+
+##### *Return value*
+*String* the element at this index  
+*Bool* `FALSE` if the key identifies a non-string data type, or no value corresponds to this index in the list `Key`.
+
+##### *Example*
+~~~
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->lGet('key1', 0); /* 'A' */
+$redis->lGet('key1', -1); /* 'C' */
+$redis->lGet('key1', 10); /* `FALSE` */
+~~~
+
+### lInsert
+-----
+_**Description**_: Insert value in the list before or after the pivot value.
+
+The parameter options specify the position of the insert (before or after).
+If the list didn't exists, or the pivot didn't exists, the value is not inserted.
+
+##### *Parameters*
+*key*
+*position*  Redis::BEFORE | Redis::AFTER
+*pivot*
+*value*
+
+##### *Return value*
+The number of the elements in the list, -1 if the pivot didn't exists.
+
+##### *Example*
+~~~
+$redis->delete('key1');
+$redis->lInsert('key1', Redis::AFTER, 'A', 'X'); /* 0 */
+
+$redis->lPush('key1', 'A');
+$redis->lPush('key1', 'B');
+$redis->lPush('key1', 'C');
+
+$redis->lInsert('key1', Redis::BEFORE, 'C', 'X'); /* 4 */
+$redis->lRange('key1', 0, -1); /* array('A', 'B', 'X', 'C') */
+
+$redis->lInsert('key1', Redis::AFTER, 'C', 'Y'); /* 5 */
+$redis->lRange('key1', 0, -1); /* array('A', 'B', 'X', 'C', 'Y') */
+
+$redis->lInsert('key1', Redis::AFTER, 'W', 'value'); /* -1 */
+~~~
+
+### lPop
+-----
+_**Description**_: Return and remove the first element of the list.
+
+##### *Parameters*
+*key*
+
+##### *Return value*
+*STRING* if command executed successfully
+*BOOL* `FALSE` in case of failure (empty list)
+
+##### *Example*
+~~~
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->lPop('key1'); /* key1 => [ 'B', 'C' ] */
+~~~
+
+### lPush
+-----
+_**Description**_: Adds the string value to the head (left) of the list. Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
+
+##### *Parameters*
+*key*  
+*value* String, value to push in key
+
+##### *Return value*
+*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
+
+##### *Examples*
+~~~
+$redis->delete('key1');
+$redis->lPush('key1', 'C'); // returns 1
+$redis->lPush('key1', 'B'); // returns 2
+$redis->lPush('key1', 'A'); // returns 3
+/* key1 now points to the following list: [ 'A', 'B', 'C' ] */
+~~~
+
+### lPushx
+-----
+_**Description**_: Adds the string value to the head (left) of the list if the list exists.
+
+##### *Parameters*
+*key*  
+*value* String, value to push in key
+
+##### *Return value*
+*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
+
+##### *Examples*
+~~~
+$redis->delete('key1');
+$redis->lPushx('key1', 'A'); // returns 0
+$redis->lPush('key1', 'A'); // returns 1
+$redis->lPushx('key1', 'B'); // returns 2
+$redis->lPushx('key1', 'C'); // returns 3
+/* key1 now points to the following list: [ 'A', 'B', 'C' ] */
+~~~
+
+### lRange, lGetRange
+-----
+_**Description**_: Returns the specified elements of the list stored at the specified key in the range [start, end]. start and stop are interpretated as indices:
+0 the first element, 1 the second ...
+-1 the last element, -2 the penultimate ...
+
+##### *Parameters*
+*key*
+*start*
+*end*
+
+##### *Return value*
+*Array* containing the values in specified range. 
+
+##### *Example*
+~~~
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C');
+$redis->lRange('key1', 0, -1); /* array('A', 'B', 'C') */
+~~~
+
+### lRem, lRemove
+-----
+_**Description**_: Removes the first `count` occurences of the value element from the list. If count is zero, all the matching elements are removed. If count is negative, elements are removed from tail to head.
+
+**Note**: The argument order is not the same as in the Redis documentation. This difference is kept for compatibility reasons.
+
+##### *Parameters*
+*key*  
+*value*  
+*count*  
+
+##### *Return value*
+*LONG* the number of elements to remove  
+*BOOL* `FALSE` if the value identified by key is not a list.
+
+##### *Example*
+~~~
+$redis->lPush('key1', 'A');
+$redis->lPush('key1', 'B');
+$redis->lPush('key1', 'C'); 
+$redis->lPush('key1', 'A'); 
+$redis->lPush('key1', 'A'); 
+
+$redis->lRange('key1', 0, -1); /* array('A', 'A', 'C', 'B', 'A') */
+$redis->lRem('key1', 'A', 2); /* 2 */
+$redis->lRange('key1', 0, -1); /* array('C', 'B', 'A') */
+~~~
+
+### lSet
+-----
+_**Description**_: Set the list at index with the new value.
+
+##### *Parameters*
+*key*
+*index*
+*value*
+
+##### *Return value*
+*BOOL* `TRUE` if the new value is setted. `FALSE` if the index is out of range, or data type identified by key is not a list.
+
+##### *Example*
+~~~
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->lGet('key1', 0); /* 'A' */
+$redis->lSet('key1', 0, 'X');
+$redis->lGet('key1', 0); /* 'X' */ 
+~~~
+
+### lTrim, listTrim
+-----
+_**Description**_: Trims an existing list so that it will contain only a specified range of elements.
+
+##### *Parameters*
+*key*
+*start*
+*stop*
+
+##### *Return value*
+*Array*  
+*Bool* return `FALSE` if the key identify a non-list value.
+
+##### *Example*
+~~~
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C');
+$redis->lRange('key1', 0, -1); /* array('A', 'B', 'C') */
+$redis->lTrim('key1', 0, 1);
+$redis->lRange('key1', 0, -1); /* array('A', 'B') */
+~~~
+
+### rPop
+-----
+_**Description**_: Returns and removes the last element of the list.
+
+##### *Parameters*
+*key*
+
+##### *Return value*
+*STRING* if command executed successfully
+*BOOL* `FALSE` in case of failure (empty list)
+
+##### *Example*
+~~~
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->rPop('key1'); /* key1 => [ 'A', 'B' ] */
+~~~
+
+### rpoplpush
+-----
+_**Description**_: Pops a value from the tail of a list, and pushes it to the front of another list. Also return this value. (redis >= 1.1)
+
+##### *Parameters*
+*Key*: srckey  
+*Key*: dstkey
+
+##### *Return value*
+*STRING* The element that was moved in case of success, `FALSE` in case of failure.
+
+##### *Example*
+~~~
+$redis->delete('x', 'y');
+
+$redis->lPush('x', 'abc');
+$redis->lPush('x', 'def');
+$redis->lPush('y', '123');
+$redis->lPush('y', '456');
+
+// move the last of x to the front of y.
+var_dump($redis->rpoplpush('x', 'y'));
+var_dump($redis->lRange('x', 0, -1));
+var_dump($redis->lRange('y', 0, -1));
+
+~~~
+Output:
+~~~
+string(3) "abc"
+array(1) {
+  [0]=>
+  string(3) "def"
+}
+array(3) {
+  [0]=>
+  string(3) "abc"
+  [1]=>
+  string(3) "456"
+  [2]=>
+  string(3) "123"
+}
+~~~
+
+### rPush
+-----
+_**Description**_: Adds the string value to the tail (right) of the list. Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
+
+##### *Parameters*
+*key*  
+*value* String, value to push in key
+
+##### *Return value*
+*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
+
+##### *Examples*
+~~~
+$redis->delete('key1');
+$redis->rPush('key1', 'A'); // returns 1
+$redis->rPush('key1', 'B'); // returns 2
+$redis->rPush('key1', 'C'); // returns 3
+/* key1 now points to the following list: [ 'A', 'B', 'C' ] */
+~~~
+
+### rPushx
+-----
+_**Description**_: Adds the string value to the tail (right) of the list if the ist exists. `FALSE` in case of Failure.
+
+##### *Parameters*
+*key*  
+*value* String, value to push in key
+
+##### *Return value*
+*LONG* The new length of the list in case of success, `FALSE` in case of Failure.
+
+##### *Examples*
+~~~
+$redis->delete('key1');
+$redis->rPushx('key1', 'A'); // returns 0
+$redis->rPush('key1', 'A'); // returns 1
+$redis->rPushx('key1', 'B'); // returns 2
+$redis->rPushx('key1', 'C'); // returns 3
+/* key1 now points to the following list: [ 'A', 'B', 'C' ] */
+~~~
+
+### lSize
+-----
+_**Description**_: Returns the size of a list identified by Key. If the list didn't exist or is empty, the command returns 0. If the data type identified by Key is not a list, the command return `FALSE`.
+
+##### *Parameters*
+*Key*
+##### *Return value*
+*LONG* The size of the list identified by Key exists.  
+*BOOL* `FALSE` if the data type identified by Key is not list
+
+##### *Example*
+~~~
+$redis->rPush('key1', 'A');
+$redis->rPush('key1', 'B');
+$redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
+$redis->lSize('key1');/* 3 */
+$redis->rPop('key1'); 
+$redis->lSize('key1');/* 2 */
+~~~
+
 
 ## Sets
 
