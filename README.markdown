@@ -1,5 +1,4 @@
-PhpRedis
-========
+# PhpRedis
 
 The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 This code has been developed and maintained by Owlient from November 2009 to March 2011.
@@ -7,8 +6,7 @@ This code has been developed and maintained by Owlient from November 2009 to Mar
 You can send comments, patches, questions [here on github](https://github.com/nicolasff/phpredis/issues) or to n.favrefelix@gmail.com ([@yowgi](http://twitter.com/yowgi)).
 
 
-Table of contents
-=================
+# Table of contents
 
 1. [Installing/Configuring](#installingconfiguring)
    * [Installation](#installation)
@@ -29,8 +27,7 @@ Table of contents
    * Transactions
 
 
-Installing/Configuring
-======================
+# Installing/Configuring
 
 1. [Installation](#installation)
 1. [Installation on OSX](#installation-on-osx)
@@ -39,8 +36,8 @@ Installing/Configuring
 1. [Error handling](#error-handling)
 
 
-Installation
-------------
+## Installation
+
 <pre>
 phpize
 ./configure [--enable-redis-igbinary]
@@ -54,8 +51,8 @@ You can generate a debian package for PHP5, accessible from Apache 2 by running 
 
 This extension exports a single class, `Redis` (and `RedisException` used in case of errors). Check out https://github.com/ukko/phpredis-phpdoc for a PHP stub that you can use in your IDE for code completion.
 
-Installation on OSX
--------------------
+
+## Installation on OSX
 
 If the install fails on OSX, type the following commands in your shell before trying again:
 <pre>
@@ -73,8 +70,8 @@ Taken from [Compiling phpredis on Zend Server CE/OSX ](http://www.tumblr.com/tag
 
 See also: [Install Redis & PHP Extension PHPRedis with Macports](http://www.lecloud.net/post/3378834922/install-redis-php-extension-phpredis-with-macports).
 
-PHP Session handler
--------------------
+
+## PHP Session handler
 
 phpredis can be used to store PHP sessions. To do this, configure `session.save_handler` and `session.save_path` in your php.ini to tell phpredis where to store the sessions:
 <pre>
@@ -95,25 +92,23 @@ Sessions have a lifetime expressed in seconds and stored in the INI variable "se
 The session handler requires a version of Redis with the `SETEX` command (at least 2.0).
 
 
-Distributed Redis Array
------------------------
+## Distributed Redis Array
 
 See [dedicated page](https://github.com/nicolasff/phpredis/blob/master/arrays.markdown#readme).
 
 
-Error handling
---------------
+## Error handling
 
 phpredis throws a `RedisException` object if it can't reach the Redis server. That can happen in case of connectivity issues, if the Redis service is down, or if the redis host is overloaded. In any other problematic case that does not involve an unreachable server (such as a key not existing, an invalid command, etc), phpredis will return `FALSE`.
 
 
-Methods
-=======
+# Methods
+
+## General
 
 ### Redis::__construct
 -----
-
-Creates a Redis client
+**Description**: Creates a Redis client
 
 ##### *Example*
 
