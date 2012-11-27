@@ -108,7 +108,7 @@ phpredis throws a `RedisException` object if it can't reach the Redis server. Th
 
 ### Redis::__construct
 -----
-_**Description**_: _**Description**_: Creates a Redis client
+_**Description**_: Creates a Redis client
 
 ##### *Example*
 
