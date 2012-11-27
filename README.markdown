@@ -15,8 +15,8 @@ You can send comments, patches, questions [here on github](https://github.com/ni
    * [Distributed Redis Array](#distributed-redis-array)
    * [Error handling](#error-handling)
 1. [Methods](#methods)
-   * General
-   * Connection
+   * [General](#general)
+   * [Connection](#connection)
    * Server
    * Keys and strings
    * Hashes
@@ -108,7 +108,7 @@ phpredis throws a `RedisException` object if it can't reach the Redis server. Th
 
 ### Redis::__construct
 -----
-**Description**: Creates a Redis client
+_**Description**_: Creates a Redis client
 
 ##### *Example*
 
@@ -116,9 +116,10 @@ phpredis throws a `RedisException` object if it can't reach the Redis server. Th
 $redis = new Redis();
 </pre>
 
+## Connection
+
 ### connect, open
 -----
-
 Connects to a Redis instance.
 
 ##### *Parameters*
@@ -142,7 +143,6 @@ $redis->connect('/tmp/redis.sock'); // unix domain socket.
 
 ### pconnect, popen
 -----
-
 Connects to a Redis instance or reuse a connection already established with `pconnect`/`popen`.
 
 The connection will not be closed on `close` or end of request until the php process ends.
@@ -218,7 +218,6 @@ $redis->getOption(Redis::OPT_SERIALIZER);	// return Redis::SERIALIZER_NONE, Redi
 
 ### ping
 -----
-
 Check the current connection status
 
 ##### *Parameters*
@@ -232,7 +231,6 @@ Check the current connection status
 
 ### echo
 -----
-
 Sends a string to Redis, which replies with the same string
 
 ##### *Parameters*
@@ -246,7 +244,6 @@ Sends a string to Redis, which replies with the same string
 
 ### get
 -----
-
 Get the value related to the specified key
 
 ##### *Parameters*
@@ -265,7 +262,6 @@ $redis->get('key');
 
 ### set
 -----
-
 Set the string value in argument as value of the key.
 
 ##### *Parameters*
@@ -284,7 +280,6 @@ $redis->set('key', 'value');
 
 ### setex, psetex
 -----
-
 Set the string value in argument as value of the key, with a time to live. PSETEX uses a TTL in milliseconds.
 
 ##### *Parameters*
@@ -301,6 +296,7 @@ Set the string value in argument as value of the key, with a time to live. PSETE
 $redis->setex('key', 3600, 'value'); // sets key → value, with 1h TTL.
 $redis->psetex('key', 100, 'value'); // sets key → value, with 0.1 sec TTL.
 </pre>
+
 ### setnx
 -----
 Set the string value in argument as value of the key if the key doesn't already exist in the database.
@@ -321,10 +317,13 @@ $redis->setnx('key', 'value'); /* return FALSE */
 ### del, delete
 -----
 Remove specified keys.
+
 ##### *Parameters*
 An array of keys, or an undefined number of parameters, each a key: *key1* *key2* *key3* ... *keyN*
+
 ##### *Return value*
 *Long* Number of keys deleted.
+
 ##### *Examples*
 <pre>
 $redis->set('key1', 'val1');
@@ -339,10 +338,13 @@ $redis->delete(array('key3', 'key4')); /* return 2 */
 ### multi, exec, discard.
 -----
 Enter and exit transactional mode.  
+
 ##### *Parameters*
 (optional) `Redis::MULTI` or `Redis::PIPELINE`. Defaults to `Redis::MULTI`. A `Redis::MULTI` block of commands runs as a single transaction; a `Redis::PIPELINE` block is simply transmitted faster to the server, but without any guarantee of atomicity. `discard` cancels a transaction.  
+
 ##### *Return value*
 `multi()` returns the Redis instance and enters multi-mode. Once in multi-mode, all subsequent method calls return the same object until `exec()` is called.
+
 ##### *Example*
 <pre>
 $ret = $redis->multi()
@@ -364,8 +366,10 @@ $ret == array(
 ### watch, unwatch
 -----
 Watches a key for modifications by another client. If the key is modified between `WATCH` and `EXEC`, the MULTI/EXEC transaction will fail (return `FALSE`). `unwatch` cancels all the watching of all keys by this client.
+
 ##### *Parameters*
 *keys*: a list of keys
+
 ##### *Example*
 <pre>
 $redis->watch('x');
@@ -381,9 +385,11 @@ $ret = FALSE if x has been modified between the call to WATCH and the call to EX
 ### subscribe
 -----
 Subscribe to channels. Warning: this function will probably change in the future.
+
 ##### *Parameters*
 *channels*: an array of channels to subscribe to  
 *callback*: either a string or an array($instance, 'method_name'). The callback function receives 3 parameters: the redis instance, the channel name, and the message.  
+
 ##### *Example*
 <pre>
 function f($redis, $chan, $msg) {
@@ -408,9 +414,11 @@ $redis->subscribe(array('chan-1', 'chan-2', 'chan-3'), 'f'); // subscribe to 3 c
 ### psubscribe
 -----
 Subscribe to channels by pattern
+
 ##### *Parameters*
 *patterns*: An array of patterns to match
 *callback*: Either a string or an array with an object and method.  The callback will get four arguments ($redis, $pattern, $channel, $message)
+
 ##### *Example*
 <pre>
 function psubscribe($redis, $pattern, $chan, $msg) {
@@ -423,9 +431,11 @@ function psubscribe($redis, $pattern, $chan, $msg) {
 ### publish
 -----
 Publish messages to channels. Warning: this function will probably change in the future.
+
 ##### *Parameters*
 *channel*: a channel to publish to  
 *messsage*: string  
+
 ##### *Example*
 <pre>
 $redis->publish('chan-1', 'hello, world!'); // send message.
@@ -435,10 +445,13 @@ $redis->publish('chan-1', 'hello, world!'); // send message.
 ### exists
 -----
 Verify if the specified key exists.
+
 ##### *Parameters*
 *key*
+
 ##### *Return value*
 *BOOL*: If the key exists, return `TRUE`, otherwise return `FALSE`.
+
 ##### *Examples*
 <pre>
 $redis->set('key', 'value');
@@ -449,11 +462,14 @@ $redis->exists('NonExistingKey'); /* FALSE */
 ### incr, incrBy
 -----
 Increment the number stored at key by one. If the second argument is filled, it will be used as the integer value of the increment.
+
 ##### *Parameters*
 *key*  
 *value*: value that will be added to key (only for incrBy)
+
 ##### *Return value*
 *INT* the new value
+
 ##### *Examples*
 <pre>
 $redis->incr('key1'); /* key1 didn't exists, set to 0 before the increment */
@@ -468,11 +484,14 @@ $redis->incrBy('key1', 10); /* 14 */
 ### incrByFloat
 -----
 Increment the key with floating point precision.
+
 ##### *Parameters*
 *key*  
 *value*: (float) value that will be added to the key  
+
 ##### *Return value*
 *FLOAT* the new value
+
 ##### *Examples*
 <pre>
 $redis->incrByFloat('key1', 1.5); /* key1 didn't exist, so it will now be 1.5 */
@@ -486,11 +505,14 @@ $redis->incrByFloat('key1', 2.5); /* 3.5 */
 ### decr, decrBy
 -----
 Decrement the number stored at key by one. If the second argument is filled, it will be used as the integer value of the decrement.
+
 ##### *Parameters*
 *key*  
 *value*: value that will be substracted to key (only for decrBy)
+
 ##### *Return value*
 *INT* the new value
+
 ##### *Examples*
 <pre>
 $redis->decr('key1'); /* key1 didn't exists, set to 0 before the increment */
@@ -504,10 +526,13 @@ $redis->decrBy('key1', 10); /* -13 */
 ### mGet, getMultiple
 -----
 Get the values of all the specified keys. If one or more keys dont exist, the array will contain `FALSE` at the position of the key.
+
 ##### *Parameters*
 *Array*: Array containing the list of the keys
+
 ##### *Return value*
 *Array*: Array containing the values related to keys in argument
+
 ##### *Examples*
 <pre>
 $redis->set('key1', 'value1');
@@ -520,11 +545,14 @@ $redis->mGet(array('key0', 'key1', 'key5')); /* array(`FALSE`, 'value2', `FALSE`
 ### lPush
 -----
 Adds the string value to the head (left) of the list. Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
+
 ##### *Parameters*
 *key*  
 *value* String, value to push in key
+
 ##### *Return value*
 *LONG* The new length of the list in case of success, `FALSE` in case of Failure.
+
 ##### *Examples*
 <pre>
 $redis->delete('key1');
@@ -537,11 +565,14 @@ $redis->lPush('key1', 'A'); // returns 3
 ### rPush
 -----
 Adds the string value to the tail (right) of the list. Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
+
 ##### *Parameters*
 *key*  
 *value* String, value to push in key
+
 ##### *Return value*
 *LONG* The new length of the list in case of success, `FALSE` in case of Failure.
+
 ##### *Examples*
 <pre>
 $redis->delete('key1');
@@ -554,11 +585,14 @@ $redis->rPush('key1', 'C'); // returns 3
 ### lPushx
 -----
 Adds the string value to the head (left) of the list if the list exists.
+
 ##### *Parameters*
 *key*  
 *value* String, value to push in key
+
 ##### *Return value*
 *LONG* The new length of the list in case of success, `FALSE` in case of Failure.
+
 ##### *Examples*
 <pre>
 $redis->delete('key1');
@@ -572,11 +606,14 @@ $redis->lPushx('key1', 'C'); // returns 3
 ### rPushx
 -----
 Adds the string value to the tail (right) of the list if the ist exists. `FALSE` in case of Failure.
+
 ##### *Parameters*
 *key*  
 *value* String, value to push in key
+
 ##### *Return value*
 *LONG* The new length of the list in case of success, `FALSE` in case of Failure.
+
 ##### *Examples*
 <pre>
 $redis->delete('key1');
@@ -590,11 +627,14 @@ $redis->rPushx('key1', 'C'); // returns 3
 ### lPop
 -----
 Return and remove the first element of the list.
+
 ##### *Parameters*
 *key*
+
 ##### *Return value*
 *STRING* if command executed successfully
 *BOOL* `FALSE` in case of failure (empty list)
+
 ##### *Example*
 <pre>
 $redis->rPush('key1', 'A');
@@ -606,11 +646,14 @@ $redis->lPop('key1'); /* key1 => [ 'B', 'C' ] */
 ### rPop
 -----
 Returns and removes the last element of the list.
+
 ##### *Parameters*
 *key*
+
 ##### *Return value*
 *STRING* if command executed successfully
 *BOOL* `FALSE` in case of failure (empty list)
+
 ##### *Example*
 <pre>
 $redis->rPush('key1', 'A');
@@ -634,6 +677,7 @@ Or
 ...
 *STRING* Keyn
 *INTEGER* Timeout
+
 ##### *Return value*
 *ARRAY* array('listName', 'element')
 
@@ -669,6 +713,7 @@ $redis->lPush('key1', 'A');
 ### lSize
 -----
 Returns the size of a list identified by Key. If the list didn't exist or is empty, the command returns 0. If the data type identified by Key is not a list, the command return `FALSE`.
+
 ##### *Parameters*
 *Key*
 ##### *Return value*
@@ -711,12 +756,15 @@ $redis->lGet('key1', 10); /* `FALSE` */
 ### lSet
 -----
 Set the list at index with the new value.
+
 ##### *Parameters*
 *key*
 *index*
 *value*
+
 ##### *Return value*
 *BOOL* `TRUE` if the new value is setted. `FALSE` if the index is out of range, or data type identified by key is not a list.
+
 ##### *Example*
 <pre>
 $redis->rPush('key1', 'A');
@@ -732,6 +780,7 @@ $redis->lGet('key1', 0); /* 'X' */
 Returns the specified elements of the list stored at the specified key in the range [start, end]. start and stop are interpretated as indices:
 0 the first element, 1 the second ...
 -1 the last element, -2 the penultimate ...
+
 ##### *Parameters*
 *key*
 *start*
@@ -739,6 +788,7 @@ Returns the specified elements of the list stored at the specified key in the ra
 
 ##### *Return value*
 *Array* containing the values in specified range. 
+
 ##### *Example*
 <pre>
 $redis->rPush('key1', 'A');
@@ -750,13 +800,16 @@ $redis->lRange('key1', 0, -1); /* array('A', 'B', 'C') */
 ### lTrim, listTrim
 -----
 Trims an existing list so that it will contain only a specified range of elements.
+
 ##### *Parameters*
 *key*
 *start*
 *stop*
+
 ##### *Return value*
 *Array*  
 *Bool* return `FALSE` if the key identify a non-list value.
+
 ##### *Example*
 <pre>
 $redis->rPush('key1', 'A');
@@ -781,6 +834,7 @@ Removes the first `count` occurences of the value element from the list. If coun
 ##### *Return value*
 *LONG* the number of elements to remove  
 *BOOL* `FALSE` if the value identified by key is not a list.
+
 ##### *Example*
 <pre>
 $redis->lPush('key1', 'A');
