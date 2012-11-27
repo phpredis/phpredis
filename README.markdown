@@ -576,6 +576,8 @@ $redis->time();
 * [ttl, pttl](#ttl-pttl) - Get the time to live for a key
 * [restore](#restore) - Create a key using the provided serialized value, previously obtained with [dump](#dump).
 
+-----
+
 ### get
 -----
 _**Description**_: Get the value related to the specified key
