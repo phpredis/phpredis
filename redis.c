@@ -2195,11 +2195,51 @@ PHP_METHOD(Redis, sPop)
 /* }}} */
 
 /* }}} */
-/* {{{ proto string Redis::sRandMember(string key)
+/* {{{ proto string Redis::sRandMember(string key, [int count])
  */
 PHP_METHOD(Redis, sRandMember)
 {
-    generic_pop_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SRANDMEMBER", 11);
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd;
+    int key_len, cmd_len, key_free;
+    long count = 0;
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
+                                     &object, redis_ce,
+                                     &key, &key_len, &count) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    if (count == 0) {
+        /* SRANDMEMBER key */
+        key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+        cmd_len = redis_cmd_format_static(&cmd, "SRANDMEMBER", "s", key, key_len);
+        if(key_free) efree(key);
+
+        REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+        IF_ATOMIC() {
+            redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        }
+        REDIS_PROCESS_RESPONSE(redis_string_response);
+    } else {
+        /* SRANDMEMBER key count */
+        key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+        cmd_len = redis_cmd_format_static(&cmd, "SRANDMEMBER", "sd", key, key_len, count);
+        if(key_free) efree(key);
+
+        REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+        IF_ATOMIC() {
+            if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                                redis_sock, NULL, NULL) < 0) {
+                RETURN_FALSE;
+            }
+        }
+        REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+    }
 }
 /* }}} */
 
