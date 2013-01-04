@@ -235,6 +235,12 @@ static zend_function_entry redis_functions[] = {
      /* config */
      PHP_ME(Redis, config, NULL, ZEND_ACC_PUBLIC)
 
+     /* Sentinel */
+     PHP_ME(Redis, masters, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getMasterAddrByName, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, slaves, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, reset, NULL, ZEND_ACC_PUBLIC)
+
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, popen, pconnect, NULL, ZEND_ACC_PUBLIC)
@@ -6241,6 +6247,129 @@ PHP_METHOD(Redis, time) {
 	}
 	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_raw);
 }
+
+/* {{{ proto array Redis::masters()
+ */
+PHP_METHOD(Redis, masters) {
+
+    zval *object;
+    RedisSock *redis_sock;
+    char *cmd, *opt = NULL;
+    int cmd_len, opt_len;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|s",
+                                     &object, redis_ce, &opt, &opt_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format(&cmd, "SENTINEL masters" _NL, "");
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+            redis_sock_read_multi_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_sock_read_multi_multibulk_reply_assoc);
+}
+/* }}} */
+
+/* {{{ proto array Redis::getMasterAddrByName()
+ */
+PHP_METHOD(Redis, getMasterAddrByName) {
+
+    zval *object;
+    RedisSock *redis_sock;
+    char *cmd, *opt = NULL;
+    int cmd_len, opt_len;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|s",
+                                     &object, redis_ce, &opt, &opt_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    if(opt == NULL) {
+        RETURN_FALSE;    	
+    }
+    
+    cmd_len = redis_cmd_format(&cmd, "SENTINEL get-master-addr-by-name %s" _NL, opt, opt_len);
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+            redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+}
+/* }}} */
+
+/* {{{ proto array Redis::slaves()
+ */
+PHP_METHOD(Redis, slaves) {
+
+    zval *object;
+    RedisSock *redis_sock;
+    char *cmd, *opt = NULL;
+    int cmd_len, opt_len;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|s",
+                                     &object, redis_ce, &opt, &opt_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    if(opt == NULL) {
+        RETURN_FALSE;    	
+    }
+    
+    cmd_len = redis_cmd_format(&cmd, "SENTINEL slaves %s" _NL, opt, opt_len);
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+            redis_sock_read_multi_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_sock_read_multi_multibulk_reply_assoc);
+}
+
+/* {{{ proto array Redis::reset()
+ */
+PHP_METHOD(Redis, reset) {
+
+    zval *object;
+    RedisSock *redis_sock;
+    char *cmd, *opt = NULL;
+    int cmd_len, opt_len;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|s",
+                                     &object, redis_ce, &opt, &opt_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    if(opt == NULL) {
+        RETURN_FALSE;    	
+    }
+    
+    cmd_len = redis_cmd_format(&cmd, "SENTINEL reset %s" _NL, opt, opt_len);
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+            redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_long_response);
+}
+/* }}} */
 
 /* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
 

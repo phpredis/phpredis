@@ -24,7 +24,8 @@ You can send comments, patches, questions [here on github](https://github.com/ni
    * [Sorted sets](#sorted-sets)
    * [Pub/sub](#pubsub)
    * [Transactions](#transactions)
-   * [Scripting](#scripting)
+   * [Scripting](#Scripting)
+   * [Sentinel](#Sentinel)
 
 -----
 
@@ -2938,4 +2939,113 @@ serializing values, and you return something from redis in a LUA script that is 
 ~~~
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
 $redis->_unserialize('a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}'); // Will return Array(1,2,3)
+~~~
+
+
+
+## Sentinel
+
+* [masters](#) - Show a list of monitored masters and their state
+* [slaves](#) - Show a list of slaves for specified master and their state
+* [getMasterAddrByName](#) -  Return the ip and port number of the master with specified name
+* [reset](#) - This command will reset all the masters with matching name
+
+### masters
+-----
+_**Description**_: Show a list of monitored masters and their state
+
+##### *Return value*
+Array.  Each element of this array is associative array with info about master and it state.
+
+##### *Examples*
+~~~
+$redis->masters(); 
+/* Returns: 
+array(
+  0 => array(
+    'name' => 'mymaster',
+    'ip' => '192.168.0.106',
+    'port' => '6379',
+    'runid' => '142d3942da9827b3bba9d16dd9c36a451b96288f',
+    'flags' => 'master',
+    'pending-commands' => '0',
+    'last-ok-ping-reply' => '584',
+    'last-ping-reply' => '584',
+    'info-refresh' => '4758',
+    'num-slaves' => '1',
+    'num-other-sentinels' => '1',
+    'quorum' => '2'
+  )
+)
+*/
+~~~
+
+### slaves
+-----
+_**Description**_: Show a list of slaves for specified master and their state.
+
+##### *Parameters*
+*master_name* string.  Master name.  
+
+##### *Return value*
+Array.  Each element of this array is associative array with info about slave and it state.
+
+##### *Examples*
+~~~
+$redis->slaves('mymaster'); 
+/* Returns:
+array(
+  0 => array(
+    'name' => '192.168.0.129:6379',
+    'ip' => '192.168.0.129',
+    'port' => '6379',
+    'runid' => '1cad55cd8e2df3093184f5f98932996117709dab',
+    'flags' => 'slave',
+    'pending-commands' => '0',
+    'last-ok-ping-reply' => '623',
+    'last-ping-reply' => '623',
+    'info-refresh' => '622',
+    'master-link-down-time' => '449000',
+    'master-link-status' => 'err',
+    'master-host' => '192.168.0.106',
+    'master-port' => '6379',
+    'slave-priority' => '100'
+  )
+)
+*/
+~~~
+
+### getMasterAddrByName
+-----
+_**Description**_: Return the ip and port number of the master with specified name.
+If a failover is in progress or terminated successfully for this master it returns 
+the address and port of the promoted slave.
+
+##### *Parameters*
+*master_name* string.  Master name.  
+
+##### *Return value*
+Array.  First item in array is a master ip. Second item is a master port.
+
+##### *Examples*
+~~~
+$redis->getMasterAddrByName('mymaster'); // Returns: array(0 => '192.168.0.106', 1 => '6379')
+~~~
+
+### reset
+-----
+_**Description**_: This command will reset all the masters with matching name.
+The reset process clears any previous state in a master (including a failover in 
+progress), and removes every slave and sentinel already discovered and associated 
+with the master.
+
+##### *Parameters*
+*pattern* string.  The pattern argument is a glob-style pattern.
+
+##### *Return value*
+Integer.  Number of reseted masters.
+
+##### *Examples*
+~~~
+$redis->reset('mymaster'); // Returns: 1
 ~~~

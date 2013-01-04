@@ -181,6 +181,12 @@ PHP_METHOD(Redis, setOption);
 
 PHP_METHOD(Redis, config);
 
+/* Sentinel functions*/
+PHP_METHOD(Redis, masters);
+PHP_METHOD(Redis, getMasterAddrByName);
+PHP_METHOD(Redis, slaves);
+PHP_METHOD(Redis, reset);
+
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
 #else
