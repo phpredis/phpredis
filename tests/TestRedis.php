@@ -1718,6 +1718,28 @@ class Redis_Test extends TestSuite
 
     }
 
+    public function testBRpopLpush() {
+
+	// standard case.
+	$this->redis->delete('x', 'y');
+	$this->redis->lpush('x', 'abc');
+	$this->redis->lpush('x', 'def');	// x = [def, abc]
+
+	$this->redis->lpush('y', '123');
+	$this->redis->lpush('y', '456');	// y = [456, 123]
+
+	$this->assertEquals($this->redis->brpoplpush('x', 'y', 1), 'abc');	// we RPOP x, yielding abc.
+	$this->assertEquals($this->redis->lgetRange('x', 0, -1), array('def'));	// only def remains in x.
+	$this->assertEquals($this->redis->lgetRange('y', 0, -1), array('abc', '456', '123'));	// abc has been lpushed to y.
+
+	// with an empty source, expecting no change.
+	$this->redis->delete('x', 'y');
+	$this->assertTrue(FALSE === $this->redis->brpoplpush('x', 'y', 1));
+	$this->assertTrue(array() === $this->redis->lgetRange('x', 0, -1));
+	$this->assertTrue(array() === $this->redis->lgetRange('y', 0, -1));
+
+    }
+
 	public function testZAddFirstArg() {
 
 		$this->redis->delete('key');

@@ -203,8 +203,14 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
             resp = redis_sock_read_bulk_reply(redis_sock, *buf_len TSRMLS_CC);
             return resp;
 
+        case '*':
+            /* For null multi-bulk replies (like timeouts from brpoplpush): */
+            if(memcmp(inbuf + 1, "-1", 2) == 0) {
+                return NULL;
+            }
+            /* fall through */
+
         case '+':
-		case '*':
         case ':':
 	    // Single Line Reply
             /* :123\r\n */
