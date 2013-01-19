@@ -3263,7 +3263,10 @@ class Redis_Test extends TestSuite
     		1,1.5,'one',Array('this','is','an','array')
     	);
 
-    	foreach(Array(Redis::SERIALIZER_PHP, Redis::SERIALIZER_IGBINARY) as $mode) {
+        $serializers = Array(Redis::SERIALIZER_PHP);
+        if(defined('Redis::SERIALIZER_IGBINARY')) $serializers[] = Redis::SERIALIZER_IGBINARY;
+
+    	foreach($serializers as $mode) {
     		$vals_enc = Array();
 
     		// Pass them through redis so they're serialized

@@ -448,6 +448,20 @@ int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len) 
 }
 
 /*
+ * Append a command sequence to a smart_str
+ */
+int redis_cmd_append_sstr(smart_str *str, char *append, int append_len) {
+    smart_str_appendc(str, '$');
+    smart_str_append_long(str, append_len);
+    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    smart_str_appendl(str, append, append_len);
+    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+
+    // Return our new length
+    return str->len;
+}
+
+/*
  * Append an integer command to a Redis command
  */
 int redis_cmd_append_int(char **cmd, int cmd_len, int append) {
