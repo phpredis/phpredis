@@ -10,4 +10,7 @@ Package: php5-redis
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${php5:Depends}
 Recommends: php5
+Provides: php5-redis
+Conflicts: phpredis
+Replaces: phpredis
 Description: Redis C extension for PHP5.
