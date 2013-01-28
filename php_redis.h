@@ -200,7 +200,7 @@ PHP_MINFO_FUNCTION(redis);
 PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
 PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int count);
 PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
-									 int min_argc, RedisSock **redis_sock, int has_timeout, int all_keys, int can_serialize);
+					 int min_argc, RedisSock **redis_sock, int has_timeout, int all_keys, int can_serialize);
 PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_alpha);
 typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHPAPI void generic_empty_cmd_impl(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ResultCallback result_callback);
@@ -234,7 +234,7 @@ struct redis_queued_item {
 	/* reading function */
 	zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, ...);
 
-	char *cmd; 
+	char *cmd;
 	int cmd_len;
 
 	struct redis_queued_item *next;

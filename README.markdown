@@ -154,9 +154,9 @@ _**Description**_: Connects to a Redis instance.
 
 ##### *Parameters*
 
-*host*: string. can be a host, or the path to a unix domain socket  
-*port*: int, optional  
-*timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
+*host*: string. can be a host, or the path to a unix domain socket
+*port*: int, optional
+*timeout*: float, value in seconds (optional, default is 0 meaning unlimited)
 
 ##### *Return value*
 
@@ -187,9 +187,9 @@ persistent equivalents.
 
 ##### *Parameters*
 
-*host*: string. can be a host, or the path to a unix domain socket  
-*port*: int, optional  
-*timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
+*host*: string. can be a host, or the path to a unix domain socket
+*port*: int, optional
+*timeout*: float, value in seconds (optional, default is 0 meaning unlimited)
 *persistent_id*: string. identity for the requested persistent connection
 
 ##### *Return value*
@@ -243,8 +243,8 @@ _**Description**_: Disconnects from the Redis instance, except when `pconnect` i
 _**Description**_: Set client option.
 
 ##### *Parameters*
-*parameter name*  
-*parameter value*  
+*parameter name*
+*parameter value*
 
 ##### *Return value*
 *BOOL*: `TRUE` on success, `FALSE` on error.
@@ -264,7 +264,7 @@ $redis->setOption(Redis::OPT_PREFIX, 'myAppName:');	// use custom prefix on all 
 _**Description**_: Get client option.
 
 ##### *Parameters*
-*parameter name*  
+*parameter name*
 
 ##### *Return value*
 Parameter value.
@@ -350,12 +350,12 @@ $redis->bgSave();
 _**Description**_: Get or Set the Redis server configuration parameters.
 
 ##### *Parameters*
-*operation* (string) either `GET` or `SET`  
-*key* string for `SET`, glob-pattern for `GET`. See http://redis.io/commands/config-get for examples.  
+*operation* (string) either `GET` or `SET`
+*key* string for `SET`, glob-pattern for `GET`. See http://redis.io/commands/config-get for examples.
 *value* optional string (only for `SET`)
 
 ##### *Return value*
-*Associative array* for `GET`, key -> value  
+*Associative array* for `GET`, key -> value
 *bool* for `SET`
 
 ##### *Examples*
@@ -520,7 +520,7 @@ $redis->slaveof();
 _**Description**_: Return the current server time.
 
 ##### *Parameters*
-(none)  
+(none)
 
 ##### *Return value*
 If successfull, the time will come back as an associative array with element zero being
@@ -599,9 +599,9 @@ $redis->get('key');
 _**Description**_: Set the string value in argument as value of the key.
 
 ##### *Parameters*
-*Key*  
-*Value*  
-*Timeout* (optional). Calling `SETEX` is preferred if you want a timeout.  
+*Key*
+*Value*
+*Timeout* (optional). Calling `SETEX` is preferred if you want a timeout.
 
 ##### *Return value*
 *Bool* `TRUE` if the command is successful.
@@ -691,7 +691,7 @@ $redis->exists('NonExistingKey'); /* FALSE */
 _**Description**_: Increment the number stored at key by one. If the second argument is filled, it will be used as the integer value of the increment.
 
 ##### *Parameters*
-*key*  
+*key*
 *value*: value that will be added to key (only for incrBy)
 
 ##### *Return value*
@@ -700,7 +700,7 @@ _**Description**_: Increment the number stored at key by one. If the second argu
 ##### *Examples*
 ~~~
 $redis->incr('key1'); /* key1 didn't exists, set to 0 before the increment */
-					  /* and now has the value 1  */
+			  /* and now has the value 1  */
 
 $redis->incr('key1'); /* 2 */
 $redis->incr('key1'); /* 3 */
@@ -713,8 +713,8 @@ $redis->incrBy('key1', 10); /* 14 */
 _**Description**_: Increment the key with floating point precision.
 
 ##### *Parameters*
-*key*  
-*value*: (float) value that will be added to the key  
+*key*
+*value*: (float) value that will be added to the key
 
 ##### *Return value*
 *FLOAT* the new value
@@ -734,7 +734,7 @@ $redis->incrByFloat('key1', 2.5); /* 3.5 */
 _**Description**_: Decrement the number stored at key by one. If the second argument is filled, it will be used as the integer value of the decrement.
 
 ##### *Parameters*
-*key*  
+*key*
 *value*: value that will be substracted to key (only for decrBy)
 
 ##### *Return value*
@@ -743,7 +743,7 @@ _**Description**_: Decrement the number stored at key by one. If the second argu
 ##### *Examples*
 ~~~
 $redis->decr('key1'); /* key1 didn't exists, set to 0 before the increment */
-					  /* and now has the value -1  */
+			  /* and now has the value -1  */
 
 $redis->decr('key1'); /* -2 */
 $redis->decr('key1'); /* -3 */
@@ -931,13 +931,13 @@ _**Description**_: Returns the type of data pointed by a given key.
 
 ##### *Return value*
 
-Depending on the type of the data pointed by the key, this method will return the following value:  
-string: Redis::REDIS_STRING  
-set: Redis::REDIS_SET  
-list: Redis::REDIS_LIST  
-zset: Redis::REDIS_ZSET  
-hash: Redis::REDIS_HASH  
-other: Redis::REDIS_NOT_FOUND  
+Depending on the type of the data pointed by the key, this method will return the following value:
+string: Redis::REDIS_STRING
+set: Redis::REDIS_SET
+list: Redis::REDIS_LIST
+zset: Redis::REDIS_ZSET
+hash: Redis::REDIS_HASH
+other: Redis::REDIS_NOT_FOUND
 
 ##### *Example*
 ~~~
@@ -964,7 +964,7 @@ $redis->get('key'); /* 'value1value2' */
 
 ### getRange
 -----
-_**Description**_: Return a substring of a larger string 
+_**Description**_: Return a substring of a larger string
 
 *Note*: substr also supported but deprecated in redis.
 
@@ -974,7 +974,7 @@ _**Description**_: Return a substring of a larger string
 *end*
 
 ##### *Return value*
-*STRING*: the substring 
+*STRING*: the substring
 
 ##### *Example*
 ~~~
@@ -988,9 +988,9 @@ $redis->getRange('key', -5, -1); /* 'value' */
 _**Description**_: Changes a substring of a larger string.
 
 ##### *Parameters*
-*key*  
-*offset*  
-*value*  
+*key*
+*offset*
+*value*
 
 ##### *Return value*
 *STRING*: the length of the string after it was modified.
@@ -1023,8 +1023,8 @@ $redis->strlen('key'); /* 5 */
 _**Description**_: Return a single bit out of a larger string
 
 ##### *Parameters*
-*key*  
-*offset*  
+*key*
+*offset*
 
 ##### *Return value*
 *LONG*: the bit value (0 or 1)
@@ -1041,9 +1041,9 @@ $redis->getBit('key', 1); /* 1 */
 _**Description**_: Changes a single bit of a string.
 
 ##### *Parameters*
-*key*  
-*offset*  
-*value*: bool or int (1 or 0)  
+*key*
+*offset*
+*value*: bool or int (1 or 0)
 
 ##### *Return value*
 *LONG*: 0 or 1, the value of the bit before it was set.
@@ -1061,10 +1061,10 @@ $redis->get('key'); /* chr(0x2f) = "/" = b("0010 1111") */
 _**Description**_: Bitwise operation on multiple keys.
 
 ##### *Parameters*
-*operation*: either "AND", "OR", "NOT", "XOR"  
-*ret_key*: return key  
-*key1*  
-*key2...*  
+*operation*: either "AND", "OR", "NOT", "XOR"
+*ret_key*: return key
+*key1*
+*key2...*
 
 ##### *Return value*
 *LONG*: The size of the string stored in the destination key.
@@ -1074,7 +1074,7 @@ _**Description**_: Bitwise operation on multiple keys.
 _**Description**_: Count bits in a string.
 
 ##### *Parameters*
-*key*  
+*key*
 
 ##### *Return value*
 *LONG*: The number of bits set to 1 in the value behind the input key.
@@ -1175,7 +1175,7 @@ string(6) "value1"
 _**Description**_: Dump a key out of a redis database, the value of which can later be passed into redis using the RESTORE command.  The data
 that comes out of DUMP is a binary representation of the key as Redis stores it.
 ##### *Parameters*
-*key* string  
+*key* string
 ##### *Return value*
 The Redis encoded value of the key, or FALSE if the key doesn't exist
 ##### *Examples*
@@ -1188,9 +1188,9 @@ $val = $redis->dump('foo'); // $val will be the Redis encoded key value
 -----
 _**Description**_: Restore a key from the result of a DUMP operation.
 ##### *Parameters*
-*key* string.  The key name  
-*ttl* integer.  How long the key should live (if zero, no expire will be set on the key)  
-*value* string (binary).  The Redis encoded key value (from DUMP)  
+*key* string.  The key name
+*ttl* integer.  How long the key should live (if zero, no expire will be set on the key)
+*value* string (binary).  The Redis encoded key value (from DUMP)
 ##### *Examples*
 ~~~
 $redis->set('foo', 'bar');
@@ -1202,11 +1202,11 @@ $redis->restore('bar', 0, $val); // The key 'bar', will now be equal to the key 
 -----
 _**Description**_: Migrates a key to a different Redis instance.
 ##### *Parameters*
-*host* string.  The destination host  
-*port* integer.  The TCP port to connect to.  
-*key* string. The key to migrate.  
-*destination-db* integer.  The target DB.  
-*timeout* integer.  The maximum amount of time given to this transfer.  
+*host* string.  The destination host
+*port* integer.  The TCP port to connect to.
+*key* string. The key to migrate.
+*destination-db* integer.  The target DB.
+*timeout* integer.  The maximum amount of time given to this transfer.
 ##### *Examples*
 ~~~
 $redis->migrate('backup', 6379, 'foo', 0, 3600);
@@ -1232,11 +1232,11 @@ $redis->migrate('backup', 6379, 'foo', 0, 3600);
 
 ### hSet
 -----
-_**Description**_: Adds a value to the hash stored at key. If this value is already in the hash, `FALSE` is returned.  
+_**Description**_: Adds a value to the hash stored at key. If this value is already in the hash, `FALSE` is returned.
 ##### *Parameters*
-*key*  
-*hashKey*  
-*value*  
+*key*
+*hashKey*
+*value*
 
 ##### *Return value*
 *LONG* `1` if value didn't exist and was added successfully, `0` if the value was already present and was replaced, `FALSE` if there was an error.
@@ -1267,10 +1267,10 @@ $redis->hSetNx('h', 'key1', 'world'); /* FALSE, 'key1' => 'hello' in the hash at
 
 ### hGet
 -----
-_**Description**_: Gets a value from the hash stored at key. If the hash table doesn't exist, or the key doesn't exist, `FALSE` is returned.  
+_**Description**_: Gets a value from the hash stored at key. If the hash table doesn't exist, or the key doesn't exist, `FALSE` is returned.
 ##### *Parameters*
-*key*  
-*hashKey*  
+*key*
+*hashKey*
 
 ##### *Return value*
 *STRING* The value, if the command executed successfully
@@ -1295,10 +1295,10 @@ $redis->hLen('h'); /* returns 2 */
 
 ### hDel
 -----
-_**Description**_: Removes a value from the hash stored at key. If the hash table doesn't exist, or the key doesn't exist, `FALSE` is returned.  
+_**Description**_: Removes a value from the hash stored at key. If the hash table doesn't exist, or the key doesn't exist, `FALSE` is returned.
 ##### *Parameters*
-*key*  
-*hashKey*  
+*key*
+*hashKey*
 
 ##### *Return value*
 *BOOL* `TRUE` in case of success, `FALSE` in case of failure
@@ -1413,7 +1413,7 @@ The order is random and corresponds to redis' own internal representation of the
 -----
 _**Description**_: Verify if the specified member exists in a key.
 ##### *Parameters*
-*key*  
+*key*
 *memberKey*
 ##### *Return value*
 *BOOL*: If the member exists in the hash table, return `TRUE`, otherwise return `FALSE`.
@@ -1428,9 +1428,9 @@ $redis->hExists('h', 'NonExistingKey'); /* FALSE */
 -----
 _**Description**_: Increments the value of a member from a hash by a given amount.
 ##### *Parameters*
-*key*  
-*member*  
-*value*: (integer) value that will be added to the member's value  
+*key*
+*member*
+*value*: (integer) value that will be added to the member's value
 ##### *Return value*
 *LONG* the new value
 ##### *Examples*
@@ -1444,9 +1444,9 @@ $redis->hIncrBy('h', 'x', 1); /* h[x] ← 2 + 1. Returns 3 */
 -----
 _**Description**_: Increments the value of a hash member by the provided float value
 ##### *Parameters*
-*key*  
-*member*  
-*value*: (float) value that will be added to the member's value  
+*key*
+*member*
+*value*: (float) value that will be added to the member's value
 ##### *Return value*
 *FLOAT* the new value
 ##### *Examples*
@@ -1461,10 +1461,10 @@ $redis->hIncrByFloat('h', 'x', -3.0); /* returns 0.0: h[x] = 0.0 now */
 -----
 _**Description**_: Fills in a whole hash. Non-string values are converted to string, using the standard `(string)` cast. NULL values are stored as empty strings.
 ##### *Parameters*
-*key*  
-*members*: key → value array  
+*key*
+*members*: key → value array
 ##### *Return value*
-*BOOL*  
+*BOOL*
 ##### *Examples*
 ~~~
 $redis->delete('user:1');
@@ -1476,8 +1476,8 @@ $redis->hIncrBy('user:1', 'salary', 100); // Joe earns 100 more now.
 -----
 _**Description**_: Retrieve the values associated to the specified fields in the hash.
 ##### *Parameters*
-*key*  
-*memberKeys* Array  
+*key*
+*memberKeys* Array
 ##### *Return value*
 *Array* An array of elements, the values of the specified fields in the hash, with the hash keys as array keys.
 ##### *Examples*
@@ -1561,8 +1561,8 @@ $redis->lPush('key1', 'A');
 _**Description**_: A blocking version of `rpoplpush`, with an integral timeout in the third parameter.
 
 ##### *Parameters*
-*Key*: srckey  
-*Key*: dstkey  
+*Key*: srckey
+*Key*: dstkey
 *Long*: timeout
 
 ##### *Return value*
@@ -1582,7 +1582,7 @@ Return `FALSE` in case of a bad index or a key that doesn't point to a list.
 *index*
 
 ##### *Return value*
-*String* the element at this index  
+*String* the element at this index
 *Bool* `FALSE` if the key identifies a non-string data type, or no value corresponds to this index in the list `Key`.
 
 ##### *Example*
@@ -1653,7 +1653,7 @@ $redis->lPop('key1'); /* key1 => [ 'B', 'C' ] */
 _**Description**_: Adds the string value to the head (left) of the list. Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
 
 ##### *Parameters*
-*key*  
+*key*
 *value* String, value to push in key
 
 ##### *Return value*
@@ -1673,7 +1673,7 @@ $redis->lPush('key1', 'A'); // returns 3
 _**Description**_: Adds the string value to the head (left) of the list if the list exists.
 
 ##### *Parameters*
-*key*  
+*key*
 *value* String, value to push in key
 
 ##### *Return value*
@@ -1701,7 +1701,7 @@ _**Description**_: Returns the specified elements of the list stored at the spec
 *end*
 
 ##### *Return value*
-*Array* containing the values in specified range. 
+*Array* containing the values in specified range.
 
 ##### *Example*
 ~~~
@@ -1718,21 +1718,21 @@ _**Description**_: Removes the first `count` occurences of the value element fro
 **Note**: The argument order is not the same as in the Redis documentation. This difference is kept for compatibility reasons.
 
 ##### *Parameters*
-*key*  
-*value*  
-*count*  
+*key*
+*value*
+*count*
 
 ##### *Return value*
-*LONG* the number of elements to remove  
+*LONG* the number of elements to remove
 *BOOL* `FALSE` if the value identified by key is not a list.
 
 ##### *Example*
 ~~~
 $redis->lPush('key1', 'A');
 $redis->lPush('key1', 'B');
-$redis->lPush('key1', 'C'); 
-$redis->lPush('key1', 'A'); 
-$redis->lPush('key1', 'A'); 
+$redis->lPush('key1', 'C');
+$redis->lPush('key1', 'A');
+$redis->lPush('key1', 'A');
 
 $redis->lRange('key1', 0, -1); /* array('A', 'A', 'C', 'B', 'A') */
 $redis->lRem('key1', 'A', 2); /* 2 */
@@ -1758,7 +1758,7 @@ $redis->rPush('key1', 'B');
 $redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
 $redis->lGet('key1', 0); /* 'A' */
 $redis->lSet('key1', 0, 'X');
-$redis->lGet('key1', 0); /* 'X' */ 
+$redis->lGet('key1', 0); /* 'X' */
 ~~~
 
 ### lTrim, listTrim
@@ -1771,7 +1771,7 @@ _**Description**_: Trims an existing list so that it will contain only a specifi
 *stop*
 
 ##### *Return value*
-*Array*  
+*Array*
 *Bool* return `FALSE` if the key identify a non-list value.
 
 ##### *Example*
@@ -1808,7 +1808,7 @@ $redis->rPop('key1'); /* key1 => [ 'A', 'B' ] */
 _**Description**_: Pops a value from the tail of a list, and pushes it to the front of another list. Also return this value. (redis >= 1.1)
 
 ##### *Parameters*
-*Key*: srckey  
+*Key*: srckey
 *Key*: dstkey
 
 ##### *Return value*
@@ -1851,7 +1851,7 @@ array(3) {
 _**Description**_: Adds the string value to the tail (right) of the list. Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
 
 ##### *Parameters*
-*key*  
+*key*
 *value* String, value to push in key
 
 ##### *Return value*
@@ -1871,7 +1871,7 @@ $redis->rPush('key1', 'C'); // returns 3
 _**Description**_: Adds the string value to the tail (right) of the list if the ist exists. `FALSE` in case of Failure.
 
 ##### *Parameters*
-*key*  
+*key*
 *value* String, value to push in key
 
 ##### *Return value*
@@ -1897,7 +1897,7 @@ If the list didn't exist or is empty, the command returns 0. If the data type id
 *Key*
 
 ##### *Return value*
-*LONG* The size of the list identified by Key exists.  
+*LONG* The size of the list identified by Key exists.
 *BOOL* `FALSE` if the data type identified by Key is not list
 
 ##### *Example*
@@ -1906,7 +1906,7 @@ $redis->rPush('key1', 'A');
 $redis->rPush('key1', 'B');
 $redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
 $redis->lSize('key1');/* 3 */
-$redis->rPop('key1'); 
+$redis->rPop('key1');
 $redis->lSize('key1');/* 2 */
 ~~~
 
@@ -1930,7 +1930,7 @@ $redis->lSize('key1');/* 2 */
 
 ### sAdd
 -----
-_**Description**_: Adds a value to the set value stored at key. If this value is already in the set, `FALSE` is returned.  
+_**Description**_: Adds a value to the set value stored at key. If this value is already in the set, `FALSE` is returned.
 ##### *Parameters*
 *key*
 *value*
@@ -2040,7 +2040,7 @@ is missing, `FALSE` is returned.
 ##### *Parameters*
 
 key1, key2, keyN: keys identifying the different sets on which we will apply the intersection.
-		
+
 ##### *Return value*
 
 Array, contain the result of the intersection between those keys. If the intersection beteen the different sets is empty, the return value will be empty array.
@@ -2182,7 +2182,7 @@ $redis->sAdd('key1' , 'member13'); /* 'key1' => {'member11', 'member12', 'member
 $redis->sAdd('key2' , 'member21');
 $redis->sAdd('key2' , 'member22'); /* 'key2' => {'member21', 'member22'}*/
 $redis->sMove('key1', 'key2', 'member13'); /* 'key1' =>  {'member11', 'member12'} */
-					/* 'key2' =>  {'member21', 'member22', 'member13'} */
+			/* 'key2' =>  {'member21', 'member22', 'member13'} */
 
 ~~~
 
@@ -2192,7 +2192,7 @@ _**Description**_: Removes and returns a random element from the set value at Ke
 ##### *Parameters*
 *key*
 ##### *Return value*
-*String* "popped" value  
+*String* "popped" value
 *Bool* `FALSE` if set identified by key is empty or doesn't exist.
 ##### *Example*
 ~~~
@@ -2209,7 +2209,7 @@ _**Description**_: Returns a random element from the set value at Key, without r
 ##### *Parameters*
 *key*
 ##### *Return value*
-*String* value from the set  
+*String* value from the set
 *Bool* `FALSE` if set identified by key is empty or doesn't exist.
 ##### *Example*
 ~~~
@@ -2337,9 +2337,9 @@ array(4) {
 _**Description**_: Add one or more members to a sorted set or update its score if it already exists
 
 ##### *Parameters*
-*key*  
-*score* : double  
-*value*: string  
+*key*
+*score* : double
+*value*: string
 
 ##### *Return value*
 *Long* 1 if the element is added. 0 otherwise.
@@ -2375,12 +2375,12 @@ $redis->zSize('key'); /* 3 */
 _**Description**_: Returns the *number* of elements of the sorted set stored at the specified key which have scores in the range [start,end]. Adding a parenthesis before `start` or `end` excludes it from the range. +inf and -inf are also valid limits.
 
 ##### *Parameters*
-*key*  
-*start*: string  
-*end*: string  
+*key*
+*start*: string
+*end*: string
 
 ##### *Return value*
-*LONG* the size of a corresponding zRangeByScore.  
+*LONG* the size of a corresponding zRangeByScore.
 
 ##### *Example*
 ~~~
@@ -2395,9 +2395,9 @@ $redis->zCount('key', 0, 3); /* 2, corresponding to array('val0', 'val2') */
 _**Description**_: Increments the score of a member from a sorted set by a given amount.
 
 ##### *Parameters*
-*key*  
-*value*: (double) value that will be added to the member's score  
-*member*  
+*key*
+*value*: (double) value that will be added to the member's score
+*member*
 
 ##### *Return value*
 *DOUBLE* the new value
@@ -2406,7 +2406,7 @@ _**Description**_: Increments the score of a member from a sorted set by a given
 ~~~
 $redis->delete('key');
 $redis->zIncrBy('key', 2.5, 'member1'); /* key or member1 didn't exist, so member1's score is to 0 before the increment */
-					  /* and now has the value 2.5  */
+			  /* and now has the value 2.5  */
 $redis->zIncrBy('key', 1, 'member1'); /* 3.5 */
 ~~~
 
@@ -2418,10 +2418,10 @@ The third optionnel argument defines `weights` to apply to the sorted sets in in
 The forth argument defines the `AGGREGATE` option which specify how the results of the union are aggregated.
 
 ##### *Parameters*
-*keyOutput*  
-*arrayZSetKeys*  
-*arrayWeights*  
-*aggregateFunction* Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zInter.  
+*keyOutput*
+*arrayZSetKeys*
+*arrayWeights*
+*aggregateFunction* Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zInter.
 
 ##### *Return value*
 *LONG* The number of values in the new sorted set.
@@ -2461,13 +2461,13 @@ Start and stop are interpreted as zero-based indices:
 -1 the last element, -2 the penultimate ...
 
 ##### *Parameters*
-*key*  
-*start*: long  
-*end*: long  
-*withscores*: bool = false  
+*key*
+*start*: long
+*end*: long
+*withscores*: bool = false
 
 ##### *Return value*
-*Array* containing the values in specified range. 
+*Array* containing the values in specified range.
 
 ##### *Example*
 ~~~
@@ -2485,15 +2485,15 @@ $redis->zRange('key1', 0, -1, true); /* array('val0' => 0, 'val2' => 2, 'val10' 
 _**Description**_: Returns the elements of the sorted set stored at the specified key which have scores in the range [start,end]. Adding a parenthesis before `start` or `end` excludes it from the range. +inf and -inf are also valid limits. zRevRangeByScore returns the same items in reverse order, when the `start` and `end` parameters are swapped.
 
 ##### *Parameters*
-*key*  
-*start*: string  
-*end*: string  
-*options*: array  
+*key*
+*start*: string
+*end*: string
+*options*: array
 
 Two options are available: `withscores => TRUE`, and `limit => array($offset, $count)`
 
 ##### *Return value*
-*Array* containing the values in specified range. 
+*Array* containing the values in specified range.
 
 ##### *Example*
 ~~~
@@ -2512,8 +2512,8 @@ $redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(
 _**Description**_: Returns the rank of a given member in the specified sorted set, starting at 0 for the item with the smallest score. zRevRank starts at 0 for the item with the *largest* score.
 
 ##### *Parameters*
-*key*  
-*member*  
+*key*
+*member*
 
 ##### *Return value*
 *Long*, the item's score.
@@ -2534,8 +2534,8 @@ $redis->zRevRank('key', 'two'); /* 0 */
 _**Description**_: Deletes a specified member from the ordered set.
 
 ##### *Parameters*
-*key*  
-*member*  
+*key*
+*member*
 
 ##### *Return value*
 *LONG* 1 on success, 0 on failure.
@@ -2554,9 +2554,9 @@ $redis->zRange('key', 0, -1); /* array('val0', 'val10') */
 _**Description**_: Deletes the elements of the sorted set stored at the specified key which have rank in the range [start,end].
 
 ##### *Parameters*
-*key*  
-*start*: LONG  
-*end*: LONG  
+*key*
+*start*: LONG
+*end*: LONG
 
 ##### *Return value*
 *LONG* The number of values deleted from the sorted set
@@ -2575,9 +2575,9 @@ $redis->zRange('key', 0, -1, array('withscores' => TRUE)); /* array('three' => 3
 _**Description**_: Deletes the elements of the sorted set stored at the specified key which have scores in the range [start,end].
 
 ##### *Parameters*
-*key*  
-*start*: double or "+inf" or "-inf" string  
-*end*: double or "+inf" or "-inf" string  
+*key*
+*start*: double or "+inf" or "-inf" string
+*end*: double or "+inf" or "-inf" string
 
 ##### *Return value*
 *LONG* The number of values deleted from the sorted set
@@ -2597,13 +2597,13 @@ _**Description**_: Returns the elements of the sorted set stored at the specifie
 -1 the last element, -2 the penultimate ...
 
 ##### *Parameters*
-*key*  
-*start*: long  
-*end*: long  
-*withscores*: bool = false  
+*key*
+*start*: long
+*end*: long
+*withscores*: bool = false
 
 ##### *Return value*
-*Array* containing the values in specified range. 
+*Array* containing the values in specified range.
 
 ##### *Example*
 ~~~
@@ -2621,8 +2621,8 @@ $redis->zRevRange('key', 0, -1, true); /* array('val10' => 10, 'val2' => 2, 'val
 _**Description**_: Returns the score of a given member in the specified sorted set.
 
 ##### *Parameters*
-*key*  
-*member*  
+*key*
+*member*
 
 ##### *Return value*
 *Double*
@@ -2641,10 +2641,10 @@ The third optionnel argument defines `weights` to apply to the sorted sets in in
 The forth argument defines the `AGGREGATE` option which specify how the results of the union are aggregated.
 
 ##### *Parameters*
-*keyOutput*  
-*arrayZSetKeys*  
-*arrayWeights*  
-*aggregateFunction* Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zUnion.  
+*keyOutput*
+*arrayZSetKeys*
+*arrayWeights*
+*aggregateFunction* Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zUnion.
 
 ##### *Return value*
 *LONG* The number of values in the new sorted set.
@@ -2699,8 +2699,8 @@ function psubscribe($redis, $pattern, $chan, $msg) {
 _**Description**_: Publish messages to channels. Warning: this function will probably change in the future.
 
 ##### *Parameters*
-*channel*: a channel to publish to  
-*messsage*: string  
+*channel*: a channel to publish to
+*messsage*: string
 
 ##### *Example*
 ~~~
@@ -2712,24 +2712,24 @@ $redis->publish('chan-1', 'hello, world!'); // send message.
 _**Description**_: Subscribe to channels. Warning: this function will probably change in the future.
 
 ##### *Parameters*
-*channels*: an array of channels to subscribe to  
-*callback*: either a string or an array($instance, 'method_name'). The callback function receives 3 parameters: the redis instance, the channel name, and the message.  
+*channels*: an array of channels to subscribe to
+*callback*: either a string or an array($instance, 'method_name'). The callback function receives 3 parameters: the redis instance, the channel name, and the message.
 
 ##### *Example*
 ~~~
 function f($redis, $chan, $msg) {
 	switch($chan) {
-		case 'chan-1':
-			...
-			break;
+	case 'chan-1':
+		...
+		break;
 
-		case 'chan-2':
-			...
-			break;
+	case 'chan-2':
+		...
+		break;
 
-		case 'chan-2':
-			...
-			break;
+	case 'chan-2':
+		...
+		break;
 	}
 }
 
@@ -2744,10 +2744,10 @@ $redis->subscribe(array('chan-1', 'chan-2', 'chan-3'), 'f'); // subscribe to 3 c
 
 ### multi, exec, discard.
 -----
-_**Description**_: Enter and exit transactional mode.  
+_**Description**_: Enter and exit transactional mode.
 
 ##### *Parameters*
-(optional) `Redis::MULTI` or `Redis::PIPELINE`. Defaults to `Redis::MULTI`. A `Redis::MULTI` block of commands runs as a single transaction; a `Redis::PIPELINE` block is simply transmitted faster to the server, but without any guarantee of atomicity. `discard` cancels a transaction.  
+(optional) `Redis::MULTI` or `Redis::PIPELINE`. Defaults to `Redis::MULTI`. A `Redis::MULTI` block of commands runs as a single transaction; a `Redis::PIPELINE` block is simply transmitted faster to the server, but without any guarantee of atomicity. `discard` cancels a transaction.
 
 ##### *Return value*
 `multi()` returns the Redis instance and enters multi-mode. Once in multi-mode, all subsequent method calls return the same object until `exec()` is called.
@@ -2808,9 +2808,9 @@ $ret = FALSE if x has been modified between the call to WATCH and the call to EX
 _**Description**_: Evaluate a LUA script serverside
 
 ##### *Parameters*
-*script* string.  
-*args* array, optional.  
-*num_keys* int, optional.  
+*script* string.
+*args* array, optional.
+*num_keys* int, optional.
 
 ##### *Return value*
 Mixed.  What is returned depends on what the LUA script itself returns, which could be a scalar value (int/string), or an array.
@@ -2837,9 +2837,9 @@ In order to run this command Redis will have to have already loaded the script,
 either by running it or via the SCRIPT LOAD command.
 
 ##### *Parameters*
-*script_sha* string.  The sha1 encoded hash of the script you want to run.  
-*args* array, optional.  Arguments to pass to the LUA script.  
-*num_keys* int, optional.  The number of arguments that should go into the KEYS array, vs. the ARGV array when Redis spins the script  
+*script_sha* string.  The sha1 encoded hash of the script you want to run.
+*args* array, optional.  Arguments to pass to the LUA script.
+*num_keys* int, optional.  The number of arguments that should go into the KEYS array, vs. the ARGV array when Redis spins the script
 
 ##### *Return value*
 Mixed.  See EVAL
@@ -2874,7 +2874,7 @@ $redis->script('exists', $script1, [$script2, $script3, ...]);
 _**Description**_: The last error message (if any)
 
 ##### *Parameters*
-*none*  
+*none*
 
 ##### *Return value*
 A string with the last returned script based error message, or NULL if there is no error
@@ -2882,19 +2882,19 @@ A string with the last returned script based error message, or NULL if there is 
 ##### *Examples*
 ~~~
 $redis->eval('this-is-not-lua');
-$err = $redis->getLastError(); 
+$err = $redis->getLastError();
 // "ERR Error compiling script (new function): user_script:1: '=' expected near '-'"
 ~~~
 
 ### clearLastError
 -----
-_**Description**_: Clear the last error message  
+_**Description**_: Clear the last error message
 
 ##### *Parameters*
-*none*  
+*none*
 
 ##### *Return value*
-*BOOL* TRUE  
+*BOOL* TRUE
 
 ##### *Examples*
 ~~~
@@ -2912,7 +2912,7 @@ $err = $redis->getLastError();
 _**Description**_: A utility method to prefix the value with the prefix setting for phpredis.
 
 ##### *Parameters*
-*value* string.  The value you wish to prefix  
+*value* string.  The value you wish to prefix
 
 ##### *Return value*
 If a prefix is set up, the value now prefixed.  If there is no prefix, the value will be returned unchanged.
@@ -2932,7 +2932,7 @@ and the data passed in is malformed, an exception will be thrown. This can be us
 serializing values, and you return something from redis in a LUA script that is serialized.
 
 ##### *Parameters*
-*value* string.  The value to be unserialized  
+*value* string.  The value to be unserialized
 
 ##### *Examples*
 ~~~

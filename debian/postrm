@@ -21,7 +21,7 @@ set -e
 case "$1" in
     purge)
 	if [ -e /etc/php5/conf.d/redis.ini ]; then
-		rm -f /etc/php5/conf.d/redis.ini
+	rm -f /etc/php5/conf.d/redis.ini
 	fi
     ;;
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
