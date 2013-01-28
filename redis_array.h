@@ -31,7 +31,7 @@ PHP_METHOD(RedisArray, unwatch);
 
 
 typedef struct RedisArray_ {
-	
+
 	int count;
 	char **hosts;			/* array of host:port strings */
 	zval **redis;			/* array of Redis instances */

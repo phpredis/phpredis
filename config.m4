@@ -85,7 +85,7 @@ dnl Check for igbinary
 
   dnl # --with-redis -> check for lib and symbol presence
   dnl LIBNAME=redis # you may want to change this
-  dnl LIBSYMBOL=redis # you most likely want to change this 
+  dnl LIBSYMBOL=redis # you most likely want to change this
 
   dnl PHP_CHECK_LIBRARY($LIBNAME,$LIBSYMBOL,
   dnl [

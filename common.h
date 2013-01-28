@@ -49,9 +49,9 @@ typedef enum _REDIS_REPLY_TYPE {
 #define IF_ATOMIC() if(redis_sock->mode == ATOMIC)
 #define ELSE_IF_MULTI() else if(redis_sock->mode == MULTI) { \
 	if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) {\
-		RETURN_ZVAL(getThis(), 1, 0);\
+	RETURN_ZVAL(getThis(), 1, 0);\
 	} else {\
-		RETURN_FALSE;\
+	RETURN_FALSE;\
 	}				 \
 }
 
@@ -79,11 +79,11 @@ typedef enum _REDIS_REPLY_TYPE {
 	tmp->next = NULL;\
 	current_request = redis_sock->pipeline_current; \
 	if(current_request) {\
-		current_request->next = tmp;\
+	current_request->next = tmp;\
 	} \
 	redis_sock->pipeline_current = tmp; \
 	if(NULL == redis_sock->pipeline_head) { \
-		redis_sock->pipeline_head = redis_sock->pipeline_current;\
+	redis_sock->pipeline_head = redis_sock->pipeline_current;\
 	}
 
 #define SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len) if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) { \
@@ -101,17 +101,17 @@ typedef enum _REDIS_REPLY_TYPE {
 	if(current) current->next = f1; \
 	redis_sock->current = f1; \
 	if(NULL == redis_sock->head) { \
-		redis_sock->head = redis_sock->current;\
+	redis_sock->head = redis_sock->current;\
 	}\
 }
 
 #define REDIS_ELSE_IF_MULTI(function, closure_context) \
 else if(redis_sock->mode == MULTI) { \
 	if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) {\
-		REDIS_SAVE_CALLBACK(function, closure_context); \
-		RETURN_ZVAL(getThis(), 1, 0);\
+	REDIS_SAVE_CALLBACK(function, closure_context); \
+	RETURN_ZVAL(getThis(), 1, 0);\
 	} else {\
-		RETURN_FALSE;\
+	RETURN_FALSE;\
 	}\
 }
 
@@ -122,12 +122,12 @@ else if(redis_sock->mode == MULTI) { \
 
 #define REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len) 	\
 	IF_MULTI_OR_ATOMIC() { \
-		SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len); \
-		efree(cmd); \
+	SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len); \
+	efree(cmd); \
 	}\
 	IF_PIPELINE() { \
-		PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len); \
-		efree(cmd); \
+	PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len); \
+	efree(cmd); \
 	}
 
 #define REDIS_PROCESS_RESPONSE_CLOSURE(function, closure_context) \
@@ -145,7 +145,7 @@ typedef struct fold_item {
 } fold_item;
 
 typedef struct request_item {
-	char *request_str; 
+	char *request_str;
 	int request_size; /* size_t */
 	struct request_item *next;
 } request_item;
