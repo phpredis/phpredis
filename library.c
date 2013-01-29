@@ -38,8 +38,9 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
     int eof;
     int count = 0;
 
-	if (!redis_sock->stream)
+	if (!redis_sock->stream) {
 		return -1;
+	}
 
 	eof = php_stream_eof(redis_sock->stream);
     for (; eof; count++) {
@@ -60,6 +61,12 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 			redis_sock->mode   = ATOMIC;
             redis_sock->watching = 0;
 	}
+    // Wait for a while before trying to reconnect
+    if (redis_sock->retry_interval) {
+    	// Random factor to avoid having several (or many) concurrent connections trying to reconnect at the same time
+   		long retry_interval = (count ? redis_sock->retry_interval : (random() % redis_sock->retry_interval));
+    	usleep(retry_interval);
+    }
         redis_sock_connect(redis_sock TSRMLS_CC); /* reconnect */
         if(redis_sock->stream) { /*  check for EOF again. */
             eof = php_stream_eof(redis_sock->stream);
@@ -962,7 +969,8 @@ PHPAPI void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
  * redis_sock_create
  */
 PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port,
-                                    double timeout, int persistent, char *persistent_id)
+                                    double timeout, int persistent, char *persistent_id,
+                                    long retry_interval)
 {
     RedisSock *redis_sock;
 
@@ -972,7 +980,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->watching = 0;
     redis_sock->dbNumber = 0;
-
+    redis_sock->retry_interval = retry_interval * 1000;
     redis_sock->persistent = persistent;
 
     if(persistent_id) {

@@ -522,7 +522,7 @@ PHP_METHOD(Redis,__destruct) {
 	}
 }
 
-/* {{{ proto boolean Redis::connect(string host, int port [, double timeout])
+/* {{{ proto boolean Redis::connect(string host, int port [, double timeout [, long retry_interval]])
  */
 PHP_METHOD(Redis, connect)
 {
@@ -558,6 +558,7 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 	int host_len, id;
 	char *host = NULL;
 	long port = -1;
+	long retry_interval = 0;
 
 	char *persistent_id = NULL;
 	int persistent_id_len = -1;
@@ -570,14 +571,20 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
     persistent = 0;
 #endif
 
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|lds",
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|ldsl",
 				&object, redis_ce, &host, &host_len, &port,
-				&timeout, &persistent_id, &persistent_id_len) == FAILURE) {
+				&timeout, &persistent_id, &persistent_id_len,
+				&retry_interval) == FAILURE) {
 		return FAILURE;
 	}
 
 	if (timeout < 0L || timeout > INT_MAX) {
 		zend_throw_exception(redis_exception_ce, "Invalid timeout", 0 TSRMLS_CC);
+		return FAILURE;
+	}
+
+	if (retry_interval < 0L || retry_interval > INT_MAX) {
+		zend_throw_exception(redis_exception_ce, "Invalid retry interval", 0 TSRMLS_CC);
 		return FAILURE;
 	}
 
@@ -597,7 +604,7 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 		zend_clear_exception(TSRMLS_C); /* clear exception triggered by non-existent socket during connect(). */
 	}
 
-	redis_sock = redis_sock_create(host, host_len, port, timeout, persistent, persistent_id);
+	redis_sock = redis_sock_create(host, host_len, port, timeout, persistent, persistent_id, retry_interval);
 
 	if (redis_sock_server_open(redis_sock, 1 TSRMLS_CC) < 0) {
 		redis_free_socket(redis_sock);
