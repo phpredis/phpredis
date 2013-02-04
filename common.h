@@ -1,5 +1,6 @@
 #include "php.h"
 #include "php_ini.h"
+#include <ext/standard/php_smart_str.h>
 
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
