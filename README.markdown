@@ -2207,8 +2207,8 @@ $redis->sPop('key1'); /* 'member3', 'key1' => {'member2'} */
 -----
 _**Description**_: Returns one or more random elements from the set value at Key, without removing it.
 ##### *Parameters*
-*key*
-*count* Integer, optional
+*key*  
+*count* Integer, optional  
 ##### *Return value*
 If no count is specified, sRandMember will return a *String* value from the set.  If a count is
 provided, then an array of random values will be returned, following the semantics of how
