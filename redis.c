@@ -2195,11 +2195,54 @@ PHP_METHOD(Redis, sPop)
 /* }}} */
 
 /* }}} */
-/* {{{ proto string Redis::sRandMember(string key)
+/* {{{ proto string Redis::sRandMember(string key [int count])
  */
 PHP_METHOD(Redis, sRandMember)
 {
-    generic_pop_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SRANDMEMBER", 11);
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd;
+    int key_len, cmd_len, key_free = 0;
+    long count;
+
+    // Parse our params
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
+                                    &object, redis_ce, &key, &key_len, &count) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    // Get our redis socket
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    // Prefix our key if necissary
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+
+    // If we have two arguments, we're running with an optional COUNT, which will return
+    // a multibulk reply.  Without the argument we'll return a string response
+    if(ZEND_NUM_ARGS() == 2) {
+        // Construct our command with count
+        cmd_len = redis_cmd_format_static(&cmd, "SRANDMEMBER", "sl", key, key_len, count);
+    } else {
+        // Construct our command
+        cmd_len = redis_cmd_format_static(&cmd, "SRANDMEMBER", "s", key, key_len);
+    }
+
+    // Free our key if we prefixed it
+    if(key_free) efree(key);
+
+    // Process our command
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+
+    // Process our reply
+    IF_ATOMIC() {
+        // This will be bulk or multi-bulk depending if we passed the optional [COUNT] argument
+        if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL) < 0) {
+            RETURN_FALSE;
+        }
+    }
+    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
 }
 /* }}} */
 
@@ -2207,7 +2250,7 @@ PHP_METHOD(Redis, sRandMember)
  */
 PHP_METHOD(Redis, sContains)
 {
-    zval *object;
+	zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *val = NULL, *cmd;
     int key_len, val_len, cmd_len;
