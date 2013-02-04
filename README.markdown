@@ -2205,31 +2205,19 @@ $redis->sPop('key1'); /* 'member3', 'key1' => {'member2'} */
 
 ### sRandMember
 -----
-_**Description**_: Returns one or more random elements from the set value at Key, without removing it.
+_**Description**_: Returns a random element from the set value at Key, without removing it.
 ##### *Parameters*
-*key*  
-*count* Integer, optional  
+*key*
 ##### *Return value*
-If no count is specified, sRandMember will return a *String* value from the set.  If a count is
-provided, then an array of random values will be returned, following the semantics of how
-Redis will treat the count itself. [SRANDMEMBER](http://www.redis.io/commands/srandmember).
+*String* value from the set  
 *Bool* `FALSE` if set identified by key is empty or doesn't exist.
 ##### *Example*
 ~~~
 $redis->sAdd('key1' , 'member1');
 $redis->sAdd('key1' , 'member2');
 $redis->sAdd('key1' , 'member3'); /* 'key1' => {'member3', 'member1', 'member2'}*/
-
-// No count
 $redis->sRandMember('key1'); /* 'member1', 'key1' => {'member3', 'member1', 'member2'} */
 $redis->sRandMember('key1'); /* 'member3', 'key1' => {'member3', 'member1', 'member2'} */
-
-// With a count
-$redis->sRandMember('key1', 3); // Will return an array with all members from the set
-$redis->sRandMember('key1', 2); // Will an array with 2 members of the set
-$redis->sRandMember('key1', -100); // Will return an array of 100 elements, picked from our set (with dups)
-$redis->sRandMember('empty-set', 100); // Will return an empty array
-$redis->sRandMember('not-a-set', 100); // Will return FALSE
 ~~~
 
 ### sRem, sRemove
