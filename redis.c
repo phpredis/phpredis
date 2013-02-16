@@ -2511,11 +2511,6 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword
 	efree(keys_to_free);
 
     if(z_args) efree(z_args);
-	
-	/*
-	cmd[cmd_len] = 0;
-	php_printf("cmd=[%s]\n", cmd);
-	*/
 
 	/* call REDIS_PROCESS_REQUEST and skip void returns */
 	IF_MULTI_OR_ATOMIC() {
