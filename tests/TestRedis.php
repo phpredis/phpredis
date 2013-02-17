@@ -2394,8 +2394,9 @@ class Redis_Test extends TestSuite
 		    ->expireAt('key', '0000')
 		    ->exec();
 	    $this->assertTrue(is_array($ret));
-	    $i = 0;
-	    $this->assertTrue($ret[$i++] == -1);
+		$i = 0;
+		$ttl = $ret[$i++];
+	    $this->assertTrue($ttl === -1 || $ttl === -2);
 	    $this->assertTrue($ret[$i++] === array('val1', 'valX', FALSE)); // mget
 	    $this->assertTrue($ret[$i++] === TRUE); // mset
 	    $this->assertTrue($ret[$i++] === TRUE); // set
