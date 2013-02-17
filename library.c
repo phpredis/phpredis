@@ -717,6 +717,11 @@ PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PA
     }
 
     if(inbuf[0] != '*') {
+        IF_MULTI_OR_PIPELINE() {
+            add_next_index_bool(z_tab, 0);
+        } else {
+            RETURN_FALSE;
+        }
         return -1;
     }
     numElems = atoi(inbuf+1);
@@ -1085,6 +1090,11 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
     }
 
     if(inbuf[0] != '*') {
+        IF_MULTI_OR_PIPELINE() {
+            add_next_index_bool(z_tab, 0);
+        } else {
+            RETURN_FALSE;
+        }
         return -1;
     }
     numElems = atoi(inbuf+1);
@@ -1127,6 +1137,11 @@ PHPAPI int redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, Red
     }
 
     if(inbuf[0] != '*') {
+        IF_MULTI_OR_PIPELINE() {
+            add_next_index_bool(z_tab, 0);
+        } else {
+            RETURN_FALSE;
+        }
         return -1;
     }
     numElems = atoi(inbuf+1);
@@ -1201,6 +1216,11 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, R
     }
 
     if(inbuf[0] != '*') {
+        IF_MULTI_OR_PIPELINE() {
+            add_next_index_bool(z_tab, 0);
+        } else {
+            RETURN_FALSE;
+        }
         return -1;
     }
     numElems = atoi(inbuf+1);
