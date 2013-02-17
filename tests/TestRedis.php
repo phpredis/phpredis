@@ -1650,6 +1650,32 @@ class Redis_Test extends TestSuite
 	$this->assertTrue(FALSE === $this->redis->persist('x'));	// false if the key doesn’t exist.
     }
 
+    public function testClient() {
+        /* CLIENT SETNAME */
+        $this->assertTrue($this->redis->client('setname', 'phpredis_unit_tests'));
+
+        /* CLIENT LIST */
+        $arr_clients = $this->redis->client('list');
+        $this->assertTrue(is_array($arr_clients));
+
+        // Figure out which ip:port is us!
+        $str_addr = NULL;
+        foreach($arr_clients as $arr_client) {
+            if($arr_client['name'] == 'phpredis_unit_tests') {
+                $str_addr = $arr_client['addr'];
+            }
+        }
+
+        // We should have found our connection
+        $this->assertFalse(empty($str_addr));
+        
+        /* CLIENT GETNAME */
+        $this->assertTrue($this->redis->client('getname'), 'phpredis_unit_tests');
+         
+        /* CLIENT KILL -- phpredis will reconnect, so we can do this */
+        $this->assertTrue($this->redis->client('kill', $str_addr));
+    }
+
     public function testinfo() {
 	$info = $this->redis->info();
 

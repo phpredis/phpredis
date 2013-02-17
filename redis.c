@@ -227,6 +227,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, _prefix, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _unserialize, NULL, ZEND_ACC_PUBLIC)
 
+     PHP_ME(Redis, client, NULL, ZEND_ACC_PUBLIC)
 
      /* options */
      PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
@@ -6306,5 +6307,56 @@ PHP_METHOD(Redis, time) {
 	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_raw);
 }
 
-/* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
+/*
+ * $redis->client('list');
+ * $redis->client('kill', <ip:port>);
+ * $redis->client('setname', <name>);
+ * $redis->client('getname');
+ */
+PHP_METHOD(Redis, client) {
+    zval *object;
+    RedisSock *redis_sock;
+    char *cmd, *opt=NULL, *arg=NULL;
+    int cmd_len, opt_len, arg_len;
 
+    // Parse our method parameters
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|s", 
+        &object, redis_ce, &opt, &opt_len, &arg, &arg_len) == FAILURE) 
+    {
+        RETURN_FALSE;
+    }
+
+    // Grab our socket
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    // Build our CLIENT command
+    if(ZEND_NUM_ARGS() == 2) {
+        cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "ss", opt, opt_len,
+                                          arg, arg_len); 
+    } else {
+        cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "s", opt, opt_len);
+    }
+
+    // Handle CLIENT LIST specifically
+    int is_list = !strncasecmp(opt, "list", 4);
+
+    // Execute our queue command
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+
+    // We handle CLIENT LIST with a custom response function
+    if(!strncasecmp(opt, "list", 4)) {
+        IF_ATOMIC() {
+            redis_client_list_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock,NULL);
+        }
+        REDIS_PROCESS_RESPONSE(redis_client_list_reply);
+    } else {
+        IF_ATOMIC() {
+            redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock,NULL);
+        }
+        REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+    }
+}
+
+/* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
