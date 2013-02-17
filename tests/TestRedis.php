@@ -2753,7 +2753,7 @@ class Redis_Test extends TestSuite
 
 	    $i = 0;
 	    $this->assertTrue(is_array($ret));
-	    $this->assertTrue(is_long($ret[$i]) && $ret[$i] >= 0 && $ret[$i] <= 3); $i++; // deleting at most 3 keys
+	    $this->assertTrue(is_long($ret[$i]) && $ret[$i] >= 0 && $ret[$i] <= 5); $i++; // deleting at most 5 keys
 	    $this->assertTrue($ret[$i++] === 1);
 	    $this->assertTrue($ret[$i++] === 1);
 	    $this->assertTrue($ret[$i++] === 1);
