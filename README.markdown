@@ -11,6 +11,7 @@ You can send comments, patches, questions [here on github](https://github.com/ni
 1. [Installing/Configuring](#installingconfiguring)
    * [Installation](#installation)
    * [Installation on OSX](#installation-on-osx)
+   * [Building on Windows](#building-on-windows)
    * [PHP Session handler](#php-session-handler)
    * [Distributed Redis Array](#distributed-redis-array)
 1. [Classes and methods](#classes-and-methods)
@@ -88,6 +89,11 @@ session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeou
 Sessions have a lifetime expressed in seconds and stored in the INI variable "session.gc_maxlifetime". You can change it with [`ini_set()`](http://php.net/ini_set).
 The session handler requires a version of Redis with the `SETEX` command (at least 2.0).
 phpredis can also connect to a unix domain socket: `session.save_path = "unix:///var/run/redis/redis.sock?persistent=1&weight=1&database=0`.
+
+
+## Building on Windows
+
+See [instructions from @char101](https://github.com/nicolasff/phpredis/issues/213#issuecomment-11361242) on how to build phpredis on Windows.
 
 
 ## Distributed Redis Array
