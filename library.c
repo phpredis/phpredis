@@ -455,6 +455,20 @@ int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len) 
 }
 
 /*
+ * Append a command sequence to a smart_str
+ */
+int redis_cmd_append_sstr(smart_str *str, char *append, int append_len) {
+    smart_str_appendc(str, '$');
+    smart_str_append_long(str, append_len);
+    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    smart_str_appendl(str, append, append_len);
+    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+
+    // Return our new length
+    return str->len;
+}
+
+/*
  * Append an integer command to a Redis command
  */
 int redis_cmd_append_int(char **cmd, int cmd_len, int append) {
@@ -710,6 +724,11 @@ PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PA
     }
 
     if(inbuf[0] != '*') {
+        IF_MULTI_OR_PIPELINE() {
+            add_next_index_bool(z_tab, 0);
+        } else {
+            RETURN_FALSE;
+        }
         return -1;
     }
     numElems = atoi(inbuf+1);
@@ -855,6 +874,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
 
     redis_sock->port    = port;
     redis_sock->timeout = timeout;
+    redis_sock->read_timeout = timeout;
 
     redis_sock->serializer = REDIS_SERIALIZER_NONE;
     redis_sock->mode = ATOMIC;
@@ -874,7 +894,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
  */
 PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 {
-    struct timeval tv, *tv_ptr = NULL;
+    struct timeval tv, read_tv, *tv_ptr = NULL;
     char *host = NULL, *persistent_id = NULL, *errstr = NULL;
     int host_len, err = 0;
 	php_netstream_data_t *sock;
@@ -889,6 +909,9 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     if(tv.tv_sec != 0 || tv.tv_usec != 0) {
 	    tv_ptr = &tv;
     }
+
+    read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
+    read_tv.tv_usec = (int)((redis_sock->read_timeout - read_tv.tv_sec) * 1000000);
 
     if(redis_sock->host[0] == '/' && redis_sock->port < 1) {
 	    host_len = spprintf(&host, 0, "unix://%s", redis_sock->host);
@@ -931,7 +954,7 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     if(tv.tv_sec != 0 || tv.tv_usec != 0) {
         php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_READ_TIMEOUT,
-                              0, &tv);
+                              0, &read_tv);
     }
     php_stream_set_option(redis_sock->stream,
                           PHP_STREAM_OPTION_WRITE_BUFFER,
@@ -1075,6 +1098,11 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
     }
 
     if(inbuf[0] != '*') {
+        IF_MULTI_OR_PIPELINE() {
+            add_next_index_bool(z_tab, 0);
+        } else {
+            RETURN_FALSE;
+        }
         return -1;
     }
     numElems = atoi(inbuf+1);
@@ -1117,6 +1145,11 @@ PHPAPI int redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, Red
     }
 
     if(inbuf[0] != '*') {
+        IF_MULTI_OR_PIPELINE() {
+            add_next_index_bool(z_tab, 0);
+        } else {
+            RETURN_FALSE;
+        }
         return -1;
     }
     numElems = atoi(inbuf+1);
@@ -1191,6 +1224,11 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, R
     }
 
     if(inbuf[0] != '*') {
+        IF_MULTI_OR_PIPELINE() {
+            add_next_index_bool(z_tab, 0);
+        } else {
+            RETURN_FALSE;
+        }
         return -1;
     }
     numElems = atoi(inbuf+1);

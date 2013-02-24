@@ -11,6 +11,7 @@ You can send comments, patches, questions [here on github](https://github.com/ni
 1. [Installing/Configuring](#installingconfiguring)
    * [Installation](#installation)
    * [Installation on OSX](#installation-on-osx)
+   * [Building on Windows](#building-on-windows)
    * [PHP Session handler](#php-session-handler)
    * [Distributed Redis Array](#distributed-redis-array)
 1. [Classes and methods](#classes-and-methods)
@@ -87,6 +88,12 @@ session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeou
 
 Sessions have a lifetime expressed in seconds and stored in the INI variable "session.gc_maxlifetime". You can change it with [`ini_set()`](http://php.net/ini_set).
 The session handler requires a version of Redis with the `SETEX` command (at least 2.0).
+phpredis can also connect to a unix domain socket: `session.save_path = "unix:///var/run/redis/redis.sock?persistent=1&weight=1&database=0`.
+
+
+## Building on Windows
+
+See [instructions from @char101](https://github.com/nicolasff/phpredis/issues/213#issuecomment-11361242) on how to build phpredis on Windows.
 
 
 ## Distributed Redis Array
@@ -2207,17 +2214,29 @@ $redis->sPop('key1'); /* 'member3', 'key1' => {'member2'} */
 -----
 _**Description**_: Returns a random element from the set value at Key, without removing it.
 ##### *Parameters*
-*key*
+*key*  
+*count* (Integer, optional)  
 ##### *Return value*
-*String* value from the set  
+If no count is provided, a random *String* value from the set will be returned.  If a count
+is provided, an array of values from the set will be returned.  Read about the different
+ways to use the count here: [SRANDMEMBER](http://redis.io/commands/srandmember)  
 *Bool* `FALSE` if set identified by key is empty or doesn't exist.
 ##### *Example*
 ~~~
 $redis->sAdd('key1' , 'member1');
 $redis->sAdd('key1' , 'member2');
 $redis->sAdd('key1' , 'member3'); /* 'key1' => {'member3', 'member1', 'member2'}*/
+
+// No count
 $redis->sRandMember('key1'); /* 'member1', 'key1' => {'member3', 'member1', 'member2'} */
 $redis->sRandMember('key1'); /* 'member3', 'key1' => {'member3', 'member1', 'member2'} */
+
+// With a count
+$redis->sRandMember('key1', 3); // Will return an array with all members from the set
+$redis->sRandMember('key1', 2); // Will an array with 2 members of the set
+$redis->sRandMember('key1', -100); // Will return an array of 100 elements, picked from our set (with dups)
+$redis->sRandMember('empty-set', 100); // Will return an empty array
+$redis->sRandMember('not-a-set', 100); // Will return FALSE
 ~~~
 
 ### sRem, sRemove

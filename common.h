@@ -1,5 +1,6 @@
 #include "php.h"
 #include "php_ini.h"
+#include <ext/standard/php_smart_str.h>
 
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
@@ -34,6 +35,7 @@ typedef enum _REDIS_REPLY_TYPE {
 /* options */
 #define REDIS_OPT_SERIALIZER		1
 #define REDIS_OPT_PREFIX		    2
+#define REDIS_OPT_READ_TIMEOUT		3
 
 /* serializers */
 #define REDIS_SERIALIZER_NONE		0
@@ -157,6 +159,7 @@ typedef struct {
     short          port;
     double         timeout;
     long           retry_interval;
+    double         read_timeout;
     int            failed;
     int            status;
     int            persistent;

@@ -71,6 +71,11 @@ By default and in order to be compatible with other libraries, phpredis will try
 For instance, the keys “{user:1}:name” and “{user:1}:email” will be stored on the same server as only “user:1” will be hashed. You can provide a custom function name in your redis array with the "function" option; this function will be called every time a key needs to be hashed. It should take a string and return a string.
 
 
+## Custom key distribution function
+In order to control the distribution of keys by hand, you can provide a custom function or closure that returns the server number, which is the index in the array of servers that you created the RedisArray object with.
+
+For instance, instanciate a RedisArray object with `new RedisArray(array("us-host", "uk-host", "de-host"), array("distributor" => "dist"));` and write a function called "dist" that will return `2` for all the keys that should end up on the "de-host" server.
+
 ## Migrating keys
 
 When a node is added or removed from a ring, RedisArray instances must be instanciated with a “previous” list of nodes. A single call to `$ra->_rehash()` causes all the keys to be redistributed according to the new list of nodes. Passing a callback function to `_rehash()` makes it possible to track the progress of that operation: the function is called with a node name and a number of keys that will be examined, e.g. `_rehash(function ($host, $count){ ... });`.
