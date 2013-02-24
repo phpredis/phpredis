@@ -160,6 +160,7 @@ typedef struct {
     double         timeout;
     long           retry_interval;
     double         read_timeout;
+    long           retry_interval;
     int            failed;
     int            status;
     int            persistent;
