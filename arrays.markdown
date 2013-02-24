@@ -17,7 +17,7 @@ There are several ways of creating Redis arrays;  they can be pre-defined in red
 
 #### Declaring a new array with a list of nodes
 <pre>
-$ra = new RedisArray(array("host1", "host2:63792, "host2:6380"));
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"));
 </pre>
 
 
@@ -26,7 +26,7 @@ $ra = new RedisArray(array("host1", "host2:63792, "host2:6380"));
 function extract_key_part($k) {
     return substr($k, 0, 3);	// hash only on first 3 characters.
 }
-$ra = new RedisArray(array("host1", "host2:63792, "host2:6380"), array("function" => "extract_key_part"));
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("function" => "extract_key_part"));
 </pre>
 
 #### Defining a "previous" array when nodes are added or removed.
@@ -34,7 +34,19 @@ When a new node is added to an array, phpredis needs to know about it. The old l
 
 <pre>
 // adding host3 to a ring containing host1 and host2. Read commands will look in the previous ring if the data is not found in the main ring.
-$ra = new RedisArray(array('host1', 'host2', 'host3'), array('previous' => array('host1', 'host2')));
+$ra = new RedisArray(array("host1", "host2", "host3"), array("previous" => array("host1", "host2")));
+</pre>
+
+#### Specifying the "retry_interval" parameter
+The retry_interval is used to specify a delay in milliseconds between reconnection attempts in case the client loses connection with a server
+<pre>
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("retry_timeout" => 100)));
+</pre>
+
+#### Specifying the "lazy_connect" parameter
+This option is useful when a cluster has many shards but not of them are necessarily used at one time.
+<pre>
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("lazy_connect" => true)));
 </pre>
 
 #### Defining arrays in Redis.ini
