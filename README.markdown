@@ -2897,6 +2897,7 @@ The Redis CLIENT command can be used in four ways.
 * CLIENT GETNAME
 * CLIENT SETNAME [name]
 * CLIENT KILL [ip:port]
+
 ##### *Usage*
 ~~~
 $redis->client('list'); // Get a list of clients
