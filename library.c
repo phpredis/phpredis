@@ -704,7 +704,7 @@ PHPAPI void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *red
                 } else {
                     // Something is wrong
                     efree(resp);
-                    return -1;
+                    RETURN_FALSE;
                 }
 
                 // Move forward
