@@ -720,7 +720,7 @@ PHPAPI int redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PA
         IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
         } else {
-            RETURN_FALSE;
+            RETVAL_FALSE;
         }
         return -1;
     }
