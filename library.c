@@ -1223,7 +1223,7 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
         IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
         } else {
-            RETURN_FALSE;
+            RETVAL_FALSE;
         }
         return -1;
     }
@@ -1270,7 +1270,7 @@ PHPAPI int redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, Red
         IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
         } else {
-            RETURN_FALSE;
+            RETVAL_FALSE;
         }
         return -1;
     }
@@ -1349,7 +1349,7 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, R
         IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
         } else {
-            RETURN_FALSE;
+            RETVAL_FALSE;
         }
         return -1;
     }
