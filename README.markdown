@@ -2893,10 +2893,10 @@ $redis->script('exists', $script1, [$script2, $script3, ...]);
 _**Description**_: Issue the CLIENT command with various arguments.
 
 The Redis CLIENT command can be used in four ways.  
-1. CLIENT LIST
-1. CLIENT GETNAME
-1. CLIENT SETNAME [name]
-1. CLIENT KILL [ip:port]
+* CLIENT LIST
+* CLIENT GETNAME
+* CLIENT SETNAME [name]
+* CLIENT KILL [ip:port]
 ##### *Usage*
 ~~~
 $redis->client('list'); // Get a list of clients
@@ -2907,10 +2907,10 @@ $redis->client('kill', <ip:port>); // Kill the process at ip:port
 ##### *Return value* 
 This will vary depending on which client command was executed.  
 
-CLIENT LIST will return an array of arrys with client information.
-CLIENT GETNAME will return the client name or false if none has been set
-CLIENT SETNAME will return true if it can be set and false if not
-CLIENT KILL will return true if the client can be killed, and false if not
+* CLIENT LIST will return an array of arrays with client information.
+* CLIENT GETNAME will return the client name or false if none has been set
+* CLIENT SETNAME will return true if it can be set and false if not
+* CLIENT KILL will return true if the client can be killed, and false if not
 
 Note:  phpredis will attempt to reconnect so you can actually kill your own connection
 but may not notice losing it!
