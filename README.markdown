@@ -2904,6 +2904,7 @@ $redis->client('getname'); // Get the name of the current connection
 $redis->client('setname', 'somename'); // Set the name of the current connection
 $redis->client('kill', <ip:port>); // Kill the process at ip:port
 ~~~
+
 ##### *Return value* 
 This will vary depending on which client command was executed.  
 
