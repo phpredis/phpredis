@@ -159,6 +159,7 @@ typedef struct {
     short          port;
     double         timeout;
     double         read_timeout;
+    long           retry_interval;
     int            failed;
     int            status;
     int            persistent;
