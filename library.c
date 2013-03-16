@@ -937,7 +937,7 @@ PHPAPI void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis
 		}
     } else {
 		if(redis_unserialize(redis_sock, response, response_len, &return_value TSRMLS_CC) == 0) {
-			RETURN_STRINGL(response, response_len, 0);
+		    RETURN_STRINGL(response, response_len, 0);
 		} else {
 			efree(response);
 		}
@@ -1497,7 +1497,7 @@ PHPAPI int
 redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_DC) {
 
 	php_unserialize_data_t var_hash;
-	int ret;
+	int ret, rv_free = 0;
 
 	switch(redis_sock->serializer) {
 		case REDIS_SERIALIZER_NONE:
@@ -1506,6 +1506,7 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 		case REDIS_SERIALIZER_PHP:
 			if(!*return_value) {
 				MAKE_STD_ZVAL(*return_value);
+				rv_free = 1;
 			}
 #if ZEND_MODULE_API_NO >= 20100000
 			PHP_VAR_UNSERIALIZE_INIT(var_hash);
@@ -1514,7 +1515,7 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 #endif
 			if(!php_var_unserialize(return_value, (const unsigned char**)&val,
 					(const unsigned char*)val + val_len, &var_hash TSRMLS_CC)) {
-				efree(*return_value);
+				if(rv_free==1) efree(*return_value);
 				ret = 0;
 			} else {
 				ret = 1;
