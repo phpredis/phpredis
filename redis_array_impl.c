@@ -288,12 +288,12 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 char *
 ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS_DC) {
 
-	char *error = NULL, *out;
+	char *out;
 	zval z_ret;
 	zval *z_argv0;
 
 	/* check that we can call the extractor function */
-	if(!zend_is_callable_ex(ra->z_fun, NULL, 0, NULL, NULL, NULL, &error TSRMLS_CC)) {
+	if(!zend_is_callable_ex(ra->z_fun, NULL, 0, NULL, NULL, NULL, NULL TSRMLS_CC)) {
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call extractor function");
 		return NULL;
 	}
@@ -349,12 +349,11 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS
 zend_bool
 ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRMLS_DC) {
 
-	char *error = NULL;
 	zval z_ret;
 	zval *z_argv0;
 
 	/* check that we can call the extractor function */
-	if(!zend_is_callable_ex(ra->z_dist, NULL, 0, NULL, NULL, NULL, &error TSRMLS_CC)) {
+	if(!zend_is_callable_ex(ra->z_dist, NULL, 0, NULL, NULL, NULL, NULL TSRMLS_CC)) {
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call distributor function");
 		return 0;
 	}
