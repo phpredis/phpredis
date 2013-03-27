@@ -157,6 +157,7 @@ typedef struct {
     php_stream     *stream;
     char           *host;
     short          port;
+    char           *auth;
     double         timeout;
     double         read_timeout;
     int            failed;

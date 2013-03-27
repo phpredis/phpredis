@@ -26,6 +26,7 @@ You can send comments, patches, questions [here on github](https://github.com/ni
    * [Pub/sub](#pubsub)
    * [Transactions](#transactions)
    * [Scripting](#scripting)
+   * [Introspection](#introspection) 
 
 -----
 
@@ -2958,3 +2959,88 @@ serializing values, and you return something from redis in a LUA script that is 
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
 $redis->_unserialize('a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}'); // Will return Array(1,2,3)
 ~~~
+
+
+
+## Introspection  
+
+### IsConnected
+-----
+_**Description**_:  A method to determine if a phpredis object thinks it's connected to a server
+
+##### *Parameters*
+None  
+
+##### *Return value*
+*Boolean* Returns TRUE if phpredis thinks it's connected and FALSE if not
+
+### GetHost
+-----
+_**Description**_:  Retreive our host or unix socket that we're connected to
+
+##### *Parameters*
+None  
+
+##### *Return value*
+*Mixed* The host or unix socket we're connected to or FALSE if we're not connected
+
+
+### GetPort
+-----
+_**Description**_:  Get the port we're connected to
+
+##### *Parameters*
+None  
+
+##### *Return value*
+*Mixed* Returns the port we're connected to or FALSE if we're not connected
+
+### getDBNum
+-----
+_**Description**_:  Get the database number phpredis is pointed to
+
+##### *Parameters*
+None  
+
+##### *Return value*
+*Mixed* Returns the database number (LONG) phpredis thinks it's pointing to or FALSE if we're not connected
+
+### GetTimeout
+-----
+_**Description**_:  Get the (write) timeout in use for phpreids
+
+##### *Parameters*
+None  
+
+##### *Return value*
+*Mixed* The timeout (DOUBLE) specified in our connect call or FALSE if we're not connected
+
+### GetReadTimeout
+_**Description**_:  Get the read timeout specified to phpredis or FALSE if we're not connected
+
+##### *Parameters*
+None  
+
+##### *Return value*
+*Mixed*  Returns the read timeout (which can be set using setOption and Redis::OPT_READ_TIMOUT) or FALSE if we're not connected
+
+### GetPersistentID
+-----
+_**Description**_:  Gets the persistent ID that phpredis is using
+
+##### *Parameters*
+None  
+
+##### *Return value*
+*Mixed* Returns the persistent id phpredis is using (which will only be set if connected with pconnect), NULL if we're not
+using a persistent ID, and FALSE if we're not connected
+
+### GetAuth
+-----
+_**Description**_:  Get the password used to authenticate the phpredis connection
+
+### *Parameters*
+None  
+
+### *Return value*
+*Mixed*  Returns the password used to authenticate a phpredis session or NULL if none was used, and FALSE if we're not connected
