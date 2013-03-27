@@ -183,6 +183,15 @@ PHP_METHOD(Redis, config);
 
 PHP_METHOD(Redis, client);
 
+PHP_METHOD(Redis, getHost);
+PHP_METHOD(Redis, getPort);
+PHP_METHOD(Redis, getDBNum);
+PHP_METHOD(Redis, getTimeout);
+PHP_METHOD(Redis, getReadTimeout);
+PHP_METHOD(Redis, isConnected);
+PHP_METHOD(Redis, getPersistentID);
+PHP_METHOD(Redis, getAuth);
+
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
 #else

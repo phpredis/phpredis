@@ -1413,6 +1413,12 @@ PHPAPI void redis_free_socket(RedisSock *redis_sock)
     if(redis_sock->err) {
     	efree(redis_sock->err);
     }
+    if(redis_sock->auth) {
+        efree(redis_sock->auth);
+    }
+    if(redis_sock->persistent_id) {
+        efree(redis_sock->persistent_id);
+    }
     efree(redis_sock->host);
     efree(redis_sock);
 }

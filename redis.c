@@ -236,6 +236,16 @@ static zend_function_entry redis_functions[] = {
      /* config */
      PHP_ME(Redis, config, NULL, ZEND_ACC_PUBLIC)
 
+     /* introspection */
+     PHP_ME(Redis, getHost, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getPort, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getDBNum, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getTimeout, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getReadTimeout, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getPersistentID, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getAuth, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, isConnected, NULL, ZEND_ACC_PUBLIC)
+
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, popen, pconnect, NULL, ZEND_ACC_PUBLIC)
@@ -384,6 +394,26 @@ PHPAPI int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC, int no_thr
 
     return Z_LVAL_PP(socket);
 }
+
+/**
+ * redis_sock_get_direct
+ * Returns our attached RedisSock pointer if we're connected
+ */
+PHPAPI RedisSock *redis_sock_get_connected(INTERNAL_FUNCTION_PARAMETERS TSRMLS_DC) {
+    zval *object;
+    RedisSock *redis_sock;
+
+    // If we can't grab our object, or get a socket, or we're not connected, return NULL
+    if((zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O", &object, redis_ce) == FAILURE) ||
+       (redis_sock_get(object, &redis_sock TSRMLS_CC, 1) < 0) || redis_sock->status != REDIS_SOCK_STATUS_CONNECTED)
+    {
+        return NULL;
+    }
+
+    // Return our socket
+    return redis_sock;
+}
+
 
 /**
  * PHP_MINIT_FUNCTION
@@ -3296,6 +3326,10 @@ PHP_METHOD(Redis, auth) {
     }
 
     cmd_len = redis_cmd_format_static(&cmd, "AUTH", "s", password, password_len);
+
+    // Free previously stored auth if we have one, and store this password
+    if(redis_sock->auth) efree(redis_sock->auth);
+    redis_sock->auth = estrndup(password, password_len);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
@@ -6310,6 +6344,124 @@ PHP_METHOD(Redis, time) {
 		}
 	}
 	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_raw);
+}
+
+/*
+ * Introspection stuff
+ */
+
+/*
+ * {{{ proto Redis::IsConnected
+ */
+PHP_METHOD(Redis, isConnected) {
+    RedisSock *redis_sock;
+
+    if((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU TSRMLS_CC))) {
+        RETURN_TRUE;
+    } else {
+        RETURN_FALSE;
+    }
+}
+
+/*
+ * {{{ proto Redis::getHost()
+ */
+PHP_METHOD(Redis, getHost) {
+    RedisSock *redis_sock;
+
+    if((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU TSRMLS_CC))) {
+        RETURN_STRING(redis_sock->host, 1);
+    } else {
+        RETURN_FALSE;
+    }
+}
+
+/*
+ * {{{ proto Redis::getPort()
+ */
+PHP_METHOD(Redis, getPort) {
+    RedisSock *redis_sock;
+
+    if((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU TSRMLS_CC))) {
+        // Return our port
+        RETURN_LONG(redis_sock->port);
+    } else {
+        RETURN_FALSE;
+    }
+}
+
+/*
+ * {{{ proto Redis::getDBNum
+ */
+PHP_METHOD(Redis, getDBNum) {
+    RedisSock *redis_sock;
+
+    if((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU TSRMLS_CC))) {
+        // Return our db number
+        RETURN_LONG(redis_sock->dbNumber);
+    } else {
+        RETURN_FALSE;
+    }
+}
+
+/*
+ * {{{ proto Redis::getTimeout
+ */
+PHP_METHOD(Redis, getTimeout) {
+    RedisSock *redis_sock;
+
+    if((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU TSRMLS_CC))) {
+        RETURN_DOUBLE(redis_sock->timeout);
+    } else {
+        RETURN_FALSE;
+    }
+}
+
+/*
+ * {{{ proto Redis::getReadTimeout
+ */
+PHP_METHOD(Redis, getReadTimeout) {
+    RedisSock *redis_sock;
+
+    if((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU TSRMLS_CC))) {
+        RETURN_DOUBLE(redis_sock->read_timeout);
+    } else {
+        RETURN_FALSE;
+    }
+}
+
+/*
+ * {{{ proto Redis::getPersistentID
+ */
+PHP_METHOD(Redis, getPersistentID) {
+    RedisSock *redis_sock;
+
+    if((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU TSRMLS_CC))) {
+        if(redis_sock->persistent_id != NULL) {
+            RETURN_STRING(redis_sock->persistent_id, 1);
+        } else {
+            RETURN_NULL();
+        }
+    } else {
+        RETURN_FALSE;
+    }
+}
+
+/*
+ * {{{ proto Redis::getAuth
+ */
+PHP_METHOD(Redis, getAuth) {
+    RedisSock *redis_sock;
+
+    if((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU TSRMLS_CC))) {
+        if(redis_sock->auth != NULL) {
+            RETURN_STRING(redis_sock->auth, 1);
+        } else {
+            RETURN_NULL();
+        }
+    } else {
+        RETURN_FALSE;
+    }
 }
 
 /*
