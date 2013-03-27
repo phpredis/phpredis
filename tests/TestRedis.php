@@ -4301,6 +4301,13 @@ class Redis_Test extends TestSuite
 		$this->assertEquals(12.3, $this->redis->getOption(Redis::OPT_READ_TIMEOUT));
 	}
 
+    public function testIntrospection() {
+        // Simple introspection tests
+        $this->assertTrue($this->redis->getHost() === self::HOST);
+        $this->assertTrue($this->redis->getPort() === self::PORT);
+        $this->assertTrue($this->redis->getAuth() === self::AUTH);
+    }
+
 }
 
 exit(TestSuite::run("Redis_Test"));
