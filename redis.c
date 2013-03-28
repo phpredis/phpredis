@@ -59,6 +59,9 @@ zend_class_entry *spl_ce_RuntimeException = NULL;
 extern zend_function_entry redis_array_functions[];
 
 PHP_INI_BEGIN()
+    /* redis serialization */
+    PHP_INI_ENTRY("redis.serializer", INI_REDIS_SERIALIZER_NONE, PHP_INI_ALL, NULL)
+
 	/* redis arrays */
 	PHP_INI_ENTRY("redis.arrays.names", "", PHP_INI_ALL, NULL)
 	PHP_INI_ENTRY("redis.arrays.hosts", "", PHP_INI_ALL, NULL)

@@ -843,6 +843,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
                                     double timeout, int persistent, char *persistent_id)
 {
     RedisSock *redis_sock;
+    char *ini_serializer;
 
     redis_sock         = ecalloc(1, sizeof(RedisSock));
     redis_sock->host   = estrndup(host, host_len);
@@ -868,7 +869,20 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     redis_sock->timeout = timeout;
     redis_sock->read_timeout = timeout;
 
-    redis_sock->serializer = REDIS_SERIALIZER_NONE;
+    ini_serializer = INI_STR("redis.serializer");
+    if (!strcmp(ini_serializer, INI_REDIS_SERIALIZER_PHP)) {
+        redis_sock->serializer = REDIS_SERIALIZER_PHP;
+    } else if (!strcmp(ini_serializer, INI_REDIS_SERIALIZER_IGBINARY)) {
+#ifdef HAVE_REDIS_IGBINARY
+        redis_sock->serializer = REDIS_SERIALIZER_IGBINARY;
+#else
+        zend_error(E_NOTICE, "phpredis was compiled without support for igbinary. Your INI-setting `redis.serializer=igbinary` has no effect. Falling back to no serialization.");
+        redis_sock->serializer = REDIS_SERIALIZER_NONE;
+#endif
+    } else {
+        redis_sock->serializer = REDIS_SERIALIZER_NONE;
+    }
+
     redis_sock->mode = ATOMIC;
     redis_sock->head = NULL;
     redis_sock->current = NULL;

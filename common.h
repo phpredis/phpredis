@@ -42,6 +42,10 @@ typedef enum _REDIS_REPLY_TYPE {
 #define REDIS_SERIALIZER_PHP 		1
 #define REDIS_SERIALIZER_IGBINARY 	2
 
+#define INI_REDIS_SERIALIZER_NONE		"none"
+#define INI_REDIS_SERIALIZER_PHP 		"php"
+#define INI_REDIS_SERIALIZER_IGBINARY 	"igbinary"
+
 #define IF_MULTI() if(redis_sock->mode == MULTI)
 #define IF_MULTI_OR_ATOMIC() if(redis_sock->mode == MULTI || redis_sock->mode == ATOMIC)\
 
