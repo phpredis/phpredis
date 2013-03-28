@@ -68,7 +68,9 @@ PHP_INI_BEGIN()
 	PHP_INI_ENTRY("redis.arrays.autorehash", "", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
+#ifdef ZTS
 ZEND_DECLARE_MODULE_GLOBALS(redis)
+#endif
 
 static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, __construct, NULL, ZEND_ACC_PUBLIC)
