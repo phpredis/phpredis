@@ -16,7 +16,7 @@
   | Original author: Alfonso Jimenez <yo@alfonsojimenez.com>             |
   | Maintainer: Nicolas Favre-Felix <n.favre-felix@owlient.eu>           |
   | Maintainer: Nasreddine Bouafif <n.bouafif@owlient.eu>                |
-  | Maintainer: Michael Grunder <michael.grunder@gmail.com               |
+  | Maintainer: Michael Grunder <michael.grunder@gmail.com>              |
   +----------------------------------------------------------------------+
 */
 
