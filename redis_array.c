@@ -13,6 +13,7 @@
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
   | Author: Nicolas Favre-Felix <n.favre-felix@owlient.eu>               |
+  | Maintainer: Michael Grunder <michael.grunder@gmail.com>              |
   +----------------------------------------------------------------------+
 */
 
