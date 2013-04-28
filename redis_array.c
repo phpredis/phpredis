@@ -13,6 +13,7 @@
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
   | Author: Nicolas Favre-Felix <n.favre-felix@owlient.eu>               |
+  | Maintainer: Michael Grunder <michael.grunder@gmail.com>              |
   +----------------------------------------------------------------------+
 */
 
@@ -51,6 +52,7 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, _rehash, NULL, ZEND_ACC_PUBLIC)
 
      /* special implementation for a few functions */
+     PHP_ME(RedisArray, select, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, info, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, ping, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, mget, NULL, ZEND_ACC_PUBLIC)
@@ -192,6 +194,7 @@ PHP_METHOD(RedisArray, __construct)
 	RedisArray *ra = NULL;
 	zend_bool b_index = 0, b_autorehash = 0;
 	HashTable *hPrev = NULL, *hOpts = NULL;
+  long l_retry_interval = 0;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|a", &z0, &z_opts) == FAILURE) {
 		RETURN_FALSE;
@@ -232,6 +235,19 @@ PHP_METHOD(RedisArray, __construct)
 		if(FAILURE != zend_hash_find(hOpts, "autorehash", sizeof("autorehash"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_BOOL) {
 			b_autorehash = Z_BVAL_PP(zpData);
 		}
+
+		/* extract retry_interval option. */
+    zval **z_retry_interval_pp;
+		if (FAILURE != zend_hash_find(hOpts, "retry_interval", sizeof("retry_interval"), (void**)&z_retry_interval_pp)) {
+			if (Z_TYPE_PP(z_retry_interval_pp) == IS_LONG || Z_TYPE_PP(z_retry_interval_pp) == IS_STRING) {
+				if (Z_TYPE_PP(z_retry_interval_pp) == IS_LONG) {
+					l_retry_interval = Z_LVAL_PP(z_retry_interval_pp);
+				}
+				else {
+					l_retry_interval = atol(Z_STRVAL_PP(z_retry_interval_pp));
+				}
+			}
+		}
 	}
 
 	/* extract either name of list of hosts from z0 */
@@ -241,7 +257,7 @@ PHP_METHOD(RedisArray, __construct)
 			break;
 
 		case IS_ARRAY:
-			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_dist, hPrev, b_index TSRMLS_CC);
+			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_dist, hPrev, b_index, l_retry_interval TSRMLS_CC);
 			break;
 
 		default:
@@ -688,6 +704,46 @@ PHP_METHOD(RedisArray, setOption)
 	efree(z_args[0]);
 	efree(z_args[1]);
 }
+
+PHP_METHOD(RedisArray, select)
+{
+	zval *object, z_fun, *z_tmp, *z_args[2];
+	int i;
+	RedisArray *ra;
+	long opt;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol",
+				&object, redis_array_ce, &opt) == FAILURE) {
+		RETURN_FALSE;
+	}
+
+	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+		RETURN_FALSE;
+	}
+
+	/* prepare call */
+	ZVAL_STRING(&z_fun, "select", 0);
+
+	/* copy args */
+	MAKE_STD_ZVAL(z_args[0]);
+	ZVAL_LONG(z_args[0], opt);
+
+	array_init(return_value);
+	for(i = 0; i < ra->count; ++i) {
+
+		MAKE_STD_ZVAL(z_tmp);
+
+		/* Call each node in turn */
+		call_user_function(&redis_ce->function_table, &ra->redis[i],
+				&z_fun, z_tmp, 1, z_args TSRMLS_CC);
+
+		add_assoc_zval(return_value, ra->hosts[i], z_tmp);
+	}
+
+	/* cleanup */
+	efree(z_args[0]);
+}
+
 #define HANDLE_MULTI_EXEC(cmd) do {\
 	if (redis_array_get(getThis(), &ra TSRMLS_CC) >= 0 && ra->z_multi_exec) {\
 		int i, num_varargs;\

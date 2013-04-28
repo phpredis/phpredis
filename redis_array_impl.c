@@ -13,6 +13,7 @@
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
   | Author: Nicolas Favre-Felix <n.favre-felix@owlient.eu>               |
+  | Maintainer: Michael Grunder <michael.grunder@gmail.com>              |
   +----------------------------------------------------------------------+
 */
 #include "redis_array_impl.h"
@@ -29,7 +30,7 @@ extern int le_redis_sock;
 extern zend_class_entry *redis_ce;
 
 RedisArray*
-ra_load_hosts(RedisArray *ra, HashTable *hosts TSRMLS_DC)
+ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval TSRMLS_DC)
 {
 	int i, host_len, id;
 	int count = zend_hash_num_elements(hosts);
@@ -67,7 +68,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts TSRMLS_DC)
 		call_user_function(&redis_ce->function_table, &ra->redis[i], &z_cons, &z_ret, 0, NULL TSRMLS_CC);
 
 		/* create socket */
-		redis_sock = redis_sock_create(host, host_len, port, 0, 0, NULL); /* TODO: persistence? */
+		redis_sock = redis_sock_create(host, host_len, port, 0, 0, NULL, retry_interval); /* TODO: persistence? */
 
 		/* connect */
 		redis_sock_server_open(redis_sock, 1 TSRMLS_CC);
@@ -158,9 +159,11 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 	zval *z_params_funs, **z_data_pp, *z_fun = NULL, *z_dist = NULL;
 	zval *z_params_index;
 	zval *z_params_autorehash;
+	zval *z_params_retry_interval;
 	RedisArray *ra = NULL;
 
 	zend_bool b_index = 0, b_autorehash = 0;
+	long l_retry_interval = 0;
 	HashTable *hHosts = NULL, *hPrev = NULL;
 
 	/* find entry */
@@ -223,8 +226,23 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 		}
 	}
 
+	/* find retry interval option */
+	MAKE_STD_ZVAL(z_params_retry_interval);
+	array_init(z_params_retry_interval);
+	sapi_module.treat_data(PARSE_STRING, estrdup(INI_STR("redis.arrays.retryinterval")), z_params_retry_interval TSRMLS_CC);
+	if (zend_hash_find(Z_ARRVAL_P(z_params_retry_interval), name, strlen(name) + 1, (void **) &z_data_pp) != FAILURE) {
+		if (Z_TYPE_PP(z_data_pp) == IS_LONG || Z_TYPE_PP(z_data_pp) == IS_STRING) {
+			if (Z_TYPE_PP(z_data_pp) == IS_LONG) {
+				l_retry_interval = Z_LVAL_PP(z_data_pp);
+			}
+			else {
+				l_retry_interval = atol(Z_STRVAL_PP(z_data_pp));
+			}
+		}
+	}
+
 	/* create RedisArray object */
-	ra = ra_make_array(hHosts, z_fun, z_dist, hPrev, b_index TSRMLS_CC);
+	ra = ra_make_array(hHosts, z_fun, z_dist, hPrev, b_index, l_retry_interval TSRMLS_CC);
 	ra->auto_rehash = b_autorehash;
 
 	/* cleanup */
@@ -238,12 +256,14 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 	efree(z_params_index);
 	zval_dtor(z_params_autorehash);
 	efree(z_params_autorehash);
+	zval_dtor(z_params_retry_interval);
+	efree(z_params_retry_interval);
 
 	return ra;
 }
 
 RedisArray *
-ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index TSRMLS_DC) {
+ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, long retry_interval TSRMLS_DC) {
 
 	int count = zend_hash_num_elements(hosts);
 
@@ -261,10 +281,10 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	/* init array data structures */
 	ra_init_function_table(ra);
 
-	if(NULL == ra_load_hosts(ra, hosts TSRMLS_CC)) {
+	if(NULL == ra_load_hosts(ra, hosts, retry_interval TSRMLS_CC)) {
 		return NULL;
 	}
-	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index TSRMLS_CC) : NULL;
+	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, retry_interval TSRMLS_CC) : NULL;
 
 	/* copy function if provided */
 	if(z_fun) {
@@ -1111,7 +1131,7 @@ static void zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z
 	zval *z_host, *z_count;
 
 	z_cb->retval_ptr_ptr = &z_ret;
-	z_cb->params = &z_args;
+	z_cb->params = (struct _zval_struct ***)&z_args;
 	z_cb->param_count = 2;
 	z_cb->no_separation = 0;
 

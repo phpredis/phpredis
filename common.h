@@ -160,6 +160,7 @@ typedef struct {
     char           *auth;
     double         timeout;
     double         read_timeout;
+    long           retry_interval;
     int            failed;
     int            status;
     int            persistent;

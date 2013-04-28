@@ -38,8 +38,9 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
     int eof;
     int count = 0;
 
-	if (!redis_sock->stream)
+	if (!redis_sock->stream) {
 		return -1;
+	}
 
 	eof = php_stream_eof(redis_sock->stream);
     for (; eof; count++) {
@@ -60,6 +61,12 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 			redis_sock->mode   = ATOMIC;
             redis_sock->watching = 0;
 	}
+    // Wait for a while before trying to reconnect
+    if (redis_sock->retry_interval) {
+    	// Random factor to avoid having several (or many) concurrent connections trying to reconnect at the same time
+   		long retry_interval = (count ? redis_sock->retry_interval : (random() % redis_sock->retry_interval));
+    	usleep(retry_interval);
+    }
         redis_sock_connect(redis_sock TSRMLS_CC); /* reconnect */
         if(redis_sock->stream) { /*  check for EOF again. */
             eof = php_stream_eof(redis_sock->stream);
@@ -608,6 +615,128 @@ PHPAPI void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
     }
 }
 
+/*
+ * Specialized handling of the CLIENT LIST output so it comes out in a simple way for PHP userland code
+ * to handle.
+ */
+PHPAPI void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab) {
+    char *resp;
+    int resp_len;
+    zval *z_result, *z_sub_result;
+    
+    // Make sure we can read a response from Redis
+    if((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    // Allocate memory for our response
+    MAKE_STD_ZVAL(z_result);
+    array_init(z_result);
+
+    // Allocate memory for one user (there should be at least one, namely us!)
+    ALLOC_INIT_ZVAL(z_sub_result);
+    array_init(z_sub_result);
+
+    // Pointers for parsing
+    char *p = resp, *lpos = resp, *kpos = NULL, *vpos = NULL, *p2, *key, *value;
+
+    // Key length, done flag
+    int klen, done = 0, is_numeric;
+
+    // While we've got more to parse
+    while(!done) {
+        // What character are we on
+        switch(*p) {
+            /* We're done */
+            case '\0':
+                done = 1;
+                break;
+            /* \n, ' ' mean we can pull a k/v pair */
+            case '\n':
+            case ' ':
+                // Grab our value
+                vpos = lpos;
+
+                // There is some communication error or Redis bug if we don't
+                // have a key and value, but check anyway.
+                if(kpos && vpos) {
+                    // Allocate, copy in our key
+                    key = emalloc(klen + 1);
+                    strncpy(key, kpos, klen);
+                    key[klen] = 0;
+
+                    // Allocate, copy in our value
+                    value = emalloc(p-lpos+1);
+                    strncpy(value,lpos,p-lpos+1);
+                    value[p-lpos]=0;
+
+                    // Treat numbers as numbers, strings as strings
+                    is_numeric = 1;
+                    for(p2 = value; *p; ++p) {
+                        if(*p < '0' || *p > '9') {
+                            is_numeric = 0;
+                            break;
+                        }
+                    }
+
+                    // Add as a long or string, depending
+                    if(is_numeric == 1) {
+                        add_assoc_long(z_sub_result, key, atol(value));
+                        efree(value);
+                    } else {
+                        add_assoc_string(z_sub_result, key, value, 0);
+                    }
+
+                    // If we hit a '\n', then we can add this user to our list
+                    if(*p == '\n') {
+                        // Add our user
+                        add_next_index_zval(z_result, z_sub_result);
+
+                        // If we have another user, make another one
+                        if(*(p+1) != '\0') {
+                            ALLOC_INIT_ZVAL(z_sub_result);
+                            array_init(z_sub_result);
+                        }
+                    }
+                    
+                    // Free our key
+                    efree(key);
+                } else {
+                    // Something is wrong
+                    efree(resp);
+                    RETURN_FALSE;
+                }
+
+                // Move forward
+                lpos = p + 1;
+
+                break;
+            /* We can pull the key and null terminate at our sep */
+            case '=':
+                // Key, key length
+                kpos = lpos;
+                klen = p - lpos;
+
+                // Move forward
+                lpos = p + 1;
+
+                break;
+        }
+
+        // Increment
+        p++;
+    }
+
+    // Free our respoonse
+    efree(resp);
+
+    IF_MULTI_OR_PIPELINE() { 
+        add_next_index_zval(z_tab, z_result);
+    } else {
+        RETVAL_ZVAL(z_result, 0, 1);
+    }
+}
+
 PHPAPI void redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx, SuccessCallback success_callback) {
 
     char *response;
@@ -840,7 +969,8 @@ PHPAPI void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
  * redis_sock_create
  */
 PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port,
-                                    double timeout, int persistent, char *persistent_id)
+                                    double timeout, int persistent, char *persistent_id,
+                                    long retry_interval)
 {
     RedisSock *redis_sock;
 
@@ -850,7 +980,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->watching = 0;
     redis_sock->dbNumber = 0;
-
+    redis_sock->retry_interval = retry_interval * 1000;
     redis_sock->persistent = persistent;
 
     if(persistent_id) {

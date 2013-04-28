@@ -16,6 +16,7 @@
   | Original author: Alfonso Jimenez <yo@alfonsojimenez.com>             |
   | Maintainer: Nicolas Favre-Felix <n.favre-felix@owlient.eu>           |
   | Maintainer: Nasreddine Bouafif <n.bouafif@owlient.eu>                |
+  | Maintainer: Michael Grunder <michael.grunder@gmail.com>              |
   +----------------------------------------------------------------------+
 */
 
@@ -206,6 +207,7 @@ PS_OPEN_FUNC(redis)
 			int persistent = 0;
             int database = -1;
             char *prefix = NULL, *auth = NULL, *persistent_id = NULL;
+      long retry_interval = 0;
 
             /* translate unix: into file: */
 			if (!strncmp(save_path+i, "unix:", sizeof("unix:")-1)) {
@@ -240,7 +242,6 @@ PS_OPEN_FUNC(redis)
 					convert_to_long_ex(param);
 					weight = Z_LVAL_PP(param);
 				}
-
 				if (zend_hash_find(Z_ARRVAL_P(params), "timeout", sizeof("timeout"), (void **) &param) != FAILURE) {
 					timeout = atof(Z_STRVAL_PP(param));
 				}
@@ -260,13 +261,10 @@ PS_OPEN_FUNC(redis)
 					convert_to_long_ex(param);
 					database = Z_LVAL_PP(param);
 				}
-
-				/* // not supported yet
 				if (zend_hash_find(Z_ARRVAL_P(params), "retry_interval", sizeof("retry_interval"), (void **) &param) != FAILURE) {
 					convert_to_long_ex(param);
 					retry_interval = Z_LVAL_PP(param);
 				}
-				*/
 
 				zval_ptr_dtor(&params);
 			}
@@ -280,9 +278,9 @@ PS_OPEN_FUNC(redis)
 
 			RedisSock *redis_sock;
             if(url->host) {
-                    redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, persistent, persistent_id);
+                    redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, persistent, persistent_id, retry_interval);
             } else { /* unix */
-                    redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, persistent, persistent_id);
+                    redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, persistent, persistent_id, retry_interval);
             }
 			redis_pool_add(pool, redis_sock, weight, database, prefix, auth TSRMLS_CC);
 
