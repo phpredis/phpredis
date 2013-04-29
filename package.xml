@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<package packagerversion="1.4.11" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0
+http://pear.php.net/dtd/tasks-1.0.xsd
+http://pear.php.net/dtd/package-2.0
+http://pear.php.net/dtd/package-2.0.xsd">
+ <name>redis</name>
+ <channel>pecl.php.net</channel>
+ <summary>PHP extension for interfacing with Redis</summary>
+ <description>
+   This extension provides an API for communicating with Redis servers.
+ </description>
+ <lead>
+  <name>Nicolas Favre-Felix</name>
+  <user>nff</user>
+  <email>n.favrefelix@gmail.com</email>
+  <active>yes</active>
+ </lead>
+ <lead>
+  <name>Michael Grunder</name>
+  <user>mgrunder</user>
+  <email>michael.grunder@gmail.com</email>
+  <active>yes</active>
+ </lead>
+ <date>2013-04-29</date>
+ <version>
+  <release>2.2.3</release>
+  <api>2.2.3</api>
+ </version>
+ <stability>
+  <release>stable</release>
+  <api>stable</api>
+ </stability>
+ <license uri="http://www.php.net/license">PHP</license>
+ <notes>
+	 First public release
+ </notes>
+ <contents>
+  <dir name="/">
+   <file role='doc' name='README.markdown'/>
+   <file role='doc' name='arrays.markdown'/>
+   <file role='doc' name='CREDITS'/>
+   <file role='doc' name='COPYING'/>
+   <file role='src' name='config.m4'/>
+   <file role='src' name='config.w32'/>
+   <file role='src' name='common.h'/>
+   <file role='src' name='library.c'/>
+   <file role='src' name='library.h'/>
+   <file role='src' name='php_redis.h'/>
+   <file role='src' name='redis_array.c'/>
+   <file role='src' name='redis_array.h'/>
+   <file role='src' name='redis_array_impl.c'/>
+   <file role='src' name='redis_array_impl.h'/>
+   <file role='src' name='redis.c'/>
+   <file role='src' name='redis_session.c'/>
+   <file role='src' name='redis_session.h'/>
+  </dir> <!-- / -->
+ </contents>
+ <dependencies>
+  <required>
+   <php>
+    <min>5.2.0</min>
+    <max>6.0.0</max>
+    <exclude>6.0.0</exclude>
+   </php>
+   <pearinstaller>
+    <min>1.4.0b1</min>
+   </pearinstaller>
+  </required>
+ </dependencies>
+ <providesextension>redis</providesextension>
+ <extsrcrelease/>
+ <changelog>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>2.2.3</release><api>2.2.3</api></version>
+   <date>2013-04-29</date>
+   <notes>
+    First release to PECL
+   </notes>
+  </release>
+ </changelog>
+</package>
