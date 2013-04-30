@@ -6497,9 +6497,6 @@ PHP_METHOD(Redis, client) {
         cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "s", opt, opt_len);
     }
 
-    // Handle CLIENT LIST specifically
-    int is_list = !strncasecmp(opt, "list", 4);
-
     // Execute our queue command
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
