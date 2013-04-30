@@ -641,7 +641,7 @@ PHPAPI void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *red
     char *p = resp, *lpos = resp, *kpos = NULL, *vpos = NULL, *p2, *key, *value;
 
     // Key length, done flag
-    int klen, done = 0, is_numeric;
+    int klen = 0, done = 0, is_numeric;
 
     // While we've got more to parse
     while(!done) {
