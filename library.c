@@ -1432,8 +1432,10 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 #endif
 	smart_str sstr = {0};
 	zval *z_copy;
+#ifdef HAVE_REDIS_IGBINARY
 	size_t sz;
 	uint8_t *val8;
+#endif
 
 	switch(redis_sock->serializer) {
 		case REDIS_SERIALIZER_NONE:
