@@ -672,8 +672,8 @@ PHPAPI void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *red
 
                     // Treat numbers as numbers, strings as strings
                     is_numeric = 1;
-                    for(p2 = value; *p; ++p) {
-                        if(*p < '0' || *p > '9') {
+                    for(p2 = value; *p2; ++p2) {
+                        if(*p2 < '0' || *p2 > '9') {
                             is_numeric = 0;
                             break;
                         }
