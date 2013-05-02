@@ -19,6 +19,7 @@ PHP_METHOD(RedisArray, select);
 PHP_METHOD(RedisArray, info);
 PHP_METHOD(RedisArray, ping);
 PHP_METHOD(RedisArray, flushdb);
+PHP_METHOD(RedisArray, flushall);
 PHP_METHOD(RedisArray, mget);
 PHP_METHOD(RedisArray, mset);
 PHP_METHOD(RedisArray, del);
