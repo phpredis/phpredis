@@ -497,6 +497,47 @@ class Redis_Multi_Exec_Test extends TestSuite {
 
 }
 
+// Test custom distribution function
+class Redis_Distributor_Test extends TestSuite {
+
+	public $ra = NULL;
+
+	public function setUp() {
+
+		global $newRing, $oldRing, $useIndex;
+		// create array
+		$this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex, 'distributor' => array($this, 'distribute')));
+	}
+
+	public function testInit() {
+		$this->ra->set('{uk}test', 'joe');
+		$this->ra->set('{us}test', 'bob');
+	}
+
+	public function distribute($key) {
+		$matches = array();
+		if (preg_match('/{([^}]+)}.*/', $key, $matches) == 1) {
+			$countries = array('uk' => 0, 'us' => 1);
+			if (array_key_exists($matches[1], $countries)) {
+				return $countries[$matches[1]];
+			}
+		}
+		return 2; // default server
+	}
+
+	public function testDistribution() {
+		$ukServer = $this->ra->_target('{uk}test');
+		$usServer = $this->ra->_target('{us}test');
+		$deServer = $this->ra->_target('{de}test');
+		$defaultServer = $this->ra->_target('unknown');
+
+		$nodes = $this->ra->_hosts();
+		$this->assertTrue($ukServer === $nodes[0]);
+		$this->assertTrue($usServer === $nodes[1]);
+		$this->assertTrue($deServer === $nodes[2]);
+		$this->assertTrue($defaultServer === $nodes[2]);
+	}
+}
 
 function run_tests($className) {
 		// reset rings
@@ -520,6 +561,7 @@ foreach(array(true, false) as $useIndex) {
 	run_tests('Redis_Rehashing_Test');
 	run_tests('Redis_Auto_Rehashing_Test');
 	run_tests('Redis_Multi_Exec_Test');
+	run_tests('Redis_Distributor_Test');
 }
 
 ?>

@@ -4,6 +4,7 @@ int redis_cmd_format(char **ret, char *format, ...);
 int redis_cmd_format_static(char **ret, char *keyword, char *format, ...);
 int redis_cmd_format_header(char **ret, char *keyword, int arg_count);
 int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len);
+int redis_cmd_append_sstr(smart_str *str, char *append, int append_len);
 int redis_cmd_append_int(char **cmd, int cmd_len, int append);
 
 
@@ -58,6 +59,7 @@ PHP_REDIS_API int redis_read_variant_bulk(RedisSock *redis_sock, int size, zval 
 PHP_REDIS_API int redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval **z_ret TSRMLS_DC);
 PHP_REDIS_API int redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
 
+PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
 
 #if ZEND_MODULE_API_NO >= 20100000
 #define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) \

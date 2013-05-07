@@ -181,6 +181,17 @@ PHP_METHOD(Redis, setOption);
 
 PHP_METHOD(Redis, config);
 
+PHP_METHOD(Redis, client);
+
+PHP_METHOD(Redis, getHost);
+PHP_METHOD(Redis, getPort);
+PHP_METHOD(Redis, getDBNum);
+PHP_METHOD(Redis, getTimeout);
+PHP_METHOD(Redis, getReadTimeout);
+PHP_METHOD(Redis, isConnected);
+PHP_METHOD(Redis, getPersistentID);
+PHP_METHOD(Redis, getAuth);
+
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
 #else
@@ -245,7 +256,7 @@ extern zend_module_entry redis_module_entry;
 
 #define phpext_redis_ptr redis_module_ptr
 
-#define PHP_REDIS_VERSION "2.2.2"
+#define PHP_REDIS_VERSION "2.2.3"
 
 #endif
 
