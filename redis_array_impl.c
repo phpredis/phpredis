@@ -414,11 +414,12 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 	}
 	else {
 		/* hash */
+		uint64_t h64;
 		hash = rcrc32(out, out_len);
 		efree(out);
-	
+
 		/* get position on ring */
-		uint64_t h64 = hash;
+		h64 = hash;
 		h64 *= ra->count;
 		h64 /= 0xffffffff;
 		pos = (int)h64;
@@ -513,13 +514,13 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
 
 	/* Initialize key array */
 	zval *z_keys, **z_entry_pp;
+	HashPosition pos;
 	MAKE_STD_ZVAL(z_keys);
 #if PHP_VERSION_ID > 50300
 	array_init_size(z_keys, zend_hash_num_elements(Z_ARRVAL_P(z_pairs)));
 #else
 	array_init(z_keys);
 #endif
-	HashPosition pos;
 
 	/* Go through input array and add values to the key array */
 	zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(z_pairs), &pos);
@@ -741,7 +742,7 @@ ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long 
 			if(zend_hash_get_current_data(retHash, (void**)&z_data) == FAILURE) {
 				success = 0;
 				break;
-			}	
+			}
 			if(Z_TYPE_PP(z_data) != IS_LONG) {
 				success = 0;
 				break;
@@ -833,7 +834,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	unsigned int val_len;
 	int i;
 	unsigned long idx;
-	
+
 	/* run ZRANGE key 0 -1 WITHSCORES on source */
 	ZVAL_STRINGL(&z_fun_zrange, "ZRANGE", 6, 0);
 	for(i = 0; i < 4; ++i) {
@@ -1091,23 +1092,23 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 			case REDIS_STRING:
 				success = ra_move_string(key, key_len, z_from, z_to, ttl TSRMLS_CC);
 				break;
-	
+
 			case REDIS_SET:
 				success = ra_move_set(key, key_len, z_from, z_to, ttl TSRMLS_CC);
 				break;
-	
+
 			case REDIS_LIST:
 				success = ra_move_list(key, key_len, z_from, z_to, ttl TSRMLS_CC);
 				break;
-	
+
 			case REDIS_ZSET:
 				success = ra_move_zset(key, key_len, z_from, z_to, ttl TSRMLS_CC);
 				break;
-	
+
 			case REDIS_HASH:
 				success = ra_move_hash(key, key_len, z_from, z_to, ttl TSRMLS_CC);
 				break;
-	
+
 			default:
 				/* TODO: report? */
 				break;

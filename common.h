@@ -5,6 +5,12 @@
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
 
+#ifdef PHP_WIN32
+#define PHP_REDIS_API __declspec(dllexport)
+#else
+#define PHP_REDIS_API
+#endif
+
 #define redis_sock_name "Redis Socket Buffer"
 #define REDIS_SOCK_STATUS_FAILED 0
 #define REDIS_SOCK_STATUS_DISCONNECTED 1

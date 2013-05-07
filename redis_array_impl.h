@@ -1,7 +1,7 @@
 #ifndef REDIS_ARRAY_IMPL_H
 #define REDIS_ARRAY_IMPL_H
 
-#include <stdint.h>
+#include "stdint.h"
 #include "common.h"
 #include "redis_array.h"
 
