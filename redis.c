@@ -4394,9 +4394,15 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
 			zend_hash_get_current_data_ex(arr_weights_hash, (void**) &data, &pointer) == SUCCESS;
 			zend_hash_move_forward_ex(arr_weights_hash, &pointer)) {
 
-			if (Z_TYPE_PP(data) != IS_LONG && Z_TYPE_PP(data) != IS_DOUBLE) {
-				continue;	// ignore non-numeric arguments.
-			}
+            // Ignore non numeric arguments, unless they're the special Redis numbers
+            // "inf" ,"-inf", and "+inf" which can be passed as weights
+            if (Z_TYPE_PP(data) != IS_LONG && Z_TYPE_PP(data) != IS_DOUBLE &&
+                strncasecmp(Z_STRVAL_PP(data), "inf", sizeof("inf")) != 0 &&
+                strncasecmp(Z_STRVAL_PP(data), "-inf", sizeof("-inf")) != 0 &&
+                strncasecmp(Z_STRVAL_PP(data), "+inf", sizeof("+inf")) != 0)
+            {
+                continue;
+            }
 
 			old_cmd = NULL;
 			if(*cmd) {
@@ -4412,12 +4418,18 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
 						, integer_length(Z_LVAL_PP(data)), Z_LVAL_PP(data));
 
 			} else if(Z_TYPE_PP(data) == IS_DOUBLE) {
-
 				cmd_len = redis_cmd_format(&cmd,
                                 "%s" /* cmd */
                                 "$%f" _NL /* data, including size */
                                 , cmd, cmd_len
                                 , Z_DVAL_PP(data));
+			} else if(Z_TYPE_PP(data) == IS_STRING) {
+                cmd_len = redis_cmd_format(&cmd,
+                                "%s" /* cmd */
+                                "$%d" _NL /* data len */
+                                "%s" _NL /* data */
+                                , cmd, cmd_len, Z_STRLEN_PP(data),
+                                Z_STRVAL_PP(data), Z_STRLEN_PP(data));
 			}
 
 			// keep track of elements added
