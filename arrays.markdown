@@ -91,6 +91,7 @@ For instance, instanciate a RedisArray object with `new RedisArray(array("us-hos
 You may also provide an array of 2 values that will be used as follows:
 - The first value is the initial amount of shards in use before the resharding (the x first shards specified in the constructor)
 - The second value is the resharding level, or number of resharding iterations.
+
 For instance, suppose you started with 4 shards as follows:
 <pre>
 0 => 0                    1                    2                     3
