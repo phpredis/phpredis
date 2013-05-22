@@ -417,7 +417,7 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 
 	uint32_t hash;
 	char *out;
-	int pos, out_len;
+	int pos = 0, out_len;
 
 	/* extract relevant part of the key */
 	out = ra_extract_key(ra, key, key_len, &out_len TSRMLS_CC);
@@ -425,7 +425,41 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 		return NULL;
 
 	if(ra->z_dist) {
-		if (!ra_call_distributor(ra, key, key_len, &pos TSRMLS_CC)) {
+		char *error = NULL;
+		if(Z_TYPE_P(ra->z_dist) == IS_ARRAY && !zend_is_callable_ex(ra->z_dist, NULL, 0, NULL, NULL, NULL, &error TSRMLS_CC)) {
+			zval **z_original_pp;
+			zval **z_reshards_pp;
+			HashTable *shards = Z_ARRVAL_P(ra->z_dist);
+			if (zend_hash_num_elements(shards) != 2) {
+				return NULL;
+			}
+			if (zend_hash_index_find(shards, 0, (void **)&z_original_pp) != SUCCESS || Z_TYPE_PP(z_original_pp) != IS_LONG || 
+				zend_hash_index_find(shards, 1, (void **)&z_reshards_pp) != SUCCESS || Z_TYPE_PP(z_reshards_pp) != IS_LONG) {
+				return NULL;
+			}
+			int total, num_original = Z_LVAL_PP(z_original_pp), num_reshards = Z_LVAL_PP(z_reshards_pp);
+			if (num_reshards < 1 || ra->count != (num_original * (1 << num_reshards))) {
+				return NULL;
+			}
+			/* Calculate original hash */
+			hash = rcrc32(out, out_len);
+			efree(out);
+			uint64_t h64 = hash;
+			h64 *= num_original;
+			h64 /= 0xffffffff;
+			pos = (int)h64;
+			/* Infer the new position */
+			for(int i = 0; i < num_reshards; i++) {
+				total = num_original * 2;
+				h64 = hash;
+				h64 *= total;
+				h64 /= 0xffffffff;
+				h64 %= 2;
+				pos = pos + h64 * num_original;
+				num_original = total;
+			}
+		}
+		else if (!ra_call_distributor(ra, key, key_len, &pos TSRMLS_CC)) {
 			return NULL;
 		}
 	}
@@ -441,7 +475,6 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 		pos = (int)h64;
 	}
 	if(out_pos) *out_pos = pos;
-
 	return ra->redis[pos];
 }
 
