@@ -448,8 +448,9 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 			h64 *= num_original;
 			h64 /= 0xffffffff;
 			pos = (int)h64;
+			int i;
 			/* Infer the new position */
-			for(int i = 0; i < num_reshards; i++) {
+			for(i = 0; i < num_reshards; i++) {
 				total = num_original * 2;
 				h64 = hash;
 				h64 *= total;
