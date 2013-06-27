@@ -276,7 +276,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 				d_connect_timeout = Z_DVAL_PP(z_data_pp);
 			}
 			else {
-				d_connect_timeout = atol(Z_STRVAL_PP(z_data_pp));
+				d_connect_timeout = atof(Z_STRVAL_PP(z_data_pp));
 			}
 		}
 	}
