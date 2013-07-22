@@ -427,17 +427,35 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 	if(ra->z_dist) {
 		char *error = NULL;
 		if(Z_TYPE_P(ra->z_dist) == IS_ARRAY && !zend_is_callable_ex(ra->z_dist, NULL, 0, NULL, NULL, NULL, &error TSRMLS_CC)) {
+			int num_original, num_reshards;
 			zval **z_original_pp;
 			zval **z_reshards_pp;
 			HashTable *shards = Z_ARRVAL_P(ra->z_dist);
 			if (zend_hash_num_elements(shards) != 2) {
 				return NULL;
 			}
-			if (zend_hash_index_find(shards, 0, (void **)&z_original_pp) != SUCCESS || Z_TYPE_PP(z_original_pp) != IS_LONG || 
-				zend_hash_index_find(shards, 1, (void **)&z_reshards_pp) != SUCCESS || Z_TYPE_PP(z_reshards_pp) != IS_LONG) {
+			if (zend_hash_index_find(shards, 0, (void **)&z_original_pp) != SUCCESS ||
+				zend_hash_index_find(shards, 1, (void **)&z_reshards_pp) != SUCCESS) {
 				return NULL;
 			}
-			int total, num_original = Z_LVAL_PP(z_original_pp), num_reshards = Z_LVAL_PP(z_reshards_pp);
+			if (Z_TYPE_PP(z_original_pp) == IS_LONG) {
+				num_original = Z_LVAL_PP(z_original_pp);
+			}
+			else if (Z_TYPE_PP(z_original_pp) == IS_STRING) {
+				num_original = atol(Z_STRVAL_PP(z_original_pp));
+			}
+			else {
+				return NULL;
+			}
+			if (Z_TYPE_PP(z_reshards_pp) == IS_LONG) {
+				num_reshards = Z_LVAL_PP(z_reshards_pp);
+			}
+			else if (Z_TYPE_PP(z_reshards_pp) == IS_STRING) {
+				num_reshards = atol(Z_STRVAL_PP(z_reshards_pp));
+			}
+			else {
+				return NULL;
+			}
 			if (num_reshards < 1 || ra->count != (num_original * (1 << num_reshards))) {
 				return NULL;
 			}
@@ -451,7 +469,7 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 			int i;
 			/* Infer the new position */
 			for(i = 0; i < num_reshards; i++) {
-				total = num_original * 2;
+				int total = num_original * 2;
 				h64 = hash;
 				h64 *= total;
 				h64 /= 0xffffffff;
