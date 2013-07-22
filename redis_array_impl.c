@@ -412,6 +412,50 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
 	return 1;
 }
 
+zend_bool
+ra_check_distributor(RedisArray *ra, int *num_original, int *num_reshards TSRMLS_DC) {
+	if(Z_TYPE_P(ra->z_dist) == IS_ARRAY) {
+		zval **z_original_pp;
+		zval **z_reshards_pp;
+		HashTable *shards = Z_ARRVAL_P(ra->z_dist);
+		if (zend_hash_num_elements(shards) != 2) {
+			return 0;
+		}
+		if (zend_hash_index_find(shards, 0, (void **)&z_original_pp) != SUCCESS ||
+			zend_hash_index_find(shards, 1, (void **)&z_reshards_pp) != SUCCESS) {
+			return 0;
+		}
+		if (Z_TYPE_PP(z_original_pp) == IS_LONG) {
+			if ((*num_original = Z_LVAL_PP(z_original_pp)) == 0) {
+				return 0;
+			}
+		}
+		else if (Z_TYPE_PP(z_original_pp) == IS_STRING) {
+			if ((*num_original = atol(Z_STRVAL_PP(z_original_pp))) == 0) {
+				return 0;
+			}
+		}
+		else {
+			return 0;
+		}
+		if (Z_TYPE_PP(z_reshards_pp) == IS_LONG) {
+			if ((*num_reshards = Z_LVAL_PP(z_reshards_pp)) == 0) {
+				return 0;
+			}
+		}
+		else if (Z_TYPE_PP(z_reshards_pp) == IS_STRING) {
+			if ((*num_reshards = atol(Z_STRVAL_PP(z_reshards_pp))) == 0) {
+				return 0;
+			}
+		}
+		else {
+			return 0;
+		}
+		return 1;
+	}
+	return 0;
+}
+
 zval *
 ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_DC) {
 
@@ -426,36 +470,8 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 
 	if(ra->z_dist) {
 		char *error = NULL;
-		if(Z_TYPE_P(ra->z_dist) == IS_ARRAY && !zend_is_callable_ex(ra->z_dist, NULL, 0, NULL, NULL, NULL, &error TSRMLS_CC)) {
-			int num_original, num_reshards;
-			zval **z_original_pp;
-			zval **z_reshards_pp;
-			HashTable *shards = Z_ARRVAL_P(ra->z_dist);
-			if (zend_hash_num_elements(shards) != 2) {
-				return NULL;
-			}
-			if (zend_hash_index_find(shards, 0, (void **)&z_original_pp) != SUCCESS ||
-				zend_hash_index_find(shards, 1, (void **)&z_reshards_pp) != SUCCESS) {
-				return NULL;
-			}
-			if (Z_TYPE_PP(z_original_pp) == IS_LONG) {
-				num_original = Z_LVAL_PP(z_original_pp);
-			}
-			else if (Z_TYPE_PP(z_original_pp) == IS_STRING) {
-				num_original = atol(Z_STRVAL_PP(z_original_pp));
-			}
-			else {
-				return NULL;
-			}
-			if (Z_TYPE_PP(z_reshards_pp) == IS_LONG) {
-				num_reshards = Z_LVAL_PP(z_reshards_pp);
-			}
-			else if (Z_TYPE_PP(z_reshards_pp) == IS_STRING) {
-				num_reshards = atol(Z_STRVAL_PP(z_reshards_pp));
-			}
-			else {
-				return NULL;
-			}
+		int num_original, num_reshards;
+		if (ra_check_distributor(ra, &num_original, &num_reshards TSRMLS_CC)) {
 			if (num_reshards < 1 || ra->count != (num_original * (1 << num_reshards))) {
 				return NULL;
 			}
