@@ -629,7 +629,7 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 	}
 
 	/* if there is a redis sock already we have to remove it from the list */
-	if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) > 0) {
+	if (redis_sock_get(object, &redis_sock TSRMLS_CC, 1) > 0) {
 		if (zend_hash_find(Z_OBJPROP_P(object), "socket",
 					sizeof("socket"), (void **) &socket) == FAILURE) {
 			/* maybe there is a socket but the id isn't known.. what to do? */
