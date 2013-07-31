@@ -1626,18 +1626,26 @@ class Redis_Test extends TestSuite
 //    }
 
     public function testdbSize() {
-	$this->assertTrue($this->redis->flushDB());
-	$this->redis->set('x', 'y');
-	$this->assertTrue($this->redis->dbSize() === 1);
+        $this->assertTrue($this->redis->flushDB());
+        $this->redis->set('x', 'y');
+        $this->assertTrue($this->redis->dbSize() === 1);
     }
 
     public function testttl() {
-	$this->redis->set('x', 'y');
-	$this->redis->setTimeout('x', 5);
-	for($i = 5; $i > 0; $i--) {
-		$this->assertEquals($i, $this->redis->ttl('x'));
-		sleep(1);
-	}
+        $this->redis->set('x', 'y');
+        $this->redis->setTimeout('x', 5);
+        for($i = 5; $i > 0; $i--) {
+            $this->assertEquals($i, $this->redis->ttl('x'));
+            sleep(1);
+        }
+
+        // A key with no TTL
+        $this->redis->del('x'); $this->redis->set('x', 'bar');
+        $this->assertEquals($this->redis->ttl('x'), -1);
+
+        // A key that doesn't exist
+        $this->redis->del('x');
+        $this->assertEquals($this->redis->ttl('x'), -2);
     }
 
     public function testPersist() {
