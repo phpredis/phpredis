@@ -1124,13 +1124,13 @@ var_dump($redis->sort('s', array('sort' => 'desc', 'store' => 'out'))); // (int)
 
 ### ttl, pttl
 -----
-_**Description**_: Returns the time to live left for a given key, in seconds. If the key doesn't exist, `FALSE` is returned. pttl returns a time in milliseconds.
+_**Description**_: Returns the time to live left for a given key in seconds (ttl), or milliseconds (pttl).
 
 ##### *Parameters*
 *Key*: key
 
 ##### *Return value*
-Long, the time left to live in seconds.
+*LONG*:  The time to live in seconds.  If the key has no ttl, `-1` will be returned, and `-2` if the key doesn't exist.
 
 ##### *Example*
 ~~~
