@@ -826,18 +826,34 @@ PHP_METHOD(RedisArray, mget)
 	for (i = 0, zend_hash_internal_pointer_reset_ex(h_keys, &pointer);
 			zend_hash_get_current_data_ex(h_keys, (void**) &data,
 				&pointer) == SUCCESS;
-			zend_hash_move_forward_ex(h_keys, &pointer), ++i) {
+			zend_hash_move_forward_ex(h_keys, &pointer), ++i)
+	{
+	    /* If we need to represent a long key as a string */
+	    unsigned int key_len;
+	    char kbuf[40], *key_lookup;
 
-		if (Z_TYPE_PP(data) != IS_STRING) {
-			php_error_docref(NULL TSRMLS_CC, E_ERROR, "MGET: all keys must be string.");
-			efree(argv);
-			efree(pos);
-			efree(redis_instances);
-			efree(argc_each);
-			RETURN_FALSE;
-		}
+	    /* phpredis proper can only use string or long keys, so restrict to that here */
+	    if(Z_TYPE_PP(data) != IS_STRING && Z_TYPE_PP(data) != IS_LONG) {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR, "MGET: all keys must be strings or longs");
+            efree(argv);
+            efree(pos);
+            efree(redis_instances);
+            efree(argc_each);
+            RETURN_FALSE;
+	    }
 
-		redis_instances[i] = ra_find_node(ra, Z_STRVAL_PP(data), Z_STRLEN_PP(data), &pos[i] TSRMLS_CC);
+	    /* Convert to a string for hash lookup if it isn't one */
+	    if(Z_TYPE_PP(data) == IS_STRING) {
+	        key_len = Z_STRLEN_PP(data);
+            key_lookup = Z_STRVAL_PP(data);
+	    } else {
+	        key_len = snprintf(kbuf, sizeof(kbuf), "%ld", Z_LVAL_PP(data));
+	        key_lookup = (char*)kbuf;
+	    }
+
+		/* Find our node */
+        redis_instances[i] = ra_find_node(ra, key_lookup, key_len, &pos[i] TSRMLS_CC);
+
 		argc_each[pos[i]]++;	/* count number of keys per node */
 		argv[i] = *data;
 	}
@@ -886,7 +902,6 @@ PHP_METHOD(RedisArray, mget)
 		}
 		zval_dtor(z_ret);
 		efree(z_ret);
-
 	}
 
 	/* copy temp array in the right order to return_value */
@@ -918,8 +933,8 @@ PHP_METHOD(RedisArray, mset)
 	int *pos, argc, *argc_each;
 	HashTable *h_keys;
 	zval **redis_instances, *redis_inst, **argv;
-	char *key, **keys;
-	unsigned int key_len;
+	char *key, **keys, **key_free, kbuf[40];
+	unsigned int key_len, free_idx = 0;
 	int type, *key_lens;
 	unsigned long idx;
 
@@ -941,9 +956,12 @@ PHP_METHOD(RedisArray, mset)
 	argv = emalloc(argc * sizeof(zval*));
 	pos = emalloc(argc * sizeof(int));
 	keys = emalloc(argc * sizeof(char*));
-	key_lens = emalloc(argc * sizeof(int));
+    key_lens = emalloc(argc * sizeof(int));
 	redis_instances = emalloc(argc * sizeof(zval*));
 	memset(redis_instances, 0, argc * sizeof(zval*));
+
+	/* Allocate an array holding the indexes of any keys that need freeing */
+	key_free = emalloc(argc * sizeof(char*));
 
 	argc_each = emalloc(ra->count * sizeof(int));
 	memset(argc_each, 0, ra->count * sizeof(int));
@@ -951,21 +969,30 @@ PHP_METHOD(RedisArray, mset)
 	/* associate each key to a redis node */
 	for(i = 0, zend_hash_internal_pointer_reset(h_keys);
 			zend_hash_has_more_elements(h_keys) == SUCCESS;
-			zend_hash_move_forward(h_keys), i++) {
+			zend_hash_move_forward(h_keys), i++)
+	{
+	    /* We have to skip the element if we can't get the array value */
+        if(zend_hash_get_current_data(h_keys, (void**)&data) == FAILURE) {
+            continue;
+        }
 
-		type = zend_hash_get_current_key_ex(h_keys, &key, &key_len, &idx, 0, NULL);
-		if(type != HASH_KEY_IS_STRING) { /* ignore non-string keys */
-			continue;
-		}
-		if(zend_hash_get_current_data(h_keys, (void**)&data) == FAILURE) {
-			continue;
-		}
+		/* Grab our key */
+	    type = zend_hash_get_current_key_ex(h_keys, &key, &key_len, &idx, 0, NULL);
 
-		redis_instances[i] = ra_find_node(ra, key, (int)key_len - 1, &pos[i] TSRMLS_CC); /* -1 because of PHP assoc keys which count \0... */
+	    /* If the key isn't a string, make a string representation of it */
+	    if(type != HASH_KEY_IS_STRING) {
+	        key_len = snprintf(kbuf, sizeof(kbuf), "%ld", (long)idx);
+	        key = estrndup(kbuf, key_len);
+	        key_free[free_idx++]=key;
+	    } else {
+	        key_len--; /* We don't want the null terminator */
+	    }
+
+		redis_instances[i] = ra_find_node(ra, key, (int)key_len, &pos[i] TSRMLS_CC);
 		argc_each[pos[i]]++;	/* count number of keys per node */
 		argv[i] = *data;
 		keys[i] = key;
-		key_lens[i] = (int)key_len - 1;
+		key_lens[i] = (int)key_len;
 	}
 
 
@@ -1018,8 +1045,14 @@ PHP_METHOD(RedisArray, mset)
 		zval_ptr_dtor(&z_argarray);
 	}
 
+	/* Free any keys that we needed to allocate memory for, because they weren't strings */
+	for(i=0; i<free_idx; i++) {
+	    efree(key_free[i]);
+	}
+
 	/* cleanup */
 	efree(keys);
+	efree(key_free);
 	efree(key_lens);
 	efree(argv);
 	efree(pos);
