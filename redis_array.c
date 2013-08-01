@@ -834,12 +834,12 @@ PHP_METHOD(RedisArray, mget)
 
 	    /* phpredis proper can only use string or long keys, so restrict to that here */
 	    if(Z_TYPE_PP(data) != IS_STRING && Z_TYPE_PP(data) != IS_LONG) {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR, "MGET: all keys must be strings or longs");
-            efree(argv);
-            efree(pos);
-            efree(redis_instances);
-            efree(argc_each);
-            RETURN_FALSE;
+	        php_error_docref(NULL TSRMLS_CC, E_ERROR, "MGET: all keys must be strings or longs");
+	        efree(argv);
+	        efree(pos);
+	        efree(redis_instances);
+	        efree(argc_each);
+	        RETURN_FALSE;
 	    }
 
 	    /* Convert to a string for hash lookup if it isn't one */
