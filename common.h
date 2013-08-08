@@ -182,6 +182,7 @@ typedef struct {
 
     char           *err;
     int            err_len;
+    zend_bool      lazy_connect;
 } RedisSock;
 /* }}} */
 
