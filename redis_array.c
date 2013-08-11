@@ -194,7 +194,7 @@ PHP_METHOD(RedisArray, __construct)
 	zval *z0, *z_fun = NULL, *z_dist = NULL, **zpData, *z_opts = NULL;
 	int id;
 	RedisArray *ra = NULL;
-	zend_bool b_index = 0, b_autorehash = 0;
+	zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0;
 	HashTable *hPrev = NULL, *hOpts = NULL;
   long l_retry_interval = 0;
 
@@ -238,9 +238,14 @@ PHP_METHOD(RedisArray, __construct)
 			b_autorehash = Z_BVAL_PP(zpData);
 		}
 
+		/* pconnect */
+		if(FAILURE != zend_hash_find(hOpts, "pconnect", sizeof("pconnect"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_BOOL) {
+		    b_pconnect = Z_BVAL_PP(zpData);
+		}
+
 		/* extract retry_interval option. */
-    zval **z_retry_interval_pp;
-		if (FAILURE != zend_hash_find(hOpts, "retry_interval", sizeof("retry_interval"), (void**)&z_retry_interval_pp)) {
+		zval **z_retry_interval_pp;
+        if (FAILURE != zend_hash_find(hOpts, "retry_interval", sizeof("retry_interval"), (void**)&z_retry_interval_pp)) {
 			if (Z_TYPE_PP(z_retry_interval_pp) == IS_LONG || Z_TYPE_PP(z_retry_interval_pp) == IS_STRING) {
 				if (Z_TYPE_PP(z_retry_interval_pp) == IS_LONG) {
 					l_retry_interval = Z_LVAL_PP(z_retry_interval_pp);
@@ -259,7 +264,7 @@ PHP_METHOD(RedisArray, __construct)
 			break;
 
 		case IS_ARRAY:
-			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_dist, hPrev, b_index, l_retry_interval TSRMLS_CC);
+			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_dist, hPrev, b_index, l_retry_interval, b_pconnect TSRMLS_CC);
 			break;
 
 		default:
