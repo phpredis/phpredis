@@ -970,7 +970,8 @@ PHPAPI void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
  */
 PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port,
                                     double timeout, int persistent, char *persistent_id,
-                                    long retry_interval)
+                                    long retry_interval,
+                                    zend_bool lazy_connect)
 {
     RedisSock *redis_sock;
 
@@ -982,6 +983,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     redis_sock->dbNumber = 0;
     redis_sock->retry_interval = retry_interval * 1000;
     redis_sock->persistent = persistent;
+    redis_sock->lazy_connect = lazy_connect;
 
     if(persistent_id) {
 		size_t persistent_id_len = strlen(persistent_id);

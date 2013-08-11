@@ -17,7 +17,7 @@ There are several ways of creating Redis arrays;  they can be pre-defined in red
 
 #### Declaring a new array with a list of nodes
 <pre>
-$ra = new RedisArray(array("host1", "host2:63792, "host2:6380"));
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"));
 </pre>
 
 
@@ -26,7 +26,7 @@ $ra = new RedisArray(array("host1", "host2:63792, "host2:6380"));
 function extract_key_part($k) {
     return substr($k, 0, 3);	// hash only on first 3 characters.
 }
-$ra = new RedisArray(array("host1", "host2:63792, "host2:6380"), array("function" => "extract_key_part"));
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("function" => "extract_key_part"));
 </pre>
 
 #### Defining a "previous" array when nodes are added or removed.
@@ -34,7 +34,19 @@ When a new node is added to an array, phpredis needs to know about it. The old l
 
 <pre>
 // adding host3 to a ring containing host1 and host2. Read commands will look in the previous ring if the data is not found in the main ring.
-$ra = new RedisArray(array('host1', 'host2', 'host3'), array('previous' => array('host1', 'host2')));
+$ra = new RedisArray(array("host1", "host2", "host3"), array("previous" => array("host1", "host2")));
+</pre>
+
+#### Specifying the "retry_interval" parameter
+The retry_interval is used to specify a delay in milliseconds between reconnection attempts in case the client loses connection with a server
+<pre>
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("retry_timeout" => 100)));
+</pre>
+
+#### Specifying the "lazy_connect" parameter
+This option is useful when a cluster has many shards but not of them are necessarily used at one time.
+<pre>
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("lazy_connect" => true)));
 </pre>
 
 #### Defining arrays in Redis.ini
@@ -75,6 +87,53 @@ For instance, the keys “{user:1}:name” and “{user:1}:email” will be stor
 In order to control the distribution of keys by hand, you can provide a custom function or closure that returns the server number, which is the index in the array of servers that you created the RedisArray object with.
 
 For instance, instanciate a RedisArray object with `new RedisArray(array("us-host", "uk-host", "de-host"), array("distributor" => "dist"));` and write a function called "dist" that will return `2` for all the keys that should end up on the "de-host" server.
+
+You may also provide an array of 2 values that will be used as follows:
+- The first value is the initial amount of shards in use before the resharding (the x first shards specified in the constructor)
+- The second value is the resharding level, or number of resharding iterations.
+
+For instance, suppose you started with 4 shards as follows:
+<pre>
+0 => 0                    1                    2                     3
+</pre>
+
+After 1 iteration of resharding, keys will be assigned to the following servers:
+<pre>
+1 => 0         4          1         5          2          6          3          7
+</pre>
+
+After 2 iterations, keys will be assigned to the following servers:
+<pre>
+2 => 0    8    4    12    1    9    5    13    2    10    6    14    3    11    7    15
+</pre>
+
+After 3 iterations, keys will be assigned to the following servers:
+<pre>
+3 => 0 16 8 24 4 20 12 28 1 17 9 25 5 21 13 29 2 18 10 26 6 22 14 30 3 19 11 27 7 23 15 31
+</pre>
+
+And so on...
+
+The idea here is to be able to reshard the keys easily, without moving keys from 1 server to another.
+
+The procedure to adopt is simple:
+
+For each initial shard, setup a slave. For instance, for shard 1 we setup slave 5.
+
+Keys will now be assigned to either shard 1 or shard 5. Once the application sees the new settings, just setup shard 5 as a master. Then, in order to reclaim memory, just cleanup keys from shard 1 that belong to shard 5 and vice-versa.
+
+On the next iteration, setup a new slave 9 for shard 1 and a new slave 13 for shard 5.
+
+Update the application settings, disconnect the new slaves and clean up the shards from keys that don't belong there anymore.
+
+Apply the same procedure for each resharding iteration.
+
+### Example
+<pre>
+$ra = new RedisArray(array("host1", "host2", "host3", "host4", "host5", "host6", "host7", "host8"), array("distributor" => array(2, 2)));
+</pre>
+
+This declares that we started with 2 shards and moved to 4 then 8 shards. The number of initial shards is 2 and the resharding level (or number of iterations) is 2.
 
 ## Migrating keys
 

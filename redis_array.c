@@ -197,6 +197,7 @@ PHP_METHOD(RedisArray, __construct)
 	zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0;
 	HashTable *hPrev = NULL, *hOpts = NULL;
   long l_retry_interval = 0;
+  	zend_bool b_lazy_connect = 0;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|a", &z0, &z_opts) == FAILURE) {
 		RETURN_FALSE;
@@ -254,6 +255,11 @@ PHP_METHOD(RedisArray, __construct)
 					l_retry_interval = atol(Z_STRVAL_PP(z_retry_interval_pp));
 				}
 			}
+		}
+
+		/* extract lazy connect option. */
+		if(FAILURE != zend_hash_find(hOpts, "lazy_connect", sizeof("lazy_connect"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_BOOL) {
+			b_lazy_connect = Z_BVAL_PP(zpData);
 		}
 	}
 
