@@ -30,13 +30,13 @@ extern int le_redis_sock;
 extern zend_class_entry *redis_ce;
 
 RedisArray*
-ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool lazy_connect TSRMLS_DC)
+ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b_lazy_connect TSRMLS_DC)
 {
 	int i, host_len, id;
 	int count = zend_hash_num_elements(hosts);
 	char *host, *p;
 	short port;
-	zval **zpData, *z_args, z_cons, z_ret;
+	zval **zpData, z_cons, z_ret;
 	RedisSock *redis_sock  = NULL;
 
 	/* function calls on the Redis object */
@@ -70,9 +70,9 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool l
 		call_user_function(&redis_ce->function_table, &ra->redis[i], &z_cons, &z_ret, 0, NULL TSRMLS_CC);
 
 		/* create socket */
-		redis_sock = redis_sock_create(host, host_len, port, 0, ra->pconnect, NULL, retry_interval, lazy_connect);
+		redis_sock = redis_sock_create(host, host_len, port, 0, ra->pconnect, NULL, retry_interval, b_lazy_connect);
 
-	    if (!lazy_connect)
+	    if (!b_lazy_connect)
     	{
 			/* connect */
 			redis_sock_server_open(redis_sock, 1 TSRMLS_CC);
@@ -269,7 +269,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 	}
 
 	/* create RedisArray object */
-	ra = ra_make_array(hHosts, z_fun, z_dist, hPrev, b_index, l_retry_interval, b_pconnect, b_lazy_connect TSRMLS_CC);
+	ra = ra_make_array(hHosts, z_fun, z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect TSRMLS_CC);
 	ra->auto_rehash = b_autorehash;
 
 	/* cleanup */
@@ -294,7 +294,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 }
 
 RedisArray *
-ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, long retry_interval, zend_bool b_pconnect, zend_bool b_lazy_connect TSRMLS_DC) {
+ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, zend_bool b_pconnect, long retry_interval, zend_bool b_lazy_connect TSRMLS_DC) {
 
 	int count = zend_hash_num_elements(hosts);
 
@@ -312,10 +312,10 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	/* init array data structures */
 	ra_init_function_table(ra);
 
-	if(NULL == ra_load_hosts(ra, hosts, retry_interval, lazy_connect TSRMLS_CC)) {
+	if(NULL == ra_load_hosts(ra, hosts, retry_interval, b_lazy_connect TSRMLS_CC)) {
 		return NULL;
 	}
-	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, retry_interval, b_pconnect, b_lazy_connect TSRMLS_CC) : NULL;
+	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect TSRMLS_CC) : NULL;
 
 	/* copy function if provided */
 	if(z_fun) {

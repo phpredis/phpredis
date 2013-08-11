@@ -270,7 +270,7 @@ PHP_METHOD(RedisArray, __construct)
 			break;
 
 		case IS_ARRAY:
-			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_dist, hPrev, b_index, l_retry_interval, b_pconnect TSRMLS_CC);
+			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_dist, hPrev, b_index, l_retry_interval, b_pconnect, b_lazy_connect TSRMLS_CC);
 			break;
 
 		default:
