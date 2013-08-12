@@ -4304,7 +4304,7 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
 	int cmd_len, cmd_elements;
 	int free_key_output;
 
-	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa|as",
+	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa|a!s",
 					&object, redis_ce,
 					&key_output, &key_output_len, &keys_array, &weights_array, &operation, &operation_len) == FAILURE) {
 		RETURN_FALSE;
