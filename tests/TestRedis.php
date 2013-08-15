@@ -1971,6 +1971,20 @@ class Redis_Test extends TestSuite
 	$this->redis->delete('key2');
 	$this->redis->delete('key3');
 
+	//test zUnion with weights and aggegration function
+	$this->redis->zadd('key1', 1, 'duplicate');
+	$this->redis->zadd('key2', 2, 'duplicate');
+	$this->redis->zUnion('keyU', array('key1','key2'), array(1,1), 'MIN');
+	$this->assertTrue($this->redis->zScore('keyU', 'duplicate')===1.0);
+	$this->redis->delete('keyU');
+
+	//now test zUnion *without* weights but with aggregrate function
+	$this->redis->zUnion('keyU', array('key1','key2'), null, 'MIN');
+	$this->assertTrue($this->redis->zScore('keyU', 'duplicate')===1.0);
+	$this->redis->delete('keyU', 'key1', 'key2');
+
+
+
 	// test integer and float weights (GitHub issue #109).
 	$this->redis->del('key1', 'key2', 'key3');
 
@@ -2086,6 +2100,10 @@ class Redis_Test extends TestSuite
 	$this->redis->delete('keyI');
 	$this->assertTrue( 2 === $this->redis->zInter('keyI', array('key1', 'key2', 'key3'), array(1, 5, 1), 'max'));
 	$this->assertTrue(array('val3', 'val1') === $this->redis->zRange('keyI', 0, -1));
+
+	$this->redis->delete('keyI');
+	$this->assertTrue(2 === $this->redis->zInter('keyI', array('key1', 'key2', 'key3'), null, 'max'));
+	$this->assertTrue($this->redis->zScore('keyI', 'val1') === floatval(7));
 
 	// zrank, zrevrank
 	$this->redis->delete('z');
