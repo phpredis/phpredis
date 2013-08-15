@@ -65,10 +65,10 @@ PHPAPI void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *red
 #define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) \
 	char dbl_decsep; \
 	dbl_decsep = '.'; \
-    dbl_str = _php_math_number_format_ex(dbl, 15, &dbl_decsep, 1, NULL, 0); \
+    dbl_str = _php_math_number_format_ex(dbl, 16, &dbl_decsep, 1, NULL, 0); \
 	dbl_len = strlen(dbl_str);
 #else
 #define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) \
-	dbl_str = _php_math_number_format(dbl, 15, '.', '\x00'); \
+	dbl_str = _php_math_number_format(dbl, 16, '.', '\x00'); \
 	dbl_len = strlen(dbl_str);
 #endif
