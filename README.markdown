@@ -322,6 +322,7 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 1. [save](#save) - Synchronously save the dataset to disk (wait to complete)
 1. [slaveof](#slaveof) - Make the server a slave of another instance, or promote it to master
 1. [time](#time) - Return the current server time
+1. [slowlog](#slowlog) - Access the Redis slowlog entries
 
 ### bgrewriteaof
 -----
@@ -537,6 +538,36 @@ the unix timestamp, and element one being microseconds.
 ##### *Examples*
 ~~~
 $redis->time();
+~~~
+
+### slowlog
+-----
+_**Description**_: Access the Redis slowlog
+
+##### *Parameters*
+*Operation* (string): This can be either `GET`, `LEN`, or `RESET` 
+*Length* (integer), optional: If executing a `SLOWLOG GET` command, you can pass an optional length.
+#####
+
+##### *Return value*
+The return value of SLOWLOG will depend on which operation was performed.
+SLOWLOG GET: Array of slowlog entries, as provided by Redis
+SLOGLOG LEN: Integer, the length of the slowlog
+SLOWLOG RESET: Boolean, depending on success
+#####
+
+##### *Examples*
+~~~
+// Get ten slowlog entries
+$redis->slowlog('get', 10); 
+// Get the default number of slowlog entries
+
+$redis->slowlog('get');
+// Reset our slowlog
+$redis->slowlog('reset');
+
+// Retrieve slowlog length
+$redis->slowlog('len');
 ~~~
 
 ## Keys and Strings

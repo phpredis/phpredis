@@ -237,6 +237,9 @@ static zend_function_entry redis_functions[] = {
      /* config */
      PHP_ME(Redis, config, NULL, ZEND_ACC_PUBLIC)
 
+     /* slowlog */
+     PHP_ME(Redis, slowlog, NULL, ZEND_ACC_PUBLIC)
+
      /* introspection */
      PHP_ME(Redis, getHost, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getPort, NULL, ZEND_ACC_PUBLIC)
@@ -5885,6 +5888,56 @@ PHP_METHOD(Redis, config)
 /* }}} */
 
 
+/* {{{ proto boolean Redis::slowlog(string arg, [int option])
+ */
+PHP_METHOD(Redis, slowlog) {
+    zval *object;
+    RedisSock *redis_sock;
+    char *arg, *cmd;
+    int arg_len, cmd_len;
+    long option;
+    enum {SLOWLOG_GET, SLOWLOG_LEN, SLOWLOG_RESET} mode;
+
+    // Make sure we can get parameters
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
+                                    &object, redis_ce, &arg, &arg_len, &option) == FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    // Figure out what kind of slowlog command we're executing
+    if(!strncasecmp(arg, "GET", 3)) {
+        mode = SLOWLOG_GET;
+    } else if(!strncasecmp(arg, "LEN", 3)) {
+        mode = SLOWLOG_LEN;
+    } else if(!strncasecmp(arg, "RESET", 5)) {
+        mode = SLOWLOG_RESET;
+    } else {
+        // This command is not valid
+        RETURN_FALSE;
+    }
+
+    // Make sure we can grab our redis socket
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    // Create our command.  For everything except SLOWLOG GET (with an arg) it's just two parts
+    if(mode == SLOWLOG_GET && ZEND_NUM_ARGS() == 2) {
+        cmd_len = redis_cmd_format_static(&cmd, "SLOWLOG", "sl", arg, arg_len, option);
+    } else {
+        cmd_len = redis_cmd_format_static(&cmd, "SLOWLOG", "s", arg, arg_len);
+    }
+
+    // Kick off our command
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+        if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL) < 0) {
+            RETURN_FALSE;
+        }
+    }
+    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+}
 
 // Construct an EVAL or EVALSHA command, with option argument array and number of arguments that are keys parameter
 PHPAPI int
@@ -6510,9 +6563,6 @@ PHP_METHOD(Redis, client) {
     } else {
         cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "s", opt, opt_len);
     }
-
-    // Handle CLIENT LIST specifically
-    int is_list = !strncasecmp(opt, "list", 4);
 
     // Execute our queue command
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);

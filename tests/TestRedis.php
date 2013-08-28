@@ -1684,6 +1684,16 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->client('kill', $str_addr));
     }
 
+    public function testSlowlog() {
+        // We don't really know what's going to be in the slowlog, but make sure
+        // the command returns proper types when called in various ways
+        $this->assertTrue(is_array($this->redis->slowlog('get')));
+        $this->assertTrue(is_array($this->redis->slowlog('get', 10)));
+        $this->assertTrue(is_int($this->redis->slowlog('len')));
+        $this->assertTrue($this->redis->slowlog('reset'));
+        $this->assertFalse($this->redis->slowlog('notvalid'));
+    }
+
     public function testinfo() {
 	$info = $this->redis->info();
 

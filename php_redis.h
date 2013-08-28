@@ -180,6 +180,7 @@ PHP_METHOD(Redis, getOption);
 PHP_METHOD(Redis, setOption);
 
 PHP_METHOD(Redis, config);
+PHP_METHOD(Redis, slowlog);
 
 PHP_METHOD(Redis, client);
 
