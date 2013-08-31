@@ -30,13 +30,13 @@ extern int le_redis_sock;
 extern zend_class_entry *redis_ce;
 
 RedisArray*
-ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval TSRMLS_DC)
+ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b_lazy_connect TSRMLS_DC)
 {
 	int i, host_len, id;
 	int count = zend_hash_num_elements(hosts);
 	char *host, *p;
 	short port;
-	zval **zpData, *z_args, z_cons, z_ret;
+	zval **zpData, z_cons, z_ret;
 	RedisSock *redis_sock  = NULL;
 
 	/* function calls on the Redis object */
@@ -70,10 +70,13 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval TSRMLS_DC)
 		call_user_function(&redis_ce->function_table, &ra->redis[i], &z_cons, &z_ret, 0, NULL TSRMLS_CC);
 
 		/* create socket */
-		redis_sock = redis_sock_create(host, host_len, port, 0, ra->pconnect, NULL, retry_interval);
+		redis_sock = redis_sock_create(host, host_len, port, 0, ra->pconnect, NULL, retry_interval, b_lazy_connect);
 
-		/* connect */
-		redis_sock_server_open(redis_sock, 1 TSRMLS_CC);
+	    if (!b_lazy_connect)
+    	{
+			/* connect */
+			redis_sock_server_open(redis_sock, 1 TSRMLS_CC);
+		}
 
 		/* attach */
 #if PHP_VERSION_ID >= 50400
@@ -163,10 +166,12 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 	zval *z_params_autorehash;
 	zval *z_params_retry_interval;
 	zval *z_params_pconnect;
+	zval *z_params_lazy_connect;
 	RedisArray *ra = NULL;
 
 	zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0;
 	long l_retry_interval = 0;
+	zend_bool b_lazy_connect = 0;
 	HashTable *hHosts = NULL, *hPrev = NULL;
 
 	/* find entry */
@@ -253,9 +258,18 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
             b_pconnect = 1;
         }
     }
+	/* find retry interval option */
+	MAKE_STD_ZVAL(z_params_lazy_connect);
+	array_init(z_params_lazy_connect);
+	sapi_module.treat_data(PARSE_STRING, estrdup(INI_STR("redis.arrays.lazyconnect")), z_params_lazy_connect TSRMLS_CC);
+	if (zend_hash_find(Z_ARRVAL_P(z_params_lazy_connect), name, strlen(name) + 1, (void **) &z_data_pp) != FAILURE) {
+		if(Z_TYPE_PP(z_data_pp) == IS_STRING && strncmp(Z_STRVAL_PP(z_data_pp), "1", 1) == 0) {
+			b_lazy_connect = 1;
+		}
+	}
 
 	/* create RedisArray object */
-	ra = ra_make_array(hHosts, z_fun, z_dist, hPrev, b_index, l_retry_interval, b_pconnect TSRMLS_CC);
+	ra = ra_make_array(hHosts, z_fun, z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect TSRMLS_CC);
 	ra->auto_rehash = b_autorehash;
 
 	/* cleanup */
@@ -273,12 +287,14 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 	efree(z_params_retry_interval);
 	zval_dtor(z_params_pconnect);
 	efree(z_params_pconnect);
+	zval_dtor(z_params_lazy_connect);
+	efree(z_params_lazy_connect);
 
 	return ra;
 }
 
 RedisArray *
-ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, long retry_interval, zend_bool b_pconnect TSRMLS_DC) {
+ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, zend_bool b_pconnect, long retry_interval, zend_bool b_lazy_connect TSRMLS_DC) {
 
 	int count = zend_hash_num_elements(hosts);
 
@@ -296,10 +312,10 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	/* init array data structures */
 	ra_init_function_table(ra);
 
-	if(NULL == ra_load_hosts(ra, hosts, retry_interval TSRMLS_CC)) {
+	if(NULL == ra_load_hosts(ra, hosts, retry_interval, b_lazy_connect TSRMLS_CC)) {
 		return NULL;
 	}
-	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, retry_interval, b_pconnect TSRMLS_CC) : NULL;
+	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect TSRMLS_CC) : NULL;
 
 	/* copy function if provided */
 	if(z_fun) {
@@ -410,12 +426,56 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
 	return 1;
 }
 
+zend_bool
+ra_check_distributor(RedisArray *ra, int *num_original, int *num_reshards TSRMLS_DC) {
+	if(Z_TYPE_P(ra->z_dist) == IS_ARRAY) {
+		zval **z_original_pp;
+		zval **z_reshards_pp;
+		HashTable *shards = Z_ARRVAL_P(ra->z_dist);
+		if (zend_hash_num_elements(shards) != 2) {
+			return 0;
+		}
+		if (zend_hash_index_find(shards, 0, (void **)&z_original_pp) != SUCCESS ||
+			zend_hash_index_find(shards, 1, (void **)&z_reshards_pp) != SUCCESS) {
+			return 0;
+		}
+		if (Z_TYPE_PP(z_original_pp) == IS_LONG) {
+			if ((*num_original = Z_LVAL_PP(z_original_pp)) == 0) {
+				return 0;
+			}
+		}
+		else if (Z_TYPE_PP(z_original_pp) == IS_STRING) {
+			if ((*num_original = atol(Z_STRVAL_PP(z_original_pp))) == 0) {
+				return 0;
+			}
+		}
+		else {
+			return 0;
+		}
+		if (Z_TYPE_PP(z_reshards_pp) == IS_LONG) {
+			if ((*num_reshards = Z_LVAL_PP(z_reshards_pp)) == 0) {
+				return 0;
+			}
+		}
+		else if (Z_TYPE_PP(z_reshards_pp) == IS_STRING) {
+			if ((*num_reshards = atol(Z_STRVAL_PP(z_reshards_pp))) == 0) {
+				return 0;
+			}
+		}
+		else {
+			return 0;
+		}
+		return 1;
+	}
+	return 0;
+}
+
 zval *
 ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_DC) {
 
 	uint32_t hash;
 	char *out;
-	int pos, out_len;
+	int pos = 0, out_len;
 
 	/* extract relevant part of the key */
 	out = ra_extract_key(ra, key, key_len, &out_len TSRMLS_CC);
@@ -423,7 +483,32 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 		return NULL;
 
 	if(ra->z_dist) {
-		if (!ra_call_distributor(ra, key, key_len, &pos TSRMLS_CC)) {
+		char *error = NULL;
+		int num_original, num_reshards;
+		if (ra_check_distributor(ra, &num_original, &num_reshards TSRMLS_CC)) {
+			if (num_reshards < 1 || ra->count != (num_original * (1 << num_reshards))) {
+				return NULL;
+			}
+			/* Calculate original hash */
+			hash = rcrc32(out, out_len);
+			efree(out);
+			uint64_t h64 = hash;
+			h64 *= num_original;
+			h64 /= 0xffffffff;
+			pos = (int)h64;
+			int i;
+			/* Infer the new position */
+			for(i = 0; i < num_reshards; i++) {
+				int total = num_original * 2;
+				h64 = hash;
+				h64 *= total;
+				h64 /= 0xffffffff;
+				h64 %= 2;
+				pos = pos + h64 * num_original;
+				num_original = total;
+			}
+		}
+		else if (!ra_call_distributor(ra, key, key_len, &pos TSRMLS_CC)) {
 			return NULL;
 		}
 	}
@@ -439,7 +524,6 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 		pos = (int)h64;
 	}
 	if(out_pos) *out_pos = pos;
-
 	return ra->redis[pos];
 }
 

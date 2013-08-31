@@ -165,6 +165,8 @@ _**Description**_: Connects to a Redis instance.
 *host*: string. can be a host, or the path to a unix domain socket  
 *port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
+*reserved*: should be NULL if retry_interval is specified
+*retry_interval*: int, value in milliseconds (optional)
 
 ##### *Return value*
 
@@ -177,6 +179,7 @@ $redis->connect('127.0.0.1', 6379);
 $redis->connect('127.0.0.1'); // port 6379 by default
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
+$redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
 ~~~
 
 ### pconnect, popen
@@ -199,6 +202,7 @@ persistent equivalents.
 *port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
 *persistent_id*: string. identity for the requested persistent connection
+*retry_interval*: int, value in milliseconds (optional)
 
 ##### *Return value*
 
