@@ -634,13 +634,12 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 	/* if there is a redis sock already we have to remove it from the list */
 	if (redis_sock_get(object, &redis_sock TSRMLS_CC, 1) > 0) {
 		if (zend_hash_find(Z_OBJPROP_P(object), "socket",
-					sizeof("socket"), (void **) &socket) == FAILURE) {
+					sizeof("socket"), (void **) &socket) == FAILURE)
+		{
 			/* maybe there is a socket but the id isn't known.. what to do? */
 		} else {
 			zend_list_delete(Z_LVAL_PP(socket)); /* the refcount should be decreased and the detructor called */
 		}
-	} else {
-		zend_clear_exception(TSRMLS_C); /* clear exception triggered by non-existent socket during connect(). */
 	}
 
 	redis_sock = redis_sock_create(host, host_len, port, timeout, persistent, persistent_id, retry_interval);
