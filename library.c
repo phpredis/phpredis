@@ -455,6 +455,21 @@ int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len) 
 }
 
 /*
+ * Given a smart string, number of arguments, a keyword, and the length of the keyword
+ * initialize our smart string with the proper Redis header for the command to follow
+ */
+int redis_cmd_init_sstr(smart_str *str, int num_args, char *keyword, int keyword_len) {
+    smart_str_appendc(str, '*');
+    smart_str_append_long(str, num_args + 1);
+    smart_str_appendl(str, _NL, sizeof(_NL) -1);
+    smart_str_appendc(str, '$');
+    smart_str_append_long(str, keyword_len);
+    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    smart_str_appendl(str, keyword, keyword_len);
+    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+}
+
+/*
  * Append a command sequence to a smart_str
  */
 int redis_cmd_append_sstr(smart_str *str, char *append, int append_len) {

@@ -1325,88 +1325,85 @@ PHP_METHOD(Redis, decrBy){
  */
 PHP_METHOD(Redis, getMultiple)
 {
-    zval *object, *array, **data;
-    HashTable *arr_hash;
-    HashPosition pointer;
+    zval *object, *z_args, **z_ele;
+    HashTable *hash;
+    HashPosition ptr;
     RedisSock *redis_sock;
-    char *cmd = "", *old_cmd = NULL;
-    int cmd_len = 0, array_count, elements = 1;
+    smart_str cmd = {0};
+    int arg_count;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
-                                     &object, redis_ce, &array) == FAILURE) {
+    // Make sure we have proper arguments
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
+                                    &object, redis_ce, &z_args) == FAILURE) {
         RETURN_FALSE;
     }
 
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+    // We'll need the socket
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;
     }
 
-    arr_hash    = Z_ARRVAL_P(array);
-    array_count = zend_hash_num_elements(arr_hash);
+    // Grab our array
+    hash = Z_ARRVAL_P(z_args);
 
-    if (array_count == 0) {
+    // We don't need to do anything if there aren't any keys
+    if((arg_count = zend_hash_num_elements(hash)) == 0) {
         RETURN_FALSE;
     }
 
-    for (zend_hash_internal_pointer_reset_ex(arr_hash, &pointer);
-         zend_hash_get_current_data_ex(arr_hash, (void**) &data,
-                                       &pointer) == SUCCESS;
-         zend_hash_move_forward_ex(arr_hash, &pointer)) {
+    // Build our command header
+    redis_cmd_init_sstr(&cmd, arg_count, "MGET", 4);
 
+    // Iterate through and grab our keys
+    for(zend_hash_internal_pointer_reset_ex(hash, &ptr);
+        zend_hash_get_current_data_ex(hash, (void**)&z_ele, &ptr) == SUCCESS;
+        zend_hash_move_forward_ex(hash, &ptr))
+    {
         char *key;
-        int key_len;
+        int key_len, key_free;
         zval *z_tmp = NULL;
-		char *old_cmd;
-		int key_free;
 
-        if (Z_TYPE_PP(data) == IS_STRING) {
-            key = Z_STRVAL_PP(data);
-            key_len = Z_STRLEN_PP(data);
-        } else { /* not a string, copy and convert. */
+        // If the key isn't a string, turn it into one
+        if(Z_TYPE_PP(z_ele) == IS_STRING) {
+            key = Z_STRVAL_PP(z_ele);
+            key_len = Z_STRLEN_PP(z_ele);
+        } else {
             MAKE_STD_ZVAL(z_tmp);
-            *z_tmp = **data;
+            *z_tmp = **z_ele;
             zval_copy_ctor(z_tmp);
             convert_to_string(z_tmp);
 
             key = Z_STRVAL_P(z_tmp);
             key_len = Z_STRLEN_P(z_tmp);
         }
-        old_cmd = NULL;
-        if(*cmd) {
-            old_cmd = cmd;
-        }
-		key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
-        cmd_len = redis_cmd_format(&cmd, "%s$%d" _NL "%s" _NL
-                        , cmd, cmd_len
-                        , key_len, key, key_len);
 
-		if(key_free) efree(key);
+        // Apply key prefix if necissary
+        key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
 
-        if(old_cmd) {
-            efree(old_cmd);
-        }
-        elements++;
+        // Append this key to our command
+        redis_cmd_append_sstr(&cmd, key, key_len);
+
+        // Free our key if it was prefixed
+        if(key_free) efree(key);
+
+        // Free oour temporary ZVAL if we converted from a non-string
         if(z_tmp) {
             zval_dtor(z_tmp);
             efree(z_tmp);
+            z_tmp = NULL;
         }
     }
 
-    old_cmd = cmd;
-    cmd_len = redis_cmd_format(&cmd, "*%d" _NL "$4" _NL "MGET" _NL "%s", elements, cmd, cmd_len);
-    efree(old_cmd);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    // Kick off our command
+    REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
     IF_ATOMIC() {
-	    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-											redis_sock, NULL, NULL) < 0) {
-    	    RETURN_FALSE;
-	    }
+        if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                           redis_sock, NULL, NULL) < 0) {
+            RETURN_FALSE;
+        }
     }
     REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
-
 }
-/* }}} */
 
 /* {{{ proto boolean Redis::exists(string key)
  */
