@@ -138,84 +138,140 @@ class Redis_Test extends TestSuite
 
     public function testSet()
     {
-	$this->assertEquals(TRUE, $this->redis->set('key', 'nil'));
-	$this->assertEquals('nil', $this->redis->get('key'));
+        $this->assertEquals(TRUE, $this->redis->set('key', 'nil'));
+        $this->assertEquals('nil', $this->redis->get('key'));
 
-      	$this->assertEquals(TRUE, $this->redis->set('key', 'val'));
+        $this->assertEquals(TRUE, $this->redis->set('key', 'val'));
 
-	$this->assertEquals('val', $this->redis->get('key'));
-	$this->assertEquals('val', $this->redis->get('key'));
-	$this->redis->delete('keyNotExist');
-	$this->assertEquals(FALSE, $this->redis->get('keyNotExist'));
+        $this->assertEquals('val', $this->redis->get('key'));
+        $this->assertEquals('val', $this->redis->get('key'));
+        $this->redis->delete('keyNotExist');
+        $this->assertEquals(FALSE, $this->redis->get('keyNotExist'));
 
-	$this->redis->set('key2', 'val');
-	$this->assertEquals('val', $this->redis->get('key2'));
+        $this->redis->set('key2', 'val');
+        $this->assertEquals('val', $this->redis->get('key2'));
 
-     	$value = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-	$this->redis->set('key2', $value);
-	$this->assertEquals($value, $this->redis->get('key2'));
-	$this->assertEquals($value, $this->redis->get('key2'));
+        $value = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+        
+        $this->redis->set('key2', $value);
+        $this->assertEquals($value, $this->redis->get('key2'));
+        $this->assertEquals($value, $this->redis->get('key2'));
 
-	$this->redis->delete('key');
-	$this->redis->delete('key2');
+        $this->redis->delete('key');
+        $this->redis->delete('key2');
 
 
-	$i = 66000;
-	$value2 = 'X';
-	while($i--) {
-		$value2 .= 'A';
-	}
-	$value2 .= 'X';
+        $i = 66000;
+        $value2 = 'X';
+        while($i--) {
+		    $value2 .= 'A';
+        }
+	    $value2 .= 'X';
 
-	$this->redis->set('key', $value2);
+        $this->redis->set('key', $value2);
         $this->assertEquals($value2, $this->redis->get('key'));
-	$this->redis->delete('key');
-	$this->assertEquals(False, $this->redis->get('key'));
+        $this->redis->delete('key');
+        $this->assertEquals(False, $this->redis->get('key'));
 
-	$data = gzcompress('42');
+        $data = gzcompress('42');
         $this->assertEquals(True, $this->redis->set('key', $data));
-	$this->assertEquals('42', gzuncompress($this->redis->get('key')));
+        $this->assertEquals('42', gzuncompress($this->redis->get('key')));
 
-	$this->redis->delete('key');
-	$data = gzcompress('value1');
+        $this->redis->delete('key');
+        $data = gzcompress('value1');
         $this->assertEquals(True, $this->redis->set('key', $data));
-	$this->assertEquals('value1', gzuncompress($this->redis->get('key')));
+        $this->assertEquals('value1', gzuncompress($this->redis->get('key')));
 
-	$this->redis->delete('key');
-       	$this->assertEquals(TRUE, $this->redis->set('key', 0));
-	$this->assertEquals('0', $this->redis->get('key'));
-       	$this->assertEquals(TRUE, $this->redis->set('key', 1));
-	$this->assertEquals('1', $this->redis->get('key'));
-	$this->assertEquals(TRUE, $this->redis->set('key', 0.1));
-	$this->assertEquals('0.1', $this->redis->get('key'));
-	$this->assertEquals(TRUE, $this->redis->set('key', '0.1'));
-	$this->assertEquals('0.1', $this->redis->get('key'));
-       	$this->assertEquals(TRUE, $this->redis->set('key', TRUE));
-	$this->assertEquals('1', $this->redis->get('key'));
+        $this->redis->delete('key');
+        $this->assertEquals(TRUE, $this->redis->set('key', 0));
+        $this->assertEquals('0', $this->redis->get('key'));
+        $this->assertEquals(TRUE, $this->redis->set('key', 1));
+        $this->assertEquals('1', $this->redis->get('key'));
+        $this->assertEquals(TRUE, $this->redis->set('key', 0.1));
+        $this->assertEquals('0.1', $this->redis->get('key'));
+        $this->assertEquals(TRUE, $this->redis->set('key', '0.1'));
+        $this->assertEquals('0.1', $this->redis->get('key'));
+        $this->assertEquals(TRUE, $this->redis->set('key', TRUE));
+        $this->assertEquals('1', $this->redis->get('key'));
 
-	$this->assertEquals(True, $this->redis->set('key', ''));
-       	$this->assertEquals('', $this->redis->get('key'));
-	$this->assertEquals(True, $this->redis->set('key', NULL));
-	$this->assertEquals('', $this->redis->get('key'));
+	    $this->assertEquals(True, $this->redis->set('key', ''));
+        $this->assertEquals('', $this->redis->get('key'));
+	    $this->assertEquals(True, $this->redis->set('key', NULL));
+	    $this->assertEquals('', $this->redis->get('key'));
 
         $this->assertEquals(True, $this->redis->set('key', gzcompress('42')));
         $this->assertEquals('42', gzuncompress($this->redis->get('key')));
-
     }
-    public function testGetSet() {
 
-	$this->redis->delete('key');
-	$this->assertTrue($this->redis->getSet('key', '42') === FALSE);
-	$this->assertTrue($this->redis->getSet('key', '123') === '42');
-	$this->assertTrue($this->redis->getSet('key', '123') === '123');
+    /* Extended SET options for Redis >= 2.6.12 */
+    public function testExtendedSet() {
+        // Skip the test if we don't have a new enough version of Redis
+        if(version_compare($this->version, '2.6.12', 'lt')) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        /* Legacy SETEX redirection */
+        $this->redis->del('foo');
+        $this->assertTrue($this->redis->set('foo','bar', 20));
+        $this->assertEquals($this->redis->get('foo'), 'bar');
+        $this->assertEquals($this->redis->ttl('foo'), 20);
+
+        /* Invalid third arguments */
+        $this->assertFalse($this->redis->set('foo','bar','baz'));
+        $this->assertFalse($this->redis->set('foo','bar',new StdClass()));
+
+        /* Set if not exist */
+        $this->redis->del('foo');
+        $this->assertTrue($this->redis->set('foo','bar',Array('nx')));
+        $this->assertEquals($this->redis->get('foo'), 'bar');
+        $this->assertFalse($this->redis->set('foo','bar',Array('nx')));
+
+        /* Set if exists */
+        $this->assertTrue($this->redis->set('foo','bar',Array('xx')));
+        $this->assertEquals($this->redis->get('foo'), 'bar');
+        $this->redis->del('foo');
+        $this->assertFalse($this->redis->set('foo','bar',Array('xx')));
+
+        /* Set with a TTL */
+        $this->assertTrue($this->redis->set('foo','bar',Array('ex'=>100)));
+        $this->assertEquals($this->redis->ttl('foo'), 100);
+
+        /* Set with a PTTL */
+        $this->assertTrue($this->redis->set('foo','bar',Array('px'=>100000)));
+        $this->assertTrue(100000 - $this->redis->pttl('foo') < 1000);
+
+        /* Set if exists, with a TTL */
+        $this->assertTrue($this->redis->set('foo','bar',Array('xx','ex'=>105)));
+        $this->assertEquals($this->redis->ttl('foo'), 105);
+        $this->assertEquals($this->redis->get('foo'), 'bar');
+
+        /* Set if not exists, with a TTL */
+        $this->redis->del('foo');
+        $this->assertTrue($this->redis->set('foo','bar', Array('nx', 'ex'=>110)));
+        $this->assertEquals($this->redis->ttl('foo'), 110);
+        $this->assertEquals($this->redis->get('foo'), 'bar');
+        $this->assertFalse($this->redis->set('foo','bar', Array('nx', 'ex'=>110)));
+
+        /* Throw some nonsense into the array, and check that the TTL came through */
+        $this->redis->del('foo');
+        $this->assertTrue($this->redis->set('foo','barbaz', Array('not-valid','nx','invalid','ex'=>200)));
+        $this->assertEquals($this->redis->ttl('foo'), 200);
+        $this->assertEquals($this->redis->get('foo'), 'barbaz');
+    }
+
+    public function testGetSet() {
+    	$this->redis->delete('key');
+        $this->assertTrue($this->redis->getSet('key', '42') === FALSE);
+        $this->assertTrue($this->redis->getSet('key', '123') === '42');
+        $this->assertTrue($this->redis->getSet('key', '123') === '123');
     }
 
     public function testRandomKey() {
-
         for($i = 0; $i < 1000; $i++) {
             $k = $this->redis->randomKey();
-	    $this->assertTrue($this->redis->exists($k));
-	}
+            $this->assertTrue($this->redis->exists($k));
+        }
     }
 
     public function testRename() {

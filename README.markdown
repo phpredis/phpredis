@@ -635,19 +635,30 @@ $redis->get('key');
 
 ### set
 -----
-_**Description**_: Set the string value in argument as value of the key.
+_**Description**_: Set the string value in argument as value of the key.  If you're using Redis >= 2.6.12, you can pass extended options as explained below
 
 ##### *Parameters*
 *Key*  
 *Value*  
-*Timeout* (optional). Calling `SETEX` is preferred if you want a timeout.  
+*Timeout or Options Array* (optional). If you pass an integer, phpredis will redirect to SETEX, and will try to use Redis >= 2.6.12 extended options if you pass an array with valid values
 
 ##### *Return value*
 *Bool* `TRUE` if the command is successful.
 
 ##### *Examples*
 ~~~
+// Simple key -> value set
 $redis->set('key', 'value');
+
+// Will redirect, and actually make an SETEX call
+$redis->set('key','value', 10);
+
+// Will set the key, if it doesn't exist, with a ttl of 10 seconds
+$redis->set('key', 'value', Array('nx', 'ex'=>10);
+
+// Will set a key, if it does exist, with a ttl of 1000 miliseconds
+$redis->set('key', 'value', Array('xx', 'px'=>1000);
+
 ~~~
 
 ### setex, psetex
