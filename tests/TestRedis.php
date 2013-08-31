@@ -1643,9 +1643,11 @@ class Redis_Test extends TestSuite
         $this->redis->del('x'); $this->redis->set('x', 'bar');
         $this->assertEquals($this->redis->ttl('x'), -1);
 
-        // A key that doesn't exist
-        $this->redis->del('x');
-        $this->assertEquals($this->redis->ttl('x'), -2);
+        // A key that doesn't exist (> 2.8 will return -2)
+        if(version_compare($this->version, "2.8.0", "gte")) {
+            $this->redis->del('x');
+            $this->assertEquals($this->redis->ttl('x'), -2);
+        }
     }
 
     public function testPersist() {
