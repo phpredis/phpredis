@@ -21,10 +21,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>michael.grunder@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2013-04-29</date>
+ <date>2013-09-01</date>
  <version>
-  <release>2.2.3</release>
-  <api>2.2.3</api>
+  <release>2.2.4</release>
+  <api>2.2.4</api>
  </version>
  <stability>
   <release>stable</release>
@@ -70,6 +70,14 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>redis</providesextension>
  <extsrcrelease/>
  <changelog>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>2.2.4</release><api>2.2.4</api></version>
+   <date>2013-09-01</date>
+   <notes>
+	   See GitHub for release notes
+   </notes>
+  </release>
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>2.2.3</release><api>2.2.3</api></version>
