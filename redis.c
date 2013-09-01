@@ -4405,7 +4405,7 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
     }
 
     // AGGREGATE option
-    if(agg_op != NULL) {
+    if(agg_op_len != 0) {
         // Verify our aggregation option
         if(strncasecmp(agg_op, "SUM", sizeof("SUM")) &&
            strncasecmp(agg_op, "MIN", sizeof("MIN")) &&
@@ -4470,7 +4470,7 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
     // Weights
     if(ht_weights != NULL) {
         // Append "WEIGHTS" argument
-        redis_cmd_append_sstr(&cmd, "WEIGHTS", sizeof("WEIGHTS"));
+        redis_cmd_append_sstr(&cmd, "WEIGHTS", sizeof("WEIGHTS") - 1);
 
         // Process weights
         for(zend_hash_internal_pointer_reset_ex(ht_weights, &ptr);
@@ -4489,7 +4489,7 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
                 RETURN_FALSE;
             }
 
-            // Append the weight based on it's input type
+            // Append the weight based on the input type
             switch(Z_TYPE_PP(z_data)) {
                 case IS_LONG:
                     redis_cmd_append_sstr_long(&cmd, Z_LVAL_PP(z_data));
@@ -4505,8 +4505,8 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
     }
 
     // Aggregation options, if we have them
-    if(agg_op) {
-        redis_cmd_append_sstr(&cmd, "AGGREGATE", sizeof("AGGREGATE"));
+    if(agg_op_len != 0) {
+        redis_cmd_append_sstr(&cmd, "AGGREGATE", sizeof("AGGREGATE") - 1);
         redis_cmd_append_sstr(&cmd, agg_op, agg_op_len);
     }
 

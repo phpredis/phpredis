@@ -467,6 +467,7 @@ int redis_cmd_init_sstr(smart_str *str, int num_args, char *keyword, int keyword
     smart_str_appendl(str, _NL, sizeof(_NL) - 1);
     smart_str_appendl(str, keyword, keyword_len);
     smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    return str->len;
 }
 
 /*
