@@ -6,8 +6,10 @@ int redis_cmd_format_header(char **ret, char *keyword, int arg_count);
 int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len);
 int redis_cmd_init_sstr(smart_str *str, int num_args, char *keyword, int keyword_len);
 int redis_cmd_append_sstr(smart_str *str, char *append, int append_len);
+int redis_cmd_append_sstr_int(smart_str *str, int append);
+int redis_cmd_append_sstr_long(smart_str *str, long append);
 int redis_cmd_append_int(char **cmd, int cmd_len, int append);
-
+int redis_cmd_append_sstr_dbl(smart_str *str, double value);
 
 PHPAPI char * redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC);
 

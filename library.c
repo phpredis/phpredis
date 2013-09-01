@@ -484,6 +484,44 @@ int redis_cmd_append_sstr(smart_str *str, char *append, int append_len) {
 }
 
 /*
+ * Append an integer to a smart string command
+ */
+int redis_cmd_append_sstr_int(smart_str *str, int append) {
+    char int_buf[32];
+    int int_len = snprintf(int_buf, sizeof(int_buf), "%d", append);
+    return redis_cmd_append_sstr(str, int_buf, int_len);
+}
+
+/*
+ * Append a long to a smart string command
+ */
+int redis_cmd_append_sstr_long(smart_str *str, long append) {
+    char long_buf[32];
+    int long_len = snprintf(long_buf, sizeof(long_buf), "%ld", append);
+    return redis_cmd_append_sstr(str, long_buf, long_len);
+}
+
+/*
+ * Append a double to a smart string command
+ */
+int redis_cmd_append_sstr_dbl(smart_str *str, double value) {
+    char *dbl_str;
+    int dbl_len;
+
+    /// Convert to double
+    REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, value);
+
+    // Append the string
+    int retval = redis_cmd_append_sstr(str, dbl_str, dbl_len);
+
+    // Free our double string
+    efree(dbl_str);
+
+    // Return new length
+    return retval;
+}
+
+/*
  * Append an integer command to a Redis command
  */
 int redis_cmd_append_int(char **cmd, int cmd_len, int append) {
