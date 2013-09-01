@@ -88,46 +88,6 @@ In order to control the distribution of keys by hand, you can provide a custom f
 
 For instance, instanciate a RedisArray object with `new RedisArray(array("us-host", "uk-host", "de-host"), array("distributor" => "dist"));` and write a function called "dist" that will return `2` for all the keys that should end up on the "de-host" server.
 
-You may also provide an array of 2 values that will be used as follows:
-- The first value is the initial amount of shards in use before the resharding (the x first shards specified in the constructor)
-- The second value is the resharding level, or number of resharding iterations.
-
-For instance, suppose you started with 4 shards as follows:
-<pre>
-0 => 0                    1                    2                     3
-</pre>
-
-After 1 iteration of resharding, keys will be assigned to the following servers:
-<pre>
-1 => 0         4          1         5          2          6          3          7
-</pre>
-
-After 2 iterations, keys will be assigned to the following servers:
-<pre>
-2 => 0    8    4    12    1    9    5    13    2    10    6    14    3    11    7    15
-</pre>
-
-After 3 iterations, keys will be assigned to the following servers:
-<pre>
-3 => 0 16 8 24 4 20 12 28 1 17 9 25 5 21 13 29 2 18 10 26 6 22 14 30 3 19 11 27 7 23 15 31
-</pre>
-
-And so on...
-
-The idea here is to be able to reshard the keys easily, without moving keys from 1 server to another.
-
-The procedure to adopt is simple:
-
-For each initial shard, setup a slave. For instance, for shard 1 we setup slave 5.
-
-Keys will now be assigned to either shard 1 or shard 5. Once the application sees the new settings, just setup shard 5 as a master. Then, in order to reclaim memory, just cleanup keys from shard 1 that belong to shard 5 and vice-versa.
-
-On the next iteration, setup a new slave 9 for shard 1 and a new slave 13 for shard 5.
-
-Update the application settings, disconnect the new slaves and clean up the shards from keys that don't belong there anymore.
-
-Apply the same procedure for each resharding iteration.
-
 ### Example
 <pre>
 $ra = new RedisArray(array("host1", "host2", "host3", "host4", "host5", "host6", "host7", "host8"), array("distributor" => array(2, 2)));
