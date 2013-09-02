@@ -165,6 +165,8 @@ _**Description**_: Connects to a Redis instance.
 *host*: string. can be a host, or the path to a unix domain socket  
 *port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
+*reserved*: should be NULL if retry_interval is specified
+*retry_interval*: int, value in milliseconds (optional)
 
 ##### *Return value*
 
@@ -177,6 +179,7 @@ $redis->connect('127.0.0.1', 6379);
 $redis->connect('127.0.0.1'); // port 6379 by default
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
+$redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
 ~~~
 
 ### pconnect, popen
@@ -199,6 +202,7 @@ persistent equivalents.
 *port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
 *persistent_id*: string. identity for the requested persistent connection
+*retry_interval*: int, value in milliseconds (optional)
 
 ##### *Return value*
 
@@ -322,6 +326,7 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 1. [save](#save) - Synchronously save the dataset to disk (wait to complete)
 1. [slaveof](#slaveof) - Make the server a slave of another instance, or promote it to master
 1. [time](#time) - Return the current server time
+1. [slowlog](#slowlog) - Access the Redis slowlog entries
 
 ### bgrewriteaof
 -----
@@ -539,6 +544,36 @@ the unix timestamp, and element one being microseconds.
 $redis->time();
 ~~~
 
+### slowlog
+-----
+_**Description**_: Access the Redis slowlog
+
+##### *Parameters*
+*Operation* (string): This can be either `GET`, `LEN`, or `RESET` 
+*Length* (integer), optional: If executing a `SLOWLOG GET` command, you can pass an optional length.
+#####
+
+##### *Return value*
+The return value of SLOWLOG will depend on which operation was performed.
+SLOWLOG GET: Array of slowlog entries, as provided by Redis
+SLOGLOG LEN: Integer, the length of the slowlog
+SLOWLOG RESET: Boolean, depending on success
+#####
+
+##### *Examples*
+~~~
+// Get ten slowlog entries
+$redis->slowlog('get', 10); 
+// Get the default number of slowlog entries
+
+$redis->slowlog('get');
+// Reset our slowlog
+$redis->slowlog('reset');
+
+// Retrieve slowlog length
+$redis->slowlog('len');
+~~~
+
 ## Keys and Strings
 
 ### Strings
@@ -604,19 +639,30 @@ $redis->get('key');
 
 ### set
 -----
-_**Description**_: Set the string value in argument as value of the key.
+_**Description**_: Set the string value in argument as value of the key.  If you're using Redis >= 2.6.12, you can pass extended options as explained below
 
 ##### *Parameters*
 *Key*  
 *Value*  
-*Timeout* (optional). Calling `SETEX` is preferred if you want a timeout.  
+*Timeout or Options Array* (optional). If you pass an integer, phpredis will redirect to SETEX, and will try to use Redis >= 2.6.12 extended options if you pass an array with valid values
 
 ##### *Return value*
 *Bool* `TRUE` if the command is successful.
 
 ##### *Examples*
 ~~~
+// Simple key -> value set
 $redis->set('key', 'value');
+
+// Will redirect, and actually make an SETEX call
+$redis->set('key','value', 10);
+
+// Will set the key, if it doesn't exist, with a ttl of 10 seconds
+$redis->set('key', 'value', Array('nx', 'ex'=>10);
+
+// Will set a key, if it does exist, with a ttl of 1000 miliseconds
+$redis->set('key', 'value', Array('xx', 'px'=>1000);
+
 ~~~
 
 ### setex, psetex

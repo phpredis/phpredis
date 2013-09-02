@@ -455,6 +455,22 @@ int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len) 
 }
 
 /*
+ * Given a smart string, number of arguments, a keyword, and the length of the keyword
+ * initialize our smart string with the proper Redis header for the command to follow
+ */
+int redis_cmd_init_sstr(smart_str *str, int num_args, char *keyword, int keyword_len) {
+    smart_str_appendc(str, '*');
+    smart_str_append_long(str, num_args + 1);
+    smart_str_appendl(str, _NL, sizeof(_NL) -1);
+    smart_str_appendc(str, '$');
+    smart_str_append_long(str, keyword_len);
+    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    smart_str_appendl(str, keyword, keyword_len);
+    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    return str->len;
+}
+
+/*
  * Append a command sequence to a smart_str
  */
 int redis_cmd_append_sstr(smart_str *str, char *append, int append_len) {
@@ -466,6 +482,44 @@ int redis_cmd_append_sstr(smart_str *str, char *append, int append_len) {
 
     // Return our new length
     return str->len;
+}
+
+/*
+ * Append an integer to a smart string command
+ */
+int redis_cmd_append_sstr_int(smart_str *str, int append) {
+    char int_buf[32];
+    int int_len = snprintf(int_buf, sizeof(int_buf), "%d", append);
+    return redis_cmd_append_sstr(str, int_buf, int_len);
+}
+
+/*
+ * Append a long to a smart string command
+ */
+int redis_cmd_append_sstr_long(smart_str *str, long append) {
+    char long_buf[32];
+    int long_len = snprintf(long_buf, sizeof(long_buf), "%ld", append);
+    return redis_cmd_append_sstr(str, long_buf, long_len);
+}
+
+/*
+ * Append a double to a smart string command
+ */
+int redis_cmd_append_sstr_dbl(smart_str *str, double value) {
+    char *dbl_str;
+    int dbl_len;
+
+    /// Convert to double
+    REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, value);
+
+    // Append the string
+    int retval = redis_cmd_append_sstr(str, dbl_str, dbl_len);
+
+    // Free our double string
+    efree(dbl_str);
+
+    // Return new length
+    return retval;
 }
 
 /*
@@ -970,7 +1024,8 @@ PHPAPI void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
  */
 PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port,
                                     double timeout, int persistent, char *persistent_id,
-                                    long retry_interval)
+                                    long retry_interval,
+                                    zend_bool lazy_connect)
 {
     RedisSock *redis_sock;
 
@@ -982,6 +1037,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     redis_sock->dbNumber = 0;
     redis_sock->retry_interval = retry_interval * 1000;
     redis_sock->persistent = persistent;
+    redis_sock->lazy_connect = lazy_connect;
 
     if(persistent_id) {
 		size_t persistent_id_len = strlen(persistent_id);

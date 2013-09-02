@@ -5,6 +5,11 @@
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
 
+/* NULL check so Eclipse doesn't go crazy */
+#ifndef NULL
+#define NULL   ((void *) 0)
+#endif
+
 #define redis_sock_name "Redis Socket Buffer"
 #define REDIS_SOCK_STATUS_FAILED 0
 #define REDIS_SOCK_STATUS_DISCONNECTED 1
@@ -138,6 +143,15 @@ else if(redis_sock->mode == MULTI) { \
 
 #define REDIS_PROCESS_RESPONSE(function) REDIS_PROCESS_RESPONSE_CLOSURE(function, NULL)
 
+/* Extended SET argument detection */
+#define IS_EX_ARG(a) ((a[0]=='e' || a[0]=='E') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
+#define IS_PX_ARG(a) ((a[0]=='p' || a[0]=='P') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
+#define IS_NX_ARG(a) ((a[0]=='n' || a[0]=='N') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
+#define IS_XX_ARG(a) ((a[0]=='x' || a[0]=='X') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
+
+#define IS_EX_PX_ARG(a) (IS_EX_ARG(a) || IS_PX_ARG(a))
+#define IS_NX_XX_ARG(a) (IS_NX_ARG(a) || IS_XX_ARG(a))
+
 typedef enum {ATOMIC, MULTI, PIPELINE} redis_mode;
 
 typedef struct fold_item {
@@ -182,6 +196,7 @@ typedef struct {
 
     char           *err;
     int            err_len;
+    zend_bool      lazy_connect;
 } RedisSock;
 /* }}} */
 
