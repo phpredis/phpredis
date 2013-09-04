@@ -4993,6 +4993,13 @@ PHP_METHOD(Redis, hMget) {
             }
     }
 
+    // This is a failure if none of the keys were valid
+    if(i == 0) {
+        efree(cmd);
+        efree(z_keys);
+        RETURN_FALSE;
+    }
+
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
 		redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, z_keys);
