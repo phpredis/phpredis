@@ -383,7 +383,7 @@ PHPAPI int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC, int no_thr
                                   sizeof("socket"), (void **) &socket) == FAILURE) {
     	// Throw an exception unless we've been requested not to
         if(!no_throw) {
-        	zend_throw_exception(redis_exception_ce, "Redis server went away", 0 TSRMLS_CC);
+        	zend_throw_exception(redis_exception_ce, "Redis server went away and didn't say goodbye!", 0 TSRMLS_CC);
         }
         return -1;
     }
@@ -393,7 +393,7 @@ PHPAPI int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC, int no_thr
     if (!*redis_sock || resource_type != le_redis_sock) {
 		// Throw an exception unless we've been requested not to
     	if(!no_throw) {
-    		zend_throw_exception(redis_exception_ce, "Redis server went away", 0 TSRMLS_CC);
+    		zend_throw_exception(redis_exception_ce, "Redis server went away and didn't say goodbye!", 0 TSRMLS_CC);
     	}
 		return -1;
     }
