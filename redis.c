@@ -5000,11 +5000,6 @@ PHP_METHOD(Redis, hMget) {
 
     // Kick off our request
     REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
-        efree(cmd);
-        efree(z_keys);
-        RETURN_FALSE;
-    }
-
     IF_ATOMIC() {
         redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, z_keys);
     }
