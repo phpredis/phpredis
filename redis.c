@@ -890,7 +890,7 @@ PHP_METHOD(Redis, set) {
                                           val, val_len, set_type, 2);
     } else if(expire > 0) {
         /* Backward compatible SETEX redirection */
-        cmd_len = redis_cmd_format_static(&cmd, "SETEX", "sds", key, key_len,
+        cmd_len = redis_cmd_format_static(&cmd, "SETEX", "sls", key, key_len,
                                           expire, val, val_len);
     } else {
         /* SET <key> <value> */
@@ -932,7 +932,7 @@ PHPAPI void redis_generic_setex(INTERNAL_FUNCTION_PARAMETERS, char *keyword) {
 
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
-    cmd_len = redis_cmd_format_static(&cmd, keyword, "sds", key, key_len, expire, val, val_len);
+    cmd_len = redis_cmd_format_static(&cmd, keyword, "sls", key, key_len, expire, val, val_len);
     if(val_free) efree(val);
     if(key_free) efree(key);
 
