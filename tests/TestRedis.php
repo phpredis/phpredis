@@ -408,6 +408,13 @@ class Redis_Test extends TestSuite
 	    $this->assertTrue($this->redis->get('key') === '42');
     }
 
+    public function testExpireAtWithLong() {
+        $longExpiryTimeExceedingInt = 3153600000;
+        $this->redis->delete('key');
+        $this->assertTrue($this->redis->setex('key', $longExpiryTimeExceedingInt, 'val') === TRUE);
+        $this->assertTrue($this->redis->ttl('key') === $longExpiryTimeExceedingInt);
+    }
+
     public function testIncr()
     {
         $this->redis->set('key', 0);
