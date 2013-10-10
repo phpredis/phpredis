@@ -116,7 +116,7 @@ void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
 /**
  * redis_array_get
  */
-PHPAPI int redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
+PHP_REDIS_API int redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
 {
 
     zval **socket;
@@ -198,6 +198,7 @@ PHP_METHOD(RedisArray, __construct)
 	HashTable *hPrev = NULL, *hOpts = NULL;
   long l_retry_interval = 0;
   	zend_bool b_lazy_connect = 0;
+  	zval **z_retry_interval_pp;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|a", &z0, &z_opts) == FAILURE) {
 		RETURN_FALSE;
@@ -245,7 +246,6 @@ PHP_METHOD(RedisArray, __construct)
 		}
 
 		/* extract retry_interval option. */
-		zval **z_retry_interval_pp;
         if (FAILURE != zend_hash_find(hOpts, "retry_interval", sizeof("retry_interval"), (void**)&z_retry_interval_pp)) {
 			if (Z_TYPE_PP(z_retry_interval_pp) == IS_LONG || Z_TYPE_PP(z_retry_interval_pp) == IS_STRING) {
 				if (Z_TYPE_PP(z_retry_interval_pp) == IS_LONG) {
@@ -961,6 +961,8 @@ PHP_METHOD(RedisArray, mset)
 	unsigned int key_len, free_idx = 0;
 	int type, *key_lens;
 	unsigned long idx;
+	int found;
+	zval *z_tmp;
 
 	/* Multi/exec support */
 	HANDLE_MULTI_EXEC("MSET");
@@ -1028,13 +1030,12 @@ PHP_METHOD(RedisArray, mset)
 		redis_inst = ra->redis[n];
 
 		/* copy args */
-		int found = 0;
+		found = 0;
 		MAKE_STD_ZVAL(z_argarray);
 		array_init(z_argarray);
 		for(i = 0; i < argc; ++i) {
 			if(pos[i] != n) continue;
 
-			zval *z_tmp;
 			ALLOC_ZVAL(z_tmp);
 			*z_tmp = *argv[i];
 			zval_copy_ctor(z_tmp);
