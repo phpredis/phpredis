@@ -1,7 +1,12 @@
 #ifndef REDIS_ARRAY_IMPL_H
 #define REDIS_ARRAY_IMPL_H
 
+#ifdef PHP_WIN32
+#include "win32/php_stdint.h"
+#else
 #include <stdint.h>
+#endif
+
 #include "common.h"
 #include "redis_array.h"
 

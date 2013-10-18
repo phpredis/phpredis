@@ -293,7 +293,7 @@ static void
 ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args, zval *z_new_target) {
 
 	zval **zp_tmp, z_tmp;
-	char *key = NULL; // set to avoid "unused-but-set-variable"
+	char *key = NULL; /* set to avoid "unused-but-set-variable" */
 	int key_len;
 	int i;
 	zval *redis_inst;
@@ -607,41 +607,41 @@ PHP_METHOD(RedisArray, keys)
 	char *pattern;
 	int pattern_len, i;
 
-	// Make sure the prototype is correct
+	/* Make sure the prototype is correct */
 	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
 								    &object, redis_array_ce, &pattern, &pattern_len) == FAILURE)
 	{
 		RETURN_FALSE;
 	}
 
-	// Make sure we can grab our RedisArray object
+	/* Make sure we can grab our RedisArray object */
 	if(redis_array_get(object, &ra TSRMLS_CC) < 0) {
 		RETURN_FALSE;
 	}
 
-	// Set up our function call (KEYS)
+	/* Set up our function call (KEYS) */
 	ZVAL_STRING(&z_fun, "KEYS", 0);
 
-	// We will be passing with one string argument (the pattern)
+	/* We will be passing with one string argument (the pattern) */
 	MAKE_STD_ZVAL(z_args[0]);
 	ZVAL_STRINGL(z_args[0], pattern, pattern_len, 0);
 
-	// Init our array return
+	/* Init our array return */
 	array_init(return_value);
 
-	// Iterate our RedisArray nodes
+	/* Iterate our RedisArray nodes */
 	for(i=0; i<ra->count; ++i) {
-		// Return for this node
+		/* Return for this node */
 		MAKE_STD_ZVAL(z_tmp);
 
-		// Call KEYS on each node
+		/* Call KEYS on each node */
 		call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 1, z_args TSRMLS_CC);
 
-		// Add the result for this host
+		/* Add the result for this host */
 		add_assoc_zval(return_value, ra->hosts[i], z_tmp);
 	}
 
-	// Free arg array
+	/* Free arg array */
 	efree(z_args[0]);
 }
 
@@ -1186,7 +1186,7 @@ PHP_METHOD(RedisArray, del)
 			found++;
 		}
 
-		if(!found) {	// don't run empty DELs
+		if(!found) {	/* don't run empty DELs */
 			zval_dtor(z_argarray);
 			efree(z_argarray);
 			continue;
