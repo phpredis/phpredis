@@ -308,6 +308,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	ra->z_multi_exec = NULL;
 	ra->index = b_index;
 	ra->auto_rehash = 0;
+	ra->pconnect = b_pconnect;
 
 	/* init array data structures */
 	ra_init_function_table(ra);
