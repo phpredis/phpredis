@@ -10,10 +10,13 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
+/* enable json */
+#define HAVE_JSON 1
+
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
 
-/* enable msgpack packager */
+/* enable msgpack */
 #define HAVE_MSGPACK 1
 
 /* Whether redis igbinary serializer is enabled */

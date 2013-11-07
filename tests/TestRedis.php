@@ -4361,7 +4361,10 @@ class Redis_Test extends TestSuite
     		1,1.5,'one',Array('this','is','an','array')
     	);
 
-    	$serializers = Array(Redis::SERIALIZER_PHP, Redis::SERIALIZER_JSON);
+    	$serializers = Array(Redis::SERIALIZER_PHP);
+    	if(defined('Redis::SERIALIZER_JSON')) {
+    		$serializers[] = Redis::SERIALIZER_JSON;
+    	}
     	if(defined('Redis::SERIALIZER_IGBINARY')) {
     		$serializers[] = Redis::SERIALIZER_IGBINARY;
     	}

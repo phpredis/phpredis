@@ -1553,11 +1553,14 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 			return 0;
 
 		case REDIS_SERIALIZER_JSON:
+#if HAVE_JSON
 			php_json_encode(&sstr, z, 0 TSRMLS_CC);
 			*val = sstr.c;
 			*val_len = (int)sstr.len;
 
 			return 1;
+#endif
+			return 0;
 
 		case REDIS_SERIALIZER_IGBINARY:
 #ifdef HAVE_REDIS_IGBINARY
@@ -1619,6 +1622,7 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 			return 0;
 
 		case REDIS_SERIALIZER_JSON:
+#if HAVE_JSON
 			if(!*return_value) {
 				MAKE_STD_ZVAL(*return_value);
 			}
@@ -1626,6 +1630,8 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 			php_json_decode_ex(*return_value, val, val_len, 1, 512 TSRMLS_CC);
 
 			return 1;
+#endif
+			return 0;
 
 
 		case REDIS_SERIALIZER_IGBINARY:
