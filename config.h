@@ -13,6 +13,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
 
+/* enable msgpack packager */
+#define HAVE_MSGPACK 1
+
 /* Whether redis igbinary serializer is enabled */
 /* #undef HAVE_REDIS_IGBINARY */
 

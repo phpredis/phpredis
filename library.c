@@ -1542,6 +1542,16 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 
 			return 1;
 
+		case REDIS_SERIALIZER_MSGPACK:
+#if HAVE_MSGPACK
+			php_msgpack_serialize(&sstr, z TSRMLS_CC);
+			*val = sstr.c;
+			*val_len = (int)sstr.len;
+
+			return 1;
+#endif
+			return 0;
+
 		case REDIS_SERIALIZER_JSON:
 			php_json_encode(&sstr, z, 0 TSRMLS_CC);
 			*val = sstr.c;
@@ -1596,6 +1606,17 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 #endif
 
 			return ret;
+
+		case REDIS_SERIALIZER_MSGPACK:
+#if HAVE_MSGPACK
+			if(!*return_value) {
+				MAKE_STD_ZVAL(*return_value);
+			}
+
+			php_msgpack_unserialize(*return_value, val, val_len TSRMLS_CC);
+			return 1;
+#endif
+			return 0;
 
 		case REDIS_SERIALIZER_JSON:
 			if(!*return_value) {
