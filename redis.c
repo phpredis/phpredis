@@ -286,8 +286,18 @@ static zend_function_entry redis_functions[] = {
      {NULL, NULL, NULL}
 };
 
+#if ZEND_MODULE_API_NO >= 20050922
+zend_module_dep redis_deps[] = {
+    ZEND_MOD_REQUIRED("json")
+    {NULL, NULL, NULL}
+};
+#endif
+
 zend_module_entry redis_module_entry = {
-#if ZEND_MODULE_API_NO >= 20010901
+#if ZEND_MODULE_API_NO >= 20050922
+     STANDARD_MODULE_HEADER_EX, NULL,
+     redis_deps,
+#else
      STANDARD_MODULE_HEADER,
 #endif
      "redis",
@@ -302,6 +312,7 @@ zend_module_entry redis_module_entry = {
 #endif
      STANDARD_MODULE_PROPERTIES
 };
+
 
 #ifdef COMPILE_DL_REDIS
 ZEND_GET_MODULE(redis)
@@ -486,6 +497,7 @@ PHP_MINIT_FUNCTION(redis)
     /* serializer */
     add_constant_long(redis_ce, "SERIALIZER_NONE", REDIS_SERIALIZER_NONE);
     add_constant_long(redis_ce, "SERIALIZER_PHP", REDIS_SERIALIZER_PHP);
+    add_constant_long(redis_ce, "SERIALIZER_JSON", REDIS_SERIALIZER_JSON);
 #ifdef HAVE_REDIS_IGBINARY
     add_constant_long(redis_ce, "SERIALIZER_IGBINARY", REDIS_SERIALIZER_IGBINARY);
 #endif
@@ -5845,6 +5857,7 @@ PHP_METHOD(Redis, setOption) {
 #ifdef HAVE_REDIS_IGBINARY
 						 	|| val_long == REDIS_SERIALIZER_IGBINARY
 #endif
+							|| val_long == REDIS_SERIALIZER_JSON
 							|| val_long == REDIS_SERIALIZER_PHP) {
                             redis_sock->serializer = val_long;
                             RETURN_TRUE;
