@@ -47,6 +47,10 @@ typedef enum _REDIS_REPLY_TYPE {
 #define REDIS_SERIALIZER_PHP 		1
 #define REDIS_SERIALIZER_IGBINARY 	2
 
+/* GETBIT/SETBIT offset range limits */
+#define BITOP_MIN_OFFSET 0
+#define BITOP_MAX_OFFSET 4294967295
+
 #define IF_MULTI() if(redis_sock->mode == MULTI)
 #define IF_MULTI_OR_ATOMIC() if(redis_sock->mode == MULTI || redis_sock->mode == ATOMIC)\
 
