@@ -2346,14 +2346,32 @@ PHP_METHOD(Redis, sRandMember)
     // Process our command
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
-    // Process our reply
-    IF_ATOMIC() {
+    // Either bulk or multi-bulk depending on argument count
+    if(ZEND_NUM_ARGS() == 2) {
+        IF_ATOMIC() {
+            if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                               redis_sock, NULL, NULL) < 0)
+            {
+                RETURN_FALSE;
+            }
+        }
+        REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+    } else {
+        IF_ATOMIC() {
+            redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                                  NULL, NULL);
+        }
+        REDIS_PROCESS_RESPONSE(redis_string_response);
+    }
+
+    /*IF_ATOMIC() {
         // This will be bulk or multi-bulk depending if we passed the optional [COUNT] argument
         if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL) < 0) {
             RETURN_FALSE;
         }
     }
     REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+    */
 }
 /* }}} */
 
