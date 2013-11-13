@@ -1739,6 +1739,11 @@ PHP_METHOD(Redis, getBit)
 		RETURN_FALSE;
 	}
 
+	// GETBIT and SETBIT only work for 0 - 2^32-1
+	if(offset < BITOP_MIN_OFFSET || offset > BITOP_MAX_OFFSET) {
+	    RETURN_FALSE;
+	}
+
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
 	cmd_len = redis_cmd_format_static(&cmd, "GETBIT", "sd", key, key_len, (int)offset);
 	if(key_free) efree(key);
@@ -1766,6 +1771,11 @@ PHP_METHOD(Redis, setBit)
 
 	if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
 		RETURN_FALSE;
+	}
+
+	// GETBIT and SETBIT only work for 0 - 2^32-1
+	if(offset < BITOP_MIN_OFFSET || offset > BITOP_MAX_OFFSET) {
+	    RETURN_FALSE;
 	}
 
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
@@ -2363,15 +2373,6 @@ PHP_METHOD(Redis, sRandMember)
         }
         REDIS_PROCESS_RESPONSE(redis_string_response);
     }
-
-    /*IF_ATOMIC() {
-        // This will be bulk or multi-bulk depending if we passed the optional [COUNT] argument
-        if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL) < 0) {
-            RETURN_FALSE;
-        }
-    }
-    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
-    */
 }
 /* }}} */
 
