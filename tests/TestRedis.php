@@ -264,6 +264,12 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->set('foo','barbaz', Array('not-valid','nx','invalid','ex'=>200)));
         $this->assertEquals($this->redis->ttl('foo'), 200);
         $this->assertEquals($this->redis->get('foo'), 'barbaz');
+
+        /* Pass NULL as the optional arguments which should be ignored */
+        $this->redis->del('foo');
+        $this->redis->set('foo','bar', NULL);
+        $this->assertEquals($this->redis->get('foo'), 'bar');
+        $this->assertTrue($this->redis->ttl('foo')<0);
     }
 
     public function testGetSet() {
