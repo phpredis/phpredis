@@ -836,7 +836,9 @@ PHP_METHOD(Redis, set) {
 
     /* Our optional argument can either be a long (to support legacy SETEX */
     /* redirection), or an array with Redis >= 2.6.12 set options */
-    if(z_opts && Z_TYPE_P(z_opts) != IS_LONG && Z_TYPE_P(z_opts) != IS_ARRAY) {
+    if(z_opts && Z_TYPE_P(z_opts) != IS_LONG && Z_TYPE_P(z_opts) != IS_ARRAY
+       && Z_TYPE_P(z_opts) != IS_NULL) 
+    {
         RETURN_FALSE;
     }
 
