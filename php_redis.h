@@ -14,6 +14,7 @@
   +----------------------------------------------------------------------+
   | Original author: Alfonso Jimenez <yo@alfonsojimenez.com>             |
   | Maintainer: Nicolas Favre-Felix <n.favre-felix@owlient.eu>           |
+  | Maintainer: Michael Grunder <michael.grunder@gmail.com>              |
   | Maintainer: Nasreddine Bouafif <n.bouafif@owlient.eu>                |
   +----------------------------------------------------------------------+
 */
@@ -181,6 +182,7 @@ PHP_METHOD(Redis, setOption);
 
 PHP_METHOD(Redis, config);
 PHP_METHOD(Redis, slowlog);
+PHP_METHOD(Redis, wait);
 
 PHP_METHOD(Redis, client);
 

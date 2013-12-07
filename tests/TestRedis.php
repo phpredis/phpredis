@@ -1803,6 +1803,34 @@ class Redis_Test extends TestSuite
         $this->assertFalse($this->redis->slowlog('notvalid'));
     }
 
+    public function testWait() {
+        // Closest we can check based on redis commmit history
+        if(version_compare($this->version, '2.9.11', 'lt')) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        // We could have slaves here, so determine that
+        $arr_slaves = $this->redis->info();
+        $i_slaves   = $arr_slaves['connected_slaves'];
+
+        // Send a couple commands
+        $this->redis->set('wait-foo', 'over9000');
+        $this->redis->set('wait-bar', 'revo9000');
+
+        // Make sure we get the right replication count
+        $this->assertEquals($this->redis->wait($i_slaves, 100), $i_slaves);
+
+        // Pass more slaves than are connected
+        $this->redis->set('wait-foo','over9000');
+        $this->redis->set('wait-bar','revo9000');
+        $this->assertTrue($this->redis->wait($i_slaves+1, 100) < $i_slaves+1);
+
+        // Make sure when we pass with bad arguments we just get back false
+        $this->assertFalse($this->redis->wait(-1, -1));
+        $this->assertFalse($this->redis->wait(-1, 20));
+    }
+
     public function testinfo() {
 	$info = $this->redis->info();
 
