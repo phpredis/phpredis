@@ -6784,10 +6784,9 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     zval *object, *z_iter;
     RedisSock *redis_sock;
     HashTable *hash;
-    char *pattern=NULL;
+    char *pattern=NULL, *cmd, *key=NULL;
+    int cmd_len, key_len=0, pattern_len=0, num_elements, key_free=0;
     long count=0, iter;
-    char *cmd, *key=NULL;
-    int cmd_len, key_len=0, pattern_len=0, num_elements;
 
     // Different prototype depending on if this is a key based scan
     if(type != TYPE_SCAN) {
@@ -6833,6 +6832,11 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
         RETURN_FALSE;
     }
 
+    // Prefix our key if we've got one and we have a prefix set
+    if(key_len) {
+        key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    }
+
     /**
      * Redis can return to us empty keys, especially in the case where there are a large
      * number of keys to scan, and we're matching against a pattern.  PHPRedis can be set
@@ -6850,6 +6854,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
         if(redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                       redis_sock,type,&iter)<0)
         {
+            if(key_free) efree(key);
             RETURN_FALSE;
         }
 
@@ -6857,6 +6862,9 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
         hash = Z_ARRVAL_P(return_value);
         num_elements = zend_hash_num_elements(hash);
     } while(redis_sock->scan == REDIS_SCAN_RETRY && iter != 0 && num_elements == 0);
+
+    // Free our key if it was prefixed
+    if(key_free) efree(key);
 
     // Update our iterator reference
     Z_LVAL_P(z_iter) = iter;
