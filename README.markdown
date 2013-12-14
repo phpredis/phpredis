@@ -1316,6 +1316,7 @@ $redis->migrate('backup', 6379, 'foo', 0, 3600);
 * [hSetNx](#hsetnx) - Set the value of a hash field, only if the field does not exist
 * [hVals](#hvals) - Get all the values in a hash
 * [hScan](#hscan) - Scan a hash key for members
+
 ### hSet
 -----
 _**Description**_: Adds a value to the hash stored at key. If this value is already in the hash, `FALSE` is returned.  
