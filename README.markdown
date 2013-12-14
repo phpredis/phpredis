@@ -268,6 +268,15 @@ $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);	// use built-in
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_IGBINARY);	// use igBinary serialize/unserialize
 
 $redis->setOption(Redis::OPT_PREFIX, 'myAppName:');	// use custom prefix on all keys
+
+/* Options for the SCAN family of commands, indicating whether to abstract
+   empty results from the user.  If set to SCAN_NORETRY (the default), phpredis
+   will just issue one SCAN command at a time, sometimes returning an empty
+   array of results.  If set to SCAN_RETRY, phpredis will retry the scan command
+   until keys come back OR Redis returns an iterator of zero
+*/
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
 ~~~
 
 
@@ -607,6 +616,7 @@ $redis->slowlog('len');
 * [expire, setTimeout, pexpire](#expire-settimeout-pexpire) - Set a key's time to live in seconds
 * [expireAt, pexpireAt](#expireat-pexpireat) - Set the expiration for a key as a UNIX timestamp
 * [keys, getKeys](#keys-getkeys) - Find all keys matching the given pattern
+* [scan](#scan) - Scan for keys in the keyspace (Redis >= 2.8.0)
 * [migrate](#migrate) - Atomically transfer a key from a Redis instance to another one
 * [move](#move) - Move a key to another database
 * [object](#object) - Inspect the internals of Redis objects
@@ -953,7 +963,29 @@ $allKeys = $redis->keys('*');	// all keys will match this.
 $keyWithUserPrefix = $redis->keys('user*');
 ~~~
 
+### scan
+-----
+_**Description**_:  Scan the keyspace for keys
 
+##### *Parameters*
+*LONG (reference)*:  Iterator, initialized to NULL
+*STRING, Optional*:  Pattern to match
+*LONG, Optional)*: Count of keys per iteration (only a suggestion to Redis)
+
+##### *Return value*
+*Array, boolean*:  This function will return an array of keys or FALSE if there are no more keys
+
+##### *Example*
+~~~
+$it = NULL; /* Initialize our iterator to NULL */
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY); /* retry when we get no keys back */
+while($arr_keys = $redis->scan($it)) {
+    foreach($arr_keys as $str_key) {
+        echo "Here is a key: $str_key\n";
+    }
+    echo "No more keys to scan!\n";
+}
+~~~
 
 ### object
 -----
@@ -1283,6 +1315,7 @@ $redis->migrate('backup', 6379, 'foo', 0, 3600);
 * [hSet](#hset) - Set the string value of a hash field
 * [hSetNx](#hsetnx) - Set the value of a hash field, only if the field does not exist
 * [hVals](#hvals) - Get all the values in a hash
+* [hScan](#hscan) - Scan a hash key for members
 
 ### hSet
 -----
@@ -1542,7 +1575,28 @@ $redis->hSet('h', 'field2', 'value2');
 $redis->hmGet('h', array('field1', 'field2')); /* returns array('field1' => 'value1', 'field2' => 'value2') */
 ~~~
 
+### hScan
+-----
+_**Description**_:  Scan a HASH value for members, with an optional pattern and count
+##### *Parameters*
+*key*: String
+*iterator*: Long (reference)
+*pattern*: Optional pattern to match against
+*count*: How many keys to return in a go (only a sugestion to Redis)
+##### *Return value* 
+*Array* An array of members that match our pattern
 
+##### *Examples*
+~~~
+$it = NULL;
+/* Don't ever return an empty array until we're done iterating */
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+while($arr_keys = $redis->hscan('hash', $it)) {
+    foreach($arr_keys as $str_field => $str_value) {
+        echo "$str_field => $str_value\n"; /* Print the hash member and value */
+    }
+}
+~~~
 
 ## Lists
 
@@ -1981,6 +2035,7 @@ $redis->lSize('key1');/* 2 */
 * [sRem, sRemove](#srem-sremove) - Remove one or more members from a set
 * [sUnion](#sunion) - Add multiple sets
 * [sUnionStore](#sunionstore) - Add multiple sets and store the resulting set in a key
+* [sScan](#sscan) - Scan a set for members
 
 ### sAdd
 -----
@@ -2380,6 +2435,41 @@ array(4) {
 }
 ~~~
 
+### sScan
+-----
+_**Description**_: Scan a set for members
+
+##### *Parameters*
+*Key*: The set to search
+*iterator*: LONG (reference) to the iterator as we go
+*pattern*: String, optional pattern to match against
+*count*: How many members to return at a time (Redis might return a different amount)
+
+##### *Retur value*
+*Array, boolean*: PHPRedis will return an array of keys or FALSE when we're done iterating
+
+##### *Example*
+~~~
+$it = NULL;
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY); /* don't return empty results until we're done */
+while($arr_mems = $redis->sscan('set', $it, "*pattern*")) {
+    foreach($arr_mems as $str_mem) {
+        echo "Member: $str_mem\n";
+    }
+}
+
+$it = NULL;
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY); /* return after each iteration, even if empty */
+while(($arr_mems = $redis->sscan('set', $it, "*pattern*"))!==FALSE) {
+    if(count($arr_mems) > 0) {
+        foreach($arr_mems as $str_mem) {
+            echo "Member found: $str_mem\n";
+        }
+    } else {
+        echo "No members in this iteration, iterator value: $it\n");
+    }
+}
+~~~
 
 ## Sorted sets
 
@@ -2397,6 +2487,7 @@ array(4) {
 * [zRevRange](#zrevrange) - Return a range of members in a sorted set, by index, with scores ordered from high to low
 * [zScore](#zscore) - Get the score associated with the given member in a sorted set
 * [zUnion](#zunion) - Add multiple sorted sets and store the resulting sorted set in a new key
+* [zScan](#zscan) - Scan a sorted set for members
 
 ### zAdd
 -----
@@ -2734,6 +2825,30 @@ $redis->zUnion('ko1', array('k1', 'k2')); /* 4, 'ko1' => array('val0', 'val1', '
 /* Weighted zUnion */
 $redis->zUnion('ko2', array('k1', 'k2'), array(1, 1)); /* 4, 'ko2' => array('val0', 'val1', 'val2', 'val3') */
 $redis->zUnion('ko3', array('k1', 'k2'), array(5, 1)); /* 4, 'ko3' => array('val0', 'val2', 'val3', 'val1') */
+~~~
+
+### zScan
+-----
+_**Description**_: Scan a sorted set for members, with optional pattern and count
+
+##### *Parameters*
+*key*: String, the set to scan
+*iterator*: Long (reference), initialized to NULL
+*pattern*: String (optional), the pattern to match
+*count*: How many keys to return per iteration (Redis might return a different number)
+
+##### *Return value*
+*Array, boolean* PHPReids will return matching keys from Redis, or FALSE when iteration is complete
+
+##### *Example*
+~~~
+$it = NULL;
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+while($arr_matches = $redis->zscan('zset', $it, '*pattern*')) {
+    foreach($arr_matches as $str_mem => $f_score) {
+        echo "Key: $str_mem, Score: $f_score\n";
+    }
+}
 ~~~
 
 ## Pub/sub

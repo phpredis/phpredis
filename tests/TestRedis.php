@@ -4534,6 +4534,190 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->getAuth() === self::AUTH);
     }
 
+    /**
+     * Scan and variants
+     */
+
+    protected function get_keyspace_count($str_db) {
+        $arr_info = $this->redis->info();
+        $arr_info = $arr_info[$str_db];
+        $arr_info = explode(',', $arr_info);
+        $arr_info = explode('=', $arr_info[0]);
+        return $arr_info[1];
+    }
+
+    public function testScan() {
+        if(version_compare($this->version, "2.8.0", "lt")) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        // Key count
+        $i_key_count = $this->get_keyspace_count('db0');
+
+        // Have scan retry
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+        // Scan them all
+        $it = NULL;
+        while($arr_keys = $this->redis->scan($it)) {
+            $i_key_count -= count($arr_keys);
+        }
+        // Should have iterated all keys
+        $this->assertEquals(0, $i_key_count);
+
+        // Unique keys, for pattern matching
+        $str_uniq = uniqid() . '-' . uniqid();
+        for($i=0;$i<10;$i++) {
+            $this->redis->set($str_uniq . "::$i", "bar::$i");
+        }
+
+        // Scan just these keys using a pattern match
+        $it = NULL;
+        while($arr_keys = $this->redis->scan($it, "*$str_uniq*")) {
+            $i -= count($arr_keys);
+        }
+        $this->assertEquals(0, $i);
+    }
+
+    public function testHScan() {
+        if(version_compare($this->version, "2.8.0", "lt")) {
+            $this->markTestSkipped();
+            return;
+        }
+    
+        // Never get empty sets
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+        $this->redis->del('hash');
+        $i_foo_mems = 0;
+
+        for($i=0;$i<100;$i++) {
+            if($i>3) {
+                $this->redis->hset('hash', "member:$i", "value:$i");    
+            } else {
+                $this->redis->hset('hash', "foomember:$i", "value:$i");
+                $i_foo_mems++;
+            }
+        }
+
+        // Scan all of them
+        $it = NULL;
+        while($arr_keys = $this->redis->hscan('hash', $it)) {
+            $i -= count($arr_keys);
+        }
+        $this->assertEquals(0, $i);
+
+        // Scan just *foomem* (should be 4)
+        $it = NULL;
+        while($arr_keys = $this->redis->hscan('hash', $it, '*foomember*')) {
+            $i_foo_mems -= count($arr_keys);
+            foreach($arr_keys as $str_mem => $str_val) {
+                $this->assertTrue(strpos($str_mem, 'member')!==FALSE);
+                $this->assertTrue(strpos($str_val, 'value')!==FALSE);
+            }
+        }
+        $this->assertEquals(0, $i_foo_mems);
+    }
+
+    public function testSScan() {
+        if(version_compare($this->version, "2.8.0", "lt")) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+        $this->redis->del('set');
+        for($i=0;$i<100;$i++) {
+            $this->redis->sadd('set', "member:$i");
+        }
+
+        // Scan all of them
+        $it = NULL;
+        while($arr_keys = $this->redis->sscan('set', $it)) {
+            $i -= count($arr_keys);
+            foreach($arr_keys as $str_mem) {
+                $this->assertTrue(strpos($str_mem,'member')!==FALSE);
+            }
+        }
+        $this->assertEquals(0, $i);
+
+        // Scan just ones with zero in them (0, 10, 20, 30, 40, 50, 60, 70, 80, 90)
+        $it = NULL;
+        $i_w_zero = 0;
+        while($arr_keys = $this->redis->sscan('set', $it, '*0*')) {
+            $i_w_zero += count($arr_keys);
+        }
+        $this->assertEquals(10, $i_w_zero);
+    }
+
+    public function testZScan() {
+        if(version_compare($this->version, "2.8.0", "lt")) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+        $this->redis->del('zset');
+        $i_tot_score = 0;
+        $i_p_score = 0;
+        $i_p_count = 0;
+        for($i=0;$i<2000;$i++) {
+            if($i<10) {
+                $this->redis->zadd('zset', $i, "pmem:$i");
+                $i_p_score += $i;
+                $i_p_count += 1;
+            } else {
+                $this->redis->zadd('zset', $i, "mem:$i");
+            }
+            
+            $i_tot_score += $i;
+        }
+
+        // Scan them all
+        $it = NULL;
+        while($arr_keys = $this->redis->zscan('zset', $it)) {
+            foreach($arr_keys as $str_mem => $f_score) {
+                $i_tot_score -= $f_score;
+                $i--;
+            }
+        }
+        $this->assertEquals(0, $i);
+        $this->assertEquals(0, $i_tot_score);
+
+        // Just scan "pmem" members
+        $it = NULL;
+        $i_p_score_old = $i_p_score;
+        $i_p_count_old = $i_p_count;
+        while($arr_keys = $this->redis->zscan('zset', $it, "*pmem*")) {
+            foreach($arr_keys as $str_mem => $f_score) {
+                $i_p_score -= $f_score;
+                $i_p_count -= 1;
+            }
+        }
+        $this->assertEquals(0, $i_p_score);
+        $this->assertEquals(0, $i_p_count);
+
+        // Turn off retrying and we should get some empty results
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
+        $i_skips = 0;
+        $i_p_score = $i_p_score_old;
+        $i_p_count = $i_p_count_old;
+        $it = NULL;
+        while(($arr_keys = $this->redis->zscan('zset', $it, "*pmem*")) !== FALSE) {
+            if(count($arr_keys) == 0) $i_skips++;
+            foreach($arr_keys as $str_mem => $f_score) {
+                $i_p_score -= $f_score;
+                $i_p_count -= 1;
+            }
+        }
+        // We should still get all the keys, just with several empty results
+        $this->assertTrue($i_skips > 0);
+        $this->assertEquals(0, $i_p_score);
+        $this->assertEquals(0, $i_p_count);
+    }
 }
 
 exit(TestSuite::run("Redis_Test"));
