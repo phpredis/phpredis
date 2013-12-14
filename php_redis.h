@@ -186,6 +186,13 @@ PHP_METHOD(Redis, wait);
 
 PHP_METHOD(Redis, client);
 
+/* SCAN and friends  */
+PHP_METHOD(Redis, scan);
+PHP_METHOD(Redis, hscan);
+PHP_METHOD(Redis, sscan);
+PHP_METHOD(Redis, zscan);
+
+/* Reflection */
 PHP_METHOD(Redis, getHost);
 PHP_METHOD(Redis, getPort);
 PHP_METHOD(Redis, getDBNum);
