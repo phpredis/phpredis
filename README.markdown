@@ -970,7 +970,7 @@ _**Description**_:  Scan the keyspace for keys
 ##### *Parameters*
 *LONG (reference)*:  Iterator, initialized to NULL
 *STRING, Optional*:  Pattern to match
-*LONG, Optional)*: Count of keys per iteration (only a suggestion to Redis)
+*LONG, Optional*: Count of keys per iteration (only a suggestion to Redis)
 
 ##### *Return value*
 *Array, boolean*:  This function will return an array of keys or FALSE if there are no more keys
@@ -2445,7 +2445,7 @@ _**Description**_: Scan a set for members
 *pattern*: String, optional pattern to match against
 *count*: How many members to return at a time (Redis might return a different amount)
 
-##### *Retur value*
+##### *Return value*
 *Array, boolean*: PHPRedis will return an array of keys or FALSE when we're done iterating
 
 ##### *Example*
@@ -2466,7 +2466,7 @@ while(($arr_mems = $redis->sscan('set', $it, "*pattern*"))!==FALSE) {
             echo "Member found: $str_mem\n";
         }
     } else {
-        echo "No members in this iteration, iterator value: $it\n");
+        echo "No members in this iteration, iterator value: $it\n";
     }
 }
 ~~~
@@ -2838,7 +2838,7 @@ _**Description**_: Scan a sorted set for members, with optional pattern and coun
 *count*: How many keys to return per iteration (Redis might return a different number)
 
 ##### *Return value*
-*Array, boolean* PHPReids will return matching keys from Redis, or FALSE when iteration is complete
+*Array, boolean* PHPRedis will return matching keys from Redis, or FALSE when iteration is complete
 
 ##### *Example*
 ~~~
@@ -3195,7 +3195,7 @@ None
 
 ### GetTimeout
 -----
-_**Description**_:  Get the (write) timeout in use for phpreids
+_**Description**_:  Get the (write) timeout in use for phpredis
 
 ##### *Parameters*
 None  
