@@ -2829,7 +2829,7 @@ $redis->zUnion('ko3', array('k1', 'k2'), array(5, 1)); /* 4, 'ko3' => array('val
 
 ### zScan
 -----
-_**Description*_: Scan a sorted set for members, with optional pattern and count
+_**Description**_: Scan a sorted set for members, with optional pattern and count
 
 ##### *Parameters*
 *key*: String, the set to scan
