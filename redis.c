@@ -250,6 +250,9 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, getAuth, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, isConnected, NULL, ZEND_ACC_PUBLIC)
 
+	 /* synchronous replication */
+     PHP_ME(Redis, wait, NULL, ZEND_ACC_PUBLIC)
+
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, popen, pconnect, NULL, ZEND_ACC_PUBLIC)
@@ -6647,5 +6650,33 @@ PHP_METHOD(Redis, client) {
         REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
     }
 }
+
+/* {{{ proto string Redis::wait([num_replicas, timeout])
+ */
+PHP_METHOD(Redis, wait)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *cmd = "";
+    int cmd_len;
+    long num_replicas, timeout;
+
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|ll",
+									 &object, redis_ce, &num_replicas, &timeout) == FAILURE) {
+		RETURN_FALSE;
+	}
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+	cmd_len = redis_cmd_format_static(&cmd, "WAIT", "dd", (int)num_replicas, (int)timeout);
+
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_boolean_response);
+}
+/* }}} */
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
