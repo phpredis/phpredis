@@ -658,10 +658,10 @@ $redis->set('key', 'value');
 $redis->set('key','value', 10);
 
 // Will set the key, if it doesn't exist, with a ttl of 10 seconds
-$redis->set('key', 'value', Array('nx', 'ex'=>10);
+$redis->set('key', 'value', Array('nx', 'ex'=>10));
 
 // Will set a key, if it does exist, with a ttl of 1000 miliseconds
-$redis->set('key', 'value', Array('xx', 'px'=>1000);
+$redis->set('key', 'value', Array('xx', 'px'=>1000));
 
 ~~~
 
