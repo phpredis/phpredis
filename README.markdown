@@ -794,7 +794,7 @@ $redis->incrByFloat('key1', 1.5); /* key1 didn't exist, so it will now be 1.5 */
 
 $redis->incrByFloat('key1', 1.5); /* 3 */
 $redis->incrByFloat('key1', -1.5); /* 1.5 */
-$redis->incrByFloat('key1', 2.5); /* 3.5 */
+$redis->incrByFloat('key1', 2.5); /* 4 */
 ~~~
 
 ### decr, decrBy
