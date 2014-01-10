@@ -379,9 +379,10 @@ PHPAPI int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC, int no_thr
     zval **socket;
     int resource_type;
 
-    if (Z_TYPE_P(id) != IS_OBJECT || zend_hash_find(Z_OBJPROP_P(id), "socket",
-                                  sizeof("socket"), (void **) &socket) == FAILURE) {
-    	// Throw an exception unless we've been requested not to
+    if (Z_TYPE_P(id) != IS_OBJECT ||
+        zend_hash_find(Z_OBJPROP_P(id), "socket", sizeof("socket"), (void **)&socket) == FAILURE ||
+        Z_TYPE_PP(socket) != IS_RESOURCE)
+    {
         if(!no_throw) {
         	zend_throw_exception(redis_exception_ce, "Redis server went away", 0 TSRMLS_CC);
         }
