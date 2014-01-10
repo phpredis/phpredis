@@ -1439,14 +1439,32 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, R
  */
 PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz TSRMLS_DC)
 {
-	if(redis_sock && redis_sock->status == REDIS_SOCK_STATUS_DISCONNECTED) {
-		zend_throw_exception(redis_exception_ce, "Connection closed", 0 TSRMLS_CC);
-		return -1;
-	}
+    size_t wrote;
+
+    if(sz > INT_MAX) {
+        // greater than INT_MAX would overflow the return value.
+        // other php code breaks at this threshold, and it's beyond the max
+        // string size in redis,  but lets be nice and throw an exception.
+        zend_throw_exception(redis_exception_ce, "write overflow", 0 TSRMLS_CC);
+        return -1;
+    }
+
+    if(redis_sock && redis_sock->status != REDIS_SOCK_STATUS_CONNECTED) {
+        zend_throw_exception(redis_exception_ce, "connection closed", 0 TSRMLS_CC);
+        return -1;
+    }
+
     if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
         return -1;
     }
-    return php_stream_write(redis_sock->stream, cmd, sz);
+
+    wrote = php_stream_write(redis_sock->stream, cmd, sz);
+    if(wrote < sz) {
+        zend_throw_exception(redis_exception_ce, "write error on connection", 0 TSRMLS_CC);
+        return -1;
+    }
+
+    return wrote;
 }
 
 /**
