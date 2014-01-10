@@ -1650,6 +1650,8 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t *line_siz
 
 PHPAPI int
 redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, int *reply_info TSRMLS_DC) {
+	int buf;
+
 	// Make sure we haven't lost the connection, even trying to reconnect
 	if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
 		// Failure
@@ -1657,9 +1659,12 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, int *
 	}
 
 	// Attempt to read the reply-type byte
-	if((*reply_type = php_stream_getc(redis_sock->stream)) == EOF) {
-		zend_throw_exception(redis_exception_ce, "socket error on read socket", 0 TSRMLS_CC);
+	buf = php_stream_getc(redis_sock->stream);
+	if(buf == EOF) {
+		zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
+		return -1;
 	}
+	*reply_type = buf;
 
 	// If this is a BULK, MULTI BULK, or simply an INTEGER response, we can extract the value or size info here
 	if(*reply_type == TYPE_INT || *reply_type == TYPE_BULK || *reply_type == TYPE_MULTIBULK) {
@@ -1667,7 +1672,8 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, int *
 		char inbuf[255];
 
 		// Read up to our newline
-		if(php_stream_gets(redis_sock->stream, inbuf, sizeof(inbuf)) < 0) {
+		if(php_stream_gets(redis_sock->stream, inbuf, sizeof(inbuf)) == NULL) {
+			zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
 			return -1;
 		}
 
