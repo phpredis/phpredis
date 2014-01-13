@@ -267,12 +267,12 @@ redis_cmd_format_header(char **ret, char *keyword, int arg_count) {
 
 	smart_str_appendc(&buf, '*');
 	smart_str_append_long(&buf, arg_count + 1);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) -1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 	smart_str_appendc(&buf, '$');
 	smart_str_append_long(&buf, l);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) -1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 	smart_str_appendl(&buf, keyword, l);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 
 	// Set our return pointer
 	*ret = buf.c;
@@ -296,12 +296,12 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 	/* add header */
 	smart_str_appendc(&buf, '*');
 	smart_str_append_long(&buf, strlen(format) + 1);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 	smart_str_appendc(&buf, '$');
 	smart_str_append_long(&buf, l);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 	smart_str_appendl(&buf, keyword, l);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 
 	while (*p) {
 		smart_str_appendc(&buf, '$');
@@ -311,7 +311,7 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 					char *val = va_arg(ap, char*);
 					int val_len = va_arg(ap, int);
 					smart_str_append_long(&buf, val_len);
-					smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+					smart_str_appendl(&buf, _NL, _NL_len);
 					smart_str_appendl(&buf, val, val_len);
 				}
 				break;
@@ -321,7 +321,7 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 				double d = va_arg(ap, double);
 				REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, d)
 				smart_str_append_long(&buf, dbl_len);
-				smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+				smart_str_appendl(&buf, _NL, _NL_len);
 				smart_str_appendl(&buf, dbl_str, dbl_len);
 				efree(dbl_str);
 			}
@@ -333,7 +333,7 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 				char tmp[32];
 				int tmp_len = snprintf(tmp, sizeof(tmp), "%d", i);
 				smart_str_append_long(&buf, tmp_len);
-				smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+				smart_str_appendl(&buf, _NL, _NL_len);
 				smart_str_appendl(&buf, tmp, tmp_len);
 			}
 				break;
@@ -343,13 +343,13 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 				char tmp[32];
 				int tmp_len = snprintf(tmp, sizeof(tmp), "%ld", l);
 				smart_str_append_long(&buf, tmp_len);
-				smart_str_appendl(&buf, _NL, sizeof(_NL) -1);
+				smart_str_appendl(&buf, _NL, _NL_len);
 				smart_str_appendl(&buf, tmp, tmp_len);
 			}
 				break;
 		}
 		p++;
-		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+		smart_str_appendl(&buf, _NL, _NL_len);
 	}
 	smart_str_0(&buf);
 
@@ -389,7 +389,7 @@ redis_cmd_format(char **ret, char *format, ...) {
 					double d = va_arg(ap, double);
 					REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, d)
 					smart_str_append_long(&buf, dbl_len);
-					smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+					smart_str_appendl(&buf, _NL, _NL_len);
 					smart_str_appendl(&buf, dbl_str, dbl_len);
 					efree(dbl_str);
 				}
@@ -431,9 +431,9 @@ int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len) 
 	// Append our new command sequence
 	smart_str_appendc(&buf, '$');
 	smart_str_append_long(&buf, append_len);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) -1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 	smart_str_appendl(&buf, append, append_len);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) -1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 
 	// Free our old command
 	efree(*cmd);
@@ -452,12 +452,12 @@ int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len) 
 int redis_cmd_init_sstr(smart_str *str, int num_args, char *keyword, int keyword_len) {
     smart_str_appendc(str, '*');
     smart_str_append_long(str, num_args + 1);
-    smart_str_appendl(str, _NL, sizeof(_NL) -1);
+    smart_str_appendl(str, _NL, _NL_len);
     smart_str_appendc(str, '$');
     smart_str_append_long(str, keyword_len);
-    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    smart_str_appendl(str, _NL, _NL_len);
     smart_str_appendl(str, keyword, keyword_len);
-    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    smart_str_appendl(str, _NL, _NL_len);
     return str->len;
 }
 
@@ -467,9 +467,9 @@ int redis_cmd_init_sstr(smart_str *str, int num_args, char *keyword, int keyword
 int redis_cmd_append_sstr(smart_str *str, char *append, int append_len) {
     smart_str_appendc(str, '$');
     smart_str_append_long(str, append_len);
-    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    smart_str_appendl(str, _NL, _NL_len);
     smart_str_appendl(str, append, append_len);
-    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    smart_str_appendl(str, _NL, _NL_len);
 
     // Return our new length
     return str->len;
