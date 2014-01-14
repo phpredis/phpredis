@@ -25,6 +25,48 @@ extern zend_class_entry *redis_ce;
 extern zend_class_entry *redis_exception_ce;
 extern zend_class_entry *spl_ce_RuntimeException;
 
+/* Read count bytes into buf from a redis_sock's stream.
+ * Throws an exception and returns 0 on any error, returns 1 on success.
+ */
+static int _redis_sock_read_bytes(RedisSock *redis_sock, char *buf, size_t count TSRMLS_DC)
+{
+	size_t read;
+
+	while(count) {
+		read = php_stream_read(redis_sock->stream, buf, count);
+		if(!read) {
+			/* Error or EOF */
+			zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
+			return 0;
+		}
+
+		buf += read;
+		count -= read;
+	}
+
+	return 1;
+}
+
+/* Consume a newline from a redis_socks's stream.
+ * Throws an exception and returns 0 on any error, returns 1 on success.
+ */
+static int _redis_sock_read_nl(RedisSock *redis_sock TSRMLS_DC)
+{
+	char nl[_NL_len + 1];
+
+	if (!_redis_sock_read_bytes(redis_sock, nl, _NL_len TSRMLS_CC)) {
+		return 0;
+	}
+
+	if (0 != memcmp(nl, _NL, _NL_len)) {
+		nl[_NL_len] = '\0';
+		zend_throw_exception_ex(redis_exception_ce, 0 TSRMLS_CC, "protocol error, expected newline but got '%s'", nl);
+		return 0;
+	}
+
+	return 1;
+}
+
 PHPAPI void redis_stream_close(RedisSock *redis_sock TSRMLS_DC) {
 	if (!redis_sock->persistent) {
 		php_stream_close(redis_sock->stream);
@@ -137,30 +179,30 @@ PHPAPI zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, 
  */
 PHPAPI char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_DC)
 {
-    char * reply;
-    char nl[2];
+	char * reply;
 
-    if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
-        return NULL;
-    }
+	if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
+		return NULL;
+	}
 
-    if (bytes == -1) {
-        return NULL;
-    }
+	if (bytes == -1) {
+		return NULL;
+	}
 
-    reply = emalloc(bytes+1);
+	reply = emalloc(bytes+1);
 
-    if (php_stream_read(redis_sock->stream, reply, bytes) < bytes ||
-        php_stream_read(redis_sock->stream, nl, 2) < 2 )
-    {
-        /* Error or EOF */
-        zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
-        efree(reply);
-        return NULL;
-    }
+	if (!_redis_sock_read_bytes(redis_sock, reply, bytes TSRMLS_CC)) {
+		efree(reply);
+		return NULL;
+	}
 
-    reply[bytes] = 0;
-    return reply;
+	if (!_redis_sock_read_nl(redis_sock TSRMLS_CC)) {
+		efree(reply);
+		return NULL;
+	}
+
+	reply[bytes] = '\0';
+	return reply;
 }
 
 /**

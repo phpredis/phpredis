@@ -119,14 +119,11 @@ class Redis_Test extends TestSuite
     }
 
     public function test1000() {
-
-	 $s = str_repeat('A', 1000);
-	 $this->redis->set('x', $s);
-	 $this->assertEquals($s, $this->redis->get('x'));
-
-	 $s = str_repeat('A', 1000000);
-	 $this->redis->set('x', $s);
-	 $this->assertEquals($s, $this->redis->get('x'));
+        for($len = 1; $len <= 1000000; $len *= 10) {
+            $s = str_repeat('A', $len);
+            $this->assertTrue($this->redis->set('x', $s));
+            $this->assertEquals($s, $this->redis->get('x'));
+        }
     }
 
 	public function testEcho() {
