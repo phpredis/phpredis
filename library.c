@@ -846,10 +846,10 @@ PHPAPI void redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
     char ret;
 
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-	IF_MULTI_OR_PIPELINE() {
+        IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
-	    return;
-	}
+            return;
+        }
         RETURN_FALSE;
     }
     ret = response[0];

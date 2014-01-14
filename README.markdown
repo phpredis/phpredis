@@ -1296,10 +1296,14 @@ _**Description**_: Migrates a key to a different Redis instance.
 *port* integer.  The TCP port to connect to.  
 *key* string. The key to migrate.  
 *destination-db* integer.  The target DB.  
-*timeout* integer.  The maximum amount of time given to this transfer.  
+*timeout* integer.  The maximum amount of time given to this transfer. 
+*copy* boolean, optional.  Should we send the COPY flag to redis
+*replace* boolean, optional.  Should we send the REPLACE flag to redis 
 ##### *Examples*
 ~~~
 $redis->migrate('backup', 6379, 'foo', 0, 3600);
+$redis->migrate('backup', 6379, 'foo', 0, 3600, true, true); /* copy and replace */
+$redis->migrate('backup', 6379, 'foo', 0, 3600, false, true); /* just REPLACE flag */
 ~~~
 
 
