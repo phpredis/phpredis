@@ -183,6 +183,7 @@ PHP_METHOD(Redis, setOption);
 PHP_METHOD(Redis, config);
 PHP_METHOD(Redis, slowlog);
 PHP_METHOD(Redis, wait);
+PHP_METHOD(Redis, pubsub);
 
 PHP_METHOD(Redis, client);
 
