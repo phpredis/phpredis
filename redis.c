@@ -245,6 +245,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, clearLastError, NULL, ZEND_ACC_PUBLIC)
 
      PHP_ME(Redis, _prefix, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, _serialize, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _unserialize, NULL, ZEND_ACC_PUBLIC)
 
      PHP_ME(Redis, client, NULL, ZEND_ACC_PUBLIC)
@@ -6456,6 +6457,35 @@ PHP_METHOD(Redis, _prefix) {
 	} else {
 		RETURN_STRINGL(key, key_len, 1);
 	}
+}
+
+/*
+ * {{{ proto Redis::_serialize(value)
+ */
+PHP_METHOD(Redis, _serialize) {
+    zval *object;
+    RedisSock *redis_sock;
+    zval *z_val;
+    char *val;
+    int val_free, val_len;
+
+    // Parse arguments
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oz",
+                                    &object, redis_ce, &z_val) == FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    // Grab socket
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    // Serialize, which will return a value even if no serializer is set
+    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
+
+    // Return serialized value.  Tell PHP to make a copy if redis_serialize didn't.
+    RETURN_STRINGL(val, val_len, !val_free);
 }
 
 /*

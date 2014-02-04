@@ -4428,6 +4428,34 @@ class Redis_Test extends TestSuite
     	$this->assertTrue(1 === $this->redis->evalsha($sha));
     }
 
+    public function testSerialize() {
+        $vals = Array(1, 1.5, 'one', Array('here','is','an','array'));
+        
+        // Test with no serialization at all
+        $this->assertTrue($this->redis->_serialize('test') === 'test');
+        $this->assertTrue($this->redis->_serialize(1) === '1');
+        $this->assertTrue($this->redis->_serialize(Array()) === 'Array');
+        $this->assertTrue($this->redis->_serialize(new stdClass) === 'Object');
+
+        $arr_serializers = Array(Redis::SERIALIZER_PHP);
+        if(defined('Redis::SERIALIZER_IGBINARY')) {
+            $arr_serializers[] = Redis::SERIALIZER_IGBINARY;
+        }
+
+        foreach($arr_serializers as $mode) {
+            $arr_enc = Array(); 
+            $arr_dec = Array();
+
+            foreach($vals as $k => $v) {
+                $enc = $this->redis->_serialize($v);
+                $dec = $this->redis->_unserialize($enc);
+
+                // They should be the same
+                $this->assertTrue($enc == $dec);
+            }
+        }
+    }
+
     public function testUnserialize() {
     	$vals = Array(
     		1,1.5,'one',Array('this','is','an','array')

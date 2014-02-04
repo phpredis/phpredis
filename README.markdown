@@ -2990,6 +2990,7 @@ $ret = FALSE if x has been modified between the call to WATCH and the call to EX
 * [clearLastError](#) - Clear the last error message
 * [_prefix](#) - A utility method to prefix the value with the prefix setting for phpredis
 * [_unserialize](#) - A utility method to unserialize data with whatever serializer is set up
+* [_serialize](#) - A utility method to serialize data with whatever serializer is set up
 
 ### eval
 -----
@@ -3138,6 +3139,28 @@ If a prefix is set up, the value now prefixed.  If there is no prefix, the value
 $redis->setOption(Redis::OPT_PREFIX, 'my-prefix:');
 $redis->_prefix('my-value'); // Will return 'my-prefix:my-value'
 ~~~
+
+### _serialize
+-----
+_**Description**_: A utility method to serialize values manually.
+
+This method allows you to serialize a value with whatever serializer is configured, manually.
+This can be useful for serialization/unserialization of data going in and out of EVAL commands
+as phpredis can't automatically do this itself.  Note that if no serializer is set, phpredis
+will change Array values to 'Array', and Objects to 'Object'.
+
+##### *Parameters*
+*value*:  Mixed.  The value to be serialized
+
+##### *Examples*
+~~~
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+$redis->_serialize("foo"); // returns "foo"
+$redis->_serialize(Array()); // Returns "Array"
+$redis->_serialize(new stdClass()); // Returns "Object"
+
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+$redis->_serialize("foo"); // Returns 's:3:"foo";'
 
 ### _unserialize
 -----
