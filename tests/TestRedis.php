@@ -1768,6 +1768,9 @@ class Redis_Test extends TestSuite
     }
 
     public function testClient() {
+        if (version_compare($this->version, "2.6.9", "lt")) {
+            $this->markTestSkipped();
+        }
         /* CLIENT SETNAME */
         $this->assertTrue($this->redis->client('setname', 'phpredis_unit_tests'));
 

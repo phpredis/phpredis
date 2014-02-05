@@ -695,7 +695,7 @@ PHPAPI void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *red
     char *p = resp, *lpos = resp, *kpos = NULL, *vpos = NULL, *p2, *key, *value;
 
     // Key length, done flag
-    int klen, done = 0, is_numeric;
+    int klen = 0, done = 0, is_numeric;
 
     // While we've got more to parse
     while(!done) {
@@ -726,8 +726,8 @@ PHPAPI void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *red
 
                     // Treat numbers as numbers, strings as strings
                     is_numeric = 1;
-                    for(p2 = value; *p; ++p) {
-                        if(*p < '0' || *p > '9') {
+                    for(p2 = value; *p2; ++p2) {
+                        if(*p2 < '0' || *p2 > '9') {
                             is_numeric = 0;
                             break;
                         }
@@ -1488,8 +1488,10 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 #endif
 	smart_str sstr = {0};
 	zval *z_copy;
+#ifdef HAVE_REDIS_IGBINARY
 	size_t sz;
 	uint8_t *val8;
+#endif
 
 	switch(redis_sock->serializer) {
 		case REDIS_SERIALIZER_NONE:
