@@ -876,7 +876,10 @@ PHP_METHOD(RedisArray, mget)
 
 	/* calls */
 	for(n = 0; n < ra->count; ++n) { /* for each node */
-		/* copy args for MGET call on node. */
+	    /* We don't even need to make a call to this node if no keys go there */
+	    if(!argc_each[n]) continue;
+
+	    /* copy args for MGET call on node. */
 		MAKE_STD_ZVAL(z_argarray);
 		array_init(z_argarray);
 
