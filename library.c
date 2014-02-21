@@ -1874,7 +1874,7 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zv
 		default:
 			// Protocol error
 			zend_throw_exception_ex(redis_exception_ce, 0 TSRMLS_CC, "protocol error, got '%c' as reply-type byte\n", reply_type);
-			break;
+            return FAILURE;
 	}
 
 	IF_MULTI_OR_PIPELINE() {
