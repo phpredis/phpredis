@@ -260,13 +260,18 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
             b_pconnect = 1;
         }
     }
-	/* find retry interval option */
+	
+    /* find lazy connect option */
 	MAKE_STD_ZVAL(z_params_lazy_connect);
 	array_init(z_params_lazy_connect);
 	sapi_module.treat_data(PARSE_STRING, estrdup(INI_STR("redis.arrays.lazyconnect")), z_params_lazy_connect TSRMLS_CC);
 	if (zend_hash_find(Z_ARRVAL_P(z_params_lazy_connect), name, strlen(name) + 1, (void **) &z_data_pp) != FAILURE) {
 		if(Z_TYPE_PP(z_data_pp) == IS_STRING && strncmp(Z_STRVAL_PP(z_data_pp), "1", 1) == 0) {
-	/* find connect timeout option */
+            b_lazy_connect = 1;
+        }
+    }
+        
+    /* find connect timeout option */
 	MAKE_STD_ZVAL(z_params_connect_timeout);
 	array_init(z_params_connect_timeout);
 	sapi_module.treat_data(PARSE_STRING, estrdup(INI_STR("redis.arrays.connecttimeout")), z_params_connect_timeout TSRMLS_CC);
@@ -281,10 +286,6 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 		}
 	}
 	
-			b_lazy_connect = 1;
-		}
-	}
-
 	/* create RedisArray object */
 	ra = ra_make_array(hHosts, z_fun, z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout TSRMLS_CC);
 	ra->auto_rehash = b_autorehash;
