@@ -6903,7 +6903,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
         // Execute our command getting our new iterator value
         REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
         if(redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                      redis_sock,type,&iter)<0)
+                                      redis_sock,type,&iter TSRMLS_CC)<0)
         {
             if(key_free) efree(key);
             RETURN_FALSE;
