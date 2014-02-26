@@ -103,7 +103,7 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 
 PHPAPI int 
 redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                           REDIS_SCAN_TYPE type, long *iter TSRMLS_DC)
+                           REDIS_SCAN_TYPE type, long *iter)
 {
     REDIS_REPLY_TYPE reply_type;
     int reply_info;
