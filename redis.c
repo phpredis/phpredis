@@ -177,6 +177,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, object, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, bitop, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, bitcount, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, bitpos, NULL, ZEND_ACC_PUBLIC)
 
      /* 1.1 */
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
@@ -817,6 +818,59 @@ PHP_METHOD(Redis, bitcount)
 	}
 	REDIS_PROCESS_RESPONSE(redis_long_response);
 
+}
+/* }}} */
+
+/* {{{ proto integer Redis::bitpos(string key, int bit, [int start], [int end]) */
+PHP_METHOD(Redis, bitpos) 
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key, *cmd;
+    int key_len, cmd_len, argc, key_free=0;
+    long bit, start, end;
+
+    argc = ZEND_NUM_ARGS();
+
+    if(zend_parse_method_parameters(argc TSRMLS_CC, getThis(), "Osl|ll",
+                                    &object, redis_ce, &key, &key_len, &bit,
+                                    &start, &end)==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    // We can prevalidate the first argument
+    if(bit != 0 && bit != 1) {
+        RETURN_FALSE;
+    }
+
+    // Prefix our key
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+
+    // Various command semantics
+    if(argc == 2) {
+        cmd_len = redis_cmd_format_static(&cmd, "BITPOS", "sd", key, key_len,
+                                          bit);
+    } else if(argc == 3) {
+        cmd_len = redis_cmd_format_static(&cmd, "BITPOS", "sdd", key, key_len,
+                                          bit, start);
+    } else {
+        cmd_len = redis_cmd_format_static(&cmd, "BITPOS", "sddd", key, key_len,
+                                          bit, start, end);
+    }
+
+    // Free our key if it was prefixed
+    if(key_free) efree(key);
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+        redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 /* }}} */
 

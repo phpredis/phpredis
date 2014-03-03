@@ -118,6 +118,25 @@ class Redis_Test extends TestSuite
         $this->assertFalse($this->redis->setBit('key', 4294967296, 1));
     }
 
+    public function testBitPos() {
+        if(version_compare($this->version, "2.8.7", "lt")) {
+            $this->MarkTestSkipped();
+            return;
+        }
+
+        $this->redis->del('bpkey');
+
+        $this->redis->set('bpkey', "\xff\xf0\x00");
+        $this->assertEquals($this->redis->bitpos('bpkey', 0), 12);
+
+        $this->redis->set('bpkey', "\x00\xff\xf0");
+        $this->assertEquals($this->redis->bitpos('bpkey', 1, 0), 8);
+        $this->assertEquals($this->redis->bitpos('bpkey', 1, 1), 8);
+
+        $this->redis->set('bpkey', "\x00\x00\x00");
+        $this->assertEquals($this->redis->bitpos('bpkey', 1), -1);
+    }
+
     public function test1000() {
 
 	 $s = str_repeat('A', 1000);
