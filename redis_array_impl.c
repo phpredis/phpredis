@@ -44,7 +44,9 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 
 	/* init connections */
 	for(i = 0; i < count; ++i) {
-		if(FAILURE == zend_hash_quick_find(hosts, NULL, 0, i, (void**)&zpData)) {
+		if(FAILURE == zend_hash_quick_find(hosts, NULL, 0, i, (void**)&zpData) ||
+           Z_TYPE_PP(zpData) != IS_STRING) 
+        {
 			efree(ra);
 			return NULL;
 		}
