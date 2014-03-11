@@ -273,6 +273,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 	/* create RedisArray object */
 	ra = ra_make_array(hHosts, z_fun, z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect TSRMLS_CC);
 	ra->auto_rehash = b_autorehash;
+	if(ra->prev) ra->prev->auto_rehash = b_autorehash;
 
 	/* cleanup */
 	zval_dtor(z_params_hosts);
@@ -605,6 +606,7 @@ ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC) {
 
 	/* don't dtor z_ret, since we're returning z_redis */
 	efree(z_args[0]);
+    zval_dtor(z_args[1]);
 	efree(z_args[1]);
 }
 
@@ -967,6 +969,7 @@ ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to, long ttl 
 		ZVAL_STRINGL(z_args[0], key, key_len, 0);
 		ZVAL_LONG(z_args[1], ttl);
 		ZVAL_STRINGL(z_args[2], Z_STRVAL(z_ret), Z_STRLEN(z_ret), 1); /* copy z_ret to arg 1 */
+		zval_dtor(&z_ret); /* free memory from our previous call */
 		call_user_function(&redis_ce->function_table, &z_to, &z_fun_set, &z_ret, 3, z_args TSRMLS_CC);
 		/* cleanup */
 		efree(z_args[1]);
@@ -977,6 +980,7 @@ ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to, long ttl 
 		ZVAL_STRINGL(&z_fun_set, "SET", 3, 0);
 		ZVAL_STRINGL(z_args[0], key, key_len, 0);
 		ZVAL_STRINGL(z_args[1], Z_STRVAL(z_ret), Z_STRLEN(z_ret), 1); /* copy z_ret to arg 1 */
+		zval_dtor(&z_ret); /* free memory from our previous return value */
 		call_user_function(&redis_ce->function_table, &z_to, &z_fun_set, &z_ret, 2, z_args TSRMLS_CC);
 		/* cleanup */
 		zval_dtor(z_args[1]);

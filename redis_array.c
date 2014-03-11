@@ -32,6 +32,12 @@
 #include "redis_array.h"
 #include "redis_array_impl.h"
 
+/* Simple macro to detect failure in a RedisArray call */
+#define RA_CALL_FAILED(rv, cmd) \
+    ((Z_TYPE_P(rv) == IS_BOOL && Z_BVAL_P(rv) == 0) || \
+    (Z_TYPE_P(rv) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(rv)) == 0) || \
+    (Z_TYPE_P(rv) == IS_LONG && Z_LVAL_P(rv) == 0 && !strcasecmp(cmd, "TYPE"))) \
+
 extern zend_class_entry *redis_ce;
 zend_class_entry *redis_array_ce;
 
@@ -76,41 +82,48 @@ zend_function_entry redis_array_functions[] = {
      {NULL, NULL, NULL}
 };
 
+static void redis_array_free(RedisArray *ra) {
+    int i;
+
+    // Redis objects
+    for(i=0;i<ra->count;i++) {
+        zval_dtor(ra->redis[i]);
+        efree(ra->redis[i]);
+        efree(ra->hosts[i]);
+    }
+    efree(ra->redis);
+    efree(ra->hosts);
+
+    /* delete hash function */
+    if(ra->z_fun) {
+        zval_dtor(ra->z_fun);
+        efree(ra->z_fun);
+    }
+
+    /* Distributor */
+    if(ra->z_dist) {
+        zval_dtor(ra->z_dist);
+        efree(ra->z_dist);
+    }
+
+    /* Delete pur commands */
+    zval_dtor(ra->z_pure_cmds);
+    efree(ra->z_pure_cmds);
+
+    // Free structure itself
+    efree(ra);
+}
+
 int le_redis_array;
 void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
 {
-	int i;
-	RedisArray *ra = (RedisArray*)rsrc->ptr;
+    RedisArray *ra = (RedisArray*)rsrc->ptr;
 
-	/* delete Redis objects */
-	for(i = 0; i < ra->count; ++i) {
-		zval_dtor(ra->redis[i]);
-		efree(ra->redis[i]);
+    /* Free previous ring if it's set */
+    if(ra->prev) redis_array_free(ra->prev);
 
-		/* remove host too */
-		efree(ra->hosts[i]);
-	}
-	efree(ra->redis);
-	efree(ra->hosts);
-
-	/* delete function */
-	if(ra->z_fun) {
-		zval_dtor(ra->z_fun);
-		efree(ra->z_fun);
-	}
-
-	/* delete distributor */
-	if(ra->z_dist) {
-		zval_dtor(ra->z_dist);
-		efree(ra->z_dist);
-	}
-
-	/* delete list of pure commands */
-	zval_dtor(ra->z_pure_cmds);
-	efree(ra->z_pure_cmds);
-
-	/* free container */
-	efree(ra);
+    /* Free parent array */
+    redis_array_free(ra);
 }
 
 /**
@@ -280,6 +293,7 @@ PHP_METHOD(RedisArray, __construct)
 
 	if(ra) {
 		ra->auto_rehash = b_autorehash;
+		if(ra->prev) ra->prev->auto_rehash = b_autorehash;
 #if PHP_VERSION_ID >= 50400
 		id = zend_list_insert(ra, le_redis_array TSRMLS_CC);
 #else
@@ -302,7 +316,6 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	HashTable *h_args;
 
 	int argc;
-	int failed;
 	zend_bool b_write_cmd = 0;
 
 	h_args = Z_ARRVAL_P(z_args);
@@ -366,23 +379,15 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	} else { /* call directly through. */
 		call_user_function(&redis_ce->function_table, &redis_inst, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
 
-		failed = 0;
-		if((Z_TYPE_P(return_value) == IS_BOOL && Z_BVAL_P(return_value) == 0) ||
-		   (Z_TYPE_P(return_value) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(return_value)) == 0) ||
-		   (Z_TYPE_P(return_value) == IS_LONG && Z_LVAL_P(return_value) == 0 && !strcasecmp(cmd, "TYPE")))
-
-		{
-			failed = 1;
-		}
-
 		/* check if we have an error. */
-		if(failed && ra->prev && !b_write_cmd) { /* there was an error reading, try with prev ring. */
-			/* ERROR, FALLBACK TO PREVIOUS RING and forward a reference to the first redis instance we were looking at. */
+		if(RA_CALL_FAILED(return_value,cmd) && ra->prev && !b_write_cmd) { /* there was an error reading, try with prev ring. */
+		    /* ERROR, FALLBACK TO PREVIOUS RING and forward a reference to the first redis instance we were looking at. */
 			ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra->prev, cmd, cmd_len, z_args, z_new_target?z_new_target:redis_inst);
 		}
 
-		if(!failed && !b_write_cmd && z_new_target && ra->auto_rehash) { /* move key from old ring to new ring */
-				ra_move_key(key, key_len, redis_inst, z_new_target TSRMLS_CC);
+		/* Autorehash if the key was found on the previous node if this is a read command and auto rehashing is on */
+		if(!RA_CALL_FAILED(return_value,cmd) && !b_write_cmd && z_new_target && ra->auto_rehash) { /* move key from old ring to new ring */
+		    ra_move_key(key, key_len, redis_inst, z_new_target TSRMLS_CC);
 		}
 	}
 
