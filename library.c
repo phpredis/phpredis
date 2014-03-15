@@ -100,6 +100,54 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
     return 0;
 }
 
+
+PHPAPI int 
+redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                           REDIS_SCAN_TYPE type, long *iter)
+{
+    REDIS_REPLY_TYPE reply_type;
+    int reply_info;
+    char *p_iter;
+
+    // Our response should have two multibulk replies
+    if(redis_read_reply_type(redis_sock, &reply_type, &reply_info TSRMLS_CC)<0
+       || reply_type != TYPE_MULTIBULK || reply_info != 2)
+    {
+        return -1;
+    }
+
+    // The BULK response iterator
+    if(redis_read_reply_type(redis_sock, &reply_type, &reply_info TSRMLS_CC)<0
+       || reply_type != TYPE_BULK)
+    {
+        return -1;
+    }
+
+    // Attempt to read the iterator
+    if(!(p_iter = redis_sock_read_bulk_reply(redis_sock, reply_info TSRMLS_CC))) {
+        return -1;
+    }
+
+    // Push the iterator out to the caller
+    *iter = atol(p_iter);
+    efree(p_iter);
+
+    // Read our actual keys/members/etc differently depending on what kind of
+    // scan command this is.  They all come back in slightly different ways
+    switch(type) {
+        case TYPE_SCAN:
+            return redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        case TYPE_SSCAN:
+            return redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        case TYPE_ZSCAN:
+            return redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        case TYPE_HSCAN:
+            return redis_sock_read_multibulk_reply_zipped_strings(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        default:
+            return -1;
+    }
+}
+
 PHPAPI zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     char inbuf[1024];
 	int numElems;
@@ -798,10 +846,10 @@ PHPAPI void redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
     char ret;
 
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-	IF_MULTI_OR_PIPELINE() {
+        IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
-	    return;
-	}
+            return;
+        }
         RETURN_FALSE;
     }
     ret = response[0];
@@ -1063,6 +1111,8 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
 
     redis_sock->err = NULL;
     redis_sock->err_len = 0;
+
+    redis_sock->scan = REDIS_SCAN_NORETRY;
 
     return redis_sock;
 }

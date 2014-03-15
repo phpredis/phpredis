@@ -209,8 +209,9 @@ PHP_METHOD(RedisArray, __construct)
 	RedisArray *ra = NULL;
 	zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0;
 	HashTable *hPrev = NULL, *hOpts = NULL;
-  long l_retry_interval = 0;
+	long l_retry_interval = 0;
   	zend_bool b_lazy_connect = 0;
+	double d_connect_timeout = 0;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|a", &z0, &z_opts) == FAILURE) {
 		RETURN_FALSE;
@@ -274,6 +275,19 @@ PHP_METHOD(RedisArray, __construct)
 		if(FAILURE != zend_hash_find(hOpts, "lazy_connect", sizeof("lazy_connect"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_BOOL) {
 			b_lazy_connect = Z_BVAL_PP(zpData);
 		}
+		
+		/* extract connect_timeout option */
+		zval **z_connect_timeout_pp;
+		if (FAILURE != zend_hash_find(hOpts, "connect_timeout", sizeof("connect_timeout"), (void**)&z_connect_timeout_pp)) {
+			if (Z_TYPE_PP(z_connect_timeout_pp) == IS_DOUBLE || Z_TYPE_PP(z_connect_timeout_pp) == IS_STRING) {
+				if (Z_TYPE_PP(z_connect_timeout_pp) == IS_DOUBLE) {
+					d_connect_timeout = Z_DVAL_PP(z_connect_timeout_pp);
+				}
+				else {
+					d_connect_timeout = atof(Z_STRVAL_PP(z_connect_timeout_pp));
+				}
+			}
+		}		
 	}
 
 	/* extract either name of list of hosts from z0 */
@@ -283,7 +297,7 @@ PHP_METHOD(RedisArray, __construct)
 			break;
 
 		case IS_ARRAY:
-			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect TSRMLS_CC);
+			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout TSRMLS_CC);
 			break;
 
 		default:
@@ -293,6 +307,7 @@ PHP_METHOD(RedisArray, __construct)
 
 	if(ra) {
 		ra->auto_rehash = b_autorehash;
+		ra->connect_timeout = d_connect_timeout;
 		if(ra->prev) ra->prev->auto_rehash = b_autorehash;
 #if PHP_VERSION_ID >= 50400
 		id = zend_list_insert(ra, le_redis_array TSRMLS_CC);
