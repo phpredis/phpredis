@@ -45,6 +45,13 @@ typedef enum _REDIS_SCAN_TYPE {
     TYPE_ZSCAN
 } REDIS_SCAN_TYPE;
 
+/* PUBSUB subcommands */
+typedef enum _PUBSUB_TYPE {
+    PUBSUB_CHANNELS,
+    PUBSUB_NUMSUB,
+    PUBSUB_NUMPAT
+} PUBSUB_TYPE;
+
 /* options */
 #define REDIS_OPT_SERIALIZER		1
 #define REDIS_OPT_PREFIX		    2

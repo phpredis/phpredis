@@ -2864,6 +2864,7 @@ while($arr_matches = $redis->zscan('zset', $it, '*pattern*')) {
 * [psubscribe](#psubscribe) - Subscribe to channels by pattern
 * [publish](#publish) - Post a message to a channel
 * [subscribe](#subscribe) - Subscribe to channels
+* [pubsub](#pubsub) - Introspection into the pub/sub subsystem
 
 ### psubscribe
 -----
@@ -2924,6 +2925,26 @@ function f($redis, $chan, $msg) {
 $redis->subscribe(array('chan-1', 'chan-2', 'chan-3'), 'f'); // subscribe to 3 chans
 ~~~
 
+### pubsub
+-----
+_**Description**_: A command allowing you to get information on the Redis pub/sub system.
+
+##### *Parameters*
+*keyword*: String, which can be: "channels", "numsub", or "numpat"
+*argument*:  Optional, variant.  For the "channels" subcommand, you can pass a string pattern.  For "numsub" an array of channel names.
+
+##### *Return value*
+*CHANNELS*: Returns an array where the members are the matching channels.
+*NUMSUB*:  Returns a key/value array where the keys are channel names and values are their counts.
+*NUMPAT*:  Integer return containing the number active pattern subscriptions
+
+##### *Example*
+~~~
+$redis->pubsub("channels"); /*All channels */
+$redis->pubsub("channels", "*pattern*"); /* Just channels matching your pattern */
+$redis->pubsub("numsub", Array("chan1", "chan2")); /*Get subscriber counts for 'chan1' and 'chan2'*/
+$redsi->pubsub("numpat"); /* Get the number of pattern subscribers */
+```
 
 ## Transactions
 
