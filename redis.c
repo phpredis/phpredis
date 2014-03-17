@@ -6138,7 +6138,7 @@ PHP_METHOD(Redis, wait) {
  */
 PHPAPI int
 redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
-                       zval *arg TSRMLS_CC)
+                       zval *arg TSRMLS_DC)
 {
     HashTable *ht_chan;
     HashPosition ptr;    
