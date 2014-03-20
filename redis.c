@@ -7014,6 +7014,7 @@ redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
             keyword = "HSCAN";
             break;
         case TYPE_ZSCAN:
+		default:
             keyword = "ZSCAN";
             break;
     }
