@@ -1560,6 +1560,11 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 					ZVAL_STRINGL(z_copy, "Array", 5, 1);
 					break;
 
+				case IS_NULL:
+					MAKE_STD_ZVAL(z_copy);
+					ZVAL_STRINGL(z_copy, "", 0, 1);
+					break;
+
 				default: /* copy */
 					MAKE_STD_ZVAL(z_copy);
 					*z_copy = *z;
