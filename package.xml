@@ -71,6 +71,13 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='src' name='redis.c'/>
    <file role='src' name='redis_session.c'/>
    <file role='src' name='redis_session.h'/>
+   <dir name='tests'>
+     <file role='test' name='array-tests.php' />
+     <file role='test' name='memory.php' />
+     <file role='test' name='mkring.sh' />
+     <file role='test' name='test.php' />
+     <file role='test' name='TestRedis.php' />
+   </dir> <!-- tests -->
   </dir> <!-- / -->
  </contents>
  <dependencies>
