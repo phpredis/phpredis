@@ -7163,7 +7163,7 @@ PHP_METHOD(Redis, zscan) {
  * HyperLogLog based commands 
  */
 
-/* {{{ proto Redis::PFADD(string key, array elements) }}} */
+/* {{{ proto Redis::pfAdd(string key, array elements) }}} */
 PHP_METHOD(Redis, pfadd) {
     zval *object;
     RedisSock *redis_sock;
@@ -7237,7 +7237,7 @@ PHP_METHOD(Redis, pfadd) {
         // Free memory if we serialized or converted types
         if(z_tmp) {
             zval_dtor(z_tmp);
-            STR_FREE(z_tmp);
+            efree(z_tmp);
             z_tmp = NULL;
         } else if(val_free) {
             efree(mem);
@@ -7251,7 +7251,7 @@ PHP_METHOD(Redis, pfadd) {
     REDIS_PROCESS_RESPONSE(redis_1_response);   
 }
 
-/* {{{ proto Redis::PHFCOUNT(string key) }}}*/
+/* {{{ proto Redis::pfCount(string key) }}}*/
 PHP_METHOD(Redis, pfcount) {
     zval *object;
     RedisSock *redis_sock;
@@ -7340,7 +7340,7 @@ PHP_METHOD(Redis, pfmerge) {
             key_len = Z_STRLEN_P(z_tmp);
         }
 
-        // Prefix our key if necissary and append this key
+        // Prefix our key if necessary and append this key
         key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
         redis_cmd_append_sstr(&cmd, key, key_len);
         if(key_free) efree(key);
@@ -7348,7 +7348,7 @@ PHP_METHOD(Redis, pfmerge) {
         // Free temporary zval if we converted
         if(z_tmp) {
             zval_dtor(z_tmp);
-            STR_FREE(z_tmp);
+            efree(z_tmp);
             z_tmp = NULL;
         }
     }
