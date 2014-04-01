@@ -6700,11 +6700,11 @@ PHP_METHOD(Redis, _serialize) {
     }
 
     // Serialize, which will return a value even if no serializer is set
-    redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
+    int val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
 
     // Return serialized value.  Tell PHP to make a copy as some can be interned.
     RETVAL_STRINGL(val, val_len, 1);
-    STR_FREE(val);
+    if(val_free) STR_FREE(val);
 }
 
 /*
