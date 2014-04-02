@@ -7192,7 +7192,7 @@ PHP_METHOD(Redis, pfadd) {
     argc += zend_hash_num_elements(ht_mems);
 
     // If the array was empty we can just exit
-    if(argc < 3) {
+    if(argc < 2) {
         RETURN_FALSE;
     }
 
