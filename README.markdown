@@ -3182,6 +3182,7 @@ $redis->_serialize(new stdClass()); // Returns "Object"
 
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
 $redis->_serialize("foo"); // Returns 's:3:"foo";'
+~~~
 
 ### _unserialize
 -----
