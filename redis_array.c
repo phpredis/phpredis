@@ -85,7 +85,7 @@ zend_function_entry redis_array_functions[] = {
 static void redis_array_free(RedisArray *ra) {
 	int i;
 
-    // Redis objects
+    /* Redis objects */
     for(i=0;i<ra->count;i++) {
 		zval_dtor(ra->redis[i]);
 		efree(ra->redis[i]);
@@ -110,7 +110,7 @@ static void redis_array_free(RedisArray *ra) {
 	zval_dtor(ra->z_pure_cmds);
 	efree(ra->z_pure_cmds);
 
-    // Free structure itself
+    /* Free structure itself */
 	efree(ra);
 }
 
