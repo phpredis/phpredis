@@ -37,15 +37,40 @@ typedef enum _REDIS_REPLY_TYPE {
 	TYPE_MULTIBULK = '*'
 } REDIS_REPLY_TYPE;
 
+/* SCAN variants */
+typedef enum _REDIS_SCAN_TYPE {
+    TYPE_SCAN,
+    TYPE_SSCAN,
+    TYPE_HSCAN,
+    TYPE_ZSCAN
+} REDIS_SCAN_TYPE;
+
+/* PUBSUB subcommands */
+typedef enum _PUBSUB_TYPE {
+    PUBSUB_CHANNELS,
+    PUBSUB_NUMSUB,
+    PUBSUB_NUMPAT
+} PUBSUB_TYPE;
+
 /* options */
 #define REDIS_OPT_SERIALIZER		1
 #define REDIS_OPT_PREFIX		    2
 #define REDIS_OPT_READ_TIMEOUT		3
+#define REDIS_OPT_SCAN              4
 
 /* serializers */
 #define REDIS_SERIALIZER_NONE		0
 #define REDIS_SERIALIZER_PHP 		1
 #define REDIS_SERIALIZER_IGBINARY 	2
+
+/* SCAN options */
+
+#define REDIS_SCAN_NORETRY 0
+#define REDIS_SCAN_RETRY 1
+
+/* GETBIT/SETBIT offset range limits */
+#define BITOP_MIN_OFFSET 0
+#define BITOP_MAX_OFFSET 4294967295
 
 #define IF_MULTI() if(redis_sock->mode == MULTI)
 #define IF_MULTI_OR_ATOMIC() if(redis_sock->mode == MULTI || redis_sock->mode == ATOMIC)\
@@ -53,6 +78,7 @@ typedef enum _REDIS_REPLY_TYPE {
 #define IF_MULTI_OR_PIPELINE() if(redis_sock->mode == MULTI || redis_sock->mode == PIPELINE)
 #define IF_PIPELINE() if(redis_sock->mode == PIPELINE)
 #define IF_NOT_MULTI() if(redis_sock->mode != MULTI)
+#define IF_NOT_ATOMIC() if(redis_sock->mode != ATOMIC)
 #define IF_ATOMIC() if(redis_sock->mode == ATOMIC)
 #define ELSE_IF_MULTI() else if(redis_sock->mode == MULTI) { \
 	if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) {\
@@ -197,6 +223,8 @@ typedef struct {
     char           *err;
     int            err_len;
     zend_bool      lazy_connect;
+
+    int            scan;
 } RedisSock;
 /* }}} */
 

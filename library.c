@@ -106,6 +106,54 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
     return 0;
 }
 
+
+PHP_REDIS_API int 
+redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                           REDIS_SCAN_TYPE type, long *iter)
+{
+    REDIS_REPLY_TYPE reply_type;
+    int reply_info;
+    char *p_iter;
+
+    /* Our response should have two multibulk replies */
+    if(redis_read_reply_type(redis_sock, &reply_type, &reply_info TSRMLS_CC)<0
+       || reply_type != TYPE_MULTIBULK || reply_info != 2)
+    {
+        return -1;
+    }
+
+    /* The BULK response iterator */
+    if(redis_read_reply_type(redis_sock, &reply_type, &reply_info TSRMLS_CC)<0
+       || reply_type != TYPE_BULK)
+    {
+        return -1;
+    }
+
+    /* Attempt to read the iterator */
+    if(!(p_iter = redis_sock_read_bulk_reply(redis_sock, reply_info TSRMLS_CC))) {
+        return -1;
+    }
+
+    /* Push the iterator out to the caller */
+    *iter = atol(p_iter);
+    efree(p_iter);
+
+    /* Read our actual keys/members/etc differently depending on what kind of
+       scan command this is.  They all come back in slightly different ways */
+    switch(type) {
+        case TYPE_SCAN:
+            return redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        case TYPE_SSCAN:
+            return redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        case TYPE_ZSCAN:
+            return redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        case TYPE_HSCAN:
+            return redis_sock_read_multibulk_reply_zipped_strings(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        default:
+            return -1;
+    }
+}
+
 PHP_REDIS_API zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     char inbuf[1024];
 	int numElems;
@@ -1074,6 +1122,8 @@ PHP_REDIS_API RedisSock* redis_sock_create(char *host, int host_len, unsigned sh
     redis_sock->err = NULL;
     redis_sock->err_len = 0;
 
+    redis_sock->scan = REDIS_SCAN_NORETRY;
+
     return redis_sock;
 }
 
@@ -1498,8 +1548,10 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 #endif
 	smart_str sstr = {0};
 	zval *z_copy;
+#ifdef HAVE_REDIS_IGBINARY
 	size_t sz;
 	uint8_t *val8;
+#endif
 
 	switch(redis_sock->serializer) {
 		case REDIS_SERIALIZER_NONE:
@@ -1834,7 +1886,7 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zv
 		default:
 			/* Protocol error */
 			zend_throw_exception_ex(redis_exception_ce, 0 TSRMLS_CC, "protocol error, got '%c' as reply-type byte\n", reply_type);
-			break;
+            return FAILURE;
 	}
 
 	IF_MULTI_OR_PIPELINE() {

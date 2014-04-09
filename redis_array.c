@@ -32,6 +32,12 @@
 #include "redis_array.h"
 #include "redis_array_impl.h"
 
+/* Simple macro to detect failure in a RedisArray call */
+#define RA_CALL_FAILED(rv, cmd) \
+    ((Z_TYPE_P(rv) == IS_BOOL && Z_BVAL_P(rv) == 0) || \
+    (Z_TYPE_P(rv) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(rv)) == 0) || \
+    (Z_TYPE_P(rv) == IS_LONG && Z_LVAL_P(rv) == 0 && !strcasecmp(cmd, "TYPE"))) \
+
 extern zend_class_entry *redis_ce;
 zend_class_entry *redis_array_ce;
 
@@ -76,41 +82,48 @@ zend_function_entry redis_array_functions[] = {
      {NULL, NULL, NULL}
 };
 
-int le_redis_array;
-void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
-{
+static void redis_array_free(RedisArray *ra) {
 	int i;
-	RedisArray *ra = (RedisArray*)rsrc->ptr;
 
-	/* delete Redis objects */
-	for(i = 0; i < ra->count; ++i) {
+    // Redis objects
+    for(i=0;i<ra->count;i++) {
 		zval_dtor(ra->redis[i]);
 		efree(ra->redis[i]);
-
-		/* remove host too */
 		efree(ra->hosts[i]);
 	}
 	efree(ra->redis);
 	efree(ra->hosts);
 
-	/* delete function */
+    /* delete hash function */
 	if(ra->z_fun) {
 		zval_dtor(ra->z_fun);
 		efree(ra->z_fun);
 	}
 
-	/* delete distributor */
+    /* Distributor */
 	if(ra->z_dist) {
 		zval_dtor(ra->z_dist);
 		efree(ra->z_dist);
 	}
 
-	/* delete list of pure commands */
+    /* Delete pur commands */
 	zval_dtor(ra->z_pure_cmds);
 	efree(ra->z_pure_cmds);
 
-	/* free container */
+    // Free structure itself
 	efree(ra);
+}
+
+int le_redis_array;
+void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
+{
+    RedisArray *ra = (RedisArray*)rsrc->ptr;
+
+    /* Free previous ring if it's set */
+    if(ra->prev) redis_array_free(ra->prev);
+
+    /* Free parent array */
+    redis_array_free(ra);
 }
 
 /**
@@ -199,6 +212,8 @@ PHP_METHOD(RedisArray, __construct)
   long l_retry_interval = 0;
   	zend_bool b_lazy_connect = 0;
   	zval **z_retry_interval_pp;
+  	double d_connect_timeout = 0;
+  	zval **z_connect_timeout_pp;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|a", &z0, &z_opts) == FAILURE) {
 		RETURN_FALSE;
@@ -261,6 +276,18 @@ PHP_METHOD(RedisArray, __construct)
 		if(FAILURE != zend_hash_find(hOpts, "lazy_connect", sizeof("lazy_connect"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_BOOL) {
 			b_lazy_connect = Z_BVAL_PP(zpData);
 		}
+		
+		/* extract connect_timeout option */		
+		if (FAILURE != zend_hash_find(hOpts, "connect_timeout", sizeof("connect_timeout"), (void**)&z_connect_timeout_pp)) {
+			if (Z_TYPE_PP(z_connect_timeout_pp) == IS_DOUBLE || Z_TYPE_PP(z_connect_timeout_pp) == IS_STRING) {
+				if (Z_TYPE_PP(z_connect_timeout_pp) == IS_DOUBLE) {
+					d_connect_timeout = Z_DVAL_PP(z_connect_timeout_pp);
+				}
+				else {
+					d_connect_timeout = atof(Z_STRVAL_PP(z_connect_timeout_pp));
+				}
+			}
+		}		
 	}
 
 	/* extract either name of list of hosts from z0 */
@@ -270,7 +297,7 @@ PHP_METHOD(RedisArray, __construct)
 			break;
 
 		case IS_ARRAY:
-			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect TSRMLS_CC);
+			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout TSRMLS_CC);
 			break;
 
 		default:
@@ -280,6 +307,8 @@ PHP_METHOD(RedisArray, __construct)
 
 	if(ra) {
 		ra->auto_rehash = b_autorehash;
+		ra->connect_timeout = d_connect_timeout;
+		if(ra->prev) ra->prev->auto_rehash = b_autorehash;
 #if PHP_VERSION_ID >= 50400
 		id = zend_list_insert(ra, le_redis_array TSRMLS_CC);
 #else
@@ -366,22 +395,14 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	} else { /* call directly through. */
 		call_user_function(&redis_ce->function_table, &redis_inst, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
 
-		failed = 0;
-		if((Z_TYPE_P(return_value) == IS_BOOL && Z_BVAL_P(return_value) == 0) ||
-		   (Z_TYPE_P(return_value) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(return_value)) == 0) ||
-		   (Z_TYPE_P(return_value) == IS_LONG && Z_LVAL_P(return_value) == 0 && !strcasecmp(cmd, "TYPE")))
-
-		{
-			failed = 1;
-		}
-
 		/* check if we have an error. */
-		if(failed && ra->prev && !b_write_cmd) { /* there was an error reading, try with prev ring. */
+		if(RA_CALL_FAILED(return_value,cmd) && ra->prev && !b_write_cmd) { /* there was an error reading, try with prev ring. */
 			/* ERROR, FALLBACK TO PREVIOUS RING and forward a reference to the first redis instance we were looking at. */
 			ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra->prev, cmd, cmd_len, z_args, z_new_target?z_new_target:redis_inst);
 		}
 
-		if(!failed && !b_write_cmd && z_new_target && ra->auto_rehash) { /* move key from old ring to new ring */
+		/* Autorehash if the key was found on the previous node if this is a read command and auto rehashing is on */
+		if(!RA_CALL_FAILED(return_value,cmd) && !b_write_cmd && z_new_target && ra->auto_rehash) { /* move key from old ring to new ring */
 				ra_move_key(key, key_len, redis_inst, z_new_target TSRMLS_CC);
 		}
 	}
@@ -876,6 +897,9 @@ PHP_METHOD(RedisArray, mget)
 
 	/* calls */
 	for(n = 0; n < ra->count; ++n) { /* for each node */
+	    /* We don't even need to make a call to this node if no keys go there */
+	    if(!argc_each[n]) continue;
+
 		/* copy args for MGET call on node. */
 		MAKE_STD_ZVAL(z_argarray);
 		array_init(z_argarray);

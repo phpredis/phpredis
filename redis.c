@@ -69,6 +69,25 @@ PHP_INI_BEGIN()
 	PHP_INI_ENTRY("redis.arrays.autorehash", "", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
+/**
+ * Argument info for the SCAN proper
+ */
+ZEND_BEGIN_ARG_INFO_EX(arginfo_scan, 0, 0, 1)
+    ZEND_ARG_INFO(1, i_iterator)
+    ZEND_ARG_INFO(0, str_pattern)
+    ZEND_ARG_INFO(0, i_count)
+ZEND_END_ARG_INFO();
+
+/**
+ * Argument info for key scanning
+ */
+ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan, 0, 0, 2)
+    ZEND_ARG_INFO(0, str_key)
+    ZEND_ARG_INFO(1, i_iterator)
+    ZEND_ARG_INFO(0, str_pattern)
+    ZEND_ARG_INFO(0, i_count)
+ZEND_END_ARG_INFO();
+
 #ifdef ZTS
 ZEND_DECLARE_MODULE_GLOBALS(redis)
 #endif
@@ -160,6 +179,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, object, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, bitop, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, bitcount, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, bitpos, NULL, ZEND_ACC_PUBLIC)
 
      /* 1.1 */
      PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
@@ -228,9 +248,16 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, clearLastError, NULL, ZEND_ACC_PUBLIC)
 
      PHP_ME(Redis, _prefix, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, _serialize, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _unserialize, NULL, ZEND_ACC_PUBLIC)
 
      PHP_ME(Redis, client, NULL, ZEND_ACC_PUBLIC)
+
+     /* SCAN and friends */
+     PHP_ME(Redis, scan, arginfo_scan, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hscan, arginfo_kscan, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sscan, arginfo_kscan, ZEND_ACC_PUBLIC)
 
      /* options */
      PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
@@ -251,6 +278,9 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, getPersistentID, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getAuth, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, isConnected, NULL, ZEND_ACC_PUBLIC)
+
+     PHP_ME(Redis, wait, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pubsub, NULL, ZEND_ACC_PUBLIC)
 
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
@@ -488,6 +518,11 @@ PHP_MINIT_FUNCTION(redis)
     /* serializer */
     add_constant_long(redis_ce, "SERIALIZER_NONE", REDIS_SERIALIZER_NONE);
     add_constant_long(redis_ce, "SERIALIZER_PHP", REDIS_SERIALIZER_PHP);
+
+    /* scan options*/
+    add_constant_long(redis_ce, "OPT_SCAN", REDIS_OPT_SCAN);
+    add_constant_long(redis_ce, "SCAN_RETRY", REDIS_SCAN_RETRY);
+    add_constant_long(redis_ce, "SCAN_NORETRY", REDIS_SCAN_NORETRY);
 #ifdef HAVE_REDIS_IGBINARY
     add_constant_long(redis_ce, "SERIALIZER_IGBINARY", REDIS_SERIALIZER_IGBINARY);
 #endif
@@ -790,6 +825,59 @@ PHP_METHOD(Redis, bitcount)
 }
 /* }}} */
 
+/* {{{ proto integer Redis::bitpos(string key, int bit, [int start], [int end]) */
+PHP_METHOD(Redis, bitpos) 
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key, *cmd;
+    int key_len, cmd_len, argc, key_free=0;
+    long bit, start, end;
+
+    argc = ZEND_NUM_ARGS();
+
+    if(zend_parse_method_parameters(argc TSRMLS_CC, getThis(), "Osl|ll",
+                                    &object, redis_ce, &key, &key_len, &bit,
+                                    &start, &end)==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    // We can prevalidate the first argument
+    if(bit != 0 && bit != 1) {
+        RETURN_FALSE;
+    }
+
+    // Prefix our key
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+
+    // Various command semantics
+    if(argc == 2) {
+        cmd_len = redis_cmd_format_static(&cmd, "BITPOS", "sd", key, key_len,
+                                          bit);
+    } else if(argc == 3) {
+        cmd_len = redis_cmd_format_static(&cmd, "BITPOS", "sdd", key, key_len,
+                                          bit, start);
+    } else {
+        cmd_len = redis_cmd_format_static(&cmd, "BITPOS", "sddd", key, key_len,
+                                          bit, start, end);
+    }
+
+    // Free our key if it was prefixed
+    if(key_free) efree(key);
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+        redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_long_response);
+}
+/* }}} */
+
 /* {{{ proto boolean Redis::close()
  */
 PHP_METHOD(Redis, close)
@@ -839,7 +927,9 @@ PHP_METHOD(Redis, set) {
 
     /* Our optional argument can either be a long (to support legacy SETEX */
     /* redirection), or an array with Redis >= 2.6.12 set options */
-    if(z_opts && Z_TYPE_P(z_opts) != IS_LONG && Z_TYPE_P(z_opts) != IS_ARRAY) {
+    if(z_opts && Z_TYPE_P(z_opts) != IS_LONG && Z_TYPE_P(z_opts) != IS_ARRAY
+       && Z_TYPE_P(z_opts) != IS_NULL) 
+    {
         RETURN_FALSE;
     }
 
@@ -903,7 +993,7 @@ PHP_METHOD(Redis, set) {
 
     /* Free our key or value if we prefixed/serialized */
     if(key_free) efree(key);
-    if(val_free) efree(val);
+    if(val_free) STR_FREE(val);
 
     /* Kick off the command */
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -936,7 +1026,7 @@ PHP_REDIS_API void redis_generic_setex(INTERNAL_FUNCTION_PARAMETERS, char *keywo
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
     cmd_len = redis_cmd_format_static(&cmd, keyword, "sls", key, key_len, expire, val, val_len);
-    if(val_free) efree(val);
+    if(val_free) STR_FREE(val);
     if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -985,7 +1075,7 @@ PHP_METHOD(Redis, setnx)
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
     cmd_len = redis_cmd_format_static(&cmd, "SETNX", "ss", key, key_len, val, val_len);
-    if(val_free) efree(val);
+    if(val_free) STR_FREE(val);
     if(key_free) efree(key);
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -1023,7 +1113,7 @@ PHP_METHOD(Redis, getSet)
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
     cmd_len = redis_cmd_format_static(&cmd, "GETSET", "ss", key, key_len, val, val_len);
-    if(val_free) efree(val);
+    if(val_free) STR_FREE(val);
     if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -1331,12 +1421,10 @@ PHP_METHOD(Redis, incrByFloat) {
 		RETURN_FALSE;
 	}
 
-	// Prefix our key, free it if we have
+	// Prefix key, format command, free old key if necissary
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
-	if(key_free) efree(key);
-
-	// Format our INCRBYFLOAT command
 	cmd_len = redis_cmd_format_static(&cmd, "INCRBYFLOAT", "sf", key, key_len, val);
+	if(key_free) efree(key);	
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
@@ -1742,6 +1830,11 @@ PHP_METHOD(Redis, getBit)
 		RETURN_FALSE;
 	}
 
+	// GETBIT and SETBIT only work for 0 - 2^32-1
+	if(offset < BITOP_MIN_OFFSET || offset > BITOP_MAX_OFFSET) {
+	    RETURN_FALSE;
+	}
+
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
 	cmd_len = redis_cmd_format_static(&cmd, "GETBIT", "sd", key, key_len, (int)offset);
 	if(key_free) efree(key);
@@ -1769,6 +1862,11 @@ PHP_METHOD(Redis, setBit)
 
 	if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
 		RETURN_FALSE;
+	}
+
+	// GETBIT and SETBIT only work for 0 - 2^32-1
+	if(offset < BITOP_MIN_OFFSET || offset > BITOP_MAX_OFFSET) {
+	    RETURN_FALSE;
 	}
 
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
@@ -1833,7 +1931,7 @@ generic_push_function(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_l
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
     cmd_len = redis_cmd_format_static(&cmd, keyword, "ss", key, key_len, val, val_len);
-    if(val_free) efree(val);
+    if(val_free) STR_FREE(val);
     if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -1909,9 +2007,9 @@ PHP_METHOD(Redis, lInsert)
         val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
         pivot_free = redis_serialize(redis_sock, z_pivot, &pivot, &pivot_len TSRMLS_CC);
         cmd_len = redis_cmd_format_static(&cmd, "LINSERT", "ssss", key, key_len, position, position_len, pivot, pivot_len, val, val_len);
-        if(val_free) efree(val);
+        if(val_free) STR_FREE(val);
 		if(key_free) efree(key);
-        if(pivot_free) efree(pivot);
+        if(pivot_free) STR_FREE(pivot);
 
 		REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); 
 		IF_ATOMIC() { 
@@ -2083,7 +2181,7 @@ PHP_METHOD(Redis, lRemove)
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
     cmd_len = redis_cmd_format_static(&cmd, "LREM", "sds", key, key_len, count, val, val_len);
-    if(val_free) efree(val);
+    if(val_free) STR_FREE(val);
     if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -2287,7 +2385,7 @@ PHP_METHOD(Redis, sMove)
 	src_free = redis_key_prefix(redis_sock, &src, &src_len TSRMLS_CC);
 	dst_free = redis_key_prefix(redis_sock, &dst, &dst_len TSRMLS_CC);
     cmd_len = redis_cmd_format_static(&cmd, "SMOVE", "sss", src, src_len, dst, dst_len, val, val_len);
-    if(val_free) efree(val);
+    if(val_free) STR_FREE(val);
     if(src_free) efree(src);
     if(dst_free) efree(dst);
 
@@ -2349,14 +2447,23 @@ PHP_METHOD(Redis, sRandMember)
     // Process our command
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
-    // Process our reply
+    // Either bulk or multi-bulk depending on argument count
+    if(ZEND_NUM_ARGS() == 2) {
     IF_ATOMIC() {
-        // This will be bulk or multi-bulk depending if we passed the optional [COUNT] argument
-        if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL) < 0) {
+            if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                               redis_sock, NULL, NULL) < 0)
+            {
             RETURN_FALSE;
         }
     }
-    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+        REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+    } else {
+        IF_ATOMIC() {
+            redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                                  NULL, NULL);
+        }
+        REDIS_PROCESS_RESPONSE(redis_string_response);
+    }
 }
 /* }}} */
 
@@ -2384,7 +2491,7 @@ PHP_METHOD(Redis, sContains)
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
     cmd_len = redis_cmd_format_static(&cmd, "SISMEMBER", "ss", key, key_len, val, val_len);
-    if(val_free) efree(val);
+    if(val_free) STR_FREE(val);
     if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -2612,7 +2719,7 @@ PHP_REDIS_API int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *
 	/* cleanup prefixed keys. */
 	for(i = 0; i < real_argc + (has_timeout?-1:0); ++i) {
 		if(keys_to_free[i])
-			efree(keys[i]);
+			STR_FREE(keys[i]);
 	}
 	if(single_array && has_timeout) { /* cleanup string created to contain timeout value */
 		efree(keys[real_argc-1]);
@@ -3258,7 +3365,7 @@ PHP_METHOD(Redis, lSet) {
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
     cmd_len = redis_cmd_format_static(&cmd, "LSET", "sds", key, key_len, index, val, val_len);
-    if(val_free) efree(val);
+    if(val_free) STR_FREE(val);
     if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -3678,7 +3785,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTI
 				memcpy(p, _NL, 2); p += 2;
 			}
 
-			if(val_free) efree(val);
+			if(val_free) STR_FREE(val);
 			if(key_free) efree(key);
 		}
 	}
@@ -3861,7 +3968,7 @@ PHP_METHOD(Redis, zAdd) {
 		smart_str_appendl(&buf, val, val_len);
 		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
 
-		if(val_free) efree(val);
+		if(val_free) STR_FREE(val);
 	}
 
 	/* end string */
@@ -4258,7 +4365,7 @@ PHP_METHOD(Redis, zScore)
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
     cmd_len = redis_cmd_format_static(&cmd, "ZSCORE", "ss", key, key_len, val, val_len);
-    if(val_free) efree(val);
+    if(val_free) STR_FREE(val);
     if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -4291,7 +4398,7 @@ PHP_REDIS_API void generic_rank_method(INTERNAL_FUNCTION_PARAMETERS, char *keywo
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
     cmd_len = redis_cmd_format_static(&cmd, keyword, "ss", key, key_len, val, val_len);
-    if(val_free) efree(val);
+    if(val_free) STR_FREE(val);
     if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -4341,7 +4448,7 @@ PHP_REDIS_API void generic_incrby_method(INTERNAL_FUNCTION_PARAMETERS, char *key
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
     cmd_len = redis_cmd_format_static(&cmd, keyword, "sfs", key, key_len, add, val, val_len);
-    if(val_free) efree(val);
+    if(val_free) STR_FREE(val);
     if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -4556,7 +4663,7 @@ generic_hset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTI
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
     cmd_len = redis_cmd_format_static(&cmd, kw, "sss", key, key_len, member, member_len, val, val_len);
-    if(val_free) efree(val);
+    if(val_free) STR_FREE(val);
     if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -5076,7 +5183,7 @@ PHP_METHOD(Redis, hMset)
         redis_cmd_append_sstr(&set_cmds, hkey, hkey_len - 1);
         redis_cmd_append_sstr(&set_cmds, hval, hval_len);
 
-        if(hval_free) efree(hval);
+        if(hval_free) STR_FREE(hval);
     }
 
     // Now construct the entire command
@@ -5804,22 +5911,19 @@ PHP_METHOD(Redis, getOption)  {
     }
 
     switch(option) {
-
             case REDIS_OPT_SERIALIZER:
                     RETURN_LONG(redis_sock->serializer);
-
             case REDIS_OPT_PREFIX:
 					if(redis_sock->prefix) {
 						RETURN_STRINGL(redis_sock->prefix, redis_sock->prefix_len, 1);
 					}
                     RETURN_NULL();
-
             case REDIS_OPT_READ_TIMEOUT:
                     RETURN_DOUBLE(redis_sock->read_timeout);
-
+        case REDIS_OPT_SCAN:
+            RETURN_LONG(redis_sock->scan);
             default:
                     RETURN_FALSE;
-
     }
 }
 /* }}} */
@@ -5857,7 +5961,6 @@ PHP_METHOD(Redis, setOption) {
                             RETURN_FALSE;
                     }
                     break;
-
 			case REDIS_OPT_PREFIX:
 					if(redis_sock->prefix) {
 						efree(redis_sock->prefix);
@@ -5871,17 +5974,22 @@ PHP_METHOD(Redis, setOption) {
 						memcpy(redis_sock->prefix, val_str, val_len);
 					}
 					RETURN_TRUE;
-
             case REDIS_OPT_READ_TIMEOUT:
                     redis_sock->read_timeout = atof(val_str);
                     if(redis_sock->stream) {
                         read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
                         read_tv.tv_usec = (int)((redis_sock->read_timeout - read_tv.tv_sec) * 1000000);
-                        php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_READ_TIMEOUT,
-                                              0, &read_tv);
+                    php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_READ_TIMEOUT,0, &read_tv);
                     }
                     RETURN_TRUE;
-
+            case REDIS_OPT_SCAN:
+                val_long = atol(val_str);
+                if(val_long == REDIS_SCAN_NORETRY || val_long == REDIS_SCAN_RETRY) {
+                    redis_sock->scan = val_long;
+                    RETURN_TRUE;
+                }
+                RETURN_FALSE;
+                break;
             default:
                     RETURN_FALSE;
     }
@@ -5990,6 +6098,207 @@ PHP_METHOD(Redis, slowlog) {
         }
     }
     REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+}
+
+/* {{{ proto Redis::wait(int num_slaves, int ms) }}}
+ */
+PHP_METHOD(Redis, wait) {
+    zval *object;
+    RedisSock *redis_sock;
+    long num_slaves, timeout;
+    char *cmd;
+    int cmd_len;
+
+    // Make sure arguments are valid
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oll", 
+                                    &object, redis_ce, &num_slaves, &timeout)
+                                    ==FAILURE) 
+    {
+        RETURN_FALSE;
+    }
+
+    // Don't even send this to Redis if our args are negative
+    if(num_slaves < 0 || timeout < 0) {
+        RETURN_FALSE;
+    }
+
+    // Grab our socket
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0)<0) {
+        RETURN_FALSE;
+    }
+
+    // Construct the command
+    cmd_len = redis_cmd_format_static(&cmd, "WAIT", "ll", num_slaves, timeout);
+
+    // Kick it off
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+        redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_long_response);
+}
+
+/*
+ * Construct a PUBSUB command
+ */
+PHP_REDIS_API int
+redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
+                       zval *arg TSRMLS_DC)
+{
+    HashTable *ht_chan;
+    HashPosition ptr;    
+    zval **z_ele;
+    char *key;
+    int cmd_len, key_len, key_free;
+    smart_str cmd = {0};
+
+    if(type == PUBSUB_CHANNELS) {
+        if(arg) {
+            // Get string argument and length.
+            key = Z_STRVAL_P(arg);
+            key_len = Z_STRLEN_P(arg);
+
+            // Prefix if necissary
+            key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+
+            // With a pattern
+            cmd_len = redis_cmd_format_static(ret, "PUBSUB", "ss", "CHANNELS", sizeof("CHANNELS")-1,
+                                              key, key_len);
+
+            // Free the channel name if we prefixed it
+            if(key_free) efree(key);
+
+            // Return command length
+            return cmd_len;
+        } else {
+            // No pattern
+            return redis_cmd_format_static(ret, "PUBSUB", "s", "CHANNELS", sizeof("CHANNELS")-1);
+        }
+    } else if(type == PUBSUB_NUMSUB) {
+        ht_chan = Z_ARRVAL_P(arg);
+        
+        // Add PUBSUB and NUMSUB bits
+        redis_cmd_init_sstr(&cmd, zend_hash_num_elements(ht_chan)+1, "PUBSUB", sizeof("PUBSUB")-1);
+        redis_cmd_append_sstr(&cmd, "NUMSUB", sizeof("NUMSUB")-1);
+
+        // Iterate our elements
+        for(zend_hash_internal_pointer_reset_ex(ht_chan, &ptr);
+            zend_hash_get_current_data_ex(ht_chan, (void**)&z_ele, &ptr)==SUCCESS;
+            zend_hash_move_forward_ex(ht_chan, &ptr))
+        {
+            char *key;
+            int key_len, key_free;
+            zval *z_tmp = NULL;
+
+            if(Z_TYPE_PP(z_ele) == IS_STRING) {
+                key = Z_STRVAL_PP(z_ele);
+                key_len = Z_STRLEN_PP(z_ele);
+            } else {
+                MAKE_STD_ZVAL(z_tmp);
+                *z_tmp = **z_ele;
+                zval_copy_ctor(z_tmp);
+                convert_to_string(z_tmp);
+
+                key = Z_STRVAL_P(z_tmp);
+                key_len = Z_STRLEN_P(z_tmp);
+            }
+
+            // Apply prefix if required
+            key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+
+            // Append this channel
+            redis_cmd_append_sstr(&cmd, key, key_len);
+
+            // Free key if prefixed
+            if(key_free) efree(key);
+
+            // Free our temp var if we converted from something other than a string
+            if(z_tmp) {
+                zval_dtor(z_tmp);
+                efree(z_tmp);
+                z_tmp = NULL;
+            }
+        }
+
+        // Set return
+        *ret = cmd.c;
+        return cmd.len;
+    } else if(type == PUBSUB_NUMPAT) {
+        return redis_cmd_format_static(ret, "PUBSUB", "s", "NUMPAT", sizeof("NUMPAT")-1);
+    }
+
+    // Shouldn't ever happen
+    return -1;
+}
+
+/*
+ * {{{ proto Redis::pubsub("channels", pattern);
+ *     proto Redis::pubsub("numsub", Array channels);
+ *     proto Redis::pubsub("numpat"); }}}
+ */
+PHP_METHOD(Redis, pubsub) {
+    zval *object;
+    RedisSock *redis_sock;
+    char *keyword, *cmd;
+    int kw_len, cmd_len;
+    PUBSUB_TYPE type;
+    zval *arg=NULL;
+
+    // Parse arguments
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|z", 
+                                    &object, redis_ce, &keyword, &kw_len, &arg)
+                                    ==FAILURE) 
+    {
+        RETURN_FALSE;
+    }
+
+    // Validate our sub command keyword, and that we've got proper arguments
+    if(!strncasecmp(keyword, "channels", sizeof("channels"))) {
+        // One (optional) string argument
+        if(arg && Z_TYPE_P(arg) != IS_STRING) {
+            RETURN_FALSE;
+        }
+        type = PUBSUB_CHANNELS;
+    } else if(!strncasecmp(keyword, "numsub", sizeof("numsub"))) {
+        // One array argument
+        if(ZEND_NUM_ARGS() < 2 || Z_TYPE_P(arg) != IS_ARRAY ||
+           zend_hash_num_elements(Z_ARRVAL_P(arg))==0) 
+        {
+            RETURN_FALSE;
+        }
+        type = PUBSUB_NUMSUB;
+    } else if(!strncasecmp(keyword, "numpat", sizeof("numpat"))) {
+        type = PUBSUB_NUMPAT;
+    } else {
+        // Invalid keyword
+        RETURN_FALSE;
+    }
+
+    // Grab our socket context object
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0)<0) {
+        RETURN_FALSE;
+    }
+
+    // Construct our "PUBSUB" command
+    cmd_len = redis_build_pubsub_cmd(redis_sock, &cmd, type, arg TSRMLS_CC);
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+
+    if(type == PUBSUB_NUMSUB) {
+        IF_ATOMIC() {
+            if(redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL)<0) {
+                RETURN_FALSE;
+            }
+        }
+        REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_zipped);
+    } else {
+        IF_ATOMIC() {
+            if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL)<0) {
+                RETURN_FALSE;
+            }
+        }
+        REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+    }
 }
 
 // Construct an EVAL or EVALSHA command, with option argument array and number of arguments that are keys parameter
@@ -6291,18 +6600,20 @@ PHP_METHOD(Redis, restore) {
 }
 
 /*
- * {{{ proto Redis::migrate(host port key dest-db timeout)
+ * {{{ proto Redis::migrate(host port key dest-db timeout [bool copy, bool replace])
  */
 PHP_METHOD(Redis, migrate) {
 	zval *object;
 	RedisSock *redis_sock;
 	char *cmd, *host, *key;
 	int cmd_len, host_len, key_len, key_free;
+    zend_bool copy=0, replace=0;
 	long port, dest_db, timeout;
 
 	// Parse arguments
-	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oslsll", &object, redis_ce,
-									&host, &host_len, &port, &key, &key_len, &dest_db, &timeout) == FAILURE) {
+	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oslsll|bb", &object, redis_ce,
+									&host, &host_len, &port, &key, &key_len, &dest_db, &timeout, 
+                                    &copy, &replace) == FAILURE) {
 		RETURN_FALSE;
 	}
 
@@ -6313,7 +6624,26 @@ PHP_METHOD(Redis, migrate) {
 
 	// Prefix our key if we need to, build our command
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
-	cmd_len = redis_cmd_format_static(&cmd, "MIGRATE", "sdsdd", host, host_len, port, key, key_len, dest_db, timeout);
+
+    // Construct our command
+    if(copy && replace) {
+        cmd_len = redis_cmd_format_static(&cmd, "MIGRATE", "sdsddss", host, host_len, port, 
+                                          key, key_len, dest_db, timeout, "COPY", 
+                                          sizeof("COPY")-1, "REPLACE", sizeof("REPLACE")-1);
+    } else if(copy) {
+        cmd_len = redis_cmd_format_static(&cmd, "MIGRATE", "sdsdds", host, host_len, port,
+                                          key, key_len, dest_db, timeout, "COPY", 
+                                          sizeof("COPY")-1);
+    } else if(replace) {
+        cmd_len = redis_cmd_format_static(&cmd, "MIGRATE", "sdsdds", host, host_len, port,
+                                          key, key_len, dest_db, timeout, "REPLACE",
+                                          sizeof("REPLACE")-1);
+    } else {
+        cmd_len = redis_cmd_format_static(&cmd, "MIGRATE", "sdsdd", host, host_len, port, 
+                                          key, key_len, dest_db, timeout);
+    }
+
+    // Free our key if we prefixed it
 	if(key_free) efree(key);
 
 	// Kick off our MIGRATE request
@@ -6350,6 +6680,36 @@ PHP_METHOD(Redis, _prefix) {
 	} else {
 		RETURN_STRINGL(key, key_len, 1);
 	}
+}
+
+/*
+ * {{{ proto Redis::_serialize(value)
+ */
+PHP_METHOD(Redis, _serialize) {
+    zval *object;
+    RedisSock *redis_sock;
+    zval *z_val;
+    char *val;
+    int val_len;
+
+    // Parse arguments
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oz",
+                                    &object, redis_ce, &z_val) == FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    // Grab socket
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    // Serialize, which will return a value even if no serializer is set
+    redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
+
+    // Return serialized value.  Tell PHP to make a copy as some can be interned.
+    RETVAL_STRINGL(val, val_len, 1);
+    STR_FREE(val);
 }
 
 /*
@@ -6632,6 +6992,171 @@ PHP_METHOD(Redis, client) {
         }
         REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
     }
+}
+
+/**
+ * Helper to format any combination of SCAN arguments
+ */
+PHP_REDIS_API int
+redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
+                     int iter, char *pattern, int pattern_len, int count)
+{
+    char *keyword;
+    int arg_count, cmd_len;
+
+    // Count our arguments +1 for key if it's got one, and + 2 for pattern
+    // or count given that they each carry keywords with them.
+    arg_count = 1 + (key_len>0) + (pattern_len>0?2:0) + (count>0?2:0);
+
+    // Turn our type into a keyword
+    switch(type) {
+        case TYPE_SCAN:
+            keyword = "SCAN";
+            break;
+        case TYPE_SSCAN:
+            keyword = "SSCAN";
+            break;
+        case TYPE_HSCAN:
+            keyword = "HSCAN";
+            break;
+        case TYPE_ZSCAN:
+		default:
+            keyword = "ZSCAN";
+            break;
+    }
+
+    // Start the command
+    cmd_len = redis_cmd_format_header(cmd, keyword, arg_count);
+
+    // Add the key in question if we have one
+    if(key_len) {
+        cmd_len = redis_cmd_append_str(cmd, cmd_len, key, key_len);
+    }
+
+    // Add our iterator
+    cmd_len = redis_cmd_append_int(cmd, cmd_len, iter);
+
+    // Append COUNT if we've got it
+    if(count) {
+        cmd_len = redis_cmd_append_str(cmd, cmd_len, "COUNT", sizeof("COUNT")-1);
+        cmd_len = redis_cmd_append_int(cmd, cmd_len, count);
+    }
+
+    // Append MATCH if we've got it
+    if(pattern_len) {
+        cmd_len = redis_cmd_append_str(cmd, cmd_len, "MATCH", sizeof("MATCH")-1);
+        cmd_len = redis_cmd_append_str(cmd, cmd_len, pattern, pattern_len);
+    }
+
+    // Return our command length
+    return cmd_len;
+}
+
+/**
+ * {{{ proto redis::scan(&$iterator, [pattern, [count]])
+ */
+PHP_REDIS_API void
+generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
+    zval *object, *z_iter;
+    RedisSock *redis_sock;
+    HashTable *hash;
+    char *pattern=NULL, *cmd, *key=NULL;
+    int cmd_len, key_len=0, pattern_len=0, num_elements, key_free=0;
+    long count=0, iter;
+
+    // Different prototype depending on if this is a key based scan
+    if(type != TYPE_SCAN) {
+        // Requires a key
+        if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osz/|s!l",
+                                        &object, redis_ce, &key, &key_len, &z_iter,
+                                        &pattern, &pattern_len, &count)==FAILURE)
+        {
+            RETURN_FALSE;
+        }
+    } else {
+        // Doesn't require a key
+        if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oz/|s!l",
+                                        &object, redis_ce, &z_iter, &pattern, &pattern_len,
+                                        &count) == FAILURE)
+        {
+            RETURN_FALSE;
+        }
+    }
+
+    // Grab our socket
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    // Calling this in a pipeline makes no sense
+    IF_NOT_ATOMIC() {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR, "Can't call SCAN commands in multi or pipeline mode!");
+        RETURN_FALSE;
+    }
+
+    // The iterator should be passed in as NULL for the first iteration, but we can treat
+    // any NON LONG value as NULL for these purposes as we've seperated the variable anyway.
+    if(Z_TYPE_P(z_iter) != IS_LONG || Z_LVAL_P(z_iter)<0) {
+        // Convert to long
+        convert_to_long(z_iter);
+        iter = 0;
+    } else if(Z_LVAL_P(z_iter)!=0) {
+        // Update our iterator value for the next passthru
+        iter = Z_LVAL_P(z_iter);
+    } else {
+        // We're done, back to iterator zero
+        RETURN_FALSE;
+    }
+
+    // Prefix our key if we've got one and we have a prefix set
+    if(key_len) {
+        key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+    }
+
+    /**
+     * Redis can return to us empty keys, especially in the case where there are a large
+     * number of keys to scan, and we're matching against a pattern.  PHPRedis can be set
+     * up to abstract this from the user, by setting OPT_SCAN to REDIS_SCAN_RETRY.  Otherwise
+     * we will return empty keys and the user will need to make subsequent calls with
+     * an updated iterator.
+     */
+    do {
+        // Format our SCAN command
+        cmd_len = redis_build_scan_cmd(&cmd, type, key, key_len, (int)iter,
+                                   pattern, pattern_len, count);
+
+        // Execute our command getting our new iterator value
+        REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+        if(redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                      redis_sock,type,&iter)<0)
+        {
+            if(key_free) efree(key);
+            RETURN_FALSE;
+        }
+
+        // Get the number of elements
+        hash = Z_ARRVAL_P(return_value);
+        num_elements = zend_hash_num_elements(hash);
+    } while(redis_sock->scan == REDIS_SCAN_RETRY && iter != 0 && num_elements == 0);
+
+    // Free our key if it was prefixed
+    if(key_free) efree(key);
+
+    // Update our iterator reference
+    Z_LVAL_P(z_iter) = iter;
+}
+
+PHP_METHOD(Redis, scan) {
+    generic_scan_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, TYPE_SCAN);
+}
+PHP_METHOD(Redis, hscan) {
+    generic_scan_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, TYPE_HSCAN);
+}
+PHP_METHOD(Redis, sscan) {
+    generic_scan_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, TYPE_SSCAN);
+}
+PHP_METHOD(Redis, zscan) {
+    generic_scan_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, TYPE_ZSCAN);
 }
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
