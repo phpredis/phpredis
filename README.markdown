@@ -1296,8 +1296,8 @@ _**Description**_: Migrates a key to a different Redis instance.
 *port* integer.  The TCP port to connect to.  
 *key* string. The key to migrate.  
 *destination-db* integer.  The target DB.  
-*timeout* integer.  The maximum amount of time given to this transfer. 
-*copy* boolean, optional.  Should we send the COPY flag to redis
+*timeout* integer.  The maximum amount of time given to this transfer.  
+*copy* boolean, optional.  Should we send the COPY flag to redis  
 *replace* boolean, optional.  Should we send the REPLACE flag to redis 
 ##### *Examples*
 ~~~
