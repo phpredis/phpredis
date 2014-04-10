@@ -3,7 +3,7 @@
 The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 This code has been developed and maintained by Owlient from November 2009 to March 2011.
 
-You can send comments, patches, questions [here on github](https://github.com/nicolasff/phpredis/issues) or to n.favrefelix@gmail.com ([@yowgi](http://twitter.com/yowgi)).
+You can send comments, patches, questions [here on github](https://github.com/nicolasff/phpredis/issues), to n.favrefelix@gmail.com ([@yowgi](http://twitter.com/yowgi)), or to michael.grunder@gmail.com ([@grumi78](http://twitter.com/grumi78)).
 
 
 # Table of contents
@@ -69,6 +69,10 @@ Taken from [Compiling phpredis on Zend Server CE/OSX ](http://www.tumblr.com/tag
 
 See also: [Install Redis & PHP Extension PHPRedis with Macports](http://www.lecloud.net/post/3378834922/install-redis-php-extension-phpredis-with-macports).
 
+You can install install it using Homebrew:
+
+- [Get homebrew-php](https://github.com/josegonzalez/homebrew-php)
+- `brew install php55-redis` (or php53-redis, php54-redis)
 
 ## PHP Session handler
 
@@ -165,6 +169,8 @@ _**Description**_: Connects to a Redis instance.
 *host*: string. can be a host, or the path to a unix domain socket  
 *port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
+*reserved*: should be NULL if retry_interval is specified
+*retry_interval*: int, value in milliseconds (optional)
 
 ##### *Return value*
 
@@ -177,6 +183,7 @@ $redis->connect('127.0.0.1', 6379);
 $redis->connect('127.0.0.1'); // port 6379 by default
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
+$redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
 ~~~
 
 ### pconnect, popen
@@ -199,6 +206,7 @@ persistent equivalents.
 *port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
 *persistent_id*: string. identity for the requested persistent connection
+*retry_interval*: int, value in milliseconds (optional)
 
 ##### *Return value*
 
@@ -264,6 +272,15 @@ $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);	// use built-in
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_IGBINARY);	// use igBinary serialize/unserialize
 
 $redis->setOption(Redis::OPT_PREFIX, 'myAppName:');	// use custom prefix on all keys
+
+/* Options for the SCAN family of commands, indicating whether to abstract
+   empty results from the user.  If set to SCAN_NORETRY (the default), phpredis
+   will just issue one SCAN command at a time, sometimes returning an empty
+   array of results.  If set to SCAN_RETRY, phpredis will retry the scan command
+   until keys come back OR Redis returns an iterator of zero
+*/
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
 ~~~
 
 
@@ -322,6 +339,7 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 1. [save](#save) - Synchronously save the dataset to disk (wait to complete)
 1. [slaveof](#slaveof) - Make the server a slave of another instance, or promote it to master
 1. [time](#time) - Return the current server time
+1. [slowlog](#slowlog) - Access the Redis slowlog entries
 
 ### bgrewriteaof
 -----
@@ -539,6 +557,36 @@ the unix timestamp, and element one being microseconds.
 $redis->time();
 ~~~
 
+### slowlog
+-----
+_**Description**_: Access the Redis slowlog
+
+##### *Parameters*
+*Operation* (string): This can be either `GET`, `LEN`, or `RESET` 
+*Length* (integer), optional: If executing a `SLOWLOG GET` command, you can pass an optional length.
+#####
+
+##### *Return value*
+The return value of SLOWLOG will depend on which operation was performed.
+SLOWLOG GET: Array of slowlog entries, as provided by Redis
+SLOGLOG LEN: Integer, the length of the slowlog
+SLOWLOG RESET: Boolean, depending on success
+#####
+
+##### *Examples*
+~~~
+// Get ten slowlog entries
+$redis->slowlog('get', 10); 
+// Get the default number of slowlog entries
+
+$redis->slowlog('get');
+// Reset our slowlog
+$redis->slowlog('reset');
+
+// Retrieve slowlog length
+$redis->slowlog('len');
+~~~
+
 ## Keys and Strings
 
 ### Strings
@@ -572,6 +620,7 @@ $redis->time();
 * [expire, setTimeout, pexpire](#expire-settimeout-pexpire) - Set a key's time to live in seconds
 * [expireAt, pexpireAt](#expireat-pexpireat) - Set the expiration for a key as a UNIX timestamp
 * [keys, getKeys](#keys-getkeys) - Find all keys matching the given pattern
+* [scan](#scan) - Scan for keys in the keyspace (Redis >= 2.8.0)
 * [migrate](#migrate) - Atomically transfer a key from a Redis instance to another one
 * [move](#move) - Move a key to another database
 * [object](#object) - Inspect the internals of Redis objects
@@ -604,19 +653,30 @@ $redis->get('key');
 
 ### set
 -----
-_**Description**_: Set the string value in argument as value of the key.
+_**Description**_: Set the string value in argument as value of the key.  If you're using Redis >= 2.6.12, you can pass extended options as explained below
 
 ##### *Parameters*
 *Key*  
 *Value*  
-*Timeout* (optional). Calling `SETEX` is preferred if you want a timeout.  
+*Timeout or Options Array* (optional). If you pass an integer, phpredis will redirect to SETEX, and will try to use Redis >= 2.6.12 extended options if you pass an array with valid values
 
 ##### *Return value*
 *Bool* `TRUE` if the command is successful.
 
 ##### *Examples*
 ~~~
+// Simple key -> value set
 $redis->set('key', 'value');
+
+// Will redirect, and actually make an SETEX call
+$redis->set('key','value', 10);
+
+// Will set the key, if it doesn't exist, with a ttl of 10 seconds
+$redis->set('key', 'value', Array('nx', 'ex'=>10));
+
+// Will set a key, if it does exist, with a ttl of 1000 miliseconds
+$redis->set('key', 'value', Array('xx', 'px'=>1000));
+
 ~~~
 
 ### setex, psetex
@@ -734,7 +794,7 @@ $redis->incrByFloat('key1', 1.5); /* key1 didn't exist, so it will now be 1.5 */
 
 $redis->incrByFloat('key1', 1.5); /* 3 */
 $redis->incrByFloat('key1', -1.5); /* 1.5 */
-$redis->incrByFloat('key1', 2.5); /* 3.5 */
+$redis->incrByFloat('key1', 2.5); /* 4 */
 ~~~
 
 ### decr, decrBy
@@ -907,7 +967,29 @@ $allKeys = $redis->keys('*');	// all keys will match this.
 $keyWithUserPrefix = $redis->keys('user*');
 ~~~
 
+### scan
+-----
+_**Description**_:  Scan the keyspace for keys
 
+##### *Parameters*
+*LONG (reference)*:  Iterator, initialized to NULL
+*STRING, Optional*:  Pattern to match
+*LONG, Optional*: Count of keys per iteration (only a suggestion to Redis)
+
+##### *Return value*
+*Array, boolean*:  This function will return an array of keys or FALSE if there are no more keys
+
+##### *Example*
+~~~
+$it = NULL; /* Initialize our iterator to NULL */
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY); /* retry when we get no keys back */
+while($arr_keys = $redis->scan($it)) {
+    foreach($arr_keys as $str_key) {
+        echo "Here is a key: $str_key\n";
+    }
+    echo "No more keys to scan!\n";
+}
+~~~
 
 ### object
 -----
@@ -1124,13 +1206,13 @@ var_dump($redis->sort('s', array('sort' => 'desc', 'store' => 'out'))); // (int)
 
 ### ttl, pttl
 -----
-_**Description**_: Returns the time to live left for a given key, in seconds. If the key doesn't exist, `FALSE` is returned. pttl returns a time in milliseconds.
+_**Description**_: Returns the time to live left for a given key in seconds (ttl), or milliseconds (pttl).
 
 ##### *Parameters*
 *Key*: key
 
 ##### *Return value*
-Long, the time left to live in seconds.
+*LONG*:  The time to live in seconds.  If the key has no ttl, `-1` will be returned, and `-2` if the key doesn't exist.
 
 ##### *Example*
 ~~~
@@ -1214,10 +1296,14 @@ _**Description**_: Migrates a key to a different Redis instance.
 *port* integer.  The TCP port to connect to.  
 *key* string. The key to migrate.  
 *destination-db* integer.  The target DB.  
-*timeout* integer.  The maximum amount of time given to this transfer.  
+*timeout* integer.  The maximum amount of time given to this transfer. 
+*copy* boolean, optional.  Should we send the COPY flag to redis
+*replace* boolean, optional.  Should we send the REPLACE flag to redis 
 ##### *Examples*
 ~~~
 $redis->migrate('backup', 6379, 'foo', 0, 3600);
+$redis->migrate('backup', 6379, 'foo', 0, 3600, true, true); /* copy and replace */
+$redis->migrate('backup', 6379, 'foo', 0, 3600, false, true); /* just REPLACE flag */
 ~~~
 
 
@@ -1237,6 +1323,7 @@ $redis->migrate('backup', 6379, 'foo', 0, 3600);
 * [hSet](#hset) - Set the string value of a hash field
 * [hSetNx](#hsetnx) - Set the value of a hash field, only if the field does not exist
 * [hVals](#hvals) - Get all the values in a hash
+* [hScan](#hscan) - Scan a hash key for members
 
 ### hSet
 -----
@@ -1496,7 +1583,28 @@ $redis->hSet('h', 'field2', 'value2');
 $redis->hmGet('h', array('field1', 'field2')); /* returns array('field1' => 'value1', 'field2' => 'value2') */
 ~~~
 
+### hScan
+-----
+_**Description**_:  Scan a HASH value for members, with an optional pattern and count
+##### *Parameters*
+*key*: String
+*iterator*: Long (reference)
+*pattern*: Optional pattern to match against
+*count*: How many keys to return in a go (only a sugestion to Redis)
+##### *Return value* 
+*Array* An array of members that match our pattern
 
+##### *Examples*
+~~~
+$it = NULL;
+/* Don't ever return an empty array until we're done iterating */
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+while($arr_keys = $redis->hscan('hash', $it)) {
+    foreach($arr_keys as $str_field => $str_value) {
+        echo "$str_field => $str_value\n"; /* Print the hash member and value */
+    }
+}
+~~~
 
 ## Lists
 
@@ -1935,6 +2043,7 @@ $redis->lSize('key1');/* 2 */
 * [sRem, sRemove](#srem-sremove) - Remove one or more members from a set
 * [sUnion](#sunion) - Add multiple sets
 * [sUnionStore](#sunionstore) - Add multiple sets and store the resulting set in a key
+* [sScan](#sscan) - Scan a set for members
 
 ### sAdd
 -----
@@ -2334,6 +2443,41 @@ array(4) {
 }
 ~~~
 
+### sScan
+-----
+_**Description**_: Scan a set for members
+
+##### *Parameters*
+*Key*: The set to search
+*iterator*: LONG (reference) to the iterator as we go
+*pattern*: String, optional pattern to match against
+*count*: How many members to return at a time (Redis might return a different amount)
+
+##### *Return value*
+*Array, boolean*: PHPRedis will return an array of keys or FALSE when we're done iterating
+
+##### *Example*
+~~~
+$it = NULL;
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY); /* don't return empty results until we're done */
+while($arr_mems = $redis->sscan('set', $it, "*pattern*")) {
+    foreach($arr_mems as $str_mem) {
+        echo "Member: $str_mem\n";
+    }
+}
+
+$it = NULL;
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY); /* return after each iteration, even if empty */
+while(($arr_mems = $redis->sscan('set', $it, "*pattern*"))!==FALSE) {
+    if(count($arr_mems) > 0) {
+        foreach($arr_mems as $str_mem) {
+            echo "Member found: $str_mem\n";
+        }
+    } else {
+        echo "No members in this iteration, iterator value: $it\n";
+    }
+}
+~~~
 
 ## Sorted sets
 
@@ -2351,6 +2495,7 @@ array(4) {
 * [zRevRange](#zrevrange) - Return a range of members in a sorted set, by index, with scores ordered from high to low
 * [zScore](#zscore) - Get the score associated with the given member in a sorted set
 * [zUnion](#zunion) - Add multiple sorted sets and store the resulting sorted set in a new key
+* [zScan](#zscan) - Scan a sorted set for members
 
 ### zAdd
 -----
@@ -2690,11 +2835,36 @@ $redis->zUnion('ko2', array('k1', 'k2'), array(1, 1)); /* 4, 'ko2' => array('val
 $redis->zUnion('ko3', array('k1', 'k2'), array(5, 1)); /* 4, 'ko3' => array('val0', 'val2', 'val3', 'val1') */
 ~~~
 
+### zScan
+-----
+_**Description**_: Scan a sorted set for members, with optional pattern and count
+
+##### *Parameters*
+*key*: String, the set to scan
+*iterator*: Long (reference), initialized to NULL
+*pattern*: String (optional), the pattern to match
+*count*: How many keys to return per iteration (Redis might return a different number)
+
+##### *Return value*
+*Array, boolean* PHPRedis will return matching keys from Redis, or FALSE when iteration is complete
+
+##### *Example*
+~~~
+$it = NULL;
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+while($arr_matches = $redis->zscan('zset', $it, '*pattern*')) {
+    foreach($arr_matches as $str_mem => $f_score) {
+        echo "Key: $str_mem, Score: $f_score\n";
+    }
+}
+~~~
+
 ## Pub/sub
 
 * [psubscribe](#psubscribe) - Subscribe to channels by pattern
 * [publish](#publish) - Post a message to a channel
 * [subscribe](#subscribe) - Subscribe to channels
+* [pubsub](#pubsub) - Introspection into the pub/sub subsystem
 
 ### psubscribe
 -----
@@ -2755,6 +2925,26 @@ function f($redis, $chan, $msg) {
 $redis->subscribe(array('chan-1', 'chan-2', 'chan-3'), 'f'); // subscribe to 3 chans
 ~~~
 
+### pubsub
+-----
+_**Description**_: A command allowing you to get information on the Redis pub/sub system.
+
+##### *Parameters*
+*keyword*: String, which can be: "channels", "numsub", or "numpat"
+*argument*:  Optional, variant.  For the "channels" subcommand, you can pass a string pattern.  For "numsub" an array of channel names.
+
+##### *Return value*
+*CHANNELS*: Returns an array where the members are the matching channels.
+*NUMSUB*:  Returns a key/value array where the keys are channel names and values are their counts.
+*NUMPAT*:  Integer return containing the number active pattern subscriptions
+
+##### *Example*
+~~~
+$redis->pubsub("channels"); /*All channels */
+$redis->pubsub("channels", "*pattern*"); /* Just channels matching your pattern */
+$redis->pubsub("numsub", Array("chan1", "chan2")); /*Get subscriber counts for 'chan1' and 'chan2'*/
+$redsi->pubsub("numpat"); /* Get the number of pattern subscribers */
+```
 
 ## Transactions
 
@@ -2821,6 +3011,7 @@ $ret = FALSE if x has been modified between the call to WATCH and the call to EX
 * [clearLastError](#) - Clear the last error message
 * [_prefix](#) - A utility method to prefix the value with the prefix setting for phpredis
 * [_unserialize](#) - A utility method to unserialize data with whatever serializer is set up
+* [_serialize](#) - A utility method to serialize data with whatever serializer is set up
 
 ### eval
 -----
@@ -2970,6 +3161,28 @@ $redis->setOption(Redis::OPT_PREFIX, 'my-prefix:');
 $redis->_prefix('my-value'); // Will return 'my-prefix:my-value'
 ~~~
 
+### _serialize
+-----
+_**Description**_: A utility method to serialize values manually.
+
+This method allows you to serialize a value with whatever serializer is configured, manually.
+This can be useful for serialization/unserialization of data going in and out of EVAL commands
+as phpredis can't automatically do this itself.  Note that if no serializer is set, phpredis
+will change Array values to 'Array', and Objects to 'Object'.
+
+##### *Parameters*
+*value*:  Mixed.  The value to be serialized
+
+##### *Examples*
+~~~
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+$redis->_serialize("foo"); // returns "foo"
+$redis->_serialize(Array()); // Returns "Array"
+$redis->_serialize(new stdClass()); // Returns "Object"
+
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+$redis->_serialize("foo"); // Returns 's:3:"foo";'
+
 ### _unserialize
 -----
 _**Description**_: A utility method to unserialize data with whatever serializer is set up.
@@ -3034,7 +3247,7 @@ None
 
 ### GetTimeout
 -----
-_**Description**_:  Get the (write) timeout in use for phpreids
+_**Description**_:  Get the (write) timeout in use for phpredis
 
 ##### *Parameters*
 None  

@@ -70,7 +70,48 @@ class Redis_Test extends TestSuite
 			->exec();
 
 		$this->assertTrue(is_array($ret) && count($ret) === 1 && $ret[0] >= 0);
-	}
+    }
+
+    // Run some simple tests against the PUBSUB command.  This is problematic, as we
+    // can't be sure what's going on in the instance, but we can do some things.
+    public function testPubSub() {
+        // Only available since 2.8.0
+        if(version_compare($this->version, "2.8.0", "lt")) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        // PUBSUB CHANNELS ...
+        $result = $this->redis->pubsub("channels", "*");
+        $this->assertTrue(is_array($result));
+        $result = $this->redis->pubsub("channels");
+        $this->assertTrue(is_array($result));
+
+        // PUBSUB NUMSUB
+        
+        $c1 = uniqid() . '-' . rand(1,100);
+        $c2 = uniqid() . '-' . rand(1,100);
+
+        $result = $this->redis->pubsub("numsub", Array($c1, $c2));
+
+        // Should get an array back, with two elements
+        $this->assertTrue(is_array($result));
+        $this->assertEquals(count($result), 2);
+
+        // Make sure the elements are correct, and have zero counts
+        foreach(Array($c1,$c2) as $channel) {
+            $this->assertTrue(isset($result[$channel]));
+            $this->assertEquals($result[$channel], "0");
+        }
+
+        // PUBSUB NUMPAT
+        $result = $this->redis->pubsub("numpat");
+        $this->assertTrue(is_int($result));
+
+        // Invalid calls
+        $this->assertFalse($this->redis->pubsub("notacommand"));
+        $this->assertFalse($this->redis->pubsub("numsub", "not-an-array"));
+    }
 
     public function testBitsets() {
 
@@ -109,7 +150,32 @@ class Redis_Test extends TestSuite
 
 	    // values above 1 are changed to 1 but don't overflow on bits to the right.
 	    $this->assertTrue(0 === $this->redis->setBit('key', 0, 0xff));
-	    $this->assertTrue("\x9f" === $this->redis->get('key'));
+        $this->assertTrue("\x9f" === $this->redis->get('key'));
+
+        // Verify valid offset ranges
+        $this->assertFalse($this->redis->getBit('key', -1));
+        $this->assertFalse($this->redis->getBit('key', 4294967296));
+        $this->assertFalse($this->redis->setBit('key', -1, 1));
+        $this->assertFalse($this->redis->setBit('key', 4294967296, 1));
+    }
+
+    public function testBitPos() {
+        if(version_compare($this->version, "2.8.7", "lt")) {
+            $this->MarkTestSkipped();
+            return;
+        }
+
+        $this->redis->del('bpkey');
+
+        $this->redis->set('bpkey', "\xff\xf0\x00");
+        $this->assertEquals($this->redis->bitpos('bpkey', 0), 12);
+
+        $this->redis->set('bpkey', "\x00\xff\xf0");
+        $this->assertEquals($this->redis->bitpos('bpkey', 1, 0), 8);
+        $this->assertEquals($this->redis->bitpos('bpkey', 1, 1), 8);
+
+        $this->redis->set('bpkey', "\x00\x00\x00");
+        $this->assertEquals($this->redis->bitpos('bpkey', 1), -1);
     }
 
     public function test1000() {
@@ -138,84 +204,146 @@ class Redis_Test extends TestSuite
 
     public function testSet()
     {
-	$this->assertEquals(TRUE, $this->redis->set('key', 'nil'));
-	$this->assertEquals('nil', $this->redis->get('key'));
+        $this->assertEquals(TRUE, $this->redis->set('key', 'nil'));
+        $this->assertEquals('nil', $this->redis->get('key'));
 
-      	$this->assertEquals(TRUE, $this->redis->set('key', 'val'));
+        $this->assertEquals(TRUE, $this->redis->set('key', 'val'));
 
-	$this->assertEquals('val', $this->redis->get('key'));
-	$this->assertEquals('val', $this->redis->get('key'));
-	$this->redis->delete('keyNotExist');
-	$this->assertEquals(FALSE, $this->redis->get('keyNotExist'));
+        $this->assertEquals('val', $this->redis->get('key'));
+        $this->assertEquals('val', $this->redis->get('key'));
+        $this->redis->delete('keyNotExist');
+        $this->assertEquals(FALSE, $this->redis->get('keyNotExist'));
 
-	$this->redis->set('key2', 'val');
-	$this->assertEquals('val', $this->redis->get('key2'));
+        $this->redis->set('key2', 'val');
+        $this->assertEquals('val', $this->redis->get('key2'));
 
-     	$value = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-	$this->redis->set('key2', $value);
-	$this->assertEquals($value, $this->redis->get('key2'));
-	$this->assertEquals($value, $this->redis->get('key2'));
+        $value = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+        
+        $this->redis->set('key2', $value);
+        $this->assertEquals($value, $this->redis->get('key2'));
+        $this->assertEquals($value, $this->redis->get('key2'));
 
-	$this->redis->delete('key');
-	$this->redis->delete('key2');
+        $this->redis->delete('key');
+        $this->redis->delete('key2');
 
 
-	$i = 66000;
-	$value2 = 'X';
-	while($i--) {
-		$value2 .= 'A';
-	}
-	$value2 .= 'X';
+        $i = 66000;
+        $value2 = 'X';
+        while($i--) {
+		    $value2 .= 'A';
+        }
+	    $value2 .= 'X';
 
-	$this->redis->set('key', $value2);
+        $this->redis->set('key', $value2);
         $this->assertEquals($value2, $this->redis->get('key'));
-	$this->redis->delete('key');
-	$this->assertEquals(False, $this->redis->get('key'));
+        $this->redis->delete('key');
+        $this->assertEquals(False, $this->redis->get('key'));
 
-	$data = gzcompress('42');
+        $data = gzcompress('42');
         $this->assertEquals(True, $this->redis->set('key', $data));
-	$this->assertEquals('42', gzuncompress($this->redis->get('key')));
+        $this->assertEquals('42', gzuncompress($this->redis->get('key')));
 
-	$this->redis->delete('key');
-	$data = gzcompress('value1');
+        $this->redis->delete('key');
+        $data = gzcompress('value1');
         $this->assertEquals(True, $this->redis->set('key', $data));
-	$this->assertEquals('value1', gzuncompress($this->redis->get('key')));
+        $this->assertEquals('value1', gzuncompress($this->redis->get('key')));
 
-	$this->redis->delete('key');
-       	$this->assertEquals(TRUE, $this->redis->set('key', 0));
-	$this->assertEquals('0', $this->redis->get('key'));
-       	$this->assertEquals(TRUE, $this->redis->set('key', 1));
-	$this->assertEquals('1', $this->redis->get('key'));
-	$this->assertEquals(TRUE, $this->redis->set('key', 0.1));
-	$this->assertEquals('0.1', $this->redis->get('key'));
-	$this->assertEquals(TRUE, $this->redis->set('key', '0.1'));
-	$this->assertEquals('0.1', $this->redis->get('key'));
-       	$this->assertEquals(TRUE, $this->redis->set('key', TRUE));
-	$this->assertEquals('1', $this->redis->get('key'));
+        $this->redis->delete('key');
+        $this->assertEquals(TRUE, $this->redis->set('key', 0));
+        $this->assertEquals('0', $this->redis->get('key'));
+        $this->assertEquals(TRUE, $this->redis->set('key', 1));
+        $this->assertEquals('1', $this->redis->get('key'));
+        $this->assertEquals(TRUE, $this->redis->set('key', 0.1));
+        $this->assertEquals('0.1', $this->redis->get('key'));
+        $this->assertEquals(TRUE, $this->redis->set('key', '0.1'));
+        $this->assertEquals('0.1', $this->redis->get('key'));
+        $this->assertEquals(TRUE, $this->redis->set('key', TRUE));
+        $this->assertEquals('1', $this->redis->get('key'));
 
-	$this->assertEquals(True, $this->redis->set('key', ''));
-       	$this->assertEquals('', $this->redis->get('key'));
-	$this->assertEquals(True, $this->redis->set('key', NULL));
-	$this->assertEquals('', $this->redis->get('key'));
+	    $this->assertEquals(True, $this->redis->set('key', ''));
+        $this->assertEquals('', $this->redis->get('key'));
+	    $this->assertEquals(True, $this->redis->set('key', NULL));
+	    $this->assertEquals('', $this->redis->get('key'));
 
         $this->assertEquals(True, $this->redis->set('key', gzcompress('42')));
         $this->assertEquals('42', gzuncompress($this->redis->get('key')));
-
     }
-    public function testGetSet() {
 
-	$this->redis->delete('key');
-	$this->assertTrue($this->redis->getSet('key', '42') === FALSE);
-	$this->assertTrue($this->redis->getSet('key', '123') === '42');
-	$this->assertTrue($this->redis->getSet('key', '123') === '123');
+    /* Extended SET options for Redis >= 2.6.12 */
+    public function testExtendedSet() {
+        // Skip the test if we don't have a new enough version of Redis
+        if(version_compare($this->version, '2.6.12', 'lt')) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        /* Legacy SETEX redirection */
+        $this->redis->del('foo');
+        $this->assertTrue($this->redis->set('foo','bar', 20));
+        $this->assertEquals($this->redis->get('foo'), 'bar');
+        $this->assertEquals($this->redis->ttl('foo'), 20);
+
+        /* Invalid third arguments */
+        $this->assertFalse($this->redis->set('foo','bar','baz'));
+        $this->assertFalse($this->redis->set('foo','bar',new StdClass()));
+
+        /* Set if not exist */
+        $this->redis->del('foo');
+        $this->assertTrue($this->redis->set('foo','bar',Array('nx')));
+        $this->assertEquals($this->redis->get('foo'), 'bar');
+        $this->assertFalse($this->redis->set('foo','bar',Array('nx')));
+
+        /* Set if exists */
+        $this->assertTrue($this->redis->set('foo','bar',Array('xx')));
+        $this->assertEquals($this->redis->get('foo'), 'bar');
+        $this->redis->del('foo');
+        $this->assertFalse($this->redis->set('foo','bar',Array('xx')));
+
+        /* Set with a TTL */
+        $this->assertTrue($this->redis->set('foo','bar',Array('ex'=>100)));
+        $this->assertEquals($this->redis->ttl('foo'), 100);
+
+        /* Set with a PTTL */
+        $this->assertTrue($this->redis->set('foo','bar',Array('px'=>100000)));
+        $this->assertTrue(100000 - $this->redis->pttl('foo') < 1000);
+
+        /* Set if exists, with a TTL */
+        $this->assertTrue($this->redis->set('foo','bar',Array('xx','ex'=>105)));
+        $this->assertEquals($this->redis->ttl('foo'), 105);
+        $this->assertEquals($this->redis->get('foo'), 'bar');
+
+        /* Set if not exists, with a TTL */
+        $this->redis->del('foo');
+        $this->assertTrue($this->redis->set('foo','bar', Array('nx', 'ex'=>110)));
+        $this->assertEquals($this->redis->ttl('foo'), 110);
+        $this->assertEquals($this->redis->get('foo'), 'bar');
+        $this->assertFalse($this->redis->set('foo','bar', Array('nx', 'ex'=>110)));
+
+        /* Throw some nonsense into the array, and check that the TTL came through */
+        $this->redis->del('foo');
+        $this->assertTrue($this->redis->set('foo','barbaz', Array('not-valid','nx','invalid','ex'=>200)));
+        $this->assertEquals($this->redis->ttl('foo'), 200);
+        $this->assertEquals($this->redis->get('foo'), 'barbaz');
+
+        /* Pass NULL as the optional arguments which should be ignored */
+        $this->redis->del('foo');
+        $this->redis->set('foo','bar', NULL);
+        $this->assertEquals($this->redis->get('foo'), 'bar');
+        $this->assertTrue($this->redis->ttl('foo')<0);
+    }
+
+    public function testGetSet() {
+    	$this->redis->delete('key');
+        $this->assertTrue($this->redis->getSet('key', '42') === FALSE);
+        $this->assertTrue($this->redis->getSet('key', '123') === '42');
+        $this->assertTrue($this->redis->getSet('key', '123') === '123');
     }
 
     public function testRandomKey() {
-
         for($i = 0; $i < 1000; $i++) {
             $k = $this->redis->randomKey();
-	    $this->assertTrue($this->redis->exists($k));
-	}
+            $this->assertTrue($this->redis->exists($k));
+        }
     }
 
     public function testRename() {
@@ -352,6 +480,13 @@ class Redis_Test extends TestSuite
 	    $this->assertTrue($this->redis->get('key') === '42');
     }
 
+    public function testExpireAtWithLong() {
+        $longExpiryTimeExceedingInt = 3153600000;
+        $this->redis->delete('key');
+        $this->assertTrue($this->redis->setex('key', $longExpiryTimeExceedingInt, 'val') === TRUE);
+        $this->assertTrue($this->redis->ttl('key') === $longExpiryTimeExceedingInt);
+    }
+
     public function testIncr()
     {
         $this->redis->set('key', 0);
@@ -387,31 +522,41 @@ class Redis_Test extends TestSuite
 
     public function testIncrByFloat()
     {
-	// incrbyfloat is new in 2.6.0
-	if (version_compare($this->version, "2.5.0", "lt")) {
-		$this->markTestSkipped();
-	}
+	    // incrbyfloat is new in 2.6.0
+	    if (version_compare($this->version, "2.5.0", "lt")) {
+            $this->markTestSkipped();
+        }
 
-	$this->redis->delete('key');
+        $this->redis->delete('key');
+        
+        $this->redis->set('key', 0);
 
-	$this->redis->set('key', 0);
+        $this->redis->incrbyfloat('key', 1.5);
+        $this->assertEquals('1.5', $this->redis->get('key'));
 
-	$this->redis->incrbyfloat('key', 1.5);
-	$this->assertEquals('1.5', $this->redis->get('key'));
+        $this->redis->incrbyfloat('key', 2.25);
+        $this->assertEquals('3.75', $this->redis->get('key'));
 
-	$this->redis->incrbyfloat('key', 2.25);
-	$this->assertEquals('3.75', $this->redis->get('key'));
+        $this->redis->incrbyfloat('key', -2.25);
+        $this->assertEquals('1.5', $this->redis->get('key'));
 
-	$this->redis->incrbyfloat('key', -2.25);
-	$this->assertEquals('1.5', $this->redis->get('key'));
+        $this->redis->set('key', 'abc');
 
-	$this->redis->set('key', 'abc');
+        $this->redis->incrbyfloat('key', 1.5);
+        $this->assertTrue("abc" === $this->redis->get('key'));
 
-	$this->redis->incrbyfloat('key', 1.5);
-	$this->assertTrue("abc" === $this->redis->get('key'));
+        $this->redis->incrbyfloat('key', -1.5);
+        $this->assertTrue("abc" === $this->redis->get('key'));
 
-	$this->redis->incrbyfloat('key', -1.5);
-	$this->assertTrue("abc" === $this->redis->get('key'));
+        // Test with prefixing
+        $this->redis->setOption(Redis::OPT_PREFIX, 'someprefix:');
+        $this->redis->del('key');
+        $this->redis->incrbyfloat('key',1.8);
+        $this->assertEquals('1.8', $this->redis->get('key'));
+        $this->redis->setOption(Redis::OPT_PREFIX, '');
+        $this->assertTrue($this->redis->exists('someprefix:key'));
+        $this->redis->del('someprefix:key');
+
     }
 
     public function testDecr()
@@ -1064,23 +1209,45 @@ class Redis_Test extends TestSuite
     }
 
     public function testsRandMember() {
-	$this->redis->delete('set0');
-	$this->assertTrue($this->redis->sRandMember('set0') === FALSE);
+        $this->redis->delete('set0');
+        $this->assertTrue($this->redis->sRandMember('set0') === FALSE);
 
-	$this->redis->sAdd('set0', 'val');
-	$this->redis->sAdd('set0', 'val2');
+        $this->redis->sAdd('set0', 'val');
+        $this->redis->sAdd('set0', 'val2');
 
-	$got = array();
-	while(true) {
-	    $v = $this->redis->sRandMember('set0');
-	    $this->assertTrue(2 === $this->redis->sSize('set0')); // no change.
-	    $this->assertTrue($v === 'val' || $v === 'val2');
+        $got = array();
+        while(true) {
+            $v = $this->redis->sRandMember('set0');
+            $this->assertTrue(2 === $this->redis->sSize('set0')); // no change.
+            $this->assertTrue($v === 'val' || $v === 'val2');
 
-	    $got[$v] = $v;
-	    if(count($got) == 2) {
-	        break;
-	    }
-	}
+            $got[$v] = $v;
+            if(count($got) == 2) {
+                break;
+            }
+        }
+
+        // 
+        // With and without count, while serializing
+        // 
+
+        $this->redis->delete('set0');
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+        for($i=0;$i<5;$i++) {
+            $member = "member:$i";
+            $this->redis->sAdd('set0', $member);
+            $mems[] = $member;
+        }
+
+        $member = $this->redis->srandmember('set0');
+        $this->assertTrue(in_array($member, $mems));
+
+        $rmembers = $this->redis->srandmember('set0', $i);
+        foreach($rmembers as $reply_mem) {
+            $this->assertTrue(in_array($reply_mem, $mems));
+        }
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
     }
 
     public function testSRandMemberWithCount() {
@@ -1626,18 +1793,28 @@ class Redis_Test extends TestSuite
 //    }
 
     public function testdbSize() {
-	$this->assertTrue($this->redis->flushDB());
-	$this->redis->set('x', 'y');
-	$this->assertTrue($this->redis->dbSize() === 1);
+        $this->assertTrue($this->redis->flushDB());
+        $this->redis->set('x', 'y');
+        $this->assertTrue($this->redis->dbSize() === 1);
     }
 
     public function testttl() {
-	$this->redis->set('x', 'y');
-	$this->redis->setTimeout('x', 5);
-	for($i = 5; $i > 0; $i--) {
-		$this->assertEquals($i, $this->redis->ttl('x'));
-		sleep(1);
-	}
+        $this->redis->set('x', 'y');
+        $this->redis->setTimeout('x', 5);
+        for($i = 5; $i > 0; $i--) {
+            $this->assertEquals($i, $this->redis->ttl('x'));
+            sleep(1);
+        }
+
+        // A key with no TTL
+        $this->redis->del('x'); $this->redis->set('x', 'bar');
+        $this->assertEquals($this->redis->ttl('x'), -1);
+
+        // A key that doesn't exist (> 2.8 will return -2)
+        if(version_compare($this->version, "2.8.0", "gte")) {
+            $this->redis->del('x');
+            $this->assertEquals($this->redis->ttl('x'), -2);
+        }
     }
 
     public function testPersist() {
@@ -1674,6 +1851,44 @@ class Redis_Test extends TestSuite
          
         /* CLIENT KILL -- phpredis will reconnect, so we can do this */
         $this->assertTrue($this->redis->client('kill', $str_addr));
+    }
+
+    public function testSlowlog() {
+        // We don't really know what's going to be in the slowlog, but make sure
+        // the command returns proper types when called in various ways
+        $this->assertTrue(is_array($this->redis->slowlog('get')));
+        $this->assertTrue(is_array($this->redis->slowlog('get', 10)));
+        $this->assertTrue(is_int($this->redis->slowlog('len')));
+        $this->assertTrue($this->redis->slowlog('reset'));
+        $this->assertFalse($this->redis->slowlog('notvalid'));
+    }
+
+    public function testWait() {
+        // Closest we can check based on redis commmit history
+        if(version_compare($this->version, '2.9.11', 'lt')) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        // We could have slaves here, so determine that
+        $arr_slaves = $this->redis->info();
+        $i_slaves   = $arr_slaves['connected_slaves'];
+
+        // Send a couple commands
+        $this->redis->set('wait-foo', 'over9000');
+        $this->redis->set('wait-bar', 'revo9000');
+
+        // Make sure we get the right replication count
+        $this->assertEquals($this->redis->wait($i_slaves, 100), $i_slaves);
+
+        // Pass more slaves than are connected
+        $this->redis->set('wait-foo','over9000');
+        $this->redis->set('wait-bar','revo9000');
+        $this->assertTrue($this->redis->wait($i_slaves+1, 100) < $i_slaves+1);
+
+        // Make sure when we pass with bad arguments we just get back false
+        $this->assertFalse($this->redis->wait(-1, -1));
+        $this->assertFalse($this->redis->wait(-1, 20));
     }
 
     public function testinfo() {
@@ -1963,6 +2178,20 @@ class Redis_Test extends TestSuite
 	$this->redis->delete('key2');
 	$this->redis->delete('key3');
 
+	//test zUnion with weights and aggegration function
+	$this->redis->zadd('key1', 1, 'duplicate');
+	$this->redis->zadd('key2', 2, 'duplicate');
+	$this->redis->zUnion('keyU', array('key1','key2'), array(1,1), 'MIN');
+	$this->assertTrue($this->redis->zScore('keyU', 'duplicate')===1.0);
+	$this->redis->delete('keyU');
+
+	//now test zUnion *without* weights but with aggregrate function
+	$this->redis->zUnion('keyU', array('key1','key2'), null, 'MIN');
+	$this->assertTrue($this->redis->zScore('keyU', 'duplicate')===1.0);
+	$this->redis->delete('keyU', 'key1', 'key2');
+
+
+
 	// test integer and float weights (GitHub issue #109).
 	$this->redis->del('key1', 'key2', 'key3');
 
@@ -2079,6 +2308,10 @@ class Redis_Test extends TestSuite
 	$this->assertTrue( 2 === $this->redis->zInter('keyI', array('key1', 'key2', 'key3'), array(1, 5, 1), 'max'));
 	$this->assertTrue(array('val3', 'val1') === $this->redis->zRange('keyI', 0, -1));
 
+	$this->redis->delete('keyI');
+	$this->assertTrue(2 === $this->redis->zInter('keyI', array('key1', 'key2', 'key3'), null, 'max'));
+	$this->assertTrue($this->redis->zScore('keyI', 'val1') === floatval(7));
+
 	// zrank, zrevrank
 	$this->redis->delete('z');
 	$this->redis->zadd('z', 1, 'one');
@@ -2188,6 +2421,11 @@ class Redis_Test extends TestSuite
 	$this->assertFalse(array(123 => 'x') === $this->redis->hMget('h', array(123)));
 	$this->assertTrue(array(123 => FALSE) === $this->redis->hMget('h', array(123)));
 
+    // Test with an array populated with things we can't use as keys
+    $this->assertTrue($this->redis->hmget('h', Array(false,NULL,false)) === FALSE);
+
+    // Test with some invalid keys mixed in (which should just be ignored)
+    $this->assertTrue(array('x'=>'123','y'=>'456','z'=>'abc') === $this->redis->hMget('h',Array('x',null,'y','','z',false)));
 
 	// hmget/hmset with numeric fields
 	$this->redis->del('h');
@@ -4250,6 +4488,34 @@ class Redis_Test extends TestSuite
     	$this->assertTrue(1 === $this->redis->evalsha($sha));
     }
 
+    public function testSerialize() {
+        $vals = Array(1, 1.5, 'one', Array('here','is','an','array'));
+        
+        // Test with no serialization at all
+        $this->assertTrue($this->redis->_serialize('test') === 'test');
+        $this->assertTrue($this->redis->_serialize(1) === '1');
+        $this->assertTrue($this->redis->_serialize(Array()) === 'Array');
+        $this->assertTrue($this->redis->_serialize(new stdClass) === 'Object');
+
+        $arr_serializers = Array(Redis::SERIALIZER_PHP);
+        if(defined('Redis::SERIALIZER_IGBINARY')) {
+            $arr_serializers[] = Redis::SERIALIZER_IGBINARY;
+        }
+
+        foreach($arr_serializers as $mode) {
+            $arr_enc = Array(); 
+            $arr_dec = Array();
+
+            foreach($vals as $k => $v) {
+                $enc = $this->redis->_serialize($v);
+                $dec = $this->redis->_unserialize($enc);
+
+                // They should be the same
+                $this->assertTrue($enc == $dec);
+            }
+        }
+    }
+
     public function testUnserialize() {
     	$vals = Array(
     		1,1.5,'one',Array('this','is','an','array')
@@ -4356,6 +4622,190 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->getAuth() === self::AUTH);
     }
 
+    /**
+     * Scan and variants
+     */
+
+    protected function get_keyspace_count($str_db) {
+        $arr_info = $this->redis->info();
+        $arr_info = $arr_info[$str_db];
+        $arr_info = explode(',', $arr_info);
+        $arr_info = explode('=', $arr_info[0]);
+        return $arr_info[1];
+    }
+
+    public function testScan() {
+        if(version_compare($this->version, "2.8.0", "lt")) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        // Key count
+        $i_key_count = $this->get_keyspace_count('db0');
+
+        // Have scan retry
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+        // Scan them all
+        $it = NULL;
+        while($arr_keys = $this->redis->scan($it)) {
+            $i_key_count -= count($arr_keys);
+        }
+        // Should have iterated all keys
+        $this->assertEquals(0, $i_key_count);
+
+        // Unique keys, for pattern matching
+        $str_uniq = uniqid() . '-' . uniqid();
+        for($i=0;$i<10;$i++) {
+            $this->redis->set($str_uniq . "::$i", "bar::$i");
+        }
+
+        // Scan just these keys using a pattern match
+        $it = NULL;
+        while($arr_keys = $this->redis->scan($it, "*$str_uniq*")) {
+            $i -= count($arr_keys);
+        }
+        $this->assertEquals(0, $i);
+    }
+
+    public function testHScan() {
+        if(version_compare($this->version, "2.8.0", "lt")) {
+            $this->markTestSkipped();
+            return;
+        }
+    
+        // Never get empty sets
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+        $this->redis->del('hash');
+        $i_foo_mems = 0;
+
+        for($i=0;$i<100;$i++) {
+            if($i>3) {
+                $this->redis->hset('hash', "member:$i", "value:$i");    
+            } else {
+                $this->redis->hset('hash', "foomember:$i", "value:$i");
+                $i_foo_mems++;
+            }
+        }
+
+        // Scan all of them
+        $it = NULL;
+        while($arr_keys = $this->redis->hscan('hash', $it)) {
+            $i -= count($arr_keys);
+        }
+        $this->assertEquals(0, $i);
+
+        // Scan just *foomem* (should be 4)
+        $it = NULL;
+        while($arr_keys = $this->redis->hscan('hash', $it, '*foomember*')) {
+            $i_foo_mems -= count($arr_keys);
+            foreach($arr_keys as $str_mem => $str_val) {
+                $this->assertTrue(strpos($str_mem, 'member')!==FALSE);
+                $this->assertTrue(strpos($str_val, 'value')!==FALSE);
+            }
+        }
+        $this->assertEquals(0, $i_foo_mems);
+    }
+
+    public function testSScan() {
+        if(version_compare($this->version, "2.8.0", "lt")) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+        $this->redis->del('set');
+        for($i=0;$i<100;$i++) {
+            $this->redis->sadd('set', "member:$i");
+        }
+
+        // Scan all of them
+        $it = NULL;
+        while($arr_keys = $this->redis->sscan('set', $it)) {
+            $i -= count($arr_keys);
+            foreach($arr_keys as $str_mem) {
+                $this->assertTrue(strpos($str_mem,'member')!==FALSE);
+            }
+        }
+        $this->assertEquals(0, $i);
+
+        // Scan just ones with zero in them (0, 10, 20, 30, 40, 50, 60, 70, 80, 90)
+        $it = NULL;
+        $i_w_zero = 0;
+        while($arr_keys = $this->redis->sscan('set', $it, '*0*')) {
+            $i_w_zero += count($arr_keys);
+        }
+        $this->assertEquals(10, $i_w_zero);
+    }
+
+    public function testZScan() {
+        if(version_compare($this->version, "2.8.0", "lt")) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+        $this->redis->del('zset');
+        $i_tot_score = 0;
+        $i_p_score = 0;
+        $i_p_count = 0;
+        for($i=0;$i<2000;$i++) {
+            if($i<10) {
+                $this->redis->zadd('zset', $i, "pmem:$i");
+                $i_p_score += $i;
+                $i_p_count += 1;
+            } else {
+                $this->redis->zadd('zset', $i, "mem:$i");
+            }
+            
+            $i_tot_score += $i;
+        }
+
+        // Scan them all
+        $it = NULL;
+        while($arr_keys = $this->redis->zscan('zset', $it)) {
+            foreach($arr_keys as $str_mem => $f_score) {
+                $i_tot_score -= $f_score;
+                $i--;
+            }
+        }
+        $this->assertEquals(0, $i);
+        $this->assertEquals(0, $i_tot_score);
+
+        // Just scan "pmem" members
+        $it = NULL;
+        $i_p_score_old = $i_p_score;
+        $i_p_count_old = $i_p_count;
+        while($arr_keys = $this->redis->zscan('zset', $it, "*pmem*")) {
+            foreach($arr_keys as $str_mem => $f_score) {
+                $i_p_score -= $f_score;
+                $i_p_count -= 1;
+            }
+        }
+        $this->assertEquals(0, $i_p_score);
+        $this->assertEquals(0, $i_p_count);
+
+        // Turn off retrying and we should get some empty results
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
+        $i_skips = 0;
+        $i_p_score = $i_p_score_old;
+        $i_p_count = $i_p_count_old;
+        $it = NULL;
+        while(($arr_keys = $this->redis->zscan('zset', $it, "*pmem*")) !== FALSE) {
+            if(count($arr_keys) == 0) $i_skips++;
+            foreach($arr_keys as $str_mem => $f_score) {
+                $i_p_score -= $f_score;
+                $i_p_count -= 1;
+            }
+        }
+        // We should still get all the keys, just with several empty results
+        $this->assertTrue($i_skips > 0);
+        $this->assertEquals(0, $i_p_score);
+        $this->assertEquals(0, $i_p_count);
+    }
 }
 
 exit(TestSuite::run("Redis_Test"));
