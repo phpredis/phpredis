@@ -29,6 +29,7 @@
 #include "php_ini.h"
 #include "php_redis.h"
 #include "redis_array.h"
+#include "redis_cluster.h"
 #include <zend_exceptions.h>
 
 #ifdef PHP_SESSION
@@ -53,11 +54,14 @@ extern ps_module ps_mod_redis;
 #endif
 
 extern zend_class_entry *redis_array_ce;
+extern zend_class_entry *redis_cluster_ce;
 zend_class_entry *redis_ce;
 zend_class_entry *redis_exception_ce;
+extern zend_class_entry *redis_cluster_exception_ce;
 zend_class_entry *spl_ce_RuntimeException = NULL;
 
 extern zend_function_entry redis_array_functions[];
+extern zend_function_entry redis_cluster_functions[];
 
 PHP_INI_BEGIN()
 	/* redis arrays */
@@ -469,7 +473,6 @@ PHP_REDIS_API RedisSock *redis_sock_get_connected(INTERNAL_FUNCTION_PARAMETERS) 
     return redis_sock;
 }
 
-
 /**
  * PHP_MINIT_FUNCTION
  */
@@ -477,7 +480,9 @@ PHP_MINIT_FUNCTION(redis)
 {
     zend_class_entry redis_class_entry;
     zend_class_entry redis_array_class_entry;
+    zend_class_entry redis_cluster_class_entry;
     zend_class_entry redis_exception_class_entry;
+    zend_class_entry redis_cluster_exception_class_entry;
 
 	REGISTER_INI_ENTRIES();
 
@@ -488,6 +493,11 @@ PHP_MINIT_FUNCTION(redis)
 	/* RedisArray class */
 	INIT_CLASS_ENTRY(redis_array_class_entry, "RedisArray", redis_array_functions);
     redis_array_ce = zend_register_internal_class(&redis_array_class_entry TSRMLS_CC);
+
+    /* RedisCluster class */
+    INIT_CLASS_ENTRY(redis_cluster_class_entry, "RedisCluster", redis_cluster_functions);
+    redis_cluster_ce = zend_register_internal_class(&redis_cluster_class_entry TSRMLS_CC);
+    redis_cluster_ce->create_object = create_cluster_context;
 
     le_redis_array = zend_register_list_destructors_ex(
         redis_destructor_redis_array,
@@ -500,6 +510,13 @@ PHP_MINIT_FUNCTION(redis)
     redis_exception_ce = zend_register_internal_class_ex(
         &redis_exception_class_entry,
         redis_get_exception_base(0 TSRMLS_CC),
+        NULL TSRMLS_CC
+    );
+
+    /* RedisClusterException class */
+    INIT_CLASS_ENTRY(redis_cluster_exception_class_entry, "RedisClusterException", NULL);
+    redis_cluster_exception_ce = zend_register_internal_class_ex(
+        &redis_cluster_exception_class_entry, rediscluster_get_exception_base(0 TSRMLS_CC),
         NULL TSRMLS_CC
     );
 
@@ -662,7 +679,7 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 	RedisSock *redis_sock  = NULL;
 
 #ifdef ZTS
-	/* not sure how in threaded mode this works so disabled persistents at first */
+	/* not sure how in threaded mode this works so disabled persistence at first */
     persistent = 0;
 #endif
 
@@ -694,7 +711,7 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 		{
 			/* maybe there is a socket but the id isn't known.. what to do? */
 		} else {
-			zend_list_delete(Z_LVAL_PP(socket)); /* the refcount should be decreased and the detructor called */
+			zend_list_delete(Z_LVAL_PP(socket)); /* the refcount should be decreased and the destructor called */
 		}
 	}
 
