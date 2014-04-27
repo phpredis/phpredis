@@ -53,6 +53,13 @@ typedef enum _PUBSUB_TYPE {
     PUBSUB_NUMPAT
 } PUBSUB_TYPE;
 
+/* Cluster redirection type */
+typedef enum _MOVED_TYPE {
+    MOVED_NONE,
+    MOVED_MOVED,
+    MOVED_ASK
+} MOVED_TYPE;
+
 /* options */
 #define REDIS_OPT_SERIALIZER		1
 #define REDIS_OPT_PREFIX		    2
@@ -177,6 +184,13 @@ else if(redis_sock->mode == MULTI) { \
 
 #define REDIS_PROCESS_RESPONSE(function) REDIS_PROCESS_RESPONSE_CLOSURE(function, NULL)
 
+/* Clear redirection info */
+#define REDIS_MOVED_CLEAR(redis_sock) \
+    redis_sock->redir_slot = 0; \
+    redis_sock->redir_port = 0; \
+    redis_sock->redir_type = MOVED_NONE; \
+    
+
 /* Extended SET argument detection */
 #define IS_EX_ARG(a) ((a[0]=='e' || a[0]=='E') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
 #define IS_PX_ARG(a) ((a[0]=='p' || a[0]=='P') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
@@ -239,6 +253,12 @@ typedef struct {
     zend_bool      lazy_connect;
 
     int            scan;
+
+    /* Cluster node redirection */
+    MOVED_TYPE     redir_type;
+    char           *redir_host;
+    unsigned short redir_port;
+    unsigned short redir_slot;
 } RedisSock;
 /* }}} */
 
