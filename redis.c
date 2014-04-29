@@ -1321,19 +1321,26 @@ PHP_METHOD(Redis, ping)
 }
 /* }}} */
 
-PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int count) {
-
+PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword)
+{
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *cmd;
     int key_len, cmd_len;
-    long val = 1;
-	int key_free;
+    long long val = 1;
+    int key_free;
+    zval** value = NULL;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|Z",
                                      &object, redis_ce,
-                                     &key, &key_len, &val) == FAILURE) {
+                                     &key, &key_len, &value) == FAILURE) {
         RETURN_FALSE;
+    }
+
+    if (Z_TYPE_PP(value) == IS_DOUBLE) {
+        val = (long long) Z_DVAL_PP(value);
+    } else if (Z_TYPE_PP(value) == IS_LONG) {
+        val = Z_LVAL_PP(value);
     }
 
     if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
@@ -1356,53 +1363,39 @@ PHPAPI void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword, 
 
 /* {{{ proto boolean Redis::incr(string key [,int value])
  */
-PHP_METHOD(Redis, incr){
-
+PHP_METHOD(Redis, incr)
+{
     zval *object;
     char *key = NULL;
     int key_len;
-    long val = 1;
+    zval **value = NULL;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|Z",
                                      &object, redis_ce,
-                                     &key, &key_len, &val) == FAILURE) {
+                                     &key, &key_len, &value) == FAILURE) {
         RETURN_FALSE;
     }
 
-    if(val == 1) {
-        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCR", 1);
+    if (value == NULL) {
+        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCR");
     } else {
-        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCRBY", val);
+        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCRBY");
     }
 }
 /* }}} */
 
 /* {{{ proto boolean Redis::incrBy(string key ,int value)
  */
-PHP_METHOD(Redis, incrBy){
-
-    zval *object;
-    char *key = NULL;
-    int key_len;
-    long val = 1;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl",
-                                     &object, redis_ce,
-                                     &key, &key_len, &val) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if(val == 1) {
-        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCR", 1);
-    } else {
-        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCRBY", val);
-    }
+PHP_METHOD(Redis, incrBy)
+{
+    redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INCRBY");
 }
 /* }}} */
 
 /* {{{ proto float Redis::incrByFloat(string key, float value)
  */
-PHP_METHOD(Redis, incrByFloat) {
+PHP_METHOD(Redis, incrByFloat)
+{
 	zval *object;
 	RedisSock *redis_sock;
 	char *key = NULL, *cmd;
@@ -1437,42 +1430,27 @@ PHP_METHOD(Redis, decr)
     zval *object;
     char *key = NULL;
     int key_len;
-    long val = 1;
+    zval **value = NULL;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|Z",
                                      &object, redis_ce,
-                                     &key, &key_len, &val) == FAILURE) {
+                                     &key, &key_len, &value) == FAILURE) {
         RETURN_FALSE;
     }
 
-    if(val == 1) {
-        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECR", 1);
+    if (value == NULL) {
+        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECR");
     } else {
-        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECRBY", val);
+        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECRBY");
     }
 }
 /* }}} */
 
 /* {{{ proto boolean Redis::decrBy(string key ,int value)
  */
-PHP_METHOD(Redis, decrBy){
-
-    zval *object;
-    char *key = NULL;
-    int key_len;
-    long val = 1;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl",
-                                     &object, redis_ce,
-                                     &key, &key_len, &val) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if(val == 1) {
-        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECR", 1);
-    } else {
-        redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECRBY", val);
-    }
+PHP_METHOD(Redis, decrBy)
+{
+    redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DECRBY");
 }
 /* }}} */
 

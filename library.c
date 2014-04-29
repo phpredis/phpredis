@@ -396,9 +396,9 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 				break;
 			case 'l':
 			case 'L': {
-				long l = va_arg(ap, long);
+				long long l = va_arg(ap, long long);
 				char tmp[32];
-				int tmp_len = snprintf(tmp, sizeof(tmp), "%ld", l);
+				int tmp_len = snprintf(tmp, sizeof(tmp), "%lld", l);
 				smart_str_append_long(&buf, tmp_len);
 				smart_str_appendl(&buf, _NL, sizeof(_NL) -1);
 				smart_str_appendl(&buf, tmp, tmp_len);
