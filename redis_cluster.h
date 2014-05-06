@@ -24,5 +24,6 @@ void init_rediscluster(TSRMLS_D);
 
 PHP_METHOD(RedisCluster, __construct);
 PHP_METHOD(RedisCluster, get);
+PHP_METHOD(RedisCluster, set);
 
 #endif
