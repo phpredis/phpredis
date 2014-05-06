@@ -189,3 +189,8 @@ PHP_METHOD(RedisCluster, __construct) {
 PHP_METHOD(RedisCluster, get) {
     RETURN_FALSE;
 }
+
+/* SET */
+PHP_METHOD(RedisCluster, set) {
+    RETURN_FALSE;
+}
