@@ -19,6 +19,16 @@ class TestSuite {
 			$bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
 	}
 
+    protected function assertLess($a, $b) {
+        if($a < $b) 
+            return;
+
+        $bt = debug_backtrace(false);
+        self::$errors[] = sprintf("Assertion failed (%s >= %s): %s: %d (%s\n",
+            print_r($a, true), print_r($b, true),
+            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+    }
+
 	protected function assertEquals($a, $b) {
 		if($a === $b)
 			return;
@@ -43,7 +53,6 @@ class TestSuite {
 		$methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
 
 		foreach($methods as $m) {
-
 			$name = $m->name;
 			if(substr($name, 0, 4) !== 'test')
 				continue;

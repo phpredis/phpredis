@@ -4492,7 +4492,7 @@ class Redis_Test extends TestSuite
         $vals = Array(1, 1.5, 'one', Array('here','is','an','array'));
         
         // Test with no serialization at all
-        $this->assertTrue($this->redis->_serialize('test') === 'test');
+        $this->assertTrue($this->redis->_serialize('test') === 'test');        
         $this->assertTrue($this->redis->_serialize(1) === '1');
         $this->assertTrue($this->redis->_serialize(Array()) === 'Array');
         $this->assertTrue($this->redis->_serialize(new stdClass) === 'Object');
@@ -4805,6 +4805,86 @@ class Redis_Test extends TestSuite
         $this->assertTrue($i_skips > 0);
         $this->assertEquals(0, $i_p_score);
         $this->assertEquals(0, $i_p_count);
+    }
+
+    //
+    // HyperLogLog (PF) commands
+    //
+
+    protected function createPFKey($str_key, $i_count) {
+        $arr_mems = Array();
+        for($i=0;$i<$i_count;$i++) {
+            $arr_mems[] = uniqid() . '-' . $i;
+        }
+
+        // Estimation by Redis
+        $this->redis->pfadd($str_key, $i_count);
+    }
+
+    public function testPFCommands() {
+        // Isn't available until 2.8.9
+        if(version_compare($this->version, "2.8.9", "lt")) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $str_uniq = uniqid();
+        $arr_mems = Array();
+
+        for($i=0;$i<1000;$i++) {
+            if($i%2 == 0) {
+                $arr_mems[] = $str_uniq . '-' . $i;
+            } else {
+                $arr_mems[] = $i;
+            }
+        }
+
+        // How many keys to create
+        $i_keys = 10;
+
+        // Iterate prefixing/serialization options
+        foreach(Array(Redis::SERIALIZER_NONE, Redis::SERIALIZER_PHP) as $str_ser) {
+            foreach(Array('', 'hl-key-prefix:') as $str_prefix) {
+                $arr_keys = Array();
+
+                // Now add for each key
+                for($i=0;$i<$i_keys;$i++) {
+                    $str_key    = "key:$i";
+                    $arr_keys[] = $str_key;
+
+                    // Clean up this key
+                    $this->redis->del($str_key);
+
+                    // Add to our cardinality set, and confirm we got a valid response
+                    $this->assertTrue($this->redis->pfadd($str_key, $arr_mems));
+
+                    // Grab estimated cardinality
+                    $i_card = $this->redis->pfcount($str_key);
+                    $this->assertTrue(is_int($i_card));
+
+                    // Count should be close
+                    $this->assertLess(abs($i_card-count($arr_mems)), count($arr_mems) * .1);
+
+                    // The PFCOUNT on this key should be the same as the above returned response
+                    $this->assertEquals($this->redis->pfcount($str_key), $i_card);
+                }
+
+                // Clean up merge key
+                $this->redis->del('pf-merge-key');
+                
+                // Merge the counters
+                $this->assertTrue($this->redis->pfmerge('pf-merge-key', $arr_keys));
+
+                // Validate our merged count
+                $i_redis_card = $this->redis->pfcount('pf-merge-key');
+
+                // Merged cardinality should still be roughly 1000
+                $this->assertLess(abs($i_redis_card-count($arr_mems)), count($arr_mems) * .1);
+
+                // Clean up merge key
+                $this->redis->del('pf-merge-key');
+            }
+        }
     }
 }
 
