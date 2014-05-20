@@ -25,6 +25,48 @@ extern zend_class_entry *redis_ce;
 extern zend_class_entry *redis_exception_ce;
 extern zend_class_entry *spl_ce_RuntimeException;
 
+/* Read count bytes into buf from a redis_sock's stream.
+ * Throws an exception and returns 0 on any error, returns 1 on success.
+ */
+static int _redis_sock_read_bytes(RedisSock *redis_sock, char *buf, size_t count TSRMLS_DC)
+{
+	size_t read;
+
+	while(count) {
+		read = php_stream_read(redis_sock->stream, buf, count);
+		if(!read) {
+			/* Error or EOF */
+			zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
+			return 0;
+		}
+
+		buf += read;
+		count -= read;
+	}
+
+	return 1;
+}
+
+/* Consume a newline from a redis_socks's stream.
+ * Throws an exception and returns 0 on any error, returns 1 on success.
+ */
+static int _redis_sock_read_nl(RedisSock *redis_sock TSRMLS_DC)
+{
+	char nl[_NL_len + 1];
+
+	if (!_redis_sock_read_bytes(redis_sock, nl, _NL_len TSRMLS_CC)) {
+		return 0;
+	}
+
+	if (0 != memcmp(nl, _NL, _NL_len)) {
+		nl[_NL_len] = '\0';
+		zend_throw_exception_ex(redis_exception_ce, 0 TSRMLS_CC, "protocol error, expected newline but got '%s'", nl);
+		return 0;
+	}
+
+	return 1;
+}
+
 PHPAPI void redis_stream_close(RedisSock *redis_sock TSRMLS_DC) {
 	if (!redis_sock->persistent) {
 		php_stream_close(redis_sock->stream);
@@ -185,39 +227,30 @@ PHPAPI zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, 
  */
 PHPAPI char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_DC)
 {
-    int offset = 0;
-    size_t got;
+	char * reply;
 
-    char * reply;
+	if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
+		return NULL;
+	}
 
-    if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
-        return NULL;
-    }
+	if (bytes == -1) {
+		return NULL;
+	}
 
-    if (bytes == -1) {
-        return NULL;
-    } else {
-        char c;
-        int i;
-        
-		reply = emalloc(bytes+1);
+	reply = emalloc(bytes+1);
 
-        while(offset < bytes) {
-            got = php_stream_read(redis_sock->stream, reply + offset, bytes-offset);
-            if (got <= 0) {
-                /* Error or EOF */
-				zend_throw_exception(redis_exception_ce, "socket error on read socket", 0 TSRMLS_CC);
-                break;
-            }
-            offset += got;
-        }
-        for(i = 0; i < 2; i++) {
-            php_stream_read(redis_sock->stream, &c, 1);
-        }
-    }
+	if (!_redis_sock_read_bytes(redis_sock, reply, bytes TSRMLS_CC)) {
+		efree(reply);
+		return NULL;
+	}
 
-    reply[bytes] = 0;
-    return reply;
+	if (!_redis_sock_read_nl(redis_sock TSRMLS_CC)) {
+		efree(reply);
+		return NULL;
+	}
+
+	reply[bytes] = '\0';
+	return reply;
 }
 
 /**
@@ -324,12 +357,12 @@ redis_cmd_format_header(char **ret, char *keyword, int arg_count) {
 
 	smart_str_appendc(&buf, '*');
 	smart_str_append_long(&buf, arg_count + 1);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) -1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 	smart_str_appendc(&buf, '$');
 	smart_str_append_long(&buf, l);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) -1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 	smart_str_appendl(&buf, keyword, l);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 
 	// Set our return pointer
 	*ret = buf.c;
@@ -353,12 +386,12 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 	/* add header */
 	smart_str_appendc(&buf, '*');
 	smart_str_append_long(&buf, strlen(format) + 1);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 	smart_str_appendc(&buf, '$');
 	smart_str_append_long(&buf, l);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 	smart_str_appendl(&buf, keyword, l);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 
 	while (*p) {
 		smart_str_appendc(&buf, '$');
@@ -368,7 +401,7 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 					char *val = va_arg(ap, char*);
 					int val_len = va_arg(ap, int);
 					smart_str_append_long(&buf, val_len);
-					smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+					smart_str_appendl(&buf, _NL, _NL_len);
 					smart_str_appendl(&buf, val, val_len);
 				}
 				break;
@@ -378,7 +411,7 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 				double d = va_arg(ap, double);
 				REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, d)
 				smart_str_append_long(&buf, dbl_len);
-				smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+				smart_str_appendl(&buf, _NL, _NL_len);
 				smart_str_appendl(&buf, dbl_str, dbl_len);
 				efree(dbl_str);
 			}
@@ -390,7 +423,7 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 				char tmp[32];
 				int tmp_len = snprintf(tmp, sizeof(tmp), "%d", i);
 				smart_str_append_long(&buf, tmp_len);
-				smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+				smart_str_appendl(&buf, _NL, _NL_len);
 				smart_str_appendl(&buf, tmp, tmp_len);
 			}
 				break;
@@ -400,13 +433,13 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 				char tmp[32];
 				int tmp_len = snprintf(tmp, sizeof(tmp), "%ld", l);
 				smart_str_append_long(&buf, tmp_len);
-				smart_str_appendl(&buf, _NL, sizeof(_NL) -1);
+				smart_str_appendl(&buf, _NL, _NL_len);
 				smart_str_appendl(&buf, tmp, tmp_len);
 			}
 				break;
 		}
 		p++;
-		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+		smart_str_appendl(&buf, _NL, _NL_len);
 	}
 	smart_str_0(&buf);
 
@@ -446,7 +479,7 @@ redis_cmd_format(char **ret, char *format, ...) {
 					double d = va_arg(ap, double);
 					REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, d)
 					smart_str_append_long(&buf, dbl_len);
-					smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+					smart_str_appendl(&buf, _NL, _NL_len);
 					smart_str_appendl(&buf, dbl_str, dbl_len);
 					efree(dbl_str);
 				}
@@ -488,9 +521,9 @@ int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len) 
 	// Append our new command sequence
 	smart_str_appendc(&buf, '$');
 	smart_str_append_long(&buf, append_len);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) -1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 	smart_str_appendl(&buf, append, append_len);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) -1);
+	smart_str_appendl(&buf, _NL, _NL_len);
 
 	// Free our old command
 	efree(*cmd);
@@ -509,12 +542,12 @@ int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len) 
 int redis_cmd_init_sstr(smart_str *str, int num_args, char *keyword, int keyword_len) {
     smart_str_appendc(str, '*');
     smart_str_append_long(str, num_args + 1);
-    smart_str_appendl(str, _NL, sizeof(_NL) -1);
+    smart_str_appendl(str, _NL, _NL_len);
     smart_str_appendc(str, '$');
     smart_str_append_long(str, keyword_len);
-    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    smart_str_appendl(str, _NL, _NL_len);
     smart_str_appendl(str, keyword, keyword_len);
-    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    smart_str_appendl(str, _NL, _NL_len);
     return str->len;
 }
 
@@ -524,9 +557,9 @@ int redis_cmd_init_sstr(smart_str *str, int num_args, char *keyword, int keyword
 int redis_cmd_append_sstr(smart_str *str, char *append, int append_len) {
     smart_str_appendc(str, '$');
     smart_str_append_long(str, append_len);
-    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    smart_str_appendl(str, _NL, _NL_len);
     smart_str_appendl(str, append, append_len);
-    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    smart_str_appendl(str, _NL, _NL_len);
 
     // Return our new length
     return str->len;
@@ -1498,14 +1531,32 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, R
  */
 PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz TSRMLS_DC)
 {
-	if(redis_sock && redis_sock->status == REDIS_SOCK_STATUS_DISCONNECTED) {
-		zend_throw_exception(redis_exception_ce, "Connection closed", 0 TSRMLS_CC);
-		return -1;
-	}
+    size_t wrote;
+
+    if(sz > INT_MAX) {
+        // greater than INT_MAX would overflow the return value.
+        // other php code breaks at this threshold, and it's beyond the max
+        // string size in redis,  but lets be nice and throw an exception.
+        zend_throw_exception(redis_exception_ce, "write overflow", 0 TSRMLS_CC);
+        return -1;
+    }
+
+    if(redis_sock && redis_sock->status != REDIS_SOCK_STATUS_CONNECTED) {
+        zend_throw_exception(redis_exception_ce, "connection closed", 0 TSRMLS_CC);
+        return -1;
+    }
+
     if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
         return -1;
     }
-    return php_stream_write(redis_sock->stream, cmd, sz);
+
+    wrote = php_stream_write(redis_sock->stream, cmd, sz);
+    if(wrote < sz) {
+        zend_throw_exception(redis_exception_ce, "write error on connection", 0 TSRMLS_CC);
+        return -1;
+    }
+
+    return wrote;
 }
 
 /**
@@ -1711,6 +1762,8 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t *line_siz
 
 PHPAPI int
 redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, int *reply_info TSRMLS_DC) {
+	int buf;
+
 	// Make sure we haven't lost the connection, even trying to reconnect
 	if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
 		// Failure
@@ -1718,9 +1771,12 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, int *
 	}
 
 	// Attempt to read the reply-type byte
-	if((*reply_type = php_stream_getc(redis_sock->stream)) == EOF) {
-		zend_throw_exception(redis_exception_ce, "socket error on read socket", 0 TSRMLS_CC);
+	buf = php_stream_getc(redis_sock->stream);
+	if(buf == EOF) {
+		zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
+		return -1;
 	}
+	*reply_type = buf;
 
 	// If this is a BULK, MULTI BULK, or simply an INTEGER response, we can extract the value or size info here
 	if(*reply_type == TYPE_INT || *reply_type == TYPE_BULK || *reply_type == TYPE_MULTIBULK) {
@@ -1728,7 +1784,8 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, int *
 		char inbuf[255];
 
 		// Read up to our newline
-		if(php_stream_gets(redis_sock->stream, inbuf, sizeof(inbuf)) < 0) {
+		if(php_stream_gets(redis_sock->stream, inbuf, sizeof(inbuf)) == NULL) {
+			zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
 			return -1;
 		}
 
