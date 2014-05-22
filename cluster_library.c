@@ -58,6 +58,39 @@ unsigned short cluster_hash_key(const char *key, int len) {
     return crc16(key+s+1,e-s-1) & REDIS_CLUSTER_MOD;
 }
 
+/* Hash a key from a ZVAL */
+unsigned short cluster_hash_key_zval(zval *z_key) {
+    const char *kptr;
+    char buf[255];
+    int klen;
+    
+    switch(Z_TYPE_P(z_key)) {
+        case IS_STRING:
+            kptr = Z_STRVAL_P(z_key);
+            klen = Z_STRLEN_P(z_key);
+            break;
+        case IS_LONG:
+            klen = snprintf(buf,sizeof(buf),"%ld",Z_LVAL_P(z_key));
+            kptr = (const char *)buf;
+            break;
+        case IS_DOUBLE:
+            klen = snprintf(buf,sizeof(buf),"%f",Z_DVAL_P(z_key));
+            kptr = (const char *)buf;
+            break;
+        case IS_ARRAY:
+            kptr = "Array";
+            klen = sizeof("Array")-1;
+            break;
+        case IS_OBJECT:
+            kptr = "Object";
+            klen = sizeof("Object")-1;
+            break;
+    }
+
+    // Hash the string representation
+    return cluster_hash_key(kptr, klen);
+}
+
 static char **split_str_by_delim(char *str, char *delim, int *len) {
     char **array, *tok, *tok_buf;
     int size=16;

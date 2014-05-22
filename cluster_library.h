@@ -50,8 +50,8 @@ typedef struct clusterNodeInfo {
 /* A Redis Cluster master node */
 typedef struct redisClusterNode {
     /* Our cluster ID and master ID */
-    char            *name;
-    char            *master_name;
+    char *name;
+    char *master_name;
 
     /* Our Redis socket in question */
     RedisSock *sock;
@@ -84,14 +84,17 @@ typedef struct redisCluster {
 } redisCluster;
 
 /* Hash a key to it's slot, using the Redis Cluster hash algorithm */
+unsigned short cluster_hash_key_zval(zval *key);
 unsigned short cluster_hash_key(const char *key, int len);
+
+/* Send a command to where we think the key(s) should live and redirect when needed */
+PHPAPI int cluster_send_command(redisCluster *cluster, unsigned short slot, 
+                                const char *cmd, int cmd_len);
 
 PHPAPI int cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds);
 PHPAPI int cluster_map_keyspace(redisCluster *cluster TSRMLS_DC);
 PHPAPI void cluster_free_node(redisClusterNode *node);
-
 PHPAPI char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock, int *len TSRMLS_DC);
-
 PHPAPI int cluster_node_add_slave(redisCluster *cluster, redisClusterNode *master, clusterNodeInfo *slave TSRMLS_DC);
 
 #endif
