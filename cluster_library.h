@@ -29,6 +29,33 @@
 #define CLUSTER_NODES_CONNECTED   7
 #define CLUSTER_SLOTS             8
 
+/* Cluster redirection enum */
+typedef enum CLUSTER_REDIR_TYPE {
+    REDIR_NONE,
+    REDIR_MOVED,
+    REDIR_ASK
+} CLUSTER_REDIR_TYPE;
+
+/* MOVED/ASK comparison macros */
+#define IS_MOVED(p) (p[0]=='M' && p[1]=='O' && p[2]=='V' && p[3]=='E' && \
+                     p[5]=='D' && p[6]==' ')
+#define IS_ASK(p)   (p[0]=='A' && p[1]=='S' && p[3]=='K' && p[4]==' ')
+
+/* MOVED/ASK lengths */
+#define MOVED_LEN (sizeof("MOVED ")-1)
+#define ASK_LEN   (sizeof("ASK ")-1)
+
+/* Slot/RedisSock/RedisSock->stream macros */
+#define SLOT(c,s) (c->master[s])
+#define SLOT_SOCK(c,s) (SLOT(c,s)->sock)
+#define SLOT_STREAM(c,s) (SLOT_SOCK(c,s)->stream)
+
+/* Compare redirection slot information with what we have */
+#define CLUSTER_REDIR_CMP(c) \
+    (SLOT_SOCK(c,c->redir_slot)->port != c->redir_port || \
+    strlen(SLOT_SOCK(c,c->redir_slot)->host) != c->redir_host_len || \
+    memcmp(SLOT_SOCK(c,c->redir_slot)->host,c->redir_host,c->redir_host_len))
+
 /* Specific destructor to free a cluster object */
 // void redis_destructor_redis_cluster(zend_rsrc_list_entry *rsrc TSRMLS_DC);
 
@@ -81,20 +108,37 @@ typedef struct redisCluster {
 
     /* All RedisCluster objects we've created/are connected to */
     HashTable *nodes;
+
+    /* The last ERROR we encountered */
+    char *err;
+    int err_len;
+
+    /* Last MOVED or ASK redirection response information */
+    CLUSTER_REDIR_TYPE redir_type;
+    char               redir_host[255];
+    int                redir_host_len;
+    unsigned short     redir_slot;
+    unsigned short     redir_port;
 } redisCluster;
 
 /* Hash a key to it's slot, using the Redis Cluster hash algorithm */
 unsigned short cluster_hash_key_zval(zval *key);
 unsigned short cluster_hash_key(const char *key, int len);
 
-/* Send a command to where we think the key(s) should live and redirect when needed */
-PHPAPI int cluster_send_command(redisCluster *cluster, unsigned short slot, 
-                                const char *cmd, int cmd_len);
+/* Send a command to where we think the key(s) should live and redirect when 
+ * needed */
+PHPAPI short cluster_send_command(redisCluster *cluster, short slot, 
+                                const char *cmd, int cmd_len TSRMLS_DC);
 
 PHPAPI int cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds);
 PHPAPI int cluster_map_keyspace(redisCluster *cluster TSRMLS_DC);
 PHPAPI void cluster_free_node(redisClusterNode *node);
-PHPAPI char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock, int *len TSRMLS_DC);
-PHPAPI int cluster_node_add_slave(redisCluster *cluster, redisClusterNode *master, clusterNodeInfo *slave TSRMLS_DC);
+
+PHPAPI char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock, 
+                                                int *len TSRMLS_DC);
+
+PHPAPI int cluster_node_add_slave(redisCluster *cluster, 
+                                  redisClusterNode *master, 
+                                  clusterNodeInfo *slave TSRMLS_DC);
 
 #endif
