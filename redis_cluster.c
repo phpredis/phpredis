@@ -162,19 +162,22 @@ PHP_METHOD(RedisCluster, __construct) {
 
     // Validate timeout
     if(timeout < 0L || timeout > INT_MAX) {
-        zend_throw_exception(redis_cluster_exception_ce, "Invalid timeout", 0 TSRMLS_CC);
+        zend_throw_exception(redis_cluster_exception_ce, 
+            "Invalid timeout", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
 
     // Validate our read timeout
     if(read_timeout < 0L || read_timeout > INT_MAX) {
-        zend_throw_exception(redis_cluster_exception_ce, "Invalid read timeout", 0 TSRMLS_CC);
+        zend_throw_exception(redis_cluster_exception_ce, 
+            "Invalid read timeout", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
 
     // TODO: Implement seed retrieval from php.ini
     if(!z_seeds || zend_hash_num_elements(Z_ARRVAL_P(z_seeds))==0) {
-        zend_throw_exception(redis_cluster_exception_ce, "Must pass seeds", 0 TSRMLS_CC);
+        zend_throw_exception(redis_cluster_exception_ce, 
+            "Must pass seeds", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
 
@@ -187,6 +190,7 @@ PHP_METHOD(RedisCluster, __construct) {
 
 /* GET */
 PHP_METHOD(RedisCluster, get) {
+
     RETURN_FALSE;
 }
 
