@@ -190,6 +190,24 @@ PHP_METHOD(RedisCluster, __construct) {
 
 /* GET */
 PHP_METHOD(RedisCluster, get) {
+    zval *z_obj;
+    char *cmd, *key;
+    int cmd_len, key_len;
+    redisCluster *c = GET_CONTEXT();
+
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
+                                    "Os", &z_obj, redis_cluster_ce, &key,
+                                    &key_len)==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    // Format our command
+    cmd_len = redis_cmd_format_static(&cmd, "GET", "s", key, key_len);
+
+    // Send it to our cluster
+    CLUSTER_PROCESS_REQUEST(c, cluster_hash_key(key,key_len), cmd, cmd_len);
+    CLUSTER_READ_RESPONSE(c, cluster_string_response);
 
     RETURN_FALSE;
 }
