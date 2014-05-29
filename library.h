@@ -48,7 +48,7 @@ PHPAPI int redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_le
 PHPAPI int
 redis_serialize(int serializer, zval *z, char **val, int *val_len TSRMLS_DC);
 PHPAPI int
-redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len TSRMLS_DC);
+redis_key_prefix(char *prefix, int prefix_len, char **key, int *key_len);
 
 PHPAPI int
 redis_unserialize(int serializer, const char *val, int val_len, zval **return_value TSRMLS_DC);

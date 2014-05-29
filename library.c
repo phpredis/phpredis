@@ -1735,7 +1735,7 @@ redis_unserialize(int mode, const char *val, int val_len, zval **return_value
 }
 
 PHPAPI int
-redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len TSRMLS_DC) {
+redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len) {
 	int ret_len;
 	char *ret;
 	
