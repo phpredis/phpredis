@@ -56,6 +56,16 @@ typedef enum CLUSTER_REDIR_TYPE {
     strlen(SLOT_SOCK(c,c->redir_slot)->host) != c->redir_host_len || \
     memcmp(SLOT_SOCK(c,c->redir_slot)->host,c->redir_host,c->redir_host_len))
 
+/* Send a request to our cluster, and process it's response */
+#define CLUSTER_PROCESS_REQUEST(cluster, slot, cmd, cmd_len, resp_cb) \
+    if(cluster_send_command(cluster,slot,cmd,cmd_len TSRMLS_CC)<0 || \
+       resp_cb(cluster, INTERNAL_FUNCTION_PARAM_PASSTHRU)<0) \
+    { \
+        RETVAL_FALSE; \
+    } \
+    efree(cmd); \`
+
+
 /* Specific destructor to free a cluster object */
 // void redis_destructor_redis_cluster(zend_rsrc_list_entry *rsrc TSRMLS_DC);
 
@@ -113,6 +123,13 @@ typedef struct redisCluster {
     char *err;
     int err_len;
 
+    /* The slot where we should read replies */
+    short reply_slot;
+
+    /* The last reply length we got, which we'll use to parse and
+     * format our replies to the client. */
+    int reply_len;
+
     /* Last MOVED or ASK redirection response information */
     CLUSTER_REDIR_TYPE redir_type;
     char               redir_host[255];
@@ -140,5 +157,8 @@ PHPAPI char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock,
 PHPAPI int cluster_node_add_slave(redisCluster *cluster, 
                                   redisClusterNode *master, 
                                   clusterNodeInfo *slave TSRMLS_DC);
+
+/* Response handlers */
+PHPAPI int cluster_bulk_response(
 
 #endif

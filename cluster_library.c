@@ -653,8 +653,7 @@ static redisClusterNode *cluster_find_node(redisCluster *c, const char *host,
  * This function will return -1 on a critical error (e.g. parse/communication
  * error, 0 if no redirection was encountered, and 1 if the data was moved. */
 static int cluster_check_response(redisCluster *c, unsigned short slot, 
-                                  REDIS_REPLY_TYPE *reply_type, 
-                                  int *reply_len TSRMLS_DC)
+                                  REDIS_REPLY_TYPE *reply_type, TSRMLS_DC)
 {
     // Check for general socket EOF and then EOF on our reply type request
     if((-1 == redis_check_eof(SLOT(c,slot)->sock)) ||
@@ -729,7 +728,7 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
         }
 
         // Size information
-        *reply_len = atoi(inbuf);
+        c->reply_len = atoi(inbuf);
     }
 
     // Clear out any previous error, and return that the data is here
@@ -824,7 +823,7 @@ static void cluster_update_slot(redisCluster *c, short orig_slot TSRMLS_CC) {
 /* Send a command to given slot in our cluster.  If we get a MOVED 
  * or ASK error we attempt to send the command to the node as 
  * directed. */
-PHPAPI short cluster_send_command(redisCluster *c, short slot, 
+PHPAPI int cluster_send_command(redisCluster *c, short slot, 
                                 const char *cmd, int cmd_len TSRMLS_DC)
 {
     REDIS_REPLY_TYPE reply_type;
@@ -845,8 +844,7 @@ PHPAPI short cluster_send_command(redisCluster *c, short slot,
         }
 
         // Check the response from the slot we ended up querying.
-        resp = cluster_check_response(c, slot, &reply_type, &reply_len 
-            TSRMLS_CC);
+        resp = cluster_check_response(c, slot, &reply_type TSRMLS_CC);
 
         // If we're getting an error condition, impose a slight delay before
         // we try again (e.g. server went down, election in process).  If the
@@ -864,11 +862,13 @@ PHPAPI short cluster_send_command(redisCluster *c, short slot,
         }
     } while(resp != 0);
 
-    // Clear out redirection flag
+    // Inform the cluster where to read the rest of our response, 
+    // and clear out redirection flag.
+    c->reply_slot = slot;
     c->redir_type = REDIR_NONE;
 
     // Success, return the slot where data exists.
-    return slot;
+    return 0;
 }
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
