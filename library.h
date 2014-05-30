@@ -1,3 +1,6 @@
+#ifndef REDIS_LIBRARY_H
+#define REDIS_LIBRARY_H
+
 void add_constant_long(zend_class_entry *ce, char *name, int value);
 int integer_length(int i);
 int redis_cmd_format(char **ret, char *format, ...);
@@ -48,7 +51,7 @@ PHPAPI int redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_le
 PHPAPI int
 redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_DC);
 PHPAPI int
-redis_key_prefix(char *prefix, int prefix_len, char **key, int *key_len);
+redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len);
 
 PHPAPI int
 redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_DC);
@@ -76,4 +79,6 @@ PHPAPI void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *red
 #define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) \
 	dbl_str = _php_math_number_format(dbl, 16, '.', '\x00'); \
 	dbl_len = strlen(dbl_str);
+#endif
+
 #endif
