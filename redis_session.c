@@ -122,7 +122,7 @@ redis_pool_member_auth(redis_pool_member *rpm TSRMLS_DC) {
     if(!rpm->auth || !rpm->auth_len) { /* no password given. */
             return;
     }
-    cmd_len = redis_cmd_format_static(&cmd, "AUTH", "s" TSRMLS_CC, rpm->auth,
+    cmd_len = redis_cmd_format_static(redis_sock, &cmd, "AUTH", "s" TSRMLS_CC, rpm->auth,
                                       rpm->auth_len);
 
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) >= 0) {
@@ -139,7 +139,7 @@ redis_pool_member_select(redis_pool_member *rpm TSRMLS_DC) {
     char *response, *cmd;
     int response_len, cmd_len;
 
-    cmd_len = redis_cmd_format_static(&cmd, "SELECT", "d" TSRMLS_CC,
+    cmd_len = redis_cmd_format_static(redis_sock, &cmd, "SELECT", "d" TSRMLS_CC,
                                       rpm->database);
 
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) >= 0) {
@@ -351,7 +351,7 @@ PS_READ_FUNC(redis)
 
 	/* send GET command */
 	session = redis_session_key(rpm, key, strlen(key), &session_len);
-	cmd_len = redis_cmd_format_static(&cmd, "GET", "s" TSRMLS_CC, session,
+	cmd_len = redis_cmd_format_static(redis_sock, &cmd, "GET", "s" TSRMLS_CC, session,
                                       session_len);
 	efree(session);
 	if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
@@ -385,7 +385,7 @@ PS_WRITE_FUNC(redis)
 
 	/* send SET command */
 	session = redis_session_key(rpm, key, strlen(key), &session_len);
-	cmd_len = redis_cmd_format_static(&cmd, "SETEX", "sds" TSRMLS_CC, session,
+	cmd_len = redis_cmd_format_static(redis_sock, &cmd, "SETEX", "sds" TSRMLS_CC, session,
                                       session_len,
                                       INI_INT("session.gc_maxlifetime"),
                                       val, vallen);
@@ -427,7 +427,7 @@ PS_DESTROY_FUNC(redis)
 
     /* send DEL command */
 	session = redis_session_key(rpm, key, strlen(key), &session_len);
-	cmd_len = redis_cmd_format_static(&cmd, "DEL", "s",  TSRMLS_CC, session, 
+	cmd_len = redis_cmd_format_static(redis_sock, &cmd, "DEL", "s",  TSRMLS_CC, session,
                                       session_len);
 	efree(session);
 	if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {

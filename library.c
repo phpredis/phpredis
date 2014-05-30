@@ -501,8 +501,8 @@ redis_cmd_format_header(char **ret, char *keyword, int arg_count) {
 }
 
 int
-redis_cmd_format_static(char **ret, char *keyword, char *format TSRMLS_DC,
-                        ...)
+redis_cmd_format_static(RedisSock *redis_sock, char **ret, char *keyword,
+					    char *format TSRMLS_DC, ...)
 {
     char *p = format;
     va_list ap;
@@ -535,9 +535,18 @@ redis_cmd_format_static(char **ret, char *keyword, char *format TSRMLS_DC,
                 smart_str_appendl(&buf, val, val_len);
                 }
 				break;
+			case 'k': {
+				char *key = va_arg(ap, char*);
+				int key_len = va_arg(ap, int);
+				int key_free = redis_key_prefix(redis_sock, &key, &key_len);
+				smart_str_append_long(&buf, key_len);
+				smart_str_appendl(&buf, _NL, sizeof(_NL)-1);
+				smart_str_appendl(&buf, key, key_len);
+				if(key_free) efree(key);
+				}
+				break;
             case 'v': {
                 char *zval = va_arg(ap,zval*);
-                RedisSock *redis_sock = va_arg(ap,RedisSock*);
                 int val_free = redis_serialize(redis_sock,&val,&val_len TSRMLS_CC);
                 smart_str_append_long(&buf,val_len);
                 smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
@@ -1584,7 +1593,7 @@ PHP_REDIS_API void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS, RedisSock *r
 	int response_len, cmd_len;
 	char * response;
 
-    cmd_len = redis_cmd_format_static(&cmd, "DISCARD", "" TSRMLS_CC);
+    cmd_len = redis_cmd_format_static(redis_sock, &cmd, "DISCARD", "" TSRMLS_CC);
 
     if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
