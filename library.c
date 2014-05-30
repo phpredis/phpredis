@@ -78,7 +78,8 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
         char *cmd, *response;
         int cmd_len, response_len;
 
-        cmd_len = redis_cmd_format_static(&cmd, "SELECT", "d", redis_sock->dbNumber);
+        cmd_len = redis_cmd_format_static(&cmd, "SELECT", "d" TSRMLS_CC, 
+                                          redis_sock->dbNumber);
 
         if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
             efree(cmd);
@@ -401,7 +402,9 @@ redis_cmd_format_header(char **ret, char *keyword, int arg_count) {
 }
 
 int
-redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
+redis_cmd_format_static(char **ret, char *keyword, char *format TSRMLS_DC, 
+                        ...) 
+{
     char *p = format;
     va_list ap;
     smart_str buf = {0};
@@ -442,6 +445,16 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
                 smart_str_appendl(&buf, _NL, sizeof(_NL)-1);
                 smart_str_appendl(&buf,key,key_len);
                 if(key_free) efree(key);
+                }
+                break;
+            case 'v': {
+                char *zval = va_arg(ap,zval*);
+                RedisSock *redis_sock = va_arg(ap,RedisSock*);
+                int val_free = redis_serialize(redis_sock,&val,&val_len TSRMLS_CC);
+                smart_str_append_long(&buf,val_len);
+                smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+                smart_str_appendl(&buf,val,val_len);
+                if(val_free) STR_FREE(val);
                 }
                 break;
 			case 'f':

@@ -1,7 +1,7 @@
 void add_constant_long(zend_class_entry *ce, char *name, int value);
 int integer_length(int i);
 int redis_cmd_format(char **ret, char *format, ...);
-int redis_cmd_format_static(char **ret, char *keyword, char *format, ...);
+int redis_cmd_format_static(char **ret, char *keyword, char *format TSRMLS_DC, ...);
 int redis_cmd_format_header(char **ret, char *keyword, int arg_count);
 int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len);
 int redis_cmd_init_sstr(smart_str *str, int num_args, char *keyword, int keyword_len);
