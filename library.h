@@ -46,12 +46,12 @@ PHPAPI void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_so
 PHPAPI int redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len);
 
 PHPAPI int
-redis_serialize(int serializer, zval *z, char **val, int *val_len TSRMLS_DC);
+redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_DC);
 PHPAPI int
 redis_key_prefix(char *prefix, int prefix_len, char **key, int *key_len);
 
 PHPAPI int
-redis_unserialize(int serializer, const char *val, int val_len, zval **return_value TSRMLS_DC);
+redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_DC);
 
 
 /*
