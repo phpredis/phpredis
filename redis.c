@@ -28,6 +28,7 @@
 #include "ext/standard/info.h"
 #include "php_ini.h"
 #include "php_redis.h"
+#include "redis_commands.h"
 #include "redis_array.h"
 #include "redis_cluster.h"
 #include <zend_exceptions.h>
@@ -933,97 +934,16 @@ PHP_METHOD(Redis, close)
 
 /* {{{ proto boolean Redis::set(string key, mixed value, long timeout | array options) */
 PHP_METHOD(Redis, set) {
-    zval *object;
     RedisSock *redis_sock;
-    char *key = NULL, *val = NULL, *cmd, *exp_type = NULL, *set_type = NULL;
-    int key_len, val_len, cmd_len;
-    long expire = -1;
-    int val_free = 0, key_free = 0;
-    zval *z_value, *z_opts = NULL;
+    char *cmd;
+    int cmd_len;
 
-    /* Make sure the arguments are correct */
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osz|z",
-                                    &object, redis_ce, &key, &key_len, &z_value,
-                                    &z_opts) == FAILURE)
+    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0 ||
+       redis_set_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &cmd, 
+                     &cmd_len, NULL)==FAILURE)
     {
         RETURN_FALSE;
     }
-
-    /* Ensure we can grab our redis socket */
-    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    /* Our optional argument can either be a long (to support legacy SETEX */
-    /* redirection), or an array with Redis >= 2.6.12 set options */
-    if(z_opts && Z_TYPE_P(z_opts) != IS_LONG && Z_TYPE_P(z_opts) != IS_ARRAY
-       && Z_TYPE_P(z_opts) != IS_NULL)
-    {
-        RETURN_FALSE;
-    }
-
-    /* Serialization, key prefixing */
-    val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    if(z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
-        HashTable *kt = Z_ARRVAL_P(z_opts);
-        int type;
-        unsigned int ht_key_len;
-        unsigned long idx;
-        char *k;
-        zval **v;
-
-        /* Iterate our option array */
-        for(zend_hash_internal_pointer_reset(kt);
-            zend_hash_has_more_elements(kt) == SUCCESS;
-            zend_hash_move_forward(kt))
-        {
-            /* Grab key and value */
-            type = zend_hash_get_current_key_ex(kt, &k, &ht_key_len, &idx, 0, NULL);
-            zend_hash_get_current_data(kt, (void**)&v);
-
-            if(type == HASH_KEY_IS_STRING && (Z_TYPE_PP(v) == IS_LONG) &&
-               (Z_LVAL_PP(v) > 0) && IS_EX_PX_ARG(k))
-            {
-                exp_type = k;
-                expire = Z_LVAL_PP(v);
-            } else if(Z_TYPE_PP(v) == IS_STRING && IS_NX_XX_ARG(Z_STRVAL_PP(v))) {
-                set_type = Z_STRVAL_PP(v);
-            }
-        }
-    } else if(z_opts && Z_TYPE_P(z_opts) == IS_LONG) {
-        expire = Z_LVAL_P(z_opts);
-    }
-
-    /* Now let's construct the command we want */
-    if(exp_type && set_type) {
-        /* SET <key> <value> NX|XX PX|EX <timeout> */
-        cmd_len = redis_cmd_format_static(&cmd, "SET", "ssssl", key,
-                                          key_len, val, val_len, set_type, 2,
-                                          exp_type, 2, expire);
-    } else if(exp_type) {
-        /* SET <key> <value> PX|EX <timeout> */
-        cmd_len = redis_cmd_format_static(&cmd, "SET", "sssl", key,
-                                          key_len, val, val_len, exp_type, 2,
-                                          expire);
-    } else if(set_type) {
-        /* SET <key> <value> NX|XX */
-        cmd_len = redis_cmd_format_static(&cmd, "SET", "sss", key,
-                                          key_len, val, val_len, set_type, 2);
-    } else if(expire > 0) {
-        /* Backward compatible SETEX redirection */
-        cmd_len = redis_cmd_format_static(&cmd, "SETEX", "sls", key,
-                                          key_len, expire, val, val_len);
-    } else {
-        /* SET <key> <value> */
-        cmd_len = redis_cmd_format_static(&cmd, "SET", "ss", key,
-                                          key_len, val, val_len);
-    }
-
-    /* Free our key or value if we prefixed/serialized */
-    if(key_free) efree(key);
-    if(val_free) STR_FREE(val);
 
     /* Kick off the command */
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -1302,32 +1222,24 @@ PHP_METHOD(Redis, renameNx)
  */
 PHP_METHOD(Redis, get)
 {
-    zval *object;
     RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len;
-	int key_free;
+    char *cmd;
+    int cmd_len;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
-                                     &object, redis_ce,
-                                     &key, &key_len) == FAILURE) {
+    // Grab our socket and parse arguments/build command
+    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0 ||
+       redis_get_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &cmd, 
+                     &cmd_len, NULL)==FAILURE) 
+    {
         RETURN_FALSE;
     }
 
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "GET", "s", key, key_len);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
-	  redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                              NULL, NULL);
     }
     REDIS_PROCESS_RESPONSE(redis_string_response);
-
 }
 /* }}} */
 
@@ -1498,7 +1410,6 @@ PHP_METHOD(Redis, decr)
 /* {{{ proto boolean Redis::decrBy(string key ,int value)
  */
 PHP_METHOD(Redis, decrBy){
-
     zval *object;
     char *key = NULL;
     int key_len;
@@ -6934,7 +6845,7 @@ PHP_METHOD(Redis, _unserialize) {
 	/* We only need to attempt unserialization if we have a serializer running */
 	if(redis_sock->serializer != REDIS_SERIALIZER_NONE) {
 		zval *z_ret = NULL;
-		if(redis_unserialize(redis_sock->serializer, value, value_len, &z_ret
+		if(redis_unserialize(redis_sock, value, value_len, &z_ret
                              TSRMLS_CC) == 0)
         {
 			// Badly formed input, throw an execption
