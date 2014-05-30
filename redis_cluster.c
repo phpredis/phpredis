@@ -26,6 +26,7 @@
 #include "ext/standard/info.h"
 #include "crc16.h"
 #include "redis_cluster.h"
+#include "redis_commands.h"
 #include <zend_exceptions.h>
 #include "library.h"
 
@@ -81,7 +82,7 @@ PHPAPI zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC) {
 }
 
 /* Create redisCluster context */
-zend_object_value 
+zend_object_value
 create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
     zend_object_value retval;
     redisCluster *cluster;
@@ -89,6 +90,9 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
     // Allocate our actual struct
     cluster = emalloc(sizeof(redisCluster));
     memset(cluster, 0, sizeof(redisCluster));
+
+    // Allocate our RedisSock we'll use to store prefix/serialization flags
+    cluster->flags = emalloc(sizeof(RedisSock));
 
     // Allocate our hash table for seeds
     ALLOC_HASHTABLE(cluster->seeds);
@@ -108,8 +112,8 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
         (copy_ctor_func_t)zval_add_ref, (void*)&tmp, sizeof(zval*));
 #endif
 
-    retval.handle = zend_objects_store_put(cluster, 
-        (zend_objects_store_dtor_t)zend_objects_destroy_object, 
+    retval.handle = zend_objects_store_put(cluster,
+        (zend_objects_store_dtor_t)zend_objects_destroy_object,
         free_cluster_context, NULL TSRMLS_CC);
 
     retval.handlers = zend_get_std_object_handlers();
@@ -121,9 +125,13 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
 void free_cluster_context(void *object TSRMLS_DC) {
     redisCluster *cluster;
     redisClusterNode **node;
-    
+
     // Grab context
     cluster = (redisCluster*)object;
+
+    // Free any allocated prefix, as well as the struct
+    if(cluster->flags->prefix) efree(cluster->flags->prefix);
+    efree(cluster->flags);
 
     // Free seeds HashTable itself
     zend_hash_destroy(cluster->seeds);
@@ -148,7 +156,7 @@ PHP_METHOD(RedisCluster, __construct) {
     long name_len;
     double timeout = 0.0, read_timeout = 0.0;
     redisCluster *context = GET_CONTEXT();
-    
+
     // Parse arguments
     if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|add",
                                     &object, redis_cluster_ce, &name, &name_len,
@@ -162,21 +170,21 @@ PHP_METHOD(RedisCluster, __construct) {
 
     // Validate timeout
     if(timeout < 0L || timeout > INT_MAX) {
-        zend_throw_exception(redis_cluster_exception_ce, 
+        zend_throw_exception(redis_cluster_exception_ce,
             "Invalid timeout", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
 
     // Validate our read timeout
     if(read_timeout < 0L || read_timeout > INT_MAX) {
-        zend_throw_exception(redis_cluster_exception_ce, 
+        zend_throw_exception(redis_cluster_exception_ce,
             "Invalid read timeout", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
 
     // TODO: Implement seed retrieval from php.ini
     if(!z_seeds || zend_hash_num_elements(Z_ARRVAL_P(z_seeds))==0) {
-        zend_throw_exception(redis_cluster_exception_ce, 
+        zend_throw_exception(redis_cluster_exception_ce,
             "Must pass seeds", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
@@ -190,29 +198,10 @@ PHP_METHOD(RedisCluster, __construct) {
 
 /* GET */
 PHP_METHOD(RedisCluster, get) {
-    zval *z_obj;
-    char *cmd, *key;
-    int cmd_len, key_len;
-    redisCluster *c = GET_CONTEXT();
-
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
-                                    "Os", &z_obj, redis_cluster_ce, &key,
-                                    &key_len)==FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-    // Format our command
-    cmd_len = redis_cmd_format_static(&cmd, "GET", "s", key, key_len);
-
-    // Send it to our cluster
-    CLUSTER_PROCESS_REQUEST(c, cluster_hash_key(key,key_len), cmd, cmd_len);
-    CLUSTER_READ_RESPONSE(c, cluster_string_response);
-
-    RETURN_FALSE;
+    CLUSTER_PROCESS_REQUEST(get, cluster_bulk_resp);
 }
 
 /* SET */
 PHP_METHOD(RedisCluster, set) {
-    RETURN_FALSE;
+    CLUSTER_PROCESS_REQUEST(set, cluster_bool_resp);
 }
