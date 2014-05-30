@@ -13,6 +13,41 @@
 #define GET_CONTEXT() \
     (redisCluster*)zend_object_store_get_object(getThis() TSRMLS_CC)
 
+/* Command building/processing is identical for every command */
+#define CLUSTER_BUILD_CMD(name, c, cmd, cmd_len, slot) \
+    redis_##name##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &cmd, &cmd_len, &slot)
+
+#define CLUSTER_PROCESS_REQUEST(cmdname, resp_func) \
+    redisCluster *c = GET_CONTEXT(); \
+    char *cmd; \
+    int cmd_len; \
+    short slot; \
+    if(redis_##cmdname##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,c->flags, &cmd, \
+                             &cmd_len, &slot)==FAILURE) \
+    { \
+        RETURN_FALSE; \
+    } \
+    if(cluster_send_command(c,slot,cmd,cmd_len TSRMLS_CC)<0 || \
+                            c->err_state!=0) \
+    { \
+        efree(cmd); \
+        RETURN_FALSE; \
+    } \
+    resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c); 
+    
+
+
+/* Send a request to our cluster, and process the response */
+/*#define CLUSTER_PROCESS_REQUEST(c, slot, cmd, cmd_len, resp_func) \
+    if(cluster_send_command(c,slot,cmd,cmd_len TSRMLS_CC)<0 || \
+       c->err_state!=0) || \
+    { \
+        efree(cmd); \
+        RETURN_FALSE; \
+    } \
+    efree(cmd);
+*/
+
 /* For the creation of RedisCluster specific exceptions */
 PHPAPI zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC);
 
