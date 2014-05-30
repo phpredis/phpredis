@@ -1290,7 +1290,7 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
     }
     IF_MULTI_OR_PIPELINE() {
 		zval *z = NULL;
-		if(redis_unserialize(redis_sock->serializer, response, response_len, 
+		if(redis_unserialize(redis_sock, response, response_len, 
                              &z TSRMLS_CC) == 1) 
         {
 			efree(response);
@@ -1299,7 +1299,7 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
 			add_next_index_stringl(z_tab, response, response_len, 0);
 		}
     } else {
-		if(redis_unserialize(redis_sock->serializer, response, response_len, 
+		if(redis_unserialize(redis_sock, response, response_len, 
                              &return_value TSRMLS_CC) == 0) 
         {
 		    RETURN_STRINGL(response, response_len, 0);
@@ -1774,9 +1774,8 @@ redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *re
 		if(unserialize_even_only == UNSERIALIZE_ONLY_VALUES && numElems % 2 == 0)
 			can_unserialize = 0;
 
-		if(can_unserialize && redis_unserialize(redis_sock->serializer, 
-                                                response, response_len, 
-                                                &z TSRMLS_CC) == 1) 
+		if(can_unserialize && redis_unserialize(redis_sock, response, 
+                                                response_len, &z TSRMLS_CC)==1) 
         {
 			efree(response);
 			add_next_index_zval(z_tab, z);
@@ -1832,8 +1831,8 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
         if(response != NULL) {
 			zval *z = NULL;
-			if(redis_unserialize(redis_sock->serializer, response, 
-                                 response_len, &z TSRMLS_CC) == 1) 
+			if(redis_unserialize(redis_sock, response, response_len, &z 
+                                 TSRMLS_CC) == 1) 
             {
 				efree(response);
 				add_assoc_zval_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), z);
@@ -1978,8 +1977,8 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 }
 
 PHPAPI int
-redis_unserialize(int mode, const char *val, int val_len, zval **return_value 
-                  TSRMLS_DC) 
+redis_unserialize(RedisSock* redis_sock, const char *val, int val_len, 
+                  zval **return_value TSRMLS_DC) 
 {
 
 	php_unserialize_data_t var_hash;
