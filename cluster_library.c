@@ -86,7 +86,7 @@ unsigned short cluster_hash_key_zval(zval *z_key) {
     char buf[255];
     int klen;
 
-    // Switch based on ZVAL type    
+    // Switch based on ZVAL type
     switch(Z_TYPE_P(z_key)) {
         case IS_STRING:
             kptr = Z_STRVAL_P(z_key);
@@ -153,7 +153,7 @@ cluster_parse_node_line(RedisSock *sock, char *line, clusterNodeInfo *info) {
         efree(array);
         return -1;
     }
-    
+
     // Sanity check on our cluster ID value
     if(strlen(array[CLUSTER_NODES_HASH])!=CLUSTER_NAME_LEN) {
         efree(array);
@@ -181,14 +181,14 @@ cluster_parse_node_line(RedisSock *sock, char *line, clusterNodeInfo *info) {
         efree(array);
         return -1;
     }
-    
+
     // If we've got a master hash slot, set it
     if(memcmp(array[CLUSTER_NODES_MASTER_HASH], "-", sizeof("-"))!=0) {
         if(strlen(array[CLUSTER_NODES_MASTER_HASH])!=CLUSTER_NAME_LEN) {
             efree(array);
             return -1;
         }
-        info->master_name = estrndup(array[CLUSTER_NODES_MASTER_HASH], 
+        info->master_name = estrndup(array[CLUSTER_NODES_MASTER_HASH],
             CLUSTER_NAME_LEN);
     } else {
         info->master_name = NULL;
@@ -202,7 +202,7 @@ cluster_parse_node_line(RedisSock *sock, char *line, clusterNodeInfo *info) {
             return -1;
         }
 
-        // Null terminate a the - 
+        // Null terminate a the -
         *p = '\0';
 
         // Pull out start and end slot
@@ -220,12 +220,12 @@ cluster_parse_node_line(RedisSock *sock, char *line, clusterNodeInfo *info) {
     return 0;
 }
 
-/* 
+/*
  * Execute a CLUSTER NODES command against the given seed and return an array
  * of nodes that came back, along with setting a pointer as to how many there
  * are.
  */
-static clusterNodeInfo 
+static clusterNodeInfo
 **cluster_get_nodes(redisCluster *cluster, int *len, RedisSock *redis_sock
                     TSRMLS_DC)
 {
@@ -235,7 +235,7 @@ static clusterNodeInfo
     int cmd_len, i, j, count;
 
     // Create our CLUSTER NODES command
-    cmd_len = redis_cmd_format_static(&cmd, "CLUSTER", "s", "NODES",
+    cmd_len = redis_cmd_format_static(&cmd, "CLUSTER", "s", "NODES", 
                                       sizeof("NODES")-1);
 
     // Send the command directly to this socket
@@ -245,8 +245,8 @@ static clusterNodeInfo
     }
 
     // Make sure we've got a bulk reply and we can read it
-    if(redis_read_reply_type(redis_sock, &type, len TSRMLS_CC)<0 || 
-       type!=TYPE_BULK || (reply = redis_sock_read_bulk_reply(redis_sock, 
+    if(redis_read_reply_type(redis_sock, &type, len TSRMLS_CC)<0 ||
+       type!=TYPE_BULK || (reply = redis_sock_read_bulk_reply(redis_sock,
        *len TSRMLS_CC))==NULL)
     {
         efree(cmd);
@@ -281,12 +281,12 @@ static clusterNodeInfo
 }
 
 /* Create a cluster node struct */
-static redisClusterNode* 
+static redisClusterNode*
 cluster_node_create(redisCluster *cluster, clusterNodeInfo *info) {
     redisClusterNode *node;
 
     node = ecalloc(1, sizeof(redisClusterNode));
-    
+
     // Set top level cluster info
     node->name = estrndup(info->name, CLUSTER_NAME_LEN);
     if(info->master_name) {
@@ -353,7 +353,7 @@ void cluster_free_info_array(clusterNodeInfo **array, int count) {
 }
 
 /* Get a RedisSock object from the host and port where we have been
- * directed from an ASK response.  We'll first see if we have 
+ * directed from an ASK response.  We'll first see if we have
  * connected to this node already, and return that.  If not, we
  * create it and add it to our nodes.
  */
@@ -364,7 +364,7 @@ static RedisSock *cluster_get_asking_sock(redisCluster *c TSRMLS_DC) {
     int key_len;
 
     // It'll be hashed as host:port in our nodes HashTable
-    key_len = snprintf(key, sizeof(key), "%s:%u", c->redir_host, 
+    key_len = snprintf(key, sizeof(key), "%s:%u", c->redir_host,
         c->redir_port);
 
     // See if we've already attached to it
@@ -410,10 +410,10 @@ cluster_node_add_slave(redisCluster *cluster, redisClusterNode *master,
 
     // Create our slave node
     slave_node = cluster_node_create(cluster, slave);
-    
+
     // Attach it to our slave
     if(zend_hash_next_index_insert(master->slaves, (void*)&slave_node,
-        sizeof(redisClusterNode*), NULL)==FAILURE) 
+        sizeof(redisClusterNode*), NULL)==FAILURE)
     {
         return -1;
     }
@@ -431,8 +431,8 @@ cluster_node_add_slave(redisCluster *cluster, redisClusterNode *master,
 }
 
 /* Given masters and slaves from node discovery, set up our nodes */
-static int 
-cluster_set_node_info(redisCluster *cluster, HashTable *masters, 
+static int
+cluster_set_node_info(redisCluster *cluster, HashTable *masters,
                       HashTable *slaves TSRMLS_DC)
 {
     clusterNodeInfo **info, **slave;
@@ -442,7 +442,7 @@ cluster_set_node_info(redisCluster *cluster, HashTable *masters,
     int i, key_len;
     uint name_len;
     ulong idx;
-    
+
     // Iterate over our master nodes
     for(zend_hash_internal_pointer_reset(masters);
         zend_hash_has_more_elements(masters)==SUCCESS;
@@ -561,13 +561,13 @@ cluster_map_keyspace(redisCluster *cluster TSRMLS_DC) {
         if((node = cluster_get_nodes(cluster, &count, *seed TSRMLS_CC))) {
             valid = 1;
             break;
-        }        
+        }
     }
 
     // Throw an exception if we couldn't map
     if(!valid) {
         zend_throw_exception(redis_cluster_exception_ce,
-            "Couldn't map cluster keyspace using any provided seed", 0 
+            "Couldn't map cluster keyspace using any provided seed", 0
             TSRMLS_CC);
         return -1;
     }
@@ -581,7 +581,7 @@ cluster_map_keyspace(redisCluster *cluster TSRMLS_DC) {
     // Iterate nodes, splitting into master and slave groups
     for(i=0;i<count;i++) {
         if(node[i]->master_name == NULL) {
-            zend_hash_update(masters, node[i]->name, CLUSTER_NAME_LEN+1, 
+            zend_hash_update(masters, node[i]->name, CLUSTER_NAME_LEN+1,
                 (void*)&node[i], sizeof(clusterNodeInfo*), NULL);
         } else {
             HashTable *ht_inner;
@@ -636,28 +636,31 @@ static redisClusterNode *cluster_find_node(redisCluster *c, const char *host,
     if(zend_hash_find(c->nodes, key, key_len+1, (void**)&ret)==SUCCESS) {
         return *ret;
     }
-    
+
     // Not found
     return NULL;
 }
 
-/* Once we write a command to a node in our cluster, this function will check 
+/* Once we write a command to a node in our cluster, this function will check
  * the reply type and extract information from those that will specify a length
- * bit.  If we encounter an error condition, we'll check for MOVED or ASK 
- * redirection, parsing out slot host and port so the caller can take 
+ * bit.  If we encounter an error condition, we'll check for MOVED or ASK
+ * redirection, parsing out slot host and port so the caller can take
  * appropriate action.
  *
- * In the case of a non MOVED/ASK error, we wlll set our cluster error 
- * condition so GetLastError can be queried by the client. 
+ * In the case of a non MOVED/ASK error, we wlll set our cluster error
+ * condition so GetLastError can be queried by the client.
  *
  * This function will return -1 on a critical error (e.g. parse/communication
  * error, 0 if no redirection was encountered, and 1 if the data was moved. */
-static int cluster_check_response(redisCluster *c, unsigned short slot, 
-                                  REDIS_REPLY_TYPE *reply_type, TSRMLS_DC)
+static int cluster_check_response(redisCluster *c, unsigned short slot,
+                                  REDIS_REPLY_TYPE *reply_type TSRMLS_DC)
 {
+    // Clear out any prior error state
+    c->err_state = 0;
+
     // Check for general socket EOF and then EOF on our reply type request
     if((-1 == redis_check_eof(SLOT(c,slot)->sock)) ||
-       (*reply_type = php_stream_getc(SLOT_STREAM(c,slot)))) 
+       (*reply_type = php_stream_getc(SLOT_STREAM(c,slot))))
     {
         // Actual communications error
         return -1;
@@ -676,7 +679,7 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
         // Check for MOVED or ASK redirection
         if((moved = IS_MOVED(inbuf)) || IS_ASK(inbuf)) {
             char *pslot, *phost, *pport;
-           
+
             // Move pased MOVED or ASK error message
             if(moved) {
                 pslot = inbuf + MOVED_LEN;
@@ -699,7 +702,7 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
 
             // Null terminate here
             *pport++ = '\0';
-        
+
             // Set our cluster redirection information
             c->redir_type = moved ? REDIR_MOVED : REDIR_ASK;
             strncpy(c->redir_host, phost, sizeof(c->redir_host));
@@ -715,13 +718,13 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
             return 0;
         }
     }
-    
+
     // For BULK, MULTI BULK, or simply INTEGER response typese we can get
     // the response length.
-    if(*reply_type == TYPE_INT || *reply_type == TYPE_BULK || 
+    if(*reply_type == TYPE_INT || *reply_type == TYPE_BULK ||
        *reply_type == TYPE_MULTIBULK)
     {
-        char inbuf[255];
+        char inbuf[1024];
 
         if(php_stream_gets(SLOT_STREAM(c,slot), inbuf, sizeof(inbuf))<0) {
             return -1;
@@ -736,8 +739,8 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
     return 0;
 }
 
-/* Attempt to write to a cluster node.  If the node is NULL (e.g. 
- * it's been umapped, we keep falling back until we run out of nodes 
+/* Attempt to write to a cluster node.  If the node is NULL (e.g.
+ * it's been umapped, we keep falling back until we run out of nodes
  * to try */
 static int cluster_sock_write(redisCluster *c, unsigned short slot,
                               const char *cmd, size_t sz TSRMLS_DC)
@@ -765,14 +768,14 @@ static int cluster_sock_write(redisCluster *c, unsigned short slot,
     // TODO:  Randomize the slots we request from
     for(i=0;i<REDIS_CLUSTER_SLOTS;i++) {
         redis_sock = SLOT_SOCK(c,i);
-    
+
         // Attempt the write to this node
         if(!redis_check_eof(redis_sock TSRMLS_CC) &&
            !php_stream_write(redis_sock->stream, cmd, sz))
         {
             // Return the slot where we actually sent the request
             return i;
-        }  
+        }
     }
 
     // We were unable to write to any node in our cluster
@@ -783,7 +786,7 @@ static int cluster_sock_write(redisCluster *c, unsigned short slot,
  * the slot where data was moved, update our node mapping */
 static void cluster_update_slot(redisCluster *c, short orig_slot TSRMLS_CC) {
     redisClusterNode *node;
-     
+
     // Invalidate original slot
     c->master[orig_slot] = NULL;
 
@@ -799,8 +802,8 @@ static void cluster_update_slot(redisCluster *c, short orig_slot TSRMLS_CC) {
                 c->master[c->redir_slot] = node;
             } else {
                 // Create our node
-                node = cluster_node_create_ex(c, NULL, NULL, c->redir_host, 
-                    c->redir_host_len, c->redir_port, c->redir_slot, 
+                node = cluster_node_create_ex(c, NULL, NULL, c->redir_host,
+                    c->redir_host_len, c->redir_port, c->redir_slot,
                     c->redir_slot);
 
                 // Now point our slot at the node
@@ -811,20 +814,20 @@ static void cluster_update_slot(redisCluster *c, short orig_slot TSRMLS_CC) {
         // Check to see if the ip and port are mapped
         node = cluster_find_node(c, c->redir_host, c->redir_port);
         if(!node) {
-            node = cluster_node_create_ex(c, NULL, NULL, c->redir_host, 
+            node = cluster_node_create_ex(c, NULL, NULL, c->redir_host,
                 c->redir_host_len, c->redir_port, c->redir_slot, c->redir_slot);
         }
-        
+
         // Map the slot to this node
         c->master[c->redir_slot] = node;
     }
 }
 
-/* Send a command to given slot in our cluster.  If we get a MOVED 
- * or ASK error we attempt to send the command to the node as 
+/* Send a command to given slot in our cluster.  If we get a MOVED
+ * or ASK error we attempt to send the command to the node as
  * directed. */
-PHPAPI int cluster_send_command(redisCluster *c, short slot, 
-                                const char *cmd, int cmd_len TSRMLS_DC)
+PHPAPI short cluster_send_command(redisCluster *c, short slot,
+                                  const char *cmd, int cmd_len TSRMLS_DC)
 {
     REDIS_REPLY_TYPE reply_type;
     int resp, reply_len, rslot = slot;
@@ -832,13 +835,13 @@ PHPAPI int cluster_send_command(redisCluster *c, short slot,
     // Issue commands until we find the right node or fail
     do {
         // Attempt to send the command to the slot requested
-        if((slot = cluster_sock_write(c, slot, cmd, cmd_len 
-                                      TSRMLS_CC))==-1) 
+        if((slot = cluster_sock_write(c, slot, cmd, cmd_len
+                                      TSRMLS_CC))==-1)
         {
-            // We have no choice but to throw an exception.  We 
+            // We have no choice but to throw an exception.  We
             // can't communicate with any node at all.
             zend_throw_exception(redis_cluster_exception_ce,
-                "Can't communicate with any node in the cluster", 
+                "Can't communicate with any node in the cluster",
                 0 TSRMLS_CC);
             return -1;
         }
@@ -852,7 +855,7 @@ PHPAPI int cluster_send_command(redisCluster *c, short slot,
         // encountered, we'll just try again at that slot.
         if(resp == -1) {
             // TODO:  More robust error handling, count errors and ultimately
-            // fail? 
+            // fail?
             sleep(1);
         } else if(resp == 1) {
             // In case of a MOVED redirection, update our node mapping
@@ -862,13 +865,48 @@ PHPAPI int cluster_send_command(redisCluster *c, short slot,
         }
     } while(resp != 0);
 
-    // Inform the cluster where to read the rest of our response, 
+    // Inform the cluster where to read the rest of our response,
     // and clear out redirection flag.
     c->reply_slot = slot;
     c->redir_type = REDIR_NONE;
 
     // Success, return the slot where data exists.
     return 0;
+}
+
+/* RedisCluster response handlers.  These methods all have the same prototype
+ * and set the proper return value for the calling cluster method.  These
+ * methods will never be called in the case of a communication error when
+ * we try to send the request to the Cluster *or* if a non MOVED or ASK
+ * error is encountered, in which case our response processing macro will
+ * short circuit and RETURN_FALSE, as the error will have already been
+ * consumed.
+ */
+
+/* Unmodified BULK response handler */
+PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+{
+    char *resp;
+
+    // Make sure we can read the response
+    if((resp = redis_sock_read_bulk_reply(SLOT_SOCK(c,c->reply_slot),
+                                          c->reply_len TSRMLS_CC))==NULL)
+    {
+        RETURN_FALSE;
+    }
+
+    // Return the string if we can unserialize it
+    if(redis_unserialize(c->flags, resp, c->reply_len, &return_value)==0) {
+        RETURN_STRINGL(resp,c->reply_len,0);
+    } else {
+        efree(resp);
+    }
+}
+
+/* A boolean response, which if we get here, is a success */
+PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+{
+    RETURN_TRUE;
 }
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
