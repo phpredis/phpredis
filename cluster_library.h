@@ -56,15 +56,13 @@ typedef enum CLUSTER_REDIR_TYPE {
     strlen(SLOT_SOCK(c,c->redir_slot)->host) != c->redir_host_len || \
     memcmp(SLOT_SOCK(c,c->redir_slot)->host,c->redir_host,c->redir_host_len))
 
-/* Send a request to our cluster, and process it's response */
-#define CLUSTER_PROCESS_REQUEST(cluster, slot, cmd, cmd_len, resp_cb) \
-    if(cluster_send_command(cluster,slot,cmd,cmd_len TSRMLS_CC)<0 || \
-       resp_cb(cluster, INTERNAL_FUNCTION_PARAM_PASSTHRU)<0) \
-    { \
-        RETVAL_FALSE; \
-    } \
-    efree(cmd); \`
+/* Send a request to our cluster, but take a key and key_len */
+#define CLUSTER_PROCESS_REQUEST_KEY(key, key_len, cmd, cmd_len, func) \
+    CLUSTER_PROCESS_REQUEST(cluster_hash_key(key,key_len),cmd,cmd_len,func)
 
+/* Send a request to the cluster with a key stored as a zval pointer */
+#define CLUSTER_PROCESS_REQUEST_ZVAL(key, cmd, cmd_len, func) \
+    CLUSTER_PROCESS_REQUEST(cluster_hash_key_zval(key),cmd,cmd_len,func)
 
 /* Specific destructor to free a cluster object */
 // void redis_destructor_redis_cluster(zend_rsrc_list_entry *rsrc TSRMLS_DC);
@@ -95,7 +93,7 @@ typedef struct redisClusterNode {
 
     /* Our start and end slots that we serve */
     unsigned short start_slot;
-    unsigned short end_slot;    
+    unsigned short end_slot;
 
     /* A HashTable containing any slaves */
     HashTable *slaves;
@@ -119,12 +117,18 @@ typedef struct redisCluster {
     /* All RedisCluster objects we've created/are connected to */
     HashTable *nodes;
 
+    /* Are we currently in an ERROR state */
+    int err_state;
+
     /* The last ERROR we encountered */
     char *err;
     int err_len;
 
     /* The slot where we should read replies */
     short reply_slot;
+
+    /* One RedisSock* object for serialization and prefix information */
+    RedisSock *flags;
 
     /* The last reply length we got, which we'll use to parse and
      * format our replies to the client. */
@@ -144,21 +148,30 @@ unsigned short cluster_hash_key(const char *key, int len);
 
 /* Send a command to where we think the key(s) should live and redirect when 
  * needed */
-PHPAPI short cluster_send_command(redisCluster *cluster, short slot, 
+PHPAPI short cluster_send_command(redisCluster *cluster, short slot,
                                 const char *cmd, int cmd_len TSRMLS_DC);
 
 PHPAPI int cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds);
 PHPAPI int cluster_map_keyspace(redisCluster *cluster TSRMLS_DC);
 PHPAPI void cluster_free_node(redisClusterNode *node);
 
-PHPAPI char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock, 
+PHPAPI char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock,
                                                 int *len TSRMLS_DC);
 
-PHPAPI int cluster_node_add_slave(redisCluster *cluster, 
-                                  redisClusterNode *master, 
+PHPAPI int cluster_node_add_slave(redisCluster *cluster,
+                                  redisClusterNode *master,
                                   clusterNodeInfo *slave TSRMLS_DC);
 
-/* Response handlers */
-PHPAPI int cluster_bulk_response(
+/*
+ * Redis Cluster response handlers.  All of our response handlers take the
+ * following form:
+ *      PHPAPI void handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+ *
+ * Reply handlers are responsible for setting the PHP return value (either to
+ * something valid, or FALSE in the case of some failures).
+ */
+
+PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
+PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
 
 #endif
