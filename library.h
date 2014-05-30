@@ -1,3 +1,6 @@
+#ifndef REDIS_LIBRARY_H
+#define REDIS_LIBRARY_H
+
 void add_constant_long(zend_class_entry *ce, char *name, int value);
 int integer_length(int i);
 int redis_cmd_format(char **ret, char *format, ...);
@@ -85,4 +88,6 @@ PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
 #define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) \
 	dbl_str = _php_math_number_format(dbl, 16, '.', '\x00'); \
 	dbl_len = strlen(dbl_str);
+#endif
+
 #endif
