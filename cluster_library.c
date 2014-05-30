@@ -746,6 +746,7 @@ static int cluster_sock_write(redisCluster *c, unsigned short slot,
                               const char *cmd, size_t sz TSRMLS_DC)
 {
     RedisSock *redis_sock;
+    redisClusterNode **seed_node;
     int i;
 
     // If we're in an ASK redirection state, attempt a connection to that
@@ -756,24 +757,33 @@ static int cluster_sock_write(redisCluster *c, unsigned short slot,
         redis_sock = cluster_get_asking_sock(c);
     }
 
+    // If the lazy_connect flag is still set, we've not actually
+    // connected to this node, so do that now.
+    if(redis_sock->lazy_connect) {
+        redis_sock->lazy_connect = 0;
+        redis_sock_server_open(redis_sock, 1 TSRMLS_CC);
+    }
+
     // First attempt to write it to the slot that's been requested
-    if(redis_sock && !redis_check_eof(redis_sock TSRMLS_CC) &&
+    if(redis_sock && redis_sock->stream && 
+       !redis_check_eof(redis_sock TSRMLS_CC) &&
        !php_stream_write(redis_sock->stream, cmd, sz))
     {
         // We were able to write it
         return 0;
     }
 
-    // Fall back by attempting to write the request to other nodes
-    // TODO:  Randomize the slots we request from
-    for(i=0;i<REDIS_CLUSTER_SLOTS;i++) {
-        redis_sock = SLOT_SOCK(c,i);
+    // Fall back by attempting the request against our seeds
+    for(zend_hash_internal_pointer_reset(c->nodes);
+        zend_hash_has_more_elements(c->nodes)==SUCCESS;
+        zend_hash_move_forward(c->nodes))
+    {
+        zend_hash_get_current_data(c->seeds, (void**)&seed_node);
 
-        // Attempt the write to this node
-        if(!redis_check_eof(redis_sock TSRMLS_CC) &&
-           !php_stream_write(redis_sock->stream, cmd, sz))
+        // Attempt to write our request to this seed node
+        if(!redis_check_eof((*seed_node)->sock TSRMLS_CC) &&
+           !php_stream_write((*seed_node)->sock->stream, cmd, sz))
         {
-            // Return the slot where we actually sent the request
             return i;
         }
     }
