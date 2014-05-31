@@ -7,6 +7,27 @@
 
 extern zend_class_entry *redis_cluster_exception_ce;
 
+/* Some debug methods that will go away when we're through with them */
+
+static void cluster_dump_nodes(redisCluster *c) {
+    redisClusterNode **pp, *p;
+    int i;
+    for(zend_hash_internal_pointer_reset(c->nodes);
+        zend_hash_has_more_elements(c->nodes)==SUCCESS;
+        zend_hash_move_forward(c->nodes))
+    {
+        zend_hash_get_current_data(c->nodes, (void**)&pp);
+        p = *pp;
+
+        const char *slave = (p->slave) ? "slave" : "master";
+        php_printf("%d %s %d ", p->sock->port, slave,p->sock->prefix_len);
+        for(i=0;i<p->slots_size;i++) {
+            php_printf("[%d-%d] ",p->slots[i].start,p->slots[i].end);
+        }
+        php_printf("\n");
+    }
+}
+
 /* Set our last error string encountered */
 static void cluster_set_err(redisCluster *c, char *err, int err_len)
 {
@@ -20,9 +41,7 @@ static void cluster_set_err(redisCluster *c, char *err, int err_len)
         c->err[err_len]='\0';
         c->err_len = err_len;
     } else {
-        if(c->err) {
-            efree(c->err);
-        }
+        if(c->err) efree(c->err);
         c->err = NULL;
         c->err_len = 0;
     }
@@ -38,6 +57,9 @@ static void free_cluster_info(clusterNodeInfo *info) {
     }
     if(info->host) {
         efree(info->host);
+    }
+    if(info->slots) {
+        efree(info->slots);
     }
     efree(info);
 }
@@ -143,27 +165,28 @@ static char **split_str_by_delim(char *str, char *delim, int *len) {
 /* Simple function to split a string into up to N parts */
 static int
 cluster_parse_node_line(RedisSock *sock, char *line, clusterNodeInfo *info) {
-    char **array, *p;
-    int count;
+    char **array, *p, *p2;
+    int count, i;
 
     // First split by space
     array = split_str_by_delim(line, " ", &count);
 
-    if(count != CLUSTER_NODES_MASTER_ELE && count != CLUSTER_NODES_SLAVE_ELE) {
+    // Sanity check on the number of elements we see
+    if(count < CLUSTER_MIN_NODE_LINE) {
         efree(array);
         return -1;
     }
-
+    
     // Sanity check on our cluster ID value
     if(strlen(array[CLUSTER_NODES_HASH])!=CLUSTER_NAME_LEN) {
         efree(array);
         return -1;
     }
-
+    
     // Our cluster ID
     info->name = estrndup(array[CLUSTER_NODES_HASH], CLUSTER_NAME_LEN);
-
-    // Set the host/port bits
+    
+    // Set the host/port
     if(memcmp(array[CLUSTER_NODES_HOST_PORT], ":0", sizeof(":0"))==0) {
         info->seed = 1;
         info->host_len = strlen(sock->host);
@@ -181,6 +204,9 @@ cluster_parse_node_line(RedisSock *sock, char *line, clusterNodeInfo *info) {
         efree(array);
         return -1;
     }
+    
+    // Flag this a slave node if it's a slave
+    info->slave = strstr(array[CLUSTER_NODES_TYPE], "slave")!=NULL;
 
     // If we've got a master hash slot, set it
     if(memcmp(array[CLUSTER_NODES_MASTER_HASH], "-", sizeof("-"))!=0) {
@@ -190,27 +216,37 @@ cluster_parse_node_line(RedisSock *sock, char *line, clusterNodeInfo *info) {
         }
         info->master_name = estrndup(array[CLUSTER_NODES_MASTER_HASH],
             CLUSTER_NAME_LEN);
-    } else {
-        info->master_name = NULL;
+    } else if(info->slave) {
+        // Slaves should always have a master hash
+        efree(array);
+        return -1;
     }
+    
+    // See if the node serves slots
+    if(count >= CLUSTER_MIN_SLOTS_COUNT) {
+        // Allocate for enough ranges
+        info->slots_size = count - CLUSTER_MIN_SLOTS_COUNT + 1;
+        info->slots = ecalloc(info->slots_size, sizeof(clusterSlotRange));
 
-    // If this is a master, parse slots
-    if(count == CLUSTER_NODES_MASTER_ELE) {
-        // This must be in the form <start>-<end>
-        if((p = strchr(array[CLUSTER_SLOTS], '-'))==NULL) {
-            efree(array);
-            return -1;
+        // Now iterate over each range
+        for(i=0;i<info->slots_size;i++) {
+            p = array[i+CLUSTER_MIN_SLOTS_COUNT-1];
+
+            // If we don't see -, this node only serves one slot
+            if((p2 = strchr(p,'-'))==NULL) {
+                info->slots[i].start = atoi(p);
+                info->slots[i].end   = atoi(p);
+            } else {
+                *p2++ = '\0';
+
+                // Set this range
+                info->slots[i].start = atoi(p);
+                info->slots[i].end = atoi(p2);
+            }
         }
-
-        // Null terminate a the -
-        *p = '\0';
-
-        // Pull out start and end slot
-        info->start_slot = atoi(array[CLUSTER_SLOTS]);
-        info->end_slot   = atoi(p+1);
     } else {
-        info->start_slot = 0;
-        info->end_slot   = 0;
+        info->slots_size = 0;
+        info->slots = NULL;
     }
 
     // Free our array
@@ -260,11 +296,11 @@ static clusterNodeInfo
     nodes = ecalloc(count, sizeof(clusterNodeInfo*));
 
     for(i=0;i<count;i++) {
-        nodes[i] = emalloc(sizeof(clusterNodeInfo));
+        nodes[i] = ecalloc(1, sizeof(clusterNodeInfo));
         if(cluster_parse_node_line(redis_sock, lines[i], nodes[i])<0) {
             efree(reply);
             for(j=0;j<i;j++) {
-                free_cluster_info(nodes[i]);
+                free_cluster_info(nodes[j]);
             }
             efree(nodes);
             return NULL;
@@ -274,7 +310,7 @@ static clusterNodeInfo
     efree(cmd);
     efree(lines);
     efree(reply);
-
+    
     // Success, return our nodes
     *len = count;
     return nodes;
@@ -292,11 +328,15 @@ cluster_node_create(redisCluster *cluster, clusterNodeInfo *info) {
     if(info->master_name) {
         node->master_name = estrndup(info->master_name, CLUSTER_NAME_LEN);
     }
-    node->start_slot = info->start_slot;
-    node->end_slot = info->end_slot;
+    
+    // Pull in our contiguous slot ranges
+    node->slots = info->slots;
+    node->slots_size = info->slots_size;
+    
+    // Set slave flag
+    node->slave = info->slave;
 
-    /* Attach our RedisSock */
-    /* TODO: Lazy connect as an option? */
+    // Create and attach our socket
     node->sock = redis_sock_create(info->host, info->host_len, info->port,
         cluster->timeout, 0, NULL, 0, 1);
 
@@ -319,8 +359,12 @@ cluster_node_create_ex(redisCluster *c, const char *name,
     info.host = (char*)host;
     info.host_len = host_len;
     info.port = port;
-    info.start_slot = start_slot;
-    info.end_slot = end_slot;
+
+    info.slots = ecalloc(1, sizeof(clusterSlotRange));
+    info.slots_size = 1;
+
+    info.slots[0].start = start_slot;
+    info.slots[0].end = end_slot;
 
     return cluster_node_create(c, &info);
 }
@@ -379,8 +423,12 @@ static RedisSock *cluster_get_asking_sock(redisCluster *c TSRMLS_DC) {
     pInfo.host = c->redir_host;
     pInfo.host_len = strlen(c->redir_host);
     pInfo.port = c->redir_port;
-    pInfo.start_slot = c->redir_slot;
-    pInfo.end_slot = c->redir_slot;
+    
+    // At this point, we only know one slot it might serve
+    pInfo.slots = ecalloc(1, sizeof(clusterSlotRange));
+    pInfo.slots_size = 1;
+    pInfo.slots[0].start = c->redir_slot;
+    pInfo.slots[0].end = c->redir_slot;
 
     // Create a redisClusterNode
     *ppNode = cluster_node_create(c, &pInfo);
@@ -407,6 +455,15 @@ cluster_node_add_slave(redisCluster *cluster, redisClusterNode *master,
         ALLOC_HASHTABLE(master->slaves);
         zend_hash_init(master->slaves, 0, NULL, NULL, 0);
     }
+
+    // Inherit the start - end slots from our master
+    slave->slots = ecalloc(master->slots_size, sizeof(clusterSlotRange));
+    slave->slots_size = master->slots_size;
+    memcpy(slave->slots, master->slots, 
+           master->slots_size * sizeof(clusterSlotRange));
+
+    // Flag this node as a slave
+    slave->slave = 1;
 
     // Create our slave node
     slave_node = cluster_node_create(cluster, slave);
@@ -439,7 +496,7 @@ cluster_set_node_info(redisCluster *cluster, HashTable *masters,
     HashTable **master_slaves;
     redisClusterNode *node;
     char *name, key[1024];
-    int i, key_len;
+    int i, j, key_len;
     uint name_len;
     ulong idx;
 
@@ -474,10 +531,12 @@ cluster_set_node_info(redisCluster *cluster, HashTable *masters,
             }
         }
 
-        // Point appropriate slots to this node
-        for(i=node->start_slot;i<=node->end_slot;i++) {
-            cluster->master[i] = node;
-        }
+        // Iterate each contiguous slot range, and point to the node
+        for(i=0;i<node->slots_size;i++) {
+           for(j=node->slots[i].start;j<=node->slots[i].end;j++) {
+              cluster->master[j] = node;
+           }
+        } 
 
         // Create a host:port key for this node
         key_len = snprintf(key, sizeof(key), "%s:%u", node->sock->host,
@@ -506,21 +565,21 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
     {
         // Grab seed string
         zend_hash_get_current_data(ht_seeds, (void**)&z_seed);
-
+        
         // Skip anything that isn't a string
         if(Z_TYPE_PP(z_seed)!=IS_STRING)
             continue;
-
+        
         // Grab a copy of the string
         str = Z_STRVAL_PP(z_seed);
-
+        
         // Must be in host:port form
         if(!(psep = strchr(str, ':')))
             continue;
 
         // Allocate a structure for this seed
         redis_sock = redis_sock_create(str, psep-str,
-            (unsigned short)atoi(psep+1), cluster->timeout,0,NULL,0,0);
+            (unsigned short)atoi(psep+1),cluster->timeout,0,NULL,0,0);
 
         // Index this seed by host/port
         key_len = snprintf(key, sizeof(key), "%s:%u", redis_sock->host,
@@ -580,13 +639,14 @@ cluster_map_keyspace(redisCluster *cluster TSRMLS_DC) {
 
     // Iterate nodes, splitting into master and slave groups
     for(i=0;i<count;i++) {
-        if(node[i]->master_name == NULL) {
+       if(!node[i]->slave) {
             zend_hash_update(masters, node[i]->name, CLUSTER_NAME_LEN+1,
                 (void*)&node[i], sizeof(clusterNodeInfo*), NULL);
         } else {
             HashTable *ht_inner;
 
-            // Determine if we've already got at least one slave for this master
+            // Determine if we've already got at least one slave for this
+            // master node.
             if(zend_hash_find(slaves, node[i]->master_name, CLUSTER_NAME_LEN+1,
                               (void**)&sub_slaves)==FAILURE)
             {
@@ -609,7 +669,7 @@ cluster_map_keyspace(redisCluster *cluster TSRMLS_DC) {
     // Now that we have the key space mapped by master ID, we can set
     // socket information on them for communication.
     cluster_set_node_info(cluster, masters, slaves TSRMLS_CC);
-
+    
     // Free our array of clusterNodeInfo* objects.  The HashTables will clean
     // up the clusterNodeInfo* pointers themselves.
     efree(node);
@@ -641,6 +701,38 @@ static redisClusterNode *cluster_find_node(redisCluster *c, const char *host,
     return NULL;
 }
 
+/* Parse the MOVED OR ASK redirection payload when we get such a response
+ * and apply this information to our cluster.  If we encounter a parse error
+ * nothing in the cluster will be modified, and -1 is returned. */
+static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
+{
+    char *host, *port;
+
+    // Move past MOVED or ASK
+    if(moved) {
+        msg += MOVED_LEN;
+    } else {
+        msg += ASK_LEN;
+    }
+
+    // We need a slot seperator
+    if(!(host = strchr(msg, ' '))) return -1;
+    *host++ = '\0';
+
+    // We need a : that seperates host from port
+    if(!(port = strchr(host,':'))) return -1;
+    *port++ = '\0';
+
+    // Success, apply it
+    c->redir_type = moved ? REDIR_MOVED : REDIR_ASK;
+    strncpy(c->redir_host, host, sizeof(c->redir_host));
+    c->redir_host_len = port - host - 1;
+    c->redir_slot = (unsigned short)atoi(msg);
+    c->redir_port = (unsigned short)atoi(port);
+
+    return 0;
+}
+
 /* Once we write a command to a node in our cluster, this function will check
  * the reply type and extract information from those that will specify a length
  * bit.  If we encounter an error condition, we'll check for MOVED or ASK
@@ -656,16 +748,14 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
                                   REDIS_REPLY_TYPE *reply_type TSRMLS_DC)
 {
     // Clear out any prior error state
-    c->err_state = 0;
+    CLUSTER_CLEAR_ERROR(c);
 
-    // Check for general socket EOF and then EOF on our reply type request
-    if((-1 == redis_check_eof(SLOT(c,slot)->sock)) ||
-       (*reply_type = php_stream_getc(SLOT_STREAM(c,slot))))
+    if(-1 == redis_check_eof(SLOT_SOCK(c,slot)) ||
+       EOF == (*reply_type = php_stream_getc(SLOT_STREAM(c,slot)))) 
     {
-        // Actual communications error
         return -1;
     }
-
+    
     // In the event of an ERROR, check if it's a MOVED/ASK error
     if(*reply_type == TYPE_ERR) {
         char inbuf[1024];
@@ -678,37 +768,10 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
 
         // Check for MOVED or ASK redirection
         if((moved = IS_MOVED(inbuf)) || IS_ASK(inbuf)) {
-            char *pslot, *phost, *pport;
-
-            // Move pased MOVED or ASK error message
-            if(moved) {
-                pslot = inbuf + MOVED_LEN;
-            } else {
-                pslot = inbuf + ASK_LEN;
-            }
-
-            // We will need to see a slot separator
-            if(!(phost = strchr(pslot, ' '))) {
+            // Set our redirection information
+            if(cluster_set_redirection(c,inbuf,moved)<0) {
                 return -1;
             }
-
-            // Null terminate at the separator
-            *phost++ = '\0';
-
-            // We'll need to see host:port separator
-            if(!(pport = strchr(phost, ':'))) {
-                return -1;
-            }
-
-            // Null terminate here
-            *pport++ = '\0';
-
-            // Set our cluster redirection information
-            c->redir_type = moved ? REDIR_MOVED : REDIR_ASK;
-            strncpy(c->redir_host, phost, sizeof(c->redir_host));
-            c->redir_host_len = pport - phost - 1;
-            c->redir_slot = (unsigned short)atoi(pslot);
-            c->redir_port = (unsigned short)atoi(pport);
 
             // Data moved
             return 1;
@@ -735,7 +798,7 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
     }
 
     // Clear out any previous error, and return that the data is here
-    cluster_set_err(c, NULL, 0);
+    CLUSTER_CLEAR_ERROR(c);
     return 0;
 }
 
@@ -747,7 +810,6 @@ static int cluster_sock_write(redisCluster *c, unsigned short slot,
 {
     RedisSock *redis_sock;
     redisClusterNode **seed_node;
-    int i;
 
     // If we're in an ASK redirection state, attempt a connection to that
     // host and port.  Otherwise, try on the requested slot.
@@ -759,32 +821,36 @@ static int cluster_sock_write(redisCluster *c, unsigned short slot,
 
     // If the lazy_connect flag is still set, we've not actually
     // connected to this node, so do that now.
-    if(redis_sock->lazy_connect) {
-        redis_sock->lazy_connect = 0;
-        redis_sock_server_open(redis_sock, 1 TSRMLS_CC);
-    }
+    CLUSTER_LAZY_CONNECT(redis_sock);
 
     // First attempt to write it to the slot that's been requested
     if(redis_sock && redis_sock->stream && 
        !redis_check_eof(redis_sock TSRMLS_CC) &&
-       !php_stream_write(redis_sock->stream, cmd, sz))
+       php_stream_write(redis_sock->stream, cmd, sz)==sz)
     {
         // We were able to write it
-        return 0;
+        return slot;
     }
 
-    // Fall back by attempting the request against our seeds
+    // Fall back by attempting the request against every connected node
     for(zend_hash_internal_pointer_reset(c->nodes);
         zend_hash_has_more_elements(c->nodes)==SUCCESS;
         zend_hash_move_forward(c->nodes))
     {
-        zend_hash_get_current_data(c->seeds, (void**)&seed_node);
+        zend_hash_get_current_data(c->nodes, (void**)&seed_node);
 
-        // Attempt to write our request to this seed node
+        // TODO:  Allow for failure/redirection queries to be sent
+        //        to slave nodes, but for now, stick with masters.
+        if((*seed_node)->slave) continue;
+
+        CLUSTER_LAZY_CONNECT((*seed_node)->sock);
+
+        // Attempt to write our request to this node
         if(!redis_check_eof((*seed_node)->sock TSRMLS_CC) &&
-           !php_stream_write((*seed_node)->sock->stream, cmd, sz))
+           php_stream_write((*seed_node)->sock->stream, cmd, sz)==sz)
         {
-            return i;
+            // Just return the first slot we think this node handles
+            return (*seed_node)->slots[0].start;
         }
     }
 
@@ -802,23 +868,25 @@ static void cluster_update_slot(redisCluster *c, short orig_slot TSRMLS_CC) {
 
     // Do we already have the new slot mapped
     if(c->master[c->redir_slot]) {
-        // Has this slot changed host or port
-        if(CLUSTER_REDIR_CMP(c)) {
-            // Check to see if we have this new node mapped
-            node = cluster_find_node(c, c->redir_host, c->redir_port);
+        // No need to do anything if it's the same node
+        if(!CLUSTER_REDIR_CMP(c)) {
+            return;
+        }
 
-            if(node) {
-                // Just point to this slot
-                c->master[c->redir_slot] = node;
-            } else {
-                // Create our node
-                node = cluster_node_create_ex(c, NULL, NULL, c->redir_host,
-                    c->redir_host_len, c->redir_port, c->redir_slot,
-                    c->redir_slot);
+        // Check to see if we have this new node mapped
+        node = cluster_find_node(c, c->redir_host, c->redir_port);
 
-                // Now point our slot at the node
-                c->master[c->redir_slot] = node;
-            }
+        if(node) {
+            // Just point to this slot
+            c->master[c->redir_slot] = node;
+        } else {
+            // Create our node
+            node = cluster_node_create_ex(c, NULL, NULL, c->redir_host,
+                c->redir_host_len, c->redir_port, c->redir_slot,
+                c->redir_slot);
+
+            // Now point our slot at the node
+            c->master[c->redir_slot] = node;
         }
     } else {
         // Check to see if the ip and port are mapped
@@ -831,6 +899,10 @@ static void cluster_update_slot(redisCluster *c, short orig_slot TSRMLS_CC) {
         // Map the slot to this node
         c->master[c->redir_slot] = node;
     }
+
+    // Make sure we unflag this node as a slave, as Redis Cluster will only
+    // ever direct us to master nodes.
+    node->slave = 0;
 }
 
 /* Send a command to given slot in our cluster.  If we get a MOVED
@@ -840,13 +912,12 @@ PHPAPI short cluster_send_command(redisCluster *c, short slot,
                                   const char *cmd, int cmd_len TSRMLS_DC)
 {
     REDIS_REPLY_TYPE reply_type;
-    int resp, reply_len, rslot = slot;
+    int resp, rslot = slot;
 
     // Issue commands until we find the right node or fail
     do {
         // Attempt to send the command to the slot requested
-        if((slot = cluster_sock_write(c, slot, cmd, cmd_len
-                                      TSRMLS_CC))==-1)
+        if((slot = cluster_sock_write(c, slot, cmd, cmd_len TSRMLS_CC))==-1)
         {
             // We have no choice but to throw an exception.  We
             // can't communicate with any node at all.
@@ -864,14 +935,13 @@ PHPAPI short cluster_send_command(redisCluster *c, short slot,
         // data has been moved, update node configuration, and if ASK has been
         // encountered, we'll just try again at that slot.
         if(resp == -1) {
-            // TODO:  More robust error handling, count errors and ultimately
-            // fail?
             sleep(1);
         } else if(resp == 1) {
             // In case of a MOVED redirection, update our node mapping
             if(c->redir_type == REDIR_MOVED) {
                 cluster_update_slot(c, rslot);
             }
+            slot = c->redir_slot;
         }
     } while(resp != 0);
 
@@ -913,9 +983,20 @@ PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
     }
 }
 
-/* A boolean response, which if we get here, is a success */
+/* A boolean response.  If we get here, we've consumed the '+' reply
+ * type and will now just verify we can read the OK */
 PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
 {
+    char buf[1024];
+    size_t line_len;
+
+    // As long as we can consume up to \r\n past '+', we're OK
+    if(c->err || redis_sock_gets(SLOT_SOCK(c,c->reply_slot), buf, sizeof(buf), 
+                                 &line_len)==-1) 
+    {
+        RETURN_FALSE;
+    }
+
     RETURN_TRUE;
 }
 
