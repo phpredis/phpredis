@@ -2031,14 +2031,14 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 
 PHP_REDIS_API int
 redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len) {
-	int ret_len;
+    int ret_len;
 	char *ret;
 
 	if(redis_sock->prefix == NULL || redis_sock->prefix_len == 0) {
 		return 0;
 	}
-
-	ret_len = redis_sock->prefix_len + *key_len;
+	
+    ret_len = redis_sock->prefix_len + *key_len;
 	ret = ecalloc(1 + ret_len, 1);
 	memcpy(ret, redis_sock->prefix, redis_sock->prefix_len);
 	memcpy(ret + redis_sock->prefix_len, *key, *key_len);
@@ -2197,7 +2197,9 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval **z_ret
 				add_next_index_zval(*z_ret, z_subelem);
 				redis_read_multibulk_recursive(redis_sock, reply_info, &z_subelem TSRMLS_CC);
 				break;
-            default: break; /* We know it's not < 0 from previous check */
+            default:
+                // Stop the compiler from whinging 
+                break;
 		}
 
 		/* Decrement our element counter */
