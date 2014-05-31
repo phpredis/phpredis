@@ -40,6 +40,7 @@ zend_class_entry *spl_rte_ce = NULL;
 zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, __construct, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, get, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, set, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -92,7 +93,7 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
     memset(cluster, 0, sizeof(redisCluster));
 
     // Allocate our RedisSock we'll use to store prefix/serialization flags
-    cluster->flags = emalloc(sizeof(RedisSock));
+    cluster->flags = ecalloc(1, sizeof(RedisSock));
 
     // Allocate our hash table for seeds
     ALLOC_HASHTABLE(cluster->seeds);
@@ -174,24 +175,24 @@ PHP_METHOD(RedisCluster, __construct) {
             "Invalid timeout", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
-
+    
     // Validate our read timeout
     if(read_timeout < 0L || read_timeout > INT_MAX) {
         zend_throw_exception(redis_cluster_exception_ce,
             "Invalid read timeout", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
-
+    
     // TODO: Implement seed retrieval from php.ini
     if(!z_seeds || zend_hash_num_elements(Z_ARRVAL_P(z_seeds))==0) {
         zend_throw_exception(redis_cluster_exception_ce,
             "Must pass seeds", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
-
+    
     // Initialize our RedisSock "seed" objects
     cluster_init_seeds(context, Z_ARRVAL_P(z_seeds));
-
+    
     // Create and map our key space
     cluster_map_keyspace(context TSRMLS_CC);
 }

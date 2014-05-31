@@ -15,7 +15,8 @@
 
 /* Command building/processing is identical for every command */
 #define CLUSTER_BUILD_CMD(name, c, cmd, cmd_len, slot) \
-    redis_##name##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &cmd, &cmd_len, &slot)
+    redis_##name##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &cmd, \
+                       &cmd_len, &slot)
 
 #define CLUSTER_PROCESS_REQUEST(cmdname, resp_func) \
     redisCluster *c = GET_CONTEXT(); \
@@ -23,18 +24,16 @@
     int cmd_len; \
     short slot; \
     if(redis_##cmdname##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,c->flags, &cmd, \
-                             &cmd_len, &slot)==FAILURE) \
-    { \
+                             &cmd_len, &slot)==FAILURE) { \
         RETURN_FALSE; \
     } \
-    if(cluster_send_command(c,slot,cmd,cmd_len TSRMLS_CC)<0 || \
-                            c->err_state!=0) \
-    { \
+    if(cluster_send_command(c,slot,cmd,cmd_len TSRMLS_CC)<0 || c->err!=NULL) {\
         efree(cmd); \
         RETURN_FALSE; \
     } \
+    efree(cmd); \
     resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c); 
-    
+        
 
 
 /* Send a request to our cluster, and process the response */
