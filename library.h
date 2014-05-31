@@ -15,7 +15,7 @@ int redis_cmd_append_int(char **cmd, int cmd_len, int append);
 int redis_cmd_append_sstr_dbl(smart_str *str, double value);
 
 PHPAPI char * redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC);
-
+PHPAPI int redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t* line_len TSRMLS_DC);
 PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHPAPI void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval* z_tab, void *ctx);
 typedef void (*SuccessCallback)(RedisSock *redis_sock);
