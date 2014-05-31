@@ -11,9 +11,10 @@
 #define REDIS_CLUSTER_SLOTS 16384
 #define REDIS_CLUSTER_MOD   (REDIS_CLUSTER_SLOTS-1)
 
-/* Nodes we expect for slave or master */
-#define CLUSTER_NODES_MASTER_ELE 9
-#define CLUSTER_NODES_SLAVE_ELE 8
+/* Minimum valid CLUSTER NODES line element count
+ * and the minimum we expect if there are slots */
+#define CLUSTER_MIN_NODE_LINE     8
+#define CLUSTER_MIN_SLOTS_COUNT   9
 
 /* Length of a cluster name */
 #define CLUSTER_NAME_LEN 40
@@ -38,7 +39,7 @@ typedef enum CLUSTER_REDIR_TYPE {
 
 /* MOVED/ASK comparison macros */
 #define IS_MOVED(p) (p[0]=='M' && p[1]=='O' && p[2]=='V' && p[3]=='E' && \
-                     p[5]=='D' && p[6]==' ')
+                     p[4]=='D' && p[5]==' ')
 #define IS_ASK(p)   (p[0]=='A' && p[1]=='S' && p[3]=='K' && p[4]==' ')
 
 /* MOVED/ASK lengths */
@@ -56,16 +57,28 @@ typedef enum CLUSTER_REDIR_TYPE {
     strlen(SLOT_SOCK(c,c->redir_slot)->host) != c->redir_host_len || \
     memcmp(SLOT_SOCK(c,c->redir_slot)->host,c->redir_host,c->redir_host_len))
 
-/* Send a request to our cluster, but take a key and key_len */
-#define CLUSTER_PROCESS_REQUEST_KEY(key, key_len, cmd, cmd_len, func) \
-    CLUSTER_PROCESS_REQUEST(cluster_hash_key(key,key_len),cmd,cmd_len,func)
+/* Lazy connect logic */
+#define CLUSTER_LAZY_CONNECT(s) \
+    if(s->lazy_connect) { \
+        s->lazy_connect = 0; \
+        redis_sock_server_open(s, 1 TSRMLS_CC); \
+    }
 
-/* Send a request to the cluster with a key stored as a zval pointer */
-#define CLUSTER_PROCESS_REQUEST_ZVAL(key, cmd, cmd_len, func) \
-    CLUSTER_PROCESS_REQUEST(cluster_hash_key_zval(key),cmd,cmd_len,func)
+/* Clear out our "last error" */
+#define CLUSTER_CLEAR_ERROR(c) \
+    if(c->err) { \
+        efree(c->err); \
+        c->err = NULL; \
+        c->err_len = 0; \
+    }
 
 /* Specific destructor to free a cluster object */
 // void redis_destructor_redis_cluster(zend_rsrc_list_entry *rsrc TSRMLS_DC);
+
+/* Slot range structure */
+typedef struct clusterSlotRange {
+    unsigned short start, end;
+} clusterSlotRange;
 
 /* Bits related to CLUSTER NODES output */
 typedef struct clusterNodeInfo {
@@ -77,9 +90,11 @@ typedef struct clusterNodeInfo {
     int host_len;
 
     unsigned short port;
+    
+    unsigned short slave;
 
-    unsigned short start_slot;
-    unsigned short end_slot;
+    clusterSlotRange *slots;
+    size_t slots_size;
 } clusterNodeInfo;
 
 /* A Redis Cluster master node */
@@ -91,9 +106,12 @@ typedef struct redisClusterNode {
     /* Our Redis socket in question */
     RedisSock *sock;
 
-    /* Our start and end slots that we serve */
-    unsigned short start_slot;
-    unsigned short end_slot;
+    /* Contiguous slots we serve */
+    clusterSlotRange *slots;
+    size_t slots_size;
+
+    /* Is this a slave node */
+    unsigned short slave;
 
     /* A HashTable containing any slaves */
     HashTable *slaves;
@@ -117,8 +135,8 @@ typedef struct redisCluster {
     /* All RedisCluster objects we've created/are connected to */
     HashTable *nodes;
 
-    /* Are we currently in an ERROR state */
-    int err_state;
+    /* How many failures have we had in a row */
+    int failures;
 
     /* The last ERROR we encountered */
     char *err;
