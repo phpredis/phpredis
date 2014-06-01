@@ -20,28 +20,6 @@
 
 #include "redis_commands.h"
 
-/* GET */
-int redis_get_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                  char **cmd, int *cmd_len, short *slot)
-{
-    char *key=NULL;
-    int key_len, key_free;
-
-    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &key, 
-                             &key_len)==FAILURE)
-    {
-        return FAILURE;
-    }
-
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    *cmd_len = redis_cmd_format_static(cmd, "GET", "s", key, key_len);
-    
-    CMD_SET_SLOT(slot, key, key_len);
-    if(key_free) efree(key);
-
-    return SUCCESS;
-}
-
 /* SET */
 int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   char **cmd, int *cmd_len, short *slot)
@@ -198,5 +176,38 @@ int redis_gen_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     return SUCCESS;
 }
+
+/* Generic command where we take a single key */
+int redis_gen_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char *kw, char **cmd, int *cmd_len, short *slot)
+{
+    char *key;
+    int key_len, key_free;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &key, &key_len)
+                             ==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    
+    // Don't allow an empty key
+    if(key_len == 0) {
+        if(key_free) efree(key);
+        return FAILURE;
+    }
+
+    // Construct our command
+    *cmd_len = redis_cmd_format_static(cmd, kw, "s", key, key_len);
+
+    // Set slot if directed
+    CMD_SET_SLOT(slot,key,key_len);
+
+    if(key_free) efree(key);
+
+    return SUCCESS;
+}
+
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
