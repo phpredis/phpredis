@@ -18,6 +18,7 @@
     redis_##name##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &cmd, \
                        &cmd_len, &slot)
 
+/* Simple 1-1 command -> response macro */
 #define CLUSTER_PROCESS_REQUEST(cmdname, resp_func) \
     redisCluster *c = GET_CONTEXT(); \
     char *cmd; \
@@ -34,18 +35,20 @@
     efree(cmd); \
     resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c); 
         
-
-
-/* Send a request to our cluster, and process the response */
-/*#define CLUSTER_PROCESS_REQUEST(c, slot, cmd, cmd_len, resp_func) \
-    if(cluster_send_command(c,slot,cmd,cmd_len TSRMLS_CC)<0 || \
-       c->err_state!=0) || \
-    { \
+/* More generic processing, where only the keyword differs */
+#define CLUSTER_PROCESS_KW_REQUEST(cmdfunc, kw, resp_func) \
+    redisCluster *c = GET_CONTEXT(); \
+    char *cmd; int cmd_len; short slot; \
+    if(cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len,\
+               &slot)==FAILURE) { \
+        RETURN_FALSE; \
+    } \
+    if(cluster_send_command(c,slot,cmd,cmd_len TSRMLS_CC)<0 || c->err!=NULL) { \
         efree(cmd); \
         RETURN_FALSE; \
     } \
-    efree(cmd);
-*/
+    efree(cmd); \
+    resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c); 
 
 /* For the creation of RedisCluster specific exceptions */
 PHPAPI zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC);
@@ -64,5 +67,7 @@ void init_rediscluster(TSRMLS_D);
 PHP_METHOD(RedisCluster, __construct);
 PHP_METHOD(RedisCluster, get);
 PHP_METHOD(RedisCluster, set);
+PHP_METHOD(RedisCluster, setex);
+PHP_METHOD(RedisCluster, psetex);
 
 #endif

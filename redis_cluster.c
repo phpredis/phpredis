@@ -41,6 +41,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, __construct, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, get, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, set, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, setex, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, psetex, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -205,4 +207,9 @@ PHP_METHOD(RedisCluster, get) {
 /* SET */
 PHP_METHOD(RedisCluster, set) {
     CLUSTER_PROCESS_REQUEST(set, cluster_bool_resp);
+}
+
+/* SETEX */
+PHP_METHOD(RedisCluster, setex) {
+    CLUSTER_PROCESS_KW_REQUEST(redis_gen_setex_cmd, "SETEX", cluster_bool_resp);
 }
