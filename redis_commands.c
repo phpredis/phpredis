@@ -126,4 +126,36 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int 
+redis_gen_setex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                  char *kw, char **cmd, int *cmd_len, short *slot)
+{
+    char *key = NULL, *val=NULL;
+    int key_len, val_len, val_free, key_free;
+    long expire;
+    zval *z_val;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "slz", &key, &key_len,
+                             &expire, &z_val)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Serialize value, prefix key
+    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    
+    // Construct our command
+    *cmd_len = redis_cmd_format_static(cmd, kw, "sls", key, key_len, expire,
+                                      val, val_len);
+
+    // Set the slot if directed
+    CMD_SET_SLOT(slot,key,key_len);
+
+    if(val_free) STR_FREE(val);
+    if(key_free) efree(key);
+
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
