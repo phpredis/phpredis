@@ -182,13 +182,46 @@ else if(redis_sock->mode == MULTI) { \
     redis_sock->redir_slot = 0; \
     redis_sock->redir_port = 0; \
     redis_sock->redir_type = MOVED_NONE; \
-    
+
+/* Process a command assuming our command where our command building
+ * function is redis_<cmdname>_cmd */
+#define REDIS_PROCESS_CMD(cmdname, resp_func) \
+    RedisSock *redis_sock; char *cmd; int cmd_len; \
+    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0 || \
+       redis_##cmdname##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock, \
+                             &cmd, &cmd_len, NULL)==FAILURE) { \
+            RETURN_FALSE; \
+    } \
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
+    IF_ATOMIC() { \
+        resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL); \
+    } \
+    REDIS_PROCESS_RESPONSE(resp_func);
+
+/* Process a command but with a specific command building function 
+ * and keyword which is passed to us*/
+#define REDIS_PROCESS_KW_CMD(cmdfunc, kw, resp_func) \
+    RedisSock *redis_sock; char *cmd; int cmd_len; \
+    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0 || \
+       cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw, &cmd, \
+               &cmd_len, NULL)==FAILURE) { \
+            RETURN_FALSE; \
+    } \
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
+    IF_ATOMIC() { \
+        resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL); \
+    } \
+    REDIS_PROCESS_RESPONSE(resp_func);
 
 /* Extended SET argument detection */
-#define IS_EX_ARG(a) ((a[0]=='e' || a[0]=='E') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
-#define IS_PX_ARG(a) ((a[0]=='p' || a[0]=='P') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
-#define IS_NX_ARG(a) ((a[0]=='n' || a[0]=='N') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
-#define IS_XX_ARG(a) ((a[0]=='x' || a[0]=='X') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
+#define IS_EX_ARG(a) \
+    ((a[0]=='e' || a[0]=='E') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
+#define IS_PX_ARG(a) \
+    ((a[0]=='p' || a[0]=='P') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
+#define IS_NX_ARG(a) \
+    ((a[0]=='n' || a[0]=='N') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
+#define IS_XX_ARG(a) \
+    ((a[0]=='x' || a[0]=='X') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
 
 #define IS_EX_PX_ARG(a) (IS_EX_ARG(a) || IS_PX_ARG(a))
 #define IS_NX_XX_ARG(a) (IS_NX_ARG(a) || IS_XX_ARG(a))
