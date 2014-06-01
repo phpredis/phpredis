@@ -321,58 +321,6 @@ PHP_REDIS_API char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes 
 }
 
 /**
- * Parse MOVED or ASK redirection (Redis Cluster)
- * We should get slot host:port
- */
-PHPAPI
-int redis_sock_redir(RedisSock *redis_sock, const char *msg, int len,
-                     MOVED_TYPE type TSRMLS_DC)
-{
-    char buf[24], *p1, *p2;
-
-    // Find the space and ':' seperating host/port and do a sanity check on the
-    // lengths we get back.
-    if(!(p1 = strchr(msg, ' ')) || !(p2 = strchr(p1,':')) || (len-(p2-msg)>6))
-    {
-        zend_throw_exception(redis_exception_ce,
-            "Error parsing MOVED/ASK redirection", 0 TSRMLS_CC);
-        return -1;
-    }
-
-    // Free previously stored redirection host
-    if(redis_sock->redir_host) efree(redis_sock->redir_host);
-
-    // Copy and convert slot
-    strncpy(buf, msg, p1-msg);
-    buf[p1-msg]='\0';
-    redis_sock->redir_slot = (unsigned short)atoi(buf);
-
-    // Make a copy of our host
-    redis_sock->redir_host = estrndup(p1+1, p2-p1-1);
-
-    // Copy and convert port
-    strncpy(buf, p2+1, len-(p2-msg));
-    buf[len-(p2-msg)+1]='\0';
-    redis_sock->redir_port = (unsigned short)atoi(buf);
-
-    // Success
-    return 0;
-}
-
-/**
- * Clear redirection information
- */
-PHPAPI void redis_sock_redir_clear(RedisSock *redis_sock)
-{
-    if(redis_sock->redir_host) {
-        efree(redis_sock->redir_host);
-        redis_sock->redir_host = NULL;
-    }
-    redis_sock->redir_slot = 0;
-    redis_sock->redir_port = 0;
-}
-
-/**
  * redis_sock_read
  */
 PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
@@ -395,24 +343,17 @@ PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_D
         return NULL;
     }
 
-    // Clear any previous MOVED or ASK redirection
-    REDIS_MOVED_CLEAR(redis_sock);
-
     switch(inbuf[0]) {
         case '-':
 			/* Set the last error */
             err_len = strlen(inbuf+1) - 2;
 			redis_sock_set_err(redis_sock, inbuf+1, err_len);
 
-            /* Handle stale data or MOVED/ASK redirection */
+            /* Handle stale data error */
 			if(memcmp(inbuf + 1, "-ERR SYNC ", 10) == 0) {
-				zend_throw_exception(redis_exception_ce, "SYNC with master in progress", 0 TSRMLS_CC);
-			} else if(memcmp(inbuf, "-MOVED ", sizeof("-MOVED ")-1)==0) {
-                redis_sock_redir(redis_sock,inbuf+sizeof("-MOVED "),
-                    err_len-sizeof("-MOVED ")-1, MOVED_MOVED TSRMLS_CC);
-            } else if(memcmp(inbuf, "-ASK ", sizeof("-ASK ")-1)==0) {
-                redis_sock_redir(redis_sock,inbuf+sizeof("-ASK "),
-                    err_len-sizeof("-ASK ")-1, MOVED_ASK TSRMLS_CC);
+				zend_throw_exception(redis_exception_ce, 
+                                     "SYNC with master in progress", 
+                                     0 TSRMLS_CC);
             }
             return NULL;
         case '$':
@@ -1889,9 +1830,6 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
     }
     if(redis_sock->persistent_id) {
         efree(redis_sock->persistent_id);
-    }
-    if(redis_sock->redir_host) {
-        efree(redis_sock->redir_host);
     }
     efree(redis_sock->host);
     efree(redis_sock);
