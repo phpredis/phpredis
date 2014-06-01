@@ -955,37 +955,23 @@ PHP_METHOD(Redis, set) {
 }
 
 PHP_REDIS_API void redis_generic_setex(INTERNAL_FUNCTION_PARAMETERS, char *keyword) {
-
-    zval *object;
     RedisSock *redis_sock;
-    char *key = NULL, *val = NULL, *cmd;
-    int key_len, val_len, cmd_len;
-    long expire;
-    int val_free = 0, key_free = 0;
-    zval *z_value;
+    char *cmd;
+    int cmd_len;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oslz",
-                                     &object, redis_ce, &key, &key_len,
-                                     &expire, &z_value) == FAILURE) {
+    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0 ||
+       redis_gen_setex_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                           keyword, &cmd, &cmd_len, NULL)==FAILURE)
+    {
         RETURN_FALSE;
     }
 
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+        redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                              NULL, NULL);
     }
-
-    val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, keyword, "sls", key,
-                                      key_len, expire, val, val_len);
-    if(val_free) STR_FREE(val);
-    if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_boolean_response);
+    REDIS_PROCESS_RESPONSE(redis_string_response);
 }
 
 /* {{{ proto boolean Redis::setex(string key, long expire, string value)
