@@ -26,9 +26,6 @@
  * Cluster hash slot where the key(s) belong. 
  */
 
-int redis_get_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                  char **cmd, int *cmd_len, short *slot);
-
 int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   char **cmd, int *cmd_len, short *slot);
 
@@ -37,6 +34,9 @@ int redis_gen_setex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 int redis_gen_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char *kw, char **cmd, int *cmd_len, short *slot);
+
+int redis_gen_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char *kw, char **cmd, int *cmd_len, short *slot);
 
 int redis_gen_ss_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char *kw, char **cmd, int *cmd_len, short *slot);
