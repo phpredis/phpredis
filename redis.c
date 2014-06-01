@@ -978,73 +978,45 @@ PHP_METHOD(Redis, psetex)
  */
 PHP_METHOD(Redis, setnx)
 {
-
-    zval *object;
     RedisSock *redis_sock;
-    char *key = NULL, *val = NULL, *cmd;
-    int key_len, val_len, cmd_len;
-    int val_free = 0, key_free = 0;
-    zval *z_value;
+    char *cmd;
+    int cmd_len;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osz",
-                                     &object, redis_ce, &key, &key_len,
-                                     &z_value) == FAILURE) {
+    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0 ||
+       redis_gen_kv_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, "SETNX",
+                        &cmd, &cmd_len, NULL)==FAILURE)
+    {
         RETURN_FALSE;
     }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "SETNX", "ss", key,
-                                      key_len, val, val_len);
-    if(val_free) STR_FREE(val);
-    if(key_free) efree(key);
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-
     IF_ATOMIC() {
-	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 
+                       NULL, NULL);
     }
-
     REDIS_PROCESS_RESPONSE(redis_1_response);
-
 }
+
 /* }}} */
 /* {{{ proto string Redis::getSet(string key, string value)
  */
 PHP_METHOD(Redis, getSet)
 {
-
-    zval *object;
     RedisSock *redis_sock;
-    char *key = NULL, *val = NULL, *cmd;
-    int key_len, val_len, cmd_len;
-    int val_free = 0, key_free = 0;
-    zval *z_value;
+    char *cmd;
+    int cmd_len;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osz",
-                                     &object, redis_ce, &key, &key_len,
-                                     &z_value) == FAILURE) {
+    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0 ||
+       redis_gen_kv_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, "GETSET",
+                        &cmd, &cmd_len, NULL)==FAILURE)
+    {
         RETURN_FALSE;
     }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "GETSET", "ss", key,
-                                      key_len, val, val_len);
-    if(val_free) STR_FREE(val);
-    if(key_free) efree(key);
 
 	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 	IF_ATOMIC() {
-		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 
+                              NULL, NULL);
 	}
 	REDIS_PROCESS_RESPONSE(redis_string_response);
 

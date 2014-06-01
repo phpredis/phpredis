@@ -19,7 +19,7 @@
                        &cmd_len, &slot)
 
 /* Simple 1-1 command -> response macro */
-#define CLUSTER_PROCESS_REQUEST(cmdname, resp_func) \
+#define CLUSTER_PROCESS_CMD(cmdname, resp_func) \
     redisCluster *c = GET_CONTEXT(); \
     char *cmd; \
     int cmd_len; \
@@ -36,7 +36,7 @@
     resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c); 
         
 /* More generic processing, where only the keyword differs */
-#define CLUSTER_PROCESS_KW_REQUEST(cmdfunc, kw, resp_func) \
+#define CLUSTER_PROCESS_KW_CMD(cmdfunc, kw, resp_func) \
     redisCluster *c = GET_CONTEXT(); \
     char *cmd; int cmd_len; short slot; \
     if(cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len,\
@@ -69,5 +69,7 @@ PHP_METHOD(RedisCluster, get);
 PHP_METHOD(RedisCluster, set);
 PHP_METHOD(RedisCluster, setex);
 PHP_METHOD(RedisCluster, psetex);
+PHP_METHOD(RedisCluster, setnx);
+PHP_METHOD(RedisCluster, getset);
 
 #endif

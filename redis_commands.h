@@ -34,6 +34,10 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 int redis_gen_setex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                         char *kw, char **cmd, int *cmd_len, short *slot);
+
+int redis_gen_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char *kw, char **cmd, int *cmd_len, short *slot);
+
 #endif
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
