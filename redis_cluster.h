@@ -36,7 +36,7 @@
     resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c); 
         
 /* More generic processing, where only the keyword differs */
-#define CLUSTER_PROCESS_KW_CMD(cmdfunc, kw, resp_func) \
+#define CLUSTER_PROCESS_KW_CMD(kw, cmdfunc, resp_func) \
     redisCluster *c = GET_CONTEXT(); \
     char *cmd; int cmd_len; short slot; \
     if(cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len,\
@@ -72,5 +72,6 @@ PHP_METHOD(RedisCluster, psetex);
 PHP_METHOD(RedisCluster, setnx);
 PHP_METHOD(RedisCluster, getset);
 PHP_METHOD(RedisCluster, exists);
+PHP_METHOD(RedisCluster, keys);
 
 #endif

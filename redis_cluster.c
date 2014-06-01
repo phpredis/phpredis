@@ -46,6 +46,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, setnx, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, getset, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, exists, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, keys, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -212,7 +213,7 @@ PHP_METHOD(RedisCluster, __construct) {
 
 /* {{{ proto string RedisCluster::get(string key) */
 PHP_METHOD(RedisCluster, get) {
-    CLUSTER_PROCESS_KW_CMD(redis_gen_key_cmd, "GET", cluster_bulk_resp);
+    CLUSTER_PROCESS_KW_CMD("GET", redis_gen_key_cmd, cluster_bulk_resp);
 }
 /* }}} */
 
@@ -224,32 +225,37 @@ PHP_METHOD(RedisCluster, set) {
 
 /* {{{ proto bool RedisCluster::setex(string key, string value, int expiry) */ 
 PHP_METHOD(RedisCluster, setex) {
-    CLUSTER_PROCESS_KW_CMD(redis_gen_setex_cmd, "SETEX", cluster_bool_resp);
+    CLUSTER_PROCESS_KW_CMD("SETEX", redis_gen_setex_cmd, cluster_bool_resp);
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::psetex(string key, string value, int expiry) */
 PHP_METHOD(RedisCluster, psetex) {
-    CLUSTER_PROCESS_KW_CMD(redis_gen_setex_cmd, "PSETEX", cluster_bool_resp);
+    CLUSTER_PROCESS_KW_CMD("PSETEX", redis_gen_setex_cmd, cluster_bool_resp);
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::setnx(string key, string value) */
 PHP_METHOD(RedisCluster, setnx) {
-    CLUSTER_PROCESS_KW_CMD(redis_gen_kv_cmd, "SETNX", cluster_1_resp);
+    CLUSTER_PROCESS_KW_CMD("SETNX", redis_gen_kv_cmd, cluster_1_resp);
 }
 /* }}} */
 
 /* {{{ proto string RedisCluster::getSet(string key, string value) */
 PHP_METHOD(RedisCluster, getset) {
-    CLUSTER_PROCESS_KW_CMD(redis_gen_kv_cmd, "GETSET", cluster_bulk_resp);
+    CLUSTER_PROCESS_KW_CMD("GETSET", redis_gen_kv_cmd, cluster_bulk_resp);
 }
 /* }}} */
 
 /* {{{ proto int RedisCluster::exists(string key) */
 PHP_METHOD(RedisCluster, exists) {
-    CLUSTER_PROCESS_KW_CMD(redis_gen_key_cmd, "EXISTS", cluster_int_resp);
+    CLUSTER_PROCESS_KW_CMD("EXISTS", redis_gen_key_cmd, cluster_int_resp);
 }
 /* }}} */
+
+/* {{{ proto array Redis::keys(string pattern) */
+PHP_METHOD(RedisCluster, keys) {
+    CLUSTER_PROCESS_KW_CMD("KEYS", redis_gen_key_cmd, cluster_multibulk_resp);
+}
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

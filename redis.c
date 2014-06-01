@@ -927,21 +927,21 @@ PHP_METHOD(Redis, set) {
  */
 PHP_METHOD(Redis, setex)
 {
-    REDIS_PROCESS_KW_CMD(redis_gen_setex_cmd, "SETEX", redis_string_response);
+    REDIS_PROCESS_KW_CMD("SETEX", redis_gen_setex_cmd, redis_string_response);
 }
 
 /* {{{ proto boolean Redis::psetex(string key, long expire, string value)
  */
 PHP_METHOD(Redis, psetex)
 {
-    REDIS_PROCESS_KW_CMD(redis_gen_setex_cmd, "PSETEX", redis_string_response);
+    REDIS_PROCESS_KW_CMD("PSETEX", redis_gen_setex_cmd, redis_string_response);
 }
 
 /* {{{ proto boolean Redis::setnx(string key, string value)
  */
 PHP_METHOD(Redis, setnx)
 {
-    REDIS_PROCESS_KW_CMD(redis_gen_kv_cmd, "SETNX", redis_1_response);
+    REDIS_PROCESS_KW_CMD("SETNX", redis_gen_kv_cmd, redis_1_response);
 }
 
 /* }}} */
@@ -949,7 +949,7 @@ PHP_METHOD(Redis, setnx)
  */
 PHP_METHOD(Redis, getSet)
 {
-    REDIS_PROCESS_KW_CMD(redis_gen_kv_cmd, "GETSET", redis_string_response);
+    REDIS_PROCESS_KW_CMD("GETSET", redis_gen_kv_cmd, redis_string_response);
 }
 /* }}} */
 
@@ -1096,7 +1096,7 @@ PHP_METHOD(Redis, renameNx)
  */
 PHP_METHOD(Redis, get)
 {
-    REDIS_PROCESS_KW_CMD(redis_gen_key_cmd, "GET", redis_string_response);
+    REDIS_PROCESS_KW_CMD("GET", redis_gen_key_cmd, redis_string_response);
 }
 /* }}} */
 
@@ -1374,7 +1374,7 @@ PHP_METHOD(Redis, getMultiple)
  */
 PHP_METHOD(Redis, exists)
 {
-    REDIS_PROCESS_KW_CMD(redis_gen_key_cmd, "EXISTS", redis_1_response);
+    REDIS_PROCESS_KW_CMD("EXISTS", redis_gen_key_cmd, redis_1_response);
 }
 /* }}} */
 
@@ -1449,34 +1449,8 @@ PHP_METHOD(Redis, unwatch)
  */
 PHP_METHOD(Redis, getKeys)
 {
-    zval *object;
-    RedisSock *redis_sock;
-    char *pattern = NULL, *cmd;
-    int pattern_len, cmd_len, pattern_free;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
-                                     &object, redis_ce,
-                                     &pattern, &pattern_len) == FAILURE) {
-        RETURN_NULL();
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	pattern_free = redis_key_prefix(redis_sock, &pattern, &pattern_len);
-    cmd_len = redis_cmd_format_static(&cmd, "KEYS", "s", pattern,
-                                      pattern_len);
-	if(pattern_free) efree(pattern);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
-	    if (redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-											redis_sock, NULL, NULL) < 0) {
-    	    RETURN_FALSE;
-	    }
-    }
-    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_raw);
+    REDIS_PROCESS_KW_CMD("KEYS", redis_gen_key_cmd, 
+        redis_sock_read_multibulk_reply_raw);
 }
 /* }}} */
 
