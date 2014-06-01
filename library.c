@@ -240,7 +240,8 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
         redis_sock->status = REDIS_SOCK_STATUS_FAILED;
         redis_sock->mode = ATOMIC;
         redis_sock->watching = 0;
-        zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
+        zend_throw_exception(redis_exception_ce, "read error on connection", 
+                             0 TSRMLS_CC);
         return NULL;
     }
 
@@ -280,7 +281,6 @@ PHPAPI char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
                 resp[*buf_len] = 0;
                 return resp;
             }
-
         default:
 			zend_throw_exception_ex(
 				redis_exception_ce,

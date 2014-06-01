@@ -72,6 +72,10 @@ typedef enum CLUSTER_REDIR_TYPE {
         c->err_len = 0; \
     }
 
+/* Reset our last single line reply buffer and length */
+#define CLUSTER_CLEAR_REPLY(c) \
+    *c->line_reply = '\0'; c->reply_len = 0;
+
 /* Specific destructor to free a cluster object */
 // void redis_destructor_redis_cluster(zend_rsrc_list_entry *rsrc TSRMLS_DC);
 
@@ -148,9 +152,13 @@ typedef struct redisCluster {
     /* One RedisSock* object for serialization and prefix information */
     RedisSock *flags;
 
-    /* The last reply length we got, which we'll use to parse and
-     * format our replies to the client. */
-    int reply_len;
+    /* The first line of our last reply, not including our reply type byte 
+     * or the trailing \r\n */
+    char line_reply[1024];
+
+    /* The last reply type and length or integer response we got */
+    REDIS_REPLY_TYPE reply_type;
+    size_t reply_len;
 
     /* Last MOVED or ASK redirection response information */
     CLUSTER_REDIR_TYPE redir_type;
@@ -191,5 +199,5 @@ PHPAPI int cluster_node_add_slave(redisCluster *cluster,
 
 PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
 PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
-
+PHPAPI void cluster_int_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
 #endif
