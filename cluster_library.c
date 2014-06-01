@@ -996,13 +996,22 @@ PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
 }
 
 /* 1 or 0 response, for things like SETNX */
-PHPAPI void cluster_int_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+PHPAPI void cluster_1_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
 {
     // Validate our reply type, and check for a zero
     if(c->reply_type != TYPE_INT || c->reply_len == 0) {
         RETURN_FALSE;
     }
 
+    RETURN_TRUE;
+}
+
+/* Generic integer response */
+PHPAPI void cluster_int_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+{
+    if(c->reply_type != TYPE_INT) {
+        RETURN_FALSE;
+    }
     RETURN_TRUE;
 }
 
