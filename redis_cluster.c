@@ -43,6 +43,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, set, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, setex, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, psetex, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, setnx, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, getset, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -127,7 +129,6 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
 /* Free redisCluster context */
 void free_cluster_context(void *object TSRMLS_DC) {
     redisCluster *cluster;
-    redisClusterNode **node;
 
     // Grab context
     cluster = (redisCluster*)object;
@@ -201,15 +202,33 @@ PHP_METHOD(RedisCluster, __construct) {
 
 /* GET */
 PHP_METHOD(RedisCluster, get) {
-    CLUSTER_PROCESS_REQUEST(get, cluster_bulk_resp);
+    CLUSTER_PROCESS_CMD(get, cluster_bulk_resp);
 }
 
 /* SET */
 PHP_METHOD(RedisCluster, set) {
-    CLUSTER_PROCESS_REQUEST(set, cluster_bool_resp);
+    CLUSTER_PROCESS_CMD(set, cluster_bool_resp);
 }
 
 /* SETEX */
 PHP_METHOD(RedisCluster, setex) {
-    CLUSTER_PROCESS_KW_REQUEST(redis_gen_setex_cmd, "SETEX", cluster_bool_resp);
+    CLUSTER_PROCESS_KW_CMD(redis_gen_setex_cmd, "SETEX", cluster_bool_resp);
 }
+
+/* PSETEX */
+PHP_METHOD(RedisCluster, psetex) {
+    CLUSTER_PROCESS_KW_CMD(redis_gen_setex_cmd, "PSETEX", 
+                               cluster_bool_resp);
+}
+
+/* {{{ proto bool RedisCluster::setnx(string key, string value) */
+PHP_METHOD(RedisCluster, setnx) {
+    CLUSTER_PROCESS_KW_CMD(redis_gen_kv_cmd, "SETNX", cluster_int_resp);
+}
+
+/* {{{ proto string RedisCluster::getSet(string key, string value) */
+PHP_METHOD(RedisCluster, getset) {
+    CLUSTER_PROCESS_KW_CMD(redis_gen_kv_cmd, "GETSET", cluster_bulk_resp);
+}
+
+/* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

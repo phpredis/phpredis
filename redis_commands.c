@@ -77,7 +77,8 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             zend_hash_move_forward(kt))
         {
             // Grab key and value
-            type = zend_hash_get_current_key_ex(kt, &k, &ht_key_len, &idx, 0, NULL);
+            type = zend_hash_get_current_key_ex(kt, &k, &ht_key_len, &idx, 0, 
+                                                NULL);
             zend_hash_get_current_data(kt, (void**)&v);
 
             if(type == HASH_KEY_IS_STRING && (Z_TYPE_PP(v) == IS_LONG) &&
@@ -85,7 +86,9 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             {
                 exp_type = k;
                 expire = Z_LVAL_PP(v);
-            } else if(Z_TYPE_PP(v) == IS_STRING && IS_NX_XX_ARG(Z_STRVAL_PP(v))) {
+            } else if(Z_TYPE_PP(v) == IS_STRING && 
+                      IS_NX_XX_ARG(Z_STRVAL_PP(v))) 
+            {
                 set_type = Z_STRVAL_PP(v);
             }
         }
@@ -126,6 +129,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* SETEX / PSETEX */
 int 
 redis_gen_setex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   char *kw, char **cmd, int *cmd_len, short *slot)
@@ -154,6 +158,68 @@ redis_gen_setex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     if(val_free) STR_FREE(val);
     if(key_free) efree(key);
+
+    return SUCCESS;
+}
+
+/* SETNX */
+int redis_setnx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char **cmd, int *cmd_len, short *slot)
+{
+    char *key = NULL, *val = NULL;
+    int key_len, val_len, key_free, val_free;
+    zval *z_val;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz", &key, &key_len,
+                             &z_val)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    *cmd_len = redis_cmd_format_static(cmd, "SETNX", "ss", key, key_len, val,
+                                       val_len);
+
+    // Set slot if directed
+    CMD_SET_SLOT(slot,key,key_len);
+
+    if(val_free) STR_FREE(val);
+    if(key_free) efree(key);
+
+    return SUCCESS;
+}
+
+/* Generic command construction when we just take a key and value */
+int redis_gen_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char *kw, char **cmd, int *cmd_len, short *slot)
+{
+    char *key, *val;
+    int key_len, val_len, key_free, val_free;
+    zval *z_val;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz", &key, &key_len, 
+                             &z_val)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    // If the key is empty, we can abort
+    if(key_len == 0) {
+        if(key_free) efree(key);
+        if(val_free) STR_FREE(val);
+        return FAILURE;
+    }
+
+    // Construct our command
+    *cmd_len = redis_cmd_format_static(cmd, kw, "ss", key, key_len, val, 
+                                       val_len);
+
+    // Set our slot if directed
+    CMD_SET_SLOT(slot,key,key_len);
 
     return SUCCESS;
 }
