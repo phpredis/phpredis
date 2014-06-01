@@ -53,13 +53,6 @@ typedef enum _PUBSUB_TYPE {
     PUBSUB_NUMPAT
 } PUBSUB_TYPE;
 
-/* Cluster redirection type */
-typedef enum _MOVED_TYPE {
-    MOVED_NONE,
-    MOVED_MOVED,
-    MOVED_ASK
-} MOVED_TYPE;
-
 /* options */
 #define REDIS_OPT_SERIALIZER		1
 #define REDIS_OPT_PREFIX		    2
@@ -240,12 +233,6 @@ typedef struct {
     zend_bool      lazy_connect;
 
     int            scan;
-
-    /* Cluster node redirection */
-    MOVED_TYPE     redir_type;
-    char           *redir_host;
-    unsigned short redir_port;
-    unsigned short redir_slot;
 } RedisSock;
 /* }}} */
 
