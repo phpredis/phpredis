@@ -1015,6 +1015,28 @@ PHPAPI void cluster_int_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
     RETURN_TRUE;
 }
 
+/* TYPE response handler */
+PHPAPI void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+{
+    // Make sure we got the right kind of response
+    if(c->reply_type != TYPE_LINE) {
+        RETURN_FALSE;
+    }
+
+    // Switch on the type
+    if(strncmp(c->line_reply, "+string", 7)==0) {
+        RETURN_LONG(REDIS_STRING);
+    } else if(strncmp(c->line_reply, "+set", 4)==0) {
+        RETURN_LONG(REDIS_SET);
+    } else if(strncmp(c->line_reply, "+list", 5)==0) {
+        RETURN_LONG(REDIS_LIST);
+    } else if(strncmp(c->line_reply, "+hash", 5)==0) {
+        RETURN_LONG(REDIS_HASH);
+    } else {
+        RETURN_LONG(REDIS_NOT_FOUND);
+    }
+}
+
 /* Raw multibulk reply response */
 PHPAPI void cluster_mbulk_resp_raw(INTERNAL_FUNCTION_PARAMETERS, 
                                    redisCluster *c)
