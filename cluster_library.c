@@ -1015,4 +1015,53 @@ PHPAPI void cluster_int_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
     RETURN_TRUE;
 }
 
+/* Raw multibulk reply response */
+PHPAPI void cluster_mbulk_resp_raw(INTERNAL_FUNCTION_PARAMETERS, 
+                                   redisCluster *c)
+{
+    zval *z_result;
+
+    // Verify reply type
+    if(c->reply_type != TYPE_MULTIBULK) {
+        RETURN_FALSE;
+    }
+
+    // Allocate our array
+    MAKE_STD_ZVAL(z_result);
+    array_init(z_result);
+
+    if(cluster_mbulk_resp_loop_raw(SLOT_SOCK(c,c->reply_slot), z_result, 
+                                   c->reply_len TSRMLS_CC)==FAILURE)
+    {
+        zval_dtor(z_result);
+        FREE_ZVAL(z_result);
+        RETURN_FALSE;
+    }
+
+    // Return our array
+    *return_value = *z_result;
+    efree(z_result);
+}
+
+/* Raw multibulk reply loop */
+PHPAPI int cluster_mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result, 
+                                       size_t count TSRMLS_DC) 
+{
+    char *line;
+    int line_len;
+
+    // Iterate over the number we have
+    while(count--) {
+        // Read the line, which should never come back null
+        line = redis_sock_read(redis_sock, &line_len TSRMLS_CC);
+        if(line == NULL) return FAILURE;
+
+        // Add to our result array
+        add_next_index_stringl(z_result, line, line_len, 0);
+    }
+
+    // Success!
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
