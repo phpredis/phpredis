@@ -747,8 +747,9 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
 static int cluster_check_response(redisCluster *c, unsigned short slot,
                                   REDIS_REPLY_TYPE *reply_type TSRMLS_DC)
 {
-    // Clear out any prior error state
+    // Clear out any prior error state and our last line response
     CLUSTER_CLEAR_ERROR(c);
+    CLUSTER_CLEAR_REPLY(c);    
 
     if(-1 == redis_check_eof(SLOT_SOCK(c,slot)) ||
        EOF == (*reply_type = php_stream_getc(SLOT_STREAM(c,slot)))) 
@@ -782,19 +783,16 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
         }
     }
 
-    // For BULK, MULTI BULK, or simply INTEGER response typese we can get
-    // the response length.
-    if(*reply_type == TYPE_INT || *reply_type == TYPE_BULK ||
-       *reply_type == TYPE_MULTIBULK)
+    // Fetch the first line of our response from Redis.
+    if(redis_sock_gets(SLOT_SOCK(c,slot),c->line_reply,sizeof(c->line_reply), 
+                       &c->reply_len)<0)
     {
-        char inbuf[1024];
+        return -1;
+    }
 
-        if(php_stream_gets(SLOT_STREAM(c,slot), inbuf, sizeof(inbuf))<0) {
-            return -1;
-        }
-
-        // Size information
-        c->reply_len = atoi(inbuf);
+    // For replies that will give us a numberic length, convert it
+    if(*reply_type != TYPE_LINE) { 
+        c->reply_len = atoi(c->line_reply);
     }
 
     // Clear out any previous error, and return that the data is here
@@ -911,7 +909,6 @@ static void cluster_update_slot(redisCluster *c, short orig_slot TSRMLS_CC) {
 PHPAPI short cluster_send_command(redisCluster *c, short slot,
                                   const char *cmd, int cmd_len TSRMLS_DC)
 {
-    REDIS_REPLY_TYPE reply_type;
     int resp, rslot = slot;
 
     // Issue commands until we find the right node or fail
@@ -928,7 +925,7 @@ PHPAPI short cluster_send_command(redisCluster *c, short slot,
         }
 
         // Check the response from the slot we ended up querying.
-        resp = cluster_check_response(c, slot, &reply_type TSRMLS_CC);
+        resp = cluster_check_response(c, slot, &c->reply_type TSRMLS_CC);
 
         // If we're getting an error condition, impose a slight delay before
         // we try again (e.g. server went down, election in process).  If the
@@ -969,7 +966,8 @@ PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
     char *resp;
 
     // Make sure we can read the response
-    if((resp = redis_sock_read_bulk_reply(SLOT_SOCK(c,c->reply_slot),
+    if(c->reply_type != TYPE_BULK ||
+       (resp = redis_sock_read_bulk_reply(SLOT_SOCK(c,c->reply_slot),
                                           c->reply_len TSRMLS_CC))==NULL)
     {
         RETURN_FALSE;
@@ -987,13 +985,21 @@ PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
  * type and will now just verify we can read the OK */
 PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
 {
-    char buf[1024];
-    size_t line_len;
-
-    // As long as we can consume up to \r\n past '+', we're OK
-    if(c->err || redis_sock_gets(SLOT_SOCK(c,c->reply_slot), buf, sizeof(buf), 
-                                 &line_len)==-1) 
+    // Check that we have +OK
+    if(c->reply_type != TYPE_LINE || c->reply_len != 2 || 
+       c->line_reply[0] != 'O' || c->line_reply[1] != 'K') 
     {
+        RETURN_FALSE;
+    }
+
+    RETURN_TRUE;
+}
+
+/* 1 or 0 response, for things like SETNX */
+PHPAPI void cluster_int_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+{
+    // Validate our reply type, and check for a zero
+    if(c->reply_type != TYPE_INT || c->reply_len == 0) {
         RETURN_FALSE;
     }
 
