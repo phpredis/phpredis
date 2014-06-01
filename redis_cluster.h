@@ -73,5 +73,6 @@ PHP_METHOD(RedisCluster, setnx);
 PHP_METHOD(RedisCluster, getset);
 PHP_METHOD(RedisCluster, exists);
 PHP_METHOD(RedisCluster, keys);
+PHP_METHOD(RedisCluster, type);
 
 #endif
