@@ -747,6 +747,8 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
 static int cluster_check_response(redisCluster *c, unsigned short slot,
                                   REDIS_REPLY_TYPE *reply_type TSRMLS_DC)
 {
+    size_t sz;
+
     // Clear out any prior error state and our last line response
     CLUSTER_CLEAR_ERROR(c);
     CLUSTER_CLEAR_REPLY(c);    
@@ -785,7 +787,7 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
 
     // Fetch the first line of our response from Redis.
     if(redis_sock_gets(SLOT_SOCK(c,slot),c->line_reply,sizeof(c->line_reply), 
-                       &c->reply_len)<0)
+                       &sz)<0)
     {
         return -1;
     }
@@ -793,6 +795,8 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
     // For replies that will give us a numberic length, convert it
     if(*reply_type != TYPE_LINE) { 
         c->reply_len = atoi(c->line_reply);
+    } else {
+        c->reply_len = (long long)sz;
     }
 
     // Clear out any previous error, and return that the data is here
@@ -1125,7 +1129,7 @@ cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c) {
 
 /* MULTI BULK response where we don't touch the values (e.g. KEYS) */
 int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result, 
-                        size_t count TSRMLS_DC) 
+                        long long count TSRMLS_DC) 
 {
     char *line;
     int line_len;
@@ -1145,7 +1149,7 @@ int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result,
 }
 
 /* MULTI BULK response where we unserialize everything */
-int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, size_t count 
+int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, long long count 
                     TSRMLS_CC)
 {
     char *line;
