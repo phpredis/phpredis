@@ -215,10 +215,16 @@ PHPAPI void cluster_mbulk_resp_raw(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c);
 PHPAPI void cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
     redisCluster *c);
+PHPAPI void cluster_mbulk_zipstr_resp(INTERNAL_FUNCTION_PARAMETERS,
+    redisCluster *c);
 
 /* MULTI BULK processing callbacks */
 int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, 
     long long count TSRMLS_DC);
 int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result, 
     long long count TSRMLS_DC);
+int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
+    long long count TSRMLS_DC);
 #endif
+
+/* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
