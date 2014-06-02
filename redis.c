@@ -4443,37 +4443,19 @@ generic_hash_command_1(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_
     return redis_sock;
 }
 
-/* hKeys */
+/* {{{ proto array Redis::hkeys(string key) */
 PHP_METHOD(Redis, hKeys)
 {
-    RedisSock *redis_sock = generic_hash_command_1(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HKEYS", sizeof("HKEYS")-1);
-	if(!redis_sock)
-		RETURN_FALSE;
-
-	IF_ATOMIC() {
-	    if (redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL) < 0) {
-    	    RETURN_FALSE;
-	    }
-	}
-	REDIS_PROCESS_RESPONSE(redis_mbulk_reply_raw);
-
-
+    REDIS_PROCESS_KW_CMD("HKEYS", redis_gen_key_cmd, 
+        redis_sock_read_multibulk_reply_raw);
 }
-/* hVals */
+/* }}} */
+
+/* {{{ proto array Redis::hvals(string key) */
 PHP_METHOD(Redis, hVals)
 {
-    RedisSock *redis_sock = generic_hash_command_1(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HVALS", sizeof("HVALS")-1);
-	if(!redis_sock)
-		RETURN_FALSE;
-
-	IF_ATOMIC() {
-	    if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-    	                                    redis_sock, NULL, NULL) < 0) {
-        	RETURN_FALSE;
-	    }
-	}
-	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
-
+    REDIS_PROCESS_KW_CMD("HVALS", redis_gen_key_cmd, 
+        redis_sock_read_multibulk_reply);
 }
 
 
