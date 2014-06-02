@@ -1037,37 +1037,56 @@ PHPAPI void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
     }
 }
 
-/* Raw multibulk reply response */
-PHPAPI void cluster_mbulk_resp_raw(INTERNAL_FUNCTION_PARAMETERS, 
-                                   redisCluster *c)
+/* Generic MULTI BULK response processor */
+PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
+                                   redisCluster *c, mbulk_cb cb)
 {
     zval *z_result;
 
-    // Verify reply type
+    // Verify our reply type byte is correct
     if(c->reply_type != TYPE_MULTIBULK) {
         RETURN_FALSE;
     }
 
-    // Allocate our array
+    // Allocate array
     MAKE_STD_ZVAL(z_result);
     array_init(z_result);
 
-    if(cluster_mbulk_resp_loop_raw(SLOT_SOCK(c,c->reply_slot), z_result, 
-                                   c->reply_len TSRMLS_CC)==FAILURE)
+    // Call our specified callback
+    if(cb(SLOT_SOCK(c,c->reply_slot), z_result, c->reply_len TSRMLS_CC)
+                     ==FAILURE)
     {
         zval_dtor(z_result);
         FREE_ZVAL(z_result);
         RETURN_FALSE;
     }
-
-    // Return our array
+    
+    // Success, make this array our return value
     *return_value = *z_result;
     efree(z_result);
 }
 
-/* Raw multibulk reply loop */
-PHPAPI int cluster_mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result, 
-                                       size_t count TSRMLS_DC) 
+/* Raw MULTI BULK reply */
+PHPAPI void 
+cluster_mbulk_resp_raw(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c) {
+    cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+        c, mbulk_resp_loop_raw);
+}
+
+/* Unserialize all the things */
+PHPAPI void
+cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c) {
+    cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+        c, mbulk_resp_loop);
+}
+
+/* 
+ * Various MULTI BULK reply callback functions 
+ */
+
+/* MULTI BULK response where we don't touch the values (e.g. KEYS) */
+int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result, 
+                        size_t count TSRMLS_DC) 
 {
     char *line;
     int line_len;
@@ -1083,6 +1102,31 @@ PHPAPI int cluster_mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result,
     }
 
     // Success!
+    return SUCCESS;
+}
+
+/* MULTI BULK response where we unserialize everything */
+int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, size_t count 
+                    TSRMLS_CC)
+{
+    char *line;
+    int line_len;
+    zval *z;
+
+    // Iterate over the lines we have to process
+    while(count--) {
+        // Read the line
+        line = redis_sock_read(redis_sock, &line_len TSRMLS_CC);
+        if(line == NULL) return FAILURE;
+
+        if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
+            add_next_index_zval(z_result, z);
+            efree(line);
+        } else {
+            add_next_index_stringl(z_result, line, line_len, 0);
+        }
+    }
+
     return SUCCESS;
 }
 

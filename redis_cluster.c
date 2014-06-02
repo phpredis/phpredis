@@ -55,7 +55,9 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, lpushx, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, llen, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, scard, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, smembers, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, strlen, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, persist, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -266,7 +268,6 @@ PHP_METHOD(RedisCluster, exists) {
 PHP_METHOD(RedisCluster, keys) {
     // TODO: Figure out how to implement this, as we may want to send it across
     // all nodes (although that seems dangerous), or ask for a specified slot.
-    //CLUSTER_PROCESS_KW_CMD("KEYS", redis_gen_key_cmd, cluster_multibulk_resp);
     zend_throw_exception(redis_cluster_exception_ce, 
         "KEYS command not implemented", 0 TSRMLS_CC);
 }
@@ -313,15 +314,27 @@ PHP_METHOD(RedisCluster, lpushx) {
 }
 /* }}} */
 
-/* {{{ proto long RedisCluster::llen(string key) }}} */
+/* {{{ proto long RedisCluster::llen(string key)  */
 PHP_METHOD(RedisCluster, llen) {
     CLUSTER_PROCESS_KW_CMD("LLEN", redis_gen_key_cmd, cluster_long_resp);
 }
 /* }}} */
 
-/* {{{ proto long RedisCluster::smembers(string key) }}} */
+/* {{{ proto long RedisCluster::scard(string key) */
 PHP_METHOD(RedisCluster, scard) {
-    CLUSTER_PROCESS_KW_CMD("SMEMBERS", redis_gen_key_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("SCARD", redis_gen_key_cmd, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::smembers(string key) */
+PHP_METHOD(RedisCluster, smembers) {
+    CLUSTER_PROCESS_KW_CMD("SMEMBERS", redis_gen_key_cmd, cluster_mbulk_resp);
+}
+/* }}} */
+
+/* {{{ proto bool RedisCluster::persist(string key) */
+PHP_METHOD(RedisCluster, persist) {
+    CLUSTER_PROCESS_KW_CMD("PERSIST", redis_gen_key_cmd, cluster_1_resp);
 }
 /* }}} */
 
