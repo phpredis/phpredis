@@ -77,7 +77,7 @@ typedef enum CLUSTER_REDIR_TYPE {
     *c->line_reply = '\0'; c->reply_len = 0;
 
 /* MULTI BULK response callback typedef */
-typedef int (*mbulk_cb)(RedisSock*,zval*,size_t TSRMLS_DC);
+typedef int (*mbulk_cb)(RedisSock*,zval*,long long TSRMLS_DC);
 
 /* Specific destructor to free a cluster object */
 // void redis_destructor_redis_cluster(zend_rsrc_list_entry *rsrc TSRMLS_DC);
@@ -161,7 +161,7 @@ typedef struct redisCluster {
 
     /* The last reply type and length or integer response we got */
     REDIS_REPLY_TYPE reply_type;
-    size_t reply_len;
+    long long reply_len;
 
     /* Last MOVED or ASK redirection response information */
     CLUSTER_REDIR_TYPE redir_type;
@@ -218,7 +218,7 @@ PHPAPI void cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 
 /* MULTI BULK processing callbacks */
 int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, 
-    size_t count TSRMLS_DC);
+    long long count TSRMLS_DC);
 int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result, 
-    size_t count TSRMLS_DC);
+    long long count TSRMLS_DC);
 #endif
