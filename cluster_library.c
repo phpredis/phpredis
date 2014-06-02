@@ -960,7 +960,25 @@ PHPAPI short cluster_send_command(redisCluster *c, short slot,
  * consumed.
  */
 
-/* Unmodified BULK response handler */
+/* RAW bulk response handler */
+PHPAPI void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS, 
+                                  redisCluster *c)
+{
+    char *resp;
+
+    // Make sure we can read the response
+    if(c->reply_type != TYPE_BULK ||
+       (resp = redis_sock_read_bulk_reply(SLOT_SOCK(c,c->reply_slot),
+                                          c->reply_len TSRMLS_CC))==NULL)
+    {
+        RETURN_FALSE;
+    }
+
+    // Return our response raw
+    RETURN_STRINGL(resp,c->reply_len, 0);
+}
+
+/* BULK response handler */
 PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
 {
     char *resp;
