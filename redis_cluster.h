@@ -86,4 +86,7 @@ PHP_METHOD(RedisCluster, scard);
 PHP_METHOD(RedisCluster, smembers);
 
 PHP_METHOD(RedisCluster, strlen);
+
+PHP_METHOD(RedisCluster, ttl);
+PHP_METHOD(RedisCluster, pttl);
 #endif

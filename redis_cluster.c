@@ -338,4 +338,16 @@ PHP_METHOD(RedisCluster, persist) {
 }
 /* }}} */
 
+/* {{{ proto long RedisCluster::ttl(string key) */
+PHP_METHOD(RedisCluster, ttl) {
+    CLUSTER_PROCESS_KW_CMD("TTL", redis_gen_key_cmd, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::pttl(string key) */
+PHP_METHOD(RedisCluster, pttl) {
+    CLUSTER_PROCESS_KW_CMD("PTTL", redis_gen_key_cmd, cluster_long_resp);
+}
+/* }}} */
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
