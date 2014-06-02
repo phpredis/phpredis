@@ -1086,8 +1086,9 @@ PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 {
     zval *z_result;
 
-    // Verify our reply type byte is correct
-    if(c->reply_type != TYPE_MULTIBULK) {
+    // Verify our reply type byte is correct and that this isn't a NULL
+    // (e.g. -1 count) multi bulk response.
+    if(c->reply_type != TYPE_MULTIBULK || c->reply_len == -1) {
         RETURN_FALSE;
     }
 
@@ -1123,6 +1124,14 @@ cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c) {
         c, mbulk_resp_loop);
 }
 
+/* For handling responses where we get key, value, key, value that
+ * we will turn into key => value, key => value. */
+PHPAPI void
+cluster_mbulk_resp_zipstr(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c) {
+    cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+        c, mbulk_resp_loop_zipstr);
+}
+
 /* 
  * Various MULTI BULK reply callback functions 
  */
@@ -1150,7 +1159,7 @@ int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result,
 
 /* MULTI BULK response where we unserialize everything */
 int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, long long count 
-                    TSRMLS_CC)
+                    TSRMLS_DC)
 {
     char *line;
     int line_len;
@@ -1167,6 +1176,42 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, long long count
             efree(line);
         } else {
             add_next_index_stringl(z_result, line, line_len, 0);
+        }
+    }
+
+    return SUCCESS;
+}
+
+/* MULTI BULK response where we turn key1,value1 into key1=>value1 */
+int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result, 
+                           long long count TSRMLS_DC)
+{
+    char *line, *key;
+    int line_len;
+    long long idx=0;
+    zval *z;
+
+    // Our count wil need to be divisible by 2
+    if(count % 2 != 0) {
+        return -1;
+    }
+
+    // Iterate through our elements
+    while(count--) {
+        // Grab our line, bomb out on failure
+        line = redis_sock_read(redis_sock, &line_len TSRMLS_CC);
+        if(!line) return -1;
+
+        if(idx % 2 == 0) {
+            // Save our key
+            key = line;
+        } else {
+            // Attempt unserialization, add value
+            if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
+                add_assoc_zval(z_result, key, z);
+            } else {
+                add_assoc_stringl(z_result, key, line, line_len, 0);
+            }
         }
     }
 
