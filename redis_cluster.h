@@ -93,6 +93,8 @@ PHP_METHOD(RedisCluster, pttl);
 
 PHP_METHOD(RedisCluster, zcard);
 PHP_METHOD(RedisCluster, zscore);
+PHP_METHOD(RedisCluster, zrank);
+PHP_METHOD(RedisCluster, zrevrank);
 
 PHP_METHOD(RedisCluster, hlen);
 PHP_METHOD(RedisCluster, hkeys);

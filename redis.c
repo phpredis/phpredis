@@ -3999,16 +3999,13 @@ PHP_REDIS_API void generic_rank_method(INTERNAL_FUNCTION_PARAMETERS, char *keywo
 /* {{{ proto long Redis::zRank(string key, string member)
  */
 PHP_METHOD(Redis, zRank) {
-
-        generic_rank_method(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANK", 5);
+    REDIS_PROCESS_KW_CMD("ZRANK", redis_gen_kv_cmd, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto long Redis::zRevRank(string key, string member)
- */
+/* {{{ proto long Redis::zRevRank(string key, string member) */
 PHP_METHOD(Redis, zRevRank) {
-
-        generic_rank_method(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANK", 8);
+    REDIS_PROCESS_KW_CMD("ZREVRANK", redis_gen_kv_cmd, redis_long_response);
 }
 /* }}} */
 
