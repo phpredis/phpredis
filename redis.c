@@ -1809,7 +1809,7 @@ generic_pop_function(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_le
  */
 PHP_METHOD(Redis, lPop)
 {
-        generic_pop_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "LPOP", sizeof("LPOP")-1);
+    REDIS_PROCESS_KW_CMD("LPOP", redis_gen_key_cmd, redis_string_response);
 }
 /* }}} */
 
@@ -1817,7 +1817,7 @@ PHP_METHOD(Redis, lPop)
  */
 PHP_METHOD(Redis, rPop)
 {
-        generic_pop_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "RPOP", sizeof("RPOP")-1);
+    REDIS_PROCESS_KW_CMD("RPOP", redis_gen_key_cmd, redis_string_response);
 }
 /* }}} */
 
@@ -2152,11 +2152,10 @@ PHP_METHOD(Redis, sMove)
  */
 PHP_METHOD(Redis, sPop)
 {
-    generic_pop_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SPOP", 4);
+    REDIS_PROCESS_KW_CMD("SPOP", redis_gen_key_cmd, redis_string_response);
 }
 /* }}} */
 
-/* }}} */
 /* {{{ proto string Redis::sRandMember(string key [int count])
  */
 PHP_METHOD(Redis, sRandMember)

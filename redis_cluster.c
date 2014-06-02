@@ -48,6 +48,9 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, exists, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, keys, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, type, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, lpop, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, rpop, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, spop, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -262,10 +265,31 @@ PHP_METHOD(RedisCluster, keys) {
     zend_throw_exception(redis_cluster_exception_ce, 
         "KEYS command not implemented", 0 TSRMLS_CC);
 }
+/* }}} */
 
 /* {{{ proto int RedisCluster::type(string key) */
 PHP_METHOD(RedisCluster, type) {
     CLUSTER_PROCESS_KW_CMD("TYPE", redis_gen_key_cmd, cluster_type_resp);
 }
+/* }}} */
+
+/* {{{ proto string RedisCluster::pop(string key) */
+PHP_METHOD(RedisCluster, lpop) {
+    CLUSTER_PROCESS_KW_CMD("LPOP", redis_gen_key_cmd, cluster_bulk_resp);
+}
+/* }}} */
+
+/* {{{ proto string RedisCluster::rpop(string key) */
+PHP_METHOD(RedisCluster, rpop) {
+    CLUSTER_PROCESS_KW_CMD("RPOP", redis_gen_key_cmd, cluster_bulk_resp);
+}
+/* }}} */
+
+/* {{{ proto string RedisCluster::spop(string key) */
+PHP_METHOD(RedisCluster, spop) {
+    CLUSTER_PROCESS_KW_CMD("SPOP", redis_gen_key_cmd, cluster_bulk_resp);
+}
+/* }}} */
+
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

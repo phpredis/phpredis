@@ -624,17 +624,17 @@ PHPAPI void redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
     }
 
     if (strncmp(response, "+string", 7) == 0) {
-	l = REDIS_STRING;
+        l = REDIS_STRING;
     } else if (strncmp(response, "+set", 4) == 0){
-	l = REDIS_SET;
+        l = REDIS_SET;
     } else if (strncmp(response, "+list", 5) == 0){
-	l = REDIS_LIST;
+        l = REDIS_LIST;
     } else if (strncmp(response, "+zset", 5) == 0){
-	l = REDIS_ZSET;
+        l = REDIS_ZSET;
     } else if (strncmp(response, "+hash", 5) == 0){
-	l = REDIS_HASH;
+        l = REDIS_HASH;
     } else {
-	l = REDIS_NOT_FOUND;
+        l = REDIS_NOT_FOUND;
     }
 
     efree(response);
