@@ -1619,35 +1619,12 @@ PHP_METHOD(Redis, setBit)
 	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 
-
+/* {{{ proto long Redis::strlen(string key) */
 PHP_METHOD(Redis, strlen)
 {
-	zval *object;
-	RedisSock *redis_sock;
-	char *cmd;
-	int cmd_len, key_len, key_free;
-	char *key;
-
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
-                                     &object, redis_ce,
-                                     &key, &key_len) == FAILURE) {
-		RETURN_NULL();
-	}
-
-	if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-		RETURN_FALSE;
-	}
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-	cmd_len = redis_cmd_format_static(&cmd, "STRLEN", "s", key, key_len);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_KW_CMD("STRLEN", redis_gen_key_cmd, redis_long_response);
 }
+/* }}} */
 
 PHPAPI void
 generic_push_function(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
@@ -1773,36 +1750,6 @@ PHP_METHOD(Redis, lPushx)
 PHP_METHOD(Redis, rPushx)
 {
 	generic_push_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "RPUSHX", sizeof("RPUSHX")-1);
-}
-
-PHPAPI void
-generic_pop_function(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
-
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len, key_free;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
-                                     &object, redis_ce,
-                                     &key, &key_len) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, keyword, "s", key,
-                                      key_len);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_string_response);
 }
 
 /* {{{ proto string Redis::lPOP(string key)
