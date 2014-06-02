@@ -3160,6 +3160,7 @@ PHP_METHOD(Redis, persist) {
 }
 /* }}} */
 
+
 /* {{{ proto long Redis::ttl(string key)
  */
 PHP_METHOD(Redis, ttl) {
@@ -3976,32 +3977,7 @@ PHP_METHOD(Redis, zRangeByLex) {
  */
 PHP_METHOD(Redis, zCard)
 {
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len, key_free;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
-                                     &object, redis_ce,
-                                     &key, &key_len) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "ZCARD", "s", key,
-                                      key_len);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
-
+    REDIS_PROCESS_KW_CMD("ZCARD", redis_gen_key_cmd, redis_long_response);
 }
 /* }}} */
 
@@ -4009,35 +3985,8 @@ PHP_METHOD(Redis, zCard)
  */
 PHP_METHOD(Redis, zScore)
 {
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *val = NULL, *cmd;
-    int key_len, val_len, cmd_len;
-    int val_free, key_free = 0;
-    zval *z_value;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osz",
-                                     &object, redis_ce, &key, &key_len,
-                                     &z_value) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "ZSCORE", "ss", key,
-                                      key_len, val, val_len);
-    if(val_free) STR_FREE(val);
-    if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-	    redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_bulk_double_response);
+    REDIS_PROCESS_KW_CMD("ZSCORE", redis_gen_kv_cmd, 
+        redis_bulk_double_response);
 }
 /* }}} */
 
