@@ -981,6 +981,27 @@ PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
     }
 }
 
+/* Bulk response where we expect a double */
+PHPAPI void cluster_dbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+{
+    char *resp;
+    double dbl;
+
+    // Make sure we can read the response
+    if(c->reply_type != TYPE_BULK ||
+       (resp = redis_sock_read_bulk_reply(SLOT_SOCK(c,c->reply_slot),
+                                          c->reply_len TSRMLS_CC))==NULL)
+    {
+        RETURN_FALSE;
+    }
+
+    // Convert to double, free response
+    dbl = atof(resp);
+    efree(resp);
+
+    RETURN_DOUBLE(dbl);
+}
+
 /* A boolean response.  If we get here, we've consumed the '+' reply
  * type and will now just verify we can read the OK */
 PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
