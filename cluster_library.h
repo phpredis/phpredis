@@ -76,6 +76,9 @@ typedef enum CLUSTER_REDIR_TYPE {
 #define CLUSTER_CLEAR_REPLY(c) \
     *c->line_reply = '\0'; c->reply_len = 0;
 
+/* MULTI BULK response callback typedef */
+typedef int (*mbulk_cb)(RedisSock*,zval*,size_t TSRMLS_DC);
+
 /* Specific destructor to free a cluster object */
 // void redis_destructor_redis_cluster(zend_rsrc_list_entry *rsrc TSRMLS_DC);
 
@@ -203,9 +206,17 @@ PHPAPI void cluster_1_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
 PHPAPI void cluster_long_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
 PHPAPI void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
 
-/* Raw (untouched) multi bulk processing */
+/* MULTI BULK response functions */
+PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
+    redisCluster *c, mbulk_cb func);
 PHPAPI void cluster_mbulk_resp_raw(INTERNAL_FUNCTION_PARAMETERS, 
     redisCluster *c);
-PHPAPI int cluster_mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result,
+PHPAPI void cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
+    redisCluster *c);
+
+/* MULTI BULK processing callbacks */
+int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, 
+    size_t count TSRMLS_DC);
+int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result, 
     size_t count TSRMLS_DC);
 #endif
