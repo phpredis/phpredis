@@ -78,6 +78,7 @@ PHP_METHOD(RedisCluster, type);
 PHP_METHOD(RedisCluster, lpop);
 PHP_METHOD(RedisCluster, rpop);
 PHP_METHOD(RedisCluster, spop);
-
+PHP_METHOD(RedisCluster, rpushx);
+PHP_METHOD(RedisCluster, lpushx);
 PHP_METHOD(RedisCluster, strlen);
 #endif

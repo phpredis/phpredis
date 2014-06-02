@@ -1626,39 +1626,6 @@ PHP_METHOD(Redis, strlen)
 }
 /* }}} */
 
-PHPAPI void
-generic_push_function(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
-    zval *object;
-    RedisSock *redis_sock;
-    char *cmd, *key, *val;
-    int cmd_len, key_len, val_len;
-    zval *z_value;
-    int val_free, key_free = 0;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osz",
-                                     &object, redis_ce,
-                                     &key, &key_len, &z_value) == FAILURE) {
-        RETURN_NULL();
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, keyword, "ss", key,
-                                      key_len, val, val_len);
-    if(val_free) STR_FREE(val);
-    if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
-}
-
 /* {{{ proto boolean Redis::lPush(string key , string value)
  */
 PHP_METHOD(Redis, lPush)
@@ -1742,15 +1709,20 @@ PHP_METHOD(Redis, lInsert)
 
 }
 
+/* {{{ proto long Redis::lPushx(string key, mixed value) */
 PHP_METHOD(Redis, lPushx)
-{
-	generic_push_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "LPUSHX", sizeof("LPUSHX")-1);
+{	
+    REDIS_PROCESS_KW_CMD("LPUSHX", redis_gen_kv_cmd, redis_string_response);
 }
+/* }}} */
 
+/* {{{ proto long Redis::rPushx(string key, mixed value) */
 PHP_METHOD(Redis, rPushx)
 {
-	generic_push_function(INTERNAL_FUNCTION_PARAM_PASSTHRU, "RPUSHX", sizeof("RPUSHX")-1);
+    REDIS_PROCESS_KW_CMD("RPUSHX", redis_gen_kv_cmd, redis_string_response);
 }
+
+/* }}} */
 
 /* {{{ proto string Redis::lPOP(string key)
  */
