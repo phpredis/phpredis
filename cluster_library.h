@@ -200,7 +200,7 @@ PHPAPI int cluster_node_add_slave(redisCluster *cluster,
 PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
 PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
 PHPAPI void cluster_1_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
-PHPAPI void cluster_int_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
+PHPAPI void cluster_long_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
 PHPAPI void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
 
 /* Raw (untouched) multi bulk processing */

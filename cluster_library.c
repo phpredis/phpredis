@@ -1007,7 +1007,7 @@ PHPAPI void cluster_1_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
 }
 
 /* Generic integer response */
-PHPAPI void cluster_int_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+PHPAPI void cluster_long_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
 {
     if(c->reply_type != TYPE_INT) {
         RETURN_FALSE;
