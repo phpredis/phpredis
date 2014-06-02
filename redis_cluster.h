@@ -75,4 +75,8 @@ PHP_METHOD(RedisCluster, exists);
 PHP_METHOD(RedisCluster, keys);
 PHP_METHOD(RedisCluster, type);
 
+PHP_METHOD(RedisCluster, lpop);
+PHP_METHOD(RedisCluster, rpop);
+PHP_METHOD(RedisCluster, spop);
+
 #endif
