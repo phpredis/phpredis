@@ -1187,7 +1187,7 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
                            long long count TSRMLS_DC)
 {
     char *line, *key;
-    int line_len;
+    int line_len, key_len;
     long long idx=0;
     zval *z;
 
@@ -1202,16 +1202,48 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
         line = redis_sock_read(redis_sock, &line_len TSRMLS_CC);
         if(!line) return -1;
 
-        if(idx % 2 == 0) {
-            // Save our key
+        if(idx++ % 2 == 0) {
+            // Save our key and length
             key = line;
+            key_len = line_len;
         } else {
             // Attempt unserialization, add value
             if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
                 add_assoc_zval(z_result, key, z);
             } else {
-                add_assoc_stringl(z_result, key, line, line_len, 0);
+                add_assoc_stringl_ex(z_result, key, 1+key_len, line, 
+                    line_len, 0);
             }
+        }
+    }
+
+    return SUCCESS;
+}
+
+/* MULTI BULK loop processor where we expect key,score key, score */
+int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
+                           long long count TSRMLS_DC)
+{
+    char *line, *key;
+    int line_len, key_len;
+    long long idx=0;
+    double score;
+
+    // Our context will need to be divisible by 2
+    if(count %2 != 0) {
+        return -1;
+    }
+
+    // While we have elements
+    while(count--) {
+        line = redis_sock_read(redis_sock, &line_len TSRMLS_CC);
+        if(!line) return -1;
+
+        if(idx++ % 2 == 0) {
+            key = line;
+            key_len = line_len;
+        } else {
+            add_assoc_double_ex(z_result, key, 1+key_len, atof(line));
         }
     }
 
