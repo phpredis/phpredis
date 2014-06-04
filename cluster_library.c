@@ -1055,7 +1055,7 @@ PHPAPI void cluster_long_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
     if(c->reply_type != TYPE_INT) {
         RETURN_FALSE;
     }
-    RETURN_TRUE;
+    RETURN_LONG(c->reply_len);
 }
 
 /* TYPE response handler */

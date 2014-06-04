@@ -230,4 +230,32 @@ int redis_gen_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* Generic command where we take a key and a double */
+int redis_gen_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                          char *kw, char **cmd, int *cmd_len, short *slot)
+{
+    char *key;
+    int key_len, key_free;
+    double val;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sd", &key, &key_len,
+                             &val)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Prefix our key
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    // Construct our command
+    *cmd_len = redis_cmd_format_static(cmd, kw, "sf", key, key_len, val);
+
+    // Set slot if directed
+    CMD_SET_SLOT(slot,key,key_len);
+
+    if(key_free) efree(key);
+
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
