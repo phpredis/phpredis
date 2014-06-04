@@ -112,4 +112,6 @@ PHP_METHOD(RedisCluster, expireat);
 PHP_METHOD(RedisCluster, pexpire);
 PHP_METHOD(RedisCluster, pexpireat);
 
+PHP_METHOD(RedisCluster, append);
+
 #endif
