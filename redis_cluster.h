@@ -99,4 +99,11 @@ PHP_METHOD(RedisCluster, zrevrank);
 PHP_METHOD(RedisCluster, hlen);
 PHP_METHOD(RedisCluster, hkeys);
 PHP_METHOD(RedisCluster, hvals);
+PHP_METHOD(RedisCluster, hgetall);
+
+PHP_METHOD(RedisCluster, incr);
+PHP_METHOD(RedisCluster, decr);
+PHP_METHOD(RedisCluster, incrby);
+PHP_METHOD(RedisCluster, decrby);
+
 #endif
