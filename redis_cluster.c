@@ -74,6 +74,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, decr, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, incrby, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, decrby, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, incrbyfloat, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -448,6 +449,20 @@ PHP_METHOD(RedisCluster, decr) {
 /* {{{ proto long RedisCluster::decrby(string key, long byval) */
 PHP_METHOD(RedisCluster, decrby) {
     CLUSTER_PROCESS_KW_CMD("DECRBY", redis_gen_key_long_cmd, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto double RedisCluster::incrbyfloat(string key, double val) */
+PHP_METHOD(RedisCluster, incrbyfloat) {
+    CLUSTER_PROCESS_KW_CMD("INCRBYFLOAT", redis_gen_key_dbl_cmd, 
+        cluster_dbl_resp);
+}
+/* }}} */
+
+/* {{{ proto double RedisCluster::decrbyfloat(string key, double val) */
+PHP_METHOD(RedisCluster, decrbyfloat) {
+    CLUSTER_PROCESS_KW_CMD("DECRBYFLOAT", redis_gen_key_dbl_cmd,
+        cluster_dbl_resp);
 }
 /* }}} */
 
