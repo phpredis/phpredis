@@ -157,13 +157,6 @@ int redis_gen_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
-    // Don't allow setting an empty key
-    if(key_len == 0) {
-        if(val_free) STR_FREE(val);
-        if(key_free) efree(key);
-        return FAILURE;
-    }
-
     // Construct our command
     *cmd_len = redis_cmd_format_static(cmd, kw, "ss", key, key_len, val, 
                                        val_len);
@@ -226,12 +219,6 @@ int redis_gen_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Prefix our key
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
     
-    // Don't allow an empty key
-    if(key_len == 0) {
-        if(key_free) efree(key);
-        return FAILURE;
-    }
-
     // Construct our command
     *cmd_len = redis_cmd_format_static(cmd, kw, "s", key, key_len);
 
