@@ -66,9 +66,14 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, hlen, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hkeys, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hvals, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, hgetall, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, dump, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrank, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrevrank, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, incr, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, decr, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, incrby, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, decrby, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -410,9 +415,40 @@ PHP_METHOD(RedisCluster, hvals) {
 }
 /* }}} */
 
+/* {{{ proto array RedisCluster::hgetall(string key) */
+PHP_METHOD(RedisCluster, hgetall) {
+    CLUSTER_PROCESS_KW_CMD("HGETALL", redis_gen_key_cmd, 
+        cluster_mbulk_zipstr_resp);
+} 
+/* }}} */
+
 /* {{{ proto string RedisCluster::dump(string key) */
 PHP_METHOD(RedisCluster, dump) {
     CLUSTER_PROCESS_KW_CMD("DUMP", redis_gen_key_cmd, cluster_bulk_raw_resp);
 }
+
+/* {{{ proto long RedisCluster::incr(string key) */
+PHP_METHOD(RedisCluster, incr) {
+    CLUSTER_PROCESS_KW_CMD("INCR", redis_gen_key_cmd, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::incrby(string key, long byval) */
+PHP_METHOD(RedisCluster, incrby) {
+    CLUSTER_PROCESS_KW_CMD("INCRBY", redis_gen_key_long_cmd, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::decr(string key) */
+PHP_METHOD(RedisCluster, decr) {
+    CLUSTER_PROCESS_KW_CMD("DECR", redis_gen_key_cmd, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::decrby(string key, long byval) */
+PHP_METHOD(RedisCluster, decrby) {
+    CLUSTER_PROCESS_KW_CMD("DECRBY", redis_gen_key_long_cmd, cluster_long_resp);
+}
+/* }}} */
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
