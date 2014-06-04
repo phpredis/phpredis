@@ -3059,34 +3059,7 @@ PHP_METHOD(Redis, select) {
 /* {{{ proto bool Redis::move(string key, long dbindex)
  */
 PHP_METHOD(Redis, move) {
-
-    zval *object;
-    RedisSock *redis_sock;
-
-    char *cmd, *key;
-    int cmd_len, key_len, key_free;
-    long dbNumber;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl",
-                                     &object, redis_ce, &key, &key_len, &dbNumber) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "MOVE", "sd", key, key_len,
-                                      dbNumber);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_1_response);
-
+    REDIS_PROCESS_KW_CMD("MOVE", redis_gen_key_long_cmd, redis_1_response);
 }
 /* }}} */
 
