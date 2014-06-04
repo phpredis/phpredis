@@ -105,5 +105,6 @@ PHP_METHOD(RedisCluster, incr);
 PHP_METHOD(RedisCluster, decr);
 PHP_METHOD(RedisCluster, incrby);
 PHP_METHOD(RedisCluster, decrby);
+PHP_METHOD(RedisCluster, incrbyfloat);
 
 #endif
