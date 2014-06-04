@@ -75,6 +75,12 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, incrby, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, decrby, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, incrbyfloat, NULL, ZEND_ACC_PUBLIC)
+    
+    PHP_ME(RedisCluster, expire, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, pexpire, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, expireat, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, pexpireat, NULL, ZEND_ACC_PUBLIC)
+    
     {NULL, NULL, NULL}
 };
 
@@ -465,5 +471,30 @@ PHP_METHOD(RedisCluster, decrbyfloat) {
         cluster_dbl_resp);
 }
 /* }}} */
+
+/* {{{ proto bool RedisCluster::expire(string key, long sec) */
+PHP_METHOD(RedisCluster, expire) {
+    CLUSTER_PROCESS_KW_CMD("EXPIRE", redis_gen_key_long_cmd, cluster_1_resp);
+}
+/* }}} */
+
+/* {{{ proto bool RedisCluster::expireat(string key, long ts) */
+PHP_METHOD(RedisCluster, expireat) {
+    CLUSTER_PROCESS_KW_CMD("EXPIREAT", redis_gen_key_long_cmd, cluster_1_resp);
+}
+
+/* {{{ proto bool RedisCluster::pexpire(string key, long ms) */
+PHP_METHOD(RedisCluster, pexpire) {
+    CLUSTER_PROCESS_KW_CMD("PEXPIRE", redis_gen_key_long_cmd, cluster_1_resp);
+}
+/* }}} */
+
+/* {{{ proto bool RedisCluster::pexpireat(string key, long ts) */
+PHP_METHOD(RedisCluster, pexpireat) {
+    CLUSTER_PROCESS_KW_CMD("PEXPIREAT", redis_gen_key_long_cmd, cluster_1_resp);
+}
+/* }}} */
+
+
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

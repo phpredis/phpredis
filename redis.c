@@ -1143,41 +1143,6 @@ PHP_METHOD(Redis, ping)
 }
 /* }}} */
 
-PHP_REDIS_API void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int count) {
-
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len;
-    long val = 1;
-	int key_free;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
-                                     &object, redis_ce,
-                                     &key, &key_len, &val) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    if (val == 1) {
-        cmd_len = redis_cmd_format_static(&cmd, keyword, "s", key,
-                                          key_len);
-    } else {
-        cmd_len = redis_cmd_format_static(&cmd, keyword, "sl", key,
-                                          key_len, val);
-    }
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
-		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-    }
-    REDIS_PROCESS_RESPONSE(redis_long_response);
-}
-
 /* {{{ proto boolean Redis::incr(string key [,int value])
  */
 PHP_METHOD(Redis, incr){
@@ -2822,65 +2787,31 @@ PHP_METHOD(Redis, sortDescAlpha)
 }
 /* }}} */
 
-PHP_REDIS_API void generic_expire_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd, *t;
-    int key_len, cmd_len, key_free, t_len;
-	int i;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
-                                     &object, redis_ce, &key, &key_len,
-                                     &t, &t_len) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	/* check that we have a number */
-	for(i = 0; i < t_len; ++i)
-		if(t[i] < '0' || t[i] > '9')
-			RETURN_FALSE;
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, keyword, "ss", key,
-                                      key_len, t, t_len);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_1_response);
-}
-
 /* {{{ proto array Redis::setTimeout(string key, int timeout)
  */
 PHP_METHOD(Redis, setTimeout) {
-    generic_expire_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "EXPIRE", sizeof("EXPIRE")-1);
+    REDIS_PROCESS_KW_CMD("EXPIRE", redis_gen_key_long_cmd, redis_1_response);
 }
+/* }}} */
 
 PHP_METHOD(Redis, pexpire) {
-    generic_expire_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PEXPIRE", sizeof("PEXPIRE")-1);
+    REDIS_PROCESS_KW_CMD("PEXPIRE", redis_gen_key_long_cmd, redis_1_response);
 }
 /* }}} */
 
 /* {{{ proto array Redis::expireAt(string key, int timestamp)
  */
 PHP_METHOD(Redis, expireAt) {
-    generic_expire_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "EXPIREAT", sizeof("EXPIREAT")-1);
+    REDIS_PROCESS_KW_CMD("EXPIREAT", redis_gen_key_long_cmd, redis_1_response);
 }
 /* }}} */
 
 /* {{{ proto array Redis::pexpireAt(string key, int timestamp)
  */
 PHP_METHOD(Redis, pexpireAt) {
-    generic_expire_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PEXPIREAT", sizeof("PEXPIREAT")-1);
+    REDIS_PROCESS_KW_CMD("PEXPIREAT", redis_gen_key_long_cmd, redis_1_response);
 }
 /* }}} */
-
 
 /* {{{ proto array Redis::lSet(string key, int index, string value)
  */
