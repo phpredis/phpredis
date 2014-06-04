@@ -177,6 +177,39 @@ int redis_gen_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* Generic command construction where we take a key and a long */
+int redis_gen_key_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                           char *kw, char **cmd, int *cmd_len, short *slot)
+{
+    char *key;
+    int key_len, key_free;
+    long lval;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sl", &key, &key_len,
+                             &lval)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Prefix key
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    // Disallow zero length keys (for now)
+    if(key_len == 0) {
+        if(key_free) efree(key);
+        return FAILURE;
+    }
+
+    // Construct our command
+    *cmd_len = redis_cmd_format_static(cmd, kw, "sl", key, key_len, lval);
+
+    // Set slot if directed
+    CMD_SET_SLOT(slot, key, key_len);
+
+    // Success!
+    return SUCCESS;
+}
+
 /* Generic command where we take a single key */
 int redis_gen_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char *kw, char **cmd, int *cmd_len, short *slot)
@@ -190,6 +223,7 @@ int redis_gen_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
+    // Prefix our key
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
     
     // Don't allow an empty key
@@ -208,6 +242,5 @@ int redis_gen_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     return SUCCESS;
 }
-
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

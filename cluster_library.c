@@ -1127,9 +1127,16 @@ cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c) {
 /* For handling responses where we get key, value, key, value that
  * we will turn into key => value, key => value. */
 PHPAPI void
-cluster_mbulk_resp_zipstr(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c) {
+cluster_mbulk_zipstr_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c) {
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,
         c, mbulk_resp_loop_zipstr);
+}
+
+/* Handling key,value to key=>value where the values are doubles */
+PHPAPI void
+cluster_mbulk_resp_zipdbl(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c) {
+    cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+        c, mbulk_resp_loop_zipdbl);
 }
 
 /* 
@@ -1227,7 +1234,6 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
     char *line, *key;
     int line_len, key_len;
     long long idx=0;
-    double score;
 
     // Our context will need to be divisible by 2
     if(count %2 != 0) {
