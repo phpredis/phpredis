@@ -1378,35 +1378,12 @@ PHP_METHOD(Redis, type)
 }
 /* }}} */
 
+/* {{{ proto long Redis::append(string key, string val) */
 PHP_METHOD(Redis, append)
 {
-	zval *object;
-	RedisSock *redis_sock;
-	char *cmd;
-	int cmd_len, key_len, val_len, key_free;
-	char *key, *val;
-
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
-                                     &object, redis_ce,
-                                     &key, &key_len, &val, &val_len) == FAILURE) {
-		RETURN_NULL();
-	}
-
-	if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-		RETURN_FALSE;
-	}
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-	cmd_len = redis_cmd_format_static(&cmd, "APPEND", "ss", key,
-                                      key_len, val, val_len);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_KW_CMD("APPEND", redis_gen_kv_cmd, redis_long_response);
 }
+/* }}} */
 
 PHP_METHOD(Redis, getRange)
 {
