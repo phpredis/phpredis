@@ -1146,33 +1146,10 @@ PHP_METHOD(Redis, incrBy){
 /* {{{ proto float Redis::incrByFloat(string key, float value)
  */
 PHP_METHOD(Redis, incrByFloat) {
-	zval *object;
-	RedisSock *redis_sock;
-	char *key = NULL, *cmd;
-	int key_len, cmd_len, key_free;
-	double val;
-
-	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osd",
-									&object, redis_ce, &key, &key_len, &val) == FAILURE) {
-		RETURN_FALSE;
-	}
-
-	if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-		RETURN_FALSE;
-	}
-
-	// Prefix key, format command, free old key if necissary
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "INCRBYFLOAT", "sf", key,
-                                      key_len, val);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_bulk_double_response);
+    REDIS_PROCESS_KW_CMD("INCRBYFLOAT", redis_gen_key_dbl_cmd, 
+        redis_bulk_double_response);
 }
+/* }}} */
 
 /* {{{ proto boolean Redis::decr(string key) */
 PHP_METHOD(Redis, decr)
