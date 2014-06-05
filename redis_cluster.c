@@ -50,6 +50,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, type, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, lpop, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, rpop, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, lset, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, spop, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, rpushx, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, lpushx, NULL, ZEND_ACC_PUBLIC)
@@ -266,13 +267,15 @@ PHP_METHOD(RedisCluster, set) {
 
 /* {{{ proto bool RedisCluster::setex(string key, string value, int expiry) */ 
 PHP_METHOD(RedisCluster, setex) {
-    CLUSTER_PROCESS_KW_CMD("SETEX", redis_setex_cmd, cluster_bool_resp);
+    CLUSTER_PROCESS_KW_CMD("SETEX", redis_key_long_val_cmd, 
+        cluster_bool_resp);
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::psetex(string key, string value, int expiry) */
 PHP_METHOD(RedisCluster, psetex) {
-    CLUSTER_PROCESS_KW_CMD("PSETEX", redis_setex_cmd, cluster_bool_resp);
+    CLUSTER_PROCESS_KW_CMD("PSETEX", redis_key_long_val_cmd, 
+        cluster_bool_resp);
 }
 /* }}} */
 
@@ -318,6 +321,12 @@ PHP_METHOD(RedisCluster, lpop) {
 /* {{{ proto string RedisCluster::rpop(string key) */
 PHP_METHOD(RedisCluster, rpop) {
     CLUSTER_PROCESS_KW_CMD("RPOP", redis_key_cmd, cluster_bulk_resp);
+}
+/* }}} */
+
+/* {{{ proto bool RedisCluster::lset(string key, long index, string val) */
+PHP_METHOD(RedisCluster, lset) {
+    CLUSTER_PROCESS_KW_CMD("LSET", redis_key_long_val_cmd, cluster_bool_resp);
 }
 /* }}} */
 
@@ -558,7 +567,6 @@ PHP_METHOD(RedisCluster, publish) {
     CLUSTER_PROCESS_KW_CMD("PUBLISH", redis_key_str_cmd, cluster_long_resp);
 }
 /* }}} */
-
 
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

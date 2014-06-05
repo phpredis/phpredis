@@ -941,14 +941,16 @@ PHP_METHOD(Redis, set) {
  */
 PHP_METHOD(Redis, setex)
 {
-    REDIS_PROCESS_KW_CMD("SETEX", redis_setex_cmd, redis_string_response);
+    REDIS_PROCESS_KW_CMD("SETEX", redis_key_long_val_cmd, 
+        redis_string_response);
 }
 
 /* {{{ proto boolean Redis::psetex(string key, long expire, string value)
  */
 PHP_METHOD(Redis, psetex)
 {
-    REDIS_PROCESS_KW_CMD("PSETEX", redis_setex_cmd, redis_string_response);
+    REDIS_PROCESS_KW_CMD("PSETEX", redis_key_long_val_cmd, 
+        redis_string_response);
 }
 
 /* {{{ proto boolean Redis::setnx(string key, string value)
@@ -2644,38 +2646,8 @@ PHP_METHOD(Redis, pexpireAt) {
 /* {{{ proto array Redis::lSet(string key, int index, string value)
  */
 PHP_METHOD(Redis, lSet) {
-
-    zval *object;
-    RedisSock *redis_sock;
-
-    char *cmd;
-    int cmd_len, key_len, val_len;
-    long index;
-    char *key, *val;
-    int val_free, key_free = 0;
-    zval *z_value;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oslz",
-                                     &object, redis_ce, &key, &key_len, &index, &z_value) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "LSET", "sds", key,
-                                      key_len, index, val, val_len);
-    if(val_free) STR_FREE(val);
-    if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_boolean_response);
+    REDIS_PROCESS_KW_CMD("LSET", redis_key_long_val_cmd, 
+        redis_boolean_response);
 }
 /* }}} */
 
