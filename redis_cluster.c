@@ -85,7 +85,11 @@ zend_function_entry redis_cluster_functions[] = {
 
     PHP_ME(RedisCluster, getbit, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, lget, NULL, ZEND_ACC_PUBLIC)
-
+    
+    PHP_ME(RedisCluster, getrange, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, ltrim, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, lrange, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zremrangebyrank, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -515,6 +519,33 @@ PHP_METHOD(RedisCluster, getbit) {
 /* {{{ proto string Redis::lget(string key, long index) */
 PHP_METHOD(RedisCluster, lget) {
     CLUSTER_PROCESS_KW_CMD("LGET", redis_key_long_cmd, cluster_bulk_resp);
+}
+/* }}} */
+
+/* {{{ proto string RedisCluster::getrange(string key, long start, long end) */
+PHP_METHOD(RedisCluster, getrange) {
+    CLUSTER_PROCESS_KW_CMD("GETRANGE", redis_key_long_long_cmd,
+        cluster_bulk_resp);
+}
+/* }}} */
+
+/* {{{ proto string RedisCluster::ltrim(string key, long start, long end) */
+PHP_METHOD(RedisCluster, ltrim) {
+    CLUSTER_PROCESS_KW_CMD("LTRIM", redis_key_long_long_cmd, cluster_bool_resp);
+}
+/* }}} */
+
+/* {{{ proto array RedisCluster::lrange(string key, long start, long end) */
+PHP_METHOD(RedisCluster, lrange) {
+    CLUSTER_PROCESS_KW_CMD("LRANGE", redis_key_long_long_cmd, 
+        cluster_mbulk_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::zremrangebyrank(string k, long s, long e) */
+PHP_METHOD(RedisCluster, zremrangebyrank) {
+    CLUSTER_PROCESS_KW_CMD("ZREMRANGEBYRANK", redis_key_long_long_cmd,
+        cluster_long_resp);
 }
 /* }}} */
 
