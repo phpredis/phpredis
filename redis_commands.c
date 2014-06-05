@@ -277,139 +277,167 @@ int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 /* Commands with specific signatures or that need unique functions because they
  * have specific processing (argument validation, etc) that make them unique */
 
- /* SET */
- int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                   char **cmd, int *cmd_len, short *slot)
- {
-     zval *z_value, *z_opts=NULL;
-     char *key = NULL, *val = NULL, *exp_type = NULL, *set_type = NULL;
-     int key_len, val_len, key_free, val_free;
-     long expire = -1;
+/* SET */
+int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                  char **cmd, int *cmd_len, short *slot)
+{
+    zval *z_value, *z_opts=NULL;
+    char *key = NULL, *val = NULL, *exp_type = NULL, *set_type = NULL;
+    int key_len, val_len, key_free, val_free;
+    long expire = -1;
+     
+    // Make sure the function is being called correctly
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|z", &key, &key_len,
+                             &z_value, &z_opts)==FAILURE)
+    {
+        return FAILURE;
+    }
 
-     // Make sure the function is being called correctly
-     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|z", &key, &key_len,
-                              &z_value, &z_opts)==FAILURE)
-     {
-         return FAILURE;
-     }
+    // Serialize and key prefix if required
+    val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
-     // Serialize and key prefix if required
-     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
-     key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    // Check for an options array
+    if(z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
+        HashTable *kt = Z_ARRVAL_P(z_opts);
+        int type;
+        unsigned int ht_key_len;
+        unsigned long idx;
+        char *k;
+        zval **v;
 
-     // Check for an options array
-     if(z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
-         HashTable *kt = Z_ARRVAL_P(z_opts);
-         int type;
-         unsigned int ht_key_len;
-         unsigned long idx;
-         char *k;
-         zval **v;
+        /* Iterate our option array */
+        for(zend_hash_internal_pointer_reset(kt);
+            zend_hash_has_more_elements(kt) == SUCCESS;
+            zend_hash_move_forward(kt))
+        {
+            // Grab key and value
+            type = zend_hash_get_current_key_ex(kt, &k, &ht_key_len, &idx, 0,
+                                                NULL);
+            zend_hash_get_current_data(kt, (void**)&v);
 
-         /* Iterate our option array */
-         for(zend_hash_internal_pointer_reset(kt);
-             zend_hash_has_more_elements(kt) == SUCCESS;
-             zend_hash_move_forward(kt))
-         {
-             // Grab key and value
-             type = zend_hash_get_current_key_ex(kt, &k, &ht_key_len, &idx, 0,
-                                                 NULL);
-             zend_hash_get_current_data(kt, (void**)&v);
+            if(type == HASH_KEY_IS_STRING && (Z_TYPE_PP(v) == IS_LONG) &&
+               (Z_LVAL_PP(v) > 0) && IS_EX_PX_ARG(k))
+            {
+                exp_type = k;
+                expire = Z_LVAL_PP(v);
+            } else if(Z_TYPE_PP(v) == IS_STRING &&
+                      IS_NX_XX_ARG(Z_STRVAL_PP(v)))
+            {
+                set_type = Z_STRVAL_PP(v);
+            }
+        }
+    } else if(z_opts && Z_TYPE_P(z_opts) == IS_LONG) {
+        expire = Z_LVAL_P(z_opts);
+    }
 
-             if(type == HASH_KEY_IS_STRING && (Z_TYPE_PP(v) == IS_LONG) &&
-                (Z_LVAL_PP(v) > 0) && IS_EX_PX_ARG(k))
-             {
-                 exp_type = k;
-                 expire = Z_LVAL_PP(v);
-             } else if(Z_TYPE_PP(v) == IS_STRING &&
-                       IS_NX_XX_ARG(Z_STRVAL_PP(v)))
-             {
-                 set_type = Z_STRVAL_PP(v);
-             }
-         }
-     } else if(z_opts && Z_TYPE_P(z_opts) == IS_LONG) {
-         expire = Z_LVAL_P(z_opts);
-     }
-
-     /* Now let's construct the command we want */
-     if(exp_type && set_type) {
-         /* SET <key> <value> NX|XX PX|EX <timeout> */
-         *cmd_len = redis_cmd_format_static(cmd, "SET", "ssssl", key, key_len,
-                                            val, val_len, set_type, 2, exp_type,
-                                            2, expire);
-     } else if(exp_type) {
-         /* SET <key> <value> PX|EX <timeout> */
-         *cmd_len = redis_cmd_format_static(cmd, "SET", "sssl", key, key_len,
-                                            val, val_len, exp_type, 2, expire);
-     } else if(set_type) {
-         /* SET <key> <value> NX|XX */
-         *cmd_len = redis_cmd_format_static(cmd, "SET", "sss", key, key_len, val,
-                                            val_len, set_type, 2);
-     } else if(expire > 0) {
-         /* Backward compatible SETEX redirection */
-         *cmd_len = redis_cmd_format_static(cmd, "SETEX", "sls", key, key_len,
-                                            expire, val, val_len);
-     } else {
-         /* SET <key> <value> */
-         *cmd_len = redis_cmd_format_static(cmd, "SET", "ss", key, key_len, val,
+    /* Now let's construct the command we want */
+    if(exp_type && set_type) {
+        /* SET <key> <value> NX|XX PX|EX <timeout> */
+        *cmd_len = redis_cmd_format_static(cmd, "SET", "ssssl", key, key_len,
+                                           val, val_len, set_type, 2, exp_type,
+                                           2, expire);
+    } else if(exp_type) {
+        /* SET <key> <value> PX|EX <timeout> */
+        *cmd_len = redis_cmd_format_static(cmd, "SET", "sssl", key, key_len,
+                                           val, val_len, exp_type, 2, expire);
+    } else if(set_type) {
+        /* SET <key> <value> NX|XX */
+        *cmd_len = redis_cmd_format_static(cmd, "SET", "sss", key, key_len, val,
+                                           val_len, set_type, 2);
+    } else if(expire > 0) {
+        /* Backward compatible SETEX redirection */
+        *cmd_len = redis_cmd_format_static(cmd, "SETEX", "sls", key, key_len,
+                                           expire, val, val_len);
+    } else {
+        /* SET <key> <value> */
+        *cmd_len = redis_cmd_format_static(cmd, "SET", "ss", key, key_len, val,
                                            val_len);
-     }
+    }
 
-     // If we've been passed a slot pointer, return the key's slot
-     CMD_SET_SLOT(slot,key,key_len);
+    // If we've been passed a slot pointer, return the key's slot
+    CMD_SET_SLOT(slot,key,key_len);
 
-     if(key_free) efree(key);
-     if(val_free) efree(val);
+    if(key_free) efree(key);
+    if(val_free) efree(val);
 
-     return SUCCESS;
- }
+    return SUCCESS;
+}
 
- /* BRPOPLPUSH */
- int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                          char **cmd, int *cmd_len, short *slot)
- {
-     char *key1, *key2;
-     int key1_len, key2_len;
-     int key1_free, key2_free;
-     short slot1, slot2;
-     long timeout;
+/* BRPOPLPUSH */
+int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                         char **cmd, int *cmd_len, short *slot)
+{
+    char *key1, *key2;
+    int key1_len, key2_len;
+    int key1_free, key2_free;
+    short slot1, slot2;
+    long timeout;
 
-     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssl", &key1, &key1_len,
-                              &key2, &key2_len, &timeout)==FAILURE)
-     {
-         return FAILURE;
-     }
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssl", &key1, &key1_len,
+                             &key2, &key2_len, &timeout)==FAILURE)
+    {
+        return FAILURE;
+    }
 
-     // Key prefixing
-     key1_free = redis_key_prefix(redis_sock, &key1, &key1_len);
-     key2_free = redis_key_prefix(redis_sock, &key2, &key2_len);
+    // Key prefixing
+    key1_free = redis_key_prefix(redis_sock, &key1, &key1_len);
+    key2_free = redis_key_prefix(redis_sock, &key2, &key2_len);
 
-     // In cluster mode, verify the slots match
-     if(slot) {
-         slot1 = cluster_hash_key(key1, key1_len);
-         slot2 = cluster_hash_key(key2, key2_len);
-         if(slot1 != slot2) {
-             php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                "Keys hash to different slots!");
-             if(key1_free) efree(key1);
-             if(key2_free) efree(key2);
-             return FAILURE;
-         }
+    // In cluster mode, verify the slots match
+    if(slot) {
+        slot1 = cluster_hash_key(key1, key1_len);
+        slot2 = cluster_hash_key(key2, key2_len);
+        if(slot1 != slot2) {
+            php_error_docref(NULL TSRMLS_CC, E_WARNING,
+               "Keys hash to different slots!");
+            if(key1_free) efree(key1);
+            if(key2_free) efree(key2);
+            return FAILURE;
+        }
 
-         // Both slots are the same
-         *slot = slot1;
-     }
+        // Both slots are the same
+        *slot = slot1;
+    }
 
-     // Consistency with Redis, if timeout < 0 use RPOPLPUSH
-     if(timeout < 0) {
-         *cmd_len = redis_cmd_format_static(cmd, "RPOPLPUSH", "ss", key1, 
-            key1_len, key2, key2_len);
-     } else {
-         *cmd_len = redis_cmd_format_static(cmd, "BRPOPLPUSH", "ssd", key1, 
-            key1_len, key2, key2_len, timeout);
-     }
+    // Consistency with Redis, if timeout < 0 use RPOPLPUSH
+    if(timeout < 0) {
+        *cmd_len = redis_cmd_format_static(cmd, "RPOPLPUSH", "ss", key1, 
+           key1_len, key2, key2_len);
+    } else {
+        *cmd_len = redis_cmd_format_static(cmd, "BRPOPLPUSH", "ssd", key1, 
+           key1_len, key2, key2_len, timeout);
+    }
 
-     return SUCCESS;
- }
+    return SUCCESS;
+}
+
+/* HINCRBY */
+int redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot)
+{
+
+    char *key, *mem;
+    int key_len, mem_len, key_free;
+    long byval;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssl", &key, &key_len,
+                             &mem, &mem_len, &byval)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Prefix our key if necissary 
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    
+    // Construct command
+    *cmd_len = redis_cmd_format_static(cmd, "HINCRBY", "ssd", key, key_len, mem,
+                                       mem_len, byval);
+    // Set slot
+    CMD_SET_SLOT(slot,key,key_len);
+    
+    // Success
+    return SUCCESS;
+}
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
