@@ -2957,77 +2957,17 @@ PHP_METHOD(Redis, msetnx) {
 }
 /* }}} */
 
-PHP_REDIS_API void common_rpoplpush(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-		char *srckey, int srckey_len, char *dstkey, int dstkey_len, int timeout) {
-
-	char *cmd;
-	int cmd_len;
-
-	int srckey_free = redis_key_prefix(redis_sock, &srckey, &srckey_len);
-	int dstkey_free = redis_key_prefix(redis_sock, &dstkey, &dstkey_len);
-	if(timeout < 0) {
-		cmd_len = redis_cmd_format_static(&cmd, "RPOPLPUSH", "ss",
-                                          srckey, srckey_len, dstkey, dstkey_len);
-	} else {
-		cmd_len = redis_cmd_format_static(&cmd, "BRPOPLPUSH", "ssd",
-                                          srckey, srckey_len, dstkey, dstkey_len,
-                                          timeout);
-	}
-	if(srckey_free) efree(srckey);
-	if(dstkey_free) efree(dstkey);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_string_response);
-
-}
-
 /* {{{ proto string Redis::rpoplpush(string srckey, string dstkey)
  */
 PHP_METHOD(Redis, rpoplpush)
 {
-    zval *object;
-    RedisSock *redis_sock;
-    char *srckey = NULL, *dstkey = NULL;
-    int srckey_len, dstkey_len;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
-                                     &object, redis_ce, &srckey, &srckey_len,
-                                     &dstkey, &dstkey_len) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	common_rpoplpush(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, srckey, srckey_len, dstkey, dstkey_len, -1);
+    REDIS_PROCESS_KW_CMD("RPOPLPUSH", redis_key_key_cmd, redis_string_response);
 }
 /* }}} */
 
-/* {{{ proto string Redis::brpoplpush(string srckey, string dstkey)
- */
-PHP_METHOD(Redis, brpoplpush)
-{
-    zval *object;
-    RedisSock *redis_sock;
-    char *srckey = NULL, *dstkey = NULL;
-    int srckey_len, dstkey_len;
-	long timeout = 0;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ossl",
-                                     &object, redis_ce, &srckey, &srckey_len,
-                                     &dstkey, &dstkey_len, &timeout) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	common_rpoplpush(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, srckey, srckey_len, dstkey, dstkey_len, timeout);
+/* {{{ proto string Redis::brpoplpush(string src, string dst, int timeout) */
+PHP_METHOD(Redis, brpoplpush) {
+    REDIS_PROCESS_CMD(brpoplpush, redis_string_response);
 }
 /* }}} */
 
