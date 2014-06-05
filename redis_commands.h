@@ -9,52 +9,48 @@
 #define CMD_SET_SLOT(slot,key,key_len) \
     if(slot) *slot = cluster_hash_key(key,key_len);
 
-/* Redis command construction routines, which generally take the form:
- *      int function(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
- *                   char **cmd, int *cmd_len, short *slot);
- *     
- *      OR
- *
- *      int function(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
- *                   char *kw, char **cmd, int *cmd_len, short *slot);
- *
- * The functions will return SUCCESS on success, and FAILURE on failure.  In
- * the case of a failure, the cmd pointer will not have been updated, and
- * no memory wlll have been allocated (that wasn't freed).
- *
- * If the slot pointer is passed as non-null, it will be set to the Redis
- * Cluster hash slot where the key(s) belong. 
- */
 
-int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                  char **cmd, int *cmd_len, short *slot);
+/* Redis command generics.  Many commands share common prototypes meaning that
+ * we can write one function to handle all of them.  For example, there are
+ * many COMMAND key value commands, or COMMAND key commands. */
 
 int redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                           char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot);
 
 int redis_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                 char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot);
 
 int redis_key_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                      char *kw, char **cmd, int *cmd_len, short *slot);     
+    char *kw, char **cmd, int *cmd_len, short *slot);     
 
 int redis_key_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                      char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot);
 
 int redis_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                      char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot);
 
 int redis_key_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                           char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot);
 
 int redis_key_long_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                            char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot);
 
 int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                          char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot);
 
 int redis_ss_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot);
+
+/* Commands which need a unique construction mechanism.  This is either because
+ * they don't share a signature with any other command, or because there is 
+ * specific processing we do (e.g. verifying subarguments) that make them
+ * unique */
+
+int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char **cmd, int *cmd_len, short *slot);
+
+int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char **cmd, int *cmd_len, short *slot);
 
 #endif
 
