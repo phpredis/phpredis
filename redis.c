@@ -3737,34 +3737,10 @@ PHP_METHOD(Redis, hSetNx)
 /* }}} */
 
 
-/* hGet */
+/* proto string Redis::hget(string key, string mem) */
 PHP_METHOD(Redis, hGet)
 {
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd, *member;
-    int key_len, member_len, cmd_len, key_free;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
-                                     &object, redis_ce,
-                                     &key, &key_len, &member, &member_len) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "HGET", "ss", key,
-                                      key_len, member, member_len);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_string_response);
-
+    REDIS_PROCESS_KW_CMD("HGET", redis_key_str_cmd, redis_string_response);
 }
 /* }}} */
 
