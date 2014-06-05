@@ -196,6 +196,50 @@ int redis_key_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* Generic command that takes two keys */
+int redis_key_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char *kw, char **cmd, int *cmd_len, short *slot)
+{
+    char *key1, *key2;
+    int key1_len, key2_len;
+    int key1_free, key2_free;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &key1, &key1_len,
+                             &key2, &key2_len)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Prefix both keys
+    key1_free = redis_key_prefix(redis_sock, &key1, &key1_len);
+    key2_free = redis_key_prefix(redis_sock, &key2, &key2_len);
+
+    // If a slot is requested, we can test that they hash the same
+    if(slot) {
+        // Slots where these keys resolve
+        short slot1 = cluster_hash_key(key1, key1_len);
+        short slot2 = cluster_hash_key(key2, key2_len);
+php_printf("%d, %d\n", slot1, slot2);
+        // Check if Redis would give us a CROSSLOT error
+        if(slot1 != slot2) {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR, 
+                "Keys don't hash to the same slot");
+            if(key1_free) efree(key1);
+            if(key2_free) efree(key2);
+            return FAILURE;
+        }
+
+        // They're both the same
+        *slot = slot1;
+    }
+    
+    // Construct our command
+    *cmd_len = redis_cmd_format_static(cmd, kw, "ss", key1, key1_len, key2, 
+                                       key2_len);
+
+    return SUCCESS;
+}
+
 /* Generic command construction where we take a key and a long */
 int redis_key_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                            char *kw, char **cmd, int *cmd_len, short *slot)
