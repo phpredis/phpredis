@@ -114,4 +114,5 @@ PHP_METHOD(RedisCluster, ltrim);
 PHP_METHOD(RedisCluster, lrange);
 PHP_METHOD(RedisCluster, zremrangebyrank);
 PHP_METHOD(RedisCluster, publish);
+PHP_METHOD(RedisCluster, lset);
 #endif
