@@ -86,9 +86,9 @@ unsigned short cluster_hash_key(const char *key, int len) {
     for(s=0;s<len;s++) {
         if(key[s]=='{') break;
     }
-
+    
     // There is no '{', hash everything
-    return crc16(key, len) & REDIS_CLUSTER_MOD;
+    if(s == len) return crc16(key, len) & REDIS_CLUSTER_MOD;
 
     // Found it, look for a tailing '}'
     for(e=s+1;e<len;e++) {
@@ -99,7 +99,7 @@ unsigned short cluster_hash_key(const char *key, int len) {
     if(e == len || e == s+1) return crc16(key, len) & REDIS_CLUSTER_MOD;
 
     // Hash just the bit betweeen { and }
-    return crc16(key+s+1,e-s-1) & REDIS_CLUSTER_MOD;
+    return crc16((char*)key+s+1,e-s-1) & REDIS_CLUSTER_MOD;
 }
 
 /* Hash a key from a ZVAL */
