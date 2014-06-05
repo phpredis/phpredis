@@ -69,6 +69,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, hlen, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hkeys, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hvals, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, hget, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hgetall, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hexists, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, dump, NULL, ZEND_ACC_PUBLIC)
@@ -451,6 +452,12 @@ PHP_METHOD(RedisCluster, hkeys) {
 /* {{{ proto array RedisCluster::hvals(string key) */
 PHP_METHOD(RedisCluster, hvals) { 
     CLUSTER_PROCESS_KW_CMD("HVALS", redis_key_cmd, cluster_mbulk_resp);
+}
+/* }}} */
+
+/* {{{ proto string RedisCluster::hget(string key, string mem) */
+PHP_METHOD(RedisCluster, hget) {
+    CLUSTER_PROCESS_KW_CMD("HGET", redis_key_str_cmd, cluster_bulk_resp);
 }
 /* }}} */
 
