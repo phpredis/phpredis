@@ -1362,34 +1362,13 @@ PHP_METHOD(Redis, append)
 }
 /* }}} */
 
+/* {{{ proto string Redis::GetRange(string key, long start, long end) */
 PHP_METHOD(Redis, getRange)
 {
-	zval *object;
-	RedisSock *redis_sock;
-	char *key = NULL, *cmd;
-	int key_len, cmd_len, key_free;
-	long start, end;
-
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll",
-                                     &object, redis_ce, &key, &key_len,
-                                     &start, &end) == FAILURE) {
-		RETURN_FALSE;
-	}
-
-	if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-		RETURN_FALSE;
-	}
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-	cmd_len = redis_cmd_format_static(&cmd, "GETRANGE", "sdd", key,
-                                      key_len, (int)start, (int)end);
-	if(key_free) efree(key);
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_string_response);
+    REDIS_PROCESS_KW_CMD("GETRANGE", redis_key_long_long_cmd,
+        redis_string_response);
 }
+/* }}} */
 
 PHP_METHOD(Redis, setRange)
 {
@@ -1679,33 +1658,7 @@ PHP_METHOD(Redis, lRemove)
  */
 PHP_METHOD(Redis, listTrim)
 {
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len, key_free;
-    long start, end;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll",
-                                     &object, redis_ce, &key, &key_len,
-                                     &start, &end) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "LTRIM", "sdd", key,
-                                      key_len, (int)start, (int)end);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_boolean_response);
-
+    REDIS_PROCESS_KW_CMD("LTRIM", redis_key_long_long_cmd, redis_boolean_response);
 }
 /* }}} */
 
@@ -1721,34 +1674,8 @@ PHP_METHOD(Redis, lGet)
  */
 PHP_METHOD(Redis, lGetRange)
 {
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len, key_free;
-    long start, end;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll",
-                                     &object, redis_ce,
-                                     &key, &key_len, &start, &end) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    /* LRANGE key start end */
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "LRANGE", "sdd", key,
-                                      key_len, (int)start, (int)end);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
-
+    REDIS_PROCESS_KW_CMD("LRANGE", redis_key_long_long_cmd, 
+        redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
@@ -3397,33 +3324,8 @@ PHP_METHOD(Redis, zDeleteRangeByScore)
  */
 PHP_METHOD(Redis, zDeleteRangeByRank)
 {
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len, key_free;
-    long start, end;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll",
-                                     &object, redis_ce,
-                                     &key, &key_len, &start, &end) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "ZREMRANGEBYRANK", "sdd",
-                                      key, key_len, (int)start, (int)end);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
-
+    REDIS_PROCESS_KW_CMD("ZREMRANGEBYRANK", redis_key_long_long_cmd,
+        redis_long_response);
 }
 /* }}} */
 
