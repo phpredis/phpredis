@@ -65,6 +65,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, ttl, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, pttl, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zcard, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zcount, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zremrangebyscore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zscore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hlen, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hkeys, NULL, ZEND_ACC_PUBLIC)
@@ -423,6 +425,19 @@ PHP_METHOD(RedisCluster, zcard) {
 /* {{{ proto double RedisCluster::zscore(string key) */
 PHP_METHOD(RedisCluster, zscore) {
     CLUSTER_PROCESS_KW_CMD("ZSCORE", redis_kv_cmd, cluster_dbl_resp);
+}
+/* }}} */
+
+/* {{{ proto RedisCluster::zremrangebyscore(string k, string s, string e) */
+PHP_METHOD(RedisCluster, zremrangebyscore) {
+    CLUSTER_PROCESS_KW_CMD("ZREMRANGEBYSCORE", redis_key_str_str_cmd,
+        cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto RedisCluster::zcount(string key, string s, string e) */
+PHP_METHOD(RedisCluster, zcount) {
+    CLUSTER_PROCESS_KW_CMD("ZCOUNT", redis_key_str_str_cmd, cluster_long_resp);
 }
 /* }}} */
 
