@@ -170,6 +170,32 @@ int redis_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* Generic command that takes a key and an unserialized value */
+int redis_key_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char *kw, char **cmd, int *cmd_len, short *slot)
+{
+    char *key, *val;
+    int key_len, val_len, key_free;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &key, &key_len,
+                             &val, &val_len)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Prefix key
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    // Construct command
+    *cmd_len = redis_cmd_format_static(cmd, kw, "ss", key, key_len, val, 
+                                       val_len);
+
+    // Set slot if directed
+    CMD_SET_SLOT(slot,key,key_len);
+
+    return SUCCESS;
+}
+
 /* Generic command construction where we take a key and a long */
 int redis_key_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                            char *kw, char **cmd, int *cmd_len, short *slot)

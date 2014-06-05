@@ -3892,60 +3892,10 @@ PHP_METHOD(Redis, hDel)
 	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 
-/* hExists */
+/* {{{ proto bool Redis::hExists(string key, string mem) */
 PHP_METHOD(Redis, hExists)
 {
-    char *cmd;
-    int cmd_len;
-    RedisSock *redis_sock = generic_hash_command_2(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HEXISTS", 7, &cmd, &cmd_len);
-	if(!redis_sock)
-		RETURN_FALSE;
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-	  redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_1_response);
-
-}
-
-PHPAPI RedisSock*
-generic_hash_command_1(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
-
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len, key_free;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
-                                     &object, redis_ce,
-                                     &key, &key_len) == FAILURE) {
-            ZVAL_BOOL(return_value, 0);
-            return NULL;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-            ZVAL_BOOL(return_value, 0);
-            return NULL;
-    }
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, keyword, "s", key,
-                                      key_len);
-	if(key_free) efree(key);
-
-	/* call REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len) without breaking the return value */
-	IF_MULTI_OR_ATOMIC() {
-		if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
-			efree(cmd);
-			return NULL;
-		}
-		efree(cmd);
-	}
-	IF_PIPELINE() {
-		PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len);
-		efree(cmd);
-	}
-    return redis_sock;
+    REDIS_PROCESS_KW_CMD("HEXISTS", redis_key_str_cmd, redis_1_response);
 }
 
 /* {{{ proto array Redis::hkeys(string key) */
@@ -3963,21 +3913,12 @@ PHP_METHOD(Redis, hVals)
         redis_sock_read_multibulk_reply);
 }
 
-
+/* {{{ proto array Redis::hgetall(string key) */
 PHP_METHOD(Redis, hGetAll) {
-
-    RedisSock *redis_sock = generic_hash_command_1(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HGETALL", sizeof("HGETALL")-1);
-	if(!redis_sock)
-		RETURN_FALSE;
-
-	IF_ATOMIC() {
-	    if (redis_sock_read_multibulk_reply_zipped_strings(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-    	                                    redis_sock, NULL, NULL) < 0) {
-        	RETURN_FALSE;
-	    }
-	}
-	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_zipped_strings);
+    REDIS_PROCESS_KW_CMD("HGETALL", redis_key_cmd, 
+        redis_sock_read_multibulk_reply_zipped_strings);
 }
+/* }}} */
 
 PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int use_atof TSRMLS_DC) {
 
