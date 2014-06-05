@@ -4529,38 +4529,12 @@ PHP_METHOD(Redis, pipeline)
 	RETURN_ZVAL(getThis(), 1, 0);
 }
 
-/*
-	publish channel message
-	@return the number of subscribers
-*/
+/* {{{ proto long Redis::publish(string channel, string msg) */
 PHP_METHOD(Redis, publish)
 {
-    zval *object;
-    RedisSock *redis_sock;
-    char *cmd, *key, *val;
-    int cmd_len, key_len, val_len, key_free;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
-                                     &object, redis_ce,
-                                     &key, &key_len, &val, &val_len) == FAILURE) {
-        RETURN_NULL();
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "PUBLISH", "ss", key,
-                                      key_len, val, val_len);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
-		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-    }
-    REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_KW_CMD("PUBLISH", redis_key_str_cmd, redis_long_response);
 }
+/* }}} */
 
 PHPAPI void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd)
 {

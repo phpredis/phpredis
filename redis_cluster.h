@@ -82,44 +82,36 @@ PHP_METHOD(RedisCluster, spop);
 PHP_METHOD(RedisCluster, rpushx);
 PHP_METHOD(RedisCluster, lpushx);
 PHP_METHOD(RedisCluster, llen);
-
 PHP_METHOD(RedisCluster, scard);
 PHP_METHOD(RedisCluster, smembers);
 PHP_METHOD(RedisCluster, sismember);
 PHP_METHOD(RedisCluster, strlen);
-
 PHP_METHOD(RedisCluster, ttl);
 PHP_METHOD(RedisCluster, pttl);
-
 PHP_METHOD(RedisCluster, zcard);
 PHP_METHOD(RedisCluster, zscore);
 PHP_METHOD(RedisCluster, zrank);
 PHP_METHOD(RedisCluster, zrevrank);
-
 PHP_METHOD(RedisCluster, hlen);
 PHP_METHOD(RedisCluster, hkeys);
 PHP_METHOD(RedisCluster, hvals);
 PHP_METHOD(RedisCluster, hgetall);
 PHP_METHOD(RedisCluster, hexists);
-
 PHP_METHOD(RedisCluster, incr);
 PHP_METHOD(RedisCluster, decr);
 PHP_METHOD(RedisCluster, incrby);
 PHP_METHOD(RedisCluster, decrby);
 PHP_METHOD(RedisCluster, incrbyfloat);
-
 PHP_METHOD(RedisCluster, expire);
 PHP_METHOD(RedisCluster, expireat);
 PHP_METHOD(RedisCluster, pexpire);
 PHP_METHOD(RedisCluster, pexpireat);
-
 PHP_METHOD(RedisCluster, append);
-
 PHP_METHOD(RedisCluster, getbit);
 PHP_METHOD(RedisCluster, lget);
-
 PHP_METHOD(RedisCluster, getrange);
 PHP_METHOD(RedisCluster, ltrim);
 PHP_METHOD(RedisCluster, lrange);
 PHP_METHOD(RedisCluster, zremrangebyrank);
+PHP_METHOD(RedisCluster, publish);
 #endif
