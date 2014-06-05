@@ -100,6 +100,7 @@ PHP_METHOD(RedisCluster, hlen);
 PHP_METHOD(RedisCluster, hkeys);
 PHP_METHOD(RedisCluster, hvals);
 PHP_METHOD(RedisCluster, hgetall);
+PHP_METHOD(RedisCluster, hexists);
 
 PHP_METHOD(RedisCluster, incr);
 PHP_METHOD(RedisCluster, decr);
