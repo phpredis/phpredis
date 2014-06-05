@@ -3677,35 +3677,6 @@ PHP_METHOD(Redis, hLen)
 }
 /* }}} */
 
-PHPAPI RedisSock*
-generic_hash_command_2(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len, char **out_cmd, int *out_len) {
-
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd, *member;
-    int key_len, cmd_len, member_len, key_free;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
-                                     &object, redis_ce,
-                                     &key, &key_len, &member, &member_len) == FAILURE) {
-            ZVAL_BOOL(return_value, 0);
-            return NULL;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-            ZVAL_BOOL(return_value, 0);
-            return NULL;
-    }
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, keyword, "ss", key,
-                                      key_len, member, member_len);
-	if(key_free) efree(key);
-
-    *out_cmd = cmd;
-    *out_len = cmd_len;
-    return redis_sock;
-}
-
 /* hDel */
 PHP_METHOD(Redis, hDel)
 {
