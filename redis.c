@@ -1036,37 +1036,7 @@ PHP_METHOD(Redis, echo)
  */
 PHP_METHOD(Redis, renameKey)
 {
-
-    zval *object;
-    RedisSock *redis_sock;
-    char *cmd, *src, *dst;
-    int cmd_len, src_len, dst_len;
-	int src_free, dst_free;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
-                                     &object, redis_ce,
-                                     &src, &src_len,
-                                     &dst, &dst_len) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	src_free = redis_key_prefix(redis_sock, &src, &src_len);
-	dst_free = redis_key_prefix(redis_sock, &dst, &dst_len);
-    cmd_len = redis_cmd_format_static(&cmd, "RENAME", "ss", src,
-                                      src_len, dst, dst_len);
-    if(src_free) efree(src);
-    if(dst_free) efree(dst);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_boolean_response);
-
+    REDIS_PROCESS_KW_CMD("RENAME", redis_key_key_cmd, redis_boolean_response);
 }
 /* }}} */
 
@@ -1074,38 +1044,10 @@ PHP_METHOD(Redis, renameKey)
  */
 PHP_METHOD(Redis, renameNx)
 {
-
-    zval *object;
-    RedisSock *redis_sock;
-    char *cmd, *src, *dst;
-    int cmd_len, src_len, dst_len;
-	int src_free, dst_free;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oss",
-                                     &object, redis_ce,
-                                     &src, &src_len,
-                                     &dst, &dst_len) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	src_free = redis_key_prefix(redis_sock, &src, &src_len);
-	dst_free = redis_key_prefix(redis_sock, &dst, &dst_len);
-    cmd_len = redis_cmd_format_static(&cmd, "RENAMENX", "ss", src,
-                                      src_len, dst, dst_len);
-    if(src_free) efree(src);
-    if(dst_free) efree(dst);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_1_response);
-
+    REDIS_PROCESS_KW_CMD("RENAMENX", redis_key_key_cmd, redis_1_response);
 }
+/* }}} */
+
 /* }}} */
 
 /* {{{ proto string Redis::get(string key)
