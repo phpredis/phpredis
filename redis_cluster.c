@@ -76,21 +76,18 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, incrby, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, decrby, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, incrbyfloat, NULL, ZEND_ACC_PUBLIC)
-    
     PHP_ME(RedisCluster, expire, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, pexpire, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, expireat, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, pexpireat, NULL, ZEND_ACC_PUBLIC)
-
     PHP_ME(RedisCluster, append, NULL, ZEND_ACC_PUBLIC)
-
     PHP_ME(RedisCluster, getbit, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, lget, NULL, ZEND_ACC_PUBLIC)
-    
     PHP_ME(RedisCluster, getrange, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, ltrim, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, lrange, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zremrangebyrank, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, publish, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -555,5 +552,13 @@ PHP_METHOD(RedisCluster, zremrangebyrank) {
         cluster_long_resp);
 }
 /* }}} */
+
+/* {{{ proto long RedisCluster::publish(string key, string msg) */
+PHP_METHOD(RedisCluster, publish) {
+    CLUSTER_PROCESS_KW_CMD("PUBLISH", redis_key_str_cmd, cluster_long_resp);
+}
+/* }}} */
+
+
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
