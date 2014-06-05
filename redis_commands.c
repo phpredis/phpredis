@@ -440,4 +440,32 @@ int redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* HINCRBYFLOAT */
+int redis_hincrbyfloat_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                           char **cmd, int *cmd_len, short *slot)
+{
+    char *key, *mem;
+    int key_len, mem_len, key_free;
+    double byval;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssd", &key, &key_len,
+                             &mem, &mem_len, &byval)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Prefix key
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    // Construct command
+    *cmd_len = redis_cmd_format_static(cmd, "HINCRBYFLOAT", "ssf", key, key_len,
+        mem, mem_len, byval);
+
+    // Set slot
+    CMD_SET_SLOT(slot,key,key_len);
+
+    // Success
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
