@@ -3781,42 +3781,17 @@ PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int 
     efree(z_ret);
 }
 
+/* {{{ proto double Redis::hIncrByFloat(string k, string me, double v) */
 PHP_METHOD(Redis, hIncrByFloat)
 {
-	zval *object;
-	RedisSock *redis_sock;
-	char *key = NULL, *cmd, *member;
-	int key_len, member_len, cmd_len, key_free;
-	double val;
-
-	// Validate we have the right number of arguments
-	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ossd",
-									&object, redis_ce,
-									&key, &key_len, &member, &member_len, &val) == FAILURE) {
-		RETURN_FALSE;
-	}
-
-	// Grab our socket
-	if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-		RETURN_FALSE;
-	}
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-	cmd_len = redis_cmd_format_static(&cmd, "HINCRBYFLOAT", "ssf", key,
-                                      key_len, member, member_len, val);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-	    redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_bulk_double_response);
+    REDIS_PROCESS_CMD(hincrbyfloat, redis_bulk_double_response);
 }
+/* }}} */
 
 /* {{{ proto long Redis::hincrby(string key, string mem, long byval) */
 PHP_METHOD(Redis, hIncrBy)
 {
-    REDIS_PROCESS_REQUEST(hincrby, redis_long_response);
+    REDIS_PROCESS_CMD(hincrby, redis_long_response);
 }
 /* }}} */
 
