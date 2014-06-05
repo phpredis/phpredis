@@ -83,6 +83,9 @@ zend_function_entry redis_cluster_functions[] = {
 
     PHP_ME(RedisCluster, append, NULL, ZEND_ACC_PUBLIC)
 
+    PHP_ME(RedisCluster, getbit, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, lget, NULL, ZEND_ACC_PUBLIC)
+
     {NULL, NULL, NULL}
 };
 
@@ -249,7 +252,7 @@ PHP_METHOD(RedisCluster, __construct) {
 
 /* {{{ proto string RedisCluster::get(string key) */
 PHP_METHOD(RedisCluster, get) {
-    CLUSTER_PROCESS_KW_CMD("GET", redis_gen_key_cmd, cluster_bulk_resp);
+    CLUSTER_PROCESS_KW_CMD("GET", redis_key_cmd, cluster_bulk_resp);
 }
 /* }}} */
 
@@ -261,31 +264,31 @@ PHP_METHOD(RedisCluster, set) {
 
 /* {{{ proto bool RedisCluster::setex(string key, string value, int expiry) */ 
 PHP_METHOD(RedisCluster, setex) {
-    CLUSTER_PROCESS_KW_CMD("SETEX", redis_gen_setex_cmd, cluster_bool_resp);
+    CLUSTER_PROCESS_KW_CMD("SETEX", redis_setex_cmd, cluster_bool_resp);
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::psetex(string key, string value, int expiry) */
 PHP_METHOD(RedisCluster, psetex) {
-    CLUSTER_PROCESS_KW_CMD("PSETEX", redis_gen_setex_cmd, cluster_bool_resp);
+    CLUSTER_PROCESS_KW_CMD("PSETEX", redis_setex_cmd, cluster_bool_resp);
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::setnx(string key, string value) */
 PHP_METHOD(RedisCluster, setnx) {
-    CLUSTER_PROCESS_KW_CMD("SETNX", redis_gen_kv_cmd, cluster_1_resp);
+    CLUSTER_PROCESS_KW_CMD("SETNX", redis_kv_cmd, cluster_1_resp);
 }
 /* }}} */
 
 /* {{{ proto string RedisCluster::getSet(string key, string value) */
 PHP_METHOD(RedisCluster, getset) {
-    CLUSTER_PROCESS_KW_CMD("GETSET", redis_gen_kv_cmd, cluster_bulk_resp);
+    CLUSTER_PROCESS_KW_CMD("GETSET", redis_kv_cmd, cluster_bulk_resp);
 }
 /* }}} */
 
 /* {{{ proto int RedisCluster::exists(string key) */
 PHP_METHOD(RedisCluster, exists) {
-    CLUSTER_PROCESS_KW_CMD("EXISTS", redis_gen_key_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("EXISTS", redis_key_cmd, cluster_long_resp);
 }
 /* }}} */
 
@@ -300,206 +303,218 @@ PHP_METHOD(RedisCluster, keys) {
 
 /* {{{ proto int RedisCluster::type(string key) */
 PHP_METHOD(RedisCluster, type) {
-    CLUSTER_PROCESS_KW_CMD("TYPE", redis_gen_key_cmd, cluster_type_resp);
+    CLUSTER_PROCESS_KW_CMD("TYPE", redis_key_cmd, cluster_type_resp);
 }
 /* }}} */
 
 /* {{{ proto string RedisCluster::pop(string key) */
 PHP_METHOD(RedisCluster, lpop) {
-    CLUSTER_PROCESS_KW_CMD("LPOP", redis_gen_key_cmd, cluster_bulk_resp);
+    CLUSTER_PROCESS_KW_CMD("LPOP", redis_key_cmd, cluster_bulk_resp);
 }
 /* }}} */
 
 /* {{{ proto string RedisCluster::rpop(string key) */
 PHP_METHOD(RedisCluster, rpop) {
-    CLUSTER_PROCESS_KW_CMD("RPOP", redis_gen_key_cmd, cluster_bulk_resp);
+    CLUSTER_PROCESS_KW_CMD("RPOP", redis_key_cmd, cluster_bulk_resp);
 }
 /* }}} */
 
 /* {{{ proto string RedisCluster::spop(string key) */
 PHP_METHOD(RedisCluster, spop) {
-    CLUSTER_PROCESS_KW_CMD("SPOP", redis_gen_key_cmd, cluster_bulk_resp);
+    CLUSTER_PROCESS_KW_CMD("SPOP", redis_key_cmd, cluster_bulk_resp);
 }
 /* }}} */
 
 /* {{{ proto string RedisCluster::strlen(string key) */
 PHP_METHOD(RedisCluster, strlen) {
-    CLUSTER_PROCESS_KW_CMD("STRLEN", redis_gen_key_cmd, cluster_bulk_resp);
+    CLUSTER_PROCESS_KW_CMD("STRLEN", redis_key_cmd, cluster_bulk_resp);
 }
 
 /* {{{ proto long RedisCluster::rpushx(string key, mixed value) */
 PHP_METHOD(RedisCluster, rpushx) {
-    CLUSTER_PROCESS_KW_CMD("RPUSHX", redis_gen_kv_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("RPUSHX", redis_kv_cmd, cluster_long_resp);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::lpushx(string key, mixed value) */
 PHP_METHOD(RedisCluster, lpushx) {
-    CLUSTER_PROCESS_KW_CMD("LPUSHX", redis_gen_kv_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("LPUSHX", redis_kv_cmd, cluster_long_resp);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::llen(string key)  */
 PHP_METHOD(RedisCluster, llen) {
-    CLUSTER_PROCESS_KW_CMD("LLEN", redis_gen_key_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("LLEN", redis_key_cmd, cluster_long_resp);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::scard(string key) */
 PHP_METHOD(RedisCluster, scard) {
-    CLUSTER_PROCESS_KW_CMD("SCARD", redis_gen_key_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("SCARD", redis_key_cmd, cluster_long_resp);
 }
 /* }}} */
 
 /* {{{ proto array RedisCluster::smembers(string key) */
 PHP_METHOD(RedisCluster, smembers) {
-    CLUSTER_PROCESS_KW_CMD("SMEMBERS", redis_gen_key_cmd, cluster_mbulk_resp);
+    CLUSTER_PROCESS_KW_CMD("SMEMBERS", redis_key_cmd, cluster_mbulk_resp);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::sismember(string key) */
 PHP_METHOD(RedisCluster, sismember) {
-    CLUSTER_PROCESS_KW_CMD("SISMEMBER", redis_gen_kv_cmd, cluster_1_resp);
+    CLUSTER_PROCESS_KW_CMD("SISMEMBER", redis_kv_cmd, cluster_1_resp);
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::persist(string key) */
 PHP_METHOD(RedisCluster, persist) {
-    CLUSTER_PROCESS_KW_CMD("PERSIST", redis_gen_key_cmd, cluster_1_resp);
+    CLUSTER_PROCESS_KW_CMD("PERSIST", redis_key_cmd, cluster_1_resp);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::ttl(string key) */
 PHP_METHOD(RedisCluster, ttl) {
-    CLUSTER_PROCESS_KW_CMD("TTL", redis_gen_key_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("TTL", redis_key_cmd, cluster_long_resp);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::pttl(string key) */
 PHP_METHOD(RedisCluster, pttl) {
-    CLUSTER_PROCESS_KW_CMD("PTTL", redis_gen_key_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("PTTL", redis_key_cmd, cluster_long_resp);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::zcard(string key) */
 PHP_METHOD(RedisCluster, zcard) {
-    CLUSTER_PROCESS_KW_CMD("ZCARD", redis_gen_key_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("ZCARD", redis_key_cmd, cluster_long_resp);
 } 
 /* }}} */
 
 /* {{{ proto double RedisCluster::zscore(string key) */
 PHP_METHOD(RedisCluster, zscore) {
-    CLUSTER_PROCESS_KW_CMD("ZSCORE", redis_gen_kv_cmd, cluster_dbl_resp);
+    CLUSTER_PROCESS_KW_CMD("ZSCORE", redis_kv_cmd, cluster_dbl_resp);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::zrank(string key, mixed member) */
 PHP_METHOD(RedisCluster, zrank) {
-    CLUSTER_PROCESS_KW_CMD("ZRANK", redis_gen_kv_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("ZRANK", redis_kv_cmd, cluster_long_resp);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::zrevrank(string key, mixed member) */
 PHP_METHOD(RedisCluster, zrevrank) {
-    CLUSTER_PROCESS_KW_CMD("ZREVRANK", redis_gen_kv_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("ZREVRANK", redis_kv_cmd, cluster_long_resp);
 }
 /* }}} */
 
 
 /* {{{ proto long RedisCluster::hlen(string key) */
 PHP_METHOD(RedisCluster, hlen) {
-    CLUSTER_PROCESS_KW_CMD("HLEN", redis_gen_key_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("HLEN", redis_key_cmd, cluster_long_resp);
 }
 /* }}} */
 
 /* {{{ proto array RedisCluster::hkeys(string key) */
 PHP_METHOD(RedisCluster, hkeys) {
-    CLUSTER_PROCESS_KW_CMD("HKEYS", redis_gen_key_cmd, cluster_mbulk_resp_raw);
+    CLUSTER_PROCESS_KW_CMD("HKEYS", redis_key_cmd, cluster_mbulk_resp_raw);
 }
 /* }}} */
 
 /* {{{ proto array RedisCluster::hvals(string key) */
 PHP_METHOD(RedisCluster, hvals) { 
-    CLUSTER_PROCESS_KW_CMD("HVALS", redis_gen_key_cmd, cluster_mbulk_resp);
+    CLUSTER_PROCESS_KW_CMD("HVALS", redis_key_cmd, cluster_mbulk_resp);
 }
 /* }}} */
 
 /* {{{ proto array RedisCluster::hgetall(string key) */
 PHP_METHOD(RedisCluster, hgetall) {
-    CLUSTER_PROCESS_KW_CMD("HGETALL", redis_gen_key_cmd, 
+    CLUSTER_PROCESS_KW_CMD("HGETALL", redis_key_cmd, 
         cluster_mbulk_zipstr_resp);
 } 
 /* }}} */
 
 /* {{{ proto string RedisCluster::dump(string key) */
 PHP_METHOD(RedisCluster, dump) {
-    CLUSTER_PROCESS_KW_CMD("DUMP", redis_gen_key_cmd, cluster_bulk_raw_resp);
+    CLUSTER_PROCESS_KW_CMD("DUMP", redis_key_cmd, cluster_bulk_raw_resp);
 }
 
 /* {{{ proto long RedisCluster::incr(string key) */
 PHP_METHOD(RedisCluster, incr) {
-    CLUSTER_PROCESS_KW_CMD("INCR", redis_gen_key_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("INCR", redis_key_cmd, cluster_long_resp);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::incrby(string key, long byval) */
 PHP_METHOD(RedisCluster, incrby) {
-    CLUSTER_PROCESS_KW_CMD("INCRBY", redis_gen_key_long_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("INCRBY", redis_key_long_cmd, cluster_long_resp);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::decr(string key) */
 PHP_METHOD(RedisCluster, decr) {
-    CLUSTER_PROCESS_KW_CMD("DECR", redis_gen_key_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("DECR", redis_key_cmd, cluster_long_resp);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::decrby(string key, long byval) */
 PHP_METHOD(RedisCluster, decrby) {
-    CLUSTER_PROCESS_KW_CMD("DECRBY", redis_gen_key_long_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("DECRBY", redis_key_long_cmd, cluster_long_resp);
 }
 /* }}} */
 
 /* {{{ proto double RedisCluster::incrbyfloat(string key, double val) */
 PHP_METHOD(RedisCluster, incrbyfloat) {
-    CLUSTER_PROCESS_KW_CMD("INCRBYFLOAT", redis_gen_key_dbl_cmd, 
+    CLUSTER_PROCESS_KW_CMD("INCRBYFLOAT", redis_key_dbl_cmd, 
         cluster_dbl_resp);
 }
 /* }}} */
 
 /* {{{ proto double RedisCluster::decrbyfloat(string key, double val) */
 PHP_METHOD(RedisCluster, decrbyfloat) {
-    CLUSTER_PROCESS_KW_CMD("DECRBYFLOAT", redis_gen_key_dbl_cmd,
+    CLUSTER_PROCESS_KW_CMD("DECRBYFLOAT", redis_key_dbl_cmd,
         cluster_dbl_resp);
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::expire(string key, long sec) */
 PHP_METHOD(RedisCluster, expire) {
-    CLUSTER_PROCESS_KW_CMD("EXPIRE", redis_gen_key_long_cmd, cluster_1_resp);
+    CLUSTER_PROCESS_KW_CMD("EXPIRE", redis_key_long_cmd, cluster_1_resp);
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::expireat(string key, long ts) */
 PHP_METHOD(RedisCluster, expireat) {
-    CLUSTER_PROCESS_KW_CMD("EXPIREAT", redis_gen_key_long_cmd, cluster_1_resp);
+    CLUSTER_PROCESS_KW_CMD("EXPIREAT", redis_key_long_cmd, cluster_1_resp);
 }
 
 /* {{{ proto bool RedisCluster::pexpire(string key, long ms) */
 PHP_METHOD(RedisCluster, pexpire) {
-    CLUSTER_PROCESS_KW_CMD("PEXPIRE", redis_gen_key_long_cmd, cluster_1_resp);
+    CLUSTER_PROCESS_KW_CMD("PEXPIRE", redis_key_long_cmd, cluster_1_resp);
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::pexpireat(string key, long ts) */
 PHP_METHOD(RedisCluster, pexpireat) {
-    CLUSTER_PROCESS_KW_CMD("PEXPIREAT", redis_gen_key_long_cmd, cluster_1_resp);
+    CLUSTER_PROCESS_KW_CMD("PEXPIREAT", redis_key_long_cmd, cluster_1_resp);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::append(string key, string val) */
 PHP_METHOD(RedisCluster, append) {
-    CLUSTER_PROCESS_KW_CMD("APPEND", redis_gen_kv_cmd, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("APPEND", redis_kv_cmd, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::getbit(string key, long val) */
+PHP_METHOD(RedisCluster, getbit) {
+    CLUSTER_PROCESS_KW_CMD("GETBIT", redis_key_long_cmd, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto string Redis::lget(string key, long index) */
+PHP_METHOD(RedisCluster, lget) {
+    CLUSTER_PROCESS_KW_CMD("LGET", redis_key_long_cmd, cluster_bulk_resp);
 }
 /* }}} */
 

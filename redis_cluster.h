@@ -114,4 +114,7 @@ PHP_METHOD(RedisCluster, pexpireat);
 
 PHP_METHOD(RedisCluster, append);
 
+PHP_METHOD(RedisCluster, getbit);
+PHP_METHOD(RedisCluster, lget);
+
 #endif
