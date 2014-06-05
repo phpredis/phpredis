@@ -117,4 +117,8 @@ PHP_METHOD(RedisCluster, append);
 PHP_METHOD(RedisCluster, getbit);
 PHP_METHOD(RedisCluster, lget);
 
+PHP_METHOD(RedisCluster, getrange);
+PHP_METHOD(RedisCluster, ltrim);
+PHP_METHOD(RedisCluster, lrange);
+PHP_METHOD(RedisCluster, zremrangebyrank);
 #endif
