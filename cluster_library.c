@@ -966,7 +966,7 @@ PHPAPI short cluster_send_command(redisCluster *c, short slot,
 
 /* RAW bulk response handler */
 PHPAPI void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS, 
-                                  redisCluster *c)
+                                  redisCluster *c, void *ctx)
 {
     char *resp;
 
@@ -983,7 +983,8 @@ PHPAPI void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS,
 }
 
 /* BULK response handler */
-PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                              void *ctx)
 {
     char *resp;
 
@@ -1004,7 +1005,8 @@ PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
 }
 
 /* Bulk response where we expect a double */
-PHPAPI void cluster_dbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+PHPAPI void cluster_dbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                             void *ctx)
 {
     char *resp;
     double dbl;
@@ -1026,7 +1028,8 @@ PHPAPI void cluster_dbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
 
 /* A boolean response.  If we get here, we've consumed the '+' reply
  * type and will now just verify we can read the OK */
-PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                              void *ctx)
 {
     // Check that we have +OK
     if(c->reply_type != TYPE_LINE || c->reply_len != 2 || 
@@ -1039,7 +1042,8 @@ PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
 }
 
 /* 1 or 0 response, for things like SETNX */
-PHPAPI void cluster_1_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+PHPAPI void cluster_1_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                           void *ctx)
 {
     // Validate our reply type, and check for a zero
     if(c->reply_type != TYPE_INT || c->reply_len == 0) {
@@ -1050,7 +1054,8 @@ PHPAPI void cluster_1_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
 }
 
 /* Generic integer response */
-PHPAPI void cluster_long_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+PHPAPI void cluster_long_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                              void *ctx)
 {
     if(c->reply_type != TYPE_INT) {
         RETURN_FALSE;
@@ -1059,7 +1064,8 @@ PHPAPI void cluster_long_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
 }
 
 /* TYPE response handler */
-PHPAPI void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+PHPAPI void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                              void *ctx)
 {
     // Make sure we got the right kind of response
     if(c->reply_type != TYPE_LINE) {
@@ -1082,7 +1088,7 @@ PHPAPI void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
 
 /* Generic MULTI BULK response processor */
 PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
-                                   redisCluster *c, mbulk_cb cb)
+                                   redisCluster *c, mbulk_cb cb, void *ctx)
 {
     zval *z_result;
 
@@ -1097,7 +1103,7 @@ PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     array_init(z_result);
 
     // Call our specified callback
-    if(cb(SLOT_SOCK(c,c->reply_slot), z_result, c->reply_len TSRMLS_CC)
+    if(cb(SLOT_SOCK(c,c->reply_slot), z_result, c->reply_len, ctx TSRMLS_CC)
                      ==FAILURE)
     {
         zval_dtor(z_result);
@@ -1112,31 +1118,44 @@ PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 
 /* Raw MULTI BULK reply */
 PHPAPI void 
-cluster_mbulk_resp_raw(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c) {
+cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
+                       void *ctx) {
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        c, mbulk_resp_loop_raw);
+        c, mbulk_resp_loop_raw, NULL);
 }
 
 /* Unserialize all the things */
 PHPAPI void
-cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c) {
+cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                   void *ctx) {
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        c, mbulk_resp_loop);
+        c, mbulk_resp_loop, NULL);
 }
 
 /* For handling responses where we get key, value, key, value that
  * we will turn into key => value, key => value. */
 PHPAPI void
-cluster_mbulk_zipstr_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c) {
+cluster_mbulk_zipstr_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                          void *ctx) {
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        c, mbulk_resp_loop_zipstr);
+        c, mbulk_resp_loop_zipstr, NULL);
 }
 
 /* Handling key,value to key=>value where the values are doubles */
 PHPAPI void
-cluster_mbulk_resp_zipdbl(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c) {
+cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                          void *ctx) {
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        c, mbulk_resp_loop_zipdbl);
+        c, mbulk_resp_loop_zipdbl, NULL);
+}
+
+/* Associate multi bulk response (for HMGET really) */
+PHPAPI void
+cluster_mbulk_assoc_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                         void *ctx)
+{
+    cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
+        mbulk_resp_loop_assoc, ctx);
 }
 
 /* 
@@ -1145,7 +1164,7 @@ cluster_mbulk_resp_zipdbl(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c) {
 
 /* MULTI BULK response where we don't touch the values (e.g. KEYS) */
 int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result, 
-                        long long count TSRMLS_DC) 
+                        long long count, void *ctx TSRMLS_DC) 
 {
     char *line;
     int line_len;
@@ -1165,8 +1184,8 @@ int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result,
 }
 
 /* MULTI BULK response where we unserialize everything */
-int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, long long count 
-                    TSRMLS_DC)
+int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, 
+                    long long count, void *ctx TSRMLS_DC)
 {
     char *line;
     int line_len;
@@ -1191,7 +1210,7 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, long long count
 
 /* MULTI BULK response where we turn key1,value1 into key1=>value1 */
 int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result, 
-                           long long count TSRMLS_DC)
+                           long long count, void *ctx TSRMLS_DC)
 {
     char *line, *key;
     int line_len, key_len;
@@ -1229,7 +1248,7 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
 
 /* MULTI BULK loop processor where we expect key,score key, score */
 int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
-                           long long count TSRMLS_DC)
+                           long long count, void *ctx TSRMLS_DC)
 {
     char *line, *key;
     int line_len, key_len;
@@ -1256,4 +1275,40 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
     return SUCCESS;
 }
 
+/* MULTI BULK where we're passed the keys, and we attach vals */
+int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result, 
+                          long long count, void *ctx TSRMLS_DC)
+{
+    char *line;
+    int line_len,i=0;
+    zval **z_keys = ctx, *z;
+    
+    // Loop while we've got replies
+    while(count--) {
+        line = redis_sock_read(redis_sock, &line_len TSRMLS_CC);
+        if(!line) return -1;
+
+        if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
+            efree(line);
+            add_assoc_zval_ex(z_result,Z_STRVAL_P(z_keys[i]),
+                1+Z_STRLEN_P(z_keys[i]), z);
+        } else {
+            add_assoc_stringl_ex(z_result, Z_STRVAL_P(z_keys[i]),
+                1+Z_STRLEN_P(z_keys[i]), line, line_len, 0);
+        }
+
+        // Clean up key context
+        zval_dtor(z_keys[i]);
+        efree(z_keys[i]);
+        
+        // Move to the next key
+        i++;
+    }
+
+    // Clean up our keys overall
+    efree(z_keys);
+
+    // Success!
+    return SUCCESS;
+}
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

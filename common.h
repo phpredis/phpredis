@@ -168,7 +168,8 @@ else if(redis_sock->mode == MULTI) { \
 	REDIS_ELSE_IF_MULTI(function, closure_context) \
 	REDIS_ELSE_IF_PIPELINE(function, closure_context);
 
-#define REDIS_PROCESS_RESPONSE(function) REDIS_PROCESS_RESPONSE_CLOSURE(function, NULL)
+#define REDIS_PROCESS_RESPONSE(function) \
+    REDIS_PROCESS_RESPONSE_CLOSURE(function, NULL)
 
 /* Clear redirection info */
 #define REDIS_MOVED_CLEAR(redis_sock) \
@@ -179,32 +180,32 @@ else if(redis_sock->mode == MULTI) { \
 /* Process a command assuming our command where our command building
  * function is redis_<cmdname>_cmd */
 #define REDIS_PROCESS_CMD(cmdname, resp_func) \
-    RedisSock *redis_sock; char *cmd; int cmd_len; \
+    RedisSock *redis_sock; char *cmd; int cmd_len; void *ctx=NULL; \
     if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0 || \
        redis_##cmdname##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock, \
-                             &cmd, &cmd_len, NULL)==FAILURE) { \
+                             &cmd, &cmd_len, NULL, &ctx)==FAILURE) { \
             RETURN_FALSE; \
     } \
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
     IF_ATOMIC() { \
-        resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL); \
+        resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx); \
     } \
-    REDIS_PROCESS_RESPONSE(resp_func);
+    REDIS_PROCESS_RESPONSE_CLOSURE(resp_func,ctx);
 
 /* Process a command but with a specific command building function 
  * and keyword which is passed to us*/
 #define REDIS_PROCESS_KW_CMD(kw, cmdfunc, resp_func) \
-    RedisSock *redis_sock; char *cmd; int cmd_len; \
+    RedisSock *redis_sock; char *cmd; int cmd_len; void *ctx=NULL; \
     if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0 || \
        cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw, &cmd, \
-               &cmd_len, NULL)==FAILURE) { \
+               &cmd_len, NULL, &ctx)==FAILURE) { \
             RETURN_FALSE; \
     } \
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
     IF_ATOMIC() { \
-        resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL); \
+        resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx); \
     } \
-    REDIS_PROCESS_RESPONSE(resp_func);
+    REDIS_PROCESS_RESPONSE_CLOSURE(resp_func,ctx);
 
 /* Extended SET argument detection */
 #define IS_EX_ARG(a) \

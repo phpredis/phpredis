@@ -77,7 +77,7 @@ typedef enum CLUSTER_REDIR_TYPE {
     *c->line_reply = '\0'; c->reply_len = 0;
 
 /* MULTI BULK response callback typedef */
-typedef int (*mbulk_cb)(RedisSock*,zval*,long long TSRMLS_DC);
+typedef int (*mbulk_cb)(RedisSock*,zval*,long long, void* TSRMLS_DC);
 
 /* Specific destructor to free a cluster object */
 // void redis_destructor_redis_cluster(zend_rsrc_list_entry *rsrc TSRMLS_DC);
@@ -200,35 +200,46 @@ PHPAPI int cluster_node_add_slave(redisCluster *cluster,
  * something valid, or FALSE in the case of some failures).
  */
 
-PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
-PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
-PHPAPI void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
-PHPAPI void cluster_dbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
-PHPAPI void cluster_1_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
-PHPAPI void cluster_long_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
-PHPAPI void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c);
+PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
+    void *ctx);
+PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
+    void *ctx);
+PHPAPI void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
+    void *ctx);
+PHPAPI void cluster_dbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
+    void *ctx);
+PHPAPI void cluster_1_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
+    void *ctx);
+PHPAPI void cluster_long_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
+    void *ctx);
+PHPAPI void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
+    void *ctx);
 
 /* MULTI BULK response functions */
 PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
-    redisCluster *c, mbulk_cb func);
-PHPAPI void cluster_mbulk_resp_raw(INTERNAL_FUNCTION_PARAMETERS, 
-    redisCluster *c);
+    redisCluster *c, mbulk_cb func, void *ctx);
+PHPAPI void cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS, 
+    redisCluster *c, void *ctx);
 PHPAPI void cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
-    redisCluster *c);
+    redisCluster *c, void *ctx);
 PHPAPI void cluster_mbulk_zipstr_resp(INTERNAL_FUNCTION_PARAMETERS,
-    redisCluster *c);
+    redisCluster *c, void *ctx);
 PHPAPI void cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAMETERS,
-    redisCluster *c);
+    redisCluster *c, void *ctx);
+PHPAPI void cluster_mbulk_assoc_resp(INTERNAL_FUNCTION_PARAMETERS, 
+    redisCluster *c, void *ctx);
 
 /* MULTI BULK processing callbacks */
 int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, 
-    long long count TSRMLS_DC);
+    long long count, void *ctx TSRMLS_DC);
 int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result, 
-    long long count TSRMLS_DC);
+    long long count, void *ctx TSRMLS_DC);
 int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
-    long long count TSRMLS_DC);
+    long long count, void *ctx TSRMLS_DC);
 int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
-    long long count TSRMLS_DC);
+    long long count, void *ctx TSRMLS_DC);
+int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
+    long long count, void *ctx TSRMLS_DC);
 
 #endif
 

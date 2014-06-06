@@ -75,6 +75,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, hgetall, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hexists, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hincrby, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, hmget, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hmset, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hincrbyfloat, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, dump, NULL, ZEND_ACC_PUBLIC)
@@ -463,7 +464,7 @@ PHP_METHOD(RedisCluster, hlen) {
 
 /* {{{ proto array RedisCluster::hkeys(string key) */
 PHP_METHOD(RedisCluster, hkeys) {
-    CLUSTER_PROCESS_KW_CMD("HKEYS", redis_key_cmd, cluster_mbulk_resp_raw);
+    CLUSTER_PROCESS_KW_CMD("HKEYS", redis_key_cmd, cluster_mbulk_raw_resp);
 }
 /* }}} */
 
@@ -507,6 +508,12 @@ PHP_METHOD(RedisCluster, hincrbyfloat) {
 /* {{{ proto bool RedisCluster::hmset(string key, array key_vals) */
 PHP_METHOD(RedisCluster, hmset) {
     CLUSTER_PROCESS_CMD(hmset, cluster_bool_resp);
+}
+/* }}} */
+
+/* {{{ proto array RedisCluster::hmget(string key, array members) */
+PHP_METHOD(RedisCluster, hmget) {
+    CLUSTER_PROCESS_CMD(hmget, cluster_mbulk_assoc_resp);
 }
 /* }}} */
 
