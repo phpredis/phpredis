@@ -498,4 +498,89 @@ int redis_hincrbyfloat_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* HMGET */
+int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char **cmd, int *cmd_len, short *slot)
+{
+
+}
+
+/* HMSET */
+int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
+                    char **cmd, int *cmd_len, short *slot)
+{
+    char *key;
+    int key_len, key_free, count, ktype;
+    unsigned long idx;
+    zval *z_arr;
+    HashTable *ht_vals;
+    HashPosition pos;
+    smart_str cmdstr = {0};
+
+    // Parse args
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa", &key, &key_len,
+                             &z_arr)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // We can abort if we have no fields
+    if((count = zend_hash_num_elements(Z_ARRVAL_P(z_arr)))==0) {
+        return FAILURE;
+    }
+
+    // Prefix our key
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    // Grab our array as a HashTable
+    ht_vals = Z_ARRVAL_P(z_arr);
+
+    // Initialize our HMSET command (key + 2x each array entry), add key
+    redis_cmd_init_sstr(&cmdstr, 1+(count*2), "HMSET", sizeof("HMSET")-1);
+    redis_cmd_append_sstr(&cmdstr, key, key_len);
+
+    // Start traversing our key => value array
+    for(zend_hash_internal_pointer_reset_ex(ht_vals, &pos);
+        zend_hash_has_more_elements_ex(ht_vals, &pos)==SUCCESS;
+        zend_hash_move_forward_ex(ht_vals, &pos))
+    {
+        char *val, kbuf[40];
+        int val_len, val_free;
+        unsigned int key_len;
+        zval **z_val;
+
+        // Grab our key, and value for this element in our input
+        ktype = zend_hash_get_current_key_ex(ht_vals, &key, 
+            &key_len, &idx, 0, &pos);
+        zend_hash_get_current_data_ex(ht_vals, (void**)&z_val, &pos);
+
+        // If the hash key is an integer, convert it to a string
+        if(ktype != HASH_KEY_IS_STRING) {
+            key_len = snprintf(kbuf, sizeof(kbuf), "%ld", (long)idx);
+            key = (char*)kbuf;
+        } else {
+            // Length returned includes the \0
+            key_len--;
+        }
+
+        // Serialize value (if directed)
+        val_free = redis_serialize(redis_sock, *z_val, &val, &val_len 
+            TSRMLS_CC);
+
+        // Append the key and value to our command
+        redis_cmd_append_sstr(&cmdstr, key, key_len);
+        redis_cmd_append_sstr(&cmdstr, val, val_len);
+    }
+
+    // Set slot if directed
+    CMD_SET_SLOT(slot,key,key_len);
+
+    // Push return pointers
+    *cmd_len = cmdstr.len;
+    *cmd = cmdstr.c;
+    
+    // Success!
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
