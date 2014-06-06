@@ -69,6 +69,8 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, getOption, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, setOption, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, keys, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, save, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, bgsave, NULL, ZEND_ACC_PUBLIC)
 
 	 /* Multi/Exec */
      PHP_ME(RedisArray, multi, NULL, ZEND_ACC_PUBLIC)
@@ -619,6 +621,17 @@ PHP_METHOD(RedisArray, flushall)
 {
 	multihost_distribute(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHALL");
 }
+
+PHP_METHOD(RedisArray, save) 
+{
+    multihost_distribute(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SAVE");
+}
+
+PHP_METHOD(RedisArray, bgsave)
+{
+    multihost_distribute(INTERNAL_FUNCTION_PARAM_PASSTHRU, "BGSAVE");
+}
+
 
 PHP_METHOD(RedisArray, keys)
 {
