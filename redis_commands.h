@@ -14,34 +14,34 @@
  * many COMMAND key value commands, or COMMAND key commands. */
 
 int redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_key_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char *kw, char **cmd, int *cmd_len, short *slot);     
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);     
 
 int redis_key_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_key_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_key_long_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_key_str_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_ss_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char *kw, char **cmd, int *cmd_len, short *slot);
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 /* Commands which need a unique construction mechanism.  This is either because
  * they don't share a signature with any other command, or because there is 
@@ -49,22 +49,22 @@ int redis_ss_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
  * unique */
 
 int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char **cmd, int *cmd_len, short *slot);
+    char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char **cmd, int *cmd_len, short *slot);
+    char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char **cmd, int *cmd_len, short *slot);
+    char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_hincrbyfloat_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char **cmd, int *cmd_len, short *slot);
+    char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    char **cmd, int *cmd_len, short *slot);
+    char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    char **cmd, int *cmd_len, short *slot);
+    char **cmd, int *cmd_len, short *slot, void **ctx);
 
 #endif
 
