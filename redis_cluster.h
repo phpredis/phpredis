@@ -127,5 +127,5 @@ PHP_METHOD(RedisCluster, publish);
 PHP_METHOD(RedisCluster, lset);
 PHP_METHOD(RedisCluster, rename);
 PHP_METHOD(RedisCluster, renamenx);
-
+PHP_METHOD(RedisCluster, pfcount);
 #endif

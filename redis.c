@@ -821,29 +821,7 @@ PHP_METHOD(Redis, getSet)
  */
 PHP_METHOD(Redis, randomKey)
 {
-
-    zval *object;
-    RedisSock *redis_sock;
-    char *cmd;
-    int cmd_len;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
-                                     &object, redis_ce) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    cmd_len = redis_cmd_format(&cmd, "*1" _NL "$9" _NL "RANDOMKEY" _NL);
-	/* TODO: remove prefix from key */
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-	  redis_ping_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_ping_response);
+    REDIS_PROCESS_KW_CMD("RANDOMKEY", redis_ping_response);
 }
 /* }}} */
 
@@ -5637,6 +5615,183 @@ PHP_METHOD(Redis, sscan) {
 }
 PHP_METHOD(Redis, zscan) {
     generic_scan_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, TYPE_ZSCAN);
+}
+
+/* 
+ * HyperLogLog based commands 
+ */
+
+/* {{{ proto Redis::pfAdd(string key, array elements) }}} */
+PHP_METHOD(Redis, pfadd) {
+    zval *object;
+    RedisSock *redis_sock;
+    char *key;
+    int key_len, key_free, argc=1;
+    zval *z_mems, **z_mem;
+    HashTable *ht_mems;
+    HashPosition pos;
+    smart_str cmd = {0};
+
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa",
+                                    &object, redis_ce, &key, &key_len, &z_mems)
+                                    ==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    // Grab members as an array
+    ht_mems = Z_ARRVAL_P(z_mems);
+
+    // Total arguments we'll be sending
+    argc += zend_hash_num_elements(ht_mems);
+
+    // If the array was empty we can just exit
+    if(argc < 2) {
+        RETURN_FALSE;
+    }
+
+    // Start constructing our command
+    redis_cmd_init_sstr(&cmd, argc, "PFADD", sizeof("PFADD")-1);
+
+    // Prefix our key if we're prefixing
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+    redis_cmd_append_sstr(&cmd, key, key_len);
+    if(key_free) efree(key);
+
+    // Iterate over members we're adding
+    for(zend_hash_internal_pointer_reset_ex(ht_mems, &pos);
+        zend_hash_get_current_data_ex(ht_mems, (void**)&z_mem, &pos)==SUCCESS;
+        zend_hash_move_forward_ex(ht_mems, &pos))
+    {
+        char *mem;
+        int mem_len, val_free;
+        zval *z_tmp = NULL;
+
+        // Serialize if requested
+        val_free = redis_serialize(redis_sock, *z_mem, &mem, &mem_len TSRMLS_CC);
+
+        // Allow for non string members if we're not serializing
+        if(!val_free) {
+            if(Z_TYPE_PP(z_mem)==IS_STRING) {
+                mem = Z_STRVAL_PP(z_mem);
+                mem_len = Z_STRLEN_PP(z_mem);
+            } else {
+                MAKE_STD_ZVAL(z_tmp);
+                *z_tmp = **z_mem;
+                convert_to_string(z_tmp);
+
+                mem = Z_STRVAL_P(z_tmp);
+                mem_len = Z_STRLEN_P(z_tmp);
+            }
+        }
+    
+        // Append this member
+        redis_cmd_append_sstr(&cmd, mem, mem_len);
+
+        // Free memory if we serialized or converted types
+        if(z_tmp) {
+            zval_dtor(z_tmp);
+            efree(z_tmp);
+            z_tmp = NULL;
+        } else if(val_free) {
+            efree(mem);
+        }
+    }
+   
+    REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len); 
+    IF_ATOMIC() {
+        redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_1_response);   
+}
+
+/* {{{ proto Redis::pfCount(string key) }}}*/
+PHP_METHOD(Redis, pfcount) {
+    REDIS_PROCESS_KW_CMD("PFCOUNT", redis_key_cmd, redis_long_response);
+}
+
+/* {{{ proto Redis::pfMerge(array keys) }}}*/
+PHP_METHOD(Redis, pfmerge) {
+    zval *object;    
+    RedisSock *redis_sock;
+    zval *z_keys, **z_key;
+    HashTable *ht_keys;
+    HashPosition pos;
+    smart_str cmd = {0};
+    int key_len, key_free, argc=1;
+    char *key;
+
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa",
+                                    &object, redis_ce, &key, &key_len, &z_keys)==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    // Grab keys as an array
+    ht_keys = Z_ARRVAL_P(z_keys);
+
+    // Total arguments we'll be sending
+    argc += zend_hash_num_elements(ht_keys);
+
+    // If no keys were passed we can abort
+    if(argc<2) {
+        RETURN_FALSE;
+    }
+
+    // Initial construction of our command
+    redis_cmd_init_sstr(&cmd, argc, "PFMERGE", sizeof("PFMERGE")-1);
+
+    // Add our destination key (prefixed if necessary)
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+    redis_cmd_append_sstr(&cmd, key, key_len);
+    if(key_free) efree(key);
+
+    // Iterate our keys array
+    for(zend_hash_internal_pointer_reset_ex(ht_keys, &pos);
+        zend_hash_get_current_data_ex(ht_keys, (void**)&z_key, &pos)==SUCCESS;
+        zend_hash_move_forward_ex(ht_keys, &pos))
+    {
+        zval *z_tmp = NULL;
+
+        // Keys could look like a number
+        if(Z_TYPE_PP(z_key) == IS_STRING) {
+            key = Z_STRVAL_PP(z_key);
+            key_len = Z_STRLEN_PP(z_key);
+        } else {
+            MAKE_STD_ZVAL(z_tmp);
+            *z_tmp = **z_key;
+            convert_to_string(z_tmp);
+
+            key = Z_STRVAL_P(z_tmp);
+            key_len = Z_STRLEN_P(z_tmp);
+        }
+
+        // Prefix our key if necessary and append this key
+        key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+        redis_cmd_append_sstr(&cmd, key, key_len);
+        if(key_free) efree(key);
+
+        // Free temporary zval if we converted
+        if(z_tmp) {
+            zval_dtor(z_tmp);
+            efree(z_tmp);
+            z_tmp = NULL;
+        }
+    }
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
+    IF_ATOMIC() {
+        redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
