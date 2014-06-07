@@ -16,6 +16,9 @@
 int redis_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
+int redis_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
+
 int redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
@@ -82,6 +85,9 @@ int redis_pfadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_pfmerge_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char **cmd, int *cmd_len, short *slot, void **ctx);
+
+int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
 #endif
