@@ -103,6 +103,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, publish, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, rename, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, renamenx, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, pfcount, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -665,6 +666,12 @@ PHP_METHOD(RedisCluster, rename) {
 /* {{{ proto bool RedisCluster::renamenx(string key1, string key2) */
 PHP_METHOD(RedisCluster, renamenx) {
     CLUSTER_PROCESS_KW_CMD("RENAMENX", redis_key_key_cmd, cluster_1_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::pfcount(string key) */
+PHP_METHOD(RedisCluster, pfcount) {
+    CLUSTER_PROCESS_KW_CMD("PFCOUNT", redis_key_cmd, cluster_long_resp);
 }
 /* }}} */
 
