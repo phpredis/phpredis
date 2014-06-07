@@ -54,10 +54,9 @@ int redis_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
 }
 
 /* Key, long, zval (serialized) */
-int
-redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                       char *kw, char **cmd, int *cmd_len, short *slot,
-                       void **ctx)
+int redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                           char *kw, char **cmd, int *cmd_len, short *slot,
+                           void **ctx)
 {
     char *key = NULL, *val=NULL;
     int key_len, val_len, val_free, key_free;
@@ -82,6 +81,37 @@ redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     CMD_SET_SLOT(slot,key,key_len);
 
     if(val_free) STR_FREE(val);
+    if(key_free) efree(key);
+
+    return SUCCESS;
+}
+
+/* Generic key, long, string (unserialized) */
+int redis_key_long_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                           char *kw, char **cmd, int *cmd_len, short *slot,
+                           void **ctx)
+{
+    char *key, *val;
+    int key_len, val_len, key_free;
+    long lval;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sls", &key, &key_len,
+                             &lval, &val, &val_len)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Prefix our key if requested
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    
+    // Construct command
+    *cmd_len = redis_cmd_format_static(&cmd, kw, "sds", key, key_len, (int)lval,
+        val, val_len);
+
+    // Set slot
+    CMD_SET_SLOT(slot,key,key_len);
+
+    // Free our key if we prefixed
     if(key_free) efree(key);
 
     return SUCCESS;
