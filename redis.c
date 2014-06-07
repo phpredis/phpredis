@@ -1087,31 +1087,8 @@ PHP_METHOD(Redis, getRange)
 
 PHP_METHOD(Redis, setRange)
 {
-	zval *object;
-	RedisSock *redis_sock;
-	char *key = NULL, *val, *cmd;
-	int key_len, val_len, cmd_len, key_free;
-	long offset;
-
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osls",
-                                     &object, redis_ce, &key, &key_len,
-                                     &offset, &val, &val_len) == FAILURE) {
-		RETURN_FALSE;
-	}
-
-	if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-		RETURN_FALSE;
-	}
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-	cmd_len = redis_cmd_format_static(&cmd, "SETRANGE", "sds", key,
-                                      key_len, (int)offset, val, val_len);
-	if(key_free) efree(key);
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_KW_CMD("SETRANGE", redis_key_long_str_cmd, 
+        redis_long_response);
 }
 
 /* {{{ proto long Redis::getbit(string key, long idx) */
@@ -4765,35 +4742,8 @@ PHP_METHOD(Redis, dump) {
  * {{{ proto Redis::restore(ttl, key, value)
  */
 PHP_METHOD(Redis, restore) {
-	zval *object;
-	RedisSock *redis_sock;
-	char *cmd, *key, *value;
-	int cmd_len, key_len, value_len, key_free;
-	long ttl;
-
-	// Parse our arguments
-	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osls", &object, redis_ce,
-									&key, &key_len, &ttl, &value, &value_len) == FAILURE) {
-		RETURN_FALSE;
-	}
-
-	// Grab our socket
-	if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-		RETURN_FALSE;
-	}
-
-	// Prefix the key if we need to
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-	cmd_len = redis_cmd_format_static(&cmd, "RESTORE", "sls", key,
-                                      key_len, ttl, value, value_len);
-	if(key_free) efree(key);
-
-	// Kick off our restore request
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_boolean_response);
+    REDIS_PROCESS_KW_CMD("RESTORE", redis_key_long_val_cmd, 
+        redis_boolean_response);
 }
 
 /*
