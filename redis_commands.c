@@ -24,6 +24,15 @@
  * processing.  Lots of Redis commands take something like key, value, or
  * key, value long.  Each unique signature like this is written only once */
 
+/* A command that takes no arguments */
+int redis_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char *kw, char **cmd, int *cmd_len, short *slot,
+                    void **ctx)
+{
+    *cmd_len = redis_cmd_format_static(cmd, kw, "");
+    return SUCCESS;
+}
+
 /* Key, long, zval (serialized) */
 int
 redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
@@ -706,6 +715,99 @@ int redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Set our slot
     CMD_SET_SLOT(slot, key, key_len);
+
+    return SUCCESS;
+}
+
+/* BITOP */
+int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    zval **z_args;
+    char *key;
+    int key_len, i, key_free, argc = ZEND_NUM_ARGS();
+    smart_str cmdstr = {0};
+    short kslot;
+
+    // Allocate space for args, parse them as an array
+    z_args = emalloc(argc * sizeof(zval*));
+    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE ||
+       argc < 3 || Z_TYPE_P(z_args[0]) != IS_STRING)
+    {
+        efree(z_args);
+        return FAILURE;
+    }
+
+    // If we were passed a slot pointer, init to a sentinel value
+    if(slot) *slot = -1;
+
+    // Initialize command construction, add our operation argument
+    redis_cmd_init_sstr(&cmdstr, argc, "BITOP", sizeof("BITOP")-1);
+    redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(z_args[0]), 
+        Z_STRLEN_P(z_args[0]));
+
+    // Now iterate over our keys argument
+    for(i=1;i<argc;i++) {
+        // Make sure we've got a string
+        convert_to_string(z_args[i]);
+        
+        // Grab this key and length
+        key = Z_STRVAL_P(z_args[i]);
+        key_len = Z_STRLEN_P(z_args[i]);
+
+        // Prefix key, append
+        key_free = redis_key_prefix(redis_sock, &key, &key_len);
+        redis_cmd_append_sstr(&cmdstr, key, key_len);
+  
+        // Verify slot if this is a Cluster request
+        if(slot) {
+            kslot = cluster_hash_key(key, key_len);
+            if(*slot == -1 || kslot != *slot) {
+                php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                    "Warning, not all keys hash to the same slot!");
+                if(key_free) efree(key);
+                return FAILURE;
+            }
+            *slot = kslot;
+        }
+  
+        if(key_free) efree(key);
+    }
+
+    // Free our argument array
+    efree(z_args);
+
+    // Push out variables
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+/* BITCOUNT */
+int redis_bitcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key;
+    int key_len, key_free;
+    long start = 0, end = -1;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|ll", &key, &key_len,
+                             &start, &end)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Prefix key, construct command
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    *cmd_len = redis_cmd_format_static(cmd, "BITCOUNT", "sdd", key, key_len,
+        (int)start, (int)end);
+    
+    // Set our slot
+    CMD_SET_SLOT(slot,key,key_len);
+
+    // Fre key if we prefixed it
+    if(key_free) efree(key);
 
     return SUCCESS;
 }

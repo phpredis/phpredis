@@ -13,6 +13,9 @@
  * we can write one function to handle all of them.  For example, there are
  * many COMMAND key value commands, or COMMAND key commands. */
 
+int redis_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
+
 int redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
@@ -64,6 +67,15 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char **cmd, int *cmd_len, short *slot, void **ctx);
+
+int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
+    char **cmd, int *cmd_len, short *slot, void **ctx);
+
+int redis_bitcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char **cmd, int *cmd_len, short *slot, void **ctx);
+
+int redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
 #endif

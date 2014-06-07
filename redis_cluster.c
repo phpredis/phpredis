@@ -92,6 +92,9 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, pexpireat, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, append, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, getbit, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, bitop, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, bitpos, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, bitcount, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, lget, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, getrange, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, ltrim, NULL, ZEND_ACC_PUBLIC)
@@ -592,6 +595,25 @@ PHP_METHOD(RedisCluster, append) {
 /* {{{ proto long RedisCluster::getbit(string key, long val) */
 PHP_METHOD(RedisCluster, getbit) {
     CLUSTER_PROCESS_KW_CMD("GETBIT", redis_key_long_cmd, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::bitop(string op,string key,[string key2,...]) */
+PHP_METHOD(RedisCluster, bitop)
+{
+    CLUSTER_PROCESS_CMD(bitop, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::bitcount(string key, [int start, int end]) */
+PHP_METHOD(RedisCluster, bitcount) {
+    CLUSTER_PROCESS_CMD(bitcount, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::bitpos(string key, int bit, [int s, int end]) */
+PHP_METHOD(RedisCluster, bitpos) {
+    CLUSTER_PROCESS_CMD(bitpos, cluster_long_resp);
 }
 /* }}} */
 
