@@ -1051,4 +1051,48 @@ int redis_setbit_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* LINSERT */
+int redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key, *pivot, *pos, *val;
+    int key_len, pivot_len, pos_len, val_len;
+    int key_free, pivot_free, val_free;
+    zval *z_val, *z_pivot;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sszz", &key, &key_len,
+                             &pos, &pos_len, &z_pivot, &z_val)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Validate position
+    if(strncasecmp(pos, "after", 5)!=0 && strncasecmp(pos, "before", 6)==0) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "Position must be either 'BEFORE' or 'AFTER'");
+        return FAILURE;
+    }
+
+    // Prefix key, serialize value and position
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
+    pivot_free = redis_serialize(redis_sock, z_pivot, &pivot, &pivot_len 
+        TSRMLS_CC);
+
+    // Construct command
+    *cmd_len = redis_cmd_format_static(cmd, "LINSERT", "ssss", key, key_len,
+        pos, pos_len, pivot, pivot_len, val, val_len);
+
+    // Set slot
+    CMD_SET_SLOT(slot, key, key_len);
+
+    // Clean up
+    if(val_free) STR_FREE(val);
+    if(key_free) efree(key);
+    if(pivot_free) STR_FREE(pivot);
+
+    // Success
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
