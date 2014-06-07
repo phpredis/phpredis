@@ -1100,37 +1100,7 @@ PHP_METHOD(Redis, getBit)
 
 PHP_METHOD(Redis, setBit)
 {
-	zval *object;
-	RedisSock *redis_sock;
-	char *key = NULL, *cmd;
-	int key_len, cmd_len, key_free;
-	long offset;
-	zend_bool val;
-
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oslb",
-                                     &object, redis_ce, &key, &key_len,
-                                     &offset, &val) == FAILURE) {
-		RETURN_FALSE;
-	}
-
-	if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-		RETURN_FALSE;
-	}
-
-	// GETBIT and SETBIT only work for 0 - 2^32-1
-	if(offset < BITOP_MIN_OFFSET || offset > BITOP_MAX_OFFSET) {
-	    RETURN_FALSE;
-	}
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-	cmd_len = redis_cmd_format_static(&cmd, "SETBIT", "sdd", key,
-                                      key_len, (int)offset, (int)val);
-	if(key_free) efree(key);
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_CMD(setbit, redis_long_response);
 }
 
 /* {{{ proto long Redis::strlen(string key) */

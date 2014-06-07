@@ -92,6 +92,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, pexpireat, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, append, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, getbit, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, setbit, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, bitop, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, bitpos, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, bitcount, NULL, ZEND_ACC_PUBLIC)
@@ -602,6 +603,11 @@ PHP_METHOD(RedisCluster, getbit) {
     CLUSTER_PROCESS_KW_CMD("GETBIT", redis_key_long_cmd, cluster_long_resp);
 }
 /* }}} */
+
+/* {{{ proto long RedisCluster::setbit(string key, long offset, bool onoff) */
+PHP_METHOD(RedisCluster, setbit) {
+    CLUSTER_PROCESS_CMD(setbit, cluster_long_resp);
+}
 
 /* {{{ proto long RedisCluster::bitop(string op,string key,[string key2,...]) */
 PHP_METHOD(RedisCluster, bitop)

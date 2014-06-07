@@ -105,7 +105,7 @@ int redis_key_long_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
     
     // Construct command
-    *cmd_len = redis_cmd_format_static(&cmd, kw, "sds", key, key_len, (int)lval,
+    *cmd_len = redis_cmd_format_static(cmd, kw, "sds", key, key_len, (int)lval,
         val, val_len);
 
     // Set slot
@@ -1015,6 +1015,39 @@ int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     redis_sock->auth = estrndup(pw, pw_len);
 
     // Success
+    return SUCCESS;
+}
+
+/* SETBIT */
+int redis_setbit_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key;
+    int key_len, key_free;
+    long offset;
+    zend_bool val;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "slb", &key, &key_len,
+                             &offset, &val)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Validate our offset
+    if(offset < BITOP_MIN_OFFSET || offset > BITOP_MAX_OFFSET) {
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "Invalid OFFSET for bitop command (must be between 0-2^32-1)");
+        return FAILURE;
+    }
+
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    *cmd_len = redis_cmd_format_static(cmd, "SETBIT", "sdd", key, key_len,
+        (int)offset, (int)val);
+
+    CMD_SET_SLOT(slot, key, key_len);
+
+    if(key_free) efree(key);
+
     return SUCCESS;
 }
 
