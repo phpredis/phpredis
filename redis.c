@@ -1148,49 +1148,7 @@ PHP_METHOD(Redis, rPush)
 
 PHP_METHOD(Redis, lInsert)
 {
-
-	zval *object;
-	RedisSock *redis_sock;
-	char *pivot, *position, *key, *val, *cmd;
-	int pivot_len, position_len, key_len, val_len, cmd_len;
-    int val_free, pivot_free, key_free;
-    zval *z_value, *z_pivot;
-
-
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osszz",
-					&object, redis_ce,
-					&key, &key_len,
-					&position, &position_len,
-					&z_pivot,
-					&z_value) == FAILURE) {
-		RETURN_NULL();
-	}
-
-	if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-		RETURN_FALSE;
-	}
-
-	if(strncasecmp(position, "after", 5) == 0 || strncasecmp(position, "before", 6) == 0) {
-
-		key_free = redis_key_prefix(redis_sock, &key, &key_len);
-        val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
-        pivot_free = redis_serialize(redis_sock, z_pivot, &pivot, &pivot_len TSRMLS_CC);
-        cmd_len = redis_cmd_format_static(&cmd, "LINSERT", "ssss",
-                                          key, key_len, position, position_len,
-                                          pivot, pivot_len, val, val_len);
-        if(val_free) STR_FREE(val);
-		if(key_free) efree(key);
-        if(pivot_free) STR_FREE(pivot);
-
-		REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-		IF_ATOMIC() {
-			redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-		}
-		REDIS_PROCESS_RESPONSE(redis_long_response);
-	} else {
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Error on position");
-	}
-
+    REDIS_PROCESS_CMD(linsert, redis_long_response);
 }
 
 /* {{{ proto long Redis::lPushx(string key, mixed value) */
