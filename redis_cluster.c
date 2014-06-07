@@ -104,6 +104,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, rename, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, renamenx, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, pfcount, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, pfadd, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, pfmerge, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -674,5 +676,18 @@ PHP_METHOD(RedisCluster, pfcount) {
     CLUSTER_PROCESS_KW_CMD("PFCOUNT", redis_key_cmd, cluster_long_resp);
 }
 /* }}} */
+
+/* {{{ proto bool RedisCluster::pfadd(string key, array vals) */
+PHP_METHOD(RedisCluster, pfadd) {
+    CLUSTER_PROCESS_CMD(pfadd, cluster_1_resp);
+}
+/* }}} */
+
+/* {{{ proto bool RedisCluster::pfmerge(string key, array keys) */
+PHP_METHOD(RedisCluster, pfmerge) {
+    CLUSTER_PROCESS_CMD(pfmerge, cluster_bool_resp);
+}
+/* }}} */
+
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
