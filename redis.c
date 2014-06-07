@@ -816,35 +816,11 @@ PHP_METHOD(Redis, randomKey)
 }
 /* }}} */
 
-/* {{{ proto string Redis::echo(string key)
+/* {{{ proto string Redis::echo(string msg)
  */
 PHP_METHOD(Redis, echo)
 {
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len;
-	int key_free;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
-                                     &object, redis_ce,
-                                     &key, &key_len) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "ECHO", "s", key, key_len);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
-	  redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-    }
-    REDIS_PROCESS_RESPONSE(redis_string_response);
+    REDIS_PROCESS_KW_CMD("ECHO", redis_str_cmd, redis_string_response);
 
 }
 /* }}} */
@@ -2459,34 +2435,7 @@ PHP_METHOD(Redis, dbSize)
 /* {{{ proto bool Redis::auth(string passwd)
  */
 PHP_METHOD(Redis, auth) {
-
-    zval *object;
-    RedisSock *redis_sock;
-
-    char *cmd, *password;
-    int cmd_len, password_len;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
-                                     &object, redis_ce, &password, &password_len) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    cmd_len = redis_cmd_format_static(&cmd, "AUTH", "s", password,
-                                      password_len);
-
-    // Free previously stored auth if we have one, and store this password
-    if(redis_sock->auth) efree(redis_sock->auth);
-    redis_sock->auth = estrndup(password, password_len);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_boolean_response);
+    REDIS_PROCESS_CMD(auth, redis_boolean_response);
 }
 /* }}} */
 
