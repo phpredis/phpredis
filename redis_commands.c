@@ -33,6 +33,26 @@ int redis_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* Generic command where we just take a string and do nothing to it*/
+int redis_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
+                  char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *arg;
+    int arg_len;
+
+    // Parse args
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &arg, &arg_len)
+                             ==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Build the command without molesting the string
+    *cmd_len = redis_cmd_format_static(cmd, kw, "s", arg, arg_len);
+
+    return SUCCESS;
+}
+
 /* Key, long, zval (serialized) */
 int
 redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
@@ -886,8 +906,10 @@ static int redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 return FAILURE;
             }
         } else {
-            if(redis_serialize(redis_sock, *z_ele, &mem, &mem_len TSRMLS_CC)==0)
-            {
+            mem_free = redis_serialize(redis_sock, *z_ele, &mem, &mem_len 
+                TSRMLS_CC);
+            
+            if(!mem_free) {
                 if(Z_TYPE_PP(z_ele)!=IS_STRING) {
                     MAKE_STD_ZVAL(z_tmp);
                     *z_tmp = **z_ele;
@@ -907,6 +929,15 @@ static int redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             zval_dtor(z_tmp);
             efree(z_tmp);
             z_tmp = NULL;
+        }
+
+        // Clean up prefixed or serialized data
+        if(mem_free) {
+            if(!is_keys) {
+                STR_FREE(mem);
+            } else {
+                efree(mem);
+            }
         }
     }
 
@@ -931,6 +962,30 @@ int redis_pfmerge_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     return redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 
         "PFMERGE", sizeof("PFMERGE")-1, 1, cmd, cmd_len, slot);
+}
+
+/* AUTH -- we need to update the password stored in RedisSock */
+int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *pw;
+    int pw_len;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &pw, &pw_len)
+                             ==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Construct our AUTH command
+    *cmd_len = redis_cmd_format_static(cmd, "AUTH", "s", pw, pw_len);
+
+    // Free previously allocated password, and update
+    if(redis_sock->auth) efree(redis_sock->auth);
+    redis_sock->auth = estrndup(pw, pw_len);
+
+    // Success
+    return SUCCESS;
 }
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
