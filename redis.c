@@ -361,7 +361,9 @@ PHP_REDIS_API zend_class_entry *redis_get_exception_base(int root TSRMLS_DC)
                         zend_class_entry **pce;
 
                         if (zend_hash_find(CG(class_table), "runtimeexception",
-                                                           sizeof("RuntimeException"), (void **) &pce) == SUCCESS) {
+                                           sizeof("RuntimeException"), 
+                                           (void**)&pce) == SUCCESS) 
+                        {
                                 spl_ce_RuntimeException = *pce;
                                 return *pce;
                         }
@@ -377,27 +379,26 @@ PHP_REDIS_API zend_class_entry *redis_get_exception_base(int root TSRMLS_DC)
 #endif
 }
 
-/**
- * Send a static DISCARD in case we're in MULTI mode.
- */
+/* Send a static DISCARD in case we're in MULTI mode. */
 static int send_discard_static(RedisSock *redis_sock TSRMLS_DC) {
 
 	int result = FAILURE;
-	char *cmd, *response;
-   	int response_len, cmd_len;
+	char *cmd, *resp;
+   	int resp_len, cmd_len;
 
    	/* format our discard command */
    	cmd_len = redis_cmd_format_static(&cmd, "DISCARD", "");
 
    	/* send our DISCARD command */
    	if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) >= 0 &&
-   	   (response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) != NULL) {
+   	   (resp = redis_sock_read(redis_sock,&resp_len TSRMLS_CC)) != NULL) 
+    {
 
    		/* success if we get OK */
-   		result = (response_len == 3 && strncmp(response,"+OK", 3) == 0) ? SUCCESS : FAILURE;
+   		result = (resp_len == 3 && strncmp(resp,"+OK", 3)==0) ? SUCCESS:FAILURE;
 
    		/* free our response */
-   		efree(response);
+   		efree(resp);
    	}
 
    	/* free our command */
@@ -732,125 +733,18 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 	return SUCCESS;
 }
 
-/* {{{ proto boolean Redis::bitop(string op, string key, ...)
- */
+/* {{{ proto long Redis::bitop(string op, string key, ...) */
 PHP_METHOD(Redis, bitop)
 {
-    char *cmd;
-    int cmd_len;
-
-	zval **z_args;
-	char **keys;
-	int *keys_len;
-	int argc = ZEND_NUM_ARGS(), i;
-    RedisSock *redis_sock = NULL;
-    smart_str buf = {0};
-	int key_free = 0;
-
-	/* get redis socket */
-    if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	/* fetch args */
-    z_args = emalloc(argc * sizeof(zval*));
-    if(zend_get_parameters_array(ht, argc, z_args) == FAILURE
-			|| argc < 3 /* 3 args min. */
-			|| Z_TYPE_P(z_args[0]) != IS_STRING /* operation must be a string. */
-			) {
-        efree(z_args);
-		RETURN_FALSE;
-    }
-
-
-	keys = emalloc(argc * sizeof(char*));
-	keys_len = emalloc(argc * sizeof(int));
-
-	/* prefix keys */
-	for(i = 0; i < argc; ++i) {
-		convert_to_string(z_args[i]);
-
-		keys[i] = Z_STRVAL_P(z_args[i]);
-		keys_len[i] = Z_STRLEN_P(z_args[i]);
-		if(i != 0)
-			key_free = redis_key_prefix(redis_sock, &keys[i], &keys_len[i]);
-	}
-
-	/* start building the command */
-	smart_str_appendc(&buf, '*');
-	smart_str_append_long(&buf, argc + 1); /* +1 for BITOP command */
-	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
-
-	/* add command name */
-	smart_str_appendc(&buf, '$');
-	smart_str_append_long(&buf, 5);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
-	smart_str_appendl(&buf, "BITOP", 5);
-	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
-
-	/* add keys */
-	for(i = 0; i < argc; ++i) {
-		smart_str_appendc(&buf, '$');
-		smart_str_append_long(&buf, keys_len[i]);
-		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
-		smart_str_appendl(&buf, keys[i], keys_len[i]);
-		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
-	}
-	/* end string */
-	smart_str_0(&buf);
-	cmd = buf.c;
-	cmd_len = buf.len;
-
-	/* cleanup */
-    if(key_free)
-	for(i = 1; i < argc; ++i) {
-		efree(keys[i]);
-	}
-	efree(keys);
-	efree(keys_len);
-	efree(z_args);
-
-	/* send */
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_CMD(bitop, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::bitcount(string key, [int start], [int end])
+/* {{{ proto long Redis::bitcount(string key, [int start], [int end])
  */
 PHP_METHOD(Redis, bitcount)
 {
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len, key_free;
-    long start = 0, end = -1;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|ll",
-                                     &object, redis_ce,
-                                     &key, &key_len, &start, &end) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	/* BITCOUNT key start end */
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "BITCOUNT", "sdd", key,
-                                      key_len, (int)start, (int)end);
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
-
+    REDIS_PROCESS_CMD(bitcount, redis_long_response);
 }
 /* }}} */
 
@@ -2557,7 +2451,7 @@ PHP_METHOD(Redis, save)
  */
 PHP_METHOD(Redis, bgSave)
 {
-    REDIS_PROECSS_KW_CMD("BGSAVE", redis_empty_cmd, redis_boolean_response);
+    REDIS_PROCESS_KW_CMD("BGSAVE", redis_empty_cmd, redis_boolean_response);
 }
 /* }}} */
 
