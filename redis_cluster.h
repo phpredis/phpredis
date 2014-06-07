@@ -128,4 +128,6 @@ PHP_METHOD(RedisCluster, lset);
 PHP_METHOD(RedisCluster, rename);
 PHP_METHOD(RedisCluster, renamenx);
 PHP_METHOD(RedisCluster, pfcount);
+PHP_METHOD(RedisCluster, pfadd);
+PHP_METHOD(RedisCluster, pfmerge);
 #endif

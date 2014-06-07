@@ -812,4 +812,125 @@ int redis_bitcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* PFADD and PFMERGE are the same except that in one case we serialize,
+ * and in the other case we key prefix */
+static int redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                            char *kw, int kw_len, int is_keys, char **cmd, 
+                            int *cmd_len, short *slot)
+{
+    zval *z_arr, **z_ele;
+    HashTable *ht_arr;
+    HashPosition pos;
+    smart_str cmdstr = {0};
+    char *mem, *key;
+    int key_len, key_free;
+    int mem_len, mem_free, argc=1;
+
+    // Parse arguments
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa", &key, &key_len,
+                             &z_arr)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Grab HashTable, count total argc
+    ht_arr = Z_ARRVAL_P(z_arr);
+    argc += zend_hash_num_elements(ht_arr);
+
+    // We need at least two arguments
+    if(argc < 2) {
+        return FAILURE;
+    }
+
+    // Prefix key, set initial hash slot
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    if(slot) *slot = cluster_hash_key(key, key_len);
+
+    // Start command construction
+    redis_cmd_init_sstr(&cmdstr, argc, kw, kw_len);
+    redis_cmd_append_sstr(&cmdstr, key, key_len);
+
+    // Free key if we prefixed
+    if(key_free) efree(key);
+
+    // Now iterate over the rest of our keys or values
+    for(zend_hash_internal_pointer_reset_ex(ht_arr, &pos);
+        zend_hash_get_current_data_ex(ht_arr, (void**)&z_ele, &pos)==SUCCESS;
+        zend_hash_move_forward_ex(ht_arr, &pos))
+    {
+        zval *z_tmp = NULL;
+
+        // Prefix keys, serialize values
+        if(is_keys) {
+            if(Z_TYPE_PP(z_ele)!=IS_STRING) {
+                MAKE_STD_ZVAL(z_tmp);
+                *z_tmp = **z_ele;
+                convert_to_string(z_tmp);
+                z_ele = &z_tmp;
+            }
+            mem = Z_STRVAL_PP(z_ele);
+            mem_len = Z_STRLEN_PP(z_ele);
+            
+            // Key prefix
+            mem_free = redis_key_prefix(redis_sock, &mem, &mem_len);
+
+            // Verify slot
+            if(slot && *slot != cluster_hash_key(mem, mem_len)) {
+                php_error_docref(0 TSRMLS_CC, E_WARNING,
+                    "All keys must hash to the same slot!");
+                if(key_free) efree(key);
+                if(z_tmp) {
+                    zval_dtor(z_tmp);
+                    efree(z_tmp);
+                }
+                return FAILURE;
+            }
+        } else {
+            if(redis_serialize(redis_sock, *z_ele, &mem, &mem_len TSRMLS_CC)==0)
+            {
+                if(Z_TYPE_PP(z_ele)!=IS_STRING) {
+                    MAKE_STD_ZVAL(z_tmp);
+                    *z_tmp = **z_ele;
+                    convert_to_string(z_tmp);
+                    z_ele = &z_tmp;
+                }
+                mem = Z_STRVAL_PP(z_ele);
+                mem_len = Z_STRLEN_PP(z_ele);
+            }
+        }
+
+        // Append our key or member
+        redis_cmd_append_sstr(&cmdstr, mem, mem_len);
+
+        // Clean up our temp val if it was used
+        if(z_tmp) {
+            zval_dtor(z_tmp);
+            efree(z_tmp);
+            z_tmp = NULL;
+        }
+    }
+
+    // Push output arguments
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+/* PFADD */
+int redis_pfadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
+                    char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 
+        "PFADD", sizeof("PFADD")-1, 0, cmd, cmd_len, slot);
+}
+
+/* PFMERGE */
+int redis_pfmerge_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 
+        "PFMERGE", sizeof("PFMERGE")-1, 1, cmd, cmd_len, slot);
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
