@@ -669,4 +669,45 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* BITPOS */
+int redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key;
+    int argc, key_len, key_free;
+    long bit, start, end;
+
+    argc = ZEND_NUM_ARGS();
+    if(zend_parse_parameters(argc TSRMLS_CC, "sl|ll", &key, &key_len, &bit, 
+                             &start, &end)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Prevalidate bit
+    if(bit != 0 && bit != 1) {
+        return FAILURE;
+    }
+    
+    // Prefix key
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    // Construct command based on arg count
+    if(argc == 2) {
+        *cmd_len = redis_cmd_format_static(cmd, "BITPOS", "sd", key, key_len, 
+            bit);
+    } else if(argc == 3) {
+        *cmd_len = redis_cmd_format_static(cmd, "BITPOS", "sdd", key, key_len, 
+            bit, start);
+    } else {
+        *cmd_len = redis_cmd_format_static(cmd, "BITPOS", "sddd", key, key_len, 
+            bit, start, end);
+    }
+
+    // Set our slot
+    CMD_SET_SLOT(slot, key, key_len);
+
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
