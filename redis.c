@@ -1330,49 +1330,24 @@ PHP_METHOD(Redis, sPop)
  */
 PHP_METHOD(Redis, sRandMember)
 {
-    zval *object;
+    char *cmd;
+    int cmd_len;
+    short have_count;
     RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len, key_free = 0;
-    long count;
 
-    // Parse our params
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
-                                    &object, redis_ce, &key, &key_len, &count) == FAILURE) {
+    // Grab our socket, validate call
+    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0 ||
+       redis_srandmember_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                             &cmd, &cmd_len, NULL, NULL, &have_count)==FAILURE)
+    {
         RETURN_FALSE;
     }
 
-    // Get our redis socket
-    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    // Prefix our key if necissary
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    // If we have two arguments, we're running with an optional COUNT, which will return
-    // a multibulk reply.  Without the argument we'll return a string response
-    if(ZEND_NUM_ARGS() == 2) {
-        // Construct our command with count
-        cmd_len = redis_cmd_format_static(&cmd, "SRANDMEMBER", "sl",
-                                          key, key_len, count);
-    } else {
-        // Construct our command
-        cmd_len = redis_cmd_format_static(&cmd, "SRANDMEMBER", "s",
-                                          key, key_len);
-    }
-
-    // Free our key if we prefixed it
-    if(key_free) efree(key);
-
-    // Process our command
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-
-    // Either bulk or multi-bulk depending on argument count
-    if(ZEND_NUM_ARGS() == 2) {
+    if(have_count) {
         IF_ATOMIC() {
             if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                               redis_sock, NULL, NULL) < 0)
+                                               redis_sock, NULL, NULL)<0)
             {
                 RETURN_FALSE;
             }
@@ -1381,7 +1356,7 @@ PHP_METHOD(Redis, sRandMember)
     } else {
         IF_ATOMIC() {
             redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-                                  NULL, NULL);
+                NULL, NULL);
         }
         REDIS_PROCESS_RESPONSE(redis_string_response);
     }

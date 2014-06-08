@@ -1259,4 +1259,43 @@ int redis_hsetnx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         cmd, cmd_len, slot);
 }
 
+/* SRANDMEMBER */
+int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                          char **cmd, int *cmd_len, short *slot, void **ctx,
+                          short *have_count)
+{
+    char *key;
+    int key_len, key_free;
+    long count;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &key, &key_len,
+                             &count)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Prefix key if requested
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    // Set our have count flag
+    *have_count = ZEND_NUM_ARGS() == 2;
+
+    // Two args means we have the optional COUNT
+    if(*have_count) {
+        *cmd_len = redis_cmd_format_static(cmd, "SRANDMEMBER", "sl", key, 
+            key_len, count);
+    } else {
+        *cmd_len = redis_cmd_format_static(cmd, "SRANDMEMBER", "s", key,
+            key_len);
+    }
+
+    // Set slot
+    CMD_SET_SLOT(slot,key,key_len);
+
+    // Cleanup
+    if(key_free) efree(key);
+
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
