@@ -62,6 +62,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, scard, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, smembers, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sismember, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, srandmember, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, strlen, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, persist, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, ttl, NULL, ZEND_ACC_PUBLIC)
@@ -360,6 +361,35 @@ PHP_METHOD(RedisCluster, spop) {
     CLUSTER_PROCESS_KW_CMD("SPOP", redis_key_cmd, cluster_bulk_resp);
 }
 /* }}} */
+
+/* {{{ proto string|array RedisCluster::srandmember(string key, [long count]) */
+PHP_METHOD(RedisCluster, srandmember) {
+    redisCluster *c = GET_CONTEXT();
+    char *cmd; int cmd_len; short slot;
+    short have_count;
+
+    if(redis_srandmember_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags,
+                             &cmd, &cmd_len, &slot, NULL, &have_count)
+                             ==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    if(cluster_send_command(c,slot,cmd,cmd_len TSRMLS_CC)<0 || c->err!=NULL) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+
+    // Clean up command
+    efree(cmd);
+
+    // Response type differs if we use WITHSCORES or not
+    if(have_count) {
+        cluster_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    }
+}
 
 /* {{{ proto string RedisCluster::strlen(string key) */
 PHP_METHOD(RedisCluster, strlen) {
