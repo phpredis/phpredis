@@ -1129,4 +1129,50 @@ int redis_lrem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *src, *dst, *val;
+    int src_len, dst_len, val_len;
+    int val_free, src_free, dst_free;
+    zval *z_val;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssz", &src, &src_len,
+                             &dst, &dst_len, &z_val)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
+    src_free = redis_key_prefix(redis_sock, &src, &src_len);
+    dst_free = redis_key_prefix(redis_sock, &dst, &dst_len);
+
+    // Protect against a CROSSSLOT error
+    if(slot) {
+        short slot1 = cluster_hash_key(src, src_len);
+        short slot2 = cluster_hash_key(dst, dst_len);
+        if(slot1 != slot2) {
+            php_error_docref(0 TSRMLS_CC, E_WARNING,
+                "Source and destination keys don't hash to the same slot!");
+            if(val_free) STR_FREE(val);
+            if(src_free) efree(src);
+            if(dst_free) efree(dst);
+            return FAILURE;
+        }
+        *slot = slot1;
+    }
+
+    // Construct command
+    *cmd_len = redis_cmd_format_static(cmd, "SMOVE", "sss", src, src_len, dst,
+        dst_len, val, val_len);
+
+    // Cleanup
+    if(val_free) STR_FREE(val);
+    if(src_free) efree(src);
+    if(dst_free) efree(dst);
+
+    // Succcess!
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
