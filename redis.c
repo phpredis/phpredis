@@ -191,7 +191,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zAdd, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zDelete, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRange, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zReverseRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRevRange, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRevRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCount, NULL, ZEND_ACC_PUBLIC)
@@ -316,7 +316,7 @@ static zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, scard, sSize, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, srem, sRemove, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, sismember, sContains, NULL, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zrevrange, zReverseRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zReverseRange, zRevRange, NULL, ZEND_ACC_PUBLIC)
 
      PHP_MALIAS(Redis, sendEcho, echo, NULL, ZEND_ACC_PUBLIC)
 
@@ -2587,53 +2587,55 @@ PHP_METHOD(Redis, zAdd) {
 	REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 /* }}} */
-/* {{{ proto array Redis::zRange(string key, int start , int end, bool withscores = FALSE)
- */
-PHP_METHOD(Redis, zRange)
-{
-    zval *object;
+
+/* Handle ZRANGE and ZREVRANGE as they're the same except for keyword */
+static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw) {
+    char *cmd;
+    int cmd_len;
     RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len, key_free;
-    long start, end;
-    long withscores = 0;
+    zend_bool withscores=0;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll|b",
-                                     &object, redis_ce,
-                                     &key, &key_len, &start, &end, &withscores) == FAILURE) {
+    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0) {
         RETURN_FALSE;
     }
 
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+    if(redis_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw, &cmd,
+                        &cmd_len, &withscores, NULL, NULL)==FAILURE)
+    {
         RETURN_FALSE;
     }
 
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     if(withscores) {
-        cmd_len = redis_cmd_format_static(&cmd, "ZRANGE", "sdds", key,
-                                          key_len, start, end, "WITHSCORES", 10);
+        IF_ATOMIC() {
+            redis_sock_read_multibulk_reply_zipped(
+                INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        }
+        REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_zipped);
     } else {
-        cmd_len = redis_cmd_format_static(&cmd, "ZRANGE", "sdd", key,
-                                          key_len, start, end);
-    }
-	if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    if(withscores) {
-            IF_ATOMIC() {
-                redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        IF_ATOMIC() {
+            if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                               redis_sock, NULL, NULL)<0)
+            {
+                RETURN_FALSE;
             }
-            REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_zipped);
-    } else {
-            IF_ATOMIC() {
-                if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                                    redis_sock, NULL, NULL) < 0) {
-                    RETURN_FALSE;
-                }
-            }
-            REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+        }
+        REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
     }
 }
+
+/* {{{ proto array Redis::zRange(string key,int start,int end,bool scores=0) */
+PHP_METHOD(Redis, zRange)
+{
+    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGE");
+}
+
+/* {{{ proto array Redis::zRevRange(string k, long s, long e, bool scores=0) */
+PHP_METHOD(Redis, zRevRange) {
+    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGE");
+}
+/* }}} */
+
 /* }}} */
 /* {{{ proto long Redis::zDelete(string key, string member)
  */
@@ -2667,56 +2669,6 @@ PHP_METHOD(Redis, zDeleteRangeByRank)
 {
     REDIS_PROCESS_KW_CMD("ZREMRANGEBYRANK", redis_key_long_long_cmd,
         redis_long_response);
-}
-/* }}} */
-
-/* {{{ proto array Redis::zReverseRange(string key, int start , int end, bool withscores = FALSE)
- */
-PHP_METHOD(Redis, zReverseRange)
-{
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len, key_free;
-    long start, end;
-    long withscores = 0;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osll|b",
-                                     &object, redis_ce,
-                                     &key, &key_len, &start, &end, &withscores) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    if(withscores) {
-        cmd_len = redis_cmd_format_static(&cmd, "ZREVRANGE", "sdds",
-                                          key, key_len, start, end, "WITHSCORES",
-                                          10);
-    } else {
-        cmd_len = redis_cmd_format_static(&cmd, "ZREVRANGE", "sdd",
-                                          key, key_len, start, end);
-    }
-	if(key_free) efree(key);
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    if(withscores) {
-    	IF_ATOMIC() {
-    		redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-    	}
-    	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_zipped);
-    } else {
-    	IF_ATOMIC() {
-            if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                                redis_sock, NULL, NULL) < 0) {
-                RETURN_FALSE;
-            }
-    	}
-    	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
-    }
 }
 /* }}} */
 

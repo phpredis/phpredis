@@ -372,6 +372,40 @@ int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* ZRANGE/ZREVRANGE */
+int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char *kw, char **cmd, int *cmd_len, zend_bool *withscores,
+                     short *slot, void **ctx)
+{
+    char *key;
+    int key_len, key_free;
+    long start, end;
+    zend_bool ws;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sll|b", &key, &key_len,
+                             &start, &end, &ws)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    if(ws) {
+        *cmd_len = redis_cmd_format_static(cmd, kw, "sdds", key, key_len, start,
+            end, "WITHSCORES", sizeof("WITHSCORES")-1);
+    } else {
+        *cmd_len = redis_cmd_format_static(cmd, kw, "sdd", key, key_len, start,
+            end);
+    }
+
+    CMD_SET_SLOT(slot, key, key_len);
+
+    // Free key, push out WITHSCORES option
+    if(key_free) efree(key);
+    *withscores = ws;
+
+    return SUCCESS;
+}
+
 /* Commands with specific signatures or that need unique functions because they
  * have specific processing (argument validation, etc) that make them unique */
 

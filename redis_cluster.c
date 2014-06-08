@@ -112,6 +112,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, setrange, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, restore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, smove, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zrange, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zrevrange, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -729,6 +731,48 @@ PHP_METHOD(RedisCluster, restore) {
 PHP_METHOD(RedisCluster, setrange) {
     CLUSTER_PROCESS_KW_CMD("SETRANGE", redis_key_long_str_cmd, 
         cluster_long_resp);
+}
+/* }}} */
+
+/* Generic implementation for both ZRANGE and ZREVRANGE */
+static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw) {
+    redisCluster *c = GET_CONTEXT();
+    char *cmd; int cmd_len; short slot; 
+    zend_bool withscores;
+
+    if(redis_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd,
+                        &cmd_len, &withscores, &slot, NULL)==FAILURE)
+    {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+
+    if(cluster_send_command(c,slot,cmd,cmd_len TSRMLS_CC)<0 || c->err!=NULL) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+
+    efree(cmd);
+
+    // Response type differs if we use WITHSCORES or not
+    if(!withscores) {
+        cluster_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    }
+}
+
+/* {{{ proto 
+ *     array RedisCluster::zrange(string k, long s, long e, bool score=0) */
+PHP_METHOD(RedisCluster, zrange) {
+    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGE");
+}
+/* }}} */
+
+/* {{{ proto 
+ *     array RedisCluster::zrevrange(string k,long s,long e,bool scores=0) */
+PHP_METHOD(RedisCluster, zrevrange) {
+    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGE");
 }
 /* }}} */
 
