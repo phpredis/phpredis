@@ -106,6 +106,8 @@ PHP_METHOD(RedisCluster, hgetall);
 PHP_METHOD(RedisCluster, hexists);
 PHP_METHOD(RedisCluster, hincrby);
 PHP_METHOD(RedisCluster, hincrbyfloat);
+PHP_METHOD(RedisCluster, hset);
+PHP_METHOD(RedisCluster, hsetnx);
 PHP_METHOD(RedisCluster, incr);
 PHP_METHOD(RedisCluster, decr);
 PHP_METHOD(RedisCluster, incrby);

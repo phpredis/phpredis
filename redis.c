@@ -3040,51 +3040,19 @@ PHP_METHOD(Redis, zUnion) {
 
 /* hashes */
 
-PHPAPI void
-generic_hset(INTERNAL_FUNCTION_PARAMETERS, char *kw, void (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *, zval *, void *)) {
-    zval *object;
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd, *member, *val;
-    int key_len, member_len, cmd_len, val_len;
-    int val_free, key_free = 0;
-    zval *z_value;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ossz",
-                                     &object, redis_ce,
-                                     &key, &key_len, &member, &member_len, &z_value) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, kw, "sss", key, key_len,
-                                      member, member_len, val, val_len);
-    if(val_free) STR_FREE(val);
-    if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-	  fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(fun);
-}
-/* hSet */
+/* proto long Redis::hset(string key, string mem, string val) */
 PHP_METHOD(Redis, hSet)
 {
-	generic_hset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HSET", redis_long_response);
-}
-/* }}} */
-/* hSetNx */
-PHP_METHOD(Redis, hSetNx)
-{
-	generic_hset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HSETNX", redis_1_response);
+    REDIS_PROCESS_CMD(hset, redis_long_response);
 }
 /* }}} */
 
+/* proto bool Redis::hSetNx(string key, string mem, string val) */
+PHP_METHOD(Redis, hSetNx)
+{
+    REDIS_PROCESS_CMD(hsetnx, redis_1_response);
+}
+/* }}} */
 
 /* proto string Redis::hget(string key, string mem) */
 PHP_METHOD(Redis, hGet)

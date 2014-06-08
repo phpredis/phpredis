@@ -1209,4 +1209,54 @@ int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* Generic command construction for HSET and HSETNX */
+static int gen_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                        char *kw, char **cmd, int *cmd_len, short *slot)
+{
+    char *key, *mem, *val;
+    int key_len, mem_len, val_len;
+    int val_free, key_free;
+    zval *z_val;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssz", &key, &key_len,
+                             &mem, &mem_len, &z_val)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Prefix/serialize
+    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    
+    // Construct command
+    *cmd_len = redis_cmd_format_static(cmd, kw, "sss", key, key_len, mem,
+        mem_len, val, val_len);
+
+    // Set slot
+    CMD_SET_SLOT(slot,key,key_len);
+
+    // Cleanup
+    if(key_free) STR_FREE(val);
+    if(val_free) efree(key);
+
+    // Success
+    return SUCCESS;
+}
+
+/* HSET */
+int redis_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return gen_hset_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, "HSET",
+        cmd, cmd_len, slot);
+}
+
+/* HSETNX */
+int redis_hsetnx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return gen_hset_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, "HSETNX",
+        cmd, cmd_len, slot);
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
