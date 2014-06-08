@@ -135,4 +135,5 @@ PHP_METHOD(RedisCluster, pfadd);
 PHP_METHOD(RedisCluster, pfmerge);
 PHP_METHOD(RedisCluster, restore);
 PHP_METHOD(RedisCluster, setrange);
+PHP_METHOD(RedisCluster, smove);
 #endif
