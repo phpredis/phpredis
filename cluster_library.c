@@ -1127,7 +1127,8 @@ cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 /* Unserialize all the things */
 PHPAPI void
 cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-                   void *ctx) {
+                   void *ctx) 
+{
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,
         c, mbulk_resp_loop, NULL);
 }
