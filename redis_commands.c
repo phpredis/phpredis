@@ -1298,4 +1298,36 @@ int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* ZINCRBY */
+int redis_zincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key, *mem;
+    int key_len, mem_len;
+    int key_free, mem_free;
+    double incrby;
+    zval *z_val;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sdz", &key, &key_len,
+                             &incrby, &z_val)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Prefix key, serialize
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    mem_free = redis_serialize(redis_sock, z_val, &mem, &mem_len TSRMLS_CC);
+
+    *cmd_len = redis_cmd_format_static(cmd, "ZINCRBY", "sfs", key, key_len,
+        incrby, mem, mem_len);
+
+    CMD_SET_SLOT(slot,key,key_len);
+
+    // Cleanup
+    if(key_free) efree(key);
+    if(mem_free) STR_FREE(mem);
+
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

@@ -71,6 +71,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, zcount, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zremrangebyscore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zscore, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zincrby, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hlen, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hkeys, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hvals, NULL, ZEND_ACC_PUBLIC)
@@ -489,6 +490,12 @@ PHP_METHOD(RedisCluster, zcard) {
 /* {{{ proto double RedisCluster::zscore(string key) */
 PHP_METHOD(RedisCluster, zscore) {
     CLUSTER_PROCESS_KW_CMD("ZSCORE", redis_kv_cmd, cluster_dbl_resp);
+}
+/* }}} */
+
+/* {{{ proto double RedisCluster::zincrby(string key, double by, string mem) */
+PHP_METHOD(RedisCluster, zincrby) {
+    CLUSTER_PROCESS_CMD(zincrby, cluster_dbl_resp);
 }
 /* }}} */
 
