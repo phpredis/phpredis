@@ -512,6 +512,18 @@ PHP_METHOD(RedisCluster, hget) {
 }
 /* }}} */
 
+/* {{{ proto bool RedisCluster::hset(string key, string mem, string val) */
+PHP_METHOD(RedisCluster, hset) {
+    CLUSTER_PROCESS_CMD(hset, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto bool RedisCluster::hsetnx(string key, string mem, string val) */
+PHP_METHOD(RedisCluster, hsetnx) {
+    CLUSTER_PROCESS_CMD(hsetnx, cluster_1_resp);
+}
+/* }}} */
+
 /* {{{ proto array RedisCluster::hgetall(string key) */
 PHP_METHOD(RedisCluster, hgetall) {
     CLUSTER_PROCESS_KW_CMD("HGETALL", redis_key_cmd, 
