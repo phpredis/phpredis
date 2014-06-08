@@ -96,6 +96,7 @@ PHP_METHOD(RedisCluster, zcount);
 PHP_METHOD(RedisCluster, zremrangebyscore);
 PHP_METHOD(RedisCluster, zrank);
 PHP_METHOD(RedisCluster, zrevrank);
+PHP_METHOD(RedisCluster, zincrby);
 PHP_METHOD(RedisCluster, hlen);
 PHP_METHOD(RedisCluster, hget);
 PHP_METHOD(RedisCluster, hkeys);
