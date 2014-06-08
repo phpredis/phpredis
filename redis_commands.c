@@ -1095,4 +1095,38 @@ int redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* LREM */
+int redis_lrem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key, *val;
+    int key_len, val_len, key_free, val_free;
+    long count = 0;
+    zval *z_val;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|l", &key, &key_len,
+                             &z_val, &count)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Prefix key, serialize value
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
+
+    // Construct command
+    *cmd_len = redis_cmd_format_static(cmd, "LREM", "sds", key, key_len, count,
+        val, val_len);
+
+    // Set slot
+    CMD_SET_SLOT(slot, key, key_len);
+
+    // Cleanup
+    if(val_free) STR_FREE(val);
+    if(key_free) efree(key);
+
+    // Success!
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

@@ -1247,39 +1247,7 @@ PHP_METHOD(Redis, lSize)
  */
 PHP_METHOD(Redis, lRemove)
 {
-    zval *object;
-    RedisSock *redis_sock;
-    char *cmd;
-    int cmd_len, key_len, val_len;
-    char *key, *val;
-    long count = 0;
-    zval *z_value;
-    int val_free, key_free = 0;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osz|l",
-                                     &object, redis_ce,
-                                     &key, &key_len, &z_value, &count) == FAILURE) {
-        RETURN_NULL();
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-
-    /* LREM key count value */
-    val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, "LREM", "sds", key,
-                                      key_len, count, val, val_len);
-    if(val_free) STR_FREE(val);
-    if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_CMD(lrem, redis_long_response);
 }
 /* }}} */
 
