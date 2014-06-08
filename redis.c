@@ -2866,46 +2866,11 @@ PHP_METHOD(Redis, zRevRank) {
 }
 /* }}} */
 
-PHP_REDIS_API void generic_incrby_method(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len) {
-    zval *object;
-    RedisSock *redis_sock;
-
-    char *key = NULL, *cmd, *val;
-    int key_len, val_len, cmd_len;
-    double add;
-    int val_free, key_free;
-    zval *z_value;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osdz",
-                                     &object, redis_ce,
-                                     &key, &key_len, &add, &z_value) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format_static(&cmd, keyword, "sfs", key,
-                                      key_len, add, val, val_len);
-    if(val_free) STR_FREE(val);
-    if(key_free) efree(key);
-
-	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-	IF_ATOMIC() {
-	    redis_bulk_double_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_bulk_double_response);
-
-}
-
 /* {{{ proto double Redis::zIncrBy(string key, double value, mixed member)
  */
 PHP_METHOD(Redis, zIncrBy)
 {
-    generic_incrby_method(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZINCRBY", sizeof("ZINCRBY")-1);
+    REDIS_PROCESS_CMD(zincrby, redis_bulk_double_response);
 }
 /* }}} */
 
