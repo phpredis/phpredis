@@ -2608,17 +2608,7 @@ PHP_METHOD(Redis, hLen)
 /* hDel */
 PHP_METHOD(Redis, hDel)
 {
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "HDEL", sizeof("HDEL") - 1,
-					2, &redis_sock, 0, 0, 0))
-		return;
-
-	IF_ATOMIC() {
-	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
+	REDIS_PROCESS_CMD(hdel, redis_long_response);
 }
 
 /* {{{ proto bool Redis::hExists(string key, string mem) */

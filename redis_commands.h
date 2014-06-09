@@ -135,6 +135,9 @@ int redis_zincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     int *using_store, char **cmd, int *cmd_len, short *slot, void **ctx);
 
+int redis_hdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char **cmd, int *cmd_len, short *slot, void **ctx);
+
 #endif
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

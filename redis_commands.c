@@ -1883,4 +1883,60 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* HDEL */
+int redis_hdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    zval **z_args;
+    smart_str cmdstr = {0};
+    char *arg;
+    int arg_free, arg_len, i;
+    int argc = ZEND_NUM_ARGS();
+
+    // We need at least KEY and one member
+    if(argc < 2) {
+        return FAILURE;
+    }
+
+    // Grab arguments as an array
+    z_args = emalloc(argc * sizeof(zval*));
+    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
+        efree(z_args);
+        return FAILURE;
+    }
+
+    // Get first argument (the key) as a string
+    convert_to_string(z_args[0]);
+    arg = Z_STRVAL_P(z_args[0]);
+    arg_len = Z_STRLEN_P(z_args[0]);
+
+    // Prefix
+    arg_free = redis_key_prefix(redis_sock, &arg, &arg_len);
+
+    // Start command construction
+    redis_cmd_init_sstr(&cmdstr, argc, "HDEL", sizeof("HDEL")-1);
+    redis_cmd_append_sstr(&cmdstr, arg, arg_len);
+
+    // Set our slot, free key if we prefixed it
+    CMD_SET_SLOT(slot,arg,arg_len);
+    if(arg_free) efree(arg);
+
+    // Iterate through the members we're removing
+    for(i=1;i<argc;i++) {
+        convert_to_string(z_args[i]);
+        redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(z_args[i]), 
+            Z_STRLEN_P(z_args[i]));
+    }
+
+    // Push out values
+    *cmd     = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    // Cleanup
+    efree(z_args);
+
+    // Success!
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
