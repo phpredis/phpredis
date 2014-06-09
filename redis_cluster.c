@@ -64,6 +64,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, scard, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, smembers, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sismember, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, sadd, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, srem, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, srandmember, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, strlen, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, persist, NULL, ZEND_ACC_PUBLIC)
@@ -472,6 +474,18 @@ PHP_METHOD(RedisCluster, smembers) {
 /* {{{ proto long RedisCluster::sismember(string key) */
 PHP_METHOD(RedisCluster, sismember) {
     CLUSTER_PROCESS_KW_CMD("SISMEMBER", redis_kv_cmd, cluster_1_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::sadd(string key, string val1 [, ...]) */
+PHP_METHOD(RedisCluster, sadd) {
+    CLUSTER_PROCESS_KW_CMD("SADD", redis_key_varval_cmd, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::srem(string key, string val1 [, ...]) */
+PHP_METHOD(RedisCluster, srem) {
+    CLUSTER_PROCESS_KW_CMD("SREM", redis_key_varval_cmd, cluster_long_resp);
 }
 /* }}} */
 
