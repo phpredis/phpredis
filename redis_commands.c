@@ -1939,4 +1939,65 @@ int redis_hdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* ZADD */
+int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    zval **z_args;
+    char *key, *val;
+    int key_len, key_free, val_len, val_free;
+    int argc = ZEND_NUM_ARGS(), i;
+    smart_str cmdstr = {0};
+
+    z_args = emalloc(argc * sizeof(zval*));
+    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
+        efree(z_args);
+        return FAILURE;
+    }
+
+    // Need key, score, value, [score, value...] */
+    if(argc>0) convert_to_string(z_args[0]);
+    if(argc<3 || Z_TYPE_P(z_args[0])!=IS_STRING || (argc-1)%2 != 0) {
+        efree(z_args);
+        return FAILURE;
+    }
+
+    // Prefix our key
+    key = Z_STRVAL_P(z_args[0]);
+    key_len = Z_STRLEN_P(z_args[0]);
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    // Start command construction
+    redis_cmd_init_sstr(&cmdstr, argc, "ZADD", sizeof("ZADD")-1);
+    redis_cmd_append_sstr(&cmdstr, key, key_len);
+
+    // Set our slot, free key if we prefixed it
+    CMD_SET_SLOT(slot,key,key_len);
+    if(key_free) efree(key);
+
+    // Now the rest of our arguments
+    for(i=1;i<argc;i+=2) {
+        // Convert score to a double, serialize value if requested
+        convert_to_double(z_args[i]);
+        val_free = redis_serialize(redis_sock, z_args[i+1], &val, &val_len
+            TSRMLS_CC);
+
+        // Append score and member
+        redis_cmd_append_sstr_dbl(&cmdstr, Z_DVAL_P(z_args[i]));
+        redis_cmd_append_sstr(&cmdstr, val, val_len);
+
+        // Free value if we serialized
+        if(val_free) STR_FREE(val);
+    }
+
+    // Push output values
+    *cmd     = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    // Cleanup args
+    efree(z_args);
+
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
