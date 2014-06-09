@@ -467,6 +467,44 @@ PHPAPI RedisSock *redis_sock_get_connected(INTERNAL_FUNCTION_PARAMETERS) {
     return redis_sock;
 }
 
+/* Redis and RedisCluster objects share serialization/prefixing settings so 
+ * this is a generic function to add class constants to either */
+static void add_class_constants(zend_class_entry *ce, int only_atomic) {
+    add_constant_long(ce, "REDIS_NOT_FOUND", REDIS_NOT_FOUND);
+    add_constant_long(ce, "REDIS_STRING", REDIS_STRING);
+    add_constant_long(ce, "REDIS_SET", REDIS_SET);
+    add_constant_long(ce, "REDIS_LIST", REDIS_LIST);
+    add_constant_long(ce, "REDIS_ZSET", REDIS_ZSET);
+    add_constant_long(ce, "REDIS_HASH", REDIS_HASH);
+
+    /* Cluster doesn't support pipelining at this time */
+    if(!only_atomic) {
+        add_constant_long(ce, "ATOMIC", ATOMIC);
+        add_constant_long(ce, "MULTI", MULTI);
+        add_constant_long(ce, "PIPELINE", PIPELINE);
+    }
+
+    /* options */
+    add_constant_long(ce, "OPT_SERIALIZER", REDIS_OPT_SERIALIZER);
+    add_constant_long(ce, "OPT_PREFIX", REDIS_OPT_PREFIX);
+    add_constant_long(ce, "OPT_READ_TIMEOUT", REDIS_OPT_READ_TIMEOUT);
+
+    /* serializer */
+    add_constant_long(ce, "SERIALIZER_NONE", REDIS_SERIALIZER_NONE);
+    add_constant_long(ce, "SERIALIZER_PHP", REDIS_SERIALIZER_PHP);
+
+    /* scan options*/
+    add_constant_long(ce, "OPT_SCAN", REDIS_OPT_SCAN);
+    add_constant_long(ce, "SCAN_RETRY", REDIS_SCAN_RETRY);
+    add_constant_long(ce, "SCAN_NORETRY", REDIS_SCAN_NORETRY);
+#ifdef HAVE_REDIS_IGBINARY
+    add_constant_long(ce, "SERIALIZER_IGBINARY", REDIS_SERIALIZER_IGBINARY);
+#endif
+
+    zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5 TSRMLS_CC);
+    zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
+}
+
 /**
  * PHP_MINIT_FUNCTION
  */
@@ -508,9 +546,11 @@ PHP_MINIT_FUNCTION(redis)
     );
 
     /* RedisClusterException class */
-    INIT_CLASS_ENTRY(redis_cluster_exception_class_entry, "RedisClusterException", NULL);
+    INIT_CLASS_ENTRY(redis_cluster_exception_class_entry, 
+        "RedisClusterException", NULL);
     redis_cluster_exception_ce = zend_register_internal_class_ex(
-        &redis_cluster_exception_class_entry, rediscluster_get_exception_base(0 TSRMLS_CC),
+        &redis_cluster_exception_class_entry, 
+        rediscluster_get_exception_base(0 TSRMLS_CC),
         NULL TSRMLS_CC
     );
 
@@ -520,41 +560,9 @@ PHP_MINIT_FUNCTION(redis)
         redis_sock_name, module_number
     );
 
-	add_constant_long(redis_ce, "REDIS_NOT_FOUND", REDIS_NOT_FOUND);
-	add_constant_long(redis_ce, "REDIS_STRING", REDIS_STRING);
-	add_constant_long(redis_ce, "REDIS_SET", REDIS_SET);
-	add_constant_long(redis_ce, "REDIS_LIST", REDIS_LIST);
-	add_constant_long(redis_ce, "REDIS_ZSET", REDIS_ZSET);
-	add_constant_long(redis_ce, "REDIS_HASH", REDIS_HASH);
-
-	add_constant_long(redis_ce, "ATOMIC", ATOMIC);
-	add_constant_long(redis_ce, "MULTI", MULTI);
-	add_constant_long(redis_ce, "PIPELINE", PIPELINE);
-
-    /* options */
-    add_constant_long(redis_ce, "OPT_SERIALIZER", REDIS_OPT_SERIALIZER);
-    add_constant_long(redis_ce, "OPT_PREFIX", REDIS_OPT_PREFIX);
-    add_constant_long(redis_ce, "OPT_READ_TIMEOUT", REDIS_OPT_READ_TIMEOUT);
-
-    /* serializer */
-    add_constant_long(redis_ce, "SERIALIZER_NONE", REDIS_SERIALIZER_NONE);
-    add_constant_long(redis_ce, "SERIALIZER_PHP", REDIS_SERIALIZER_PHP);
-
-    /* scan options*/
-    add_constant_long(redis_ce, "OPT_SCAN", REDIS_OPT_SCAN);
-    add_constant_long(redis_ce, "SCAN_RETRY", REDIS_SCAN_RETRY);
-    add_constant_long(redis_ce, "SCAN_NORETRY", REDIS_SCAN_NORETRY);
-#ifdef HAVE_REDIS_IGBINARY
-    add_constant_long(redis_ce, "SERIALIZER_IGBINARY", REDIS_SERIALIZER_IGBINARY);
-#endif
-
-	zend_declare_class_constant_stringl(redis_ce, "AFTER", 5, "after", 5 TSRMLS_CC);
-	zend_declare_class_constant_stringl(redis_ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
-
-#ifdef PHP_SESSION
-    /* declare session handler */
-    php_session_register_module(&ps_mod_redis);
-#endif
+    /* Add class constants to Redis and RedisCluster objects */
+    add_class_constants(redis_ce, 0);
+    add_class_constants(redis_cluster_ce, 1);
 
     return SUCCESS;
 }
@@ -1734,204 +1742,34 @@ PHP_METHOD(Redis, sDiffStore) {
 /* }}} */
 
 PHP_METHOD(Redis, sort) {
-
-    zval *object = getThis(), *z_array = NULL, **z_cur;
-    char *cmd, *old_cmd = NULL, *key;
-    int cmd_len, elements = 2, key_len, key_free;
-    int using_store = 0;
+    char *cmd; 
+    int cmd_len, have_store;
     RedisSock *redis_sock;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|a",
-                                     &object, redis_ce,
-                                     &key, &key_len, &z_array) == FAILURE) {
+    // Grab socket, handle command construction
+    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0 ||
+       redis_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &have_store,
+                      &cmd, &cmd_len, NULL, NULL)==FAILURE)
+    {
         RETURN_FALSE;
     }
 
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    cmd_len = redis_cmd_format(&cmd, "$4" _NL "SORT" _NL "$%d" _NL "%s" _NL, key_len, key, key_len);
-    if(key_free) efree(key);
-
-    if(z_array) {
-        if ((zend_hash_find(Z_ARRVAL_P(z_array), "by", sizeof("by"), (void **) &z_cur) == SUCCESS
-         || zend_hash_find(Z_ARRVAL_P(z_array), "BY", sizeof("BY"), (void **) &z_cur) == SUCCESS)
-                        && Z_TYPE_PP(z_cur) == IS_STRING) {
-
-            old_cmd = cmd;
-            cmd_len = redis_cmd_format(&cmd, "%s"
-                                             "$2" _NL
-                                             "BY" _NL
-                                             "$%d" _NL
-                                             "%s" _NL
-                                             , cmd, cmd_len
-                                             , Z_STRLEN_PP(z_cur), Z_STRVAL_PP(z_cur), Z_STRLEN_PP(z_cur));
-            elements += 2;
-            efree(old_cmd);
-
-        }
-
-        if ((zend_hash_find(Z_ARRVAL_P(z_array), "sort", sizeof("sort"), (void **) &z_cur) == SUCCESS
-         || zend_hash_find(Z_ARRVAL_P(z_array), "SORT", sizeof("SORT"), (void **) &z_cur) == SUCCESS)
-                        && Z_TYPE_PP(z_cur) == IS_STRING) {
-
-            old_cmd = cmd;
-            cmd_len = redis_cmd_format(&cmd, "%s"
-                                             "$%d" _NL
-                                             "%s" _NL
-                                             , cmd, cmd_len
-                                             , Z_STRLEN_PP(z_cur), Z_STRVAL_PP(z_cur), Z_STRLEN_PP(z_cur));
-            elements += 1;
-            efree(old_cmd);
-        }
-
-        if ((zend_hash_find(Z_ARRVAL_P(z_array), "store", sizeof("store"), (void **) &z_cur) == SUCCESS
-         || zend_hash_find(Z_ARRVAL_P(z_array), "STORE", sizeof("STORE"), (void **) &z_cur) == SUCCESS)
-                        && Z_TYPE_PP(z_cur) == IS_STRING) {
-
-            using_store = 1;
-            old_cmd = cmd;
-            cmd_len = redis_cmd_format(&cmd, "%s"
-                                             "$5" _NL
-                                             "STORE" _NL
-                                             "$%d" _NL
-                                             "%s" _NL
-                                             , cmd, cmd_len
-                                             , Z_STRLEN_PP(z_cur), Z_STRVAL_PP(z_cur), Z_STRLEN_PP(z_cur));
-            elements += 2;
-            efree(old_cmd);
-        }
-
-        if ((zend_hash_find(Z_ARRVAL_P(z_array), "get", sizeof("get"), (void **) &z_cur) == SUCCESS
-         || zend_hash_find(Z_ARRVAL_P(z_array), "GET", sizeof("GET"), (void **) &z_cur) == SUCCESS)
-                        && (Z_TYPE_PP(z_cur) == IS_STRING || Z_TYPE_PP(z_cur) == IS_ARRAY)) {
-
-            if(Z_TYPE_PP(z_cur) == IS_STRING) {
-                old_cmd = cmd;
-                cmd_len = redis_cmd_format(&cmd, "%s"
-                                                 "$3" _NL
-                                                 "GET" _NL
-                                                 "$%d" _NL
-                                                 "%s" _NL
-                                                 , cmd, cmd_len
-                                                 , Z_STRLEN_PP(z_cur), Z_STRVAL_PP(z_cur), Z_STRLEN_PP(z_cur));
-                elements += 2;
-                efree(old_cmd);
-            } else if(Z_TYPE_PP(z_cur) == IS_ARRAY) { // loop over the strings in that array and add them as patterns
-
-                HashTable *keytable = Z_ARRVAL_PP(z_cur);
-                for(zend_hash_internal_pointer_reset(keytable);
-                    zend_hash_has_more_elements(keytable) == SUCCESS;
-                    zend_hash_move_forward(keytable)) {
-
-                    char *key;
-                    unsigned int key_len;
-                    unsigned long idx;
-                    zval **z_value_pp;
-
-                    zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx, 0, NULL);
-                    if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
-                        continue; 	/* this should never happen, according to the PHP people. */
-                    }
-
-                    if(Z_TYPE_PP(z_value_pp) == IS_STRING) {
-                        old_cmd = cmd;
-                        cmd_len = redis_cmd_format(&cmd, "%s"
-                                                         "$3" _NL
-                                                         "GET" _NL
-                                                         "$%d" _NL
-                                                         "%s" _NL
-                                                         , cmd, cmd_len
-                                                         , Z_STRLEN_PP(z_value_pp), Z_STRVAL_PP(z_value_pp), Z_STRLEN_PP(z_value_pp));
-                        elements += 2;
-                        efree(old_cmd);
-                    }
-                }
-            }
-        }
-
-        if ((zend_hash_find(Z_ARRVAL_P(z_array), "alpha", sizeof("alpha"), (void **) &z_cur) == SUCCESS
-         || zend_hash_find(Z_ARRVAL_P(z_array), "ALPHA", sizeof("ALPHA"), (void **) &z_cur) == SUCCESS)
-                        && Z_TYPE_PP(z_cur) == IS_BOOL && Z_BVAL_PP(z_cur) == 1) {
-
-            old_cmd = cmd;
-            cmd_len = redis_cmd_format(&cmd, "%s"
-                                             "$5" _NL
-                                             "ALPHA" _NL
-                                             , cmd, cmd_len);
-            elements += 1;
-            efree(old_cmd);
-        }
-
-        if ((zend_hash_find(Z_ARRVAL_P(z_array), "limit", sizeof("limit"), (void **) &z_cur) == SUCCESS
-         || zend_hash_find(Z_ARRVAL_P(z_array), "LIMIT", sizeof("LIMIT"), (void **) &z_cur) == SUCCESS)
-                        && Z_TYPE_PP(z_cur) == IS_ARRAY) {
-
-            if(zend_hash_num_elements(Z_ARRVAL_PP(z_cur)) == 2) {
-                zval **z_offset_pp, **z_count_pp;
-                // get the two values from the table, check that they are indeed of LONG type
-                if(SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_cur), 0, (void**)&z_offset_pp) &&
-                  SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_cur), 1, (void**)&z_count_pp)) {
-
-                    long limit_low, limit_high;
-					if((Z_TYPE_PP(z_offset_pp) == IS_LONG || Z_TYPE_PP(z_offset_pp) == IS_STRING) &&
-						(Z_TYPE_PP(z_count_pp) == IS_LONG || Z_TYPE_PP(z_count_pp) == IS_STRING)) {
-
-
-						if(Z_TYPE_PP(z_offset_pp) == IS_LONG) {
-							limit_low = Z_LVAL_PP(z_offset_pp);
-						} else {
-							limit_low = atol(Z_STRVAL_PP(z_offset_pp));
-						}
-						if(Z_TYPE_PP(z_count_pp) == IS_LONG) {
-							limit_high = Z_LVAL_PP(z_count_pp);
-						} else {
-							limit_high = atol(Z_STRVAL_PP(z_count_pp));
-						}
-
-						old_cmd = cmd;
-						cmd_len = redis_cmd_format(&cmd, "%s"
-														 "$5" _NL
-														 "LIMIT" _NL
-														 "$%d" _NL
-														 "%d" _NL
-														 "$%d" _NL
-														 "%d" _NL
-														 , cmd, cmd_len
-														 , integer_length(limit_low), limit_low
-														 , integer_length(limit_high), limit_high);
-						elements += 3;
-						efree(old_cmd);
-					}
-                }
-            }
-        }
-
-    }
-
-    /* complete with prefix */
-
-    old_cmd = cmd;
-    cmd_len = redis_cmd_format(&cmd, "*%d" _NL "%s", elements, cmd, cmd_len);
-    efree(old_cmd);
-
-    /* run command */
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    if(using_store) {
+    if(have_store) {
         IF_ATOMIC() {
-            redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+            redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                NULL, NULL);
         }
         REDIS_PROCESS_RESPONSE(redis_long_response);
     } else {
         IF_ATOMIC() {
-            if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                                redis_sock, NULL, NULL) < 0) {
+            if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                               redis_sock, NULL, NULL)<0)
+            {
                 RETURN_FALSE;
             }
+            REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
         }
-        REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
     }
 }
 

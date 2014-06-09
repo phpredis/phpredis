@@ -116,6 +116,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, smove, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrange, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrevrange, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, sort, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -824,5 +825,33 @@ PHP_METHOD(RedisCluster, zrevrange) {
     generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGE");
 }
 /* }}} */
+
+/* {{{ proto RedisCluster::sort(string key, array options) */
+PHP_METHOD(RedisCluster, sort) {
+    redisCluster *c = GET_CONTEXT();
+    char *cmd; int cmd_len, have_store; short slot;
+
+    if(redis_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &have_store,
+                      &cmd, &cmd_len, &slot, NULL)==FAILURE)
+    {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+
+    if(cluster_send_command(c,slot,cmd,cmd_len TSRMLS_CC)<0 || c->err!=NULL) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+
+    efree(cmd);
+
+    // Response type differs based on presence of STORE argument
+    if(!have_store) {
+        cluster_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        cluster_long_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    }
+                      
+}
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

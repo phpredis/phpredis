@@ -1330,4 +1330,248 @@ int redis_zincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* SORT */
+int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
+                   int *using_store, char **cmd, int *cmd_len, short *slot, 
+                   void **ctx)
+{
+    zval *z_opts=NULL, **z_ele, *z_argv;
+    char *key;
+    HashTable *ht_opts;
+    smart_str cmdstr = {0};
+    int key_len, key_free;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|a", &key, &key_len,
+                             &z_opts)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Default that we're not using store
+    *using_store = 0;
+
+    // Handle key prefixing
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    // If we don't have an options array, the command is quite simple
+    if(!z_opts) {
+        // Construct command
+        *cmd_len = redis_cmd_format_static(cmd, "SORT", "s", key, key_len);
+        
+        // Push out slot, store flag, and clean up
+        *using_store = 0;
+        CMD_SET_SLOT(slot,key,key_len);
+        if(key_free) efree(key);
+
+        return SUCCESS;
+    }
+
+    // Create our hash table to hold our sort arguments
+    ALLOC_INIT_ZVAL(z_argv);
+    array_init(z_argv);
+
+    // SORT <key>
+    add_next_index_stringl(z_argv, key, key_len, 0);
+
+    // Set slot
+    CMD_SET_SLOT(slot,key,key_len);
+
+    // Grab the hash table
+    ht_opts = Z_ARRVAL_P(z_opts);
+
+    // Handle BY pattern
+    if((zend_hash_find(ht_opts, "by", sizeof("by"), (void**)&z_ele)==SUCCESS ||
+       zend_hash_find(ht_opts, "BY", sizeof("BY"), (void**)&z_ele)==SUCCESS) &&
+       Z_TYPE_PP(z_ele)==IS_STRING)
+    {
+        // "BY" option is disabled in cluster
+        if(slot) {
+            php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                "SORT BY option is not allowed in Redis Cluster");
+            if(key_free) efree(key);
+            zval_dtor(z_argv);
+            efree(z_argv);
+            return FAILURE;
+        }
+
+        // ... BY <pattern>
+        add_next_index_stringl(z_argv, "BY", sizeof("BY")-1, 1);
+        add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),Z_STRLEN_PP(z_ele),0);
+    }
+
+    // Handle ASC/DESC option
+    if((zend_hash_find(ht_opts,"sort",sizeof("sort"),(void**)&z_ele)==SUCCESS ||
+       zend_hash_find(ht_opts,"SORT",sizeof("SORT"),(void**)&z_ele)==SUCCESS) &&
+       Z_TYPE_PP(z_ele)==IS_STRING)
+    {
+        // 'asc'|'desc'
+        add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),Z_STRLEN_PP(z_ele),0);
+    }
+
+    // STORE option
+    if((zend_hash_find(ht_opts,"store",6,(void**)&z_ele)==SUCCESS ||
+        zend_hash_find(ht_opts,"STORE",6,(void**)&z_ele)==SUCCESS) && 
+        Z_TYPE_PP(z_ele)==IS_STRING)
+    {
+        // Slot verification
+        int cross_slot = slot && *slot != cluster_hash_key(
+            Z_STRVAL_PP(z_ele),Z_STRLEN_PP(z_ele));
+
+        if(cross_slot) {
+            php_error_docref(0 TSRMLS_CC, E_WARNING,
+                "Error, SORT key and STORE key have different slots!");
+            if(key_free) efree(key);
+            zval_dtor(z_argv);
+            efree(z_argv);
+            return FAILURE;
+        }
+
+        // STORE <key>
+        add_next_index_stringl(z_argv,"STORE",sizeof("STORE")-1, 1);
+        add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),Z_STRLEN_PP(z_ele),0);
+        
+        // We are using STORE
+        *using_store = 1;
+    }
+
+    // GET option
+    if((zend_hash_find(ht_opts,"get",4,(void**)&z_ele)==SUCCESS ||
+        zend_hash_find(ht_opts,"GET",4,(void**)&z_ele)==SUCCESS) &&
+        (Z_TYPE_PP(z_ele)==IS_STRING || Z_TYPE_PP(z_ele)==IS_ARRAY))
+    {
+        // Disabled in cluster
+        if(slot) {
+            php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                "GET option for SORT disabled in Redis Cluster");
+            if(key_free) efree(key);
+            zval_dtor(z_argv);
+            efree(z_argv);
+            return FAILURE;
+        }
+
+        // If it's a string just add it
+        if(Z_TYPE_PP(z_ele)==IS_STRING) {
+            add_next_index_stringl(z_argv,"GET",sizeof("GET")-1,0);
+            add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),
+                Z_STRLEN_PP(z_ele), 0);
+        } else {
+            HashTable *ht_keys = Z_ARRVAL_PP(z_ele);
+            int added=0;
+            
+            // Add our "GET" option
+            add_next_index_stringl(z_argv,"GET",sizeof("GET")-1,0);
+
+            for(zend_hash_internal_pointer_reset(ht_keys);
+                zend_hash_has_more_elements(ht_keys)==SUCCESS;
+                zend_hash_move_forward(ht_keys))
+            {
+                zval **z_key;
+
+                // If we can't get the data, or it's not a string, skip
+                if(zend_hash_get_current_data(ht_keys,(void**)&z_key)==FAILURE)
+                    continue;
+                if(Z_TYPE_PP(z_key)!=IS_STRING)
+                    continue;
+                
+                // Add this key to our argv array
+                add_next_index_stringl(z_argv, Z_STRVAL_PP(z_key), 
+                    Z_STRLEN_PP(z_key), 0);
+                added++;
+            }
+
+            // Make sure we were able to add at least one
+            if(added==0) {
+                php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                    "Array of GET values requested, but none are valid");
+                if(key_free) efree(key);
+                zval_dtor(z_argv);
+                efree(z_argv);
+                return FAILURE;
+            }
+        }
+    }
+
+    // ALPHA
+    if((zend_hash_find(ht_opts,"alpha",6,(void**)&z_ele)==SUCCESS ||
+        zend_hash_find(ht_opts,"ALPHA",6,(void**)&z_ele)==SUCCESS) &&
+        Z_TYPE_PP(z_ele)==IS_BOOL && Z_BVAL_PP(z_ele)==1)
+    {
+        add_next_index_stringl(z_argv, "ALPHA", sizeof("ALPHA")-1,1);
+    }
+
+    // LIMIT <offset> <count>
+    if((zend_hash_find(ht_opts,"limit",6,(void**)&z_ele)==SUCCESS ||
+        zend_hash_find(ht_opts,"LIMIT",6,(void**)&z_ele)==SUCCESS) &&
+        Z_TYPE_PP(z_ele)==IS_ARRAY)
+    {
+        HashTable *ht_off = Z_ARRVAL_PP(z_ele);
+        zval **z_off, **z_cnt;
+
+        if(zend_hash_index_find(ht_off, 0, (void**)&z_off)==SUCCESS &&
+           zend_hash_index_find(ht_off, 1, (void**)&z_cnt)==SUCCESS)
+        {
+            if((Z_TYPE_PP(z_off)!=IS_STRING && Z_TYPE_PP(z_off)!=IS_LONG) ||
+               (Z_TYPE_PP(z_cnt)!=IS_STRING && Z_TYPE_PP(z_cnt)!=IS_LONG))
+            {
+                php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                    "LIMIT options on SORT command must be longs or strings");
+                if(key_free) efree(key);
+                zval_dtor(z_argv);
+                efree(z_argv);
+                return FAILURE;
+            }
+
+            // Add LIMIT argument
+            add_next_index_stringl(z_argv,"LIMIT",sizeof("LIMIT")-1,1);
+
+            long low, high;
+            if(Z_TYPE_PP(z_off)==IS_STRING) {
+                low = atol(Z_STRVAL_PP(z_off));
+            } else {
+                low = Z_LVAL_PP(z_off);
+            }
+            if(Z_TYPE_PP(z_cnt)==IS_STRING) {
+                high = atol(Z_STRVAL_PP(z_cnt));
+            } else {
+                high = Z_LVAL_PP(z_cnt);
+            }
+
+            // Add our two LIMIT arguments
+            add_next_index_long(z_argv, low);
+            add_next_index_long(z_argv, high);
+        }
+    }
+
+    // Start constructing our command
+    HashTable *ht_argv = Z_ARRVAL_P(z_argv);
+    redis_cmd_init_sstr(&cmdstr, zend_hash_num_elements(ht_argv), "SORT",
+        sizeof("SORT")-1);
+
+    // Iterate through our arguments
+    for(zend_hash_internal_pointer_reset(ht_argv);
+        zend_hash_get_current_data(ht_argv, (void**)&z_ele)==SUCCESS;
+        zend_hash_move_forward(ht_argv))
+    {
+        // Args are strings or longs
+        if(Z_TYPE_PP(z_ele)==IS_STRING) {
+            redis_cmd_append_sstr(&cmdstr,Z_STRVAL_PP(z_ele),
+                Z_STRLEN_PP(z_ele));
+        } else {
+            redis_cmd_append_sstr_long(&cmdstr, Z_LVAL_PP(z_ele));
+        }
+    }
+
+    // Free key if we prefixed, destroy argv array
+    if(key_free) efree(key);
+    zval_dtor(z_argv);
+    efree(z_argv);
+
+    // Push our length and command
+    *cmd_len = cmdstr.len;
+    *cmd     = cmdstr.c;
+
+    // Success!
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

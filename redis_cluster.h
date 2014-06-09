@@ -142,4 +142,5 @@ PHP_METHOD(RedisCluster, smove);
 PHP_METHOD(RedisCluster, srandmember);
 PHP_METHOD(RedisCluster, zrange);
 PHP_METHOD(RedisCluster, zrevrange);
+PHP_METHOD(RedisCluster, sort);
 #endif
