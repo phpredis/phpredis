@@ -153,4 +153,5 @@ PHP_METHOD(RedisCluster, zrangebyscore);
 PHP_METHOD(RedisCluster, zunionstore);
 PHP_METHOD(RedisCluster, zinterstore);
 PHP_METHOD(RedisCluster, sort);
+PHP_METHOD(RedisCluster, object);
 #endif
