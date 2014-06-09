@@ -2000,4 +2000,47 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* OBJECT */
+int redis_object_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     REDIS_REPLY_TYPE *rtype, char **cmd, int *cmd_len,
+                     short *slot, void **ctx)
+{
+    char *key, *subcmd;
+    int key_len, key_free, subcmd_len;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &subcmd, 
+                             &subcmd_len, &key, &key_len)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Prefix our key
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    // Format our command
+    *cmd_len = redis_cmd_format_static(cmd, "OBJECT", "ss", subcmd, subcmd_len,
+        key, key_len);
+
+    // Set our slot, free key if we prefixed
+    CMD_SET_SLOT(slot,key,key_len);
+    if(key_free) efree(key);
+
+    // Push the reply type to our caller
+    if(subcmd_len == 8 && (!strncasecmp(subcmd,"refcount",8) || 
+                           !strncasecmp(subcmd,"idletime",8))) 
+    {
+        *rtype = TYPE_INT;
+    } else if(subcmd_len == 8 && !strncasecmp(subcmd, "encoding", 8)) {
+        *rtype = TYPE_BULK;
+    } else {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "Invalid subcommand sent to OBJECT");
+        efree(*cmd);
+        return FAILURE;
+    }
+
+    // Success
+    return SUCCESS;
+}
+
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

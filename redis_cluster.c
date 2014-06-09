@@ -127,6 +127,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, zinterstore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrem, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sort, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, object, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -922,7 +923,6 @@ PHP_METHOD(RedisCluster, sort) {
     if(redis_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &have_store,
                       &cmd, &cmd_len, &slot, NULL)==FAILURE)
     {
-        efree(cmd);
         RETURN_FALSE;
     }
 
@@ -939,7 +939,33 @@ PHP_METHOD(RedisCluster, sort) {
     } else {
         cluster_long_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
     }
-                      
+}
+
+/* {{{ proto Redis::object(string subcmd, string key) */
+PHP_METHOD(RedisCluster, object) {
+    redisCluster *c = GET_CONTEXT();
+    char *cmd; int cmd_len; short slot;
+    REDIS_REPLY_TYPE rtype;
+
+    if(redis_object_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &rtype,
+                        &cmd, &cmd_len, &slot, NULL)==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    if(cluster_send_command(c,slot,cmd,cmd_len TSRMLS_CC)<0 || c->err!=NULL) {
+        efree(cmd);
+        RETURN_FALSE;
+    }
+
+    efree(cmd);
+
+    // Use the correct response type
+    if(rtype == TYPE_INT) {
+        cluster_long_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    }
 }
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
