@@ -654,8 +654,69 @@ int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS; 
 }
 
-/* Commands with specific signatures or that need unique functions because they
- * have specific processing (argument validation, etc) that make them unique */
+/* Commands that take a key followed by a variable list of serializable
+ * values (RPUSH, LPUSH, SADD, SREM, etc...) */
+int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                         char *kw, char **cmd, int *cmd_len, short *slot,
+                         void **ctx)
+{
+    zval **z_args;
+    smart_str cmdstr = {0};
+    char *arg;
+    int arg_free, arg_len, i;
+    int argc = ZEND_NUM_ARGS();
+
+    // We at least need a key and one value
+    if(argc < 2) {
+        return FAILURE;
+    }
+
+    // Make sure we at least have a key, and we can get other args
+    z_args = emalloc(argc * sizeof(zval*));
+    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
+        efree(z_args);
+        return FAILURE;
+    }
+
+    // Grab the first argument (our key) as a string
+    convert_to_string(z_args[0]);
+    arg = Z_STRVAL_P(z_args[0]);
+    arg_len = Z_STRLEN_P(z_args[0]);
+
+    // Prefix if required
+    arg_free = redis_key_prefix(redis_sock, &arg, &arg_len);
+
+    // Start command construction
+    redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
+    redis_cmd_append_sstr(&cmdstr, arg, arg_len);
+
+    // Set our slot, free key prefix if we prefixed it
+    CMD_SET_SLOT(slot,arg,arg_len);
+    if(arg_free) efree(arg);
+
+    // Add our members
+    for(i=1;i<argc;i++) {
+        arg_free = redis_serialize(redis_sock, z_args[i], &arg, &arg_len
+            TSRMLS_CC);
+        redis_cmd_append_sstr(&cmdstr, arg, arg_len);
+        if(arg_free) STR_FREE(arg);
+    }
+
+    // Push out values
+    *cmd     = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    // Cleanup arg array
+    efree(z_args);
+
+    // Success!
+    return SUCCESS;
+}
+
+/*
+ * Commands with specific signatures or that need unique functions because they
+ * have specific processing (argument validation, etc) that make them unique 
+ */
 
 /* SET */
 int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
