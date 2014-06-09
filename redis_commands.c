@@ -374,7 +374,7 @@ int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* ZRANGE/ZREVRANGE */
 int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     char *kw, char **cmd, int *cmd_len, zend_bool *withscores,
+                     char *kw, char **cmd, int *cmd_len, int *withscores,
                      short *slot, void **ctx)
 {
     char *key;
@@ -402,6 +402,84 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Free key, push out WITHSCORES option
     if(key_free) efree(key);
     *withscores = ws;
+
+    return SUCCESS;
+}
+
+/* ZRANGEBYSCORE/ZREVRANGEBYSCORE */
+int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                            char *kw, char **cmd, int *cmd_len, int *withscores,
+                            short *slot, void **ctx)
+{
+    char *key;
+    int key_len, key_free;
+    char *start, *end;
+    int start_len, end_len;
+    int has_limit=0;
+    long limit_low, limit_high;
+    zval *z_opt=NULL, **z_ele;
+    HashTable *ht_opt;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss|a", &key, &key_len,
+                             &start, &start_len, &end, &end_len, &z_opt)
+                             ==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Check for an options array
+    if(z_opt && Z_TYPE_P(z_opt)==IS_ARRAY) {
+        ht_opt = Z_ARRVAL_P(z_opt);
+
+        // Check for WITHSCORES
+        *withscores = (zend_hash_find(ht_opt,"withscores",sizeof("withscores"),
+                       (void**)&z_ele)==SUCCESS && Z_TYPE_PP(z_ele)==IS_BOOL &&
+                       Z_BVAL_PP(z_ele)==1);
+        
+        // LIMIT
+        if(zend_hash_find(ht_opt,"limit",sizeof("limit"),(void**)&z_ele)
+                          ==SUCCESS)
+        {
+            HashTable *ht_limit = Z_ARRVAL_PP(z_ele);
+            zval **z_off, **z_cnt;
+            if(zend_hash_index_find(ht_limit,0,(void**)&z_off)==SUCCESS &&
+               zend_hash_index_find(ht_limit,1,(void**)&z_cnt)==SUCCESS &&
+               Z_TYPE_PP(z_off)==IS_LONG && Z_TYPE_PP(z_cnt)==IS_LONG)
+            {
+                has_limit  = 1;
+                limit_low  = Z_LVAL_PP(z_off);
+                limit_high = Z_LVAL_PP(z_cnt);
+            } 
+        }
+    } 
+    
+    // Prefix our key, set slot
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    CMD_SET_SLOT(slot,key,key_len);
+    
+    // Construct our command
+    if(*withscores) {
+        if(has_limit) {
+            *cmd_len = redis_cmd_format_static(cmd, kw, "ssssdds", key, key_len,
+                start, start_len, end, end_len, "LIMIT", 5, limit_low,
+                limit_high, "WITHSCORES", 10);
+        } else {
+            *cmd_len = redis_cmd_format_static(cmd, kw, "ssss", key, key_len,
+                start, start_len, end, end_len, "WITHSCORES", 10);
+        }
+    } else {
+        if(has_limit) {
+            *cmd_len = redis_cmd_format_static(cmd, kw, "ssssdd", key, key_len,
+                start, start_len, end, end_len, "LIMIT", 5, limit_low, 
+                limit_high);
+        } else {
+            *cmd_len = redis_cmd_format_static(cmd, kw, "sss", key, key_len,
+                start, start_len, end, end_len);
+        }
+    }
+
+    // Free our key if we prefixed
+    if(key_free) efree(key);
 
     return SUCCESS;
 }

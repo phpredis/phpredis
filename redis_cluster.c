@@ -116,6 +116,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, smove, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrange, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrevrange, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zrangebyscore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sort, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
@@ -784,14 +785,17 @@ PHP_METHOD(RedisCluster, setrange) {
 }
 /* }}} */
 
-/* Generic implementation for both ZRANGE and ZREVRANGE */
-static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw) {
+/* Generic implementation for ZRANGE, ZREVRANGE, ZRANGEBYSCORE, 
+ * ZREVRANGEBYSCORE */
+static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, 
+                               zrange_cb fun) 
+{
     redisCluster *c = GET_CONTEXT();
     char *cmd; int cmd_len; short slot; 
-    zend_bool withscores;
+    int withscores;
 
-    if(redis_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd,
-                        &cmd_len, &withscores, &slot, NULL)==FAILURE)
+    if(fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len, 
+           &withscores, &slot, NULL)==FAILURE)
     {
         efree(cmd);
         RETURN_FALSE;
@@ -815,16 +819,35 @@ static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw) {
 /* {{{ proto 
  *     array RedisCluster::zrange(string k, long s, long e, bool score=0) */
 PHP_METHOD(RedisCluster, zrange) {
-    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGE");
+    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGE",
+        redis_zrange_cmd);
 }
 /* }}} */
 
 /* {{{ proto 
  *     array RedisCluster::zrevrange(string k,long s,long e,bool scores=0) */
 PHP_METHOD(RedisCluster, zrevrange) {
-    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGE");
+    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGE",
+        redis_zrange_cmd);
 }
 /* }}} */
+
+/* {{{ proto array 
+ *     RedisCluster::zrangebyscore(string k, long s, long e, array opts) */
+PHP_METHOD(RedisCluster, zrangebyscore) {
+    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGEBYSCORE",
+        redis_zrangebyscore_cmd);
+}
+/* }}} */
+
+/* {{{ proto array
+ *     RedisCluster::zrevrangebyscore(string k, long s, long e, array opts) */
+PHP_METHOD(RedisCluster, zrevrangebyscore) {
+    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGEBYSCORE",
+        redis_zrangebyscore_cmd);
+}
+/* }}} */
+
 
 /* {{{ proto RedisCluster::sort(string key, array options) */
 PHP_METHOD(RedisCluster, sort) {
