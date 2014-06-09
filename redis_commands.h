@@ -49,8 +49,16 @@ int redis_key_str_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
+// ZRANGE, ZREVRANGE, ZRANGEBYSCORE, and ZREVRANGEBYSCORE callback type
+typedef int (*zrange_cb)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                         char *,char**,int*,int*,short*,void**);
+
 int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char *kw, char **cmd, int *cmd_len, zend_bool *withscores, short *slot, 
+    char *kw, char **cmd, int *cmd_len, int *withscores, short *slot, 
+    void **ctx);
+
+int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char *kw, char **cmd, int *cmd_len, int *withscores, short *slot, 
     void **ctx);
 
 /* Commands which need a unique construction mechanism.  This is either because
@@ -105,7 +113,6 @@ int redis_lrem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
-
 
 int redis_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);

@@ -2410,18 +2410,20 @@ PHP_METHOD(Redis, zAdd) {
 /* }}} */
 
 /* Handle ZRANGE and ZREVRANGE as they're the same except for keyword */
-static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw) {
+static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, 
+                               zrange_cb fun) 
+{
     char *cmd;
     int cmd_len;
     RedisSock *redis_sock;
-    zend_bool withscores=0;
+    int withscores=0;
 
     if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0) {
         RETURN_FALSE;
     }
 
-    if(redis_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw, &cmd,
-                        &cmd_len, &withscores, NULL, NULL)==FAILURE)
+    if(fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw, &cmd,
+           &cmd_len, &withscores, NULL, NULL)==FAILURE)
     {
         RETURN_FALSE;
     }
@@ -2448,16 +2450,32 @@ static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw) {
 /* {{{ proto array Redis::zRange(string key,int start,int end,bool scores=0) */
 PHP_METHOD(Redis, zRange)
 {
-    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGE");
+    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGE",
+        redis_zrange_cmd);
 }
 
 /* {{{ proto array Redis::zRevRange(string k, long s, long e, bool scores=0) */
 PHP_METHOD(Redis, zRevRange) {
-    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGE");
+    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGE",
+        redis_zrange_cmd);
 }
 /* }}} */
 
+/* {{{ proto array Redis::zRangeByScore(string k,string s,string e,array opt) */
+PHP_METHOD(Redis, zRangeByScore) {
+    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGEBYSCORE",
+        redis_zrangebyscore_cmd);
+}
 /* }}} */
+
+/* {{{ proto array Redis::zRevRangeByScore(string key, string start, string end,
+ *                                         array options) */
+PHP_METHOD(Redis, zRevRangeByScore) {
+    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGEBYSCORE",
+        redis_zrangebyscore_cmd);
+}
+/* }}} */
+
 /* {{{ proto long Redis::zDelete(string key, string member)
  */
 PHP_METHOD(Redis, zDelete)
@@ -2492,120 +2510,6 @@ PHP_METHOD(Redis, zDeleteRangeByRank)
         redis_long_response);
 }
 /* }}} */
-
-PHPAPI void
-redis_generic_zrange_by_score(INTERNAL_FUNCTION_PARAMETERS, char *keyword) {
-
-    zval *object, *z_options = NULL, **z_limit_val_pp = NULL, **z_withscores_val_pp = NULL;
-
-    RedisSock *redis_sock;
-    char *key = NULL, *cmd;
-    int key_len, cmd_len, key_free;
-    zend_bool withscores = 0;
-    char *start, *end;
-    int start_len, end_len;
-    int has_limit = 0;
-    long limit_low, limit_high;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osss|a",
-                                     &object, redis_ce,
-                                     &key, &key_len,
-                                     &start, &start_len,
-                                     &end, &end_len,
-                                     &z_options) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    /* options */
-    if (z_options && Z_TYPE_P(z_options) == IS_ARRAY) {
-        /* add scores */
-        zend_hash_find(Z_ARRVAL_P(z_options), "withscores", sizeof("withscores"), (void**)&z_withscores_val_pp);
-        withscores = (z_withscores_val_pp ? Z_BVAL_PP(z_withscores_val_pp) : 0);
-
-        /* limit offset, count:
-           z_limit_val_pp points to an array($longFrom, $longCount)
-        */
-        if(zend_hash_find(Z_ARRVAL_P(z_options), "limit", sizeof("limit"), (void**)&z_limit_val_pp)== SUCCESS) {;
-            if(zend_hash_num_elements(Z_ARRVAL_PP(z_limit_val_pp)) == 2) {
-                zval **z_offset_pp, **z_count_pp;
-                /* get the two values from the table, check that they are indeed of LONG type */
-                if(SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_limit_val_pp), 0, (void**)&z_offset_pp) &&
-                  SUCCESS == zend_hash_index_find(Z_ARRVAL_PP(z_limit_val_pp), 1, (void**)&z_count_pp) &&
-                  Z_TYPE_PP(z_offset_pp) == IS_LONG &&
-                  Z_TYPE_PP(z_count_pp) == IS_LONG) {
-
-                    has_limit = 1;
-                    limit_low = Z_LVAL_PP(z_offset_pp);
-                    limit_high = Z_LVAL_PP(z_count_pp);
-                }
-            }
-        }
-    }
-
-	key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    if(withscores) {
-        if(has_limit) {
-            cmd_len = redis_cmd_format_static(&cmd, keyword, "ssssdds",
-                            key, key_len, start, start_len, end, end_len, "LIMIT",
-                            5, limit_low, limit_high, "WITHSCORES", 10);
-        } else {
-            cmd_len = redis_cmd_format_static(&cmd, keyword, "ssss",
-                            key, key_len, start, start_len, end, end_len,
-                            "WITHSCORES", 10);
-        }
-    } else {
-        if(has_limit) {
-            cmd_len = redis_cmd_format_static(&cmd, keyword, "ssssdd",
-                            key, key_len, start, start_len, end, end_len,
-                            "LIMIT", 5, limit_low, limit_high);
-        } else {
-            cmd_len = redis_cmd_format_static(&cmd, keyword, "sss",
-                                              key, key_len, start, start_len,
-                                              end, end_len);
-        }
-    }
-	if(key_free) efree(key);
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    if(withscores) {
-            /* with scores! we have to transform the return array.
-             * return_value currently holds this: [elt0, val0, elt1, val1 ... ]
-             * we want [elt0 => val0, elt1 => val1], etc.
-             */
-            IF_ATOMIC() {
-                if(redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL) < 0) {
-                    RETURN_FALSE;
-                }
-            }
-            REDIS_PROCESS_RESPONSE(redis_mbulk_reply_zipped_keys_dbl);
-    } else {
-            IF_ATOMIC() {
-                if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                                    redis_sock, NULL, NULL) < 0) {
-                    RETURN_FALSE;
-                }
-            }
-            REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
-    }
-}
-
-/* {{{ proto array Redis::zRangeByScore(string key, string start , string end [,array options = NULL])
- */
-PHP_METHOD(Redis, zRangeByScore)
-{
-	redis_generic_zrange_by_score(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGEBYSCORE");
-}
-/* }}} */
-/* {{{ proto array Redis::zRevRangeByScore(string key, string start , string end [,array options = NULL])
- */
-PHP_METHOD(Redis, zRevRangeByScore)
-{
-	redis_generic_zrange_by_score(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGEBYSCORE");
-}
 
 /* {{{ proto array Redis::zCount(string key, string start , string end) */
 PHP_METHOD(Redis, zCount)
