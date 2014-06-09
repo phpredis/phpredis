@@ -1267,17 +1267,7 @@ PHP_METHOD(Redis, lGetRange)
  */
 PHP_METHOD(Redis, sAdd)
 {
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "SADD", sizeof("SADD") - 1,
-					2, &redis_sock, 0, 0, 1))
-		return;
-
-	IF_ATOMIC() {
-	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_KW_CMD("SADD", redis_key_varval_cmd, redis_long_response);
 }
 /* }}} */
 
@@ -1292,19 +1282,10 @@ PHP_METHOD(Redis, sSize)
  */
 PHP_METHOD(Redis, sRemove)
 {
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "SREM", sizeof("SREM") - 1,
-					2, &redis_sock, 0, 0, 1))
-		return;
-
-	IF_ATOMIC() {
-	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_KW_CMD("SREM", redis_key_varval_cmd, redis_long_response);
 }
 /* }}} */
+
 /* {{{ proto boolean Redis::sMove(string set_src, string set_dst, mixed value)
  */
 PHP_METHOD(Redis, sMove)
