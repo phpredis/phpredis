@@ -2440,17 +2440,7 @@ PHP_METHOD(Redis, zRevRangeByScore) {
  */
 PHP_METHOD(Redis, zDelete)
 {
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "ZREM", sizeof("ZREM") - 1,
-					2, &redis_sock, 0, 0, 1))
-		return;
-
-	IF_ATOMIC() {
-	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_KW_CMD("ZREM", redis_key_varval_cmd, redis_long_response);
 }
 /* }}} */
 
