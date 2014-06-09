@@ -49,6 +49,9 @@ int redis_key_str_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
+int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
+
 // ZRANGE, ZREVRANGE, ZRANGEBYSCORE, and ZREVRANGEBYSCORE callback type
 typedef int (*zrange_cb)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                          char *,char**,int*,int*,short*,void**);
