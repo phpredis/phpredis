@@ -1122,17 +1122,7 @@ PHP_METHOD(Redis, strlen)
  */
 PHP_METHOD(Redis, lPush)
 {
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "LPUSH", sizeof("LPUSH") - 1,
-                    2, &redis_sock, 0, 0, 1))
-		return;
-
-    IF_ATOMIC() {
-        redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-    }
-    REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_KW_CMD("LPUSH", redis_key_varval_cmd, redis_long_response);
 }
 /* }}} */
 
@@ -1140,17 +1130,7 @@ PHP_METHOD(Redis, lPush)
  */
 PHP_METHOD(Redis, rPush)
 {
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "RPUSH", sizeof("RPUSH") - 1,
-                    2, &redis_sock, 0, 0, 1))
-		return;
-
-    IF_ATOMIC() {
-        redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-    }
-    REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_KW_CMD("RPUSH", redis_key_varval_cmd, redis_long_response);
 }
 /* }}} */
 
@@ -1460,7 +1440,6 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS,
 	keys_len = emalloc(array_size * sizeof(int));
 	keys_to_free = emalloc(array_size * sizeof(int));
 	memset(keys_to_free, 0, array_size * sizeof(int));
-
 
     /* Start computing the command length */
     cmd_len = 1 + integer_length(keyword_len) + 2 +keyword_len + 2;
