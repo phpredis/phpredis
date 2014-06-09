@@ -484,6 +484,176 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* ZUNIONSTORE, ZINTERSTORE */
+int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char *kw, char **cmd, int *cmd_len, short *slot, 
+                     void **ctx)
+{
+    char *key, *agg_op=NULL;
+    int key_free, key_len;
+    zval *z_keys, *z_weights=NULL, **z_ele;
+    HashTable *ht_keys, *ht_weights=NULL;
+    HashPosition ptr;
+    smart_str cmdstr = {0};
+    int argc = 2, agg_op_len=0, keys_count;
+
+    // Parse args
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa|a!s", &key, 
+                             &key_len, &z_keys, &z_weights, &agg_op, 
+                             &agg_op_len)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    // Grab our keys
+    ht_keys = Z_ARRVAL_P(z_keys);
+
+    // Nothing to do if there aren't any
+    if((keys_count = zend_hash_num_elements(ht_keys))==0) {
+        return FAILURE;
+    } else {
+        argc += keys_count;
+    }
+
+    // Handle WEIGHTS
+    if(z_weights != NULL) {
+        ht_weights = Z_ARRVAL_P(z_weights);
+        if(zend_hash_num_elements(ht_weights) != keys_count) {
+            php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                "WEIGHTS and keys array should be the same size!");
+            return FAILURE;
+        }
+
+        // "WEIGHTS" + key count
+        argc += keys_count + 1;
+    }
+
+    // AGGREGATE option
+    if(agg_op_len != 0) {
+        if(strncasecmp(agg_op, "SUM", sizeof("SUM")) && 
+           strncasecmp(agg_op, "MIN", sizeof("MIN")) &&
+           strncasecmp(agg_op, "MAX", sizeof("MAX")))
+        {
+            php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                "Invalid AGGREGATE option provided!");
+            return FAILURE;
+        }
+
+        // "AGGREGATE" + type
+        argc += 2;
+    }
+
+    // Prefix key
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    
+    // Start building our command
+    redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
+    redis_cmd_append_sstr(&cmdstr, key, key_len);
+    redis_cmd_append_sstr_int(&cmdstr, keys_count);
+    
+    // Set our slot, free the key if we prefixed it
+    CMD_SET_SLOT(slot,key,key_len);
+    if(key_free) efree(key);
+
+    // Process input keys
+    for(zend_hash_internal_pointer_reset_ex(ht_keys, &ptr);
+        zend_hash_get_current_data_ex(ht_keys,(void**)&z_ele,&ptr)==SUCCESS;
+        zend_hash_move_forward_ex(ht_keys, &ptr))
+    {
+        char *key;
+        int key_free, key_len;
+        zval *z_tmp = NULL;
+
+        if(Z_TYPE_PP(z_ele) == IS_STRING) {
+            key = Z_STRVAL_PP(z_ele);
+            key_len = Z_STRLEN_PP(z_ele);
+        } else {
+            MAKE_STD_ZVAL(z_tmp);
+            *z_tmp = **z_ele;
+            convert_to_string(z_tmp);
+
+            key = Z_STRVAL_P(z_tmp);
+            key_len = Z_STRLEN_P(z_tmp);
+        }
+
+        // Prefix key if necissary
+        key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+        // If we're in Cluster mode, verify the slot is the same
+        if(slot && *slot != cluster_hash_key(key,key_len)) {
+            php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                "All keys don't hash to the same slot!");
+            efree(cmdstr.c);
+            if(key_free) efree(key);
+            if(z_tmp) {
+                zval_dtor(z_tmp);
+                efree(z_tmp);
+            }
+            return FAILURE;
+        }
+
+        // Append this input set
+        redis_cmd_append_sstr(&cmdstr, key, key_len);
+
+        // Cleanup
+        if(key_free) efree(key);
+        if(z_tmp) {
+            zval_dtor(z_tmp);
+            efree(z_tmp);
+            z_tmp = NULL;
+        }
+    }
+
+    // Weights
+    if(ht_weights != NULL) {
+        redis_cmd_append_sstr(&cmdstr, "WEIGHTS", sizeof("WEIGHTS")-1);
+
+        // Process our weights
+        for(zend_hash_internal_pointer_reset_ex(ht_weights,&ptr);
+            zend_hash_get_current_data_ex(ht_weights,(void**)&z_ele,&ptr)
+                                          ==SUCCESS;
+            zend_hash_move_forward_ex(ht_weights,&ptr))
+        {
+            // Ignore non numeric args unless they're inf/-inf
+            if(Z_TYPE_PP(z_ele)!=IS_LONG && Z_TYPE_PP(z_ele)!=IS_DOUBLE &&
+               strncasecmp(Z_STRVAL_PP(z_ele),"inf",sizeof("inf"))!=0 &&
+               strncasecmp(Z_STRVAL_PP(z_ele),"-inf",sizeof("-inf"))!=0 &&
+               strncasecmp(Z_STRVAL_PP(z_ele),"+inf",sizeof("+inf"))!=0)
+            {
+                php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                    "Weights must be numeric or '-inf','inf','+inf'");
+                efree(cmdstr.c);
+                return FAILURE;
+            }
+
+            switch(Z_TYPE_PP(z_ele)) {
+                case IS_LONG:
+                    redis_cmd_append_sstr_long(&cmdstr, Z_LVAL_PP(z_ele));
+                    break;
+                case IS_DOUBLE:
+                    redis_cmd_append_sstr_dbl(&cmdstr, Z_DVAL_PP(z_ele));
+                    break;
+                case IS_STRING:
+                    redis_cmd_append_sstr(&cmdstr, Z_STRVAL_PP(z_ele),
+                        Z_STRLEN_PP(z_ele));
+                    break;
+            }
+        }
+    }
+
+    // AGGREGATE
+    if(agg_op_len != 0) {
+        redis_cmd_append_sstr(&cmdstr, "AGGREGATE", sizeof("AGGREGATE")-1);
+        redis_cmd_append_sstr(&cmdstr, agg_op, agg_op_len);
+    }
+
+    // Push out values
+    *cmd     = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS; 
+}
+
 /* Commands with specific signatures or that need unique functions because they
  * have specific processing (argument validation, etc) that make them unique */
 
