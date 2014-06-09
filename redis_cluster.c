@@ -123,6 +123,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, zrangebyscore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zunionstore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zinterstore, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zrem, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sort, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
@@ -881,6 +882,12 @@ PHP_METHOD(RedisCluster, zunionstore) {
  *                                     string agg]) */
 PHP_METHOD(RedisCluster, zinterstore) {
     CLUSTER_PROCESS_KW_CMD("ZINTERSTORE", redis_zinter_cmd, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto RedisCluster::zrem(string key, string val1, ... valN) */
+PHP_METHOD(RedisCluster, zrem) {
+    CLUSTER_PROCESS_KW_CMD("ZREM", redis_key_varval_cmd, cluster_long_resp);
 }
 /* }}} */
 
