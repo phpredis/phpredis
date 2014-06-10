@@ -2931,105 +2931,24 @@ PHP_METHOD(Redis, object)
 /* {{{ proto string Redis::getOption($option) */
 PHP_METHOD(Redis, getOption)  {
     RedisSock *redis_sock;
-    zval *object;
-    long option;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol",
-                                     &object, redis_ce, &option) == FAILURE) {
+    if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;
     }
 
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    switch(option) {
-        case REDIS_OPT_SERIALIZER:
-            RETURN_LONG(redis_sock->serializer);
-        case REDIS_OPT_PREFIX:
-            if(redis_sock->prefix) {
-                RETURN_STRINGL(redis_sock->prefix, redis_sock->prefix_len, 1);
-            }
-            RETURN_NULL();
-        case REDIS_OPT_READ_TIMEOUT:
-            RETURN_DOUBLE(redis_sock->read_timeout);
-        case REDIS_OPT_SCAN:
-            RETURN_LONG(redis_sock->scan);
-        default:
-            RETURN_FALSE;
-    }
+    redis_getoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 }
 /* }}} */
 
 /* {{{ proto string Redis::setOption(string $option, mixed $value) */
 PHP_METHOD(Redis, setOption) {
     RedisSock *redis_sock;
-    zval *object;
-    long option, val_long;
-    char *val_str;
-    int val_len;
-    struct timeval read_tv;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), 
-                                     "Ols", &object, redis_ce, &option, 
-                                     &val_str, &val_len) == FAILURE) 
-    {
+    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0) {
         RETURN_FALSE;
     }
 
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    switch(option) {
-        case REDIS_OPT_SERIALIZER:
-            val_long = atol(val_str);
-            if(val_long == REDIS_SERIALIZER_NONE
-#ifdef HAVE_REDIS_IGBINARY
-                    || val_long == REDIS_SERIALIZER_IGBINARY
-#endif
-                    || val_long == REDIS_SERIALIZER_PHP) {
-                        redis_sock->serializer = val_long;
-                        RETURN_TRUE;
-                    } else {
-                        RETURN_FALSE;
-                    }
-                    break;
-            case REDIS_OPT_PREFIX:
-                if(redis_sock->prefix) {
-                    efree(redis_sock->prefix);
-                }
-                if(val_len == 0) {
-                    redis_sock->prefix = NULL;
-                    redis_sock->prefix_len = 0;
-                } else {
-                    redis_sock->prefix_len = val_len;
-                    redis_sock->prefix = ecalloc(1+val_len, 1);
-                    memcpy(redis_sock->prefix, val_str, val_len);
-                }
-                RETURN_TRUE;
-            case REDIS_OPT_READ_TIMEOUT:
-                redis_sock->read_timeout = atof(val_str);
-                if(redis_sock->stream) {
-                    read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
-                    read_tv.tv_usec = (int)((redis_sock->read_timeout - 
-                                             read_tv.tv_sec) * 1000000);
-                    php_stream_set_option(redis_sock->stream, 
-                                          PHP_STREAM_OPTION_READ_TIMEOUT, 0, 
-                                          &read_tv);
-                }
-                RETURN_TRUE;
-            case REDIS_OPT_SCAN:
-                val_long = atol(val_str);
-                if(val_long==REDIS_SCAN_NORETRY || val_long==REDIS_SCAN_RETRY) {
-                    redis_sock->scan = val_long;
-                    RETURN_TRUE;
-                }
-                RETURN_FALSE;
-                break;
-            default:
-                RETURN_FALSE;
-    }
+    redis_setoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 }
 /* }}} */
 
@@ -3690,99 +3609,38 @@ PHP_METHOD(Redis, migrate) {
 
 /* {{{ proto Redis::_prefix(key) */
 PHP_METHOD(Redis, _prefix) {
-    zval *object;
     RedisSock *redis_sock;
-    char *key;
-    int key_len;
 
-    // Parse our arguments
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os", 
-                                    &object, redis_ce, &key, &key_len) 
-                                    == FAILURE) 
-    {
-        RETURN_FALSE;
-    }
-    
-    // Grab socket
-    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0) {
         RETURN_FALSE;
     }
 
-	/* Prefix our key if we need to */
-	if(redis_sock->prefix != NULL && redis_sock->prefix_len > 0) {
-		redis_key_prefix(redis_sock, &key, &key_len);
-		RETURN_STRINGL(key, key_len, 0);
-	} else {
-		RETURN_STRINGL(key, key_len, 1);
-	}
+    redis_prefix_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 }
 
 /* {{{ proto Redis::_serialize(value) */
 PHP_METHOD(Redis, _serialize) {
-    zval *object;
     RedisSock *redis_sock;
-    zval *z_val;
-    char *val;
-    int val_len, val_free;
 
-    /* Parse arguments */
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oz",
-                                    &object, redis_ce, &z_val) == FAILURE)
-    {
+    // Grab socket
+    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;
     }
 
-    /* Grab socket */
-    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    // Serialize, which will return a value even if no serializer is set
-    redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
-
-    // Return serialized value.  Tell PHP to make a copy as some can be 
-    // interned.
-    RETVAL_STRINGL(val, val_len, 1);
-    if(val_free) STR_FREE(val);
+    redis_serialize_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 }
 
 /* {{{ proto Redis::_unserialize(value) */
 PHP_METHOD(Redis, _unserialize) {
-    zval *object;
     RedisSock *redis_sock;
-    char *value;
-    int value_len;
-
-    // Parse our arguments
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os", 
-                                    &object, redis_ce, &value, &value_len) 
-                                    == FAILURE) 
-    {
-        RETURN_FALSE;
-    }
     
     // Grab socket
-    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;
     }
 
-	/* We only need to attempt unserialization if we have a serializer running */
-	if(redis_sock->serializer != REDIS_SERIALIZER_NONE) {
-		zval *z_ret = NULL;
-		if(redis_unserialize(redis_sock, value, value_len, &z_ret
-                             TSRMLS_CC) == 0)
-        {
-            // Badly formed input, throw an execption
-            zend_throw_exception(redis_exception_ce,
-                "Invalid serialized data, or unserialization error",
-                0 TSRMLS_CC);
-            RETURN_FALSE;
-        }
-        RETURN_ZVAL(z_ret, 0, 1);
-    } else {
-        // Just return the value that was passed to us
-        RETURN_STRINGL(value, value_len, 1);
-    }
+    redis_unserialize_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+        redis_exception_ce);
 }
 
 /* {{{ proto Redis::getLastError() */
