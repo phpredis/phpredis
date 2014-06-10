@@ -68,6 +68,12 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, sismember, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sadd, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, srem, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, sunion, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, sunionstore, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, sinter, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, sinterstore, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, sdiff, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, sdiffstore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, srandmember, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, strlen, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, persist, NULL, ZEND_ACC_PUBLIC)
@@ -504,6 +510,42 @@ PHP_METHOD(RedisCluster, sadd) {
 /* {{{ proto long RedisCluster::srem(string key, string val1 [, ...]) */
 PHP_METHOD(RedisCluster, srem) {
     CLUSTER_PROCESS_KW_CMD("SREM", redis_key_varval_cmd, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto array RedisCluster::sunion(string key1, ... keyN) */
+PHP_METHOD(RedisCluster, sunion) {
+    CLUSTER_PROCESS_CMD(sunion, cluster_mbulk_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::sunionstore(string dst, string k1, ... kN) */
+PHP_METHOD(RedisCluster, sunionstore) {
+    CLUSTER_PROCESS_CMD(sunionstore, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ ptoto array RedisCluster::sinter(string k1, ... kN) */
+PHP_METHOD(RedisCluster, sinter) {
+    CLUSTER_PROCESS_CMD(sinter, cluster_mbulk_resp);
+}
+/* }}} */
+
+/* {{{ ptoto long RedisCluster::sinterstore(string dst, string k1, ... kN) */
+PHP_METHOD(RedisCluster, sinterstore) {
+    CLUSTER_PROCESS_CMD(sinterstore, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto array RedisCluster::sdiff(string k1, ... kN) */
+PHP_METHOD(RedisCluster, sdiff) {
+    CLUSTER_PROCESS_CMD(sdiff, cluster_mbulk_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::sdiffstore(string dst, string k1, ... kN) */
+PHP_METHOD(RedisCluster, sdiffstore) {
+    CLUSTER_PROCESS_CMD(sdiffstore, cluster_long_resp);
 }
 /* }}} */
 

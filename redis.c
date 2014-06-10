@@ -1541,120 +1541,41 @@ PHPAPI int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS,
 /* {{{ proto array Redis::sInter(string key0, ... string keyN)
  */
 PHP_METHOD(Redis, sInter) {
-
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "SINTER", sizeof("SINTER") - 1,
-					0, &redis_sock, 0, 1, 1))
-		return;
-
-    IF_ATOMIC() {
-    	if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-											redis_sock, NULL, NULL) < 0) {
-        	RETURN_FALSE;
-	    }
-    }
-    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_CMD(sinter, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
 /* {{{ proto array Redis::sInterStore(string destination, string key0, ... string keyN)
  */
 PHP_METHOD(Redis, sInterStore) {
-
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "SINTERSTORE", sizeof("SINTERSTORE") - 1,
-					1, &redis_sock, 0, 1, 1))
-		return;
-
-	IF_ATOMIC() {
-		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-    REDIS_PROCESS_RESPONSE(redis_long_response);
-
-
+    REDIS_PROCESS_CMD(sinterstore, redis_long_response);
 }
 /* }}} */
 
 /* {{{ proto array Redis::sUnion(string key0, ... string keyN)
  */
 PHP_METHOD(Redis, sUnion) {
-
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "SUNION", sizeof("SUNION") - 1,
-							  0, &redis_sock, 0, 1, 1))
-		return;
-
-	IF_ATOMIC() {
-    	if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        	                                redis_sock, NULL, NULL) < 0) {
-	        RETURN_FALSE;
-    	}
-	}
-	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_CMD(sunion, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 /* {{{ proto array Redis::sUnionStore(string destination, string key0, ... string keyN)
  */
 PHP_METHOD(Redis, sUnionStore) {
-
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "SUNIONSTORE", sizeof("SUNIONSTORE") - 1,
-					1, &redis_sock, 0, 1, 1))
-		return;
-
-	IF_ATOMIC() {
-		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_CMD(sunionstore, redis_long_response);
 }
-
 /* }}} */
 
 /* {{{ proto array Redis::sDiff(string key0, ... string keyN)
  */
 PHP_METHOD(Redis, sDiff) {
-
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "SDIFF", sizeof("SDIFF") - 1,
-					0, &redis_sock, 0, 1, 1))
-		return;
-
-	IF_ATOMIC() {
-	    /* read multibulk reply */
-    	if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-											redis_sock, NULL, NULL) < 0) {
-        	RETURN_FALSE;
-	    }
-	}
-	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_CMD(sdiff, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
 /* {{{ proto array Redis::sDiffStore(string destination, string key0, ... string keyN)
  */
 PHP_METHOD(Redis, sDiffStore) {
-
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "SDIFFSTORE", sizeof("SDIFFSTORE") - 1,
-					1, &redis_sock, 0, 1, 1))
-		return;
-
-	IF_ATOMIC() {
-	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-	}
-	REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_CMD(sdiffstore, redis_long_response);
 }
 /* }}} */
 
