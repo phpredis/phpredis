@@ -1166,21 +1166,7 @@ PHP_METHOD(Redis, rPop)
  */
 PHP_METHOD(Redis, blPop)
 {
-
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "BLPOP", sizeof("BLPOP") - 1,
-					2, &redis_sock, 1, 1, 1))
-		return;
-
-    IF_ATOMIC() {
-    	if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-											redis_sock, NULL, NULL) < 0) {
-        	RETURN_FALSE;
-	    }
-    }
-    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_CMD(blpop, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
@@ -1188,20 +1174,7 @@ PHP_METHOD(Redis, blPop)
  */
 PHP_METHOD(Redis, brPop)
 {
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "BRPOP", sizeof("BRPOP") - 1,
-					2, &redis_sock, 1, 1, 1))
-		return;
-
-    IF_ATOMIC() {
-    	if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-											redis_sock, NULL, NULL) < 0) {
-        	RETURN_FALSE;
-	    }
-    }
-    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_CMD(brpop, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 

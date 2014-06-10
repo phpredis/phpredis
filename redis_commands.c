@@ -754,6 +754,7 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if(single_array) {
         ht_arr = Z_ARRVAL_P(z_args[0]);
         argc = zend_hash_num_elements(ht_arr);
+        if(has_timeout) argc++;
         efree(z_args);
         z_args = NULL;
     }
@@ -793,6 +794,7 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         if(has_timeout && Z_TYPE_P(z_args[argc-1])!=IS_LONG) {
             php_error_docref(NULL TSRMLS_CC, E_ERROR,
                 "Timeout value must be a LONG");
+            efree(z_args);
             return FAILURE;
         }
 
@@ -810,6 +812,7 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             } else if(cluster_hash_key(key,key_len)!=kslot) {
                 php_error_docref(NULL TSRMLS_CC, E_WARNING,
                     "Not all keys hash to the same slot");
+                efree(z_args);
                 return FAILURE;
             }
 
@@ -820,6 +823,9 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         if(has_timeout) {
             redis_cmd_append_sstr_long(&cmdstr, Z_LVAL_P(z_args[tail]));
         }
+
+        // Cleanup args
+        efree(z_args);
     }
 
     // Push out parameters
@@ -2181,7 +2187,7 @@ int redis_blpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-        "BLPOP", sizeof("BLPOP")-1, 1, 1, cmd, cmd_len, slot);
+        "BLPOP", sizeof("BLPOP")-1, 2, 1, cmd, cmd_len, slot);
 }
 
 /* BRPOP */
