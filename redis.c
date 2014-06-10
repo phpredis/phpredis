@@ -420,7 +420,8 @@ static void redis_destructor_redis_sock(zend_rsrc_list_entry * rsrc TSRMLS_DC)
 /**
  * redis_sock_get
  */
-PHP_REDIS_API int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC, int no_throw)
+PHPAPI int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC, 
+                          int no_throw)
 {
 
     zval **socket;
@@ -467,7 +468,8 @@ PHP_REDIS_API RedisSock *redis_sock_get_connected(INTERNAL_FUNCTION_PARAMETERS) 
     zval *object;
     RedisSock *redis_sock;
 
-    // If we can't grab our object, or get a socket, or we're not connected, return NULL
+    // If we can't grab our object, or get a socket, or we're not connected, 
+    // return NULL
     if((zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O", 
        &object, redis_ce) == FAILURE) ||
        (redis_sock_get(object, &redis_sock TSRMLS_CC, 1) < 0) || 
@@ -804,7 +806,8 @@ PHP_METHOD(Redis, close)
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::set(string key, mixed value, long timeout | array options) */
+/* {{{ proto boolean Redis::set(string key, mixed val, long timeout,
+ *                              [array opt) */
 PHP_METHOD(Redis, set) {
     REDIS_PROCESS_CMD(set, redis_boolean_response);
 }
@@ -2171,7 +2174,8 @@ PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
         /* fetch again */
         zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 
             0, NULL);
-        if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
+        if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) 
+        {
             /* this should never happen, according to the PHP people */
             continue;
         }
