@@ -11,7 +11,7 @@
 
 /* Get attached object context */
 #define GET_CONTEXT() \
-    (redisCluster*)zend_object_store_get_object(getThis() TSRMLS_CC)
+    ((redisCluster*)zend_object_store_get_object(getThis() TSRMLS_CC))
 
 /* Command building/processing is identical for every command */
 #define CLUSTER_BUILD_CMD(name, c, cmd, cmd_len, slot) \
@@ -162,4 +162,11 @@ PHP_METHOD(RedisCluster, zunionstore);
 PHP_METHOD(RedisCluster, zinterstore);
 PHP_METHOD(RedisCluster, sort);
 PHP_METHOD(RedisCluster, object);
+
+/* Introspection */
+PHP_METHOD(RedisCluster, getoption);
+PHP_METHOD(RedisCluster, setoption);
+PHP_METHOD(RedisCluster, _prefix);
+PHP_METHOD(RedisCluster, _serialize);
+PHP_METHOD(RedisCluster, _unserialize);
 #endif

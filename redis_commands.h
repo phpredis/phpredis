@@ -175,6 +175,22 @@ int redis_sdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_sdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
+/* Commands that don't communicate with Redis at all (such as getOption, 
+ * setOption, _prefix, _serialize, etc).  These can be handled in one place
+ * with the method of grabbing our RedisSock* object in different ways 
+ * depending if this is a Redis object or a RedisCluster object. */
+
+void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS, 
+    RedisSock *redis_sock);
+void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS, 
+    RedisSock *redis_sock);
+void redis_prefix_handler(INTERNAL_FUNCTION_PARAMETERS, 
+    RedisSock *redis_sock);
+void redis_serialize_handler(INTERNAL_FUNCTION_PARAMETERS, 
+    RedisSock *redis_sock);
+void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS, 
+    RedisSock *redis_sock, zend_class_entry *ex);
+
 #endif
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

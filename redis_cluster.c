@@ -136,6 +136,12 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, zrem, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sort, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, object, NULL, ZEND_ACC_PUBLIC)
+    
+    PHP_ME(RedisCluster, getoption, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, setoption, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, _prefix, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, _serialize, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, _unserialize, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -253,14 +259,14 @@ PHP_METHOD(RedisCluster, __construct) {
     redisCluster *context = GET_CONTEXT();
 
     // Parse arguments
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), 
-                                    "Os|add", &object, redis_cluster_ce, &name, 
-                                    &name_len, &z_seeds, &timeout, 
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
+                                    "Os|add", &object, redis_cluster_ce, &name,
+                                    &name_len, &z_seeds, &timeout,
                                     &read_timeout)==FAILURE)
     {
         RETURN_FALSE;
     }
-       
+
     // Require a name
     if(name_len == 0) {
         zend_throw_exception(redis_cluster_exception_ce,
@@ -274,24 +280,24 @@ PHP_METHOD(RedisCluster, __construct) {
             "Invalid timeout", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
-    
+
     // Validate our read timeout
     if(read_timeout < 0L || read_timeout > INT_MAX) {
         zend_throw_exception(redis_cluster_exception_ce,
             "Invalid read timeout", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
-    
+
     // TODO: Implement seed retrieval from php.ini
     if(!z_seeds || zend_hash_num_elements(Z_ARRVAL_P(z_seeds))==0) {
         zend_throw_exception(redis_cluster_exception_ce,
             "Must pass seeds", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
-    
+
     // Initialize our RedisSock "seed" objects
     cluster_init_seeds(context, Z_ARRVAL_P(z_seeds));
-    
+
     // Create and map our key space
     cluster_map_keyspace(context TSRMLS_CC);
 }
@@ -312,16 +318,16 @@ PHP_METHOD(RedisCluster, set) {
 }
 /* }}} */
 
-/* {{{ proto bool RedisCluster::setex(string key, string value, int expiry) */ 
+/* {{{ proto bool RedisCluster::setex(string key, string value, int expiry) */
 PHP_METHOD(RedisCluster, setex) {
-    CLUSTER_PROCESS_KW_CMD("SETEX", redis_key_long_val_cmd, 
+    CLUSTER_PROCESS_KW_CMD("SETEX", redis_key_long_val_cmd,
         cluster_bool_resp);
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::psetex(string key, string value, int expiry) */
 PHP_METHOD(RedisCluster, psetex) {
-    CLUSTER_PROCESS_KW_CMD("PSETEX", redis_key_long_val_cmd, 
+    CLUSTER_PROCESS_KW_CMD("PSETEX", redis_key_long_val_cmd,
         cluster_bool_resp);
 }
 /* }}} */
@@ -348,7 +354,7 @@ PHP_METHOD(RedisCluster, exists) {
 PHP_METHOD(RedisCluster, keys) {
     // TODO: Figure out how to implement this, as we may want to send it across
     // all nodes (although that seems dangerous), or ask for a specified slot.
-    zend_throw_exception(redis_cluster_exception_ce, 
+    zend_throw_exception(redis_cluster_exception_ce,
         "KEYS command not implemented", 0 TSRMLS_CC);
 }
 /* }}} */
@@ -453,7 +459,7 @@ PHP_METHOD(RedisCluster, lpushx) {
 }
 /* }}} */
 
-/* {{{ proto long RedisCluster::linsert(string k,string pos,mix pvt,mix val) */ 
+/* {{{ proto long RedisCluster::linsert(string k,string pos,mix pvt,mix val) */
 PHP_METHOD(RedisCluster, linsert) {
     CLUSTER_PROCESS_CMD(linsert, cluster_long_resp);
 }
@@ -576,7 +582,7 @@ PHP_METHOD(RedisCluster, pttl) {
 /* {{{ proto long RedisCluster::zcard(string key) */
 PHP_METHOD(RedisCluster, zcard) {
     CLUSTER_PROCESS_KW_CMD("ZCARD", redis_key_cmd, cluster_long_resp);
-} 
+}
 /* }}} */
 
 /* {{{ proto double RedisCluster::zscore(string key) */
@@ -636,7 +642,7 @@ PHP_METHOD(RedisCluster, hkeys) {
 /* }}} */
 
 /* {{{ proto array RedisCluster::hvals(string key) */
-PHP_METHOD(RedisCluster, hvals) { 
+PHP_METHOD(RedisCluster, hvals) {
     CLUSTER_PROCESS_KW_CMD("HVALS", redis_key_cmd, cluster_mbulk_resp);
 }
 /* }}} */
@@ -661,9 +667,9 @@ PHP_METHOD(RedisCluster, hsetnx) {
 
 /* {{{ proto array RedisCluster::hgetall(string key) */
 PHP_METHOD(RedisCluster, hgetall) {
-    CLUSTER_PROCESS_KW_CMD("HGETALL", redis_key_cmd, 
+    CLUSTER_PROCESS_KW_CMD("HGETALL", redis_key_cmd,
         cluster_mbulk_zipstr_resp);
-} 
+}
 /* }}} */
 
 /* {{{ proto bool RedisCluster::hexists(string key, string member) */
@@ -733,7 +739,7 @@ PHP_METHOD(RedisCluster, decrby) {
 
 /* {{{ proto double RedisCluster::incrbyfloat(string key, double val) */
 PHP_METHOD(RedisCluster, incrbyfloat) {
-    CLUSTER_PROCESS_KW_CMD("INCRBYFLOAT", redis_key_dbl_cmd, 
+    CLUSTER_PROCESS_KW_CMD("INCRBYFLOAT", redis_key_dbl_cmd,
         cluster_dbl_resp);
 }
 /* }}} */
@@ -825,7 +831,7 @@ PHP_METHOD(RedisCluster, ltrim) {
 
 /* {{{ proto array RedisCluster::lrange(string key, long start, long end) */
 PHP_METHOD(RedisCluster, lrange) {
-    CLUSTER_PROCESS_KW_CMD("LRANGE", redis_key_long_long_cmd, 
+    CLUSTER_PROCESS_KW_CMD("LRANGE", redis_key_long_long_cmd,
         cluster_mbulk_resp);
 }
 /* }}} */
@@ -875,28 +881,28 @@ PHP_METHOD(RedisCluster, pfmerge) {
 
 /* {{{ proto boolean RedisCluster::restore(string key, long ttl, string val) */
 PHP_METHOD(RedisCluster, restore) {
-    CLUSTER_PROCESS_KW_CMD("RESTORE", redis_key_long_str_cmd, 
+    CLUSTER_PROCESS_KW_CMD("RESTORE", redis_key_long_str_cmd,
         cluster_bool_resp);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::setrange(string key, long offset, string val) */
 PHP_METHOD(RedisCluster, setrange) {
-    CLUSTER_PROCESS_KW_CMD("SETRANGE", redis_key_long_str_cmd, 
+    CLUSTER_PROCESS_KW_CMD("SETRANGE", redis_key_long_str_cmd,
         cluster_long_resp);
 }
 /* }}} */
 
-/* Generic implementation for ZRANGE, ZREVRANGE, ZRANGEBYSCORE, 
+/* Generic implementation for ZRANGE, ZREVRANGE, ZRANGEBYSCORE,
  * ZREVRANGEBYSCORE */
-static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, 
-                               zrange_cb fun) 
+static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
+                               zrange_cb fun)
 {
     redisCluster *c = GET_CONTEXT();
-    char *cmd; int cmd_len; short slot; 
+    char *cmd; int cmd_len; short slot;
     int withscores;
 
-    if(fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len, 
+    if(fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len,
            &withscores, &slot, NULL)==FAILURE)
     {
         efree(cmd);
@@ -918,7 +924,7 @@ static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
     }
 }
 
-/* {{{ proto 
+/* {{{ proto
  *     array RedisCluster::zrange(string k, long s, long e, bool score=0) */
 PHP_METHOD(RedisCluster, zrange) {
     generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGE",
@@ -926,7 +932,7 @@ PHP_METHOD(RedisCluster, zrange) {
 }
 /* }}} */
 
-/* {{{ proto 
+/* {{{ proto
  *     array RedisCluster::zrevrange(string k,long s,long e,bool scores=0) */
 PHP_METHOD(RedisCluster, zrevrange) {
     generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGE",
@@ -934,7 +940,7 @@ PHP_METHOD(RedisCluster, zrevrange) {
 }
 /* }}} */
 
-/* {{{ proto array 
+/* {{{ proto array
  *     RedisCluster::zrangebyscore(string k, long s, long e, array opts) */
 PHP_METHOD(RedisCluster, zrangebyscore) {
     generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGEBYSCORE",
@@ -1023,5 +1029,43 @@ PHP_METHOD(RedisCluster, object) {
         cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
     }
 }
+
+/* Commands that do not interact with Redis, but just report stuff about
+ * various options, etc */
+
+/* {{{ proto long RedisCluster::getOption(long option */
+PHP_METHOD(RedisCluster, getoption) {
+    redis_getoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
+        GET_CONTEXT()->flags);
+}
+/* }}} */
+
+/* {{{ proto bool RedisCluster::setOption(long option, mixed value) */
+PHP_METHOD(RedisCluster, setoption) {
+    redis_setoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
+        GET_CONTEXT()->flags);
+}
+/* }}} */
+
+/* {{{ proto string RedisCluster::_prefix(string key) */
+PHP_METHOD(RedisCluster, _prefix) {
+    redis_prefix_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
+        GET_CONTEXT()->flags);
+}
+/* }}} */
+
+/* {{{ proto string RedisCluster::_serialize(mixed val) */
+PHP_METHOD(RedisCluster, _serialize) {
+    redis_serialize_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+        GET_CONTEXT()->flags);
+}
+/* }}} */
+
+/* {{{ proto mixed RedisCluster::_unserialize(string val) */
+PHP_METHOD(RedisCluster, _unserialize) {
+    redis_unserialize_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+        GET_CONTEXT()->flags, redis_cluster_exception_ce);
+}
+/* }}} */
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
