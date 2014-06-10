@@ -1154,35 +1154,30 @@ PHP_METHOD(Redis, rPushx)
 {
     REDIS_PROCESS_KW_CMD("RPUSHX", redis_kv_cmd, redis_string_response);
 }
-
 /* }}} */
 
-/* {{{ proto string Redis::lPOP(string key)
- */
+/* {{{ proto string Redis::lPOP(string key) */
 PHP_METHOD(Redis, lPop)
 {
     REDIS_PROCESS_KW_CMD("LPOP", redis_key_cmd, redis_string_response);
 }
 /* }}} */
 
-/* {{{ proto string Redis::rPOP(string key)
- */
+/* {{{ proto string Redis::rPOP(string key) */
 PHP_METHOD(Redis, rPop)
 {
     REDIS_PROCESS_KW_CMD("RPOP", redis_key_cmd, redis_string_response);
 }
 /* }}} */
 
-/* {{{ proto string Redis::blPop(string key1, string key2, ..., int timeout)
- */
+/* {{{ proto string Redis::blPop(string key1, string key2, ..., int timeout) */
 PHP_METHOD(Redis, blPop)
 {
     REDIS_PROCESS_CMD(blpop, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
-/* {{{ proto string Redis::brPop(string key1, string key2, ..., int timeout)
- */
+/* {{{ proto string Redis::brPop(string key1, string key2, ..., int timeout) */
 PHP_METHOD(Redis, brPop)
 {
     REDIS_PROCESS_CMD(brpop, redis_sock_read_multibulk_reply);
@@ -1190,24 +1185,21 @@ PHP_METHOD(Redis, brPop)
 /* }}} */
 
 
-/* {{{ proto int Redis::lSize(string key)
- */
+/* {{{ proto int Redis::lSize(string key) */
 PHP_METHOD(Redis, lSize)
 {
     REDIS_PROCESS_KW_CMD("LLEN", redis_key_cmd, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::lRemove(string list, string value, int count = 0)
- */
+/* {{{ proto boolean Redis::lRemove(string list, string value, int count = 0) */
 PHP_METHOD(Redis, lRemove)
 {
     REDIS_PROCESS_CMD(lrem, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::listTrim(string key , int start , int end)
- */
+/* {{{ proto boolean Redis::listTrim(string key , int start , int end) */
 PHP_METHOD(Redis, listTrim)
 {
     REDIS_PROCESS_KW_CMD("LTRIM", redis_key_long_long_cmd, 
@@ -1215,16 +1207,14 @@ PHP_METHOD(Redis, listTrim)
 }
 /* }}} */
 
-/* {{{ proto string Redis::lGet(string key , int index)
- */
+/* {{{ proto string Redis::lGet(string key , int index) */
 PHP_METHOD(Redis, lGet)
 {
     REDIS_PROCESS_KW_CMD("LGET", redis_key_long_cmd, redis_string_response);
 }
 /* }}} */
 
-/* {{{ proto array Redis::lGetRange(string key, int start , int end)
- */
+/* {{{ proto array Redis::lGetRange(string key, int start , int end) */
 PHP_METHOD(Redis, lGetRange)
 {
     REDIS_PROCESS_KW_CMD("LRANGE", redis_key_long_long_cmd, 
@@ -1232,8 +1222,7 @@ PHP_METHOD(Redis, lGetRange)
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::sAdd(string key , mixed value)
- */
+/* {{{ proto boolean Redis::sAdd(string key , mixed value) */
 PHP_METHOD(Redis, sAdd)
 {
     REDIS_PROCESS_KW_CMD("SADD", redis_key_varval_cmd, redis_long_response);
@@ -1247,33 +1236,28 @@ PHP_METHOD(Redis, sSize)
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::sRemove(string set, string value)
- */
+/* {{{ proto boolean Redis::sRemove(string set, string value) */
 PHP_METHOD(Redis, sRemove)
 {
     REDIS_PROCESS_KW_CMD("SREM", redis_key_varval_cmd, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::sMove(string set_src, string set_dst, mixed value)
- */
+/* {{{ proto boolean Redis::sMove(string src, string dst, mixed value) */
 PHP_METHOD(Redis, sMove)
 {
     REDIS_PROCESS_CMD(smove, redis_1_response);
 }
 /* }}} */
 
-/* }}} */
-/* {{{ proto string Redis::sPop(string key)
- */
+/* {{{ proto string Redis::sPop(string key) */
 PHP_METHOD(Redis, sPop)
 {
     REDIS_PROCESS_KW_CMD("SPOP", redis_key_cmd, redis_string_response);
 }
 /* }}} */
 
-/* {{{ proto string Redis::sRandMember(string key [int count])
- */
+/* {{{ proto string Redis::sRandMember(string key [int count]) */
 PHP_METHOD(Redis, sRandMember)
 {
     char *cmd;
@@ -1309,16 +1293,14 @@ PHP_METHOD(Redis, sRandMember)
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::sContains(string set, string value)
- */
+/* {{{ proto boolean Redis::sContains(string set, string value) */
 PHP_METHOD(Redis, sContains)
 {
     REDIS_PROCESS_KW_CMD("SISMEMBER", redis_kv_cmd, redis_1_response);
 }
 /* }}} */
 
-/* {{{ proto array Redis::sMembers(string set)
- */
+/* {{{ proto array Redis::sMembers(string set) */
 PHP_METHOD(Redis, sMembers)
 {
     REDIS_PROCESS_KW_CMD("SMEMBERS", redis_key_cmd,
@@ -1326,42 +1308,37 @@ PHP_METHOD(Redis, sMembers)
 }
 /* }}} */
 
-/* {{{ proto array Redis::sInter(string key0, ... string keyN)
- */
+/* {{{ proto array Redis::sInter(string key0, ... string keyN) */
 PHP_METHOD(Redis, sInter) {
     REDIS_PROCESS_CMD(sinter, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
-/* {{{ proto array Redis::sInterStore(string dst, string key0, ... string keyN)
- */
+/* {{{ proto array Redis::sInterStore(string dst, string key0,...string keyN) */
 PHP_METHOD(Redis, sInterStore) {
     REDIS_PROCESS_CMD(sinterstore, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto array Redis::sUnion(string key0, ... string keyN)
- */
+/* {{{ proto array Redis::sUnion(string key0, ... string keyN) */
 PHP_METHOD(Redis, sUnion) {
     REDIS_PROCESS_CMD(sunion, redis_sock_read_multibulk_reply);
 }
 /* }}} */
-/* {{{ proto array Redis::sUnionStore(string dst, string key0, ... string keyN)
- */
+
+/* {{{ proto array Redis::sUnionStore(string dst, string key0, ... keyN) */
 PHP_METHOD(Redis, sUnionStore) {
     REDIS_PROCESS_CMD(sunionstore, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto array Redis::sDiff(string key0, ... string keyN)
- */
+/* {{{ proto array Redis::sDiff(string key0, ... string keyN) */
 PHP_METHOD(Redis, sDiff) {
     REDIS_PROCESS_CMD(sdiff, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
-/* {{{ proto array Redis::sDiffStore(string dst, string key0, ... string keyN)
- */
+/* {{{ proto array Redis::sDiffStore(string dst, string key0, ... keyN) */
 PHP_METHOD(Redis, sDiffStore) {
     REDIS_PROCESS_CMD(sdiffstore, redis_long_response);
 }
@@ -1593,8 +1570,7 @@ PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
 }
 
 /* {{{ proto array Redis::sortAsc(string key, string pattern, string get, 
- *                                int start, int end, bool getList])
- */
+ *                                int start, int end, bool getList]) */
 PHP_METHOD(Redis, sortAsc)
 {
     generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ASC", 0);
@@ -1602,8 +1578,7 @@ PHP_METHOD(Redis, sortAsc)
 /* }}} */
 
 /* {{{ proto array Redis::sortAscAlpha(string key, string pattern, string get, 
- *                                     int start, int end, bool getList])
- */
+ *                                     int start, int end, bool getList]) */
 PHP_METHOD(Redis, sortAscAlpha)
 {
     generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ASC", 1);
@@ -1611,8 +1586,7 @@ PHP_METHOD(Redis, sortAscAlpha)
 /* }}} */
 
 /* {{{ proto array Redis::sortDesc(string key, string pattern, string get, 
- *                                 int start, int end, bool getList])
- */
+ *                                 int start, int end, bool getList]) */
 PHP_METHOD(Redis, sortDesc)
 {
     generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DESC", 0);
@@ -1620,127 +1594,112 @@ PHP_METHOD(Redis, sortDesc)
 /* }}} */
 
 /* {{{ proto array Redis::sortDescAlpha(string key, string pattern, string get, 
- *                                      int start, int end, bool getList])
- */
+ *                                      int start, int end, bool getList]) */
 PHP_METHOD(Redis, sortDescAlpha)
 {
     generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DESC", 1);
 }
 /* }}} */
 
-/* {{{ proto array Redis::setTimeout(string key, int timeout)
- */
+/* {{{ proto array Redis::setTimeout(string key, int timeout) */
 PHP_METHOD(Redis, setTimeout) {
     REDIS_PROCESS_KW_CMD("EXPIRE", redis_key_long_cmd, redis_1_response);
 }
 /* }}} */
 
+/* {{{ proto bool Redis::pexpire(string key, long ms) */
 PHP_METHOD(Redis, pexpire) {
     REDIS_PROCESS_KW_CMD("PEXPIRE", redis_key_long_cmd, redis_1_response);
 }
 /* }}} */
 
-/* {{{ proto array Redis::expireAt(string key, int timestamp)
- */
+/* {{{ proto array Redis::expireAt(string key, int timestamp) */
 PHP_METHOD(Redis, expireAt) {
     REDIS_PROCESS_KW_CMD("EXPIREAT", redis_key_long_cmd, redis_1_response);
 }
 /* }}} */
 
-/* {{{ proto array Redis::pexpireAt(string key, int timestamp)
- */
+/* {{{ proto array Redis::pexpireAt(string key, int timestamp) */
 PHP_METHOD(Redis, pexpireAt) {
     REDIS_PROCESS_KW_CMD("PEXPIREAT", redis_key_long_cmd, redis_1_response);
 }
 /* }}} */
 
-/* {{{ proto array Redis::lSet(string key, int index, string value)
- */
+/* {{{ proto array Redis::lSet(string key, int index, string value) */
 PHP_METHOD(Redis, lSet) {
     REDIS_PROCESS_KW_CMD("LSET", redis_key_long_val_cmd, 
         redis_boolean_response);
 }
 /* }}} */
 
-/* {{{ proto string Redis::save()
- */
+/* {{{ proto string Redis::save() */
 PHP_METHOD(Redis, save)
 {
     REDIS_PROCESS_KW_CMD("SAVE", redis_empty_cmd, redis_boolean_response);
 }
 /* }}} */
 
-/* {{{ proto string Redis::bgSave()
- */
+/* {{{ proto string Redis::bgSave() */
 PHP_METHOD(Redis, bgSave)
 {
     REDIS_PROCESS_KW_CMD("BGSAVE", redis_empty_cmd, redis_boolean_response);
 }
 /* }}} */
 
-/* {{{ proto integer Redis::lastSave()
- */
+/* {{{ proto integer Redis::lastSave() */
 PHP_METHOD(Redis, lastSave)
 {
     REDIS_PROCESS_KW_CMD("LASTSAVE", redis_empty_cmd, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto bool Redis::flushDB()
- */
+/* {{{ proto bool Redis::flushDB() */
 PHP_METHOD(Redis, flushDB)
 {
     REDIS_PROCESS_KW_CMD("FLUSHDB", redis_empty_cmd, redis_boolean_response);    
 }
 /* }}} */
 
-/* {{{ proto bool Redis::flushAll()
- */
+/* {{{ proto bool Redis::flushAll() */
 PHP_METHOD(Redis, flushAll)
 {
     REDIS_PROCESS_KW_CMD("FLUSHALL", redis_empty_cmd, redis_boolean_response);
 }
 /* }}} */
 
-/* {{{ proto int Redis::dbSize()
- */
+/* {{{ proto int Redis::dbSize() */
 PHP_METHOD(Redis, dbSize)
 {
     REDIS_PROCESS_KW_CMD("DBSIZE", redis_empty_cmd, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto bool Redis::auth(string passwd)
- */
+/* {{{ proto bool Redis::auth(string passwd) */
 PHP_METHOD(Redis, auth) {
     REDIS_PROCESS_CMD(auth, redis_boolean_response);
 }
 /* }}} */
 
-/* {{{ proto long Redis::persist(string key)
- */
+/* {{{ proto long Redis::persist(string key) */
 PHP_METHOD(Redis, persist) {
     REDIS_PROCESS_KW_CMD("PERSIST", redis_key_cmd, redis_1_response);
 }
 /* }}} */
 
 
-/* {{{ proto long Redis::ttl(string key)
- */
+/* {{{ proto long Redis::ttl(string key) */
 PHP_METHOD(Redis, ttl) {
     REDIS_PROCESS_KW_CMD("TTL", redis_key_cmd, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto long Redis::pttl(string key)
- */
+/* {{{ proto long Redis::pttl(string key) */
 PHP_METHOD(Redis, pttl) {
     REDIS_PROCESS_KW_CMD("PTTL", redis_key_cmd, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto array Redis::info()
- */
+/* {{{ proto array Redis::info() */
 PHP_METHOD(Redis, info) {
 
     zval *object;
@@ -1777,8 +1736,7 @@ PHP_METHOD(Redis, info) {
 }
 /* }}} */
 
-/* {{{ proto bool Redis::select(long dbNumber)
- */
+/* {{{ proto bool Redis::select(long dbNumber) */
 PHP_METHOD(Redis, select) {
 
     zval *object;
@@ -1810,8 +1768,7 @@ PHP_METHOD(Redis, select) {
 }
 /* }}} */
 
-/* {{{ proto bool Redis::move(string key, long dbindex)
- */
+/* {{{ proto bool Redis::move(string key, long dbindex) */
 PHP_METHOD(Redis, move) {
     REDIS_PROCESS_KW_CMD("MOVE", redis_key_long_cmd, redis_1_response);
 }
@@ -1927,8 +1884,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
     REDIS_PROCESS_RESPONSE(fun);
 }
 
-/* {{{ proto bool Redis::mset(array (key => value, ...))
- */
+/* {{{ proto bool Redis::mset(array (key => value, ...)) */
 PHP_METHOD(Redis, mset) {
     generic_mset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "MSET", 
         redis_boolean_response);
@@ -1936,16 +1892,14 @@ PHP_METHOD(Redis, mset) {
 /* }}} */
 
 
-/* {{{ proto bool Redis::msetnx(array (key => value, ...))
- */
+/* {{{ proto bool Redis::msetnx(array (key => value, ...)) */
 PHP_METHOD(Redis, msetnx) {
     generic_mset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "MSETNX", 
         redis_1_response);
 }
 /* }}} */
 
-/* {{{ proto string Redis::rpoplpush(string srckey, string dstkey)
- */
+/* {{{ proto string Redis::rpoplpush(string srckey, string dstkey) */
 PHP_METHOD(Redis, rpoplpush)
 {
     REDIS_PROCESS_KW_CMD("RPOPLPUSH", redis_key_key_cmd, redis_string_response);
@@ -1958,8 +1912,7 @@ PHP_METHOD(Redis, brpoplpush) {
 }
 /* }}} */
 
-/* {{{ proto long Redis::zAdd(string key, int score, string value)
- */
+/* {{{ proto long Redis::zAdd(string key, int score, string value) */
 PHP_METHOD(Redis, zAdd) {
     REDIS_PROCESS_CMD(zadd, redis_long_response);
 }
@@ -2032,8 +1985,7 @@ PHP_METHOD(Redis, zRevRangeByScore) {
 }
 /* }}} */
 
-/* {{{ proto long Redis::zDelete(string key, string member)
- */
+/* {{{ proto long Redis::zDelete(string key, string member) */
 PHP_METHOD(Redis, zDelete)
 {
     REDIS_PROCESS_KW_CMD("ZREM", redis_key_varval_cmd, redis_long_response);
@@ -2048,8 +2000,7 @@ PHP_METHOD(Redis, zDeleteRangeByScore)
 }
 /* }}} */
 
-/* {{{ proto long Redis::zDeleteRangeByRank(string key, long start, long end)
- */
+/* {{{ proto long Redis::zDeleteRangeByRank(string key, long start, long end) */
 PHP_METHOD(Redis, zDeleteRangeByRank)
 {
     REDIS_PROCESS_KW_CMD("ZREMRANGEBYRANK", redis_key_long_long_cmd,
@@ -2064,16 +2015,14 @@ PHP_METHOD(Redis, zCount)
 }
 /* }}} */
 
-/* {{{ proto long Redis::zCard(string key)
- */
+/* {{{ proto long Redis::zCard(string key) */
 PHP_METHOD(Redis, zCard)
 {
     REDIS_PROCESS_KW_CMD("ZCARD", redis_key_cmd, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto double Redis::zScore(string key, mixed member)
- */
+/* {{{ proto double Redis::zScore(string key, mixed member) */
 PHP_METHOD(Redis, zScore)
 {
     REDIS_PROCESS_KW_CMD("ZSCORE", redis_kv_cmd, 
@@ -2081,8 +2030,7 @@ PHP_METHOD(Redis, zScore)
 }
 /* }}} */
 
-/* {{{ proto long Redis::zRank(string key, string member)
- */
+/* {{{ proto long Redis::zRank(string key, string member) */
 PHP_METHOD(Redis, zRank) {
     REDIS_PROCESS_KW_CMD("ZRANK", redis_kv_cmd, redis_long_response);
 }
@@ -2094,8 +2042,7 @@ PHP_METHOD(Redis, zRevRank) {
 }
 /* }}} */
 
-/* {{{ proto double Redis::zIncrBy(string key, double value, mixed member)
- */
+/* {{{ proto double Redis::zIncrBy(string key, double value, mixed member) */
 PHP_METHOD(Redis, zIncrBy)
 {
     REDIS_PROCESS_CMD(zincrby, redis_bulk_double_response);
@@ -2114,35 +2061,35 @@ PHP_METHOD(Redis, zUnion) {
 
 /* hashes */
 
-/* proto long Redis::hset(string key, string mem, string val) */
+/* {{{ proto long Redis::hset(string key, string mem, string val) */
 PHP_METHOD(Redis, hSet)
 {
     REDIS_PROCESS_CMD(hset, redis_long_response);
 }
 /* }}} */
 
-/* proto bool Redis::hSetNx(string key, string mem, string val) */
+/* {{{ proto bool Redis::hSetNx(string key, string mem, string val) */
 PHP_METHOD(Redis, hSetNx)
 {
     REDIS_PROCESS_CMD(hsetnx, redis_1_response);
 }
 /* }}} */
 
-/* proto string Redis::hget(string key, string mem) */
+/* {{{ proto string Redis::hget(string key, string mem) */
 PHP_METHOD(Redis, hGet)
 {
     REDIS_PROCESS_KW_CMD("HGET", redis_key_str_cmd, redis_string_response);
 }
 /* }}} */
 
-/* hLen */
+/* {{{ proto long Redis::hLen(string key) */
 PHP_METHOD(Redis, hLen)
 {
     REDIS_PROCESS_KW_CMD("HLEN", redis_key_cmd, redis_long_response);
 }
 /* }}} */
 
-/* hDel */
+/* {{{ proto long Redis::hDel(string key, string mem1, ... memN) */
 PHP_METHOD(Redis, hDel)
 {
     REDIS_PROCESS_CMD(hdel, redis_long_response);
@@ -2370,6 +2317,7 @@ redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS,
     return 0;
 
 }
+
 /* redis_sock_read_multibulk_multi_reply */
 PHPAPI int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS,
                                       RedisSock *redis_sock)
@@ -2541,7 +2489,8 @@ PHPAPI int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC) {
 PHPAPI void fold_this_item(INTERNAL_FUNCTION_PARAMETERS, fold_item *item, 
                            RedisSock *redis_sock, zval *z_tab) 
 {
-    item->fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, item->ctx TSRMLS_CC);
+    item->fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, item->ctx 
+        TSRMLS_CC);
 }
 
 PHPAPI int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
@@ -2775,15 +2724,13 @@ PHPAPI void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd)
     }
 }
 
-/* {{{ proto void Redis::psubscribe(Array(pattern1, pattern2, ... patternN))
- */
+/* {{{ proto void Redis::psubscribe(Array(pattern1, pattern2, ... patternN)) */
 PHP_METHOD(Redis, psubscribe)
 {
     generic_subscribe_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "psubscribe");
 }
 
-/* {{{ proto void Redis::subscribe(Array(channel1, channel2, ... channelN))
- */
+/* {{{ proto void Redis::subscribe(Array(channel1, channel2, ... channelN)) */
 PHP_METHOD(Redis, subscribe) {
     generic_subscribe_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "subscribe");
 }
@@ -2889,8 +2836,7 @@ PHP_METHOD(Redis, punsubscribe)
     generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PUNSUBSCRIBE");
 }
 
-/* {{{ proto string Redis::bgrewriteaof()
- */
+/* {{{ proto string Redis::bgrewriteaof() */
 PHP_METHOD(Redis, bgrewriteaof)
 {
     REDIS_PROCESS_KW_CMD("BGREWRITEAOF", redis_empty_cmd, 
@@ -2898,8 +2844,7 @@ PHP_METHOD(Redis, bgrewriteaof)
 }
 /* }}} */
 
-/* {{{ proto string Redis::slaveof([host, port])
- */
+/* {{{ proto string Redis::slaveof([host, port]) */
 PHP_METHOD(Redis, slaveof)
 {
     zval *object;
@@ -2935,8 +2880,7 @@ PHP_METHOD(Redis, slaveof)
 }
 /* }}} */
 
-/* {{{ proto string Redis::object(key)
- */
+/* {{{ proto string Redis::object(key) */
 PHP_METHOD(Redis, object)
 {
     RedisSock *redis_sock;
@@ -2969,8 +2913,7 @@ PHP_METHOD(Redis, object)
 }
 /* }}} */
 
-/* {{{ proto string Redis::getOption($option)
- */
+/* {{{ proto string Redis::getOption($option) */
 PHP_METHOD(Redis, getOption)  {
     RedisSock *redis_sock;
     zval *object;
@@ -3003,8 +2946,7 @@ PHP_METHOD(Redis, getOption)  {
 }
 /* }}} */
 
-/* {{{ proto string Redis::setOption(string $option, mixed $value)
- */
+/* {{{ proto string Redis::setOption(string $option, mixed $value) */
 PHP_METHOD(Redis, setOption) {
     RedisSock *redis_sock;
     zval *object;
@@ -3076,8 +3018,7 @@ PHP_METHOD(Redis, setOption) {
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::config(string op, string key [, mixed value])
- */
+/* {{{ proto boolean Redis::config(string op, string key [, mixed value]) */
 PHP_METHOD(Redis, config)
 {
     zval *object;
@@ -3134,8 +3075,7 @@ PHP_METHOD(Redis, config)
 /* }}} */
 
 
-/* {{{ proto boolean Redis::slowlog(string arg, [int option])
- */
+/* {{{ proto boolean Redis::slowlog(string arg, [int option]) */
 PHP_METHOD(Redis, slowlog) {
     zval *object;
     RedisSock *redis_sock;
@@ -3191,8 +3131,7 @@ PHP_METHOD(Redis, slowlog) {
     REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
 }
 
-/* {{{ proto Redis::wait(int num_slaves, int ms) }}}
- */
+/* {{{ proto Redis::wait(int num_slaves, int ms) }}} */
 PHP_METHOD(Redis, wait) {
     zval *object;
     RedisSock *redis_sock;
@@ -3231,9 +3170,7 @@ PHP_METHOD(Redis, wait) {
     REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 
-/*
- * Construct a PUBSUB command
- */
+/* Construct a PUBSUB command */
 PHPAPI int
 redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
                        zval *arg TSRMLS_DC)
@@ -3489,8 +3426,7 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
     return cmd_len;
 }
 
-/* {{{ proto variant Redis::evalsha(string sha1, [array keys, int num_key_args])
- */
+/* {{{ proto variant Redis::evalsha(string sha1, [array keys, long num_keys]) */
 PHP_METHOD(Redis, evalsha)
 {
     zval *object, *args= NULL;
@@ -3526,8 +3462,7 @@ PHP_METHOD(Redis, evalsha)
     REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
 }
 
-/* {{{ proto variant Redis::eval(string script, [array keys, int num_key_args])
- */
+/* {{{ proto variant Redis::eval(string script, [array keys, long num_keys]) */
 PHP_METHOD(Redis, eval)
 {
     zval *object, *args = NULL;
@@ -3665,24 +3600,19 @@ PHP_METHOD(Redis, script) {
     REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
 }
 
-/* {{{ proto DUMP key
- */
+/* {{{ proto DUMP key */
 PHP_METHOD(Redis, dump) {
     REDIS_PROCESS_KW_CMD("DUMP", redis_key_cmd, redis_ping_response);
 }
 
-/*
- * {{{ proto Redis::restore(ttl, key, value)
- */
+/* {{{ proto Redis::restore(ttl, key, value) */
 PHP_METHOD(Redis, restore) {
     REDIS_PROCESS_KW_CMD("RESTORE", redis_key_long_val_cmd, 
         redis_boolean_response);
 }
 
-/*
- * {{{ proto Redis::migrate(host port key dest-db timeout [bool copy, 
- *                          bool replace])
- */
+/* {{{ proto Redis::migrate(host port key dest-db timeout [bool copy, 
+ *                          bool replace]) */
 PHP_METHOD(Redis, migrate) {
     zval *object;
     RedisSock *redis_sock;
@@ -3743,9 +3673,7 @@ PHP_METHOD(Redis, migrate) {
     REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 
-/*
- * {{{ proto Redis::_prefix(key)
- */
+/* {{{ proto Redis::_prefix(key) */
 PHP_METHOD(Redis, _prefix) {
     zval *object;
     RedisSock *redis_sock;
@@ -3774,9 +3702,7 @@ PHP_METHOD(Redis, _prefix) {
     }
 }
 
-/*
- * {{{ proto Redis::_serialize(value)
- */
+/* {{{ proto Redis::_serialize(value) */
 PHP_METHOD(Redis, _serialize) {
     zval *object;
     RedisSock *redis_sock;
@@ -3805,9 +3731,7 @@ PHP_METHOD(Redis, _serialize) {
     if(val_free) STR_FREE(val);
 }
 
-/*
- * {{{ proto Redis::_unserialize(value)
- */
+/* {{{ proto Redis::_unserialize(value) */
 PHP_METHOD(Redis, _unserialize) {
     zval *object;
     RedisSock *redis_sock;
@@ -3846,9 +3770,7 @@ PHP_METHOD(Redis, _unserialize) {
     }
 }
 
-/*
- * {{{ proto Redis::getLastError()
- */
+/* {{{ proto Redis::getLastError() */
 PHP_METHOD(Redis, getLastError) {
     zval *object;
     RedisSock *redis_sock;
@@ -3873,9 +3795,7 @@ PHP_METHOD(Redis, getLastError) {
     }
 }
 
-/*
- * {{{ proto Redis::clearLastError()
- */
+/* {{{ proto Redis::clearLastError() */
 PHP_METHOD(Redis, clearLastError) {
     zval *object;
     RedisSock *redis_sock;
@@ -3901,9 +3821,7 @@ PHP_METHOD(Redis, clearLastError) {
 }
 
 
-/*
- * {{{ proto Redis::time()
- */
+/* {{{ proto Redis::time() */
 PHP_METHOD(Redis, time) {
     zval *object;
     RedisSock *redis_sock;
@@ -3941,9 +3859,7 @@ PHP_METHOD(Redis, time) {
  * Introspection stuff
  */
 
-/*
- * {{{ proto Redis::IsConnected
- */
+/* {{{ proto Redis::IsConnected */
 PHP_METHOD(Redis, isConnected) {
     RedisSock *redis_sock;
 
@@ -3954,9 +3870,7 @@ PHP_METHOD(Redis, isConnected) {
     }
 }
 
-/*
- * {{{ proto Redis::getHost()
- */
+/* {{{ proto Redis::getHost() */
 PHP_METHOD(Redis, getHost) {
     RedisSock *redis_sock;
 
@@ -3967,9 +3881,7 @@ PHP_METHOD(Redis, getHost) {
     }
 }
 
-/*
- * {{{ proto Redis::getPort()
- */
+/* {{{ proto Redis::getPort() */
 PHP_METHOD(Redis, getPort) {
     RedisSock *redis_sock;
 
@@ -3981,9 +3893,7 @@ PHP_METHOD(Redis, getPort) {
     }
 }
 
-/*
- * {{{ proto Redis::getDBNum
- */
+/* {{{ proto Redis::getDBNum */
 PHP_METHOD(Redis, getDBNum) {
     RedisSock *redis_sock;
 
@@ -3995,9 +3905,7 @@ PHP_METHOD(Redis, getDBNum) {
     }
 }
 
-/*
- * {{{ proto Redis::getTimeout
- */
+/* {{{ proto Redis::getTimeout */
 PHP_METHOD(Redis, getTimeout) {
     RedisSock *redis_sock;
 
@@ -4008,9 +3916,7 @@ PHP_METHOD(Redis, getTimeout) {
     }
 }
 
-/*
- * {{{ proto Redis::getReadTimeout
- */
+/* {{{ proto Redis::getReadTimeout */
 PHP_METHOD(Redis, getReadTimeout) {
     RedisSock *redis_sock;
 
@@ -4021,9 +3927,7 @@ PHP_METHOD(Redis, getReadTimeout) {
     }
 }
 
-/*
- * {{{ proto Redis::getPersistentID
- */
+/* {{{ proto Redis::getPersistentID */
 PHP_METHOD(Redis, getPersistentID) {
     RedisSock *redis_sock;
 
@@ -4038,9 +3942,7 @@ PHP_METHOD(Redis, getPersistentID) {
     }
 }
 
-/*
- * {{{ proto Redis::getAuth
- */
+/* {{{ proto Redis::getAuth */
 PHP_METHOD(Redis, getAuth) {
     RedisSock *redis_sock;
 
@@ -4108,9 +4010,7 @@ PHP_METHOD(Redis, client) {
     }
 }
 
-/**
- * Helper to format any combination of SCAN arguments
- */
+/* Helper to format any combination of SCAN arguments */
 PHPAPI int
 redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
                      int iter, char *pattern, int pattern_len, int count)
@@ -4168,9 +4068,7 @@ redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     return cmd_len;
 }
 
-/**
- * {{{ proto redis::scan(&$iterator, [pattern, [count]])
- */
+/* {{{ proto redis::scan(&$iterator, [pattern, [count]]) */
 PHPAPI void
 generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     zval *object, *z_iter;
