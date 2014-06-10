@@ -24,6 +24,9 @@
 #ifndef PHP_REDIS_H
 #define PHP_REDIS_H
 
+/* phpredis version */
+#define PHP_REDIS_VERSION "2.2.5"
+
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, __destruct);
 PHP_METHOD(Redis, connect);
@@ -229,25 +232,32 @@ PHP_RINIT_FUNCTION(redis);
 PHP_RSHUTDOWN_FUNCTION(redis);
 PHP_MINFO_FUNCTION(redis);
 
-PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
-PHP_REDIS_API void redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int count);
-PHP_REDIS_API int generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAMETERS, char *keyword, int keyword_len,
-									 int min_argc, RedisSock **redis_sock, int has_timeout, int all_keys, int can_serialize);
-PHP_REDIS_API void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, int use_alpha);
-typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
-PHP_REDIS_API void generic_empty_cmd_impl(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ResultCallback result_callback);
-PHP_REDIS_API void generic_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...);
-PHP_REDIS_API void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cmd, int cmd_len, ...);
+/* Redis response handler function callback prototype */
+typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS, 
+    RedisSock *redis_sock, zval *z_tab, void *ctx);
 
-PHP_REDIS_API void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd);
-PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *unsub_cmd);
+PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
 
-PHP_REDIS_API int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC);
+PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort, 
+    int use_alpha);
 
-PHP_REDIS_API int get_flag(zval *object TSRMLS_DC);
-PHP_REDIS_API void set_flag(zval *object, int new_flag TSRMLS_DC);
+PHPAPI void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd);
 
-PHP_REDIS_API int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, int numElems);
+PHPAPI void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, 
+    char *unsub_cmd);
+
+PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, 
+    int use_atof TSRMLS_DC);
+
+PHPAPI int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC);
+
+PHPAPI int get_flag(zval *object TSRMLS_DC);
+
+PHPAPI void set_flag(zval *object, int new_flag TSRMLS_DC);
+
+PHPAPI int redis_sock_read_multibulk_multi_reply_loop(
+    INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, 
+    int numElems);
 
 /* pipeline */
 PHP_REDIS_API request_item* get_pipeline_head(zval *object);
@@ -261,7 +271,6 @@ ZEND_END_MODULE_GLOBALS(redis)
 #endif
 
 struct redis_queued_item {
-
 	/* reading function */
 	zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, ...);
 
@@ -272,11 +281,9 @@ struct redis_queued_item {
 };
 
 extern zend_module_entry redis_module_entry;
+
 #define redis_module_ptr &redis_module_entry
-
 #define phpext_redis_ptr redis_module_ptr
-
-#define PHP_REDIS_VERSION "2.2.7"
 
 #endif
 
