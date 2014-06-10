@@ -1001,19 +1001,6 @@ PHP_METHOD(Redis, exists)
 PHP_METHOD(Redis, delete)
 {
     REDIS_PROCESS_CMD(del, redis_long_response);
-/*
-    RedisSock *redis_sock;
-
-    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "DEL", sizeof("DEL") - 1,
-					1, &redis_sock, 0, 1, 1))
-		return;
-
-    IF_ATOMIC() {
-	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-    }
-	REDIS_PROCESS_RESPONSE(redis_long_response);
-*/
 }
 /* }}} */
 
@@ -1022,26 +1009,18 @@ PHPAPI void redis_set_watch(RedisSock *redis_sock)
     redis_sock->watching = 1;
 }
 
-PHPAPI void redis_watch_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+PHPAPI void redis_watch_response(INTERNAL_FUNCTION_PARAMETERS, 
+                                 RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
-    redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, ctx, redis_set_watch);
+    redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 
+        z_tab, ctx, redis_set_watch);
 }
 
 /* {{{ proto boolean Redis::watch(string key1, string key2...)
  */
 PHP_METHOD(Redis, watch)
 {
-    RedisSock *redis_sock;
-
-    generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "WATCH", sizeof("WATCH") - 1,
-					1, &redis_sock, 0, 1, 1);
-    redis_sock->watching = 1;
-    IF_ATOMIC() {
-        redis_watch_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-    }
-    REDIS_PROCESS_RESPONSE(redis_watch_response);
-
+    REDIS_PROCESS_CMD(watch, redis_watch_response);
 }
 /* }}} */
 
@@ -1050,9 +1029,12 @@ PHPAPI void redis_clear_watch(RedisSock *redis_sock)
     redis_sock->watching = 0;
 }
 
-PHPAPI void redis_unwatch_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+PHPAPI void redis_unwatch_response(INTERNAL_FUNCTION_PARAMETERS, 
+                                   RedisSock *redis_sock, zval *z_tab, 
+                                   void *ctx)
 {
-    redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, ctx, redis_clear_watch);
+    redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 
+        z_tab, ctx, redis_clear_watch);
 }
 
 /* {{{ proto boolean Redis::unwatch()
