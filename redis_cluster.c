@@ -54,6 +54,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, spop, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, lpush, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, rpush, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, blpop, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, brpop, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, rpushx, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, lpushx, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, linsert, NULL, ZEND_ACC_PUBLIC)
@@ -418,6 +420,18 @@ PHP_METHOD(RedisCluster, lpush) {
 /* {{{ proto long RedisCluster::rpush(string key, string val1, ... valN) */
 PHP_METHOD(RedisCluster, rpush) {
     CLUSTER_PROCESS_KW_CMD("RPUSH", redis_key_varval_cmd, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto array RedisCluster::blpop(string key1, ... keyN, long timeout) */
+PHP_METHOD(RedisCluster, blpop) {
+    CLUSTER_PROCESS_CMD(blpop, cluster_mbulk_resp);
+}
+/* }}} */
+
+/* {{{ proto array RedisCluster::brpop(string key1, ... keyN, long timeout */
+PHP_METHOD(RedisCluster, brpop) {
+    CLUSTER_PROCESS_CMD(brpop, cluster_mbulk_resp);
 }
 /* }}} */
 
