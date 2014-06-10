@@ -713,6 +713,123 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* Generic function that takes a variable number of keys, with an optional
+ * timeout value.  This can handle various SUNION/SUNIONSTORE/BRPOP type
+ * commands. */
+static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                          char *kw, int kw_len, int min_argc, int has_timeout, 
+                          char **cmd, int *cmd_len, short *slot)
+{
+    zval **z_args, **z_ele;
+    HashTable *ht_arr;
+    char *key;
+    int key_free, key_len, i, tail;
+    int single_array = 0, argc = ZEND_NUM_ARGS();
+    smart_str cmdstr = {0};
+    long timeout;
+    short kslot = -1;
+
+    if(argc < min_argc) {
+        zend_wrong_param_count(TSRMLS_C);
+        return FAILURE;
+    }
+
+    // Allocate args
+    z_args = emalloc(argc * sizeof(zval *));
+    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
+        efree(z_args);
+        return FAILURE;
+    }
+
+    // Handle our "single array" case
+    if(has_timeout == 0) {
+        single_array = argc==1 && Z_TYPE_P(z_args[0])==IS_ARRAY;
+    } else {
+        single_array = argc==2 && Z_TYPE_P(z_args[0])==IS_ARRAY &&
+            Z_TYPE_P(z_args[1])==IS_LONG;
+        timeout = Z_LVAL_P(z_args[1]);
+    }
+
+    // If we're running a single array, rework args
+    if(single_array) {
+        ht_arr = Z_ARRVAL_P(z_args[0]);
+        argc = zend_hash_num_elements(ht_arr);
+        efree(z_args);
+        z_args = NULL;
+    }
+
+    // Begin construction of our command
+    redis_cmd_init_sstr(&cmdstr, argc, kw, kw_len);
+
+    if(single_array) {
+        for(zend_hash_internal_pointer_reset(ht_arr);
+            zend_hash_get_current_data(ht_arr,(void**)&z_ele)==SUCCESS;
+            zend_hash_move_forward(ht_arr))
+        {
+            convert_to_string(*z_ele);
+            key = Z_STRVAL_PP(z_ele);
+            key_len = Z_STRLEN_PP(z_ele);
+            key_free = redis_key_prefix(redis_sock, &key, &key_len);
+        
+            // Protect against CROSSLOT errors
+            if(slot) {
+                if(kslot == -1) {
+                    kslot = cluster_hash_key(key, key_len);
+                } else if(cluster_hash_key(key,key_len)!=kslot) {
+                    php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                        "Not all keys hash to the same slot!");
+                    return FAILURE;
+                }
+            }
+
+            // Append this key, free it if we prefixed
+            redis_cmd_append_sstr(&cmdstr, key, key_len);
+            if(key_free) efree(key);
+        }
+        if(has_timeout) {
+            redis_cmd_append_sstr_long(&cmdstr, timeout);
+        }
+    } else {
+        if(has_timeout && Z_TYPE_P(z_args[argc-1])!=IS_LONG) {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "Timeout value must be a LONG");
+            return FAILURE;
+        }
+
+        tail = has_timeout ? argc-1 : argc;
+        for(i=0;i<tail;i++) {
+            convert_to_string(z_args[i]);
+            key = Z_STRVAL_P(z_args[i]);
+            key_len = Z_STRLEN_P(z_args[i]);
+
+            key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+            // Protect against CROSSLOT errors
+            if(kslot == -1) {
+                kslot = cluster_hash_key(key, key_len);
+            } else if(cluster_hash_key(key,key_len)!=kslot) {
+                php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                    "Not all keys hash to the same slot");
+                return FAILURE;
+            }
+
+            // Append this key
+            redis_cmd_append_sstr(&cmdstr, key, key_len);
+            if(key_free) efree(key);
+        }
+        if(has_timeout) {
+            redis_cmd_append_sstr_long(&cmdstr, Z_LVAL_P(z_args[tail]));
+        }
+    }
+
+    // Push out parameters
+    if(slot) *slot = kslot;
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 /*
  * Commands with specific signatures or that need unique functions because they
  * have specific processing (argument validation, etc) that make them unique 
@@ -2041,6 +2158,86 @@ int redis_object_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Success
     return SUCCESS;
+}
+
+/* DEL */
+int redis_del_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                  char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+        "DEL", sizeof("DEL")-1, 1, 0, cmd, cmd_len, slot);
+}
+
+/* WATCH */
+int redis_watch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+        "WATCH", sizeof("WATCH")-1, 1, 0, cmd, cmd_len, slot);
+}
+
+/* BLPOP */
+int redis_blpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+        "BLPOP", sizeof("BLPOP")-1, 1, 1, cmd, cmd_len, slot);
+}
+
+/* BRPOP */
+int redis_brpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+        "BRPOP", sizeof("BRPOP")-1, 1, 1, cmd, cmd_len, slot);
+}
+
+/* SINTER */
+int redis_sinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+        "SINTER", sizeof("SINTER")-1, 1, 0, cmd, cmd_len, slot);
+}
+
+/* SINTERSTORE */
+int redis_sinterstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                          char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+        "SINTERSTORE", sizeof("SINTERSTORE")-1, 2, 0, cmd, cmd_len, slot);
+}
+
+/* SUNION */
+int redis_sunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+        "SUNION", sizeof("SUNION")-1, 1, 0, cmd, cmd_len, slot);
+}
+
+/* SUNIONSTORE */
+int redis_sunionstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                          char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 
+        "SUNIONSTORE", sizeof("SUNIONSTORE")-1, 2, 0, cmd, cmd_len, slot);
+}
+
+/* SDIFF */
+int redis_sdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, "SDIFF",
+        sizeof("SDIFF")-1, 1, 0, cmd, cmd_len, slot);
+}
+
+/* SDIFFSTORE */
+int redis_sdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                         char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+        "SDIFFSTORE", sizeof("SDIFFSTORE")-1, 2, 0, cmd, cmd_len, slot);
 }
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

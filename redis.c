@@ -1008,6 +1008,8 @@ PHP_METHOD(Redis, exists)
  */
 PHP_METHOD(Redis, delete)
 {
+    REDIS_PROCESS_CMD(del, redis_long_response);
+/*
     RedisSock *redis_sock;
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
@@ -1019,7 +1021,7 @@ PHP_METHOD(Redis, delete)
 	  redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
 	REDIS_PROCESS_RESPONSE(redis_long_response);
-
+*/
 }
 /* }}} */
 
