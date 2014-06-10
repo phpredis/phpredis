@@ -43,7 +43,7 @@ PHPAPI int redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *r
 PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz TSRMLS_DC);
 PHPAPI void redis_stream_close(RedisSock *redis_sock TSRMLS_DC);
 PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC);
-//PHPAPI int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC);
+PHPAPI int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC, int nothrow);
 PHPAPI void redis_free_socket(RedisSock *redis_sock);
 PHPAPI void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 PHPAPI int redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len);
