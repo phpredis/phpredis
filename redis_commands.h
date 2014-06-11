@@ -181,9 +181,9 @@ int redis_sdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
  * depending if this is a Redis object or a RedisCluster object. */
 
 void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS, 
-    RedisSock *redis_sock);
+    RedisSock *redis_sock, redisCluster *c);
 void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS, 
-    RedisSock *redis_sock);
+    RedisSock *redis_sock, redisCluster *c);
 void redis_prefix_handler(INTERNAL_FUNCTION_PARAMETERS, 
     RedisSock *redis_sock);
 void redis_serialize_handler(INTERNAL_FUNCTION_PARAMETERS, 

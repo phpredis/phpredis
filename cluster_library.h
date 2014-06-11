@@ -12,12 +12,19 @@
 #define REDIS_CLUSTER_MOD   (REDIS_CLUSTER_SLOTS-1)
 
 /* Minimum valid CLUSTER NODES line element count
- * and the minimum we expect if there are slots */
+   and the minimum we expect if there are slots */
 #define CLUSTER_MIN_NODE_LINE     8
 #define CLUSTER_MIN_SLOTS_COUNT   9
 
 /* Length of a cluster name */
 #define CLUSTER_NAME_LEN 40
+
+/* RedisCluster class constants */
+#define CLUSTER_OPT_DISTRIBUTE    5
+
+/* Maintain order of execution vs. efficiency of delivery */
+#define CLUSTER_DIST_OOE          0
+#define CLUSTER_DIST_SPEED        1
 
 /* The parts for our cluster nodes command */
 #define CLUSTER_NODES_HASH        0
@@ -152,8 +159,11 @@ typedef struct redisCluster {
     /* The slot where we should read replies */
     short reply_slot;
 
-    /* One RedisSock* object for serialization and prefix information */
+    /* One RedisSock* struct for serialization and prefix information */
     RedisSock *flags;
+
+    /* Cluster distribution mode (speed, vs. maintaining order of execution) */
+    short dist_mode;
 
     /* The first line of our last reply, not including our reply type byte 
      * or the trailing \r\n */

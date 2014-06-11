@@ -477,7 +477,7 @@ PHPAPI RedisSock *redis_sock_get_connected(INTERNAL_FUNCTION_PARAMETERS) {
 
 /* Redis and RedisCluster objects share serialization/prefixing settings so 
  * this is a generic function to add class constants to either */
-static void add_class_constants(zend_class_entry *ce, int only_atomic) {
+static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     add_constant_long(ce, "REDIS_NOT_FOUND", REDIS_NOT_FOUND);
     add_constant_long(ce, "REDIS_STRING", REDIS_STRING);
     add_constant_long(ce, "REDIS_SET", REDIS_SET);
@@ -486,11 +486,13 @@ static void add_class_constants(zend_class_entry *ce, int only_atomic) {
     add_constant_long(ce, "REDIS_HASH", REDIS_HASH);
 
     /* Cluster doesn't support pipelining at this time */
-    if(!only_atomic) {
-        add_constant_long(ce, "ATOMIC", ATOMIC);
-        add_constant_long(ce, "MULTI", MULTI);
+    if(!is_cluster) {
         add_constant_long(ce, "PIPELINE", PIPELINE);
     }
+
+    /* Add common mode constants */
+    add_constant_long(ce, "ATOMIC", ATOMIC);
+    add_constant_long(ce, "MULTI", MULTI);
 
     /* options */
     add_constant_long(ce, "OPT_SERIALIZER", REDIS_OPT_SERIALIZER);
@@ -511,6 +513,16 @@ static void add_class_constants(zend_class_entry *ce, int only_atomic) {
 
     zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5 TSRMLS_CC);
     zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
+}
+
+/* Settings specific to RedisCluster */
+static void add_cluster_constants(zend_class_entry *ce) {
+    /* options */
+    add_constant_long(ce, "OPT_DISTRIBUTE", CLUSTER_OPT_DISTRIBUTE);
+
+    /* Distribution settings */
+    add_constant_long(ce, "DIST_OOE", CLUSTER_DIST_OOE);
+    add_constant_long(ce, "DIST_SPEED", CLUSTER_DIST_SPEED);
 }
 
 /**
@@ -572,9 +584,12 @@ PHP_MINIT_FUNCTION(redis)
         redis_sock_name, module_number
     );
 
-    /* Add class constants to Redis and RedisCluster objects */
+    /* Add shared class constants to Redis and RedisCluster objects */
     add_class_constants(redis_ce, 0);
     add_class_constants(redis_cluster_ce, 1);
+
+    /* Add specific RedisCluster class constants */
+    add_cluster_constants(redis_cluster_ce);
 
     return SUCCESS;
 }
@@ -2925,7 +2940,8 @@ PHP_METHOD(Redis, getOption)  {
         RETURN_FALSE;
     }
 
-    redis_getoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+    redis_getoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+        NULL);
 }
 /* }}} */
 
@@ -2937,7 +2953,8 @@ PHP_METHOD(Redis, setOption) {
         RETURN_FALSE;
     }
 
-    redis_setoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+    redis_setoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+        NULL);
 }
 /* }}} */
 
