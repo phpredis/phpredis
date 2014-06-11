@@ -155,6 +155,7 @@ Redis::REDIS_NOT_FOUND - Not found / other
 1. [getOption](#getoption) - Get client option
 1. [ping](#ping) - Ping the server
 1. [echo](#echo) - Echo the given string
+1. [IsOldSocket](#IsOldSocket) - Whether the under socket was connected in the previous pconnect
 
 ### connect, open
 -----
