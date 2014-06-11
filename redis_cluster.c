@@ -1036,14 +1036,14 @@ PHP_METHOD(RedisCluster, object) {
 /* {{{ proto long RedisCluster::getOption(long option */
 PHP_METHOD(RedisCluster, getoption) {
     redis_getoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-        GET_CONTEXT()->flags);
+        GET_CONTEXT()->flags, GET_CONTEXT());
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::setOption(long option, mixed value) */
 PHP_METHOD(RedisCluster, setoption) {
     redis_setoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-        GET_CONTEXT()->flags);
+        GET_CONTEXT()->flags, GET_CONTEXT());
 }
 /* }}} */
 
