@@ -3062,6 +3062,19 @@ None
 *Mixed* Returns the persistent id phpredis is using (which will only be set if connected with pconnect), NULL if we're not
 using a persistent ID, and FALSE if we're not connected
 
+### IsOldSocket
+
+-----
+_**Description**_: check whether the under socket was connected in the previous pconnect
+
+##### *Parameters*
+None  
+
+##### *Return value*
+
+return true if the last pconnect use a socket already exists.
+return false if the last pconnect create a new socket.
+
 ### GetAuth
 -----
 _**Description**_:  Get the password used to authenticate the phpredis connection
