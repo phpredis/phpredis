@@ -2254,7 +2254,7 @@ int redis_sdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
  * return value handling, and thread safety. */
 
 void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
-                             RedisSock *redis_sock)
+                             RedisSock *redis_sock, redisCluster *c)
 {
     long option;
 
@@ -2262,6 +2262,16 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                               == FAILURE)
     {
         RETURN_FALSE;
+    }
+
+    // Check if we're asking for a RedisCluster specific option
+    if(c != NULL && option > REDIS_OPT_SCAN) {
+        switch(option) {
+            case CLUSTER_OPT_DISTRIBUTE:
+                RETURN_LONG(c->dist_mode);
+            default:
+                RETURN_FALSE;
+        }
     }
 
     // Return the requested option
@@ -2283,7 +2293,7 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
 }
 
 void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
-                             RedisSock *redis_sock)
+                             RedisSock *redis_sock, redisCluster *c)
 {
     long option, val_long;
     char *val_str;
@@ -2294,6 +2304,26 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                               &val_str, &val_len) == FAILURE)
     {
         RETURN_FALSE;
+    }
+
+    // If we've been passed a RedisCluster object, check if the option
+    // being set is specific to RedisCluster.
+    if(c != NULL && option > REDIS_OPT_SCAN) {
+        switch(option) {
+            case CLUSTER_OPT_DISTRIBUTE:
+                val_long = atol(val_str);
+                if(val_long == CLUSTER_DIST_OOE || 
+                   val_long == CLUSTER_DIST_SPEED)
+                {
+                    c->dist_mode = val_long;
+                    RETURN_TRUE;
+                } else {
+                    RETURN_FALSE;
+                }
+                break;
+            default:
+                RETURN_FALSE;
+        }
     }
 
     switch(option) {
