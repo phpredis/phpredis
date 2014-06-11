@@ -37,12 +37,8 @@
 #define CLUSTER_NODES_CONNECTED   7
 #define CLUSTER_SLOTS             8
 
-/* Cluster redirection enum */
-typedef enum CLUSTER_REDIR_TYPE {
-    REDIR_NONE,
-    REDIR_MOVED,
-    REDIR_ASK
-} CLUSTER_REDIR_TYPE;
+/* Complete representation of a MULTI command in RESP */
+#define RESP_MULTI_CMD "*1\r\n$5\r\nMULTI\r\n"
 
 /* MOVED/ASK comparison macros */
 #define IS_MOVED(p) (p[0]=='M' && p[1]=='O' && p[2]=='V' && p[3]=='E' && \
@@ -83,11 +79,47 @@ typedef enum CLUSTER_REDIR_TYPE {
 #define CLUSTER_CLEAR_REPLY(c) \
     *c->line_reply = '\0'; c->reply_len = 0;
 
+/* Cluster redirection enum */
+typedef enum CLUSTER_REDIR_TYPE {
+    REDIR_NONE,
+    REDIR_MOVED,
+    REDIR_ASK
+} CLUSTER_REDIR_TYPE;
+
 /* MULTI BULK response callback typedef */
 typedef int (*mbulk_cb)(RedisSock*,zval*,long long, void* TSRMLS_DC);
 
 /* Specific destructor to free a cluster object */
 // void redis_destructor_redis_cluster(zend_rsrc_list_entry *rsrc TSRMLS_DC);
+
+typedef struct clusterDistArg {
+    /* Command payload */
+    char *cmd;
+
+    /* Length and size of our string */
+    size_t size, len;
+} clusterDistArg;
+
+typedef struct clusterDistCmd {
+    /* An array of multi-bulk argv values */
+    clusterDistArg *argv;
+
+    /* argv capacity and length */
+    size_t size, argc;
+
+    /* Our fully constructed command */
+    smart_str cmd;
+} clusterDistCmd;
+
+/* A structure to hold commands we'll distribute to multiple nodes, for
+ * example MGET, MSET, DEL */
+typedef struct clusterDistList {
+    /* An array of commands to distribute, by node */
+    clusterDistCmd *commands;
+
+    /* The size and length of our list */
+    size_t size, len;
+} clusterDistList;
 
 /* Slot range structure */
 typedef struct clusterSlotRange {
