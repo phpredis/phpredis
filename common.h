@@ -164,6 +164,7 @@ typedef struct {
     int            failed;
     int            status;
     int            persistent;
+    int            old_sock; //whether the sock was connected with pconnect in the previous request
     int            watching;
     char           *persistent_id;
 

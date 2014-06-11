@@ -244,6 +244,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, getTimeout, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getReadTimeout, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getPersistentID, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, isOldSocket, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getAuth, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, isConnected, NULL, ZEND_ACC_PUBLIC)
 
@@ -6460,6 +6461,18 @@ PHP_METHOD(Redis, getPersistentID) {
     } else {
         RETURN_FALSE;
     }
+}
+
+/*
+ * {{{ proto Redis::isOldSocket
+ */
+PHP_METHOD(Redis, isOldSocket) {
+    RedisSock *redis_sock;
+    	if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0 || !redis_sock->old_sock) {
+    		RETURN_FALSE;
+    	} else {
+    		RETURN_TRUE;
+    	}
 }
 
 /*

@@ -990,6 +990,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     } else {
         redis_sock->persistent_id = NULL;
     }
+    redis_sock->old_sock = 0;
 
     memcpy(redis_sock->host, host, host_len);
     redis_sock->host[host_len] = '\0';
@@ -1051,12 +1052,21 @@ PHPAPI int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
       }
     }
 
-    redis_sock->stream = php_stream_xport_create(host, host_len, ENFORCE_SAFE_MODE,
+
+    php_stream *stream = NULL;
+    if (persistent_id
+    			&& PHP_STREAM_PERSISTENT_SUCCESS == php_stream_from_persistent_id(persistent_id, &stream TSRMLS_CC)
+    			&& PHP_STREAM_OPTION_RETURN_OK == php_stream_set_option(stream, PHP_STREAM_OPTION_CHECK_LIVENESS, 0, NULL)
+    		) {
+    		redis_sock->stream =stream;
+    		redis_sock->old_sock = 1;
+    	} else {
+    		redis_sock->stream = php_stream_xport_create(host, host_len, ENFORCE_SAFE_MODE,
 							 STREAM_XPORT_CLIENT
 							 | STREAM_XPORT_CONNECT,
 							 persistent_id, tv_ptr, NULL, &errstr, &err
 							);
-
+    	}
     if (persistent_id) {
       efree(persistent_id);
     }
