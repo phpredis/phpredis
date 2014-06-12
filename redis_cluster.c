@@ -1149,8 +1149,9 @@ PHP_METHOD(RedisCluster, exec) {
     // MULTI multi-bulk response handler
     cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
 
-    // Free our queue
+    // Free our queue, and reset MULTI state
     CLUSTER_FREE_QUEUE(c);
+    CLUSTER_RESET_MULTI(c);
 }
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
