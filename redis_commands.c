@@ -1153,23 +1153,23 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         zend_hash_has_more_elements_ex(ht_vals, &pos)==SUCCESS;
         zend_hash_move_forward_ex(ht_vals, &pos))
     {
-        char *val, kbuf[40];
+        char *mem, *val, kbuf[40];
         int val_len, val_free;
-        unsigned int key_len;
+        unsigned int mem_len;
         zval **z_val;
 
         // Grab our key, and value for this element in our input
-        ktype = zend_hash_get_current_key_ex(ht_vals, &key,
-            &key_len, &idx, 0, &pos);
+        ktype = zend_hash_get_current_key_ex(ht_vals, &mem,
+            &mem_len, &idx, 0, &pos);
         zend_hash_get_current_data_ex(ht_vals, (void**)&z_val, &pos);
 
         // If the hash key is an integer, convert it to a string
         if(ktype != HASH_KEY_IS_STRING) {
-            key_len = snprintf(kbuf, sizeof(kbuf), "%ld", (long)idx);
-            key = (char*)kbuf;
+            mem_len = snprintf(kbuf, sizeof(kbuf), "%ld", (long)idx);
+            mem = (char*)kbuf;
         } else {
             // Length returned includes the \0
-            key_len--;
+            mem_len--;
         }
 
         // Serialize value (if directed)
@@ -1177,7 +1177,7 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             TSRMLS_CC);
 
         // Append the key and value to our command
-        redis_cmd_append_sstr(&cmdstr, key, key_len);
+        redis_cmd_append_sstr(&cmdstr, mem, mem_len);
         redis_cmd_append_sstr(&cmdstr, val, val_len);
     }
 
