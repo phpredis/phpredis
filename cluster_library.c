@@ -1448,15 +1448,19 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
     // Loop while we've got replies
     while(count--) {
         line = redis_sock_read(redis_sock, &line_len TSRMLS_CC);
-        if(!line) return -1;
-
-        if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
-            efree(line);
-            add_assoc_zval_ex(z_result,Z_STRVAL_P(z_keys[i]),
-                1+Z_STRLEN_P(z_keys[i]), z);
+        
+        if(line != NULL) {
+            if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
+                efree(line);
+                add_assoc_zval_ex(z_result,Z_STRVAL_P(z_keys[i]),
+                    1+Z_STRLEN_P(z_keys[i]), z);
+            } else {
+                add_assoc_stringl_ex(z_result, Z_STRVAL_P(z_keys[i]),
+                    1+Z_STRLEN_P(z_keys[i]), line, line_len, 0);
+            }
         } else {
-            add_assoc_stringl_ex(z_result, Z_STRVAL_P(z_keys[i]),
-                1+Z_STRLEN_P(z_keys[i]), line, line_len, 0);
+            add_assoc_bool_ex(z_result, Z_STRVAL_P(z_keys[i]),
+                1+Z_STRLEN_P(z_keys[i]), 0);
         }
 
         // Clean up key context

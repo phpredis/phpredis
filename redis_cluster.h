@@ -53,8 +53,8 @@
         zend_hash_move_forward(c->nodes)) \
     { \
         (*_node)->sock->mode = ATOMIC; \
-    }
-
+    } \
+    c->flags->mode = ATOMIC; 
 
 /* Simple 1-1 command -> response macro */
 #define CLUSTER_PROCESS_CMD(cmdname, resp_func) \
