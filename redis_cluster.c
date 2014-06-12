@@ -148,6 +148,7 @@ zend_function_entry redis_cluster_functions[] = {
 
     PHP_ME(RedisCluster, multi, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, exec, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, discard, NULL, ZEND_ACC_PUBLIC)
 
     {NULL, NULL, NULL}
 };
@@ -1152,6 +1153,25 @@ PHP_METHOD(RedisCluster, exec) {
     // Free our queue, and reset MULTI state
     CLUSTER_FREE_QUEUE(c);
     CLUSTER_RESET_MULTI(c);
+}
+
+/* {{{ proto bool RedisCluster::discard() */
+PHP_METHOD(RedisCluster, discard) {
+    redisCluster *c = GET_CONTEXT();
+
+    if(CLUSTER_IS_ATOMIC(c)) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "Cluster is not in MULTI mode");
+        RETURN_FALSE;
+    }
+    
+    if(cluster_abort_exec(c TSRMLS_CC)<0) {
+        CLUSTER_RESET_MULTI(c);
+    }
+
+    CLUSTER_FREE_QUEUE(c);
+
+    RETURN_TRUE;
 }
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

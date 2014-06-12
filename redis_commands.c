@@ -1061,8 +1061,8 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Prefix our key
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
-    // Allocate memory for the max members we'll grab
-    z_mems = ecalloc(count, sizeof(zval*));
+    // Allocate memory for mems+1 so we can have a sentinel
+    z_mems = ecalloc(count+1, sizeof(zval*));
 
     // Iterate over our member array
     for(zend_hash_internal_pointer_reset_ex(ht_arr, &ptr);
@@ -1088,6 +1088,10 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         efree(z_mems);
         return FAILURE;
     }
+
+    // Sentinel so we can free this even if it's used and then we discard
+    // the transaction manually or there is a transaction failure
+    z_mems[valid]=NULL;
 
     // Start command construction
     redis_cmd_init_sstr(&cmdstr, valid+1, "HMGET", sizeof("HMGET")-1);
