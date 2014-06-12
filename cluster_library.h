@@ -37,8 +37,10 @@
 #define CLUSTER_NODES_CONNECTED   7
 #define CLUSTER_SLOTS             8
 
-/* Complete representation of a MULTI command in RESP */
-#define RESP_MULTI_CMD "*1\r\n$5\r\nMULTI\r\n"
+/* Complete representation for MULTI and EXEC in RESP */
+#define RESP_MULTI_CMD   "*1\r\n$5\r\nMULTI\r\n"
+#define RESP_EXEC_CMD    "*1\r\n$4\r\nEXEC\r\n"
+#define RESP_DISCARD_CMD "*1\r\n$7\r\nDISCARD\r\n"
 
 /* MOVED/ASK comparison macros */
 #define IS_MOVED(p) (p[0]=='M' && p[1]=='O' && p[2]=='V' && p[3]=='E' && \
@@ -79,6 +81,54 @@
 #define CLUSTER_CLEAR_REPLY(c) \
     *c->line_reply = '\0'; c->reply_len = 0;
 
+/* Helper to determine if we're in MULTI mode */
+#define CLUSTER_IS_ATOMIC(c) (c->flags->mode != MULTI)
+
+/* Helper that either returns false or adds false in multi mode */
+#define CLUSTER_RETURN_FALSE(c) \
+    if(CLUSTER_IS_ATOMIC(c)) { \
+        RETURN_FALSE; \
+    } else { \
+        add_next_index_bool(c->multi_resp, 0); \
+        return; \
+    }
+
+/* Helper to either return a bool value or add it to MULTI response */
+#define CLUSTER_RETURN_BOOL(c, b) \
+    if(CLUSTER_IS_ATOMIC(c)) { \
+        if(b==1) {\
+            RETURN_TRUE; \
+        } else {\
+            RETURN_FALSE; \
+        } \
+    } else { \
+        add_next_index_bool(c->multi_resp, b); \
+    }
+
+/* Helper to respond with a double or add it to our MULTI response */
+#define CLUSTER_RETURN_DOUBLE(c, d) \
+    if(CLUSTER_IS_ATOMIC(c)) { \
+        RETURN_DOUBLE(d); \
+    } else { \
+        add_next_index_double(c->multi_resp, d); \
+    }
+
+/* Helper to return a string value */
+#define CLUSTER_RETURN_STRING(c, str, len) \
+    if(CLUSTER_IS_ATOMIC(c)) { \
+        RETURN_STRINGL(str, len, 0); \
+    } else { \
+        add_next_index_stringl(c->multi_resp, str, len, 0); \
+    } \
+
+/* Return a LONG value */
+#define CLUSTER_RETURN_LONG(c, val) \
+    if(CLUSTER_IS_ATOMIC(c)) { \
+        RETURN_LONG(val); \
+    } else { \
+        add_next_index_long(c->multi_resp, val); \
+    }
+
 /* Cluster redirection enum */
 typedef enum CLUSTER_REDIR_TYPE {
     REDIR_NONE,
@@ -87,39 +137,10 @@ typedef enum CLUSTER_REDIR_TYPE {
 } CLUSTER_REDIR_TYPE;
 
 /* MULTI BULK response callback typedef */
-typedef int (*mbulk_cb)(RedisSock*,zval*,long long, void* TSRMLS_DC);
+typedef int  (*mbulk_cb)(RedisSock*,zval*,long long, void* TSRMLS_DC);
 
 /* Specific destructor to free a cluster object */
 // void redis_destructor_redis_cluster(zend_rsrc_list_entry *rsrc TSRMLS_DC);
-
-typedef struct clusterDistArg {
-    /* Command payload */
-    char *cmd;
-
-    /* Length and size of our string */
-    size_t size, len;
-} clusterDistArg;
-
-typedef struct clusterDistCmd {
-    /* An array of multi-bulk argv values */
-    clusterDistArg *argv;
-
-    /* argv capacity and length */
-    size_t size, argc;
-
-    /* Our fully constructed command */
-    smart_str cmd;
-} clusterDistCmd;
-
-/* A structure to hold commands we'll distribute to multiple nodes, for
- * example MGET, MSET, DEL */
-typedef struct clusterDistList {
-    /* An array of commands to distribute, by node */
-    clusterDistCmd *commands;
-
-    /* The size and length of our list */
-    size_t size, len;
-} clusterDistList;
 
 /* Slot range structure */
 typedef struct clusterSlotRange {
@@ -135,9 +156,7 @@ typedef struct clusterNodeInfo {
     char *host;
     int host_len;
 
-    unsigned short port;
-    
-    unsigned short slave;
+    unsigned short port, slave;
 
     clusterSlotRange *slots;
     size_t slots_size;
@@ -163,6 +182,8 @@ typedef struct redisClusterNode {
     HashTable *slaves;
 } redisClusterNode;
 
+typedef struct clusterFoldItem clusterFoldItem;
+
 /* RedisCluster implementation structure */
 typedef struct redisCluster {
     /* Object reference for Zend */
@@ -180,6 +201,13 @@ typedef struct redisCluster {
 
     /* All RedisCluster objects we've created/are connected to */
     HashTable *nodes;
+
+    /* Transaction handling linked list, and where we are as we EXEC */
+    clusterFoldItem *multi_head;
+    clusterFoldItem *multi_curr;
+
+    /* Variable to store MULTI response */
+    zval *multi_resp;
 
     /* How many failures have we had in a row */
     int failures;
@@ -213,25 +241,47 @@ typedef struct redisCluster {
     unsigned short     redir_port;
 } redisCluster;
 
+/* RedisCluster response processing callback */
+typedef void (*cluster_cb)(INTERNAL_FUNCTION_PARAMETERS, redisCluster*, void*);
+
+/* Context for processing transactions */
+struct clusterFoldItem {
+    /* Response processing callback */
+    cluster_cb callback;
+
+    /* The slot where this response was sent */
+    short slot;
+
+    /* Any context we need to send to our callback */
+    void *ctx;
+
+    /* Next item in our list */
+    struct clusterFoldItem *next;
+};
+
 /* Hash a key to it's slot, using the Redis Cluster hash algorithm */
 unsigned short cluster_hash_key_zval(zval *key);
 unsigned short cluster_hash_key(const char *key, int len);
 
-/* Send a command to where we think the key(s) should live and redirect when 
- * needed */
-PHPAPI short cluster_send_command(redisCluster *cluster, short slot,
-                                const char *cmd, int cmd_len TSRMLS_DC);
+PHPAPI short cluster_send_command(redisCluster *c, short slot, const char *cmd, 
+    int cmd_len TSRMLS_DC);
 
-PHPAPI int cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds);
-PHPAPI int cluster_map_keyspace(redisCluster *cluster TSRMLS_DC);
+PHPAPI void cluster_disconnect(redisCluster *c TSRMLS_DC);
+
+PHPAPI int cluster_send_exec(redisCluster *c, short slot TSRMLS_DC);
+PHPAPI int cluster_send_discard(redisCluster *c, short slot TSRMLS_DC);
+PHPAPI int cluster_abort_exec(redisCluster *c TSRMLS_DC);
+PHPAPI int cluster_reset_multi(redisCluster *c);
+
+PHPAPI int cluster_init_seeds(redisCluster *c, HashTable *ht_seeds);
+PHPAPI int cluster_map_keyspace(redisCluster *c TSRMLS_DC);
 PHPAPI void cluster_free_node(redisClusterNode *node);
 
 PHPAPI char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock,
-                                                int *len TSRMLS_DC);
+    int *len TSRMLS_DC);
 
-PHPAPI int cluster_node_add_slave(redisCluster *cluster,
-                                  redisClusterNode *master,
-                                  clusterNodeInfo *slave TSRMLS_DC);
+PHPAPI int cluster_node_add_slave(redisCluster *c, redisClusterNode *master, 
+    clusterNodeInfo *slave TSRMLS_DC);
 
 /*
  * Redis Cluster response handlers.  All of our response handlers take the
@@ -269,6 +319,8 @@ PHPAPI void cluster_mbulk_zipstr_resp(INTERNAL_FUNCTION_PARAMETERS,
 PHPAPI void cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 PHPAPI void cluster_mbulk_assoc_resp(INTERNAL_FUNCTION_PARAMETERS, 
+    redisCluster *c, void *ctx);
+PHPAPI void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 
 /* MULTI BULK processing callbacks */

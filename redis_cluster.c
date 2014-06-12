@@ -39,8 +39,11 @@ zend_class_entry *spl_rte_ce = NULL;
 /* Function table */
 zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, __construct, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, close, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, get, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, set, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, mget, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, mset, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, setex, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, psetex, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, setnx, NULL, ZEND_ACC_PUBLIC)
@@ -142,6 +145,10 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, _prefix, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _serialize, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _unserialize, NULL, ZEND_ACC_PUBLIC)
+
+    PHP_ME(RedisCluster, multi, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, exec, NULL, ZEND_ACC_PUBLIC)
+
     {NULL, NULL, NULL}
 };
 
@@ -302,9 +309,15 @@ PHP_METHOD(RedisCluster, __construct) {
     cluster_map_keyspace(context TSRMLS_CC);
 }
 
-/*
- * RedisCluster methods
+/* 
+ * RedisCluster method implementation
  */
+
+/* {{{ proto bool RedisCluster::close() */
+PHP_METHOD(RedisCluster, close) {
+    cluster_disconnect(GET_CONTEXT() TSRMLS_CC);
+    RETURN_TRUE;
+}
 
 /* {{{ proto string RedisCluster::get(string key) */
 PHP_METHOD(RedisCluster, get) {
@@ -317,6 +330,16 @@ PHP_METHOD(RedisCluster, set) {
     CLUSTER_PROCESS_CMD(set, cluster_bool_resp);
 }
 /* }}} */
+
+/* {{{ proto array RedisCluster::mget(string key1, ... string keyN) */
+PHP_METHOD(RedisCluster, mget) {
+    php_error_docref(NULL TSRMLS_CC, E_ERROR, "Coming soon!");
+}
+
+/* {{{ proto bool RedisCluster::mset(string key1, string val1, ... kN, vN) */
+PHP_METHOD(RedisCluster, mset) {
+    php_error_docref(NULL TSRMLS_CC, E_ERROR, "Coming soon!");
+}
 
 /* {{{ proto bool RedisCluster::setex(string key, string value, int expiry) */
 PHP_METHOD(RedisCluster, setex) {
@@ -1067,5 +1090,67 @@ PHP_METHOD(RedisCluster, _unserialize) {
         GET_CONTEXT()->flags, redis_cluster_exception_ce);
 }
 /* }}} */
+
+/*
+ * Transaction handling
+ */
+
+/* {{{ proto bool RedisCluster::multi() */
+PHP_METHOD(RedisCluster, multi) {
+    redisCluster *c = GET_CONTEXT();
+
+    if(c->flags->mode == MULTI) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "RedisCluster is already in MULTI mode, ignoring");
+        RETURN_FALSE;
+    }
+
+    // Go into MULTI mode
+    c->flags->mode = MULTI;
+
+    // Success
+    RETURN_TRUE;
+}
+
+/* {{{ proto array RedisCluster::exec() */
+PHP_METHOD(RedisCluster, exec) {
+    redisCluster *c = GET_CONTEXT();
+    clusterFoldItem *fi;
+
+    // Verify we are in fact in multi mode
+    if(CLUSTER_IS_ATOMIC(c)) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, 
+            "RedisCluster is not in MULTI mode");
+        RETURN_FALSE;
+    }
+
+    // First pass, send EXEC and abort on failure
+    fi = c->multi_head;
+    while(fi) {
+        if(SLOT_SOCK(c, fi->slot)->mode == MULTI) {
+            if(cluster_send_exec(c, fi->slot TSRMLS_CC)<0) {
+                cluster_abort_exec(c TSRMLS_CC);
+            
+                zend_throw_exception(redis_cluster_exception_ce,
+                    "Error processing EXEC across the cluster",
+                    0 TSRMLS_CC);
+
+                // Free our queue, reset MULTI state
+                CLUSTER_FREE_QUEUE(c);
+                CLUSTER_RESET_MULTI(c);
+            
+                RETURN_FALSE;
+            }
+            SLOT_SOCK(c, fi->slot)->mode = ATOMIC;
+        }
+        fi = fi->next;
+    }
+
+    // MULTI multi-bulk response handler
+    cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+
+    // Free our queue
+    CLUSTER_FREE_QUEUE(c);
+}
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
