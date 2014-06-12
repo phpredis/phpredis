@@ -2402,7 +2402,6 @@ free_reply_callbacks(zval *z_this, RedisSock *redis_sock) {
 /* exec */
 PHP_METHOD(Redis, exec)
 {
-
     RedisSock *redis_sock;
     char *cmd;
     int cmd_len;

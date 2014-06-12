@@ -18,6 +18,44 @@
     redis_##name##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &cmd, \
                        &cmd_len, &slot)
 
+/* Append information required to handle MULTI commands to the tail of our MULTI 
+ * linked list. */
+#define CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx) \
+    clusterFoldItem *_item; \
+    _item = emalloc(sizeof(clusterFoldItem)); \
+    _item->callback = cb; \
+    _item->slot = slot; \
+    _item->ctx = ctx; \
+    _item->next = NULL; \
+    if(c->multi_head == NULL) { \
+        c->multi_head = _item; \
+        c->multi_curr = _item; \
+    } else { \
+        c->multi_curr->next = _item; \
+        c->multi_curr = _item; \
+    } \
+
+/* Simple macro to free our enqueued callbacks after we EXEC */
+#define CLUSTER_FREE_QUEUE(c) \
+    clusterFoldItem *_item = c->multi_head, *_tmp; \
+    while(_item) { \
+        _tmp = _item->next; \
+        efree(_item); \
+        _item = _tmp; \
+    } \
+    c->multi_head = c->multi_curr = NULL; \
+
+/* Reset anything flagged as MULTI */
+#define CLUSTER_RESET_MULTI(c) \
+    redisClusterNode **_node; \
+    for(zend_hash_internal_pointer_reset(c->nodes); \
+        zend_hash_get_current_data(c->nodes, (void**)&_node); \
+        zend_hash_move_forward(c->nodes)) \
+    { \
+        (*_node)->sock->mode = ATOMIC; \
+    }
+
+
 /* Simple 1-1 command -> response macro */
 #define CLUSTER_PROCESS_CMD(cmdname, resp_func) \
     redisCluster *c = GET_CONTEXT(); \
@@ -31,6 +69,10 @@
         RETURN_FALSE; \
     } \
     efree(cmd); \
+    if(c->flags->mode == MULTI) { \
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, resp_func, ctx); \
+        RETURN_ZVAL(getThis(), 1, 0); \
+    } \
     resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx); 
         
 /* More generic processing, where only the keyword differs */
@@ -46,6 +88,10 @@
         RETURN_FALSE; \
     } \
     efree(cmd); \
+    if(c->flags->mode == MULTI) { \
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, resp_func, ctx); \
+        RETURN_ZVAL(getThis(), 1, 0); \
+    } \
     resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx); 
 
 /* For the creation of RedisCluster specific exceptions */
@@ -63,8 +109,11 @@ void init_rediscluster(TSRMLS_D);
 
 /* RedisCluster method implementation */
 PHP_METHOD(RedisCluster, __construct);
+PHP_METHOD(RedisCluster, close);
 PHP_METHOD(RedisCluster, get);
 PHP_METHOD(RedisCluster, set);
+PHP_METHOD(RedisCluster, mget);
+PHP_METHOD(RedisCluster, mset);
 PHP_METHOD(RedisCluster, dump);
 PHP_METHOD(RedisCluster, setex);
 PHP_METHOD(RedisCluster, psetex);
@@ -169,4 +218,7 @@ PHP_METHOD(RedisCluster, setoption);
 PHP_METHOD(RedisCluster, _prefix);
 PHP_METHOD(RedisCluster, _serialize);
 PHP_METHOD(RedisCluster, _unserialize);
+
+PHP_METHOD(RedisCluster, multi);
+PHP_METHOD(RedisCluster, exec);
 #endif
