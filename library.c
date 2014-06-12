@@ -1188,7 +1188,9 @@ PHP_REDIS_API int redis_mbulk_reply_zipped_vals(INTERNAL_FUNCTION_PARAMETERS, Re
     int response_len;
     char ret;
 
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) 
+                                    == NULL) 
+    {
         IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
             return;
@@ -1219,7 +1221,9 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
     char *response;
     int response_len;
 
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) 
+                                    == NULL) 
+    {
         IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
         return;
@@ -1248,12 +1252,17 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
 }
 
 /* like string response, but never unserialized. */
-PHP_REDIS_API void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
+PHPAPI void 
+redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
+                    zval *z_tab, void *ctx) 
+{
 
     char *response;
     int response_len;
 
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) 
+                                    == NULL) 
+    {
         IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
         return;
@@ -1332,10 +1341,10 @@ PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
 /**
  * redis_sock_create
  */
-PHP_REDIS_API RedisSock* redis_sock_create(char *host, int host_len, unsigned short port,
-                                    double timeout, int persistent, char *persistent_id,
-                                    long retry_interval,
-                                    zend_bool lazy_connect)
+PHPAPI RedisSock* 
+redis_sock_create(char *host, int host_len, unsigned short port, double timeout, 
+                  int persistent, char *persistent_id, long retry_interval,
+                  zend_bool lazy_connect)
 {
     RedisSock *redis_sock;
 
@@ -1401,32 +1410,33 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     }
 
     read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
-    read_tv.tv_usec = (int)((redis_sock->read_timeout - read_tv.tv_sec) * 1000000);
+    read_tv.tv_usec = (int)((redis_sock->read_timeout-read_tv.tv_sec)*1000000);
 
     if(redis_sock->host[0] == '/' && redis_sock->port < 1) {
         host_len = spprintf(&host, 0, "unix://%s", redis_sock->host);
     } else {
         if(redis_sock->port == 0)
             redis_sock->port = 6379;
-        host_len = spprintf(&host, 0, "%s:%d", redis_sock->host, redis_sock->port);
+        host_len = spprintf(&host, 0, "%s:%d", redis_sock->host, 
+            redis_sock->port);
     }
 
     if (redis_sock->persistent) {
-      if (redis_sock->persistent_id) {
-        spprintf(&persistent_id, 0, "phpredis:%s:%s", host, redis_sock->persistent_id);
-      } else {
-        spprintf(&persistent_id, 0, "phpredis:%s:%f", host, redis_sock->timeout);
-      }
+        if (redis_sock->persistent_id) {
+            spprintf(&persistent_id, 0, "phpredis:%s:%s", host, 
+                redis_sock->persistent_id);
+        } else {
+            spprintf(&persistent_id, 0, "phpredis:%s:%f", host, 
+                redis_sock->timeout);
+        }
     }
 
-    redis_sock->stream = php_stream_xport_create(host, host_len, ENFORCE_SAFE_MODE,
-                             STREAM_XPORT_CLIENT
-                             | STREAM_XPORT_CONNECT,
-                             persistent_id, tv_ptr, NULL, &errstr, &err
-                            );
+    redis_sock->stream = php_stream_xport_create(host, host_len, 
+        ENFORCE_SAFE_MODE, STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT,
+        persistent_id, tv_ptr, NULL, &errstr, &err);
 
     if (persistent_id) {
-      efree(persistent_id);
+        efree(persistent_id);
     }
 
     efree(host);
@@ -1438,17 +1448,17 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     /* set TCP_NODELAY */
     sock = (php_netstream_data_t*)redis_sock->stream->abstract;
-    setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag, sizeof(int));
+    setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag, 
+        sizeof(int));
 
     php_stream_auto_cleanup(redis_sock->stream);
 
     if(tv.tv_sec != 0 || tv.tv_usec != 0) {
-        php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_READ_TIMEOUT,
-                              0, &read_tv);
+        php_stream_set_option(redis_sock->stream,PHP_STREAM_OPTION_READ_TIMEOUT,
+            0, &read_tv);
     }
     php_stream_set_option(redis_sock->stream,
-                          PHP_STREAM_OPTION_WRITE_BUFFER,
-                          PHP_STREAM_BUFFER_NONE, NULL);
+        PHP_STREAM_OPTION_WRITE_BUFFER, PHP_STREAM_BUFFER_NONE, NULL);
 
     redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
 
@@ -1458,7 +1468,8 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 /**
  * redis_sock_server_open
  */
-PHP_REDIS_API int redis_sock_server_open(RedisSock *redis_sock, int force_connect TSRMLS_DC)
+PHPAPI int 
+redis_sock_server_open(RedisSock *redis_sock, int force_connect TSRMLS_DC)
 {
     int res = -1;
 
