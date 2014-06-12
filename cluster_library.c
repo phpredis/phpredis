@@ -960,10 +960,9 @@ PHPAPI int cluster_send_discard(redisCluster *c, short slot TSRMLS_DC) {
 }
 
 
-/* When we encounter an error on EXEC (e.g. we can't properly send the EXEC
- * command or read a proper response, we try as a last ditch effort to discard
- * on each node we haven't yet sent EXEC.  If we can't do this, our connections
- * are in an unknown state, and we have to reset our connections. */
+/* Abort any transaction in process, by sending DISCARD to any nodes that
+ * have active transactions in progress.  If we can't send DISCARD, we need
+ * to disconnect as it would leave us in an undefined state. */
 PHPAPI int cluster_abort_exec(redisCluster *c TSRMLS_DC) {
     clusterFoldItem *fi = c->multi_head;
     
@@ -976,10 +975,12 @@ PHPAPI int cluster_abort_exec(redisCluster *c TSRMLS_DC) {
             }
             SLOT_SOCK(c,fi->slot)->mode = ATOMIC;
         }
-
         fi = fi->next;
     }
-    
+   
+    // Update our overall cluster state
+    c->flags->mode = ATOMIC;
+
     // Success
     return 0;
 }
