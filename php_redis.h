@@ -271,13 +271,13 @@ ZEND_END_MODULE_GLOBALS(redis)
 #endif
 
 struct redis_queued_item {
-	/* reading function */
-	zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, ...);
+    /* reading function */
+    zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, ...);
 
-	char *cmd; 
-	int cmd_len;
+    char *cmd; 
+    int cmd_len;
 
-	struct redis_queued_item *next;
+    struct redis_queued_item *next;
 };
 
 extern zend_module_entry redis_module_entry;

@@ -5,6 +5,10 @@
 #include "library.h"
 #include "cluster_library.h"
 
+/* Pick a random slot, any slot (for stuff like publish/subscribe) */
+#define CMD_RAND_SLOT(slot,key,key_len) \
+    if(slot) *slot = rand() % REDIS_CLUSTER_MOD
+
 /* Macro for setting the slot if we've been asked to */
 #define CMD_SET_SLOT(slot,key,key_len) \
     if(slot) *slot = cluster_hash_key(key,key_len);

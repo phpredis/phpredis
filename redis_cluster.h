@@ -61,9 +61,11 @@
         zend_hash_get_current_data(c->nodes, (void**)&_node); \
         zend_hash_move_forward(c->nodes)) \
     { \
-        (*_node)->sock->mode = ATOMIC; \
+        (*_node)->sock->watching = 0; \
+        (*_node)->sock->mode     = ATOMIC; \
     } \
-    c->flags->mode = ATOMIC; 
+    c->flags->watching = 0; \
+    c->flags->mode     = ATOMIC; \
 
 /* Simple 1-1 command -> response macro */
 #define CLUSTER_PROCESS_CMD(cmdname, resp_func) \
@@ -231,4 +233,5 @@ PHP_METHOD(RedisCluster, _unserialize);
 PHP_METHOD(RedisCluster, multi);
 PHP_METHOD(RedisCluster, exec);
 PHP_METHOD(RedisCluster, discard);
+PHP_METHOD(RedisCluster, watch);
 #endif
