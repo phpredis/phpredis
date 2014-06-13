@@ -147,15 +147,16 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 
     eof = php_stream_eof(redis_sock->stream);
     for (; eof; count++) {
-        if((MULTI == redis_sock->mode) || redis_sock->watching || count == 10) { /* too many failures */
-        if(redis_sock->stream) { /* close stream if still here */
-            redis_stream_close(redis_sock TSRMLS_CC);
-            redis_sock->stream = NULL;
-            redis_sock->mode   = ATOMIC;
-            redis_sock->status = REDIS_SOCK_STATUS_FAILED;
-            redis_sock->watching = 0;
-        }
-            zend_throw_exception(redis_exception_ce, "Connection lost", 0 TSRMLS_CC);
+        if((MULTI == redis_sock->mode) || redis_sock->watching || count == 10) {            /* too many failures */
+            if(redis_sock->stream) { /* close stream if still here */
+                redis_stream_close(redis_sock TSRMLS_CC);
+                redis_sock->stream = NULL;
+                redis_sock->mode   = ATOMIC;
+                redis_sock->status = REDIS_SOCK_STATUS_FAILED;
+                redis_sock->watching = 0;
+            }
+            zend_throw_exception(redis_exception_ce, "Connection lost", 
+                0 TSRMLS_CC);
         return -1;
     }
     if(redis_sock->stream) { /* close existing stream before reconnecting */
@@ -352,8 +353,7 @@ PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_D
             /* Handle stale data error */
             if(memcmp(inbuf + 1, "-ERR SYNC ", 10) == 0) {
                 zend_throw_exception(redis_exception_ce, 
-                                     "SYNC with master in progress", 
-                                     0 TSRMLS_CC);
+                    "SYNC with master in progress", 0 TSRMLS_CC);
             }
             return NULL;
         case '$':
@@ -946,7 +946,10 @@ PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
     }
 }
 
-PHP_REDIS_API void redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx, SuccessCallback success_callback) {
+PHPAPI void 
+redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,                            zval *z_tab, void *ctx, 
+                            SuccessCallback success_callback) 
+{
 
     char *response;
     int response_len;
@@ -983,16 +986,25 @@ PHP_REDIS_API void redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, Red
     }
 }
 
-PHP_REDIS_API void redis_boolean_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
-    redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, ctx, NULL);
+PHPAPI void redis_boolean_response(INTERNAL_FUNCTION_PARAMETERS, 
+                                   RedisSock *redis_sock, zval *z_tab, 
+                                   void *ctx) 
+{
+    redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 
+        z_tab, ctx, NULL);
 }
 
-PHP_REDIS_API void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval * z_tab, void *ctx) {
+PHPAPI void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, 
+                                RedisSock *redis_sock, zval * z_tab, 
+                                void *ctx) 
+{
 
     char *response;
     int response_len;
 
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC))
+                                    == NULL) 
+    {
         IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
             return;
@@ -1042,68 +1054,10 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
     zval *z_ret;
     HashTable *keytable;
 
-    MAKE_STD_ZVAL(z_ret);
-    array_init(z_ret);
-    keytable = Z_ARRVAL_P(z_tab);
-
-    for(zend_hash_internal_pointer_reset(keytable);
-        zend_hash_has_more_elements(keytable) == SUCCESS;
-        zend_hash_move_forward(keytable)) {
-
-        char *tablekey, *hkey, *hval;
-        unsigned int tablekey_len;
-        int hkey_len;
-        unsigned long idx;
-        zval **z_key_pp, **z_value_pp;
-
-        zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
-        if(zend_hash_get_current_data(keytable, (void**)&z_key_pp) == FAILURE) {
-            continue;   /* this should never happen, according to the PHP people. */
-        }
-
-        /* get current value, a key */
-        convert_to_string(*z_key_pp);
-        hkey = Z_STRVAL_PP(z_key_pp);
-        hkey_len = Z_STRLEN_PP(z_key_pp);
-
-        /* move forward */
-        zend_hash_move_forward(keytable);
-
-        /* fetch again */
-        zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
-        if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
-            continue;   /* this should never happen, according to the PHP people. */
-        }
-
-        /* get current value, a hash value now. */
-        hval = Z_STRVAL_PP(z_value_pp);
-
-        /* Decode the score depending on flag */
-        if (decode == SCORE_DECODE_INT && Z_STRLEN_PP(z_value_pp) > 0) {
-            add_assoc_long_ex(z_ret, hkey, 1+hkey_len, atoi(hval+1));
-        } else if (decode == SCORE_DECODE_DOUBLE) {
-            add_assoc_double_ex(z_ret, hkey, 1+hkey_len, atof(hval));
-        } else {
-            zval *z = NULL;
-            MAKE_STD_ZVAL(z);
-            *z = **z_value_pp;
-            zval_copy_ctor(z);
-            add_assoc_zval_ex(z_ret, hkey, 1+hkey_len, z);
-        }
-    }
-    
-    /* replace */
-    zval_dtor(z_tab);
-    *z_tab = *z_ret;
-    zval_copy_ctor(z_tab);
-    zval_dtor(z_ret);
-
-    efree(z_ret);
-}
-
-static int
-redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                         zval *z_tab, int unserialize, int decode)
+PHPAPI int 
+redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PARAMETERS, 
+                                                 RedisSock *redis_sock, 
+                                                 zval *z_tab, int flag) 
 {
     char inbuf[1024];
     int numElems;
@@ -1118,7 +1072,8 @@ redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_sock->status = REDIS_SOCK_STATUS_FAILED;
         redis_sock->mode = ATOMIC;
         redis_sock->watching = 0;
-        zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
+        zend_throw_exception(redis_exception_ce, 
+            "read error on connection", 0 TSRMLS_CC);
         return -1;
     }
 

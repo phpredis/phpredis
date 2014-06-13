@@ -51,6 +51,9 @@
 #define MOVED_LEN (sizeof("MOVED ")-1)
 #define ASK_LEN   (sizeof("ASK ")-1)
 
+/* Initial allocation size for key distribution container */
+#define CLUSTER_KEYDIST_ALLOC 8
+
 /* Slot/RedisSock/RedisSock->stream macros */
 #define SLOT(c,s) (c->master[s])
 #define SLOT_SOCK(c,s) (SLOT(c,s)->sock)
@@ -182,6 +185,7 @@ typedef struct redisClusterNode {
     HashTable *slaves;
 } redisClusterNode;
 
+/* Forward decl */
 typedef struct clusterFoldItem clusterFoldItem;
 
 /* RedisCluster implementation structure */
@@ -259,6 +263,28 @@ struct clusterFoldItem {
     struct clusterFoldItem *next;
 };
 
+/* Key and value container, with info if they need freeing */
+typedef struct clusterKeyVal {
+    char *key, *val;
+    int  key_len,  val_len;
+    int  key_free, val_free;
+} clusterKeyVal;
+
+/* Container to hold keys (and possibly values) for when we need to distribute
+ * commands across more than 1 node (e.g. WATCH, MGET, MSET, etc) */
+typedef struct clusterDistList {
+    clusterKeyVal *entry;
+    size_t len, size;
+} clusterDistList;
+
+/* Cluster distribution helpers */
+HashTable *cluster_dist_create();
+void cluster_dist_free(HashTable *ht);
+int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key, 
+    int key_len, clusterKeyVal **kv);
+void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *val 
+    TSRMLS_CC);
+
 /* Hash a key to it's slot, using the Redis Cluster hash algorithm */
 unsigned short cluster_hash_key_zval(zval *key);
 unsigned short cluster_hash_key(const char *key, int len);
@@ -272,6 +298,9 @@ PHPAPI int cluster_send_exec(redisCluster *c, short slot TSRMLS_DC);
 PHPAPI int cluster_send_discard(redisCluster *c, short slot TSRMLS_DC);
 PHPAPI int cluster_abort_exec(redisCluster *c TSRMLS_DC);
 PHPAPI int cluster_reset_multi(redisCluster *c);
+
+PHPAPI int cluster_send_direct(redisCluster *c, short slot, char *cmd, 
+    int cmd_len, REDIS_REPLY_TYPE rtype TSRMLS_DC);
 
 PHPAPI int cluster_init_seeds(redisCluster *c, HashTable *ht_seeds);
 PHPAPI int cluster_map_keyspace(redisCluster *c TSRMLS_DC);
