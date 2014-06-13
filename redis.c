@@ -714,8 +714,7 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), 
                                      "Os|ldsl", &object, redis_ce, &host, 
-                                     &host_len, &port, &timeout, &persistent_id, 
-                                     &persistent_id_len, &retry_interval) 
+                                     &host_len, &port, &timeout, &persistent_id,                                     &persistent_id_len, &retry_interval) 
                                      == FAILURE) 
     {
         return FAILURE;
@@ -1459,8 +1458,7 @@ PHPAPI void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
             cmd_elements++;
 
             /* pattern */
-            cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements], 
-                "$%d", pattern_len);
+            cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements],                "$%d", pattern_len);
             cmd_elements++;
             cmd_lines[cmd_elements] = emalloc(pattern_len + 1);
             memcpy(cmd_lines[cmd_elements], pattern, pattern_len);
@@ -2112,6 +2110,7 @@ PHP_METHOD(Redis, hDel)
 {
     REDIS_PROCESS_CMD(hdel, redis_long_response);
 }
+/* }}} */
 
 /* {{{ proto bool Redis::hExists(string key, string mem) */
 PHP_METHOD(Redis, hExists)
@@ -2130,7 +2129,7 @@ PHP_METHOD(Redis, hKeys)
 /* {{{ proto array Redis::hvals(string key) */
 PHP_METHOD(Redis, hVals)
 {
-    REDIS_PROCESS_KW_CMD("HVALS", redis_key_cmd, 
+    REDIS_PROCESS_KW_CMD("HVALS", redis_key_cmd,
         redis_sock_read_multibulk_reply);
 }
 
@@ -2228,6 +2227,7 @@ PHP_METHOD(Redis, hIncrBy)
 PHP_METHOD(Redis, hMget) {
     REDIS_PROCESS_CMD(hmget, redis_sock_read_multibulk_reply_assoc);
 }
+/* }}} */
 
 /* {{{ proto bool Redis::hmset(string key, array keyvals) */
 PHP_METHOD(Redis, hMset)

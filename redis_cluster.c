@@ -139,7 +139,6 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, zrem, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sort, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, object, NULL, ZEND_ACC_PUBLIC)
-    
     PHP_ME(RedisCluster, getoption, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, setoption, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _prefix, NULL, ZEND_ACC_PUBLIC)
@@ -149,6 +148,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, multi, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, exec, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, discard, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, watch, NULL, ZEND_ACC_PUBLIC)
 
     {NULL, NULL, NULL}
 };
@@ -652,7 +652,6 @@ PHP_METHOD(RedisCluster, zrevrank) {
 }
 /* }}} */
 
-
 /* {{{ proto long RedisCluster::hlen(string key) */
 PHP_METHOD(RedisCluster, hlen) {
     CLUSTER_PROCESS_KW_CMD("HLEN", redis_key_cmd, cluster_long_resp);
@@ -1027,7 +1026,7 @@ PHP_METHOD(RedisCluster, sort) {
     }
 }
 
-/* {{{ proto Redis::object(string subcmd, string key) */
+/* {{{ proto RedisCluster::object(string subcmd, string key) */
 PHP_METHOD(RedisCluster, object) {
     redisCluster *c = GET_CONTEXT();
     char *cmd; int cmd_len; short slot;
@@ -1110,6 +1109,95 @@ PHP_METHOD(RedisCluster, multi) {
     c->flags->mode = MULTI;
 
     // Success
+    RETURN_TRUE;
+}
+
+/* {{{ proto bool RedisCluster::watch() */
+PHP_METHOD(RedisCluster, watch) {
+    redisCluster *c = GET_CONTEXT();
+    HashTable *ht_dist;
+    clusterDistList **dl;
+    smart_str cmd = {0};
+    zval **z_args;
+    int argc = ZEND_NUM_ARGS(), i;
+    ulong slot;
+
+    // Disallow in MULTI mode
+    if(c->flags->mode == MULTI) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "WATCH command not allowed in MULTI mode");
+        RETURN_FALSE;
+    }
+
+    // Don't need to process zero arguments
+    if(!argc) RETURN_FALSE;
+
+    // Create our distribution HashTable
+    ht_dist = cluster_dist_create();
+
+    // Allocate args, and grab them
+    z_args = emalloc(sizeof(zval*)*argc);
+    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
+        efree(z_args);
+        cluster_dist_free(ht_dist);
+        RETURN_FALSE;
+    }
+
+    // Loop through arguments, prefixing if needed
+    for(i=0;i<argc;i++) {
+        // We'll need the key as a string
+        convert_to_string(z_args[i]);
+
+        // Add this key to our distribution handler
+        if(cluster_dist_add_key(c, ht_dist, Z_STRVAL_P(z_args[i]), 
+                                Z_STRLEN_P(z_args[i]), NULL) == FAILURE)
+        {
+            zend_throw_exception(redis_cluster_exception_ce,
+                "Can't issue WATCH command as the keyspace isn't fully mapped",
+                0 TSRMLS_CC);
+            RETURN_FALSE;
+        }
+    }
+
+    // Iterate over each node we'll be sending commands to
+    for(zend_hash_internal_pointer_reset(ht_dist);
+        zend_hash_get_current_key(ht_dist,NULL,&slot, 0)==HASH_KEY_IS_LONG;
+        zend_hash_move_forward(ht_dist))
+    {
+        // Grab the clusterDistList pointer itself
+        if(zend_hash_get_current_data(ht_dist, (void**)&dl)==FAILURE) {
+            zend_throw_exception(redis_cluster_exception_ce,
+                "Internal error in a PHP HashTable", 0 TSRMLS_CC);
+            cluster_dist_free(ht_dist);
+            efree(z_args);
+            efree(cmd.c);
+            RETURN_FALSE;
+        }
+
+        // Construct our watch command for this node
+        redis_cmd_init_sstr(&cmd, (*dl)->len, "WATCH", sizeof("WATCH")-1);
+        for(i=0;i<(*dl)->len;i++) {
+            redis_cmd_append_sstr(&cmd, (*dl)->entry[i].key, 
+                (*dl)->entry[i].key_len);
+        }
+
+        // Send this command directly to our server
+        if(cluster_send_direct(c, (short)slot, cmd.c, cmd.len, TYPE_LINE)==-1) {
+            zend_throw_exception(redis_cluster_exception_ce,
+                "WATCH command failed.  Nodes are possibly resharding",
+                0 TSRMLS_CC);
+            RETURN_FALSE;
+        }
+
+        // Zero out our command buffer
+        cmd.len = 0;
+    }
+
+    // Cleanup
+    cluster_dist_free(ht_dist);
+    efree(z_args);
+    efree(cmd.c);
+
     RETURN_TRUE;
 }
 
