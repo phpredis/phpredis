@@ -37,10 +37,11 @@
 #define CLUSTER_NODES_CONNECTED   7
 #define CLUSTER_SLOTS             8
 
-/* Complete representation for MULTI and EXEC in RESP */
+/* Complete representation for various MULTI/EXEC commands in RESP */
 #define RESP_MULTI_CMD   "*1\r\n$5\r\nMULTI\r\n"
 #define RESP_EXEC_CMD    "*1\r\n$4\r\nEXEC\r\n"
 #define RESP_DISCARD_CMD "*1\r\n$7\r\nDISCARD\r\n"
+#define RESP_UNWATCH_CMD "*1\r\n$7\r\nUNWATCH\r\n"
 
 /* MOVED/ASK comparison macros */
 #define IS_MOVED(p) (p[0]=='M' && p[1]=='O' && p[2]=='V' && p[3]=='E' && \
@@ -299,7 +300,7 @@ PHPAPI int cluster_send_discard(redisCluster *c, short slot TSRMLS_DC);
 PHPAPI int cluster_abort_exec(redisCluster *c TSRMLS_DC);
 PHPAPI int cluster_reset_multi(redisCluster *c);
 
-PHPAPI int cluster_send_direct(redisCluster *c, short slot, char *cmd, 
+PHPAPI int cluster_send_slot(redisCluster *c, short slot, char *cmd, 
     int cmd_len, REDIS_REPLY_TYPE rtype TSRMLS_DC);
 
 PHPAPI int cluster_init_seeds(redisCluster *c, HashTable *ht_seeds);

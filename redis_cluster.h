@@ -234,4 +234,5 @@ PHP_METHOD(RedisCluster, multi);
 PHP_METHOD(RedisCluster, exec);
 PHP_METHOD(RedisCluster, discard);
 PHP_METHOD(RedisCluster, watch);
+PHP_METHOD(RedisCluster, unwatch);
 #endif

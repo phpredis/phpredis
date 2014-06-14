@@ -1097,6 +1097,7 @@ PHPAPI int cluster_abort_exec(redisCluster *c TSRMLS_DC) {
                 return -1;
             }
             SLOT_SOCK(c,fi->slot)->mode = ATOMIC;
+            SLOT_SOCK(c,fi->slot)->watching = 0;
         }
         fi = fi->next;
     }
@@ -1129,10 +1130,9 @@ static int cluster_send_multi(redisCluster *c, short slot TSRMLS_DC) {
     return 0;
 }
 
-/* Send a command to a specific node (without falling back), in addition we
- * can check for a reply type if not sent as TYPE_EOF */
-PHPAPI int cluster_send_direct(redisCluster *c, short slot, char *cmd, 
-                               int cmd_len, REDIS_REPLY_TYPE rtype TSRMLS_DC)
+/* Send a command to a specific slot */
+PHPAPI int cluster_send_slot(redisCluster *c, short slot, char *cmd, 
+                             int cmd_len, REDIS_REPLY_TYPE rtype TSRMLS_DC)
 {
     // Try only this node
     if(cluster_sock_write(c, slot, cmd, cmd_len, 1 TSRMLS_CC)==-1) {

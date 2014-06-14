@@ -149,7 +149,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, exec, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, discard, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, watch, NULL, ZEND_ACC_PUBLIC)
-
+    PHP_ME(RedisCluster, unwatch, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -1182,12 +1182,15 @@ PHP_METHOD(RedisCluster, watch) {
         }
 
         // Send this command directly to our server
-        if(cluster_send_direct(c, (short)slot, cmd.c, cmd.len, TYPE_LINE)==-1) {
+        if(cluster_send_slot(c, (short)slot, cmd.c, cmd.len, TYPE_LINE)==-1) {
             zend_throw_exception(redis_cluster_exception_ce,
                 "WATCH command failed.  Nodes are possibly resharding",
                 0 TSRMLS_CC);
             RETURN_FALSE;
         }
+
+        // This node is watching
+        SLOT_SOCK(c, (short)slot)->watching = 1;
 
         // Zero out our command buffer
         cmd.len = 0;
@@ -1199,6 +1202,29 @@ PHP_METHOD(RedisCluster, watch) {
     efree(cmd.c);
 
     RETURN_TRUE;
+}
+
+/* {{{ proto bool RedisCluster::unwatch() */
+PHP_METHOD(RedisCluster, unwatch) {
+    redisCluster *c = GET_CONTEXT();
+    short slot;
+
+    // Send UNWATCH to nodes that need it
+    for(slot=0;slot<REDIS_CLUSTER_SLOTS;slot++) {
+        if(c->master[slot] && SLOT_SOCK(c,slot)->watching) {
+            if(cluster_send_slot(c, slot, RESP_UNWATCH_CMD, 
+                                 sizeof(RESP_UNWATCH_CMD)-1,
+                                 TYPE_LINE TSRMLS_CC)==-1)
+            {
+                CLUSTER_RETURN_BOOL(c, 0);
+            }
+
+            // No longer watching
+            SLOT_SOCK(c,slot)->watching = 0;
+        }
+    }
+
+    CLUSTER_RETURN_BOOL(c, 1);
 }
 
 /* {{{ proto array RedisCluster::exec() */
@@ -1230,7 +1256,8 @@ PHP_METHOD(RedisCluster, exec) {
             
                 RETURN_FALSE;
             }
-            SLOT_SOCK(c, fi->slot)->mode = ATOMIC;
+            SLOT_SOCK(c, fi->slot)->mode     = ATOMIC;
+            SLOT_SOCK(c, fi->slot)->watching = 0;
         }
         fi = fi->next;
     }
