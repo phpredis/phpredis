@@ -718,6 +718,52 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* UNSUBSCRIBE/PUNSUBSCRIBE */
+int redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                          char *kw, char **cmd, int *cmd_len, short *slot,
+                          void **ctx)
+{
+    zval *z_arr, **z_chan;
+    HashTable *ht_arr;
+    HashPosition ptr;
+    smart_str cmdstr = {0};
+    subscribeContext *sctx = emalloc(sizeof(subscribeContext));
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &z_arr)==FAILURE) {
+        efree(sctx);
+        return FAILURE;
+    }
+
+    ht_arr = Z_ARRVAL_P(z_arr);
+    
+    sctx->argc = zend_hash_num_elements(ht_arr);
+    if(sctx->argc == 0) {
+        efree(sctx);
+        return FAILURE;
+    }
+
+    redis_cmd_init_sstr(&cmdstr, sctx->argc, kw, strlen(kw));
+        
+    for(zend_hash_internal_pointer_reset_ex(ht_arr, &ptr);
+        zend_hash_get_current_data_ex(ht_arr, (void**)&z_chan, &ptr)==SUCCESS;
+        zend_hash_move_forward_ex(ht_arr, &ptr))
+    {
+        char *key = Z_STRVAL_PP(z_chan);
+        int key_len = Z_STRLEN_PP(z_chan), key_free;
+
+        key_free = redis_key_prefix(redis_sock, &key, &key_len);
+        redis_cmd_append_sstr(&cmdstr, key, key_len);
+        if(key_free) efree(key);
+    }
+
+    // Push out vals
+    *cmd_len = cmdstr.len;
+    *cmd     = cmdstr.c;
+    *ctx     = (void*)sctx;
+
+    return SUCCESS; 
+}
+
 /* Commands that take a key followed by a variable list of serializable
  * values (RPUSH, LPUSH, SADD, SREM, etc...) */
 int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,

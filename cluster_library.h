@@ -224,6 +224,9 @@ typedef struct redisCluster {
     /* The slot where we should read replies */
     short reply_slot;
 
+    /* The slot where we're subscribed */
+    short subscribed_slot;
+
     /* One RedisSock* struct for serialization and prefix information */
     RedisSock *flags;
 
@@ -337,6 +340,8 @@ PHPAPI void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     void *ctx);
 PHPAPI void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     void *ctx);
+PHPAPI void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+    void *ctx);
 
 /* MULTI BULK response functions */
 PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
@@ -353,7 +358,7 @@ PHPAPI void cluster_mbulk_assoc_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 PHPAPI void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
-PHPAPI zval *cluster_sub_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
+PHPAPI zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
     redisCluster *c, int pull, mbulk_cb cb);
 
 /* MULTI BULK processing callbacks */

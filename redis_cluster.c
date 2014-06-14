@@ -141,7 +141,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, object, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, subscribe, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, psubscribe, NULL, ZEND_ACC_PUBLIC)
-
+    PHP_ME(RedisCluster, unsubscribe, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, punsubscribe, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, getoption, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, setoption, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _prefix, NULL, ZEND_ACC_PUBLIC)
@@ -203,6 +204,9 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
     // Allocate our actual struct
     cluster = emalloc(sizeof(redisCluster));
     memset(cluster, 0, sizeof(redisCluster));
+
+    // We're not currently subscribed anywhere
+    cluster->subscribed_slot = -1;
 
     // Allocate our RedisSock we'll use to store prefix/serialization flags
     cluster->flags = ecalloc(1, sizeof(RedisSock));
@@ -1065,6 +1069,59 @@ PHP_METHOD(RedisCluster, subscribe) {
 /* {{{ proto null RedisCluster::psubscribe(array pats, callable cb) */
 PHP_METHOD(RedisCluster, psubscribe) {
     CLUSTER_PROCESS_KW_CMD("PSUBSCRIBE", redis_subscribe_cmd, cluster_sub_resp);
+}
+/* }}} */
+
+static void generic_unsub_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                              char *kw)
+{
+    char *cmd;
+    int cmd_len;
+    void *ctx;
+    short slot;
+
+    // There is not reason to unsubscribe outside of a subscribe loop
+    if(c->subscribed_slot == -1) {
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "You can't unsubscribe outside of a subscribe loop");
+        RETURN_FALSE;
+    }
+
+    // Call directly because we're going to set the slot manually
+    if(redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, 
+                             &cmd, &cmd_len, &slot, &ctx)
+                             ==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    // This has to operate on our subscribe slot
+    if(cluster_send_slot(c, c->subscribed_slot, cmd, cmd_len, TYPE_MULTIBULK)
+                         ==FAILURE)
+    {
+        zend_throw_exception(redis_cluster_exception_ce,
+            "Failed to UNSUBSCRIBE within our subscribe loop!", 0 TSRMLS_CC);
+        RETURN_FALSE;
+    }
+
+    // Now process response from the slot we're subscribed on
+    cluster_unsub_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
+
+    // Cleanup our command
+    efree(cmd);
+}
+
+/* {{{ proto array RedisCluster::unsubscribe(array chans) */
+PHP_METHOD(RedisCluster, unsubscribe) {
+    generic_unsub_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, GET_CONTEXT(), 
+        "UNSUBSCRIBE");
+}
+/* }}} */
+
+/* {{{ proto array RedisCluster::punsubscribe(array pats) */
+PHP_METHOD(RedisCluster, punsubscribe) {
+    generic_unsub_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, GET_CONTEXT(),
+        "PUNSUBSCRIBE");
 }
 /* }}} */
 

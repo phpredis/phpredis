@@ -224,6 +224,8 @@ PHP_METHOD(RedisCluster, sort);
 PHP_METHOD(RedisCluster, object);
 PHP_METHOD(RedisCluster, subscribe);
 PHP_METHOD(RedisCluster, psubscribe);
+PHP_METHOD(RedisCluster, unsubscribe);
+PHP_METHOD(RedisCluster, punsubscribe);
 
 /* Transactions */
 PHP_METHOD(RedisCluster, multi);
