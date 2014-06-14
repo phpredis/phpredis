@@ -172,7 +172,10 @@ PHPAPI int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
     while(sctx->argc--) {
         z_tab = redis_sock_read_multibulk_reply_zval(
             INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
-        if(!z_tab) return -1;
+        if(!z_tab) {
+            efree(sctx);
+            return -1;
+        }
 
         // We'll need to find the command response
         if(zend_hash_index_find(Z_ARRVAL_P(z_tab), 0, (void**)&z_tmp)
@@ -180,6 +183,7 @@ PHPAPI int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
         {
             zval_dtor(z_tab);
             efree(z_tab);
+            efree(sctx);
             return -1;
         }
 
@@ -187,6 +191,7 @@ PHPAPI int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
         if(strcasecmp(Z_STRVAL_PP(z_tmp), sctx->kw) !=0) {
             zval_dtor(z_tab);
             efree(z_tab);
+            efree(sctx);
             return -1;
         }
 
@@ -269,12 +274,52 @@ PHPAPI int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
         efree(z_tab);
     }
 
+    // This is an error state, clean up
     if(z_tab) {
         zval_dtor(z_tab);
         efree(z_tab);
     }
+    efree(sctx);
 
     return -1;
+}
+
+PHPAPI int redis_unsubscribe_response(INTERNAL_FUNCTION_PARAMETERS,
+                                      RedisSock *redis_sock, zval *z_tab,
+                                      void *ctx)
+{
+    subscribeContext *sctx = (subscribeContext*)ctx;
+    zval **z_chan, *z_ret;
+    int i=0;
+
+    MAKE_STD_ZVAL(z_ret);
+    array_init(z_ret);
+
+    while(i<sctx->argc) {
+        z_tab = redis_sock_read_multibulk_reply_zval(
+            INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+
+        if(!z_tab || zend_hash_index_find(Z_ARRVAL_P(z_tab), 1, 
+                                          (void**)&z_chan)==FAILURE)
+        {
+            zval_dtor(z_ret);
+            efree(z_ret);
+            return -1;
+        }
+
+        add_assoc_bool(z_ret, Z_STRVAL_PP(z_chan), 1);
+
+        zval_dtor(z_tab);
+        efree(z_tab);
+        i++;
+    }
+
+    efree(sctx);
+
+    RETVAL_ZVAL(z_ret, 0, 1);
+
+    // Success
+    return 0;
 }
 
 PHPAPI zval *
