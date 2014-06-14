@@ -139,6 +139,9 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, zrem, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sort, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, object, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, subscribe, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, psubscribe, NULL, ZEND_ACC_PUBLIC)
+
     PHP_ME(RedisCluster, getoption, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, setoption, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _prefix, NULL, ZEND_ACC_PUBLIC)
@@ -1052,6 +1055,18 @@ PHP_METHOD(RedisCluster, object) {
         cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
     }
 }
+
+/* {{{ proto null RedisCluster::subscribe(array chans, callable cb) */
+PHP_METHOD(RedisCluster, subscribe) {
+    CLUSTER_PROCESS_KW_CMD("SUBSCRIBE", redis_subscribe_cmd, cluster_sub_resp);
+}
+/* }}} */
+
+/* {{{ proto null RedisCluster::psubscribe(array pats, callable cb) */
+PHP_METHOD(RedisCluster, psubscribe) {
+    CLUSTER_PROCESS_KW_CMD("PSUBSCRIBE", redis_subscribe_cmd, cluster_sub_resp);
+}
+/* }}} */
 
 /* Commands that do not interact with Redis, but just report stuff about
  * various options, etc */
