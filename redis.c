@@ -1679,7 +1679,7 @@ PHP_METHOD(Redis, lastSave)
 /* {{{ proto bool Redis::flushDB() */
 PHP_METHOD(Redis, flushDB)
 {
-    REDIS_PROCESS_KW_CMD("FLUSHDB", redis_empty_cmd, redis_boolean_response);    
+    REDIS_PROCESS_KW_CMD("FLUSHDB", redis_empty_cmd, redis_boolean_response);
 }
 /* }}} */
 
