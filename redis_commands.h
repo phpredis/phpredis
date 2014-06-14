@@ -6,12 +6,20 @@
 #include "cluster_library.h"
 
 /* Pick a random slot, any slot (for stuff like publish/subscribe) */
-#define CMD_RAND_SLOT(slot,key,key_len) \
+#define CMD_RAND_SLOT(slot) \
     if(slot) *slot = rand() % REDIS_CLUSTER_MOD
 
 /* Macro for setting the slot if we've been asked to */
 #define CMD_SET_SLOT(slot,key,key_len) \
     if(slot) *slot = cluster_hash_key(key,key_len);
+
+/* Simple container so we can push subscribe context out */
+typedef struct subscribeContext {
+    char *kw;
+    int argc;
+    zend_fcall_info cb;
+    zend_fcall_info_cache cb_cache;
+} subscribeContext;
 
 /* Redis command generics.  Many commands share common prototypes meaning that
  * we can write one function to handle all of them.  For example, there are
@@ -69,6 +77,9 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     void **ctx);
 
 int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
+
+int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 /* Commands which need a unique construction mechanism.  This is either because

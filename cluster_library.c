@@ -1,6 +1,7 @@
 #include "php_redis.h"
 #include "common.h"
 #include "library.h"
+#include "redis_commands.h"
 #include "cluster_library.h"
 #include "crc16.h"
 #include <zend_exceptions.h>
@@ -1360,6 +1361,122 @@ PHPAPI void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     }
 }
 
+/* SUBSCRIBE/PSCUBSCRIBE handler */
+PHPAPI void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                             void *ctx)
+{
+    subscribeContext *sctx = (subscribeContext*)ctx;
+    zval *z_tab, **z_tmp, *z_ret, **z_args[4];
+    int pull=0;
+
+    // Consume each MULTI BULK response (one per channel/pattern)
+    while(sctx->argc--) { 
+        z_tab = cluster_sub_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, 
+            pull, mbulk_resp_loop_raw);
+        
+        if(!z_tab) {
+            efree(sctx);
+            RETURN_FALSE;
+        }
+       
+        if(zend_hash_index_find(Z_ARRVAL_P(z_tab),0,(void**)&z_tmp)==FAILURE ||
+           strcasecmp(Z_STRVAL_PP(z_tmp), sctx->kw) != 0)
+        {
+            zval_dtor(z_tab);
+            FREE_ZVAL(z_tab);
+            efree(sctx);
+            RETURN_FALSE;
+        }
+
+        zval_dtor(z_tab);
+        pull = 1;
+    }
+
+    // Set up our callback pointers
+    sctx->cb.retval_ptr_ptr = &z_ret;
+    sctx->cb.params = z_args;
+    sctx->cb.no_separation = 0;
+
+    /* Multibulk response, {[pattern], type, channel, payload} */
+    while(1) {
+        /* Arguments */
+        zval **z_type, **z_chan, **z_pat, **z_data;
+        int tab_idx=1, is_pmsg;
+
+        // Get the next subscribe response
+        z_tab = cluster_sub_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, 
+            1, mbulk_resp_loop);
+        
+        if(!z_tab || zend_hash_index_find(Z_ARRVAL_P(z_tab), 0, (void**)&z_type)
+                                          ==FAILURE) 
+        {
+            break;
+        }
+
+        // Make sure we have a message or pmessage
+        if(!strncmp(Z_STRVAL_PP(z_type), "message", 7) ||
+           !strncmp(Z_STRVAL_PP(z_type), "pmessage", 8))
+        {
+            is_pmsg = *Z_STRVAL_PP(z_type) == 'p';
+        } else {
+            zval_dtor(z_tab);
+            efree(z_tab);
+            continue;
+        }
+
+        if(is_pmsg && zend_hash_index_find(Z_ARRVAL_P(z_tab), tab_idx++, 
+                                           (void**)&z_pat)==FAILURE)
+        {
+            break;
+        }
+
+        // Extract channel and data
+        if(zend_hash_index_find(Z_ARRVAL_P(z_tab), tab_idx++, 
+                                (void**)&z_chan)==FAILURE ||
+           zend_hash_index_find(Z_ARRVAL_P(z_tab), tab_idx++,
+                                (void**)&z_data)==FAILURE)
+        {
+            break;
+        }
+
+        // Always pass our object through
+        z_args[0] = &getThis();
+
+        // Set up calbacks depending on type
+        if(is_pmsg) {
+            z_args[1] = z_pat;
+            z_args[2] = z_chan;
+            z_args[3] = z_data;
+        } else {
+            z_args[1] = z_chan;
+            z_args[2] = z_data;
+        }
+
+        // Set arg count
+        sctx->cb.param_count = tab_idx;
+
+        // Execute our callback
+        if(zend_call_function(&(sctx->cb), &(sctx->cb_cache) TSRMLS_CC)!=
+                              SUCCESS) 
+        {
+            break;
+        }
+
+        zval_dtor(z_tab);
+        efree(z_tab);
+    }
+    
+    // Cleanup
+    efree(sctx);
+    if(z_tab) {
+        zval_dtor(z_tab);
+        efree(z_tab);
+    }
+
+    // Failure
+    RETURN_FALSE;
+}
+
 /* Generic MULTI BULK response processor */
 PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
                                    redisCluster *c, mbulk_cb cb, void *ctx)
@@ -1378,7 +1495,7 @@ PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 
     // Call our specified callback
     if(cb(SLOT_SOCK(c,c->reply_slot), z_result, c->reply_len, ctx TSRMLS_CC)
-                     ==FAILURE)
+                    ==FAILURE)
     {
         zval_dtor(z_result);
         FREE_ZVAL(z_result);
@@ -1392,6 +1509,39 @@ PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     } else {
         add_next_index_zval(c->multi_resp, z_result);
     }
+}
+
+/* MULTI BULK response loop where we might pull the next one */
+PHPAPI zval *cluster_sub_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
+                                    redisCluster *c, int pull, mbulk_cb cb)
+{
+    zval *z_result;
+
+    // Pull our next response if directed
+    if(pull) {
+        if(cluster_check_response(c, c->reply_slot, &c->reply_type 
+                                  TSRMLS_CC)<0)
+        {
+            return NULL;
+        }
+    }
+
+    // Validate reply type and length
+    if(c->reply_type != TYPE_MULTIBULK || c->reply_len == -1) {
+        return NULL;
+    }
+
+    MAKE_STD_ZVAL(z_result);
+    array_init(z_result);
+
+    // Call our callback
+    if(cb(SLOT_SOCK(c,c->reply_slot), z_result, c->reply_len, NULL)==FAILURE) {
+        zval_dtor(z_result);
+        FREE_ZVAL(z_result);
+        return NULL;
+    }
+
+    return z_result;
 }
 
 /* MULTI MULTI BULK reply (for EXEC) */

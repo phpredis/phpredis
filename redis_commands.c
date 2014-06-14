@@ -655,6 +655,69 @@ int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* SUBSCRIBE/PSUBSCRIBE */
+int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                        char *kw, char **cmd, int *cmd_len, short *slot,
+                        void **ctx)
+{
+    zval *z_arr, **z_chan;
+    HashTable *ht_chan;
+    HashPosition ptr;
+    smart_str cmdstr = {0};
+    subscribeContext *sctx = emalloc(sizeof(subscribeContext));
+    int key_len, key_free;
+    char *key;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "af", &z_arr, 
+                             &(sctx->cb), &(sctx->cb_cache))==FAILURE)
+    {
+        efree(sctx);
+        return FAILURE;
+    }
+
+    ht_chan    = Z_ARRVAL_P(z_arr);
+    sctx->kw   = kw;
+    sctx->argc = zend_hash_num_elements(ht_chan);  
+
+    if(sctx->argc==0) {
+        efree(sctx);
+        return FAILURE;
+    }
+
+    // Start command construction
+    redis_cmd_init_sstr(&cmdstr, sctx->argc, kw, strlen(kw));
+
+    // Iterate over channels
+    for(zend_hash_internal_pointer_reset_ex(ht_chan, &ptr);
+        zend_hash_get_current_data_ex(ht_chan, (void**)&z_chan, &ptr)==SUCCESS;
+        zend_hash_move_forward_ex(ht_chan, &ptr))
+    {
+        // We want to deal with strings here
+        convert_to_string(*z_chan);
+
+        // Grab channel name, prefix if required
+        key      = Z_STRVAL_PP(z_chan);
+        key_len  = Z_STRLEN_PP(z_chan);
+        key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+        // Add this channel
+        redis_cmd_append_sstr(&cmdstr, key, key_len);
+
+        // Free our key if it was prefixed
+        if(key_free) efree(key); 
+    }
+
+    // Push values out
+    *cmd_len = cmdstr.len;
+    *cmd     = cmdstr.c;
+    *ctx     = (void*)sctx;
+
+    // Pick a slot at random
+    CMD_RAND_SLOT(slot);
+
+    return SUCCESS;
+}
+
 /* Commands that take a key followed by a variable list of serializable
  * values (RPUSH, LPUSH, SADD, SREM, etc...) */
 int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
