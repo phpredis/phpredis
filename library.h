@@ -22,6 +22,9 @@ PHP_REDIS_API int redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size
 
 typedef void (*SuccessCallback)(RedisSock *redis_sock);
 
+PHPAPI int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS, 
+        RedisSock *redis_sock, zval *z_tab, void *ctx);
+
 PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz TSRMLS_DC);
 PHPAPI void redis_stream_close(RedisSock *redis_sock TSRMLS_DC);
 PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC);

@@ -2565,207 +2565,17 @@ PHP_METHOD(Redis, publish)
 }
 /* }}} */
 
-PHP_REDIS_API void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd)
-{
-    zval *object, *array, **data;
-    HashTable *arr_hash;
-    HashPosition pointer;
-    RedisSock *redis_sock;
-    char *cmd = "", *old_cmd = NULL, *key;
-    int cmd_len, array_count, key_len, key_free;
-    zval *z_tab, **tmp;
-    char *type_response;
-
-    // Function call information
-    zend_fcall_info z_callback;
-    zend_fcall_info_cache z_callback_cache;
-
-    zval *z_ret, **z_args[4];
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oaf",
-                                     &object, redis_ce, &array, &z_callback, 
-                                     &z_callback_cache) == FAILURE) 
-    {
-        RETURN_FALSE;
-    }
-
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    arr_hash    = Z_ARRVAL_P(array);
-    array_count = zend_hash_num_elements(arr_hash);
-
-    if (array_count == 0) {
-        RETURN_FALSE;
-    }
-    for (zend_hash_internal_pointer_reset_ex(arr_hash, &pointer);
-         zend_hash_get_current_data_ex(arr_hash, (void**) &data,
-                                       &pointer) == SUCCESS;
-         zend_hash_move_forward_ex(arr_hash, &pointer)) {
-
-        if (Z_TYPE_PP(data) == IS_STRING) {
-            char *old_cmd = NULL;
-            if(*cmd) {
-                old_cmd = cmd;
-            }
-
-            /* Grab our key and len */
-            key = Z_STRVAL_PP(data);
-            key_len = Z_STRLEN_PP(data);
-
-            /* Prefix our key if neccisary */
-            key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-            cmd_len = spprintf(&cmd, 0, "%s %s", cmd, key);
-
-            if(old_cmd) {
-                efree(old_cmd);
-            }
-
-            /* Free our key if it was prefixed */
-            if(key_free) {
-                efree(key);
-            }
-        }
-    }
-
-    old_cmd = cmd;
-    cmd_len = spprintf(&cmd, 0, "%s %s\r\n", sub_cmd, cmd);
-    efree(old_cmd);
-    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
-        efree(cmd);
-        RETURN_FALSE;
-    }
-    efree(cmd);
-
-    /* read the status of the execution of the command `subscribe` */
-    z_tab = redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-        redis_sock);
-    if(z_tab == NULL) {
-        RETURN_FALSE;
-    }
-
-	if (zend_hash_index_find(Z_ARRVAL_P(z_tab), 0, (void**)&tmp) == SUCCESS) {
-        type_response = Z_STRVAL_PP(tmp);
-		if(strcmp(type_response, sub_cmd) != 0) {
-            zval_dtor(z_tab);
-            efree(z_tab);
-			RETURN_FALSE;
-		}
-	} else {
-		zval_dtor(z_tab);
-        efree(z_tab);
-		RETURN_FALSE;
-	}
-	zval_dtor(z_tab);
-    efree(z_tab);
-
-	/* Set a pointer to our return value and to our arguments. */
-	z_callback.retval_ptr_ptr = &z_ret;
-	z_callback.params = z_args;
-	z_callback.no_separation = 0;
-
-    /* Multibulk Response, format : {message type, originating channel, message
-     * payload} */
-    while(1) {
-        /* call the callback with this z_tab in argument */
-        zval **type, **channel, **pattern, **data;
-        z_tab = redis_sock_read_multibulk_reply_zval(
-                    INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
-        int is_pmsg, tab_idx = 1;
-
-		if(z_tab == NULL || Z_TYPE_P(z_tab) != IS_ARRAY) {
-			/*ERROR */
-			break;
-		}
-
-        if (zend_hash_index_find(Z_ARRVAL_P(z_tab), 0, (void**)&type) == FAILURE 
-                                 || Z_TYPE_PP(type) != IS_STRING) 
-        {
-            break;
-        }
-
-        // Make sure we have a message or pmessage
-        if(!strncmp(Z_STRVAL_PP(type), "message", 7) || 
-           !strncmp(Z_STRVAL_PP(type), "pmessage", 8)) 
-        {
-            // Is this a pmessage
-            is_pmsg = *Z_STRVAL_PP(type) == 'p';
-        } else {
-            continue;  // It's not a message or pmessage
-        }
-
-        // If this is a pmessage, we'll want to extract the pattern first
-        if(is_pmsg) {
-            // Extract pattern
-            if(zend_hash_index_find(Z_ARRVAL_P(z_tab), tab_idx++, 
-                                    (void**)&pattern) == FAILURE) 
-            {
-                break;
-            }
-        }
-
-        // Extract channel and data
-        if (zend_hash_index_find(Z_ARRVAL_P(z_tab), tab_idx++, (void**)&channel) 
-                                 == FAILURE) 
-        {
-            break;
-        }
-        if (zend_hash_index_find(Z_ARRVAL_P(z_tab), tab_idx++, (void**)&data) 
-                                 == FAILURE) 
-        {
-            break;
-        }
-
-		/* Always pass the Redis object through */
-		z_args[0] = &getThis();
-
-		/* Set up our callback args depending on the message type */
-		if(is_pmsg) {
-			z_args[1] = pattern;
-			z_args[2] = channel;
-			z_args[3] = data;
-		} else {
-			z_args[1] = channel;
-			z_args[2] = data;
-		}
-
-		/* Set our argument information */
-		z_callback.param_count = tab_idx;
-
-        // Break if we can't call the function
-        if(zend_call_function(&z_callback, &z_callback_cache TSRMLS_CC) 
-                              != SUCCESS) 
-        {
-            break;
-        }
-
-        // If we have a return value, free it.  Note, we could use the return 
-        // value to break the subscribe loop
-        if(z_ret) zval_ptr_dtor(&z_ret);
-
-        /* Check for a non-null return value.  If we have one, return it from
-         * the subscribe function itself.  Otherwise continue our loop. */
-        if (z_ret) {
-            if (Z_TYPE_P(z_ret) != IS_NULL) {
-                RETVAL_ZVAL(z_ret, 0, 1);
-                break;
-            }
-            zval_ptr_dtor(&z_ret);
-        }
-	}
-}
-
 /* {{{ proto void Redis::psubscribe(Array(pattern1, pattern2, ... patternN)) */
 PHP_METHOD(Redis, psubscribe)
 {
-    generic_subscribe_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "psubscribe");
+    REDIS_PROCESS_KW_CMD("PSUBSCRIBE", redis_subscribe_cmd, 
+        redis_subscribe_response);
 }
 
 /* {{{ proto void Redis::subscribe(Array(channel1, channel2, ... channelN)) */
 PHP_METHOD(Redis, subscribe) {
-    generic_subscribe_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "subscribe");
+    REDIS_PROCESS_KW_CMD("SUBSCRIBE", redis_subscribe_cmd,
+        redis_subscribe_response);
 }
 
 /**
@@ -4020,11 +3830,12 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     }
 
     /**
-     * Redis can return to us empty keys, especially in the case where there are 
-     * a large number of keys to scan, and we're matching against a pattern.  
-     * PHPRedis can be set up to abstract this from the user, by setting 
-     * OPT_SCAN to REDIS_SCAN_RETRY.  Otherwise we will return empty keys and 
-     * the user will need to make subsequent calls with an updated iterator.
+     * Redis can return to us empty keys, especially in the case where there 
+     * are a large number of keys to scan, and we're matching against a 
+     * pattern.  phpredis can be set up to abstract this from the user, by 
+     * setting OPT_SCAN to REDIS_SCAN_RETRY.  Otherwise we will return empty 
+     * keys and the user will need to make subsequent calls with an updated 
+     * iterator.
      */
     do {
         /* Free our previous reply if we're back in the loop.  We know we are
