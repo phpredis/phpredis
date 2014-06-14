@@ -1389,6 +1389,7 @@ PHPAPI void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         }
 
         zval_dtor(z_tab);
+        efree(z_tab);
         pull = 1;
     }
 
@@ -1465,6 +1466,9 @@ PHPAPI void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
             break;
         }
 
+        // If we have a return value, free it
+        if(z_ret) zval_ptr_dtor(&z_ret);
+
         zval_dtor(z_tab);
         efree(z_tab);
     }
@@ -1489,12 +1493,13 @@ PHPAPI void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
 {
     subscribeContext *sctx = (subscribeContext*)ctx;
     zval *z_tab, **z_chan, **z_flag;
-    int pull = 0;
+    int pull = 0, argc = sctx->argc;
 
+    efree(sctx);
     array_init(return_value);
 
     // Consume each response
-    while(sctx->argc--) {
+    while(argc--) {
         z_tab = cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,
             c, pull, mbulk_resp_loop_raw);
         
@@ -1502,20 +1507,20 @@ PHPAPI void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
         if(!z_tab || zend_hash_index_find(Z_ARRVAL_P(z_tab), 1, 
                                           (void**)&z_chan)==FAILURE) 
         {
+            if(z_tab) {
+                zval_dtor(z_tab);
+                efree(z_tab);
+            }
             zval_dtor(return_value);
             RETURN_FALSE;
         }
 
         // Find the flag for this channel/pattern
         if(zend_hash_index_find(Z_ARRVAL_P(z_tab), 2, (void**)&z_flag)
-                                ==FAILURE)
+                                ==FAILURE || Z_STRLEN_PP(z_flag)!=2)
         {
-            zval_dtor(return_value);
-            RETURN_FALSE;
-        }
-
-        // Sanity check
-        if(Z_STRLEN_PP(z_flag) != 2) {
+            zval_dtor(z_tab);
+            efree(z_tab);
             zval_dtor(return_value);
             RETURN_FALSE;
         }
@@ -1526,6 +1531,7 @@ PHPAPI void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
         // Add result
         add_assoc_bool(return_value, Z_STRVAL_PP(z_chan), flag[1]=='1');
 
+        zval_dtor(z_tab);
         efree(z_tab);
         pull = 1;
     }

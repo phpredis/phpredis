@@ -2671,12 +2671,14 @@ PHPAPI void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
 PHP_METHOD(Redis, unsubscribe)
 {
-    generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "UNSUBSCRIBE");
+    REDIS_PROCESS_KW_CMD("UNSUBSCRIBE", redis_unsubscribe_cmd,
+        redis_unsubscribe_response);
 }
 
 PHP_METHOD(Redis, punsubscribe)
 {
-    generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PUNSUBSCRIBE");
+    REDIS_PROCESS_KW_CMD("PUNSUBSCRIBE", redis_unsubscribe_cmd,
+        redis_unsubscribe_response);
 }
 
 /* {{{ proto string Redis::bgrewriteaof() */
