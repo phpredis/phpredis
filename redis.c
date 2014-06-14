@@ -2426,8 +2426,9 @@ PHP_METHOD(Redis, exec)
         }
         efree(cmd);
 
-        if(redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-                                                 redis_sock) < 0) 
+        if(redis_sock_read_multibulk_multi_reply(
+                    INTERNAL_FUNCTION_PARAM_PASSTHRU, 
+                    redis_sock) < 0) 
         {
             zval_dtor(return_value);
             free_reply_callbacks(object, redis_sock);
@@ -2477,8 +2478,9 @@ PHP_METHOD(Redis, exec)
                 return;
         }
 
-        if (redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-                                                     redis_sock) < 0) 
+        if (redis_sock_read_multibulk_pipeline_reply(
+                        INTERNAL_FUNCTION_PARAM_PASSTHRU, 
+                        redis_sock) < 0) 
         {
             redis_sock->mode = ATOMIC;
             free_reply_callbacks(object, redis_sock);
@@ -2511,9 +2513,10 @@ PHPAPI void fold_this_item(INTERNAL_FUNCTION_PARAMETERS, fold_item *item,
         TSRMLS_CC);
 }
 
-PHPAPI int redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
-                                                      RedisSock *redis_sock, 
-                                                      zval *z_tab, int numElems)
+PHPAPI int 
+redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
+                                           RedisSock *redis_sock, zval *z_tab, 
+                                           int numElems)
 {
 
     fold_item *head = redis_sock->head;
@@ -2642,8 +2645,8 @@ PHPAPI void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
     array_init(return_value);
 
     while( i <= array_count) {
-        z_tab = redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-            redis_sock);
+        z_tab = redis_sock_read_multibulk_reply_zval(
+            INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 
         if(Z_TYPE_P(z_tab) == IS_ARRAY) {
             if (zend_hash_index_find(Z_ARRVAL_P(z_tab), 1, (void**)&z_channel) 
@@ -2658,7 +2661,7 @@ PHPAPI void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
             RETURN_FALSE;
         }
         efree(z_tab);
-        i ++;
+        i++;
     }
 }
 
@@ -2807,8 +2810,8 @@ PHP_METHOD(Redis, config)
     }
 
     if (mode == CFG_GET && val == NULL) {
-        cmd_len = redis_cmd_format_static(&cmd, "CONFIG", "ss", op, op_len, key, 
-            key_len);
+        cmd_len = redis_cmd_format_static(&cmd, "CONFIG", "ss", op, op_len, 
+            key, key_len);
 
         REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len)
         IF_ATOMIC() {
@@ -3078,8 +3081,9 @@ PHP_METHOD(Redis, pubsub) {
 
     if(type == PUBSUB_NUMSUB) {
         IF_ATOMIC() {
-            if(redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-                                                      redis_sock, NULL, NULL)<0) 
+            if(redis_sock_read_multibulk_reply_zipped(
+                    INTERNAL_FUNCTION_PARAM_PASSTHRU, 
+                    redis_sock, NULL, NULL)<0) 
             {
                 RETURN_FALSE;
             }
@@ -3120,7 +3124,8 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
         // We only need to process the arguments if the array is non empty
         if(args_count >  0) {
             // Header for our EVAL command
-            cmd_len = redis_cmd_format_header(ret, keyword, eval_cmd_count + args_count);
+            cmd_len = redis_cmd_format_header(ret, keyword, 
+                eval_cmd_count + args_count);
 
             // Now append the script itself, and the number of arguments to 
             // treat as keys
@@ -3129,7 +3134,8 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
 
             // Iterate the values in our "keys" array
             for(zend_hash_internal_pointer_reset_ex(args_hash, &hash_pos);
-                zend_hash_get_current_data_ex(args_hash,(void **)&elem,&hash_pos) == SUCCESS;
+                zend_hash_get_current_data_ex(args_hash,(void **)&elem,
+                                              &hash_pos) == SUCCESS;
                 zend_hash_move_forward_ex(args_hash, &hash_pos))
             {
                 zval *z_tmp = NULL;
@@ -3155,7 +3161,8 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
 
                 // If this is still a key argument, prefix it if we've been set 
                 // up to prefix keys
-                key_free = keys_count-- > 0 ? redis_key_prefix(redis_sock, &key, &key_len) : 0;
+                key_free = keys_count-- > 0 ? redis_key_prefix(redis_sock, 
+                    &key, &key_len) : 0;
 
                 // Append this key to our EVAL command, free our old command
                 cmd_len = redis_cmd_format(ret, "%s$%d" _NL "%s" _NL, *ret, 
@@ -3265,7 +3272,7 @@ redis_build_script_exists_cmd(char **ret, zval **argv, int argc) {
     int cmd_len = 0, i;
 
     // Start building our command
-    cmd_len = redis_cmd_format_header(ret, "SCRIPT", argc + 1); // +1 for "EXISTS"
+    cmd_len = redis_cmd_format_header(ret, "SCRIPT", argc + 1);
     cmd_len = redis_cmd_append_str(ret, cmd_len, "EXISTS", 6);
 
     // Iterate our arguments
