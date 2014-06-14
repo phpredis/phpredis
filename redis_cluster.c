@@ -143,8 +143,10 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, psubscribe, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, unsubscribe, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, punsubscribe, NULL, ZEND_ACC_PUBLIC)
+
     PHP_ME(RedisCluster, getoption, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, setoption, NULL, ZEND_ACC_PUBLIC)
+
     PHP_ME(RedisCluster, _prefix, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _serialize, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _unserialize, NULL, ZEND_ACC_PUBLIC)
@@ -256,6 +258,8 @@ void free_cluster_context(void *object TSRMLS_DC) {
     // Destroy all Redis objects and free our nodes HashTable
     zend_hash_destroy(cluster->nodes);
     efree(cluster->nodes);
+
+    if(cluster->err) efree(cluster->err);
 
     // Finally, free the redisCluster structure itself
     efree(cluster);
