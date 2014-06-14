@@ -1489,7 +1489,6 @@ PHPAPI void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
 {
     subscribeContext *sctx = (subscribeContext*)ctx;
     zval *z_tab, **z_chan, **z_flag;
-    char *flag;
     int pull = 0;
 
     array_init(return_value);
