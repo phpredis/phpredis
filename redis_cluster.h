@@ -222,6 +222,15 @@ PHP_METHOD(RedisCluster, zunionstore);
 PHP_METHOD(RedisCluster, zinterstore);
 PHP_METHOD(RedisCluster, sort);
 PHP_METHOD(RedisCluster, object);
+PHP_METHOD(RedisCluster, subscribe);
+PHP_METHOD(RedisCluster, psubscribe);
+
+/* Transactions */
+PHP_METHOD(RedisCluster, multi);
+PHP_METHOD(RedisCluster, exec);
+PHP_METHOD(RedisCluster, discard);
+PHP_METHOD(RedisCluster, watch);
+PHP_METHOD(RedisCluster, unwatch);
 
 /* Introspection */
 PHP_METHOD(RedisCluster, getoption);
@@ -230,9 +239,4 @@ PHP_METHOD(RedisCluster, _prefix);
 PHP_METHOD(RedisCluster, _serialize);
 PHP_METHOD(RedisCluster, _unserialize);
 
-PHP_METHOD(RedisCluster, multi);
-PHP_METHOD(RedisCluster, exec);
-PHP_METHOD(RedisCluster, discard);
-PHP_METHOD(RedisCluster, watch);
-PHP_METHOD(RedisCluster, unwatch);
 #endif
