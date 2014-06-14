@@ -16,6 +16,7 @@
 #include <zend_exceptions.h>
 #include "php_redis.h"
 #include "library.h"
+#include "redis_commands.h"
 #include <ext/standard/php_math.h>
 #include <ext/standard/php_rand.h>
 
@@ -147,7 +148,8 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 
     eof = php_stream_eof(redis_sock->stream);
     for (; eof; count++) {
-        if((MULTI == redis_sock->mode) || redis_sock->watching || count == 10) {            /* too many failures */
+        if((MULTI == redis_sock->mode) || redis_sock->watching || count == 10) {
+            /* too many failures */
             if(redis_sock->stream) { /* close stream if still here */
                 redis_stream_close(redis_sock TSRMLS_CC);
                 redis_sock->stream = NULL;
@@ -246,7 +248,125 @@ redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 }
 
-PHP_REDIS_API zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+PHPAPI int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS, 
+                                    RedisSock *redis_sock, zval *z_tab, 
+                                    void *ctx)
+{
+    subscribeContext *sctx = (subscribeContext*)ctx;
+    zval **z_tmp, *z_ret, **z_args[4];
+
+    // Consume response(s) from subscribe, which will vary on argc
+    while(sctx->argc--) {
+        z_tab = redis_sock_read_multibulk_reply_zval(
+            INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+        if(!z_tab) return -1;
+
+        // We'll need to find the command response
+        if(zend_hash_index_find(Z_ARRVAL_P(z_tab), 0, (void**)&z_tmp)
+                                ==FAILURE)
+        {
+            zval_dtor(z_tab);
+            efree(z_tab);
+            return -1;
+        }
+
+        // Make sure the command response matches the command we called
+        if(strcasecmp(Z_STRVAL_PP(z_tmp), sctx->kw) !=0) {
+            zval_dtor(z_tab);
+            efree(z_tab);
+            return -1;
+        }
+
+        zval_dtor(z_tab);
+        efree(z_tab);
+    }
+
+    sctx->cb.retval_ptr_ptr = &z_ret;
+    sctx->cb.params = z_args;
+    sctx->cb.no_separation = 0;
+
+    /* Multibulk response, {[pattern], type, channel, payload } */
+    while(1) {
+        zval **z_type, **z_chan, **z_pat, **z_data;
+        HashTable *ht_tab;
+        int tab_idx=1, is_pmsg;
+
+        z_tab = redis_sock_read_multibulk_reply_zval(
+            INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+        if(z_tab == NULL) break;
+
+        ht_tab = Z_ARRVAL_P(z_tab);
+        
+        if(zend_hash_index_find(ht_tab, 0, (void**)&z_type)==FAILURE ||
+           Z_TYPE_PP(z_type) != IS_STRING) 
+        {
+            break;
+        }
+        
+        // Check for message or pmessage
+        if(!strncmp(Z_STRVAL_PP(z_type), "message", 7) ||
+           !strncmp(Z_STRVAL_PP(z_type), "pmessage", 8))
+        {
+            is_pmsg = *Z_STRVAL_PP(z_type)=='p';
+        } else {
+            break;
+        }
+
+        // Extract pattern if it's a pmessage
+        if(is_pmsg) {
+            if(zend_hash_index_find(ht_tab, tab_idx++, (void**)&z_pat)
+                                    ==FAILURE)
+            {
+                break;
+            }
+        }
+
+        // Extract channel and data
+        if(zend_hash_index_find(ht_tab, tab_idx++, (void**)&z_chan)==FAILURE ||
+           zend_hash_index_find(ht_tab, tab_idx++, (void**)&z_data)==FAILURE)
+        {
+            break;
+        }
+
+        // Different args for SUBSCRIBE and PSUBSCRIBE
+        z_args[0] = &getThis();
+        if(is_pmsg) {
+            z_args[1] = z_pat;
+            z_args[2] = z_chan;
+            z_args[3] = z_data;
+        } else {
+            z_args[1] = z_chan;
+            z_args[2] = z_data;
+        }
+
+        // Set arg count
+        sctx->cb.param_count = tab_idx;
+
+        // Execute callback
+        if(zend_call_function(&(sctx->cb), &(sctx->cb_cache) TSRMLS_CC)
+                              ==FAILURE)
+        {
+            break;
+        }
+
+        // If we have a return value free it
+        if(z_ret) zval_ptr_dtor(&z_ret);
+
+        zval_dtor(z_tab);
+        efree(z_tab);
+    }
+
+    if(z_tab) {
+        zval_dtor(z_tab);
+        efree(z_tab);
+    }
+
+    return -1;
+}
+
+PHPAPI zval *
+redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, 
+                                     RedisSock *redis_sock) {
     char inbuf[1024];
     int numElems;
     zval *z_tab;
