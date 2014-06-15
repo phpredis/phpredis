@@ -1140,7 +1140,7 @@ PHPAPI int cluster_send_slot(redisCluster *c, short slot, char *cmd,
         return -1;
     }
 
-    // Require a +OK response
+    // Check our response and verify the type unless passed in as TYPE_EOF
     if(cluster_check_response(c, slot, &c->reply_type TSRMLS_CC)!=0 ||
        (rtype != TYPE_EOF && rtype != c->reply_type))
     {

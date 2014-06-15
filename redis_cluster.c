@@ -1257,11 +1257,10 @@ PHP_METHOD(RedisCluster, watch) {
                 (*dl)->entry[i].key_len);
         }
 
-        // Send this command directly to our server
-        if(cluster_send_slot(c, (short)slot, cmd.c, cmd.len, TYPE_LINE)==-1) {
-            zend_throw_exception(redis_cluster_exception_ce,
-                "WATCH command failed.  Nodes are possibly resharding",
-                0 TSRMLS_CC);
+        // If we get a failure from this, we have to abort
+        if((slot = cluster_send_command(c, (short)slot, cmd.c, cmd.len 
+                                        TSRMLS_CC))==-1)
+        {
             RETURN_FALSE;
         }
 
