@@ -133,6 +133,17 @@
         add_next_index_long(c->multi_resp, val); \
     }
 
+/* Macro to clear out a clusterMultiCmd structure */
+#define CLUSTER_MULTI_CLEAR(mc) \
+    mc->cmd.len  = 0; \
+    mc->args.len = 0; \
+    mc->argc     = 0; \
+
+/* Initialzie a clusterMultiCmd with a keyword and length */
+#define CLUSTER_MULTI_INIT(mc, keyword, keyword_len) \
+    mc.kw     = keyword; \
+    mc.kw_len = keyword_len; \
+
 /* Cluster redirection enum */
 typedef enum CLUSTER_REDIR_TYPE {
     REDIR_NONE,
@@ -281,13 +292,48 @@ typedef struct clusterDistList {
     size_t len, size;
 } clusterDistList;
 
-/* Cluster distribution helpers */
+/* Context for things like MGET/MSET/MSETNX.  When executing in MULTI mode, 
+ * we'll want to re-integrate into one running array, except for the last
+ * command execution, in which we'll want to return the value (or add it) */
+typedef struct clusterMultiCtx {
+    /* Our running array */
+    zval *z_multi;
+
+    /* How many keys did we request for this bit */
+    int count;
+
+    /* Is this the last entry */
+    short last;
+} clusterMultiCtx;
+
+/* Container for things like MGET, MSET, and MSETNX, which split the command
+ * into a header and payload while aggregating to a specific slot. */
+typedef struct clusterMultiCmd {
+    /* Keyword and keyword length */
+    char *kw;
+    int  kw_len;
+
+    /* Arguments in our payload */
+    int argc;
+
+    /* The full command, built into cmd, and args as we aggregate */
+    smart_str cmd;
+    smart_str args;
+} clusterMultiCmd;
+
+/* Cluster distribution helpers for WATCH */
 HashTable *cluster_dist_create();
 void cluster_dist_free(HashTable *ht);
 int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key, 
     int key_len, clusterKeyVal **kv);
 void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *val 
     TSRMLS_CC);
+
+/* Aggregation for multi commands like MGET, MSET, and MSETNX */
+void cluster_multi_init(clusterMultiCmd *mc, char *kw, int kw_len);
+void cluster_multi_free(clusterMultiCmd *mc);
+void cluster_multi_add(clusterMultiCmd *mc, char *data, int data_len);
+void cluster_multi_fini(clusterMultiCmd *mc);
 
 /* Hash a key to it's slot, using the Redis Cluster hash algorithm */
 unsigned short cluster_hash_key_zval(zval *key);
@@ -360,6 +406,14 @@ PHPAPI void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 PHPAPI zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
     redisCluster *c, int pull, mbulk_cb cb);
+
+/* MULTI BULK handlers for things like MGET/MSET/MSETNX */
+PHPAPI void cluster_mgetset_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
+    redisCluster *c, mbulk_cb func, void *ctx);
+PHPAPI void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS, 
+    redisCluster *c, void *ctx);
+PHPAPI void cluster_mbulk_mset_resp(INTERNAL_FUNCTION_PARAMETERS,
+    redisCluster *c, void *ctx);
 
 /* MULTI BULK processing callbacks */
 int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, 
