@@ -44,6 +44,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, set, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, mget, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, mset, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, msetnx, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, setex, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, psetex, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, setnx, NULL, ZEND_ACC_PUBLIC)
@@ -343,10 +344,10 @@ PHP_METHOD(RedisCluster, set) {
 }
 /* }}} */
 
-/* Multiple key response handler mechanism for things like MGET/MSET/MSETEX */
+/* Specific handler for MGET */
 static int 
-mkey_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, cluster_cb cb, 
-                  short slot, clusterMultiCmd *mc, zval *z_ret, int last)
+mget_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, short slot, 
+                  clusterMultiCmd *mc, zval *z_ret, int last)
 {
     clusterMultiCtx *ctx;
 
@@ -371,15 +372,37 @@ mkey_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, cluster_cb cb,
 
     if(CLUSTER_IS_ATOMIC(c)) {
         // Process response now
-        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, (void*)ctx);
+        cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, 
+            (void*)ctx);
     } else {
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_mbulk_mget_resp, ctx);
     }
 
     // Clear out our command but retain allocated memory
     CLUSTER_MULTI_CLEAR(mc);
 
     return 0;
+}
+
+/* Helper function to stringify a zval** key, prefix, and hash it */
+static int process_zval_key(redisCluster *c, zval **z_key_pp, char **key, 
+                            int *key_len, short *slot)
+{
+    int key_free;
+
+    // Always want strings
+    convert_to_string(*z_key_pp);
+
+    // Set up initial pointers, prefix
+    *key     = Z_STRVAL_PP(z_key_pp);
+    *key_len = Z_STRLEN_PP(z_key_pp);
+    key_free = redis_key_prefix(c->flags, key, key_len);
+
+    // Hash the slot
+    *slot = cluster_hash_key(*key, *key_len);
+
+    // Return if we need to free the pointer
+    return key_free;
 }
 
 /* {{{ proto array RedisCluster::mget(array keys) */
@@ -423,16 +446,8 @@ PHP_METHOD(RedisCluster, mget) {
         RETURN_FALSE;
     }
 
-    // Always string keys
-    convert_to_string(*z_key);
-    
-    // Grab info, prefix if required
-    key      = Z_STRVAL_PP(z_key);
-    key_len  = Z_STRLEN_PP(z_key);
-    key_free = redis_key_prefix(c->flags, &key, &key_len);
-    
-    // Hash it and add to our MGET commands
-    slot = cluster_hash_key(key, key_len);
+    // Process our key and add it to the command
+    key_free = process_zval_key(c, z_key, &key, &key_len, &slot);
     cluster_multi_add(&mc, key, key_len);
 
     // Free key if we prefixed
@@ -453,23 +468,14 @@ PHP_METHOD(RedisCluster, mget) {
             efree(z_ret);
             RETURN_FALSE;
         }
-        
-        // Always want to work with strings
-        convert_to_string(*z_key);
-
-        // Grab key bits, prefixing if required
-        key      = Z_STRVAL_PP(z_key);
-        key_len  = Z_STRLEN_PP(z_key);
-        key_free = redis_key_prefix(c->flags, &key, &key_len); 
-
-        // Hash our key
-        kslot = cluster_hash_key(key, key_len);
+    
+        // Proceess and hash this key
+        key_free = process_zval_key(c, z_key, &key, &key_len, &kslot);    
 
         // If the slots have changed, kick off the keys we've aggregated
         if(slot != kslot) {
             // Process this batch of MGET keys
-            if(mkey_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-                                 cluster_mbulk_mget_resp, slot, &mc,
+            if(mget_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot, &mc,
                                  z_ret, i==argc)<0)
             {
                 RETURN_FALSE;
@@ -491,8 +497,7 @@ PHP_METHOD(RedisCluster, mget) {
 
     // If we've got straggler(s) process them
     if(mc.argc > 0) {
-        if(mkey_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-                             cluster_mbulk_mget_resp, slot, &mc,
+        if(mget_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot, &mc,
                              z_ret, 1)<0)
         {
             RETURN_FALSE;
@@ -503,10 +508,15 @@ PHP_METHOD(RedisCluster, mget) {
     cluster_multi_free(&mc);
 }
 
-/* {{{ proto bool RedisCluster::mset(string key1, string val1, ... kN, vN) */
+/* {{{ proto bool RedisCluster::mset(array keyvalues) */
 PHP_METHOD(RedisCluster, mset) {
     php_error_docref(NULL TSRMLS_CC, E_ERROR, "Coming soon!");
 }
+
+/* {{{ proto array RedisCluster::msetnx(array keyvalues) */
+PHP_METHOD(RedisCluster, msetnx) {
+}
+/* }}} */
 
 /* {{{ proto bool RedisCluster::setex(string key, string value, int expiry) */
 PHP_METHOD(RedisCluster, setex) {

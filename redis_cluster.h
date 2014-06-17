@@ -125,6 +125,8 @@ PHP_METHOD(RedisCluster, get);
 PHP_METHOD(RedisCluster, set);
 PHP_METHOD(RedisCluster, mget);
 PHP_METHOD(RedisCluster, mset);
+PHP_METHOD(RedisCluster, msetnx);
+PHP_METHOD(RedisCluster, mset);
 PHP_METHOD(RedisCluster, dump);
 PHP_METHOD(RedisCluster, setex);
 PHP_METHOD(RedisCluster, psetex);
