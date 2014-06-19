@@ -39,8 +39,10 @@ static void cluster_dist_free_ht(void *p) {
     int i;
 
     for(i=0; i < dl->len; i++) {
-        if(dl->entry[i].key_free) efree(dl->entry[i].key);
-        if(dl->entry[i].val_free) efree(dl->entry[i].val);
+        if(dl->entry[i].key_free) 
+            efree(dl->entry[i].key);
+        if(dl->entry[i].val_free) 
+            efree(dl->entry[i].val);
     }
 
     efree(dl->entry);

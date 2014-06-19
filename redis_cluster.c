@@ -379,6 +379,7 @@ distcmd_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, short slot,
         cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, (void*)ctx);
     } else {
         CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
+        RETVAL_ZVAL(getThis(), 1, 0);
     }
 
     // Clear out our command but retain allocated memory
