@@ -45,6 +45,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, mget, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, mset, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, msetnx, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, del, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, setex, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, psetex, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, setnx, NULL, ZEND_ACC_PUBLIC)
@@ -468,12 +469,14 @@ static int get_key_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
     return 0;
 }
 
-/* {{{ proto array RedisCluster::mget(array keys) */
-PHP_METHOD(RedisCluster, mget) {
+/* Handler for both MGET and DEL */
+static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
+                          zval *z_ret, cluster_cb cb)
+{
     redisCluster *c = GET_CONTEXT();
     clusterMultiCmd mc = {0};
     clusterKeyValHT kv;
-    zval *z_arr, *z_ret;
+    zval *z_arr;
     HashTable *ht_arr;
     HashPosition ptr;
     int i=1, argc;
@@ -481,29 +484,23 @@ PHP_METHOD(RedisCluster, mget) {
 
     // Parse our arguments
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &z_arr)==FAILURE) {
-        RETURN_FALSE;
+        return -1;
     }
 
     // No reason to send zero arguments
     ht_arr = Z_ARRVAL_P(z_arr);
     if((argc = zend_hash_num_elements(ht_arr))==0) {
-        RETURN_FALSE;
+        return -1; 
     }
 
-    // Spin up a running array for our response
-    MAKE_STD_ZVAL(z_ret);
-    array_init(z_ret);
-
     // Initialize our "multi" command handler with command/len
-    CLUSTER_MULTI_INIT(mc, "MGET", sizeof("MGET")-1);
+    CLUSTER_MULTI_INIT(mc, kw, kw_len);
 
     // Process the first key outside of our loop, so we don't have to check if
     // it's the first iteration every time, needlessly
     zend_hash_internal_pointer_reset_ex(ht_arr, &ptr);
     if(get_key_ht(c, ht_arr, &ptr, &kv TSRMLS_CC)<0) {
-        zval_dtor(z_ret);
-        efree(z_ret);
-        RETURN_FALSE;
+        return -1;
     }
 
     // Process our key and add it to the command
@@ -519,19 +516,18 @@ PHP_METHOD(RedisCluster, mget) {
     slot = kv.slot;
     while(zend_hash_has_more_elements_ex(ht_arr, &ptr)==SUCCESS) {
         if(get_key_ht(c, ht_arr, &ptr, &kv TSRMLS_CC)<0) {
-            zval_dtor(z_ret);
-            efree(z_ret);
-            RETURN_FALSE;
+            cluster_multi_free(&mc);
+            return -1;
         }
     
         // If the slots have changed, kick off the keys we've aggregated
         if(slot != kv.slot) {
             // Process this batch of MGET keys
             if(distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot, 
-                                    &mc, z_ret, i==argc, 
-                                    cluster_mbulk_mget_resp)<0)
+                                    &mc, z_ret, i==argc, cb)<0)
             {
-                RETURN_FALSE;
+                cluster_multi_free(&mc);
+                return -1;
             }
         }
 
@@ -551,14 +547,18 @@ PHP_METHOD(RedisCluster, mget) {
     // If we've got straggler(s) process them
     if(mc.argc > 0) {
         if(distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot, &mc,
-                             z_ret, 1, cluster_mbulk_mget_resp)<0)
+                             z_ret, 1, cb)<0)
         {
-            RETURN_FALSE;
+            cluster_multi_free(&mc);
+            return -1;
         }
     }
 
     // Free our command
     cluster_multi_free(&mc);
+
+    // Success
+    return 0;
 }
 
 /* Handler for both MSET and MSETNX */
@@ -646,6 +646,41 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
     // Success
     return 0;
+}
+
+/* {{{ proto array RedisCluster::del(string key1, string key2, ... keyN) */
+PHP_METHOD(RedisCluster, del) {
+    zval *z_ret;
+
+    // Initialize a LONG value to zero for our return
+    MAKE_STD_ZVAL(z_ret);
+    ZVAL_LONG(z_ret, 0);
+
+    // Parse args, process
+    if(cluster_mkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DEL", 
+                        sizeof("DEL")-1, z_ret, cluster_del_resp)<0)
+    {
+        efree(z_ret);
+        RETURN_FALSE;
+    }
+}
+
+/* {{{ proto array RedisCluster::mget(array keys) */
+PHP_METHOD(RedisCluster, mget) {
+    zval *z_ret;
+
+    // Array response
+    MAKE_STD_ZVAL(z_ret);
+    array_init(z_ret);
+
+    // Parse args, process
+    if(cluster_mkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "MGET",
+                        sizeof("MGET")-1, z_ret, cluster_mbulk_mget_resp)<0)
+    {
+        zval_dtor(z_ret);
+        efree(z_ret);
+        RETURN_FALSE;
+    }
 }
 
 /* {{{ proto bool RedisCluster::mset(array keyvalues) */

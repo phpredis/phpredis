@@ -1721,6 +1721,35 @@ PHPAPI void cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     efree(mctx);
 }
 
+/* Handler for DEL */
+PHPAPI void cluster_del_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                             void *ctx)
+{
+    clusterMultiCtx *mctx = (clusterMultiCtx*)ctx;
+
+    // If we get an invalid reply, inform the client
+    if(c->reply_type != TYPE_INT) {
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "Invalid reply type returned for DEL command");
+        efree(mctx);
+        return;
+    }
+
+    // Increment by the number of keys deleted
+    Z_LVAL_P(mctx->z_multi) += c->reply_len;
+
+    if(mctx->last) {
+        if(CLUSTER_IS_ATOMIC(c)) {
+            ZVAL_LONG(return_value, Z_LVAL_P(mctx->z_multi));
+        } else {
+            add_next_index_long(c->multi_resp, Z_LVAL_P(mctx->z_multi));
+        }
+        efree(mctx->z_multi);
+    }
+
+    efree(ctx);
+}
+
 /* Handler for MSET */
 PHPAPI void cluster_mset_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                               void *ctx)
