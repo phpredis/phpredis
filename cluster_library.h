@@ -408,7 +408,9 @@ PHPAPI void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 PHPAPI zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
     redisCluster *c, int pull, mbulk_cb cb);
 
-/* Handlers for things like MGET/MSET/MSETNX */
+/* Handlers for things like DEL/MGET/MSET/MSETNX */
+PHPAPI void cluster_del_resp(INTERNAL_FUNCTION_PARAMETERS, 
+    redisCluster *c, void *ctx);
 PHPAPI void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS, 
     redisCluster *c, void *ctx);
 PHPAPI void cluster_mset_resp(INTERNAL_FUNCTION_PARAMETERS,
