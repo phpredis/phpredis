@@ -922,7 +922,7 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
             return 1;
         } else {
             // Capture the error string Redis returned
-            cluster_set_err(c, inbuf+1, strlen(inbuf+1)-2);
+            cluster_set_err(c, inbuf, strlen(inbuf)-1);
             return 0;
         }
     }
@@ -1649,22 +1649,23 @@ PHPAPI void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     efree(c->multi_resp);
 }
 
-/* Generic handler for things like MGET/MSET/MSETNX */
-PHPAPI void cluster_mgetset_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
-                                       redisCluster *c, mbulk_cb func,
-                                       void *ctx)
+/* Generic handler for MGET */
+PHPAPI void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS, 
+                                    redisCluster *c, void *ctx)
 {
     clusterMultiCtx *mctx = (clusterMultiCtx*)ctx;
 
     // Protect against an invalid response type, -1 response length, and failure
     // to consume the responses.
     short fail = c->reply_type != TYPE_MULTIBULK || c->reply_len == -1 ||
-                 func(SLOT_SOCK(c,c->reply_slot), mctx->z_multi, c->reply_len,
-                      NULL TSRMLS_CC)==FAILURE;
+                 mbulk_resp_loop(SLOT_SOCK(c,c->reply_slot), mctx->z_multi, 
+                                 c->reply_len, NULL TSRMLS_CC)==FAILURE;
 
     // If we had a failure, pad results with FALSE to indicate failure.  Non
     // existant keys (e.g. for MGET will come back as NULL)
     if(fail) {
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "Invalid response from Redis for MGET command");
         while(mctx->count--) { 
             add_next_index_bool(mctx->z_multi, 0);
         }
@@ -1684,13 +1685,70 @@ PHPAPI void cluster_mgetset_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     efree(mctx);
 }
 
-/* Response for MGET */
-PHPAPI void
-cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
-                        void *ctx)
+/* Handler for MSETNX */
+PHPAPI void cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                                void *ctx)
 {
-    cluster_mgetset_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-        mbulk_resp_loop, ctx);
+    clusterMultiCtx *mctx = (clusterMultiCtx*)ctx;
+    int real_argc = mctx->count/2;
+
+    // Protect against an invalid response type
+    if(c->reply_type != TYPE_INT) {
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "Invalid response type for MSETNX");
+        while(real_argc--) {
+            add_next_index_bool(mctx->z_multi, 0);
+        }
+        return;
+    }
+
+    // Response will be 1/0 per key, so the client can match them up
+    while(real_argc--) {
+        add_next_index_long(mctx->z_multi, c->reply_len);
+    }
+
+    // Set return value if it's our last response
+    if(mctx->last) {
+        if(CLUSTER_IS_ATOMIC(c)) {
+            *return_value = *(mctx->z_multi);
+            efree(mctx->z_multi);
+        } else {
+            add_next_index_zval(c->multi_resp, mctx->z_multi);
+        }
+    }
+
+    // Free multi context
+    efree(mctx);
+}
+
+/* Handler for MSET */
+PHPAPI void cluster_mset_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                              void *ctx)
+{
+    clusterMultiCtx *mctx = (clusterMultiCtx*)ctx;
+
+    // If we get an invalid reply type something very wrong has happened, 
+    // and we have to abort.
+    if(c->reply_type != TYPE_LINE) {
+        php_error_docref(0 TSRMLS_CC, E_ERROR,
+            "Invalid reply type returned for MSET command");
+        ZVAL_FALSE(return_value);
+        efree(mctx->z_multi);
+        efree(mctx);
+        return;
+    }
+
+    // Set our return if it's the last call
+    if(mctx->last) {
+        if(CLUSTER_IS_ATOMIC(c)) {
+            ZVAL_BOOL(return_value, Z_BVAL_P(mctx->z_multi));
+        } else {
+            add_next_index_bool(c->multi_resp, Z_BVAL_P(mctx->z_multi));
+        }
+        efree(mctx->z_multi);
+    }
+
+    efree(mctx);
 }
 
 /* Raw MULTI BULK reply */
