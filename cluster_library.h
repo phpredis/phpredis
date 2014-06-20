@@ -43,6 +43,9 @@
 #define RESP_DISCARD_CMD "*1\r\n$7\r\nDISCARD\r\n"
 #define RESP_UNWATCH_CMD "*1\r\n$7\r\nUNWATCH\r\n"
 
+/* ASKING RESP */
+#define RESP_ASKING_CMD  "*1\r\n$6\r\nASKING\r\n"
+
 /* MOVED/ASK comparison macros */
 #define IS_MOVED(p) (p[0]=='M' && p[1]=='O' && p[2]=='V' && p[3]=='E' && \
                      p[4]=='D' && p[5]==' ')
