@@ -540,6 +540,39 @@ void cluster_free_info_array(clusterNodeInfo **array, int count) {
     efree(array);
 }
 
+/* When we're in an ASK redirection state, Redis Cluster wants us to send
+ * the command only after starting our query with ASKING, or it'll just
+ * bounce us back and forth until the slots have migrated */
+static int cluster_send_asking(RedisSock *redis_sock TSRMLS_DC) 
+{
+    REDIS_REPLY_TYPE reply_type;
+    char buf[255];
+
+    // Make sure we can send the request
+    if(redis_check_eof(redis_sock TSRMLS_DC) ||
+       php_stream_write(redis_sock->stream, RESP_ASKING_CMD, 
+                        sizeof(RESP_ASKING_CMD)-1) != sizeof(RESP_ASKING_CMD)-1)
+    {
+        return -1;
+    }
+
+    // Read our reply type
+    if((redis_check_eof(redis_sock TSRMLS_CC) == - 1) ||
+       (reply_type = php_stream_getc(redis_sock->stream TSRMLS_DC) 
+                                     != TYPE_LINE))
+    {
+        return -1;
+    }
+
+    // Consume the rest of our response
+    if(php_stream_gets(redis_sock->stream, buf, sizeof(buf)<0)) {
+        return -1;
+    }
+
+    // Success
+    return 0;
+}
+
 /* Get a RedisSock object from the host and port where we have been
  * directed from an ASK response.  We'll first see if we have
  * connected to this node already, and return that.  If not, we
@@ -586,9 +619,8 @@ static RedisSock *cluster_get_asking_sock(redisCluster *c TSRMLS_DC) {
 }
 
 /* Attach a slave to a cluster node */
-int
-cluster_node_add_slave(redisCluster *cluster, redisClusterNode *master,
-                       clusterNodeInfo *slave TSRMLS_DC)
+int cluster_node_add_slave(redisCluster *cluster, redisClusterNode *master,
+                           clusterNodeInfo *slave TSRMLS_DC)
 {
     redisClusterNode *slave_node;
     char key[1024];
@@ -970,12 +1002,17 @@ static int cluster_sock_write(redisCluster *c, unsigned short slot,
     RedisSock *redis_sock;
     redisClusterNode **seed_node;
 
-    // If we're in an ASK redirection state, attempt a connection to that
-    // host and port.  Otherwise, try on the requested slot.
+    // If we're not in ASK redirection, use the slot requested, otherwise
+    // send our ASKING command and use the asking slot.
     if(c->redir_type != REDIR_ASK) {
         redis_sock = SLOT_SOCK(c,slot);
     } else {
         redis_sock = cluster_get_asking_sock(c);
+    
+        // Redis Cluster wants this command preceded by the "ASKING" command
+        if(cluster_send_asking(redis_sock TSRMLS_CC)<0) {
+            return -1;
+        }
     }
 
     // If the lazy_connect flag is still set, we've not actually
