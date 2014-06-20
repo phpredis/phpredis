@@ -1059,11 +1059,8 @@ static int cluster_sock_write(redisCluster *c, unsigned short slot,
 
 /* Provided a redisCluster object, the slot where we thought data was and
  * the slot where data was moved, update our node mapping */
-static void cluster_update_slot(redisCluster *c, short orig_slot TSRMLS_CC) {
+static void cluster_update_slot(redisCluster *c TSRMLS_CC) {
     redisClusterNode *node;
-
-    // Invalidate original slot
-    c->master[orig_slot] = NULL;
 
     // Do we already have the new slot mapped
     if(c->master[c->redir_slot]) {
@@ -1210,8 +1207,8 @@ PHPAPI int cluster_send_slot(redisCluster *c, short slot, char *cmd,
 
 /* Send a command to given slot in our cluster.  If we get a MOVED or ASK error 
  * we attempt to send the command to the node as directed. */
-PHPAPI short cluster_send_command(redisCluster *c, short slot,
-                                  const char *cmd, int cmd_len TSRMLS_DC)
+PHPAPI short cluster_send_command(redisCluster *c, short slot, const char *cmd, 
+                                  int cmd_len TSRMLS_DC)
 {
     int resp, rslot = slot;
 
@@ -1260,10 +1257,10 @@ PHPAPI short cluster_send_command(redisCluster *c, short slot,
                     0 TSRMLS_CC);
                 return -1;
             }
-
+            
             // In case of a MOVED redirection, update our node mapping
             if(c->redir_type == REDIR_MOVED) {
-                cluster_update_slot(c, rslot);
+                cluster_update_slot(c);
             }
             slot = c->redir_slot;
         }
