@@ -40,15 +40,6 @@
     clusterFoldItem *_item = c->multi_head, *_tmp; \
     while(_item) { \
         _tmp = _item->next; \
-        if(_item->ctx) { \
-            zval **z_arr = (zval**)_item->ctx; int i=0; \
-            while(z_arr[i]!=NULL) { \
-                zval_dtor(z_arr[i]); \
-                efree(z_arr[i]); \
-                i++; \
-            } \
-            efree(z_arr); \
-        } \
         efree(_item); \
         _item = _tmp; \
     } \

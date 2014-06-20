@@ -1784,16 +1784,15 @@ PHPAPI void cluster_mset_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
 /* Raw MULTI BULK reply */
 PHPAPI void 
-cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
-                       void *ctx) {
+cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) 
+{
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, 
         mbulk_resp_loop_raw, NULL);
 }
 
 /* Unserialize all the things */
 PHPAPI void
-cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-                   void *ctx) 
+cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) 
 {
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, 
         mbulk_resp_loop, NULL);
@@ -1803,7 +1802,8 @@ cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
  * we will turn into key => value, key => value. */
 PHPAPI void
 cluster_mbulk_zipstr_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-                          void *ctx) {
+                          void *ctx) 
+{
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, 
         mbulk_resp_loop_zipstr, NULL);
 }
@@ -1811,7 +1811,8 @@ cluster_mbulk_zipstr_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 /* Handling key,value to key=>value where the values are doubles */
 PHPAPI void
 cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-                          void *ctx) {
+                          void *ctx) 
+{
     cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, 
         mbulk_resp_loop_zipdbl, NULL);
 }
