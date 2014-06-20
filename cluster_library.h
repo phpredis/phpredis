@@ -197,7 +197,7 @@ typedef struct redisClusterNode {
     HashTable *slaves;
 } redisClusterNode;
 
-/* Forward decl */
+/* Forward declarations */
 typedef struct clusterFoldItem clusterFoldItem;
 
 /* RedisCluster implementation structure */
