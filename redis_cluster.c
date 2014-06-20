@@ -379,7 +379,6 @@ distcmd_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, short slot,
         cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, (void*)ctx);
     } else {
         CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
-        RETVAL_ZVAL(getThis(), 1, 0);
     }
 
     // Clear out our command but retain allocated memory
@@ -472,7 +471,7 @@ static int get_key_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
 
 /* Handler for both MGET and DEL */
 static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
-                          zval *z_ret, cluster_cb cb)
+                            zval *z_ret, cluster_cb cb)
 {
     redisCluster *c = GET_CONTEXT();
     clusterMultiCmd mc = {0};
@@ -547,8 +546,8 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
     // If we've got straggler(s) process them
     if(mc.argc > 0) {
-        if(distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot, &mc,
-                             z_ret, 1, cb)<0)
+        if(distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot, 
+                                &mc, z_ret, 1, cb)<0)
         {
             cluster_multi_free(&mc);
             return -1;
@@ -557,6 +556,9 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
     // Free our command
     cluster_multi_free(&mc);
+
+    if(!CLUSTER_IS_ATOMIC(c))
+        RETVAL_ZVAL(getThis(), 1, 0);
 
     // Success
     return 0;
@@ -1705,7 +1707,8 @@ PHP_METHOD(RedisCluster, exec) {
     // MULTI multi-bulk response handler
     cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
 
-    // Free our queue, and reset MULTI state
+    // Free our callback queue, any enqueued distributed command context items
+    // and reset our MULTI state.
     CLUSTER_FREE_QUEUE(c);
     CLUSTER_RESET_MULTI(c);
 }
