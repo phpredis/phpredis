@@ -14,6 +14,7 @@
   +----------------------------------------------------------------------+
   | Original author: Alfonso Jimenez <yo@alfonsojimenez.com>             |
   | Maintainer: Nicolas Favre-Felix <n.favre-felix@owlient.eu>           |
+  | Maintainer: Michael Grunder <michael.grunder@gmail.com>              |
   | Maintainer: Nasreddine Bouafif <n.bouafif@owlient.eu>                |
   +----------------------------------------------------------------------+
 */
@@ -128,6 +129,7 @@ PHP_METHOD(Redis, slaveof);
 PHP_METHOD(Redis, object);
 PHP_METHOD(Redis, bitop);
 PHP_METHOD(Redis, bitcount);
+PHP_METHOD(Redis, bitpos);
 
 PHP_METHOD(Redis, eval);
 PHP_METHOD(Redis, evalsha);
@@ -141,6 +143,7 @@ PHP_METHOD(Redis, time);
 PHP_METHOD(Redis, getLastError);
 PHP_METHOD(Redis, clearLastError);
 PHP_METHOD(Redis, _prefix);
+PHP_METHOD(Redis, _serialize);
 PHP_METHOD(Redis, _unserialize);
 
 PHP_METHOD(Redis, mset);
@@ -180,9 +183,19 @@ PHP_METHOD(Redis, getOption);
 PHP_METHOD(Redis, setOption);
 
 PHP_METHOD(Redis, config);
+PHP_METHOD(Redis, slowlog);
+PHP_METHOD(Redis, wait);
+PHP_METHOD(Redis, pubsub);
 
 PHP_METHOD(Redis, client);
 
+/* SCAN and friends  */
+PHP_METHOD(Redis, scan);
+PHP_METHOD(Redis, hscan);
+PHP_METHOD(Redis, sscan);
+PHP_METHOD(Redis, zscan);
+
+/* Reflection */
 PHP_METHOD(Redis, getHost);
 PHP_METHOD(Redis, getPort);
 PHP_METHOD(Redis, getDBNum);
@@ -257,7 +270,7 @@ extern zend_module_entry redis_module_entry;
 
 #define phpext_redis_ptr redis_module_ptr
 
-#define PHP_REDIS_VERSION "2.2.3"
+#define PHP_REDIS_VERSION "2.2.5"
 
 #endif
 

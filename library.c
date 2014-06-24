@@ -100,6 +100,54 @@ PHPAPI int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
     return 0;
 }
 
+
+PHPAPI int 
+redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                           REDIS_SCAN_TYPE type, long *iter)
+{
+    REDIS_REPLY_TYPE reply_type;
+    int reply_info;
+    char *p_iter;
+
+    // Our response should have two multibulk replies
+    if(redis_read_reply_type(redis_sock, &reply_type, &reply_info TSRMLS_CC)<0
+       || reply_type != TYPE_MULTIBULK || reply_info != 2)
+    {
+        return -1;
+    }
+
+    // The BULK response iterator
+    if(redis_read_reply_type(redis_sock, &reply_type, &reply_info TSRMLS_CC)<0
+       || reply_type != TYPE_BULK)
+    {
+        return -1;
+    }
+
+    // Attempt to read the iterator
+    if(!(p_iter = redis_sock_read_bulk_reply(redis_sock, reply_info TSRMLS_CC))) {
+        return -1;
+    }
+
+    // Push the iterator out to the caller
+    *iter = atol(p_iter);
+    efree(p_iter);
+
+    // Read our actual keys/members/etc differently depending on what kind of
+    // scan command this is.  They all come back in slightly different ways
+    switch(type) {
+        case TYPE_SCAN:
+            return redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        case TYPE_SSCAN:
+            return redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        case TYPE_ZSCAN:
+            return redis_sock_read_multibulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        case TYPE_HSCAN:
+            return redis_sock_read_multibulk_reply_zipped_strings(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        default:
+            return -1;
+    }
+}
+
 PHPAPI zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     char inbuf[1024];
 	int numElems;
@@ -455,6 +503,22 @@ int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len) 
 }
 
 /*
+ * Given a smart string, number of arguments, a keyword, and the length of the keyword
+ * initialize our smart string with the proper Redis header for the command to follow
+ */
+int redis_cmd_init_sstr(smart_str *str, int num_args, char *keyword, int keyword_len) {
+    smart_str_appendc(str, '*');
+    smart_str_append_long(str, num_args + 1);
+    smart_str_appendl(str, _NL, sizeof(_NL) -1);
+    smart_str_appendc(str, '$');
+    smart_str_append_long(str, keyword_len);
+    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    smart_str_appendl(str, keyword, keyword_len);
+    smart_str_appendl(str, _NL, sizeof(_NL) - 1);
+    return str->len;
+}
+
+/*
  * Append a command sequence to a smart_str
  */
 int redis_cmd_append_sstr(smart_str *str, char *append, int append_len) {
@@ -466,6 +530,44 @@ int redis_cmd_append_sstr(smart_str *str, char *append, int append_len) {
 
     // Return our new length
     return str->len;
+}
+
+/*
+ * Append an integer to a smart string command
+ */
+int redis_cmd_append_sstr_int(smart_str *str, int append) {
+    char int_buf[32];
+    int int_len = snprintf(int_buf, sizeof(int_buf), "%d", append);
+    return redis_cmd_append_sstr(str, int_buf, int_len);
+}
+
+/*
+ * Append a long to a smart string command
+ */
+int redis_cmd_append_sstr_long(smart_str *str, long append) {
+    char long_buf[32];
+    int long_len = snprintf(long_buf, sizeof(long_buf), "%ld", append);
+    return redis_cmd_append_sstr(str, long_buf, long_len);
+}
+
+/*
+ * Append a double to a smart string command
+ */
+int redis_cmd_append_sstr_dbl(smart_str *str, double value) {
+    char *dbl_str;
+    int dbl_len;
+
+    /// Convert to double
+    REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, value);
+
+    // Append the string
+    int retval = redis_cmd_append_sstr(str, dbl_str, dbl_len);
+
+    // Free our double string
+    efree(dbl_str);
+
+    // Return new length
+    return retval;
 }
 
 /*
@@ -641,7 +743,7 @@ PHPAPI void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *red
     char *p = resp, *lpos = resp, *kpos = NULL, *vpos = NULL, *p2, *key, *value;
 
     // Key length, done flag
-    int klen, done = 0, is_numeric;
+    int klen = 0, done = 0, is_numeric;
 
     // While we've got more to parse
     while(!done) {
@@ -672,8 +774,8 @@ PHPAPI void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *red
 
                     // Treat numbers as numbers, strings as strings
                     is_numeric = 1;
-                    for(p2 = value; *p; ++p) {
-                        if(*p < '0' || *p > '9') {
+                    for(p2 = value; *p2; ++p2) {
+                        if(*p2 < '0' || *p2 > '9') {
                             is_numeric = 0;
                             break;
                         }
@@ -744,10 +846,10 @@ PHPAPI void redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
     char ret;
 
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-	IF_MULTI_OR_PIPELINE() {
+        IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
-	    return;
-	}
+            return;
+        }
         RETURN_FALSE;
     }
     ret = response[0];
@@ -970,7 +1072,8 @@ PHPAPI void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
  */
 PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short port,
                                     double timeout, int persistent, char *persistent_id,
-                                    long retry_interval)
+                                    long retry_interval,
+                                    zend_bool lazy_connect)
 {
     RedisSock *redis_sock;
 
@@ -982,6 +1085,7 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
     redis_sock->dbNumber = 0;
     redis_sock->retry_interval = retry_interval * 1000;
     redis_sock->persistent = persistent;
+    redis_sock->lazy_connect = lazy_connect;
 
     if(persistent_id) {
 		size_t persistent_id_len = strlen(persistent_id);
@@ -1008,6 +1112,8 @@ PHPAPI RedisSock* redis_sock_create(char *host, int host_len, unsigned short por
 
     redis_sock->err = NULL;
     redis_sock->err_len = 0;
+
+    redis_sock->scan = REDIS_SCAN_NORETRY;
 
     return redis_sock;
 }
@@ -1136,7 +1242,7 @@ PHPAPI int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
     redis_sock->dbNumber = 0;
     if (redis_sock->stream != NULL) {
 			if (!redis_sock->persistent) {
-				redis_sock_write(redis_sock, "QUIT", sizeof("QUIT") - 1 TSRMLS_CC);
+				redis_sock_write(redis_sock, "QUIT" _NL, sizeof("QUIT" _NL) - 1 TSRMLS_CC);
 			}
 
 			redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
@@ -1442,8 +1548,10 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_
 #endif
 	smart_str sstr = {0};
 	zval *z_copy;
+#ifdef HAVE_REDIS_IGBINARY
 	size_t sz;
 	uint8_t *val8;
+#endif
 
 	switch(redis_sock->serializer) {
 		case REDIS_SERIALIZER_NONE:
@@ -1778,7 +1886,7 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zv
 		default:
 			// Protocol error
 			zend_throw_exception_ex(redis_exception_ce, 0 TSRMLS_CC, "protocol error, got '%c' as reply-type byte\n", reply_type);
-			break;
+            return FAILURE;
 	}
 
 	IF_MULTI_OR_PIPELINE() {
