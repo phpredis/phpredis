@@ -19,13 +19,6 @@
 /* Length of a cluster name */
 #define CLUSTER_NAME_LEN 40
 
-/* RedisCluster class constants */
-#define CLUSTER_OPT_DISTRIBUTE    5
-
-/* Maintain order of execution vs. efficiency of delivery */
-#define CLUSTER_DIST_OOE          0
-#define CLUSTER_DIST_SPEED        1
-
 /* The parts for our cluster nodes command */
 #define CLUSTER_NODES_HASH        0
 #define CLUSTER_NODES_HOST_PORT   1
