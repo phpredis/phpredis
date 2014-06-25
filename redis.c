@@ -517,12 +517,7 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
 
 /* Settings specific to RedisCluster */
 static void add_cluster_constants(zend_class_entry *ce) {
-    /* options */
-    add_constant_long(ce, "OPT_DISTRIBUTE", CLUSTER_OPT_DISTRIBUTE);
-
-    /* Distribution settings */
-    add_constant_long(ce, "DIST_OOE", CLUSTER_DIST_OOE);
-    add_constant_long(ce, "DIST_SPEED", CLUSTER_DIST_SPEED);
+    // TODO: Placeholder if we add constants
 }
 
 /**
