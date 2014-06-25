@@ -1210,7 +1210,7 @@ PHPAPI int cluster_send_slot(redisCluster *c, short slot, char *cmd,
 PHPAPI short cluster_send_command(redisCluster *c, short slot, const char *cmd, 
                                   int cmd_len TSRMLS_DC)
 {
-    int resp, rslot = slot;
+    int resp;
 
     // Issue commands until we find the right node or fail
     do {
