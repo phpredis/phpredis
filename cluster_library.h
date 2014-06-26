@@ -345,6 +345,9 @@ PHPAPI int cluster_send_discard(redisCluster *c, short slot TSRMLS_DC);
 PHPAPI int cluster_abort_exec(redisCluster *c TSRMLS_DC);
 PHPAPI int cluster_reset_multi(redisCluster *c);
 
+
+PHPAPI short cluster_find_slot(redisCluster *c, const char *host,
+    unsigned short port);
 PHPAPI int cluster_send_slot(redisCluster *c, short slot, char *cmd, 
     int cmd_len, REDIS_REPLY_TYPE rtype TSRMLS_DC);
 
