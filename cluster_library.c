@@ -859,24 +859,6 @@ cluster_map_keyspace(redisCluster *cluster TSRMLS_DC) {
     return 0;
 }
 
-/* Helper to find if we've got a host:port mapped in our cluster nodes. */
-static redisClusterNode *cluster_find_node(redisCluster *c, const char *host,
-                                           unsigned short port)
-{
-    redisClusterNode **ret = NULL;
-    int key_len;
-    char key[1024];
-
-    key_len = snprintf(key,sizeof(key),"%s:%d", host, port);
-
-    if(zend_hash_find(c->nodes, key, key_len+1, (void**)&ret)==SUCCESS) {
-        return *ret;
-    }
-
-    // Not found
-    return NULL;
-}
-
 /* Parse the MOVED OR ASK redirection payload when we get such a response
  * and apply this information to our cluster.  If we encounter a parse error
  * nothing in the cluster will be modified, and -1 is returned. */
@@ -1057,6 +1039,24 @@ static int cluster_sock_write(redisCluster *c, unsigned short slot,
     return -1;
 }
 
+/* Helper to find if we've got a host:port mapped in our cluster nodes. */
+static redisClusterNode *cluster_find_node(redisCluster *c, const char *host,
+                                           unsigned short port)
+{
+    redisClusterNode **ret = NULL;
+    int key_len;
+    char key[1024];
+
+    key_len = snprintf(key,sizeof(key),"%s:%d", host, port);
+
+    if(zend_hash_find(c->nodes, key, key_len+1, (void**)&ret)==SUCCESS) {
+        return *ret;
+    }
+
+    // Not found
+    return NULL;
+}
+
 /* Provided a redisCluster object, the slot where we thought data was and
  * the slot where data was moved, update our node mapping */
 static void cluster_update_slot(redisCluster *c TSRMLS_CC) {
@@ -1184,6 +1184,27 @@ static int cluster_send_multi(redisCluster *c, short slot TSRMLS_DC) {
 
     // Success
     return 0;
+}
+
+/* Iterate through our slots, looking for the host/port in question.  This 
+ * should perform well enough as in almost all situations, a few or a few
+ * dozen servers will map all the slots */
+PHPAPI short cluster_find_slot(redisCluster *c, const char *host,
+                               unsigned short port)
+{
+    int i;
+
+    for(i=0;i<REDIS_CLUSTER_SLOTS;i++) {
+        if(c->master[i] && c->master[i]->sock && 
+           c->master[i]->sock->port == port &&
+           !strcasecmp(c->master[i]->sock->host, host))
+        {
+            return i;
+        }
+    }
+
+    // We didn't find it
+    return -1;
 }
 
 /* Send a command to a specific slot */
