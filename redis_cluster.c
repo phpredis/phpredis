@@ -160,6 +160,14 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, discard, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, watch, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, unwatch, NULL, ZEND_ACC_PUBLIC)
+
+    PHP_ME(RedisCluster, save, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, bgsave, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, flushdb, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, flushall, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, dbsize, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, bgrewriteaof, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, lastsave, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -1731,5 +1739,108 @@ PHP_METHOD(RedisCluster, discard) {
 
     RETURN_TRUE;
 }
+
+/* Generic handler for things we want directed at a given node, like SAVE,
+ * BGSAVE, FLUSHDB, FLUSHALL, etc */
+static void 
+cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, 
+                       REDIS_REPLY_TYPE reply_type, cluster_cb cb)
+{
+    redisCluster *c = GET_CONTEXT();
+    char *cmd, *arg1; 
+    int arg1_len, cmd_len, arg1_free; 
+    short slot;
+    long arg2;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &arg1, &arg1_len,
+                             &arg2)==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    // One argument means find the node (treated like a key), and two means
+    // send the command to a specific host and port
+    if(ZEND_NUM_ARGS() == 1) {
+        // Treat our argument like a key, and look for the slot that way
+        arg1_free = redis_key_prefix(c->flags, &arg1, &arg1_len);
+        slot = cluster_hash_key(arg1, arg1_len);
+        if(arg1_free) efree(arg1);        
+    } else {
+        // Find the slot by IP/port
+        slot = cluster_find_slot(c, (const char *)arg1, (unsigned short)arg2);
+        if(slot<0) {
+            php_error_docref(0 TSRMLS_CC, E_WARNING, "Unknown node %s:%ld", 
+                arg1, arg2);
+            RETURN_FALSE;
+        }
+    }
+
+    // Construct our command
+    cmd_len = redis_cmd_format_static(&cmd, kw, "");
+
+    // Kick off our command
+    if(cluster_send_slot(c, slot, cmd, cmd_len, reply_type TSRMLS_CC)<0) {
+        zend_throw_exception(redis_cluster_exception_ce,
+            "Unable to send command at a specific node", 0 TSRMLS_CC);
+        efree(cmd);
+        RETURN_FALSE;
+    }
+
+    // Our response callback
+    cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+
+    // Free our command
+    efree(cmd);
+}
+
+/* {{{ proto RedisCluster::save(string key)
+ *     proto RedisCluster::save(string host, long port) */
+PHP_METHOD(RedisCluster, save) {
+    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SAVE", TYPE_LINE,
+        cluster_bool_resp);
+}
+
+/* {{{ proto RedisCluster::bgsave(string key) 
+ *     proto RedisCluster::bgsave(string host, long port) */
+PHP_METHOD(RedisCluster, bgsave) {
+    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "BGSAVE", 
+        TYPE_LINE, cluster_bool_resp);
+}
+
+/* {{{ proto RedisCluster::flushdb(string key)
+ *     proto RedisCluster::flushdb(string host, long port) */
+PHP_METHOD(RedisCluster, flushdb) {
+    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHDB",
+        TYPE_LINE, cluster_bool_resp);
+}
+
+/* {{{ proto RedisCluster::flushall(string key)
+ *     proto RedisCluster::flushall(string host, long port) */
+PHP_METHOD(RedisCluster, flushall) {
+    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHALL",
+        TYPE_LINE, cluster_bool_resp);
+}
+
+/* {{{ proto RedisCluster::dbsize(string key)
+ *     proto RedisCluster::dbsize(string host, long port) */
+PHP_METHOD(RedisCluster, dbsize) {
+    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DBSIZE",
+        TYPE_LINE, cluster_bool_resp);
+}
+
+/* {{{ proto RedisCluster::bgrewriteaof(string key)
+ *     proto RedisCluster::bgrewriteaof(string host, long port) */
+PHP_METHOD(RedisCluster, bgrewriteaof) {
+    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "BGREWRITEAOF",
+        TYPE_LINE, cluster_bool_resp);
+}
+
+/* {{{ proto RedisCluster::lastsave(string key)
+ *     proto RedisCluster::lastsave(string host, long port) */
+PHP_METHOD(RedisCluster, lastsave) {
+    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "LASTSAVE",
+        TYPE_INT, cluster_long_resp);
+}
+
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
