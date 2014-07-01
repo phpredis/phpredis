@@ -64,7 +64,11 @@ int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
-// ZRANGE, ZREVRANGE, ZRANGEBYSCORE, and ZREVRANGEBYSCORE callback type
+/* Construct SCAN and similar commands, as well as check iterator  */
+int redis_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    REDIS_SCAN_TYPE type, char **cmd, int *cmd_len);
+
+/* ZRANGE, ZREVRANGE, ZRANGEBYSCORE, and ZREVRANGEBYSCORE callback type */
 typedef int (*zrange_cb)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                          char *,char**,int*,int*,short*,void**);
 
@@ -192,6 +196,9 @@ int redis_sdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 int redis_sdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
+
+int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
+                       long it, char *pat, int pat_len, long count);
 
 /* Commands that don't communicate with Redis at all (such as getOption, 
  * setOption, _prefix, _serialize, etc).  These can be handled in one place

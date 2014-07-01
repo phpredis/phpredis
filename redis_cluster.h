@@ -221,6 +221,12 @@ PHP_METHOD(RedisCluster, psubscribe);
 PHP_METHOD(RedisCluster, unsubscribe);
 PHP_METHOD(RedisCluster, punsubscribe);
 
+/* SCAN and friends */
+PHP_METHOD(RedisCluster, scan);
+PHP_METHOD(RedisCluster, zscan);
+PHP_METHOD(RedisCluster, hscan);
+PHP_METHOD(RedisCluster, sscan);
+
 /* Transactions */
 PHP_METHOD(RedisCluster, multi);
 PHP_METHOD(RedisCluster, exec);

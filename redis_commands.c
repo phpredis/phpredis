@@ -373,6 +373,44 @@ int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* Generic to construct SCAN and variant commands */
+int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len, 
+                       long it, char *pat, int pat_len, long count)
+{
+    static char *kw[] = {"SCAN","SSCAN","HSCAN","ZSCAN"};
+    int argc;
+    smart_str cmdstr = {0};
+
+    // Figure out our argument count
+    argc = 1 + (type!=TYPE_SCAN) + (pat_len>0?2:0) + (count>0?2:0);
+
+    redis_cmd_init_sstr(&cmdstr, argc, kw[type], strlen(kw[type]));
+    
+    // Append our key if it's not a regular SCAN command
+    if(type != TYPE_SCAN) {
+        redis_cmd_append_sstr(&cmdstr, key, key_len);
+    }
+
+    // Append cursor
+    redis_cmd_append_sstr_long(&cmdstr, it);
+
+    // Append count if we've got one
+    if(count) {
+        redis_cmd_append_sstr(&cmdstr,"COUNT",sizeof("COUNT")-1);
+        redis_cmd_append_sstr_long(&cmdstr, count);
+    }
+
+    // Append pattern if we've got one
+    if(pat_len) {
+        redis_cmd_append_sstr(&cmdstr,"MATCH",sizeof("MATCH")-1);
+        redis_cmd_append_sstr(&cmdstr,pat,pat_len);
+    }
+
+    // Push command to the caller, return length
+    *cmd = cmdstr.c;
+    return cmdstr.len;
+}
+
 /* ZRANGE/ZREVRANGE */
 int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char *kw, char **cmd, int *cmd_len, int *withscores,
