@@ -19,6 +19,13 @@
 #include <ext/standard/php_math.h>
 #include <ext/standard/php_rand.h>
 
+#ifdef PHP_WIN32
+# if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION <= 4
+/* This proto is available from 5.5 on only */
+PHPAPI int usleep(unsigned int useconds);
+# endif
+#endif
+
 #define UNSERIALIZE_ONLY_VALUES 0
 #define UNSERIALIZE_ALL 1
 
