@@ -22,6 +22,7 @@ if (PHP_REDIS != "no") {
 			WARNING("redis igbinary support not enabled");
 		}
 	}
+	
 
-	EXTENSION("redis", sources);
 }
+
