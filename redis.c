@@ -585,12 +585,13 @@ PHP_METHOD(Redis, __construct)
     Public Destructor
  */
 PHP_METHOD(Redis,__destruct) {
+	RedisSock *redis_sock;
+
 	if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
 		RETURN_FALSE;
 	}
 
 	// Grab our socket
-	RedisSock *redis_sock;
 	if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 1) < 0) {
 		RETURN_FALSE;
 	}
@@ -3898,6 +3899,8 @@ PHP_METHOD(Redis, zAdd) {
 	zval **z_args;
 	int argc = ZEND_NUM_ARGS(), i;
 
+    smart_str buf = {0};
+
 	/* get redis socket */
     if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;
@@ -3924,7 +3927,6 @@ PHP_METHOD(Redis, zAdd) {
 	key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
 
 	/* start building the command */
-    smart_str buf = {0};
 	smart_str_appendc(&buf, '*');
 	smart_str_append_long(&buf, argc + 1); /* +1 for ZADD command */
 	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
@@ -4471,6 +4473,7 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
     HashPosition ptr;
     char *store_key, *agg_op = NULL;
     int cmd_arg_count = 2, store_key_len, agg_op_len = 0, keys_count;
+	int key_free;
 
     // Grab our parameters
     if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa|a!s",
@@ -4529,7 +4532,7 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
     redis_cmd_init_sstr(&cmd, cmd_arg_count, command, command_len);
 
     // Prefix our key if necessary and add the output key
-    int key_free = redis_key_prefix(redis_sock, &store_key, &store_key_len TSRMLS_CC);
+    key_free = redis_key_prefix(redis_sock, &store_key, &store_key_len TSRMLS_CC);
     redis_cmd_append_sstr(&cmd, store_key, store_key_len);
     if(key_free) efree(store_key);
 
@@ -5630,9 +5633,9 @@ PHPAPI void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd)
 	/* Multibulk Response, format : {message type, originating channel, message payload} */
 	while(1) {		
 		/* call the callback with this z_tab in argument */
+	    int is_pmsg, tab_idx = 1;
 		zval **type, **channel, **pattern, **data;
 	    z_tab = redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
-	    int is_pmsg, tab_idx = 1;
 		
 		if(z_tab == NULL || Z_TYPE_P(z_tab) != IS_ARRAY) {
 			//ERROR

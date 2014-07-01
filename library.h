@@ -67,11 +67,12 @@ PHPAPI int redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *red
 PHPAPI void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
 
 #if ZEND_MODULE_API_NO >= 20100000
-#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) \
+#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) do { \
 	char dbl_decsep; \
 	dbl_decsep = '.'; \
     dbl_str = _php_math_number_format_ex(dbl, 16, &dbl_decsep, 1, NULL, 0); \
-	dbl_len = strlen(dbl_str);
+	dbl_len = strlen(dbl_str); \
+	} while (0);
 #else
 #define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) \
 	dbl_str = _php_math_number_format(dbl, 16, '.', '\x00'); \
