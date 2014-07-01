@@ -182,6 +182,9 @@ typedef struct redisClusterNode {
     /* Our Redis socket in question */
     RedisSock *sock;
 
+    /* A slot where one of these lives */
+    short slot;
+
     /* Contiguous slots we serve */
     clusterSlotRange *slots;
     size_t slots_size;
@@ -345,7 +348,6 @@ PHPAPI int cluster_send_discard(redisCluster *c, short slot TSRMLS_DC);
 PHPAPI int cluster_abort_exec(redisCluster *c TSRMLS_DC);
 PHPAPI int cluster_reset_multi(redisCluster *c);
 
-
 PHPAPI short cluster_find_slot(redisCluster *c, const char *host,
     unsigned short port);
 PHPAPI int cluster_send_slot(redisCluster *c, short slot, char *cmd, 
@@ -416,6 +418,10 @@ PHPAPI void cluster_mset_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 PHPAPI void cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
+
+/* Response handler for ZSCAN, SSCAN, and HSCAN */
+PHPAPI int cluster_kscan_resp(INTERNAL_FUNCTION_PARAMETERS,
+    redisCluster *c, REDIS_SCAN_TYPE type, long *it);
 
 /* MULTI BULK processing callbacks */
 int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, 
