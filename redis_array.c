@@ -219,6 +219,8 @@ PHP_METHOD(RedisArray, __construct)
 
 	/* extract options */
 	if(z_opts) {
+		zval **z_retry_interval_pp;
+		zval **z_connect_timeout_pp;
 
 		hOpts = Z_ARRVAL_P(z_opts);
 
@@ -259,7 +261,6 @@ PHP_METHOD(RedisArray, __construct)
 		}
 
 		/* extract retry_interval option. */
-		zval **z_retry_interval_pp;
         if (FAILURE != zend_hash_find(hOpts, "retry_interval", sizeof("retry_interval"), (void**)&z_retry_interval_pp)) {
 			if (Z_TYPE_PP(z_retry_interval_pp) == IS_LONG || Z_TYPE_PP(z_retry_interval_pp) == IS_STRING) {
 				if (Z_TYPE_PP(z_retry_interval_pp) == IS_LONG) {
@@ -277,7 +278,6 @@ PHP_METHOD(RedisArray, __construct)
 		}
 		
 		/* extract connect_timeout option */
-		zval **z_connect_timeout_pp;
 		if (FAILURE != zend_hash_find(hOpts, "connect_timeout", sizeof("connect_timeout"), (void**)&z_connect_timeout_pp)) {
 			if (Z_TYPE_PP(z_connect_timeout_pp) == IS_DOUBLE || Z_TYPE_PP(z_connect_timeout_pp) == IS_STRING) {
 				if (Z_TYPE_PP(z_connect_timeout_pp) == IS_DOUBLE) {
@@ -1045,19 +1045,20 @@ PHP_METHOD(RedisArray, mset)
 
 	/* calls */
 	for(n = 0; n < ra->count; ++n) { /* for each node */
+		int found = 0;
 
 		/* prepare call */
 		ZVAL_STRING(&z_fun, "MSET", 0);
 		redis_inst = ra->redis[n];
 
 		/* copy args */
-		int found = 0;
 		MAKE_STD_ZVAL(z_argarray);
 		array_init(z_argarray);
 		for(i = 0; i < argc; ++i) {
+			zval *z_tmp;
+
 			if(pos[i] != n) continue;
 
-			zval *z_tmp;
 			ALLOC_ZVAL(z_tmp);
 			*z_tmp = *argv[i];
 			zval_copy_ctor(z_tmp);

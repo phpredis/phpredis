@@ -5,7 +5,7 @@ ARG_ENABLE("redis-session", "whether to enable sessions", "yes");
 ARG_ENABLE("redis-igbinary", "whether to enable igbinary support", "no");
 
 if (PHP_REDIS != "no") {
-	var sources = "redis.c library.c"
+	var sources = "redis.c library.c redis_array.c redis_array_impl.c"
 	
 	if (PHP_REDIS_IGBINARY != "no") {
 		sources += " igbinary\\igbinary.c igbinary\\hash_si.c igbinary\\hash_function.c";
