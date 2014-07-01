@@ -152,7 +152,6 @@ PHP_REDIS_API redis_pool_member *
 redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
 	redis_pool_member *rpm = pool->head;
 	unsigned int pos, i;
-	redis_pool_member *rpm = pool->head;
 
 	memcpy(&pos, key, sizeof(pos));
 	pos %= pool->totalWeight;

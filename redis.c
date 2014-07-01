@@ -3903,8 +3903,6 @@ PHP_METHOD(Redis, zAdd) {
 	zval **z_args;
 	int argc = ZEND_NUM_ARGS(), i;
 
-    smart_str buf = {0};
-
 	/* get redis socket */
     if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;

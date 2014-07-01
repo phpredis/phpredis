@@ -126,17 +126,6 @@ void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
     redis_array_free(ra);
 }
 
-int le_redis_array;
-void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
-{
-    RedisArray *ra = (RedisArray*)rsrc->ptr;
-
-    /* Free previous ring if it's set */
-    if(ra->prev) redis_array_free(ra->prev);
-
-    /* Free parent array */
-    redis_array_free(ra);
-}
 
 /**
  * redis_array_get
