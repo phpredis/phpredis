@@ -709,9 +709,11 @@ cluster_set_node_info(redisCluster *cluster, HashTable *masters,
 
         // Iterate each contiguous slot range, and point to the node
         for(i=0;i<node->slots_size;i++) {
-           for(j=node->slots[i].start;j<=node->slots[i].end;j++) {
+            node->slot = node->slots[i].start;
+            for(j=node->slots[i].start;j<=node->slots[i].end;j++) {
               cluster->master[j] = node;
            }
+
         } 
 
         // Create a host:port key for this node
@@ -1095,6 +1097,9 @@ static void cluster_update_slot(redisCluster *c TSRMLS_CC) {
         // Map the slot to this node
         c->master[c->redir_slot] = node;
     }
+
+    // Update slot inside of node, so it can be found for command sending
+    node->slot = c->redir_slot;
 
     // Make sure we unflag this node as a slave, as Redis Cluster will only
     // ever direct us to master nodes.
@@ -1647,6 +1652,61 @@ PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     }
 }
 
+/* HSCAN, SSCAN, ZSCAN */
+PHPAPI int cluster_kscan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
+                              REDIS_SCAN_TYPE type, long *it)
+{
+    char *pit;
+
+    // We always want to see a MULTIBULK response with two elements
+    if(c->reply_type != TYPE_MULTIBULK || c->reply_len != 2)
+    {
+        return FAILURE;
+    }
+
+    // Read the BULK size
+    if(cluster_check_response(c, c->reply_slot, &c->reply_type TSRMLS_CC),0 ||
+       c->reply_type != TYPE_BULK)
+    {
+        return FAILURE;
+    }
+
+    // Read the iterator
+    if((pit = redis_sock_read_bulk_reply(SLOT_SOCK(c,c->reply_slot), 
+                                         c->reply_len TSRMLS_CC))==NULL) 
+    {
+        return FAILURE;
+    }
+
+    // Push the new iterator value to our caller
+    *it = atol(pit);
+    efree(pit);
+
+    // We'll need another MULTIBULK response for the payload
+    if(cluster_check_response(c, c->reply_slot, &c->reply_type TSRMLS_CC)<0)
+    {
+        return FAILURE;
+    }
+
+    // Use the proper response callback depending on scan type
+    switch(type) {
+        case TYPE_SSCAN:
+            cluster_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,c,NULL);
+            break;
+        case TYPE_HSCAN:
+            cluster_mbulk_zipstr_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,c,NULL);
+            break;
+        case TYPE_ZSCAN:
+            cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,c,NULL);
+            break;
+        default:
+            return FAILURE;
+    }
+
+    // Success
+    return SUCCESS;
+}
+
 /* MULTI BULK response loop where we might pull the next one */
 PHPAPI zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
                                      redisCluster *c, int pull, mbulk_cb cb)
@@ -1968,6 +2028,7 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
                 add_assoc_stringl_ex(z_result, key, 1+key_len, line, 
                     line_len, 0);
             }
+            efree(key);
         }
     }
 
@@ -1997,6 +2058,8 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
             key_len = line_len;
         } else {
             add_assoc_double_ex(z_result, key, 1+key_len, atof(line));
+            efree(key);
+            efree(line);
         }
     }
 
