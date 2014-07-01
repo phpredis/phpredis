@@ -3896,7 +3896,6 @@ PHP_METHOD(Redis, zAdd) {
     char *key, *val;
     int val_free, key_free = 0;
 	char *dbl_str;
-    char dbl_decsep;
 	int dbl_len;
     smart_str buf = {0};
 
@@ -5545,7 +5544,6 @@ PHP_REDIS_API void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub
     int cmd_len, array_count, key_len, key_free;
 	zval *z_tab, **tmp;
 	char *type_response;
-    int is_pmsg, tab_idx;
 
 	/* Function call information */
 	zend_fcall_info z_callback;

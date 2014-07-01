@@ -985,8 +985,6 @@ PHP_METHOD(RedisArray, mset)
 	unsigned int key_len, free_idx = 0;
 	int type, *key_lens;
 	unsigned long idx;
-	int found;
-	zval *z_tmp;
 
 	/* Multi/exec support */
 	HANDLE_MULTI_EXEC("MSET");
@@ -1006,7 +1004,7 @@ PHP_METHOD(RedisArray, mset)
 	argv = emalloc(argc * sizeof(zval*));
 	pos = emalloc(argc * sizeof(int));
 	keys = emalloc(argc * sizeof(char*));
-    key_lens = emalloc(argc * sizeof(int));
+	key_lens = emalloc(argc * sizeof(int));
 	redis_instances = emalloc(argc * sizeof(zval*));
 	memset(redis_instances, 0, argc * sizeof(zval*));
 

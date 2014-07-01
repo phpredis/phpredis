@@ -455,7 +455,6 @@ zval *
 ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_DC) {
 
         uint32_t hash;
-        uint64_t h64;
         char *out;
         int pos, out_len;
 

@@ -187,7 +187,6 @@ PS_OPEN_FUNC(redis)
 	php_url *url;
 	zval *params, **param;
 	int i, j, path_len;
-	RedisSock *redis_sock;
 
 	redis_pool *pool = redis_pool_new(TSRMLS_C);
 

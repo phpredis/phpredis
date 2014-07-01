@@ -360,7 +360,6 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
     smart_str buf = {0};
     int l = strlen(keyword);
 	char *dbl_str;
-    char dbl_decsep;
 	int dbl_len;
 
 	va_start(ap, format);
@@ -442,7 +441,6 @@ redis_cmd_format(char **ret, char *format, ...) {
 	va_list ap;
 	char *p = format;
 	char *dbl_str;
-    char dbl_decsep;
 	int dbl_len;
 
 	va_start(ap, format);
