@@ -85,7 +85,7 @@ zend_function_entry redis_array_functions[] = {
 static void redis_array_free(RedisArray *ra) {
     int i;
 
-    // Redis objects
+    /* Redis objects */
     for(i=0;i<ra->count;i++) {
         zval_dtor(ra->redis[i]);
         efree(ra->redis[i]);
@@ -110,8 +110,20 @@ static void redis_array_free(RedisArray *ra) {
     zval_dtor(ra->z_pure_cmds);
     efree(ra->z_pure_cmds);
 
-    // Free structure itself
+    /* Free structure itself */
     efree(ra);
+}
+
+int le_redis_array;
+void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
+{
+    RedisArray *ra = (RedisArray*)rsrc->ptr;
+
+    /* Free previous ring if it's set */
+    if(ra->prev) redis_array_free(ra->prev);
+
+    /* Free parent array */
+    redis_array_free(ra);
 }
 
 int le_redis_array;
@@ -129,7 +141,7 @@ void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
 /**
  * redis_array_get
  */
-PHPAPI int redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
+PHP_REDIS_API int redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
 {
 
     zval **socket;
@@ -277,7 +289,7 @@ PHP_METHOD(RedisArray, __construct)
 			b_lazy_connect = Z_BVAL_PP(zpData);
 		}
 		
-		/* extract connect_timeout option */
+		/* extract connect_timeout option */		
 		if (FAILURE != zend_hash_find(hOpts, "connect_timeout", sizeof("connect_timeout"), (void**)&z_connect_timeout_pp)) {
 			if (Z_TYPE_PP(z_connect_timeout_pp) == IS_DOUBLE || Z_TYPE_PP(z_connect_timeout_pp) == IS_STRING) {
 				if (Z_TYPE_PP(z_connect_timeout_pp) == IS_DOUBLE) {
@@ -322,7 +334,7 @@ static void
 ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args, zval *z_new_target) {
 
 	zval **zp_tmp, z_tmp;
-	char *key = NULL; // set to avoid "unused-but-set-variable"
+	char *key = NULL; /* set to avoid "unused-but-set-variable" */
 	int key_len;
 	int i;
 	zval *redis_inst;
@@ -396,7 +408,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
 		/* check if we have an error. */
 		if(RA_CALL_FAILED(return_value,cmd) && ra->prev && !b_write_cmd) { /* there was an error reading, try with prev ring. */
-		    /* ERROR, FALLBACK TO PREVIOUS RING and forward a reference to the first redis instance we were looking at. */
+			/* ERROR, FALLBACK TO PREVIOUS RING and forward a reference to the first redis instance we were looking at. */
 			ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra->prev, cmd, cmd_len, z_args, z_new_target?z_new_target:redis_inst);
 		}
 
@@ -627,41 +639,41 @@ PHP_METHOD(RedisArray, keys)
 	char *pattern;
 	int pattern_len, i;
 
-	// Make sure the prototype is correct
+	/* Make sure the prototype is correct */
 	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
 								    &object, redis_array_ce, &pattern, &pattern_len) == FAILURE)
 	{
 		RETURN_FALSE;
 	}
 
-	// Make sure we can grab our RedisArray object
+	/* Make sure we can grab our RedisArray object */
 	if(redis_array_get(object, &ra TSRMLS_CC) < 0) {
 		RETURN_FALSE;
 	}
 
-	// Set up our function call (KEYS)
+	/* Set up our function call (KEYS) */
 	ZVAL_STRING(&z_fun, "KEYS", 0);
 
-	// We will be passing with one string argument (the pattern)
+	/* We will be passing with one string argument (the pattern) */
 	MAKE_STD_ZVAL(z_args[0]);
 	ZVAL_STRINGL(z_args[0], pattern, pattern_len, 0);
 
-	// Init our array return
+	/* Init our array return */
 	array_init(return_value);
 
-	// Iterate our RedisArray nodes
+	/* Iterate our RedisArray nodes */
 	for(i=0; i<ra->count; ++i) {
-		// Return for this node
+		/* Return for this node */
 		MAKE_STD_ZVAL(z_tmp);
 
-		// Call KEYS on each node
+		/* Call KEYS on each node */
 		call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 1, z_args TSRMLS_CC);
 
-		// Add the result for this host
+		/* Add the result for this host */
 		add_assoc_zval(return_value, ra->hosts[i], z_tmp);
 	}
 
-	// Free arg array
+	/* Free arg array */
 	efree(z_args[0]);
 }
 
@@ -984,6 +996,8 @@ PHP_METHOD(RedisArray, mset)
 	unsigned int key_len, free_idx = 0;
 	int type, *key_lens;
 	unsigned long idx;
+	int found;
+	zval *z_tmp;
 
 	/* Multi/exec support */
 	HANDLE_MULTI_EXEC("MSET");
@@ -1209,7 +1223,7 @@ PHP_METHOD(RedisArray, del)
 			found++;
 		}
 
-		if(!found) {	// don't run empty DELs
+		if(!found) {	/* don't run empty DELs */
 			zval_dtor(z_argarray);
 			efree(z_argarray);
 			continue;

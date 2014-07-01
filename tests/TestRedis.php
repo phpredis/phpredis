@@ -113,6 +113,47 @@ class Redis_Test extends TestSuite
         $this->assertFalse($this->redis->pubsub("numsub", "not-an-array"));
     }
 
+    // Run some simple tests against the PUBSUB command.  This is problematic, as we
+    // can't be sure what's going on in the instance, but we can do some things.
+    public function testPubSub() {
+        // Only available since 2.8.0
+        if(version_compare($this->version, "2.8.0", "lt")) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        // PUBSUB CHANNELS ...
+        $result = $this->redis->pubsub("channels", "*");
+        $this->assertTrue(is_array($result));
+        $result = $this->redis->pubsub("channels");
+        $this->assertTrue(is_array($result));
+
+        // PUBSUB NUMSUB
+        
+        $c1 = uniqid() . '-' . rand(1,100);
+        $c2 = uniqid() . '-' . rand(1,100);
+
+        $result = $this->redis->pubsub("numsub", Array($c1, $c2));
+
+        // Should get an array back, with two elements
+        $this->assertTrue(is_array($result));
+        $this->assertEquals(count($result), 2);
+
+        // Make sure the elements are correct, and have zero counts
+        foreach(Array($c1,$c2) as $channel) {
+            $this->assertTrue(isset($result[$channel]));
+            $this->assertEquals($result[$channel], "0");
+        }
+
+        // PUBSUB NUMPAT
+        $result = $this->redis->pubsub("numpat");
+        $this->assertTrue(is_int($result));
+
+        // Invalid calls
+        $this->assertFalse($this->redis->pubsub("notacommand"));
+        $this->assertFalse($this->redis->pubsub("numsub", "not-an-array"));
+    }
+
     public function testBitsets() {
 
 	    $this->redis->delete('key');
@@ -150,7 +191,7 @@ class Redis_Test extends TestSuite
 
 	    // values above 1 are changed to 1 but don't overflow on bits to the right.
 	    $this->assertTrue(0 === $this->redis->setBit('key', 0, 0xff));
-        $this->assertTrue("\x9f" === $this->redis->get('key'));
+	    $this->assertTrue("\x9f" === $this->redis->get('key'));
 
         // Verify valid offset ranges
         $this->assertFalse($this->redis->getBit('key', -1));
@@ -1221,11 +1262,11 @@ class Redis_Test extends TestSuite
             $this->assertTrue(2 === $this->redis->sSize('set0')); // no change.
             $this->assertTrue($v === 'val' || $v === 'val2');
 
-            $got[$v] = $v;
-            if(count($got) == 2) {
-                break;
-            }
-        }
+	    $got[$v] = $v;
+	    if(count($got) == 2) {
+	        break;
+	    }
+	}
 
         // 
         // With and without count, while serializing
