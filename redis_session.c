@@ -152,10 +152,10 @@ PHPAPI redis_pool_member *
 redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
 
 	unsigned int pos, i;
+	redis_pool_member *rpm = pool->head;
+
 	memcpy(&pos, key, sizeof(pos));
 	pos %= pool->totalWeight;
-
-	redis_pool_member *rpm = pool->head;
 
 	for(i = 0; i < pool->totalWeight;) {
 		if(pos >= i && pos < i + rpm->weight) {
@@ -208,6 +208,7 @@ PS_OPEN_FUNC(redis)
             int database = -1;
             char *prefix = NULL, *auth = NULL, *persistent_id = NULL;
       long retry_interval = 0;
+			RedisSock *redis_sock;
 
             /* translate unix: into file: */
 			if (!strncmp(save_path+i, "unix:", sizeof("unix:")-1)) {
@@ -276,7 +277,6 @@ PS_OPEN_FUNC(redis)
 				return FAILURE;
 			}
 
-			RedisSock *redis_sock;
             if(url->host) {
                     redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, persistent, persistent_id, retry_interval, 0);
             } else { /* unix */
