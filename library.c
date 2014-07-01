@@ -906,7 +906,11 @@ PHPAPI void redis_long_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
     }
 
     if(response[0] == ':') {
+#ifdef PHP_WIN32
+        __int64 ret = _atoi64(response + 1);
+#else
         long long ret = atoll(response + 1);
+#endif
         IF_MULTI_OR_PIPELINE() {
 			if(ret > LONG_MAX) { /* overflow */
 				add_next_index_stringl(z_tab, response+1, response_len-1, 1);
