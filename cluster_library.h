@@ -320,6 +320,22 @@ typedef struct clusterMultiCmd {
     smart_str args;
 } clusterMultiCmd;
 
+/* Hiredis like structure for processing any sort of reply Redis Cluster might
+ * give us, including N level deep nested multi-bulk replies.  Unlike hiredis
+ * we don't encode errors, here as that's handled in the cluster structure. */
+typedef struct clusterReply {
+    REDIS_REPLY_TYPE type;         /* Our reply type */
+    long long integer;             /* Integer reply */
+    size_t len;                    /* Length of our string */
+    char *str;                     /* String reply */
+    size_t elements;               /* Count of array elements */
+    struct clusterReply **element; /* Array elements */
+} clusterReply;
+
+/* Direct variant response handler */
+clusterReply *cluster_read_resp(redisCluster *c TSRMLS_DC);
+void cluster_free_reply(clusterReply *reply, int free_data);
+
 /* Cluster distribution helpers for WATCH */
 HashTable *cluster_dist_create();
 void cluster_dist_free(HashTable *ht);
