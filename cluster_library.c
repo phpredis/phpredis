@@ -29,9 +29,191 @@ static void cluster_dump_nodes(redisCluster *c) {
     }
 }
 
-/* Cluster key distribution helpers.  For a small handlful of commands, we
- * want to distribute them across 1-N nodes.  These methods provide
- * simple containers for the purposes of splitting keys/values in this way */
+/* Direct handling of variant replies, in a hiredis like way.  These methods
+ * are used for non userland facing commands, as well as passed through from 
+ * them when the reply is just variant (e.g. eval) */
+
+/* Debug function to dump a clusterReply structure recursively */
+static void dump_reply(clusterReply *reply, int indent) { 
+    smart_str buf = {0};
+    int i;
+    char ibuf[255];
+
+    switch(reply->type) {
+        case TYPE_ERR:
+            smart_str_appendl(&buf, "(error) ", sizeof("(error) ")-1);
+            smart_str_appendl(&buf, reply->str, reply->len);
+            break;
+        case TYPE_LINE:
+            smart_str_appendl(&buf, reply->str, reply->len);
+            break;
+        case TYPE_INT:
+            smart_str_appendl(&buf, "(integer) ", sizeof("(integer) ")-1);
+            smart_str_append_long(&buf, reply->integer);
+            break;
+        case TYPE_BULK:
+            smart_str_appendl(&buf,"\"", 1);
+            smart_str_appendl(&buf, reply->str, reply->len);
+            smart_str_appendl(&buf, "\"", 1);
+            break;
+        case TYPE_MULTIBULK:
+            if(reply->elements == (size_t)-1) {
+                smart_str_appendl(&buf, "(nil)", sizeof("(nil)")-1);
+            } else {
+                for(i=0;i<reply->elements;i++) {
+                    dump_reply(reply->element[i], indent+2);
+                }
+            }
+            break;
+        default:
+            break;
+    }
+
+    if(buf.len > 0) {
+        for(i=0;i<indent;i++) {
+            php_printf(" ");
+        }
+
+        smart_str_0(&buf);
+        php_printf("%s", buf.c);
+        php_printf("\n");
+
+        efree(buf.c);
+    }
+}
+
+/* Recursively free our reply object.  If free_data is non-zero we'll also free
+ * the payload data (strings) themselves.  If not, we just free the structs */
+void cluster_free_reply(clusterReply *reply, int free_data) {
+    int i;
+
+    switch(reply->type) {
+        case TYPE_ERR:
+        case TYPE_LINE:
+        case TYPE_BULK:
+            if(free_data) 
+                efree(reply->str);
+            break;
+        case TYPE_MULTIBULK:
+            for(i=0;i<reply->elements && reply->element[i]; i++) {
+                cluster_free_reply(reply->element[i], free_data);
+            }
+            efree(reply->element);
+            break;
+        default:
+            break;
+    }
+    efree(reply);    
+}
+
+static void
+cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements, 
+                                 clusterReply **element, int *err TSRMLS_DC)
+{
+    size_t idx = 0;
+    clusterReply *r;
+    int len;
+    char buf[1024];
+
+    while(elements-- > 0) {
+        element[idx] = ecalloc(1, sizeof(clusterReply));
+        r = element[idx];
+        
+        // Bomb out, flag error condition on a communication failure
+        if(redis_read_reply_type(sock, &r->type, &len TSRMLS_CC)<0) {
+            *err = 1; 
+            return;
+        }
+       
+        r->len = len;
+
+        switch(r->type) {
+            case TYPE_ERR:
+            case TYPE_LINE:
+                if(redis_sock_gets(sock,buf,sizeof(buf),&r->len TSRMLS_CC)<0) {
+                    *err = 1;
+                    return;
+                }
+                r->str = estrndup(buf,r->len);
+                break;
+            case TYPE_INT:
+                r->integer = len;
+                break;
+            case TYPE_BULK:
+                r->str = redis_sock_read_bulk_reply(sock,r->len TSRMLS_CC);
+                if(!r->str) {
+                    *err = 1;
+                    return;
+                }
+                break;
+            case TYPE_MULTIBULK:
+                r->element = ecalloc(r->len,r->len*sizeof(clusterReply*));
+                r->elements = r->len;
+                cluster_multibulk_resp_recursive(sock, r->elements, r->element, 
+                    err TSRMLS_CC);
+                if(*err) return;
+                break;
+            default:
+                *err = 1;
+                return;
+        }
+
+        idx++;
+    }
+}
+
+/* Read a variant response from the cluster into a redisReply struct */
+clusterReply *cluster_read_resp(redisCluster *c TSRMLS_DC) {
+    // Allocate our reply, set it's overall type
+    clusterReply *reply = ecalloc(1, sizeof(clusterReply));
+    reply->type = c->reply_type;
+
+    // Local copy of the socket in question
+    RedisSock *redis_sock = SLOT_SOCK(c,c->reply_slot);
+
+    // Error flag in case we go recursive
+    int err = 0;
+
+    switch(reply->type) {
+        case TYPE_INT:
+            reply->integer = c->reply_len;
+            break;
+        case TYPE_BULK:
+            reply->len = c->reply_len;
+            reply->str = redis_sock_read_bulk_reply(redis_sock, c->reply_len 
+                TSRMLS_CC);
+            if(reply->len != -1 && !reply->str) {
+                cluster_free_reply(reply, 1);
+                return NULL;
+            }
+            break;
+        case TYPE_MULTIBULK:
+            reply->elements = c->reply_len;
+            if(c->reply_len != (size_t)-1) {
+                reply->element = ecalloc(reply->elements,
+                    sizeof(clusterReply*)*reply->elements);
+                cluster_multibulk_resp_recursive(redis_sock, reply->elements, 
+                    reply->element, &err TSRMLS_CC);
+            }
+            break;
+        default:
+            cluster_free_reply(reply,1);
+            return NULL;
+    }
+
+    // Free/return null on communication error
+    if(err) {
+        cluster_free_reply(reply,1);
+        return NULL;
+    }
+
+    // Success, return our reply
+    return reply;
+}
+
+/* Cluster key distribution helpers.  For a small handlful of commands, we want 
+ * to distribute them across 1-N nodes.  These methods provide simple containers 
+ * for the purposes of splitting keys/values in this way */
 
 /* Free cluster distribution list inside a HashTable */
 static void cluster_dist_free_ht(void *p) {
