@@ -31,13 +31,12 @@
 #define CLUSTER_SLOTS             8
 
 /* Complete representation for various MULTI/EXEC commands in RESP */
-#define RESP_MULTI_CMD   "*1\r\n$5\r\nMULTI\r\n"
-#define RESP_EXEC_CMD    "*1\r\n$4\r\nEXEC\r\n"
-#define RESP_DISCARD_CMD "*1\r\n$7\r\nDISCARD\r\n"
-#define RESP_UNWATCH_CMD "*1\r\n$7\r\nUNWATCH\r\n"
-
-/* ASKING RESP */
-#define RESP_ASKING_CMD  "*1\r\n$6\r\nASKING\r\n"
+#define RESP_MULTI_CMD         "*1\r\n$5\r\nMULTI\r\n"
+#define RESP_EXEC_CMD          "*1\r\n$4\r\nEXEC\r\n"
+#define RESP_DISCARD_CMD       "*1\r\n$7\r\nDISCARD\r\n"
+#define RESP_UNWATCH_CMD       "*1\r\n$7\r\nUNWATCH\r\n"
+#define RESP_CLUSTER_SLOTS_CMD "*2\r\n$7\r\nCLUSTER\r\n$5\r\nSLOTS\r\n"
+#define RESP_ASKING_CMD        "*1\r\n$6\r\nASKING\r\n"
 
 /* MOVED/ASK comparison macros */
 #define IS_MOVED(p) (p[0]=='M' && p[1]=='O' && p[2]=='V' && p[3]=='E' && \
@@ -175,19 +174,11 @@ typedef struct clusterNodeInfo {
 
 /* A Redis Cluster master node */
 typedef struct redisClusterNode {
-    /* Our cluster ID and master ID */
-    char *name;
-    char *master_name;
-
     /* Our Redis socket in question */
     RedisSock *sock;
 
     /* A slot where one of these lives */
     short slot;
-
-    /* Contiguous slots we serve */
-    clusterSlotRange *slots;
-    size_t slots_size;
 
     /* Is this a slave node */
     unsigned short slave;
@@ -334,6 +325,8 @@ typedef struct clusterReply {
 
 /* Direct variant response handler */
 clusterReply *cluster_read_resp(redisCluster *c TSRMLS_DC);
+clusterReply *cluster_read_sock_resp(RedisSock *redis_sock, 
+    REDIS_REPLY_TYPE type, size_t reply_len TSRMLS_DC);
 void cluster_free_reply(clusterReply *reply, int free_data);
 
 /* Cluster distribution helpers for WATCH */
@@ -375,9 +368,6 @@ PHPAPI void cluster_free_node(redisClusterNode *node);
 
 PHPAPI char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock,
     int *len TSRMLS_DC);
-
-PHPAPI int cluster_node_add_slave(redisCluster *c, redisClusterNode *master, 
-    clusterNodeInfo *slave TSRMLS_DC);
 
 /*
  * Redis Cluster response handlers.  All of our response handlers take the
