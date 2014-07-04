@@ -23,12 +23,6 @@ if (PHP_REDIS != "no") {
 		}
 	}
 
-	if (PHP_REDIS_IGBINARY != "no") {
-		CHECK_HEADER_ADD_INCLUDE("igbinary.h", "CFLAGS_REDIS", "ext\\igbinary");
-		AC_DEFINE('HAVE_REDIS_IGBINARY', 1);
-		ADD_EXTENSION_DEP('redis', 'igbinary');
-	}
-
 	EXTENSION("redis", sources);
 }
 
