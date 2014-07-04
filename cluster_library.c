@@ -376,23 +376,6 @@ static void cluster_set_err(redisCluster *c, char *err, int err_len)
     }
 }
 
-/* Free a cluster info structure */
-static void free_cluster_info(clusterNodeInfo *info) {
-    if(info->name) {
-        efree(info->name);
-    }
-    if(info->master_name) {
-        efree(info->master_name);
-    }
-    if(info->host) {
-        efree(info->host);
-    }
-    if(info->slots) {
-        efree(info->slots);
-    }
-    efree(info);
-}
-
 /* Destructor for slaves */
 static void ht_free_slave(void *data) {
     if(*(redisClusterNode**)data) {
@@ -484,8 +467,7 @@ static char **split_str_by_delim(char *str, char *delim, int *len) {
     return array;
 }
 
-/* Simple function to split a string into up to N parts */
-static int
+/*static int
 cluster_parse_node_line(RedisSock *sock, char *line, clusterNodeInfo *info) {
     char **array, *p, *p2;
     int count, i;
@@ -515,7 +497,7 @@ cluster_parse_node_line(RedisSock *sock, char *line, clusterNodeInfo *info) {
         info->host = estrndup(sock->host, info->host_len);
         info->port = sock->port;
     } else if((p = strchr(array[CLUSTER_NODES_HOST_PORT], ':'))!=NULL) {
-        /* Null terminate at the : character */
+        // Null terminate at the : character
         *p = '\0';
 
         info->seed = 0;
@@ -577,6 +559,7 @@ cluster_parse_node_line(RedisSock *sock, char *line, clusterNodeInfo *info) {
     // Success!
     return 0;
 }
+*/
 
 /* Execute a CLUSTER SLOTS command against the seed socket, and return the
  * reply or NULL on failure. */
@@ -717,19 +700,6 @@ PHPAPI void cluster_free_node(redisClusterNode *node) {
     }
     redis_free_socket(node->sock);
     efree(node);
-}
-
-/* Free an array of clusterNodeInfo structs */
-void cluster_free_info_array(clusterNodeInfo **array, int count) {
-    int i;
-
-    // Free each info structure we've got
-    for(i=0;i<count;i++) {
-        free_cluster_info(array[i]);
-    }
-
-    // Free the array itself
-    efree(array);
 }
 
 /* When we're in an ASK redirection state, Redis Cluster wants us to send
