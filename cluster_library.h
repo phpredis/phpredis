@@ -157,21 +157,6 @@ typedef struct clusterSlotRange {
     unsigned short start, end;
 } clusterSlotRange;
 
-/* Bits related to CLUSTER NODES output */
-typedef struct clusterNodeInfo {
-    char *name, *master_name;
-
-    short seed;
-
-    char *host;
-    int host_len;
-
-    unsigned short port, slave;
-
-    clusterSlotRange *slots;
-    size_t slots_size;
-} clusterNodeInfo;
-
 /* A Redis Cluster master node */
 typedef struct redisClusterNode {
     /* Our Redis socket in question */
