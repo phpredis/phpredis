@@ -30,7 +30,7 @@
 #define CLUSTER_NODES_CONNECTED   7
 #define CLUSTER_SLOTS             8
 
-/* Complete representation for various MULTI/EXEC commands in RESP */
+/* Complete representation for various commands in RESP */
 #define RESP_MULTI_CMD         "*1\r\n$5\r\nMULTI\r\n"
 #define RESP_EXEC_CMD          "*1\r\n$4\r\nEXEC\r\n"
 #define RESP_DISCARD_CMD       "*1\r\n$7\r\nDISCARD\r\n"
