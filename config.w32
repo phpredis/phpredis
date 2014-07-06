@@ -2,14 +2,27 @@
 
 ARG_ENABLE("redis", "whether to enable redis support", "yes");
 ARG_ENABLE("redis-session", "whether to enable sessions", "yes");
+ARG_ENABLE("redis-igbinary", "whether to enable igbinary serializer support", "no");
 
 if (PHP_REDIS != "no") {
-	var sources = "redis.c library.c igbinary\\igbinary.c igbinary\\hash_si.c igbinary\\hash_function.c";
+	var sources = "redis.c library.c redis_array.c redis_array_impl.c";
 	if (PHP_REDIS_SESSION != "no") {
-		AC_DEFINE('PHP_SESSION', 1);
-		sources += " redis_session.c";
+		ADD_SOURCES(configure_module_dirname, "redis_session.c", "redis");
+		ADD_EXTENSION_DEP("redis", "session");
+		ADD_FLAG("CFLAGS_REDIS", ' /D PHP_SESSION=1 ');
+		AC_DEFINE("HAVE_REDIS_SESSION", 1);
 	}
-	
-	AC_DEFINE("PHP_EXPORTS", 1);
+
+	if (PHP_REDIS_IGBINARY != "no") {
+		if (CHECK_HEADER_ADD_INCLUDE("igbinary.h", "CFLAGS_REDIS", configure_module_dirname + "\\..\\igbinary")) {
+
+			ADD_EXTENSION_DEP("redis", "igbinary");
+			AC_DEFINE("HAVE_REDIS_IGBINARY", 1);
+		} else {
+			WARNING("redis igbinary support not enabled");
+		}
+	}
+
 	EXTENSION("redis", sources);
 }
+
