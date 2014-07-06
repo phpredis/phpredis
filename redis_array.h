@@ -1,7 +1,11 @@
 #ifndef REDIS_ARRAY_H
 #define REDIS_ARRAY_H
 
+#ifdef PHP_WIN32
+#include "win32/php_stdint.h"
+#else
 #include <stdint.h>
+#endif
 #include "common.h"
 
 void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC);
@@ -34,7 +38,7 @@ PHP_METHOD(RedisArray, unwatch);
 
 
 typedef struct RedisArray_ {
-	
+
 	int count;
 	char **hosts;			/* array of host:port strings */
 	zval **redis;			/* array of Redis instances */

@@ -373,7 +373,7 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call extractor function");
 		return NULL;
 	}
-	//convert_to_string(ra->z_fun);
+	/* convert_to_string(ra->z_fun); */
 
 	/* call extraction function */
 	MAKE_STD_ZVAL(z_argv0);
@@ -433,7 +433,7 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call distributor function");
 		return 0;
 	}
-	//convert_to_string(ra->z_fun);
+	/* convert_to_string(ra->z_fun); */
 
 	/* call extraction function */
 	MAKE_STD_ZVAL(z_argv0);
@@ -469,12 +469,14 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
                 }
         }
         else {
+                uint64_t h64;
+
                 /* hash */
                 hash = rcrc32(out, out_len);
                 efree(out);
-        
+
                 /* get position on ring */
-                uint64_t h64 = hash;
+                h64 = hash;
                 h64 *= ra->count;
                 h64 /= 0xffffffff;
                 pos = (int)h64;
@@ -526,7 +528,7 @@ ra_index_multi(zval *z_redis, long multi_value TSRMLS_DC) {
 	ZVAL_LONG(z_args[0], multi_value);
 	call_user_function(&redis_ce->function_table, &z_redis, &z_fun_multi, &z_ret, 1, z_args TSRMLS_CC);
 	efree(z_args[0]);
-	//zval_dtor(&z_ret);
+	/* zval_dtor(&z_ret); */
 }
 
 static void
@@ -569,13 +571,13 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
 
 	/* Initialize key array */
 	zval *z_keys, **z_entry_pp;
+	HashPosition pos;
 	MAKE_STD_ZVAL(z_keys);
 #if PHP_VERSION_ID > 50300
 	array_init_size(z_keys, zend_hash_num_elements(Z_ARRVAL_P(z_pairs)));
 #else
 	array_init(z_keys);
 #endif
-	HashPosition pos;
 
 	/* Go through input array and add values to the key array */
 	zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(z_pairs), &pos);
@@ -655,8 +657,8 @@ ra_index_exec(zval *z_redis, zval *return_value, int keep_all TSRMLS_DC) {
 		zval_dtor(&z_ret);
 	}
 
-	//zval *zptr = &z_ret;
-	//php_var_dump(&zptr, 0 TSRMLS_CC);
+	/* zval *zptr = &z_ret; */
+	/* php_var_dump(&zptr, 0 TSRMLS_CC); */
 }
 
 void
@@ -798,7 +800,7 @@ ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long 
 			if(zend_hash_get_current_data(retHash, (void**)&z_data) == FAILURE) {
 				success = 0;
 				break;
-			}	
+			}
 			if(Z_TYPE_PP(z_data) != IS_LONG) {
 				success = 0;
 				break;
@@ -890,7 +892,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	unsigned int val_len;
 	int i;
 	unsigned long idx;
-	
+
 	/* run ZRANGE key 0 -1 WITHSCORES on source */
 	ZVAL_STRINGL(&z_fun_zrange, "ZRANGE", 6, 0);
 	for(i = 0; i < 4; ++i) {
@@ -942,7 +944,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 				ZVAL_LONG(z_zadd_args[i+1], (long)idx);
 				break;
 			default:
-				return -1; // Todo: log error
+				return -1; /* Todo: log error */
 				break;
 		}
 		i += 2;
@@ -1150,23 +1152,23 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 			case REDIS_STRING:
 				success = ra_move_string(key, key_len, z_from, z_to, ttl TSRMLS_CC);
 				break;
-	
+
 			case REDIS_SET:
 				success = ra_move_set(key, key_len, z_from, z_to, ttl TSRMLS_CC);
 				break;
-	
+
 			case REDIS_LIST:
 				success = ra_move_list(key, key_len, z_from, z_to, ttl TSRMLS_CC);
 				break;
-	
+
 			case REDIS_ZSET:
 				success = ra_move_zset(key, key_len, z_from, z_to, ttl TSRMLS_CC);
 				break;
-	
+
 			case REDIS_HASH:
 				success = ra_move_hash(key, key_len, z_from, z_to, ttl TSRMLS_CC);
 				break;
-	
+
 			default:
 				/* TODO: report? */
 				break;

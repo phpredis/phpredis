@@ -150,7 +150,7 @@ class Redis_Test extends TestSuite
 
 	    // values above 1 are changed to 1 but don't overflow on bits to the right.
 	    $this->assertTrue(0 === $this->redis->setBit('key', 0, 0xff));
-        $this->assertTrue("\x9f" === $this->redis->get('key'));
+	    $this->assertTrue("\x9f" === $this->redis->get('key'));
 
         // Verify valid offset ranges
         $this->assertFalse($this->redis->getBit('key', -1));
@@ -1221,11 +1221,11 @@ class Redis_Test extends TestSuite
             $this->assertTrue(2 === $this->redis->sSize('set0')); // no change.
             $this->assertTrue($v === 'val' || $v === 'val2');
 
-            $got[$v] = $v;
-            if(count($got) == 2) {
-                break;
-            }
-        }
+	    $got[$v] = $v;
+	    if(count($got) == 2) {
+	        break;
+	    }
+	}
 
         // 
         // With and without count, while serializing
