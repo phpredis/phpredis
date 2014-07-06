@@ -6694,7 +6694,7 @@ PHP_METHOD(Redis, _serialize) {
     RedisSock *redis_sock;
     zval *z_val;
     char *val;
-    int val_len;
+    int val_len, val_free;
 
     /* Parse arguments */
     if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oz",
@@ -6709,7 +6709,7 @@ PHP_METHOD(Redis, _serialize) {
     }
 
     /* Serialize, which will return a value even if no serializer is set */
-    redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
+    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
 
     /* Return serialized value.  Tell PHP to make a copy as some can be interned. */
     RETVAL_STRINGL(val, val_len, 1);
