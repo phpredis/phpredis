@@ -13,8 +13,8 @@
 
 /* Minimum valid CLUSTER NODES line element count
    and the minimum we expect if there are slots */
-#define CLUSTER_MIN_NODE_LINE     8
-#define CLUSTER_MIN_SLOTS_COUNT   9
+#define CLUSTER_MIN_NODE_LINE   8
+#define CLUSTER_MIN_SLOTS_COUNT 9
 
 /* Length of a cluster name */
 #define CLUSTER_NAME_LEN 40
