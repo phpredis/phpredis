@@ -251,5 +251,6 @@ PHP_METHOD(RedisCluster, setoption);
 PHP_METHOD(RedisCluster, _prefix);
 PHP_METHOD(RedisCluster, _serialize);
 PHP_METHOD(RedisCluster, _unserialize);
+PHP_METHOD(RedisCluster, _masters);
 
 #endif
