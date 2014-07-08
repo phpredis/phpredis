@@ -220,6 +220,8 @@ PHP_METHOD(RedisCluster, subscribe);
 PHP_METHOD(RedisCluster, psubscribe);
 PHP_METHOD(RedisCluster, unsubscribe);
 PHP_METHOD(RedisCluster, punsubscribe);
+PHP_METHOD(RedisCluster, eval);
+PHP_METHOD(RedisCluster, evalsha);
 
 /* SCAN and friends */
 PHP_METHOD(RedisCluster, scan);

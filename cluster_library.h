@@ -378,6 +378,10 @@ PHPAPI void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 PHPAPI void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     void *ctx);
 
+/* Generic/Variant handler for stuff like EVAL */
+PHPAPI void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS,
+    redisCluster *c, void *ctx);
+
 /* MULTI BULK response functions */
 PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
     redisCluster *c, mbulk_cb func, void *ctx);

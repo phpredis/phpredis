@@ -44,6 +44,14 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan, 0, 0, 2)
     ZEND_ARG_INFO(0, i_count)
 ZEND_END_ARG_INFO();
 
+/* Argument infor for SCAN */
+ZEND_BEGIN_ARG_INFO_EX(arginfo_scan, 0, 0, 2)
+    ZEND_ARG_INFO(1, i_node_iterator)
+    ZEND_ARG_INFO(1, i_iterator)
+    ZEND_ARG_INFO(0, str_pattern)
+    ZEND_ARG_INFO(0, i_count)
+ZEND_END_ARG_INFO();
+
 /* Function table */
 zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, __construct, NULL, ZEND_ACC_PUBLIC)
@@ -155,7 +163,9 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, psubscribe, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, unsubscribe, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, punsubscribe, NULL, ZEND_ACC_PUBLIC)
-    
+    PHP_ME(RedisCluster, eval, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, evalsha, NULL, ZEND_ACC_PUBLIC)
+
     PHP_ME(RedisCluster, scan, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sscan, arginfo_kscan, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
@@ -1514,6 +1524,111 @@ PHP_METHOD(RedisCluster, unsubscribe) {
 PHP_METHOD(RedisCluster, punsubscribe) {
     generic_unsub_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, GET_CONTEXT(),
         "PUNSUBSCRIBE");
+}
+/* }}} */
+
+/* Parse arguments for EVAL or EVALSHA in the context of cluster.  If we aren't
+ * provided any "keys" as arguments, the only choice is to send the command to
+ * a random node in the cluster.  If we are passed key arguments the best we
+ * can do is make sure they all map to the same "node", as we don't know what
+ * the user is actually doing in the LUA source itself. */
+/* EVAL/EVALSHA */
+static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                            char *kw, int kw_len)
+{
+    redisClusterNode *node=NULL;
+    char *lua, *key;
+    int key_free, args_count=0, lua_len, key_len;
+    zval *z_arr=NULL, **z_ele;
+    HashTable *ht_arr;
+    HashPosition ptr;
+    long num_keys = 0;
+    short slot;
+    smart_str cmdstr = {0};
+
+    /* Parse args */
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|al", &lua, &lua_len,
+                             &z_arr, &num_keys)==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    /* Grab arg count */
+    if(z_arr != NULL) {
+        ht_arr = Z_ARRVAL_P(z_arr);
+        args_count = zend_hash_num_elements(ht_arr);
+    }
+
+    /* Format header, add script or SHA, and the number of args which are keys */
+    redis_cmd_init_sstr(&cmdstr, 2 + args_count, kw, kw_len);
+    redis_cmd_append_sstr(&cmdstr, lua, lua_len);
+    redis_cmd_append_sstr_long(&cmdstr, num_keys);
+
+    // Iterate over our args if we have any
+    if(args_count > 0) {
+        for(zend_hash_internal_pointer_reset_ex(ht_arr, &ptr);
+            zend_hash_get_current_data_ex(ht_arr, (void**)&z_ele, &ptr)==SUCCESS;
+            zend_hash_move_forward_ex(ht_arr, &ptr))
+        {
+            convert_to_string(*z_ele);
+            key = Z_STRVAL_PP(z_ele);
+            key_len = Z_STRLEN_PP(z_ele);
+
+            /* If we're still on a key, prefix it check node */
+            if(num_keys-- > 0) {
+                key_free = redis_key_prefix(c->flags, &key, &key_len);
+                slot = cluster_hash_key(key, key_len);
+
+                /* validate that this key maps to the same node */
+                if(node && c->master[slot] != node) {
+                    php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                        "Keys appear to map to different nodes");
+                    RETURN_FALSE;
+                }
+
+                node = c->master[slot];
+            } else {
+                key_free = 0;
+            }
+
+            /* Append this key/argument */
+            redis_cmd_append_sstr(&cmdstr, key, key_len);
+
+            /* Free key if we prefixed */
+            if(key_free) efree(key);
+        }
+    } else {
+        /* Pick a slot at random, we're being told there are no keys */
+        slot = rand() % REDIS_CLUSTER_MOD;
+    }
+
+    if(cluster_send_command(c, slot, cmdstr.c, cmdstr.len TSRMLS_CC)<0) {
+        efree(cmdstr.c);
+        RETURN_FALSE;
+    }
+
+    if(CLUSTER_IS_ATOMIC(c)) {
+        cluster_variant_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        void *ctx = NULL;
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_resp, ctx);
+        RETURN_ZVAL(getThis(), 1, 0);
+    }
+
+    efree(cmdstr.c);
+}
+
+/* {{{ proto mixed RedisCluster::eval(string script, [array args, int numkeys) */
+PHP_METHOD(RedisCluster, eval) {
+    cluster_eval_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, GET_CONTEXT(), 
+        "EVAL", 4);
+}
+/* }}} */
+
+/* {{{ proto mixed RedisCluster::evalsha(string sha, [array args, int numkeys]) */
+PHP_METHOD(RedisCluster, evalsha) {
+    cluster_eval_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, GET_CONTEXT(), 
+        "EVALSHA", 7);
 }
 /* }}} */
 
