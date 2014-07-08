@@ -177,7 +177,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, _prefix, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _serialize, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _unserialize, NULL, ZEND_ACC_PUBLIC)
-
+    PHP_ME(RedisCluster, _masters, NULL, ZEND_ACC_PUBLIC)
+    
     PHP_ME(RedisCluster, multi, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, exec, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, discard, NULL, ZEND_ACC_PUBLIC)
@@ -1670,6 +1671,30 @@ PHP_METHOD(RedisCluster, _unserialize) {
 }
 /* }}} */
 
+/* {{{ proto array RedisCluster::_masters() */
+PHP_METHOD(RedisCluster, _masters) {
+    redisCluster *c = GET_CONTEXT();
+    zval *z_ret;
+    redisClusterNode **node;
+    char buf[1024];
+    size_t len;
+
+    MAKE_STD_ZVAL(z_ret);
+    array_init(z_ret);
+
+    for(zend_hash_internal_pointer_reset(c->nodes);
+        zend_hash_get_current_data(c->nodes, (void**)&node)==SUCCESS;
+        zend_hash_move_forward(c->nodes))
+    {
+        len = snprintf(buf, sizeof(buf), "%s:%d", (*node)->sock->host,
+            (*node)->sock->port);
+        add_next_index_stringl(z_ret, buf, (int)len, 1);
+    }
+
+    *return_value = *z_ret;
+    efree(z_ret);
+}
+
 /*
  * Transaction handling
  */
@@ -1940,9 +1965,9 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
         RETURN_FALSE;
     }
 
-    // Requires a key
-    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz/|s!l", &key, &key_len,
-                             &z_it, &pat, &pat_len, &count)==FAILURE)
+    /* Parse arguments */
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz/|s!l", &key, 
+                             &key_len, &z_it, &pat, &pat_len, &count)==FAILURE)
     {
         RETURN_FALSE;
     }
@@ -2007,6 +2032,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
 /* {{{ proto RedisCluster::scan(long it [, string pat, long count]) */
 PHP_METHOD(RedisCluster, scan) {
+
 }
 
 /* {{{ proto RedisCluster::sscan(string key, long it [string pat, long cnt]) */
