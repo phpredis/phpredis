@@ -152,11 +152,6 @@ typedef int  (*mbulk_cb)(RedisSock*,zval*,long long, void* TSRMLS_DC);
 /* Specific destructor to free a cluster object */
 // void redis_destructor_redis_cluster(zend_rsrc_list_entry *rsrc TSRMLS_DC);
 
-/* Slot range structure */
-typedef struct clusterSlotRange {
-    unsigned short start, end;
-} clusterSlotRange;
-
 /* A Redis Cluster master node */
 typedef struct redisClusterNode {
     /* Our Redis socket in question */
@@ -355,9 +350,10 @@ PHPAPI char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock,
     int *len TSRMLS_DC);
 
 /*
- * Redis Cluster response handlers.  All of our response handlers take the
+ * Redis Cluster response handlers.  Our response handlers generally take the
  * following form:
- *      PHPAPI void handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c)
+ *      PHPAPI void handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
+ *          void *ctx)
  *
  * Reply handlers are responsible for setting the PHP return value (either to
  * something valid, or FALSE in the case of some failures).
