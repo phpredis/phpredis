@@ -1611,6 +1611,97 @@ PHPAPI void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
     }
 }   
 
+/* Recursive MULTI BULK -> PHP style response handling */
+static void cluster_mbulk_variant_resp(clusterReply *r, zval *z_ret)
+{
+    zval *z_sub_ele;
+
+    switch(r->type) {
+        case TYPE_INT:
+            add_next_index_long(z_ret, r->integer);
+            break;
+        case TYPE_LINE:
+            add_next_index_bool(z_ret, 1);
+            break;
+        case TYPE_BULK:
+            add_next_index_stringl(z_ret, r->str, r->len, 0);
+            break;
+        case TYPE_MULTIBULK:
+            MAKE_STD_ZVAL(z_sub_ele);
+            array_init(z_sub_ele);
+            cluster_mbulk_variant_resp(r, z_sub_ele);
+            add_next_index_zval(z_ret, z_sub_ele);
+            break;
+        default:
+            add_next_index_bool(z_ret, 0);
+            break;
+    }
+}
+
+/* Variant response handling, for things like EVAL and various other responses
+ * where we just map the replies from Redis type values to PHP ones directly. */
+PHPAPI void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
+                                 void *ctx)
+{
+    clusterReply *r;
+    zval *z_arr;
+
+    // Make sure we can read it
+    if((r = cluster_read_resp(c TSRMLS_CC))==NULL) {
+        CLUSTER_RETURN_FALSE(c);
+    }
+
+    // Handle ATOMIC vs. MULTI mode in a seperate switch
+    if(CLUSTER_IS_ATOMIC(c)) {
+        switch(r->type) {
+            case TYPE_INT:
+                RETVAL_LONG(r->integer);
+                break;
+            case TYPE_LINE:
+                RETVAL_TRUE;
+                break;
+            case TYPE_BULK:
+                RETVAL_STRINGL(r->str, r->len, 0);
+                break;
+            case TYPE_MULTIBULK:
+                MAKE_STD_ZVAL(z_arr);
+                array_init(z_arr);
+                cluster_mbulk_variant_resp(r, z_arr);
+       
+                *return_value = *z_arr;
+                efree(z_arr);
+                break;
+            default:
+                RETVAL_FALSE;
+                break;
+        }
+    } else {
+        switch(r->type) {
+            case TYPE_INT:
+                add_next_index_long(c->multi_resp, r->integer);
+                break;
+            case TYPE_LINE:
+                add_next_index_bool(c->multi_resp, 1);
+                break;
+            case TYPE_BULK:
+                add_next_index_stringl(c->multi_resp, r->str, r->len, 0);
+                break;
+            case TYPE_MULTIBULK:
+                MAKE_STD_ZVAL(z_arr);
+                array_init(z_arr);
+                cluster_mbulk_variant_resp(r, z_arr);
+                add_next_index_zval(c->multi_resp, z_arr);
+                break;
+            default:
+                add_next_index_bool(c->multi_resp, 0);
+                break;
+        }
+    }
+
+    // Free our response structs, but not allocated data itself
+    cluster_free_reply(r, 0);
+}
+
 /* Generic MULTI BULK response processor */
 PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
                                    redisCluster *c, mbulk_cb cb, void *ctx)
