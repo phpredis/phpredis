@@ -411,7 +411,7 @@ PHPAPI void cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 
 /* Response handler for ZSCAN, SSCAN, and HSCAN */
-PHPAPI int cluster_kscan_resp(INTERNAL_FUNCTION_PARAMETERS,
+PHPAPI int cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, REDIS_SCAN_TYPE type, long *it);
 
 /* MULTI BULK processing callbacks */

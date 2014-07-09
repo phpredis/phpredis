@@ -1737,7 +1737,7 @@ PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 }
 
 /* HSCAN, SSCAN, ZSCAN */
-PHPAPI int cluster_kscan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
+PHPAPI int cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
                               REDIS_SCAN_TYPE type, long *it)
 {
     char *pit;
@@ -1774,6 +1774,9 @@ PHPAPI int cluster_kscan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
     // Use the proper response callback depending on scan type
     switch(type) {
+        case TYPE_SCAN:
+            cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,c,NULL);
+            break;
         case TYPE_SSCAN:
             cluster_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,c,NULL);
             break;

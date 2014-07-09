@@ -46,8 +46,8 @@ ZEND_END_ARG_INFO();
 
 /* Argument infor for SCAN */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_scan, 0, 0, 2)
-    ZEND_ARG_INFO(1, i_node_iterator)
     ZEND_ARG_INFO(1, i_iterator)
+    ZEND_ARG_INFO(0, str_node)
     ZEND_ARG_INFO(0, str_pattern)
     ZEND_ARG_INFO(0, i_count)
 ZEND_END_ARG_INFO();
@@ -166,7 +166,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, eval, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, evalsha, NULL, ZEND_ACC_PUBLIC)
 
-    PHP_ME(RedisCluster, scan, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, scan, arginfo_scan, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sscan, arginfo_kscan, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hscan, arginfo_kscan, ZEND_ACC_PUBLIC)
@@ -2005,7 +2005,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
         }
 
         // Read response
-        if(cluster_kscan_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, type, 
+        if(cluster_scan_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, type, 
                               &it)==FAILURE)
         {
             zend_throw_exception(redis_cluster_exception_ce,
@@ -2030,9 +2030,81 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     Z_LVAL_P(z_it) = it;
 }
 
-/* {{{ proto RedisCluster::scan(long it [, string pat, long count]) */
+/* {{{ proto RedisCluster::scan(string master, long it [, string pat, long cnt]) */
 PHP_METHOD(RedisCluster, scan) {
+    redisCluster *c = GET_CONTEXT();
+    redisClusterNode **n;
+    char *cmd, *node, *pat=NULL, *key=NULL;
+    int pat_len=0, node_len, cmd_len;
+    short slot;
+    zval *z_it;
+    HashTable *hash;
+    long it, num_ele, count=0;
 
+    /* Can't be in MULTI mode */
+    if(!CLUSTER_IS_ATOMIC(c)) {
+        zend_throw_exception(redis_cluster_exception_ce,
+            "SCAN type commands can't be called in MULTI mode", 0 TSRMLS_CC);
+        RETURN_FALSE;
+    }
+
+    /* Parse arguments */
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z/s|s!l", &z_it, &node, 
+                             &node_len, &pat, &pat_len, &count)==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    /* Convert or update iterator */
+    if(Z_TYPE_P(z_it) != IS_LONG || Z_LVAL_P(z_it)<0) {
+        convert_to_long(z_it);
+        it = 0;
+    } else if(Z_LVAL_P(z_it)!=0) {
+        it = Z_LVAL_P(z_it);
+    } else {
+        RETURN_FALSE;
+    }
+
+    /* With SCAN_RETRY on, loop until we get some keys, otherwise just return
+     * what Redis does, as it does */
+    do {
+        /* Construct our command */
+        cmd_len = redis_fmt_scan_cmd(&cmd, TYPE_SCAN, NULL, 0, it, pat, pat_len,
+            count);
+        
+        /* Find this slot by node */
+        if(zend_hash_find(c->nodes, node, node_len+1, (void**)&n)==FAILURE) {
+            zend_throw_exception(redis_cluster_exception_ce, 
+                "Unknown host:port passed to SCAN command", 0 TSRMLS_CC);
+            efree(cmd);
+            RETURN_FALSE;
+        }
+
+        // Send it to the node in question
+        slot = (*n)->slot;
+        if(cluster_send_command(c, slot, cmd, cmd_len TSRMLS_CC)<0) 
+        {
+            zend_throw_exception(redis_cluster_exception_ce,
+                "Couldn't send SCAN to node", 0 TSRMLS_CC);
+            efree(cmd);
+            RETURN_FALSE;
+        }
+
+        if(cluster_scan_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, TYPE_SCAN,
+                           &it)==FAILURE || Z_TYPE_P(return_value)!=IS_ARRAY)
+        {
+            zend_throw_exception(redis_cluster_exception_ce,
+                "Couldn't process SCAN response from node", 0 TSRMLS_CC);
+            efree(cmd);
+            RETURN_FALSE;
+        }
+
+        efree(cmd);
+
+        num_ele = zend_hash_num_elements(Z_ARRVAL_P(return_value));
+    } while(c->flags->scan == REDIS_SCAN_RETRY && it != 0 && num_ele == 0);
+
+    Z_LVAL_P(z_it) = it;
 }
 
 /* {{{ proto RedisCluster::sscan(string key, long it [string pat, long cnt]) */
