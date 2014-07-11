@@ -217,6 +217,7 @@ PHP_METHOD(RedisCluster, zrevrangebyscore);
 PHP_METHOD(RedisCluster, zrangebylex);
 PHP_METHOD(RedisCluster, zrevrangebylex);
 PHP_METHOD(RedisCluster, zlexcount);
+PHP_METHOD(RedisCluster, zremrangebylex);
 PHP_METHOD(RedisCluster, zunionstore);
 PHP_METHOD(RedisCluster, zinterstore);
 PHP_METHOD(RedisCluster, sort);

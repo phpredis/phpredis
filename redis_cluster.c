@@ -159,6 +159,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, zrangebylex, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrevrangebylex, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zlexcount, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zremrangebylex, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zunionstore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zinterstore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrem, NULL, ZEND_ACC_PUBLIC)
@@ -1441,9 +1442,16 @@ PHP_METHOD(RedisCluster, zrevrangebylex) {
 }
 /* }}} */
 
-/* {{{ proto RedisCluster::zlexcount(string key, string min, string max) */
+/* {{{ proto long RedisCluster::zlexcount(string key, string min, string max) */
 PHP_METHOD(RedisCluster, zlexcount) {
-    CLUSTER_PROCESS_CMD(zlexcount, cluster_long_resp);
+    CLUSTER_PROCESS_KW_CMD("ZLEXCOUNT", redis_gen_zlex_cmd, cluster_long_resp);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::zremrangebylex(string key, string min, string max) */
+PHP_METHOD(RedisCluster, zremrangebylex) {
+    CLUSTER_PROCESS_KW_CMD("ZREMRANGEBYLEX", redis_gen_zlex_cmd, 
+        cluster_long_resp);
 }
 /* }}} */
 
