@@ -2339,7 +2339,7 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval **z_ret
 
 PHPAPI int
 redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
-                         zval *z_tab) 
+                         zval *z_tab, void *ctx) 
 {
     // Reply type, and reply size vars
     REDIS_REPLY_TYPE reply_type;

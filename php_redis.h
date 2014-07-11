@@ -145,6 +145,7 @@ PHP_METHOD(Redis, restore);
 PHP_METHOD(Redis, migrate);
 
 PHP_METHOD(Redis, time);
+PHP_METHOD(Redis, role);
 
 PHP_METHOD(Redis, getLastError);
 PHP_METHOD(Redis, clearLastError);
