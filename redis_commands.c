@@ -374,7 +374,7 @@ int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 /* Generic to construct SCAN and variant commands */
-int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len, 
+int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
                        long it, char *pat, int pat_len, long count)
 {
     static char *kw[] = {"SCAN","SSCAN","HSCAN","ZSCAN"};
@@ -385,7 +385,7 @@ int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     argc = 1 + (type!=TYPE_SCAN) + (pat_len>0?2:0) + (count>0?2:0);
 
     redis_cmd_init_sstr(&cmdstr, argc, kw[type], strlen(kw[type]));
-    
+
     // Append our key if it's not a regular SCAN command
     if(type != TYPE_SCAN) {
         redis_cmd_append_sstr(&cmdstr, key, key_len);
@@ -706,7 +706,7 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     int key_len, key_free;
     char *key;
 
-    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "af", &z_arr, 
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "af", &z_arr,
                              &(sctx->cb), &(sctx->cb_cache))==FAILURE)
     {
         efree(sctx);
@@ -715,7 +715,7 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     ht_chan    = Z_ARRVAL_P(z_arr);
     sctx->kw   = kw;
-    sctx->argc = zend_hash_num_elements(ht_chan);  
+    sctx->argc = zend_hash_num_elements(ht_chan);
 
     if(sctx->argc==0) {
         efree(sctx);
@@ -742,7 +742,7 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_cmd_append_sstr(&cmdstr, key, key_len);
 
         // Free our key if it was prefixed
-        if(key_free) efree(key); 
+        if(key_free) efree(key);
     }
 
     // Push values out
@@ -773,7 +773,7 @@ int redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     ht_arr = Z_ARRVAL_P(z_arr);
-    
+
     sctx->argc = zend_hash_num_elements(ht_arr);
     if(sctx->argc == 0) {
         efree(sctx);
@@ -781,7 +781,7 @@ int redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     redis_cmd_init_sstr(&cmdstr, sctx->argc, kw, strlen(kw));
-        
+
     for(zend_hash_internal_pointer_reset_ex(ht_arr, &ptr);
         zend_hash_get_current_data_ex(ht_arr, (void**)&z_chan, &ptr)==SUCCESS;
         zend_hash_move_forward_ex(ht_arr, &ptr))
@@ -799,7 +799,61 @@ int redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     *cmd     = cmdstr.c;
     *ctx     = (void*)sctx;
 
-    return SUCCESS; 
+    return SUCCESS;
+}
+
+/* ZRANGEBYLEX/ZREVRANGEBYLEX */
+int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                          char *kw, char **cmd, int *cmd_len, short *slot,
+                          void **ctx)
+{
+    char *key, *min, *max;
+    int key_len, min_len, max_len, key_free;
+    long offset, count;
+    int argc = ZEND_NUM_ARGS();
+
+    /* We need either 3 or 5 arguments for this to be valid */
+    if(argc != 3 && argc != 5) {
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "Must pass either 3 or 5 arguments");
+        return FAILURE;
+    }
+
+    if(zend_parse_parameters(argc TSRMLS_CC, "sss|ll", &key,
+                             &key_len, &min, &min_len, &max, &max_len,
+                             &offset, &count)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    /* min and max must start with '(' or '[' */
+    if(min_len < 1 || max_len < 1 || (min[0] != '(' && min[0] != '[') ||
+       (max[0] != '(' && max[0] != '['))
+    {
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "min and max arguments must start with '[' or '('");
+        return FAILURE;
+    }
+
+    /* Prefix key */
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    /* Construct command */
+    if(argc == 3) {
+        *cmd_len = redis_cmd_format_static(cmd, kw, "sss", key, key_len, min, 
+            min_len, max, max_len);
+    } else {
+        *cmd_len = redis_cmd_format_static(cmd, kw, "ssssll", key, key_len, min, 
+            min_len, max, max_len, "LIMIT", sizeof("LIMIT")-1, offset, count);
+    }
+
+    /* Pick our slot */
+    CMD_SET_SLOT(slot,key,key_len);
+
+    /* Free key if we prefixed */
+    if(key_free) efree(key);
+
+    return SUCCESS;
 }
 
 /* Commands that take a key followed by a variable list of serializable
@@ -2398,60 +2452,6 @@ int redis_sdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         "SDIFFSTORE", sizeof("SDIFFSTORE")-1, 2, 0, cmd, cmd_len, slot);
 }
 
-/* ZRANGEBYLEX */
-int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                          char **cmd, int *cmd_len, short *slot, void **ctx)
-{
-    char *key, *min, *max;
-    int key_len, min_len, max_len, key_free;
-    long offset, count;
-    int argc = ZEND_NUM_ARGS();
-
-    /* We need either 3 or 5 arguments for this to be valid */
-    if(argc != 3 && argc != 5) {
-        php_error_docref(0 TSRMLS_CC, E_WARNING,
-            "Must pass either 3 or 5 arguments");
-        return FAILURE;
-    }
-
-    if(zend_parse_parameters(argc TSRMLS_CC, "sss|ll", &key, 
-                             &key_len, &min, &min_len, &max, &max_len,
-                             &offset, &count)==FAILURE)
-    {
-        return FAILURE;
-    }
-
-    /* min and max must start with '(' or '[' */
-    if(min_len < 1 || max_len < 1 || (min[0] != '(' && min[0] != '[') ||
-       (max[0] != '(' && max[0] != '['))
-    {
-        php_error_docref(0 TSRMLS_CC, E_WARNING,
-            "min and max arguments must start with '[' or '('");
-        return FAILURE;
-    }
-
-    /* Prefix key */
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    /* Construct command */
-    if(argc == 3) {
-        *cmd_len = redis_cmd_format_static(cmd, "ZRANGEBYLEX", "sss", key,
-            key_len, min, min_len, max, max_len);
-    } else {
-        *cmd_len = redis_cmd_format_static(cmd, "ZRANGEBYLEX", "ssssll", key,
-            key_len, min, min_len, max, max_len, "LIMIT", sizeof("LIMIT")-1,
-            offset, count);
-    }
-
-    /* Pick our slot */
-    CMD_SET_SLOT(slot,key,key_len);
-
-    /* Free key if we prefixed */
-    if(key_free) efree(key);
-
-    return SUCCESS;
-}
-
 /* ZLEXCOUNT */
 int redis_zlexcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                         char **cmd, int *cmd_len, short *slot, void **ctx)
@@ -2610,7 +2610,7 @@ void redis_prefix_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     }
 }
 
-void redis_serialize_handler(INTERNAL_FUNCTION_PARAMETERS, 
+void redis_serialize_handler(INTERNAL_FUNCTION_PARAMETERS,
                              RedisSock *redis_sock)
 {
     zval *z_val;
@@ -2627,7 +2627,7 @@ void redis_serialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     if(val_free) STR_FREE(val);
 }
 
-void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS, 
+void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
                                RedisSock *redis_sock, zend_class_entry *ex)
 {
     char *value;
@@ -2647,7 +2647,7 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
                              TSRMLS_CC) == 0)
         {
             // Badly formed input, throw an execption
-            zend_throw_exception(ex, 
+            zend_throw_exception(ex,
                 "Invalid serialized data, or unserialization error",
                 0 TSRMLS_CC);
             RETURN_FALSE;
