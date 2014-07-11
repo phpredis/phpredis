@@ -157,6 +157,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, zrangebyscore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrevrangebyscore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrangebylex, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zrevrangebylex, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zlexcount, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zunionstore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zinterstore, NULL, ZEND_ACC_PUBLIC)
@@ -1424,10 +1425,19 @@ PHP_METHOD(RedisCluster, zrevrangebyscore) {
 }
 /* }}} */
 
-/* {{{ proto RedisCluster::zrangebylex(string key, string min, string max, [
- *                                     LIMIT offset count) */
+/* {{{ proto array RedisCluster::zrangebylex(string key, string min, string max, 
+ *                                           [offset, count]) */
 PHP_METHOD(RedisCluster, zrangebylex) {
-    CLUSTER_PROCESS_CMD(zrangebylex, cluster_mbulk_resp);
+    CLUSTER_PROCESS_KW_CMD("ZRANGEBYLEX", redis_zrangebylex_cmd, 
+        cluster_mbulk_resp);
+}
+/* }}} */
+
+/* {{{ proto array RedisCluster::zrevrangebylex(string key, string min,
+ *                                              string min, [long off, long limit) */
+PHP_METHOD(RedisCluster, zrevrangebylex) {
+    CLUSTER_PROCESS_KW_CMD("ZREVRANGEBYLEX", redis_zrangebylex_cmd,
+        cluster_mbulk_resp);
 }
 /* }}} */
 
