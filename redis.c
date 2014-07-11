@@ -199,6 +199,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zRangeByLex, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRevRangeByLex, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zLexCount, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRemRangeByLex, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCount, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zDeleteRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zDeleteRangeByRank, NULL, ZEND_ACC_PUBLIC)
@@ -2021,7 +2022,14 @@ PHP_METHOD(Redis, zRevRangeByLex) {
 
 /* {{{ proto long Redis::zLexCount(string key, string min, string max) */
 PHP_METHOD(Redis, zLexCount) {
-    REDIS_PROCESS_CMD(zlexcount, redis_long_response);
+    REDIS_PROCESS_KW_CMD("ZLEXCOUNT", redis_gen_zlex_cmd, redis_long_response);
+}
+/* }}} */
+
+/* {{{ proto long Redis::zRemRangeByLex(string key, string min, string max) */
+PHP_METHOD(Redis, zRemRangeByLex) {
+    REDIS_PROCESS_KW_CMD("ZREMRANGEBYLEX", redis_gen_zlex_cmd, 
+        redis_long_response);
 }
 /* }}} */
 
