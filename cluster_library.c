@@ -1802,7 +1802,7 @@ PHPAPI void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                               void *ctx)
 {
     zval *z_result;
-    char *info, *p;
+    char *info;
 
     // Read our bulk response
     if((info = redis_sock_read_bulk_reply(SLOT_SOCK(c,c->reply_slot), 
