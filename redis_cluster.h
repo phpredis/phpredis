@@ -241,7 +241,7 @@ PHP_METHOD(RedisCluster, discard);
 PHP_METHOD(RedisCluster, watch);
 PHP_METHOD(RedisCluster, unwatch);
 
-/* DB saving, etc */
+/* DB saving, server info, etc */
 PHP_METHOD(RedisCluster, save);
 PHP_METHOD(RedisCluster, bgsave);
 PHP_METHOD(RedisCluster, flushdb);
@@ -249,6 +249,8 @@ PHP_METHOD(RedisCluster, flushall);
 PHP_METHOD(RedisCluster, dbsize);
 PHP_METHOD(RedisCluster, bgrewriteaof);
 PHP_METHOD(RedisCluster, lastsave);
+PHP_METHOD(RedisCluster, role);
+PHP_METHOD(RedisCluster, time);
 
 /* Introspection */
 PHP_METHOD(RedisCluster, getoption);

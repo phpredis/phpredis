@@ -196,6 +196,9 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, bgrewriteaof, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, lastsave, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, info, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, role, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, time, NULL, ZEND_ACC_PUBLIC)
+
     {NULL, NULL, NULL}
 };
 
@@ -2225,11 +2228,26 @@ PHP_METHOD(RedisCluster, lastsave) {
 }
 /* }}} */
 
-/* {{{ proto RedisCluster::info(string key)
- *     proto RedisCluster::info(string host, long port) */
+/* {{{ proto array RedisCluster::info(string key)
+ *     proto array RedisCluster::info(string host, long port) */
 PHP_METHOD(RedisCluster, info) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INFO",
         TYPE_BULK, cluster_info_resp);
+}
+/* }}} */
+
+/* {{{ proto array RedisCluster::role(string key)
+ *     proto array RedisCluster::role(string key, long port) */
+PHP_METHOD(RedisCluster, role) {
+    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ROLE",
+        TYPE_MULTIBULK, cluster_variant_resp);
+}
+
+/* {{{ proto array RedisCluster::time(string key)
+ *     proto array RedisCluster::time(string key, long port */
+PHP_METHOD(RedisCluster, time) {
+    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "TIME",
+        TYPE_MULTIBULK, cluster_variant_resp);
 }
 /* }}} */
 
