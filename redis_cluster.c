@@ -198,6 +198,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, info, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, role, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, time, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, randomkey, NULL, ZEND_ACC_PUBLIC)
 
     {NULL, NULL, NULL}
 };
@@ -2237,17 +2238,25 @@ PHP_METHOD(RedisCluster, info) {
 /* }}} */
 
 /* {{{ proto array RedisCluster::role(string key)
- *     proto array RedisCluster::role(string key, long port) */
+ *     proto array RedisCluster::role(string host, long port) */
 PHP_METHOD(RedisCluster, role) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ROLE",
         TYPE_MULTIBULK, cluster_variant_resp);
 }
 
 /* {{{ proto array RedisCluster::time(string key)
- *     proto array RedisCluster::time(string key, long port */
+ *     proto array RedisCluster::time(string host, long port */
 PHP_METHOD(RedisCluster, time) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "TIME",
         TYPE_MULTIBULK, cluster_variant_resp);
+}
+/* }}} */
+
+/* {{{ proto string RedisCluster::randomkey(string key)
+ *     proto string RedisCluster::randomkey(string host, long port) */
+PHP_METHOD(RedisCluster, randomkey) {
+    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "RANDOMKEY",
+        TYPE_BULK, cluster_bulk_resp);
 }
 /* }}} */
 
