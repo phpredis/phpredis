@@ -239,7 +239,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, punsubscribe, NULL, ZEND_ACC_PUBLIC)
 
      PHP_ME(Redis, time, NULL, ZEND_ACC_PUBLIC)
-
+     PHP_ME(Redis, role, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, eval, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, evalsha, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, script, NULL, ZEND_ACC_PUBLIC)
@@ -2895,7 +2895,7 @@ PHP_METHOD(Redis, slowlog) {
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
         if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-                                    redis_sock, NULL) < 0) 
+                                    redis_sock, NULL, NULL) < 0) 
         {
             RETURN_FALSE;
         }
@@ -3102,7 +3102,7 @@ PHP_METHOD(Redis, pubsub) {
     } else {
         IF_ATOMIC() {
             if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-                                        redis_sock, NULL)<0) 
+                                        redis_sock, NULL, NULL)<0) 
             {
                 RETURN_FALSE;
             }
@@ -3230,7 +3230,7 @@ PHP_METHOD(Redis, evalsha)
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
         if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-                                    redis_sock, NULL) < 0) 
+                                    redis_sock, NULL, NULL) < 0) 
         {
             RETURN_FALSE;
         }
@@ -3268,7 +3268,7 @@ PHP_METHOD(Redis, eval)
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
         if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-                                    redis_sock, NULL) < 0) 
+                                    redis_sock, NULL, NULL) < 0) 
         {
             RETURN_FALSE;
         }
@@ -3368,7 +3368,7 @@ PHP_METHOD(Redis, script) {
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
         if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-                                    redis_sock, NULL) < 0) 
+                                    redis_sock, NULL, NULL) < 0) 
         {
             RETURN_FALSE;
         }
@@ -3538,36 +3538,13 @@ PHP_METHOD(Redis, clearLastError) {
 
 /* {{{ proto Redis::time() */
 PHP_METHOD(Redis, time) {
-    zval *object;
-    RedisSock *redis_sock;
-    char *cmd;
-    int cmd_len;
+    REDIS_PROCESS_KW_CMD("TIME", redis_empty_cmd, 
+        redis_sock_read_multibulk_reply_raw);
+}
 
-    // Grab our object
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O", 
-                                    &object, redis_ce) == FAILURE) 
-    {
-        RETURN_FALSE;
-    }
-    
-    // Grab socket
-    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
-    }
-
-    // Build TIME command
-    cmd_len = redis_cmd_format_static(&cmd, "TIME", "");
-
-    // Execute or queue command
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
-        if(redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-                                               redis_sock, NULL, NULL) < 0) 
-        {
-            RETURN_FALSE;
-        }
-    }
-    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply_raw);
+/* {{{ proto array Redis::role() */
+PHP_METHOD(Redis, role) {
+    REDIS_PROCESS_KW_CMD("ROLE", redis_empty_cmd, redis_read_variant_reply);
 }
 
 /*
@@ -3719,7 +3696,7 @@ PHP_METHOD(Redis, client) {
     } else {
         IF_ATOMIC() {
             redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                redis_sock,NULL);
+                redis_sock,NULL,NULL);
         }
         REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
     }

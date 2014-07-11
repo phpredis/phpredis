@@ -1618,6 +1618,7 @@ PHPAPI void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
 static void cluster_mbulk_variant_resp(clusterReply *r, zval *z_ret)
 {
     zval *z_sub_ele;
+    int i;
 
     switch(r->type) {
         case TYPE_INT:
@@ -1632,7 +1633,9 @@ static void cluster_mbulk_variant_resp(clusterReply *r, zval *z_ret)
         case TYPE_MULTIBULK:
             MAKE_STD_ZVAL(z_sub_ele);
             array_init(z_sub_ele);
-            cluster_mbulk_variant_resp(r, z_sub_ele);
+            for(i=0;i<r->elements;i++) {
+                cluster_mbulk_variant_resp(r->element[i], z_sub_ele);
+            }
             add_next_index_zval(z_ret, z_sub_ele);
             break;
         default:
@@ -1648,6 +1651,7 @@ PHPAPI void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 {
     clusterReply *r;
     zval *z_arr;
+    int i;
 
     // Make sure we can read it
     if((r = cluster_read_resp(c TSRMLS_CC))==NULL) {
@@ -1669,8 +1673,11 @@ PHPAPI void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
             case TYPE_MULTIBULK:
                 MAKE_STD_ZVAL(z_arr);
                 array_init(z_arr);
-                cluster_mbulk_variant_resp(r, z_arr);
-       
+                
+                for(i=0;i<r->elements;i++) {
+                    cluster_mbulk_variant_resp(r->element[i], z_arr);
+                }
+
                 *return_value = *z_arr;
                 efree(z_arr);
                 break;
