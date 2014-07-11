@@ -361,6 +361,8 @@ PHPAPI char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock,
 
 PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
     void *ctx);
+PHPAPI void cluster_ping_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+    void *ctx);
 PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
     void *ctx);
 PHPAPI void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,    

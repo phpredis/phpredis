@@ -1393,6 +1393,19 @@ PHPAPI void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     CLUSTER_RETURN_BOOL(c, 1);
 }
 
+/* Boolean response, specialized for PING */
+PHPAPI void cluster_ping_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                              void *ctx)
+{
+    if(c->reply_type != TYPE_LINE || c->reply_len != 4 ||
+       memcmp(c->line_reply,"PONG",sizeof("PONG")-1))
+    {
+        CLUSTER_RETURN_FALSE(c);
+    }
+
+    CLUSTER_RETURN_BOOL(c, 1);
+}
+
 /* 1 or 0 response, for things like SETNX */
 PHPAPI void cluster_1_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                            void *ctx)
