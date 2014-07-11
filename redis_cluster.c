@@ -154,6 +154,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, zrange, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrevrange, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrangebyscore, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zrevrangebyscore, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zrangebylex, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zunionstore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zinterstore, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrem, NULL, ZEND_ACC_PUBLIC)
@@ -1409,6 +1411,12 @@ PHP_METHOD(RedisCluster, zrevrangebyscore) {
 }
 /* }}} */
 
+/* {{{ proto RedisCluster::zrangebylex(string key, string min, string max, [
+ *                                     LIMIT offset count) */
+PHP_METHOD(RedisCluster, zrangebylex) {
+    CLUSTER_PROCESS_CMD(zrangebylex, cluster_mbulk_resp);
+}
+/* }}} */
 
 /* {{{ proto RedisCluster::sort(string key, array options) */
 PHP_METHOD(RedisCluster, sort) {
