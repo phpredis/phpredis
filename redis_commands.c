@@ -856,6 +856,46 @@ int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* ZLEXCOUNT/ZREMRANGEBYLEX */
+int redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                       char *kw, char **cmd, int *cmd_len, short *slot, 
+                       void **ctx)
+{
+    char *key, *min, *max;
+    int key_len, min_len, max_len, key_free;
+
+    /* Parse args */
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss", &key, &key_len,
+                             &min, &min_len, &max, &max_len)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    /* Quick sanity check on min/max */
+    if(min_len<1 || max_len<1 || (min[0]!='(' && min[0]!='[') ||
+       (max[0]!='(' && max[0]!='['))
+    {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "Min and Max arguments must begin with '(' or '['");
+        return FAILURE;
+    }
+
+    /* Prefix key if we need to */
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    /* Construct command */
+    *cmd_len = redis_cmd_format_static(cmd, kw, "sss", key, key_len, min, 
+        min_len, max, max_len);
+
+    /* set slot */
+    CMD_SET_SLOT(slot,key,key_len);
+
+    /* Free key if prefixed */
+    if(key_free) efree(key);
+
+    return SUCCESS;
+}
+
 /* Commands that take a key followed by a variable list of serializable
  * values (RPUSH, LPUSH, SADD, SREM, etc...) */
 int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
@@ -2450,45 +2490,6 @@ int redis_sdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         "SDIFFSTORE", sizeof("SDIFFSTORE")-1, 2, 0, cmd, cmd_len, slot);
-}
-
-/* ZLEXCOUNT */
-int redis_zlexcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                        char **cmd, int *cmd_len, short *slot, void **ctx)
-{
-    char *key, *min, *max;
-    int key_len, min_len, max_len, key_free;
-
-    /* Parse args */
-    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss", &key, &key_len,
-                             &min, &min_len, &max, &max_len)==FAILURE)
-    {
-        return FAILURE;
-    }
-
-    /* Quick sanity check on min/max */
-    if(min_len<1 || max_len<1 || (min[0]!='(' && min[0]!='[') ||
-       (max[0]!='(' && max[0]!='['))
-    {
-        php_error_docref(NULL TSRMLS_CC, E_WARNING,
-            "Min and Max arguments must begin with '(' or '['");
-        return FAILURE;
-    }
-
-    /* Prefix key if we need to */
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    /* Construct command */
-    *cmd_len = redis_cmd_format_static(cmd, "ZLEXCOUNT", "sss", key, key_len,
-        min, min_len, max, max_len);
-
-    /* set slot */
-    CMD_SET_SLOT(slot,key,key_len);
-
-    /* Free key if prefixed */
-    if(key_free) efree(key);
-
-    return SUCCESS;
 }
 
 /*
