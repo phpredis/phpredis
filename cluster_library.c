@@ -1221,6 +1221,9 @@ PHPAPI int cluster_send_slot(redisCluster *c, short slot, char *cmd,
         return -1;
     }
 
+    // Update our reply slot
+    c->reply_slot = slot;
+
     return 0;
 }
 
@@ -1792,6 +1795,33 @@ PHPAPI int cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
     // Success
     return SUCCESS;
+}
+
+/* INFO response */
+PHPAPI void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                              void *ctx)
+{
+    zval *z_result;
+    char *info, *p;
+
+    // Read our bulk response
+    if((info = redis_sock_read_bulk_reply(SLOT_SOCK(c,c->reply_slot), 
+                                          c->reply_len TSRMLS_CC))==NULL)
+    {
+        CLUSTER_RETURN_FALSE(c);
+    }
+
+    /* Parse response, free memory */
+    z_result = redis_parse_info_response(info);
+    efree(info);
+
+    // Return our array
+    if(CLUSTER_IS_ATOMIC(c)) {
+        *return_value = *z_result;
+        efree(z_result);
+    } else {
+        add_next_index_zval(c->multi_resp, z_result);
+    } 
 }
 
 /* MULTI BULK response loop where we might pull the next one */

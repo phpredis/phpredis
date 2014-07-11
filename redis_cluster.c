@@ -169,7 +169,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, sscan, arginfo_kscan, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hscan, arginfo_kscan, ZEND_ACC_PUBLIC)
-
+    
     PHP_ME(RedisCluster, getoption, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, setoption, NULL, ZEND_ACC_PUBLIC)
 
@@ -191,6 +191,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, dbsize, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, bgrewriteaof, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, lastsave, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, info, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -2126,22 +2127,25 @@ PHP_METHOD(RedisCluster, scan) {
 
     Z_LVAL_P(z_it) = it;
 }
+/* }}} */
 
 /* {{{ proto RedisCluster::sscan(string key, long it [string pat, long cnt]) */
 PHP_METHOD(RedisCluster, sscan) {
     cluster_kscan_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, TYPE_SSCAN);
 }
+/* }}} */
 
 /* {{{ proto RedisCluster::zscan(string key, long it [string pat, long cnt]) */
 PHP_METHOD(RedisCluster, zscan) {
     cluster_kscan_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, TYPE_ZSCAN);
 }
+/* }}} */
 
 /* {{{ proto RedisCluster::hscan(string key, long it [string pat, long cnt]) */
 PHP_METHOD(RedisCluster, hscan) {
     cluster_kscan_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, TYPE_HSCAN);
 }
-
+/* }}} */
 
 /* {{{ proto RedisCluster::save(string key)
  *     proto RedisCluster::save(string host, long port) */
@@ -2149,6 +2153,7 @@ PHP_METHOD(RedisCluster, save) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SAVE", TYPE_LINE,
         cluster_bool_resp);
 }
+/* }}} */
 
 /* {{{ proto RedisCluster::bgsave(string key) 
  *     proto RedisCluster::bgsave(string host, long port) */
@@ -2156,6 +2161,7 @@ PHP_METHOD(RedisCluster, bgsave) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "BGSAVE", 
         TYPE_LINE, cluster_bool_resp);
 }
+/* }}} */
 
 /* {{{ proto RedisCluster::flushdb(string key)
  *     proto RedisCluster::flushdb(string host, long port) */
@@ -2163,6 +2169,7 @@ PHP_METHOD(RedisCluster, flushdb) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHDB",
         TYPE_LINE, cluster_bool_resp);
 }
+/* }}} */
 
 /* {{{ proto RedisCluster::flushall(string key)
  *     proto RedisCluster::flushall(string host, long port) */
@@ -2170,6 +2177,7 @@ PHP_METHOD(RedisCluster, flushall) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHALL",
         TYPE_LINE, cluster_bool_resp);
 }
+/* }}} */
 
 /* {{{ proto RedisCluster::dbsize(string key)
  *     proto RedisCluster::dbsize(string host, long port) */
@@ -2177,6 +2185,7 @@ PHP_METHOD(RedisCluster, dbsize) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DBSIZE",
         TYPE_LINE, cluster_bool_resp);
 }
+/* }}} */
 
 /* {{{ proto RedisCluster::bgrewriteaof(string key)
  *     proto RedisCluster::bgrewriteaof(string host, long port) */
@@ -2184,6 +2193,7 @@ PHP_METHOD(RedisCluster, bgrewriteaof) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "BGREWRITEAOF",
         TYPE_LINE, cluster_bool_resp);
 }
+/* }}} */
 
 /* {{{ proto RedisCluster::lastsave(string key)
  *     proto RedisCluster::lastsave(string host, long port) */
@@ -2191,6 +2201,14 @@ PHP_METHOD(RedisCluster, lastsave) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "LASTSAVE",
         TYPE_INT, cluster_long_resp);
 }
+/* }}} */
 
+/* {{{ proto RedisCluster::info(string key)
+ *     proto RedisCluster::info(string host, long port) */
+PHP_METHOD(RedisCluster, info) {
+    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INFO",
+        TYPE_BULK, cluster_info_resp);
+}
+/* }}} */
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

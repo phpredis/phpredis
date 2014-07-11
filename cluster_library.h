@@ -414,6 +414,10 @@ PHPAPI void cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS,
 PHPAPI int cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, REDIS_SCAN_TYPE type, long *it);
 
+/* INFO response handler */
+PHPAPI void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS,
+    redisCluster *c, void *ctx);
+
 /* MULTI BULK processing callbacks */
 int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result, 
     long long count, void *ctx TSRMLS_DC);
