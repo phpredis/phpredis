@@ -138,6 +138,7 @@ PHP_METHOD(RedisCluster, brpop);
 PHP_METHOD(RedisCluster, rpushx);
 PHP_METHOD(RedisCluster, lpushx);
 PHP_METHOD(RedisCluster, linsert);
+PHP_METHOD(RedisCluster, lindex);
 PHP_METHOD(RedisCluster, lrem);
 PHP_METHOD(RedisCluster, brpoplpush);
 PHP_METHOD(RedisCluster, rpoplpush);
