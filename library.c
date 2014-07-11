@@ -914,24 +914,37 @@ PHP_REDIS_API void redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
 PHP_REDIS_API void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
     char *response;
     int response_len;
-    char *pos, *cur;
-    char *key, *value, *p;
     int is_numeric;
-    zval *z_multi_result;
+    zval *z_ret;
 
+    /* Read bulk response */
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
     }
 
-    MAKE_STD_ZVAL(z_multi_result);
-    array_init(z_multi_result); /* pre-allocate array for multi's results. */
-    /* response :: [response_line]
-     * response_line :: key ':' value CRLF
-     */
+    /* Parse it into a zval array */
+    z_ret = redis_parse_info_response(response);
+
+    /* Free source response */
+    efree(response);
+
+    IF_MULTI_OR_PIPELINE() {
+        add_next_index_zval(z_tab, z_ret);
+    } else {
+        RETVAL_ZVAL(z_ret, 0, 1);
+    }
+}
+
+PHPAPI zval *redis_parse_info_response(char *response) {
+    zval *z_ret;
+    char *key, *value, *p, *cur, *pos;
+    int is_numeric;
+
+    MAKE_STD_ZVAL(z_ret);
+    array_init(z_ret);
 
     cur = response;
     while(1) {
-
         /* skip comments and empty lines */
         if(*cur == '#' || *cur == '\r') {
             if(!(cur = strchr(cur, '\n')))
@@ -970,20 +983,15 @@ PHP_REDIS_API void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
         }
 
         if(is_numeric == 1) {
-            add_assoc_long(z_multi_result, key, atol(value));
+            add_assoc_long(z_ret, key, atol(value));
             efree(value);
         } else {
-            add_assoc_string(z_multi_result, key, value, 0);
+            add_assoc_string(z_ret, key, value, 0);
         }
         efree(key);
     }
-    efree(response);
 
-    IF_MULTI_OR_PIPELINE() {
-        add_next_index_zval(z_tab, z_multi_result);
-    } else {
-        RETVAL_ZVAL(z_multi_result, 0, 1);
-    }
+    return z_ret;
 }
 
 /*
