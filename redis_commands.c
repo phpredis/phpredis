@@ -2398,6 +2398,60 @@ int redis_sdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         "SDIFFSTORE", sizeof("SDIFFSTORE")-1, 2, 0, cmd, cmd_len, slot);
 }
 
+/* ZRANGEBYLEX */
+int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                          char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key, *min, *max;
+    int key_len, min_len, max_len, key_free;
+    long offset, count;
+    int argc = ZEND_NUM_ARGS();
+
+    /* We need either 3 or 5 arguments for this to be valid */
+    if(argc != 3 && argc != 5) {
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "Must pass either 3 or 5 arguments");
+        return FAILURE;
+    }
+
+    if(zend_parse_parameters(argc TSRMLS_CC, "sss|ll", &key, 
+                             &key_len, &min, &min_len, &max, &max_len,
+                             &offset, &count)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    /* min and max must start with '(' or '[' */
+    if(min_len < 1 || max_len < 1 || (min[0] != '(' && min[0] != '[') ||
+       (max[0] != '(' && max[0] != '['))
+    {
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "min and max arguments must start with '[' or '('");
+        return FAILURE;
+    }
+
+    /* Prefix key */
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    /* Construct command */
+    if(argc == 3) {
+        *cmd_len = redis_cmd_format_static(cmd, "ZRANGEBYLEX", "sss", key,
+            key_len, min, min_len, max, max_len);
+    } else {
+        *cmd_len = redis_cmd_format_static(cmd, "ZRANGEBYLEX", "ssssll", key,
+            key_len, min, min_len, max, max_len, "LIMIT", sizeof("LIMIT")-1,
+            offset, count);
+    }
+
+    /* Pick our slot */
+    CMD_SET_SLOT(slot,key,key_len);
+
+    /* Free key if we prefixed */
+    if(key_free) efree(key);
+
+    return SUCCESS;
+}
+
 /*
  * Redis commands that don't deal with the server at all.  The RedisSock*
  * pointer is the only thing retreived differently, so we just take that

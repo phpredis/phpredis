@@ -2003,6 +2003,13 @@ PHP_METHOD(Redis, zRevRangeByScore) {
 }
 /* }}} */
 
+/* {{{ proto array Redis::zRangeByLex(string key, string min, string max, [
+ *                                    offset, limit]) */
+PHP_METHOD(Redis, zRangeByLex) {
+    REDIS_PROCESS_CMD(zrangebylex, redis_sock_read_multibulk_reply);
+}
+/* }}} */
+
 /* {{{ proto long Redis::zDelete(string key, string member) */
 PHP_METHOD(Redis, zDelete)
 {
