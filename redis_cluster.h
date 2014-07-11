@@ -252,6 +252,7 @@ PHP_METHOD(RedisCluster, lastsave);
 PHP_METHOD(RedisCluster, role);
 PHP_METHOD(RedisCluster, time);
 PHP_METHOD(RedisCluster, randomkey);
+PHP_METHOD(RedisCluster, ping);
 
 /* Introspection */
 PHP_METHOD(RedisCluster, getoption);

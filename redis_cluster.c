@@ -199,6 +199,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, role, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, time, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, randomkey, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, ping, NULL, ZEND_ACC_PUBLIC)
 
     {NULL, NULL, NULL}
 };
@@ -2257,6 +2258,14 @@ PHP_METHOD(RedisCluster, time) {
 PHP_METHOD(RedisCluster, randomkey) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "RANDOMKEY",
         TYPE_BULK, cluster_bulk_resp);
+}
+/* }}} */
+
+/* {{{ proto bool RedisCluster::ping(string key)
+ *     proto bool RedisCluster::ping(string host, long port) */
+PHP_METHOD(RedisCluster, ping) {
+    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PING",
+        TYPE_LINE, cluster_ping_resp);
 }
 /* }}} */
 
