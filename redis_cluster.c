@@ -165,7 +165,6 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, punsubscribe, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, eval, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, evalsha, NULL, ZEND_ACC_PUBLIC)
-
     PHP_ME(RedisCluster, scan, arginfo_scan, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sscan, arginfo_kscan, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
@@ -1674,10 +1673,19 @@ PHP_METHOD(RedisCluster, _unserialize) {
 /* {{{ proto array RedisCluster::_masters() */
 PHP_METHOD(RedisCluster, _masters) {
     redisCluster *c = GET_CONTEXT();
-    zval *z_ret;
+    zend_bool as_arr=0;
+    zval *z_ret, *z_sub;
     redisClusterNode **node;
-    char buf[1024];
+    char buf[1024], *host;
+    short port;
     size_t len;
+
+    // See if the user wants this as an array of host:port strings, or an array
+    // of [host, port] arrays.
+    if(!zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|b", &as_arr)==FAILURE) 
+    {
+        RETURN_FALSE;
+    }
 
     MAKE_STD_ZVAL(z_ret);
     array_init(z_ret);
@@ -1686,9 +1694,22 @@ PHP_METHOD(RedisCluster, _masters) {
         zend_hash_get_current_data(c->nodes, (void**)&node)==SUCCESS;
         zend_hash_move_forward(c->nodes))
     {
-        len = snprintf(buf, sizeof(buf), "%s:%d", (*node)->sock->host,
-            (*node)->sock->port);
-        add_next_index_stringl(z_ret, buf, (int)len, 1);
+        host = (*node)->sock->host;
+        port = (*node)->sock->port;
+
+        // What response type were we asked for
+        if(as_arr) {
+            MAKE_STD_ZVAL(z_sub);
+            array_init(z_sub);
+
+            add_next_index_stringl(z_sub, host, strlen(host), 1);
+            add_next_index_long(z_sub, port);
+
+            add_next_index_zval(z_ret, z_sub);
+        } else {
+            len = snprintf(buf, sizeof(buf), "%s:%d", host, port);
+            add_next_index_stringl(z_ret, buf, (int)len, 1);
+        }
     }
 
     *return_value = *z_ret;
@@ -2034,11 +2055,10 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 PHP_METHOD(RedisCluster, scan) {
     redisCluster *c = GET_CONTEXT();
     redisClusterNode **n;
-    char *cmd, *node, *pat=NULL, *key=NULL;
+    char *cmd, *node, *pat=NULL;
     int pat_len=0, node_len, cmd_len;
     short slot;
     zval *z_it;
-    HashTable *hash;
     long it, num_ele, count=0;
 
     /* Can't be in MULTI mode */
