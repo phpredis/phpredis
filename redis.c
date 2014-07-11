@@ -870,7 +870,6 @@ PHP_METHOD(Redis, randomKey)
 PHP_METHOD(Redis, echo)
 {
     REDIS_PROCESS_KW_CMD("ECHO", redis_str_cmd, redis_string_response);
-
 }
 /* }}} */
 

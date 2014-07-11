@@ -202,6 +202,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, time, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, randomkey, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, ping, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, echo, NULL, ZEND_ACC_PUBLIC)
 
     {NULL, NULL, NULL}
 };
@@ -1960,6 +1961,29 @@ PHP_METHOD(RedisCluster, discard) {
     RETURN_TRUE;
 }
 
+/* Get a slot either by key or host/port */
+static short
+cluster_cmd_get_slot(redisCluster *c, int by_key, char *arg1, int arg1_len, 
+                     long port) 
+{
+    short slot;
+    int key_free;
+
+    if(by_key) {
+        key_free = redis_key_prefix(c->flags, &arg1, &arg1_len);
+        slot = cluster_hash_key(arg1, arg1_len);
+        if(key_free) efree(arg1);
+    } else {
+        slot = cluster_find_slot(c,(const char *)arg1, (unsigned short)port);
+        if(slot<0) {
+            php_error_docref(0 TSRMLS_CC, E_WARNING, "Unknown node %s:%ld",
+                arg1, port);
+        }
+    }
+
+    return slot;
+}
+
 /* Generic handler for things we want directed at a given node, like SAVE,
  * BGSAVE, FLUSHDB, FLUSHALL, etc */
 static void 
@@ -1968,7 +1992,7 @@ cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
 {
     redisCluster *c = GET_CONTEXT();
     char *cmd, *arg1; 
-    int arg1_len, cmd_len, arg1_free; 
+    int arg1_len, cmd_len; 
     short slot;
     long arg2;
 
@@ -1980,19 +2004,9 @@ cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
 
     // One argument means find the node (treated like a key), and two means
     // send the command to a specific host and port
-    if(ZEND_NUM_ARGS() == 1) {
-        // Treat our argument like a key, and look for the slot that way
-        arg1_free = redis_key_prefix(c->flags, &arg1, &arg1_len);
-        slot = cluster_hash_key(arg1, arg1_len);
-        if(arg1_free) efree(arg1);        
-    } else {
-        // Find the slot by IP/port
-        slot = cluster_find_slot(c, (const char *)arg1, (unsigned short)arg2);
-        if(slot<0) {
-            php_error_docref(0 TSRMLS_CC, E_WARNING, "Unknown node %s:%ld", 
-                arg1, arg2);
-            RETURN_FALSE;
-        }
+    slot = cluster_cmd_get_slot(c, ZEND_NUM_ARGS()==1, arg1, arg1_len, arg2);
+    if(slot<0) {
+        RETURN_FALSE;
     }
 
     // Construct our command
@@ -2284,6 +2298,45 @@ PHP_METHOD(RedisCluster, randomkey) {
 PHP_METHOD(RedisCluster, ping) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PING",
         TYPE_LINE, cluster_ping_resp);
+}
+/* }}} */
+
+/* {{{ proto string RedisCluster::echo(string msg, string key)
+ *     proto string RedisCluster::echo(string msg, string host, long port) */
+PHP_METHOD(RedisCluster, echo) {
+    redisCluster *c = GET_CONTEXT();
+    char *cmd, *arg2, *msg;
+    int cmd_len, arg2_len, msg_len;
+    short slot;
+    long arg3;
+    
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss|l", &msg, &msg_len,
+                             &arg2, &arg2_len, &arg3)==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    /* Grab slot either by key or host/port */
+    slot = cluster_cmd_get_slot(c, ZEND_NUM_ARGS()==2, arg2, arg2_len, arg3);
+    if(slot<0) {
+        RETURN_FALSE;
+    }
+
+    /* Construct our command */
+    cmd_len = redis_cmd_format_static(&cmd, "ECHO", "s", msg, msg_len);
+
+    /* Send it off */
+    if(cluster_send_slot(c,slot,cmd,cmd_len,TYPE_BULK TSRMLS_CC)<0) {
+        zend_throw_exception(redis_cluster_exception_ce,
+            "Unable to send commnad at the specificed node", 0 TSRMLS_CC);
+        efree(cmd);
+        RETURN_FALSE;
+    }
+
+    /* Process bulk response */
+    cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+
+    efree(cmd);
 }
 /* }}} */
 

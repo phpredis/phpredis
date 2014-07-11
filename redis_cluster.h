@@ -243,7 +243,7 @@ PHP_METHOD(RedisCluster, discard);
 PHP_METHOD(RedisCluster, watch);
 PHP_METHOD(RedisCluster, unwatch);
 
-/* Commands we direct to a node, with no args */
+/* Commands we direct to a node */
 PHP_METHOD(RedisCluster, save);
 PHP_METHOD(RedisCluster, bgsave);
 PHP_METHOD(RedisCluster, flushdb);
@@ -255,6 +255,7 @@ PHP_METHOD(RedisCluster, role);
 PHP_METHOD(RedisCluster, time);
 PHP_METHOD(RedisCluster, randomkey);
 PHP_METHOD(RedisCluster, ping);
+PHP_METHOD(RedisCluster, echo);
 
 /* Introspection */
 PHP_METHOD(RedisCluster, getoption);
