@@ -132,7 +132,6 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
                     *err = 1;
                     return;
                 }
-                r->str = estrndup(buf,r->len);
                 break;
             case TYPE_INT:
                 r->integer = len;
