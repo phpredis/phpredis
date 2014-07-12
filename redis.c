@@ -261,6 +261,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, _unserialize, NULL, ZEND_ACC_PUBLIC)
 
      PHP_ME(Redis, client, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, command, NULL, ZEND_ACC_PUBLIC)
 
      /* SCAN and friends */
      PHP_ME(Redis, scan, arginfo_scan, ZEND_ACC_PUBLIC)
@@ -3717,6 +3718,14 @@ PHP_METHOD(Redis, client) {
         REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
     }
 }
+
+/* proto array Redis::command()
+ * proto array Redis::command('info', string cmd)
+ * proto array Redis::command('getkeys', array cmd_args) */
+PHP_METHOD(Redis, command) {
+    REDIS_PROCESS_CMD(command, redis_read_variant_reply);
+}
+/* }}} */
 
 /* Helper to format any combination of SCAN arguments */
 PHPAPI int
