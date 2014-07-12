@@ -195,6 +195,7 @@ PHP_METHOD(Redis, wait);
 PHP_METHOD(Redis, pubsub);
 
 PHP_METHOD(Redis, client);
+PHP_METHOD(Redis, command);
 
 /* SCAN and friends  */
 PHP_METHOD(Redis, scan);

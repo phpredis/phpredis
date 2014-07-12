@@ -2492,6 +2492,71 @@ int redis_sdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         "SDIFFSTORE", sizeof("SDIFFSTORE")-1, 2, 0, cmd, cmd_len, slot);
 }
 
+/* COMMAND */
+int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *kw=NULL;
+    zval *z_arg;
+    int kw_len;
+
+    /* Parse our args */
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|sz", &kw, &kw_len, 
+                             &z_arg)==FAILURE) 
+    {
+        return FAILURE;
+    }
+
+    /* Construct our command */
+    if(!kw) {
+        *cmd_len = redis_cmd_format_static(cmd, "COMMAND", "");
+    } else if(kw && !z_arg) {
+        /* Sanity check */
+        if(strncasecmp(kw, "info", sizeof("info")-1) || 
+           Z_TYPE_P(z_arg)!=IS_STRING)
+        {
+            return FAILURE;
+        }
+
+        /* COMMAND INFO <cmd> */
+        *cmd_len = redis_cmd_format_static(cmd, "COMMAND", "ss", "INFO",
+            sizeof("INFO")-1, Z_STRVAL_P(z_arg), Z_STRLEN_P(z_arg));
+    } else {
+        int arr_len;
+
+        /* Sanity check on args */
+        if(strncasecmp(kw, "getkeys", sizeof("getkeys")-1) ||
+           Z_TYPE_P(z_arg)!=IS_ARRAY || 
+           (arr_len=zend_hash_num_elements(Z_ARRVAL_P(z_arg)))<1)
+        {
+            return FAILURE;
+        }
+        
+        zval **z_ele;
+        HashTable *ht_arr = Z_ARRVAL_P(z_arg);
+        smart_str cmdstr = {0};
+
+        redis_cmd_init_sstr(&cmdstr, 1 + arr_len, "COMMAND", sizeof("COMMAND")-1);
+        redis_cmd_append_sstr(&cmdstr, "GETKEYS", sizeof("GETKEYS")-1);
+
+        for(zend_hash_internal_pointer_reset(ht_arr);
+            zend_hash_get_current_data(ht_arr, (void**)&z_ele)==SUCCESS;
+            zend_hash_move_forward(ht_arr))
+        {
+            convert_to_string(*z_ele);
+            redis_cmd_append_sstr(&cmdstr, Z_STRVAL_PP(z_ele), Z_STRLEN_PP(z_ele));
+        }
+
+        *cmd = cmdstr.c;
+        *cmd_len = cmdstr.len;
+    }
+
+    /* Any slot will do */
+    CMD_RAND_SLOT(slot);
+
+    return SUCCESS;
+}
+
 /*
  * Redis commands that don't deal with the server at all.  The RedisSock*
  * pointer is the only thing retreived differently, so we just take that
