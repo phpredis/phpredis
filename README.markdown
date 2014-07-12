@@ -3011,11 +3011,11 @@ _**Description**_: Watches a key for modifications by another client.
 If the key is modified between `WATCH` and `EXEC`, the MULTI/EXEC transaction will fail (return `FALSE`). `unwatch` cancels all the watching of all keys by this client.
 
 ##### *Parameters*
-*keys*: a list of keys
+*keys*: string for one key or array for a list of keys
 
 ##### *Example*
 ~~~
-$redis->watch('x');
+$redis->watch('x'); // or for a list of keys: $redis->watch(array('x','another key'));
 /* long code here during the execution of which other clients could well modify `x` */
 $ret = $redis->multi()
     ->incr('x')
