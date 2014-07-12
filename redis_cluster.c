@@ -204,7 +204,12 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, ping, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, echo, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, command, NULL, ZEND_ACC_PUBLIC)
-
+    PHP_ME(RedisCluster, cluster, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, client, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, config, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, pubsub, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, script, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, slowlog, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -2031,6 +2036,72 @@ cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
     efree(cmd);
 }
 
+/* Generic routine for handling various commands which need to be directed at
+ * a node, but have complex syntax.  We simply parse out the arguments and send
+ * the command as constructed by the caller */
+static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) 
+{
+    redisCluster *c = GET_CONTEXT();
+    smart_str cmd = {0};
+    zval **z_args;
+    short slot;
+    int cmd_len;
+    int i, argc = ZEND_NUM_ARGS();
+
+    /* Commands using this pass-thru don't need to be enabled in MULTI mode */
+    if(!CLUSTER_IS_ATOMIC(c)) {
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "Command can't be issued in MULTI mode");
+        RETURN_FALSE;
+    }
+
+    /* We at least need the key or [host,port] argument */
+    if(argc<1) {
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "Command requires at least an argument to direct to a node");
+        RETURN_FALSE;
+    }
+
+    /* Allocate an array to process arguments */
+    z_args = emalloc(argc * sizeof(zval*));
+
+    /* Grab args */
+    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
+        efree(z_args);
+        RETURN_FALSE;
+    }
+
+    /* First argument needs to be the "where" */
+    if((slot = cluster_cmd_get_slot(c, z_args[0]))<0) {
+        RETURN_FALSE;
+    }
+
+    /* Initialize our command */
+    redis_cmd_init_sstr(&cmd, argc-1, kw, kw_len);
+
+    /* Iterate, appending args */
+    for(i=1;i<argc;i++) {
+        convert_to_string(z_args[i]);
+        redis_cmd_append_sstr(&cmd, Z_STRVAL_P(z_args[i]), 
+            Z_STRLEN_P(z_args[i]));
+    }
+
+    /* Send it off */
+    if(cluster_send_slot(c, slot, cmd.c, cmd.len, TYPE_EOF TSRMLS_CC)<0) {
+        zend_throw_exception(redis_cluster_exception_ce,
+            "Couldn't send command to node", 0 TSRMLS_CC);
+        efree(cmd.c);
+        efree(z_args);
+        RETURN_FALSE;
+    }
+
+    /* Read the response variant */
+    cluster_variant_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+
+    efree(cmd.c);
+    efree(z_args);
+}
+
 /* Generic method for HSCAN, SSCAN, and ZSCAN */
 static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS, 
                               REDIS_SCAN_TYPE type)
@@ -2259,7 +2330,7 @@ PHP_METHOD(RedisCluster, bgrewriteaof) {
 /* }}} */
 
 /* {{{ proto RedisCluster::lastsave(string key)
- *     proto RedisCluster::lastsave(string host, long port) */
+ *     proto RedisCluster::lastsave(array $host_port) */
 PHP_METHOD(RedisCluster, lastsave) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "LASTSAVE",
         TYPE_INT, cluster_long_resp);
@@ -2267,22 +2338,70 @@ PHP_METHOD(RedisCluster, lastsave) {
 /* }}} */
 
 /* {{{ proto array RedisCluster::info(string key)
- *     proto array RedisCluster::info(string host, long port) */
+ *     proto array RedisCluster::info(array host_port) */
 PHP_METHOD(RedisCluster, info) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INFO",
         TYPE_BULK, cluster_info_resp);
 }
 /* }}} */
 
+/* {{{ proto mixed RedisCluster::cluster(variant) */
+PHP_METHOD(RedisCluster, cluster) {
+    cluster_raw_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "CLUSTER", 
+        sizeof("CLUSTER")-1);
+}
+/* }}} */
+
+/* {{{ proto mixed RedisCluster::client(string key, ...)
+ *     proto mixed RedisCluster::client(array host_port, ...) */
+PHP_METHOD(RedisCluster, client) {
+    cluster_raw_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "CLIENT", 
+        sizeof("CLIENT")-1);
+}
+/* }}} */
+
+/* {{{ proto mixed RedisCluster::config(string key, ...) 
+ *     proto mixed RedisCluster::config(array host_port, ...) */
+PHP_METHOD(RedisCluster, config) {
+    cluster_raw_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "CONFIG",
+        sizeof("CONFIG")-1);
+}
+/* }}} */
+
+/* {{{ proto mixed RedisCluster::pubsub(string key, ...)
+ *     proto mixed RedisCluster::pubsub(array host_port, ...) */
+PHP_METHOD(RedisCluster, pubsub) {
+    cluster_raw_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PUBSUB",
+        sizeof("PUBSUB")-1);
+}
+/* }}} */
+
+/* {{{ proto mixed RedisCluster::script(string key, ...) 
+ *     proto mixed RedisCluster::script(array host_port, ...) */
+PHP_METHOD(RedisCluster, script) {
+    cluster_raw_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SCRIPT",
+        sizeof("SCRIPT")-1);
+}
+/* }}} */
+
+/* {{{ proto mixed RedisCluster::slowlog(string key, ...)
+ *     proto mixed RedisCluster::slowlog(array host_port, ...) */
+PHP_METHOD(RedisCluster, slowlog) {
+    cluster_raw_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SLOWLOG",
+        sizeof("SLOWLOG")-1);
+}
+/* }}} */
+
+
 /* {{{ proto array RedisCluster::role(string key)
- *     proto array RedisCluster::role(string host, long port) */
+ *     proto array RedisCluster::role(array host_port) */
 PHP_METHOD(RedisCluster, role) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ROLE",
         TYPE_MULTIBULK, cluster_variant_resp);
 }
 
 /* {{{ proto array RedisCluster::time(string key)
- *     proto array RedisCluster::time(string host, long port */
+ *     proto array RedisCluster::time(array host_port) */
 PHP_METHOD(RedisCluster, time) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "TIME",
         TYPE_MULTIBULK, cluster_variant_resp);
@@ -2290,7 +2409,7 @@ PHP_METHOD(RedisCluster, time) {
 /* }}} */
 
 /* {{{ proto string RedisCluster::randomkey(string key)
- *     proto string RedisCluster::randomkey(string host, long port) */
+ *     proto string RedisCluster::randomkey(array host_port) */
 PHP_METHOD(RedisCluster, randomkey) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "RANDOMKEY",
         TYPE_BULK, cluster_bulk_resp);
@@ -2298,15 +2417,15 @@ PHP_METHOD(RedisCluster, randomkey) {
 /* }}} */
 
 /* {{{ proto bool RedisCluster::ping(string key)
- *     proto bool RedisCluster::ping(string host, long port) */
+ *     proto bool RedisCluster::ping(array host_port) */
 PHP_METHOD(RedisCluster, ping) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PING",
         TYPE_LINE, cluster_ping_resp);
 }
 /* }}} */
 
-/* {{{ proto string RedisCluster::echo(mixed node, string msg)
- *     proto string RedisCluster::echo(mixed node, string msg) */
+/* {{{ proto string RedisCluster::echo(string key, string msg)
+ *     proto string RedisCluster::echo(array host_port, string msg) */
 PHP_METHOD(RedisCluster, echo) {
     redisCluster *c = GET_CONTEXT();
     zval *z_arg;
