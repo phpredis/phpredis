@@ -229,6 +229,12 @@ PHP_METHOD(RedisCluster, punsubscribe);
 PHP_METHOD(RedisCluster, eval);
 PHP_METHOD(RedisCluster, evalsha);
 PHP_METHOD(RedisCluster, info);
+PHP_METHOD(RedisCluster, cluster);
+PHP_METHOD(RedisCluster, client);
+PHP_METHOD(RedisCluster, config);
+PHP_METHOD(RedisCluster, pubsub);
+PHP_METHOD(RedisCluster, script);
+PHP_METHOD(RedisCluster, slowlog);
 
 /* SCAN and friends */
 PHP_METHOD(RedisCluster, scan);
