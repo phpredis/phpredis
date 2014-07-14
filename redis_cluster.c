@@ -2189,11 +2189,10 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 /* {{{ proto RedisCluster::scan(string master, long it [, string pat, long cnt]) */
 PHP_METHOD(RedisCluster, scan) {
     redisCluster *c = GET_CONTEXT();
-    redisClusterNode **n;
-    char *cmd, *node, *pat=NULL;
+    char *cmd, *pat=NULL;
     int pat_len=0, node_len, cmd_len;
     short slot;
-    zval *z_it;
+    zval *z_it, *z_node;
     long it, num_ele, count=0;
 
     /* Can't be in MULTI mode */
@@ -2204,8 +2203,8 @@ PHP_METHOD(RedisCluster, scan) {
     }
 
     /* Parse arguments */
-    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z/s|s!l", &z_it, &node, 
-                             &node_len, &pat, &pat_len, &count)==FAILURE)
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z/z|s!l", &z_it, 
+                             &z_node, &pat, &pat_len, &count)==FAILURE)
     {
         RETURN_FALSE;
     }
@@ -2226,17 +2225,12 @@ PHP_METHOD(RedisCluster, scan) {
         /* Construct our command */
         cmd_len = redis_fmt_scan_cmd(&cmd, TYPE_SCAN, NULL, 0, it, pat, pat_len,
             count);
-        
-        /* Find this slot by node */
-        if(zend_hash_find(c->nodes, node, node_len+1, (void**)&n)==FAILURE) {
-            zend_throw_exception(redis_cluster_exception_ce, 
-                "Unknown host:port passed to SCAN command", 0 TSRMLS_CC);
-            efree(cmd);
-            RETURN_FALSE;
+       
+        if((slot = cluster_cmd_get_slot(c, z_node))<0) {
+           RETURN_FALSE;
         }
 
         // Send it to the node in question
-        slot = (*n)->slot;
         if(cluster_send_command(c, slot, cmd, cmd_len TSRMLS_CC)<0) 
         {
             zend_throw_exception(redis_cluster_exception_ce,
