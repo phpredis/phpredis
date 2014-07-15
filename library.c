@@ -157,8 +157,10 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
                 redis_sock->status = REDIS_SOCK_STATUS_FAILED;
                 redis_sock->watching = 0;
             }
-            zend_throw_exception(redis_exception_ce, "Connection lost", 
-                0 TSRMLS_CC);
+            if(!no_throw) {
+                zend_throw_exception(redis_exception_ce, "Connection lost", 
+                    0 TSRMLS_CC);
+            }
         return -1;
     }
     if(redis_sock->stream) { /* close existing stream before reconnecting */
@@ -416,7 +418,7 @@ redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
     int numElems;
     zval *z_tab;
 
-    if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
+    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return NULL;
     }
 
@@ -455,7 +457,7 @@ PHP_REDIS_API char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes 
 
     char * reply;
 
-    if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
+    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return NULL;
     }
 
@@ -496,7 +498,7 @@ PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_D
     char *resp = NULL;
     size_t err_len;
 
-    if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
+    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return NULL;
     }
 
@@ -1235,7 +1237,7 @@ redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PARAMETERS,
     int numElems;
     zval *z_multi_result;
 
-    if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
+    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return -1;
     }
     if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
@@ -1717,7 +1719,7 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
     int numElems;
     zval *z_multi_result;
 
-    if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
+    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return -1;
     }
     if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
@@ -1774,7 +1776,7 @@ PHPAPI int redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS,
     int numElems;
     zval *z_multi_result;
 
-    if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
+    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return -1;
     }
     if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
@@ -1898,7 +1900,7 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS,
 
     zval **z_keys = ctx;
 
-    if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
+    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return -1;
     }
     if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
@@ -1970,7 +1972,7 @@ PHPAPI int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz
             0 TSRMLS_CC);
         return -1;
     }
-    if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
+    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return -1;
     }
     return php_stream_write(redis_sock->stream, cmd, sz);
@@ -2159,7 +2161,7 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size,
                 size_t *line_size TSRMLS_DC) 
 {
     // Handle EOF
-    if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
+    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return -1;
     }
 
@@ -2191,7 +2193,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
                       int *reply_info TSRMLS_DC) 
 {
     // Make sure we haven't lost the connection, even trying to reconnect
-    if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
+    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         // Failure
         return -1;
     }

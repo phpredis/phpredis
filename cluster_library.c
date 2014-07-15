@@ -28,6 +28,18 @@ static void cluster_dump_nodes(redisCluster *c) {
     }
 }
 
+static void cluster_log(char *fmt, ...)
+{
+    va_list args;
+    char buffer[1024];
+
+    va_start(args, fmt);
+    vsnprintf(buffer,sizeof(buffer),fmt,args);
+    va_end(args);
+
+    fprintf(stderr, "%s\n", buffer);
+}
+
 /* Direct handling of variant replies, in a hiredis like way.  These methods
  * are used for non userland facing commands, as well as passed through from 
  * them when the reply is just variant (e.g. eval) */
@@ -710,7 +722,7 @@ static int cluster_send_asking(RedisSock *redis_sock TSRMLS_DC)
     char buf[255];
 
     // Make sure we can send the request
-    if(redis_check_eof(redis_sock TSRMLS_DC) ||
+    if(redis_check_eof(redis_sock, 1 TSRMLS_DC) ||
        php_stream_write(redis_sock->stream, RESP_ASKING_CMD, 
                         sizeof(RESP_ASKING_CMD)-1) != sizeof(RESP_ASKING_CMD)-1)
     {
@@ -718,7 +730,7 @@ static int cluster_send_asking(RedisSock *redis_sock TSRMLS_DC)
     }
 
     // Read our reply type
-    if((redis_check_eof(redis_sock TSRMLS_CC) == - 1) ||
+    if((redis_check_eof(redis_sock, 1 TSRMLS_CC) == - 1) ||
        (reply_type = php_stream_getc(redis_sock->stream TSRMLS_DC) 
                                      != TYPE_LINE))
     {
@@ -906,7 +918,7 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
     CLUSTER_CLEAR_ERROR(c);
     CLUSTER_CLEAR_REPLY(c);    
 
-    if(-1 == redis_check_eof(SLOT_SOCK(c,slot)) ||
+    if(-1 == redis_check_eof(SLOT_SOCK(c,slot), 1 TSRMLS_CC) ||
        EOF == (*reply_type = php_stream_getc(SLOT_STREAM(c,slot)))) 
     {
         return -1;
@@ -998,7 +1010,7 @@ static int cluster_sock_write(redisCluster *c, unsigned short slot,
 
     // First attempt to write it to the slot that's been requested
     if(redis_sock && redis_sock->stream && 
-       !redis_check_eof(redis_sock TSRMLS_CC) &&
+       !redis_check_eof(redis_sock, 1 TSRMLS_CC) &&
        php_stream_write(redis_sock->stream, cmd, sz)==sz)
     {
         // We were able to write it
@@ -1022,7 +1034,7 @@ static int cluster_sock_write(redisCluster *c, unsigned short slot,
         CLUSTER_LAZY_CONNECT((*seed_node)->sock);
 
         // Attempt to write our request to this node
-        if(!redis_check_eof((*seed_node)->sock TSRMLS_CC) &&
+        if(!redis_check_eof((*seed_node)->sock, 1 TSRMLS_CC) &&
            php_stream_write((*seed_node)->sock->stream, cmd, sz)==sz)
         {
             // Just return the first slot we think this node handles
