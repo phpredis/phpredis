@@ -826,7 +826,7 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
 PHPAPI int
 cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
     RedisSock **seed;
-    clusterReply *slots;
+    clusterReply *slots=NULL;
     int mapped=0;
 
     // Iterate over seeds until we can get slots
