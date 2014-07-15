@@ -2378,7 +2378,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAME
     int numElems;
     zval *z_tab;
 
-    redis_check_eof(redis_sock TSRMLS_CC);
+    redis_check_eof(redis_sock, 0 TSRMLS_CC);
 
     php_stream_gets(redis_sock->stream, inbuf, 1024);
     if(inbuf[0] != '*') {
