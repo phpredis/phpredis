@@ -1,6 +1,8 @@
 #include "php.h"
 #include "php_ini.h"
 #include <ext/standard/php_smart_str.h>
+#include <ext/standard/streamsfuncs.h>
+#include <ext/standard/file.h>
 
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
