@@ -1095,7 +1095,7 @@ PHP_REDIS_API void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
  */
 PHP_REDIS_API RedisSock* redis_sock_create(char *host, int host_len, unsigned short port,
                                     double timeout, int persistent, char *persistent_id,
-                                    long retry_interval, php_stream_context *context
+                                    long retry_interval, php_stream_context *context,
                                     zend_bool lazy_connect)
 {
     RedisSock *redis_sock;
