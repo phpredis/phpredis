@@ -1095,7 +1095,7 @@ PHP_REDIS_API void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
  */
 PHP_REDIS_API RedisSock* redis_sock_create(char *host, int host_len, unsigned short port,
                                     double timeout, int persistent, char *persistent_id,
-                                    long retry_interval,
+                                    long retry_interval, php_stream_context *context
                                     zend_bool lazy_connect)
 {
     RedisSock *redis_sock;
@@ -1109,7 +1109,8 @@ PHP_REDIS_API RedisSock* redis_sock_create(char *host, int host_len, unsigned sh
     redis_sock->retry_interval = retry_interval * 1000;
     redis_sock->persistent = persistent;
     redis_sock->lazy_connect = lazy_connect;
-
+	redis_sock->context=context;
+	
     if(persistent_id) {
 		size_t persistent_id_len = strlen(persistent_id);
         redis_sock->persistent_id = ecalloc(persistent_id_len + 1, 1);
@@ -1183,7 +1184,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     redis_sock->stream = php_stream_xport_create(host, host_len, ENFORCE_SAFE_MODE,
 							 STREAM_XPORT_CLIENT
 							 | STREAM_XPORT_CONNECT,
-							 persistent_id, tv_ptr, NULL, &errstr, &err
+							 persistent_id, tv_ptr, redis_sock->context, &errstr, &err
 							);
 
     if (persistent_id) {

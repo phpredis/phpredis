@@ -206,7 +206,8 @@ typedef struct {
     int            persistent;
     int            watching;
     char           *persistent_id;
-
+	php_stream_context *context;
+	
     int            serializer;
     long           dbNumber;
 

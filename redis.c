@@ -648,17 +648,20 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 	int persistent_id_len = -1;
 	
 	double timeout = 0.0;
+
 	RedisSock *redis_sock  = NULL;
+	zval *zcontext = NULL;
+	php_stream_context *context = NULL;
 
 #ifdef ZTS
 	/* not sure how in threaded mode this works so disabled persistents at first */
     persistent = 0;
 #endif
 
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|ldsl",
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|ldslr",
 				&object, redis_ce, &host, &host_len, &port,
 				&timeout, &persistent_id, &persistent_id_len,
-				&retry_interval) == FAILURE) {
+				&retry_interval,&zcontext) == FAILURE) {
 		return FAILURE;
 	}
 
@@ -686,8 +689,10 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 			zend_list_delete(Z_LVAL_PP(socket)); /* the refcount should be decreased and the detructor called */
 		}
 	}
-
-	redis_sock = redis_sock_create(host, host_len, port, timeout, persistent, persistent_id, retry_interval, 0);
+	
+	context = php_stream_context_from_zval(zcontext, PHP_STREAM_CLIENT_CONNECT & PHP_FILE_NO_DEFAULT_CONTEXT);
+	
+	redis_sock = redis_sock_create(host, host_len, port, timeout, persistent, persistent_id, retry_interval, context, 0);
 
 	if (redis_sock_server_open(redis_sock, 1 TSRMLS_CC) < 0) {
 		redis_free_socket(redis_sock);
