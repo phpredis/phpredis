@@ -685,7 +685,10 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
             if(!VALIDATE_SLOTS_INNER(r3)) {
                 return -1;
             }
-           
+          
+            // Skip slaves where the host is ""
+            if(r3->element[0]->len == 0) continue;
+
             // Attach this node to our slave 
             slave = cluster_node_create(c, r3->element[0]->str, 
                 (int)r3->element[0]->len, 
