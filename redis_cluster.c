@@ -176,14 +176,17 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hscan, arginfo_kscan, ZEND_ACC_PUBLIC)
     
+    PHP_ME(RedisCluster, getlasterror, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, clearlasterror, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, getoption, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, setoption, NULL, ZEND_ACC_PUBLIC)
-
+    
     PHP_ME(RedisCluster, _prefix, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _serialize, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _unserialize, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _masters, NULL, ZEND_ACC_PUBLIC)
-    
+    PHP_ME(RedisCluster, _redir, NULL, ZEND_ACC_PUBLIC)
+
     PHP_ME(RedisCluster, multi, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, exec, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, discard, NULL, ZEND_ACC_PUBLIC)
@@ -260,7 +263,7 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
     // Allocate our actual struct
     cluster = emalloc(sizeof(redisCluster));
     memset(cluster, 0, sizeof(redisCluster));
-
+    
     // We're not currently subscribed anywhere
     cluster->subscribed_slot = -1;
 
@@ -1688,6 +1691,32 @@ PHP_METHOD(RedisCluster, evalsha) {
 /* Commands that do not interact with Redis, but just report stuff about
  * various options, etc */
 
+/* {{{ proto string RedisCluster::getlasterror() */
+PHP_METHOD(RedisCluster, getlasterror) {
+    redisCluster *c = GET_CONTEXT();
+
+    if(c->flags->err != NULL && c->flags->err_len > 0) {
+        RETURN_STRINGL(c->flags->err, c->flags->err_len, 1);
+    } else {
+        RETURN_NULL();
+    }
+}
+/* }}} */
+
+/* {{{ proto bool RedisCluster::clearlasterror() */
+PHP_METHOD(RedisCluster, clearlasterror) {
+    redisCluster *c = GET_CONTEXT();
+
+    if(c->flags->err) {
+        efree(c->flags->err);
+    }
+    c->flags->err = NULL;
+    c->flags->err_len = 0;
+
+    RETURN_TRUE;
+}
+/* }}} */
+
 /* {{{ proto long RedisCluster::getOption(long option */
 PHP_METHOD(RedisCluster, getoption) {
     redis_getoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
@@ -1751,6 +1780,19 @@ PHP_METHOD(RedisCluster, _masters) {
 
     *return_value = *z_ret;
     efree(z_ret);
+}
+
+PHP_METHOD(RedisCluster, _redir) {
+    redisCluster *c = GET_CONTEXT();
+    char buf[255];
+    size_t len;
+
+    len = snprintf(buf, sizeof(buf), "%s:%d", c->redir_host, c->redir_port);
+    if(c->redir_host && c->redir_host_len) {
+        RETURN_STRINGL(buf, len, 1);
+    } else {
+        RETURN_NULL();
+    }
 }
 
 /*
@@ -2045,7 +2087,6 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     smart_str cmd = {0};
     zval **z_args;
     short slot;
-    int cmd_len;
     int i, argc = ZEND_NUM_ARGS();
 
     /* Commands using this pass-thru don't need to be enabled in MULTI mode */
@@ -2190,7 +2231,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 PHP_METHOD(RedisCluster, scan) {
     redisCluster *c = GET_CONTEXT();
     char *cmd, *pat=NULL;
-    int pat_len=0, node_len, cmd_len;
+    int pat_len=0, cmd_len;
     short slot;
     zval *z_it, *z_node;
     long it, num_ele, count=0;

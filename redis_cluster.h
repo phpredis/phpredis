@@ -265,11 +265,14 @@ PHP_METHOD(RedisCluster, echo);
 PHP_METHOD(RedisCluster, command);
 
 /* Introspection */
+PHP_METHOD(RedisCluster, getlasterror);
+PHP_METHOD(RedisCluster, clearlasterror);
 PHP_METHOD(RedisCluster, getoption);
 PHP_METHOD(RedisCluster, setoption);
 PHP_METHOD(RedisCluster, _prefix);
 PHP_METHOD(RedisCluster, _serialize);
 PHP_METHOD(RedisCluster, _unserialize);
 PHP_METHOD(RedisCluster, _masters);
+PHP_METHOD(RedisCluster, _redir);
 
 #endif
