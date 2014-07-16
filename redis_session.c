@@ -277,9 +277,9 @@ PS_OPEN_FUNC(redis)
 			}
 
             if(url->host) {
-                    redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, persistent, persistent_id, retry_interval, 0);
+                    redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, persistent, persistent_id, retry_interval,NULL, 0);
             } else { /* unix */
-                    redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, persistent, persistent_id, retry_interval, 0);
+                    redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, persistent, persistent_id, retry_interval,NULL, 0);
             }
 			redis_pool_add(pool, redis_sock, weight, database, prefix, auth TSRMLS_CC);
 
