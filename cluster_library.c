@@ -372,6 +372,13 @@ void cluster_multi_fini(clusterMultiCmd *mc) {
 static void cluster_set_err(redisCluster *c, char *err, int err_len)
 {
     if(err && err_len>0) {
+        if(err_len >= sizeof("CLUSTERDOWN")-1 &&
+           !memcmp(err, "CLUSTERDOWN", sizeof("CLUSTERDOWN")-1))
+        {
+            c->clusterdown = 1;
+            return;
+        }
+
         if(c->err == NULL) {
             c->err = emalloc(err_len+1);
         } else if(err_len > c->err_len) {
@@ -380,8 +387,6 @@ static void cluster_set_err(redisCluster *c, char *err, int err_len)
         memcpy(c->err,err,err_len);
         c->err[err_len]='\0';
         c->err_len = err_len;
-php_printf("Set error to: %s\n", c->err);
-
     } else {
         if(c->err) efree(c->err);
         c->err = NULL;
@@ -1280,13 +1285,8 @@ PHPAPI short cluster_send_command(redisCluster *c, short slot, const char *cmd,
         // Check the response from the slot we ended up querying.
         resp = cluster_check_response(c, slot, &c->reply_type TSRMLS_CC);
 
-        // If we're getting an error condition, impose a slight delay before
-        // we try again (e.g. server went down, election in process).  If the
-        // data has been moved, update node configuration, and if ASK has been
-        // encountered, we'll just try again at that slot.
-        if(resp == -1) {
-            sleep(1);
-        } else if(resp == 1) {
+        /* Handle MOVED or ASKING redirection */
+        if(resp == 1) {
             // If we get a MOVED response inside of a transaction, we have to
             // abort, because the transaction would be invalid.
             if(c->flags->mode == MULTI) {
@@ -1302,7 +1302,14 @@ PHPAPI short cluster_send_command(redisCluster *c, short slot, const char *cmd,
             }
             slot = c->redir_slot;
         }
-    } while(resp != 0);
+    } while(resp != 0 && !c->clusterdown);
+
+    // If we've detected the cluster is down, throw an exception
+    if(c->clusterdown) {
+        zend_throw_exception(redis_cluster_exception_ce,
+            "The Redis Cluster is down (CLUSTERDOWN)", 0 TSRMLS_CC);
+        return -1;
+    }
 
     // Inform the cluster where to read the rest of our response,
     // and clear out redirection flag.
