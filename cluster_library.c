@@ -380,6 +380,8 @@ static void cluster_set_err(redisCluster *c, char *err, int err_len)
         memcpy(c->err,err,err_len);
         c->err[err_len]='\0';
         c->err_len = err_len;
+php_printf("Set error to: %s\n", c->err);
+
     } else {
         if(c->err) efree(c->err);
         c->err = NULL;
