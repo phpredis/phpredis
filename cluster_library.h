@@ -74,7 +74,8 @@
         efree(c->err); \
         c->err = NULL; \
         c->err_len = 0; \
-    }
+    } \
+    c->clusterdown = 0;
 
 /* Reset our last single line reply buffer and length */
 #define CLUSTER_CLEAR_REPLY(c) \
@@ -195,8 +196,8 @@ typedef struct redisCluster {
     /* Variable to store MULTI response */
     zval *multi_resp;
 
-    /* How many failures have we had in a row */
-    int failures;
+    /* Flag for when we get a CLUSTERDOWN error */
+    short clusterdown;
 
     /* The last ERROR we encountered */
     char *err;

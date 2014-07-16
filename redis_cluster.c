@@ -267,6 +267,9 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
     // We're not currently subscribed anywhere
     cluster->subscribed_slot = -1;
 
+    // Assume we're up initially
+    cluster->clusterdown = 0;
+
     // Allocate our RedisSock we'll use to store prefix/serialization flags
     cluster->flags = ecalloc(1, sizeof(RedisSock));
 
