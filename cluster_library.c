@@ -1035,7 +1035,11 @@ static int cluster_sock_write(redisCluster *c, unsigned short slot,
         zend_hash_has_more_elements(c->nodes)==SUCCESS;
         zend_hash_move_forward(c->nodes))
     {
+        /* Grab node */
         zend_hash_get_current_data(c->nodes, (void**)&seed_node);
+
+        /* Skip this node if it's the one that failed */
+        if((*seed_node)->sock == redis_sock) continue;
 
         // TODO:  Allow for failure/redirection queries to be sent
         //        to slave nodes, but for now, stick with masters.
