@@ -1089,6 +1089,67 @@ PHP_REDIS_API void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
 	}
 }
 
+/* Response for DEBUG object which is a formatted single line reply */
+PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
+                                        zval *z_tab, void *ctx)
+{
+    char *resp, *p, *p2, *p3, *p4;
+    int is_numeric,  resp_len;
+    zval *z_result;
+
+    /* Add or return false if we can't read from the socket */
+    if((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC))==NULL) {
+        IF_MULTI_OR_PIPELINE() {
+            add_next_index_bool(z_tab, 0);
+            return;
+        }
+        RETURN_FALSE;
+    }
+
+    MAKE_STD_ZVAL(z_result);
+    array_init(z_result);
+
+    /* Skip the '+' */
+    p = resp + 1;
+
+    /* <info>:<value> <info2:value2> ... */
+    while((p2 = strchr(p, ':'))!=NULL) {
+        /* Null terminate at the ':' */
+        *p2++ = '\0';
+       
+        /* Null terminate at the space if we have one */
+        if((p3 = strchr(p2, ' '))!=NULL) {
+            *p3++ = '\0';
+        } else {
+            p3 = resp + resp_len;
+        }
+
+        is_numeric = 1;
+        for(p4=p2; *p4; ++p4) {
+            if(*p4 < '0' || *p4 > '9') {
+                is_numeric = 0;
+                break;
+            }
+        }
+
+        /* Add our value */
+        if(is_numeric) {
+            add_assoc_long(z_result, p, atol(p2));
+        } else {
+            add_assoc_string(z_result, p, p2, 1);
+        }
+   
+        p = p3;
+    }
+
+    efree(resp);
+
+    IF_MULTI_OR_PIPELINE() {
+        add_next_index_zval(z_tab, z_result);
+    } else {
+        RETVAL_ZVAL(z_result, 0, 1);
+    }
+}
 
 /**
  * redis_sock_create

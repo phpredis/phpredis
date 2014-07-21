@@ -134,6 +134,7 @@ PHP_METHOD(Redis, bitpos);
 PHP_METHOD(Redis, eval);
 PHP_METHOD(Redis, evalsha);
 PHP_METHOD(Redis, script);
+PHP_METHOD(Redis, debug);
 PHP_METHOD(Redis, dump);
 PHP_METHOD(Redis, restore);
 PHP_METHOD(Redis, migrate);
