@@ -240,6 +240,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, evalsha, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, script, NULL, ZEND_ACC_PUBLIC)
 
+     PHP_ME(Redis, debug, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dump, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, restore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, migrate, NULL, ZEND_ACC_PUBLIC)
@@ -6567,6 +6568,37 @@ PHP_METHOD(Redis, dump) {
 		redis_ping_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
 	REDIS_PROCESS_RESPONSE(redis_ping_response);
+}
+
+/* {{{ proto Redis::DEBUG(string key) */
+PHP_METHOD(Redis, debug) {
+    zval *object;
+    RedisSock *redis_sock;
+    char *cmd, *key;
+    int cmd_len, key_len, key_free;
+
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os", 
+                                    &object, redis_ce, &key, &key_len)==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    /* Grab our socket */
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0)<0) {
+        RETURN_FALSE;
+    }
+
+    /* Prefix key, format command */
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+    cmd_len = redis_cmd_format_static(&cmd, "DEBUG", "ss", "OBJECT", sizeof("OBJECT")-1, key, key_len);
+    if(key_free) efree(key);
+
+    /* Kick it off */
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+        redis_debug_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_debug_response);
 }
 
 /*

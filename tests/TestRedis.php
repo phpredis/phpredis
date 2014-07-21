@@ -4237,6 +4237,12 @@ class Redis_Test extends TestSuite
 	    $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE);		// get ok
     }
 
+    public function testDebug() {
+        $this->redis->set('foo', 0);
+        $arr_info = $this->redis->debug('foo');
+        $this->assertTrue(isset($arr_info['encoding']) && $arr_info['encoding']=='int');
+    }
+
     public function testDumpRestore() {
 
 		if (version_compare($this->version, "2.5.0", "lt")) {
