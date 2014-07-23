@@ -325,9 +325,9 @@ void free_cluster_context(void *object TSRMLS_DC) {
     efree(cluster);
 }
 
-//
-// PHP Methods
-//
+/*
+ * PHP Methods
+ */
 
 /* Create a RedisCluster Object */
 PHP_METHOD(RedisCluster, __construct) {
