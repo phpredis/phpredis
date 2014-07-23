@@ -2435,11 +2435,42 @@ PHP_METHOD(RedisCluster, lastsave) {
 }
 /* }}} */
 
-/* {{{ proto array RedisCluster::info(string key)
- *     proto array RedisCluster::info(array host_port) */
+/* {{{ proto array RedisCluster::info(string key, [string $arg])
+ *     proto array RedisCluster::info(array host_port, [string $arg]) */
 PHP_METHOD(RedisCluster, info) {
-    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INFO",
-        TYPE_BULK, cluster_info_resp);
+    redisCluster *c = GET_CONTEXT();
+    char *cmd, *opt=NULL;
+    int cmd_len, opt_len;
+    zval *z_arg;
+    short slot;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zs", &z_arg, &opt,
+                             &opt_len)==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    slot = cluster_cmd_get_slot(c, z_arg);
+    if(slot<0) {
+        RETURN_FALSE;
+    }
+
+    if(opt != NULL) {
+        cmd_len = redis_cmd_format_static(&cmd, "INFO", "s", opt, opt_len);
+    } else {
+        cmd_len = redis_cmd_format_static(&cmd, "INFO", "");
+    }
+
+    if(cluster_send_slot(c, slot, cmd, cmd_len, TYPE_BULK TSRMLS_CC)<0) {
+        zend_throw_exception(redis_cluster_exception_ce,
+            "Unable to send INFO command to spacific node", 0 TSRMLS_CC);
+        efree(cmd);
+        RETURN_FALSE;
+    }
+
+    cluster_info_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+
+    efree(cmd);
 }
 /* }}} */
 
