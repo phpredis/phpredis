@@ -748,7 +748,7 @@ static int cluster_send_asking(RedisSock *redis_sock TSRMLS_DC)
     }
 
     // Consume the rest of our response
-    if(php_stream_gets(redis_sock->stream, buf, sizeof(buf)<0)) {
+    if(!php_stream_gets(redis_sock->stream, buf, sizeof(buf))) {
         return -1;
     }
 
@@ -940,7 +940,7 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
         int moved;
 
         // Attempt to read the error
-        if(php_stream_gets(SLOT_STREAM(c,slot), inbuf, sizeof(inbuf))<0) {
+        if(!php_stream_gets(SLOT_STREAM(c,slot), inbuf, sizeof(inbuf))) {
             return -1;
         }
 
