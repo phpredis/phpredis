@@ -870,6 +870,8 @@ PHP_METHOD(RedisCluster, keys) {
         cluster_free_reply(resp, 0);
     }
 
+    efree(cmd);
+
     /* Return our keys */
     RETURN_ZVAL(z_ret, 0, 1);
 }
