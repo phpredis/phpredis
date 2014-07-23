@@ -37,6 +37,8 @@
 #define RESP_UNWATCH_CMD       "*1\r\n$7\r\nUNWATCH\r\n"
 #define RESP_CLUSTER_SLOTS_CMD "*2\r\n$7\r\nCLUSTER\r\n$5\r\nSLOTS\r\n"
 #define RESP_ASKING_CMD        "*1\r\n$6\r\nASKING\r\n"
+#define RESP_READONLY_CMD      "*1\r\n$8\r\nREADONLY\r\n"
+#define RESP_READWRITE_CMD     "*1\r\n$9\r\nREADWRITE\r\n"
 
 /* MOVED/ASK comparison macros */
 #define IS_MOVED(p) (p[0]=='M' && p[1]=='O' && p[2]=='V' && p[3]=='E' && \
