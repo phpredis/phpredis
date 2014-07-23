@@ -810,10 +810,68 @@ PHP_METHOD(RedisCluster, exists) {
 
 /* {{{ proto array Redis::keys(string pattern) */
 PHP_METHOD(RedisCluster, keys) {
-    // TODO: Figure out how to implement this, as we may want to send it across
-    // all nodes (although that seems dangerous), or ask for a specified slot.
-    zend_throw_exception(redis_cluster_exception_ce,
-        "KEYS command not implemented", 0 TSRMLS_CC);
+    redisCluster *c = GET_CONTEXT();
+    redisClusterNode **node;
+    int pat_len, pat_free, cmd_len;
+    char *pat, *cmd;
+    clusterReply *resp;
+    zval *z_ret;
+    int i;
+
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &pat, &pat_len)
+                             ==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    /* Prefix and then build our command */
+    pat_free = redis_key_prefix(c->flags, &pat, &pat_len);
+    cmd_len = redis_cmd_format_static(&cmd, "KEYS", "s", pat, pat_len);
+    if(pat_free) efree(pat);
+
+    MAKE_STD_ZVAL(z_ret);
+    array_init(z_ret);
+
+    /* Iterate over our known nodes */
+    for(zend_hash_internal_pointer_reset(c->nodes);
+        zend_hash_get_current_data(c->nodes, (void**)&node)==SUCCESS;
+        zend_hash_move_forward(c->nodes))
+    {
+        if(cluster_send_slot(c, (*node)->slot, cmd, cmd_len, TYPE_MULTIBULK
+                             TSRMLS_CC)<0)
+        {
+            php_error_docref(0 TSRMLS_CC, E_ERROR, "Can't send KEYS to %s:%d",
+                (*node)->sock->host, (*node)->sock->port);
+            efree(cmd);
+            RETURN_FALSE;
+        }
+
+        /* Ensure we can get a response */
+        resp = cluster_read_resp(c TSRMLS_CC);
+        if(!resp) {
+            php_error_docref(0 TSRMLS_CC, E_WARNING, 
+                "Can't read response from %s:%d", (*node)->sock->host, 
+                (*node)->sock->port);
+            continue;
+        }
+
+        /* Iterate keys, adding to our big array */
+        for(i=0;i<resp->elements;i++) {
+            /* Skip non bulk responses, they should all be bulk */
+            if(resp->element[i]->type != TYPE_BULK) {
+                continue;
+            }
+
+            add_next_index_stringl(z_ret, resp->element[i]->str,
+                resp->element[i]->len, 0);
+        }
+
+        /* Free response, don't free data */
+        cluster_free_reply(resp, 0);
+    }
+
+    /* Return our keys */
+    RETURN_ZVAL(z_ret, 0, 1);
 }
 /* }}} */
 
