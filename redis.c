@@ -5248,7 +5248,7 @@ PHP_METHOD(Redis, multi)
         RETURN_FALSE;
 	}
 
-    redis_sock->current = NULL;
+    //redis_sock->current = NULL;
 
 	IF_MULTI() {
         cmd_len = redis_cmd_format_static(&cmd, "MULTI", "");
@@ -5265,6 +5265,7 @@ PHP_METHOD(Redis, multi)
 
         if(strncmp(response, "+OK", 3) == 0) {
             efree(response);
+			free_reply_callbacks(object, redis_sock);
 			RETURN_ZVAL(getThis(), 1, 0);
 		}
         efree(response);
@@ -5292,6 +5293,7 @@ PHP_METHOD(Redis, discard)
     }
 
 	redis_sock->mode = ATOMIC;
+	free_reply_callbacks(object, redis_sock);
 	redis_send_discard(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 }
 
