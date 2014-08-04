@@ -5622,15 +5622,18 @@ PHP_REDIS_API void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub
 	if (zend_hash_index_find(Z_ARRVAL_P(z_tab), 0, (void**)&tmp) == SUCCESS) {
 		type_response = Z_STRVAL_PP(tmp);
 		if(strcmp(type_response, sub_cmd) != 0) {
-			efree(tmp);
-			efree(z_tab);	
+            efree(tmp);
+			zval_dtor(z_tab);
+            efree(z_tab);	
 			RETURN_FALSE;
 		} 
 	} else {
-		efree(z_tab);	
+		zval_dtor(z_tab);
+        efree(z_tab);	
 		RETURN_FALSE;
 	}
-	efree(z_tab);	
+	zval_dtor(z_tab);
+    efree(z_tab);	
 
 	/* Set a pointer to our return value and to our arguments. */
 	z_callback.retval_ptr_ptr = &z_ret;
@@ -5698,18 +5701,19 @@ PHP_REDIS_API void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub
 			break;
 		}
 
-		/* If we have a return value, free it.  Note, we could use the return value to break the subscribe loop */
+        /* Free our return value if we have one.  If the return value is a bool
+         * that is FALSE, break our subscribe loop and return control to the
+         * userland code */
 		if (z_ret) {
 			if(Z_TYPE_P(z_ret) == IS_BOOL && Z_BVAL_P(z_ret) == 0) {
-				zval_ptr_dtor(&z_ret);
+                zval_ptr_dtor(&z_ret);
 				zval_dtor(z_tab);
 				efree(z_tab);
 				break;
 			}
+            zval_ptr_dtor(&z_ret);
 		}
-		if(z_ret) zval_ptr_dtor(&z_ret);
 
-        /* TODO: provide a way to break out of the loop. */
 		zval_dtor(z_tab);
 		efree(z_tab);
 	}
