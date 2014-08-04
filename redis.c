@@ -5699,6 +5699,14 @@ PHP_REDIS_API void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub
 		}
 
 		/* If we have a return value, free it.  Note, we could use the return value to break the subscribe loop */
+		if (z_ret) {
+			if(Z_TYPE_P(z_ret) == IS_BOOL && Z_BVAL_P(z_ret) == 0) {
+				zval_ptr_dtor(&z_ret);
+				zval_dtor(z_tab);
+				efree(z_tab);
+				break;
+			}
+		}
 		if(z_ret) zval_ptr_dtor(&z_ret);
 
         /* TODO: provide a way to break out of the loop. */
