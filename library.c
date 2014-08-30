@@ -1911,6 +1911,7 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval **z_ret
 				add_next_index_zval(*z_ret, z_subelem);
 				redis_read_multibulk_recursive(redis_sock, reply_info, &z_subelem TSRMLS_CC);
 				break;
+            default: break; /* We know it's not < 0 from previous check */
 		}
 
 		/* Decrement our element counter */

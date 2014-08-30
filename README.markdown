@@ -2488,6 +2488,7 @@ while(($arr_mems = $redis->sscan('set', $it, "*pattern*"))!==FALSE) {
 * [zInter](#zinter) - Intersect multiple sorted sets and store the resulting sorted set in a new key
 * [zRange](#zrange) - Return a range of members in a sorted set, by index
 * [zRangeByScore, zRevRangeByScore](#zrangebyscore-zrevrangebyscore) - Return a range of members in a sorted set, by score
+* [zRangeByLex](#zrangebylex) - Return a lexigraphical range from members that share the same score
 * [zRank, zRevRank](#zrank-zrevrank) - Determine the index of a member in a sorted set
 * [zRem, zDelete](#zrem-zdelete) - Remove one or more members from a sorted set
 * [zRemRangeByRank, zDeleteRangeByRank](#zremrangebyrank-zdeleterangebyrank) - Remove all members in a sorted set within the given indexes
@@ -2669,6 +2670,30 @@ $redis->zRangeByScore('key', 0, 3); /* array('val0', 'val2') */
 $redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE); /* array('val0' => 0, 'val2' => 2) */
 $redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1)); /* array('val2') */
 $redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(1, 1)); /* array('val2' => 2) */
+~~~
+
+### zRangeByLex
+-----
+_**Description**_:  Returns a lexigraphical range of members in a sorted set, assuming the members have the same score.  The min and max values are required to start with '(' (exclusive), '[' (inclusive), or be exactly the values '-' (negative inf) or '+' (positive inf).  The command must be called with either three *or* five arguments or will return FALSE.
+
+##### *Parameters*
+*key*: The ZSET you wish to run against
+*min*: The minimum alphanumeric value you wish to get
+*max*: The maximum alphanumeric value you wish to get
+*offset*:  Optional argument if you wish to start somewhere other than the first element.
+*limit*: Optional argument if you wish to limit the number of elements returned.
+
+##### *Return value*
+*Array* containing the values in the specified range.
+
+##### *Example*
+~~~
+foreach(Array('a','b','c','d','e','f','g') as $c)
+    $redis->zAdd('key',0,$c);
+
+$redis->zRangeByLex('key','-','[c') /* Array('a','b','c'); */
+$redis->zRangeByLex('key','-','(c') /* Array('a','b') */
+$redis->zRangeByLex('key','-','[c',1,2) /* Array('b','c') */
 ~~~
 
 ### zRank, zRevRank

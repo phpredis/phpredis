@@ -30,7 +30,8 @@
 
 /* reply types */
 typedef enum _REDIS_REPLY_TYPE {
-	TYPE_LINE      = '+',
+    TYPE_EOF       = EOF,
+    TYPE_LINE      = '+',
 	TYPE_INT       = ':',
 	TYPE_ERR       = '-',
 	TYPE_BULK      = '$',
@@ -177,6 +178,12 @@ else if(redis_sock->mode == MULTI) { \
 
 #define IS_EX_PX_ARG(a) (IS_EX_ARG(a) || IS_PX_ARG(a))
 #define IS_NX_XX_ARG(a) (IS_NX_ARG(a) || IS_XX_ARG(a))
+
+/* Given a string and length, validate a zRangeByLex argument.  The semantics
+ * here are that the argument must start with '(' or '[' or be just the char
+ * '+' or '-' */
+#define IS_LEX_ARG(s,l) \
+    (l>0 && (*s=='(' || *s=='[' || (l==1 && (*s=='+' || *s=='-'))))
 
 typedef enum {ATOMIC, MULTI, PIPELINE} redis_mode;
 
