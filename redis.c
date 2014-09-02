@@ -7229,6 +7229,13 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
      * an updated iterator.
      */
     do {
+        /* Free our previous reply if we're back in the loop.  We know we are
+         * if our return_value is an array. */
+        if(Z_TYPE_P(return_value) == IS_ARRAY) {
+            zval_dtor(return_value);
+            ZVAL_NULL(return_value);
+        }
+
         /* Format our SCAN command */
         cmd_len = redis_build_scan_cmd(&cmd, type, key, key_len, (int)iter,
                                    pattern, pattern_len, count);
