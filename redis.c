@@ -276,6 +276,9 @@ static zend_function_entry redis_functions[] = {
      /* slowlog */
      PHP_ME(Redis, slowlog, NULL, ZEND_ACC_PUBLIC)
 
+     /* Send a raw command and read raw results */
+     PHP_ME(Redis, command, NULL, ZEND_ACC_PUBLIC)
+
      /* introspection */
      PHP_ME(Redis, getHost, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getPort, NULL, ZEND_ACC_PUBLIC)
@@ -6171,6 +6174,49 @@ PHP_METHOD(Redis, slowlog) {
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
         if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL) < 0) {
+            RETURN_FALSE;
+        }
+    }
+    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+}
+
+/* {{{ proto Redis::command(string cmd, arg, arg, arg, ...) }}} */
+PHP_METHOD(Redis, command) {
+    zval **z_args;
+    RedisSock *redis_sock;
+    int argc = ZEND_NUM_ARGS(), i;
+    smart_str cmd = {0};
+
+    /* We need at least one argument */
+    z_args = emalloc(argc * sizeof(zval*));
+    if (argc < 1 || zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
+        efree(z_args);
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
+        efree(z_args);
+        RETURN_FALSE;
+    }
+
+    /* Initialize the command we'll send */
+    convert_to_string(z_args[0]);
+    redis_cmd_init_sstr(&cmd,argc-1,Z_STRVAL_P(z_args[0]),Z_STRLEN_P(z_args[0]));
+
+    /* Iterate over the remainder of our arguments, appending */
+    for (i = 1; i < argc; i++) {
+        convert_to_string(z_args[i]);
+        redis_cmd_append_sstr(&cmd, Z_STRVAL_P(z_args[i]), Z_STRLEN_P(z_args[i])); 
+    }
+
+    efree(z_args);
+
+    /* Kick off our request and read response or enqueue handler */
+    REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
+    IF_ATOMIC() {
+        if (redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
+                                     redis_sock, NULL) < 0)
+        {
             RETURN_FALSE;
         }
     }
