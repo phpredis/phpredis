@@ -1254,7 +1254,7 @@ PHP_METHOD(Redis, sAdd)
 /* {{{ proto int Redis::sSize(string key) */
 PHP_METHOD(Redis, sSize)
 {
-    REDIS_PROCESS_KW_CMD("SMEMBERS", redis_key_cmd, redis_long_response);
+    REDIS_PROCESS_KW_CMD("SCARD", redis_key_cmd, redis_long_response);
 }
 /* }}} */
 
