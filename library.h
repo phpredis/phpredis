@@ -55,7 +55,7 @@ PHPAPI void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_so
 PHPAPI int redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len);
 
 PHPAPI int
-redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len TSRMLS_DC);
+redis_serialize(RedisSock *redis_sock, zval *z, zend_string **val TSRMLS_DC);
 PHPAPI int
 redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len);
 
@@ -68,23 +68,17 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 */
 
 PHPAPI int redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, int *reply_info TSRMLS_DC);
-PHPAPI int redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type, zval **z_ret TSRMLS_DC);
-PHPAPI int redis_read_variant_bulk(RedisSock *redis_sock, int size, zval **z_ret TSRMLS_DC);
-PHPAPI int redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval **z_ret TSRMLS_DC);
+PHPAPI int redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type, zval *z_ret TSRMLS_DC);
+PHPAPI int redis_read_variant_bulk(RedisSock *redis_sock, int size, zval *z_ret TSRMLS_DC);
+PHPAPI int redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval *z_ret TSRMLS_DC);
 PHPAPI int redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 
 PHPAPI void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
 
-#if ZEND_MODULE_API_NO >= 20100000
-#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) \
+#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl) \
 	char dbl_decsep; \
 	dbl_decsep = '.'; \
     dbl_str = _php_math_number_format_ex(dbl, 16, &dbl_decsep, 1, NULL, 0); \
-	dbl_len = strlen(dbl_str);
-#else
-#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) \
-	dbl_str = _php_math_number_format(dbl, 16, '.', '\x00'); \
-	dbl_len = strlen(dbl_str);
-#endif
+
 
 #endif

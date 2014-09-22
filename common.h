@@ -159,11 +159,9 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len) \
     IF_MULTI_OR_ATOMIC() { \
         SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len); \
-        efree(cmd); \
     }\
     IF_PIPELINE() { \
         PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len); \
-        efree(cmd); \
     }
 
 #define REDIS_PROCESS_RESPONSE_CLOSURE(function, closure_context) \

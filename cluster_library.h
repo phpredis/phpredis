@@ -91,7 +91,7 @@
     if(CLUSTER_IS_ATOMIC(c)) { \
         RETURN_FALSE; \
     } else { \
-        add_next_index_bool(c->multi_resp, 0); \
+        add_next_index_bool(&c->multi_resp, 0); \
         return; \
     }
 
@@ -104,7 +104,7 @@
             RETURN_FALSE; \
         } \
     } else { \
-        add_next_index_bool(c->multi_resp, b); \
+        add_next_index_bool(&c->multi_resp, b); \
     }
 
 /* Helper to respond with a double or add it to our MULTI response */
@@ -112,15 +112,15 @@
     if(CLUSTER_IS_ATOMIC(c)) { \
         RETURN_DOUBLE(d); \
     } else { \
-        add_next_index_double(c->multi_resp, d); \
+        add_next_index_double(&c->multi_resp, d); \
     }
 
 /* Helper to return a string value */
 #define CLUSTER_RETURN_STRING(c, str, len) \
     if(CLUSTER_IS_ATOMIC(c)) { \
-        RETURN_STRINGL(str, len, 0); \
+        RETURN_STRINGL(str, len); \
     } else { \
-        add_next_index_stringl(c->multi_resp, str, len, 0); \
+        add_next_index_stringl(&c->multi_resp, str, len); \
     } \
 
 /* Return a LONG value */
@@ -128,13 +128,13 @@
     if(CLUSTER_IS_ATOMIC(c)) { \
         RETURN_LONG(val); \
     } else { \
-        add_next_index_long(c->multi_resp, val); \
+        add_next_index_long(&c->multi_resp, val); \
     }
 
 /* Macro to clear out a clusterMultiCmd structure */
 #define CLUSTER_MULTI_CLEAR(mc) \
-    mc->cmd.len  = 0; \
-    mc->args.len = 0; \
+    mc->cmd.s->len  = 0; \
+    mc->args.s->len = 0; \
     mc->argc     = 0; \
 
 /* Initialzie a clusterMultiCmd with a keyword and length */
@@ -196,7 +196,7 @@ typedef struct redisCluster {
     clusterFoldItem *multi_curr;
 
     /* Variable to store MULTI response */
-    zval *multi_resp;
+    zval multi_resp;
 
     /* Flag for when we get a CLUSTERDOWN error */
     short clusterdown;
