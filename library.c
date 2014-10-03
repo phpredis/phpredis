@@ -1730,11 +1730,12 @@ redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **re
 #ifdef HAVE_REDIS_IGBINARY
 			if(!*return_value) {
 				MAKE_STD_ZVAL(*return_value);
+				rv_free = 1;
 			}
 			if(igbinary_unserialize((const uint8_t *)val, (size_t)val_len, return_value TSRMLS_CC) == 0) {
 				return 1;
 			}
-			efree(*return_value);
+			if(rv_free==1) efree(*return_value);
 #endif
 			return 0;
 			break;
