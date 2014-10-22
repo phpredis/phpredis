@@ -278,11 +278,15 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 	array_init(z_params_connect_timeout);
 	sapi_module.treat_data(PARSE_STRING, estrdup(INI_STR("redis.arrays.connecttimeout")), z_params_connect_timeout TSRMLS_CC);
 	if (zend_hash_find(Z_ARRVAL_P(z_params_connect_timeout), name, strlen(name) + 1, (void **) &z_data_pp) != FAILURE) {
-		if (Z_TYPE_PP(z_data_pp) == IS_DOUBLE || Z_TYPE_PP(z_data_pp) == IS_STRING) {
+		if (Z_TYPE_PP(z_data_pp) == IS_DOUBLE || 
+            Z_TYPE_PP(z_data_pp) == IS_STRING ||
+            Z_TYPE_PP(z_data_pp) == IS_LONG) 
+        {
 			if (Z_TYPE_PP(z_data_pp) == IS_DOUBLE) {
 				d_connect_timeout = Z_DVAL_PP(z_data_pp);
-			}
-			else {
+			} else if (Z_TYPE_PP(z_data_pp) == IS_LONG) {
+                d_connect_timeout = Z_LVAL_PP(z_data_pp);
+            } else {
 				d_connect_timeout = atof(Z_STRVAL_PP(z_data_pp));
 			}
 		}

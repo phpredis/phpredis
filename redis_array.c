@@ -282,11 +282,15 @@ PHP_METHOD(RedisArray, __construct)
 		
 		/* extract connect_timeout option */		
 		if (FAILURE != zend_hash_find(hOpts, "connect_timeout", sizeof("connect_timeout"), (void**)&z_connect_timeout_pp)) {
-			if (Z_TYPE_PP(z_connect_timeout_pp) == IS_DOUBLE || Z_TYPE_PP(z_connect_timeout_pp) == IS_STRING) {
+			if (Z_TYPE_PP(z_connect_timeout_pp) == IS_DOUBLE || 
+                Z_TYPE_PP(z_connect_timeout_pp) == IS_STRING ||
+                Z_TYPE_PP(z_connect_timeout_pp) == IS_LONG) 
+            {
 				if (Z_TYPE_PP(z_connect_timeout_pp) == IS_DOUBLE) {
 					d_connect_timeout = Z_DVAL_PP(z_connect_timeout_pp);
-				}
-				else {
+				} else if (Z_TYPE_PP(z_connect_timeout_pp) == IS_LONG) {
+                    d_connect_timeout = Z_LVAL_PP(z_connect_timeout_pp);
+                } else {
 					d_connect_timeout = atof(Z_STRVAL_PP(z_connect_timeout_pp));
 				}
 			}
