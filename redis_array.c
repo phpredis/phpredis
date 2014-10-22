@@ -288,7 +288,6 @@ PHP_METHOD(RedisArray, __construct)
 					d_connect_timeout = Z_DVAL_PP(z_connect_timeout_pp);
 				} else if (Z_TYPE_PP(z_connect_timeout_pp) == IS_LONG) {
                     d_connect_timeout = Z_LVAL_PP(z_connect_timeout_pp);
-php_printf("Connect timeout: %f\n", d_connect_timeout);
                 } else {
 					d_connect_timeout = atof(Z_STRVAL_PP(z_connect_timeout_pp));
 				}
