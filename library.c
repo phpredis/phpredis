@@ -166,7 +166,7 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
         /* Wait for a while before trying to reconnect */
         if (redis_sock->retry_interval) {
             // Random factor to avoid having several (or many) concurrent connections trying to reconnect at the same time
-            long retry_interval = (count ? redis_sock->retry_interval : (php_rand(TSRMLS_C) redis_sock->retry_interval));
+            long retry_interval = (count ? redis_sock->retry_interval : (php_rand(TSRMLS_C) % redis_sock->retry_interval));
             usleep(retry_interval);
         }
 
@@ -1572,7 +1572,7 @@ redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *re
         if(response != NULL) {
 		zval *z = NULL;
 		int can_unserialize = unwrap_key;
-		if(unserialize_even_only == UNSERIALIZE_ONLY_VALUES && numElems 2 == 0)
+		if(unserialize_even_only == UNSERIALIZE_ONLY_VALUES && numElems % 2 == 0)
 			can_unserialize = 0;
 
 		if(can_unserialize && redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
