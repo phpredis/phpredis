@@ -39,6 +39,89 @@ extern zend_class_entry *redis_ce;
 extern zend_class_entry *redis_exception_ce;
 extern zend_class_entry *spl_ce_RuntimeException;
 
+/* Helper to reselect the proper DB number when we reconnect */
+static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
+    char *cmd, *response;
+    int cmd_len, response_len;
+
+    cmd_len = redis_cmd_format_static(&cmd, "SELECT", "d", redis_sock->dbNumber);
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
+        efree(cmd);
+        return -1;
+    }
+
+    efree(cmd);
+
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        return -1;
+    }
+
+    if (strncmp(response, "+OK", 3)) {
+        efree(response);
+        return -1;
+    }
+
+    efree(response);
+    return 0;
+}
+
+/* Helper to resend AUTH <password> in the case of a reconnect */
+static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
+    char *cmd, *response;
+    int cmd_len, response_len;
+
+    cmd_len = redis_cmd_format_static(&cmd, "AUTH", "s", redis_sock->auth,
+        strlen(redis_sock->auth));
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_DC) < 0) {
+        efree(cmd);
+        return -1;
+    }
+
+    efree(cmd);
+
+    response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
+    if (response == NULL) {
+        return -1;
+    }
+
+    if (strncmp(response, "+OK", 3)) {
+        efree(response);
+        return -1;
+    }
+
+    efree(response);
+    return 0;
+}
+
+/* Helper function that will throw an exception for a small number of ERR codes
+ * returned by Redis.  Typically we just return FALSE to the caller in the event
+ * of an ERROR reply, but for the following error types:
+ *    1) MASTERDOWN
+ *    2) AUTH
+ *    3) LOADING
+ */
+static void redis_error_throw(char *err, size_t err_len TSRMLS_DC) {
+    /* Handle stale data error (slave syncing with master) */
+    if (err_len == sizeof(REDIS_ERR_SYNC_MSG) - 1 &&
+        !memcmp(err,REDIS_ERR_SYNC_KW,sizeof(REDIS_ERR_SYNC_KW)-1))
+    {
+        zend_throw_exception(redis_exception_ce,
+            "SYNC with master in progress or master down!", 0 TSRMLS_CC);
+    } else if (err_len == sizeof(REDIS_ERR_LOADING_MSG) - 1 &&
+               !memcmp(err,REDIS_ERR_LOADING_KW,sizeof(REDIS_ERR_LOADING_KW)-1))
+    {
+        zend_throw_exception(redis_exception_ce,
+            "Redis is LOADING the dataset", 0 TSRMLS_CC);
+    } else if (err_len == sizeof(REDIS_ERR_AUTH_MSG) -1 &&
+               !memcmp(err,REDIS_ERR_AUTH_KW,sizeof(REDIS_ERR_AUTH_KW)-1))
+    {
+        zend_throw_exception(redis_exception_ce,
+            "Failed to AUTH connection", 0 TSRMLS_CC);
+    }
+}
+
 PHP_REDIS_API void redis_stream_close(RedisSock *redis_sock TSRMLS_DC) {
 	if (!redis_sock->persistent) {
 		php_stream_close(redis_sock->stream);
@@ -58,64 +141,60 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
 
 	eof = php_stream_eof(redis_sock->stream);
     for (; eof; count++) {
-        if((MULTI == redis_sock->mode) || redis_sock->watching || count == 10) { /* too many failures */
-	    if(redis_sock->stream) { /* close stream if still here */
+        /* Only try up to a certain point */
+        if((MULTI == redis_sock->mode) || redis_sock->watching || count == 10) {
+	        if(redis_sock->stream) { /* close stream if still here */
                 redis_stream_close(redis_sock TSRMLS_CC);
                 redis_sock->stream = NULL;
-				redis_sock->mode   = ATOMIC;
+                redis_sock->mode   = ATOMIC;
                 redis_sock->status = REDIS_SOCK_STATUS_FAILED;
                 redis_sock->watching = 0;
-	    }
+	        }
+
             zend_throw_exception(redis_exception_ce, "Connection lost", 0 TSRMLS_CC);
-	    return -1;
-	}
-	if(redis_sock->stream) { /* close existing stream before reconnecting */
+	        return -1;
+        }
+
+        /* Close existing stream before reconnecting */
+        if(redis_sock->stream) {
             redis_stream_close(redis_sock TSRMLS_CC);
             redis_sock->stream = NULL;
-			redis_sock->mode   = ATOMIC;
+            redis_sock->mode   = ATOMIC;
             redis_sock->watching = 0;
-	}
-    /* Wait for a while before trying to reconnect */
-    if (redis_sock->retry_interval) {
-    	// Random factor to avoid having several (or many) concurrent connections trying to reconnect at the same time
-   		long retry_interval = (count ? redis_sock->retry_interval : (php_rand(TSRMLS_C) % redis_sock->retry_interval));
-    	usleep(retry_interval);
-    }
+	    }
+
+        /* Wait for a while before trying to reconnect */
+        if (redis_sock->retry_interval) {
+            // Random factor to avoid having several (or many) concurrent connections trying to reconnect at the same time
+            long retry_interval = (count ? redis_sock->retry_interval : (php_rand(TSRMLS_C) % redis_sock->retry_interval));
+            usleep(retry_interval);
+        }
+
         redis_sock_connect(redis_sock TSRMLS_CC); /* reconnect */
         if(redis_sock->stream) { /*  check for EOF again. */
             eof = php_stream_eof(redis_sock->stream);
         }
     }
 
-    /* Reselect the DB. */
-    if (count && redis_sock->dbNumber) {
-        char *cmd, *response;
-        int cmd_len, response_len;
-
-        cmd_len = redis_cmd_format_static(&cmd, "SELECT", "d", redis_sock->dbNumber);
-
-        if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
-            efree(cmd);
-            return -1;
-        }
-        efree(cmd);
-
-        if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+    /* We've reconnected if we have a count */
+    if (count) {
+        /* If we're using a password, attempt a reauthorization */
+        if (redis_sock->auth && resend_auth(redis_sock) != 0) {
             return -1;
         }
 
-        if (strncmp(response, "+OK", 3)) {
-            efree(response);
+        /* If we're using a non zero db, reselect it */
+        if (redis_sock->dbNumber && reselect_db(redis_sock) != 0) {
             return -1;
         }
-        efree(response);
     }
 
+    /* Success */
     return 0;
 }
 
 
-PHP_REDIS_API int 
+PHP_REDIS_API int
 redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                            REDIS_SCAN_TYPE type, long *iter)
 {
@@ -259,14 +338,14 @@ PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_D
 
     switch(inbuf[0]) {
         case '-':
-			err_len = strlen(inbuf+1) - 2;
+			/* Set the last error */
+            err_len = strlen(inbuf+1) - 2;
 			redis_sock_set_err(redis_sock, inbuf+1, err_len);
-			/* stale data */
-			if(memcmp(inbuf + 1, "-ERR SYNC ", 10) == 0) {
-				zend_throw_exception(redis_exception_ce, "SYNC with master in progress", 0 TSRMLS_CC);
-			}
-            return NULL;
 
+            /* Filter our ERROR through the few that should actually throw */
+            redis_error_throw(inbuf + 1, err_len);
+
+            return NULL;
         case '$':
             *buf_len = atoi(inbuf + 1);
             resp = redis_sock_read_bulk_reply(redis_sock, *buf_len TSRMLS_CC);
@@ -432,7 +511,7 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...) {
 /**
  * This command behave somehow like printf, except that strings need 2 arguments:
  * Their data and their size (strlen).
- * Supported formats are: %d, %i, %s, %l
+ * Supported formats are:d, %i, %s, %l
  */
 int
 redis_cmd_format(char **ret, char *format, ...) {
@@ -1090,7 +1169,7 @@ PHP_REDIS_API void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
 }
 
 /* Response for DEBUG object which is a formatted single line reply */
-PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
+PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                                         zval *z_tab, void *ctx)
 {
     char *resp, *p, *p2, *p3, *p4;
@@ -1116,7 +1195,7 @@ PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
     while((p2 = strchr(p, ':'))!=NULL) {
         /* Null terminate at the ':' */
         *p2++ = '\0';
-       
+
         /* Null terminate at the space if we have one */
         if((p3 = strchr(p2, ' '))!=NULL) {
             *p3++ = '\0';
@@ -1138,7 +1217,7 @@ PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
         } else {
             add_assoc_string(z_result, p, p2, 1);
         }
-   
+
         p = p3;
     }
 
@@ -1789,7 +1868,6 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t *line_siz
 	*line_size-=2;
 	buf[*line_size]='\0';
 
-
 	/* Success! */
 	return 0;
 }
@@ -1839,11 +1917,11 @@ redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type, zval
 		return -1;
 	}
 
-	/* If this is an error response, check if it is a SYNC error, and throw in that case */
+	/* If this is an error response, filter specific errors that should throw
+     * an exception, and set our error field in our RedisSock object. */
 	if(reply_type == TYPE_ERR) {
-		if(memcmp(inbuf, "ERR SYNC", 9) == 0) {
-			zend_throw_exception(redis_exception_ce, "SYNC with master in progress", 0 TSRMLS_CC);
-		}
+        /* Handle throwable errors */
+        redis_error_throw(inbuf, line_size TSRMLS_CC);
 
 		/* Set our last error */
 		redis_sock_set_err(redis_sock, inbuf, line_size);

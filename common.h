@@ -65,13 +65,20 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_SERIALIZER_IGBINARY 	2
 
 /* SCAN options */
-
 #define REDIS_SCAN_NORETRY 0
 #define REDIS_SCAN_RETRY 1
 
 /* GETBIT/SETBIT offset range limits */
 #define BITOP_MIN_OFFSET 0
 #define BITOP_MAX_OFFSET 4294967295
+
+/* Specific error messages we want to throw against */
+#define REDIS_ERR_LOADING_MSG "LOADING Redis is loading the dataset in memory"
+#define REDIS_ERR_LOADING_KW  "LOADING"
+#define REDIS_ERR_AUTH_MSG    "NOAUTH Authentication required."
+#define REDIS_ERR_AUTH_KW     "NOAUTH"
+#define REDIS_ERR_SYNC_MSG    "MASTERDOWN Link with MASTER is down and slave-serve-stale-data is set to 'no'"
+#define REDIS_ERR_SYNC_KW     "MASTERDOWN"
 
 #define IF_MULTI() if(redis_sock->mode == MULTI)
 #define IF_MULTI_OR_ATOMIC() if(redis_sock->mode == MULTI || redis_sock->mode == ATOMIC)\
