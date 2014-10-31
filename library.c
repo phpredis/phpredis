@@ -1009,19 +1009,8 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
             zval_copy_ctor(z);
             add_assoc_zval_ex(z_ret, hkey, 1+hkey_len, z);
         }
-
-        /*
-        if(use_atof) {
-            add_assoc_double_ex(z_ret, hkey, 1+hkey_len, atof(hval));
-        } else {
-            zval *z = NULL;
-            MAKE_STD_ZVAL(z);
-            *z = **z_value_pp;
-            zval_copy_ctor(z);
-            add_assoc_zval_ex(z_ret, hkey, 1+hkey_len, z);
-        }*/
-
     }
+    
     /* replace */
     zval_dtor(z_tab);
     *z_tab = *z_ret;
