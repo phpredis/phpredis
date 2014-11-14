@@ -2898,7 +2898,7 @@ _**Description**_: Subscribe to channels by pattern
 ##### *Parameters*
 *patterns*: An array of patterns to match
 *callback*: Either a string or an array with an object and method.  The callback will get four arguments ($redis, $pattern, $channel, $message)
-
+*return value*: Mixed.  Any non-null return value in the callback will be returned to the caller.
 ##### *Example*
 ~~~
 function psubscribe($redis, $pattern, $chan, $msg) {
@@ -2928,7 +2928,7 @@ _**Description**_: Subscribe to channels. Warning: this function will probably c
 ##### *Parameters*
 *channels*: an array of channels to subscribe to  
 *callback*: either a string or an array($instance, 'method_name'). The callback function receives 3 parameters: the redis instance, the channel name, and the message.  
-
+*return value*:  Mixed.  Any non-null return value in the callback will be returned to the caller.
 ##### *Example*
 ~~~
 function f($redis, $chan, $msg) {

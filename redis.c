@@ -5764,21 +5764,19 @@ PHP_REDIS_API void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub
 			break;
 		}
 
-        /* Free our return value if we have one.  If the return value is a bool
-         * that is FALSE, break our subscribe loop and return control to the
-         * userland code */
-		if (z_ret) {
-			if(Z_TYPE_P(z_ret) == IS_BOOL && Z_BVAL_P(z_ret) == 0) {
-                zval_ptr_dtor(&z_ret);
-				zval_dtor(z_tab);
-				efree(z_tab);
-				break;
-			}
-            zval_ptr_dtor(&z_ret);
-		}
+        /* Free reply from Redis */
+        zval_dtor(z_tab);
+        efree(z_tab);        
 
-		zval_dtor(z_tab);
-		efree(z_tab);
+        /* Check for a non-null return value.  If we have one, return it from
+         * the subscribe function itself.  Otherwise continue our loop. */
+        if (z_ret) {
+            if (Z_TYPE_P(z_ret) != IS_NULL) {
+                RETVAL_ZVAL(z_ret, 0, 1);
+                break;
+            }
+            zval_ptr_dtor(&z_ret);
+        }
 	}
 }
 
