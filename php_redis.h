@@ -211,7 +211,7 @@ PHP_METHOD(Redis, getReadTimeout);
 PHP_METHOD(Redis, isConnected);
 PHP_METHOD(Redis, getPersistentID);
 PHP_METHOD(Redis, getAuth);
-
+PHP_METHOD(Redis, getMode);
 PHP_METHOD(Redis, command);
 
 #ifdef PHP_WIN32
