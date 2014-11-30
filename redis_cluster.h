@@ -264,7 +264,7 @@ PHP_METHOD(RedisCluster, time);
 PHP_METHOD(RedisCluster, randomkey);
 PHP_METHOD(RedisCluster, ping);
 PHP_METHOD(RedisCluster, echo);
-PHP_METHOD(RedisCluster, command);
+PHP_METHOD(RedisCluster, rawcommand);
 
 /* Introspection */
 PHP_METHOD(RedisCluster, getlasterror);

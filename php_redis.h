@@ -197,7 +197,7 @@ PHP_METHOD(Redis, wait);
 PHP_METHOD(Redis, pubsub);
 
 PHP_METHOD(Redis, client);
-PHP_METHOD(Redis, command);
+PHP_METHOD(Redis, rawcommand);
 
 /* SCAN and friends  */
 PHP_METHOD(Redis, scan);
@@ -220,7 +220,7 @@ PHP_METHOD(Redis, isConnected);
 PHP_METHOD(Redis, getPersistentID);
 PHP_METHOD(Redis, getAuth);
 PHP_METHOD(Redis, getMode);
-PHP_METHOD(Redis, rawCommand);
+PHP_METHOD(Redis, rawcommand);
 
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)

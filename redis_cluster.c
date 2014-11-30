@@ -208,7 +208,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, randomkey, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, ping, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, echo, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, command, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, rawcommand, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, cluster, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, client, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, config, NULL, ZEND_ACC_PUBLIC)
@@ -2714,11 +2714,11 @@ PHP_METHOD(RedisCluster, echo) {
 }
 /* }}} */
 
-/* {{{ proto array RedisCluster::command()
- *     proto array RedisCluster::command('INFO', string cmd)
- *     proto array RedisCluster::command('GETKEYS', array cmd_args) */
-PHP_METHOD(RedisCluster, command) {
-    CLUSTER_PROCESS_CMD(command, cluster_variant_resp, 0);
+/* {{{ proto array RedisCluster::rawcommand()
+ *     proto array RedisCluster::rawcommand('INFO', string cmd)
+ *     proto array RedisCluster::rawcommand('GETKEYS', array cmd_args) */
+PHP_METHOD(RedisCluster, rawcommand) {
+    CLUSTER_PROCESS_CMD(rawcommand, cluster_variant_resp, 0);
 }
 /* }}} */
 
