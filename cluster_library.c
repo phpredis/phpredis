@@ -183,7 +183,9 @@ clusterReply*
 cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type, 
                        size_t len TSRMLS_DC) 
 {
-    clusterReply *r = ecalloc(1, sizeof(clusterReply));
+    clusterReply *r;
+
+    r = ecalloc(1, sizeof(clusterReply));
     r->type = type;
 
     // Error flag in case we go recursive
@@ -193,6 +195,9 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
         case TYPE_INT:
             r->integer = len;
             break;
+        case TYPE_LINE:
+        case TYPE_ERR:
+            return r;
         case TYPE_BULK:
             r->len = len;
             r->str = redis_sock_read_bulk_reply(redis_sock, len TSRMLS_CC);
@@ -1702,6 +1707,9 @@ PHPAPI void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
             case TYPE_INT:
                 RETVAL_LONG(r->integer);
                 break;
+            case TYPE_ERR:
+                RETVAL_FALSE;
+                break;
             case TYPE_LINE:
                 RETVAL_TRUE;
                 break;
@@ -1727,6 +1735,9 @@ PHPAPI void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         switch(r->type) {
             case TYPE_INT:
                 add_next_index_long(c->multi_resp, r->integer);
+                break;
+            case TYPE_ERR:
+                add_next_index_bool(c->multi_resp, 0);
                 break;
             case TYPE_LINE:
                 add_next_index_bool(c->multi_resp, 1);
