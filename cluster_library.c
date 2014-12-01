@@ -756,11 +756,9 @@ static int cluster_send_asking(RedisSock *redis_sock TSRMLS_DC)
     return 0;
 }
 
-/* Get a RedisSock object from the host and port where we have been
- * directed from an ASK response.  We'll first see if we have
- * connected to this node already, and return that.  If not, we
- * create it and add it to our nodes.
- */
+/* Get a RedisSock object from the host and port where we have been directed 
+ * from an ASK response.  We'll first see if we have connected to this node 
+ * already, and return that.  If not, we create it and add it to our nodes. */
 static RedisSock *cluster_get_asking_sock(redisCluster *c TSRMLS_DC) {
     redisClusterNode **ppNode;
     char key[1024];
