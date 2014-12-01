@@ -714,7 +714,8 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), 
                                      "Os|ldsl", &object, redis_ce, &host, 
-                                     &host_len, &port, &timeout, &persistent_id,                                     &persistent_id_len, &retry_interval) 
+                                     &host_len, &port, &timeout, &persistent_id,
+                                     &persistent_id_len, &retry_interval) 
                                      == FAILURE) 
     {
         return FAILURE;
@@ -2443,7 +2444,6 @@ PHP_METHOD(Redis, exec)
     }
 
     IF_MULTI() {
-
         cmd_len = redis_cmd_format_static(&cmd, "EXEC", "");
 
         if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
@@ -2453,8 +2453,8 @@ PHP_METHOD(Redis, exec)
         efree(cmd);
 
         if(redis_sock_read_multibulk_multi_reply(
-                    INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-                    redis_sock) < 0) 
+           INTERNAL_FUNCTION_PARAM_PASSTHRU, 
+           redis_sock) < 0) 
         {
             zval_dtor(return_value);
             free_reply_callbacks(object, redis_sock);
@@ -2468,7 +2468,6 @@ PHP_METHOD(Redis, exec)
     }
 
     IF_PIPELINE() {
-
         char *request = NULL;
         int total = 0;
         int offset = 0;
@@ -2505,8 +2504,8 @@ PHP_METHOD(Redis, exec)
         }
 
         if (redis_sock_read_multibulk_pipeline_reply(
-                        INTERNAL_FUNCTION_PARAM_PASSTHRU, 
-                        redis_sock) < 0) 
+            INTERNAL_FUNCTION_PARAM_PASSTHRU, 
+            redis_sock) < 0) 
         {
             redis_sock->mode = ATOMIC;
             free_reply_callbacks(object, redis_sock);
