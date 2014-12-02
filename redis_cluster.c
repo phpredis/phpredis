@@ -333,7 +333,7 @@ void free_cluster_context(void *object TSRMLS_DC) {
 PHP_METHOD(RedisCluster, __construct) {
     zval *object, *z_seeds=NULL;
     char *name;
-    long name_len;
+    long name_len, tmsec;
     double timeout = 0.0, read_timeout = 0.0;
     redisCluster *context = GET_CONTEXT();
 
@@ -373,6 +373,16 @@ PHP_METHOD(RedisCluster, __construct) {
             "Must pass seeds", 0 TSRMLS_CC);
         RETURN_FALSE;
     }
+
+    /* Set our timeout and read_timeout which we'll pass through to the
+     * socket type operations */
+    context->timeout = timeout;
+    context->read_timeout = read_timeout;
+
+    /* Calculate the number of miliseconds we will wait when bouncing around,
+     * (e.g. a node goes down), which is not the same as a standard timeout. */
+    tmsec = (long)timeout * 1000;
+    context->waitms = tmsec + ((timeout-(long)timeout) * 1000);
 
     // Initialize our RedisSock "seed" objects
     cluster_init_seeds(context, Z_ARRVAL_P(z_seeds));

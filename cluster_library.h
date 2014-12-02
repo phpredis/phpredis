@@ -178,9 +178,12 @@ typedef struct redisCluster {
     /* Object reference for Zend */
     zend_object std;
 
-    /* Timeout and read timeout */
+    /* Timeout and read timeout (for normal operations) */
     double timeout;
     double read_timeout;
+
+    /* How long in milliseconds should we wait when being bounced around */
+    long waitms;
 
     /* Hash table of seed host/ports */
     HashTable *seeds;
@@ -213,9 +216,6 @@ typedef struct redisCluster {
 
     /* One RedisSock* struct for serialization and prefix information */
     RedisSock *flags;
-
-    /* Cluster distribution mode (speed, vs. maintaining order of execution) */
-    short dist_mode;
 
     /* The first line of our last reply, not including our reply type byte 
      * or the trailing \r\n */
@@ -329,6 +329,9 @@ void cluster_multi_fini(clusterMultiCmd *mc);
 /* Hash a key to it's slot, using the Redis Cluster hash algorithm */
 unsigned short cluster_hash_key_zval(zval *key);
 unsigned short cluster_hash_key(const char *key, int len);
+
+/* Get the current time in miliseconds */
+long long mstime(void);
 
 PHPAPI short cluster_send_command(redisCluster *c, short slot, const char *cmd, 
     int cmd_len TSRMLS_DC);
