@@ -430,6 +430,18 @@ unsigned short cluster_hash_key(const char *key, int len) {
     return crc16((char*)key+s+1,e-s-1) & REDIS_CLUSTER_MOD;
 }
 
+/* Grab the current time in milliseconds */
+long long mstime(void) {
+    struct timeval tv;
+    long long mst;
+
+    gettimeofday(&tv, NULL);
+    mst = ((long long)tv.tv_sec)*1000;
+    mst += tv.tv_usec/1000;
+
+    return mst;
+}
+
 /* Hash a key from a ZVAL */
 unsigned short cluster_hash_key_zval(zval *z_key) {
     const char *kptr;
@@ -1260,9 +1272,15 @@ PHPAPI int cluster_send_slot(redisCluster *c, short slot, char *cmd,
 PHPAPI short cluster_send_command(redisCluster *c, short slot, const char *cmd, 
                                   int cmd_len TSRMLS_DC)
 {
-    int resp;
+    int resp, timedout=0;
+    long msstart;
 
-    // Issue commands until we find the right node or fail
+    /* Grab the current time in milliseconds */
+    msstart = mstime();
+
+    /* Our main cluster request/reply loop.  This loop runs until we're able
+     * to get a valid reply from a node, hit our "request" timeout, or encounter
+     * a CLUSTERDOWN state from Redis cluster. */
     do {
         // Send MULTI to the node if we haven't yet.
         if(c->flags->mode == MULTI && SLOT_SOCK(c,slot)->mode != MULTI) {
@@ -1309,13 +1327,19 @@ PHPAPI short cluster_send_command(redisCluster *c, short slot, const char *cmd,
             }
             slot = c->redir_slot;
         }
-    } while(resp != 0 && !c->clusterdown);
+
+        /* If we didn't get a valid response and we do have a timeout check it */
+        timedout = resp && c->waitms ? mstime() - msstart >= c->waitms : 0;
+    } while(resp != 0 && !c->clusterdown && !timedout);
 
     // If we've detected the cluster is down, throw an exception
     if(c->clusterdown) {
         zend_throw_exception(redis_cluster_exception_ce,
             "The Redis Cluster is down (CLUSTERDOWN)", 0 TSRMLS_CC);
         return -1;
+    } else if (timedout) {
+        zend_throw_exception(redis_cluster_exception_ce,
+            "Timed out attempting to find data in the correct node!", 0 TSRMLS_CC);
     }
 
     // Inform the cluster where to read the rest of our response,
