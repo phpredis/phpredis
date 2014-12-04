@@ -59,8 +59,9 @@
     c->flags->mode     = ATOMIC; \
 
 /* Simple 1-1 command -> response macro */
-#define CLUSTER_PROCESS_CMD(cmdname, resp_func) \
+#define CLUSTER_PROCESS_CMD(cmdname, resp_func, readcmd) \
     redisCluster *c = GET_CONTEXT(); \
+    c->readonly = CLUSTER_IS_ATOMIC(c) && readcmd; \
     char *cmd; int cmd_len; short slot; void *ctx=NULL; \
     if(redis_##cmdname##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,c->flags, &cmd, \
                              &cmd_len, &slot, &ctx)==FAILURE) { \
@@ -78,8 +79,9 @@
     resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx); 
         
 /* More generic processing, where only the keyword differs */
-#define CLUSTER_PROCESS_KW_CMD(kw, cmdfunc, resp_func) \
+#define CLUSTER_PROCESS_KW_CMD(kw, cmdfunc, resp_func, readcmd) \
     redisCluster *c = GET_CONTEXT(); \
+    c->readonly = CLUSTER_IS_ATOMIC(c) && readcmd; \
     char *cmd; int cmd_len; short slot; void *ctx=NULL; \
     if(cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len,\
                &slot,&ctx)==FAILURE) { \

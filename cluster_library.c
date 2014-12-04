@@ -502,100 +502,6 @@ static char **split_str_by_delim(char *str, char *delim, int *len) {
     return array;
 }
 
-/*static int
-cluster_parse_node_line(RedisSock *sock, char *line, clusterNodeInfo *info) {
-    char **array, *p, *p2;
-    int count, i;
-
-    // First split by space
-    array = split_str_by_delim(line, " ", &count);
-
-    // Sanity check on the number of elements we see
-    if(count < CLUSTER_MIN_NODE_LINE) {
-        efree(array);
-        return -1;
-    }
-    
-    // Sanity check on our cluster ID value
-    if(strlen(array[CLUSTER_NODES_HASH])!=CLUSTER_NAME_LEN) {
-        efree(array);
-        return -1;
-    }
-    
-    // Our cluster ID
-    info->name = estrndup(array[CLUSTER_NODES_HASH], CLUSTER_NAME_LEN);
-    
-    // Set the host/port
-    if(memcmp(array[CLUSTER_NODES_HOST_PORT], ":0", sizeof(":0"))==0) {
-        info->seed = 1;
-        info->host_len = strlen(sock->host);
-        info->host = estrndup(sock->host, info->host_len);
-        info->port = sock->port;
-    } else if((p = strchr(array[CLUSTER_NODES_HOST_PORT], ':'))!=NULL) {
-        // Null terminate at the : character
-        *p = '\0';
-
-        info->seed = 0;
-        info->host_len = p - array[CLUSTER_NODES_HOST_PORT];
-        info->host = estrndup(array[CLUSTER_NODES_HOST_PORT], info->host_len);
-        info->port = atoi(p+1);
-    } else {
-        efree(array);
-        return -1;
-    }
-    
-    // Flag this a slave node if it's a slave
-    info->slave = strstr(array[CLUSTER_NODES_TYPE], "slave")!=NULL;
-
-    // If we've got a master hash slot, set it
-    if(memcmp(array[CLUSTER_NODES_MASTER_HASH], "-", sizeof("-"))!=0) {
-        if(strlen(array[CLUSTER_NODES_MASTER_HASH])!=CLUSTER_NAME_LEN) {
-            efree(array);
-            return -1;
-        }
-        info->master_name = estrndup(array[CLUSTER_NODES_MASTER_HASH],
-            CLUSTER_NAME_LEN);
-    } else if(info->slave) {
-        // Slaves should always have a master hash
-        efree(array);
-        return -1;
-    }
-    
-    // See if the node serves slots
-    if(count >= CLUSTER_MIN_SLOTS_COUNT) {
-        // Allocate for enough ranges
-        info->slots_size = count - CLUSTER_MIN_SLOTS_COUNT + 1;
-        info->slots = ecalloc(info->slots_size, sizeof(clusterSlotRange));
-
-        // Now iterate over each range
-        for(i=0;i<info->slots_size;i++) {
-            p = array[i+CLUSTER_MIN_SLOTS_COUNT-1];
-
-            // If we don't see -, this node only serves one slot
-            if((p2 = strchr(p,'-'))==NULL) {
-                info->slots[i].start = atoi(p);
-                info->slots[i].end   = atoi(p);
-            } else {
-                *p2++ = '\0';
-
-                // Set this range
-                info->slots[i].start = atoi(p);
-                info->slots[i].end = atoi(p2);
-            }
-        }
-    } else {
-        info->slots_size = 0;
-        info->slots = NULL;
-    }
-
-    // Free our array
-    efree(array);
-
-    // Success!
-    return 0;
-}
-*/
-
 /* Execute a CLUSTER SLOTS command against the seed socket, and return the
  * reply or NULL on failure. */
 clusterReply* cluster_get_slots(RedisSock *redis_sock TSRMLS_DC)
@@ -1357,8 +1263,7 @@ PHPAPI short cluster_send_command(redisCluster *c, short slot, const char *cmd,
  * we try to send the request to the Cluster *or* if a non MOVED or ASK
  * error is encountered, in which case our response processing macro will
  * short circuit and RETURN_FALSE, as the error will have already been
- * consumed.
- */
+ * consumed. */
 
 /* RAW bulk response handler */
 PHPAPI void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS, 
