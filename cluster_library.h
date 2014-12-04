@@ -185,6 +185,10 @@ typedef struct redisCluster {
     /* How long in milliseconds should we wait when being bounced around */
     long waitms;
 
+    /* Are we flagged as being in readonly mode, meaning we could fall back to
+     * a given master's slave */
+    short readonly;
+
     /* Hash table of seed host/ports */
     HashTable *seeds;
 
