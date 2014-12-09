@@ -951,7 +951,7 @@ static int cluster_sock_write(redisCluster *c, unsigned short slot,
     // Don't fall back if direct communication with this slot is required.
     if(direct) return -1;
 
-    // Fall back by attempting the request against every connected node
+    // Fall back by attempting the request against every known node
     for(zend_hash_internal_pointer_reset(c->nodes);
         zend_hash_has_more_elements(c->nodes)==SUCCESS;
         zend_hash_move_forward(c->nodes))
@@ -1234,7 +1234,7 @@ PHPAPI short cluster_send_command(redisCluster *c, short slot, const char *cmd,
             slot = c->redir_slot;
         }
 
-        /* If we didn't get a valid response and we do have a timeout check it */
+        /* If we didn't get a valid response see if we've now timed out */
         timedout = resp && c->waitms ? mstime() - msstart >= c->waitms : 0;
     } while(resp != 0 && !c->clusterdown && !timedout);
 
