@@ -212,7 +212,7 @@ PHP_METHOD(Redis, isConnected);
 PHP_METHOD(Redis, getPersistentID);
 PHP_METHOD(Redis, getAuth);
 PHP_METHOD(Redis, getMode);
-PHP_METHOD(Redis, command);
+PHP_METHOD(Redis, rawCommand);
 
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
