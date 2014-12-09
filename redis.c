@@ -271,7 +271,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, slowlog, NULL, ZEND_ACC_PUBLIC)
 
      /* Send a raw command and read raw results */
-     PHP_ME(Redis, command, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, rawCommand, NULL, ZEND_ACC_PUBLIC)
 
      /* introspection */
      PHP_ME(Redis, getHost, NULL, ZEND_ACC_PUBLIC)
@@ -6103,8 +6103,8 @@ PHP_METHOD(Redis, slowlog) {
     REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
 }
 
-/* {{{ proto Redis::command(string cmd, arg, arg, arg, ...) }}} */
-PHP_METHOD(Redis, command) {
+/* {{{ proto Redis::rawCommand(string cmd, arg, arg, arg, ...) }}} */
+PHP_METHOD(Redis, rawCommand) {
     zval **z_args;
     RedisSock *redis_sock;
     int argc = ZEND_NUM_ARGS(), i;
