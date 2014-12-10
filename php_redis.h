@@ -188,6 +188,10 @@ PHP_METHOD(Redis, slowlog);
 PHP_METHOD(Redis, wait);
 PHP_METHOD(Redis, pubsub);
 
+PHP_METHOD(Redis, pfAdd);
+PHP_METHOD(Redis, pfCount);
+PHP_METHOD(Redis, pfMerge);
+
 PHP_METHOD(Redis, client);
 
 /* SCAN and friends  */
