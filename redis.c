@@ -286,6 +286,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, wait, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, pubsub, NULL, ZEND_ACC_PUBLIC)
 
+     PHP_ME(Redis, command, NULL, ZEND_ACC_PUBLIC)
+
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, popen, pconnect, NULL, ZEND_ACC_PUBLIC)
@@ -7241,6 +7243,89 @@ PHP_METHOD(Redis, sscan) {
 }
 PHP_METHOD(Redis, zscan) {
     generic_scan_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, TYPE_ZSCAN);
+}
+
+PHP_METHOD(Redis, command)
+{
+    char *cmd;
+    int cmd_len;
+
+	zval **z_args;
+	char **params;
+	int *params_len;
+	int argc = ZEND_NUM_ARGS(), i;
+    RedisSock *redis_sock = NULL;
+    smart_str buf = {0};
+	int key_free = 0;
+
+	/* get redis socket */
+    if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+	/* fetch args */
+    z_args = emalloc(argc * sizeof(zval*));
+    if(zend_get_parameters_array(ht, argc, z_args) == FAILURE
+       || argc < 1
+       || Z_TYPE_P(z_args[0]) != IS_STRING /* operation must be a string. */
+        ) {
+        efree(z_args);
+		RETURN_FALSE;
+    }
+
+	params = emalloc((argc) * sizeof(char*));
+	params_len = emalloc((argc) * sizeof(int));
+
+	/* prefix params */
+	for(i = 0; i < argc; ++i) {
+		convert_to_string(z_args[i]);
+
+		params[i] = Z_STRVAL_P(z_args[i]);
+		params_len[i] = Z_STRLEN_P(z_args[i]);
+        // key_free = redis_key_prefix(redis_sock, &params[i], &params_len[i] TSRMLS_CC);
+	}
+
+	/* start building the command */
+	smart_str_appendc(&buf, '*');
+	smart_str_append_long(&buf, argc); /* +1 for BITOP command */
+	smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+
+	/* add params */
+	for(i = 0; i < argc; ++i) {
+		smart_str_appendc(&buf, '$');
+		smart_str_append_long(&buf, params_len[i]);
+		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+		smart_str_appendl(&buf, params[i], params_len[i]);
+		smart_str_appendl(&buf, _NL, sizeof(_NL) - 1);
+	}
+	/* end string */
+	smart_str_0(&buf);
+	cmd = buf.c;
+	cmd_len = buf.len;
+
+	/* cleanup */
+    if(key_free)
+        for(i = 0; i < argc; ++i) {
+            efree(params[i]);
+        }
+	efree(params);
+	efree(params_len);
+	efree(z_args);
+
+	/* send */
+	REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+	/* IF_ATOMIC() { */
+	/* 	redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL); */
+	/* } */
+	/* REDIS_PROCESS_RESPONSE(redis_long_response); */
+    IF_ATOMIC() {
+	    if (redis_sock_read_generic_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                          redis_sock, NULL, NULL) < 0) {
+        	RETURN_FALSE;
+	    }
+	}
+	REDIS_PROCESS_RESPONSE(redis_sock_read_generic_reply);
+
 }
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
