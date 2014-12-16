@@ -101,7 +101,7 @@ class Redis_Test extends TestSuite
         // Make sure the elements are correct, and have zero counts
         foreach(Array($c1,$c2) as $channel) {
             $this->assertTrue(isset($result[$channel]));
-            $this->assertEquals($result[$channel], "0");
+            $this->assertEquals($result[$channel], 0);
         }
 
         // PUBSUB NUMPAT
@@ -2037,14 +2037,13 @@ class Redis_Test extends TestSuite
     }
 
 	public function testZAddFirstArg() {
+        $zsetName = 100; // Make sure int keys work
+		$this->redis->delete($zsetName);
 
-		$this->redis->delete('key');
+        $this->assertEquals(1,  $this->redis->zAdd($zsetName, 0, 'val0'));
+		$this->assertEquals(1, $this->redis->zAdd($zsetName, 1, 'val1'));
 
-		$zsetName = 100; // not a string!
-		$this->assertTrue(1 === $this->redis->zAdd($zsetName, 0, 'val0'));
-		$this->assertTrue(1 === $this->redis->zAdd($zsetName, 1, 'val1'));
-
-		$this->assertTrue(array('val0', 'val1') === $this->redis->zRange($zsetName, 0, -1));
+        $this->assertTrue(array('val0', 'val1') === $this->redis->zRange($zsetName, 0, -1));
 	}
 
     public function testZX() {
@@ -4812,8 +4811,9 @@ class Redis_Test extends TestSuite
                 $i--;
             }
         }
+
         $this->assertEquals(0, $i);
-        $this->assertEquals(0, $i_tot_score);
+        $this->assertEquals(0.0, $i_tot_score);
 
         // Just scan "pmem" members
         $it = NULL;
@@ -4825,7 +4825,7 @@ class Redis_Test extends TestSuite
                 $i_p_count -= 1;
             }
         }
-        $this->assertEquals(0, $i_p_score);
+        $this->assertEquals(0.0, $i_p_score);
         $this->assertEquals(0, $i_p_count);
 
         // Turn off retrying and we should get some empty results
@@ -4843,7 +4843,7 @@ class Redis_Test extends TestSuite
         }
         // We should still get all the keys, just with several empty results
         $this->assertTrue($i_skips > 0);
-        $this->assertEquals(0, $i_p_score);
+        $this->assertEquals(0.0, $i_p_score);
         $this->assertEquals(0, $i_p_count);
     }
 

@@ -243,7 +243,6 @@ PHP_REDIS_API void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cm
 PHP_REDIS_API void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd);
 PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *unsub_cmd);
 
-PHP_REDIS_API void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int use_atof TSRMLS_DC);
 PHP_REDIS_API int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC);
 
 PHP_REDIS_API int get_flag(zval *object TSRMLS_DC);
