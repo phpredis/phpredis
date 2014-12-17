@@ -1567,7 +1567,7 @@ PHP_REDIS_API int redis_sock_set_err(RedisSock *redis_sock, const char *msg, int
 PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
     char inbuf[1024];
-	int numElems;
+	int numElems, err_len;
     zval *z_multi_result;
 
     if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
@@ -1587,6 +1587,12 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, 
         IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
         } else {
+            /* Capture our error if redis has given us one */
+            if (inbuf[0] == '-') {
+                err_len = strlen(inbuf+1) - 2;
+                redis_sock_set_err(redis_sock, inbuf+1, err_len);
+            }
+
             RETVAL_FALSE;
         }
         return -1;

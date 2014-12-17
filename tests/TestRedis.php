@@ -2499,13 +2499,21 @@ class Redis_Test extends TestSuite
     }
 
     public function testObject() {
-	    $this->redis->del('key');
+        /* Version 3.0.0 (represented as >= 2.9.0 in redis info)  and moving
+         * forward uses "embstr" instead of "raw" for small string values */
+        if (version_compare($this->version, "2.9.0", "lt")) {
+            $str_small_encoding = "raw";
+        } else {
+            $str_small_encoding = "embstr";
+        }
+
+        $this->redis->del('key');
 	    $this->assertTrue($this->redis->object('encoding', 'key') === FALSE);
 	    $this->assertTrue($this->redis->object('refcount', 'key') === FALSE);
 	    $this->assertTrue($this->redis->object('idletime', 'key') === FALSE);
 
 	    $this->redis->set('key', 'value');
-	    $this->assertTrue($this->redis->object('encoding', 'key') === "raw");
+	    $this->assertTrue($this->redis->object('encoding', 'key') === $str_small_encoding);
 	    $this->assertTrue($this->redis->object('refcount', 'key') === 1);
 	    $this->assertTrue($this->redis->object('idletime', 'key') === 0);
 
