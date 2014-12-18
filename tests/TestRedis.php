@@ -4910,12 +4910,18 @@ class Redis_Test extends TestSuite
                     $i_card = $this->redis->pfcount($str_key);
                     $this->assertTrue(is_int($i_card));
 
+
                     // Count should be close
                     $this->assertLess(abs($i_card-count($arr_mems)), count($arr_mems) * .1);
 
                     // The PFCOUNT on this key should be the same as the above returned response
                     $this->assertEquals($this->redis->pfcount($str_key), $i_card);
+
                 }
+
+                // Make sure we can pass an array of keys into pfCount
+                $i_card = $this->redis->pfcount($arr_keys);
+                $this->assertTrue(is_int($i_card));
 
                 // Clean up merge key
                 $this->redis->del('pf-merge-key');

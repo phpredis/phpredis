@@ -7367,15 +7367,19 @@ PHP_METHOD(Redis, pfadd) {
     REDIS_PROCESS_RESPONSE(redis_1_response);
 }
 
-/* {{{ proto Redis::pfCount(string key) }}}*/
+/* {{{ proto Redis::pfCount(string key) }}}
+ *     proto Redis::pfCount(array keys) }}} */
 PHP_METHOD(Redis, pfcount) {
-    zval *object;
+    zval *object, *z_keys, **z_key, *z_tmp = NULL;
+    HashTable *ht_keys;
+    HashPosition ptr;
     RedisSock *redis_sock;
-    char *key, *cmd;
-    int key_len, cmd_len, key_free;
+    smart_str cmd = {0};
+    int num_keys, key_len, key_free;
+    char *key;
 
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
-                                    &object, redis_ce, &key, &key_len)==FAILURE)
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oz",
+                                    &object, redis_ce, &z_keys)==FAILURE)
     {
         RETURN_FALSE;
     }
@@ -7384,17 +7388,88 @@ PHP_METHOD(Redis, pfcount) {
         RETURN_FALSE;
     }
 
-    // Prefix key if neccisary and construct our command
-    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
-    cmd_len = redis_cmd_format_static(&cmd, "PFCOUNT", "s", key, key_len);
-    if(key_free) efree(key);
+    /* If we were passed an array of keys, iterate through them prefixing if
+     * required and capturing lengths and if we need to free them.  Otherwise
+     * attempt to treat the argument as a string and just pass one */
+    if (Z_TYPE_P(z_keys) == IS_ARRAY) {
+        /* Grab key hash table and the number of keys */
+        ht_keys = Z_ARRVAL_P(z_keys);
+        num_keys = zend_hash_num_elements(ht_keys);
 
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+        /* There is no reason to send zero keys */
+        if (num_keys == 0) {
+            RETURN_FALSE;
+        }
+
+        /* Initialize the command with our number of arguments */
+        redis_cmd_init_sstr(&cmd, num_keys, "PFCOUNT", sizeof("PFCOUNT")-1);
+        
+        /* Append our key(s) */
+        for (zend_hash_internal_pointer_reset_ex(ht_keys, &ptr);
+             zend_hash_get_current_data_ex(ht_keys, (void**)&z_key, &ptr)==SUCCESS;
+             zend_hash_move_forward_ex(ht_keys, &ptr))
+        {
+            /* Turn our value into a string if it isn't one */
+            if (Z_TYPE_PP(z_key) != IS_STRING) {
+                MAKE_STD_ZVAL(z_tmp);
+                *z_tmp = **z_key;
+                zval_copy_ctor(z_tmp);
+                convert_to_string(z_tmp);
+
+                key = Z_STRVAL_P(z_tmp);
+                key_len = Z_STRLEN_P(z_tmp);
+            } else {
+                key = Z_STRVAL_PP(z_key);
+                key_len = Z_STRLEN_PP(z_key);
+            }
+
+            /* Append this key to our command */
+            key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+            redis_cmd_append_sstr(&cmd, key, key_len);
+            
+            /* Cleanup */
+            if (key_free) efree(key);
+            if (z_tmp) {
+                zval_dtor(z_tmp);
+                efree(z_tmp);
+                z_tmp = NULL;
+            }
+        }
+    } else {
+        /* Turn our key into a string if it's a different type */
+        if (Z_TYPE_P(z_keys) != IS_STRING) {
+            MAKE_STD_ZVAL(z_tmp);
+            *z_tmp = *z_keys;
+            zval_copy_ctor(z_tmp);
+            convert_to_string(z_tmp);
+
+            key = Z_STRVAL_P(z_tmp);
+            key_len = Z_STRLEN_P(z_tmp);
+        } else {
+            key = Z_STRVAL_P(z_keys);
+            key_len = Z_STRLEN_P(z_keys);
+        }
+
+        /* Construct our whole command */
+        redis_cmd_init_sstr(&cmd, 1, "PFCOUNT", sizeof("PFCOUNT")-1);
+        key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+        redis_cmd_append_sstr(&cmd, key, key_len);
+        
+        /* Cleanup */
+        if (key_free) efree(key);
+        if (z_tmp) {
+            zval_dtor(z_tmp);
+            efree(z_tmp);
+        }
+    }
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
     IF_ATOMIC() {
         redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
     REDIS_PROCESS_RESPONSE(redis_long_response);
 }
+/* }}} */
 
 /* {{{ proto Redis::pfMerge(array keys) }}}*/
 PHP_METHOD(Redis, pfmerge) {
