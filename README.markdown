@@ -2487,7 +2487,7 @@ while(($arr_mems = $redis->sscan('set', $it, "*pattern*"))!==FALSE) {
 * [zIncrBy](#zincrby) - Increment the score of a member in a sorted set
 * [zInter](#zinter) - Intersect multiple sorted sets and store the resulting sorted set in a new key
 * [zRange](#zrange) - Return a range of members in a sorted set, by index
-* [zRangeByScore, zRevRangeByScore](#zrangebyscore-zrevrangebyscore) - Return a range of members in a sorted set, by score
+* [zRangeByScore, zRevRangeByScore](#-zrevrangebyscore) - Return a range of members in a sorted set, by score
 * [zRank, zRevRank](#zrank-zrevrank) - Determine the index of a member in a sorted set
 * [zRem, zDelete](#zrem-zdelete) - Remove one or more members from a sorted set
 * [zRemRangeByRank, zDeleteRangeByRank](#zremrangebyrank-zdeleterangebyrank) - Remove all members in a sorted set within the given indexes
@@ -2666,7 +2666,7 @@ $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
 $redis->zRangeByScore('key', 0, 3); /* array('val0', 'val2') */
-$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE); /* array('val0' => 0, 'val2' => 2) */
+$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE)); /* array('val0' => 0, 'val2' => 2) */
 $redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1)); /* array('val2') */
 $redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(1, 1)); /* array('val2' => 2) */
 ~~~
