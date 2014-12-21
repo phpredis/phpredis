@@ -81,9 +81,10 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
    		long retry_interval = (count ? redis_sock->retry_interval : (php_rand(TSRMLS_C) % redis_sock->retry_interval));
     	usleep(retry_interval);
     }
-        redis_sock_connect(redis_sock TSRMLS_CC); /* reconnect */
-        if(redis_sock->stream) { /*  check for EOF again. */
-            eof = php_stream_eof(redis_sock->stream);
+        if (redis_sock_connect(redis_sock TSRMLS_CC) == 0) { /* reconnect */
+            if(redis_sock->stream) { /*  check for EOF again. */
+                eof = php_stream_eof(redis_sock->stream);
+            }
         }
     }
 
