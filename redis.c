@@ -319,7 +319,13 @@ static zend_function_entry redis_functions[] = {
 
      PHP_MALIAS(Redis, evaluate, eval, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, evaluateSha, evalsha, NULL, ZEND_ACC_PUBLIC)
+     
+     /* GeoRedis commands*/
+     PHP_ME(Redis, georadius, NULL, ZEND_ACC_PUBLIC)
+     
      {NULL, NULL, NULL}
+     
+     
 };
 
 zend_module_entry redis_module_entry = {
@@ -7242,5 +7248,54 @@ PHP_METHOD(Redis, sscan) {
 PHP_METHOD(Redis, zscan) {
     generic_scan_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, TYPE_ZSCAN);
 }
+
+
+/* {{{ array Redis::georadius(string hash, geoset latitude longitude radius units, [ascending|descending]) */
+PHP_METHOD(Redis, georadius) {
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *lat = NULL, *lon = NULL, *dist = NULL, *unit = NULL, *order = NULL, *cmd;
+    zval *z_array, **z_keys, **data;
+    int field_count, i, valid, key_len, key_free,lat_len, lon_len, dist_len, unit_len, order_len, cmd_len;
+    HashTable *ht_array;
+    HashPosition ptr;
+    int arg_nos = 5;
+    long distance = 0;
+    //smart_str cmd = {0};
+
+    /* Make sure we can grab our arguments properly */
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),  "Osssls|s", &object, redis_ce, &key, &key_len, &lat, &lat_len, &lon, &lon_len, &distance, &unit, &unit_len, &order, &order_len)
+                                    == FAILURE)
+    {
+        RETURN_FALSE;
+    }
+
+    /* We'll need our socket */
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    /* Add prefix if needed */
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+    
+    /* Build command header.  Change number of arguments if order is specified*/
+    
+	if(order != NULL && order_len > 0){
+    	 cmd_len = redis_cmd_format_static(&cmd, "GEORADIUS", "ssslss", key, key_len, lat, lat_len, lon, lon_len, distance, unit, unit_len,order, order_len);
+    }
+    else{
+		cmd_len = redis_cmd_format_static(&cmd, "GEORADIUS", "sssls", key, key_len, lat, lat_len, lon, lon_len, distance, unit, unit_len);
+    }
+    /* Free key if prefix was added */
+    if(key_free) efree(key);
+	
+    /* Kick off our request */
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+        redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+     REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+}
+
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

@@ -206,6 +206,8 @@ PHP_METHOD(Redis, isConnected);
 PHP_METHOD(Redis, getPersistentID);
 PHP_METHOD(Redis, getAuth);
 PHP_METHOD(Redis, rawCommand);
+/* Geo Redis*/
+PHP_METHOD(Redis, georadius);
 
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
