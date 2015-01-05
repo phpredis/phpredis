@@ -80,7 +80,7 @@ static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
     cmd_len = redis_cmd_format_static(&cmd, "AUTH", "s", redis_sock->auth,
         strlen(redis_sock->auth));
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_DC) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
         return -1;
     }
@@ -185,12 +185,12 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
     /* We've reconnected if we have a count */
     if (count) {
         /* If we're using a password, attempt a reauthorization */
-        if (redis_sock->auth && resend_auth(redis_sock) != 0) {
+        if (redis_sock->auth && resend_auth(redis_sock TSRMLS_CC) != 0) {
             return -1;
         }
 
         /* If we're using a non zero db, reselect it */
-        if (redis_sock->dbNumber && reselect_db(redis_sock) != 0) {
+        if (redis_sock->dbNumber && reselect_db(redis_sock TSRMLS_CC) != 0) {
             return -1;
         }
     }
@@ -350,7 +350,7 @@ PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_D
 			redis_sock_set_err(redis_sock, inbuf+1, err_len);
 
             /* Filter our ERROR through the few that should actually throw */
-            redis_error_throw(inbuf + 1, err_len);
+            redis_error_throw(inbuf + 1, err_len TSRMLS_CC);
 
             return NULL;
         case '$':
