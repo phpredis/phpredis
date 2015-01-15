@@ -339,7 +339,9 @@ PS_READ_FUNC(redis)
 {
 	char *session, *cmd;
 	int session_len, cmd_len;
-
+	if (strlen(key) == 0){
+	    return FAILURE;
+	}
 	redis_pool *pool = PS_GET_MOD_DATA();
     redis_pool_member *rpm = redis_pool_get_sock(pool, key TSRMLS_CC);
 	RedisSock *redis_sock = rpm?rpm->redis_sock:NULL;
@@ -372,7 +374,9 @@ PS_WRITE_FUNC(redis)
 {
 	char *cmd, *response, *session;
 	int cmd_len, response_len, session_len;
-
+	if (strlen(key) == 0){
+	    return FAILURE;
+	}
 	redis_pool *pool = PS_GET_MOD_DATA();
     redis_pool_member *rpm = redis_pool_get_sock(pool, key TSRMLS_CC);
 	RedisSock *redis_sock = rpm?rpm->redis_sock:NULL;
