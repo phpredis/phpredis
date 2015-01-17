@@ -88,7 +88,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue(is_array($result));
 
         // PUBSUB NUMSUB
-        
+
         $c1 = uniqid() . '-' . rand(1,100);
         $c2 = uniqid() . '-' . rand(1,100);
 
@@ -101,7 +101,7 @@ class Redis_Test extends TestSuite
         // Make sure the elements are correct, and have zero counts
         foreach(Array($c1,$c2) as $channel) {
             $this->assertTrue(isset($result[$channel]));
-            $this->assertEquals($result[$channel], "0");
+            $this->assertEquals($result[$channel], 0);
         }
 
         // PUBSUB NUMPAT
@@ -218,7 +218,7 @@ class Redis_Test extends TestSuite
         $this->assertEquals('val', $this->redis->get('key2'));
 
         $value = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-        
+
         $this->redis->set('key2', $value);
         $this->assertEquals($value, $this->redis->get('key2'));
         $this->assertEquals($value, $this->redis->get('key2'));
@@ -528,7 +528,7 @@ class Redis_Test extends TestSuite
         }
 
         $this->redis->delete('key');
-        
+
         $this->redis->set('key', 0);
 
         $this->redis->incrbyfloat('key', 1.5);
@@ -1227,9 +1227,9 @@ class Redis_Test extends TestSuite
 	    }
 	}
 
-        // 
+        //
         // With and without count, while serializing
-        // 
+        //
 
         $this->redis->delete('set0');
         $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
@@ -1253,11 +1253,11 @@ class Redis_Test extends TestSuite
     public function testSRandMemberWithCount() {
         // Make sure the set is nuked
         $this->redis->delete('set0');
-        
+
         // Run with a count (positive and negative) on an empty set
         $ret_pos = $this->redis->sRandMember('set0', 10);
         $ret_neg = $this->redis->sRandMember('set0', -10);
-        
+
         // Should both be empty arrays
         $this->assertTrue(is_array($ret_pos) && empty($ret_pos));
         $this->assertTrue(is_array($ret_neg) && empty($ret_neg));
@@ -1845,10 +1845,10 @@ class Redis_Test extends TestSuite
 
         // We should have found our connection
         $this->assertFalse(empty($str_addr));
-        
+
         /* CLIENT GETNAME */
         $this->assertTrue($this->redis->client('getname'), 'phpredis_unit_tests');
-         
+
         /* CLIENT KILL -- phpredis will reconnect, so we can do this */
         $this->assertTrue($this->redis->client('kill', $str_addr));
     }
@@ -2037,14 +2037,13 @@ class Redis_Test extends TestSuite
     }
 
 	public function testZAddFirstArg() {
+        $zsetName = 100; // Make sure int keys work
+		$this->redis->delete($zsetName);
 
-		$this->redis->delete('key');
+        $this->assertEquals(1,  $this->redis->zAdd($zsetName, 0, 'val0'));
+		$this->assertEquals(1, $this->redis->zAdd($zsetName, 1, 'val1'));
 
-		$zsetName = 100; // not a string!
-		$this->assertTrue(1 === $this->redis->zAdd($zsetName, 0, 'val0'));
-		$this->assertTrue(1 === $this->redis->zAdd($zsetName, 1, 'val1'));
-
-		$this->assertTrue(array('val0', 'val1') === $this->redis->zRange($zsetName, 0, -1));
+        $this->assertTrue(array('val0', 'val1') === $this->redis->zRange($zsetName, 0, -1));
 	}
 
     public function testZX() {
@@ -2328,6 +2327,40 @@ class Redis_Test extends TestSuite
 
     }
 
+    public function testZRangeByLex() {
+        /* Only out since 2.8.9 */
+        if (version_compare($this->version,  '2.8.9', 'lt')) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $arr_vals = Array('a','b','c','d','e','f','g');
+
+        $this->redis->del('zlex');
+        foreach($arr_vals as $str_val) {
+            $this->redis->zadd('zlex', 0, $str_val);
+        }
+
+        /* These tests were taken off of redis.io out of sheer laziness :) */
+        $arr_ret = $this->redis->zRangeByLex('zlex', '-', '[c');
+        $this->assertTrue($arr_ret === Array('a','b','c'));
+
+        $arr_ret = $this->redis->zRangeByLex('zlex', '-', '(c');
+        $this->assertTrue($arr_ret === Array('a','b'));
+
+        $arr_ret = $this->redis->zRangeByLex('zlex', '[aaa', '(g');
+        $this->assertTrue($arr_ret === Array('b','c','d','e','f'));
+
+        /* Test with a limit and count */
+        $arr_ret = $this->redis->zRangeBylex('zlex', '-', '[c', 1, 2);
+        $this->assertTrue($arr_ret === Array('b','c'));
+
+        /* Test some invalid calls */
+        $this->assertFalse($this->redis->zRangeByLex('zlex','b','[s'));
+        $this->assertFalse($this->redis->zRangeByLex('zlex','(a', ''));
+        $this->assertFalse($this->redis->zRangeByLex('zlex','(a','[b',1));
+    }
+
     public function testHashes() {
 	$this->redis->delete('h', 'key');
 
@@ -2466,13 +2499,21 @@ class Redis_Test extends TestSuite
     }
 
     public function testObject() {
-	    $this->redis->del('key');
+        /* Version 3.0.0 (represented as >= 2.9.0 in redis info)  and moving
+         * forward uses "embstr" instead of "raw" for small string values */
+        if (version_compare($this->version, "2.9.0", "lt")) {
+            $str_small_encoding = "raw";
+        } else {
+            $str_small_encoding = "embstr";
+        }
+
+        $this->redis->del('key');
 	    $this->assertTrue($this->redis->object('encoding', 'key') === FALSE);
 	    $this->assertTrue($this->redis->object('refcount', 'key') === FALSE);
 	    $this->assertTrue($this->redis->object('idletime', 'key') === FALSE);
 
 	    $this->redis->set('key', 'value');
-	    $this->assertTrue($this->redis->object('encoding', 'key') === "raw");
+	    $this->assertTrue($this->redis->object('encoding', 'key') === $str_small_encoding);
 	    $this->assertTrue($this->redis->object('refcount', 'key') === 1);
 	    $this->assertTrue($this->redis->object('idletime', 'key') === 0);
 
@@ -4496,7 +4537,7 @@ class Redis_Test extends TestSuite
 
     public function testSerialize() {
         $vals = Array(1, 1.5, 'one', Array('here','is','an','array'));
-        
+
         // Test with no serialization at all
         $this->assertTrue($this->redis->_serialize('test') === 'test');
         $this->assertTrue($this->redis->_serialize(1) === '1');
@@ -4509,7 +4550,7 @@ class Redis_Test extends TestSuite
         }
 
         foreach($arr_serializers as $mode) {
-            $arr_enc = Array(); 
+            $arr_enc = Array();
             $arr_dec = Array();
 
             foreach($vals as $k => $v) {
@@ -4679,7 +4720,7 @@ class Redis_Test extends TestSuite
             $this->markTestSkipped();
             return;
         }
-    
+
         // Never get empty sets
         $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
 
@@ -4688,7 +4729,7 @@ class Redis_Test extends TestSuite
 
         for($i=0;$i<100;$i++) {
             if($i>3) {
-                $this->redis->hset('hash', "member:$i", "value:$i");    
+                $this->redis->hset('hash', "member:$i", "value:$i");
             } else {
                 $this->redis->hset('hash', "foomember:$i", "value:$i");
                 $i_foo_mems++;
@@ -4766,7 +4807,7 @@ class Redis_Test extends TestSuite
             } else {
                 $this->redis->zadd('zset', $i, "mem:$i");
             }
-            
+
             $i_tot_score += $i;
         }
 
@@ -4778,8 +4819,9 @@ class Redis_Test extends TestSuite
                 $i--;
             }
         }
+
         $this->assertEquals(0, $i);
-        $this->assertEquals(0, $i_tot_score);
+        $this->assertEquals(0.0, $i_tot_score);
 
         // Just scan "pmem" members
         $it = NULL;
@@ -4791,7 +4833,7 @@ class Redis_Test extends TestSuite
                 $i_p_count -= 1;
             }
         }
-        $this->assertEquals(0, $i_p_score);
+        $this->assertEquals(0.0, $i_p_score);
         $this->assertEquals(0, $i_p_count);
 
         // Turn off retrying and we should get some empty results
@@ -4809,11 +4851,98 @@ class Redis_Test extends TestSuite
         }
         // We should still get all the keys, just with several empty results
         $this->assertTrue($i_skips > 0);
-        $this->assertEquals(0, $i_p_score);
+        $this->assertEquals(0.0, $i_p_score);
         $this->assertEquals(0, $i_p_count);
+    }
+
+    //
+    // HyperLogLog (PF) commands
+    //
+
+    protected function createPFKey($str_key, $i_count) {
+        $arr_mems = Array();
+        for($i=0;$i<$i_count;$i++) {
+            $arr_mems[] = uniqid() . '-' . $i;
+        }
+
+        // Estimation by Redis
+        $this->redis->pfadd($str_key, $i_count);
+    }
+
+    public function testPFCommands() {
+        // Isn't available until 2.8.9
+        if(version_compare($this->version, "2.8.9", "lt")) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $str_uniq = uniqid();
+        $arr_mems = Array();
+
+        for($i=0;$i<1000;$i++) {
+            if($i%2 == 0) {
+                $arr_mems[] = $str_uniq . '-' . $i;
+            } else {
+                $arr_mems[] = $i;
+            }
+        }
+
+        // How many keys to create
+        $i_keys = 10;
+
+        // Iterate prefixing/serialization options
+        foreach(Array(Redis::SERIALIZER_NONE, Redis::SERIALIZER_PHP) as $str_ser) {
+            foreach(Array('', 'hl-key-prefix:') as $str_prefix) {
+                $arr_keys = Array();
+
+                // Now add for each key
+                for($i=0;$i<$i_keys;$i++) {
+                    $str_key    = "key:$i";
+                    $arr_keys[] = $str_key;
+
+                    // Clean up this key
+                    $this->redis->del($str_key);
+
+                    // Add to our cardinality set, and confirm we got a valid response
+                    $this->assertTrue($this->redis->pfadd($str_key, $arr_mems));
+
+                    // Grab estimated cardinality
+                    $i_card = $this->redis->pfcount($str_key);
+                    $this->assertTrue(is_int($i_card));
+
+
+                    // Count should be close
+                    $this->assertLess(abs($i_card-count($arr_mems)), count($arr_mems) * .1);
+
+                    // The PFCOUNT on this key should be the same as the above returned response
+                    $this->assertEquals($this->redis->pfcount($str_key), $i_card);
+
+                }
+
+                // Make sure we can pass an array of keys into pfCount
+                $i_card = $this->redis->pfcount($arr_keys);
+                $this->assertTrue(is_int($i_card));
+
+                // Clean up merge key
+                $this->redis->del('pf-merge-key');
+
+                // Merge the counters
+                $this->assertTrue($this->redis->pfmerge('pf-merge-key', $arr_keys));
+
+                // Validate our merged count
+                $i_redis_card = $this->redis->pfcount('pf-merge-key');
+
+                // Merged cardinality should still be roughly 1000
+                $this->assertLess(abs($i_redis_card-count($arr_mems)), count($arr_mems) * .1);
+
+                // Clean up merge key
+                $this->redis->del('pf-merge-key');
+            }
+        }
     }
 }
 
-exit(TestSuite::run("Redis_Test"));
+$str_test = isset($argv[1]) ? $argv[1] : NULL;
+exit(TestSuite::run("Redis_Test", $str_test));
 
 ?>

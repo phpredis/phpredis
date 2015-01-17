@@ -30,7 +30,8 @@
 
 /* reply types */
 typedef enum _REDIS_REPLY_TYPE {
-	TYPE_LINE      = '+',
+    TYPE_EOF       = EOF,
+    TYPE_LINE      = '+',
 	TYPE_INT       = ':',
 	TYPE_ERR       = '-',
 	TYPE_BULK      = '$',
@@ -64,13 +65,20 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_SERIALIZER_IGBINARY 	2
 
 /* SCAN options */
-
 #define REDIS_SCAN_NORETRY 0
 #define REDIS_SCAN_RETRY 1
 
 /* GETBIT/SETBIT offset range limits */
 #define BITOP_MIN_OFFSET 0
 #define BITOP_MAX_OFFSET 4294967295
+
+/* Specific error messages we want to throw against */
+#define REDIS_ERR_LOADING_MSG "LOADING Redis is loading the dataset in memory"
+#define REDIS_ERR_LOADING_KW  "LOADING"
+#define REDIS_ERR_AUTH_MSG    "NOAUTH Authentication required."
+#define REDIS_ERR_AUTH_KW     "NOAUTH"
+#define REDIS_ERR_SYNC_MSG    "MASTERDOWN Link with MASTER is down and slave-serve-stale-data is set to 'no'"
+#define REDIS_ERR_SYNC_KW     "MASTERDOWN"
 
 #define IF_MULTI() if(redis_sock->mode == MULTI)
 #define IF_MULTI_OR_ATOMIC() if(redis_sock->mode == MULTI || redis_sock->mode == ATOMIC)\
@@ -177,6 +185,12 @@ else if(redis_sock->mode == MULTI) { \
 
 #define IS_EX_PX_ARG(a) (IS_EX_ARG(a) || IS_PX_ARG(a))
 #define IS_NX_XX_ARG(a) (IS_NX_ARG(a) || IS_XX_ARG(a))
+
+/* Given a string and length, validate a zRangeByLex argument.  The semantics
+ * here are that the argument must start with '(' or '[' or be just the char
+ * '+' or '-' */
+#define IS_LEX_ARG(s,l) \
+    (l>0 && (*s=='(' || *s=='[' || (l==1 && (*s=='+' || *s=='-'))))
 
 typedef enum {ATOMIC, MULTI, PIPELINE} redis_mode;
 

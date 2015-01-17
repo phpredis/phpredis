@@ -30,6 +30,8 @@ PHP_METHOD(RedisArray, del);
 PHP_METHOD(RedisArray, keys);
 PHP_METHOD(RedisArray, getOption);
 PHP_METHOD(RedisArray, setOption);
+PHP_METHOD(RedisArray, save);
+PHP_METHOD(RedisArray, bgsave);
 
 PHP_METHOD(RedisArray, multi);
 PHP_METHOD(RedisArray, exec);

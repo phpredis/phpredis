@@ -111,6 +111,7 @@ PHP_METHOD(Redis, zDelete);
 PHP_METHOD(Redis, zRange);
 PHP_METHOD(Redis, zReverseRange);
 PHP_METHOD(Redis, zRangeByScore);
+PHP_METHOD(Redis, zRangeByLex);
 PHP_METHOD(Redis, zRevRangeByScore);
 PHP_METHOD(Redis, zCount);
 PHP_METHOD(Redis, zDeleteRangeByScore);
@@ -196,6 +197,11 @@ PHP_METHOD(Redis, hscan);
 PHP_METHOD(Redis, sscan);
 PHP_METHOD(Redis, zscan);
 
+/* HyperLogLog commands */
+PHP_METHOD(Redis, pfadd);
+PHP_METHOD(Redis, pfcount);
+PHP_METHOD(Redis, pfmerge);
+
 /* Reflection */
 PHP_METHOD(Redis, getHost);
 PHP_METHOD(Redis, getPort);
@@ -205,6 +211,7 @@ PHP_METHOD(Redis, getReadTimeout);
 PHP_METHOD(Redis, isConnected);
 PHP_METHOD(Redis, getPersistentID);
 PHP_METHOD(Redis, getAuth);
+PHP_METHOD(Redis, getMode);
 PHP_METHOD(Redis, rawCommand);
 
 #ifdef PHP_WIN32
@@ -236,7 +243,6 @@ PHP_REDIS_API void generic_empty_long_cmd(INTERNAL_FUNCTION_PARAMETERS, char *cm
 PHP_REDIS_API void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd);
 PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *unsub_cmd);
 
-PHP_REDIS_API void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, int use_atof TSRMLS_DC);
 PHP_REDIS_API int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC);
 
 PHP_REDIS_API int get_flag(zval *object TSRMLS_DC);
@@ -271,7 +277,7 @@ extern zend_module_entry redis_module_entry;
 
 #define phpext_redis_ptr redis_module_ptr
 
-#define PHP_REDIS_VERSION "2.2.5"
+#define PHP_REDIS_VERSION "2.2.6"
 
 #endif
 
