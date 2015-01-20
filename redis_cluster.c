@@ -2494,7 +2494,7 @@ PHP_METHOD(RedisCluster, info) {
 
     if(cluster_send_slot(c, slot, cmd, cmd_len, TYPE_BULK TSRMLS_CC)<0) {
         zend_throw_exception(redis_cluster_exception_ce,
-            "Unable to send INFO command to spacific node", 0 TSRMLS_CC);
+            "Unable to send INFO command to specific node", 0 TSRMLS_CC);
         efree(cmd);
         RETURN_FALSE;
     }
