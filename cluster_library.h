@@ -168,6 +168,9 @@ typedef struct redisClusterNode {
 
     /* A HashTable containing any slaves */
     HashTable *slaves;
+
+    /* Is slave in readonly mode */
+    unsigned short readonly;
 } redisClusterNode;
 
 /* Forward declarations */
@@ -337,6 +340,8 @@ unsigned short cluster_hash_key(const char *key, int len);
 /* Get the current time in miliseconds */
 long long mstime(void);
 
+static int redis_sock_write_no_exception(RedisSock *redis_sock, char *cmd, size_t sz);
+PHPAPI int send_readonly_command(redisClusterNode *slave_node);
 PHPAPI short cluster_send_command(redisCluster *c, short slot, const char *cmd, 
     int cmd_len TSRMLS_DC);
 
