@@ -8,6 +8,42 @@
 
 extern zend_class_entry *redis_cluster_exception_ce;
 
+/* sock_write function without exception */
+static int redis_sock_write_no_exception(RedisSock *redis_sock, char *cmd, size_t sz
+                            TSRMLS_DC)
+{
+    if(redis_sock && redis_sock->status == REDIS_SOCK_STATUS_DISCONNECTED) {
+        return -1;
+    }
+    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
+        return -1;
+    }
+    return php_stream_write(redis_sock->stream, cmd, sz);
+}
+
+/* send readonly command && get the resp */
+PHPAPI int send_readonly_command(redisClusterNode *slave_node)
+{
+    int result = FAILURE;
+    char *resp;
+    int len;
+
+    if (!slave_node->readonly) {
+        CLUSTER_LAZY_CONNECT(slave_node->sock);
+        // Send the command to the socket and consume reply type
+        if (redis_sock_write_no_exception(slave_node->sock, RESP_READONLY_CMD, sizeof(RESP_READONLY_CMD)-1 TSRMLS_CC) >= 0 &&
+           (resp = redis_sock_read(slave_node->sock,&len TSRMLS_CC)) != NULL)
+        {
+            /* success if we get OK */
+            result = (len == 3 && strncmp(resp,"+OK", 3)==0) ? SUCCESS:FAILURE;
+            slave_node->readonly = 1;
+            /* free our response */
+            efree(resp);
+        }
+    }
+    return result;
+}
+
 /* Some debug methods that will go away when we're through with them */
 
 static void cluster_dump_nodes(redisCluster *c) {
@@ -541,6 +577,7 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
     node->slot   = slot;
     node->slave  = slave;
     node->slaves = NULL;
+    node->readonly = 0;
 
     // Attach socket
     node->sock = redis_sock_create(host, host_len, port, c->timeout, 

@@ -81,22 +81,43 @@
 /* More generic processing, where only the keyword differs */
 #define CLUSTER_PROCESS_KW_CMD(kw, cmdfunc, resp_func, readcmd) \
     redisCluster *c = GET_CONTEXT(); \
+    int resp_from_slave=0; \
     c->readonly = CLUSTER_IS_ATOMIC(c) && readcmd; \
     char *cmd; int cmd_len; short slot; void *ctx=NULL; \
     if(cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len,\
                &slot,&ctx)==FAILURE) { \
         RETURN_FALSE; \
     } \
-    if(cluster_send_command(c,slot,cmd,cmd_len TSRMLS_CC)<0 || c->err!=NULL) { \
+    /* send command to slave */ \
+    /* TODO check resp from slave if is nil */ \
+    if (strcmp(kw, "GET")==0 && (c->master[slot]->slaves != NULL)) { \
+        redisClusterNode **_node; \
+        int slave_index; \
+        srand(time(NULL)); \
+        slave_index = (rand() % zend_hash_num_elements(c->master[slot]->slaves)); \
+        zend_hash_index_find(c->master[slot]->slaves, slave_index, (void**)&_node); \
+        if (send_readonly_command(*_node)==SUCCESS) { \
+            RedisSock *redis_sock = (*_node)->sock; \
+            REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
+            IF_ATOMIC() { \
+                redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx); \
+            } \
+            REDIS_PROCESS_RESPONSE_CLOSURE(resp_func,ctx); \
+            resp_from_slave = 1; \
+        } \
+    } \
+    if (!resp_from_slave) { \
+        if(cluster_send_command(c,slot,cmd,cmd_len TSRMLS_CC)<0 || c->err!=NULL) { \
+            efree(cmd); \
+            RETURN_FALSE; \
+        } \
         efree(cmd); \
-        RETURN_FALSE; \
-    } \
-    efree(cmd); \
-    if(c->flags->mode == MULTI) { \
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, resp_func, ctx); \
-        RETURN_ZVAL(getThis(), 1, 0); \
-    } \
-    resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx); 
+        if(c->flags->mode == MULTI) { \
+            CLUSTER_ENQUEUE_RESPONSE(c, slot, resp_func, ctx); \
+            RETURN_ZVAL(getThis(), 1, 0); \
+        } \
+        resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx); \
+    }
 
 /* For the creation of RedisCluster specific exceptions */
 PHPAPI zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC);
