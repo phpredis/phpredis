@@ -3288,7 +3288,7 @@ _**Description**_:  Get the read timeout specified to phpredis or FALSE if we're
 None  
 
 ##### *Return value*
-*Mixed*  Returns the read timeout (which can be set using setOption and Redis::OPT_READ_TIMOUT) or FALSE if we're not connected
+*Mixed*  Returns the read timeout (which can be set using setOption and Redis::OPT_READ_TIMEOUT) or FALSE if we're not connected
 
 ### GetPersistentID
 -----
