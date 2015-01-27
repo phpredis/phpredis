@@ -11,25 +11,6 @@
 #define REDIS_CLUSTER_SLOTS 16384
 #define REDIS_CLUSTER_MOD   (REDIS_CLUSTER_SLOTS-1)
 
-/* Minimum valid CLUSTER NODES line element count
-   and the minimum we expect if there are slots */
-#define CLUSTER_MIN_NODE_LINE   8
-#define CLUSTER_MIN_SLOTS_COUNT 9
-
-/* Length of a cluster name */
-#define CLUSTER_NAME_LEN 40
-
-/* The parts for our cluster nodes command */
-#define CLUSTER_NODES_HASH        0
-#define CLUSTER_NODES_HOST_PORT   1
-#define CLUSTER_NODES_TYPE        2
-#define CLUSTER_NODES_MASTER_HASH 3
-#define CLUSTER_NODES_PING        4
-#define CLUSTER_NODES_PONG        5
-#define CLUSTER_NODES_EPOCH       6
-#define CLUSTER_NODES_CONNECTED   7
-#define CLUSTER_SLOTS             8
-
 /* Complete representation for various commands in RESP */
 #define RESP_MULTI_CMD         "*1\r\n$5\r\nMULTI\r\n"
 #define RESP_EXEC_CMD          "*1\r\n$4\r\nEXEC\r\n"
