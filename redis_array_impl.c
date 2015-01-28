@@ -510,7 +510,7 @@ ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len) {
 	int key_pos = 0; /* TODO: change this depending on the command */
 
 	if(	zend_hash_num_elements(Z_ARRVAL_P(z_args)) == 0
-		|| zend_hash_quick_find(Z_ARRVAL_P(z_args), NULL, 0, key_pos, (void**)&zp_tmp) == FAILURE
+		|| zend_hash_index_find(Z_ARRVAL_P(z_args), key_pos, (void**) &zp_tmp) == FAILURE
 		|| Z_TYPE_PP(zp_tmp) != IS_STRING) {
 
 		return NULL;
@@ -553,7 +553,7 @@ ra_index_change_keys(const char *cmd, zval *z_keys, zval *z_redis TSRMLS_DC) {
 	/* prepare keys */
 	for(i = 0; i < argc - 1; ++i) {
 		zval **zpp;
-		zend_hash_quick_find(Z_ARRVAL_P(z_keys), NULL, 0, i, (void**)&zpp);
+		zend_hash_index_find(Z_ARRVAL_P(z_keys), i, (void**)&zpp);
 		z_args[i+1] = *zpp;
 	}
 
@@ -653,7 +653,7 @@ ra_index_exec(zval *z_redis, zval *return_value, int keep_all TSRMLS_DC) {
 				if(keep_all) {
 						*return_value = z_ret;
 						zval_copy_ctor(return_value);
-				} else if(zend_hash_quick_find(Z_ARRVAL(z_ret), NULL, 0, 0, (void**)&zp_tmp) != FAILURE) {
+				} else if(zend_hash_index_find(Z_ARRVAL(z_ret), 0, (void**)&zp_tmp) != FAILURE) {
 						*return_value = **zp_tmp;
 						zval_copy_ctor(return_value);
 				}
