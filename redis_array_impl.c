@@ -32,7 +32,7 @@ extern zend_class_entry *redis_ce;
 RedisArray*
 ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b_lazy_connect TSRMLS_DC)
 {
-	int i, host_len, id;
+	int i = 0, host_len, id;
 	int count = zend_hash_num_elements(hosts);
 	char *host, *p;
 	short port;
@@ -43,10 +43,10 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 	ZVAL_STRING(&z_cons, "__construct", 0);
 
 	/* init connections */
-	for(i = 0; i < count; ++i) {
-		if(FAILURE == zend_hash_quick_find(hosts, NULL, 0, i, (void**)&zpData) ||
-           Z_TYPE_PP(zpData) != IS_STRING) 
-        {
+	for (zend_hash_internal_pointer_reset(hosts); zend_hash_has_more_elements(hosts) == SUCCESS; zend_hash_move_forward(hosts))
+	{
+		if ((zend_hash_get_current_data(hosts, (void **) &zpData) == FAILURE) || (Z_TYPE_PP(zpData) != IS_STRING))
+		{
 			efree(ra);
 			return NULL;
 		}
@@ -87,6 +87,8 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 		id = zend_list_insert(redis_sock, le_redis_sock);
 #endif
 		add_property_resource(ra->redis[i], "socket", id);
+
+		i++;
 	}
 
 	return ra;
