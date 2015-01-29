@@ -547,7 +547,7 @@ function run_tests($className) {
 		$serverList = array('localhost:6379', 'localhost:6380', 'localhost:6381', 'localhost:6382');
 
 		// run
-		TestSuite::run($className);
+		TestSuite::run($className, NULL);
 }
 
 define('REDIS_ARRAY_DATA_SIZE', 1000);
