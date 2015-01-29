@@ -957,7 +957,9 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	for(i = 0; i < 1 + 2 * count; ++i) {
 		efree(z_zadd_args[i]);
 	}
-    
+
+    zval_dtor(&z_ret);
+
     /* Free the array itself */
     efree(z_zadd_args);
 
