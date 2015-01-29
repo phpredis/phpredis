@@ -348,19 +348,9 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	}
 	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect, connect_timeout TSRMLS_CC) : NULL;
 
-	/* copy function if provided */
-	if(z_fun) {
-		MAKE_STD_ZVAL(ra->z_fun);
-		*ra->z_fun = *z_fun;
-		zval_copy_ctor(ra->z_fun);
-	}
-
-	/* copy distributor if provided */
-	if(z_dist) {
-		MAKE_STD_ZVAL(ra->z_dist);
-		*ra->z_dist = *z_dist;
-		zval_copy_ctor(ra->z_dist);
-	}
+    /* Set hash function and distribtor if provided */
+    ra->z_fun = z_fun;
+    ra->z_dist = z_dist;
 
 	return ra;
 }
@@ -471,7 +461,8 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 
         if(ra->z_dist) {
                 if (!ra_call_distributor(ra, key, key_len, &pos TSRMLS_CC)) {
-                        return NULL;
+                    efree(out);
+                    return NULL;
                 }
         }
         else {
@@ -479,7 +470,6 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 
                 /* hash */
                 hash = rcrc32(out, out_len);
-                efree(out);
 
                 /* get position on ring */
                 h64 = hash;
@@ -488,6 +478,9 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
                 pos = (int)h64;
         }
         if(out_pos) *out_pos = pos;
+
+        /* cleanup */
+        efree(out);
 
         return ra->redis[pos];
 }
@@ -969,6 +962,9 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	for(i = 0; i < 1 + 2 * count; ++i) {
 		efree(z_zadd_args[i]);
 	}
+
+    /* Free the array itself */
+    efree(z_zadd_args);
 
 	return 1;
 }

@@ -49,8 +49,15 @@ class TestSuite {
 	public static function run($className, $str_limit) {
         $rc = new ReflectionClass($className);
 		$methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
+        $i_limit = -1;
+        $i_idx = 0;
+        $boo_printed = false;
+        $arr_ran_methods = Array();
 
-        if ($str_limit) {
+        if ($str_limit && is_numeric($str_limit)) {
+            echo "Limiting to $str_limit tests!\n";
+            $i_limit = (integer)$str_limit;
+        } else if ($str_limit) {
             echo "Limiting to tests with the substring: '$str_limit'\n";
         }
 
@@ -61,8 +68,14 @@ class TestSuite {
 
             /* If TestRedis.php was envoked with an argument, do a simple
              * match against the routine.  Useful to limit to one test */
-            if ($str_limit && strpos(strtolower($name),strtolower($str_limit))===false)
+            if ($i_limit == -1 && $str_limit && strpos(strtolower($name),strtolower($str_limit))===false)
                 continue;
+
+            if ($i_limit > -1 && $i_idx++ >= $i_limit) {
+                continue;
+            }
+
+            $arr_ran_methods[] = $name;
 
 			$count = count($className::$errors);
 			$rt = new $className;
@@ -77,10 +90,14 @@ class TestSuite {
 				} else {
 					echo 'S';
 				}
-			}
+            }
 		}
 		echo "\n";
 		echo implode('', $className::$warnings);
+
+        echo " --- tests run ---\n";
+        echo implode("\n", $arr_ran_methods) . "\n" ;
+        echo " --- fin ---\n";
 
 		if(empty($className::$errors)) {
 			echo "All tests passed.\n";
