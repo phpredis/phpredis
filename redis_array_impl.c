@@ -33,7 +33,6 @@ RedisArray*
 ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b_lazy_connect TSRMLS_DC)
 {
 	int i = 0, host_len, id;
-	int count = zend_hash_num_elements(hosts);
 	char *host, *p;
 	short port;
 	zval **zpData, z_cons, z_ret;
