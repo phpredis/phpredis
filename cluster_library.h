@@ -303,7 +303,7 @@ void cluster_dist_free(HashTable *ht);
 int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key, 
     int key_len, clusterKeyVal **kv);
 void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *val 
-    TSRMLS_CC);
+    TSRMLS_DC);
 
 /* Aggregation for multi commands like MGET, MSET, and MSETNX */
 void cluster_multi_init(clusterMultiCmd *mc, char *kw, int kw_len);
