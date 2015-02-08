@@ -488,7 +488,7 @@ PHP_REDIS_API RedisSock *redis_sock_get_connected(INTERNAL_FUNCTION_PARAMETERS) 
 
 /* Redis and RedisCluster objects share serialization/prefixing settings so 
  * this is a generic function to add class constants to either */
-static void add_class_constants(zend_class_entry *ce, int is_cluster) {
+static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) {
     add_constant_long(ce, "REDIS_NOT_FOUND", REDIS_NOT_FOUND);
     add_constant_long(ce, "REDIS_STRING", REDIS_STRING);
     add_constant_long(ce, "REDIS_SET", REDIS_SET);
@@ -591,8 +591,8 @@ PHP_MINIT_FUNCTION(redis)
     );
 
     /* Add shared class constants to Redis and RedisCluster objects */
-    add_class_constants(redis_ce, 0);
-    add_class_constants(redis_cluster_ce, 1);
+    add_class_constants(redis_ce, 0 TSRMLS_CC);
+    add_class_constants(redis_cluster_ce, 1 TSRMLS_CC);
 
     /* Add specific RedisCluster class constants */
     add_cluster_constants(redis_cluster_ce);
