@@ -1433,18 +1433,25 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     }
 
     /* set TCP_NODELAY */
-	sock = (php_netstream_data_t*)redis_sock->stream->abstract;
-    setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag, sizeof(int));
+    sock = (php_netstream_data_t*)redis_sock->stream->abstract;
+    if (setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag, sizeof(int)) != 0) {
+        return -1;
+    }
 
     php_stream_auto_cleanup(redis_sock->stream);
 
     if(tv.tv_sec != 0 || tv.tv_usec != 0) {
-        php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_READ_TIMEOUT,
-                              0, &read_tv);
+        
+        if (PHP_STREAM_OPTION_RETURN_ERR == php_stream_set_option(redis_sock->stream, 
+                PHP_STREAM_OPTION_READ_TIMEOUT, 0, &read_tv)) { 
+            return -1;
+        }
     }
-    php_stream_set_option(redis_sock->stream,
+    if (PHP_STREAM_OPTION_RETURN_ERR == php_stream_set_option(redis_sock->stream,
                           PHP_STREAM_OPTION_WRITE_BUFFER,
-                          PHP_STREAM_BUFFER_NONE, NULL);
+                          PHP_STREAM_BUFFER_NONE, NULL)) {
+        return -1;
+     }  
 
     redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
 
@@ -1805,7 +1812,14 @@ PHP_REDIS_API int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz T
     if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
         return -1;
     }
-    return php_stream_write(redis_sock->stream, cmd, sz);
+
+    size_t bytes_written = php_stream_write(redis_sock->stream, cmd, sz);
+    
+    if (bytes_written != sz) {
+        return -1;
+    }
+    
+    return bytes_written;
 }
 
 /**
