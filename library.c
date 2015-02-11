@@ -1815,7 +1815,7 @@ PHP_REDIS_API int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz T
 
     size_t bytes_written = php_stream_write(redis_sock->stream, cmd, sz);
     
-    if (bytes_written != sz) {
+    if (bytes_written < sz) {
         return -1;
     }
     
