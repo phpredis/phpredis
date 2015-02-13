@@ -1799,8 +1799,10 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
 PHP_REDIS_API int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz TSRMLS_DC)
 {
 	if(redis_sock && redis_sock->status == REDIS_SOCK_STATUS_DISCONNECTED) {
+            if (strcmp(cmd, "QUIT") != 0) {
 		zend_throw_exception(redis_exception_ce, "Connection closed", 0 TSRMLS_CC);
-		return -1;
+            }		
+            return -1;
 	}
     if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
         return -1;
