@@ -1490,7 +1490,7 @@ PHP_REDIS_API int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
     redis_sock->dbNumber = 0;
     if (redis_sock->stream != NULL) {
 			if (!redis_sock->persistent) {
-				redis_sock_write(redis_sock, "QUIT" _NL, sizeof("QUIT" _NL) - 1 TSRMLS_CC);
+				redis_sock_write(redis_sock, "*1" _NL "$4" _NL "QUIT" _NL, sizeof("*1" _NL "$4" _NL "QUIT" _NL) - 1 TSRMLS_CC);
 			}
 
 			redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
