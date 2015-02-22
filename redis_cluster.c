@@ -502,7 +502,8 @@ static int get_key_val_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
     }
 
     // Serialize our value if required
-    kv->val_free = redis_serialize(c->flags,*z_val,&(kv->val),&(kv->val_len));
+    kv->val_free = redis_serialize(c->flags,*z_val,&(kv->val),&(kv->val_len)
+        TSRMLS_CC);
 
     // Success
     return 0;
@@ -1639,8 +1640,8 @@ static void generic_unsub_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     }
 
     // This has to operate on our subscribe slot
-    if(cluster_send_slot(c, c->subscribed_slot, cmd, cmd_len, TYPE_MULTIBULK)
-                         ==FAILURE)
+    if(cluster_send_slot(c, c->subscribed_slot, cmd, cmd_len, TYPE_MULTIBULK 
+                         TSRMLS_CC) ==FAILURE)
     {
         zend_throw_exception(redis_cluster_exception_ce,
             "Failed to UNSUBSCRIBE within our subscribe loop!", 0 TSRMLS_CC);
@@ -2080,7 +2081,7 @@ PHP_METHOD(RedisCluster, discard) {
 
 /* Get a slot either by key (string) or host/port array */
 static short
-cluster_cmd_get_slot(redisCluster *c, zval *z_arg) 
+cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC) 
 {
     short slot;
 
@@ -2140,7 +2141,7 @@ cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
 
     // One argument means find the node (treated like a key), and two means
     // send the command to a specific host and port
-    slot = cluster_cmd_get_slot(c, z_arg);
+    slot = cluster_cmd_get_slot(c, z_arg TSRMLS_CC);
     if(slot<0) {
         RETURN_FALSE;
     }
@@ -2198,7 +2199,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     }
 
     /* First argument needs to be the "where" */
-    if((slot = cluster_cmd_get_slot(c, z_args[0]))<0) {
+    if((slot = cluster_cmd_get_slot(c, z_args[0] TSRMLS_CC))<0) {
         RETURN_FALSE;
     }
 
@@ -2358,7 +2359,7 @@ PHP_METHOD(RedisCluster, scan) {
         cmd_len = redis_fmt_scan_cmd(&cmd, TYPE_SCAN, NULL, 0, it, pat, pat_len,
             count);
        
-        if((slot = cluster_cmd_get_slot(c, z_node))<0) {
+        if((slot = cluster_cmd_get_slot(c, z_node TSRMLS_CC))<0) {
            RETURN_FALSE;
         }
 
@@ -2481,7 +2482,7 @@ PHP_METHOD(RedisCluster, info) {
     /* Treat INFO as non read-only, as we probably want the master */
     c->readonly = 0;
 
-    slot = cluster_cmd_get_slot(c, z_arg);
+    slot = cluster_cmd_get_slot(c, z_arg TSRMLS_CC);
     if(slot<0) {
         RETURN_FALSE;
     }
@@ -2603,7 +2604,7 @@ PHP_METHOD(RedisCluster, echo) {
     c->readonly = CLUSTER_IS_ATOMIC(c);
 
     /* Grab slot either by key or host/port */
-    slot = cluster_cmd_get_slot(c, z_arg);
+    slot = cluster_cmd_get_slot(c, z_arg TSRMLS_CC);
     if(slot<0) {
         RETURN_FALSE;
     }

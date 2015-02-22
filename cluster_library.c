@@ -340,7 +340,7 @@ int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
 
 /* Provided a clusterKeyVal, add a value */
 void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *z_val 
-                         TSRMLS_CC)
+                         TSRMLS_DC)
 {
     char *val;
     int val_len, val_free;
@@ -513,13 +513,13 @@ clusterReply* cluster_get_slots(RedisSock *redis_sock TSRMLS_DC)
     // Send the command to the socket and consume reply type
     if(redis_sock_write(redis_sock, RESP_CLUSTER_SLOTS_CMD, 
                         sizeof(RESP_CLUSTER_SLOTS_CMD)-1 TSRMLS_CC)<0 ||
-                        redis_read_reply_type(redis_sock, &type, &len)<0)
+                        redis_read_reply_type(redis_sock, &type, &len TSRMLS_CC)<0)
     {
         return NULL;
     }
 
     // Consume the rest of our response
-    if((r = cluster_read_sock_resp(redis_sock, type, len))==NULL ||
+    if((r = cluster_read_sock_resp(redis_sock, type, len TSRMLS_CC))==NULL ||
        r->type != TYPE_MULTIBULK || r->elements < 3)
     {
         if(r) cluster_free_reply(r, 1);
@@ -651,11 +651,10 @@ PHPAPI void cluster_free_node(redisClusterNode *node) {
  * bounce us back and forth until the slots have migrated */
 static int cluster_send_asking(RedisSock *redis_sock TSRMLS_DC) 
 {
-    REDIS_REPLY_TYPE reply_type;
     char buf[255];
 
     // Make sure we can send the request
-    if(redis_check_eof(redis_sock, 1 TSRMLS_DC) ||
+    if(redis_check_eof(redis_sock, 1 TSRMLS_CC) ||
        php_stream_write(redis_sock->stream, RESP_ASKING_CMD, 
                         sizeof(RESP_ASKING_CMD)-1) != sizeof(RESP_ASKING_CMD)-1)
     {
@@ -664,9 +663,7 @@ static int cluster_send_asking(RedisSock *redis_sock TSRMLS_DC)
 
     // Read our reply type
     if((redis_check_eof(redis_sock, 1 TSRMLS_CC) == - 1) ||
-       (reply_type = php_stream_getc(redis_sock->stream TSRMLS_DC) 
-                                     != TYPE_LINE))
-    {
+       (php_stream_getc(redis_sock->stream) != TYPE_LINE)) {
         return -1;
     }
 
@@ -883,7 +880,7 @@ static int cluster_check_response(redisCluster *c, unsigned short slot,
 
     // Fetch the first line of our response from Redis.
     if(redis_sock_gets(SLOT_SOCK(c,slot),c->line_reply,sizeof(c->line_reply), 
-                       &sz)<0)
+                       &sz TSRMLS_CC)<0)
     {
         return -1;
     }
@@ -927,7 +924,7 @@ static int cluster_sock_write(redisCluster *c, unsigned short slot,
     if(c->redir_type != REDIR_ASK) {
         redis_sock = SLOT_SOCK(c,slot);
     } else {
-        redis_sock = cluster_get_asking_sock(c);
+        redis_sock = cluster_get_asking_sock(c TSRMLS_CC);
     
         // Redis Cluster wants this command preceded by the "ASKING" command
         if(cluster_send_asking(redis_sock TSRMLS_CC)<0) {
@@ -1001,7 +998,7 @@ static redisClusterNode *cluster_find_node(redisCluster *c, const char *host,
 
 /* Provided a redisCluster object, the slot where we thought data was and
  * the slot where data was moved, update our node mapping */
-static void cluster_update_slot(redisCluster *c TSRMLS_CC) {
+static void cluster_update_slot(redisCluster *c TSRMLS_DC) {
     redisClusterNode *node;
 
     // Do we already have the new slot mapped
@@ -1229,7 +1226,7 @@ PHPAPI short cluster_send_command(redisCluster *c, short slot, const char *cmd,
             
             // In case of a MOVED redirection, update our node mapping
             if(c->redir_type == REDIR_MOVED) {
-                cluster_update_slot(c);
+                cluster_update_slot(c TSRMLS_CC);
             }
             slot = c->redir_slot;
         }
@@ -1303,7 +1300,7 @@ PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     }
 
     // Return the string if we can unserialize it
-    if(redis_unserialize(c->flags, resp, c->reply_len, &z_ret)==0) {
+    if(redis_unserialize(c->flags, resp, c->reply_len, &z_ret TSRMLS_CC)==0) {
         CLUSTER_RETURN_STRING(c, resp, c->reply_len);
     } else {
         if(CLUSTER_IS_ATOMIC(c)) {
@@ -1833,7 +1830,9 @@ PHPAPI zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     array_init(z_result);
 
     // Call our callback
-    if(cb(SLOT_SOCK(c,c->reply_slot), z_result, c->reply_len, NULL)==FAILURE) {
+    if(cb(SLOT_SOCK(c,c->reply_slot), z_result, c->reply_len, NULL TSRMLS_CC)
+                    ==FAILURE) 
+    {
         zval_dtor(z_result);
         FREE_ZVAL(z_result);
         return NULL;
