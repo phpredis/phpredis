@@ -170,6 +170,9 @@ typedef struct redisCluster {
      * a given master's slave */
     short readonly;
 
+    /* RedisCluster failover options (never, on error, to load balance) */
+    short failover;
+
     /* Hash table of seed host/ports */
     HashTable *seeds;
 

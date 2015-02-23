@@ -72,6 +72,11 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("redis.arrays.functions", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.index", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.autorehash", "", PHP_INI_ALL, NULL)
+
+    /* redis cluster */
+    PHP_INI_ENTRY("redis.clusters.seeds", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.clusters.timeout", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.clusters.read_timeout", "", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
 /**
@@ -512,6 +517,11 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
     add_constant_long(ce, "OPT_SCAN", REDIS_OPT_SCAN);
     add_constant_long(ce, "SCAN_RETRY", REDIS_SCAN_RETRY);
     add_constant_long(ce, "SCAN_NORETRY", REDIS_SCAN_NORETRY);
+
+    /* Cluster option to allow for slave failover */
+    if (is_cluster) {
+        add_constant_long(ce, "OPT_SLAVE_FAILOVER", CLUSTER_OPT_FAILOVER);
+    }
 #ifdef HAVE_REDIS_IGBINARY
     add_constant_long(ce, "SERIALIZER_IGBINARY", REDIS_SERIALIZER_IGBINARY);
 #endif
