@@ -520,7 +520,10 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
 
     /* Cluster option to allow for slave failover */
     if (is_cluster) {
-        add_constant_long(ce, "OPT_SLAVE_FAILOVER", CLUSTER_OPT_FAILOVER);
+        add_constant_long(ce, "OPT_SLAVE_FAILOVER", REDIS_OPT_FAILOVER);
+        add_constant_long(ce, "FAILOVER_NONE", REDIS_FAILOVER_NONE);
+        add_constant_long(ce, "FAILOVER_ERROR", REDIS_FAILOVER_ERROR);
+        add_constant_long(ce, "FAILOVER_DISTRIBUTE", REDIS_FAILOVER_DISTRIBUTE);
     }
 #ifdef HAVE_REDIS_IGBINARY
     add_constant_long(ce, "SERIALIZER_IGBINARY", REDIS_SERIALIZER_IGBINARY);

@@ -60,10 +60,10 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_SCAN               4
 
 /* cluster options */
-#define CLUSTER_OPT_FAILOVER         5
-#define CLUSTER_FAILOVER_NEVER       0
-#define CLUSTER_FAILOVER_ERROR       1
-#define CLUSTER_FAILOVER_LB          2
+#define REDIS_OPT_FAILOVER           5
+#define REDIS_FAILOVER_NONE          0
+#define REDIS_FAILOVER_ERROR         1
+#define REDIS_FAILOVER_DISTRIBUTE    2
 
 /* serializers */
 #define REDIS_SERIALIZER_NONE        0
@@ -71,7 +71,6 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_SERIALIZER_IGBINARY    2
 
 /* SCAN options */
-
 #define REDIS_SCAN_NORETRY 0
 #define REDIS_SCAN_RETRY 1
 
