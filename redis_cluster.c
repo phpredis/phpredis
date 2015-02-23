@@ -29,6 +29,8 @@
 #include "redis_commands.h"
 #include <zend_exceptions.h>
 #include "library.h"
+#include <php_variables.h>
+#include <SAPI.h>
 
 zend_class_entry *redis_cluster_ce;
 
@@ -325,6 +327,102 @@ void free_cluster_context(void *object TSRMLS_DC) {
     efree(cluster);
 }
 
+/* Attempt to connect to a Redis cluster provided seeds and timeout options */
+void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
+                        double read_timeout TSRMLS_DC)
+{
+    // Validate timeout
+    if(timeout < 0L || timeout > INT_MAX) {
+        zend_throw_exception(redis_cluster_exception_ce, 
+            "Invalid timeout", 0 TSRMLS_CC);
+    }
+
+    // Validate our read timeout
+    if(read_timeout < 0L || read_timeout > INT_MAX) {
+        zend_throw_exception(redis_cluster_exception_ce,
+            "Invalid read timeout", 0 TSRMLS_CC);
+    }
+
+    /* Make sure there are some seeds */
+    if(zend_hash_num_elements(ht_seeds)==0) {
+        zend_throw_exception(redis_cluster_exception_ce,
+            "Must pass seeds", 0 TSRMLS_CC);
+    }
+
+    /* Set our timeout and read_timeout which we'll pass through to the
+     * socket type operations */
+    c->timeout = timeout;
+    c->read_timeout = read_timeout;
+
+    /* Calculate the number of miliseconds we will wait when bouncing around,
+     * (e.g. a node goes down), which is not the same as a standard timeout. */
+    c->waitms = (long)(timeout * 1000);
+    
+    // Initialize our RedisSock "seed" objects
+    cluster_init_seeds(c, ht_seeds);
+
+    // Create and map our key space
+    cluster_map_keyspace(c TSRMLS_CC);
+}
+
+/* Attempt to load a named cluster configured in php.ini */
+void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
+    zval *z_seeds, *z_timeout, *z_read_timeout, **z_value;
+    char *iptr;
+    double timeout=0, read_timeout=0;
+    HashTable *ht_seeds = NULL;
+
+    /* Seeds */
+    MAKE_STD_ZVAL(z_seeds);
+    array_init(z_seeds);
+    iptr = estrdup(INI_STR("redis.clusters.seeds"));
+    sapi_module.treat_data(PARSE_STRING, iptr, z_seeds TSRMLS_CC);
+    if (zend_hash_find(Z_ARRVAL_P(z_seeds), name, name_len+1, (void**)&z_value) != FAILURE) {
+        ht_seeds = Z_ARRVAL_PP(z_value);
+    } else {
+        zval_dtor(z_seeds);
+        efree(z_seeds);
+        zend_throw_exception(redis_cluster_exception_ce, "Couldn't find seeds for cluster", 0 TSRMLS_CC);
+    }
+    
+    /* Connection timeout */
+    MAKE_STD_ZVAL(z_timeout);
+    array_init(z_timeout);
+    iptr = estrdup(INI_STR("redis.clusters.timeout"));
+    sapi_module.treat_data(PARSE_STRING, iptr, z_timeout TSRMLS_CC);
+    if (zend_hash_find(Z_ARRVAL_P(z_timeout), name, name_len+1, (void**)&z_value) != FAILURE) {
+        if (Z_TYPE_PP(z_value) == IS_STRING) {
+            timeout = atof(Z_STRVAL_PP(z_value));
+        } else if (Z_TYPE_PP(z_value) == IS_DOUBLE) {
+            timeout = Z_DVAL_PP(z_value);
+        }
+    }
+
+    /* Read timeout */
+    MAKE_STD_ZVAL(z_read_timeout);
+    array_init(z_read_timeout);
+    iptr = estrdup(INI_STR("redis.clusters.read_timeout"));
+    sapi_module.treat_data(PARSE_STRING, iptr, z_read_timeout TSRMLS_CC);
+    if (zend_hash_find(Z_ARRVAL_P(z_read_timeout), name, name_len+1, (void**)&z_value) != FAILURE) {
+        if (Z_TYPE_PP(z_value) == IS_STRING) {
+            read_timeout = atof(Z_STRVAL_PP(z_value));
+        } else if (Z_TYPE_PP(z_value) == IS_DOUBLE) {
+            read_timeout = Z_DVAL_PP(z_value);
+        }
+    }
+
+    /* Attempt to create/connect to the cluster */
+    redis_cluster_init(c, ht_seeds, timeout, read_timeout TSRMLS_CC);    
+
+    /* Clean up our arrays */
+    zval_dtor(z_seeds);
+    efree(z_seeds);
+    zval_dtor(z_timeout);
+    efree(z_timeout);
+    zval_dtor(z_read_timeout);
+    efree(z_read_timeout);
+}
+
 /*
  * PHP Methods
  */
@@ -347,48 +445,20 @@ PHP_METHOD(RedisCluster, __construct) {
     }
 
     // Require a name
-    if(name_len == 0) {
+    if(name_len == 0 && ZEND_NUM_ARGS() < 2) {
         zend_throw_exception(redis_cluster_exception_ce,
-            "You must give this cluster a name!",
+            "You must specify a name or pass seeds!",
             0 TSRMLS_CC);
     }
 
-    // Validate timeout
-    if(timeout < 0L || timeout > INT_MAX) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Invalid timeout", 0 TSRMLS_CC);
-        RETURN_FALSE;
+    /* If we've been passed only one argument, the user is attempting to connect
+     * to a named cluster, stored in php.ini, otherwise we'll need manual seeds */
+    if (ZEND_NUM_ARGS() > 2) {
+        redis_cluster_init(context, Z_ARRVAL_P(z_seeds), timeout, read_timeout
+            TSRMLS_CC);
+    } else {
+        redis_cluster_load(context, name, name_len TSRMLS_CC);
     }
-
-    // Validate our read timeout
-    if(read_timeout < 0L || read_timeout > INT_MAX) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Invalid read timeout", 0 TSRMLS_CC);
-        RETURN_FALSE;
-    }
-
-    // TODO: Implement seed retrieval from php.ini
-    if(!z_seeds || zend_hash_num_elements(Z_ARRVAL_P(z_seeds))==0) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Must pass seeds", 0 TSRMLS_CC);
-        RETURN_FALSE;
-    }
-
-    /* Set our timeout and read_timeout which we'll pass through to the
-     * socket type operations */
-    context->timeout = timeout;
-    context->read_timeout = read_timeout;
-
-    /* Calculate the number of miliseconds we will wait when bouncing around,
-     * (e.g. a node goes down), which is not the same as a standard timeout. */
-    tmsec = (long)timeout * 1000;
-    context->waitms = tmsec + ((timeout-(long)timeout) * 1000);
-
-    // Initialize our RedisSock "seed" objects
-    cluster_init_seeds(context, Z_ARRVAL_P(z_seeds));
-
-    // Create and map our key space
-    cluster_map_keyspace(context TSRMLS_CC);
 }
 
 /* 

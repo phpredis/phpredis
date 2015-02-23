@@ -59,6 +59,12 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_READ_TIMEOUT       3
 #define REDIS_OPT_SCAN               4
 
+/* cluster options */
+#define CLUSTER_OPT_FAILOVER         5
+#define CLUSTER_FAILOVER_NEVER       0
+#define CLUSTER_FAILOVER_ERROR       1
+#define CLUSTER_FAILOVER_LB          2
+
 /* serializers */
 #define REDIS_SERIALIZER_NONE        0
 #define REDIS_SERIALIZER_PHP         1
