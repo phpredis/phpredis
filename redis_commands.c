@@ -2587,6 +2587,8 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             RETURN_DOUBLE(redis_sock->read_timeout);
         case REDIS_OPT_SCAN:
             RETURN_LONG(redis_sock->scan);
+        case CLUSTER_OPT_FAILOVER:
+            RETURN_LONG(c->failover);
         default:
             RETURN_FALSE;
     }
@@ -2653,6 +2655,17 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             }
             RETURN_FALSE;
             break;
+        case CLUSTER_OPT_FAILOVER:
+            val_long = atol(val_str);
+            if (val_long == CLUSTER_FAILOVER_NEVER || 
+                val_long == CLUSTER_FAILOVER_ERROR ||
+                val_long == CLUSTER_FAILOVER_LB)
+            {
+                c->failover = val_long;
+                RETURN_TRUE;
+            } else {
+                RETURN_FALSE;
+            } 
         default:
             RETURN_FALSE;
     }
