@@ -21,6 +21,8 @@
 #define RESP_READONLY_CMD      "*1\r\n$8\r\nREADONLY\r\n"
 #define RESP_READWRITE_CMD     "*1\r\n$9\r\nREADWRITE\r\n"
 
+#define RESP_READONLY_CMD_LEN (sizeof(RESP_READONLY_CMD)-1)
+
 /* MOVED/ASK comparison macros */
 #define IS_MOVED(p) (p[0]=='M' && p[1]=='O' && p[2]=='V' && p[3]=='E' && \
                      p[4]=='D' && p[5]==' ')
@@ -33,10 +35,15 @@
 /* Initial allocation size for key distribution container */
 #define CLUSTER_KEYDIST_ALLOC 8
 
-/* Slot/RedisSock/RedisSock->stream macros */
+/* Macros to access nodes, sockets, and streams for a given slot */
 #define SLOT(c,s) (c->master[s])
 #define SLOT_SOCK(c,s) (SLOT(c,s)->sock)
 #define SLOT_STREAM(c,s) (SLOT_SOCK(c,s)->stream)
+#define SLOT_SLAVES(c,s) (c->master[s]->slaves)
+
+/* Macros to access socket and stream for the node we're communicating with */
+#define CMD_SOCK(c) (c->cmd_sock)
+#define CMD_STREAM(c) (c->cmd_sock->stream)
 
 /* Compare redirection slot information with what we have */
 #define CLUSTER_REDIR_CMP(c) \
@@ -59,6 +66,16 @@
         c->err_len = 0; \
     } \
     c->clusterdown = 0;
+
+/* Protected sending of data down the wire to a RedisSock->stream */
+#define CLUSTER_SEND_PAYLOAD(sock, buf, len) \
+    (sock && sock->stream && !redis_check_eof(sock, 1 TSRMLS_CC) && \
+     php_stream_write(sock->stream, buf, len)==len)
+
+/* Macro to read our reply type character */
+#define CLUSTER_VALIDATE_REPLY_TYPE(sock, type) \
+    (redis_check_eof(sock, 1 TSRMLS_CC) == 0 && \
+     (php_stream_getc(sock->stream) == type))
 
 /* Reset our last single line reply buffer and length */
 #define CLUSTER_CLEAR_REPLY(c) \
@@ -196,13 +213,14 @@ typedef struct redisCluster {
     char *err;
     int err_len;
 
-    /* The slot where we should read replies */
-    short reply_slot;
+    /* The slot our command is operating on, as well as it's socket */
+    unsigned short cmd_slot;
+    RedisSock *cmd_sock;
 
     /* The slot where we're subscribed */
     short subscribed_slot;
 
-    /* One RedisSock* struct for serialization and prefix information */
+    /* One RedisSock struct for serialization and prefix information */
     RedisSock *flags;
 
     /* The first line of our last reply, not including our reply type byte 
@@ -229,8 +247,8 @@ struct clusterFoldItem {
     /* Response processing callback */
     cluster_cb callback;
 
-    /* The slot where this response was sent */
-    short slot;
+    /* The actual socket where we send this request */
+    unsigned short slot;
 
     /* Any context we need to send to our callback */
     void *ctx;

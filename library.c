@@ -1513,6 +1513,8 @@ redis_sock_create(char *host, int host_len, unsigned short port, double timeout,
     redis_sock->err_len = 0;
 
     redis_sock->scan = REDIS_SCAN_NORETRY;
+    
+    redis_sock->readonly = 0;
 
     return redis_sock;
 }
