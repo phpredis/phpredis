@@ -252,9 +252,15 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
 static int cluster_send_direct(RedisSock *redis_sock, char *cmd, int cmd_len,
                                REDIS_REPLY_TYPE type TSRMLS_DC)
 {
-    /* Send the command and validate the reply type */
+    char buf[1024];
+
+    /* Connect to the socket if we aren't yet */
+    CLUSTER_LAZY_CONNECT(redis_sock);
+
+    /* Send our command, validate the reply type, and consume the first line */
     if (!CLUSTER_SEND_PAYLOAD(redis_sock,cmd,cmd_len) ||
-        !CLUSTER_VALIDATE_REPLY_TYPE(redis_sock, type)) return -1;
+        !CLUSTER_VALIDATE_REPLY_TYPE(redis_sock, type) ||
+        !php_stream_gets(redis_sock->stream, buf, sizeof(buf))) return -1;
 
     /* Success! */
     return 0;
