@@ -271,6 +271,9 @@ static int cluster_send_asking(RedisSock *redis_sock TSRMLS_DC) {
         sizeof(RESP_ASKING_CMD)-1, TYPE_LINE TSRMLS_CC);
 }
 
+/* Send READONLY to a specific RedisSock unless it's already flagged as being
+ * in READONLY mode.  If we can send the command, we flag the socket as being
+ * in that mode. */
 static int cluster_send_readonly(RedisSock *redis_sock TSRMLS_DC) {
     int ret;
 
@@ -288,6 +291,7 @@ static int cluster_send_readonly(RedisSock *redis_sock TSRMLS_DC) {
     return ret;
 }
 
+/* Send MULTI to a specific ReidsSock */
 static int cluster_send_multi(redisCluster *c, short slot TSRMLS_DC) {
     if (cluster_send_direct(SLOT_SOCK(c,slot), RESP_MULTI_CMD,
         sizeof(RESP_MULTI_CMD)-1, TYPE_LINE TSRMLS_CC)==0)
@@ -298,13 +302,13 @@ static int cluster_send_multi(redisCluster *c, short slot TSRMLS_DC) {
     return -1;
 }
 
+/* Send EXEC to a given slot.  We can use the normal command processing mechanism
+ * here because we know we'll only have sent MULTI to the master nodes.  We can't
+ * failover inside a transaction, as we don't know if the transaction will only
+ * be readonly commands, or contain write commands as well */
 PHPAPI int cluster_send_exec(redisCluster *c, short slot TSRMLS_DC) {
-    if (cluster_send_direct(SLOT_SOCK(c,slot), RESP_EXEC_CMD, 
-        sizeof(RESP_EXEC_CMD)-1, TYPE_MULTIBULK TSRMLS_CC))
-    {
-        return c->reply_len;
-    }
-    return -1;
+    return cluster_send_slot(c, slot, RESP_EXEC_CMD, sizeof(RESP_EXEC_CMD)-1,
+        TYPE_MULTIBULK TSRMLS_CC);
 }
 
 PHPAPI int cluster_send_discard(redisCluster *c, short slot TSRMLS_DC) {
