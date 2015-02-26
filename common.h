@@ -95,14 +95,14 @@ typedef enum _PUBSUB_TYPE {
 #define IF_NOT_ATOMIC() if(redis_sock->mode != ATOMIC)
 #define IF_ATOMIC() if(redis_sock->mode == ATOMIC)
 #define ELSE_IF_MULTI() else if(redis_sock->mode == MULTI) { \
-    if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) {\
+    if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) { \
         RETURN_ZVAL(getThis(), 1, 0);\
-    } else {\
-        RETURN_FALSE;\
-    }                 \
+    } else { \
+        RETURN_FALSE; \
+    } \
 }
 
-#define ELSE_IF_PIPELINE() else IF_PIPELINE() {    \
+#define ELSE_IF_PIPELINE() else IF_PIPELINE() { \
     RETURN_ZVAL(getThis(), 1, 0);\
 }
 
@@ -288,6 +288,8 @@ typedef struct {
     zend_bool      lazy_connect;
 
     int            scan;
+
+    int            readonly;
 } RedisSock;
 /* }}} */
 
