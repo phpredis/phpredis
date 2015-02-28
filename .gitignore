@@ -6,7 +6,7 @@ config.*
 *.o
 install-sh
 libtool
-*.sh
+./*.sh
 configure*
 *.lo
 build*
