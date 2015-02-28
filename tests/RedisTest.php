@@ -489,17 +489,14 @@ class Redis_Test extends TestSuite
         $this->redis->incr('key');
 	$this->assertEquals(2, (int)$this->redis->get('key'));
 
-       $this->redis->incr('key', 3);
+	$this->redis->incrBy('key', 3);
 	$this->assertEquals(5, (int)$this->redis->get('key'));
 
-	$this->redis->incrBy('key', 3);
-	$this->assertEquals(8, (int)$this->redis->get('key'));
-
 	$this->redis->incrBy('key', 1);
-	$this->assertEquals(9, (int)$this->redis->get('key'));
+	$this->assertEquals(6, (int)$this->redis->get('key'));
 
 	$this->redis->incrBy('key', -1);
-	$this->assertEquals(8, (int)$this->redis->get('key'));
+	$this->assertEquals(5, (int)$this->redis->get('key'));
 
 	$this->redis->delete('key');
 
@@ -561,20 +558,14 @@ class Redis_Test extends TestSuite
         $this->redis->decr('key');
 	$this->assertEquals(3, (int)$this->redis->get('key'));
 
-        $this->redis->decr('key', 2);
+	$this->redis->decrBy('key', 2);
 	$this->assertEquals(1, (int)$this->redis->get('key'));
 
-	$this->redis->decr('key', 2);
-	$this->assertEquals(-1, (int)$this->redis->get('key'));
-
-	$this->redis->decrBy('key', 2);
-	$this->assertEquals(-3, (int)$this->redis->get('key'));
-
 	$this->redis->decrBy('key', 1);
-	$this->assertEquals(-4, (int)$this->redis->get('key'));
+	$this->assertEquals(0, (int)$this->redis->get('key'));
 
-	$this->redis->decr('key', -10);
-	$this->assertEquals(6, (int)$this->redis->get('key'));
+	$this->redis->decrBy('key', -10);
+	$this->assertEquals(10, (int)$this->redis->get('key'));
     }
 
     public function testExists()
