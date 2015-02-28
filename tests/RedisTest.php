@@ -1395,9 +1395,7 @@ class Redis_Test extends TestSuite
 	$xyz = $this->redis->sInter(array('x', 'y', 'z'));// odd prime squares, with an array as a parameter
         $this->assertTrue($xyz === array('1'));
 
-        $nil = $this->redis->sInter();
-        $this->assertTrue($nil === FALSE);
-	$nil = $this->redis->sInter(array());
+	    $nil = $this->redis->sInter(array());
         $this->assertTrue($nil === FALSE);
     }
 
@@ -1455,8 +1453,6 @@ class Redis_Test extends TestSuite
 	$xyz = $this->redis->sInterStore('k', 'x', 'y', 'z'); // x y and z ALL missing, expect 0.
 	$this->assertTrue($xyz === 0);
 
-        $o = $this->redis->sInterStore('k');
-	$this->assertTrue($o === FALSE);	// error, wrong parameter count
     }
 
     public function testsUnion() {
@@ -1508,9 +1504,6 @@ class Redis_Test extends TestSuite
 	    $i = (int)$i;
             $this->assertTrue(in_array($i, array_merge($x, $y, $z)));
         }
-
-        $nil = $this->redis->sUnion();
-        $this->assertTrue($nil === FALSE);
     }
 
     public function testsUnionStore() {
@@ -1582,9 +1575,6 @@ class Redis_Test extends TestSuite
 	$this->redis->delete('z');	// x, y, and z ALL missing
         $count = $this->redis->sUnionStore('k', 'x', 'y', 'z');	// x U y U z
 	$this->assertTrue($count === 0);
-
-        $count = $this->redis->sUnionStore('k');	// Union on nothing...
-	$this->assertTrue($count === FALSE);
     }
 
     public function testsDiff() {
@@ -1636,9 +1626,6 @@ class Redis_Test extends TestSuite
 	    $i = (int)$i;
             $this->assertTrue(in_array($i, array_diff($x, $y, $z)));
         }
-
-        $nil = $this->redis->sDiff();
-        $this->assertTrue($nil === FALSE);
     }
 
     public function testsDiffStore() {
@@ -1710,9 +1697,6 @@ class Redis_Test extends TestSuite
 	$this->redis->delete('z');	// x, y, and z ALL missing
         $count = $this->redis->sDiffStore('k', 'x', 'y', 'z');	// x - y - z
 	$this->assertTrue($count === 0);
-
-        $count = $this->redis->sDiffStore('k');	// diff on nothing...
-	$this->assertTrue($count === FALSE);
     }
 
     public function testlGetRange() {
