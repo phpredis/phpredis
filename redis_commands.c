@@ -2034,7 +2034,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
     // If we don't have an options array, the command is quite simple
-    if(!z_opts) {
+    if(!z_opts || zend_hash_num_elements(Z_ARRVAL_P(z_opts)) == 0) {
         // Construct command
         *cmd_len = redis_cmd_format_static(cmd, "SORT", "s", key, key_len);
 
@@ -2051,7 +2051,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     array_init(z_argv);
 
     // SORT <key>
-    add_next_index_stringl(z_argv, key, key_len, 0);
+    add_next_index_stringl(z_argv, key, key_len, !key_free);
 
     // Set slot
     CMD_SET_SLOT(slot,key,key_len);
@@ -2076,7 +2076,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         // ... BY <pattern>
         add_next_index_stringl(z_argv, "BY", sizeof("BY")-1, 1);
-        add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),Z_STRLEN_PP(z_ele),0);
+        add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),Z_STRLEN_PP(z_ele),1);
     }
 
     // Handle ASC/DESC option
@@ -2085,7 +2085,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
        Z_TYPE_PP(z_ele)==IS_STRING)
     {
         // 'asc'|'desc'
-        add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),Z_STRLEN_PP(z_ele),0);
+        add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),Z_STRLEN_PP(z_ele),1);
     }
 
     // STORE option
@@ -2108,7 +2108,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         // STORE <key>
         add_next_index_stringl(z_argv,"STORE",sizeof("STORE")-1, 1);
-        add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),Z_STRLEN_PP(z_ele),0);
+        add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),Z_STRLEN_PP(z_ele),1);
 
         // We are using STORE
         *using_store = 1;
@@ -2131,15 +2131,15 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         // If it's a string just add it
         if(Z_TYPE_PP(z_ele)==IS_STRING) {
-            add_next_index_stringl(z_argv,"GET",sizeof("GET")-1,0);
+            add_next_index_stringl(z_argv,"GET",sizeof("GET")-1,1);
             add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),
-                Z_STRLEN_PP(z_ele), 0);
+                Z_STRLEN_PP(z_ele), 1);
         } else {
             HashTable *ht_keys = Z_ARRVAL_PP(z_ele);
             int added=0;
 
             // Add our "GET" option
-            add_next_index_stringl(z_argv,"GET",sizeof("GET")-1,0);
+            add_next_index_stringl(z_argv,"GET",sizeof("GET")-1,1);
 
             for(zend_hash_internal_pointer_reset(ht_keys);
                 zend_hash_has_more_elements(ht_keys)==SUCCESS;
@@ -2155,7 +2155,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
                 // Add this key to our argv array
                 add_next_index_stringl(z_argv, Z_STRVAL_PP(z_key),
-                    Z_STRLEN_PP(z_key), 0);
+                    Z_STRLEN_PP(z_key), 1);
                 added++;
             }
 
@@ -2241,8 +2241,8 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         }
     }
 
-    // Free key if we prefixed, destroy argv array
-    if(key_free) efree(key);
+    /* Clean up our arguments array.  Note we don't have to free any prefixed
+     * key as that we didn't duplicate the pointer if we prefixed */
     zval_dtor(z_argv);
     efree(z_argv);
 
