@@ -1,7 +1,7 @@
 <?php
+require_once(dirname($_SERVER['PHP_SELF'])."/TestSuite.php");
 
-require_once(dirname($_SERVER['PHP_SELF'])."/test.php");
-echo "Redis Array tests.\n\n";
+define('REDIS_ARRAY_DATA_SIZE', 1000);
 
 function custom_hash($str) {
 	// str has the following format: $APPID_fb$FACEBOOKID_$key.
