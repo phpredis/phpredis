@@ -1,7 +1,7 @@
 <?php
+require_once(dirname($_SERVER['PHP_SELF'])."/TestSuite.php");
 
-require_once(dirname($_SERVER['PHP_SELF'])."/test.php");
-echo "Redis Array tests.\n\n";
+define('REDIS_ARRAY_DATA_SIZE', 1000);
 
 function custom_hash($str) {
 	// str has the following format: $APPID_fb$FACEBOOKID_$key.
@@ -549,19 +549,4 @@ function run_tests($className) {
 		// run
 		TestSuite::run($className);
 }
-
-define('REDIS_ARRAY_DATA_SIZE', 1000);
-
-global $useIndex;
-foreach(array(true, false) as $useIndex) {
-
-	echo "\n".($useIndex?"WITH":"WITHOUT"). " per-node index:\n";
-
-	run_tests('Redis_Array_Test');
-	run_tests('Redis_Rehashing_Test');
-	run_tests('Redis_Auto_Rehashing_Test');
-	run_tests('Redis_Multi_Exec_Test');
-	run_tests('Redis_Distributor_Test');
-}
-
 ?>
