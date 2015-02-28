@@ -2372,7 +2372,6 @@ class Redis_Test extends TestSuite
 	$this->assertTrue(2 === $this->redis->hIncrBy('h', 'x', 2));
 	$this->assertTrue(3 === $this->redis->hIncrBy('h', 'x', 1));
 	$this->assertTrue(2 === $this->redis->hIncrBy('h', 'x', -1));
-	$this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'x', "not-a-number"));
 	$this->assertTrue("2" === $this->redis->hGet('h', 'x'));
 
 	$this->redis->hSet('h', 'y', 'not-a-number');
@@ -2571,9 +2570,9 @@ class Redis_Test extends TestSuite
 		    ->get('key3')
 		    ->renameNx('key3', 'key1')
 		    ->renameKey('key3', 'key2')
-		    ->incr('key2', 5)
+		    ->incrby('key2', 5)
 		    ->get('key2')
-		    ->decr('key2', 5)
+		    ->decrby('key2', 5)
 		    ->get('key2')
 		    ->exec();
 
