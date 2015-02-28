@@ -1048,14 +1048,16 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
             key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
-            // Protect against CROSSLOT errors
-            if(kslot == -1) {
-                kslot = cluster_hash_key(key, key_len);
-            } else if(cluster_hash_key(key,key_len)!=kslot) {
-                php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                    "Not all keys hash to the same slot");
-                efree(z_args);
-                return FAILURE;
+            /* Protect against CROSSSLOT errors if we've got a slot */
+            if (slot) {
+                if( kslot == -1) {
+                    kslot = cluster_hash_key(key, key_len);
+                } else if(cluster_hash_key(key,key_len)!=kslot) {
+                    php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                        "Not all keys hash to the same slot");
+                    efree(z_args);
+                    return FAILURE;
+                }
             }
 
             // Append this key
