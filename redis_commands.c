@@ -1779,7 +1779,7 @@ int redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Validate position
-    if(strncasecmp(pos, "after", 5)!=0 && strncasecmp(pos, "before", 6)==0) {
+    if(strncasecmp(pos, "after", 5) && strncasecmp(pos, "before", 6)) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "Position must be either 'BEFORE' or 'AFTER'");
         return FAILURE;
