@@ -1386,7 +1386,9 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         zend_hash_move_forward_ex(ht_arr, &ptr))
     {
         // We can only handle string or long values here
-        if(Z_TYPE_PP(z_mem)==IS_STRING || Z_TYPE_PP(z_mem)==IS_LONG) {
+        if ((Z_TYPE_PP(z_mem)==IS_STRING && Z_STRLEN_PP(z_mem)>0) 
+            || Z_TYPE_PP(z_mem)==IS_LONG) 
+        {
             // Copy into our member array
             MAKE_STD_ZVAL(z_mems[valid]);
             *z_mems[valid] = **z_mem;
