@@ -1336,7 +1336,7 @@ PHP_METHOD(RedisCluster, dump) {
 
 /* {{{ proto long RedisCluster::incr(string key) */
 PHP_METHOD(RedisCluster, incr) {
-    CLUSTER_PROCESS_KW_CMD("INCR", redis_key_cmd, cluster_long_resp, 0);
+    CLUSTER_PROCESS_CMD(incr, cluster_long_resp, 0);
 }
 /* }}} */
 
@@ -1348,7 +1348,7 @@ PHP_METHOD(RedisCluster, incrby) {
 
 /* {{{ proto long RedisCluster::decr(string key) */
 PHP_METHOD(RedisCluster, decr) {
-    CLUSTER_PROCESS_KW_CMD("DECR", redis_key_cmd, cluster_long_resp, 0);
+    CLUSTER_PROCESS_CMD(decr, cluster_long_resp, 0);
 }
 /* }}} */
 

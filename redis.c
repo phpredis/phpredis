@@ -918,7 +918,7 @@ PHP_METHOD(Redis, ping)
 /* {{{ proto boolean Redis::incr(string key [,int value])
  */
 PHP_METHOD(Redis, incr){
-    REDIS_PROCESS_KW_CMD("INCR", redis_key_cmd, redis_long_response);
+    REDIS_PROCESS_CMD(incr, redis_long_response);
 }
 /* }}} */
 
@@ -940,7 +940,7 @@ PHP_METHOD(Redis, incrByFloat) {
 /* {{{ proto boolean Redis::decr(string key) */
 PHP_METHOD(Redis, decr)
 {
-    REDIS_PROCESS_KW_CMD("DECR", redis_key_cmd, redis_long_response);
+    REDIS_PROCESS_CMD(decr, redis_long_response);
 }
 /* }}} */
 
@@ -1238,7 +1238,7 @@ PHP_METHOD(Redis, listTrim)
 /* {{{ proto string Redis::lGet(string key , int index) */
 PHP_METHOD(Redis, lGet)
 {
-    REDIS_PROCESS_KW_CMD("LGET", redis_key_long_cmd, redis_string_response);
+    REDIS_PROCESS_KW_CMD("LINDEX", redis_key_long_cmd, redis_string_response);
 }
 /* }}} */
 
