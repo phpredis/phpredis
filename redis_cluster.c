@@ -177,7 +177,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, sscan, arginfo_kscan, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hscan, arginfo_kscan, ZEND_ACC_PUBLIC)
-    
+   
+    PHP_ME(RedisCluster, getmode, NULL, ZEND_ACC_PUBLIC) 
     PHP_ME(RedisCluster, getlasterror, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, clearlasterror, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, getoption, NULL, ZEND_ACC_PUBLIC)
@@ -436,7 +437,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
 PHP_METHOD(RedisCluster, __construct) {
     zval *object, *z_seeds=NULL;
     char *name;
-    long name_len, tmsec;
+    long name_len;
     double timeout = 0.0, read_timeout = 0.0;
     redisCluster *context = GET_CONTEXT();
 
@@ -1851,6 +1852,13 @@ PHP_METHOD(RedisCluster, evalsha) {
 
 /* Commands that do not interact with Redis, but just report stuff about
  * various options, etc */
+
+/* {{{ proto string RedisCluster::getmode() */
+PHP_METHOD(RedisCluster, getmode) {
+    redisCluster *c = GET_CONTEXT();
+    RETURN_LONG(c->flags->mode);
+}
+/* }}} */
 
 /* {{{ proto string RedisCluster::getlasterror() */
 PHP_METHOD(RedisCluster, getlasterror) {
