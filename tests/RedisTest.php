@@ -2451,20 +2451,33 @@ class Redis_Test extends TestSuite
     }
 
     public function testObject() {
-	    $this->redis->del('key');
+        /* Version 3.0.0 (represented as >= 2.9.0 in redis info)  and moving
+         * forward uses "embstr" instead of "raw" for small string values */
+        if (version_compare($this->version, "2.9.0", "lt")) {
+            $str_small_encoding = "raw";
+        } else {
+            $str_small_encoding = "embstr";
+        }
+
+        $this->redis->del('key');
 	    $this->assertTrue($this->redis->object('encoding', 'key') === FALSE);
 	    $this->assertTrue($this->redis->object('refcount', 'key') === FALSE);
 	    $this->assertTrue($this->redis->object('idletime', 'key') === FALSE);
 
 	    $this->redis->set('key', 'value');
-	    $this->assertTrue($this->redis->object('encoding', 'key') === "raw");
+	    $this->assertTrue($this->redis->object('encoding', 'key') === $str_small_encoding);
 	    $this->assertTrue($this->redis->object('refcount', 'key') === 1);
 	    $this->assertTrue($this->redis->object('idletime', 'key') === 0);
 
 	    $this->redis->del('key');
 	    $this->redis->lpush('key', 'value');
-	    $this->assertTrue($this->redis->object('encoding', 'key') === "ziplist");
-	    $this->assertTrue($this->redis->object('refcount', 'key') === 1);
+
+        /* Newer versions of redis are going to encode lists as 'quicklists',
+         * so 'quicklist' or 'ziplist' is valid here */
+        $str_encoding = $this->redis->object('encoding', 'key');
+        $this->assertTrue($str_encoding === "ziplist" || $str_encoding === 'quicklist');
+        
+        $this->assertTrue($this->redis->object('refcount', 'key') === 1);
 	    $this->assertTrue($this->redis->object('idletime', 'key') === 0);
 
 	    $this->redis->del('key');
@@ -2482,8 +2495,11 @@ class Redis_Test extends TestSuite
 
 	    $this->redis->del('key');
 	    $this->redis->lpush('key', str_repeat('A', pow(10,6))); // 1M elements, too big for a ziplist.
-	    $this->assertTrue($this->redis->object('encoding', 'key') === "linkedlist");
-	    $this->assertTrue($this->redis->object('refcount', 'key') === 1);
+
+        $str_encoding = $this->redis->object('encoding', 'key');
+        $this->assertTrue($str_encoding === "linkedlist" || $str_encoding == "quicklist");
+        
+        $this->assertTrue($this->redis->object('refcount', 'key') === 1);
 	    $this->assertTrue($this->redis->object('idletime', 'key') === 0);
     }
 
