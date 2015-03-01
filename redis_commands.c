@@ -1220,6 +1220,73 @@ int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* To maintain backward compatibility with earlier versions of phpredis, we 
+ * allow for an optional "increment by" argument for INCR and DECR even though
+ * that's not how Redis proper works */
+#define TYPE_INCR 0
+#define TYPE_DECR 1
+
+/* Handle INCR(BY) and DECR(BY) depending on optional increment value */
+static int 
+redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, int type, 
+                       RedisSock *redis_sock, char **cmd, int *cmd_len, 
+                       short *slot, void **ctx)
+{
+    char *key;
+    int key_free, key_len;
+    long val = 1;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &key, &key_len,
+                              &val)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    /* Prefix the key if required */
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    /* If our value is 1 we use INCR/DECR.  For other values, treat the call as
+     * an INCRBY or DECRBY call */
+    if (type == TYPE_INCR) {
+        if (val == 1) {
+           *cmd_len = redis_cmd_format_static(cmd,"INCR","s",key,key_len);
+        } else {
+           *cmd_len = redis_cmd_format_static(cmd,"INCRBY","sd",key,key_len,val);
+        }
+    } else {
+        if (val == 1) {
+            *cmd_len = redis_cmd_format_static(cmd,"DECR","s",key,key_len);
+        } else {
+            *cmd_len = redis_cmd_format_static(cmd,"DECRBY","sd",key,key_len,val);
+        }
+    }
+
+    /* Set our slot */
+    CMD_SET_SLOT(slot,key,key_len);
+
+    /* Free our key if we prefixed */
+    if (key_free) efree(key);
+
+    /* Success */
+    return SUCCESS;
+}
+ 
+/* INCR */
+int redis_incr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+        TYPE_INCR, redis_sock, cmd, cmd_len, slot, ctx);
+}
+
+/* DECR */
+int redis_decr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+        TYPE_DECR, redis_sock, cmd, cmd_len, slot, ctx);
+}
+
 /* HINCRBY */
 int redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char **cmd, int *cmd_len, short *slot, void **ctx)
@@ -1242,6 +1309,9 @@ int redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                                        mem_len, byval);
     // Set slot
     CMD_SET_SLOT(slot,key,key_len);
+
+    /* Free the key if we prefixed */
+    if (key_free) efree(key);
 
     // Success
     return SUCCESS;
@@ -1270,6 +1340,9 @@ int redis_hincrbyfloat_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Set slot
     CMD_SET_SLOT(slot,key,key_len);
+
+    /* Free the key if we prefixed */
+    if (key_free) efree(key);
 
     // Success
     return SUCCESS;
