@@ -2213,9 +2213,6 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             HashTable *ht_keys = Z_ARRVAL_PP(z_ele);
             int added=0;
 
-            // Add our "GET" option
-            add_next_index_stringl(z_argv,"GET",sizeof("GET")-1,1);
-
             for(zend_hash_internal_pointer_reset(ht_keys);
                 zend_hash_has_more_elements(ht_keys)==SUCCESS;
                 zend_hash_move_forward(ht_keys))
@@ -2227,6 +2224,9 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     continue;
                 if(Z_TYPE_PP(z_key)!=IS_STRING)
                     continue;
+
+                /* Add get per thing we're getting */
+                add_next_index_stringl(z_argv, "GET", sizeof("GET")-1, 1);
 
                 // Add this key to our argv array
                 add_next_index_stringl(z_argv, Z_STRVAL_PP(z_key),
