@@ -98,7 +98,7 @@ class TestSuite {
         echo " --- fin ---\n";
 
 		if(empty($className::$errors)) {
-			echo "All tests passed.\n";
+			echo "All tests passed. \o/\n";
 			return 0;
 		}
 
