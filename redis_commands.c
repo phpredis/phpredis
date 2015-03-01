@@ -1101,6 +1101,14 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
+    /* Our optional argument can either be a long (to support legacy SETEX */
+    /* redirection), or an array with Redis >= 2.6.12 set options */
+    if(z_opts && Z_TYPE_P(z_opts) != IS_LONG && Z_TYPE_P(z_opts) != IS_ARRAY
+       && Z_TYPE_P(z_opts) != IS_NULL)
+    {
+        return FAILURE;
+    }
+
     // Serialize and key prefix if required
     val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
