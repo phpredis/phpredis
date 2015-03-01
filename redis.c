@@ -2700,6 +2700,8 @@ PHP_METHOD(Redis, object)
        RETURN_FALSE;
     }
 
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); 
+
     if(rtype == TYPE_INT) {
         IF_ATOMIC() {
             redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
