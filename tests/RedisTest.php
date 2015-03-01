@@ -107,7 +107,7 @@ class Redis_Test extends TestSuite
         // Make sure the elements are correct, and have zero counts
         foreach(Array($c1,$c2) as $channel) {
             $this->assertTrue(isset($result[$channel]));
-            $this->assertEquals($result[$channel], "0");
+            $this->assertEquals($result[$channel], 0);
         }
 
         // PUBSUB NUMPAT
@@ -156,7 +156,9 @@ class Redis_Test extends TestSuite
 
         // Verify valid offset ranges
         $this->assertFalse($this->redis->getBit('key', -1));
-        $this->assertTrue($this->redis->getBit('key', 4294967295));
+        
+        $this->redis->setBit('key', 4294967295, 1);
+        $this->assertTrue(1 === $this->redis->getBit('key', 4294967295));
     }
 
     public function testBitPos() {

@@ -27,16 +27,10 @@ PHPAPI int usleep(unsigned int useconds);
 # endif
 #endif
 
-#ifdef _MSC_VER
-#define atoll _atoi64
-#define random rand
-#define usleep Sleep
-#endif
-
 #define UNSERIALIZE_NONE 0
 #define UNSERIALIZE_KEYS 1
 #define UNSERIALIZE_VALS 2
-#define UNSERIALIZE_ALL 3
+#define UNSERIALIZE_ALL  3
 
 #define SCORE_DECODE_NONE 0
 #define SCORE_DECODE_INT  1
@@ -237,14 +231,17 @@ redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
        scan command this is.  They all come back in slightly different ways */
     switch(type) {
         case TYPE_SCAN:
-            return redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+            return redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                redis_sock, NULL, NULL);
         case TYPE_SSCAN:
             return redis_sock_read_multibulk_reply(
                 INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
         case TYPE_ZSCAN:
-            return redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+            return redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                redis_sock, NULL, NULL);
         case TYPE_HSCAN:
-            return redis_mbulk_reply_zipped_vals(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+            return redis_mbulk_reply_zipped_vals(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                redis_sock, NULL, NULL);
         default:
             return -1;
     }
@@ -443,7 +440,7 @@ redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
 
     redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab,
         numElems, UNSERIALIZE_ALL);
-
+    
     return z_tab;
 }
 
@@ -1228,10 +1225,68 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
     zval *z_ret;
     HashTable *keytable;
 
-PHPAPI int 
-redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PARAMETERS, 
-                                                 RedisSock *redis_sock, 
-                                                 zval *z_tab, int flag) 
+    MAKE_STD_ZVAL(z_ret);
+    array_init(z_ret);
+    keytable = Z_ARRVAL_P(z_tab);
+
+    for(zend_hash_internal_pointer_reset(keytable);
+        zend_hash_has_more_elements(keytable) == SUCCESS;
+        zend_hash_move_forward(keytable)) {
+
+        char *tablekey, *hkey, *hval;
+        unsigned int tablekey_len;
+        int hkey_len;
+        unsigned long idx;
+        zval **z_key_pp, **z_value_pp;
+
+        zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
+        if(zend_hash_get_current_data(keytable, (void**)&z_key_pp) == FAILURE) {
+            continue;   /* this should never happen, according to the PHP people. */
+        }
+
+        /* get current value, a key */
+        convert_to_string(*z_key_pp);
+        hkey = Z_STRVAL_PP(z_key_pp);
+        hkey_len = Z_STRLEN_PP(z_key_pp);
+
+        /* move forward */
+        zend_hash_move_forward(keytable);
+
+        /* fetch again */
+        zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
+        if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
+            continue;   /* this should never happen, according to the PHP people. */
+        }
+
+        /* get current value, a hash value now. */
+        hval = Z_STRVAL_PP(z_value_pp);
+
+        /* Decode the score depending on flag */
+        if (decode == SCORE_DECODE_INT && Z_STRLEN_PP(z_value_pp) > 0) {
+            add_assoc_long_ex(z_ret, hkey, 1+hkey_len, atoi(hval+1));
+        } else if (decode == SCORE_DECODE_DOUBLE) {
+            add_assoc_double_ex(z_ret, hkey, 1+hkey_len, atof(hval));
+        } else {
+            zval *z = NULL;
+            MAKE_STD_ZVAL(z);
+            *z = **z_value_pp;
+            zval_copy_ctor(z);
+            add_assoc_zval_ex(z_ret, hkey, 1+hkey_len, z);
+        }
+    }
+    
+    /* replace */
+    zval_dtor(z_tab);
+    *z_tab = *z_ret;
+    zval_copy_ctor(z_tab);
+    zval_dtor(z_ret);
+
+    efree(z_ret);
+}
+
+static int
+redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                         zval *z_tab, int unserialize, int decode)
 {
     char inbuf[1024];
     int numElems;
@@ -1246,8 +1301,7 @@ redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PARAMETERS,
         redis_sock->status = REDIS_SOCK_STATUS_FAILED;
         redis_sock->mode = ATOMIC;
         redis_sock->watching = 0;
-        zend_throw_exception(redis_exception_ce, 
-            "read error on connection", 0 TSRMLS_CC);
+        zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
         return -1;
     }
 
@@ -1283,14 +1337,14 @@ redis_sock_read_multibulk_reply_zipped_with_flag(INTERNAL_FUNCTION_PARAMETERS,
 }
 
 /* Zipped key => value reply but we don't touch anything (e.g. CONFIG GET) */
-PHP_REDIS_API int redis_mbulk_reply_zipped_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+PHPAPI int redis_mbulk_reply_zipped_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
     return redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         z_tab, UNSERIALIZE_NONE, SCORE_DECODE_NONE);
 }
 
 /* Zipped key => value reply unserializing keys and decoding the score as an integer (PUBSUB) */
-PHP_REDIS_API int redis_mbulk_reply_zipped_keys_int(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+PHPAPI int redis_mbulk_reply_zipped_keys_int(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                                                zval *z_tab, void *ctx)
 {
     return redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
@@ -1298,7 +1352,7 @@ PHP_REDIS_API int redis_mbulk_reply_zipped_keys_int(INTERNAL_FUNCTION_PARAMETERS
 }
 
 /* Zipped key => value reply unserializing keys and decoding the score as a double (ZSET commands) */
-PHP_REDIS_API int redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+PHPAPI int redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                                                     zval *z_tab, void *ctx)
 {
     return redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
@@ -1306,13 +1360,24 @@ PHP_REDIS_API int redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAMETERS
 }
 
 /* Zipped key => value reply where only the values are unserialized (e.g. HMGET) */
-PHP_REDIS_API int redis_mbulk_reply_zipped_vals(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+PHPAPI int redis_mbulk_reply_zipped_vals(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                                                zval *z_tab, void *ctx)
 {
     return redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         z_tab, UNSERIALIZE_VALS, SCORE_DECODE_NONE);
 }
 
+PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, 
+                             RedisSock *redis_sock, zval *z_tab, void *ctx) 
+{
+    return redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+        z_tab, UNSERIALIZE_VALS, SCORE_DECODE_NONE);
+}
+
+
+PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, 
+                             RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
     char *response;
     int response_len;
     char ret;
@@ -1755,7 +1820,7 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
 
     redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         z_multi_result, numElems, UNSERIALIZE_ALL);
-
+    
     IF_MULTI_OR_PIPELINE() {
         add_next_index_zval(z_tab, z_multi_result);
     } else {
@@ -1766,13 +1831,9 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
     return 0;
 }
 
-/**
- * Like multibulk reply, but don't touch the values, they won't be compressed. 
- * (this is used by HKEYS).
- */
-PHPAPI int redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, 
-                                               RedisSock *redis_sock, 
-                                               zval *z_tab, void *ctx)
+/* Like multibulk reply, but don't touch the values, they won't be unserialized
+ * (this is used by HKEYS). */
+PHPAPI int redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
     char inbuf[1024];
     int numElems;
@@ -1787,8 +1848,7 @@ PHPAPI int redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS,
         redis_sock->status = REDIS_SOCK_STATUS_FAILED;
         redis_sock->mode = ATOMIC;
         redis_sock->watching = 0;
-        zend_throw_exception(redis_exception_ce, "read error on connection", 
-            0 TSRMLS_CC);
+        zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
         return -1;
     }
 
@@ -1817,7 +1877,7 @@ PHPAPI int redis_sock_read_multibulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS,
     return 0;
 }
 
-PHP_REDIS_API void
+PHPAPI void
 redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                        zval *z_tab, int count, int unserialize)
 {
@@ -1850,50 +1910,11 @@ redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         count--;
     }
 }
-
-
-/*
-PHP_REDIS_API int
-redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                                     zval *z_tab, int numElems, int unwrap_key, int unserialize_even_only)
-{
-    char *response;
-    int response_len;
-
-    while(numElems > 0) {
-        response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
-        if(response != NULL) {
-        zval *z = NULL;
-        int can_unserialize = unwrap_key;
-        if(unserialize_even_only == UNSERIALIZE_ONLY_VALUES && 
-           numElems % 2 == 0) 
-        {
-            can_unserialize = 0;
-        }
-
-        if(can_unserialize && redis_unserialize(redis_sock, response,
-                                                response_len, &z TSRMLS_CC)==1)
-        {
-            efree(response);
-            add_next_index_zval(z_tab, z);
-        } else {
-            add_next_index_stringl(z_tab, response, response_len, 0);
-        }
-        } else {
-            add_next_index_bool(z_tab, 0);
-        }
-        numElems --;
-    }
-    return 0;
-}
 */
 
-/**
- * redis_sock_read_multibulk_reply_assoc
- */
-PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, 
-                                                 RedisSock *redis_sock, 
-                                                 zval *z_tab, void *ctx)
+/* Specialized multibulk processing for HMGET where we need to pair requested
+ * keys with their returned values */
+PHPAPI int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
     char inbuf[1024], *response;
     int response_len;
@@ -1911,8 +1932,7 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS,
         redis_sock->status = REDIS_SOCK_STATUS_FAILED;
         redis_sock->mode = ATOMIC;
         redis_sock->watching = 0;
-        zend_throw_exception(redis_exception_ce, "read error on connection", 
-            0 TSRMLS_CC);
+        zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
         return -1;
     }
 
@@ -1932,22 +1952,17 @@ PHPAPI int redis_sock_read_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS,
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
         if(response != NULL) {
             zval *z = NULL;
-            if(redis_unserialize(redis_sock, response, response_len, &z
-                                 TSRMLS_CC) == 1)
-            {
+            if(redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
                 efree(response);
-                add_assoc_zval_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 
-                    1+Z_STRLEN_P(z_keys[i]), z);
+                add_assoc_zval_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), z);
             } else {
-                add_assoc_stringl_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 
-                    1+Z_STRLEN_P(z_keys[i]), response, response_len, 0);
+                add_assoc_stringl_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), response, response_len, 0);
             }
         } else {
-            add_assoc_bool_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 
-                1+Z_STRLEN_P(z_keys[i]), 0);
+            add_assoc_bool_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), 0);
         }
-        zval_dtor(z_keys[i]);
-        efree(z_keys[i]);
+    zval_dtor(z_keys[i]);
+    efree(z_keys[i]);
     }
     efree(z_keys);
 
