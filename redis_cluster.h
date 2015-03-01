@@ -267,6 +267,7 @@ PHP_METHOD(RedisCluster, echo);
 PHP_METHOD(RedisCluster, rawcommand);
 
 /* Introspection */
+PHP_METHOD(RedisCluster, getmode);
 PHP_METHOD(RedisCluster, getlasterror);
 PHP_METHOD(RedisCluster, clearlasterror);
 PHP_METHOD(RedisCluster, getoption);
