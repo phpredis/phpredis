@@ -1998,9 +1998,9 @@ static int gen_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Set slot
     CMD_SET_SLOT(slot,key,key_len);
 
-    // Cleanup
-    if(key_free) STR_FREE(val);
-    if(val_free) efree(key);
+    /* Cleanup our key and value */
+    if (val_free) STR_FREE(val);
+    if (key_free) efree(key);
 
     // Success
     return SUCCESS;
