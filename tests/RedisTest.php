@@ -4782,8 +4782,9 @@ class Redis_Test extends TestSuite
                 $i--;
             }
         }
+
         $this->assertEquals(0, $i);
-        $this->assertEquals(0, $i_tot_score);
+        $this->assertEquals((float)0, $i_tot_score);
 
         // Just scan "pmem" members
         $it = NULL;
@@ -4795,7 +4796,7 @@ class Redis_Test extends TestSuite
                 $i_p_count -= 1;
             }
         }
-        $this->assertEquals(0, $i_p_score);
+        $this->assertEquals((float)0, $i_p_score);
         $this->assertEquals(0, $i_p_count);
 
         // Turn off retrying and we should get some empty results
@@ -4813,7 +4814,7 @@ class Redis_Test extends TestSuite
         }
         // We should still get all the keys, just with several empty results
         $this->assertTrue($i_skips > 0);
-        $this->assertEquals(0, $i_p_score);
+        $this->assertEquals((float)0, $i_p_score);
         $this->assertEquals(0, $i_p_count);
     }
 
