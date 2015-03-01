@@ -2351,6 +2351,12 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     // If SCAN_RETRY is set, loop until we get a zero iterator or until
     // we get non-zero elements.  Otherwise we just send the command once.
     do {
+        /* Free our return value if we're back in the loop */
+        if (Z_TYPE_P(return_value) == IS_ARRAY) {
+            zval_dtor(return_value);
+            ZVAL_NULL(return_value);
+        } 
+    
         // Create command
         cmd_len = redis_fmt_scan_cmd(&cmd, type, key, key_len, it, pat, pat_len,
             count); 
@@ -2430,6 +2436,12 @@ PHP_METHOD(RedisCluster, scan) {
     /* With SCAN_RETRY on, loop until we get some keys, otherwise just return
      * what Redis does, as it does */
     do {
+        /* Free our return value if we're back in the loop */
+        if (Z_TYPE_P(return_value) == IS_ARRAY) {
+            zval_dtor(return_value);
+            ZVAL_NULL(return_value);
+        }
+    
         /* Construct our command */
         cmd_len = redis_fmt_scan_cmd(&cmd, TYPE_SCAN, NULL, 0, it, pat, pat_len,
             count);
