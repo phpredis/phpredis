@@ -1165,14 +1165,14 @@ PHP_METHOD(Redis, lInsert)
 /* {{{ proto long Redis::lPushx(string key, mixed value) */
 PHP_METHOD(Redis, lPushx)
 {    
-    REDIS_PROCESS_KW_CMD("LPUSHX", redis_kv_cmd, redis_string_response);
+    REDIS_PROCESS_KW_CMD("LPUSHX", redis_kv_cmd, redis_long_response);
 }
 /* }}} */
 
 /* {{{ proto long Redis::rPushx(string key, mixed value) */
 PHP_METHOD(Redis, rPushx)
 {
-    REDIS_PROCESS_KW_CMD("RPUSHX", redis_kv_cmd, redis_string_response);
+    REDIS_PROCESS_KW_CMD("RPUSHX", redis_kv_cmd, redis_long_response);
 }
 /* }}} */
 
