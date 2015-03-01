@@ -1828,8 +1828,8 @@ int redis_setbit_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    *cmd_len = redis_cmd_format_static(cmd, "SETBIT", "sdd", key, key_len,
-        (int)offset, (int)val);
+    *cmd_len = redis_cmd_format_static(cmd, "SETBIT", "sld", key, key_len,
+        offset, (int)val);
 
     CMD_SET_SLOT(slot, key, key_len);
 
