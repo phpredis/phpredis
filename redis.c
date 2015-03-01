@@ -835,8 +835,7 @@ PHP_METHOD(Redis, set) {
  */
 PHP_METHOD(Redis, setex)
 {
-    REDIS_PROCESS_KW_CMD("SETEX", redis_key_long_val_cmd, 
-        redis_string_response);
+    REDIS_PROCESS_KW_CMD("SETEX", redis_key_long_val_cmd, redis_boolean_response);
 }
 
 /* {{{ proto boolean Redis::psetex(string key, long expire, string value)
