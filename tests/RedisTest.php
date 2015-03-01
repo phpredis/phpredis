@@ -15,9 +15,9 @@ class Redis_Test extends TestSuite
 
     public function setUp()
     {
-	$this->redis = $this->newInstance();
-	$info = $this->redis->info();
-	$this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
+        $this->redis = $this->newInstance();
+        $info = $this->redis->info();
+        $this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
     }
 
 	protected function newInstance() {
@@ -44,10 +44,15 @@ class Redis_Test extends TestSuite
         $this->tearDown();
     }
 
+    /* Helper function to determine if the clsas has pipeline support */
+    protected function havePipeline() {
+        return defined('Redis::PIPELINE');
+    }
+
     public function testMinimumVersion()
     {
-	// Minimum server version required for tests
-	$this->assertTrue(version_compare($this->version, "2.4.0", "ge"));
+        // Minimum server version required for tests
+        $this->assertTrue(version_compare($this->version, "2.4.0", "ge"));
     }
 
     public function testPing()
@@ -62,6 +67,9 @@ class Redis_Test extends TestSuite
     }
 
 	public function testPipelinePublish() {
+        if (!$this->havePipeline()) {
+            $this->markTestSkipped();
+        }
 
 		$ret = $this->redis->pipeline()
 			->publish('chan', 'msg')
@@ -498,6 +506,9 @@ class Redis_Test extends TestSuite
 	$this->redis->incrBy('key', -1);
 	$this->assertEquals(5, (int)$this->redis->get('key'));
 
+    $this->redis->incr('key', 5);
+    $this->assertEquals(10, (int)$this->redis->get('key'));
+
 	$this->redis->delete('key');
 
 	$this->redis->set('key', 'abc');
@@ -566,7 +577,11 @@ class Redis_Test extends TestSuite
 
 	$this->redis->decrBy('key', -10);
 	$this->assertEquals(10, (int)$this->redis->get('key'));
+
+    $this->redis->decr('key', 10);
+    $this->assertEquals(0, (int)$this->redis->get('key'));
     }
+
 
     public function testExists()
     {
@@ -1272,20 +1287,22 @@ class Redis_Test extends TestSuite
         // Test in a pipeline
         //
 
-        $pipe = $this->redis->pipeline();
+        if ($this->havePipeline()) {
+            $pipe = $this->redis->pipeline();
 
-        $pipe->srandmember('set0', 20);
-        $pipe->srandmember('set0', 200);
-        $pipe->srandmember('set0', -200);
+            $pipe->srandmember('set0', 20);
+            $pipe->srandmember('set0', 200);
+            $pipe->srandmember('set0', -200);
 
-        $ret = $this->redis->exec();
+            $ret = $this->redis->exec();
 
-        $this->assertTrue(is_array($ret[0]) && count($ret[0]) == 20);
-        $this->assertTrue(is_array($ret[1]) && count($ret[1]) == $i);
-        $this->assertTrue(is_array($ret[2]) && count($ret[2]) == 200);
+            $this->assertTrue(is_array($ret[0]) && count($ret[0]) == 20);
+            $this->assertTrue(is_array($ret[1]) && count($ret[1]) == $i);
+            $this->assertTrue(is_array($ret[2]) && count($ret[2]) == 200);
 
-        // Kill the set
-        $this->redis->del('set0');
+            // Kill the set
+            $this->redis->del('set0');
+        }
     }
 
     public function testsContains()
@@ -2511,14 +2528,18 @@ class Redis_Test extends TestSuite
     }
 
     public function testPipeline() {
-	$this->sequence(Redis::PIPELINE);
-	$this->differentType(Redis::PIPELINE);
+        if (!$this->havePipeline()) {
+            $this->markTestSkipped();
+        }
 
-	// with prefix as well
-	$this->redis->setOption(Redis::OPT_PREFIX, "test:");
-	$this->sequence(Redis::PIPELINE);
-	$this->differentType(Redis::PIPELINE);
-	$this->redis->setOption(Redis::OPT_PREFIX, "");
+        $this->sequence(Redis::PIPELINE);
+	    $this->differentType(Redis::PIPELINE);
+
+    	// with prefix as well
+	    $this->redis->setOption(Redis::OPT_PREFIX, "test:");
+    	$this->sequence(Redis::PIPELINE);
+	    $this->differentType(Redis::PIPELINE);
+    	$this->redis->setOption(Redis::OPT_PREFIX, "");
     }
 
     protected function sequence($mode) {
@@ -2683,7 +2704,7 @@ class Redis_Test extends TestSuite
 	    $this->assertTrue(count($ret) == $i);
 
 
-	    $ret = $this->redis->multi(Redis::PIPELINE)
+	    $ret = $this->redis->multi($mode)
 		    ->delete('lkey', 'lDest')
 		    ->rpush('lkey', 'lvalue')
 		    ->lpush('lkey', 'lvalue')
@@ -2742,9 +2763,9 @@ class Redis_Test extends TestSuite
 		    ->get('key3')
 		    ->renameNx('key3', 'key1')
 		    ->renameKey('key3', 'key2')
-		    ->incr('key2', 5)
+		    ->incrby('key2', 5)
 		    ->get('key2')
-		    ->decr('key2', 5)
+		    ->decrby('key2', 5)
 		    ->get('key2')
 		    ->exec();
 
@@ -4174,7 +4195,9 @@ class Redis_Test extends TestSuite
 	    $this->assertTrue(array(NULL, FALSE, 42, array('x' => 'y')) === $this->redis->getMultiple(array('a', 'b', 'c', 'd')));
 
 	    // pipeline
-	    $this->sequence(Redis::PIPELINE);
+        if ($this->havePipeline()) {
+            $this->sequence(Redis::PIPELINE);
+        }
 
 	    // multi-exec
 	    $this->sequence(Redis::MULTI);
@@ -4393,7 +4416,10 @@ class Redis_Test extends TestSuite
 
 		$num_scripts = 10;
 
-		foreach(Array(Redis::PIPELINE, Redis::MULTI) as $mode) {
+        $arr_modes = Array(Redis::MULTI);
+        if ($this->havePipeline()) $arr_modes[] = Redis::PIPELINE;
+
+		foreach($arr_modes as $mode) {
 			$this->redis->multi($mode);
 			for($i=0;$i<$num_scripts;$i++) {
 				$this->redis->eval($nested_script);
