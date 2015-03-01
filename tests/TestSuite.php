@@ -46,8 +46,11 @@ class TestSuite {
 		throw new Exception($msg);
 	}
 
-	public static function run($className, $str_limit) {
-        $rc = new ReflectionClass($className);
+	public static function run($className, $str_limit = NULL) {
+        /* Lowercase our limit arg if we're passed one */
+        $str_limit = $str_limit ? strtolower($str_limit) : $str_limit;
+
+		$rc = new ReflectionClass($className);
 		$methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
         $i_limit = -1;
         $i_idx = 0;
@@ -66,16 +69,11 @@ class TestSuite {
 			if(substr($name, 0, 4) !== 'test')
 				continue;
 
-            /* If TestRedis.php was envoked with an argument, do a simple
-             * match against the routine.  Useful to limit to one test */
-            if ($i_limit == -1 && $str_limit && strpos(strtolower($name),strtolower($str_limit))===false)
-                continue;
-
-            if ($i_limit > -1 && $i_idx++ >= $i_limit) {
+            /* If we're trying to limit to a specific test and can't match the
+             * substring, skip */
+            if ($str_limit && strstr(strtolower($name), $str_limit)===FALSE) {
                 continue;
             }
-
-            $arr_ran_methods[] = $name;
 
 			$count = count($className::$errors);
 			$rt = new $className;
