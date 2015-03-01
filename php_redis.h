@@ -252,9 +252,6 @@ PHPAPI void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub_cmd);
 PHPAPI void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, 
     char *unsub_cmd);
 
-PHPAPI void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab, 
-    int use_atof TSRMLS_DC);
-
 PHPAPI int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC);
 
 PHPAPI int get_flag(zval *object TSRMLS_DC);
