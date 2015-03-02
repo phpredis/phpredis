@@ -1961,8 +1961,6 @@ PHPAPI void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS,
     // If we had a failure, pad results with FALSE to indicate failure.  Non
     // existant keys (e.g. for MGET will come back as NULL)
     if(fail) {
-        php_error_docref(0 TSRMLS_CC, E_WARNING,
-            "Invalid response from Redis for MGET command");
         while(mctx->count--) { 
             add_next_index_bool(mctx->z_multi, 0);
         }

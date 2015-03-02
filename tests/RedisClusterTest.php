@@ -17,11 +17,44 @@ class Redis_Cluster_Test extends Redis_Test {
         }
 
         /* Store our node map */
-        $this->_arr_node_map = array_filter(file_get_contents('nodes/nodemap'));
+        $this->_arr_node_map = array_filter(
+            explode("\n", file_get_contents('nodes/nodemap')
+        ));
+    }
+
+    /* Override setUp to get info from a specific node */
+    public function setUp() {
+        $this->redis = $this->newInstance();
+        $info = $this->redis->info(uniqid());
+        $this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
     }
 
     /* Override newInstance as we want a RedisCluster object */
     protected function newInstance() {
         return new RedisCluster(NULL, $this->_arr_node_map);
     }
+
+    /* Overrides for RedisTest where the function signature is different.  This
+     * is only true for a few commands, which by definition have to be directed
+     * at a specific node */
+
+    public function testPing() {
+        for ($i = 0; $i < 100; $i++) {
+            $this->assertTrue($this->redis->ping("key:$i"));
+        }
+    }
+
+    public function testRandomKey() {
+        for ($i = 0; $i < 1000; $i++) {
+            $k = $this->redis->randomKey("key:$i");
+            $this->assertTrue($this->redis->exists($k));
+        }
+    }
+
+    public function testEcho() {
+        $this->assertEquals($this->redis->echo('k1', 'hello'), 'hello');
+        $this->assertEquals($this->redis->echo('k2', 'world'), 'world');
+        $this->assertEquals($this->redis->echo('k3', " 0123 "), " 0123 ");
+    }
 }
+?>
