@@ -1485,7 +1485,7 @@ PHP_METHOD(RedisCluster, renamenx) {
 
 /* {{{ proto long RedisCluster::pfcount(string key) */
 PHP_METHOD(RedisCluster, pfcount) {
-    CLUSTER_PROCESS_KW_CMD("PFCOUNT", redis_key_cmd, cluster_long_resp, 1);
+    CLUSTER_PROCESS_CMD(pfcount, cluster_long_resp, 1);
 }
 /* }}} */
 
