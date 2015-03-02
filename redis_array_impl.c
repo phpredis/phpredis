@@ -347,11 +347,11 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	}
 	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect, connect_timeout TSRMLS_CC) : NULL;
 
-    /* Set hash function and distribtor if provided */
+	/* Set hash function and distribtor if provided */
     ra->z_fun = z_fun;
     ra->z_dist = z_dist;
-
-	return ra;
+    
+    return ra;
 }
 
 
@@ -448,40 +448,36 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
 
 zval *
 ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_DC) {
+    uint32_t hash;
+    char *out;
+    int pos, out_len;
 
-        uint32_t hash;
-        char *out;
-        int pos, out_len;
+    /* extract relevant part of the key */
+    out = ra_extract_key(ra, key, key_len, &out_len TSRMLS_CC);
+    if(!out) return NULL;
 
-        /* extract relevant part of the key */
-        out = ra_extract_key(ra, key, key_len, &out_len TSRMLS_CC);
-        if(!out)
-                return NULL;
-
-        if(ra->z_dist) {
-                if (!ra_call_distributor(ra, key, key_len, &pos TSRMLS_CC)) {
-                    efree(out);
-                    return NULL;
-                }
+    if(ra->z_dist) {
+        if (!ra_call_distributor(ra, key, key_len, &pos TSRMLS_CC)) {
+            efree(out);
+            return NULL;
         }
-        else {
-                uint64_t h64;
-
-                /* hash */
-                hash = rcrc32(out, out_len);
-
-                /* get position on ring */
-                h64 = hash;
-                h64 *= ra->count;
-                h64 /= 0xffffffff;
-                pos = (int)h64;
-        }
-        if(out_pos) *out_pos = pos;
-
-        /* cleanup */
+    } else {
+        /* hash */
+        hash = rcrc32(out, out_len);
         efree(out);
+        
+        /* get position on ring */
+        uint64_t h64 = hash;
+        h64 *= ra->count;
+        h64 /= 0xffffffff;
+        pos = (int)h64;
+    }
+    if(out_pos) *out_pos = pos;
 
-        return ra->redis[pos];
+    /* Cleanup */
+    efree(out);
+
+    return ra->redis[pos];
 }
 
 zval *
@@ -961,6 +957,9 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	for(i = 0; i < 1 + 2 * count; ++i) {
 		efree(z_zadd_args[i]);
 	}
+    
+    /* Free the array itself */
+    efree(z_zadd_args);
 
     zval_dtor(&z_ret);
 
