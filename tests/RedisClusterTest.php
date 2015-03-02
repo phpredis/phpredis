@@ -11,14 +11,16 @@ class Redis_Cluster_Test extends Redis_Test {
 
     /* Load our seeds on construction */
     public function __construct() {
-        if (!file_exists('nodes/nodemap')) {
+        $str_nodemap_file = dirname($_SERVER['PHP_SELF']) . '/nodes/nodemap';
+
+        if (!file_exists($str_nodemap_file)) {
             fprintf(STDERR, "Error:  Can't find nodemap file for seeds!\n");
             exit(1);
         }
 
         /* Store our node map */
         $this->_arr_node_map = array_filter(
-            explode("\n", file_get_contents('nodes/nodemap')
+            explode("\n", file_get_contents($str_nodemap_file)
         ));
     }
 

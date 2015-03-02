@@ -407,24 +407,23 @@ class Redis_Test extends TestSuite
         $this->redis->del('k2');
         $this->redis->del('k3');
 
-    $this->redis->set('k1', gzcompress('v1'));
-    $this->redis->set('k2', gzcompress('v2'));
-    $this->redis->set('k3', gzcompress('v3'));
+        $this->redis->set('k1', gzcompress('v1'));
+        $this->redis->set('k2', gzcompress('v2')); 
+        $this->redis->set('k3', gzcompress('v3'));
 
-    $this->assertEquals(array(gzcompress('v1'), gzcompress('v2'), gzcompress('v3')), $this->redis->getMultiple(array('k1', 'k2', 'k3')));
-    $this->assertEquals(array(gzcompress('v1'), gzcompress('v2'), gzcompress('v3')), $this->redis->getMultiple(array('k1', 'k2', 'k3')));
+        $this->assertEquals(array(gzcompress('v1'), gzcompress('v2'), gzcompress('v3')), $this->redis->mget(array('k1', 'k2', 'k3')));
+        $this->assertEquals(array(gzcompress('v1'), gzcompress('v2'), gzcompress('v3')), $this->redis->mget(array('k1', 'k2', 'k3')));
 
     }
 
     public function testSetTimeout() {
-
-    $this->redis->del('key');
+        $this->redis->del('key');
         $this->redis->set('key', 'value');
-    $this->assertEquals('value', $this->redis->get('key'));
-    $this->redis->setTimeout('key', 1);
-    $this->assertEquals('value', $this->redis->get('key'));
-    sleep(2);
-    $this->assertEquals(False, $this->redis->get('key'));
+        $this->assertEquals('value', $this->redis->get('key'));
+        $this->redis->expire('key', 1);
+        $this->assertEquals('value', $this->redis->get('key'));
+        sleep(2);
+        $this->assertEquals(False, $this->redis->get('key'));
     }
 
     public function testExpireAt() {
@@ -571,22 +570,21 @@ class Redis_Test extends TestSuite
 
     public function testGetKeys()
     {
-
         $pattern = 'getKeys-test-';
-    for($i = 1; $i < 10; $i++) {
-        $this->redis->set($pattern.$i, $i);
+        for($i = 1; $i < 10; $i++) {
+            $this->redis->set($pattern.$i, $i);
         }
         $this->redis->del($pattern.'3');
-        $keys = $this->redis->getKeys($pattern.'*');
+        $keys = $this->redis->keys($pattern.'*');
 
-    $this->redis->set($pattern.'3', 'something');
+        $this->redis->set($pattern.'3', 'something');
 
-        $keys2 = $this->redis->getKeys($pattern.'*');
+        $keys2 = $this->redis->keys($pattern.'*');
 
         $this->assertEquals((count($keys) + 1), count($keys2));
 
-    // empty array when no key matches
-        $this->assertEquals(array(), $this->redis->getKeys(rand().rand().rand().'*'));
+        // empty array when no key matches
+        $this->assertEquals(array(), $this->redis->keys(rand().rand().rand().'*'));
     }
 
     public function testDelete()
@@ -812,31 +810,30 @@ class Redis_Test extends TestSuite
 
     }
 
-    public function testlSize()
+    public function testllen()
     {
-
         $this->redis->del('list');
 
         $this->redis->lPush('list', 'val');
-        $this->assertEquals(1, $this->redis->lSize('list'));
+        $this->assertEquals(1, $this->redis->llen('list'));
 
         $this->redis->lPush('list', 'val2');
-        $this->assertEquals(2, $this->redis->lSize('list'));
+        $this->assertEquals(2, $this->redis->llen('list'));
 
-    $this->assertEquals('val2', $this->redis->lPop('list'));
-        $this->assertEquals(1, $this->redis->lSize('list'));
+        $this->assertEquals('val2', $this->redis->lPop('list'));
+        $this->assertEquals(1, $this->redis->llen('list'));
 
-    $this->assertEquals('val', $this->redis->lPop('list'));
-        $this->assertEquals(0, $this->redis->lSize('list'));
+        $this->assertEquals('val', $this->redis->lPop('list'));
+        $this->assertEquals(0, $this->redis->llen('list'));
 
         $this->assertEquals(FALSE, $this->redis->lPop('list'));
-        $this->assertEquals(0, $this->redis->lSize('list'));    // empty returns 0
+        $this->assertEquals(0, $this->redis->llen('list'));    // empty returns 0
 
         $this->redis->del('list');
-        $this->assertEquals(0, $this->redis->lSize('list'));    // non-existent returns 0
+        $this->assertEquals(0, $this->redis->llen('list'));    // non-existent returns 0
 
         $this->redis->set('list', 'actually not a list');
-        $this->assertEquals(FALSE, $this->redis->lSize('list'));// not a list returns FALSE
+        $this->assertEquals(FALSE, $this->redis->llen('list'));// not a list returns FALSE
     }
 
     //lInsert, lPopx, rPopx
@@ -850,7 +847,7 @@ class Redis_Test extends TestSuite
         $this->redis->lPush('key', 'val0');
         $this->assertTrue($this->redis->lPushx('key', 'val1') === 2);
         $this->assertTrue($this->redis->rPushx('key', 'val2') === 3);
-        $this->assertTrue($this->redis->lGetRange('key', 0, -1) === array('val1', 'val0', 'val2'));
+        $this->assertTrue($this->redis->lrange('key', 0, -1) === array('val1', 'val0', 'val2'));
 
         //test linsert
         $this->redis->del('key');
@@ -860,11 +857,11 @@ class Redis_Test extends TestSuite
 
         $this->assertTrue($this->redis->lInsert('key', Redis::AFTER, 'val0', 'val1') === 2);
         $this->assertTrue($this->redis->lInsert('key', Redis::BEFORE, 'val0', 'val2') === 3);
-        $this->assertTrue($this->redis->lGetRange('key', 0, -1) === array('val2', 'val0', 'val1'));
+        $this->assertTrue($this->redis->lrange('key', 0, -1) === array('val2', 'val0', 'val1'));
     }
 
     // ltrim, lsize, lpop
-    public function testlistTrim()
+    public function testltrim()
     {
 
         $this->redis->del('list');
@@ -874,50 +871,49 @@ class Redis_Test extends TestSuite
         $this->redis->lPush('list', 'val3');
         $this->redis->lPush('list', 'val4');
 
-    $this->assertEquals(TRUE, $this->redis->listTrim('list', 0, 2));
-    $this->assertEquals(3, $this->redis->lSize('list'));
+    $this->assertEquals(TRUE, $this->redis->ltrim('list', 0, 2));
+    $this->assertEquals(3, $this->redis->llen('list'));
 
-        $this->redis->listTrim('list', 0, 0);
-        $this->assertEquals(1, $this->redis->lSize('list'));
+        $this->redis->ltrim('list', 0, 0);
+        $this->assertEquals(1, $this->redis->llen('list'));
     $this->assertEquals('val4', $this->redis->lPop('list'));
 
-    $this->assertEquals(TRUE, $this->redis->listTrim('list', 10, 10000));
-    $this->assertEquals(TRUE, $this->redis->listTrim('list', 10000, 10));
+    $this->assertEquals(TRUE, $this->redis->ltrim('list', 10, 10000));
+    $this->assertEquals(TRUE, $this->redis->ltrim('list', 10000, 10));
 
     // test invalid type
     $this->redis->set('list', 'not a list...');
-    $this->assertEquals(FALSE, $this->redis->listTrim('list', 0, 2));
+    $this->assertEquals(FALSE, $this->redis->ltrim('list', 0, 2));
 
     }
 
     public function setupSort() {
-    // people with name, age, salary
-    $this->redis->set('person:name_1', 'Alice');
-    $this->redis->set('person:age_1', 27);
-    $this->redis->set('person:salary_1', 2500);
+        // people with name, age, salary
+        $this->redis->set('person:name_1', 'Alice');
+        $this->redis->set('person:age_1', 27);
+        $this->redis->set('person:salary_1', 2500);
 
-    $this->redis->set('person:name_2', 'Bob');
-    $this->redis->set('person:age_2', 34);
-    $this->redis->set('person:salary_2', 2000);
+        $this->redis->set('person:name_2', 'Bob');
+        $this->redis->set('person:age_2', 34);
+        $this->redis->set('person:salary_2', 2000);
 
-    $this->redis->set('person:name_3', 'Carol');
-    $this->redis->set('person:age_3', 25);
-    $this->redis->set('person:salary_3', 2800);
+        $this->redis->set('person:name_3', 'Carol');
+        $this->redis->set('person:age_3', 25);
+        $this->redis->set('person:salary_3', 2800);
 
-    $this->redis->set('person:name_4', 'Dave');
-    $this->redis->set('person:age_4', 41);
-    $this->redis->set('person:salary_4', 3100);
+        $this->redis->set('person:name_4', 'Dave');
+        $this->redis->set('person:age_4', 41);
+        $this->redis->set('person:salary_4', 3100);
 
-    // set-up
-    $this->redis->del('person:id');
-    foreach(array(1,2,3,4) as $id) {
-        $this->redis->lPush('person:id', $id);
-    }
-
+        // set-up
+        $this->redis->del('person:id');
+        foreach(array(1,2,3,4) as $id) {
+            $this->redis->lPush('person:id', $id);
+        }
     }
 
     public function testSortPrefix() {
-    // Make sure that sorting works with a prefix
+        // Make sure that sorting works with a prefix
         $this->redis->setOption(Redis::OPT_PREFIX, 'some-prefix:');
         $this->redis->del('some-item');
         $this->redis->sadd('some-item', 1);
@@ -925,75 +921,72 @@ class Redis_Test extends TestSuite
         $this->redis->sadd('some-item', 3);
 
         $this->assertEquals(array('1','2','3'), $this->redis->sortAsc('some-item'));
-    $this->assertEquals(array('3','2','1'), $this->redis->sortDesc('some-item'));
-    $this->assertEquals(array('1','2','3'), $this->redis->sort('some-item'));
+        $this->assertEquals(array('3','2','1'), $this->redis->sortDesc('some-item'));
+        $this->assertEquals(array('1','2','3'), $this->redis->sort('some-item'));
 
-    // Kill our set/prefix
-    $this->redis->del('some-item');
-    $this->redis->setOption(Redis::OPT_PREFIX, '');
+        // Kill our set/prefix
+        $this->redis->del('some-item');
+        $this->redis->setOption(Redis::OPT_PREFIX, '');
     }
 
     public function testSortAsc() {
+        $this->setupSort();
+        $this->assertTrue(FALSE === $this->redis->sortAsc(NULL));
 
-    $this->setupSort();
+        // sort by age and get IDs
+        $byAgeAsc = array('3','1','2','4');
+        $this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*'));
+        $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', array('by' => 'person:age_*', 'sort' => 'asc')));
+        $this->assertEquals(array('1', '2', '3', '4'), $this->redis->sortAsc('person:id', NULL));   // check that NULL works.
+        $this->assertEquals(array('1', '2', '3', '4'), $this->redis->sortAsc('person:id', NULL, NULL)); // for all fields.
+        $this->assertEquals(array('1', '2', '3', '4'), $this->redis->sort('person:id', array('sort' => 'asc')));
 
-    $this->assertTrue(FALSE === $this->redis->sortAsc(NULL));
+        // sort by age and get names
+        $byAgeAsc = array('Carol','Alice','Bob','Dave');
+        $this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*'));
+        $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'sort' => 'asc')));
 
-    // sort by age and get IDs
-    $byAgeAsc = array('3','1','2','4');
-    $this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*'));
-    $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', array('by' => 'person:age_*', 'sort' => 'asc')));
-    $this->assertEquals(array('1', '2', '3', '4'), $this->redis->sortAsc('person:id', NULL));   // check that NULL works.
-    $this->assertEquals(array('1', '2', '3', '4'), $this->redis->sortAsc('person:id', NULL, NULL)); // for all fields.
-    $this->assertEquals(array('1', '2', '3', '4'), $this->redis->sort('person:id', array('sort' => 'asc')));
+        $this->assertEquals(array_slice($byAgeAsc, 0, 2), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 0, 2));
+        $this->assertEquals(array_slice($byAgeAsc, 0, 2), $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => array(0, 2), 'sort' => 'asc')));
 
-    // sort by age and get names
-    $byAgeAsc = array('Carol','Alice','Bob','Dave');
-    $this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*'));
-    $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'sort' => 'asc')));
+        $this->assertEquals(array_slice($byAgeAsc, 1, 2), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 1, 2));
+        $this->assertEquals(array_slice($byAgeAsc, 1, 2), $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => array(1, 2), 'sort' => 'asc')));
+    $   this->assertEquals(array_slice($byAgeAsc, 0, 3), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', NULL, 3)); // NULL is transformed to 0 if there is something after it.
+        $this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 0, 4));
+        $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => array(0, 4))));
+        $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => array(0, "4")))); // with strings
+        $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => array("0", 4))));
+        $this->assertEquals(array(), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', NULL, NULL)); // NULL, NULL is the same as (0,0). That returns no element.
 
-    $this->assertEquals(array_slice($byAgeAsc, 0, 2), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 0, 2));
-    $this->assertEquals(array_slice($byAgeAsc, 0, 2), $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => array(0, 2), 'sort' => 'asc')));
+        // sort by salary and get ages
+        $agesBySalaryAsc = array('34', '27', '25', '41');
+        $this->assertEquals($agesBySalaryAsc, $this->redis->sortAsc('person:id', 'person:salary_*', 'person:age_*'));
+        $this->assertEquals($agesBySalaryAsc, $this->redis->sort('person:id', array('by' => 'person:salary_*', 'get' => 'person:age_*', 'sort' => 'asc')));
 
-    $this->assertEquals(array_slice($byAgeAsc, 1, 2), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 1, 2));
-    $this->assertEquals(array_slice($byAgeAsc, 1, 2), $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => array(1, 2), 'sort' => 'asc')));
-    $this->assertEquals(array_slice($byAgeAsc, 0, 3), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', NULL, 3)); // NULL is transformed to 0 if there is something after it.
-    $this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 0, 4));
-    $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => array(0, 4))));
-    $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => array(0, "4")))); // with strings
-    $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', array('by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => array("0", 4))));
-    $this->assertEquals(array(), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', NULL, NULL)); // NULL, NULL is the same as (0,0). That returns no element.
+        $agesAndSalaries = $this->redis->sort('person:id', array('by' => 'person:salary_*', 'get' => array('person:age_*', 'person:salary_*'), 'sort' => 'asc'));
+        $this->assertEquals(array('34', '2000', '27', '2500', '25', '2800', '41', '3100'), $agesAndSalaries);
 
-    // sort by salary and get ages
-    $agesBySalaryAsc = array('34', '27', '25', '41');
-    $this->assertEquals($agesBySalaryAsc, $this->redis->sortAsc('person:id', 'person:salary_*', 'person:age_*'));
-    $this->assertEquals($agesBySalaryAsc, $this->redis->sort('person:id', array('by' => 'person:salary_*', 'get' => 'person:age_*', 'sort' => 'asc')));
+        // sort non-alpha doesn't change all-string lists
+        // list → [ghi, def, abc]
+        $list = array('abc', 'def', 'ghi');
+        $this->redis->del('list');
+        foreach($list as $i) {
+            $this->redis->lPush('list', $i);
+        }
 
-    $agesAndSalaries = $this->redis->sort('person:id', array('by' => 'person:salary_*', 'get' => array('person:age_*', 'person:salary_*'), 'sort' => 'asc'));
-    $this->assertEquals(array('34', '2000', '27', '2500', '25', '2800', '41', '3100'), $agesAndSalaries);
+        // SORT list → [ghi, def, abc]
+        if (version_compare($this->version, "2.5.0", "lt")) {
+            $this->assertEquals(array_reverse($list), $this->redis->sortAsc('list'));
+            $this->assertEquals(array_reverse($list), $this->redis->sort('list', array('sort' => 'asc')));
+        } else {
+            // TODO rewrite, from 2.6.0 release notes:
+            // SORT now will refuse to sort in numerical mode elements that can't be parsed
+            // as numbers
+        }
 
-
-    // sort non-alpha doesn't change all-string lists
-    // list → [ghi, def, abc]
-    $list = array('abc', 'def', 'ghi');
-    $this->redis->del('list');
-    foreach($list as $i) {
-        $this->redis->lPush('list', $i);
-    }
-
-    // SORT list → [ghi, def, abc]
-    if (version_compare($this->version, "2.5.0", "lt")) {
-        $this->assertEquals(array_reverse($list), $this->redis->sortAsc('list'));
-        $this->assertEquals(array_reverse($list), $this->redis->sort('list', array('sort' => 'asc')));
-    } else {
-        // TODO rewrite, from 2.6.0 release notes:
-        // SORT now will refuse to sort in numerical mode elements that can't be parsed
-        // as numbers
-    }
-
-    // SORT list ALPHA → [abc, def, ghi]
-    $this->assertEquals($list, $this->redis->sortAscAlpha('list'));
-    $this->assertEquals($list, $this->redis->sort('list', array('sort' => 'asc', 'alpha' => TRUE)));
+        // SORT list ALPHA → [abc, def, ghi]
+        $this->assertEquals($list, $this->redis->sortAscAlpha('list'));
+        $this->assertEquals($list, $this->redis->sort('list', array('sort' => 'asc', 'alpha' => TRUE)));
     }
 
     public function testSortDesc() {
@@ -1693,7 +1686,7 @@ class Redis_Test extends TestSuite
     $this->assertTrue($count === 0);
     }
 
-    public function testlGetRange() {
+    public function testlrange() {
 
         $this->redis->del('list');
         $this->redis->lPush('list', 'val');
@@ -1704,17 +1697,17 @@ class Redis_Test extends TestSuite
     // pos :  -3    -2    -1
     // list: [val3, val2, val]
 
-    $this->assertEquals($this->redis->lGetRange('list', 0, 0), array('val3'));
-    $this->assertEquals($this->redis->lGetRange('list', 0, 1), array('val3', 'val2'));
-    $this->assertEquals($this->redis->lGetRange('list', 0, 2), array('val3', 'val2', 'val'));
-    $this->assertEquals($this->redis->lGetRange('list', 0, 3), array('val3', 'val2', 'val'));
+    $this->assertEquals($this->redis->lrange('list', 0, 0), array('val3'));
+    $this->assertEquals($this->redis->lrange('list', 0, 1), array('val3', 'val2'));
+    $this->assertEquals($this->redis->lrange('list', 0, 2), array('val3', 'val2', 'val'));
+    $this->assertEquals($this->redis->lrange('list', 0, 3), array('val3', 'val2', 'val'));
 
-    $this->assertEquals($this->redis->lGetRange('list', 0, -1), array('val3', 'val2', 'val'));
-    $this->assertEquals($this->redis->lGetRange('list', 0, -2), array('val3', 'val2'));
-    $this->assertEquals($this->redis->lGetRange('list', -2, -1), array('val2', 'val'));
+    $this->assertEquals($this->redis->lrange('list', 0, -1), array('val3', 'val2', 'val'));
+    $this->assertEquals($this->redis->lrange('list', 0, -2), array('val3', 'val2'));
+    $this->assertEquals($this->redis->lrange('list', -2, -1), array('val2', 'val'));
 
     $this->redis->del('list');
-    $this->assertEquals($this->redis->lGetRange('list', 0, -1), array());
+    $this->assertEquals($this->redis->lrange('list', 0, -1), array());
     }
 
 
@@ -2660,15 +2653,15 @@ class Redis_Test extends TestSuite
             ->lpush('lkey', 'lvalue')
             ->lpush('lkey', 'lvalue')
             ->rpoplpush('lkey', 'lDest')
-            ->lGetRange('lDest', 0, -1)
+            ->lrange('lDest', 0, -1)
             ->lpop('lkey')
             ->llen('lkey')
             ->lRemove('lkey', 'lvalue', 3)
             ->llen('lkey')
             ->lget('lkey', 0)
-            ->lGetRange('lkey', 0, -1)
+            ->lrange('lkey', 0, -1)
             ->lSet('lkey', 1, "newValue")    // check errors on key not exists
-            ->lGetRange('lkey', 0, -1)
+            ->lrange('lkey', 0, -1)
             ->llen('lkey')
             ->exec();
 
@@ -2703,7 +2696,7 @@ class Redis_Test extends TestSuite
             ->lpush('lkey', 'lvalue')
             ->lpush('lkey', 'lvalue')
             ->rpoplpush('lkey', 'lDest')
-            ->lGetRange('lDest', 0, -1)
+            ->lrange('lDest', 0, -1)
             ->lpop('lkey')
             ->exec();
         $this->assertTrue(is_array($ret));
@@ -2844,15 +2837,15 @@ class Redis_Test extends TestSuite
             ->lpush('lkey', 'lvalue')
             ->lpush('lkey', 'lvalue')
             ->rpoplpush('lkey', 'lDest')
-            ->lGetRange('lDest', 0, -1)
+            ->lrange('lDest', 0, -1)
             ->lpop('lkey')
             ->llen('lkey')
             ->lRemove('lkey', 'lvalue', 3)
             ->llen('lkey')
             ->lget('lkey', 0)
-            ->lGetRange('lkey', 0, -1)
+            ->lrange('lkey', 0, -1)
             ->lSet('lkey', 1, "newValue")    // check errors on missing key
-            ->lGetRange('lkey', 0, -1)
+            ->lrange('lkey', 0, -1)
             ->llen('lkey')
             ->exec();
 
@@ -3110,7 +3103,7 @@ class Redis_Test extends TestSuite
             ->lPush($key, 'lvalue')
             ->lLen($key)
             ->lPop($key)
-            ->lGetRange($key, 0, -1)
+            ->lrange($key, 0, -1)
             ->lTrim($key, 0, 1)
             ->lGet($key, 0)
             ->lSet($key, 0, "newValue")
@@ -3358,7 +3351,7 @@ class Redis_Test extends TestSuite
             ->lPush($key, 'lvalue')
             ->lLen($key)
             ->lPop($key)
-            ->lGetRange($key, 0, -1)
+            ->lrange($key, 0, -1)
             ->lTrim($key, 0, 1)
             ->lGet($key, 0)
             ->lSet($key, 0, "newValue")
@@ -3476,7 +3469,7 @@ class Redis_Test extends TestSuite
             ->lPush($key, 'lvalue')
             ->lLen($key)
             ->lPop($key)
-            ->lGetRange($key, 0, -1)
+            ->lrange($key, 0, -1)
             ->lTrim($key, 0, 1)
             ->lGet($key, 0)
             ->lSet($key, 0, "newValue")
@@ -3590,7 +3583,7 @@ class Redis_Test extends TestSuite
             ->lPush($key, 'lvalue')
             ->lLen($key)
             ->lPop($key)
-            ->lGetRange($key, 0, -1)
+            ->lrange($key, 0, -1)
             ->lTrim($key, 0, 1)
             ->lGet($key, 0)
             ->lSet($key, 0, "newValue")
@@ -3697,7 +3690,7 @@ class Redis_Test extends TestSuite
         $this->assertEquals(FALSE, $this->redis->lPush($key, 'lvalue'));
         $this->assertEquals(FALSE, $this->redis->lLen($key));
         $this->assertEquals(FALSE, $this->redis->lPop($key));
-        $this->assertEquals(FALSE, $this->redis->lGetRange($key, 0, -1));
+        $this->assertEquals(FALSE, $this->redis->lrange($key, 0, -1));
         $this->assertEquals(FALSE, $this->redis->lTrim($key, 0, 1));
         $this->assertEquals(FALSE, $this->redis->lGet($key, 0));
         $this->assertEquals(FALSE, $this->redis->lSet($key, 0, "newValue"));
@@ -3827,7 +3820,7 @@ class Redis_Test extends TestSuite
         $this->assertEquals(FALSE, $this->redis->lPush($key, 'lvalue'));
         $this->assertEquals(FALSE, $this->redis->lLen($key));
         $this->assertEquals(FALSE, $this->redis->lPop($key));
-        $this->assertEquals(FALSE, $this->redis->lGetRange($key, 0, -1));
+        $this->assertEquals(FALSE, $this->redis->lrange($key, 0, -1));
         $this->assertEquals(FALSE, $this->redis->lTrim($key, 0, 1));
         $this->assertEquals(FALSE, $this->redis->lGet($key, 0));
         $this->assertEquals(FALSE, $this->redis->lSet($key, 0, "newValue"));
@@ -3886,7 +3879,7 @@ class Redis_Test extends TestSuite
         $this->assertEquals(FALSE, $this->redis->lPush($key, 'lvalue'));
         $this->assertEquals(FALSE, $this->redis->lLen($key));
         $this->assertEquals(FALSE, $this->redis->lPop($key));
-        $this->assertEquals(FALSE, $this->redis->lGetRange($key, 0, -1));
+        $this->assertEquals(FALSE, $this->redis->lrange($key, 0, -1));
         $this->assertEquals(FALSE, $this->redis->lTrim($key, 0, 1));
         $this->assertEquals(FALSE, $this->redis->lGet($key, 0));
         $this->assertEquals(FALSE, $this->redis->lSet($key, 0, "newValue"));
@@ -3943,7 +3936,7 @@ class Redis_Test extends TestSuite
         $this->assertEquals(FALSE, $this->redis->lPush($key, 'lvalue'));
         $this->assertEquals(FALSE, $this->redis->lLen($key));
         $this->assertEquals(FALSE, $this->redis->lPop($key));
-        $this->assertEquals(FALSE, $this->redis->lGetRange($key, 0, -1));
+        $this->assertEquals(FALSE, $this->redis->lrange($key, 0, -1));
         $this->assertEquals(FALSE, $this->redis->lTrim($key, 0, 1));
         $this->assertEquals(FALSE, $this->redis->lGet($key, 0));
         $this->assertEquals(FALSE, $this->redis->lSet($key, 0, "newValue"));
@@ -4019,8 +4012,8 @@ class Redis_Test extends TestSuite
         $this->redis->rPush('key', $a[2]);
         $this->redis->rPush('key', $a[3]);
 
-        // lGetRange
-        $this->assertTrue($a === $this->redis->lGetRange('key', 0, -1));
+        // lrange
+        $this->assertTrue($a === $this->redis->lrange('key', 0, -1));
 
         // lGet
         $this->assertTrue($a[0] === $this->redis->lGet('key', 0));
@@ -4030,7 +4023,7 @@ class Redis_Test extends TestSuite
 
         // lRemove
         $this->assertTrue($this->redis->lRemove('key', $a[3]) === 1);
-        $this->assertTrue(array_slice($a, 0, 3) === $this->redis->lGetRange('key', 0, -1));
+        $this->assertTrue(array_slice($a, 0, 3) === $this->redis->lrange('key', 0, -1));
 
         // lSet
         $a[0] = array('k' => 'v'); // update
@@ -4042,7 +4035,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->lInsert('key', Redis::AFTER, $a[0], array(4,5,6)) === 5);
 
         $a = array(array(1,2,3), $a[0], array(4,5,6), $a[1], $a[2]);
-        $this->assertTrue($a === $this->redis->lGetRange('key', 0, -1));
+        $this->assertTrue($a === $this->redis->lrange('key', 0, -1));
 
         // sAdd
         $this->redis->del('key');
