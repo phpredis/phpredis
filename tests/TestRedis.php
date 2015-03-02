@@ -24,9 +24,11 @@ if (!in_array($str_class, $arr_valid_classes)) {
 echo "Note: these tests might take up to a minute. Don't worry :-)\n";
 
 /* Depending on the classes being tested, run our tests on it */
-if ($str_class = 'redis') {
+if ($str_class == 'redis') {
+    echo "Testing Redis ";
     exit(TestSuite::run("Redis_Test", $str_filter));
 } else if ($str_class == 'redisarray') {
+    echo "Testing RedisArray ";
     global $useIndex;
     foreach(array(true, false) as $useIndex) {
         echo "\n".($useIndex?"WITH":"WITHOUT"). " per-node index:\n";
@@ -38,6 +40,7 @@ if ($str_class = 'redis') {
         run_tests('Redis_Distributor_Test');
     }
 } else {
-
+    echo "Testing RedisCluster ";
+    exit(TestSuite::run("Redis_Cluster_Test", $str_filter));
 }
 ?>

@@ -613,28 +613,18 @@ static int get_key_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
 }
 
 /* Turn variable arguments into a HashTable for processing */
-static HashTable *method_args_to_ht(INTERNAL_FUNCTION_PARAMETERS) {
+static HashTable *method_args_to_ht(zval **z_args, int argc) {
     HashTable *ht_ret;
-    int argc = ZEND_NUM_ARGS(), i;
-    zval **z_args;
+    int i;
 
     /* Allocate our hash table */
     ALLOC_HASHTABLE(ht_ret);
     zend_hash_init(ht_ret, argc, NULL, NULL, 0);
 
-    /* Allocate storage for our elements */
-    z_args = emalloc(sizeof(zval*)*argc);
-    if (zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
-        return NULL;
-    }
-
     /* Populate our return hash table with our arguments */
     for (i = 0; i < argc; i++) {
         zend_hash_next_index_insert(ht_ret, &z_args[i], sizeof(zval*), NULL);
     }
-
-    /* Free our argument container array */
-    efree(z_args);
 
     /* Return our hash table */
     return ht_ret;
@@ -647,33 +637,37 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     redisCluster *c = GET_CONTEXT();
     clusterMultiCmd mc = {0};
     clusterKeyValHT kv;
-    zval *z_arr;
+    zval **z_args;
     HashTable *ht_arr;
     HashPosition ptr;
-    int i=1, argc, ht_free=0;
+    int i=1, argc = ZEND_NUM_ARGS(), ht_free=0;
     short slot;
 
-    /* If we're called with one argument, attempt to process it as a single
-     * array.  Otherwise, treat it as variadic and put the function arguments
-     * into a HashTable that we'll free. */
-    if (ZEND_NUM_ARGS() == 1) {
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,"a",&z_arr)==FAILURE) 
-        {
-            return -1;
-        }
-        ht_arr = Z_ARRVAL_P(z_arr);
-    } else if (ZEND_NUM_ARGS() > 1) {
-        ht_arr = method_args_to_ht(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-        if (!ht_arr) return -1;
-        ht_free = 1;
-    } else {
-        /* Zero arguments passed, do nothing */
+    /* If we don't have any arguments we're invalid */
+    if (!argc) return -1;
+
+    /* Extract our arguments into an array */
+    z_args = emalloc(sizeof(zval*)*argc);
+    if (zend_get_parameters_array(ht, ZEND_NUM_ARGS(), z_args) == FAILURE) {
+        efree(z_args);
         return -1;
     }
 
-    /* Grab our argument count and abort if we have zero */
-    argc = zend_hash_num_elements(ht_arr);
-    if (!argc) return -1;
+    /* Determine if we're working with a single array or variadic args */
+    if (argc == 1 && Z_TYPE_P(z_args[0]) == IS_ARRAY) {
+        ht_arr = Z_ARRVAL_P(z_args[0]);
+        argc = zend_hash_num_elements(ht_arr);
+        if (!argc) {
+            efree(z_args);
+            return -1;
+        }
+    } else {
+        ht_arr = method_args_to_ht(z_args, argc);
+        ht_free = 1;
+    }
+
+    /* We no longer need our array args */
+    efree(z_args);
 
     /* MGET is readonly, DEL is not */
     c->readonly = kw_len == 3 && CLUSTER_IS_ATOMIC(c);
@@ -2625,7 +2619,7 @@ PHP_METHOD(RedisCluster, info) {
     zval *z_arg;
     short slot;
 
-    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zs", &z_arg, &opt,
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|s", &z_arg, &opt,
                              &opt_len)==FAILURE)
     {
         RETURN_FALSE;
