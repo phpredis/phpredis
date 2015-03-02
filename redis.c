@@ -3862,7 +3862,7 @@ PHP_METHOD(Redis, pfadd) {
 
 /* {{{ proto Redis::pfCount(string key) }}}*/
 PHP_METHOD(Redis, pfcount) {
-    REDIS_PROCESS_KW_CMD("PFCOUNT", redis_key_cmd, redis_long_response);
+    REDIS_PROCESS_CMD(pfcount, redis_long_response);
 }
 
 /* {{{ proto Redis::pfMerge(string dstkey, array keys) }}}*/
