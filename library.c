@@ -123,6 +123,28 @@ static void redis_error_throw(char *err, size_t err_len TSRMLS_DC) {
     }
 }
 
+PHPAPI void redis_stream_close(RedisSock *redis_sock TSRMLS_DC) {
+    if (!redis_sock->persistent) {
+        php_stream_close(redis_sock->stream);
+    } else {
+        php_stream_pclose(redis_sock->stream);
+    }
+
+    efree(cmd);
+
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
+        return -1;
+    }
+
+    if (strncmp(response, "+OK", 3)) {
+        efree(response);
+        return -1;
+    }
+
+    efree(response);
+    return 0;
+}
+
 PHP_REDIS_API void redis_stream_close(RedisSock *redis_sock TSRMLS_DC) {
 	if (!redis_sock->persistent) {
 		php_stream_close(redis_sock->stream);
@@ -178,14 +200,14 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
         }
     }
 
-    /* We've reconnected if we have a count */
+    /* We've connected if we have a count */
     if (count) {
         /* If we're using a password, attempt a reauthorization */
         if (redis_sock->auth && resend_auth(redis_sock TSRMLS_CC) != 0) {
             return -1;
         }
 
-        /* If we're using a non zero db, reselect it */
+        /* If we're using a non-zero db, reselect it */
         if (redis_sock->dbNumber && reselect_db(redis_sock TSRMLS_CC) != 0) {
             return -1;
         }
@@ -513,6 +535,9 @@ PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_D
         case '-':
             err_len = strlen(inbuf+1) - 2;
             redis_sock_set_err(redis_sock, inbuf+1, err_len);
+
+            /* Filter our ERROR through the few that should actually throw */
+            redis_error_throw(inbuf + 1, err_len TSRMLS_CC);
 
             /* Handle stale data error */
             if(memcmp(inbuf + 1, "-ERR SYNC ", 10) == 0) {
@@ -2262,9 +2287,9 @@ redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type,
 		return -1;
 	}
 
-	/* If this is an error response, filter specific errors that should throw
-     * an exception, and set our error field in our RedisSock object. */
-	if(reply_type == TYPE_ERR) {
+    // If this is an error response, check if it is a SYNC error, and throw in 
+    // that case
+    if(reply_type == TYPE_ERR) {
         /* Handle throwable errors */
         redis_error_throw(inbuf, line_size TSRMLS_CC);
 
