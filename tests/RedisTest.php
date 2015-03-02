@@ -13,8 +13,7 @@ class Redis_Test extends TestSuite
      */
     public $redis;
 
-    public function setUp()
-    {
+    public function setUp() {
         $this->redis = $this->newInstance();
         $info = $this->redis->info();
         $this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
@@ -30,12 +29,10 @@ class Redis_Test extends TestSuite
         return $r;
     }
 
-    public function tearDown()
-    {
-    if($this->redis) {
-        $this->redis->close();
-    }
-   //     unset($this->redis);
+    public function tearDown() {
+        if($this->redis) {
+            $this->redis->close();
+        }
     }
 
     public function reset()
@@ -46,7 +43,8 @@ class Redis_Test extends TestSuite
 
     /* Helper function to determine if the clsas has pipeline support */
     protected function havePipeline() {
-        return defined('Redis::PIPELINE');
+        $str_constant = get_class($this->redis) . '::PIPELINE';
+        return defined($str_constant);
     }
 
     public function testMinimumVersion()
@@ -57,13 +55,12 @@ class Redis_Test extends TestSuite
 
     public function testPing()
     {
+        $this->assertEquals('+PONG', $this->redis->ping());
 
-    $this->assertEquals('+PONG', $this->redis->ping());
-
-    $count = 1000;
-    while($count --) {
+        $count = 1000;
+        while($count --) {
             $this->assertEquals('+PONG', $this->redis->ping());
-    }
+        }
     }
 
     public function testPipelinePublish() {
@@ -122,43 +119,43 @@ class Redis_Test extends TestSuite
     public function testBitsets() {
 
         $this->redis->delete('key');
-        $this->assertTrue(0 === $this->redis->getBit('key', 0));
-        $this->assertTrue(FALSE === $this->redis->getBit('key', -1));
-        $this->assertTrue(0 === $this->redis->getBit('key', 100000));
+        $this->assertEquals(0, $this->redis->getBit('key', 0));
+        $this->assertEquals(FALSE, $this->redis->getBit('key', -1));
+        $this->assertEquals(0, $this->redis->getBit('key', 100000));
 
         $this->redis->set('key', "\xff");
         for($i = 0; $i < 8; $i++) {
-            $this->assertTrue(1 === $this->redis->getBit('key', $i));
+            $this->assertEquals(1, $this->redis->getBit('key', $i));
         }
-        $this->assertTrue(0 === $this->redis->getBit('key', 8));
+        $this->assertEquals(0, $this->redis->getBit('key', 8));
 
         // change bit 0
-        $this->assertTrue(1 === $this->redis->setBit('key', 0, 0));
-        $this->assertTrue(0 === $this->redis->setBit('key', 0, 0));
-        $this->assertTrue(0 === $this->redis->getBit('key', 0));
-        $this->assertTrue("\x7f" === $this->redis->get('key'));
+        $this->assertEquals(1, $this->redis->setBit('key', 0, 0));
+        $this->assertEquals(0, $this->redis->setBit('key', 0, 0));
+        $this->assertEquals(0, $this->redis->getBit('key', 0));
+        $this->assertEquals("\x7f", $this->redis->get('key'));
 
         // change bit 1
-        $this->assertTrue(1 === $this->redis->setBit('key', 1, 0));
-        $this->assertTrue(0 === $this->redis->setBit('key', 1, 0));
-        $this->assertTrue(0 === $this->redis->getBit('key', 1));
-        $this->assertTrue("\x3f" === $this->redis->get('key'));
+        $this->assertEquals(1, $this->redis->setBit('key', 1, 0));
+        $this->assertEquals(0, $this->redis->setBit('key', 1, 0));
+        $this->assertEquals(0, $this->redis->getBit('key', 1));
+        $this->assertEquals("\x3f", $this->redis->get('key'));
 
         // change bit > 1
-        $this->assertTrue(1 === $this->redis->setBit('key', 2, 0));
-        $this->assertTrue(0 === $this->redis->setBit('key', 2, 0));
-        $this->assertTrue(0 === $this->redis->getBit('key', 2));
-        $this->assertTrue("\x1f" === $this->redis->get('key'));
+        $this->assertEquals(1, $this->redis->setBit('key', 2, 0));
+        $this->assertEquals(0, $this->redis->setBit('key', 2, 0));
+        $this->assertEquals(0, $this->redis->getBit('key', 2));
+        $this->assertEquals("\x1f", $this->redis->get('key'));
 
         // values above 1 are changed to 1 but don't overflow on bits to the right.
-        $this->assertTrue(0 === $this->redis->setBit('key', 0, 0xff));
-        $this->assertTrue("\x9f" === $this->redis->get('key'));
+        $this->assertEquals(0, $this->redis->setBit('key', 0, 0xff));
+        $this->assertEquals("\x9f", $this->redis->get('key'));
 
         // Verify valid offset ranges
         $this->assertFalse($this->redis->getBit('key', -1));
         
         $this->redis->setBit('key', 4294967295, 1);
-        $this->assertTrue(1 === $this->redis->getBit('key', 4294967295));
+        $this->assertEquals(1, $this->redis->getBit('key', 4294967295));
     }
 
     public function testBitPos() {

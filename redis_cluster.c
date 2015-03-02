@@ -459,7 +459,7 @@ PHP_METHOD(RedisCluster, __construct) {
 
     /* If we've been passed only one argument, the user is attempting to connect
      * to a named cluster, stored in php.ini, otherwise we'll need manual seeds */
-    if (ZEND_NUM_ARGS() > 2) {
+    if (ZEND_NUM_ARGS() > 1) {
         redis_cluster_init(context, Z_ARRVAL_P(z_seeds), timeout, read_timeout
             TSRMLS_CC);
     } else {
@@ -612,6 +612,34 @@ static int get_key_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
     return 0;
 }
 
+/* Turn variable arguments into a HashTable for processing */
+static HashTable *method_args_to_ht(INTERNAL_FUNCTION_PARAMETERS) {
+    HashTable *ht_ret;
+    int argc = ZEND_NUM_ARGS(), i;
+    zval **z_args;
+
+    /* Allocate our hash table */
+    ALLOC_HASHTABLE(ht_ret);
+    zend_hash_init(ht_ret, argc, NULL, NULL, 0);
+
+    /* Allocate storage for our elements */
+    z_args = emalloc(sizeof(zval*)*argc);
+    if (zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
+        return NULL;
+    }
+
+    /* Populate our return hash table with our arguments */
+    for (i = 0; i < argc; i++) {
+        zend_hash_next_index_insert(ht_ret, &z_args[i], sizeof(zval*), NULL);
+    }
+
+    /* Free our argument container array */
+    efree(z_args);
+
+    /* Return our hash table */
+    return ht_ret;
+}
+
 /* Handler for both MGET and DEL */
 static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
                             zval *z_ret, cluster_cb cb)
@@ -622,19 +650,30 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     zval *z_arr;
     HashTable *ht_arr;
     HashPosition ptr;
-    int i=1, argc;
+    int i=1, argc, ht_free=0;
     short slot;
 
-    // Parse our arguments
-    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &z_arr)==FAILURE) {
+    /* If we're called with one argument, attempt to process it as a single
+     * array.  Otherwise, treat it as variadic and put the function arguments
+     * into a HashTable that we'll free. */
+    if (ZEND_NUM_ARGS() == 1) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,"a",&z_arr)==FAILURE) 
+        {
+            return -1;
+        }
+        ht_arr = Z_ARRVAL_P(z_arr);
+    } else if (ZEND_NUM_ARGS() > 1) {
+        ht_arr = method_args_to_ht(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+        if (!ht_arr) return -1;
+        ht_free = 1;
+    } else {
+        /* Zero arguments passed, do nothing */
         return -1;
     }
 
-    // No reason to send zero arguments
-    ht_arr = Z_ARRVAL_P(z_arr);
-    if((argc = zend_hash_num_elements(ht_arr))==0) {
-        return -1; 
-    }
+    /* Grab our argument count and abort if we have zero */
+    argc = zend_hash_num_elements(ht_arr);
+    if (!argc) return -1;
 
     /* MGET is readonly, DEL is not */
     c->readonly = kw_len == 3 && CLUSTER_IS_ATOMIC(c);
@@ -663,6 +702,10 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     while(zend_hash_has_more_elements_ex(ht_arr, &ptr)==SUCCESS) {
         if(get_key_ht(c, ht_arr, &ptr, &kv TSRMLS_CC)<0) {
             cluster_multi_free(&mc);
+            if (ht_free) {
+                zend_hash_destroy(ht_arr);
+                efree(ht_arr);
+            }
             return -1;
         }
     
@@ -673,6 +716,10 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
                                     &mc, z_ret, i==argc, cb)<0)
             {
                 cluster_multi_free(&mc);
+                if (ht_free) {
+                    zend_hash_destroy(ht_arr);
+                    efree(ht_arr);
+                }
                 return -1;
             }
         }
@@ -696,12 +743,22 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
                                 &mc, z_ret, 1, cb)<0)
         {
             cluster_multi_free(&mc);
+            if (ht_free) {
+                zend_hash_destroy(ht_arr);
+                efree(ht_arr);
+            }
             return -1;
         }
     }
 
     // Free our command
     cluster_multi_free(&mc);
+
+    /* Clean up our hash table if we constructed it from variadic args */
+    if (ht_free) {
+        zend_hash_destroy(ht_arr);
+        efree(ht_arr);
+    }
 
     if(!CLUSTER_IS_ATOMIC(c))
         RETVAL_ZVAL(getThis(), 1, 0);
