@@ -9,6 +9,15 @@ require_once(dirname($_SERVER['PHP_SELF'])."/RedisTest.php");
 class Redis_Cluster_Test extends Redis_Test {
     private $_arr_node_map = Array();
 
+    /* Tests we'll skip all together in the context of RedisCluster.  The 
+     * RedisCluster class doesn't implement specialized (non-redis) commands
+     * such as sortAsc, or sortDesc and other commands such as SELECT are
+     * simply invalid in Redis Cluster */
+    public function testSortAsc()  { return $this->markTestSkipped(); }
+    public function testSortDesc() { return $this->markTestSkipped(); }
+    public function testWait()     { return $this->markTestSkipped(); }
+    public function testSelect()   { return $this->markTestSkipped(); }
+
     /* Load our seeds on construction */
     public function __construct() {
         $str_nodemap_file = dirname($_SERVER['PHP_SELF']) . '/nodes/nodemap';
@@ -59,9 +68,6 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals($this->redis->echo('k3', " 0123 "), " 0123 ");
     }
 
-    public function testSortAsc()  { return $this->markTestSkipped(); }
-    public function testSortDesc() { return $this->markTestSkipped(); }
-
     public function testSortPrefix() {
         $this->redis->setOption(Redis::OPT_PREFIX, 'some-prefix:');
         $this->redis->del('some-item');
@@ -82,6 +88,22 @@ class Redis_Cluster_Test extends Redis_Test {
             $this->assertTrue($this->redis->flushdb($str_key));
             $this->redis->set($str_key, "val:$i");
             $this->assertEquals(1, $this->redis->dbsize($str_key));
+        }
+    }
+
+    public function testInfo() {
+        $arr_check_keys = Array(
+            "redis_version", "arch_bits", "uptime_in_seconds", "uptime_in_days",
+            "connected_clients", "connected_slaves", "used_memory",
+            "total_connections_received", "total_commands_processed",
+            "role"
+        );
+
+        for ($i = 0; $i < 3; $i++) {
+            $arr_info = $this->redis->info("k:$i");
+            foreach ($arr_check_keys as $str_check_key) {
+                $this->assertTrue(isset($arr_info[$str_check_key]));
+            }
         }
     }
 
