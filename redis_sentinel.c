@@ -70,6 +70,9 @@ ZEND_BEGIN_ARG_INFO(arginfo_redis_sentinel_failover, 0)
 ZEND_ARG_INFO(0, name)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(arginfo_redis_sentinel_get_master, 0)
+ZEND_END_ARG_INFO()
+
 zend_function_entry redis_sentinel_functions[] = {
     PHP_ME(RedisSentinel, __construct,          arginfo_redis_sentinel_construct, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
     PHP_ME(RedisSentinel, __destruct,           arginfo_redis_sentinel_destruct, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
@@ -81,6 +84,7 @@ zend_function_entry redis_sentinel_functions[] = {
     PHP_ME(RedisSentinel, getMasterAddrByName,  arginfo_redis_sentinel_get_master_adr_by_name, ZEND_ACC_PUBLIC)
     PHP_ME(RedisSentinel, reset,                arginfo_redis_sentinel_reset, ZEND_ACC_PUBLIC)
     PHP_ME(RedisSentinel, failover,             arginfo_redis_sentinel_failover, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisSentinel, getMaster,            arginfo_redis_sentinel_get_master, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 
@@ -94,12 +98,12 @@ PHP_METHOD(RedisSentinel, __construct)
     double timeout = 0.0;
 
     if (zend_parse_parameters(
-            ZEND_NUM_ARGS() TSRMLS_CC,
-            "s|ld",
-            &host,
-            &host_len,
-            &port,
-            &timeout
+        ZEND_NUM_ARGS() TSRMLS_CC,
+        "s|ld",
+        &host,
+        &host_len,
+        &port,
+        &timeout
     ) == FAILURE) {
         return;
     }
@@ -144,7 +148,31 @@ PHP_METHOD(RedisSentinel, __construct)
  */
 PHP_METHOD(RedisSentinel, __destruct)
 {
+    zval *object;
+    RedisSock *redis_sock = NULL;
 
+    if (zend_parse_method_parameters(
+        ZEND_NUM_ARGS() TSRMLS_CC,
+        getThis(),
+        "O",
+        &object,
+        redis_sentinel_ce
+    ) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (
+        (redis_sock_get(object, &redis_sock TSRMLS_CC, 1) < 0) ||
+        (redis_sock->status != REDIS_SOCK_STATUS_CONNECTED)
+    ) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_disconnect(redis_sock TSRMLS_CC)) {
+        RETURN_TRUE;
+    }
+
+    RETURN_FALSE;
 }
 /* }}} */
 
@@ -275,9 +303,11 @@ PHP_METHOD(RedisSentinel, masters)
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
-        redis_sock_read_multi_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        if (redis_sock_read_sentinel_servers_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL) < 0) {
+            RETURN_FALSE;
+        }
     }
-    REDIS_PROCESS_RESPONSE(redis_sock_read_multi_multibulk_reply_assoc);
+    REDIS_PROCESS_RESPONSE(redis_sock_read_sentinel_servers_reply);
 }
 /* }}} */
 
@@ -308,15 +338,15 @@ PHP_METHOD(RedisSentinel, master)
         RETURN_FALSE;
     }
 
-    //cmd_len = redis_cmd_format_static(&cmd, "PERSIST", "s", name, name_len);
     cmd_len = redis_cmd_format(&cmd, "SENTINEL master %s" _NL, name, name_len);
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
-        redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-        //redis_sentinel_master_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        if (redis_sock_read_sentinel_server_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL) < 0) {
+            RETURN_FALSE;
+        }
     }
-    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_RESPONSE(redis_sock_read_sentinel_server_reply);
 }
 /* }}} */
 
@@ -351,9 +381,11 @@ PHP_METHOD(RedisSentinel, slaves)
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
-        redis_sock_read_multi_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        if (redis_sock_read_sentinel_servers_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL) < 0) {
+            RETURN_FALSE;
+        }
     }
-    REDIS_PROCESS_RESPONSE(redis_sock_read_multi_multibulk_reply_assoc);
+    REDIS_PROCESS_RESPONSE(redis_sock_read_sentinel_servers_reply);
 }
 /* }}} */
 
@@ -425,9 +457,9 @@ PHP_METHOD(RedisSentinel, reset)
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
-        redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
-    REDIS_PROCESS_RESPONSE(redis_boolean_response);
+    REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 /* }}} */
 
@@ -467,4 +499,114 @@ PHP_METHOD(RedisSentinel, failover)
     REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 /* }}} */
+
+/* {{{ proto array RedisSentinel::getMaster()
+ */
+PHP_METHOD(RedisSentinel, getMaster)
+{
+    if (zend_parse_parameters_none() == FAILURE) {
+        return;
+    }
+
+    zval *fun_masters;
+    MAKE_STD_ZVAL(fun_masters);
+    ZVAL_STRING(fun_masters, "masters", 1);
+
+    zval **master_info;
+
+    zval *masters;
+    MAKE_STD_ZVAL(masters);
+
+    zval **flags;
+    zval **name;
+
+    if (call_user_function(
+        &redis_sentinel_ce->function_table,
+        &getThis(),
+        fun_masters,
+        masters,
+        0,
+        NULL TSRMLS_CC
+    ) == SUCCESS) {
+
+        if (Z_TYPE_P(masters) == IS_ARRAY) {
+
+            if (zend_hash_num_elements(Z_ARRVAL_P(masters)) <= 0) {
+                zval_ptr_dtor(&fun_masters);
+                zend_throw_exception(redis_exception_ce, "All masters are unreachable", 0 TSRMLS_CC);
+                RETURN_FALSE;
+            }
+
+            for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(masters));
+                 zend_hash_get_current_data(Z_ARRVAL_P(masters), (void **) &master_info) == SUCCESS;
+                 zend_hash_move_forward(Z_ARRVAL_P(masters))
+            ) {
+                if (zend_hash_find(Z_ARRVAL_PP(master_info), ZEND_STRS("name"), (void **)&name) == SUCCESS) {
+
+                    php_printf("name => %s\n", Z_STRVAL_PP(name));
+                }
+
+                if (zend_hash_find(Z_ARRVAL_PP(master_info), ZEND_STRS("flags"), (void **)&flags) == SUCCESS) {
+                    php_printf("flags => %s\n", Z_STRVAL_PP(flags));
+                    zval result;
+
+                    zval *is_master;
+                    MAKE_STD_ZVAL(is_master);
+                    ZVAL_STRING(is_master, "master", 1);
+
+                    if (string_compare_function(&result, *flags, is_master TSRMLS_CC) == FAILURE) {
+                        zval_ptr_dtor(&is_master);
+                        zval_ptr_dtor(&masters);
+                        zval_ptr_dtor(&fun_masters);
+                        RETURN_FALSE;
+                    }
+
+                    zval_ptr_dtor(&is_master);
+
+                    if ((Z_TYPE(result) == IS_DOUBLE && Z_DVAL(result) == 0.0) || (Z_TYPE(result) == IS_LONG && Z_LVAL(result) == 0)) {
+
+                        zval *fun_get_addr;
+                        MAKE_STD_ZVAL(fun_get_addr);
+                        ZVAL_STRING(fun_get_addr, "getMasterAddrByName", 1);
+
+                        zval *master;
+                        MAKE_STD_ZVAL(master);
+
+                        if (call_user_function(
+                            &redis_sentinel_ce->function_table,
+                            &getThis(),
+                            fun_get_addr,
+                            master,
+                            1,
+                            name TSRMLS_CC
+                        ) == SUCCESS) {
+                            if (Z_TYPE_P(master) == IS_ARRAY) {
+                                zval_ptr_dtor(&fun_masters);
+                                zval_ptr_dtor(&masters);
+                                zval_ptr_dtor(&fun_get_addr);
+                                RETURN_ZVAL(master, 1, 1);
+                            }
+                        }
+
+                        zval_ptr_dtor(&master);
+                        zval_ptr_dtor(&fun_get_addr);
+                    }
+
+                }
+            }
+
+        }
+
+    }
+
+
+    zval_ptr_dtor(&fun_masters);
+    zval_ptr_dtor(&masters);
+
+    zend_throw_exception(redis_exception_ce, "All masters are unreachable", 0 TSRMLS_CC);
+    RETURN_FALSE;
+
+}
+/* }}} */
+
 

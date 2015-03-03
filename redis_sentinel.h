@@ -8,8 +8,6 @@
 #endif
 #include "common.h"
 
-void redis_destructor_redis_sentinel(zend_rsrc_list_entry * rsrc TSRMLS_DC);
-
 PHP_METHOD(RedisSentinel, __construct);
 PHP_METHOD(RedisSentinel, __destruct);
 PHP_METHOD(RedisSentinel, connect);
@@ -20,5 +18,6 @@ PHP_METHOD(RedisSentinel, slaves);
 PHP_METHOD(RedisSentinel, getMasterAddrByName);
 PHP_METHOD(RedisSentinel, reset);
 PHP_METHOD(RedisSentinel, failover);
+PHP_METHOD(RedisSentinel, getMaster);
 
 #endif

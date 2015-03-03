@@ -1614,103 +1614,6 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, 
     return 0;
 }
 
-
-/**
- * redis_sock_read_multi_multibulk_reply_assoc
- */
-PHP_REDIS_API int redis_sock_read_multi_multibulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
-{
-    char inbuf[1024], *response, *key;
-    int response_len;
-    int i, j, numElems, numSubElems;
-    zval *z_multi_result;
-        zval *z_signle_result;
-
-    if (-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
-        return -1;
-    }
-
-    if (php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
-        redis_stream_close(redis_sock TSRMLS_CC);
-        redis_sock->stream = NULL;
-        redis_sock->status = REDIS_SOCK_STATUS_FAILED;
-        redis_sock->mode = ATOMIC;
-        redis_sock->watching = 0;
-        zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
-        return -1;
-    }
-
-    if (inbuf[0] != '*') {
-        return -1;
-    }
-
-    numSubElems = atoi(inbuf+1);
-    MAKE_STD_ZVAL(z_signle_result);
-    array_init(z_signle_result); /* pre-allocate array for multi's results. */
-
-    for (j = 0; j < numSubElems; ++j) {
-
-        if (-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
-            return -1;
-        }
-
-        if (php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
-            redis_stream_close(redis_sock TSRMLS_CC);
-            redis_sock->stream = NULL;
-            redis_sock->status = REDIS_SOCK_STATUS_FAILED;
-            redis_sock->mode = ATOMIC;
-            redis_sock->watching = 0;
-            zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
-            return -1;
-        }
-
-        if (inbuf[0] != '*') {
-            return -1;
-        }
-
-        numElems = atoi(inbuf+1) / 2;
-        MAKE_STD_ZVAL(z_multi_result);
-        array_init(z_multi_result); /* pre-allocate array for multi's results. */
-
-        for (i = 0; i < numElems; ++i) {
-            // read key
-            key = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
-
-            if (key == NULL) {
-                continue;
-            }
-
-            // read value and append it to array
-            response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
-
-            if (response != NULL) {
-                zval *kValue = NULL;
-                if (redis_unserialize(redis_sock, response, response_len, &kValue TSRMLS_CC) == 1) {
-                    efree(response);
-                    add_assoc_zval(z_multi_result, key, kValue);
-                } else {
-                    add_assoc_stringl_ex(z_multi_result, key, strlen(key)+1, response, response_len, 0);
-                }
-            } else {
-                continue;
-            }
-        }
-
-        add_next_index_zval(z_signle_result, z_multi_result);
-    }
-
-    IF_MULTI_OR_PIPELINE() {
-        add_next_index_zval(z_tab, z_signle_result);
-    } else {
-        *return_value = *z_signle_result;
-
-        zval_copy_ctor(return_value);
-        INIT_PZVAL(return_value);
-    }
-
-    return 0;
-}
-
 /**
  * Like multibulk reply, but don't touch the values, they won't be compressed. (this is used by HKEYS).
  */
@@ -2290,6 +2193,151 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zv
 	/* Success */
 	return 0;
 }
+
+
+/// ------
+
+/* Helper method to get the string representation of a REDIS_REPLY_TYPE */
+const char *redis_reply_type_str(REDIS_REPLY_TYPE reply_type)
+{
+    switch(reply_type) {
+        case TYPE_LINE:
+            return "LINE";
+        case TYPE_INT:
+            return "INTEGER";
+        case TYPE_ERR:
+            return "ERROR";
+        case TYPE_BULK:
+            return "BULK";
+        case TYPE_MULTIBULK:
+            return "MULTIBULK";
+        default:
+            return "UNKNOWN";
+    }
+}
+
+
+/* Inner MULTIBULK reply parser for SENTINEL MASTERS or SENTINEL SLAVE */
+static zval*
+read_sentinel_server_reply(RedisSock *redis_sock TSRMLS_DC)
+{
+    char buf[1024], *resp;
+    int count, resp_len;
+    zval *z_ret;
+
+    if(-1 == redis_check_eof(redis_sock TSRMLS_CC)) {
+        return NULL;
+    }
+    if(php_stream_gets(redis_sock->stream, buf, sizeof(buf)) == NULL) {
+        redis_stream_close(redis_sock TSRMLS_CC);
+        redis_sock->stream = NULL;
+        redis_sock->status = REDIS_SOCK_STATUS_FAILED;
+        redis_sock->mode = ATOMIC;
+        redis_sock->watching = 0;
+        zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
+        return NULL;
+    }
+
+    // Must be MULTIBULK
+    if(buf[0] != '*') {
+        // Set last error, if something is wrong with our command, otherwise
+        // throw an exception.
+        if(buf[0] == TYPE_ERR) {
+            redis_sock_set_err(redis_sock, buf, strlen(buf));
+        } else {
+            snprintf(buf, sizeof(buf), "Protocol error:  Expecting MULTIBULK but got %s",
+                     redis_reply_type_str(buf[0]));
+            zend_throw_exception(redis_exception_ce, buf, 0 TSRMLS_CC);
+        }
+        return NULL;
+    }
+
+    // Grab the number of MULTIBULK elements
+    count = atoi(buf+1);
+
+    // Crate our return array
+    MAKE_STD_ZVAL(z_ret);
+    array_init(z_ret);
+
+    // Read the values raw
+    while(count>0) {
+        if((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC))!=NULL) {
+            add_next_index_stringl(z_ret, resp, resp_len, 0);
+        }
+        count--;
+    }
+
+    // Turn k1,v1,k2,v2 into k1=>v1, k2=>v2
+    array_zip_values_and_scores(redis_sock, z_ret, 0 TSRMLS_CC);
+
+    // Return our value
+    return z_ret;
+}
+
+/* Read one MULTIBULK server info response */
+PHP_REDIS_API int
+redis_sock_read_sentinel_server_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                                      zval *z_tab)
+{
+    zval *z_resp;
+
+    // Grab the response in the form key1=>val1, key2=>val2
+    if((z_resp = read_sentinel_server_reply(redis_sock TSRMLS_CC))==NULL) {
+        return -1;
+    }
+
+    // Set this as our return value, free contianer
+    *return_value = *z_resp;
+    efree(z_resp);
+
+    // Success
+    return 0;
+}
+
+/* Nested MULTIBULK replies with N elements */
+PHP_REDIS_API int
+redis_sock_read_sentinel_servers_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab)
+{
+    REDIS_REPLY_TYPE reply_type;
+    int count;
+    zval *z_ret, *z_sub;
+
+    // Read our header
+    if(redis_read_reply_type(redis_sock, &reply_type, &count TSRMLS_CC) < 0) {
+        return -1;
+    }
+
+    // Make sure we have an outer MULTIBULK reply
+    if(reply_type != TYPE_MULTIBULK) {
+        return -1;
+    }
+
+    // Our return variable
+    MAKE_STD_ZVAL(z_ret);
+    array_init(z_ret);
+
+    // Read for each master reply
+    while(count > 0) {
+        // Grab our info for this master
+        if((z_sub = read_sentinel_server_reply(redis_sock TSRMLS_CC))==NULL) {
+            return -1;
+        }
+        add_next_index_zval(z_ret, z_sub);
+        count--;
+    }
+
+    IF_MULTI_OR_PIPELINE() {
+        add_next_index_zval(z_tab, z_ret);
+    } else {
+        *return_value = *z_ret;
+        efree(z_ret);
+    }
+
+    // Success!
+    return 0;
+}
+
+
 
 /* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
 

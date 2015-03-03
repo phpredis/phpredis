@@ -99,5 +99,5 @@ dnl Check for igbinary
   dnl
   dnl PHP_SUBST(REDIS_SHARED_LIBADD)
 
-  PHP_NEW_EXTENSION(redis, redis.c library.c redis_session.c redis_array.c redis_array_impl.c redis_sentinel.c, $ext_shared)
+  PHP_NEW_EXTENSION(redis, redis.c library.c redis_session.c redis_array.c redis_array_impl.c redis_sentinel.c redis_master_discovery.c, $ext_shared)
 fi
