@@ -1810,36 +1810,37 @@ class Redis_Test extends TestSuite
     }
 
     public function testinfo() {
-    $info = $this->redis->info();
+        $info = $this->redis->info();
 
-    $keys = array(
-        "redis_version",
-        "arch_bits",
-        "uptime_in_seconds",
-        "uptime_in_days",
-        "connected_clients",
-        "connected_slaves",
-        "used_memory",
-        "total_connections_received",
-        "total_commands_processed",
-        "role");
-    if (version_compare($this->version, "2.5.0", "lt")) {
-        array_push($keys,
-            "changes_since_last_save",
-            "bgsave_in_progress",
-            "last_save_time"
+        $keys = array(
+            "redis_version",
+            "arch_bits",
+            "uptime_in_seconds",
+            "uptime_in_days",
+            "connected_clients",
+            "connected_slaves",
+            "used_memory",
+            "total_connections_received",
+            "total_commands_processed",
+            "role"
         );
-    } else {
-        array_push($keys,
-            "rdb_changes_since_last_save",
-            "rdb_bgsave_in_progress",
-            "rdb_last_save_time"
-        );
-    }
-
-    foreach($keys as $k) {
-        $this->assertTrue(in_array($k, array_keys($info)));
-    }
+        if (version_compare($this->version, "2.5.0", "lt")) {
+            array_push($keys,
+                "changes_since_last_save",
+                "bgsave_in_progress",
+                "last_save_time"
+            );
+        } else {
+            array_push($keys,
+                "rdb_changes_since_last_save",
+                "rdb_bgsave_in_progress",
+                "rdb_last_save_time"
+            );
+        }
+        
+        foreach($keys as $k) {
+            $this->assertTrue(in_array($k, array_keys($info)));
+        }
     }
 
     public function testInfoCommandStats() {
@@ -1860,8 +1861,8 @@ class Redis_Test extends TestSuite
     }
 
     public function testSelect() {
-    $this->assertFalse($this->redis->select(-1));
-    $this->assertTrue($this->redis->select(0));
+        $this->assertFalse($this->redis->select(-1));
+        $this->assertTrue($this->redis->select(0));
     }
 
     public function testMset() {

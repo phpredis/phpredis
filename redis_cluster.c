@@ -2338,10 +2338,10 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     }
 
     /* Initialize our command */
-    redis_cmd_init_sstr(&cmd, argc, kw, kw_len);
+    redis_cmd_init_sstr(&cmd, argc-1, kw, kw_len);
 
     /* Iterate, appending args */
-    for(i=0;i<argc;i++) {
+    for(i=1;i<argc;i++) {
         convert_to_string(z_args[i]);
         redis_cmd_append_sstr(&cmd, Z_STRVAL_P(z_args[i]), 
             Z_STRLEN_P(z_args[i]));
