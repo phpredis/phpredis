@@ -76,5 +76,14 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->redis->setOption(Redis::OPT_PREFIX, '');
     }
 
+    public function testDBSize() {
+        for ($i = 0; $i < 10; $i++) {
+            $str_key = "key:$i";
+            $this->assertTrue($this->redis->flushdb($str_key));
+            $this->redis->set($str_key, "val:$i");
+            $this->assertEquals(1, $this->redis->dbsize($str_key));
+        }
+    }
+
 }
 ?>

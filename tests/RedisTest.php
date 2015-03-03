@@ -1389,106 +1389,105 @@ class Redis_Test extends TestSuite
     }
 
     public function testsInterStore() {
-        $this->redis->del('x');  // set of odd numbers
-        $this->redis->del('y');  // set of prime numbers
-        $this->redis->del('z');  // set of squares
-        $this->redis->del('t');  // set of numbers of the form n^2 - 1
+        $this->redis->del('{set}x');  // set of odd numbers
+        $this->redis->del('{set}y');  // set of prime numbers
+        $this->redis->del('{set}z');  // set of squares
+        $this->redis->del('{set}t');  // set of numbers of the form n^2 - 1
 
         $x = array(1,3,5,7,9,11,13,15,17,19,21,23,25);
         foreach($x as $i) {
-            $this->redis->sAdd('x', $i);
+            $this->redis->sAdd('{set}x', $i);
         }
 
         $y = array(1,2,3,5,7,11,13,17,19,23);
         foreach($y as $i) {
-            $this->redis->sAdd('y', $i);
+            $this->redis->sAdd('{set}y', $i);
         }
 
         $z = array(1,4,9,16,25);
         foreach($z as $i) {
-            $this->redis->sAdd('z', $i);
+            $this->redis->sAdd('{set}z', $i);
         }
 
         $t = array(2,5,10,17,26);
         foreach($t as $i) {
-            $this->redis->sAdd('t', $i);
+            $this->redis->sAdd('{set}t', $i);
         }
 
-        $count = $this->redis->sInterStore('k', 'x', 'y');  // odd prime numbers
-    $this->assertEquals($count, $this->redis->scard('k'));
+        $count = $this->redis->sInterStore('{set}k', '{set}x', '{set}y');  // odd prime numbers
+        $this->assertEquals($count, $this->redis->scard('{set}k'));
         foreach(array_intersect($x, $y) as $i) {
-            $this->assertTrue($this->redis->sismember('k', $i));
+            $this->assertTrue($this->redis->sismember('{set}k', $i));
         }
 
-        $count = $this->redis->sInterStore('k', 'y', 'z');  // set of odd squares
-    $this->assertEquals($count, $this->redis->scard('k'));
+        $count = $this->redis->sInterStore('{set}k', '{set}y', '{set}z');  // set of odd squares
+        $this->assertEquals($count, $this->redis->scard('{set}k'));
         foreach(array_intersect($y, $z) as $i) {
-            $this->assertTrue($this->redis->sismember('k', $i));
+            $this->assertTrue($this->redis->sismember('{set}k', $i));
         }
 
-        $count = $this->redis->sInterStore('k', 'z', 't');  // squares of the form n^2 + 1
-    $this->assertEquals($count, 0);
-    $this->assertEquals($count, $this->redis->scard('k'));
+        $count = $this->redis->sInterStore('{set}k', '{set}z', '{set}t');  // squares of the form n^2 + 1
+        $this->assertEquals($count, 0);
+        $this->assertEquals($count, $this->redis->scard('{set}k'));
 
-    $this->redis->del('z');
-    $xyz = $this->redis->sInterStore('k', 'x', 'y', 'z'); // only z missing, expect 0.
-    $this->assertTrue($xyz === 0);
+        $this->redis->del('{set}z');
+        $xyz = $this->redis->sInterStore('{set}k', '{set}x', '{set}y', '{set}z'); // only z missing, expect 0.
+        $this->assertTrue($xyz === 0);
 
-    $this->redis->del('y');
-    $xyz = $this->redis->sInterStore('k', 'x', 'y', 'z'); // y and z missing, expect 0.
-    $this->assertTrue($xyz === 0);
+        $this->redis->del('{set}y');
+        $xyz = $this->redis->sInterStore('{set}k', '{set}x', '{set}y', '{set}z'); // y and z missing, expect 0.
+        $this->assertTrue($xyz === 0);
 
-    $this->redis->del('x');
-    $xyz = $this->redis->sInterStore('k', 'x', 'y', 'z'); // x y and z ALL missing, expect 0.
-    $this->assertTrue($xyz === 0);
-
+        $this->redis->del('{set}x');
+        $xyz = $this->redis->sInterStore('{set}k', '{set}x', '{set}y', '{set}z'); // x y and z ALL missing, expect 0.
+        $this->assertTrue($xyz === 0);
     }
 
     public function testsUnion() {
-        $this->redis->del('x');  // set of odd numbers
-        $this->redis->del('y');  // set of prime numbers
-        $this->redis->del('z');  // set of squares
-        $this->redis->del('t');  // set of numbers of the form n^2 - 1
+        $this->redis->del('{set}x');  // set of odd numbers
+        $this->redis->del('{set}y');  // set of prime numbers
+        $this->redis->del('{set}z');  // set of squares
+        $this->redis->del('{set}t');  // set of numbers of the form n^2 - 1
 
         $x = array(1,3,5,7,9,11,13,15,17,19,21,23,25);
         foreach($x as $i) {
-            $this->redis->sAdd('x', $i);
+            $this->redis->sAdd('{set}x', $i);
         }
 
         $y = array(1,2,3,5,7,11,13,17,19,23);
         foreach($y as $i) {
-            $this->redis->sAdd('y', $i);
+            $this->redis->sAdd('{set}y', $i);
         }
 
         $z = array(1,4,9,16,25);
         foreach($z as $i) {
-            $this->redis->sAdd('z', $i);
+            $this->redis->sAdd('{set}z', $i);
         }
 
         $t = array(2,5,10,17,26);
         foreach($t as $i) {
-            $this->redis->sAdd('t', $i);
+            $this->redis->sAdd('{set}t', $i);
         }
 
-        $xy = $this->redis->sUnion('x', 'y');   // x U y
+        $xy = $this->redis->sUnion('{set}x', '{set}y');   // x U y
         foreach($xy as $i) {
         $i = (int)$i;
             $this->assertTrue(in_array($i, array_merge($x, $y)));
         }
 
-        $yz = $this->redis->sUnion('y', 'z');   // y U Z
+        $yz = $this->redis->sUnion('{set}y', '{set}z');   // y U Z
         foreach($yz as $i) {
         $i = (int)$i;
             $this->assertTrue(in_array($i, array_merge($y, $z)));
         }
 
-        $zt = $this->redis->sUnion('z', 't');   // z U t
+        $zt = $this->redis->sUnion('{set}z', '{set}t');   // z U t
         foreach($zt as $i) {
         $i = (int)$i;
             $this->assertTrue(in_array($i, array_merge($z, $t)));
         }
 
-        $xyz = $this->redis->sUnion('x', 'y', 'z'); // x U y U z
+        $xyz = $this->redis->sUnion('{set}x', '{set}y', '{set}z'); // x U y U z
         foreach($xyz as $i) {
         $i = (int)$i;
             $this->assertTrue(in_array($i, array_merge($x, $y, $z)));
@@ -1496,121 +1495,121 @@ class Redis_Test extends TestSuite
     }
 
     public function testsUnionStore() {
-        $this->redis->del('x');  // set of odd numbers
-        $this->redis->del('y');  // set of prime numbers
-        $this->redis->del('z');  // set of squares
-        $this->redis->del('t');  // set of numbers of the form n^2 - 1
+        $this->redis->del('{set}x');  // set of odd numbers
+        $this->redis->del('{set}y');  // set of prime numbers
+        $this->redis->del('{set}z');  // set of squares
+        $this->redis->del('{set}t');  // set of numbers of the form n^2 - 1
 
         $x = array(1,3,5,7,9,11,13,15,17,19,21,23,25);
         foreach($x as $i) {
-            $this->redis->sAdd('x', $i);
+            $this->redis->sAdd('{set}x', $i);
         }
 
         $y = array(1,2,3,5,7,11,13,17,19,23);
         foreach($y as $i) {
-            $this->redis->sAdd('y', $i);
+            $this->redis->sAdd('{set}y', $i);
         }
 
         $z = array(1,4,9,16,25);
         foreach($z as $i) {
-            $this->redis->sAdd('z', $i);
+            $this->redis->sAdd('{set}z', $i);
         }
 
         $t = array(2,5,10,17,26);
         foreach($t as $i) {
-            $this->redis->sAdd('t', $i);
+            $this->redis->sAdd('{set}t', $i);
         }
 
-        $count = $this->redis->sUnionStore('k', 'x', 'y');  // x U y
-    $xy = array_unique(array_merge($x, $y));
-    $this->assertEquals($count, count($xy));
+        $count = $this->redis->sUnionStore('{set}k', '{set}x', '{set}y');  // x U y
+        $xy = array_unique(array_merge($x, $y));
+        $this->assertEquals($count, count($xy));
         foreach($xy as $i) {
         $i = (int)$i;
-            $this->assertTrue($this->redis->sismember('k', $i));
+            $this->assertTrue($this->redis->sismember('{set}k', $i));
         }
 
-        $count = $this->redis->sUnionStore('k', 'y', 'z');  // y U z
-    $yz = array_unique(array_merge($y, $z));
-    $this->assertEquals($count, count($yz));
+        $count = $this->redis->sUnionStore('{set}k', '{set}y', '{set}z');  // y U z
+        $yz = array_unique(array_merge($y, $z));
+        $this->assertEquals($count, count($yz));
         foreach($yz as $i) {
         $i = (int)$i;
-            $this->assertTrue($this->redis->sismember('k', $i));
+            $this->assertTrue($this->redis->sismember('{set}k', $i));
         }
 
-        $count = $this->redis->sUnionStore('k', 'z', 't');  // z U t
-    $zt = array_unique(array_merge($z, $t));
-    $this->assertEquals($count, count($zt));
+        $count = $this->redis->sUnionStore('{set}k', '{set}z', '{set}t');  // z U t
+        $zt = array_unique(array_merge($z, $t));
+        $this->assertEquals($count, count($zt));
         foreach($zt as $i) {
         $i = (int)$i;
-            $this->assertTrue($this->redis->sismember('k', $i));
+            $this->assertTrue($this->redis->sismember('{set}k', $i));
         }
 
-        $count = $this->redis->sUnionStore('k', 'x', 'y', 'z'); // x U y U z
-    $xyz = array_unique(array_merge($x, $y, $z));
-    $this->assertEquals($count, count($xyz));
+        $count = $this->redis->sUnionStore('{set}k', '{set}x', '{set}y', '{set}z'); // x U y U z
+        $xyz = array_unique(array_merge($x, $y, $z));
+        $this->assertEquals($count, count($xyz));
         foreach($xyz as $i) {
         $i = (int)$i;
-            $this->assertTrue($this->redis->sismember('k', $i));
+            $this->assertTrue($this->redis->sismember('{set}k', $i));
         }
 
-    $this->redis->del('x');  // x missing now
-        $count = $this->redis->sUnionStore('k', 'x', 'y', 'z'); // x U y U z
-    $this->assertTrue($count === count(array_unique(array_merge($y, $z))));
+        $this->redis->del('{set}x');  // x missing now
+        $count = $this->redis->sUnionStore('{set}k', '{set}x', '{set}y', '{set}z'); // x U y U z
+        $this->assertTrue($count === count(array_unique(array_merge($y, $z))));
 
-    $this->redis->del('y');  // x and y missing
-        $count = $this->redis->sUnionStore('k', 'x', 'y', 'z'); // x U y U z
-    $this->assertTrue($count === count(array_unique($z)));
+        $this->redis->del('{set}y');  // x and y missing
+        $count = $this->redis->sUnionStore('{set}k', '{set}x', '{set}y', '{set}z'); // x U y U z
+        $this->assertTrue($count === count(array_unique($z)));
 
-    $this->redis->del('z');  // x, y, and z ALL missing
-        $count = $this->redis->sUnionStore('k', 'x', 'y', 'z'); // x U y U z
-    $this->assertTrue($count === 0);
+        $this->redis->del('{set}z');  // x, y, and z ALL missing
+        $count = $this->redis->sUnionStore('{set}k', '{set}x', '{set}y', '{set}z'); // x U y U z
+        $this->assertTrue($count === 0);
     }
 
     public function testsDiff() {
-        $this->redis->del('x');  // set of odd numbers
-        $this->redis->del('y');  // set of prime numbers
-        $this->redis->del('z');  // set of squares
-        $this->redis->del('t');  // set of numbers of the form n^2 - 1
+        $this->redis->del('{set}x');  // set of odd numbers
+        $this->redis->del('{set}y');  // set of prime numbers
+        $this->redis->del('{set}z');  // set of squares
+        $this->redis->del('{set}t');  // set of numbers of the form n^2 - 1
 
         $x = array(1,3,5,7,9,11,13,15,17,19,21,23,25);
         foreach($x as $i) {
-            $this->redis->sAdd('x', $i);
+            $this->redis->sAdd('{set}x', $i);
         }
 
         $y = array(1,2,3,5,7,11,13,17,19,23);
         foreach($y as $i) {
-            $this->redis->sAdd('y', $i);
+            $this->redis->sAdd('{set}y', $i);
         }
 
         $z = array(1,4,9,16,25);
         foreach($z as $i) {
-            $this->redis->sAdd('z', $i);
+            $this->redis->sAdd('{set}z', $i);
         }
 
         $t = array(2,5,10,17,26);
         foreach($t as $i) {
-            $this->redis->sAdd('t', $i);
+            $this->redis->sAdd('{set}t', $i);
         }
 
-        $xy = $this->redis->sDiff('x', 'y');    // x U y
+        $xy = $this->redis->sDiff('{set}x', '{set}y');    // x U y
         foreach($xy as $i) {
         $i = (int)$i;
             $this->assertTrue(in_array($i, array_diff($x, $y)));
         }
 
-        $yz = $this->redis->sDiff('y', 'z');    // y U Z
+        $yz = $this->redis->sDiff('{set}y', '{set}z');    // y U Z
         foreach($yz as $i) {
         $i = (int)$i;
             $this->assertTrue(in_array($i, array_diff($y, $z)));
         }
 
-        $zt = $this->redis->sDiff('z', 't');    // z U t
+        $zt = $this->redis->sDiff('{set}z', '{set}t');    // z U t
         foreach($zt as $i) {
         $i = (int)$i;
             $this->assertTrue(in_array($i, array_diff($z, $t)));
         }
 
-        $xyz = $this->redis->sDiff('x', 'y', 'z'); // x U y U z
+        $xyz = $this->redis->sDiff('{set}x', '{set}y', '{set}z'); // x U y U z
         foreach($xyz as $i) {
         $i = (int)$i;
             $this->assertTrue(in_array($i, array_diff($x, $y, $z)));
@@ -1618,135 +1617,98 @@ class Redis_Test extends TestSuite
     }
 
     public function testsDiffStore() {
-        $this->redis->del('x');  // set of odd numbers
-        $this->redis->del('y');  // set of prime numbers
-        $this->redis->del('z');  // set of squares
-        $this->redis->del('t');  // set of numbers of the form n^2 - 1
+        $this->redis->del('{set}x');  // set of odd numbers
+        $this->redis->del('{set}y');  // set of prime numbers
+        $this->redis->del('{set}z');  // set of squares
+        $this->redis->del('{set}t');  // set of numbers of the form n^2 - 1
 
         $x = array(1,3,5,7,9,11,13,15,17,19,21,23,25);
         foreach($x as $i) {
-            $this->redis->sAdd('x', $i);
+            $this->redis->sAdd('{set}x', $i);
         }
 
         $y = array(1,2,3,5,7,11,13,17,19,23);
         foreach($y as $i) {
-            $this->redis->sAdd('y', $i);
+            $this->redis->sAdd('{set}y', $i);
         }
 
         $z = array(1,4,9,16,25);
         foreach($z as $i) {
-            $this->redis->sAdd('z', $i);
+            $this->redis->sAdd('{set}z', $i);
         }
 
         $t = array(2,5,10,17,26);
         foreach($t as $i) {
-            $this->redis->sAdd('t', $i);
+            $this->redis->sAdd('{set}t', $i);
         }
 
-        $count = $this->redis->sDiffStore('k', 'x', 'y');   // x - y
-    $xy = array_unique(array_diff($x, $y));
-    $this->assertEquals($count, count($xy));
+        $count = $this->redis->sDiffStore('{set}k', '{set}x', '{set}y');   // x - y
+        $xy = array_unique(array_diff($x, $y));
+        $this->assertEquals($count, count($xy));
         foreach($xy as $i) {
         $i = (int)$i;
             $this->assertTrue($this->redis->sismember('k', $i));
         }
 
-        $count = $this->redis->sDiffStore('k', 'y', 'z');   // y - z
-    $yz = array_unique(array_diff($y, $z));
-    $this->assertEquals($count, count($yz));
+        $count = $this->redis->sDiffStore('{set}k', '{set}y', '{set}z');   // y - z
+        $yz = array_unique(array_diff($y, $z));
+        $this->assertEquals($count, count($yz));
         foreach($yz as $i) {
         $i = (int)$i;
-            $this->assertTrue($this->redis->sismember('k', $i));
+            $this->assertTrue($this->redis->sismember('{set}k', $i));
         }
 
-        $count = $this->redis->sDiffStore('k', 'z', 't');   // z - t
-    $zt = array_unique(array_diff($z, $t));
-    $this->assertEquals($count, count($zt));
+        $count = $this->redis->sDiffStore('{set}k', '{set}z', '{set}t');   // z - t
+        $zt = array_unique(array_diff($z, $t));
+        $this->assertEquals($count, count($zt));
         foreach($zt as $i) {
         $i = (int)$i;
-            $this->assertTrue($this->redis->sismember('k', $i));
+            $this->assertTrue($this->redis->sismember('{set}k', $i));
         }
 
-        $count = $this->redis->sDiffStore('k', 'x', 'y', 'z');  // x - y - z
-    $xyz = array_unique(array_diff($x, $y, $z));
-    $this->assertEquals($count, count($xyz));
+        $count = $this->redis->sDiffStore('{set}k', '{set}x', '{set}y', '{set}z');  // x - y - z
+        $xyz = array_unique(array_diff($x, $y, $z));
+        $this->assertEquals($count, count($xyz));
         foreach($xyz as $i) {
         $i = (int)$i;
-            $this->assertTrue($this->redis->sismember('k', $i));
+            $this->assertTrue($this->redis->sismember('{set}k', $i));
         }
 
-    $this->redis->del('x');  // x missing now
-        $count = $this->redis->sDiffStore('k', 'x', 'y', 'z');  // x - y - z
-    $this->assertTrue($count === 0);
+        $this->redis->del('x');  // x missing now
+        $count = $this->redis->sDiffStore('{set}k', '{set}x', '{set}y', '{set}z');  // x - y - z
+        $this->assertTrue($count === 0);
 
-    $this->redis->del('y');  // x and y missing
-        $count = $this->redis->sDiffStore('k', 'x', 'y', 'z');  // x - y - z
-    $this->assertTrue($count === 0);
+        $this->redis->del('y');  // x and y missing
+        $count = $this->redis->sDiffStore('{set}k', '{set}x', '{set}y', '{set}z');  // x - y - z
+        $this->assertTrue($count === 0);
 
-    $this->redis->del('z');  // x, y, and z ALL missing
-        $count = $this->redis->sDiffStore('k', 'x', 'y', 'z');  // x - y - z
-    $this->assertTrue($count === 0);
+        $this->redis->del('z');  // x, y, and z ALL missing
+        $count = $this->redis->sDiffStore('{set}k', '{set}x', '{set}y', '{set}z');  // x - y - z
+        $this->assertTrue($count === 0);
     }
 
     public function testlrange() {
-
         $this->redis->del('list');
         $this->redis->lPush('list', 'val');
         $this->redis->lPush('list', 'val2');
-    $this->redis->lPush('list', 'val3');
+        $this->redis->lPush('list', 'val3');
 
-    // pos :   0     1     2
-    // pos :  -3    -2    -1
-    // list: [val3, val2, val]
+        // pos :   0     1     2
+        // pos :  -3    -2    -1
+        // list: [val3, val2, val]
 
-    $this->assertEquals($this->redis->lrange('list', 0, 0), array('val3'));
-    $this->assertEquals($this->redis->lrange('list', 0, 1), array('val3', 'val2'));
-    $this->assertEquals($this->redis->lrange('list', 0, 2), array('val3', 'val2', 'val'));
-    $this->assertEquals($this->redis->lrange('list', 0, 3), array('val3', 'val2', 'val'));
+        $this->assertEquals($this->redis->lrange('list', 0, 0), array('val3'));
+        $this->assertEquals($this->redis->lrange('list', 0, 1), array('val3', 'val2'));
+        $this->assertEquals($this->redis->lrange('list', 0, 2), array('val3', 'val2', 'val'));
+        $this->assertEquals($this->redis->lrange('list', 0, 3), array('val3', 'val2', 'val'));
 
-    $this->assertEquals($this->redis->lrange('list', 0, -1), array('val3', 'val2', 'val'));
-    $this->assertEquals($this->redis->lrange('list', 0, -2), array('val3', 'val2'));
-    $this->assertEquals($this->redis->lrange('list', -2, -1), array('val2', 'val'));
+        $this->assertEquals($this->redis->lrange('list', 0, -1), array('val3', 'val2', 'val'));
+        $this->assertEquals($this->redis->lrange('list', 0, -2), array('val3', 'val2'));
+        $this->assertEquals($this->redis->lrange('list', -2, -1), array('val2', 'val'));
 
-    $this->redis->del('list');
-    $this->assertEquals($this->redis->lrange('list', 0, -1), array());
+        $this->redis->del('list');
+        $this->assertEquals($this->redis->lrange('list', 0, -1), array());
     }
-
-
-//    public function testsave() {
-//  $this->assertTrue($this->redis->save() === TRUE);   // don't really know how else to test this...
-//    }
-//    public function testbgSave() {
-//  // let's try to fill the DB and then bgSave twice. We expect the second one to fail.
-//  for($i = 0; $i < 10e+4; $i++) {
-//      $s = md5($i);
-//      $this->redis->set($s, $s);
-//  }
-//  $this->assertTrue($this->redis->bgSave() === TRUE); // the first one should work.
-//  $this->assertTrue($this->redis->bgSave() === FALSE);    // the second one should fail (still working on the first one)
-//    }
-//
-//    public function testlastSave() {
-//  while(!$this->redis->save()) {
-//      sleep(1);
-//  }
-//  $t_php = microtime(TRUE);
-//  $t_redis = $this->redis->lastSave();
-//
-//  $this->assertTrue($t_php - $t_redis < 10000); // check that it's approximately what we've measured in PHP.
-//    }
-//
-//    public function testflushDb() {
-//  $this->redis->set('x', 'y');
-//  $this->assertTrue($this->redis->flushDb());
-//  $this->assertTrue($this->redis->getKeys('*') === array());
-//    }
-//
-//    public function testflushAll() {
-//  $this->redis->set('x', 'y');
-//  $this->assertTrue($this->redis->flushAll());
-//  $this->assertTrue($this->redis->getKeys('*') === array());
-//    }
 
     public function testdbSize() {
         $this->assertTrue($this->redis->flushDB());
@@ -1756,7 +1718,7 @@ class Redis_Test extends TestSuite
 
     public function testttl() {
         $this->redis->set('x', 'y');
-        $this->redis->setTimeout('x', 5);
+        $this->redis->expire('x', 5);
         for($i = 5; $i > 0; $i--) {
             $this->assertEquals($i, $this->redis->ttl('x'));
             sleep(1);
@@ -1775,7 +1737,7 @@ class Redis_Test extends TestSuite
 
     public function testPersist() {
     $this->redis->set('x', 'y');
-    $this->redis->setTimeout('x', 100);
+    $this->redis->expire('x', 100);
     $this->assertTrue(TRUE === $this->redis->persist('x'));     // true if there is a timeout
     $this->assertTrue(-1 === $this->redis->ttl('x'));       // -1: timeout has been removed.
     $this->assertTrue(FALSE === $this->redis->persist('x'));    // false if there is no timeout
