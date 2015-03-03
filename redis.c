@@ -29,6 +29,7 @@
 #include "php_ini.h"
 #include "php_redis.h"
 #include "redis_array.h"
+#include "redis_sentinel.h"
 #include <zend_exceptions.h>
 
 #ifdef PHP_SESSION
@@ -53,11 +54,14 @@ extern ps_module ps_mod_redis;
 #endif
 
 extern zend_class_entry *redis_array_ce;
+extern zend_class_entry *redis_sentinel_ce;
 zend_class_entry *redis_ce;
 zend_class_entry *redis_exception_ce;
 zend_class_entry *spl_ce_RuntimeException = NULL;
 
 extern zend_function_entry redis_array_functions[];
+
+extern zend_function_entry redis_sentinel_functions[];
 
 PHP_INI_BEGIN()
 	/* redis arrays */
@@ -477,6 +481,7 @@ PHP_MINIT_FUNCTION(redis)
 {
     zend_class_entry redis_class_entry;
     zend_class_entry redis_array_class_entry;
+    zend_class_entry redis_sentinel_class_entry;
     zend_class_entry redis_exception_class_entry;
 
 	REGISTER_INI_ENTRIES();
@@ -488,6 +493,10 @@ PHP_MINIT_FUNCTION(redis)
 	/* RedisArray class */
 	INIT_CLASS_ENTRY(redis_array_class_entry, "RedisArray", redis_array_functions);
     redis_array_ce = zend_register_internal_class(&redis_array_class_entry TSRMLS_CC);
+
+    /* RedisArray class */
+    INIT_CLASS_ENTRY(redis_sentinel_class_entry, "RedisSentinel", redis_sentinel_functions);
+    redis_sentinel_ce = zend_register_internal_class(&redis_sentinel_class_entry TSRMLS_CC);
 
     le_redis_array = zend_register_list_destructors_ex(
         redis_destructor_redis_array,
@@ -5704,7 +5713,7 @@ PHP_REDIS_API void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub
 
         /* Free reply from Redis */
         zval_dtor(z_tab);
-        efree(z_tab);        
+        efree(z_tab);
 
         /* Check for a non-null return value.  If we have one, return it from
          * the subscribe function itself.  Otherwise continue our loop. */
@@ -6142,7 +6151,7 @@ PHP_METHOD(Redis, rawCommand) {
     /* Iterate over the remainder of our arguments, appending */
     for (i = 1; i < argc; i++) {
         convert_to_string(z_args[i]);
-        redis_cmd_append_sstr(&cmd, Z_STRVAL_P(z_args[i]), Z_STRLEN_P(z_args[i])); 
+        redis_cmd_append_sstr(&cmd, Z_STRVAL_P(z_args[i]), Z_STRLEN_P(z_args[i]));
     }
 
     efree(z_args);
@@ -6150,7 +6159,7 @@ PHP_METHOD(Redis, rawCommand) {
     /* Kick off our request and read response or enqueue handler */
     REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
     IF_ATOMIC() {
-        if (redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, 
+        if (redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                      redis_sock, NULL) < 0)
         {
             RETURN_FALSE;
@@ -7403,7 +7412,7 @@ PHP_METHOD(Redis, pfcount) {
 
         /* Initialize the command with our number of arguments */
         redis_cmd_init_sstr(&cmd, num_keys, "PFCOUNT", sizeof("PFCOUNT")-1);
-        
+
         /* Append our key(s) */
         for (zend_hash_internal_pointer_reset_ex(ht_keys, &ptr);
              zend_hash_get_current_data_ex(ht_keys, (void**)&z_key, &ptr)==SUCCESS;
@@ -7426,7 +7435,7 @@ PHP_METHOD(Redis, pfcount) {
             /* Append this key to our command */
             key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
             redis_cmd_append_sstr(&cmd, key, key_len);
-            
+
             /* Cleanup */
             if (key_free) efree(key);
             if (z_tmp) {
@@ -7454,7 +7463,7 @@ PHP_METHOD(Redis, pfcount) {
         redis_cmd_init_sstr(&cmd, 1, "PFCOUNT", sizeof("PFCOUNT")-1);
         key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
         redis_cmd_append_sstr(&cmd, key, key_len);
-        
+
         /* Cleanup */
         if (key_free) efree(key);
         if (z_tmp) {

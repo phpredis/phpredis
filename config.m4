@@ -85,7 +85,7 @@ dnl Check for igbinary
 
   dnl # --with-redis -> check for lib and symbol presence
   dnl LIBNAME=redis # you may want to change this
-  dnl LIBSYMBOL=redis # you most likely want to change this 
+  dnl LIBSYMBOL=redis # you most likely want to change this
 
   dnl PHP_CHECK_LIBRARY($LIBNAME,$LIBSYMBOL,
   dnl [
@@ -99,5 +99,5 @@ dnl Check for igbinary
   dnl
   dnl PHP_SUBST(REDIS_SHARED_LIBADD)
 
-  PHP_NEW_EXTENSION(redis, redis.c library.c redis_session.c redis_array.c redis_array_impl.c, $ext_shared)
+  PHP_NEW_EXTENSION(redis, redis.c library.c redis_session.c redis_array.c redis_array_impl.c redis_sentinel.c, $ext_shared)
 fi
