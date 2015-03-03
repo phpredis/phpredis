@@ -58,5 +58,23 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals($this->redis->echo('k2', 'world'), 'world');
         $this->assertEquals($this->redis->echo('k3', " 0123 "), " 0123 ");
     }
+
+    public function testSortAsc()  { return $this->markTestSkipped(); }
+    public function testSortDesc() { return $this->markTestSkipped(); }
+
+    public function testSortPrefix() {
+        $this->redis->setOption(Redis::OPT_PREFIX, 'some-prefix:');
+        $this->redis->del('some-item');
+        $this->redis->sadd('some-item', 1);
+        $this->redis->sadd('some-item', 2);
+        $this->redis->sadd('some-item', 3);
+
+        $this->assertEquals(array('1','2','3'), $this->redis->sort('some-item'));
+
+        // Kill our set/prefix
+        $this->redis->del('some-item');
+        $this->redis->setOption(Redis::OPT_PREFIX, '');
+    }
+
 }
 ?>
