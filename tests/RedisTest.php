@@ -2499,24 +2499,24 @@ class Redis_Test extends TestSuite
         $serializer = $this->redis->getOption(Redis::OPT_SERIALIZER);
         $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE); // testing incr, which doesn't work with the serializer
         $ret = $this->redis->multi($mode)
-            ->del('key1')
-            ->set('key1', 'value1')
-            ->get('key1')
-            ->getSet('key1', 'value2')
-            ->get('key1')
-            ->set('key2', 4)
-            ->incr('key2')
-            ->get('key2')
-            ->decr('key2')
-            ->get('key2')
-            ->rename('key2', 'key3')
-            ->get('key3')
-            ->renameNx('key3', 'key1')
-            ->rename('key3', 'key2')
-            ->incrby('key2', 5)
-            ->get('key2')
-            ->decrby('key2', 5)
-            ->get('key2')
+            ->del('{key}1')
+            ->set('{key1}', 'value1')
+            ->get('{key}1')
+            ->getSet('{key}1', 'value2')
+            ->get('{key}1')
+            ->set('{key}2', 4)
+            ->incr('{key}2')
+            ->get('{key}2')
+            ->decr('{key}2')
+            ->get('{key}2')
+            ->rename('{key}2', '{key}3')
+            ->get('{key}3')
+            ->renameNx('{key}3', '{key}1')
+            ->rename('{key}3', '{key}2')
+            ->incrby('{key}2', 5)
+            ->get('{key}2')
+            ->decrby('{key}2', 5)
+            ->get('{key}2')
             ->exec();
 
         $this->assertTrue(is_array($ret));
@@ -2544,14 +2544,13 @@ class Redis_Test extends TestSuite
         $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
 
         $ret = $this->redis->multi($mode)
-            ->del('key1')
-            ->del('key2')
-            ->set('key1', 'val1')
-            ->setnx('key1', 'valX')
-            ->setnx('key2', 'valX')
-            ->exists('key1')
-            ->exists('key3')
-            ->ping()
+            ->del('{key}1')
+            ->del('{key}2')
+            ->set('{key}1', 'val1')
+            ->setnx('{key}1', 'valX')
+            ->setnx('{key}2', 'valX')
+            ->exists('{key}1')
+            ->exists('{key}3')
             ->exec();
 
         $this->assertTrue(is_array($ret));
@@ -2562,14 +2561,6 @@ class Redis_Test extends TestSuite
         $this->assertTrue($ret[4] == TRUE);
         $this->assertTrue($ret[5] == TRUE);
         $this->assertTrue($ret[6] == FALSE);
-        $this->assertTrue($ret[7] == '+PONG');
-
-        $ret = $this->redis->multi($mode)
-            ->randomKey()
-            ->exec();
-        $ret = $this->redis->multi($mode)
-            ->exec();
-        $this->assertTrue($ret == array());
 
         // ttl, mget, mset, msetnx, expire, expireAt
         $this->redis->del('key');
@@ -2595,26 +2586,26 @@ class Redis_Test extends TestSuite
         $this->assertTrue(count($ret) == $i);
 
         $ret = $this->redis->multi($mode)
-            ->set('lkey', 'x')
-            ->set('lDest', 'y')
-            ->del('lkey', 'lDest')
-            ->rpush('lkey', 'lvalue')
-            ->lpush('lkey', 'lvalue')
-            ->lpush('lkey', 'lvalue')
-            ->lpush('lkey', 'lvalue')
-            ->lpush('lkey', 'lvalue')
-            ->lpush('lkey', 'lvalue')
-            ->rpoplpush('lkey', 'lDest')
-            ->lrange('lDest', 0, -1)
-            ->lpop('lkey')
-            ->llen('lkey')
-            ->lrem('lkey', 'lvalue', 3)
-            ->llen('lkey')
-            ->lget('lkey', 0)
-            ->lrange('lkey', 0, -1)
-            ->lSet('lkey', 1, "newValue")    // check errors on key not exists
-            ->lrange('lkey', 0, -1)
-            ->llen('lkey')
+            ->set('{list}lkey', 'x')
+            ->set('{list}lDest', 'y')
+            ->del('{list}lkey', '{list}lDest')
+            ->rpush('{list}lkey', 'lvalue')
+            ->lpush('{list}lkey', 'lvalue')
+            ->lpush('{list}lkey', 'lvalue')
+            ->lpush('{list}lkey', 'lvalue')
+            ->lpush('{list}lkey', 'lvalue')
+            ->lpush('{list}lkey', 'lvalue')
+            ->rpoplpush('{list}lkey', 'lDest')
+            ->lrange('{list}lDest', 0, -1)
+            ->lpop('{list}lkey')
+            ->llen('{list}lkey')
+            ->lrem('{list}lkey', 'lvalue', 3)
+            ->llen('{list}lkey')
+            ->lget('{list}lkey', 0)
+            ->lrange('{list}lkey', 0, -1)
+            ->lSet('{list}lkey', 1, "newValue")    // check errors on key not exists
+            ->lrange('{list}lkey', 0, -1)
+            ->llen('{list}lkey')
             ->exec();
 
         $this->assertTrue(is_array($ret));
@@ -2643,13 +2634,13 @@ class Redis_Test extends TestSuite
 
 
         $ret = $this->redis->multi($mode)
-            ->del('lkey', 'lDest')
-            ->rpush('lkey', 'lvalue')
-            ->lpush('lkey', 'lvalue')
-            ->lpush('lkey', 'lvalue')
-            ->rpoplpush('lkey', 'lDest')
-            ->lrange('lDest', 0, -1)
-            ->lpop('lkey')
+            ->del('{list}lkey', '{list}lDest')
+            ->rpush('{list}lkey', 'lvalue')
+            ->lpush('{list}lkey', 'lvalue')
+            ->lpush('{list}lkey', 'lvalue')
+            ->rpoplpush('{list}lkey', '{list}lDest')
+            ->lrange('{list}lDest', 0, -1)
+            ->lpop('{list}lkey')
             ->exec();
         $this->assertTrue(is_array($ret));
         $i = 0;
@@ -2663,48 +2654,27 @@ class Redis_Test extends TestSuite
         $this->assertTrue(count($ret) == $i);
 
 
-        // general command
-        $ret = $this->redis->multi($mode)
-            ->select(3)
-            ->set('keyAAA', 'value')
-            ->set('keyAAB', 'value')
-            ->dbSize()
-            ->lastsave()
-            ->exec();
-
-        $this->redis->select(0); // back to normal
-
-        $i = 0;
-        $this->assertTrue(is_array($ret));
-        $this->assertTrue($ret[$i++] === TRUE); // select
-        $this->assertTrue($ret[$i++] === TRUE); // set
-        $this->assertTrue($ret[$i++] === TRUE); // set
-        $this->assertTrue(is_long($ret[$i++])); // dbsize
-        $this->assertTrue(is_long($ret[$i++])); // lastsave
-
-        $this->assertTrue(count($ret) === $i);
-
         $serializer = $this->redis->getOption(Redis::OPT_SERIALIZER);
         $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE); // testing incr, which doesn't work with the serializer
         $ret = $this->redis->multi($mode)
-            ->del('key1')
-            ->set('key1', 'value1')
-            ->get('key1')
-            ->getSet('key1', 'value2')
-            ->get('key1')
-            ->set('key2', 4)
-            ->incr('key2')
-            ->get('key2')
-            ->decr('key2')
-            ->get('key2')
-            ->rename('key2', 'key3')
-            ->get('key3')
-            ->renameNx('key3', 'key1')
-            ->rename('key3', 'key2')
-            ->incrby('key2', 5)
-            ->get('key2')
-            ->decrby('key2', 5)
-            ->get('key2')
+            ->del('{key}1')
+            ->set('{key}1', 'value1')
+            ->get('{key}1')
+            ->getSet('{key}1', 'value2')
+            ->get('{key}1')
+            ->set('{key}2', 4)
+            ->incr('{key}2')
+            ->get('{key}2')
+            ->decr('{key}2')
+            ->get('{key}2')
+            ->rename('{key}2', '{key}3')
+            ->get('{key}3')
+            ->renameNx('{key}3', '{key}1')
+            ->rename('{key}3', '{key}2')
+            ->incrby('{key}2', 5)
+            ->get('{key}2')
+            ->decrby('{key}2', 5)
+            ->get('{key}2')
             ->exec();
 
         $i = 0;
@@ -2781,24 +2751,24 @@ class Redis_Test extends TestSuite
 
         // lists
         $ret = $this->redis->multi($mode)
-            ->del('lkey', 'lDest')
-            ->rpush('lkey', 'lvalue')
-            ->lpush('lkey', 'lvalue')
-            ->lpush('lkey', 'lvalue')
-            ->lpush('lkey', 'lvalue')
-            ->lpush('lkey', 'lvalue')
-            ->lpush('lkey', 'lvalue')
-            ->rpoplpush('lkey', 'lDest')
-            ->lrange('lDest', 0, -1)
-            ->lpop('lkey')
-            ->llen('lkey')
-            ->lrem('lkey', 'lvalue', 3)
-            ->llen('lkey')
-            ->lget('lkey', 0)
-            ->lrange('lkey', 0, -1)
-            ->lSet('lkey', 1, "newValue")    // check errors on missing key
-            ->lrange('lkey', 0, -1)
-            ->llen('lkey')
+            ->del('{l}key', '{l}Dest')
+            ->rpush('{l}key', 'lvalue')
+            ->lpush('{l}key', 'lvalue')
+            ->lpush('{l}key', 'lvalue')
+            ->lpush('{l}key', 'lvalue')
+            ->lpush('{l}key', 'lvalue')
+            ->lpush('{l}key', 'lvalue')
+            ->rpoplpush('{l}key', '{l}Dest')
+            ->lrange('{l}Dest', 0, -1)
+            ->lpop('{l}key')
+            ->llen('{l}key')
+            ->lrem('{l}key', 'lvalue', 3)
+            ->llen('{l}key')
+            ->lget('{l}key', 0)
+            ->lrange('{l}key', 0, -1)
+            ->lSet('{l}key', 1, "newValue")    // check errors on missing key
+            ->lrange('{l}key', 0, -1)
+            ->llen('{l}key')
             ->exec();
 
         $this->assertTrue(is_array($ret));
@@ -2827,34 +2797,34 @@ class Redis_Test extends TestSuite
 
         // sets
         $ret = $this->redis->multi($mode)
-            ->del('skey1', 'skey2', 'skeydest', 'skeyUnion', 'sDiffDest')
-            ->sadd('skey1', 'sValue1')
-            ->sadd('skey1', 'sValue2')
-            ->sadd('skey1', 'sValue3')
-            ->sadd('skey1', 'sValue4')
+            ->del('{s}key1', '{s}key2', '{s}keydest', '{s}keyUnion', '{s}DiffDest')
+            ->sadd('{s}key1', 'sValue1')
+            ->sadd('{s}key1', 'sValue2')
+            ->sadd('{s}key1', 'sValue3')
+            ->sadd('{s}key1', 'sValue4')
 
-            ->sadd('skey2', 'sValue1')
-            ->sadd('skey2', 'sValue2')
+            ->sadd('{s}key2', 'sValue1')
+            ->sadd('{s}key2', 'sValue2')
 
-            ->scard('skey1')
-            ->srem('skey1', 'sValue2')
-            ->scard('skey1')
-            ->sMove('skey1', 'skey2', 'sValue4')
-            ->scard('skey2')
-            ->sismember('skey2', 'sValue4')
-            ->sMembers('skey1')
-            ->sMembers('skey2')
-            ->sInter('skey1', 'skey2')
-            ->sInterStore('skeydest', 'skey1', 'skey2')
-            ->sMembers('skeydest')
-            ->sUnion('skey2', 'skeydest')
-            ->sUnionStore('skeyUnion', 'skey2', 'skeydest')
-            ->sMembers('skeyUnion')
-            ->sDiff('skey1', 'skey2')
-            ->sDiffStore('sDiffDest', 'skey1', 'skey2')
-            ->sMembers('sDiffDest')
-            ->sPop('skey2')
-            ->scard('skey2')
+            ->scard('{s}key1')
+            ->srem('{s}key1', 'sValue2')
+            ->scard('{s}key1')
+            ->sMove('{s}key1', '{s}key2', 'sValue4')
+            ->scard('{s}key2')
+            ->sismember('{s}key2', 'sValue4')
+            ->sMembers('{s}key1')
+            ->sMembers('{s}key2')
+            ->sInter('{s}key1', '{s}key2')
+            ->sInterStore('{s}keydest', '{s}key1', '{s}key2')
+            ->sMembers('{s}keydest')
+            ->sUnion('{s}key2', '{s}keydest')
+            ->sUnionStore('{s}keyUnion', '{s}key2', '{s}keydest')
+            ->sMembers('{s}keyUnion')
+            ->sDiff('{s}key1', '{s}key2')
+            ->sDiffStore('{s}DiffDest', '{s}key1', '{s}key2')
+            ->sMembers('{s}DiffDest')
+            ->sPop('{s}key2')
+            ->scard('{s}key2')
             ->exec();
 
         $i = 0;
@@ -2908,36 +2878,36 @@ class Redis_Test extends TestSuite
 
         // sorted sets
         $ret = $this->redis->multi($mode)
-            ->del('zkey1', 'zkey2', 'zkey5', 'zInter', 'zUnion')
-            ->zadd('zkey1', 1, 'zValue1')
-            ->zadd('zkey1', 5, 'zValue5')
-            ->zadd('zkey1', 2, 'zValue2')
-            ->zRange('zkey1', 0, -1)
-            ->zRem('zkey1', 'zValue2')
-            ->zRange('zkey1', 0, -1)
-            ->zadd('zkey1', 11, 'zValue11')
-            ->zadd('zkey1', 12, 'zValue12')
-            ->zadd('zkey1', 13, 'zValue13')
-            ->zadd('zkey1', 14, 'zValue14')
-            ->zadd('zkey1', 15, 'zValue15')
-            ->zRemRangeByScore('zkey1', 11, 13)
-            ->zrange('zkey1', 0, -1)
-            ->zReverseRange('zkey1', 0, -1)
-            ->zRangeByScore('zkey1', 1, 6)
-            ->zCard('zkey1')
-            ->zScore('zkey1', 'zValue15')
-            ->zadd('zkey2', 5, 'zValue5')
-            ->zadd('zkey2', 2, 'zValue2')
-            ->zInter('zInter', array('zkey1', 'zkey2'))
-            ->zRange('zkey1', 0, -1)
-            ->zRange('zkey2', 0, -1)
-            ->zRange('zInter', 0, -1)
-            ->zUnionStore('zUnion', array('zkey1', 'zkey2'))
-            ->zRange('zUnion', 0, -1)
-            ->zadd('zkey5', 5, 'zValue5')
-            ->zIncrBy('zkey5', 3, 'zValue5') // fix this
-            ->zScore('zkey5', 'zValue5')
-            ->zScore('zkey5', 'unknown')
+            ->del('{z}key1', '{z}key2', '{z}key5', '{z}Inter', '{z}Union')
+            ->zadd('{z}key1', 1, 'zValue1')
+            ->zadd('{z}key1', 5, 'zValue5')
+            ->zadd('{z}key1', 2, 'zValue2')
+            ->zRange('{z}key1', 0, -1)
+            ->zRem('{z}key1', 'zValue2')
+            ->zRange('{z}key1', 0, -1)
+            ->zadd('{z}key1', 11, 'zValue11')
+            ->zadd('{z}key1', 12, 'zValue12')
+            ->zadd('{z}key1', 13, 'zValue13')
+            ->zadd('{z}key1', 14, 'zValue14')
+            ->zadd('{z}key1', 15, 'zValue15')
+            ->zRemRangeByScore('{z}key1', 11, 13)
+            ->zrange('{z}key1', 0, -1)
+            ->zReverseRange('{z}key1', 0, -1)
+            ->zRangeByScore('{z}key1', 1, 6)
+            ->zCard('{z}key1')
+            ->zScore('{z}key1', 'zValue15')
+            ->zadd('{z}key2', 5, 'zValue5')
+            ->zadd('{z}key2', 2, 'zValue2')
+            ->zInterStore('{z}Inter', array('{z}key1', '{z}key2'))
+            ->zRange('{z}key1', 0, -1)
+            ->zRange('{z}key2', 0, -1)
+            ->zRange('{z}Inter', 0, -1)
+            ->zUnionStore('{z}Union', array('{z}key1', '{z}key2'))
+            ->zRange('{z}Union', 0, -1)
+            ->zadd('{z}key5', 5, 'zValue5')
+            ->zIncrBy('{z}key5', 3, 'zValue5') // fix this
+            ->zScore('{z}key5', 'zValue5')
+            ->zScore('{z}key5', 'unknown')
             ->exec();
 
         $i = 0;
@@ -2963,12 +2933,12 @@ class Redis_Test extends TestSuite
         $this->assertTrue($ret[$i++] === 1); // added value
         $this->assertTrue($ret[$i++] === 1); // added value
         $this->assertTrue($ret[$i++] === 1); // zinter only has 1 value
-        $this->assertTrue($ret[$i++] === array('zValue1', 'zValue5', 'zValue14', 'zValue15')); // zkey1 contents
-        $this->assertTrue($ret[$i++] === array('zValue2', 'zValue5')); // zkey2 contents
-        $this->assertTrue($ret[$i++] === array('zValue5')); // zinter contents
-        $this->assertTrue($ret[$i++] === 5); // zUnion has 5 values (1,2,5,14,15)
-        $this->assertTrue($ret[$i++] === array('zValue1', 'zValue2', 'zValue5', 'zValue14', 'zValue15')); // zunion contents
-        $this->assertTrue($ret[$i++] === 1); // added value to zkey5, with score 5
+        $this->assertTrue($ret[$i++] === array('zValue1', 'zValue5', 'zValue14', 'zValue15')); // {z}key1 contents
+        $this->assertTrue($ret[$i++] === array('zValue2', 'zValue5')); // {z}key2 contents
+        $this->assertTrue($ret[$i++] === array('zValue5')); // {z}inter contents
+        $this->assertTrue($ret[$i++] === 5); // {z}Union has 5 values (1,2,5,14,15)
+        $this->assertTrue($ret[$i++] === array('zValue1', 'zValue2', 'zValue5', 'zValue14', 'zValue15')); // {z}Union contents
+        $this->assertTrue($ret[$i++] === 1); // added value to {z}key5, with score 5
         $this->assertTrue($ret[$i++] === 8.0); // incremented score by 3 → it is now 8.
         $this->assertTrue($ret[$i++] === 8.0); // current score is 8.
         $this->assertTrue($ret[$i++] === FALSE); // score for unknown element.

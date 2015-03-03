@@ -754,7 +754,8 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
         efree(ht_arr);
     }
 
-    if(!CLUSTER_IS_ATOMIC(c))
+    /* Return our object if we're in MULTI mode */
+    if (!CLUSTER_IS_ATOMIC(c))
         RETVAL_ZVAL(getThis(), 1, 0);
 
     // Success
@@ -846,6 +847,10 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
     // Free our command
     cluster_multi_free(&mc);
+
+    /* Return our object if we're in MULTI mode */
+    if (!CLUSTER_IS_ATOMIC(c))
+        RETVAL_ZVAL(getThis(), 1, 0);
 
     // Success
     return 0;
