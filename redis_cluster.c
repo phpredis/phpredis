@@ -2029,11 +2029,11 @@ PHP_METHOD(RedisCluster, multi) {
         RETURN_FALSE;
     }
 
-    // Go into MULTI mode
+    /* Flag that we're in MULTI mode */
     c->flags->mode = MULTI;
 
-    // Success
-    RETURN_TRUE;
+    /* Return our object so we can chain MULTI calls */
+    RETVAL_ZVAL(getThis(), 1, 0);
 }
 
 /* {{{ proto bool RedisCluster::watch() */
