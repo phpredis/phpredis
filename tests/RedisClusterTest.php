@@ -18,6 +18,9 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testWait()     { return $this->markTestSkipped(); }
     public function testSelect()   { return $this->markTestSkipped(); }
 
+    /* Skips for now, which need attention */
+    public function testClient()   { return $this->markTestSkipped(); }
+
     /* Load our seeds on construction */
     public function __construct() {
         $str_nodemap_file = dirname($_SERVER['PHP_SELF']) . '/nodes/nodemap';
