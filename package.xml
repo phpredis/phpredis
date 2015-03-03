@@ -131,7 +131,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
        * @remicollet -- Fix possible segfault when igbinary is enabled.
        * Add a couple of cases where we throw on an error (LOADING/NOAUTH/MASTERDOWN)
        * Fix several issues with serialization NARY
-       * @itcom -- Fix missing TSRMLS_CC and a TSRMLS_DC/TSRMLS_CC typo</notes>
+       * @itcom -- Fix missing TSRMLS_CC and a TSRMLS_DC/TSRMLS_CC typo
    </notes>
    </release>
    <release>
