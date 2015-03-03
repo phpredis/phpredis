@@ -999,6 +999,9 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         if(has_timeout) argc++;
         efree(z_args);
         z_args = NULL;
+
+        /* If the array is empty, we can simply abort */
+        if (argc == 0) return FAILURE;
     }
 
     // Begin construction of our command
