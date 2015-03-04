@@ -1113,7 +1113,7 @@ PHP_METHOD(RedisCluster, srandmember) {
 
 /* {{{ proto string RedisCluster::strlen(string key) */
 PHP_METHOD(RedisCluster, strlen) {
-    CLUSTER_PROCESS_KW_CMD("STRLEN", redis_key_cmd, cluster_bulk_resp, 1);
+    CLUSTER_PROCESS_KW_CMD("STRLEN", redis_key_cmd, cluster_long_resp, 1);
 }
 
 /* {{{ proto long RedisCluster::lpush(string key, string val1, ... valN) */
