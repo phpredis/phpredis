@@ -1092,23 +1092,6 @@ PHP_METHOD(RedisCluster, srandmember) {
         CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
         RETURN_ZVAL(getThis(), 1, 0);
     }
-
-/*
- *    cb = withscores ? cluster_mbulk_zipdbl_resp : cluster_mbulk_resp;
-    if (CLUSTER_IS_ATOMIC(c)) {
-        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
-    } else {
-        void *ctx = NULL;
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
-        RETURN_ZVAL(getThis(), 1, 0);
-    }*/
-
-    // Response type differs if we use WITHSCORES or not
-/*    if(have_count) {
-        cluster_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
-    } else {
-        cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
-    }*/
 }
 
 /* {{{ proto string RedisCluster::strlen(string key) */

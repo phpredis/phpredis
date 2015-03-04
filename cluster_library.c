@@ -1381,7 +1381,6 @@ PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                               void *ctx)
 {
     char *resp;
-    zval *z_ret = NULL;
 
     // Make sure we can read the response
     if(c->reply_type != TYPE_BULK ||
@@ -1390,6 +1389,25 @@ PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         CLUSTER_RETURN_FALSE(c);
     }
 
+    if (CLUSTER_IS_ATOMIC(c)) {
+        if (redis_unserialize(c->flags, resp, c->reply_len, &return_value
+                              TSRMLS_CC) == 0) 
+        {
+            CLUSTER_RETURN_STRING(c, resp, c->reply_len);
+        } else {
+            efree(resp);
+        }
+    } else {
+        zval *z = NULL;
+        if (redis_unserialize(c->flags, resp, c->reply_len, &z TSRMLS_CC)) {
+            efree(resp);
+            add_next_index_zval(c->multi_resp, z);
+        } else {
+            add_next_index_stringl(c->multi_resp, resp, c->reply_len, 0);
+        }
+    }
+
+    /*
     // Return the string if we can unserialize it
     if(redis_unserialize(c->flags, resp, c->reply_len, &z_ret TSRMLS_CC)==0) {
         CLUSTER_RETURN_STRING(c, resp, c->reply_len);
@@ -1400,7 +1418,7 @@ PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
             add_next_index_zval(c->multi_resp, z_ret);
         }
         efree(resp);
-    }
+    }*/
 }
 
 /* Bulk response where we expect a double */
@@ -1796,6 +1814,9 @@ PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 
     /* Consume replies as long as there are more than zero */
     if (c->reply_len > 0) {
+        /* Push serialization settings from the cluster into our socket */
+        c->cmd_sock->serializer = c->flags->serializer;
+
         /* Call our specified callback */
         if (cb(c->cmd_sock, z_result, c->reply_len, ctx TSRMLS_CC)==FAILURE) {
             zval_dtor(z_result);
@@ -2168,7 +2189,6 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
 {
     char *line;
     int line_len;
-    zval *z;
 
     // Iterate over the lines we have to process
     while(count--) {
@@ -2177,6 +2197,7 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
         if(line == NULL) return FAILURE;
 
         if(line_len > 0) {
+            zval *z = NULL;
             if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
                 add_next_index_zval(z_result, z);
                 efree(line);
@@ -2199,7 +2220,7 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
     char *line, *key;
     int line_len, key_len;
     long long idx=0;
-    zval *z;
+    zval *z = NULL;
 
     // Our count wil need to be divisible by 2
     if(count % 2 != 0) {
