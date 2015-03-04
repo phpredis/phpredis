@@ -14,6 +14,7 @@ $masters = $sentinel->masters();
 var_dump(count($masters));
 
 assert(isset($masters[0]['name']));
+assert(isset($masters[0]['ip']));
 
 ?>
 --EXPECT--
