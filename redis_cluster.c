@@ -1574,15 +1574,14 @@ PHP_METHOD(RedisCluster, setrange) {
 }
 /* }}} */
 
-/* Generic implementation for ZRANGE, ZREVRANGE, ZRANGEBYSCORE,
- * ZREVRANGEBYSCORE */
+/* Generic implementation for ZRANGE, ZREVRANGE, ZRANGEBYSCORE, ZREVRANGEBYSCORE */
 static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
                                zrange_cb fun)
 {
     redisCluster *c = GET_CONTEXT();
     cluster_cb cb;
     char *cmd; int cmd_len; short slot;
-    int withscores;
+    int withscores=0;
 
     if(fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len,
            &withscores, &slot, NULL)==FAILURE)

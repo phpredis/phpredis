@@ -91,7 +91,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue(is_array($result));
 
         // PUBSUB NUMSUB
-        
+
         $c1 = uniqid() . '-' . rand(1,100);
         $c2 = uniqid() . '-' . rand(1,100);
 
@@ -153,7 +153,7 @@ class Redis_Test extends TestSuite
 
         // Verify valid offset ranges
         $this->assertFalse($this->redis->getBit('key', -1));
-        
+
         $this->redis->setBit('key', 4294967295, 1);
         $this->assertEquals(1, $this->redis->getBit('key', 4294967295));
     }
@@ -217,7 +217,7 @@ class Redis_Test extends TestSuite
         $this->assertEquals('val', $this->redis->get('key2'));
 
         $value = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-        
+
         $this->redis->set('key2', $value);
         $this->assertEquals($value, $this->redis->get('key2'));
         $this->assertEquals($value, $this->redis->get('key2'));
@@ -408,7 +408,7 @@ class Redis_Test extends TestSuite
         $this->redis->del('k3');
 
         $this->redis->set('k1', gzcompress('v1'));
-        $this->redis->set('k2', gzcompress('v2')); 
+        $this->redis->set('k2', gzcompress('v2'));
         $this->redis->set('k3', gzcompress('v3'));
 
         $this->assertEquals(array(gzcompress('v1'), gzcompress('v2'), gzcompress('v3')), $this->redis->mget(array('k1', 'k2', 'k3')));
@@ -503,7 +503,7 @@ class Redis_Test extends TestSuite
         }
 
         $this->redis->del('key');
-        
+
         $this->redis->set('key', 0);
 
         $this->redis->incrbyfloat('key', 1.5);
@@ -1162,9 +1162,9 @@ class Redis_Test extends TestSuite
             }
         }
 
-        // 
+        //
         // With and without count, while serializing
-        // 
+        //
 
         $this->redis->del('set0');
         $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
@@ -1188,11 +1188,11 @@ class Redis_Test extends TestSuite
     public function testSRandMemberWithCount() {
         // Make sure the set is nuked
         $this->redis->del('set0');
-        
+
         // Run with a count (positive and negative) on an empty set
         $ret_pos = $this->redis->sRandMember('set0', 10);
         $ret_neg = $this->redis->sRandMember('set0', -10);
-        
+
         // Should both be empty arrays
         $this->assertTrue(is_array($ret_pos) && empty($ret_pos));
         $this->assertTrue(is_array($ret_neg) && empty($ret_neg));
@@ -1321,13 +1321,13 @@ class Redis_Test extends TestSuite
             $i = (int)$i;
             $this->assertTrue(in_array($i, array_intersect($x, $y)));
         }
-        
+
         $xy = $this->redis->sInter(array('{set}odd', '{set}prime'));    // odd prime numbers, as array.
         foreach($xy as $i) {
             $i = (int)$i;
             $this->assertTrue(in_array($i, array_intersect($x, $y)));
         }
-        
+
         $yz = $this->redis->sInter('{set}prime', '{set}square');   // set of prime squares
         foreach($yz as $i) {
             $i = (int)$i;
@@ -1339,12 +1339,12 @@ class Redis_Test extends TestSuite
         $i = (int)$i;
             $this->assertTrue(in_array($i, array_intersect($y, $z)));
         }
-        
+
         $zt = $this->redis->sInter('{set}square', '{set}seq');   // prime squares
         $this->assertTrue($zt === array());
         $zt = $this->redis->sInter(array('{set}square', '{set}seq'));    // prime squares, as array
         $this->assertTrue($zt === array());
-        
+
         $xyz = $this->redis->sInter('{set}odd', '{set}prime', '{set}square');// odd prime squares
         $this->assertTrue($xyz === array('1'));
 
@@ -1730,10 +1730,10 @@ class Redis_Test extends TestSuite
 
         // We should have found our connection
         $this->assertFalse(empty($str_addr));
-        
+
         /* CLIENT GETNAME */
         $this->assertTrue($this->redis->client('getname'), 'phpredis_unit_tests');
-         
+
         /* CLIENT KILL -- phpredis will reconnect, so we can do this */
         $this->assertTrue($this->redis->client('kill', $str_addr));
     }
@@ -1804,7 +1804,7 @@ class Redis_Test extends TestSuite
                 "rdb_last_save_time"
             );
         }
-        
+
         foreach($keys as $k) {
             $this->assertTrue(in_array($k, array_keys($info)));
         }
@@ -2366,7 +2366,7 @@ class Redis_Test extends TestSuite
          * so 'quicklist' or 'ziplist' is valid here */
         $str_encoding = $this->redis->object('encoding', 'key');
         $this->assertTrue($str_encoding === "ziplist" || $str_encoding === 'quicklist');
-        
+
         $this->assertTrue($this->redis->object('refcount', 'key') === 1);
         $this->assertTrue($this->redis->object('idletime', 'key') === 0);
 
@@ -2388,7 +2388,7 @@ class Redis_Test extends TestSuite
 
         $str_encoding = $this->redis->object('encoding', 'key');
         $this->assertTrue($str_encoding === "linkedlist" || $str_encoding == "quicklist");
-        
+
         $this->assertTrue($this->redis->object('refcount', 'key') === 1);
         $this->assertTrue($this->redis->object('idletime', 'key') === 0);
     }
@@ -2413,12 +2413,12 @@ class Redis_Test extends TestSuite
 
         // failed transaction
         $this->redis->watch('x');
-        
+
         $r = $this->newInstance(); // new instance, modifying `x'.
         $r->incr('x');
 
         $ret = $this->redis->multi()->get('x')->exec();
-        
+
         $this->assertTrue($ret === FALSE); // failed because another client changed our watched key between WATCH and EXEC.
 
         // watch and unwatch
@@ -2662,7 +2662,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue($ret[$i++] == 4);
         $this->assertTrue($ret[$i++]);
         $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
-        
+
         $ret = $this->redis->multi($mode)
             ->del('{key}1')
             ->del('{key}2')
@@ -2992,7 +2992,7 @@ class Redis_Test extends TestSuite
             ->lPop($key)
             ->rPop($key)
             ->rPoplPush($key, $dkey . 'lkey1')
-            
+
             // sets I/F
             ->sAdd($key, 'sValue1')
             ->srem($key, 'sValue1')
@@ -3037,7 +3037,7 @@ class Redis_Test extends TestSuite
             ->hGetAll($key)
 
             ->exec();
-        
+
         $i = 0;
         $this->assertTrue(is_array($ret));
         $this->assertTrue(is_long($ret[$i++])); // delete
@@ -3873,7 +3873,7 @@ class Redis_Test extends TestSuite
     public function testSerializerPHP() {
 
         $this->checkSerializer(Redis::SERIALIZER_PHP);
-        
+
         // with prefix
         $this->redis->setOption(Redis::OPT_PREFIX, "test:");
         $this->checkSerializer(Redis::SERIALIZER_PHP);
@@ -3907,7 +3907,7 @@ class Redis_Test extends TestSuite
         $this->redis->rPush('key', $a[1]);
         $this->redis->rPush('key', $a[2]);
         $this->redis->rPush('key', $a[3]);
-        
+
         // lrange
         $this->assertTrue($a === $this->redis->lrange('key', 0, -1));
 
@@ -3916,11 +3916,11 @@ class Redis_Test extends TestSuite
         $this->assertTrue($a[1] === $this->redis->lGet('key', 1));
         $this->assertTrue($a[2] === $this->redis->lGet('key', 2));
         $this->assertTrue($a[3] === $this->redis->lGet('key', 3));
-        
+
         // lrem
         $this->assertTrue($this->redis->lrem('key', $a[3]) === 1);
         $this->assertTrue(array_slice($a, 0, 3) === $this->redis->lrange('key', 0, -1));
-        
+
         // lSet
         $a[0] = array('k' => 'v'); // update
         $this->assertTrue(TRUE === $this->redis->lSet('key', 0, $a[0]));
@@ -3929,7 +3929,7 @@ class Redis_Test extends TestSuite
         // lInsert
         $this->assertTrue($this->redis->lInsert('key', Redis::BEFORE, $a[0], array(1,2,3)) === 4);
         $this->assertTrue($this->redis->lInsert('key', Redis::AFTER, $a[0], array(4,5,6)) === 5);
-        
+
         $a = array(array(1,2,3), $a[0], array(4,5,6), $a[1], $a[2]);
         $this->assertTrue($a === $this->redis->lrange('key', 0, -1));
 
@@ -3941,7 +3941,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue(1 === $this->redis->sAdd('{set}key', $s[1]));
         $this->assertTrue(1 === $this->redis->sAdd('{set}key', $s[2]));
         $this->assertTrue(1 === $this->redis->sAdd('{set}key', $s[3]));
-        
+
         // variadic sAdd
         $this->redis->del('k');
         $this->assertTrue(3 === $this->redis->sAdd('k', 'a', 'b', 'c'));
@@ -3950,14 +3950,14 @@ class Redis_Test extends TestSuite
         // srem
         $this->assertTrue(1 === $this->redis->srem('{set}key', $s[3]));
         $this->assertTrue(0 === $this->redis->srem('{set}key', $s[3]));
-        
+
         // variadic
         $this->redis->del('k');
         $this->redis->sAdd('k', 'a', 'b', 'c', 'd');
         $this->assertTrue(2 === $this->redis->sRem('k', 'a', 'd'));
         $this->assertTrue(2 === $this->redis->sRem('k', 'b', 'c', 'e'));
         $this->assertTrue(FALSE === $this->redis->exists('k'));
-        
+
         // sismember
         $this->assertTrue(TRUE === $this->redis->sismember('{set}key', $s[0]));
         $this->assertTrue(TRUE === $this->redis->sismember('{set}key', $s[1]));
@@ -4082,7 +4082,7 @@ class Redis_Test extends TestSuite
 
         // multi-exec
         $this->sequence(Redis::MULTI);
-        
+
         // keys
         $this->assertTrue(is_array($this->redis->keys('*')));
 
@@ -4230,46 +4230,46 @@ class Redis_Test extends TestSuite
         /*
          * Keys to be incorporated into lua results
          */
-
         // Make a list
-        $this->redis->del('mylist');
-        $this->redis->rpush('mylist', 'a');
-        $this->redis->rpush('mylist', 'b');
-        $this->redis->rpush('mylist', 'c');
+        $this->redis->del('{eval-key}-list');
+        $this->redis->rpush('{eval-key}-list', 'a');
+        $this->redis->rpush('{eval-key}-list', 'b');
+        $this->redis->rpush('{eval-key}-list', 'c');
 
         // Make a set
-        $this->redis->del('myset');
-        $this->redis->sadd('myset', 'd');
-        $this->redis->sadd('myset', 'e');
-        $this->redis->sadd('myset', 'f');
+        $this->redis->del('{eval-key}-set');
+        $this->redis->sadd('{eval-key}-set', 'd');
+        $this->redis->sadd('{eval-key}-set', 'e');
+        $this->redis->sadd('{eval-key}-set', 'f');
 
         // Basic keys
-        $this->redis->set('key1', 'hello, world');
-        $this->redis->set('key2', 'hello again!');
+        $this->redis->set('{eval-key}-str1', 'hello, world');
+        $this->redis->set('{eval-key}-str2', 'hello again!');
 
         // Use a script to return our list, and verify its response
-        $list = $this->redis->eval("return redis.call('lrange', 'mylist', 0, -1)");
+/*        $list = $this->redis->eval("return redis.call('lrange', KEYS[1], 0, -1)", Array('{eval-key}-list'), 1);
         $this->assertTrue($list === Array('a','b','c'));
 
         // Use a script to return our set
-        $set = $this->redis->eval("return redis.call('smembers', 'myset')");
+        $set = $this->redis->eval("return redis.call('smembers', KEYS[1])", Array('{eval-key}-set'), 1);
         $this->assertTrue($set == Array('d','e','f'));
 
         // Test an empty MULTI BULK response
-        $this->redis->del('not-any-kind-of-list');
-        $empty_resp = $this->redis->eval("return redis.call('lrange', 'not-any-kind-of-list', 0, -1)");
+        $this->redis->del('{eval-key}-nolist');
+        $empty_resp = $this->redis->eval("return redis.call('lrange', '{eval-key}-nolist', 0, -1)",
+            Array('{eval-key}-nolist'), 1);
         $this->assertTrue(is_array($empty_resp) && empty($empty_resp));
-
+ */
         // Now test a nested reply
         $nested_script = "
             return {
                 1,2,3, {
-                    redis.call('get', 'key1'),
-                    redis.call('get', 'key2'),
+                    redis.call('get', '{eval-key}-str1'),
+                    redis.call('get', '{eval-key}-str2'),
                     redis.call('lrange', 'not-any-kind-of-list', 0, -1),
                     {
-                        redis.call('smembers','myset'),
-                        redis.call('lrange', 'mylist', 0, -1)
+                        redis.call('smembers','{eval-key}-set'),
+                        redis.call('lrange', '{eval-key}-list', 0, -1)
                     }
                 }
             }
@@ -4286,11 +4286,11 @@ class Redis_Test extends TestSuite
                 )
             )
         );
-
+/*
         // Now run our script, and check our values against each other
-        $eval_result = $this->redis->eval($nested_script);
+        $eval_result = $this->redis->eval($nested_script, Array('{eval-key}-str1', '{eval-key}-str2', '{eval-key}-set', '{eval-key}-list'), 4);
         $this->assertTrue(is_array($eval_result) && count($this->array_diff_recursive($eval_result, $expected)) == 0);
-
+ */
         /*
          * Nested reply wihin a multi/pipeline block
          */
@@ -4303,11 +4303,20 @@ class Redis_Test extends TestSuite
         foreach($arr_modes as $mode) {
             $this->redis->multi($mode);
             for($i=0;$i<$num_scripts;$i++) {
-                $this->redis->eval($nested_script);
+                $this->redis->eval($nested_script, Array('{eval-key}-dummy'), 1);
             }
             $replies = $this->redis->exec();
 
+var_dump($replies); die();
+
             foreach($replies as $reply) {
+                echo "--expected---\n";
+                var_dump($expected);
+                echo "---reply---\n";
+                var_dump($reply);
+                var_dump($this->array_diff_recursive($reply, $expected));
+                die();
+
                 $this->assertTrue(is_array($reply) && count($this->array_diff_recursive($reply, $expected)) == 0);
             }
         }
@@ -4363,9 +4372,9 @@ class Redis_Test extends TestSuite
 
     public function testSerialize() {
         $vals = Array(1, 1.5, 'one', Array('here','is','an','array'));
-        
+
         // Test with no serialization at all
-        $this->assertTrue($this->redis->_serialize('test') === 'test');        
+        $this->assertTrue($this->redis->_serialize('test') === 'test');
         $this->assertTrue($this->redis->_serialize(1) === '1');
         $this->assertTrue($this->redis->_serialize(Array()) === 'Array');
         $this->assertTrue($this->redis->_serialize(new stdClass) === 'Object');
@@ -4376,7 +4385,7 @@ class Redis_Test extends TestSuite
         }
 
         foreach($arr_serializers as $mode) {
-            $arr_enc = Array(); 
+            $arr_enc = Array();
             $arr_dec = Array();
 
             foreach($vals as $k => $v) {
@@ -4546,7 +4555,7 @@ class Redis_Test extends TestSuite
             $this->markTestSkipped();
             return;
         }
-    
+
         // Never get empty sets
         $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
 
@@ -4555,7 +4564,7 @@ class Redis_Test extends TestSuite
 
         for($i=0;$i<100;$i++) {
             if($i>3) {
-                $this->redis->hset('hash', "member:$i", "value:$i");    
+                $this->redis->hset('hash', "member:$i", "value:$i");
             } else {
                 $this->redis->hset('hash', "foomember:$i", "value:$i");
                 $i_foo_mems++;
@@ -4633,7 +4642,7 @@ class Redis_Test extends TestSuite
             } else {
                 $this->redis->zadd('zset', $i, "mem:$i");
             }
-            
+
             $i_tot_score += $i;
         }
 
@@ -4745,7 +4754,7 @@ class Redis_Test extends TestSuite
 
                 // Clean up merge key
                 $this->redis->del('pf-merge-{key}');
-                
+
                 // Merge the counters
                 $this->assertTrue($this->redis->pfmerge('pf-merge-{key}', $arr_keys));
 

@@ -175,5 +175,29 @@ class Redis_Cluster_Test extends Redis_Test {
         
         $this->assertFalse($this->redis->msetnx(array())); // set ø → FALSE
     }
+
+    /* Slowlog needs to take a key or Array(ip, port), to direct it to a node */
+    public function testSlowlog() {
+        $str_key = uniqid() . '-' . rand(1, 1000);
+
+        $this->assertTrue(is_array($this->redis->slowlog($str_key, 'get')));
+        $this->assertTrue(is_array($this->redis->slowlog($str_key, 'get', 10)));
+        $this->assertTrue(is_int($this->redis->slowlog($str_key, 'len')));
+        $this->assertTrue($this->redis->slowlog($str_key, 'reset'));
+        $this->assertFalse($this->redis->slowlog($str_key, 'notvalid'));
+    }
+
+    /* INFO COMMANDSTATS requires a key or ip:port for node direction */
+    public function testInfoCommandStats() {
+        $str_key = uniqid() . '-' . rand(1,1000);
+        $arr_info = $this->redis->info($str_key, "COMMANDSTATS");
+
+        $this->assertTrue(is_array($arr_info));
+        if (is_array($arr_info)) {
+            foreach($arr_info as $k => $str_value) {
+                $this->assertTrue(strpos($k, 'cmdstat_') !== false);
+            }
+        }
+    }
 }
 ?>

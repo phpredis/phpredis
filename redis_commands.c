@@ -419,7 +419,7 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key;
     int key_len, key_free;
     long start, end;
-    zend_bool ws;
+    zend_bool ws=0;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sll|b", &key, &key_len,
                              &start, &end, &ws)==FAILURE)
@@ -938,8 +938,7 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Add our members
     for(i=1;i<argc;i++) {
-        arg_free = redis_serialize(redis_sock, z_args[i], &arg, &arg_len
-            TSRMLS_CC);
+        arg_free = redis_serialize(redis_sock, z_args[i], &arg, &arg_len TSRMLS_CC);
         redis_cmd_append_sstr(&cmdstr, arg, arg_len);
         if(arg_free) STR_FREE(arg);
     }

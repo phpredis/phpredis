@@ -309,8 +309,8 @@ typedef struct clusterMultiCmd {
  * we don't encode errors, here as that's handled in the cluster structure. */
 typedef struct clusterReply {
     REDIS_REPLY_TYPE type;         /* Our reply type */
-    long long integer;             /* Integer reply */
-    size_t len;                    /* Length of our string */
+    size_t integer;                /* Integer reply */
+    long long len;                 /* Length of our string */
     char *str;                     /* String reply */
     size_t elements;               /* Count of array elements */
     struct clusterReply **element; /* Array elements */
