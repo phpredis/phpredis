@@ -17,6 +17,8 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSortDesc() { return $this->markTestSkipped(); }
     public function testWait()     { return $this->markTestSkipped(); }
     public function testSelect()   { return $this->markTestSkipped(); }
+    public function testReconnectSelect() { return $this->markTestSkipped(); }
+    public function testIntrospection() { return $this->markTestSkipped(); }
 
     /* Skips for now, which need attention */
     public function testClient()   { return $this->markTestSkipped(); }
@@ -110,5 +112,68 @@ class Redis_Cluster_Test extends Redis_Test {
         }
     }
 
+    public function testTime() {
+        $time_arr = $this->redis->time("k:" . rand(1,100));
+        $this->assertTrue(is_array($time_arr) && count($time_arr) == 2 &&
+                          strval(intval($time_arr[0])) === strval($time_arr[0]) &&
+                          strval(intval($time_arr[1])) === strval($time_arr[1]));
+    }
+
+    public function testScan() {
+        $this->markTestSkipped(); // this will be implemented
+    }
+
+    // Run some simple tests against the PUBSUB command.  This is problematic, as we
+    // can't be sure what's going on in the instance, but we can do some things.
+    public function testPubSub() {
+        // PUBSUB CHANNELS ...
+        $result = $this->redis->pubsub("somekey", "channels", "*");
+        $this->assertTrue(is_array($result));
+        $result = $this->redis->pubsub("somekey", "channels");
+        $this->assertTrue(is_array($result));
+
+        // PUBSUB NUMSUB
+
+        $c1 = '{pubsub}-' . rand(1,100);
+        $c2 = '{pubsub}-' . rand(1,100);
+
+        $result = $this->redis->pubsub("{pubsub}", "numsub", Array($c1, $c2));
+
+        // Should get an array back, with two elements
+        $this->assertTrue(is_array($result));
+        $this->assertEquals(count($result), 2);
+
+        // Make sure the elements are correct, and have zero counts
+        foreach(Array($c1,$c2) as $channel) {
+            $this->assertTrue(isset($result[$channel]));
+            $this->assertEquals($result[$channel], 0);
+        }
+
+        // PUBSUB NUMPAT
+        $result = $this->redis->pubsub("somekey", "numpat");
+        $this->assertTrue(is_int($result));
+
+        // Invalid calls
+        $this->assertFalse($this->redis->pubsub("somekey", "notacommand"));
+        $this->assertFalse($this->redis->pubsub("somekey", "numsub", "not-an-array"));
+    }
+
+    /* Unlike Redis proper, MsetNX won't always totally fail if all keys can't
+     * be set, but rather will only fail per-node when that is the case */
+    public function testMSetNX() {
+        /* All of these keys should get set */
+        $this->redis->del('x','y','z');
+        $ret = $this->redis->msetnx(Array('x'=>'a','y'=>'b','z'=>'c'));
+        $this->assertTrue(is_array($ret));
+        $this->assertEquals(array_sum($ret),count($ret));
+
+        /* Delete one key */
+        $this->redis->del('x');
+        $ret = $this->redis->msetnx(Array('x'=>'a','y'=>'b','z'=>'c'));
+        $this->assertTrue(is_array($ret));
+        $this->assertEquals(array_sum($ret),1);
+        
+        $this->assertFalse($this->redis->msetnx(array())); // set ø → FALSE
+    }
 }
 ?>

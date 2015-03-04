@@ -307,8 +307,16 @@ static int cluster_send_multi(redisCluster *c, short slot TSRMLS_DC) {
  * failover inside a transaction, as we don't know if the transaction will only
  * be readonly commands, or contain write commands as well */
 PHPAPI int cluster_send_exec(redisCluster *c, short slot TSRMLS_DC) {
-    return cluster_send_slot(c, slot, RESP_EXEC_CMD, sizeof(RESP_EXEC_CMD)-1,
+    int retval;
+
+    /* Send exec */
+    retval = cluster_send_slot(c, slot, RESP_EXEC_CMD, sizeof(RESP_EXEC_CMD)-1,
         TYPE_MULTIBULK TSRMLS_CC);
+
+    /* We'll either get a length corresponding to the number of commands sent to
+     * this node, or -1 in the case of EXECABORT or WATCH failure. */
+    c->multi_len[slot] = c->reply_len > 0 ? 1 : -1;
+
 }
 
 PHPAPI int cluster_send_discard(redisCluster *c, short slot TSRMLS_DC) {
@@ -949,7 +957,7 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
 
     // For replies that will give us a numberic length, convert it
     if(*reply_type != TYPE_LINE) { 
-        c->reply_len = atoi(c->line_reply);
+        c->reply_len = strtol(c->line_reply, NULL, 10);
     } else {
         c->reply_len = (long long)sz;
     }
@@ -1373,7 +1381,7 @@ PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                               void *ctx)
 {
     char *resp;
-    zval *z_ret;
+    zval *z_ret = NULL;
 
     // Make sure we can read the response
     if(c->reply_type != TYPE_BULK ||
@@ -1387,7 +1395,7 @@ PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         CLUSTER_RETURN_STRING(c, resp, c->reply_len);
     } else {
         if(CLUSTER_IS_ATOMIC(c)) {
-            return_value = z_ret;
+            *return_value = *z_ret;
         } else {
             add_next_index_zval(c->multi_resp, z_ret);
         }
@@ -1476,14 +1484,16 @@ PHPAPI void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     }
 
     // Switch on the type
-    if(strncmp(c->line_reply, "+string", 7)==0) {
+    if(strncmp (c->line_reply, "string", 6)==0) {
         CLUSTER_RETURN_LONG(c, REDIS_STRING);
-    } else if(strncmp(c->line_reply, "+set", 4)==0) {
+    } else if (strncmp(c->line_reply, "set", 3)==0) {
         CLUSTER_RETURN_LONG(c, REDIS_SET);
-    } else if(strncmp(c->line_reply, "+list", 5)==0) {
+    } else if (strncmp(c->line_reply, "list", 4)==0) {
         CLUSTER_RETURN_LONG(c, REDIS_LIST); 
-    } else if(strncmp(c->line_reply, "+hash", 5)==0) {
+    } else if (strncmp(c->line_reply, "hash", 4)==0) {
         CLUSTER_RETURN_LONG(c, REDIS_HASH);
+    } else if (strncmp(c->line_reply, "zset", 4)==0) {
+        CLUSTER_RETURN_LONG(c, REDIS_ZSET);
     } else {
         CLUSTER_RETURN_LONG(c, REDIS_NOT_FOUND); 
     }
@@ -1925,19 +1935,25 @@ PHPAPI void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 
     clusterFoldItem *fi = c->multi_head;
     while(fi) {
-        /* Set the slot where we should look for responses.  We don't allow
-         * failover inside a transaction, so it will be the master we have
-         * mapped. */
-        c->cmd_slot = fi->slot;
-        c->cmd_sock = SLOT_SOCK(c, fi->slot);
+        /* Make sure our transaction didn't fail here */
+        if (c->multi_len[fi->slot] > 0) {
+            /* Set the slot where we should look for responses.  We don't allow
+             * failover inside a transaction, so it will be the master we have
+             * mapped. */
+            c->cmd_slot = fi->slot;
+            c->cmd_sock = SLOT_SOCK(c, fi->slot);
 
-        if(cluster_check_response(c, &c->reply_type TSRMLS_CC)<0) {
-            zval_dtor(c->multi_resp);
-            efree(c->multi_resp);
-            RETURN_FALSE;
+            if(cluster_check_response(c, &c->reply_type TSRMLS_CC)<0) {
+                zval_dtor(c->multi_resp);
+                efree(c->multi_resp);
+                RETURN_FALSE;
+            }
+
+            fi->callback(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, fi->ctx);
+        } else {
+            /* Just add false */
+            add_next_index_bool(c->multi_resp, 0);
         }
-
-        fi->callback(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, fi->ctx);
         fi = fi->next;
     }
 

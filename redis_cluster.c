@@ -953,7 +953,7 @@ PHP_METHOD(RedisCluster, getset) {
 
 /* {{{ proto int RedisCluster::exists(string key) */
 PHP_METHOD(RedisCluster, exists) {
-    CLUSTER_PROCESS_KW_CMD("EXISTS", redis_key_cmd, cluster_long_resp, 1);
+    CLUSTER_PROCESS_KW_CMD("EXISTS", redis_key_cmd, cluster_1_resp, 1);
 }
 /* }}} */
 
@@ -1062,6 +1062,7 @@ PHP_METHOD(RedisCluster, spop) {
 /* {{{ proto string|array RedisCluster::srandmember(string key, [long count]) */
 PHP_METHOD(RedisCluster, srandmember) {
     redisCluster *c = GET_CONTEXT();
+    cluster_cb cb;
     char *cmd; int cmd_len; short slot;
     short have_count;
 
@@ -1083,12 +1084,31 @@ PHP_METHOD(RedisCluster, srandmember) {
     // Clean up command
     efree(cmd);
 
+    cb = have_count ? cluster_mbulk_resp : cluster_bulk_resp;
+    if (CLUSTER_IS_ATOMIC(c)) {
+        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        void *ctx = NULL;
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
+        RETURN_ZVAL(getThis(), 1, 0);
+    }
+
+/*
+ *    cb = withscores ? cluster_mbulk_zipdbl_resp : cluster_mbulk_resp;
+    if (CLUSTER_IS_ATOMIC(c)) {
+        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        void *ctx = NULL;
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
+        RETURN_ZVAL(getThis(), 1, 0);
+    }*/
+
     // Response type differs if we use WITHSCORES or not
-    if(have_count) {
+/*    if(have_count) {
         cluster_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
     } else {
         cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
-    }
+    }*/
 }
 
 /* {{{ proto string RedisCluster::strlen(string key) */
@@ -1490,7 +1510,7 @@ PHP_METHOD(RedisCluster, bitpos) {
 
 /* {{{ proto string Redis::lget(string key, long index) */
 PHP_METHOD(RedisCluster, lget) {
-    CLUSTER_PROCESS_KW_CMD("LGET", redis_key_long_cmd, cluster_bulk_resp, 1);
+    CLUSTER_PROCESS_KW_CMD("LINDEX", redis_key_long_cmd, cluster_bulk_resp, 1);
 }
 /* }}} */
 
@@ -1577,6 +1597,7 @@ static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
                                zrange_cb fun)
 {
     redisCluster *c = GET_CONTEXT();
+    cluster_cb cb;
     char *cmd; int cmd_len; short slot;
     int withscores;
 
@@ -1594,11 +1615,13 @@ static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
 
     efree(cmd);
 
-    // Response type differs if we use WITHSCORES or not
-    if(!withscores) {
-        cluster_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    cb = withscores ? cluster_mbulk_zipdbl_resp : cluster_mbulk_resp;
+    if (CLUSTER_IS_ATOMIC(c)) {
+        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
     } else {
-        cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+        void *ctx = NULL;
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
+        RETURN_ZVAL(getThis(), 1, 0);
     }
 }
 
@@ -2162,8 +2185,7 @@ PHP_METHOD(RedisCluster, exec) {
 
     // Verify we are in fact in multi mode
     if(CLUSTER_IS_ATOMIC(c)) {
-        php_error_docref(NULL TSRMLS_CC, E_WARNING, 
-            "RedisCluster is not in MULTI mode");
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "RedisCluster is not in MULTI mode");
         RETURN_FALSE;
     }
 
@@ -2173,7 +2195,7 @@ PHP_METHOD(RedisCluster, exec) {
         if(SLOT_SOCK(c, fi->slot)->mode == MULTI) {
             if(cluster_send_exec(c, fi->slot TSRMLS_CC)<0) {
                 cluster_abort_exec(c TSRMLS_CC);
-            
+
                 zend_throw_exception(redis_cluster_exception_ce,
                     "Error processing EXEC across the cluster",
                     0 TSRMLS_CC);
@@ -2204,8 +2226,7 @@ PHP_METHOD(RedisCluster, discard) {
     redisCluster *c = GET_CONTEXT();
 
     if(CLUSTER_IS_ATOMIC(c)) {
-        php_error_docref(NULL TSRMLS_CC, E_WARNING,
-            "Cluster is not in MULTI mode");
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Cluster is not in MULTI mode");
         RETURN_FALSE;
     }
     

@@ -203,6 +203,10 @@ typedef struct redisCluster {
     clusterFoldItem *multi_head;
     clusterFoldItem *multi_curr;
 
+    /* When we issue EXEC to nodes, we need to keep track of how many replies
+     * we have, as this can fail for various reasons (EXECABORT, watch, etc.) */
+    char multi_len[REDIS_CLUSTER_SLOTS];
+
     /* Variable to store MULTI response */
     zval *multi_resp;
 
