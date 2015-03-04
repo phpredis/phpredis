@@ -9,7 +9,11 @@ $sentinel = new RedisSentinel('127.0.0.1');
 
 var_dump($sentinel->connect());
 
-var_dump(count($sentinel->masters()));
+$masters = $sentinel->masters();
+
+var_dump(count($masters));
+
+assert(isset($masters[0]['name']));
 
 ?>
 --EXPECT--
