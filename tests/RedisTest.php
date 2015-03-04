@@ -670,6 +670,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->append('key', 'val2') === 8);
         $this->assertTrue($this->redis->get('key') === 'val1val2');
 
+        $this->redis->del('keyNotExist');
         $this->assertTrue($this->redis->append('keyNotExist', 'value') === 5);
         $this->assertTrue($this->redis->get('keyNotExist') === 'value');
 
@@ -757,8 +758,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testblockingPop() {
-
-    // non blocking blPop, brPop
+        // non blocking blPop, brPop
         $this->redis->del('list');
         $this->redis->lPush('list', 'val1');
         $this->redis->lPush('list', 'val2');
@@ -768,44 +768,13 @@ class Redis_Test extends TestSuite
         $this->redis->del('list');
         $this->redis->lPush('list', 'val1');
         $this->redis->lPush('list', 'val2');
-    $this->assertTrue($this->redis->brPop(array('list'), 1) === array('list', 'val1'));
-    $this->assertTrue($this->redis->brPop(array('list'), 1) === array('list', 'val2'));
+        $this->assertTrue($this->redis->brPop(array('list'), 1) === array('list', 'val1'));
+        $this->assertTrue($this->redis->brPop(array('list'), 1) === array('list', 'val2'));
 
-    // blocking blpop, brpop
+        // blocking blpop, brpop
         $this->redis->del('list');
-    $this->assertTrue($this->redis->blPop(array('list'), 1) === array());
-    $this->assertTrue($this->redis->brPop(array('list'), 1) === array());
-
-    // TODO: fix this broken test.
-//      $this->redis->del('list');
-//      $params = array(
-//          0 => array("pipe", "r"),
-//          1 => array("pipe", "w"),
-//          2 => array("file", "/dev/null", "w")
-//      );
-//      if(function_exists('proc_open')) {
-//          $env = array('PHPREDIS_key' =>'list', 'PHPREDIS_value' => 'value');
-//          $process = proc_open('php', $params, $pipes, '/tmp', $env);
-//
-//          if (is_resource($process)) {
-//              fwrite($pipes[0],  '<?php
-//  sleep(2);
-//  $r = new Redis;
-//  $r->connect("'.self::HOST.'", '.self::PORT.');
-//  if("'.addslashes(self::AUTH).'") {
-//      $r->auth("'.addslashes(self::AUTH).'");
-//  }
-//  $r->lPush($_ENV["PHPREDIS_key"], $_ENV["PHPREDIS_value"]);
-//  ?' . '>');
-//
-//              fclose($pipes[0]);
-//              fclose($pipes[1]);
-//              $re = proc_close($process);
-//
-//              $this->assertTrue($this->redis->blPop(array('list'), 5) === array("list", "value"));
-//          }
-//      }
-
+        $this->assertTrue($this->redis->blPop(array('list'), 1) === array());
+        $this->assertTrue($this->redis->brPop(array('list'), 1) === array());
     }
 
     public function testllen()

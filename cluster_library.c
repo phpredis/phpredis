@@ -1785,21 +1785,23 @@ PHPAPI void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 {
     zval *z_result;
 
-    // Verify our reply type byte is correct and that this isn't a NULL
-    // (e.g. -1 count) multi bulk response.
-    if(c->reply_type != TYPE_MULTIBULK || c->reply_len == -1) {
+    /* Return FALSE if we didn't get a multi-bulk response */
+    if (c->reply_type != TYPE_MULTIBULK) {
         CLUSTER_RETURN_FALSE(c);
     }
 
-    // Allocate array
+    /* Allocate our array */
     MAKE_STD_ZVAL(z_result);
     array_init(z_result);
 
-    // Call our specified callback
-    if(cb(c->cmd_sock, z_result, c->reply_len, ctx TSRMLS_CC)==FAILURE) {
-        zval_dtor(z_result);
-        FREE_ZVAL(z_result);
-        CLUSTER_RETURN_FALSE(c);
+    /* Consume replies as long as there are more than zero */
+    if (c->reply_len > 0) {
+        /* Call our specified callback */
+        if (cb(c->cmd_sock, z_result, c->reply_len, ctx TSRMLS_CC)==FAILURE) {
+            zval_dtor(z_result);
+            FREE_ZVAL(z_result);
+            CLUSTER_RETURN_FALSE(c);
+        }
     }
     
     // Success, make this array our return value
