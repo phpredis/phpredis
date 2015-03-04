@@ -670,7 +670,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     efree(z_args);
 
     /* MGET is readonly, DEL is not */
-    c->readonly = kw_len == 3 && CLUSTER_IS_ATOMIC(c);
+    c->readonly = kw_len == 4 && CLUSTER_IS_ATOMIC(c);
 
     // Initialize our "multi" command handler with command/len
     CLUSTER_MULTI_INIT(mc, kw, kw_len);
