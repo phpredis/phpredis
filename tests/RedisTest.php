@@ -4247,7 +4247,7 @@ class Redis_Test extends TestSuite
         $this->redis->set('{eval-key}-str2', 'hello again!');
 
         // Use a script to return our list, and verify its response
-/*        $list = $this->redis->eval("return redis.call('lrange', KEYS[1], 0, -1)", Array('{eval-key}-list'), 1);
+        $list = $this->redis->eval("return redis.call('lrange', KEYS[1], 0, -1)", Array('{eval-key}-list'), 1);
         $this->assertTrue($list === Array('a','b','c'));
 
         // Use a script to return our set
@@ -4259,7 +4259,7 @@ class Redis_Test extends TestSuite
         $empty_resp = $this->redis->eval("return redis.call('lrange', '{eval-key}-nolist', 0, -1)",
             Array('{eval-key}-nolist'), 1);
         $this->assertTrue(is_array($empty_resp) && empty($empty_resp));
- */
+
         // Now test a nested reply
         $nested_script = "
             return {
@@ -4286,11 +4286,11 @@ class Redis_Test extends TestSuite
                 )
             )
         );
-/*
+
         // Now run our script, and check our values against each other
         $eval_result = $this->redis->eval($nested_script, Array('{eval-key}-str1', '{eval-key}-str2', '{eval-key}-set', '{eval-key}-list'), 4);
         $this->assertTrue(is_array($eval_result) && count($this->array_diff_recursive($eval_result, $expected)) == 0);
- */
+
         /*
          * Nested reply wihin a multi/pipeline block
          */
@@ -4307,16 +4307,7 @@ class Redis_Test extends TestSuite
             }
             $replies = $this->redis->exec();
 
-var_dump($replies); die();
-
             foreach($replies as $reply) {
-                echo "--expected---\n";
-                var_dump($expected);
-                echo "---reply---\n";
-                var_dump($reply);
-                var_dump($this->array_diff_recursive($reply, $expected));
-                die();
-
                 $this->assertTrue(is_array($reply) && count($this->array_diff_recursive($reply, $expected)) == 0);
             }
         }
