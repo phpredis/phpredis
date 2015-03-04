@@ -1788,10 +1788,7 @@ PHPAPI void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                 add_next_index_stringl(c->multi_resp, r->str, r->len, 0);
                 break;
             case TYPE_MULTIBULK:
-                MAKE_STD_ZVAL(z_arr);
-                array_init(z_arr);
-                cluster_mbulk_variant_resp(r, z_arr);
-                add_next_index_zval(c->multi_resp, z_arr);
+                cluster_mbulk_variant_resp(r, c->multi_resp);
                 break;
             default:
                 add_next_index_bool(c->multi_resp, 0);
