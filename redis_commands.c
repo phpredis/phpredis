@@ -1895,7 +1895,10 @@ int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_cmd_init_sstr(&cmdstr, 1, "PFCOUNT", sizeof("PFCOUNT")-1);
         key_free = redis_key_prefix(redis_sock, &key, &key_len);
         redis_cmd_append_sstr(&cmdstr, key, key_len);
-        
+
+        /* Hash our key */
+        CMD_SET_SLOT(slot, key, key_len);
+
         /* Cleanup */
         if (key_free) efree(key);
         if (z_tmp) {
