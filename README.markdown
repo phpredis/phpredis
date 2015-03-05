@@ -3061,7 +3061,7 @@ $redis->rpush('mylist','a');
 $redis->rpush('mylist','b');
 $redis->rpush('mylist','c');
 // Nested response:  Array(1,2,3,Array('a','b','c'));
-$redis->eval("return {1,2,3,redis.call('lrange','mylist',0,-1)}}");
+$redis->eval("return {1,2,3,redis.call('lrange','mylist',0,-1)}");
 ~~~
 
 ### evalSha
