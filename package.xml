@@ -21,10 +21,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>michael.grunder@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2014-03-15</date>
+ <date>2015-03-03</date>
  <version>
-  <release>2.2.5</release>
-  <api>2.2.5</api>
+  <release>2.2.7</release>
+  <api>2.2.7</api>
  </version>
  <stability>
   <release>stable</release>
@@ -32,26 +32,32 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 2.2.5
+    phpredis 2.2.7
     
-    This is a minor release with several bug fixes as well as additions to support
-    new commands that have been introduced to Redis since our last release.
+    -- Improvements ---
     
-    A special thanks to everyone who helps the project by commenting on issues and
-    submitting pull requests!  :)
-    
-    [NEW] Support for the BITPOS command
-    [NEW] Connection timeout option for RedisArray (@MikeToString)
-    [NEW] A _serialize method, to complement our existing _unserialize method
-    [NEW] Support for the PUBSUB command
-    [NEW] Support for SCAN, SSCAN, HSCAN, and ZSCAN
-    [NEW] Support for the WAIT command
-    
-    [FIX] Handle the COPY and REPLACE arguments for the MIGRATE command
-    
-    [DOC] Fix syntax error in documentation for the SET command (@mithunsatheesh)
-    [DOC] Homebrew documentation instructions (@mathias)
- </notes>
+    * Implemented PFADD, PFMERGE, and PFCOUNT command handling
+    * Implemented ZRANGEBYLEX command (holding off on ZREVRANGEBYLEX
+      as that won't be out until 3.0)
+    * Implemented getMode() so clients can detect whether we're in
+      ATOMIC/MULTI/PIPELINE mode.
+    * Implemented rawCommand() so clients can send arbitrary things to
+      the redis server
+    * Implemented DEBUG OBJECT (@michael-grunder, @isage)
+    * Added/abide by connect timeout for RedisArray
+    * Select to the last selected DB when phpredis reconnects
+
+    -- Fixes ---
+
+    * Fix a possible invalid free in _serialize
+    * Added SAVE and BGSAVE to "distributable" commands for RedisArray
+    * @welting -- Fixed invalid "argc" calculation re HLL commands
+    * Allow clients to break out of the subscribe loop and return context.
+    * Fixes a memory leak in SCAN when OPT_SCAN_RETRY id.
+    * @remicollet -- Fix possible segfault when igbinary is enabled.
+    * Add a couple of cases where we throw on an error (LOADING/NOAUTH/MASTERDOWN)
+    * Fix several issues with serialization NARY
+    * @itcom -- Fix missing TSRMLS_CC and a TSRMLS_DC/TSRMLS_CC typo</notes>
  <contents>
   <dir name="/">
    <file role='doc' name='README.markdown'/>
@@ -95,6 +101,39 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>redis</providesextension>
  <extsrcrelease/>
  <changelog>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>2.2.7</release><api>2.2.7</api></version>
+   <date>2015-03-03</date>
+   <notes>
+      phpredis 2.2.7
+
+       -- Improvements ---
+
+       * Implemented PFADD, PFMERGE, and PFCOUNT command handling
+       * Implemented ZRANGEBYLEX command (holding off on ZREVRANGEBYLEX
+         as that won't be out until 3.0)
+       * Implemented getMode() so clients can detect whether we're in
+         ATOMIC/MULTI/PIPELINE mode.
+       * Implemented rawCommand() so clients can send arbitrary things to
+         the redis server
+       * Implemented DEBUG OBJECT (@michael-grunder, @isage)
+       * Added/abide by connect timeout for RedisArray
+       * Select to the last selected DB when phpredis reconnects
+
+       -- Fixes ---
+
+       * Fix a possible invalid free in _serialize
+       * Added SAVE and BGSAVE to "distributable" commands for RedisArray
+       * @welting -- Fixed invalid "argc" calculation re HLL commands
+       * Allow clients to break out of the subscribe loop and return context.
+       * Fixes a memory leak in SCAN when OPT_SCAN_RETRY id.
+       * @remicollet -- Fix possible segfault when igbinary is enabled.
+       * Add a couple of cases where we throw on an error (LOADING/NOAUTH/MASTERDOWN)
+       * Fix several issues with serialization NARY
+       * @itcom -- Fix missing TSRMLS_CC and a TSRMLS_DC/TSRMLS_CC typo
+   </notes>
+   </release>
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>2.2.5</release><api>2.2.5</api></version>
