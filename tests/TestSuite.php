@@ -117,7 +117,7 @@ class TestSuite {
             echo self::make_bold($str_out_name);
 
             $count = count($className::$errors);
-            $rt = new $className;
+            $rt = new $className();
             try {
                 $rt->setUp();
                 $rt->$name();
@@ -145,7 +145,7 @@ class TestSuite {
         echo implode('', $className::$warnings);
 
         if(empty($className::$errors)) {
-            echo "\nAll tests passed. \o/\n";
+            echo "All tests passed. \o/\n";
             return 0;
         }
 

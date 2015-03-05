@@ -461,6 +461,7 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
             efree(out);
             return NULL;
         }
+        efree(out);
     } else {
         /* hash */
         hash = rcrc32(out, out_len);
@@ -1019,7 +1020,6 @@ ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to, long ttl 
 
 static zend_bool
 ra_move_hash(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
-
 	zval z_fun_hgetall, z_fun_hmset, z_ret, z_ret_dest, *z_args[2];
 
 	/* run HGETALL on source */
@@ -1266,7 +1266,6 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 
 void
 ra_rehash(RedisArray *ra, zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache TSRMLS_DC) {
-
 	int i;
 
 	/* redistribute the data, server by server. */
