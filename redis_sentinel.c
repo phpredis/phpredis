@@ -58,7 +58,7 @@ ZEND_BEGIN_ARG_INFO(arginfo_redis_sentinel_slaves, 0)
 ZEND_ARG_INFO(0, name)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(arginfo_redis_sentinel_get_master_adr_by_name, 0)
+ZEND_BEGIN_ARG_INFO(arginfo_redis_sentinel_get_master_addr_by_name, 0)
 ZEND_ARG_INFO(0, name)
 ZEND_END_ARG_INFO()
 
@@ -70,7 +70,7 @@ ZEND_BEGIN_ARG_INFO(arginfo_redis_sentinel_failover, 0)
 ZEND_ARG_INFO(0, name)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(arginfo_redis_sentinel_get_master, 0)
+ZEND_BEGIN_ARG_INFO(arginfo_redis_sentinel_get_master_addr, 0)
 ZEND_END_ARG_INFO()
 
 zend_function_entry redis_sentinel_functions[] = {
@@ -81,10 +81,10 @@ zend_function_entry redis_sentinel_functions[] = {
     PHP_ME(RedisSentinel, masters,              arginfo_redis_sentinel_masters, ZEND_ACC_PUBLIC)
     PHP_ME(RedisSentinel, master,               arginfo_redis_sentinel_master, ZEND_ACC_PUBLIC)
     PHP_ME(RedisSentinel, slaves,               arginfo_redis_sentinel_slaves, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisSentinel, getMasterAddrByName,  arginfo_redis_sentinel_get_master_adr_by_name, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisSentinel, getMasterAddrByName,  arginfo_redis_sentinel_get_master_addr_by_name, ZEND_ACC_PUBLIC)
     PHP_ME(RedisSentinel, reset,                arginfo_redis_sentinel_reset, ZEND_ACC_PUBLIC)
     PHP_ME(RedisSentinel, failover,             arginfo_redis_sentinel_failover, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisSentinel, getMaster,            arginfo_redis_sentinel_get_master, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisSentinel, getMasterAddr,        arginfo_redis_sentinel_get_master_addr, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 
@@ -426,7 +426,7 @@ PHP_METHOD(RedisSentinel, getMasterAddrByName)
 }
 /* }}} */
 
-/* {{{ proto boolean RedisSentinel::reset(string pattern)
+/* {{{ proto integer RedisSentinel::reset(string pattern)
  */
 PHP_METHOD(RedisSentinel, reset)
 {
@@ -500,9 +500,9 @@ PHP_METHOD(RedisSentinel, failover)
 }
 /* }}} */
 
-/* {{{ proto array RedisSentinel::getMaster()
+/* {{{ proto array RedisSentinel::getMasterAddr()
  */
-PHP_METHOD(RedisSentinel, getMaster)
+PHP_METHOD(RedisSentinel, getMasterAddr)
 {
     if (zend_parse_parameters_none() == FAILURE) {
         return;
@@ -518,7 +518,9 @@ PHP_METHOD(RedisSentinel, getMaster)
     MAKE_STD_ZVAL(masters);
 
     zval **flags;
-    zval **name;
+    //zval **name;
+    zval **ip;
+    zval **port;
 
     if (call_user_function(
         &redis_sentinel_ce->function_table,
@@ -541,13 +543,12 @@ PHP_METHOD(RedisSentinel, getMaster)
                  zend_hash_get_current_data(Z_ARRVAL_P(masters), (void **) &master_info) == SUCCESS;
                  zend_hash_move_forward(Z_ARRVAL_P(masters))
             ) {
-                if (zend_hash_find(Z_ARRVAL_PP(master_info), ZEND_STRS("name"), (void **)&name) == SUCCESS) {
-
-                    php_printf("name => %s\n", Z_STRVAL_PP(name));
-                }
+                /*if (zend_hash_find(Z_ARRVAL_PP(master_info), ZEND_STRS("name"), (void **)&name) == FAILURE) {
+                    continue;
+                }*/
 
                 if (zend_hash_find(Z_ARRVAL_PP(master_info), ZEND_STRS("flags"), (void **)&flags) == SUCCESS) {
-                    php_printf("flags => %s\n", Z_STRVAL_PP(flags));
+
                     zval result;
 
                     zval *is_master;
@@ -556,16 +557,34 @@ PHP_METHOD(RedisSentinel, getMaster)
 
                     if (string_compare_function(&result, *flags, is_master TSRMLS_CC) == FAILURE) {
                         zval_ptr_dtor(&is_master);
-                        zval_ptr_dtor(&masters);
-                        zval_ptr_dtor(&fun_masters);
-                        RETURN_FALSE;
+                        continue;
                     }
 
                     zval_ptr_dtor(&is_master);
 
-                    if ((Z_TYPE(result) == IS_DOUBLE && Z_DVAL(result) == 0.0) || (Z_TYPE(result) == IS_LONG && Z_LVAL(result) == 0)) {
 
-                        zval *fun_get_addr;
+                    if (
+                        (Z_TYPE(result) == IS_DOUBLE && Z_DVAL(result) == 0.0) ||
+                        (Z_TYPE(result) == IS_LONG && Z_LVAL(result) == 0)
+                    ) {
+
+                        if (zend_hash_find(Z_ARRVAL_PP(master_info), ZEND_STRS("ip"), (void **)&ip) == FAILURE) {
+                            continue;
+                        }
+
+                        if (zend_hash_find(Z_ARRVAL_PP(master_info), ZEND_STRS("port"), (void **)&port) == FAILURE) {
+                            continue;
+                        }
+
+                        array_init(return_value);
+                        add_next_index_stringl(return_value, Z_STRVAL_PP(ip), Z_STRLEN_PP(ip), 1);
+                        add_next_index_stringl(return_value, Z_STRVAL_PP(port), Z_STRLEN_PP(port), 1);
+
+                        zval_ptr_dtor(&fun_masters);
+                        zval_ptr_dtor(&masters);
+                        return;
+
+                        /*zval *fun_get_addr;
                         MAKE_STD_ZVAL(fun_get_addr);
                         ZVAL_STRING(fun_get_addr, "getMasterAddrByName", 1);
 
@@ -589,7 +608,7 @@ PHP_METHOD(RedisSentinel, getMaster)
                         }
 
                         zval_ptr_dtor(&master);
-                        zval_ptr_dtor(&fun_get_addr);
+                        zval_ptr_dtor(&fun_get_addr);*/
                     }
 
                 }
