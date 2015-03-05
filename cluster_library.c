@@ -320,6 +320,8 @@ PHPAPI int cluster_send_exec(redisCluster *c, short slot TSRMLS_DC) {
      * this node, or -1 in the case of EXECABORT or WATCH failure. */
     c->multi_len[slot] = c->reply_len > 0 ? 1 : -1;
 
+    /* Return our retval */
+    return retval;
 }
 
 PHPAPI int cluster_send_discard(redisCluster *c, short slot TSRMLS_DC) {
@@ -1962,7 +1964,7 @@ PHPAPI void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     clusterFoldItem *fi = c->multi_head;
     while(fi) {
         /* Make sure our transaction didn't fail here */
-        if (c->multi_len[fi->slot] > 0) {
+        if (c->multi_len[fi->slot] > -1) {
             /* Set the slot where we should look for responses.  We don't allow
              * failover inside a transaction, so it will be the master we have
              * mapped. */
@@ -2193,13 +2195,12 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
     char *line;
     int line_len;
 
-    // Iterate over the lines we have to process
+    /* Iterate over the lines we have to process */
     while(count--) {
-        // Read the line
+        /* Read our line */
         line = redis_sock_read(redis_sock, &line_len TSRMLS_CC);
-        if(line == NULL) return FAILURE;
-
-        if(line_len > 0) {
+        
+        if (line != NULL) {
             zval *z = NULL;
             if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
                 add_next_index_zval(z_result, z);
@@ -2208,8 +2209,8 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
                 add_next_index_stringl(z_result, line, line_len, 0);
             }
         } else {
-            efree(line);
-            add_next_index_null(z_result);
+            if (line) efree(line);
+            add_next_index_bool(z_result, 0);
         }
     }
 
