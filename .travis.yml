@@ -6,9 +6,8 @@ php:
     - 5.6
 env:
     - REPORT_EXIT_STATUS=1 NO_INTERACTION=1 TESTS="--show-all"
-before_install:
-    - sudo apt-get update -qq
-    - sudo apt-get install -y redis-server
+services:
+    - redis-server
 before_script:
     - wget download.redis.io/redis-stable/sentinel.conf
     - redis-sentinel sentinel.conf > /dev/null &
