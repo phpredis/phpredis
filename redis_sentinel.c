@@ -70,9 +70,6 @@ ZEND_BEGIN_ARG_INFO(arginfo_redis_sentinel_failover, 0)
 ZEND_ARG_INFO(0, name)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(arginfo_redis_sentinel_get_master_addr, 0)
-ZEND_END_ARG_INFO()
-
 zend_function_entry redis_sentinel_functions[] = {
     PHP_ME(RedisSentinel, __construct,          arginfo_redis_sentinel_construct, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
     PHP_ME(RedisSentinel, __destruct,           arginfo_redis_sentinel_destruct, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
@@ -84,7 +81,6 @@ zend_function_entry redis_sentinel_functions[] = {
     PHP_ME(RedisSentinel, getMasterAddrByName,  arginfo_redis_sentinel_get_master_addr_by_name, ZEND_ACC_PUBLIC)
     PHP_ME(RedisSentinel, reset,                arginfo_redis_sentinel_reset, ZEND_ACC_PUBLIC)
     PHP_ME(RedisSentinel, failover,             arginfo_redis_sentinel_failover, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisSentinel, getMasterAddr,        arginfo_redis_sentinel_get_master_addr, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 
@@ -505,103 +501,5 @@ PHP_METHOD(RedisSentinel, failover)
         redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
     REDIS_PROCESS_RESPONSE(redis_boolean_response);
-}
-/* }}} */
-
-
-/* {{{ proto array RedisSentinel::getMasterAddr()
- */
-PHP_METHOD(RedisSentinel, getMasterAddr)
-{
-    if (zend_parse_parameters_none() == FAILURE) {
-        return;
-    }
-
-    zval *fun_masters;
-    MAKE_STD_ZVAL(fun_masters);
-    ZVAL_STRING(fun_masters, "masters", 1);
-
-    zval **master_info;
-
-    zval *masters;
-    MAKE_STD_ZVAL(masters);
-
-    zval **flags;
-    zval **ip;
-    zval **port;
-
-    if (call_user_function(
-        &redis_sentinel_ce->function_table,
-        &getThis(),
-        fun_masters,
-        masters,
-        0,
-        NULL TSRMLS_CC
-    ) == SUCCESS) {
-
-        if (Z_TYPE_P(masters) == IS_ARRAY) {
-
-            if (zend_hash_num_elements(Z_ARRVAL_P(masters)) <= 0) {
-                zval_ptr_dtor(&fun_masters);
-                zend_throw_exception(redis_exception_ce, "All masters are unreachable", 0 TSRMLS_CC);
-                RETURN_FALSE;
-            }
-
-            for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(masters));
-                 zend_hash_get_current_data(Z_ARRVAL_P(masters), (void **) &master_info) == SUCCESS;
-                 zend_hash_move_forward(Z_ARRVAL_P(masters))
-            ) {
-
-                if (zend_hash_find(Z_ARRVAL_PP(master_info), ZEND_STRS("flags"), (void **)&flags) == SUCCESS) {
-
-                    zval result;
-
-                    zval *is_master;
-                    MAKE_STD_ZVAL(is_master);
-                    ZVAL_STRING(is_master, "master", 1);
-
-                    if (string_compare_function(&result, *flags, is_master TSRMLS_CC) == FAILURE) {
-                        zval_ptr_dtor(&is_master);
-                        continue;
-                    }
-
-                    zval_ptr_dtor(&is_master);
-
-
-                    if (
-                        (Z_TYPE(result) == IS_DOUBLE && Z_DVAL(result) == 0.0) ||
-                        (Z_TYPE(result) == IS_LONG && Z_LVAL(result) == 0)
-                    ) {
-
-                        if (zend_hash_find(Z_ARRVAL_PP(master_info), ZEND_STRS("ip"), (void **)&ip) == FAILURE) {
-                            continue;
-                        }
-
-                        if (zend_hash_find(Z_ARRVAL_PP(master_info), ZEND_STRS("port"), (void **)&port) == FAILURE) {
-                            continue;
-                        }
-
-                        array_init(return_value);
-                        add_next_index_stringl(return_value, Z_STRVAL_PP(ip), Z_STRLEN_PP(ip), 1);
-                        add_next_index_stringl(return_value, Z_STRVAL_PP(port), Z_STRLEN_PP(port), 1);
-
-                        zval_ptr_dtor(&fun_masters);
-                        zval_ptr_dtor(&masters);
-                        return;
-                    }
-
-                }
-            }
-
-        }
-
-    }
-
-
-    zval_ptr_dtor(&fun_masters);
-    zval_ptr_dtor(&masters);
-
-    zend_throw_exception(redis_exception_ce, "All masters are unreachable", 0 TSRMLS_CC);
-    RETURN_FALSE;
 }
 /* }}} */

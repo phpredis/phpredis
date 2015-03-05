@@ -11,6 +11,6 @@
 PHP_METHOD(RedisMasterDiscovery, __construct);
 PHP_METHOD(RedisMasterDiscovery, addSentinel);
 PHP_METHOD(RedisMasterDiscovery, getSentinels);
-PHP_METHOD(RedisMasterDiscovery, getMasterAddr);
+PHP_METHOD(RedisMasterDiscovery, getMasterAddrByName);
 
 #endif

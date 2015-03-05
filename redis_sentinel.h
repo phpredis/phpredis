@@ -18,6 +18,5 @@ PHP_METHOD(RedisSentinel, slaves);
 PHP_METHOD(RedisSentinel, getMasterAddrByName);
 PHP_METHOD(RedisSentinel, reset);
 PHP_METHOD(RedisSentinel, failover);
-PHP_METHOD(RedisSentinel, getMasterAddr);
 
 #endif

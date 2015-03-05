@@ -1,5 +1,5 @@
 --TEST--
-Test RedisMasterDiscovery::getMasterAddr without sentinels
+Test RedisMasterDiscovery::getMasterAddrByName without sentinels
 --SKIPIF--
 <?php if (!extension_loaded("redis")) print "skip"; ?>
 --FILE--
@@ -8,7 +8,7 @@ Test RedisMasterDiscovery::getMasterAddr without sentinels
 $masterDiscovery = new RedisMasterDiscovery();
 
 try {
-    $masterDiscovery->getMasterAddr();
+    $masterDiscovery->getMasterAddrByName('mymaster');
 } catch (RedisException $ex) {
     var_dump($ex->getMessage());
 }

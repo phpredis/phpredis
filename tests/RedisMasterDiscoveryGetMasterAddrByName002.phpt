@@ -1,5 +1,5 @@
 --TEST--
-Test RedisMasterDiscovery::getMasterAddr with first sentinel disconnected
+Test RedisMasterDiscovery::getMasterAddrByName with first sentinel disconnected
 --SKIPIF--
 <?php if (!extension_loaded("redis")) print "skip"; ?>
 --FILE--
@@ -10,7 +10,7 @@ $masterDiscovery = new RedisMasterDiscovery();
 $masterDiscovery->addSentinel(new RedisSentinel('192.168.50.41', 26379));
 $masterDiscovery->addSentinel(new RedisSentinel('127.0.0.1', 26379));
 
-var_dump($masterDiscovery->getMasterAddr());
+var_dump($masterDiscovery->getMasterAddrByName('mymaster'));
 
 ?>
 --EXPECT--
