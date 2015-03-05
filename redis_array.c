@@ -403,7 +403,10 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
 		/* check if we have an error. */
 		if(RA_CALL_FAILED(return_value,cmd) && ra->prev && !b_write_cmd) { /* there was an error reading, try with prev ring. */
-			/* ERROR, FALLBACK TO PREVIOUS RING and forward a reference to the first redis instance we were looking at. */
+            /* Free previous return value */
+            zval_dtor(return_value);
+
+            /* ERROR, FALLBACK TO PREVIOUS RING and forward a reference to the first redis instance we were looking at. */
 			ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra->prev, cmd, cmd_len, z_args, z_new_target?z_new_target:redis_inst);
 		}
 
@@ -956,7 +959,7 @@ PHP_METHOD(RedisArray, mget)
 
 		    if(pos[i] != n) continue;
 
-			zend_hash_quick_find(Z_ARRVAL_P(z_ret), NULL, 0, j, (void**)&z_cur);
+			zend_hash_index_find(Z_ARRVAL_P(z_ret), j, (void**)&z_cur);
 			j++;
 
 			MAKE_STD_ZVAL(z_tmp);
@@ -971,7 +974,7 @@ PHP_METHOD(RedisArray, mget)
 
 	/* copy temp array in the right order to return_value */
 	for(i = 0; i < argc; ++i) {
-		zend_hash_quick_find(Z_ARRVAL_P(z_tmp_array), NULL, 0, i, (void**)&z_cur);
+		zend_hash_index_find(Z_ARRVAL_P(z_tmp_array), i, (void**)&z_cur);
 
 		MAKE_STD_ZVAL(z_tmp);
 		*z_tmp = **z_cur;
