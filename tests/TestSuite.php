@@ -145,7 +145,7 @@ class TestSuite {
         echo implode('', $className::$warnings);
 
         if(empty($className::$errors)) {
-            echo "All tests passed. \o/\n";
+            echo "\nAll tests passed. \o/\n";
             return 0;
         }
 

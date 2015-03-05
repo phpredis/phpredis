@@ -137,11 +137,17 @@ class Redis_Cluster_Test extends Redis_Test {
         $c1 = '{pubsub}-' . rand(1,100);
         $c2 = '{pubsub}-' . rand(1,100);
 
-        $result = $this->redis->pubsub("{pubsub}", "numsub", Array($c1, $c2));
+        $result = $this->redis->pubsub("{pubsub}", "numsub", $c1, $c2);
 
         // Should get an array back, with two elements
         $this->assertTrue(is_array($result));
-        $this->assertEquals(count($result), 2);
+        $this->assertEquals(count($result), 4);
+
+        $arr_zipped = Array();
+        for ($i = 0; $i <= count($result) / 2; $i+=2) {
+            $arr_zipped[$result[$i]] = $result[$i+1];
+        }
+        $result = $arr_zipped;
 
         // Make sure the elements are correct, and have zero counts
         foreach(Array($c1,$c2) as $channel) {
@@ -153,9 +159,8 @@ class Redis_Cluster_Test extends Redis_Test {
         $result = $this->redis->pubsub("somekey", "numpat");
         $this->assertTrue(is_int($result));
 
-        // Invalid calls
+        // Invalid call
         $this->assertFalse($this->redis->pubsub("somekey", "notacommand"));
-        $this->assertFalse($this->redis->pubsub("somekey", "numsub", "not-an-array"));
     }
 
     /* Unlike Redis proper, MsetNX won't always totally fail if all keys can't
@@ -198,6 +203,83 @@ class Redis_Cluster_Test extends Redis_Test {
                 $this->assertTrue(strpos($k, 'cmdstat_') !== false);
             }
         }
+    }
+
+    /* RedisCluster will always respond with an array, even if transactions
+     * failed, because the commands could be coming from multiple nodes */
+    public function testFailedTransactions() {
+        $this->redis->set('x', 42);
+
+        // failed transaction
+        $this->redis->watch('x');
+
+        $r = $this->newInstance(); // new instance, modifying `x'.
+        $r->incr('x');
+
+        $ret = $this->redis->multi()->get('x')->exec();
+        $this->assertTrue($ret === Array(FALSE)); // failed because another client changed our watched key between WATCH and EXEC.
+
+        // watch and unwatch
+        $this->redis->watch('x');
+        $r->incr('x'); // other instance
+        $this->redis->unwatch('x'); // cancel transaction watch
+
+        $ret = $this->redis->multi()->get('x')->exec();
+        $this->assertTrue($ret === array('44')); // succeeded since we've cancel the WATCH command.
+    }
+
+    /* RedisCluster::script() is a 'raw' command, which requires a key such that
+     * we can direct it to a given node */
+    public function testScript() {
+        $str_key = uniqid() . '-' . rand(1,1000);
+
+        // Flush any scripts we have
+        $this->assertTrue($this->redis->script($str_key, 'flush'));
+
+        // Silly scripts to test against
+        $s1_src = 'return 1';
+        $s1_sha = sha1($s1_src);
+        $s2_src = 'return 2';
+        $s2_sha = sha1($s2_src);
+        $s3_src = 'return 3';
+        $s3_sha = sha1($s3_src);
+
+        // None should exist
+        $result = $this->redis->script($str_key, 'exists', $s1_sha, $s2_sha, $s3_sha);
+        $this->assertTrue(is_array($result) && count($result) == 3);
+        $this->assertTrue(is_array($result) && count(array_filter($result)) == 0);
+
+        // Load them up
+        $this->assertTrue($this->redis->script($str_key, 'load', $s1_src) == $s1_sha);
+        $this->assertTrue($this->redis->script($str_key, 'load', $s2_src) == $s2_sha);
+        $this->assertTrue($this->redis->script($str_key, 'load', $s3_src) == $s3_sha);
+
+        // They should all exist
+        $result = $this->redis->script($str_key, 'exists', $s1_sha, $s2_sha, $s3_sha);
+        $this->assertTrue(is_array($result) && count(array_filter($result)) == 3);
+    }
+
+    /* RedisCluster::EVALSHA needs a 'key' to let us know which node we want to
+     * direct the command at */
+    public function testEvalSHA() {
+        $str_key = uniqid() . '-' . rand(1,1000);
+
+        // Flush any loaded scripts
+        $this->redis->script($str_key, 'flush');
+
+        // Non existant script (but proper sha1), and a random (not) sha1 string
+        $this->assertFalse($this->redis->evalsha(sha1(uniqid()),Array($str_key), 1));
+        $this->assertFalse($this->redis->evalsha('some-random-data'),Array($str_key), 1);
+
+        // Load a script
+        $cb  = uniqid(); // To ensure the script is new
+        $scr = "local cb='$cb' return 1";
+        $sha = sha1($scr);
+
+        // Run it when it doesn't exist, run it with eval, and then run it with sha1
+        $this->assertTrue(false === $this->redis->evalsha($scr,Array($str_key), 1));
+        $this->assertTrue(1 === $this->redis->eval($scr,Array($str_key), 1));
+        $this->assertTrue(1 === $this->redis->evalsha($sha,Array($str_key), 1));
     }
 }
 ?>
