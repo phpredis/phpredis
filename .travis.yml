@@ -10,7 +10,7 @@ services:
     - redis-server
 before_script:
     - wget download.redis.io/redis-stable/sentinel.conf
-    - redis-sentinel sentinel.conf > /dev/null &
+    - redis-server sentinel.conf --sentinel > /dev/null &
     - phpize && ./configure && make
 script:
     - make test | tee test-output.txt && grep 'TEST SUMMARY$' test-output.txt > /dev/null ; test $? '!=' 0
