@@ -2410,7 +2410,11 @@ class Redis_Test extends TestSuite
 
         // successful transaction
         $this->assertTrue($ret === array('42'));
+    }
 
+    public function testFailedTransactions() {
+        $this->redis->set('x', 42);
+    
         // failed transaction
         $this->redis->watch('x');
 
@@ -2418,7 +2422,6 @@ class Redis_Test extends TestSuite
         $r->incr('x');
 
         $ret = $this->redis->multi()->get('x')->exec();
-     
         $this->assertTrue($ret === FALSE); // failed because another client changed our watched key between WATCH and EXEC.
 
         // watch and unwatch
@@ -2427,6 +2430,7 @@ class Redis_Test extends TestSuite
         $this->redis->unwatch(); // cancel transaction watch
 
         $ret = $this->redis->multi()->get('x')->exec();
+
         $this->assertTrue($ret === array('44')); // succeeded since we've cancel the WATCH command.
     }
 
@@ -3872,7 +3876,6 @@ class Redis_Test extends TestSuite
     }
 
     public function testSerializerPHP() {
-
         $this->checkSerializer(Redis::SERIALIZER_PHP);
 
         // with prefix
@@ -3882,7 +3885,6 @@ class Redis_Test extends TestSuite
     }
 
     public function testSerializerIGBinary() {
-
         if(defined('Redis::SERIALIZER_IGBINARY')) {
             $this->checkSerializer(Redis::SERIALIZER_IGBINARY);
 
@@ -4074,6 +4076,7 @@ class Redis_Test extends TestSuite
         $this->redis->set('b', FALSE);
         $this->redis->set('c', 42);
         $this->redis->set('d', array('x' => 'y'));
+
         $this->assertTrue(array(NULL, FALSE, 42, array('x' => 'y')) === $this->redis->mGet(array('a', 'b', 'c', 'd')));
 
         // pipeline
@@ -4142,18 +4145,10 @@ class Redis_Test extends TestSuite
         // We shouldn't have any errors now
         $this->assertTrue($this->redis->getLastError() === NULL);
 
-        // Throw some invalid lua at redis
-        $this->redis->eval("not-a-lua-script");
-
-        // Now we should have an error
-        $evalError = $this->redis->getLastError();
-        $this->assertTrue(strlen($evalError) > 0);
-
         // test getLastError with a regular command
         $this->redis->set('x', 'a');
         $this->assertFalse($this->redis->incr('x'));
         $incrError = $this->redis->getLastError();
-        $this->assertTrue($incrError !== $evalError); // error has changed
         $this->assertTrue(strlen($incrError) > 0);
 
         // clear error
@@ -4339,7 +4334,6 @@ class Redis_Test extends TestSuite
     }
 
     public function testEvalSHA() {
-
         if (version_compare($this->version, "2.5.0", "lt")) {
             $this->markTestSkipped();
         }

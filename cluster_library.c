@@ -948,7 +948,7 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
             return 1;
         } else {
             // Capture the error string Redis returned
-            cluster_set_err(c, inbuf, strlen(inbuf)-1);
+            cluster_set_err(c, inbuf, strlen(inbuf)-2);
             return 0;
         }
     }
@@ -1999,6 +1999,7 @@ PHPAPI void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS,
 
     /* Protect against an invalid response type, -1 response length, and failure
      * to consume the responses. */
+    c->cmd_sock->serializer = c->flags->serializer;
     short fail = c->reply_type != TYPE_MULTIBULK || c->reply_len == -1 ||
         mbulk_resp_loop(c->cmd_sock, mctx->z_multi, c->reply_len, NULL TSRMLS_CC)==FAILURE;
 
@@ -2224,7 +2225,6 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
     char *line, *key;
     int line_len, key_len;
     long long idx=0;
-    zval *z = NULL;
 
     // Our count wil need to be divisible by 2
     if(count % 2 != 0) {
@@ -2242,9 +2242,11 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
             key = line;
             key_len = line_len;
         } else {
-            // Attempt unserialization, add value
+            /* Attempt serialization */
+            zval *z = NULL;
             if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
                 add_assoc_zval(z_result, key, z);
+                efree(line);
             } else {
                 add_assoc_stringl_ex(z_result, key, 1+key_len, line,
                     line_len, 0);

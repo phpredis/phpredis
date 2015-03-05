@@ -1925,8 +1925,8 @@ PHP_METHOD(RedisCluster, getmode) {
 PHP_METHOD(RedisCluster, getlasterror) {
     redisCluster *c = GET_CONTEXT();
 
-    if(c->flags->err != NULL && c->flags->err_len > 0) {
-        RETURN_STRINGL(c->flags->err, c->flags->err_len, 1);
+    if(c->err != NULL && c->err_len > 0) {
+        RETURN_STRINGL(c->err, c->err_len, 1);
     } else {
         RETURN_NULL();
     }
@@ -1936,13 +1936,11 @@ PHP_METHOD(RedisCluster, getlasterror) {
 /* {{{ proto bool RedisCluster::clearlasterror() */
 PHP_METHOD(RedisCluster, clearlasterror) {
     redisCluster *c = GET_CONTEXT();
-
-    if(c->flags->err) {
-        efree(c->flags->err);
-    }
-    c->flags->err = NULL;
-    c->flags->err_len = 0;
-
+    
+    if (c->err) efree(c->err);
+    c->err = NULL;
+    c->err_len = 0;
+    
     RETURN_TRUE;
 }
 /* }}} */
@@ -2116,9 +2114,7 @@ PHP_METHOD(RedisCluster, watch) {
         }
 
         // If we get a failure from this, we have to abort
-        if((slot = cluster_send_command(c, (short)slot, cmd.c, cmd.len 
-                                        TSRMLS_CC))==-1)
-        {
+        if (cluster_send_command(c,(short)slot,cmd.c,cmd.len TSRMLS_CC)==-1) {
             RETURN_FALSE;
         }
 
