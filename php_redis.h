@@ -191,6 +191,8 @@ PHP_METHOD(Redis, pubsub);
 
 PHP_METHOD(Redis, client);
 
+PHP_METHOD(Redis, role);
+
 /* SCAN and friends  */
 PHP_METHOD(Redis, scan);
 PHP_METHOD(Redis, hscan);
@@ -266,7 +268,7 @@ struct redis_queued_item {
 	/* reading function */
 	zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, ...);
 
-	char *cmd; 
+	char *cmd;
 	int cmd_len;
 
 	struct redis_queued_item *next;

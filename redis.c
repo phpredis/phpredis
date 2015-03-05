@@ -263,6 +263,8 @@ static zend_function_entry redis_functions[] = {
 
      PHP_ME(Redis, client, NULL, ZEND_ACC_PUBLIC)
 
+     PHP_ME(Redis, role, NULL, ZEND_ACC_PUBLIC)
+
      /* SCAN and friends */
      PHP_ME(Redis, scan, arginfo_scan, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hscan, arginfo_kscan, ZEND_ACC_PUBLIC)
@@ -7119,6 +7121,39 @@ PHP_METHOD(Redis, client) {
         }
         REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
     }
+}
+
+
+PHP_METHOD(Redis, role) {
+    zval *object;
+    RedisSock *redis_sock;
+    char *cmd;
+    int cmd_len;
+
+    /* Parse our method parameters */
+    if (zend_parse_method_parameters(
+        ZEND_NUM_ARGS() TSRMLS_CC,
+        getThis(),
+        "O",
+        &object,
+        redis_ce
+    ) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    /* Grab our socket */
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    cmd_len = redis_cmd_format_static(&cmd, "ROLE", "");
+
+    /* Execute our queue command */
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+        redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
 }
 
 /**
