@@ -88,6 +88,7 @@ zend_function_entry redis_sentinel_functions[] = {
     PHP_FE_END
 };
 
+
 /* {{{ proto RedisSentinel RedisSentinel::__construct(string host, int port [, double timeout])
     Public constructor */
 PHP_METHOD(RedisSentinel, __construct)
@@ -143,6 +144,7 @@ PHP_METHOD(RedisSentinel, __construct)
 }
 /* }}} */
 
+
 /* {{{ proto RedisSentinel RedisSentinel::__destruct()
     Public Destructor
  */
@@ -175,6 +177,7 @@ PHP_METHOD(RedisSentinel, __destruct)
     RETURN_FALSE;
 }
 /* }}} */
+
 
 /* {{{ proto string RedisSentinel::ping()
  */
@@ -311,6 +314,7 @@ PHP_METHOD(RedisSentinel, masters)
 }
 /* }}} */
 
+
 /* {{{ proto array RedisSentinel::master(string name)
  */
 PHP_METHOD(RedisSentinel, master)
@@ -349,6 +353,7 @@ PHP_METHOD(RedisSentinel, master)
     REDIS_PROCESS_RESPONSE(redis_sock_read_sentinel_server_reply);
 }
 /* }}} */
+
 
 /* {{{ proto array RedisSentinel::slaves(string master)
  */
@@ -389,6 +394,7 @@ PHP_METHOD(RedisSentinel, slaves)
 }
 /* }}} */
 
+
 /* {{{ proto array RedisSentinel::getMasterAddrByName(string master)
  */
 PHP_METHOD(RedisSentinel, getMasterAddrByName)
@@ -425,6 +431,7 @@ PHP_METHOD(RedisSentinel, getMasterAddrByName)
     REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 }
 /* }}} */
+
 
 /* {{{ proto integer RedisSentinel::reset(string pattern)
  */
@@ -463,6 +470,7 @@ PHP_METHOD(RedisSentinel, reset)
 }
 /* }}} */
 
+
 /* {{{ proto boolean RedisSentinel::failover(string master)
  */
 PHP_METHOD(RedisSentinel, failover)
@@ -499,6 +507,7 @@ PHP_METHOD(RedisSentinel, failover)
     REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 /* }}} */
+
 
 /* {{{ proto array RedisSentinel::getMasterAddr()
  */
@@ -594,8 +603,5 @@ PHP_METHOD(RedisSentinel, getMasterAddr)
 
     zend_throw_exception(redis_exception_ce, "All masters are unreachable", 0 TSRMLS_CC);
     RETURN_FALSE;
-
 }
 /* }}} */
-
-
