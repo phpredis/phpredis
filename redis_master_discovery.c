@@ -49,7 +49,7 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_redis_master_discovery_get_sentinels, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(arginfo_redis_master_discovery_get_master, 0)
+ZEND_BEGIN_ARG_INFO(arginfo_redis_master_discovery_get_master_addr, 0)
 ZEND_END_ARG_INFO()
 
 zend_function_entry redis_master_discovery_functions[] = {
@@ -57,7 +57,7 @@ zend_function_entry redis_master_discovery_functions[] = {
     PHP_ME(RedisMasterDiscovery, __destruct,    arginfo_redis_master_discovery_destruct, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
     PHP_ME(RedisMasterDiscovery, addSentinel,   arginfo_redis_master_discovery_add_sentinel, ZEND_ACC_PUBLIC)
     PHP_ME(RedisMasterDiscovery, getSentinels,  arginfo_redis_master_discovery_get_sentinels, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisMasterDiscovery, getMaster,     arginfo_redis_master_discovery_get_master, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisMasterDiscovery, getMasterAddr, arginfo_redis_master_discovery_get_master_addr, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 
@@ -149,9 +149,9 @@ PHP_METHOD(RedisMasterDiscovery, getSentinels)
 /* }}} */
 
 
-/* {{{ proto array RedisMasterDiscovery::getMaster()
+/* {{{ proto array RedisMasterDiscovery::getMasterAddr()
  */
-PHP_METHOD(RedisMasterDiscovery, getMaster)
+PHP_METHOD(RedisMasterDiscovery, getMasterAddr)
 {
     zval *sentinels;
 
@@ -196,9 +196,9 @@ PHP_METHOD(RedisMasterDiscovery, getMaster)
 
             if (Z_TYPE_P(available) == IS_BOOL && Z_BVAL_P(available)) {
 
-                zval *fun_get_master;
-                MAKE_STD_ZVAL(fun_get_master);
-                ZVAL_STRING(fun_get_master, "getMaster", 1);
+                zval *fun_get_master_addr;
+                MAKE_STD_ZVAL(fun_get_master_addr);
+                ZVAL_STRING(fun_get_master_addr, "getMasterAddr", 1);
 
                 zval *master;
                 MAKE_STD_ZVAL(master);
@@ -206,7 +206,7 @@ PHP_METHOD(RedisMasterDiscovery, getMaster)
                 if (call_user_function(
                     &redis_sentinel_ce->function_table,
                     sentinel,
-                    fun_get_master,
+                    fun_get_master_addr,
                     master,
                     0,
                     NULL TSRMLS_CC
@@ -214,13 +214,13 @@ PHP_METHOD(RedisMasterDiscovery, getMaster)
 
                     if (Z_TYPE_P(master) == IS_ARRAY) {
                         zval_ptr_dtor(&fun_connect);
-                        zval_ptr_dtor(&fun_get_master);
+                        zval_ptr_dtor(&fun_get_master_addr);
                         zval_ptr_dtor(&available);
                         RETURN_ZVAL(master, 1, 1);
                     }
                 }
 
-                zval_ptr_dtor(&fun_get_master);
+                zval_ptr_dtor(&fun_get_master_addr);
                 zval_ptr_dtor(&master);
             }
         }
