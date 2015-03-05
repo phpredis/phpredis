@@ -95,7 +95,7 @@ PHP_METHOD(RedisSentinel, __construct)
     int host_len;
     char *host = NULL;
     long port = -1;
-    double timeout = 0.0;
+    double timeout = 1.0;
 
     if (zend_parse_parameters(
         ZEND_NUM_ARGS() TSRMLS_CC,
@@ -518,7 +518,6 @@ PHP_METHOD(RedisSentinel, getMasterAddr)
     MAKE_STD_ZVAL(masters);
 
     zval **flags;
-    //zval **name;
     zval **ip;
     zval **port;
 
@@ -543,9 +542,6 @@ PHP_METHOD(RedisSentinel, getMasterAddr)
                  zend_hash_get_current_data(Z_ARRVAL_P(masters), (void **) &master_info) == SUCCESS;
                  zend_hash_move_forward(Z_ARRVAL_P(masters))
             ) {
-                /*if (zend_hash_find(Z_ARRVAL_PP(master_info), ZEND_STRS("name"), (void **)&name) == FAILURE) {
-                    continue;
-                }*/
 
                 if (zend_hash_find(Z_ARRVAL_PP(master_info), ZEND_STRS("flags"), (void **)&flags) == SUCCESS) {
 
@@ -583,32 +579,6 @@ PHP_METHOD(RedisSentinel, getMasterAddr)
                         zval_ptr_dtor(&fun_masters);
                         zval_ptr_dtor(&masters);
                         return;
-
-                        /*zval *fun_get_addr;
-                        MAKE_STD_ZVAL(fun_get_addr);
-                        ZVAL_STRING(fun_get_addr, "getMasterAddrByName", 1);
-
-                        zval *master;
-                        MAKE_STD_ZVAL(master);
-
-                        if (call_user_function(
-                            &redis_sentinel_ce->function_table,
-                            &getThis(),
-                            fun_get_addr,
-                            master,
-                            1,
-                            name TSRMLS_CC
-                        ) == SUCCESS) {
-                            if (Z_TYPE_P(master) == IS_ARRAY) {
-                                zval_ptr_dtor(&fun_masters);
-                                zval_ptr_dtor(&masters);
-                                zval_ptr_dtor(&fun_get_addr);
-                                RETURN_ZVAL(master, 1, 1);
-                            }
-                        }
-
-                        zval_ptr_dtor(&master);
-                        zval_ptr_dtor(&fun_get_addr);*/
                     }
 
                 }
