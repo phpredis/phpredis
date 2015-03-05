@@ -1695,38 +1695,6 @@ redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 }
 
-
-/*
-PHP_REDIS_API int
-redis_sock_read_multibulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                                     zval *z_tab, int numElems, int unwrap_key, int unserialize_even_only)
-{
-    char *response;
-    int response_len;
-
-    while(numElems > 0) {
-        response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
-        if(response != NULL) {
-		zval *z = NULL;
-		int can_unserialize = unwrap_key;
-		if(unserialize_even_only == UNSERIALIZE_ONLY_VALUES && numElems % 2 == 0)
-			can_unserialize = 0;
-
-		if(can_unserialize && redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
-			efree(response);
-			add_next_index_zval(z_tab, z);
-		} else {
-			add_next_index_stringl(z_tab, response, response_len, 0);
-		}
-        } else {
-            add_next_index_bool(z_tab, 0);
-        }
-        numElems --;
-    }
-    return 0;
-}
-*/
-
 /* Specialized multibulk processing for HMGET where we need to pair requested
  * keys with their returned values */
 PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
@@ -2193,9 +2161,6 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zv
 	/* Success */
 	return 0;
 }
-
-
-/// ------
 
 /* Helper method to get the string representation of a REDIS_REPLY_TYPE */
 const char *redis_reply_type_str(REDIS_REPLY_TYPE reply_type)
