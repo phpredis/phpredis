@@ -39,8 +39,8 @@ zend_class_entry *redis_master_discovery_ce;
 ZEND_BEGIN_ARG_INFO(arginfo_redis_master_discovery_construct, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(arginfo_redis_master_discovery_destruct, 0)
-ZEND_END_ARG_INFO()
+/*ZEND_BEGIN_ARG_INFO(arginfo_redis_master_discovery_destruct, 0)
+ZEND_END_ARG_INFO()*/
 
 ZEND_BEGIN_ARG_INFO(arginfo_redis_master_discovery_add_sentinel, 0)
 ZEND_ARG_INFO(0, sentinel)
@@ -54,7 +54,7 @@ ZEND_END_ARG_INFO()
 
 zend_function_entry redis_master_discovery_functions[] = {
     PHP_ME(RedisMasterDiscovery, __construct,   arginfo_redis_master_discovery_construct, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
-    PHP_ME(RedisMasterDiscovery, __destruct,    arginfo_redis_master_discovery_destruct, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
+    //PHP_ME(RedisMasterDiscovery, __destruct,    arginfo_redis_master_discovery_destruct, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
     PHP_ME(RedisMasterDiscovery, addSentinel,   arginfo_redis_master_discovery_add_sentinel, ZEND_ACC_PUBLIC)
     PHP_ME(RedisMasterDiscovery, getSentinels,  arginfo_redis_master_discovery_get_sentinels, ZEND_ACC_PUBLIC)
     PHP_ME(RedisMasterDiscovery, getMasterAddr, arginfo_redis_master_discovery_get_master_addr, ZEND_ACC_PUBLIC)
@@ -87,10 +87,10 @@ PHP_METHOD(RedisMasterDiscovery, __construct)
 /* {{{ proto RedisMasterDiscovery RedisMasterDiscovery::__destruct()
     Public Destructor
  */
-PHP_METHOD(RedisMasterDiscovery, __destruct)
+/*PHP_METHOD(RedisMasterDiscovery, __destruct)
 {
 
-}
+}*/
 /* }}} */
 
 /* {{{ proto void RedisMasterDiscovery::addSentinel(RedisSentinel sentinel)
