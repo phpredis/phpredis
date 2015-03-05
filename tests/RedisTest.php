@@ -2418,7 +2418,7 @@ class Redis_Test extends TestSuite
         $r->incr('x');
 
         $ret = $this->redis->multi()->get('x')->exec();
-
+     
         $this->assertTrue($ret === FALSE); // failed because another client changed our watched key between WATCH and EXEC.
 
         // watch and unwatch
@@ -2535,6 +2535,7 @@ class Redis_Test extends TestSuite
             ->ttl('key')
             ->expireAt('key', '0000')
             ->exec();
+        
         $this->assertTrue(is_array($ret));
         $i = 0;
         $ttl = $ret[$i++];
