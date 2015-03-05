@@ -15,6 +15,8 @@ var_dump(count($masters));
 
 assert(isset($masters[0]['name']));
 assert(isset($masters[0]['ip']));
+assert(isset($masters[0]['port']));
+assert(isset($masters[0]['flags']));
 
 ?>
 --EXPECT--
