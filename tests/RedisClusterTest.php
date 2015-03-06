@@ -1,4 +1,4 @@
-<?php
+<?php defined('PHPREDIS_TESTRUN') or die("Use TestRedis.php to run tests!\n");
 require_once(dirname($_SERVER['PHP_SELF'])."/RedisTest.php");
 
 /**
@@ -8,6 +8,20 @@ require_once(dirname($_SERVER['PHP_SELF'])."/RedisTest.php");
  */
 class Redis_Cluster_Test extends Redis_Test {
     private $_arr_node_map = Array();
+
+    private $_arr_redis_types = Array(
+        Redis::REDIS_STRING,
+        Redis::REDIS_SET,
+        Redis::REDIS_LIST,  
+        Redis::REDIS_ZSET,
+        Redis::REDIS_HASH
+    );
+
+    private $_arr_failover_types = Array(
+        RedisCluster::FAILOVER_NONE,
+        RedisCluster::FAILOVER_ERROR,
+        RedisCluster::FAILOVER_DISTRIBUTE
+    );
 
     /* Tests we'll skip all together in the context of RedisCluster.  The 
      * RedisCluster class doesn't implement specialized (non-redis) commands
@@ -216,16 +230,17 @@ class Redis_Cluster_Test extends Redis_Test {
         $r = $this->newInstance(); // new instance, modifying `x'.
         $r->incr('x');
 
+        // This transaction should fail because the other client changed 'x'
         $ret = $this->redis->multi()->get('x')->exec();
-        $this->assertTrue($ret === Array(FALSE)); // failed because another client changed our watched key between WATCH and EXEC.
-
+        $this->assertTrue($ret === Array(FALSE));
         // watch and unwatch
         $this->redis->watch('x');
         $r->incr('x'); // other instance
         $this->redis->unwatch('x'); // cancel transaction watch
 
+        // This should succeed as the watch has been cancelled
         $ret = $this->redis->multi()->get('x')->exec();
-        $this->assertTrue($ret === array('44')); // succeeded since we've cancel the WATCH command.
+        $this->assertTrue($ret === array('44'));
     }
 
     /* RedisCluster::script() is a 'raw' command, which requires a key such that
@@ -280,6 +295,141 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertTrue(false === $this->redis->evalsha($scr,Array($str_key), 1));
         $this->assertTrue(1 === $this->redis->eval($scr,Array($str_key), 1));
         $this->assertTrue(1 === $this->redis->evalsha($sha,Array($str_key), 1));
+    }
+
+    protected function genKeyName($i_key_idx, $i_type) {
+        switch ($i_type) { 
+            case Redis::REDIS_STRING: 
+                return "string-$i_key_idx";
+            case Redis::REDIS_SET: 
+                return "set-$i_key_idx";
+            case Redis::REDIS_LIST:
+                return "list-$i_key_idx";
+            case Redis::REDIS_ZSET:
+                return "zset-$i_key_idx";
+            case Redis::REDIS_HASH:
+                return "hash-$i_key_idx";
+            default:
+                return "unknown-$i_key_idx";
+        }
+    }
+
+    protected function setKeyVals($i_key_idx, $i_type, &$arr_ref) {
+        $str_key = $this->genKeyName($i_key_idx, $i_type);
+
+        $this->redis->del($str_key);
+
+        switch ($i_type) {
+            case Redis::REDIS_STRING:
+                $value = "$str_key-value";
+                $this->redis->set($str_key, $value); 
+                break;
+            case Redis::REDIS_SET:
+                $value = Array(
+                    $str_key . '-mem1', $str_key . '-mem2', $str_key . '-mem3',
+                    $str_key . '-mem4', $str_key . '-mem5', $str_key . '-mem6'
+                );
+                $arr_args = $value;
+                array_unshift($arr_args, $str_key);
+                call_user_func_array(Array($this->redis, 'sadd'), $arr_args);
+                break;
+            case Redis::REDIS_HASH:
+                $value = Array(
+                    $str_key . '-mem1' => $str_key . '-val1',
+                    $str_key . '-mem2' => $str_key . '-val2',
+                    $str_key . '-mem3' => $str_key . '-val3'
+                );
+                $this->redis->hmset($str_key, $value);
+                break; 
+            case Redis::REDIS_LIST:
+                $value = Array(
+                    $str_key . '-ele1', $str_key . '-ele2', $str_key . '-ele3',
+                    $str_key . '-ele4', $str_key . '-ele5', $str_key . '-ele6'
+                );
+                $arr_args = $value;
+                array_unshift($arr_args, $str_key);
+                call_user_func_array(Array($this->redis, 'rpush'), $arr_args);
+                break;
+            case Redis::REDIS_ZSET:
+                $i_score = 1;
+                $value = Array(
+                    $str_key . '-mem1' => 1, $str_key . '-mem2' => 2,
+                    $str_key . '-mem3' => 3, $str_key . '-mem3' => 3
+                );
+                foreach ($value as $str_mem => $i_score) {
+                    $this->redis->zadd($str_key, $i_score, $str_mem);
+                }
+                break; 
+        }
+
+        /* Update our reference array so we can verify values */
+        $arr_ref[$str_key] = $value;
+        return $str_key;
+    }
+
+    /* Verify that our ZSET values are identical */
+    protected function checkZSetEquality($a, $b) {
+        /* If the count is off, the array keys are different or the sums are
+         * different, we know there is something off */
+        $boo_diff = count($a) != count($b) ||
+            count(array_diff(array_keys($a), array_keys($b))) != 0 ||
+            array_sum($a) != array_sum($b);
+
+        if ($boo_diff) {
+            $this->assertEquals($a,$b);
+            return;
+        }
+    }
+
+    protected function checkKeyValue($str_key, $i_type, $value) {
+        switch ($i_type) {
+            case Redis::REDIS_STRING:
+                $this->assertEquals($value, $this->redis->get($str_key));
+                break;
+            case Redis::REDIS_SET:
+                $arr_r_values = $this->redis->sMembers($str_key);
+                $arr_l_values = $value;
+                sort($arr_r_values);
+                sort($arr_l_values);
+                $this->assertEquals($arr_r_values, $arr_l_values);
+                break;
+            case Redis::REDIS_LIST:
+                $this->assertEquals($value, $this->redis->lrange($str_key,0,-1));
+                break;
+            case Redis::REDIS_HASH:
+                $this->assertEquals($value, $this->redis->hgetall($str_key));
+                break;
+            case Redis::REDIS_ZSET:
+                $this->checkZSetEquality($value, $this->redis->zrange($str_key,0,-1,true));
+                break;
+            default:
+                throw new Exception("Unknown type " . $i_type);
+        }
+    }
+
+    /* Test automatic load distributor */
+    public function testFailOver() {
+        $arr_value_ref = Array();
+        $arr_type_ref  = Array();
+
+        /* Set a bunch of keys of various redis types*/
+        for ($i = 0; $i < 200; $i++) {
+            foreach ($this->_arr_redis_types as $i_type) {
+                $str_key = $this->setKeyVals($i, $i_type, $arr_value_ref);
+                $arr_type_ref[$str_key] = $i_type;                
+            }
+        }
+
+        /* Iterate over failover options */
+        foreach ($this->_arr_failover_types as $i_opt) {
+            $this->redis->setOption(RedisCluster::OPT_SLAVE_FAILOVER, $i_opt);
+
+            foreach ($arr_value_ref as $str_key => $value) {
+                $this->checkKeyValue($str_key, $arr_type_ref[$str_key], $value);
+            }
+
+            break;
+        }    
     }
 }
 ?>
