@@ -1,15 +1,21 @@
-<?php
+<?php define('PHPREDIS_TESTRUN', true);
+
 require_once(dirname($_SERVER['PHP_SELF'])."/TestSuite.php");
 require_once(dirname($_SERVER['PHP_SELF'])."/RedisTest.php");
 require_once(dirname($_SERVER['PHP_SELF'])."/RedisArrayTest.php");
 require_once(dirname($_SERVER['PHP_SELF'])."/RedisClusterTest.php");
 
+/* Make sure errors go to stdout and are shown */
+error_reporting(E_ALL); 
+ini_set( 'display_errors','1');
+
 /* Grab options */
-$arr_args = getopt('', Array('class:', 'test:'));
+$arr_args = getopt('', Array('class:', 'test:', 'nocolors'));
 
 /* Grab the test the user is trying to run */
 $arr_valid_classes = Array('redis', 'redisarray', 'rediscluster');
 $str_class = isset($arr_args['class']) ? strtolower($arr_args['class']) : 'redis';
+$boo_colorize = !isset($arr_args['nocolors']);
 
 /* Get our test filter if provided one */
 $str_filter = isset($arr_args['test']) ? $arr_args['test'] : NULL;
@@ -19,6 +25,9 @@ if (!in_array($str_class, $arr_valid_classes)) {
     echo "Error:  Valid test classes are Redis, RedisArray, and RedisCluster!\n";
     exit(1);
 }
+
+/* Toggle colorization in our TestSuite class */
+TestSuite::flagColorization($boo_colorize);
 
 /* Let the user know this can take a bit of time */
 echo "Note: these tests might take up to a minute. Don't worry :-)\n";

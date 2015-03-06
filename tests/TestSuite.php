@@ -1,7 +1,8 @@
-<?php
+<?php defined('PHPREDIS_TESTRUN') or die("Use TestRedis.php to run tests!\n");
 
 // phpunit is such a pain to install, we're going with pure-PHP here.
 class TestSuite {
+    private static $_boo_colorize = false;
 
     private static $BOLD_ON = "\033[1m";
     private static $BOLD_OFF = "\033[0m";
@@ -18,19 +19,27 @@ class TestSuite {
     public static $warnings = array();
 
     public static function make_bold($str_msg) {
-        return self::$BOLD_ON . $str_msg . self::$BOLD_OFF;
+        return self::$_boo_colorize 
+            ? self::$BOLD_ON . $str_msg . self::$BOLD_OFF
+            : $str_msg;
     }
 
     public static function make_success($str_msg) {
-        return self::$GREEN . $str_msg . self::$BOLD_OFF;
+        return self::$_boo_colorize
+            ? self::$GREEN . $str_msg . self::$BOLD_OFF
+            : $str_msg;
     }
 
     public static function make_fail($str_msg) {
-        return self::$RED . $str_msg . self::$BOLD_OFF;
+        return self::$_boo_colorize
+            ? self::$RED . $str_msg . self::$BOLD_OFF
+            : $str_msg;
     }
 
     public static function make_warning($str_msg) {
-        return self::$YELLOW . $str_msg . self::$BOLD_OFF;
+        return self::$_boo_colorize
+            ? self::$YELLOW . $str_msg . self::$BOLD_OFF
+            : $str_msg;
     }
 
     protected function assertFalse($bool) {
@@ -74,7 +83,7 @@ class TestSuite {
         throw new Exception($msg);
     }
 
-    private function getMaxTestLen($arr_methods, $str_limit) {
+    private static function getMaxTestLen($arr_methods, $str_limit) {
         $i_result = 0;
         
         $str_limit = strtolower($str_limit);
@@ -91,6 +100,12 @@ class TestSuite {
             }
         }
         return $i_result;
+    }
+    
+    /* Flag colorization */
+    public static function flagColorization($boo_override) {
+        self::$_boo_colorize = $boo_override && function_exists('posix_isatty') &&
+            posix_isatty(STDOUT);
     }
 
     public static function run($className, $str_limit = NULL) {
@@ -142,7 +157,7 @@ class TestSuite {
             echo "[" . $str_msg . "]\n";
         }
         echo "\n";
-        echo implode('', $className::$warnings);
+        echo implode('', $className::$warnings) . "\n";
 
         if(empty($className::$errors)) {
             echo "All tests passed. \o/\n";
