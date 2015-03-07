@@ -2703,6 +2703,24 @@ PHP_METHOD(RedisCluster, client) {
     slot = cluster_cmd_get_slot(c, z_node TSRMLS_CC);
     if(slot<0) RETURN_FALSE;
 
+    /* Our return type and reply callback is different for all subcommands */
+    if (opt_len == 4 && !strncasecmp(opt, "list", 4)) {
+        rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
+        cb = cluster_client_list_resp;
+    } else if ((opt_len == 4 && !strncasecmp(opt, "kill", 4)) ||
+               (opt_len == 7 && !strncasecmp(opt, "setname", 7))) 
+    {
+        rtype = TYPE_LINE;
+        cb = cluster_bool_resp;
+    } else if (opt_len == 7 && !strncasecmp(opt, "getname", 7)) {
+        rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
+        cb = cluster_bulk_resp;
+    } else {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "Invalid CLIENT subcommand (LIST, KILL, GETNAME, and SETNAME are valid");
+        RETURN_FALSE;
+    }
+
     /* Construct the command */
     if (ZEND_NUM_ARGS() == 3) {
         cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "ss", opt, opt_len,
@@ -2714,7 +2732,7 @@ PHP_METHOD(RedisCluster, client) {
         RETURN_FALSE;
     }
 
-    rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
+    /* Attempt to write our command */
     if (cluster_send_slot(c, slot, cmd, cmd_len, rtype TSRMLS_CC)<0) {
         zend_throw_exception(redis_cluster_exception_ce,
             "Unable to send CLIENT command to specific node", 0 TSRMLS_CC);
@@ -2722,19 +2740,12 @@ PHP_METHOD(RedisCluster, client) {
         RETURN_FALSE;
     }
 
-    /* Handle client list and anything else differently */
-    if (opt_len == 4 && !strncasecmp(opt, "list", 4)) {
-        cb = cluster_client_list_resp;
-    } else {
-        cb = cluster_variant_resp;
-    }
-
     /* Now enqueue or process response */
     if (CLUSTER_IS_ATOMIC(c)) {
-        cluster_client_list_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
     } else {
         void *ctx = NULL;
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_client_list_resp, ctx);
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
     }
 
     efree(cmd);
