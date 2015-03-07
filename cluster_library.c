@@ -1258,6 +1258,17 @@ PHPAPI int cluster_send_slot(redisCluster *c, short slot, char *cmd,
     c->cmd_slot = slot;
     c->cmd_sock = SLOT_SOCK(c, slot);
 
+    /* Enable multi mode on this slot if we've been directed to but haven't
+     * send it to this node yet */
+    if (c->flags->mode == MULTI && c->cmd_sock->mode != MULTI) {
+        if (cluster_send_multi(c, slot TSRMLS_CC) == -1) {
+            zend_throw_exception(redis_cluster_exception_ce,
+                "Unable to enter MULTI mode on requested slot",
+                0 TSRMLS_CC);
+            return -1;
+        }
+    }
+
     /* Try the slot */
     if(cluster_sock_write(c, cmd, cmd_len, 1 TSRMLS_CC)==-1) {
         return -1;
@@ -1411,19 +1422,6 @@ PHPAPI void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
             add_next_index_stringl(c->multi_resp, resp, c->reply_len, 0);
         }
     }
-
-    /*
-    // Return the string if we can unserialize it
-    if(redis_unserialize(c->flags, resp, c->reply_len, &z_ret TSRMLS_CC)==0) {
-        CLUSTER_RETURN_STRING(c, resp, c->reply_len);
-    } else {
-        if(CLUSTER_IS_ATOMIC(c)) {
-            *return_value = *z_ret;
-        } else {
-            add_next_index_zval(c->multi_resp, z_ret);
-        }
-        efree(resp);
-    }*/
 }
 
 /* Bulk response where we expect a double */

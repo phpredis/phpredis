@@ -32,7 +32,6 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testWait()     { return $this->markTestSkipped(); }
     public function testSelect()   { return $this->markTestSkipped(); }
     public function testReconnectSelect() { return $this->markTestSkipped(); }
-    public function testIntrospection() { return $this->markTestSkipped(); }
 
     /* Skips for now, which need attention */
     public function testClient()   { return $this->markTestSkipped(); }
@@ -295,6 +294,18 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertTrue(false === $this->redis->evalsha($scr,Array($str_key), 1));
         $this->assertTrue(1 === $this->redis->eval($scr,Array($str_key), 1));
         $this->assertTrue(1 === $this->redis->evalsha($sha,Array($str_key), 1));
+    }
+
+    /* Cluster specific introspection stuff */
+    public function testIntrospection() {
+        $arr_masters = $this->redis->_masters();
+        $this->assertTrue(is_array($arr_masters));
+        
+        foreach ($arr_masters as $arr_info) {
+            $this->assertTrue(is_array($arr_info));
+            $this->assertTrue(is_string($arr_info[0]));
+            $this->assertTrue(is_long($arr_info[1]));
+        }
     }
 
     protected function genKeyName($i_key_idx, $i_type) {
