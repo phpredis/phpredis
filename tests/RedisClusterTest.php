@@ -33,9 +33,6 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSelect()   { return $this->markTestSkipped(); }
     public function testReconnectSelect() { return $this->markTestSkipped(); }
 
-    /* Skips for now, which need attention */
-    public function testClient()   { return $this->markTestSkipped(); }
-
     /* Load our seeds on construction */
     public function __construct() {
         $str_nodemap_file = dirname($_SERVER['PHP_SELF']) . '/nodes/nodemap';
@@ -123,6 +120,30 @@ class Redis_Cluster_Test extends Redis_Test {
                 $this->assertTrue(isset($arr_info[$str_check_key]));
             }
         }
+    }
+
+    public function testClient() {
+        $str_key = 'key-' . rand(1,100);
+
+        $this->assertTrue($this->redis->client($str_key, 'setname', 'cluster_tests'));
+
+        $arr_clients = $this->redis->client($str_key, 'list');
+        $this->assertTrue(is_array($arr_clients));
+
+        /* Find us in the list */
+        $str_addr = NULL;
+        foreach ($arr_clients as $arr_client) {
+            if ($arr_client['name'] == 'cluster_tests') {
+                $str_addr = $arr_client['addr'];
+                break;
+            }
+        }
+
+        /* We should be in there */
+        $this->assertFalse(empty($str_addr));
+
+        /* Kill our own client! */
+        $this->assertTrue($this->redis->client($str_key, 'kill', $str_addr));
     }
 
     public function testTime() {
