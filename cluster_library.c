@@ -1920,6 +1920,31 @@ PHPAPI void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     }
 }
 
+/* CLIENT LIST response */
+PHPAPI void cluster_client_list_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                                     void *ctx)
+{
+    zval *z_result;
+    char *info;
+
+    /* Read the bulk response */
+    info = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len TSRMLS_CC);
+    if (info == NULL) {
+        CLUSTER_RETURN_FALSE(c);
+    }
+
+    /* Parse it and free the bulk string */
+    z_result = redis_parse_client_list_response(info);
+    efree(info);
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        *return_value = *z_result;
+        efree(z_result);
+    } else {
+        add_next_index_zval(c->multi_resp, z_result);
+    }
+}
+
 /* MULTI BULK response loop where we might pull the next one */
 PHPAPI zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
                                      redisCluster *c, int pull, mbulk_cb cb)

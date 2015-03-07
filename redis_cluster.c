@@ -2678,6 +2678,68 @@ PHP_METHOD(RedisCluster, info) {
 }
 /* }}} */
 
+/* {{{ proto array RedisCluster::client('list')
+ *     proto bool RedisCluster::client('kill', $ipport)
+ *     proto bool RedisCluster::client('setname', $name)
+ *     proto string RedisCluster::client('getname')
+ */
+PHP_METHOD(RedisCluster, client) {
+    redisCluster *c = GET_CONTEXT();
+    char *cmd, *opt=NULL, *arg=NULL;
+    int cmd_len, opt_len, arg_len;
+    REDIS_REPLY_TYPE rtype;
+    zval *z_node;
+    short slot;
+    cluster_cb cb;
+
+    /* Parse args */
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zs|s", &z_node, &opt, 
+                              &opt_len, &arg, &arg_len)==FAILURE)
+    {
+        RETURN_FALSE;
+    }
+    
+    /* Make sure we can properly resolve the slot */
+    slot = cluster_cmd_get_slot(c, z_node TSRMLS_CC);
+    if(slot<0) RETURN_FALSE;
+
+    /* Construct the command */
+    if (ZEND_NUM_ARGS() == 3) {
+        cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "ss", opt, opt_len,
+            arg, arg_len);
+    } else if(ZEND_NUM_ARGS() == 2) {
+        cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "s", opt, opt_len);
+    } else {
+        zend_wrong_param_count(TSRMLS_C);
+        RETURN_FALSE;
+    }
+
+    rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
+    if (cluster_send_slot(c, slot, cmd, cmd_len, rtype TSRMLS_CC)<0) {
+        zend_throw_exception(redis_cluster_exception_ce,
+            "Unable to send CLIENT command to specific node", 0 TSRMLS_CC);
+        efree(cmd);
+        RETURN_FALSE;
+    }
+
+    /* Handle client list and anything else differently */
+    if (opt_len == 4 && !strncasecmp(opt, "list", 4)) {
+        cb = cluster_client_list_resp;
+    } else {
+        cb = cluster_variant_resp;
+    }
+
+    /* Now enqueue or process response */
+    if (CLUSTER_IS_ATOMIC(c)) {
+        cluster_client_list_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        void *ctx = NULL;
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_client_list_resp, ctx);
+    }
+
+    efree(cmd);
+}
+
 /* {{{ proto mixed RedisCluster::cluster(variant) */
 PHP_METHOD(RedisCluster, cluster) {
     cluster_raw_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "CLUSTER", 
@@ -2685,12 +2747,6 @@ PHP_METHOD(RedisCluster, cluster) {
 }
 /* }}} */
 
-/* {{{ proto mixed RedisCluster::client(string key, ...)
- *     proto mixed RedisCluster::client(array host_port, ...) */
-PHP_METHOD(RedisCluster, client) {
-    cluster_raw_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "CLIENT", 
-        sizeof("CLIENT")-1);
-}
 /* }}} */
 
 /* {{{ proto mixed RedisCluster::config(string key, ...) 
