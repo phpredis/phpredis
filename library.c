@@ -1024,20 +1024,31 @@ PHPAPI zval *redis_parse_info_response(char *response) {
 PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab) {
     char *resp;
     int resp_len;
-    zval *z_result, *z_sub_result;
+    zval *z_ret;
 
-    /* Pointers for parsing */
-    char *p, *lpos, *kpos = NULL, *vpos = NULL, *p2, *key, *value;
-
-    /* Key length, done flag */
-    int klen = 0, done = 0, is_numeric;
-
-    /* Make sure we can read a response from Redis */
-    if((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC)) == NULL) {
+    /* Make sure we can read the bulk response from Redis */
+    if ((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
     }
 
-    /* Allocate memory for our response */
+    /* Parse it out */
+    z_ret = redis_parse_client_list_response(resp);
+
+    /* Free our response */
+    efree(resp);
+
+    /* Return or append depending if we're atomic */
+    IF_MULTI_OR_PIPELINE() {
+        add_next_index_zval(z_tab, z_ret);
+    } else {
+        RETVAL_ZVAL(z_ret, 0, 1);
+    }
+}
+
+PHPAPI zval* redis_parse_client_list_response(char *response) {
+    zval *z_result, *z_sub_result;
+
+    // Allocate memory for our response
     MAKE_STD_ZVAL(z_result);
     array_init(z_result);
 
@@ -1045,8 +1056,9 @@ PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
     ALLOC_INIT_ZVAL(z_sub_result);
     array_init(z_sub_result);
 
-    p = resp;
-	lpos = resp;
+    // Pointers for parsing
+    char *p = response, *lpos = response, *p2, *key;
+    char *kpos = NULL, *vpos = NULL, *value;
 
     /* While we've got more to parse */
     while(!done) {
@@ -1107,9 +1119,11 @@ PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
                     /* Free our key */
                     efree(key);
                 } else {
-                    /* Something is wrong */
-                    efree(resp);
-                    RETURN_FALSE;
+                    // Something is wrong
+                    zval_dtor(z_result);
+                    MAKE_STD_ZVAL(z_result);
+                    ZVAL_BOOL(z_result, 0);
+                    return z_result;
                 }
 
                 /* Move forward */
@@ -1132,18 +1146,13 @@ PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
         p++;
     }
 
-    /* Free our respoonse */
-    efree(resp);
-
-    IF_MULTI_OR_PIPELINE() {
-        add_next_index_zval(z_tab, z_result);
-    } else {
-        RETVAL_ZVAL(z_result, 0, 1);
-    }
+    /* Return our parsed response */
+    return z_result;
 }
 
 PHPAPI void 
-redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,                            zval *z_tab, void *ctx, 
+redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                            zval *z_tab, void *ctx, 
                             SuccessCallback success_callback) 
 {
 
