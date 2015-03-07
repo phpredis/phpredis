@@ -2221,32 +2221,43 @@ PHP_METHOD(RedisCluster, discard) {
 static short
 cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC) 
 {
+    int key_len, key_free;
+    zval **z_host, **z_port, *z_tmp = NULL;
     short slot;
+    char *key;
 
     /* If it's a string, treat it as a key.  Otherwise, look for a two
      * element array */
-    if(Z_TYPE_P(z_arg)==IS_STRING) {
-        char *key = Z_STRVAL_P(z_arg);
-        int key_len = Z_STRLEN_P(z_arg), key_free;
+    if(Z_TYPE_P(z_arg)==IS_STRING || Z_TYPE_P(z_arg)==IS_LONG ||
+       Z_TYPE_P(z_arg)==IS_DOUBLE) 
+    {
+        /* Allow for any scalar here */
+        if (Z_TYPE_P(z_arg) != IS_STRING) {
+            MAKE_STD_ZVAL(z_tmp);
+            *z_tmp = *z_arg;
+            zval_copy_ctor(z_tmp);
+            convert_to_string(z_tmp);
+            z_arg = z_tmp;
+        }
+
+        key = Z_STRVAL_P(z_arg);
+        key_len = Z_STRLEN_P(z_arg);
 
         /* Hash it */
         key_free = redis_key_prefix(c->flags, &key, &key_len);
         slot = cluster_hash_key(key, key_len);
         if(key_free) efree(key);
-    } else {
-        zval **z_host, **z_port;
-        
-        /* We'll need two elements, one string, one long */
-        if(Z_TYPE_P(z_arg) != IS_ARRAY ||
-           zend_hash_index_find(Z_ARRVAL_P(z_arg),0,(void**)&z_host)==FAILURE ||
-           zend_hash_index_find(Z_ARRVAL_P(z_arg),1,(void**)&z_port)==FAILURE ||
-           Z_TYPE_PP(z_host)!=IS_STRING || Z_TYPE_PP(z_port)!=IS_LONG)
-        {
-            php_error_docref(0 TSRMLS_CC, E_WARNING,
-                "Directed commands must be passed string key or [host,port]");
-            return -1;
-        }
 
+        /* Destroy our temp value if we had to convert it */
+        if (z_tmp) {
+            zval_dtor(z_tmp);
+            efree(z_tmp);
+        }
+    } else if (Z_TYPE_P(z_arg) == IS_ARRAY && 
+               zend_hash_index_find(Z_ARRVAL_P(z_arg),0,(void**)&z_host)!=FAILURE &&
+               zend_hash_index_find(Z_ARRVAL_P(z_arg),1,(void**)&z_port)!=FAILURE &&
+               Z_TYPE_PP(z_host)==IS_STRING && Z_TYPE_PP(z_port)==IS_LONG)
+    {
         /* Attempt to find this specific node by host:port */
         slot = cluster_find_slot(c,(const char *)Z_STRVAL_PP(z_host),
             (unsigned short)Z_LVAL_PP(z_port));
@@ -2256,6 +2267,10 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
             php_error_docref(0 TSRMLS_CC, E_WARNING, "Unknown node %s:%ld",
                 Z_STRVAL_PP(z_host), Z_LVAL_PP(z_port));
         }
+    } else {
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "Direted commands musty be passed a key or [host,port] array");
+        return -1;
     }
 
     return slot;
@@ -2618,8 +2633,10 @@ PHP_METHOD(RedisCluster, lastsave) {
  *     proto array RedisCluster::info(array host_port, [string $arg]) */
 PHP_METHOD(RedisCluster, info) {
     redisCluster *c = GET_CONTEXT();
+    REDIS_REPLY_TYPE rtype;
     char *cmd, *opt=NULL;
     int cmd_len, opt_len;
+    void *ctx = NULL;
     zval *z_arg;
     short slot;
 
@@ -2643,14 +2660,19 @@ PHP_METHOD(RedisCluster, info) {
         cmd_len = redis_cmd_format_static(&cmd, "INFO", "");
     }
 
-    if(cluster_send_slot(c, slot, cmd, cmd_len, TYPE_BULK TSRMLS_CC)<0) {
+    rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
+    if (cluster_send_slot(c, slot, cmd, cmd_len, rtype TSRMLS_CC)<0) {
         zend_throw_exception(redis_cluster_exception_ce,
             "Unable to send INFO command to specific node", 0 TSRMLS_CC);
         efree(cmd);
         RETURN_FALSE;
     }
 
-    cluster_info_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    if (CLUSTER_IS_ATOMIC(c)) {
+        cluster_info_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_info_resp, ctx);
+    }
 
     efree(cmd);
 }
