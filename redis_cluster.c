@@ -2828,6 +2828,7 @@ PHP_METHOD(RedisCluster, ping) {
  *     proto string RedisCluster::echo(array host_port, string msg) */
 PHP_METHOD(RedisCluster, echo) {
     redisCluster *c = GET_CONTEXT();
+    REDIS_REPLY_TYPE rtype;
     zval *z_arg;
     char *cmd, *msg;
     int cmd_len, msg_len;
@@ -2852,7 +2853,8 @@ PHP_METHOD(RedisCluster, echo) {
     cmd_len = redis_cmd_format_static(&cmd, "ECHO", "s", msg, msg_len);
 
     /* Send it off */
-    if(cluster_send_slot(c,slot,cmd,cmd_len,TYPE_BULK TSRMLS_CC)<0) {
+    rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
+    if(cluster_send_slot(c,slot,cmd,cmd_len,rtype TSRMLS_CC)<0) {
         zend_throw_exception(redis_cluster_exception_ce,
             "Unable to send commnad at the specificed node", 0 TSRMLS_CC);
         efree(cmd);
@@ -2860,7 +2862,12 @@ PHP_METHOD(RedisCluster, echo) {
     }
 
     /* Process bulk response */
-    cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    if (CLUSTER_IS_ATOMIC(c)) {
+        cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        void *ctx = NULL;
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_bulk_resp, ctx);
+    } 
 
     efree(cmd);
 }
