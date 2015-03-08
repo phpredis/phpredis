@@ -33,7 +33,7 @@ $obj_cluster = new RedisCluster('mycluster');
 On construction, the RedisCluster class will iterate over the provided seed nodes until it can attain a connection to the cluster and run CLUSTER SLOTS to map every node in the cluster locally.  Once the keyspace is mapped, RedisCluster will only connect to nodes when it needs to (e.g. you're getting a key that we believe is on that node.)
 
 ## Keyspace map
-As previously described, RedisCluster makes an initial mapping of every master (and any slaves) on initial construction, which it uses to determine which nodes to direct a given command.  However, one of the core functionalities of Redis cluster is that this keyspace can change while the cluster is running.
+As previously described, RedisCluster makes an initial mapping of every master (and any slaves) on construction, which it uses to determine which nodes to direct a given command.  However, one of the core functionalities of Redis cluster is that this keyspace can change while the cluster is running.
 
 Because of this, the RedisCluster class will update it's keyspace mapping whenever it receives a MOVED error when requesting data.  In the case that we receive ASK redirection, it follows the Redis specification and requests the key from the ASK node, prefixed with an ASKING command.
 
@@ -48,7 +48,9 @@ $obj_cluster->setOption(RedisCluster::OPT_FAILOVER, RedisCluster::FAILOVER_NONE)
 $obj_cluster->setOption(RedisCluster::OPT_FAILOVER, RedisCluster::FAILOVER_ERROR);
 
 // Always distribute readonly commands between masters and slaves, at random
-$obj_cluster->setOption(RedisCluster::OPT_FAILOVER, RedsiCluster::FAILOVER_DISTRIBUTE);
+$obj_cluster->setOption(
+    RedisCluster::OPT_FAILOVER, RedsiCluster::FAILOVER_DISTRIBUTE
+);
 </pre>
 
 ## Main command loop
