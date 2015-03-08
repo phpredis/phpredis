@@ -2609,7 +2609,7 @@ PHP_METHOD(RedisCluster, flushall) {
  *     proto RedisCluster::dbsize(string host, long port) */
 PHP_METHOD(RedisCluster, dbsize) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DBSIZE",
-        TYPE_LINE, cluster_bool_resp);
+        TYPE_INT, cluster_long_resp);
 }
 /* }}} */
 
