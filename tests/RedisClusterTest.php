@@ -154,7 +154,26 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testScan() {
-        $this->markTestSkipped(); // this will be implemented
+        $i_key_count = 0;
+        $i_scan_count = 0;
+
+        /* Have scan retry for us */
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+        /* Iterate over our masters, scanning each one */
+        foreach ($this->redis->_masters() as $arr_master) {
+            /* Grab the number of keys we have */
+            $i_key_count += $this->redis->dbsize($arr_master);
+
+            /* Scan the keys here */
+            $it = NULL;
+            while ($arr_keys = $this->redis->scan($it, $arr_master)) {
+                $i_scan_count += count($arr_keys);
+            }
+        }
+
+        /* Our total key count should match */
+        $this->assertEquals($i_scan_count, $i_key_count);
     }
 
     // Run some simple tests against the PUBSUB command.  This is problematic, as we
