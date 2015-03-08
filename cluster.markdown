@@ -1,7 +1,7 @@
 Redis Cluster
 =============
 
-Redis introduces cluster support as of version 3.0.0, and to communicate with a cluster using phpredis one needs to use the RedisCluster class.  For the majority of operations the RedisCluster class can act as a drop-in replacement for the Redis class without needing to modify how it's called. **This feature was added as the result of a generous sponsorship by [Tradsey](www.tradsey.com)**
+Redis introduces cluster support as of version 3.0.0, and to communicate with a cluster using phpredis one needs to use the RedisCluster class.  For the majority of operations the RedisCluster class can act as a drop-in replacement for the Redis class without needing to modify how it's called. **This feature was added as the result of a generous sponsorship by [Tradsey](https://www.tradesy.com/)**
 
 ## Creating and connecting to a cluster
 
