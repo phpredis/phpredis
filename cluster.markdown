@@ -38,8 +38,8 @@ $obj_cluster = new RedisCluster('mycluster');
 
 On construction, the RedisCluster class will iterate over the provided seed nodes until it can attain a connection to the cluster and run CLUSTER SLOTS to map every node in the cluster locally.  Once the keyspace is mapped, RedisCluster will only connect to nodes when it needs to (e.g. you're getting a key that we believe is on that node.)
 
-# Timeouts
-Because Redis cluster is intended to provide high availability, timeouts do not work in the same way they do in normal socket communication.  It's fully possible to have a timeout or even exception on a gien socket (say in the case that a master node has failed), and continue to serve the request if and when a slave can be promoted as the new master.
+## Timeouts
+Because Redis cluster is intended to provide high availability, timeouts do not work in the same way they do in normal socket communication.  It's fully possible to have a timeout or even exception on a given socket (say in the case that a master node has failed), and continue to serve the request if and when a slave can be promoted as the new master.
 
 The way RedisCluster handles user specified timeout values is that every time a command is sent to the cluster, we record the the time at the start of the request and then again every time we have to re-issue the command to a different node (either because Redis cluster responded with MOVED/ASK or because we failed to communicate with a given node).  Once we detect having been in the command loop for longer than our specified timeout, an error is raised.
 
@@ -65,7 +65,7 @@ $obj_cluster->setOption(
 </pre>
 
 ## Main command loop
-With the exception of commands that are directed to a specific node, each command executed via RedisCluster is processed through a command loop, where we make the request, handle any MOVED or ASK redirection, and repeat if neccsary.  This continues until one of the following conditions is met:
+With the exception of commands that are directed to a specific node, each command executed via RedisCluster is processed through a command loop, where we make the request, handle any MOVED or ASK redirection, and repeat if necessary.  This continues until one of the following conditions is met:
 
 1.  We fail to communicate with *any* node that we are aware of, in which case a ```RedisClusterExecption``` is raised.
 2.  We have been bounced around longer than the timeout which was set on construction.
@@ -80,11 +80,14 @@ When you call ```RedisCluster->multi()```, the cluster is put into a MULTI state
 Consider the following example:
 
 <pre>
-$obj_cluster->multi(); // Cluster is put into MULTI state locally
+// Cluster is put into MULTI state locally
+$obj_cluster->multi();
+
 for ($i = 0; $i < 10; $i++) {
     // MULTI will be delivered only once per node
     $obj_cluster->get("key:$i");
 }
+
 // This always returns an array of 10 elements, of which some could be false 
 // (for example if a slot had been migrated)
 print_r($obj_cluster->exec());
