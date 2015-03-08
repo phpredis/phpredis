@@ -103,9 +103,11 @@ See [instructions from @char101](https://github.com/nicolasff/phpredis/issues/21
 
 ## Distributed Redis Array
 
-See [dedicated page](https://github.com/nicolasff/phpredis/blob/master/arrays.markdown#readme).
+See [dedicated page](https://github.com/phpredis/phpredis/blob/master/arrays.markdown#readme).
 
+## Redis Cluster support
 
+See [dedicated page](https://github.com/phpredis/phpredis/blob/feature/redis_cluster/cluster.markdown#readme).
 
 # Classes and methods
 -----
