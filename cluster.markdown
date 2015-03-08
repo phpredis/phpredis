@@ -9,7 +9,13 @@ To maintain consistency with the RedisArray class, one can create and connect to
 
 #### Declaring a cluster with an array of seeds
 <pre>
+// Create a cluster setting two nodes as seeds
 $obj_cluster = new RedisCluster(NULL, Array('host:7000', 'host:7001', 'host:7003'));
+
+// Connect and specify timeout and read_timeout
+$obj_cluster = new RedisCluster(
+    NULL, Array("host:7000", "host:7001", 1.5, 1.5);
+);
 </pre>
 
 #### Loading a cluster configuration by name
@@ -31,6 +37,11 @@ $obj_cluster = new RedisCluster('mycluster');
 ## Connection process
 
 On construction, the RedisCluster class will iterate over the provided seed nodes until it can attain a connection to the cluster and run CLUSTER SLOTS to map every node in the cluster locally.  Once the keyspace is mapped, RedisCluster will only connect to nodes when it needs to (e.g. you're getting a key that we believe is on that node.)
+
+# Timeouts
+Because Redis cluster is intended to provide high availability, timeouts do not work in the same way they do in normal socket communication.  It's fully possible to have a timeout or even exception on a gien socket (say in the case that a master node has failed), and continue to serve the request if and when a slave can be promoted as the new master.
+
+The way RedisCluster handles user specified timeout values is that every time a command is sent to the cluster, we record the the time at the start of the request and then again every time we have to re-issue the command to a different node (either because Redis cluster responded with MOVED/ASK or because we failed to communicate with a given node).  Once we detect having been in the command loop for longer than our specified timeout, an error is raised.
 
 ## Keyspace map
 As previously described, RedisCluster makes an initial mapping of every master (and any slaves) on construction, which it uses to determine which nodes to direct a given command.  However, one of the core functionalities of Redis cluster is that this keyspace can change while the cluster is running.
