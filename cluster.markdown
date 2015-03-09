@@ -83,13 +83,16 @@ Consider the following example:
 // Cluster is put into MULTI state locally
 $obj_cluster->multi();
 
-for ($i = 0; $i < 10; $i++) {
-    // MULTI will be delivered only once per node
-    $obj_cluster->get("key:$i");
-}
+// The cluster will issue MULTI on this node first (and only once)
+$obj_cluster->get("mykey");
+$obj_cluster->set("mykey", "new_value");
 
-// This always returns an array of 10 elements, of which some could be false 
-// (for example if a slot had been migrated)
+// If 'myotherkey' maps to a different node, MULTI will be issued there
+// before requesting the key
+$obj_cluster->get("myotherkey");
+
+// This will always return an array, even in the event of a failed transaction
+// on one of the nodes, in which case that element will be FALSE
 print_r($obj_cluster->exec());
 </pre>
 
