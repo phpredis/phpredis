@@ -509,32 +509,33 @@ PHP_MINIT_FUNCTION(redis)
         redis_sock_name, module_number
     );
 
-	add_constant_long(redis_ce, "REDIS_NOT_FOUND", REDIS_NOT_FOUND);
-	add_constant_long(redis_ce, "REDIS_STRING", REDIS_STRING);
-	add_constant_long(redis_ce, "REDIS_SET", REDIS_SET);
-	add_constant_long(redis_ce, "REDIS_LIST", REDIS_LIST);
-	add_constant_long(redis_ce, "REDIS_ZSET", REDIS_ZSET);
-	add_constant_long(redis_ce, "REDIS_HASH", REDIS_HASH);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("REDIS_NOT_FOUND"), REDIS_NOT_FOUND TSRMLS_CC);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("REDIS_STRING"), REDIS_STRING TSRMLS_CC);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("REDIS_SET"), REDIS_SET TSRMLS_CC);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("REDIS_LIST"), REDIS_LIST TSRMLS_CC);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("REDIS_ZSET"), REDIS_ZSET TSRMLS_CC);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("REDIS_HASH"), REDIS_HASH TSRMLS_CC);
 
-	add_constant_long(redis_ce, "ATOMIC", ATOMIC);
-	add_constant_long(redis_ce, "MULTI", MULTI);
-	add_constant_long(redis_ce, "PIPELINE", PIPELINE);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("ATOMIC"), ATOMIC TSRMLS_CC);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("MULTI"), MULTI TSRMLS_CC);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("PIPELINE"), PIPELINE TSRMLS_CC);
 
     /* options */
-    add_constant_long(redis_ce, "OPT_SERIALIZER", REDIS_OPT_SERIALIZER);
-    add_constant_long(redis_ce, "OPT_PREFIX", REDIS_OPT_PREFIX);
-    add_constant_long(redis_ce, "OPT_READ_TIMEOUT", REDIS_OPT_READ_TIMEOUT);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("OPT_SERIALIZER"), REDIS_OPT_SERIALIZER TSRMLS_CC);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("OPT_PREFIX"), REDIS_OPT_PREFIX TSRMLS_CC);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("OPT_READ_TIMEOUT"), REDIS_OPT_READ_TIMEOUT TSRMLS_CC);
 
     /* serializer */
-    add_constant_long(redis_ce, "SERIALIZER_NONE", REDIS_SERIALIZER_NONE);
-    add_constant_long(redis_ce, "SERIALIZER_PHP", REDIS_SERIALIZER_PHP);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("SERIALIZER_NONE"), REDIS_SERIALIZER_NONE TSRMLS_CC);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("SERIALIZER_PHP"), REDIS_SERIALIZER_PHP TSRMLS_CC);
 
     /* scan options*/
-    add_constant_long(redis_ce, "OPT_SCAN", REDIS_OPT_SCAN);
-    add_constant_long(redis_ce, "SCAN_RETRY", REDIS_SCAN_RETRY);
-    add_constant_long(redis_ce, "SCAN_NORETRY", REDIS_SCAN_NORETRY);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("OPT_SCAN"), REDIS_OPT_SCAN TSRMLS_CC);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("SCAN_RETRY"), REDIS_SCAN_RETRY TSRMLS_CC);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("SCAN_NORETRY"), REDIS_SCAN_NORETRY TSRMLS_CC);
+
 #ifdef HAVE_REDIS_IGBINARY
-    add_constant_long(redis_ce, "SERIALIZER_IGBINARY", REDIS_SERIALIZER_IGBINARY);
+    zend_declare_class_constant_long(redis_ce, ZEND_STRL("SERIALIZER_IGBINARY"), REDIS_SERIALIZER_IGBINARY TSRMLS_CC);
 #endif
 
 	zend_declare_class_constant_stringl(redis_ce, "AFTER", 5, "after", 5 TSRMLS_CC);
