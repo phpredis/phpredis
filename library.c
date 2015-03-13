@@ -850,13 +850,12 @@ int redis_cmd_append_sstr_long(smart_str *str, long append) {
  */
 int redis_cmd_append_sstr_dbl(smart_str *str, double value) {
     char *dbl_str;
-    int dbl_len;
-	int retval;
+    int dbl_len, retval;
 
     /* Convert to double */
     REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, value);
 
-    /* Append the string */
+    // Append the string
     retval = redis_cmd_append_sstr(str, dbl_str, dbl_len);
 
     /* Free our double string */
@@ -870,11 +869,11 @@ int redis_cmd_append_sstr_dbl(smart_str *str, double value) {
  * Append an integer command to a Redis command
  */
 int redis_cmd_append_int(char **cmd, int cmd_len, int append) {
-	char int_buf[32];
-	int int_len;
+    char int_buf[32];
+    int int_len;
 
-	/* Conver to an int, capture length */
-	int_len = snprintf(int_buf, sizeof(int_buf), "%d", append);
+    // Conver to an int, capture length
+    int_len = snprintf(int_buf, sizeof(int_buf), "%d", append);
 
 	/* Return the new length */
 	return redis_cmd_append_str(cmd, cmd_len, int_buf, int_len);
@@ -1051,6 +1050,8 @@ PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
 
 PHPAPI zval* redis_parse_client_list_response(char *response) {
     zval *z_result, *z_sub_result;
+    char *p, *lpos, *kpos = NULL, *vpos = NULL, *p2, *key, *value;
+    int klen = 0, done = 0, is_numeric;
 
     // Allocate memory for our response
     MAKE_STD_ZVAL(z_result);
@@ -1061,8 +1062,8 @@ PHPAPI zval* redis_parse_client_list_response(char *response) {
     array_init(z_sub_result);
 
     // Pointers for parsing
-    char *p = response, *lpos = response, *p2, *key;
-    char *kpos = NULL, *vpos = NULL, *value;
+    p = response;
+    lpos = response;
 
     /* While we've got more to parse */
     while(!done) {
