@@ -36,6 +36,13 @@ PHPAPI int usleep(unsigned int useconds);
 #define SCORE_DECODE_INT  1
 #define SCORE_DECODE_DOUBLE 2
 
+#ifdef PHP_WIN32
+    # if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION <= 4
+        /* This proto is available from 5.5 on only */
+        PHPAPI int usleep(unsigned int useconds);
+    # endif
+#endif
+
 extern zend_class_entry *redis_ce;
 extern zend_class_entry *redis_exception_ce;
 extern zend_class_entry *spl_ce_RuntimeException;
