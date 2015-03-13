@@ -25,4 +25,3 @@ if (PHP_REDIS != "no") {
 
 	EXTENSION("redis", sources);
 }
-
