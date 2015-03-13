@@ -109,6 +109,29 @@ See [dedicated page](https://github.com/phpredis/phpredis/blob/master/arrays.mar
 
 See [dedicated page](https://github.com/phpredis/phpredis/blob/feature/redis_cluster/cluster.markdown#readme).
 
+## Running the unit tests
+phpredis uses a small custom unit test suite for testing functionality of the various classes.  To run tests, simply do the following:
+
+<pre>
+# Run tests for Redis class (note this is the default)
+php tests/TestRedis.php --class Redis
+
+# Run tests for RedisArray class
+tests/mkring.sh
+php tests/TestRedis.php --class RedisArray
+
+# Run tests for the RedisCluster class
+test/make-cluster.sh start
+php tests/TestRedis.php --class RedisCluster
+</pre>
+
+Note that it is possible to run only tests which match a substring of the test itself by passing the additional argument '--test <str>' when invoking.
+
+<pre>
+# Just run the 'echo' test
+php tests/TestRedis.php --class Redis --test echo 
+</pre>
+
 # Classes and methods
 -----
 
