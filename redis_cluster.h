@@ -99,7 +99,7 @@
     resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx); 
 
 /* For the creation of RedisCluster specific exceptions */
-PHPAPI zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC);
+PHP_REDIS_API zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC);
 
 /* Create cluster context */
 zend_object_value create_cluster_context(zend_class_entry *class_type 
