@@ -28,6 +28,12 @@
 #define REDIS_ZSET      4
 #define REDIS_HASH      5
 
+#ifdef PHP_WIN32
+#define PHP_REDIS_API __declspec(dllexport)
+#else
+#define PHP_REDIS_API
+#endif
+
 /* reply types */
 typedef enum _REDIS_REPLY_TYPE {
     TYPE_EOF       = -1,
