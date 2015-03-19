@@ -24,6 +24,7 @@ You can send comments, patches, questions [here on github](https://github.com/ni
    * [Sets](#sets)
    * [Sorted sets](#sorted-sets)
    * [Pub/sub](#pubsub)
+   * [HyperLogLog](#hyperloglog)
    * [Transactions](#transactions)
    * [Scripting](#scripting)
    * [Introspection](#introspection) 
@@ -2971,6 +2972,83 @@ $redis->pubsub("numsub", Array("chan1", "chan2")); /*Get subscriber counts for '
 $redsi->pubsub("numpat"); /* Get the number of pattern subscribers */
 ```
 
+## HyperLogLog
+
+* [pfAdd](#pfAdd) - Add element(s) to a HyperLogLog data structure
+* [pfCount](#pfCount) - Get the approximated number of unique elements observed via pfAdd
+* [pfMerge](#pfMerge) - Merge multiple HyperLogLog values into an unique value
+
+### pfAdd
+-----
+_**Description**_: Add element(s) to a HyperLogLog data structure.
+
+##### *Parameters*
+*key*:
+*Elements*: element1, element2, ... , elementN: Any number of elements to add to the HyperLogLog data structure.
+
+##### *Return value*
+*BOOL*: `TRUE` in case at least 1 HyperLogLog internal register was altered, `FALSE` otherwise.
+
+##### *Example*
+~~~
+$redis->delete('hll');
+
+$redis->pfAdd('hll', 'a', 'b', 'c', 'd', 'e', 'f', 'g');
+
+$redis->pfCount('hll'); /* 7 */
+~~~
+
+### pfCount
+-----
+_**Description**_: Get the approximated number of unique elements observed via pfAdd.
+
+When called with a single key, returns the approximated cardinality computed by the HyperLogLog data structure stored at the specified variable, which is 0 if the variable does not exist.
+
+When called with multiple keys, returns the approximated cardinality of the union of the HyperLogLogs passed, by internally merging the HyperLogLogs stored at the provided keys into a temporary hyperLogLog.
+
+##### *Parameters*
+*Keys*: key1, key2, ... , keyN: Any number of keys to get the approximated cardinality computed by the HyperLogLog data structure.
+
+##### *Return value*
+*LONG*: The approximated cardinality.
+
+##### *Example*
+~~~
+$redis->delete('hll');
+$redis->delete('hll2');
+
+$redis->pfAdd('hll', 'a', 'b', 'c', 'd', 'e', 'f', 'g');
+$redis->pfAdd('hll2', 'a', 'b', 'c', 'x', 'y', 'z');
+
+$redis->pfCount('hll'); /* 7 */
+$redis->pfCount('hll2'); /* 6 */
+$redis->pfCount('hll', 'hll2'); /* 10 */
+~~~
+
+### pfMerge
+-----
+_**Description**_: Merge multiple HyperLogLog values into an unique value that will approximate the cardinality of the union of the observed Sets of the source HyperLogLog structures.
+
+##### *Parameters*
+*DestKey*: destKey
+*SourceKeys*: key1, key2, ... , keyN: Any number of source keys to merge into the destKey HyperLogLog data structure.
+
+##### *Return value*
+*BOOL*: `TRUE` on success, `FALSE` on error.
+
+##### *Example*
+~~~
+$redis->delete('hll');
+$redis->delete('hll2');
+$redis->delete('hll3');
+
+$redis->pfAdd('hll', 'a', 'b', 'c', 'd', 'e', 'f', 'g');
+$redis->pfAdd('hll2', 'a', 'b', 'c', 'x', 'y', 'z');
+
+$redis->pfMerge('hll3', 'hll', 'hll2');
+$redis->pfCount('hll3'); /* 10 */
+~~~
+
 ## Transactions
 
 1. [multi, exec, discard](#multi-exec-discard) - Enter and exit transactional mode
@@ -3310,3 +3388,4 @@ None
 
 ### *Return value*
 *Mixed*  Returns the password used to authenticate a phpredis session or NULL if none was used, and FALSE if we're not connected
+

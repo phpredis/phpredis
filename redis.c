@@ -292,6 +292,11 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, wait, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, pubsub, NULL, ZEND_ACC_PUBLIC)
 
+     /* hyperloglog since 2.8.9 */
+     PHP_ME(Redis, pfAdd, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pfCount, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pfMerge, NULL, ZEND_ACC_PUBLIC)
+
      /* aliases */
      PHP_MALIAS(Redis, open, connect, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, popen, pconnect, NULL, ZEND_ACC_PUBLIC)
@@ -6358,6 +6363,57 @@ PHP_METHOD(Redis, pubsub) {
         }
         REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
     }
+}
+
+/* {{{ proto boolean Redis::pfAdd(string key, string element0, ... string elementN)
+ */
+PHP_METHOD(Redis, pfAdd) {
+
+	RedisSock *redis_sock;
+
+	if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+			"PFADD", sizeof("PFADD") - 1,
+			1, &redis_sock, 0, 1, 1))
+		return;
+
+	IF_ATOMIC() {
+		redis_1_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_1_response);
+}
+
+/* {{{ proto long Redis::pfCount(string key0, ... string keyN)
+ */
+PHP_METHOD(Redis, pfCount) {
+
+	RedisSock *redis_sock;
+
+	if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+			"PFCOUNT", sizeof("PFCOUNT") - 1,
+			0, &redis_sock, 0, 1, 1))
+		return;
+
+	IF_ATOMIC() {
+		redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_long_response);
+}
+
+/* {{{ proto boolean Redis::pfMerge(string destkey, string sourcekey0, ... string sourcekeyN)
+ */
+PHP_METHOD(Redis, pfMerge) {
+
+	RedisSock *redis_sock;
+
+	if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+			"PFMERGE", sizeof("PFMERGE") - 1,
+			1, &redis_sock, 0, 1, 1))
+		return;
+
+	IF_ATOMIC() {
+		redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+	}
+	REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 
 /* Construct an EVAL or EVALSHA command, with option argument array and number of arguments that are keys parameter */
