@@ -3029,14 +3029,14 @@ $ret = FALSE if x has been modified between the call to WATCH and the call to EX
 
 ## Scripting
 
-* [eval](#) - Evaluate a LUA script serverside
-* [evalSha](#) - Evaluate a LUA script serverside, from the SHA1 hash of the script instead of the script itself
-* [script](#) - Execute the Redis SCRIPT command to perform various operations on the scripting subsystem
-* [getLastError](#) - The last error message (if any)
-* [clearLastError](#) - Clear the last error message
-* [_prefix](#) - A utility method to prefix the value with the prefix setting for phpredis
-* [_unserialize](#) - A utility method to unserialize data with whatever serializer is set up
-* [_serialize](#) - A utility method to serialize data with whatever serializer is set up
+* [eval](#eval) - Evaluate a LUA script serverside
+* [evalSha](#evalsha) - Evaluate a LUA script serverside, from the SHA1 hash of the script instead of the script itself
+* [script](#script) - Execute the Redis SCRIPT command to perform various operations on the scripting subsystem
+* [getLastError](#getlasterror) - The last error message (if any)
+* [clearLastError](#clearlasterror) - Clear the last error message
+* [_prefix](#_prefix) - A utility method to prefix the value with the prefix setting for phpredis
+* [_unserialize](#_unserialize) - A utility method to unserialize data with whatever serializer is set up
+* [_serialize](#_serialize) - A utility method to serialize data with whatever serializer is set up
 
 ### eval
 -----
