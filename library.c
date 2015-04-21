@@ -832,7 +832,7 @@ PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
     char *p, *lpos, *kpos = NULL, *vpos = NULL, *p2, *key, *value;
 
     /* Key length, done flag */
-    int klen, done = 0, is_numeric;
+    int klen = 0, done = 0, is_numeric;
 
     /* Make sure we can read a response from Redis */
     if((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC)) == NULL) {
