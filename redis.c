@@ -494,45 +494,45 @@ PHP_REDIS_API RedisSock *redis_sock_get_connected(INTERNAL_FUNCTION_PARAMETERS) 
 /* Redis and RedisCluster objects share serialization/prefixing settings so 
  * this is a generic function to add class constants to either */
 static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) {
-    add_constant_long(ce, "REDIS_NOT_FOUND", REDIS_NOT_FOUND);
-    add_constant_long(ce, "REDIS_STRING", REDIS_STRING);
-    add_constant_long(ce, "REDIS_SET", REDIS_SET);
-    add_constant_long(ce, "REDIS_LIST", REDIS_LIST);
-    add_constant_long(ce, "REDIS_ZSET", REDIS_ZSET);
-    add_constant_long(ce, "REDIS_HASH", REDIS_HASH);
+    zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_NOT_FOUND"), REDIS_NOT_FOUND TSRMLS_CC);
+    zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_STRING"), REDIS_STRING TSRMLS_CC);
+    zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_SET"), REDIS_SET TSRMLS_CC);
+    zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_LIST"), REDIS_LIST TSRMLS_CC);
+    zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_ZSET"), REDIS_ZSET TSRMLS_CC);
+    zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_HASH"), REDIS_HASH TSRMLS_CC);
 
     /* Cluster doesn't support pipelining at this time */
     if(!is_cluster) {
-        add_constant_long(ce, "PIPELINE", PIPELINE);
+        zend_declare_class_constant_long(ce, ZEND_STRL("PIPELINE"), PIPELINE TSRMLS_CC);
     }
 
     /* Add common mode constants */
-    add_constant_long(ce, "ATOMIC", ATOMIC);
-    add_constant_long(ce, "MULTI", MULTI);
+    zend_declare_class_constant_long(ce, ZEND_STRL("ATOMIC"), ATOMIC TSRMLS_CC);
+    zend_declare_class_constant_long(ce, ZEND_STRL("MULTI"), MULTI TSRMLS_CC);
 
     /* options */
-    add_constant_long(ce, "OPT_SERIALIZER", REDIS_OPT_SERIALIZER);
-    add_constant_long(ce, "OPT_PREFIX", REDIS_OPT_PREFIX);
-    add_constant_long(ce, "OPT_READ_TIMEOUT", REDIS_OPT_READ_TIMEOUT);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_SERIALIZER"), REDIS_OPT_SERIALIZER TSRMLS_CC);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_PREFIX"), REDIS_OPT_PREFIX TSRMLS_CC);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_READ_TIMEOUT"), REDIS_OPT_READ_TIMEOUT TSRMLS_CC);
 
     /* serializer */
-    add_constant_long(ce, "SERIALIZER_NONE", REDIS_SERIALIZER_NONE);
-    add_constant_long(ce, "SERIALIZER_PHP", REDIS_SERIALIZER_PHP);
+    zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_NONE"), REDIS_SERIALIZER_NONE TSRMLS_CC);
+    zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_PHP"), REDIS_SERIALIZER_PHP TSRMLS_CC);
 
     /* scan options*/
-    add_constant_long(ce, "OPT_SCAN", REDIS_OPT_SCAN);
-    add_constant_long(ce, "SCAN_RETRY", REDIS_SCAN_RETRY);
-    add_constant_long(ce, "SCAN_NORETRY", REDIS_SCAN_NORETRY);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_SCAN"), REDIS_OPT_SCAN TSRMLS_CC);
+    zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_RETRY"), REDIS_SCAN_RETRY TSRMLS_CC);
+    zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_NORETRY"), REDIS_SCAN_NORETRY TSRMLS_CC);
 
     /* Cluster option to allow for slave failover */
     if (is_cluster) {
-        add_constant_long(ce, "OPT_SLAVE_FAILOVER", REDIS_OPT_FAILOVER);
-        add_constant_long(ce, "FAILOVER_NONE", REDIS_FAILOVER_NONE);
-        add_constant_long(ce, "FAILOVER_ERROR", REDIS_FAILOVER_ERROR);
-        add_constant_long(ce, "FAILOVER_DISTRIBUTE", REDIS_FAILOVER_DISTRIBUTE);
+        zend_declare_class_constant_long(ce, ZEND_STRL("OPT_SLAVE_FAILOVER"), REDIS_OPT_FAILOVER TSRMLS_CC);
+        zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_NONE"), REDIS_FAILOVER_NONE TSRMLS_CC);
+        zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_ERROR"), REDIS_FAILOVER_ERROR TSRMLS_CC);
+        zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE"), REDIS_FAILOVER_DISTRIBUTE TSRMLS_CC);
     }
 #ifdef HAVE_REDIS_IGBINARY
-    add_constant_long(ce, "SERIALIZER_IGBINARY", REDIS_SERIALIZER_IGBINARY);
+    zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_IGBINARY"), REDIS_SERIALIZER_IGBINARY TSRMLS_CC);
 #endif
 
     zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5 TSRMLS_CC);
