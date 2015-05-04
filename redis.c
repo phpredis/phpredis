@@ -3861,7 +3861,7 @@ PHP_METHOD(Redis, zscan) {
 
 /* {{{ proto Redis::pfAdd(string key, array elements) }}} */
 PHP_METHOD(Redis, pfadd) {
-    REDIS_PROCESS_CMD(pfadd, redis_1_response);
+    REDIS_PROCESS_CMD(pfadd, redis_long_response);
 }
 
 /* {{{ proto Redis::pfCount(string key) }}}*/
