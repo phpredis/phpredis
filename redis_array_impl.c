@@ -567,7 +567,6 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
 	zval *z_keys, **z_entry_pp;
 	HashPosition pos;
 	MAKE_STD_ZVAL(z_keys);
-    HashPosition pos;
 #if PHP_VERSION_ID > 50300
 	array_init_size(z_keys, zend_hash_num_elements(Z_ARRVAL_P(z_pairs)));
 #else

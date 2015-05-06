@@ -266,7 +266,6 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, _unserialize, NULL, ZEND_ACC_PUBLIC)
 
      PHP_ME(Redis, client, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, rawcommand, NULL, ZEND_ACC_PUBLIC)
 
      /* SCAN and friends */
      PHP_ME(Redis, scan, arginfo_scan, ZEND_ACC_PUBLIC)
@@ -290,7 +289,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, slowlog, NULL, ZEND_ACC_PUBLIC)
 
      /* Send a raw command and read raw results */
-     PHP_ME(Redis, rawCommand, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, rawcommand, NULL, ZEND_ACC_PUBLIC)
 
      /* introspection */
      PHP_ME(Redis, getHost, NULL, ZEND_ACC_PUBLIC)
@@ -3336,12 +3335,20 @@ PHP_METHOD(Redis, script) {
 PHP_METHOD(Redis, dump) {
     REDIS_PROCESS_KW_CMD("DUMP", redis_key_cmd, redis_ping_response);
 }
+/* }}} */
 
 /* {{{ proto Redis::restore(ttl, key, value) */
 PHP_METHOD(Redis, restore) {
     REDIS_PROCESS_KW_CMD("RESTORE", redis_key_long_val_cmd, 
         redis_boolean_response);
 }
+/* }}} */
+
+/* {{{ proto Redis::debug(string key) */
+PHP_METHOD(Redis, debug) {
+    REDIS_PROCESS_KW_CMD("DEBUG", redis_key_cmd, redis_string_response);
+}
+/* }}} */
 
 /* {{{ proto Redis::migrate(host port key dest-db timeout [bool copy, 
  *                          bool replace]) */
@@ -3483,7 +3490,13 @@ PHP_METHOD(Redis, clearLastError) {
         RETURN_FALSE;
     }
 
-    RETVAL_LONG(redis_sock->mode);
+    /* Clear error message if we have one */
+    if (redis_sock->err) {
+        efree(redis_sock->err);
+        redis_sock->err = NULL;
+    }
+
+    RETURN_TRUE;
 }
 
 /*

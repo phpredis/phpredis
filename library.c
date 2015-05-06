@@ -130,28 +130,6 @@ static void redis_error_throw(char *err, size_t err_len TSRMLS_DC) {
     }
 }
 
-PHPAPI void redis_stream_close(RedisSock *redis_sock TSRMLS_DC) {
-    if (!redis_sock->persistent) {
-        php_stream_close(redis_sock->stream);
-    } else {
-        php_stream_pclose(redis_sock->stream);
-    }
-
-    efree(cmd);
-
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-        return -1;
-    }
-
-    if (strncmp(response, "+OK", 3)) {
-        efree(response);
-        return -1;
-    }
-
-    efree(response);
-    return 0;
-}
-
 PHP_REDIS_API void redis_stream_close(RedisSock *redis_sock TSRMLS_DC) {
 	if (!redis_sock->persistent) {
 		php_stream_close(redis_sock->stream);
@@ -160,7 +138,7 @@ PHP_REDIS_API void redis_stream_close(RedisSock *redis_sock TSRMLS_DC) {
 	}
 }
 
-PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock TSRMLS_DC)
+PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
 {
     int eof;
     int count = 0;
@@ -1407,14 +1385,6 @@ PHPAPI int redis_mbulk_reply_zipped_vals(INTERNAL_FUNCTION_PARAMETERS, RedisSock
 }
 
 PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, 
-                             RedisSock *redis_sock, zval *z_tab, void *ctx) 
-{
-    return redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-        z_tab, UNSERIALIZE_VALS, SCORE_DECODE_NONE);
-}
-
-
-PHPAPI void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, 
                              RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
     char *response;
@@ -1875,7 +1845,7 @@ PHPAPI int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
 PHPAPI int redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
     char inbuf[1024];
-    int numElems;
+    int numElems, err_len;
     zval *z_multi_result;
 
     if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
@@ -1953,7 +1923,6 @@ redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         count--;
     }
 }
-*/
 
 /* Specialized multibulk processing for HMGET where we need to pair requested
  * keys with their returned values */
