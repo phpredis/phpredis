@@ -1647,7 +1647,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     efree(host);
 
     if (!redis_sock->stream) {
-        efree(errstr);
+        if (errstr) efree(errstr);
         return -1;
     }
 
