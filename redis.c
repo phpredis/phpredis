@@ -266,7 +266,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, _unserialize, NULL, ZEND_ACC_PUBLIC)
 
      PHP_ME(Redis, client, NULL, ZEND_ACC_PUBLIC)
-
+     PHP_ME(Redis, command, NULL, ZEND_ACC_PUBLIC)
+     
      /* SCAN and friends */
      PHP_ME(Redis, scan, arginfo_scan, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hscan, arginfo_kscan, ZEND_ACC_PUBLIC)
@@ -3684,11 +3685,50 @@ PHP_METHOD(Redis, client) {
     }
 }
 
-/* proto array Redis::rawcommand()
- * proto array Redis::rawcommand('info', string cmd)
- * proto array Redis::rawcommand('getkeys', array cmd_args) */
+/* {{{ proto mixed Redis::rawcommand(string $command, [ $arg1 ... $argN]) */
 PHP_METHOD(Redis, rawcommand) {
-    REDIS_PROCESS_CMD(rawcommand, redis_read_variant_reply);
+    int argc = ZEND_NUM_ARGS(), cmd_len;
+    char *cmd = NULL;
+    RedisSock *redis_sock;
+    zval **z_args;
+
+    /* Sanity check on arguments */
+    z_args = emalloc(argc * sizeof(zval*));
+    if (argc < 1) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "Must pass at least one command keyword");
+        efree(z_args);
+        RETURN_FALSE;
+    } else if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "Internal PHP error parsing arguments");
+        efree(z_args);
+        RETURN_FALSE;
+    } else if (redis_build_raw_cmd(z_args, argc, &cmd, &cmd_len TSRMLS_CC) < 0 ||
+               redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0) 
+    {
+        if (cmd) efree(cmd);
+        efree(z_args);
+        RETURN_FALSE;
+    }
+
+    /* Clean up command array */
+    efree(z_args);
+
+    /* Execute our command */
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+        redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock,NULL,NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+}
+/* }}} */
+
+/* {{{ proto array Redis::command()
+ *     proto array Redis::command('info', string cmd)
+ *     proto array Redis::command('getkeys', array cmd_args) */
+PHP_METHOD(Redis, command) {
+    REDIS_PROCESS_CMD(command, redis_read_variant_reply);
 }
 /* }}} */
 

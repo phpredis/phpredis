@@ -34,6 +34,51 @@ int redis_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* Helper to construct a raw command.  Given that the cluster and non cluster
+ * versions are different (RedisCluster needs an additional argument to direct
+ * the command) we take the start of our array and count */
+int redis_build_raw_cmd(zval **z_args, int argc, char **cmd, int *cmd_len TSRMLS_DC) 
+{
+    smart_str cmdstr = {0};
+    int i;
+
+    /* Make sure our first argument is a string */
+    if (Z_TYPE_P(z_args[0]) != IS_STRING) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "When sending a 'raw' command, the first argument must be a string!");
+        return FAILURE;
+    }
+
+    /* Initialize our command string */
+    redis_cmd_init_sstr(&cmdstr, argc-1, Z_STRVAL_P(z_args[0]), Z_STRLEN_P(z_args[0]));
+
+    for (i = 1; i < argc; i++) {
+       switch (Z_TYPE_P(z_args[i])) {
+            case IS_STRING:
+                redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(z_args[i]),
+                    Z_STRLEN_P(z_args[i]));
+                break;
+            case IS_LONG:
+                redis_cmd_append_sstr_long(&cmdstr,Z_LVAL_P(z_args[i]));
+                break;
+            case IS_DOUBLE:
+                redis_cmd_append_sstr_dbl(&cmdstr,Z_DVAL_P(z_args[i]));
+                break;
+            default:
+                php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                    "Raw command arguments must be scalar values!");
+                efree(cmdstr.c);
+                return FAILURE;
+        }
+    }
+
+    /* Push command and length to caller */
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 /* Generic command where we just take a string and do nothing to it*/
 int redis_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
                   char **cmd, int *cmd_len, short *slot, void **ctx)
@@ -2699,8 +2744,8 @@ int redis_sdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 /* COMMAND */
-int redis_rawcommand_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                         char **cmd, int *cmd_len, short *slot, void **ctx)
+int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *kw=NULL;
     zval *z_arg;
