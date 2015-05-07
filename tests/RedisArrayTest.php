@@ -544,17 +544,4 @@ function run_tests($className, $str_filter) {
 
 define('REDIS_ARRAY_DATA_SIZE', 1000);
 
-global $useIndex;
-foreach(array(true, false) as $useIndex) {
-    $str_limit = isset($argv[1]) ? $argv[1] : NULL;
-
-    echo "\n".($useIndex?"WITH":"WITHOUT"). " per-node index:\n";
-
-    //run_tests('Redis_Array_Test', $str_limit);
-	run_tests('Redis_Rehashing_Test', $str_limit);
-	//run_tests('Redis_Auto_Rehashing_Test', $str_limit);
-	//run_tests('Redis_Multi_Exec_Test', $str_limit);
-    //run_tests('Redis_Distributor_Test', $str_limit);
-}
-
 ?>

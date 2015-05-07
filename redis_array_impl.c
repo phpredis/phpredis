@@ -565,8 +565,8 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
 
 	/* Initialize key array */
 	zval *z_keys, **z_entry_pp;
-	HashPosition pos;
 	MAKE_STD_ZVAL(z_keys);
+    HashPosition pos;
 #if PHP_VERSION_ID > 50300
 	array_init_size(z_keys, zend_hash_num_elements(Z_ARRVAL_P(z_pairs)));
 #else
@@ -957,11 +957,6 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	for(i = 0; i < 1 + 2 * count; ++i) {
 		efree(z_zadd_args[i]);
 	}
-
-    zval_dtor(&z_ret);
-
-    /* Free the array itself */
-    efree(z_zadd_args);
 
     zval_dtor(&z_ret);
 
