@@ -7,7 +7,7 @@ require_once(dirname($_SERVER['PHP_SELF'])."/RedisTest.php");
  * where we're validating specific cluster mechanisms
  */
 class Redis_Cluster_Test extends Redis_Test {
-    private $_arr_node_map = Array();
+    private static $_arr_node_map = Array();
 
     private $_arr_redis_types = Array(
         Redis::REDIS_STRING,
@@ -43,9 +43,11 @@ class Redis_Cluster_Test extends Redis_Test {
         }
 
         /* Store our node map */
-        $this->_arr_node_map = array_filter(
-            explode("\n", file_get_contents($str_nodemap_file)
-        ));
+        if (!self::$_arr_node_map) {
+            self::$_arr_node_map = array_filter(
+                explode("\n", file_get_contents($str_nodemap_file)
+            ));
+        }
     }
 
     /* Override setUp to get info from a specific node */
@@ -57,7 +59,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
     /* Override newInstance as we want a RedisCluster object */
     protected function newInstance() {
-        return new RedisCluster(NULL, $this->_arr_node_map);
+        return new RedisCluster(NULL, self::$_arr_node_map);
     }
 
     /* Overrides for RedisTest where the function signature is different.  This
