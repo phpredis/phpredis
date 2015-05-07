@@ -3485,17 +3485,16 @@ PHP_METHOD(Redis, clearLastError) {
     {
         RETURN_FALSE;
     }
-
-    /* Grab socket */
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+    // Grab socket
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;
     }
 
-    /* Clear error message if we have one */
-    if (redis_sock->err) {
+    // Clear error message
+    if(redis_sock->err) {
         efree(redis_sock->err);
-        redis_sock->err = NULL;
     }
+    redis_sock->err = NULL;
 
     RETURN_TRUE;
 }

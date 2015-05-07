@@ -2200,8 +2200,27 @@ PHP_METHOD(RedisCluster, exec) {
     CLUSTER_RESET_MULTI(c);
 }
 
+/* {{{ proto bool RedisCluster::discard() */
+PHP_METHOD(RedisCluster, discard) {
+    redisCluster *c = GET_CONTEXT();
+
+    if(CLUSTER_IS_ATOMIC(c)) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Cluster is not in MULTI mode");
+        RETURN_FALSE;
+    }
+    
+    if(cluster_abort_exec(c TSRMLS_CC)<0) {
+        CLUSTER_RESET_MULTI(c);
+    }
+
+    CLUSTER_FREE_QUEUE(c);
+
+    RETURN_TRUE;
+}
+
 /* Get a slot either by key (string) or host/port array */
-static short cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
+static short
+cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC) 
 {
     int key_len, key_free;
     zval **z_host, **z_port, *z_tmp = NULL;
@@ -2211,7 +2230,7 @@ static short cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
     /* If it's a string, treat it as a key.  Otherwise, look for a two
      * element array */
     if(Z_TYPE_P(z_arg)==IS_STRING || Z_TYPE_P(z_arg)==IS_LONG ||
-       Z_TYPE_P(z_arg)==IS_DOUBLE)
+       Z_TYPE_P(z_arg)==IS_DOUBLE) 
     {
         /* Allow for any scalar here */
         if (Z_TYPE_P(z_arg) != IS_STRING) {
@@ -2235,7 +2254,7 @@ static short cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
             zval_dtor(z_tmp);
             efree(z_tmp);
         }
-    } else if (Z_TYPE_P(z_arg) == IS_ARRAY &&
+    } else if (Z_TYPE_P(z_arg) == IS_ARRAY && 
                zend_hash_index_find(Z_ARRVAL_P(z_arg),0,(void**)&z_host)!=FAILURE &&
                zend_hash_index_find(Z_ARRVAL_P(z_arg),1,(void**)&z_port)!=FAILURE &&
                Z_TYPE_PP(z_host)==IS_STRING && Z_TYPE_PP(z_port)==IS_LONG)
@@ -2245,7 +2264,7 @@ static short cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
             (unsigned short)Z_LVAL_PP(z_port));
 
         /* Inform the caller if they've passed bad data */
-        if(slot < 0) {
+        if(slot < 0) { 
             php_error_docref(0 TSRMLS_CC, E_WARNING, "Unknown node %s:%ld",
                 Z_STRVAL_PP(z_host), Z_LVAL_PP(z_port));
         }
@@ -2256,24 +2275,6 @@ static short cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
     }
 
     return slot;
-}
-
-/* {{{ proto bool RedisCluster::discard() */
-PHP_METHOD(RedisCluster, discard) {
-    redisCluster *c = GET_CONTEXT();
-
-    if(CLUSTER_IS_ATOMIC(c)) {
-        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Cluster is not in MULTI mode");
-        RETURN_FALSE;
-    }
-    
-    if(cluster_abort_exec(c TSRMLS_CC)<0) {
-        CLUSTER_RESET_MULTI(c);
-    }
-
-    CLUSTER_FREE_QUEUE(c);
-
-    RETURN_TRUE;
 }
 
 /* Generic handler for things we want directed at a given node, like SAVE,
@@ -2856,7 +2857,7 @@ PHP_METHOD(RedisCluster, echo) {
     rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
     if(cluster_send_slot(c,slot,cmd,cmd_len,rtype TSRMLS_CC)<0) {
         zend_throw_exception(redis_cluster_exception_ce,
-            "Unable to send command at the specificed node", 0 TSRMLS_CC);
+            "Unable to send commnad at the specificed node", 0 TSRMLS_CC);
         efree(cmd);
         RETURN_FALSE;
     }
@@ -2934,6 +2935,5 @@ PHP_METHOD(RedisCluster, rawcommand) {
 PHP_METHOD(RedisCluster, command) {
     CLUSTER_PROCESS_CMD(command, cluster_variant_resp, 0);
 }
-/* }}} */
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
