@@ -209,6 +209,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, randomkey, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, ping, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, echo, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, command, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, rawcommand, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, cluster, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, client, NULL, ZEND_ACC_PUBLIC)
@@ -2199,27 +2200,8 @@ PHP_METHOD(RedisCluster, exec) {
     CLUSTER_RESET_MULTI(c);
 }
 
-/* {{{ proto bool RedisCluster::discard() */
-PHP_METHOD(RedisCluster, discard) {
-    redisCluster *c = GET_CONTEXT();
-
-    if(CLUSTER_IS_ATOMIC(c)) {
-        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Cluster is not in MULTI mode");
-        RETURN_FALSE;
-    }
-    
-    if(cluster_abort_exec(c TSRMLS_CC)<0) {
-        CLUSTER_RESET_MULTI(c);
-    }
-
-    CLUSTER_FREE_QUEUE(c);
-
-    RETURN_TRUE;
-}
-
 /* Get a slot either by key (string) or host/port array */
-static short
-cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC) 
+static short cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
 {
     int key_len, key_free;
     zval **z_host, **z_port, *z_tmp = NULL;
@@ -2229,7 +2211,7 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
     /* If it's a string, treat it as a key.  Otherwise, look for a two
      * element array */
     if(Z_TYPE_P(z_arg)==IS_STRING || Z_TYPE_P(z_arg)==IS_LONG ||
-       Z_TYPE_P(z_arg)==IS_DOUBLE) 
+       Z_TYPE_P(z_arg)==IS_DOUBLE)
     {
         /* Allow for any scalar here */
         if (Z_TYPE_P(z_arg) != IS_STRING) {
@@ -2253,7 +2235,7 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
             zval_dtor(z_tmp);
             efree(z_tmp);
         }
-    } else if (Z_TYPE_P(z_arg) == IS_ARRAY && 
+    } else if (Z_TYPE_P(z_arg) == IS_ARRAY &&
                zend_hash_index_find(Z_ARRVAL_P(z_arg),0,(void**)&z_host)!=FAILURE &&
                zend_hash_index_find(Z_ARRVAL_P(z_arg),1,(void**)&z_port)!=FAILURE &&
                Z_TYPE_PP(z_host)==IS_STRING && Z_TYPE_PP(z_port)==IS_LONG)
@@ -2263,7 +2245,7 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
             (unsigned short)Z_LVAL_PP(z_port));
 
         /* Inform the caller if they've passed bad data */
-        if(slot < 0) { 
+        if(slot < 0) {
             php_error_docref(0 TSRMLS_CC, E_WARNING, "Unknown node %s:%ld",
                 Z_STRVAL_PP(z_host), Z_LVAL_PP(z_port));
         }
@@ -2274,6 +2256,24 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
     }
 
     return slot;
+}
+
+/* {{{ proto bool RedisCluster::discard() */
+PHP_METHOD(RedisCluster, discard) {
+    redisCluster *c = GET_CONTEXT();
+
+    if(CLUSTER_IS_ATOMIC(c)) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Cluster is not in MULTI mode");
+        RETURN_FALSE;
+    }
+    
+    if(cluster_abort_exec(c TSRMLS_CC)<0) {
+        CLUSTER_RESET_MULTI(c);
+    }
+
+    CLUSTER_FREE_QUEUE(c);
+
+    RETURN_TRUE;
 }
 
 /* Generic handler for things we want directed at a given node, like SAVE,
@@ -2856,7 +2856,7 @@ PHP_METHOD(RedisCluster, echo) {
     rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
     if(cluster_send_slot(c,slot,cmd,cmd_len,rtype TSRMLS_CC)<0) {
         zend_throw_exception(redis_cluster_exception_ce,
-            "Unable to send commnad at the specificed node", 0 TSRMLS_CC);
+            "Unable to send command at the specificed node", 0 TSRMLS_CC);
         efree(cmd);
         RETURN_FALSE;
     }
@@ -2873,11 +2873,66 @@ PHP_METHOD(RedisCluster, echo) {
 }
 /* }}} */
 
-/* {{{ proto array RedisCluster::rawcommand()
- *     proto array RedisCluster::rawcommand('INFO', string cmd)
- *     proto array RedisCluster::rawcommand('GETKEYS', array cmd_args) */
+/* {{{ proto mixed RedisCluster::rawcommand(string $key, string $cmd, [ $argv1 .. $argvN])
+ *     proto mixed RedisCluster::rawcommand(array $host_port, string $cmd, [ $argv1 .. $argvN]) */
 PHP_METHOD(RedisCluster, rawcommand) {
-    CLUSTER_PROCESS_CMD(rawcommand, cluster_variant_resp, 0);
+    REDIS_REPLY_TYPE rtype;
+    int argc = ZEND_NUM_ARGS(), cmd_len;
+    redisCluster *c = GET_CONTEXT();
+    char *cmd = NULL;
+    zval **z_args;
+    short slot;
+
+    /* Sanity check on our arguments */
+    z_args = emalloc(argc * sizeof(zval*));
+    if (argc < 2) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "You must pass at least node information as well as at least a command.");
+        efree(z_args);
+        RETURN_FALSE;
+    } else if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "Internal PHP error parsing method parameters.");
+        efree(z_args);
+        RETURN_FALSE;
+    } else if (redis_build_raw_cmd(z_args+1, argc-1, &cmd, &cmd_len TSRMLS_CC) ||
+               (slot = cluster_cmd_get_slot(c, z_args[0] TSRMLS_CC))<0) 
+    {
+        if (cmd) efree(cmd);
+        efree(z_args);
+        RETURN_FALSE;
+    }
+
+    /* Free argument array */
+    efree(z_args);
+
+    /* Direct the command */
+    rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_EOF : TYPE_LINE;
+    if (cluster_send_slot(c,slot,cmd,cmd_len,rtype TSRMLS_CC)<0) {
+        zend_throw_exception(redis_cluster_exception_ce,
+            "Unable to send command to the specified node", 0 TSRMLS_CC);
+        efree(cmd);
+        efree(z_args);
+        RETURN_FALSE;
+    }
+
+    /* Process variant response */
+    if (CLUSTER_IS_ATOMIC(c)) {
+        cluster_variant_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        void *ctx = NULL;
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_resp, ctx);
+    }
+
+    efree(cmd);
+}
+/* }}} */
+
+/* {{{ proto array RedisCluster::command()
+ *     proto array RedisCluster::command('INFO', string cmd)
+ *     proto array RedisCluster::command('GETKEYS', array cmd_args) */
+PHP_METHOD(RedisCluster, command) {
+    CLUSTER_PROCESS_CMD(command, cluster_variant_resp, 0);
 }
 /* }}} */
 

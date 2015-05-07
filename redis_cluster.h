@@ -237,6 +237,7 @@ PHP_METHOD(RedisCluster, config);
 PHP_METHOD(RedisCluster, pubsub);
 PHP_METHOD(RedisCluster, script);
 PHP_METHOD(RedisCluster, slowlog);
+PHP_METHOD(RedisCluster, command);
 
 /* SCAN and friends */
 PHP_METHOD(RedisCluster, scan);
