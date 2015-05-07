@@ -147,10 +147,8 @@ class TestSuite {
                 if ($e instanceof RedisException) {
                     $className::$errors[] = "Uncaught exception '".$e->getMessage()."' ($name)\n";
                     $str_msg = self::make_fail('FAILED');
-                    //echo 'F';
                 } else {
                     $str_msg = self::make_warning('SKIPPED');
-                    //echo 'S';
                 }
             }
 
