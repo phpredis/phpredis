@@ -156,6 +156,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, lSet, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lInsert, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sAdd, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sAddArray, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sSize, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sRemove, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sMove, NULL, ZEND_ACC_PUBLIC)
@@ -1252,12 +1253,17 @@ PHP_METHOD(Redis, lGetRange)
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::sAdd(string key , mixed value) */
+/* {{{ proto long Redis::sAdd(string key , mixed value) */
 PHP_METHOD(Redis, sAdd)
 {
     REDIS_PROCESS_KW_CMD("SADD", redis_key_varval_cmd, redis_long_response);
 }
 /* }}} */
+
+/* {{{ proto boolean Redis::sAddArray(string key, array $values) */
+PHP_METHOD(Redis, sAddArray) {
+    REDIS_PROCESS_KW_CMD("SADD", redis_key_arr_cmd, redis_long_response);
+} /* }}} */
 
 /* {{{ proto int Redis::sSize(string key) */
 PHP_METHOD(Redis, sSize)

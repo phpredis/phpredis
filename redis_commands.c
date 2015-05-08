@@ -999,6 +999,52 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* Commands that take a key and then an array of values */
+int redis_key_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char *kw, char **cmd, int *cmd_len, short *slot,
+                      void **ctx)
+{
+    zval *z_key, *z_arr, **z_val;
+    HashTable *ht_arr;
+    HashPosition pos;
+    smart_str cmdstr = {0};
+    int key_len, val_len, key_free, val_free, argc = 1;
+    char *key, *val;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa", &key, &key_len, 
+                              &z_arr) == FAILURE ||
+                              zend_hash_num_elements(Z_ARRVAL_P(z_arr)) == 0)
+    {
+        return FAILURE;
+    }
+
+    /* Start constructing our command */
+    ht_arr = Z_ARRVAL_P(z_arr);
+    argc += zend_hash_num_elements(ht_arr);
+    redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
+    
+    /* Prefix if required and append the key name */
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    redis_cmd_append_sstr(&cmdstr, key, key_len);
+    CMD_SET_SLOT(slot, key, key_len);
+    if (key_free) efree(key);
+
+    /* Iterate our hash table, serializing and appending values */
+    for (zend_hash_internal_pointer_reset_ex(ht_arr, &pos);
+         zend_hash_get_current_data_ex(ht_arr, (void**)&z_val, &pos) == SUCCESS;
+         zend_hash_move_forward_ex(ht_arr, &pos))
+    {
+        val_free = redis_serialize(redis_sock, *z_val, &val, &val_len TSRMLS_CC);
+        redis_cmd_append_sstr(&cmdstr, val, val_len);
+        if (val_free) STR_FREE(val);
+    }
+
+    *cmd_len = cmdstr.len;
+    *cmd = cmdstr.c;
+
+    return SUCCESS;
+}
+
 /* Generic function that takes a variable number of keys, with an optional
  * timeout value.  This can handle various SUNION/SUNIONSTORE/BRPOP type
  * commands. */
