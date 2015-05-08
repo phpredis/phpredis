@@ -484,5 +484,15 @@ class Redis_Cluster_Test extends Redis_Test {
             break;
         }    
     }
+
+    /* Test a 'raw' command */
+    public function testRawCommand() {
+        $this->redis->rawCommand('mykey', 'set', 'mykey', 'my-value');
+        $this->assertEquals($this->redis->get('mykey'), 'my-value');
+
+        $this->redis->del('mylist');
+        $this->redis->rpush('mylist', 'A','B','C','D');
+        $this->assertEquals($this->redis->lrange('mylist', 0, -1), Array('A','B','C','D'));
+    }
 }
 ?>
