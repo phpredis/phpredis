@@ -149,6 +149,7 @@ PHP_METHOD(RedisCluster, scard);
 PHP_METHOD(RedisCluster, smembers);
 PHP_METHOD(RedisCluster, sismember);
 PHP_METHOD(RedisCluster, sadd);
+PHP_METHOD(RedisCluster, saddarray);
 PHP_METHOD(RedisCluster, srem);
 PHP_METHOD(RedisCluster, sunion);
 PHP_METHOD(RedisCluster, sunionstore);

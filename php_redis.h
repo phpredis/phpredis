@@ -80,6 +80,7 @@ PHP_METHOD(Redis, lGetRange);
 PHP_METHOD(Redis, lSet);
 PHP_METHOD(Redis, lInsert);
 PHP_METHOD(Redis, sAdd);
+PHP_METHOD(Redis, sAddArray);
 PHP_METHOD(Redis, sSize);
 PHP_METHOD(Redis, sRemove);
 PHP_METHOD(Redis, sMove);
