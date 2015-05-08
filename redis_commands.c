@@ -1596,12 +1596,14 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         }
 
         // Serialize value (if directed)
-        val_free = redis_serialize(redis_sock, *z_val, &val, &val_len
-            TSRMLS_CC);
+        val_free = redis_serialize(redis_sock, *z_val, &val, &val_len TSRMLS_CC);
 
         // Append the key and value to our command
         redis_cmd_append_sstr(&cmdstr, mem, mem_len);
         redis_cmd_append_sstr(&cmdstr, val, val_len);
+
+        // Free our value if we serialized it
+        if (val_free) STR_FREE(val);
     }
 
     // Set slot if directed
