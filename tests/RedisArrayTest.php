@@ -542,6 +542,4 @@ function run_tests($className, $str_filter) {
         TestSuite::run($className, $str_filter);
 }
 
-define('REDIS_ARRAY_DATA_SIZE', 1000);
-
 ?>
