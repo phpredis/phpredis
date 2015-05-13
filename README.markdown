@@ -832,7 +832,11 @@ $redis->incr('key1'); /* key1 didn't exists, set to 0 before the increment */
 $redis->incr('key1'); /* 2 */
 $redis->incr('key1'); /* 3 */
 $redis->incr('key1'); /* 4 */
-$redis->incrBy('key1', 10); /* 14 */
+
+// Will redirect, and actually make an INCRBY call
+$redis->incr('key1', 10);   /* 14 */
+
+$redis->incrBy('key1', 10); /* 24 */
 ~~~
 
 ### incrByFloat
@@ -874,7 +878,11 @@ $redis->decr('key1'); /* key1 didn't exists, set to 0 before the increment */
 
 $redis->decr('key1'); /* -2 */
 $redis->decr('key1'); /* -3 */
-$redis->decrBy('key1', 10); /* -13 */
+
+// Will redirect, and actually make an DECRBY call
+$redis->decr('key1', 10);   /* -13 */
+
+$redis->decrBy('key1', 10); /* -23 */
 ~~~
 
 ### mGet, getMultiple
