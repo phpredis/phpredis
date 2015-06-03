@@ -18,6 +18,10 @@
   +----------------------------------------------------------------------+
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "redis_commands.h"
 #include <zend_exceptions.h>
 
