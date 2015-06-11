@@ -1587,6 +1587,7 @@ static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
                                zrange_cb fun)
 {
     redisCluster *c = GET_CONTEXT();
+    c->readonly = CLUSTER_IS_ATOMIC(c);
     cluster_cb cb;
     char *cmd; int cmd_len; short slot;
     int withscores=0;
