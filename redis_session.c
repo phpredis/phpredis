@@ -525,6 +525,15 @@ PS_OPEN_FUNC(rediscluster) {
     session_conf_timeout(ht_conf, "timeout", sizeof("timeout"), &timeout);
     session_conf_timeout(ht_conf, "read_timeout", sizeof("read_timeout"), &read_timeout);
 
+    /* Sanity check on our timeouts */
+    if (timeout < 0 || read_timeout < 0) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "Can't set negative timeout values in session configuration");
+        zval_dtor(z_conf);
+        efree(z_conf);
+        return FAILURE;
+    }
+
     /* Look for a specific prefix */
     if (zend_hash_find(ht_conf, "prefix", sizeof("prefix"), (void**)&z_val) == SUCCESS &&
         Z_TYPE_PP(z_val) == IS_STRING && Z_STRLEN_PP(z_val) > 0) 
