@@ -108,7 +108,7 @@ redis_pool_free(redis_pool *pool TSRMLS_DC) {
     while(rpm) {
         next = rpm->next;
         redis_sock_disconnect(rpm->redis_sock TSRMLS_CC);
-        efree(rpm->redis_sock);
+        redis_free_socket(rpm->redis_sock);
         if(rpm->prefix) efree(rpm->prefix);
         if(rpm->auth) efree(rpm->auth);
         efree(rpm);
