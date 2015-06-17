@@ -97,7 +97,7 @@ void cluster_free_reply(clusterReply *reply, int free_data) {
         case TYPE_ERR:
         case TYPE_LINE:
         case TYPE_BULK:
-            if(free_data)
+            if(free_data && reply->str)
                 efree(reply->str);
             break;
         case TYPE_MULTIBULK:
@@ -783,6 +783,68 @@ static redisClusterNode *cluster_get_asking_node(redisCluster *c TSRMLS_DC) {
  * redis_sock for it. */
 static RedisSock *cluster_get_asking_sock(redisCluster *c TSRMLS_DC) {
     return cluster_get_asking_node(c TSRMLS_CC)->sock;
+}
+
+/* Our context seeds will be a hash table with RedisSock* pointers */
+static void ht_free_seed(void *data) {
+    RedisSock *redis_sock = *(RedisSock**)data;
+    if(redis_sock) redis_free_socket(redis_sock);
+}
+
+/* Free redisClusterNode objects we've stored */
+static void ht_free_node(void *data) {
+    redisClusterNode *node = *(redisClusterNode**)data;
+    cluster_free_node(node);
+}
+
+/* Construct a redisCluster object */
+PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
+                                           int failover)
+{
+    redisCluster *c;
+
+    /* Actual our actual cluster structure */
+    c = ecalloc(1, sizeof(redisCluster));
+
+    /* Initialize flags and settings */
+    c->flags = ecalloc(1, sizeof(RedisSock));
+    c->subscribed_slot = -1;
+    c->clusterdown = 0;
+    c->timeout = timeout;
+    c->read_timeout = read_timeout;
+
+    /* Set up our waitms based on timeout */
+    c->waitms  = (long)(1000 * timeout);
+
+    /* Allocate our seeds hash table */
+    ALLOC_HASHTABLE(c->seeds);
+    zend_hash_init(c->seeds, 0, NULL, ht_free_seed, 0);
+
+    /* Allocate our nodes HashTable */
+    ALLOC_HASHTABLE(c->nodes);
+    zend_hash_init(c->nodes, 0, NULL, ht_free_node, 0);
+
+    return c;
+}
+
+PHP_REDIS_API void cluster_free(redisCluster *c) {
+    /* Free any allocated prefix */
+    if (c->flags->prefix) efree(c->flags->prefix);
+    efree(c->flags);
+
+    /* Call hash table destructors */
+    zend_hash_destroy(c->seeds);
+    zend_hash_destroy(c->nodes);
+
+    /* Free hash tables themselves */
+    efree(c->seeds);
+    efree(c->nodes);
+
+    /* Free any error we've got */
+    if (c->err) efree(c->err);
+
+    /* Free structure itself */
+    efree(c); 
 }
 
 /* Initialize seeds */

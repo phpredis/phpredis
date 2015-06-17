@@ -10,6 +10,12 @@ PS_WRITE_FUNC(redis);
 PS_DESTROY_FUNC(redis);
 PS_GC_FUNC(redis);
 
+PS_OPEN_FUNC(rediscluster);
+PS_CLOSE_FUNC(rediscluster);
+PS_READ_FUNC(rediscluster);
+PS_WRITE_FUNC(rediscluster);
+PS_DESTROY_FUNC(rediscluster);
+PS_GC_FUNC(rediscluster);
 
 #endif
 #endif

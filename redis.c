@@ -52,6 +52,7 @@ extern int le_redis_array;
 
 #ifdef PHP_SESSION
 extern ps_module ps_mod_redis;
+extern ps_module ps_mod_redis_cluster;
 #endif
 
 extern zend_class_entry *redis_array_ce;
@@ -541,6 +542,7 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
 
 #ifdef PHP_SESSION
     php_session_register_module(&ps_mod_redis);
+    php_session_register_module(&ps_mod_redis_cluster);
 #endif
 }
 
