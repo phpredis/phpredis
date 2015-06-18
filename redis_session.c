@@ -470,12 +470,10 @@ static void session_conf_timeout(HashTable *ht_conf, const char *key, int key_le
 {
     zval **z_val;
 
-    if (zend_hash_find(ht_conf, key, key_len, (void**)&z_val) == SUCCESS) {
-        if (Z_TYPE_PP(z_val) == IS_STRING) {
-            *val = atof(Z_STRVAL_PP(z_val));
-        } else {
-            *val = Z_DVAL_PP(z_val);
-        }
+    if (zend_hash_find(ht_conf, key, key_len, (void**)&z_val) == SUCCESS &&
+        Z_TYPE_PP(z_val) == IS_STRING) 
+    {
+        *val = atof(Z_STRVAL_PP(z_val));
     }
 }
 

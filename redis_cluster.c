@@ -266,10 +266,6 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
     redisCluster *cluster;
     struct timeval t1;
 
-    /* Seed random generator for failover */
-    gettimeofday(&t1, NULL);
-    srand(t1.tv_usec * t1.tv_sec);
-    
     // Allocate our actual struct
     cluster = emalloc(sizeof(redisCluster));
     memset(cluster, 0, sizeof(redisCluster));

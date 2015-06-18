@@ -812,6 +812,7 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     c->clusterdown = 0;
     c->timeout = timeout;
     c->read_timeout = read_timeout;
+    c->failover = failover;
 
     /* Set up our waitms based on timeout */
     c->waitms  = (long)(1000 * timeout);
