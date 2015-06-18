@@ -551,11 +551,17 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
  */
 PHP_MINIT_FUNCTION(redis)
 {
+    struct timeval tv;
+    
     zend_class_entry redis_class_entry;
     zend_class_entry redis_array_class_entry;
     zend_class_entry redis_cluster_class_entry;
     zend_class_entry redis_exception_class_entry;
     zend_class_entry redis_cluster_exception_class_entry;
+
+    /* Seed random generator (for RedisCluster failover) */
+    gettimeofday(&tv, NULL);
+    srand(tv.tv_usec * tv.tv_sec);
 
     REGISTER_INI_ENTRIES();
 
