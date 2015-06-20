@@ -497,6 +497,7 @@ PS_OPEN_FUNC(rediscluster) {
     zval *z_conf, **z_val;
     HashTable *ht_conf, *ht_seeds;
     double timeout = 0, read_timeout = 0;
+    int persistent = 0;
     int retval, prefix_len, failover = REDIS_FAILOVER_NONE;
     char *prefix;
 
@@ -554,7 +555,14 @@ PS_OPEN_FUNC(rediscluster) {
         }
     }
 
-    c = cluster_create(timeout, read_timeout, failover);
+    /* Check for persistent option */
+    if (zend_hash_find(ht_conf, "persistent", sizeof("persistent"), (void **)&z_val) == SUCCESS &&
+        Z_TYPE_PP(z_val) == IS_STRING)
+    {
+        persistent = atoi(z_val);
+    }
+
+    c = cluster_create(timeout, read_timeout, failover, persistent);
     if (!cluster_init_seeds(c, ht_seeds) && !cluster_map_keyspace(c TSRMLS_CC)) {
         /* Set up our prefix */
         c->flags->prefix = estrndup(prefix, prefix_len);
@@ -671,7 +679,6 @@ PS_DESTROY_FUNC(rediscluster) {
 
     /* Attempt to send command */
     if (cluster_send_command(c,slot,cmd,cmdlen TSRMLS_CC)<0 || c->err) {
-        if (reply) cluster_free_reply(reply, 1);
         efree(cmd);
         return FAILURE;
     }

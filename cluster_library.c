@@ -650,7 +650,7 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
 
     // Attach socket
     node->sock = redis_sock_create(host, host_len, port, c->timeout,
-        0, NULL, 0, 1);
+        c->persistent, NULL, 0, 1);
 
     return node;
 }
@@ -799,7 +799,7 @@ static void ht_free_node(void *data) {
 
 /* Construct a redisCluster object */
 PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
-                                           int failover)
+                                           int failover, int persistent)
 {
     redisCluster *c;
 
@@ -813,6 +813,7 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     c->timeout = timeout;
     c->read_timeout = read_timeout;
     c->failover = failover;
+    c->persistent = persistent;
 
     /* Set up our waitms based on timeout */
     c->waitms  = (long)(1000 * timeout);
@@ -877,7 +878,8 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
 
         // Allocate a structure for this seed
         redis_sock = redis_sock_create(str, psep-str,
-            (unsigned short)atoi(psep+1),cluster->timeout,0,NULL,0,0);
+            (unsigned short)atoi(psep+1), cluster->timeout,
+            cluster->persistent, NULL, 0, 0);
 
         // Index this seed by host/port
         key_len = snprintf(key, sizeof(key), "%s:%u", redis_sock->host,
