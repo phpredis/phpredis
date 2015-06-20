@@ -180,6 +180,9 @@ typedef struct redisCluster {
     double timeout;
     double read_timeout;
 
+    /* Are we using persistent connections */
+    int persistent;
+
     /* How long in milliseconds should we wait when being bounced around */
     long waitms;
 
@@ -359,7 +362,7 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
     int cmd_len, REDIS_REPLY_TYPE rtype TSRMLS_DC);
 
 PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
-    int failover);
+    int failover, int persistent);
 PHP_REDIS_API void cluster_free(redisCluster *c);
 PHP_REDIS_API int cluster_init_seeds(redisCluster *c, HashTable *ht_seeds);
 PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC);

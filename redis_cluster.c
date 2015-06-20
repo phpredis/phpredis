@@ -264,7 +264,6 @@ zend_object_value
 create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
     zend_object_value retval;
     redisCluster *cluster;
-    struct timeval t1;
 
     // Allocate our actual struct
     cluster = emalloc(sizeof(redisCluster));
@@ -333,7 +332,7 @@ void free_cluster_context(void *object TSRMLS_DC) {
 
 /* Attempt to connect to a Redis cluster provided seeds and timeout options */
 void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
-                        double read_timeout TSRMLS_DC)
+                        double read_timeout, int persistent TSRMLS_DC)
 {
     // Validate timeout
     if(timeout < 0L || timeout > INT_MAX) {
@@ -357,6 +356,9 @@ void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
      * socket type operations */
     c->timeout = timeout;
     c->read_timeout = read_timeout;
+    
+    /* Set our option to use or not use persistent connections */
+    c->persistent = persistent;
 
     /* Calculate the number of miliseconds we will wait when bouncing around,
      * (e.g. a node goes down), which is not the same as a standard timeout. */
@@ -371,9 +373,10 @@ void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
 
 /* Attempt to load a named cluster configured in php.ini */
 void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
-    zval *z_seeds, *z_timeout, *z_read_timeout, **z_value;
+    zval *z_seeds, *z_timeout, *z_read_timeout, *z_persistent, **z_value;
     char *iptr;
     double timeout=0, read_timeout=0;
+    int persistent = 0;
     HashTable *ht_seeds = NULL;
 
     /* Seeds */
@@ -415,8 +418,21 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
         }
     }
 
+    /* Persistent connections */
+    MAKE_STD_ZVAL(z_persistent);
+    array_init(z_persistent);
+    iptr = estrdup(INI_STR("redis.clusters.persistent"));
+    sapi_module.treat_data(PARSE_STRING, iptr, z_persistent TSRMLS_CC);
+    if (zend_hash_find(Z_ARRVAL_P(z_persistent), name, name_len+1, (void**)&z_value) != FAILURE) {
+        if (Z_TYPE_PP(z_value) == IS_STRING) {
+            persistent = atoi(Z_STRVAL_PP(z_value));
+        } else if (Z_TYPE_PP(z_value) == IS_LONG) {
+            persistent = Z_LVAL_PP(z_value);
+        }
+    }
+
     /* Attempt to create/connect to the cluster */
-    redis_cluster_init(c, ht_seeds, timeout, read_timeout TSRMLS_CC);    
+    redis_cluster_init(c, ht_seeds, timeout, read_timeout, persistent TSRMLS_CC);    
 
     /* Clean up our arrays */
     zval_dtor(z_seeds);
@@ -437,13 +453,14 @@ PHP_METHOD(RedisCluster, __construct) {
     char *name;
     long name_len;
     double timeout = 0.0, read_timeout = 0.0;
+    zend_bool persistent = 0;
     redisCluster *context = GET_CONTEXT();
 
     // Parse arguments
     if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
-                                    "Os|add", &object, redis_cluster_ce, &name,
+                                    "Os|addb", &object, redis_cluster_ce, &name,
                                     &name_len, &z_seeds, &timeout,
-                                    &read_timeout)==FAILURE)
+                                    &read_timeout, &persistent)==FAILURE)
     {
         RETURN_FALSE;
     }
@@ -458,8 +475,8 @@ PHP_METHOD(RedisCluster, __construct) {
     /* If we've been passed only one argument, the user is attempting to connect
      * to a named cluster, stored in php.ini, otherwise we'll need manual seeds */
     if (ZEND_NUM_ARGS() > 1) {
-        redis_cluster_init(context, Z_ARRVAL_P(z_seeds), timeout, read_timeout
-            TSRMLS_CC);
+        redis_cluster_init(context, Z_ARRVAL_P(z_seeds), timeout, read_timeout,
+            persistent TSRMLS_CC);
     } else {
         redis_cluster_load(context, name, name_len TSRMLS_CC);
     }
