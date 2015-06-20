@@ -14,8 +14,15 @@ $obj_cluster = new RedisCluster(NULL, Array('host:7000', 'host:7001', 'host:7003
 
 // Connect and specify timeout and read_timeout
 $obj_cluster = new RedisCluster(
-    NULL, Array("host:7000", "host:7001", 1.5, 1.5);
+    NULL, Array("host:7000", "host:7001"), 1.5, 1.5
 );
+
+// Connect with read/write timeout as well as specify that phpredis should use
+// persistent connections to each node.
+$obj_cluster = new RedisCluster(
+    NULL, Array("host:7000", "host:7001"), 1.5, 1.5, true
+);
+
 </pre>
 
 #### Loading a cluster configuration by name
@@ -146,3 +153,26 @@ In the case of all commands which need to be directed at a node, the calling con
 14.  RANDOMKEY
 15.  PING
 
+## Session Handler
+You can use the cluster functionality of phpredis to store PHP session information in a Redis cluster as you can with a non cluster-enabled Redis instance.
+
+To do this, you must configure your `session.save_handler` and `session.save_path` INI variables to give phpredis enough information to communicate with the cluster.
+
+~~~
+session.save_handler = rediscluster
+session.save_path = "seed[]=host1:port1&seed[]=host2:port2&seed[]=hostN:portN&timeout=2&read_timeout=2&failover=error&persistent=1"
+~~~
+
+### session.session_handler
+Set this variable to "rediscluster" to inform phpredis that this is a cluster instance.
+
+### session.save_path
+The save path for cluster based session storage takes the form of a PHP GET request, and requires that you specify at least on `seed` node.  Other options you can specify are as follows:
+
+* _timeout (double)_:  The amount of time phpredis will wait when connecting or writing to the cluster.
+* _read_timeout (double)_: The amount of time phpredis will wait for a result from the cluster.
+* _persistent_: Tells phpredis whether persistent connections should be used.
+* _distribute_: phpredis will randomly distribute session reads between masters and any attached slaves (load balancing).
+* _failover (string)_:  How phpredis should distribute session reads between master and slave nodes.
+* * _none_ : phpredis will only communicate with master nodes
+* * _error_: phpredis will communicate with master nodes unless one failes, in which case an attempt will be made to read session information from a slave. 
