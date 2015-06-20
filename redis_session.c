@@ -477,6 +477,29 @@ static void session_conf_timeout(HashTable *ht_conf, const char *key, int key_le
     }
 }
 
+/* Simple helper to retreive a boolean (0 or 1) value from a string stored in our
+ * session.save_path variable.  This is so the user can use 0, 1, or 'true', 
+ * 'false' */
+static void session_conf_bool(HashTable *ht_conf, char *key, int keylen,
+                              int *retval) {
+    zval **z_val;
+    char *str;
+    int strlen;
+
+    /* See if we have the option, and it's a string */   
+    if (zend_hash_find(ht_conf, key, keylen, (void**)&z_val) == SUCCESS &&
+        Z_TYPE_PP(z_val) == IS_STRING)
+    {
+        str = Z_STRVAL_PP(z_val);
+        strlen = Z_STRLEN_PP(z_val);
+
+        /* true/yes/1 are treated as true.  Everything else is false */
+        *retval = (strlen == 4 && !strncasecmp(str, "true", 4)) ||
+                  (strlen == 3 && !strncasecmp(str, "yes", 3)) ||
+                  (strlen == 1 && !strncasecmp(str, "1", 1));
+    }
+}
+
 /* Prefix a session key */
 static char *cluster_session_key(redisCluster *c, const char *key, int keylen, 
                                  int *skeylen, short *slot) {
@@ -524,6 +547,9 @@ PS_OPEN_FUNC(rediscluster) {
     session_conf_timeout(ht_conf, "timeout", sizeof("timeout"), &timeout);
     session_conf_timeout(ht_conf, "read_timeout", sizeof("read_timeout"), &read_timeout);
 
+    /* Grab persistent option */
+    session_conf_bool(ht_conf, "persistent", sizeof("persistent"), &persistent);
+    
     /* Sanity check on our timeouts */
     if (timeout < 0 || read_timeout < 0) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
@@ -553,13 +579,6 @@ PS_OPEN_FUNC(rediscluster) {
         } else if (!strcasecmp(Z_STRVAL_PP(z_val), "distribute")) {
             failover = REDIS_FAILOVER_DISTRIBUTE;
         }
-    }
-
-    /* Check for persistent option */
-    if (zend_hash_find(ht_conf, "persistent", sizeof("persistent"), (void **)&z_val) == SUCCESS &&
-        Z_TYPE_PP(z_val) == IS_STRING)
-    {
-        persistent = atoi(z_val);
     }
 
     c = cluster_create(timeout, read_timeout, failover, persistent);
