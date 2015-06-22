@@ -347,11 +347,11 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	}
 	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect, connect_timeout TSRMLS_CC) : NULL;
 
-    /* Set hash function and distribtor if provided */
+	/* Set hash function and distribtor if provided */
     ra->z_fun = z_fun;
     ra->z_dist = z_dist;
-
-	return ra;
+    
+    return ra;
 }
 
 
@@ -448,40 +448,36 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
 
 zval *
 ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_DC) {
+    uint32_t hash;
+    char *out;
+    int pos, out_len;
 
-        uint32_t hash;
-        char *out;
-        int pos, out_len;
+    /* extract relevant part of the key */
+    out = ra_extract_key(ra, key, key_len, &out_len TSRMLS_CC);
+    if(!out) return NULL;
 
-        /* extract relevant part of the key */
-        out = ra_extract_key(ra, key, key_len, &out_len TSRMLS_CC);
-        if(!out)
-                return NULL;
-
-        if(ra->z_dist) {
-                if (!ra_call_distributor(ra, key, key_len, &pos TSRMLS_CC)) {
-                    efree(out);
-                    return NULL;
-                }
+    if(ra->z_dist) {
+        if (!ra_call_distributor(ra, key, key_len, &pos TSRMLS_CC)) {
+            efree(out);
+            return NULL;
         }
-        else {
-                uint64_t h64;
-
-                /* hash */
-                hash = rcrc32(out, out_len);
-
-                /* get position on ring */
-                h64 = hash;
-                h64 *= ra->count;
-                h64 /= 0xffffffff;
-                pos = (int)h64;
-        }
-        if(out_pos) *out_pos = pos;
-
-        /* cleanup */
         efree(out);
+    } else {
+        uint64_t h64;
 
-        return ra->redis[pos];
+        /* hash */
+        hash = rcrc32(out, out_len);
+        efree(out);
+        
+        /* get position on ring */
+        h64 = hash;
+        h64 *= ra->count;
+        h64 /= 0xffffffff;
+        pos = (int)h64;
+    }
+    if(out_pos) *out_pos = pos;
+
+    return ra->redis[pos];
 }
 
 zval *
@@ -569,8 +565,8 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
 
 	/* Initialize key array */
 	zval *z_keys, **z_entry_pp;
-	HashPosition pos;
 	MAKE_STD_ZVAL(z_keys);
+    HashPosition pos;
 #if PHP_VERSION_ID > 50300
 	array_init_size(z_keys, zend_hash_num_elements(Z_ARRVAL_P(z_pairs)));
 #else
@@ -1021,7 +1017,6 @@ ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to, long ttl 
 
 static zend_bool
 ra_move_hash(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
-
 	zval z_fun_hgetall, z_fun_hmset, z_ret, z_ret_dest, *z_args[2];
 
 	/* run HGETALL on source */
@@ -1268,7 +1263,6 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 
 void
 ra_rehash(RedisArray *ra, zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache TSRMLS_DC) {
-
 	int i;
 
 	/* redistribute the data, server by server. */

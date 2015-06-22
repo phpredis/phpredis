@@ -5,7 +5,7 @@ ARG_ENABLE("redis-session", "whether to enable sessions", "yes");
 ARG_ENABLE("redis-igbinary", "whether to enable igbinary serializer support", "no");
 
 if (PHP_REDIS != "no") {
-	var sources = "redis.c library.c redis_array.c redis_array_impl.c";
+	var sources = "redis.c library.c redis_array.c redis_array_impl.c redis_cluster.c cluster_library.c";
 	if (PHP_REDIS_SESSION != "no") {
 		ADD_SOURCES(configure_module_dirname, "redis_session.c", "redis");
 		ADD_EXTENSION_DEP("redis", "session");
@@ -22,7 +22,7 @@ if (PHP_REDIS != "no") {
 			WARNING("redis igbinary support not enabled");
 		}
 	}
+	
 
-	EXTENSION("redis", sources);
 }
 

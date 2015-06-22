@@ -103,9 +103,34 @@ See [instructions from @char101](https://github.com/nicolasff/phpredis/issues/21
 
 ## Distributed Redis Array
 
-See [dedicated page](https://github.com/nicolasff/phpredis/blob/master/arrays.markdown#readme).
+See [dedicated page](https://github.com/phpredis/phpredis/blob/master/arrays.markdown#readme).
 
+## Redis Cluster support
 
+See [dedicated page](https://github.com/phpredis/phpredis/blob/feature/redis_cluster/cluster.markdown#readme).
+
+## Running the unit tests
+phpredis uses a small custom unit test suite for testing functionality of the various classes.  To run tests, simply do the following:
+
+<pre>
+# Run tests for Redis class (note this is the default)
+php tests/TestRedis.php --class Redis
+
+# Run tests for RedisArray class
+tests/mkring.sh
+php tests/TestRedis.php --class RedisArray
+
+# Run tests for the RedisCluster class
+test/make-cluster.sh start
+php tests/TestRedis.php --class RedisCluster
+</pre>
+
+Note that it is possible to run only tests which match a substring of the test itself by passing the additional argument '--test <str>' when invoking.
+
+<pre>
+# Just run the 'echo' test
+php tests/TestRedis.php --class Redis --test echo 
+</pre>
 
 # Classes and methods
 -----
@@ -169,7 +194,7 @@ _**Description**_: Connects to a Redis instance.
 *host*: string. can be a host, or the path to a unix domain socket  
 *port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
-*reserved*: should be NULL if retry_interval is specified
+*reserved*: should be NULL if retry_interval is specified  
 *retry_interval*: int, value in milliseconds (optional)
 
 ##### *Return value*
@@ -205,7 +230,7 @@ persistent equivalents.
 *host*: string. can be a host, or the path to a unix domain socket  
 *port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
-*persistent_id*: string. identity for the requested persistent connection
+*persistent_id*: string. identity for the requested persistent connection  
 *retry_interval*: int, value in milliseconds (optional)
 
 ##### *Return value*
@@ -3011,11 +3036,11 @@ _**Description**_: Watches a key for modifications by another client.
 If the key is modified between `WATCH` and `EXEC`, the MULTI/EXEC transaction will fail (return `FALSE`). `unwatch` cancels all the watching of all keys by this client.
 
 ##### *Parameters*
-*keys*: a list of keys
+*keys*: string for one key or array for a list of keys
 
 ##### *Example*
 ~~~
-$redis->watch('x');
+$redis->watch('x'); // or for a list of keys: $redis->watch(array('x','another key'));
 /* long code here during the execution of which other clients could well modify `x` */
 $ret = $redis->multi()
     ->incr('x')
@@ -3029,14 +3054,14 @@ $ret = FALSE if x has been modified between the call to WATCH and the call to EX
 
 ## Scripting
 
-* [eval](#) - Evaluate a LUA script serverside
-* [evalSha](#) - Evaluate a LUA script serverside, from the SHA1 hash of the script instead of the script itself
-* [script](#) - Execute the Redis SCRIPT command to perform various operations on the scripting subsystem
-* [getLastError](#) - The last error message (if any)
-* [clearLastError](#) - Clear the last error message
-* [_prefix](#) - A utility method to prefix the value with the prefix setting for phpredis
-* [_unserialize](#) - A utility method to unserialize data with whatever serializer is set up
-* [_serialize](#) - A utility method to serialize data with whatever serializer is set up
+* [eval](#eval) - Evaluate a LUA script serverside
+* [evalSha](#evalsha) - Evaluate a LUA script serverside, from the SHA1 hash of the script instead of the script itself
+* [script](#script) - Execute the Redis SCRIPT command to perform various operations on the scripting subsystem
+* [getLastError](#getlasterror) - The last error message (if any)
+* [clearLastError](#clearlasterror) - Clear the last error message
+* [_prefix](#_prefix) - A utility method to prefix the value with the prefix setting for phpredis
+* [_unserialize](#_unserialize) - A utility method to unserialize data with whatever serializer is set up
+* [_serialize](#_serialize) - A utility method to serialize data with whatever serializer is set up
 
 ### eval
 -----

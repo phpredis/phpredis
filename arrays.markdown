@@ -40,13 +40,19 @@ $ra = new RedisArray(array("host1", "host2", "host3"), array("previous" => array
 #### Specifying the "retry_interval" parameter
 The retry_interval is used to specify a delay in milliseconds between reconnection attempts in case the client loses connection with a server
 <pre>
-$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("retry_timeout" => 100)));
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("retry_timeout" => 100));
 </pre>
 
 #### Specifying the "lazy_connect" parameter
 This option is useful when a cluster has many shards but not of them are necessarily used at one time.
 <pre>
-$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("lazy_connect" => true)));
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("lazy_connect" => true));
+</pre>
+
+#### Specifying the "connect_timeout" parameter
+The connect_timeout value is a double and is used to specify a timeout in number of seconds when creating redis socket connections used in the RedisArray.
+<pre>
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("connect_timeout" => 0.5));
 </pre>
 
 #### Defining arrays in Redis.ini
