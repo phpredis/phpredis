@@ -698,14 +698,21 @@ PHP_METHOD(Redis, connect)
 }
 /* }}} */
 
+#ifdef DEBUG
+#define SAMPLE_SIZE	(size_t)100
 static void debug_read_dirty_data(int times_read, int bytes_read, int retry_for_empty_read) {
-    char s[100] = {0};
+    char s[SAMPLE_SIZE] = {0};
     FILE* fp = fopen("/tmp/tmp_out", "a");
-    snprintf(s, 100, "dirty data: times_read=%d, bytes_read=%d, retry_for_empty_read=%d\n", times_read, bytes_read, retry_for_empty_read);
-    fwrite((void*)s, strlen(s), 1, fp);
+    snprintf(s, SAMPLE_SIZE, "dirty data: times_read=%d, bytes_read=%d, retry_for_empty_read=%d\n", times_read, bytes_read, retry_for_empty_read);
+    fwrite((void*)s, SAMPLE_SIZE, 1, fp);
     fclose(fp);
 }
+#define DEBUG_DIRTY_READ(n, s, i) debug_read_dirty_data(n, s, i)
+#else
+#define DEBUG_DIRTY_READ(n, s, i)
+#endif
 
+#define MAX_DIRTY_READ_RETRY	10
 /* {{{ proto boolean Redis::pconnect(string host, int port [, double timeout])
  */
 PHP_METHOD(Redis, pconnect)
@@ -713,8 +720,7 @@ PHP_METHOD(Redis, pconnect)
     char inbuf[65536] = {0};
     int max_clear_times = 2048; // read up to 128M *dirty* data after pconnect
     int bytes_read = 0;
-    #define MAX_RETRY_FOR_EMPTY_READ 10
-    int max_retry_for_empty_read = MAX_RETRY_FOR_EMPTY_READ; // retry 10 times when read empty data (non-block mode)
+    int max_retry_for_empty_read = MAX_DIRTY_READ_RETRY; // retry 10 times when read empty data (non-block mode)
 
     if (redis_connect(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1) == FAILURE) {
         RETURN_FALSE;
@@ -727,7 +733,6 @@ PHP_METHOD(Redis, pconnect)
 
         if(redis_sock->stream) {
             php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_BLOCKING, 0, NULL); // set io to non-block
-            // FILE* fp = fopen("/tmp/tmp_redis_raw", "w"); // test what dirty data is
             while (--max_clear_times >= 0) { // clear dirty data(late arrived and queued)
                 if(php_stream_gets(redis_sock->stream, inbuf, sizeof(inbuf) / sizeof(char)) == NULL) {
                     if(--max_retry_for_empty_read < 0) {
@@ -737,12 +742,12 @@ PHP_METHOD(Redis, pconnect)
                     continue;
                 }
                 bytes_read += strlen(inbuf);
-                // fwrite(inbuf, strlen(inbuf), 1, fp);
             }
-            // fclose(fp);
             php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_BLOCKING, 1, NULL);
             // debug reading dirty data
-            // debug_read_dirty_data(2048 - max_clear_times, bytes_read, MAX_RETRY_FOR_EMPTY_READ - max_retry_for_empty_read - 1);
+#ifdef DEBUG
+            debug_read_dirty_data(2048 - max_clear_times, bytes_read, MAX_DIRTY_READ_RETRY - max_retry_for_empty_read - 1);
+#endif
         }
 
         RETURN_TRUE;
