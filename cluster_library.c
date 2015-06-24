@@ -132,12 +132,12 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
         }
 
         /* Set our reply len */
-        r->len = len;
+        r->len = (long long)len;
 
         switch(r->type) {
             case TYPE_ERR:
             case TYPE_LINE:
-                if(redis_sock_gets(sock,buf,sizeof(buf),&r->len TSRMLS_CC)<0) {
+                if(redis_sock_gets(sock,buf,sizeof(buf),(size_t*)&(r->len) TSRMLS_CC)<0) {
                     *err = 1;
                     return;
                 }
@@ -147,7 +147,7 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
                 break;
             case TYPE_BULK:
                 if (r->len > 0) {
-                    r->str = redis_sock_read_bulk_reply(sock,r->len TSRMLS_CC);
+                    r->str = redis_sock_read_bulk_reply(sock,(int)r->len TSRMLS_CC);
                     if(!r->str) {
                         *err = 1;
                         return;
@@ -155,7 +155,7 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
                 }
                 break;
             case TYPE_MULTIBULK:
-                r->element = ecalloc(r->len,r->len*sizeof(clusterReply*));
+                r->element = ecalloc((size_t)r->len,(size_t)r->len*sizeof(clusterReply*));
                 r->elements = r->len;
                 cluster_multibulk_resp_recursive(sock, r->elements, r->element,
                     err TSRMLS_CC);
