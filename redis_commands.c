@@ -875,9 +875,12 @@ int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    /* min and max must start with '(' or '[' */
-    if(min_len < 1 || max_len < 1 || (min[0] != '(' && min[0] != '[') ||
-       (max[0] != '(' && max[0] != '['))
+    /* min and max must start with '(' or '[', or be either '-' or '+' */
+    if(min_len < 1 || max_len < 1 ||
+       (min[0] != '(' && min[0] != '[' &&
+       (min[0] != '-' || min_len > 1) && (min[0] != '+' || min_len > 1)) ||
+       (max[0] != '(' && max[0] != '[' &&
+       (max[0] != '-' || max_len > 1) && (max[0] != '+' || max_len > 1)))
     {
         php_error_docref(0 TSRMLS_CC, E_WARNING,
             "min and max arguments must start with '[' or '('");
