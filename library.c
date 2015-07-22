@@ -156,19 +156,19 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
                     0 TSRMLS_CC);
             }
         return -1;
-    }
-    if(redis_sock->stream) { /* close existing stream before reconnecting */
-        redis_stream_close(redis_sock TSRMLS_CC);
-        redis_sock->stream = NULL;
-        redis_sock->mode   = ATOMIC;
-        redis_sock->watching = 0;
-    }
-    // Wait for a while before trying to reconnect
-    if (redis_sock->retry_interval) {
-    	// Random factor to avoid having several (or many) concurrent connections trying to reconnect at the same time
-   		long retry_interval = (count ? redis_sock->retry_interval : (php_rand(TSRMLS_C) % redis_sock->retry_interval));
-    	usleep(retry_interval);
-    }
+        }
+        if(redis_sock->stream) { /* close existing stream before reconnecting */
+            redis_stream_close(redis_sock TSRMLS_CC);
+            redis_sock->stream = NULL;
+            redis_sock->mode   = ATOMIC;
+            redis_sock->watching = 0;
+        }
+        // Wait for a while before trying to reconnect
+        if (redis_sock->retry_interval) {
+            // Random factor to avoid having several (or many) concurrent connections trying to reconnect at the same time
+            long retry_interval = (count ? redis_sock->retry_interval : (php_rand(TSRMLS_C) % redis_sock->retry_interval));
+            usleep(retry_interval);
+        }
         redis_sock_connect(redis_sock TSRMLS_CC); /* reconnect */
         if(redis_sock->stream) { /*  check for EOF again. */
             eof = php_stream_eof(redis_sock->stream);
