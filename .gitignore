@@ -14,3 +14,5 @@ missing
 autom4te.cache
 mkinstalldirs
 run-tests.php
+TAGS
+modules
