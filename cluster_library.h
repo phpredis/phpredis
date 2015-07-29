@@ -141,9 +141,9 @@
     mc.kw_len = keyword_len; \
 
 #ifdef PHP_WIN32
-#define GENERATE_SEED() ((long) (time(0) * GetCurrentProcessId()))
+#define RANDVAL() ((long) (time(0) * GetCurrentProcessId()))
 #else
-#define GENERATE_SEED() ((long) (time(0) * getpid()))
+#define RANDVAL() ((long) (time(0) * getpid()))
 #endif
 
 /* Cluster redirection enum */

@@ -902,9 +902,8 @@ cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
     int randval, loop, tried = 0, mapped=0, num = zend_hash_num_elements(c->seeds);
 
     // Get a randnode index
-    srand(GENERATE_SEED());
     while (!mapped && tried++ < num) {
-      randval = rand() % num;
+      randval = RANDVAL() % num;
       loop = 0;
       zend_hash_internal_pointer_reset(c->seeds);
       while (loop++ < randval) {
@@ -927,28 +926,6 @@ cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
         memset(c->master, 0, sizeof(redisClusterNode*)*REDIS_CLUSTER_SLOTS);
       }
     }
-    /* // Iterate over seeds until we can get slots */
-    /* for(zend_hash_internal_pointer_reset(c->seeds); */
-    /*     !mapped && zend_hash_has_more_elements(c->seeds) == SUCCESS; */
-    /*     zend_hash_move_forward(c->seeds)) */
-    /* { */
-    /*     // Grab the redis_sock for this seed */
-    /*     zend_hash_get_current_data(c->seeds, (void**)&seed); */
-
-    /*     // Attempt to connect to this seed node */
-    /*     if(redis_sock_connect(*seed TSRMLS_CC)!=0) { */
-    /*         continue; */
-    /*     } */
-
-    /*     // Parse out cluster nodes.  Flag mapped if we are valid */
-    /*     slots = cluster_get_slots(*seed TSRMLS_CC); */
-    /*     if(slots) mapped = !cluster_map_slots(c, slots); */
-
-    /*     // Bin anything mapped, if we failed somewhere */
-    /*     if(!mapped && slots) { */
-    /*         memset(c->master, 0, sizeof(redisClusterNode*)*REDIS_CLUSTER_SLOTS); */
-    /*     } */
-    /* } */
 
     // Clean up slots reply if we got one
     if(slots) cluster_free_reply(slots, 1);
