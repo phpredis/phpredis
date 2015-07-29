@@ -16,3 +16,4 @@ mkinstalldirs
 run-tests.php
 TAGS
 modules
+redis.la

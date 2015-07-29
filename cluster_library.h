@@ -140,6 +140,12 @@
     mc.kw     = keyword; \
     mc.kw_len = keyword_len; \
 
+#ifdef PHP_WIN32
+#define GENERATE_SEED() ((long) (time(0) * GetCurrentProcessId()))
+#else
+#define GENERATE_SEED() ((long) (time(0) * getpid()))
+#endif
+
 /* Cluster redirection enum */
 typedef enum CLUSTER_REDIR_TYPE {
     REDIR_NONE,
