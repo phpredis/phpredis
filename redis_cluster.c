@@ -496,7 +496,9 @@ PHP_METHOD(RedisCluster, __destruct) {
        zend_hash_move_forward(c->seeds)) {
     // get current redissock
     zend_hash_get_current_data(c->seeds, (void**)&redis_sock);
-    redis_sock_disconnect(*redis_sock);
+    if (!(*redis_sock)->persistent) {
+      redis_sock_disconnect(*redis_sock);
+    }
   }
 
   //close cluster
