@@ -57,6 +57,7 @@ ZEND_END_ARG_INFO();
 /* Function table */
 zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, __construct, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, __destruct, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, close, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, get, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, set, NULL, ZEND_ACC_PUBLIC)
@@ -480,6 +481,26 @@ PHP_METHOD(RedisCluster, __construct) {
     } else {
         redis_cluster_load(context, name, name_len TSRMLS_CC);
     }
+}
+
+PHP_METHOD(RedisCluster, __destruct) {
+  redisCluster *c = GET_CONTEXT();
+  RedisSock **redis_sock;
+  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
+    RETURN_FALSE;
+  }
+
+  // loop for close all seeds
+  for (zend_hash_internal_pointer_reset(c->seeds);
+       zend_hash_has_more_elements(c->seeds) == SUCCESS;
+       zend_hash_move_forward(c->seeds)) {
+    // get current redissock
+    zend_hash_get_current_data(c->seeds, (void**)&redis_sock);
+    redis_sock_disconnect(*redis_sock);
+  }
+
+  //close cluster
+  cluster_disconnect(c TSRMLS_CC);
 }
 
 /* 
