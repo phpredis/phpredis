@@ -5621,10 +5621,9 @@ PHP_REDIS_API void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub
 	}
 
 	if (zend_hash_index_find(Z_ARRVAL_P(z_tab), 0, (void**)&tmp) == SUCCESS) {
-		type_response = Z_STRVAL_PP(tmp);
+        type_response = Z_STRVAL_PP(tmp);
 		if(strcmp(type_response, sub_cmd) != 0) {
-            efree(tmp);
-			zval_dtor(z_tab);
+            zval_dtor(z_tab);
             efree(z_tab);
 			RETURN_FALSE;
 		}
