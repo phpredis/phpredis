@@ -140,6 +140,21 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
         return -1;
     }
 
+    /* NOITCE: set errno = 0 here
+     *
+     * There is a bug in php socket stream to check liveness of a connection:
+     * if (0 >= recv(sock->socket, &buf, sizeof(buf), MSG_PEEK) && php_socket_errno() != EWOULDBLOCK) {
+     *    alive = 0;
+     * }
+     * If last errno is EWOULDBLOCK and recv returns 0 because of connection closed, alive would not be
+     * set to 0. However, the connection is close indeed. The php_stream_eof is not reliable. This will
+     * cause a "read error on connection" exception when use a closed persistent connection.
+     *
+     * We work around this by set errno = 0 first.
+     *
+     * Bug fix of php: https://github.com/php/php-src/pull/1456
+     * */
+    errno = 0;
     eof = php_stream_eof(redis_sock->stream);
     for (; eof; count++) {
         if((MULTI == redis_sock->mode) || redis_sock->watching || count == 10) {
@@ -171,6 +186,7 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
     }
         redis_sock_connect(redis_sock TSRMLS_CC); /* reconnect */
         if(redis_sock->stream) { /*  check for EOF again. */
+            errno = 0;
             eof = php_stream_eof(redis_sock->stream);
         }
     }
