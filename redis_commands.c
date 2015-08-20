@@ -1008,7 +1008,7 @@ int redis_key_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char *kw, char **cmd, int *cmd_len, short *slot,
                       void **ctx)
 {
-    zval *z_key, *z_arr, **z_val;
+    zval *z_arr, **z_val;
     HashTable *ht_arr;
     HashPosition pos;
     smart_str cmdstr = {0};
@@ -1225,23 +1225,31 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             zend_hash_move_forward(kt))
         {
             // Grab key and value
-            type = zend_hash_get_current_key_ex(kt, &k, &ht_key_len, &idx, 0,
-                                                NULL);
+            type = zend_hash_get_current_key_ex(kt, &k, &ht_key_len, &idx, 0, NULL);
             zend_hash_get_current_data(kt, (void**)&v);
 
-            if(type == HASH_KEY_IS_STRING && (Z_TYPE_PP(v) == IS_LONG) &&
-               (Z_LVAL_PP(v) > 0) && IS_EX_PX_ARG(k))
-            {
+            /* Detect PX or EX argument and validate timeout */
+            if (type == HASH_KEY_IS_STRING && IS_EX_PX_ARG(k)) {
+                /* Set expire type */
                 exp_type = k;
-                expire = Z_LVAL_PP(v);
-            } else if(Z_TYPE_PP(v) == IS_STRING &&
-                      IS_NX_XX_ARG(Z_STRVAL_PP(v)))
-            {
+
+                /* Try to extract timeout */
+                if (Z_TYPE_PP(v) == IS_LONG) {
+                    expire = Z_LVAL_PP(v);
+                } else if (Z_TYPE_PP(v) == IS_STRING) {
+                    expire = atol(Z_STRVAL_PP(v));
+                }
+
+                /* Expiry can't be set < 1 */
+                if (expire < 1) return FAILURE;
+            } else if (Z_TYPE_PP(v) == IS_STRING && IS_EX_PX_ARG(k)) {
                 set_type = Z_STRVAL_PP(v);
             }
         }
     } else if(z_opts && Z_TYPE_P(z_opts) == IS_LONG) {
+        /* Grab expiry and fail if it's < 1 */
         expire = Z_LVAL_P(z_opts);
+        if (expire < 1) return FAILURE;
     }
 
     /* Now let's construct the command we want */
