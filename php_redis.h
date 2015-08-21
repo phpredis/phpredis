@@ -207,6 +207,7 @@ PHP_METHOD(Redis, getPersistentID);
 PHP_METHOD(Redis, getAuth);
 PHP_METHOD(Redis, rawCommand);
 /* Geo Redis*/
+PHP_METHOD(Redis, geoadd);
 PHP_METHOD(Redis, georadius);
 
 #ifdef PHP_WIN32
