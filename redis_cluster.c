@@ -497,7 +497,7 @@ PHP_METHOD(RedisCluster, __destruct) {
     // get current redissock
     zend_hash_get_current_data(c->seeds, (void**)&redis_sock);
     if (!(*redis_sock)->persistent) {
-      redis_sock_disconnect(*redis_sock);
+      redis_sock_disconnect(*redis_sock TSRMLS_CC);
     }
   }
 
