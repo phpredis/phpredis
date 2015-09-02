@@ -18,7 +18,7 @@
     redis_##name##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &cmd, \
                        &cmd_len, &slot)
 
-/* Append information required to handle MULTI commands to the tail of our MULTI 
+/* Append information required to handle MULTI commands to the tail of our MULTI
  * linked list. */
 #define CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx) \
     clusterFoldItem *_item; \
@@ -76,8 +76,8 @@
         CLUSTER_ENQUEUE_RESPONSE(c, slot, resp_func, ctx); \
         RETURN_ZVAL(getThis(), 1, 0); \
     } \
-    resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx); 
-        
+    resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
+
 /* More generic processing, where only the keyword differs */
 #define CLUSTER_PROCESS_KW_CMD(kw, cmdfunc, resp_func, readcmd) \
     redisCluster *c = GET_CONTEXT(); \
@@ -96,13 +96,13 @@
         CLUSTER_ENQUEUE_RESPONSE(c, slot, resp_func, ctx); \
         RETURN_ZVAL(getThis(), 1, 0); \
     } \
-    resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx); 
+    resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
 
 /* For the creation of RedisCluster specific exceptions */
 PHP_REDIS_API zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC);
 
 /* Create cluster context */
-zend_object_value create_cluster_context(zend_class_entry *class_type 
+zend_object *create_cluster_context(zend_class_entry *class_type
                                          TSRMLS_DC);
 
 /* Free cluster context struct */
