@@ -2560,7 +2560,7 @@ PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
     int cmd_len, array_count;
 
     int i;
-    zval *z_tab, *z_channel;
+    zval z_tab, *z_channel;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
                                      &object, redis_ce, &array) == FAILURE) {
@@ -2607,21 +2607,20 @@ PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
     array_init(return_value);
 
     while( i <= array_count) {
-        z_tab = redis_sock_read_multibulk_reply_zval(
-            INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+        redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_tab);
 
-        if(Z_TYPE_P(z_tab) == IS_ARRAY) {
-            if ((z_channel = zend_hash_index_find(Z_ARRVAL_P(z_tab), 1)) == NULL)
+        if(Z_TYPE(z_tab) == IS_ARRAY) {
+            if ((z_channel = zend_hash_index_find(Z_ARRVAL(z_tab), 1)) == NULL)
             {
                 RETURN_FALSE;
             }
             add_assoc_bool(return_value, Z_STRVAL_P(z_channel), 1);
         } else {
             //error
-            efree(z_tab);
+            zval_dtor(&z_tab);
             RETURN_FALSE;
         }
-        efree(z_tab);
+        zval_dtor(&z_tab);
         i++;
     }
 }

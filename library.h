@@ -25,14 +25,14 @@ PHP_REDIS_API void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, Redi
 PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API void redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
-PHP_REDIS_API zval *redis_parse_info_response(char *resp);
-PHP_REDIS_API zval *redis_parse_client_list_response(char *resp);
+PHP_REDIS_API void redis_parse_info_response(char *resp, zval *z_ret);
+PHP_REDIS_API void redis_parse_client_list_response(char *resp, zval *z_result);
 PHP_REDIS_API void redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API RedisSock* redis_sock_create(char *host, int host_len, unsigned short port, double timeout, int persistent, char *persistent_id, long retry_interval, zend_bool lazy_connect);
 PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC);
 PHP_REDIS_API int redis_sock_server_open(RedisSock *redis_sock, int force_connect TSRMLS_DC);
 PHP_REDIS_API int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC);
-PHP_REDIS_API zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
+PHP_REDIS_API void redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
 PHP_REDIS_API char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_DC);
 PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *_z_tab, void *ctx);
 PHP_REDIS_API void redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, int count, int unserialize);
@@ -84,17 +84,9 @@ PHP_REDIS_API int redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
 
 PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
 
-#if ZEND_MODULE_API_NO >= 20100000
-#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) do { \
-	char dbl_decsep; \
-	dbl_decsep = '.'; \
-    dbl_str = _php_math_number_format_ex(dbl, 16, &dbl_decsep, 1, NULL, 0); \
-	dbl_len = strlen(dbl_str); \
+#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl) do { \
+	char dbl_decsep = '.'; \
+	dbl_str = _php_math_number_format_ex(dbl, 16, &dbl_decsep, 1, NULL, 0); \
 	} while (0);
-#else
-#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) \
-	dbl_str = _php_math_number_format(dbl, 16, '.', '\x00'); \
-	dbl_len = strlen(dbl_str);
-#endif
 
 #endif
