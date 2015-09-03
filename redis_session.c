@@ -26,7 +26,7 @@
 #include "config.h"
 #endif
 
-#ifdef PHP_SESSION
+#ifdef PHP_SESSION_NEW
 #include "common.h"
 #include "ext/standard/info.h"
 #include "php_redis.h"
@@ -354,7 +354,7 @@ PS_READ_FUNC(redis)
     /* send GET command */
     session = redis_session_key(rpm, key, strlen(key), &session_len);
     cmd_len = redis_cmd_format_static(&cmd, "GET", "s", session, session_len);
-    
+
     efree(session);
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
@@ -471,14 +471,14 @@ static void session_conf_timeout(HashTable *ht_conf, const char *key, int key_le
     zval **z_val;
 
     if (zend_hash_find(ht_conf, key, key_len, (void**)&z_val) == SUCCESS &&
-        Z_TYPE_PP(z_val) == IS_STRING) 
+        Z_TYPE_PP(z_val) == IS_STRING)
     {
         *val = atof(Z_STRVAL_PP(z_val));
     }
 }
 
 /* Simple helper to retreive a boolean (0 or 1) value from a string stored in our
- * session.save_path variable.  This is so the user can use 0, 1, or 'true', 
+ * session.save_path variable.  This is so the user can use 0, 1, or 'true',
  * 'false' */
 static void session_conf_bool(HashTable *ht_conf, char *key, int keylen,
                               int *retval) {
@@ -486,7 +486,7 @@ static void session_conf_bool(HashTable *ht_conf, char *key, int keylen,
     char *str;
     int strlen;
 
-    /* See if we have the option, and it's a string */   
+    /* See if we have the option, and it's a string */
     if (zend_hash_find(ht_conf, key, keylen, (void**)&z_val) == SUCCESS &&
         Z_TYPE_PP(z_val) == IS_STRING)
     {
@@ -501,7 +501,7 @@ static void session_conf_bool(HashTable *ht_conf, char *key, int keylen,
 }
 
 /* Prefix a session key */
-static char *cluster_session_key(redisCluster *c, const char *key, int keylen, 
+static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
                                  int *skeylen, short *slot) {
     char *skey;
 
@@ -509,7 +509,7 @@ static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
     skey = emalloc(*skeylen);
     memcpy(skey, c->flags->prefix, c->flags->prefix_len);
     memcpy(skey + c->flags->prefix_len, key, keylen);
-    
+
     *slot = cluster_hash_key(skey, *skeylen);
 
     return skey;
@@ -549,7 +549,7 @@ PS_OPEN_FUNC(rediscluster) {
 
     /* Grab persistent option */
     session_conf_bool(ht_conf, "persistent", sizeof("persistent"), &persistent);
-    
+
     /* Sanity check on our timeouts */
     if (timeout < 0 || read_timeout < 0) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
@@ -561,7 +561,7 @@ PS_OPEN_FUNC(rediscluster) {
 
     /* Look for a specific prefix */
     if (zend_hash_find(ht_conf, "prefix", sizeof("prefix"), (void**)&z_val) == SUCCESS &&
-        Z_TYPE_PP(z_val) == IS_STRING && Z_STRLEN_PP(z_val) > 0) 
+        Z_TYPE_PP(z_val) == IS_STRING && Z_STRLEN_PP(z_val) > 0)
     {
         prefix = Z_STRVAL_PP(z_val);
         prefix_len = Z_STRLEN_PP(z_val);
@@ -597,7 +597,7 @@ PS_OPEN_FUNC(rediscluster) {
     /* Cleanup */
     zval_dtor(z_conf);
     efree(z_conf);
-    
+
     return retval;
 }
 
@@ -709,7 +709,7 @@ PS_DESTROY_FUNC(rediscluster) {
     reply = cluster_read_resp(c TSRMLS_CC);
     if (!reply || c->err) {
         if (reply) cluster_free_reply(reply, 1);
-        return FAILURE; 
+        return FAILURE;
     }
 
     /* Clean up our reply */
