@@ -993,6 +993,7 @@ PHP_METHOD(Redis, getMultiple)
         char *key;
         int key_len, key_free;
         zval z_tmp;
+		ZVAL_UNDEF(&z_tmp);
 
         /* If the key isn't a string, turn it into one */
         if(Z_TYPE_P(z_ele) == IS_STRING) {
@@ -1001,6 +1002,7 @@ PHP_METHOD(Redis, getMultiple)
         } else {
             ZVAL_DUP(&z_tmp, z_ele);
 
+			convert_to_string(&z_tmp);
             key = Z_STRVAL(z_tmp);
             key_len = Z_STRLEN(z_tmp);
         }
@@ -1859,7 +1861,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
             int val_free, key_free;
             char buf[32];
 
-            type = zend_hash_get_current_key_ex(keytable, &key_zstr, &idx, 0);
+            type = zend_hash_get_current_key(keytable, &key_zstr, &idx);
             if((z_value_p = zend_hash_get_current_data(keytable)) == NULL)
             {
                 /* Should never happen, according to the PHP people */
@@ -1873,12 +1875,14 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
                 // Create string representation of our index
                 key_len = snprintf(buf, sizeof(buf), "%ld", (long)idx);
                 key = (char*)buf;
-            } else if(key_len > 0) {
-                // When not an integer key, the length will include the \0
-                key_len--;
             } else {
                 key_len = key_zstr->len;
                 key = key_zstr->val;
+
+				// When not an integer key, the length will include the \0
+				if (key_len > 0) {
+					key_len--;
+				}
             }
 
             if(step == 0)
@@ -2950,6 +2954,7 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
             char *key;
             int key_len, key_free;
             zval z_tmp;
+			ZVAL_UNDEF(&z_tmp);
 
             if(Z_TYPE_P(z_ele) == IS_STRING) {
                 key = Z_STRVAL_P(z_ele);

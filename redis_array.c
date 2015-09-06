@@ -993,7 +993,7 @@ PHP_METHOD(RedisArray, mset)
         }
 
 		/* Grab our key */
-	    type = zend_hash_get_current_key_ex(h_keys, &key_zstr, &idx, 0);
+	    type = zend_hash_get_current_key(h_keys, &key_zstr, &idx);
 
 	    /* If the key isn't a string, make a string representation of it */
 	    if(type != HASH_KEY_IS_STRING) {

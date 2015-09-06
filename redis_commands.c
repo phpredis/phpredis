@@ -591,7 +591,7 @@ int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     HashPosition ptr;
     smart_string cmdstr = {0};
     int argc = 2, keys_count;
-    size_t agg_op_len, key_len;
+    size_t agg_op_len = 0, key_len = 0;
 
     // Parse args
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa|a!s", &key,
@@ -659,6 +659,7 @@ int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         char *key;
         int key_free, key_len;
         zval z_tmp;
+        ZVAL_UNDEF(&z_tmp);
 
         if(Z_TYPE_P(z_ele) == IS_STRING) {
             key = Z_STRVAL_P(z_ele);
@@ -968,7 +969,7 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Make sure we at least have a key, and we can get other args
-    z_args = emalloc(argc * sizeof(zval*));
+    z_args = (zval *) safe_emalloc(sizeof(zval), argc, 0);
     if(zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
         return FAILURE;
@@ -994,7 +995,7 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     for(i=1;i<argc;i++) {
         arg_free = redis_serialize(redis_sock, &z_args[i], &arg, &arg_len TSRMLS_CC);
         redis_cmd_append_sstr(&cmdstr, arg, arg_len);
-        if(arg_free) efree(arg);
+        //if(arg_free) efree(arg);
     }
 
     // Push out values
@@ -1077,7 +1078,7 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Allocate args
-    z_args = emalloc(argc * sizeof(zval *));
+    z_args = (zval *) safe_emalloc(sizeof(zval), argc, 0);
     if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
         efree(z_args);
         return FAILURE;
@@ -1231,7 +1232,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             zend_hash_move_forward(kt))
         {
             // Grab key and value
-            type = zend_hash_get_current_key_ex(kt, &k, &idx, 0);
+            type = zend_hash_get_current_key(kt, &k, &idx);
             v = zend_hash_get_current_data(kt);
 
             /* Detect PX or EX argument and validate timeout */
@@ -1248,7 +1249,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
                 /* Expiry can't be set < 1 */
                 if (expire < 1) return FAILURE;
-            } else if (Z_TYPE_P(v) == IS_STRING && IS_EX_PX_ARG(k->val)) {
+            } else if (Z_TYPE_P(v) == IS_STRING && k != NULL && IS_EX_PX_ARG(k->val)) {
                 set_type = Z_STRVAL_P(v);
             }
         }
@@ -1475,7 +1476,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *key;
-    zval *z_arr, *z_mem, **z_mems;
+    zval *z_arr, *z_mem, *z_mems;
     int i, count, valid=0, key_free;
     size_t key_len;
     HashTable *ht_arr;
@@ -1501,7 +1502,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     key_free = redis_key_prefix(redis_sock, &key, (int *) &key_len);
 
     // Allocate memory for mems+1 so we can have a sentinel
-    z_mems = ecalloc(count+1, sizeof(zval*));
+	z_mems = (zval *) safe_emalloc(sizeof(zval), count + 1, 0);
 
     // Iterate over our member array
     for(zend_hash_internal_pointer_reset_ex(ht_arr, &ptr);
@@ -1513,8 +1514,8 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             || Z_TYPE_P(z_mem) == IS_LONG)
         {
             // Copy into our member array
-            ZVAL_DUP(z_mems[valid], z_mem);
-            convert_to_string(z_mems[valid]);
+            ZVAL_DUP(&z_mems[valid], z_mem);
+            convert_to_string(&z_mems[valid]);
 
             // Increment the member count to actually send
             valid++;
@@ -1530,7 +1531,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Sentinel so we can free this even if it's used and then we discard
     // the transaction manually or there is a transaction failure
-    z_mems[valid] = NULL;
+	ZVAL_UNDEF(&z_mems[valid]);
 
     // Start command construction
     redis_cmd_init_sstr(&cmdstr, valid+1, "HMGET", sizeof("HMGET")-1);
@@ -1538,7 +1539,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Iterate over members, appending as arguments
     for(i=0;i<valid;i++) {
-        redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(z_mems[i]), Z_STRLEN_P(z_mems[i]));
+        redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_mems[i]), Z_STRLEN(z_mems[i]));
     }
 
     // Set our slot
@@ -2569,7 +2570,7 @@ int redis_hdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Grab arguments as an array
-    z_args = emalloc(argc * sizeof(zval*));
+	z_args = (zval *) safe_emalloc(sizeof(zval), argc, 0);
     if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
         efree(z_args);
         return FAILURE;
@@ -2618,7 +2619,7 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     int argc = ZEND_NUM_ARGS(), i;
     smart_string cmdstr = {0};
 
-    z_args = emalloc(argc * sizeof(zval*));
+    z_args = (zval *) safe_emalloc(sizeof(zval), argc, 0);
     if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
         efree(z_args);
         return FAILURE;
@@ -3022,8 +3023,9 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
 
     // We only need to attempt unserialization if we have a serializer running
     if(redis_sock->serializer != REDIS_SERIALIZER_NONE) {
-        zval *z_ret = NULL;
-        if(redis_unserialize(redis_sock, value, value_len, &z_ret
+        zval z_ret, *z_ret_p;
+		z_ret_p = &z_ret;
+        if(redis_unserialize(redis_sock, value, value_len, &z_ret_p
                              TSRMLS_CC) == 0)
         {
             // Badly formed input, throw an execption
@@ -3032,7 +3034,7 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
                 0 TSRMLS_CC);
             RETURN_FALSE;
         }
-        RETURN_ZVAL(z_ret, 0, 1);
+        RETURN_ZVAL(z_ret_p, 0, 1);
     } else {
         // Just return the value that was passed to us
         RETURN_STRINGL(value, value_len);

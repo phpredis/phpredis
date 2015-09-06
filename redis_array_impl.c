@@ -854,7 +854,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 		ZVAL_DOUBLE(z_zadd_args[i], Z_DVAL_P(z_score_p));
 
 		/* add value */
-		switch (zend_hash_get_current_key_ex(h_zset_vals, &val, &idx, 0)) {
+		switch (zend_hash_get_current_key(h_zset_vals, &val, &idx)) {
 			case HASH_KEY_IS_STRING:
 				ZVAL_STRINGL(z_zadd_args[i+1], val->val, val->len - 1); /* we have to remove 1 because it is an array key. */
 				break;
