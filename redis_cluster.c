@@ -426,7 +426,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
 PHP_METHOD(RedisCluster, __construct) {
     zval *object, *z_seeds=NULL;
     char *name;
-    long name_len;
+    size_t name_len;
     double timeout = 0.0, read_timeout = 0.0;
     zend_bool persistent = 0;
     redisCluster *context = Z_REDIS_OBJ_P(getThis());
@@ -945,8 +945,9 @@ PHP_METHOD(RedisCluster, exists) {
 PHP_METHOD(RedisCluster, keys) {
     redisCluster *c = Z_REDIS_OBJ_P(getThis());
     redisClusterNode *node;
-    int pat_len, pat_free, cmd_len;
+    int pat_free, cmd_len;
     char *pat, *cmd;
+	size_t pat_len;
     clusterReply *resp;
     zval z_ret;
     int i;
@@ -958,7 +959,8 @@ PHP_METHOD(RedisCluster, keys) {
     }
 
     /* Prefix and then build our command */
-    pat_free = redis_key_prefix(c->flags, &pat, &pat_len);
+	//TODO Sean-Der
+    pat_free = redis_key_prefix(c->flags, &pat, (int *) &pat_len);
     cmd_len = redis_cmd_format_static(&cmd, "KEYS", "s", pat, pat_len);
     if(pat_free) efree(pat);
 
@@ -1805,7 +1807,8 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 {
     redisClusterNode *node=NULL;
     char *lua, *key;
-    int key_free, args_count=0, lua_len, key_len;
+    int key_free, args_count=0, key_len;
+	size_t lua_len;
     zval *z_arr=NULL, *z_ele;
     HashTable *ht_arr;
     HashPosition ptr;
@@ -2367,7 +2370,8 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 {
     redisCluster *c = Z_REDIS_OBJ_P(getThis());
     char *cmd, *pat=NULL, *key=NULL;
-    int cmd_len, key_len=0, pat_len=0, key_free=0;
+    int cmd_len, key_free=0;
+	size_t key_len, pat_len;
     short slot;
     zval *z_it;
     HashTable *hash;
@@ -2402,7 +2406,8 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     // Apply any key prefix we have, get the slot
-    key_free = redis_key_prefix(c->flags, &key, &key_len);
+	// TODO Sean-Der
+    key_free = redis_key_prefix(c->flags, &key, (int *) &key_len);
     slot = cluster_hash_key(key, key_len);
 
     // If SCAN_RETRY is set, loop until we get a zero iterator or until
@@ -2458,7 +2463,8 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 PHP_METHOD(RedisCluster, scan) {
     redisCluster *c = Z_REDIS_OBJ_P(getThis());
     char *cmd, *pat=NULL;
-    int pat_len=0, cmd_len;
+    int cmd_len;
+	size_t pat_len;
     short slot;
     zval *z_it, *z_node;
     long it, num_ele, count=0;
@@ -2614,7 +2620,8 @@ PHP_METHOD(RedisCluster, info) {
     redisCluster *c = Z_REDIS_OBJ_P(getThis());
     REDIS_REPLY_TYPE rtype;
     char *cmd, *opt=NULL;
-    int cmd_len, opt_len;
+    int cmd_len;
+	size_t opt_len;
     void *ctx = NULL;
     zval *z_arg;
     short slot;
@@ -2665,7 +2672,8 @@ PHP_METHOD(RedisCluster, info) {
 PHP_METHOD(RedisCluster, client) {
     redisCluster *c = Z_REDIS_OBJ_P(getThis());
     char *cmd, *opt=NULL, *arg=NULL;
-    int cmd_len, opt_len, arg_len;
+    int cmd_len;
+	size_t opt_len, arg_len;
     REDIS_REPLY_TYPE rtype;
     zval *z_node;
     short slot;
@@ -2810,7 +2818,8 @@ PHP_METHOD(RedisCluster, echo) {
     REDIS_REPLY_TYPE rtype;
     zval *z_arg;
     char *cmd, *msg;
-    int cmd_len, msg_len;
+    int cmd_len;
+	size_t msg_len;
     short slot;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zs", &z_arg, &msg,

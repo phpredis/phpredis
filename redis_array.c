@@ -99,13 +99,11 @@ static void redis_array_free(RedisArray *ra) {
     /* delete hash function */
     if(Z_TYPE(ra->z_fun) != IS_UNDEF) {
         zval_dtor(&ra->z_fun);
-        efree(&ra->z_fun);
     }
 
     /* Distributor */
     if(Z_TYPE(ra->z_dist) != IS_UNDEF) {
         zval_dtor(&ra->z_dist);
-        efree(&ra->z_dist);
     }
 
     /* Delete pur commands */
@@ -212,7 +210,7 @@ PHP_METHOD(RedisArray, __construct)
 	zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0;
 	HashTable *hPrev = NULL, *hOpts = NULL;
 	long l_retry_interval = 0;
-  	zend_bool b_lazy_connect = 0;
+	zend_bool b_lazy_connect = 0;
 	double d_connect_timeout = 0;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|a", &z0, &z_opts) == FAILURE) {
@@ -416,7 +414,7 @@ PHP_METHOD(RedisArray, __call)
 	zval *z_args;
 
 	char *cmd;
-	int cmd_len;
+	size_t cmd_len;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa",
 				&object, redis_array_ce, &cmd, &cmd_len, &z_args) == FAILURE) {
@@ -456,7 +454,8 @@ PHP_METHOD(RedisArray, _target)
 	zval *object;
 	RedisArray *ra;
 	char *key;
-	int key_len, i;
+	size_t key_len;
+	int i;
 	zval *redis_inst;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
@@ -481,7 +480,7 @@ PHP_METHOD(RedisArray, _instance)
 	zval *object;
 	RedisArray *ra;
 	char *target;
-	int target_len;
+	size_t target_len;
 	zval *z_redis;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
@@ -632,7 +631,8 @@ PHP_METHOD(RedisArray, keys)
 	zval *object, z_args[1], z_tmp, z_fun;
 	RedisArray *ra;
 	char *pattern;
-	int pattern_len, i;
+	size_t pattern_len;
+	int i;
 
 	/* Make sure the prototype is correct */
 	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
@@ -666,9 +666,6 @@ PHP_METHOD(RedisArray, keys)
 	    /* Add the result for this host */
 	    add_assoc_zval(return_value, ra->hosts[i], &z_tmp);
 	}
-
-	/* Free arg array */
-	efree(&z_args[0]);
 }
 
 PHP_METHOD(RedisArray, getOption)
@@ -704,9 +701,6 @@ PHP_METHOD(RedisArray, getOption)
 
 		add_assoc_zval(return_value, ra->hosts[i], &z_tmp);
 	}
-
-	/* cleanup */
-	efree(&z_args[0]);
 }
 
 PHP_METHOD(RedisArray, setOption)
@@ -716,7 +710,7 @@ PHP_METHOD(RedisArray, setOption)
 	RedisArray *ra;
 	long opt;
 	char *val_str;
-	int val_len;
+	size_t val_len;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ols",
 				&object, redis_array_ce, &opt, &val_str, &val_len) == FAILURE) {
@@ -745,10 +739,6 @@ PHP_METHOD(RedisArray, setOption)
 
 		add_assoc_zval(return_value, ra->hosts[i], &z_tmp);
 	}
-
-	/* cleanup */
-	efree(&z_args[0]);
-	efree(&z_args[1]);
 }
 
 PHP_METHOD(RedisArray, select)
@@ -784,9 +774,6 @@ PHP_METHOD(RedisArray, select)
 
 		add_assoc_zval(return_value, ra->hosts[i], &z_tmp);
 	}
-
-	/* cleanup */
-	efree(&z_args[0]);
 }
 
 #define HANDLE_MULTI_EXEC(cmd) do {\
@@ -861,12 +848,12 @@ PHP_METHOD(RedisArray, mget)
 
 	    /* phpredis proper can only use string or long keys, so restrict to that here */
 	    if(Z_TYPE_P(data) != IS_STRING && Z_TYPE_P(data) != IS_LONG) {
-	        php_error_docref(NULL TSRMLS_CC, E_ERROR, "MGET: all keys must be strings or longs");
-	        efree(argv);
-	        efree(pos);
-	        efree(redis_instances);
-	        efree(argc_each);
-	        RETURN_FALSE;
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "MGET: all keys must be strings or longs");
+		efree(argv);
+		efree(pos);
+		efree(redis_instances);
+		efree(argc_each);
+		RETURN_FALSE;
 	    }
 
 	    /* Convert to a string for hash lookup if it isn't one */
@@ -874,8 +861,8 @@ PHP_METHOD(RedisArray, mget)
 		key_len = Z_STRLEN_P(data);
 		key_lookup = Z_STRVAL_P(data);
 	    } else {
-	        key_len = snprintf(kbuf, sizeof(kbuf), "%ld", Z_LVAL_P(data));
-	        key_lookup = (char*)kbuf;
+		key_len = snprintf(kbuf, sizeof(kbuf), "%ld", Z_LVAL_P(data));
+		key_lookup = (char*)kbuf;
 	    }
 
 		/* Find our node */
@@ -914,16 +901,15 @@ PHP_METHOD(RedisArray, mget)
 		for(i = 0, j = 0; i < argc; ++i) {
 		    /* Error out if we didn't get a proper response */
 		    if(Z_TYPE(z_ret) != IS_ARRAY) {
-		        /* cleanup */
-		        zval_dtor(&z_ret);
-		        efree(&z_ret);
-		        zval_ptr_dtor(&z_tmp_array);
-		        efree(pos);
-		        efree(redis_instances);
-		        efree(argc_each);
+			/* cleanup */
+			zval_dtor(&z_ret);
+			zval_ptr_dtor(&z_tmp_array);
+			efree(pos);
+			efree(redis_instances);
+			efree(argc_each);
 
-		        /* failure */
-		        RETURN_FALSE;
+			/* failure */
+			RETURN_FALSE;
 		    }
 
 		    if(pos[i] != n) continue;
@@ -934,7 +920,6 @@ PHP_METHOD(RedisArray, mget)
 			add_index_zval(&z_tmp_array, i, &z_tmp);
 		}
 		zval_dtor(&z_ret);
-		efree(&z_ret);
 	}
 
 	/* copy temp array in the right order to return_value */
@@ -1009,12 +994,12 @@ PHP_METHOD(RedisArray, mset)
 
 	    /* If the key isn't a string, make a string representation of it */
 	    if(type != HASH_KEY_IS_STRING) {
-	        key_len = snprintf(kbuf, sizeof(kbuf), "%ld", (long)idx);
-	        key = estrndup(kbuf, key_len);
-	        key_free[free_idx++] = key;
+		key_len = snprintf(kbuf, sizeof(kbuf), "%ld", (long)idx);
+		key = estrndup(kbuf, key_len);
+		key_free[free_idx++] = key;
 	    } else {
 		key_len = key_zstr->len - 1; /* We don't want the null terminator */
-	        key = key_zstr->val;
+		key = key_zstr->val;
 	    }
 
 	    redis_instances[i] = *ra_find_node(ra, key, (int)key_len, &pos[i] TSRMLS_CC);
@@ -1049,7 +1034,6 @@ PHP_METHOD(RedisArray, mset)
 		if(!found)
 		{
 			zval_dtor(&z_argarray);
-			efree(&z_argarray);
 			continue;				/* don't run empty MSETs */
 		}
 
@@ -1178,7 +1162,6 @@ PHP_METHOD(RedisArray, del)
 
 		if(!found) {	/* don't run empty DELs */
 			zval_dtor(&z_argarray);
-			efree(&z_argarray);
 			continue;
 		}
 
@@ -1199,10 +1182,8 @@ PHP_METHOD(RedisArray, del)
 		}
 
 		zval_dtor(&z_ret);
-		efree(&z_ret);
 
 		zval_dtor(&z_argarray);
-		efree(&z_argarray);
 	}
 
 	/* cleanup */
@@ -1213,7 +1194,6 @@ PHP_METHOD(RedisArray, del)
 
 	if(free_zkeys) {
 		zval_dtor(&z_keys);
-		efree(&z_keys);
 	}
 
 	efree(z_args);
@@ -1226,7 +1206,7 @@ PHP_METHOD(RedisArray, multi)
 	RedisArray *ra;
 	zval *z_redis;
 	char *host;
-	int host_len;
+	size_t host_len;
 	long multi_value = MULTI;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
