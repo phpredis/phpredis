@@ -2075,7 +2075,8 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
         case REDIS_SERIALIZER_IGBINARY:
 #ifdef HAVE_REDIS_IGBINARY
             if(!*return_value) {
-                MAKE_STD_ZVAL(*return_value);
+				// TODO Sean-Der, heap allocation
+                //MAKE_STD_ZVAL(*return_value);
                 rv_free = 1;
             }
             if(igbinary_unserialize((const uint8_t *)val, (size_t)val_len,
