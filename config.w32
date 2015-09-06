@@ -1,6 +1,6 @@
 // vim: ft=javascript:
 
-ARG_ENABLE("redis", "whether to enable redis support", "yes");
+ARG_ENABLE("redis", "whether to enable redis support", "no");
 ARG_ENABLE("redis-session", "whether to enable sessions", "yes");
 ARG_ENABLE("redis-igbinary", "whether to enable igbinary serializer support", "no");
 
@@ -22,7 +22,7 @@ if (PHP_REDIS != "no") {
 			WARNING("redis igbinary support not enabled");
 		}
 	}
-	
+	EXTENSION("redis", sources);
 
 }
 
