@@ -1250,7 +1250,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
                 /* Expiry can't be set < 1 */
                 if (expire < 1) return FAILURE;
-            } else if (Z_TYPE_P(v) == IS_STRING && k != NULL && IS_EX_PX_ARG(k->val)) {
+            } else if (Z_TYPE_P(v) == IS_STRING && IS_NX_XX_ARG(Z_STRVAL_P(v))) {
                 set_type = Z_STRVAL_P(v);
             }
         }
