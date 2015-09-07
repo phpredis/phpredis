@@ -313,7 +313,7 @@ typedef struct clusterMultiCmd {
 typedef struct clusterReply {
     REDIS_REPLY_TYPE type;         /* Our reply type */
     size_t integer;                /* Integer reply */
-    long long len;                 /* Length of our string */
+    size_t len;                 /* Length of our string */
     char *str;                     /* String reply */
     size_t elements;               /* Count of array elements */
     struct clusterReply **element; /* Array elements */
@@ -329,7 +329,7 @@ void cluster_free_reply(clusterReply *reply, int free_data);
 HashTable *cluster_dist_create();
 void cluster_dist_free(HashTable *ht);
 int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
-    int key_len, clusterKeyVal **kv);
+    size_t key_len, clusterKeyVal **kv);
 void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *val
     TSRMLS_DC);
 

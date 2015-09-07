@@ -136,8 +136,7 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
         switch(r->type) {
             case TYPE_ERR:
             case TYPE_LINE:
-                //TODO Sean-Der
-                if(redis_sock_gets(sock, buf, sizeof(buf), (size_t *) &r->len) < 0) {
+                if(redis_sock_gets(sock, buf, sizeof(buf), &r->len) < 0) {
                     *err = 1;
                     return;
                 }
@@ -409,7 +408,7 @@ static clusterKeyVal *cluster_dl_add_key(clusterDistList *dl, char *key,
 /* Add a key, returning a pointer to the entry where passed for easy adding
  * of values to match this key */
 int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
-                          int key_len, clusterKeyVal **kv)
+                          size_t key_len, clusterKeyVal **kv)
 {
     int key_free;
     short slot;
@@ -448,7 +447,8 @@ void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *z_val
                          TSRMLS_DC)
 {
     char *val;
-    int val_len, val_free;
+    int val_free;
+	size_t val_len;
 
     // Serialize our value
     val_free = redis_serialize(c->flags, z_val, &val, &val_len TSRMLS_CC);

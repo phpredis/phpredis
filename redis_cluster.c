@@ -524,11 +524,13 @@ typedef struct clusterKeyValHT {
     char kbuf[22];
 
     char  *key;
-    int   key_len, key_free;
+	size_t key_len;
+    int    key_free;
     short slot;
 
     char *val;
-    int  val_len, val_free;
+	size_t val_len;
+    int  val_free;
 } clusterKeyValHT;
 
 /* Helper to pull a key/value pair from a HashTable */
@@ -959,8 +961,7 @@ PHP_METHOD(RedisCluster, keys) {
     }
 
     /* Prefix and then build our command */
-	//TODO Sean-Der
-    pat_free = redis_key_prefix(c->flags, &pat, (int *) &pat_len);
+    pat_free = redis_key_prefix(c->flags, &pat, &pat_len);
     cmd_len = redis_cmd_format_static(&cmd, "KEYS", "s", pat, pat_len);
     if(pat_free) efree(pat);
 
@@ -1807,8 +1808,8 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 {
     redisClusterNode *node=NULL;
     char *lua, *key;
-    int key_free, args_count=0, key_len;
-	size_t lua_len;
+    int key_free, args_count=0;
+	size_t lua_len, key_len;
     zval *z_arr=NULL, *z_ele;
     HashTable *ht_arr;
     HashPosition ptr;
@@ -2208,7 +2209,8 @@ PHP_METHOD(RedisCluster, discard) {
 static short
 cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
 {
-    int key_len, key_free;
+    int key_free;
+	size_t key_len;
     zval *z_host, *z_port, z_tmp;
     short slot;
     char *key;
@@ -2406,8 +2408,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     // Apply any key prefix we have, get the slot
-	// TODO Sean-Der
-    key_free = redis_key_prefix(c->flags, &key, (int *) &key_len);
+    key_free = redis_key_prefix(c->flags, &key, &key_len);
     slot = cluster_hash_key(key, key_len);
 
     // If SCAN_RETRY is set, loop until we get a zero iterator or until

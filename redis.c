@@ -991,9 +991,10 @@ PHP_METHOD(Redis, getMultiple)
         zend_hash_move_forward_ex(hash, &ptr))
     {
         char *key;
-        int key_len, key_free;
+        int key_free;
+        size_t key_len;
         zval z_tmp;
-		ZVAL_UNDEF(&z_tmp);
+        ZVAL_UNDEF(&z_tmp);
 
         /* If the key isn't a string, turn it into one */
         if(Z_TYPE_P(z_ele) == IS_STRING) {
@@ -1002,7 +1003,7 @@ PHP_METHOD(Redis, getMultiple)
         } else {
             ZVAL_DUP(&z_tmp, z_ele);
 
-			convert_to_string(&z_tmp);
+            convert_to_string(&z_tmp);
             key = Z_STRVAL(z_tmp);
             key_len = Z_STRLEN(z_tmp);
         }
@@ -1449,8 +1450,7 @@ PHP_REDIS_API void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
     cmd_sizes[2] = 4;
 
     /* Prefix our key if we need to */
-    //TODO Sean-Der
-    key_free = redis_key_prefix(redis_sock, &key, (int *) &key_len);
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
     /* second line, key */
     cmd_sizes[3] = redis_cmd_format(&cmd_lines[3], "$%d", key_len);
@@ -1853,8 +1853,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
 
             zend_string *key_zstr;
             char *val, *key;
-            unsigned int key_len;
-            int val_len;
+            size_t val_len, key_len;
             unsigned long idx;
             int type;
             zval *z_value_p;
@@ -1879,10 +1878,10 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
                 key_len = key_zstr->len;
                 key = key_zstr->val;
 
-				// When not an integer key, the length will include the \0
-				if (key_len > 0) {
-					key_len--;
-				}
+                // When not an integer key, the length will include the \0
+                if (key_len > 0) {
+                    key_len--;
+                }
             }
 
             if(step == 0)
@@ -1890,7 +1889,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
 
             val_free = redis_serialize(redis_sock, z_value_p, &val, &val_len
                 TSRMLS_CC);
-            key_free = redis_key_prefix(redis_sock, &key, (int*)&key_len);
+            key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
             if(step == 0) { /* counting */
                 cmd_len += 1 + integer_length(key_len) + 2
@@ -2912,7 +2911,8 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
     HashPosition ptr;
     zval *z_ele;
     char *key;
-    int cmd_len, key_len, key_free;
+    size_t key_len;
+    int cmd_len, key_free;
     smart_string cmd = {0};
 
     if(type == PUBSUB_CHANNELS) {
@@ -2952,9 +2952,10 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
             zend_hash_move_forward_ex(ht_chan, &ptr))
         {
             char *key;
-            int key_len, key_free;
+            int key_free;
+            size_t key_len;
             zval z_tmp;
-			ZVAL_UNDEF(&z_tmp);
+            ZVAL_UNDEF(&z_tmp);
 
             if(Z_TYPE_P(z_ele) == IS_STRING) {
                 key = Z_STRVAL_P(z_ele);
@@ -3107,7 +3108,8 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
             {
                 zval z_tmp;
                 char *key, *old_cmd;
-                int key_len, key_free;
+                int key_free;
+                size_t key_len;
 
                 if(Z_TYPE_P(elem) == IS_STRING) {
                     key = Z_STRVAL_P(elem);
@@ -3377,8 +3379,7 @@ PHP_METHOD(Redis, migrate) {
     }
 
     // Prefix our key if we need to, build our command
-    // TODO Sean-Der
-    key_free = redis_key_prefix(redis_sock, &key, (int *) &key_len);
+    key_free = redis_key_prefix(redis_sock, &key,  &key_len);
 
     /* Construct our command */
     if(copy && replace) {
@@ -3740,7 +3741,7 @@ redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
                      int iter, char *pattern, int pattern_len, int count)
 {
     char *keyword;
-    int arg_count, cmd_len;
+    int arg_count = 0, cmd_len;
 
     /* Count our arguments +1 for key if it's got one, and + 2 for pattern */
     /* or count given that they each carry keywords with them. */
@@ -3799,7 +3800,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     RedisSock *redis_sock;
     HashTable *hash;
     char *pattern=NULL, *cmd, *key=NULL;
-    size_t key_len, pattern_len;
+    size_t key_len = 0, pattern_len = 0;
     int cmd_len, num_elements, key_free=0;
     long count=0, iter;
 
@@ -3852,9 +3853,8 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     }
 
     /* Prefix our key if we've got one and we have a prefix set */
-    //TODO Sean-Der
     if(key_len) {
-        key_free = redis_key_prefix(redis_sock, &key, (int *) &key_len);
+        key_free = redis_key_prefix(redis_sock, &key,  &key_len);
     }
 
     /**

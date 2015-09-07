@@ -1977,7 +1977,7 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
 }
 
 PHP_REDIS_API int
-redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len
+redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
                 TSRMLS_DC)
 {
 #if ZEND_MODULE_API_NO >= 20100000
@@ -2049,7 +2049,7 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 {
 
     php_unserialize_data_t var_hash;
-    int ret, rv_free = 0;
+    int ret;
 
     switch(redis_sock->serializer) {
         case REDIS_SERIALIZER_NONE:
@@ -2059,7 +2059,6 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
             PHP_VAR_UNSERIALIZE_INIT(var_hash);
             if(!php_var_unserialize(*return_value, (const unsigned char**)&val,
                     (const unsigned char*)val + val_len, &var_hash TSRMLS_CC)) {
-                if(rv_free==1) efree(*return_value);
                 ret = 0;
             } else {
                 ret = 1;
@@ -2074,17 +2073,11 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 
         case REDIS_SERIALIZER_IGBINARY:
 #ifdef HAVE_REDIS_IGBINARY
-            if(!*return_value) {
-				// TODO Sean-Der, heap allocation
-                //MAKE_STD_ZVAL(*return_value);
-                rv_free = 1;
-            }
             if(igbinary_unserialize((const uint8_t *)val, (size_t)val_len,
                                     return_value TSRMLS_CC) == 0)
             {
                 return 1;
             }
-            if (rv_free==1) efree(*return_value);
 #endif
             return 0;
             break;
@@ -2093,7 +2086,7 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 }
 
 PHP_REDIS_API int
-redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len) {
+redis_key_prefix(RedisSock *redis_sock, char **key, size_t *key_len) {
     int ret_len;
     char *ret;
 
