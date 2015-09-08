@@ -1877,11 +1877,6 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
             } else {
                 key_len = key_zstr->len;
                 key = key_zstr->val;
-
-                // When not an integer key, the length will include the \0
-                if (key_len > 0) {
-                    key_len--;
-                }
             }
 
             if(step == 0)
@@ -3277,7 +3272,7 @@ PHP_METHOD(Redis, script) {
     argc = ZEND_NUM_ARGS();
 
     /* Allocate an array big enough to store our arguments */
-    z_args = emalloc(argc * sizeof(zval*));
+	z_args = (zval *) safe_emalloc(sizeof(zval), argc, 0);
 
     /* Make sure we can grab our arguments, we have a string directive */
     if(zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
@@ -3336,7 +3331,7 @@ PHP_METHOD(Redis, script) {
 
 /* {{{ proto DUMP key */
 PHP_METHOD(Redis, dump) {
-    REDIS_PROCESS_KW_CMD("DUMP", redis_key_cmd, redis_ping_response);
+    REDIS_PROCESS_KW_CMD("DUMP", redis_key_cmd, redis_string_response);
 }
 /* }}} */
 
@@ -3643,9 +3638,9 @@ PHP_METHOD(Redis, getAuth) {
 PHP_METHOD(Redis, client) {
     zval *object;
     RedisSock *redis_sock;
-    char *cmd, *opt=NULL, *arg=NULL;
-    int cmd_len;
-    size_t opt_len, arg_len;
+    char *cmd, *opt = NULL, *arg = NULL;
+    int cmd_len = 0;
+    size_t opt_len = 0, arg_len = 0;
 
     // Parse our method parameters
     if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
@@ -3690,13 +3685,13 @@ PHP_METHOD(Redis, client) {
 
 /* {{{ proto mixed Redis::rawcommand(string $command, [ $arg1 ... $argN]) */
 PHP_METHOD(Redis, rawcommand) {
-    int argc = ZEND_NUM_ARGS(), cmd_len;
+    int argc = ZEND_NUM_ARGS(), cmd_len = 0;
     char *cmd = NULL;
     RedisSock *redis_sock;
     zval *z_args;
 
     /* Sanity check on arguments */
-    z_args = emalloc(argc * sizeof(zval*));
+	z_args = (zval *) safe_emalloc(sizeof(zval), argc, 0);
     if (argc < 1) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "Must pass at least one command keyword");
@@ -3707,7 +3702,7 @@ PHP_METHOD(Redis, rawcommand) {
             "Internal PHP error parsing arguments");
         efree(z_args);
         RETURN_FALSE;
-    } else if (redis_build_raw_cmd(&z_args, argc, &cmd, &cmd_len TSRMLS_CC) < 0 ||
+    } else if (redis_build_raw_cmd(z_args, argc, &cmd, &cmd_len TSRMLS_CC) < 0 ||
                redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0)
     {
         if (cmd) efree(cmd);

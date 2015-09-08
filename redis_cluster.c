@@ -2883,7 +2883,7 @@ PHP_METHOD(RedisCluster, rawcommand) {
             "Internal PHP error parsing method parameters.");
         efree(z_args);
         RETURN_FALSE;
-    } else if (redis_build_raw_cmd(&z_args+1, argc-1, &cmd, &cmd_len TSRMLS_CC) ||
+    } else if (redis_build_raw_cmd(z_args+1, argc-1, &cmd, &cmd_len TSRMLS_CC) ||
                (slot = cluster_cmd_get_slot(c, &z_args[0] TSRMLS_CC))<0)
     {
         if (cmd) efree(cmd);

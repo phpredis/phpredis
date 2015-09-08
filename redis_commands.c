@@ -41,32 +41,32 @@ int redis_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 /* Helper to construct a raw command.  Given that the cluster and non cluster
  * versions are different (RedisCluster needs an additional argument to direct
  * the command) we take the start of our array and count */
-int redis_build_raw_cmd(zval **z_args, int argc, char **cmd, int *cmd_len TSRMLS_DC)
+int redis_build_raw_cmd(zval *z_args, int argc, char **cmd, int *cmd_len TSRMLS_DC)
 {
     smart_string cmdstr = {0};
     int i;
 
     /* Make sure our first argument is a string */
-    if (Z_TYPE_P(z_args[0]) != IS_STRING) {
+    if (Z_TYPE(z_args[0]) != IS_STRING) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "When sending a 'raw' command, the first argument must be a string!");
         return FAILURE;
     }
 
     /* Initialize our command string */
-    redis_cmd_init_sstr(&cmdstr, argc-1, Z_STRVAL_P(z_args[0]), Z_STRLEN_P(z_args[0]));
+    redis_cmd_init_sstr(&cmdstr, argc-1, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
 
     for (i = 1; i < argc; i++) {
-       switch (Z_TYPE_P(z_args[i])) {
+       switch (Z_TYPE(z_args[i])) {
             case IS_STRING:
-                redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(z_args[i]),
-                    Z_STRLEN_P(z_args[i]));
+                redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[i]),
+                    Z_STRLEN(z_args[i]));
                 break;
             case IS_LONG:
-                redis_cmd_append_sstr_long(&cmdstr,Z_LVAL_P(z_args[i]));
+                redis_cmd_append_sstr_long(&cmdstr,Z_LVAL(z_args[i]));
                 break;
             case IS_DOUBLE:
-                redis_cmd_append_sstr_dbl(&cmdstr,Z_DVAL_P(z_args[i]));
+                redis_cmd_append_sstr_dbl(&cmdstr,Z_DVAL(z_args[i]));
                 break;
             default:
                 php_error_docref(NULL TSRMLS_CC, E_WARNING,
@@ -1616,7 +1616,7 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         } else {
             // Length returned includes the \0
             mem = mem_zstring->val;
-            mem_len = mem_zstring->len - 1;
+            mem_len = mem_zstring->len;
         }
 
         // Serialize value (if directed)
