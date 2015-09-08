@@ -1092,6 +1092,7 @@ PHP_METHOD(RedisArray, del)
 	HANDLE_MULTI_EXEC("DEL");
 
 	/* get all args in z_args */
+	z_args = (zval *) safe_emalloc(sizeof(zval), ZEND_NUM_ARGS(), 0);
 	if(zend_get_parameters_array(ht, ZEND_NUM_ARGS(), z_args) == FAILURE) {
 		efree(z_args);
 		RETURN_FALSE;

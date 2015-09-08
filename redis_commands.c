@@ -1697,6 +1697,7 @@ int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     smart_string cmdstr = {0};
     short kslot;
 
+	z_args = (zval *) safe_emalloc(sizeof(zval), argc, 0);
     if(zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
        argc < 3 || Z_TYPE(z_args[0]) != IS_STRING)
     {

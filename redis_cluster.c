@@ -2873,6 +2873,7 @@ PHP_METHOD(RedisCluster, rawcommand) {
     short slot;
 
     /* Sanity check on our arguments */
+	z_args = (zval *) safe_emalloc(sizeof(zval), argc, 0);
     if (argc < 2) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "You must pass at least node information as well as at least a command.");

@@ -33,7 +33,7 @@
 #include "redis_cluster.h"
 #include <zend_exceptions.h>
 
-#ifdef PHP_SESSION_NEW
+#ifdef PHP_SESSION
 #include "ext/session/php_session.h"
 #endif
 
@@ -50,7 +50,7 @@
 int le_redis_sock;
 extern int le_redis_array;
 
-#ifdef PHP_SESSION_NEW
+#ifdef PHP_SESSION
 extern ps_module ps_mod_redis;
 extern ps_module ps_mod_redis_cluster;
 #endif

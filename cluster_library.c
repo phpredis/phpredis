@@ -581,32 +581,6 @@ unsigned short cluster_hash_key_zval(zval *z_key) {
     return cluster_hash_key(kptr, klen);
 }
 
-static char **split_str_by_delim(char *str, char *delim, int *len) {
-    char **array, *tok, *tok_buf;
-    int size=16;
-
-    *len = 0;
-
-    // Initial storage
-    array = emalloc(size * sizeof(char*));
-
-    tok = php_strtok_r(str, delim, &tok_buf);
-
-    while(tok) {
-        if(size == *len) {
-            size *= 2;
-            array = erealloc(array, size * sizeof(char*));
-        }
-
-        array[*len] = tok;
-        (*len)++;
-
-        tok = php_strtok_r(NULL, delim, &tok_buf);
-    }
-
-    return array;
-}
-
 /* Execute a CLUSTER SLOTS command against the seed socket, and return the
  * reply or NULL on failure. */
 clusterReply* cluster_get_slots(RedisSock *redis_sock TSRMLS_DC)

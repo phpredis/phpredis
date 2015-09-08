@@ -460,4 +460,4 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
 
 #endif
 
-/* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
+/* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
