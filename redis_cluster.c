@@ -28,6 +28,7 @@
 #include "redis_cluster.h"
 #include "redis_commands.h"
 #include <zend_exceptions.h>
+#include <ext/spl/spl_exceptions.h>
 #include "library.h"
 #include <php_variables.h>
 #include <SAPI.h>
@@ -234,27 +235,22 @@ static void ht_free_node(zval *data) {
 }
 
 /* Initialize/Register our RedisCluster exceptions */
-PHPAPI zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC) {
-#if HAVE_SPL
-    if(!root) {
-        if(!spl_rte_ce) {
-            zend_class_entry *pce;
+PHP_REDIS_API zend_class_entry *rediscluster_get_exception_base(int root) {
+#if defined(HAVE_SPL)
+	if (!root) {
+		if (!spl_ce_RuntimeException) {
+			zend_class_entry *pce;
 
-            if((pce = zend_hash_str_find_ptr(CG(class_table), "runtimeexception", sizeof("runtimeexception") - 1)) != NULL)
-            {
-                spl_rte_ce = pce;
-                return pce;
-            }
-        } else {
-            return spl_rte_ce;
-        }
-    }
+			if ((pce = zend_hash_str_find_ptr(CG(class_table), "runtimeexception", sizeof("RuntimeException") - 1))) {
+				spl_ce_RuntimeException = pce;
+				return pce;
+			}
+		} else {
+			return spl_ce_RuntimeException;
+		}
+	}
 #endif
-#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
-    return zend_exception_get_default();
-#else
-    return zend_exception_get_default(TSRMLS_C);
-#endif
+	return zend_ce_exception;
 }
 
 /* Create redisCluster context */
