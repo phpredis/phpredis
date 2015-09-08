@@ -65,7 +65,7 @@ PHP_REDIS_API int
 redis_key_prefix(RedisSock *redis_sock, char **key, size_t *key_len);
 
 PHP_REDIS_API int
-redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_DC);
+redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval *return_value TSRMLS_DC);
 
 PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock);
 PHP_REDIS_API void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);

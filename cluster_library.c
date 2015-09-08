@@ -1441,7 +1441,7 @@ PHP_REDIS_API void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     }
 
     if (CLUSTER_IS_ATOMIC(c)) {
-        if (redis_unserialize(c->flags, resp, c->reply_len, &return_value
+        if (redis_unserialize(c->flags, resp, c->reply_len, return_value
                               TSRMLS_CC) == 0)
         {
             CLUSTER_RETURN_STRING(c, resp, c->reply_len);
@@ -1449,10 +1449,10 @@ PHP_REDIS_API void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
             efree(resp);
         }
     } else {
-        zval *z = NULL;
+        zval z;
         if (redis_unserialize(c->flags, resp, c->reply_len, &z TSRMLS_CC)) {
             efree(resp);
-            add_next_index_zval(&c->multi_resp, z);
+            add_next_index_zval(&c->multi_resp, &z);
         } else {
             add_next_index_stringl(&c->multi_resp, resp, c->reply_len);
         }
@@ -2229,9 +2229,9 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
         line = redis_sock_read(redis_sock, &line_len TSRMLS_CC);
 
         if (line != NULL) {
-            zval *z = NULL;
+            zval z;
             if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
-                add_next_index_zval(z_result, z);
+                add_next_index_zval(z_result, &z);
                 efree(line);
             } else {
                 add_next_index_stringl(z_result, line, line_len);
@@ -2270,9 +2270,9 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
             key_len = line_len;
         } else {
             /* Attempt serialization */
-            zval *z = NULL;
+            zval z;
             if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
-                add_assoc_zval(z_result, key, z);
+                add_assoc_zval(z_result, key, &z);
                 efree(line);
             } else {
                 add_assoc_stringl_ex(z_result, key, 1+key_len, line,
@@ -2306,12 +2306,11 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
                 key = line;
                 key_len = line_len;
             } else {
-                zval *z = NULL;
+                zval z;
                 if (redis_unserialize(redis_sock,key,key_len, &z TSRMLS_CC)) {
-                    convert_to_string(z);
-                    add_assoc_double_ex(z_result, Z_STRVAL_P(z), 1+Z_STRLEN_P(z), atof(line));
-                    zval_dtor(z);
-                    efree(z);
+                    convert_to_string(&z);
+                    add_assoc_double_ex(z_result, Z_STRVAL(z), 1+Z_STRLEN(z), atof(line));
+                    zval_dtor(&z);
                 } else {
                     add_assoc_double_ex(z_result, key, 1+key_len, atof(line));
                 }
@@ -2339,11 +2338,11 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
         line = redis_sock_read(redis_sock, &line_len TSRMLS_CC);
 
         if(line != NULL) {
-            zval *z = NULL;
+            zval z;
             if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
                 efree(line);
                 add_assoc_zval_ex(z_result,Z_STRVAL_P(z_keys[i]),
-                    1+Z_STRLEN_P(z_keys[i]), z);
+                    1+Z_STRLEN_P(z_keys[i]), &z);
             } else {
                 add_assoc_stringl_ex(z_result, Z_STRVAL_P(z_keys[i]),
                     1+Z_STRLEN_P(z_keys[i]), line, line_len);

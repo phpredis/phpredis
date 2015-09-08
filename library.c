@@ -1391,18 +1391,17 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
         RETURN_FALSE;
     }
     IF_MULTI_OR_PIPELINE() {
-        zval z, *z_p;
-		z_p = &z;
-        if(redis_unserialize(redis_sock, response, response_len, &z_p) == 1)
+        zval z;
+        if(redis_unserialize(redis_sock, response, response_len, &z) == 1)
         {
             efree(response);
-            add_next_index_zval(z_tab, z_p);
+            add_next_index_zval(z_tab, &z);
         } else {
             add_next_index_stringl(z_tab, response, response_len);
         }
     } else {
         if(redis_unserialize(redis_sock, response, response_len,
-                             &return_value TSRMLS_CC) == 0)
+                             return_value TSRMLS_CC) == 0)
         {
             RETURN_STRINGL(response, response_len);
         } else {
@@ -1851,8 +1850,7 @@ redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     while(count > 0) {
         line = redis_sock_read(redis_sock, &len TSRMLS_CC);
         if (line != NULL) {
-            zval z, *z_p;
-			z_p = &z;
+            zval z;
             int unwrap;
 
             /* We will attempt unserialization, if we're unserializing everything,
@@ -1862,9 +1860,9 @@ redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 (unserialize == UNSERIALIZE_KEYS && count % 2 == 0) ||
                 (unserialize == UNSERIALIZE_VALS && count % 2 != 0);
 
-            if (unwrap && redis_unserialize(redis_sock, line, len, &z_p TSRMLS_CC)) {
+            if (unwrap && redis_unserialize(redis_sock, line, len, &z TSRMLS_CC)) {
                 efree(line);
-                add_next_index_zval(z_tab, z_p);
+                add_next_index_zval(z_tab, &z);
             } else {
                 add_next_index_stringl(z_tab, line, len);
             }
@@ -1914,11 +1912,10 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
     for(i = 0; i < numElems; ++i) {
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
         if(response != NULL) {
-            zval z, *z_p;
-			z_p = &z;
-            if(redis_unserialize(redis_sock, response, response_len, &z_p) == 1) {
+            zval z;
+            if(redis_unserialize(redis_sock, response, response_len, &z) == 1) {
                 efree(response);
-                add_assoc_zval_ex(&z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), z_p);
+                add_assoc_zval_ex(&z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), &z);
             } else {
                 add_assoc_stringl_ex(&z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), response, response_len);
             }
@@ -2032,7 +2029,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
 
         case REDIS_SERIALIZER_IGBINARY:
 #ifdef HAVE_REDIS_IGBINARY
-            if(igbinary_serialize(&val8, (size_t *)&sz, z TSRMLS_CC) == 0) {
+            if(igbinary_serialize(&val8, &sz, z TSRMLS_CC) == 0) {
                 *val = (char*)val8;
                 *val_len = (int)sz;
                 return 0;
@@ -2045,7 +2042,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
 
 PHP_REDIS_API int
 redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
-                  zval **return_value TSRMLS_DC)
+                  zval *return_value TSRMLS_DC)
 {
 
     php_unserialize_data_t var_hash;
@@ -2057,18 +2054,13 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 
         case REDIS_SERIALIZER_PHP:
             PHP_VAR_UNSERIALIZE_INIT(var_hash);
-            if(!php_var_unserialize(*return_value, (const unsigned char**)&val,
+            if(!php_var_unserialize(return_value, (const unsigned char**)&val,
                     (const unsigned char*)val + val_len, &var_hash TSRMLS_CC)) {
                 ret = 0;
             } else {
                 ret = 1;
             }
-#if ZEND_MODULE_API_NO >= 20100000
             PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
-#else
-            var_destroy(&var_hash);
-#endif
-
             return ret;
 
         case REDIS_SERIALIZER_IGBINARY:
