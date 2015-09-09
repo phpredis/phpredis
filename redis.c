@@ -3099,6 +3099,7 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
                 char *key, *old_cmd;
                 int key_free;
                 size_t key_len;
+				ZVAL_UNDEF(&z_tmp);
 
                 if(Z_TYPE_P(elem) == IS_STRING) {
                     key = Z_STRVAL_P(elem);

@@ -1919,6 +1919,7 @@ int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 	size_t key_len;
     char *key;
     short kslot=-1;
+	ZVAL_UNDEF(&z_tmp);
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,"z",&z_keys)==FAILURE) {
         return FAILURE;
