@@ -364,28 +364,22 @@ zend_module_entry redis_module_entry = {
 ZEND_GET_MODULE(redis)
 #endif
 
-PHP_REDIS_API zend_class_entry *redis_get_exception_base(int root TSRMLS_DC)
-{
-#if HAVE_SPL
-        if (!root) {
-                if (!spl_ce_RuntimeException) {
-                        zend_class_entry *pce;
+PHP_REDIS_API zend_class_entry *redis_get_exception_base(int root) {
+#if defined(HAVE_SPL)
+	if (!root) {
+		if (!spl_ce_RuntimeException) {
+			zend_class_entry *pce;
 
-                        if ((pce = zend_hash_str_find_ptr(CG(class_table), "runtimeexception", sizeof("RuntimeException") - 1)) != NULL)
-                        {
-                                spl_ce_RuntimeException = pce;
-                                return pce;
-                        }
-                } else {
-                        return spl_ce_RuntimeException;
-                }
-        }
+			if ((pce = zend_hash_str_find_ptr(CG(class_table), "runtimeexception", sizeof("RuntimeException") - 1))) {
+				spl_ce_RuntimeException = pce;
+				return pce;
+			}
+		} else {
+			return spl_ce_RuntimeException;
+		}
+	}
 #endif
-#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
-        return zend_exception_get_default();
-#else
-        return zend_exception_get_default(TSRMLS_C);
-#endif
+	return zend_ce_exception;
 }
 
 /* Send a static DISCARD in case we're in MULTI mode. */
@@ -587,7 +581,7 @@ PHP_MINIT_FUNCTION(redis)
     INIT_CLASS_ENTRY(redis_exception_class_entry, "RedisException", NULL);
     redis_exception_ce = zend_register_internal_class_ex(
         &redis_exception_class_entry,
-        redis_get_exception_base(0 TSRMLS_CC)
+        redis_get_exception_base(0)
     );
 
     /* RedisClusterException class */
@@ -595,7 +589,7 @@ PHP_MINIT_FUNCTION(redis)
         "RedisClusterException", NULL);
     redis_cluster_exception_ce = zend_register_internal_class_ex(
         &redis_cluster_exception_class_entry,
-        rediscluster_get_exception_base(0 TSRMLS_CC)
+        rediscluster_get_exception_base(0)
     );
 
     le_redis_sock = zend_register_list_destructors_ex(
