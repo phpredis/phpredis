@@ -157,7 +157,7 @@ redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
 
     redis_pool_member *rpm = pool->head;
 
-    for(i = 0; i < pool->totalWeight;) {
+    for(i = 0; i < (unsigned int)pool->totalWeight;) {
         if(pos >= i && pos < i + rpm->weight) {
             int needs_auth = 0;
             if(rpm->auth && rpm->auth_len && rpm->redis_sock->status != REDIS_SOCK_STATUS_CONNECTED) {

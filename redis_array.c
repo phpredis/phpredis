@@ -950,7 +950,8 @@ PHP_METHOD(RedisArray, mset)
 	zval *redis_inst, **redis_instances, **argv;
 	char *key, **keys, **key_free, kbuf[40];
 	zend_string *key_zstr;
-	unsigned int key_len, free_idx = 0;
+	unsigned int key_len;
+	int free_idx = 0;
 	int type, *key_lens;
 	zend_ulong idx;
 
@@ -1059,7 +1060,7 @@ PHP_METHOD(RedisArray, mset)
 	}
 
 	/* Free any keys that we needed to allocate memory for, because they weren't strings */
-	for(i=0; i<free_idx; i++) {
+	for(i=0; i < free_idx; i++) {
 	    efree(key_free[i]);
 	}
 
@@ -1105,7 +1106,7 @@ PHP_METHOD(RedisArray, del)
 		/* copy all elements to z_keys */
 		array_init(&z_keys);
 		free_zkeys = 1;
-		for(i = 0; i < ZEND_NUM_ARGS(); ++i) {
+		for(i = 0; i < (int)ZEND_NUM_ARGS(); ++i) {
 			ZVAL_DUP(&z_tmp, &z_args[i]);
 
 			/* add copy to z_keys */
