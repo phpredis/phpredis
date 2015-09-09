@@ -1848,7 +1848,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
             zend_string *key_zstr;
             char *val, *key;
             size_t val_len, key_len;
-            unsigned long idx;
+            zend_ulong idx;
             int type;
             zval *z_value_p;
             int val_free, key_free;

@@ -534,7 +534,7 @@ static int get_key_val_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
                           clusterKeyValHT *kv TSRMLS_DC)
 {
     zval *z_val;
-    ulong idx;
+    zend_ulong idx;
 	zend_string *key_zstr;
 
     // Grab the key, convert it to a string using provided kbuf buffer if it's
@@ -2038,7 +2038,7 @@ PHP_METHOD(RedisCluster, watch) {
     smart_string cmd = {0};
     zval *z_args;
     int argc = ZEND_NUM_ARGS(), i;
-    ulong slot;
+    zend_ulong slot;
 
     // Disallow in MULTI mode
     if(c->flags->mode == MULTI) {

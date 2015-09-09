@@ -952,7 +952,7 @@ PHP_METHOD(RedisArray, mset)
 	zend_string *key_zstr;
 	unsigned int key_len, free_idx = 0;
 	int type, *key_lens;
-	unsigned long idx;
+	zend_ulong idx;
 
 	/* Multi/exec support */
 	HANDLE_MULTI_EXEC("MSET");

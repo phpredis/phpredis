@@ -1223,7 +1223,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if(z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
         HashTable *kt = Z_ARRVAL_P(z_opts);
         int type;
-        unsigned long idx;
+        zend_ulong idx;
         zend_string *k;
         zval *v;
 
@@ -1565,7 +1565,7 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key;
     int key_free, count, ktype;
     size_t key_len;
-    unsigned long idx;
+    zend_ulong idx;
     zval *z_arr;
     HashTable *ht_vals;
     HashPosition pos;

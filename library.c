@@ -1217,7 +1217,7 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
         char *hkey, *hval;
 		zend_string *tablekey;
         int hkey_len;
-        unsigned long idx;
+        zend_ulong idx;
         zval *z_key_p, *z_value_p;
 
         zend_hash_get_current_key(keytable, &tablekey, &idx);

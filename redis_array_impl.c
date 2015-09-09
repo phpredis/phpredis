@@ -533,7 +533,7 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
 	zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(z_pairs), &pos);
 	while ((z_entry_p = zend_hash_get_current_data_ex(Z_ARRVAL_P(z_pairs), &pos)) != NULL) {
 			zend_string *key;
-			unsigned long num_key;
+			zend_ulong num_key;
 			zval z_new;
 
 			switch (zend_hash_get_current_key_ex(Z_ARRVAL_P(z_pairs), &key, &num_key, &pos)) {
@@ -814,7 +814,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	HashTable *h_zset_vals;
 	zend_string *val;
 	int i;
-	unsigned long idx;
+	zend_ulong idx;
 
 	/* run ZRANGE key 0 -1 WITHSCORES on source */
 	ZVAL_STRINGL(&z_fun_zrange, "ZRANGE", 6);
