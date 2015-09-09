@@ -1,6 +1,21 @@
 #ifndef REDIS_COMMANDS_H
 #define REDIS_COMMANDS_H
 
+#if defined(_MSC_VER) && _MSC_VER >= 1900
+# if defined(HAVE_GETTIMEOFDAY)
+#  include <time.h>
+   struct timezone 
+   {
+    int tz_minuteswest; /* minutes W of Greenwich */
+    int tz_dsttime;     /* type of dst correction */
+   };
+   int gettimeofday(struct timeval *tv, struct timezone *tz);
+# endif
+# if defined(HAVE_USLEEP)
+   int usleep(unsigned int useconds);
+# endif
+#endif
+
 #include "common.h"
 #include "library.h"
 #include "cluster_library.h"
