@@ -154,8 +154,8 @@ class Redis_Test extends TestSuite
         // Verify valid offset ranges
         $this->assertFalse($this->redis->getBit('key', -1));
 
-        $this->redis->setBit('key', 4294967295, 1);
-        $this->assertEquals(1, $this->redis->getBit('key', 4294967295));
+        $this->redis->setBit('key', ((2^32)-1), 1);
+        $this->assertEquals(1, $this->redis->getBit('key', ((2^32)-1)));
     }
 
     public function testBitPos() {

@@ -1,6 +1,6 @@
 #include "php.h"
 #include "php_ini.h"
-#include <ext/standard/php_smart_str.h>
+#include <ext/standard/php_smart_string.h>
 
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
@@ -213,7 +213,7 @@ typedef enum _PUBSUB_TYPE {
     } \
     REDIS_PROCESS_RESPONSE_CLOSURE(resp_func,ctx);
 
-/* Process a command but with a specific command building function 
+/* Process a command but with a specific command building function
  * and keyword which is passed to us*/
 #define REDIS_PROCESS_KW_CMD(kw, cmdfunc, resp_func) \
     RedisSock *redis_sock; char *cmd; int cmd_len; void *ctx=NULL; \
@@ -256,7 +256,7 @@ typedef struct fold_item {
 } fold_item;
 
 typedef struct request_item {
-    char *request_str; 
+    char *request_str;
     int request_size; /* size_t */
     struct request_item *next;
 } request_item;
