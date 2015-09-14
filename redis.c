@@ -31,7 +31,7 @@
 #include "redis_commands.h"
 #include "redis_array.h"
 #include "redis_cluster.h"
-#include <zend_exceptions.h>
+#include "zend_exceptions.h"
 
 #ifdef PHP_SESSION
 #include "ext/session/php_session.h"
@@ -60,7 +60,7 @@ extern zend_class_entry *redis_cluster_ce;
 zend_class_entry *redis_ce;
 zend_class_entry *redis_exception_ce;
 extern zend_class_entry *redis_cluster_exception_ce;
-zend_class_entry *spl_ce_RuntimeException = NULL;
+static zend_class_entry *spl_ce_RuntimeException;
 
 extern zend_function_entry redis_array_functions[];
 extern zend_function_entry redis_cluster_functions[];
