@@ -529,7 +529,7 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
     zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5 TSRMLS_CC);
     zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
 
-#ifdef PHP_SESSION_NEW
+#ifdef PHP_SESSION
     php_session_register_module(&ps_mod_redis);
     php_session_register_module(&ps_mod_redis_cluster);
 #endif
