@@ -2316,8 +2316,7 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             // If we've got more than zero elements, parse our multi bulk
             // response recursively
             if(reply_info > -1) {
-                redis_read_multibulk_recursive(redis_sock, reply_info, &z_ret_p
-                    TSRMLS_CC);
+                redis_read_multibulk_recursive(redis_sock, reply_info, &z_ret_p TSRMLS_CC);
             }
             break;
         default:
