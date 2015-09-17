@@ -1,6 +1,8 @@
 #include "php.h"
 #include "php_ini.h"
 #include <ext/standard/php_smart_str.h>
+#include <ext/standard/streamsfuncs.h>
+#include <ext/standard/file.h>
 
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
@@ -220,7 +222,8 @@ typedef struct {
     int            persistent;
     int            watching;
     char           *persistent_id;
-
+	php_stream_context *context;
+	
     int            serializer;
     long           dbNumber;
 
