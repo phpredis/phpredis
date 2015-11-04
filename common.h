@@ -66,11 +66,11 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_SCAN               4
 
 /* cluster options */
-#define REDIS_OPT_FAILOVER           5
-#define REDIS_FAILOVER_NONE          0
-#define REDIS_FAILOVER_ERROR         1
-#define REDIS_FAILOVER_DISTRIBUTE    2
-
+#define REDIS_OPT_FAILOVER               5
+#define REDIS_FAILOVER_NONE              0
+#define REDIS_FAILOVER_ERROR             1
+#define REDIS_FAILOVER_DISTRIBUTE        2
+#define REDIS_FAILOVER_DISTRIBUTE_SLAVES 3
 /* serializers */
 #define REDIS_SERIALIZER_NONE        0
 #define REDIS_SERIALIZER_PHP         1

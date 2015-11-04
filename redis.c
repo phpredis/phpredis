@@ -532,6 +532,7 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_NONE"), REDIS_FAILOVER_NONE TSRMLS_CC);
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_ERROR"), REDIS_FAILOVER_ERROR TSRMLS_CC);
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE"), REDIS_FAILOVER_DISTRIBUTE TSRMLS_CC);
+        zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE_SLAVES"), REDIS_FAILOVER_DISTRIBUTE_SLAVES TSRMLS_CC);
     }
 #ifdef HAVE_REDIS_IGBINARY
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_IGBINARY"), REDIS_SERIALIZER_IGBINARY TSRMLS_CC);
