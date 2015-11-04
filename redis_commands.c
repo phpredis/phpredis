@@ -2970,7 +2970,8 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             val_long = atol(val_str);
             if (val_long == REDIS_FAILOVER_NONE || 
                 val_long == REDIS_FAILOVER_ERROR ||
-                val_long == REDIS_FAILOVER_DISTRIBUTE)
+                val_long == REDIS_FAILOVER_DISTRIBUTE ||
+                val_long == REDIS_FAILOVER_DISTRIBUTE_SLAVES)
             {
                 c->failover = val_long;
                 RETURN_TRUE;

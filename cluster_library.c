@@ -1072,10 +1072,12 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
     int i, count=1, *nodes;
     RedisSock *redis_sock;
 
-    /* Allocate enough memory for the master and all of our slaves */
+    /* Determine our overall node count */
     if (c->master[c->cmd_slot]->slaves) {
         count += zend_hash_num_elements(c->master[c->cmd_slot]->slaves);
     }
+
+    /* Allocate memory for master + slaves or just slaves */
     nodes = emalloc(sizeof(int)*count);
 
     /* Populate our array with the master and each of it's slaves, then
@@ -1084,7 +1086,11 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
     fyshuffle(nodes, count);
 
     /* Iterate through our nodes until we find one we can write to or fail */
-    for (i = nomaster; i < count; i++) {
+    for (i = 0; i < count; i++) {
+        /* Skip if this is the master node and we don't want to query that */
+        if (nomaster && nodes[i] == 0)
+           continue; 
+
         /* Get the slave for this index */
         redis_sock = cluster_slot_sock(c, c->cmd_slot, nodes[i]);
         if (!redis_sock) continue;
@@ -1092,7 +1098,7 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
         /* Connect to this node if we haven't already */
         CLUSTER_LAZY_CONNECT(redis_sock);
 
-        /* If we're not on the master, attempt to send the READONLY commadn to
+        /* If we're not on the master, attempt to send the READONLY command to
          * this slave, and skip it if that fails */
         if (nodes[i] == 0 || redis_sock->readonly ||
             cluster_send_readonly(redis_sock TSRMLS_CC) == 0)
@@ -1127,7 +1133,10 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
  *   If we're unable to communicate with this slot's master, we attempt the query
  *   against any slaves (at random) that this master has.
  * REDIS_FAILOVER_DISTRIBUTE:
- *   We pick at random from the master and any slaves it has.  This option is
+ *   We pick at random from the master and any slaves it has.  This option will
+ *   load balance between masters and slaves
+ * REDIS_FAILOVER_DISTRIBUTE_SLAVES:
+ *   We pick at random from slave nodes of a given master.  This option is
  *   used to load balance read queries against N slaves.
  *
  * Once we are able to find a node we can write to, we check for MOVED or
@@ -1138,7 +1147,7 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
 {
     redisClusterNode **seed_node;
     RedisSock *redis_sock;
-    int failover;
+    int failover, nomaster;
 
     /* First try the socket requested */
     redis_sock = c->cmd_sock;
@@ -1170,9 +1179,14 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
         CLUSTER_LAZY_CONNECT(redis_sock);
         if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz) ||
            !cluster_dist_write(c, cmd, sz, 1 TSRMLS_CC)) return 0;
-    } else if (!cluster_dist_write(c, cmd, sz, 0 TSRMLS_CC)) {
-        /* We were able to write to a master or slave at random */
-        return 0;
+    } else {
+        /* Include or exclude master node depending on failover option and
+         * attempt to make our write */
+        nomaster = failover == REDIS_FAILOVER_DISTRIBUTE_SLAVES;
+        if (!cluster_dist_write(c, cmd, sz, nomaster TSRMLS_CC)) {
+            /* We were able to write to a master or slave at random */
+            return 0;
+        }
     }
 
     /* Don't fall back if direct communication with this slot is required. */
