@@ -1653,7 +1653,7 @@ while($arr_keys = $redis->hscan('hash', $it)) {
 ### blPop, brPop
 -----
 _**Description**_: Is a blocking lPop(rPop) primitive. If at least one of the lists contains at least one element, the element will be popped from the head of the list and returned to the caller.
-Il all the list identified by the keys passed in arguments are empty, blPop will block during the specified timeout until an element is pushed to one of those lists. This element will be popped.
+If all the list identified by the keys passed in arguments are empty, blPop will block during the specified timeout until an element is pushed to one of those lists. This element will be popped.
 
 ##### *Parameters*
 *ARRAY* Array containing the keys of the lists
