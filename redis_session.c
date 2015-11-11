@@ -338,7 +338,7 @@ PS_READ_FUNC(redis)
     char *session, *cmd;
     int session_len, cmd_len;
     char *char_val;
-    int int_val;
+    int int_val = 0;
 
     redis_pool *pool = PS_GET_MOD_DATA();
     redis_pool_member *rpm = redis_pool_get_sock(pool, key->val);
@@ -358,11 +358,17 @@ PS_READ_FUNC(redis)
     }
     efree(cmd);
 
-    /* read response */
-    if ((char_val = redis_sock_read(redis_sock, &int_val)) == NULL) {
+    /* Read response from Redis.  If we get a NULL response from redis_sock_read
+     * this can indicate an error, OR a "NULL bulk" reply (empty session data)
+     * in which case we can reply with success. */
+    if ((char_val = redis_sock_read(redis_sock, &int_val)) == NULL && int_val != -1) 
+    {
         return FAILURE;
     }
-    *val = zend_string_init(char_val, int_val, 0);
+    
+    *val = zend_string_init(char_val, int_val == -1 ? 0 : int_val, 0);
+    if (char_val) efree(char_val);
+    
     return SUCCESS;
 }
 /* }}} */

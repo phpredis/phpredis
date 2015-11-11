@@ -518,6 +518,7 @@ PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_D
         case '*':
             /* For null multi-bulk replies (like timeouts from brpoplpush): */
             if(memcmp(inbuf + 1, "-1", 2) == 0) {
+                *buf_len = -1;
                 return NULL;
             }
             /* fall through */
