@@ -34,6 +34,9 @@
         /* This proto is available from 5.5 on only */
         PHP_REDIS_API int usleep(unsigned int useconds);
     # endif
+    # if PHP_MAJOR_VERSION >= 7
+        PHP_REDIS_API int usleep(unsigned int useconds);
+    # endif
 #endif
 
 extern zend_class_entry *redis_ce;

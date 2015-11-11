@@ -1805,11 +1805,11 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     redisClusterNode *node=NULL;
     char *lua, *key;
     int key_free, args_count=0;
-	size_t lua_len, key_len;
+    size_t lua_len, key_len;
     zval *z_arr=NULL, *z_ele;
     HashTable *ht_arr;
     HashPosition ptr;
-    long num_keys = 0;
+    zend_long num_keys = 0;
     short slot;
     smart_string cmdstr = {0};
 
@@ -2369,11 +2369,12 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c = Z_REDIS_OBJ_P(getThis());
     char *cmd, *pat=NULL, *key=NULL;
     int cmd_len, key_free=0;
-	size_t key_len, pat_len;
+    size_t key_len, pat_len;
     short slot;
     zval *z_it;
     HashTable *hash;
-    long it, num_ele, count=0;
+    long it, num_ele;
+    zend_long count;
 
     // Can't be in MULTI mode
     if(!CLUSTER_IS_ATOMIC(c)) {
@@ -2464,7 +2465,8 @@ PHP_METHOD(RedisCluster, scan) {
 	size_t pat_len;
     short slot;
     zval *z_it, *z_node;
-    long it, num_ele, count=0;
+    long it, num_ele;
+    zend_long count;
 
     /* Treat as read-only */
     c->readonly = CLUSTER_IS_ATOMIC(c);

@@ -11,9 +11,6 @@
    };
    int gettimeofday(struct timeval *tv, struct timezone *tz);
 # endif
-# if defined(HAVE_USLEEP)
-   int usleep(unsigned int useconds);
-# endif
 #endif
 
 #include "common.h"
