@@ -60,14 +60,14 @@ By default, RedisCluster will only ever send commands to master nodes, but can b
 
 <pre>
 // The default option, only send commands to master nodes
-$obj_cluster->setOption(RedisCluster::OPT_FAILOVER, RedisCluster::FAILOVER_NONE);
+$obj_cluster->setOption(RedisCluster::OPT_SLAVE_FAILOVER, RedisCluster::FAILOVER_NONE);
 
 // In the event we can't reach a master, and it has slaves, failover for read commands
-$obj_cluster->setOption(RedisCluster::OPT_FAILOVER, RedisCluster::FAILOVER_ERROR);
+$obj_cluster->setOption(RedisCluster::OPT_SLAVE_FAILOVER, RedisCluster::FAILOVER_ERROR);
 
 // Always distribute readonly commands between masters and slaves, at random
 $obj_cluster->setOption(
-    RedisCluster::OPT_FAILOVER, RedsiCluster::FAILOVER_DISTRIBUTE
+    RedisCluster::OPT_SLAVE_FAILOVER, RedsiCluster::FAILOVER_DISTRIBUTE
 );
 </pre>
 
