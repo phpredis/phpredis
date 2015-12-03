@@ -2017,9 +2017,10 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
 
             /* return string */
             convert_to_string(&z_copy);
-            *val = Z_STRVAL_P(&z_copy);
+            *val = estrndup(Z_STRVAL_P(&z_copy), Z_STRLEN_P(&z_copy));
             *val_len = Z_STRLEN_P(&z_copy);
-            return 0;
+            zval_ptr_dtor(&z_copy);
+            return 1;
 
         case REDIS_SERIALIZER_PHP:
 
