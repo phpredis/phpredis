@@ -50,6 +50,19 @@ You can generate a debian package for PHP5, accessible from Apache 2 by running 
 
 This extension exports a single class, [Redis](#class-redis) (and [RedisException](#class-redisexception) used in case of errors). Check out https://github.com/ukko/phpredis-phpdoc for a PHP stub that you can use in your IDE for code completion.
 
+### Note for gentoo (and possibly other distributions)
+In some cases, libtool might have problems during `make`. To properly recreate the header files for your distribution,
+you should recreate the headers and reconfigure the Makefile using.
+
+~~~
+phpize
+aclocal
+libtoolize --force 
+autoheader 
+autoconf
+./configure
+make && make install
+~~~
 
 ## Installation on OSX
 
