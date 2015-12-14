@@ -2913,7 +2913,7 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
 {
     long option, val_long;
     char *val_str;
-    int val_len;
+    int val_len, test_val;
     struct timeval read_tv;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &option,
@@ -2925,11 +2925,11 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
     switch(option) {
         case REDIS_OPT_SERIALIZER:
             val_long = atol(val_str);
-            if(val_long == REDIS_SERIALIZER_NONE
+            test_val = val_long == REDIS_SERIALIZER_NONE || val_long == REDIS_SERIALIZER_PHP;            
 #ifdef HAVE_REDIS_IGBINARY
-                || val_long == REDIS_SERIALIZER_IGBINARY
+            test_val = test_val || val_long == REDIS_SERIALIZER_IGBINARY;
 #endif
-                || val_long == REDIS_SERIALIZER_PHP)
+                if(test_val)
                 {
                     redis_sock->serializer = val_long;
                     RETURN_TRUE;
