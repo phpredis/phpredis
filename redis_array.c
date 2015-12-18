@@ -204,7 +204,7 @@ uint32_t rcrc32(const char *s, size_t sz) {
     Public constructor */
 PHP_METHOD(RedisArray, __construct)
 {
-	zval *z0, z_fun, z_dist, *zpData, *z_opts = NULL;
+	zval *z0, z_fun = {0}, z_dist = {0}, *zpData, *z_opts = NULL;
 	zval *id;
 	RedisArray *ra = NULL;
 	zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0;

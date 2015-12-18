@@ -155,7 +155,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 
 	zval z_params_hosts, *z_hosts;
 	zval z_params_prev, *z_prev;
-	zval z_params_funs, *z_data_p, z_fun, z_dist;
+	zval z_params_funs, *z_data_p, z_fun = {0}, z_dist = {0};
 	zval z_params_index;
 	zval z_params_autorehash;
 	zval z_params_retry_interval;
