@@ -2161,7 +2161,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
         char inbuf[255];
 
 		/* Read up to our newline */
-		if(php_stream_gets(redis_sock->stream, inbuf, sizeof(inbuf)) < 0) {
+		if(php_stream_gets(redis_sock->stream, inbuf, sizeof(inbuf)) == NULL) {
 			return -1;
 		}
 
