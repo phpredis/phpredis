@@ -1352,7 +1352,7 @@ $redis->migrate('backup', 6379, 'foo', 0, 3600, false, true); /* just REPLACE fl
 
 ### hSet
 -----
-_**Description**_: Adds a value to the hash stored at key. If this value is already in the hash, `FALSE` is returned.
+_**Description**_: Adds a value to the hash stored at key.
 ##### *Parameters*
 *key*
 *hashKey*
