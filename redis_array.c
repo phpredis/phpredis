@@ -91,7 +91,7 @@ static void redis_array_free(RedisArray *ra) {
     for(i=0;i<ra->count;i++) {
         zval_dtor(&ra->redis[i]);
         efree(&ra->redis[i]);
-        efree(&ra->hosts[i]);
+        efree(ra->hosts[i]);
     }
     efree(ra->redis);
     efree(ra->hosts);
@@ -213,6 +213,10 @@ PHP_METHOD(RedisArray, __construct)
 	zend_bool b_lazy_connect = 0;
 	double d_connect_timeout = 0;
 
+    /* Initialize custom functions to 'undefined' */
+    ZVAL_UNDEF(&z_fun);
+    ZVAL_UNDEF(&z_dist);
+
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|a", &z0, &z_opts) == FAILURE) {
 		RETURN_FALSE;
 	}
@@ -321,7 +325,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	int key_len;
 	int i;
 	zval *redis_inst;
-	zval z_fun, **z_callargs;
+	zval z_fun, *z_callargs;
 	HashPosition pointer;
 	HashTable *h_args;
 
@@ -357,19 +361,20 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
 	/* pass call through */
 	ZVAL_STRING(&z_fun, cmd);	/* method name */
-	z_callargs = emalloc(argc * sizeof(zval*));
+	z_callargs = emalloc(argc * sizeof(zval));
 
 	/* copy args to array */
 	for (i = 0, zend_hash_internal_pointer_reset_ex(h_args, &pointer);
 			(zp_tmp = zend_hash_get_current_data_ex(h_args, &pointer)) != NULL;
-			++i, zend_hash_move_forward_ex(h_args, &pointer)) {
-
-	    ZVAL_DUP(z_callargs[i], zp_tmp);
+			++i, zend_hash_move_forward_ex(h_args, &pointer))
+    {
+        ZVAL_DUP(&z_callargs[i], zp_tmp);
+        //	    ZVAL_DUP(z_callargs[i], zp_tmp);
 	}
 
 	/* multi/exec */
 	if(ra->z_multi_exec) {
-		call_user_function(&redis_ce->function_table, ra->z_multi_exec, &z_fun, return_value, argc, *z_callargs TSRMLS_CC);
+		call_user_function(&redis_ce->function_table, ra->z_multi_exec, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
 		efree(z_callargs);
 		RETURN_ZVAL(getThis(), 1, 0);
 	}
@@ -377,7 +382,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	/* CALL! */
 	if(ra->index && b_write_cmd) {
 		/* call using discarded temp value and extract exec results after. */
-		call_user_function(&redis_ce->function_table, redis_inst, &z_fun, &z_tmp, argc, *z_callargs TSRMLS_CC);
+		call_user_function(&redis_ce->function_table, redis_inst, &z_fun, &z_tmp, argc, z_callargs TSRMLS_CC);
 		zval_dtor(&z_tmp);
 
 		/* add keys to index. */
@@ -386,7 +391,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 		/* call EXEC */
 		ra_index_exec(redis_inst, return_value, 0 TSRMLS_CC);
 	} else { /* call directly through. */
-		call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, argc, *z_callargs TSRMLS_CC);
+		call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
 
 		/* check if we have an error. */
 		if(RA_CALL_FAILED(return_value,cmd) && ra->prev && !b_write_cmd) { /* there was an error reading, try with prev ring. */
