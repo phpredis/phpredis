@@ -846,7 +846,7 @@ PHP_REDIS_API void cluster_free(redisCluster *c) {
     if (c->err) efree(c->err);
 
     /* Free structure itself */
-    efree(c); 
+    efree(c);
 }
 
 /* Initialize seeds */
@@ -1089,7 +1089,7 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
     for (i = 0; i < count; i++) {
         /* Skip if this is the master node and we don't want to query that */
         if (nomaster && nodes[i] == 0)
-           continue; 
+           continue;
 
         /* Get the slave for this index */
         redis_sock = cluster_slot_sock(c, c->cmd_slot, nodes[i]);
@@ -1240,6 +1240,8 @@ static redisClusterNode *cluster_find_node(redisCluster *c, const char *host,
  * the slot where data was moved, update our node mapping */
 static void cluster_update_slot(redisCluster *c TSRMLS_DC) {
     redisClusterNode *node;
+    char key[1024];
+    size_t klen;
 
     /* Do we already have the new slot mapped */
     if(c->master[c->redir_slot]) {
@@ -1258,6 +1260,11 @@ static void cluster_update_slot(redisCluster *c TSRMLS_DC) {
             /* Create our node */
             node = cluster_node_create(c, c->redir_host, c->redir_host_len,
                 c->redir_port, c->redir_slot, 0);
+
+            /* Our node is new, so keep track of it for cleanup */
+            klen = snprintf(key,sizeof(key),"%s:%ld",c->redir_host,c->redir_port);
+            zend_hash_update(c->nodes, key, klen+1, (void*)&node,
+                sizeof(redisClusterNode*), NULL);
 
             /* Now point our slot at the node */
             c->master[c->redir_slot] = node;
@@ -1418,7 +1425,10 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
            }
 
            /* Update mapping if the data has MOVED */
-           if (c->redir_type == REDIR_MOVED) cluster_update_slot(c TSRMLS_CC);
+           if (c->redir_type == REDIR_MOVED) {
+               cluster_update_slot(c TSRMLS_CC);
+               c->cmd_sock = SLOT_SOCK(c, slot);
+           }
         }
 
         /* Figure out if we've timed out trying to read or write the data */
@@ -2302,7 +2312,7 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
     while(count--) {
         /* Read our line */
         line = redis_sock_read(redis_sock, &line_len TSRMLS_CC);
-        
+
         if (line != NULL) {
             zval *z = NULL;
             if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
