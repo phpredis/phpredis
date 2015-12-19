@@ -42,12 +42,15 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 	/* function calls on the Redis object */
 	ZVAL_STRING(&z_cons, "__construct");
 
-	/* init connections */
-	for (zend_hash_internal_pointer_reset(hosts); zend_hash_has_more_elements(hosts) == SUCCESS; zend_hash_move_forward(hosts))
+    /* init connections */
+	for (zend_hash_internal_pointer_reset(hosts);
+         zend_hash_has_more_elements(hosts) == SUCCESS;
+         zend_hash_move_forward(hosts))
 	{
 		if ((zpData = zend_hash_get_current_data(hosts)) == NULL || (Z_TYPE_P(zpData) != IS_STRING))
 		{
-			efree(ra);
+            zval_dtor(&z_cons);
+            efree(ra);
 			return NULL;
 		}
 
@@ -58,14 +61,14 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 		host_len = Z_STRLEN_P(zpData);
 		port = 6379;
 
-		if((p = strchr(host, ':'))) { /* found port */
+        if((p = strchr(host, ':'))) { /* found port */
 		    host_len = p - host;
 		    port = (short)atoi(p+1);
 		} else if(strchr(host,'/') != NULL) { /* unix socket */
 		    port = -1;
 		}
 
-		/* create Redis object */
+        /* create Redis object */
 		object_init_ex(&ra->redis[i], redis_ce);
 		call_user_function(&redis_ce->function_table, &ra->redis[i], &z_cons, &z_ret, 0, NULL TSRMLS_CC);
 
@@ -83,6 +86,9 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 		i++;
 	}
 
+    /* Cleanup constructor zval */
+    zval_dtor(&z_cons);
+
 	return ra;
 }
 
@@ -90,8 +96,8 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 void ra_init_function_table(RedisArray *ra) {
 	array_init(&ra->z_pure_cmds);
 
-	add_assoc_bool(&ra->z_pure_cmds, "HGET", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "HGETALL", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "HGET", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "HGETALL", 1);
 	add_assoc_bool(&ra->z_pure_cmds, "HKEYS", 1);
 	add_assoc_bool(&ra->z_pure_cmds, "HLEN", 1);
 	add_assoc_bool(&ra->z_pure_cmds, "SRANDMEMBER", 1);
@@ -290,8 +296,10 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 }
 
 RedisArray *
-ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, zend_bool b_pconnect, long retry_interval, zend_bool b_lazy_connect, double connect_timeout TSRMLS_DC) {
-
+ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev,
+              zend_bool b_index, zend_bool b_pconnect, long retry_interval,
+              zend_bool b_lazy_connect, double connect_timeout TSRMLS_DC)
+{
 	int count = zend_hash_num_elements(hosts);
 
 	/* create object */
@@ -303,14 +311,21 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	ra->auto_rehash = 0;
 	ra->pconnect = b_pconnect;
 	ra->connect_timeout = connect_timeout;
+    ra->z_multi_exec = NULL;
+    ra->prev = NULL;
 
 	/* init array data structures */
-	ra_init_function_table(ra);
+    ra_init_function_table(ra);
 
-	if(NULL == ra_load_hosts(ra, hosts, retry_interval, b_lazy_connect TSRMLS_CC)) {
+    if(NULL == ra_load_hosts(ra, hosts, retry_interval, b_lazy_connect TSRMLS_CC)) {
 		return NULL;
 	}
-	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect, connect_timeout TSRMLS_CC) : NULL;
+
+    if (hosts_prev) {
+        ra->prev = ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index,
+                                 b_pconnect, retry_interval, b_lazy_connect,
+                                 connect_timeout TSRMLS_CC);
+    }
 
 	/* Set hash function and distribtor if provided */
 	if (z_fun != NULL) {
@@ -318,7 +333,6 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	}
 	if (z_dist != NULL) {
 	    ZVAL_DUP(&ra->z_dist, z_dist);
-
 	}
 
     return ra;
