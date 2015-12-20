@@ -1398,7 +1398,6 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
         zval z;
         if(redis_unserialize(redis_sock, response, response_len, &z) == 1)
         {
-            efree(response);
             add_next_index_zval(z_tab, &z);
         } else {
             add_next_index_stringl(z_tab, response, response_len);
@@ -1407,11 +1406,10 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
         if(redis_unserialize(redis_sock, response, response_len,
                              return_value TSRMLS_CC) == 0)
         {
-            RETURN_STRINGL(response, response_len);
-        } else {
-            efree(response);
+            RETVAL_STRINGL(response, response_len);
         }
     }
+    efree(response);
 }
 
 /* like string response, but never unserialized. */
@@ -1918,11 +1916,11 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
         if(response != NULL) {
             zval z;
             if(redis_unserialize(redis_sock, response, response_len, &z) == 1) {
-                efree(response);
                 add_assoc_zval_ex(&z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), &z);
             } else {
                 add_assoc_stringl_ex(&z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), response, response_len);
             }
+            efree(response);
         } else {
             add_assoc_bool_ex(&z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), 0);
         }
@@ -2017,9 +2015,10 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
 
             /* return string */
             convert_to_string(&z_copy);
-            *val = Z_STRVAL_P(&z_copy);
+            *val = estrndup(Z_STRVAL_P(&z_copy), Z_STRLEN_P(&z_copy));
             *val_len = Z_STRLEN_P(&z_copy);
-            return 0;
+            zval_ptr_dtor(&z_copy);
+            return 1;
 
         case REDIS_SERIALIZER_PHP:
 
