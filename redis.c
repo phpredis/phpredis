@@ -457,7 +457,7 @@ PHP_REDIS_API int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC,
         }
     }
 
-    return Z_RES_P(socket)->handle;
+    return 0;
 }
 
 /**
