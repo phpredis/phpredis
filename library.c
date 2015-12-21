@@ -1407,7 +1407,8 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
         if(redis_unserialize(redis_sock, response, response_len,
                              return_value TSRMLS_CC) == 0)
         {
-            RETURN_STRINGL(response, response_len);
+            RETVAL_STRINGL(response, response_len);
+            efree(response);
         } else {
             efree(response);
         }
