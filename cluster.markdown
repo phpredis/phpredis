@@ -67,7 +67,7 @@ $obj_cluster->setOption(RedisCluster::OPT_FAILOVER, RedisCluster::FAILOVER_ERROR
 
 // Always distribute readonly commands between masters and slaves, at random
 $obj_cluster->setOption(
-    RedisCluster::OPT_FAILOVER, RedsiCluster::FAILOVER_DISTRIBUTE
+    RedisCluster::OPT_FAILOVER, RedisCluster::FAILOVER_DISTRIBUTE
 );
 </pre>
 
