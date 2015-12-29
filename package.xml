@@ -21,10 +21,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>michael.grunder@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2013-09-01</date>
+ <date>2015-03-03</date>
  <version>
-  <release>2.2.4</release>
-  <api>2.2.4</api>
+  <release>2.2.7</release>
+  <api>2.2.7</api>
  </version>
  <stability>
   <release>stable</release>
@@ -32,8 +32,32 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-	 First public release
- </notes>
+    phpredis 2.2.7
+    
+    -- Improvements ---
+    
+    * Implemented PFADD, PFMERGE, and PFCOUNT command handling
+    * Implemented ZRANGEBYLEX command (holding off on ZREVRANGEBYLEX
+      as that won't be out until 3.0)
+    * Implemented getMode() so clients can detect whether we're in
+      ATOMIC/MULTI/PIPELINE mode.
+    * Implemented rawCommand() so clients can send arbitrary things to
+      the redis server
+    * Implemented DEBUG OBJECT (@michael-grunder, @isage)
+    * Added/abide by connect timeout for RedisArray
+    * Select to the last selected DB when phpredis reconnects
+
+    -- Fixes ---
+
+    * Fix a possible invalid free in _serialize
+    * Added SAVE and BGSAVE to "distributable" commands for RedisArray
+    * @welting -- Fixed invalid "argc" calculation re HLL commands
+    * Allow clients to break out of the subscribe loop and return context.
+    * Fixes a memory leak in SCAN when OPT_SCAN_RETRY id.
+    * @remicollet -- Fix possible segfault when igbinary is enabled.
+    * Add a couple of cases where we throw on an error (LOADING/NOAUTH/MASTERDOWN)
+    * Fix several issues with serialization NARY
+    * @itcom -- Fix missing TSRMLS_CC and a TSRMLS_DC/TSRMLS_CC typo</notes>
  <contents>
   <dir name="/">
    <file role='doc' name='README.markdown'/>
@@ -53,6 +77,13 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='src' name='redis.c'/>
    <file role='src' name='redis_session.c'/>
    <file role='src' name='redis_session.h'/>
+   <dir name='tests'>
+     <file role='test' name='array-tests.php' />
+     <file role='test' name='memory.php' />
+     <file role='test' name='mkring.sh' />
+     <file role='test' name='test.php' />
+     <file role='test' name='TestRedis.php' />
+   </dir> <!-- tests -->
   </dir> <!-- / -->
  </contents>
  <dependencies>
@@ -72,10 +103,100 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <changelog>
    <release>
    <stability><release>stable</release><api>stable</api></stability>
+   <version><release>2.2.7</release><api>2.2.7</api></version>
+   <date>2015-03-03</date>
+   <notes>
+      phpredis 2.2.7
+
+       -- Improvements ---
+
+       * Implemented PFADD, PFMERGE, and PFCOUNT command handling
+       * Implemented ZRANGEBYLEX command (holding off on ZREVRANGEBYLEX
+         as that won't be out until 3.0)
+       * Implemented getMode() so clients can detect whether we're in
+         ATOMIC/MULTI/PIPELINE mode.
+       * Implemented rawCommand() so clients can send arbitrary things to
+         the redis server
+       * Implemented DEBUG OBJECT (@michael-grunder, @isage)
+       * Added/abide by connect timeout for RedisArray
+       * Select to the last selected DB when phpredis reconnects
+
+       -- Fixes ---
+
+       * Fix a possible invalid free in _serialize
+       * Added SAVE and BGSAVE to "distributable" commands for RedisArray
+       * @welting -- Fixed invalid "argc" calculation re HLL commands
+       * Allow clients to break out of the subscribe loop and return context.
+       * Fixes a memory leak in SCAN when OPT_SCAN_RETRY id.
+       * @remicollet -- Fix possible segfault when igbinary is enabled.
+       * Add a couple of cases where we throw on an error (LOADING/NOAUTH/MASTERDOWN)
+       * Fix several issues with serialization NARY
+       * @itcom -- Fix missing TSRMLS_CC and a TSRMLS_DC/TSRMLS_CC typo
+   </notes>
+   </release>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>2.2.5</release><api>2.2.5</api></version>
+   <date>2014-03-15</date>
+   <notes>
+    phpredis 2.2.5
+
+    This is a minor release with several bug fixes as well as additions to support
+    new commands that have been introduced to Redis since our last release.
+
+    A special thanks to everyone who helps the project by commenting on issues and
+    submitting pull requests!  :)
+
+    [NEW] Support for the BITPOS command
+    [NEW] Connection timeout option for RedisArray (@MikeToString)
+    [NEW] A _serialize method, to complement our existing _unserialize method
+    [NEW] Support for the PUBSUB command
+    [NEW] Support for SCAN, SSCAN, HSCAN, and ZSCAN
+    [NEW] Support for the WAIT command
+
+    [FIX] Handle the COPY and REPLACE arguments for the MIGRATE command
+
+    [DOC] Fix syntax error in documentation for the SET command (@mithunsatheesh)
+    [DOC] Homebrew documentation instructions (@mathias)
+
+   </notes>
+   </release>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
    <version><release>2.2.4</release><api>2.2.4</api></version>
    <date>2013-09-01</date>
    <notes>
-	   See GitHub for release notes
+   **
+   ** Features / Improvements
+   **
+
+   * Randomized reconnect delay for RedisArray @mobli
+     This feature adds an optional parameter when constructing a RedisArray object
+     such that a random delay will be introduced if reconnections are made,
+     mitigating any &apos;thundering herd&apos; type problems.
+
+   * Lazy connections to RedisArray servers @mobli
+     By default, RedisArray will attempt to connect to each server you pass in
+     the ring on construction.  This feature lets you specify that you would
+     rather have RedisArray only attempt a connection when it needs to get data
+     from a particular node (throughput/performance improvement).
+
+   * Allow LONG and STRING keys in MGET/MSET
+   * Extended SET options for Redis &gt;= 2.6.12
+   * Persistent connections and UNIX SOCKET support for RedisArray
+   * Allow aggregates for ZUNION/ZINTER without weights @mheijkoop
+   * Support for SLOWLOG command
+   * Reworked MGET algorithm to run in linear time regardless of key count.
+   * Reworked ZINTERSTORE/ZUNIONSTORE algorithm to run in linear time
+
+   **
+   ** Bug fixes
+   **
+
+   * C99 Compliance (or rather lack thereof) fix @mobli
+   * Added ZEND_ACC_CTOR and ZEND_ACC_DTOR @euskadi31
+   * Stop throwing and clearing an exception on connect failure @matmoi
+   * Fix a false positive unit test failure having to do with TTL returns
    </notes>
   </release>
    <release>

@@ -17,7 +17,7 @@
 #define HAVE_MEMORY_H 1
 
 /* enable msgpack */
-#define HAVE_MSGPACK 1
+/* #undef HAVE_MSGPACK */
 
 /* Whether redis igbinary serializer is enabled */
 /* #undef HAVE_REDIS_IGBINARY */
@@ -42,10 +42,6 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #define HAVE_UNISTD_H 1
-
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
-#define LT_OBJDIR ".libs/"
 
 /* Define to 1 if your C compiler doesn't accept -c and -o together. */
 /* #undef NO_MINUS_C_MINUS_O */
