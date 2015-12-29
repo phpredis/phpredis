@@ -4042,13 +4042,27 @@ class Redis_Test extends TestSuite
         $this->assertEquals(FALSE, $this->redis->zDeleteRangeByScore($key, 1, 2));
     }
 
-	public function testSerializerJSON() {
-		$this->checkSerializer(Redis::SERIALIZER_JSON);
+	public function testSerializerMSGPACK() {
+	    if(defined('Redis::SERIALIZER_MSGPACK')) {
+		    $this->checkSerializer(Redis::SERIALIZER_MSGPACK);
 
-		// with prefix
-		$this->redis->setOption(Redis::OPT_PREFIX, "test:");
-		$this->checkSerializer(Redis::SERIALIZER_JSON);
-		$this->redis->setOption(Redis::OPT_PREFIX, "");
+		    // with prefix
+		    $this->redis->setOption(Redis::OPT_PREFIX, "test:");
+		    $this->checkSerializer(Redis::SERIALIZER_MSGPACK);
+		    $this->redis->setOption(Redis::OPT_PREFIX, "");
+        }
+	}
+
+
+	public function testSerializerJSON() {
+	    if(defined('Redis::SERIALIZER_JSON')) {
+		    $this->checkSerializer(Redis::SERIALIZER_JSON);
+
+		    // with prefix
+		    $this->redis->setOption(Redis::OPT_PREFIX, "test:");
+		    $this->checkSerializer(Redis::SERIALIZER_JSON);
+		    $this->redis->setOption(Redis::OPT_PREFIX, "");
+        }
 	}
 
 
