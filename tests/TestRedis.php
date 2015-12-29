@@ -4042,6 +4042,30 @@ class Redis_Test extends TestSuite
         $this->assertEquals(FALSE, $this->redis->zDeleteRangeByScore($key, 1, 2));
     }
 
+	public function testSerializerMSGPACK() {
+	    if(defined('Redis::SERIALIZER_MSGPACK')) {
+		    $this->checkSerializer(Redis::SERIALIZER_MSGPACK);
+
+		    // with prefix
+		    $this->redis->setOption(Redis::OPT_PREFIX, "test:");
+		    $this->checkSerializer(Redis::SERIALIZER_MSGPACK);
+		    $this->redis->setOption(Redis::OPT_PREFIX, "");
+        }
+	}
+
+
+	public function testSerializerJSON() {
+	    if(defined('Redis::SERIALIZER_JSON')) {
+		    $this->checkSerializer(Redis::SERIALIZER_JSON);
+
+		    // with prefix
+		    $this->redis->setOption(Redis::OPT_PREFIX, "test:");
+		    $this->checkSerializer(Redis::SERIALIZER_JSON);
+		    $this->redis->setOption(Redis::OPT_PREFIX, "");
+        }
+	}
+
+
     public function testSerializerPHP() {
 
 	    $this->checkSerializer(Redis::SERIALIZER_PHP);
@@ -4270,8 +4294,13 @@ class Redis_Test extends TestSuite
 		$this->redis->set('x', array(new stdClass, new stdClass));
 		$x = $this->redis->get('x');
 		$this->assertTrue(is_array($x));
-		$this->assertTrue(is_object($x[0]) && get_class($x[0]) === 'stdClass');
-		$this->assertTrue(is_object($x[1]) && get_class($x[1]) === 'stdClass');
+		if ($mode === Redis::SERIALIZER_JSON) {
+			$this->assertTrue(is_array($x[0]) && $x[0] === array());
+			$this->assertTrue(is_array($x[1]) && $x[1] === array());
+		} else {
+			$this->assertTrue(is_object($x[0]) && get_class($x[0]) === 'stdClass');
+			$this->assertTrue(is_object($x[1]) && get_class($x[1]) === 'stdClass');
+	    }
 
 	    // revert
 	    $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE) === TRUE); 	// set ok
@@ -4569,8 +4598,14 @@ class Redis_Test extends TestSuite
     	);
 
     	$serializers = Array(Redis::SERIALIZER_PHP);
+    	if(defined('Redis::SERIALIZER_JSON')) {
+    		$serializers[] = Redis::SERIALIZER_JSON;
+    	}
     	if(defined('Redis::SERIALIZER_IGBINARY')) {
     		$serializers[] = Redis::SERIALIZER_IGBINARY;
+    	}
+    	if(defined('Redis::SERIALIZER_MSGPACK')) {
+    		$serializers[] = Redis::SERIALIZER_MSGPACK;
     	}
 
     	foreach($serializers as $mode) {

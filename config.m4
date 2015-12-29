@@ -11,6 +11,13 @@ PHP_ARG_ENABLE(redis-session, whether to enable sessions,
 PHP_ARG_ENABLE(redis-igbinary, whether to enable igbinary serializer support,
 [  --enable-redis-igbinary      Enable igbinary serializer support], no, no)
 
+PHP_ARG_ENABLE(msgpack, whether to enable msgpack serializer support,
+    [  --enable-msgpack Include msgpack support], no, no)
+
+PHP_ARG_ENABLE(json, whether to enable json serializer support,
+    [  --enable-json Include json support], yes, no)
+
+
 
 if test "$PHP_REDIS" != "no"; then
 
@@ -100,4 +107,18 @@ dnl Check for igbinary
   dnl PHP_SUBST(REDIS_SHARED_LIBADD)
 
   PHP_NEW_EXTENSION(redis, redis.c library.c redis_session.c redis_array.c redis_array_impl.c, $ext_shared)
+  if test "$PHP_JSON" != "no"; then
+    AC_DEFINE(HAVE_JSON,1,[enable json])
+        ifdef([PHP_ADD_EXTENSION_DEP],
+        [
+            PHP_ADD_EXTENSION_DEP(redis, json, true)
+        ])
+  fi
+  if test "$PHP_MSGPACK" != "no"; then
+    AC_DEFINE(HAVE_MSGPACK,1,[enable msgpack])
+        ifdef([PHP_ADD_EXTENSION_DEP],
+        [
+            PHP_ADD_EXTENSION_DEP(redis, msgpack, true)
+        ])
+  fi
 fi

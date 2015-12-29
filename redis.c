@@ -328,8 +328,23 @@ static zend_function_entry redis_functions[] = {
      {NULL, NULL, NULL}
 };
 
+#if ZEND_MODULE_API_NO >= 20050922
+zend_module_dep redis_deps[] = {
+#ifdef HAVE_JSON
+    ZEND_MOD_REQUIRED("json")
+#endif
+#ifdef HAVE_MSGPACK
+    ZEND_MOD_REQUIRED("msgpack")
+#endif
+    {NULL, NULL, NULL}
+};
+#endif
+
 zend_module_entry redis_module_entry = {
-#if ZEND_MODULE_API_NO >= 20010901
+#if ZEND_MODULE_API_NO >= 20050922
+     STANDARD_MODULE_HEADER_EX, NULL,
+     redis_deps,
+#else
      STANDARD_MODULE_HEADER,
 #endif
      "redis",
@@ -344,6 +359,7 @@ zend_module_entry redis_module_entry = {
 #endif
      STANDARD_MODULE_PROPERTIES
 };
+
 
 #ifdef COMPILE_DL_REDIS
 ZEND_GET_MODULE(redis)
@@ -528,6 +544,12 @@ PHP_MINIT_FUNCTION(redis)
     /* serializer */
     add_constant_long(redis_ce, "SERIALIZER_NONE", REDIS_SERIALIZER_NONE);
     add_constant_long(redis_ce, "SERIALIZER_PHP", REDIS_SERIALIZER_PHP);
+#if HAVE_JSON
+    add_constant_long(redis_ce, "SERIALIZER_JSON", REDIS_SERIALIZER_JSON);
+#endif
+#if HAVE_MSGPACK
+    add_constant_long(redis_ce, "SERIALIZER_MSGPACK", REDIS_SERIALIZER_MSGPACK);
+#endif
 
     /* scan options*/
     add_constant_long(redis_ce, "OPT_SCAN", REDIS_OPT_SCAN);
@@ -5966,10 +5988,16 @@ PHP_METHOD(Redis, setOption) {
         case REDIS_OPT_SERIALIZER:
             val_long = atol(val_str);
             if(val_long == REDIS_SERIALIZER_NONE
+#ifdef HAVE_MSGPACK
+			 	    || val_long == REDIS_SERIALIZER_MSGPACK
+#endif
 #ifdef HAVE_REDIS_IGBINARY
                     || val_long == REDIS_SERIALIZER_IGBINARY
 #endif
-                    || val_long == REDIS_SERIALIZER_PHP) {
+#ifdef HAVE_JSON
+					|| val_long == REDIS_SERIALIZER_JSON
+#endif
+					|| val_long == REDIS_SERIALIZER_PHP) {
                         redis_sock->serializer = val_long;
                         RETURN_TRUE;
                     } else {

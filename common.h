@@ -63,6 +63,8 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_SERIALIZER_NONE		0
 #define REDIS_SERIALIZER_PHP 		1
 #define REDIS_SERIALIZER_IGBINARY 	2
+#define REDIS_SERIALIZER_JSON    	3
+#define REDIS_SERIALIZER_MSGPACK    4
 
 /* SCAN options */
 #define REDIS_SCAN_NORETRY 0
@@ -244,5 +246,15 @@ typedef struct {
 
 void
 free_reply_callbacks(zval *z_this, RedisSock *redis_sock);
+
+#if defined(PHP_WIN32) && defined(JSON_EXPORTS)
+#define PHP_JSON_API __declspec(dllexport)
+#else
+#define PHP_JSON_API PHPAPI
+#endif
+
+PHP_JSON_API void php_json_encode(smart_str *buf, zval *val, int options TSRMLS_DC);
+PHP_JSON_API void php_json_decode_ex(zval *return_value, char *buf, int buf_len, zend_bool assoc, int depth TSRMLS_DC);
+
 
 #endif
