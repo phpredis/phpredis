@@ -252,35 +252,35 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
                                     void *ctx)
 {
     subscribeContext *sctx = (subscribeContext*)ctx;
-    zval *z_tmp, z_ret, z_args[4];
+    zval *z_tmp, z_ret, z_resp, z_args[4];
+
+    /* Initialize our response as undefined */
+    ZVAL_UNDEF(&z_resp);
 
     // Consume response(s) from subscribe, which will vary on argc
     while(sctx->argc--) {
-        redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab);
-        if(!z_tab) {
+        redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_resp);
+        if(Z_ISUNDEF(z_resp)) {
             efree(sctx);
             return -1;
         }
 
         // We'll need to find the command response
-        if ((z_tmp = zend_hash_index_find(Z_ARRVAL_P(z_tab), 0)) == NULL)
+        if ((z_tmp = zend_hash_index_find(Z_ARRVAL_P(&z_resp), 0)) == NULL)
         {
-            zval_dtor(z_tab);
-            efree(z_tab);
+            zval_dtor(&z_resp);
             efree(sctx);
             return -1;
         }
 
         // Make sure the command response matches the command we called
         if(strcasecmp(Z_STRVAL_P(z_tmp), sctx->kw) !=0) {
-            zval_dtor(z_tab);
-            efree(z_tab);
+            zval_dtor(&z_resp);
             efree(sctx);
             return -1;
         }
 
-        zval_dtor(z_tab);
-        efree(z_tab);
+        zval_dtor(&z_resp);
     }
 
     sctx->cb.retval = &z_ret;
@@ -293,10 +293,13 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
         HashTable *ht_tab;
         int tab_idx=1, is_pmsg;
 
-        redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab);
-        if(Z_TYPE_P(z_tab) == IS_UNDEF) break;
+        /* Start as undefined */
+        ZVAL_UNDEF(&z_resp);
 
-        ht_tab = Z_ARRVAL_P(z_tab);
+        redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_resp);
+        if (Z_ISUNDEF(z_resp)) break;
+
+        ht_tab = Z_ARRVAL_P(&z_resp);
 
         if((z_type = zend_hash_index_find(ht_tab, 0)) == NULL ||
            Z_TYPE_P(z_type) != IS_STRING)
@@ -352,15 +355,11 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
         // If we have a return value free it
         if(Z_TYPE(z_ret) != IS_UNDEF) zval_ptr_dtor(&z_ret);
 
-        zval_dtor(z_tab);
-        efree(z_tab);
+        zval_dtor(&z_resp);
     }
 
     // This is an error state, clean up
-    if(z_tab) {
-        zval_dtor(z_tab);
-        efree(z_tab);
-    }
+    if (!Z_ISUNDEF(z_resp)) zval_dtor(&z_resp);
     efree(sctx);
 
     return -1;
@@ -371,24 +370,25 @@ PHP_REDIS_API int redis_unsubscribe_response(INTERNAL_FUNCTION_PARAMETERS,
                                       void *ctx)
 {
     subscribeContext *sctx = (subscribeContext*)ctx;
-    zval *z_chan, z_ret;
+    zval *z_chan, z_ret, z_resp;
     int i=0;
 
+    ZVAL_UNDEF(&z_resp);
     array_init(&z_ret);
 
     while(i<sctx->argc) {
-        redis_sock_read_multibulk_reply_zval( INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab);
+        redis_sock_read_multibulk_reply_zval( INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_resp);
 
-        if(Z_TYPE_P(z_tab) == IS_UNDEF || (z_chan = zend_hash_index_find(Z_ARRVAL_P(z_tab), 1)) == NULL)
+        if(Z_ISUNDEF(z_resp) || (z_chan = zend_hash_index_find(Z_ARRVAL_P(&z_resp), 1)) == NULL)
         {
+            if (!Z_ISUNDEF(z_resp)) zval_dtor(&z_resp);
             zval_dtor(&z_ret);
             return -1;
         }
 
         add_assoc_bool(&z_ret, Z_STRVAL_P(z_chan), 1);
 
-        zval_dtor(z_tab);
-        efree(z_tab);
+        zval_dtor(&z_resp);
         i++;
     }
 
