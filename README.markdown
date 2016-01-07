@@ -3,7 +3,7 @@
 The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 This code has been developed and maintained by Owlient from November 2009 to March 2011.
 
-You can send comments, patches, questions [here on github](https://github.com/nicolasff/phpredis/issues), to n.favrefelix@gmail.com ([@yowgi](http://twitter.com/yowgi)), or to michael.grunder@gmail.com ([@grumi78](http://twitter.com/grumi78)).
+You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to n.favrefelix@gmail.com ([@yowgi](https://twitter.com/yowgi)), or to michael.grunder@gmail.com ([@grumi78](https://twitter.com/grumi78)).
 
 
 # Table of contents
@@ -65,13 +65,13 @@ export CFLAGS CXXFLAGS LDFLAGS CCFLAGS MACOSX_DEPLOYMENT_TARGET
 
 If that still fails and you are running Zend Server CE, try this right before "make": `./configure CFLAGS="-arch i386"`.
 
-Taken from [Compiling phpredis on Zend Server CE/OSX ](http://www.tumblr.com/tagged/phpredis).
+Taken from [Compiling phpredis on Zend Server CE/OSX ](https://www.tumblr.com/search/phpredis).
 
 See also: [Install Redis & PHP Extension PHPRedis with Macports](http://www.lecloud.net/post/3378834922/install-redis-php-extension-phpredis-with-macports).
 
 You can install install it using Homebrew:
 
-- [Get homebrew-php](https://github.com/josegonzalez/homebrew-php)
+- [Get homebrew-php](https://github.com/Homebrew/homebrew-php)
 - `brew install php55-redis` (or php53-redis, php54-redis)
 
 ## PHP Session handler
@@ -98,7 +98,7 @@ phpredis can also connect to a unix domain socket: `session.save_path = "unix://
 
 ## Building on Windows
 
-See [instructions from @char101](https://github.com/nicolasff/phpredis/issues/213#issuecomment-11361242) on how to build phpredis on Windows.
+See [instructions from @char101](https://github.com/phpredis/phpredis/issues/213#issuecomment-11361242) on how to build phpredis on Windows.
 
 
 ## Distributed Redis Array
