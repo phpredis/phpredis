@@ -1,6 +1,7 @@
 #ifndef REDIS_LIBRARY_H
 #define REDIS_LIBRARY_H
 
+typedef long int LONG_INT;
 void add_constant_long(zend_class_entry *ce, char *name, int value);
 int integer_length(int i);
 int redis_cmd_format(char **ret, char *format, ...);
@@ -76,7 +77,7 @@ PHP_REDIS_API int redis_sock_set_err(RedisSock *redis_sock, const char *msg, int
 * Variant Read methods, mostly to implement eval
 */
 
-PHP_REDIS_API int redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, int *reply_info TSRMLS_DC);
+PHP_REDIS_API int redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, LONG_INT *reply_info TSRMLS_DC);
 PHP_REDIS_API int redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type, zval **z_ret TSRMLS_DC);
 PHP_REDIS_API int redis_read_variant_bulk(RedisSock *redis_sock, int size, zval **z_ret TSRMLS_DC);
 PHP_REDIS_API int redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval **z_ret TSRMLS_DC);
