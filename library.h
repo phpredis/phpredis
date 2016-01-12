@@ -76,7 +76,7 @@ PHP_REDIS_API int redis_sock_set_err(RedisSock *redis_sock, const char *msg, int
 * Variant Read methods, mostly to implement eval
 */
 
-PHP_REDIS_API int redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, long int *reply_info TSRMLS_DC);
+PHP_REDIS_API int redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, long *reply_info TSRMLS_DC);
 PHP_REDIS_API int redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type, zval **z_ret TSRMLS_DC);
 PHP_REDIS_API int redis_read_variant_bulk(RedisSock *redis_sock, int size, zval **z_ret TSRMLS_DC);
 PHP_REDIS_API int redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval **z_ret TSRMLS_DC);
