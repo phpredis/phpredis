@@ -201,7 +201,7 @@ redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                            REDIS_SCAN_TYPE type, long *iter)
 {
     REDIS_REPLY_TYPE reply_type;
-    int reply_info;
+    long reply_info;
     char *p_iter;
 
     /* Our response should have two multibulk replies */
@@ -2138,8 +2138,8 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size,
 }
 
 PHP_REDIS_API int
-redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
-                      int *reply_info TSRMLS_DC)
+redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, 
+                      long *reply_info TSRMLS_DC)
 {
     // Make sure we haven't lost the connection, even trying to reconnect
     if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
@@ -2167,7 +2167,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
 		}
 
 		/* Set our size response */
-		*reply_info = atoi(inbuf);
+		*reply_info = atol(inbuf);
 	}
 
 	/* Success! */
@@ -2230,7 +2230,7 @@ PHP_REDIS_API int
 redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval **z_ret
                                TSRMLS_DC)
 {
-    int reply_info;
+    long reply_info;
     REDIS_REPLY_TYPE reply_type;
     zval z_subelem, *z_subelem_p;
 	z_subelem_p = &z_subelem;
@@ -2291,7 +2291,7 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     // Reply type, and reply size vars
     REDIS_REPLY_TYPE reply_type;
-    int reply_info;
+    long reply_info;
     //char *bulk_resp;
     zval z_ret, *z_ret_p;
 	z_ret_p = &z_ret;
