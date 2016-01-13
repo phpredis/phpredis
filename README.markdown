@@ -3,7 +3,7 @@
 The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 This code has been developed and maintained by Owlient from November 2009 to March 2011.
 
-You can send comments, patches, questions [here on github](https://github.com/nicolasff/phpredis/issues), to n.favrefelix@gmail.com ([@yowgi](http://twitter.com/yowgi)), or to michael.grunder@gmail.com ([@grumi78](http://twitter.com/grumi78)).
+You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to n.favrefelix@gmail.com ([@yowgi](http://twitter.com/yowgi)), or to michael.grunder@gmail.com ([@grumi78](http://twitter.com/grumi78)).
 
 
 # Table of contents
@@ -110,27 +110,30 @@ See [dedicated page](https://github.com/phpredis/phpredis/blob/master/arrays.mar
 See [dedicated page](https://github.com/phpredis/phpredis/blob/feature/redis_cluster/cluster.markdown#readme).
 
 ## Running the unit tests
+
 phpredis uses a small custom unit test suite for testing functionality of the various classes.  To run tests, simply do the following:
 
-<pre>
+~~~
 # Run tests for Redis class (note this is the default)
 php tests/TestRedis.php --class Redis
 
 # Run tests for RedisArray class
-tests/mkring.sh
+tests/mkring.sh start
 php tests/TestRedis.php --class RedisArray
+tests/mkring.sh stop
 
 # Run tests for the RedisCluster class
-test/make-cluster.sh start
+tests/make-cluster.sh start
 php tests/TestRedis.php --class RedisCluster
-</pre>
+tests/make-cluster.sh stop
+~~~
 
 Note that it is possible to run only tests which match a substring of the test itself by passing the additional argument '--test <str>' when invoking.
 
-<pre>
+~~~
 # Just run the 'echo' test
 php tests/TestRedis.php --class Redis --test echo
-</pre>
+~~~
 
 # Classes and methods
 -----
