@@ -118,7 +118,7 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
 {
     size_t idx = 0;
     clusterReply *r;
-    int len;
+    long len;
     char buf[1024];
 
     while(elements-- > 0) {
@@ -614,7 +614,7 @@ clusterReply* cluster_get_slots(RedisSock *redis_sock TSRMLS_DC)
 {
     clusterReply *r;
     REDIS_REPLY_TYPE type;
-    int len;
+    long len;
 
     // Send the command to the socket and consume reply type
     if(redis_sock_write(redis_sock, RESP_CLUSTER_SLOTS_CMD,
