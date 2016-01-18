@@ -1657,7 +1657,11 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     efree(host);
 
     if (!redis_sock->stream) {
-        if (errstr) efree(errstr);
+        if (errstr) {
+             zend_throw_exception(redis_exception_ce, errstr, 0 
+                                 TSRMLS_CC);
+            efree(errstr);
+        }
         return -1;
     }
 
