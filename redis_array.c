@@ -390,17 +390,15 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
     } else { /* call directly through. */
         call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
 
-        /* check if we have an error. */
-        if(RA_CALL_FAILED(return_value,cmd) && ra->prev && !b_write_cmd) { /* there was an error reading, try with prev ring. */
-            /* Free previous return value */
+        /* If we detect a failure on a read command and have a previous ring, fall back. */
+        if(RA_CALL_FAILED(return_value,cmd) && ra->prev && !b_write_cmd) {
             zval_dtor(return_value);
-
-            /* ERROR, FALLBACK TO PREVIOUS RING and forward a reference to the first redis instance we were looking at. */
-            ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra->prev, cmd, cmd_len, z_args, z_new_target?z_new_target:redis_inst);
+            ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra->prev, cmd, cmd_len, 
+                z_args, z_new_target?z_new_target:redis_inst);
         }
 
         /* Autorehash if the key was found on the previous node if this is a read command and auto rehashing is on */
-        if(!RA_CALL_FAILED(return_value,cmd) && !b_write_cmd && z_new_target && ra->auto_rehash) { /* move key from old ring to new ring */
+        if(!RA_CALL_FAILED(return_value,cmd) && !b_write_cmd && z_new_target && ra->auto_rehash) { 
             ra_move_key(key, key_len, redis_inst, z_new_target TSRMLS_CC);
         }
     }
@@ -593,14 +591,17 @@ static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *metho
 
     array_init(return_value);
     for(i = 0; i < ra->count; ++i) {
-
         ZVAL_UNDEF(&z_tmp);
 
         /* Call each node in turn */
         call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, &z_tmp, 0, NULL TSRMLS_CC);
 
+        /* Add our reply */
         add_assoc_zval(return_value, ra->hosts[i], &z_tmp);
     }
+
+    /* Cleanup function name */
+    zval_dtor(&z_fun);
 }
 
 PHP_METHOD(RedisArray, info)
@@ -787,7 +788,7 @@ PHP_METHOD(RedisArray, select)
 #define HANDLE_MULTI_EXEC(cmd) do {\
     if (redis_array_get(getThis(), &ra TSRMLS_CC) >= 0 && ra->z_multi_exec) {\
         int i, num_varargs;\
-        zval ***varargs = NULL;\
+        zval *varargs = NULL;\
         zval z_arg_array;\
         if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O*",\
                                 &object, redis_array_ce, &varargs, &num_varargs) == FAILURE) {\
@@ -797,15 +798,12 @@ PHP_METHOD(RedisArray, select)
         array_init(&z_arg_array);\
         for(i = 0; i < num_varargs; ++i) {\
             zval z_tmp;\
-            ZVAL_DUP(&z_tmp, *varargs[i]);\
+            ZVAL_DUP(&z_tmp, &varargs[i]);\
             add_next_index_zval(&z_arg_array, &z_tmp);\
         }\
         /* call */\
         ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, sizeof(cmd)-1, &z_arg_array, NULL);\
         zval_dtor(&z_arg_array);\
-        if(varargs) {\
-            efree(varargs);\
-        }\
         return;\
     }\
 }while(0)
@@ -858,21 +856,21 @@ PHP_METHOD(RedisArray, mget)
 
         /* phpredis proper can only use string or long keys, so restrict to that here */
         if(Z_TYPE_P(data) != IS_STRING && Z_TYPE_P(data) != IS_LONG) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR, "MGET: all keys must be strings or longs");
-        efree(argv);
-        efree(pos);
-        efree(redis_instances);
-        efree(argc_each);
-        RETURN_FALSE;
+            php_error_docref(NULL TSRMLS_CC, E_ERROR, "MGET: all keys must be strings or longs");
+            efree(argv);
+            efree(pos);
+            efree(redis_instances);
+            efree(argc_each);
+            RETURN_FALSE;
         }
 
         /* Convert to a string for hash lookup if it isn't one */
         if(Z_TYPE_P(data) == IS_STRING) {
-        key_len = Z_STRLEN_P(data);
-        key_lookup = Z_STRVAL_P(data);
+            key_len = Z_STRLEN_P(data);
+            key_lookup = Z_STRVAL_P(data);
         } else {
-        key_len = snprintf(kbuf, sizeof(kbuf), "%ld", Z_LVAL_P(data));
-        key_lookup = (char*)kbuf;
+            key_len = snprintf(kbuf, sizeof(kbuf), "%ld", Z_LVAL_P(data));
+            key_lookup = (char*)kbuf;
         }
 
         /* Find our node */
@@ -911,23 +909,28 @@ PHP_METHOD(RedisArray, mget)
         for(i = 0, j = 0; i < argc; ++i) {
             /* Error out if we didn't get a proper response */
             if(Z_TYPE(z_ret) != IS_ARRAY) {
-            /* cleanup */
-            zval_dtor(&z_ret);
-            zval_ptr_dtor(&z_tmp_array);
-            efree(pos);
-            efree(redis_instances);
-            efree(argc_each);
+                /* cleanup */
+                zval_dtor(&z_ret);
+                zval_dtor(&z_fun);
+                zval_ptr_dtor(&z_tmp_array);
+                efree(pos);
+                efree(redis_instances);
+                efree(argc_each);
 
-            /* failure */
-            RETURN_FALSE;
+                /* failure */
+                RETURN_FALSE;
             }
 
             if(pos[i] != n) continue;
 
-            z_cur = zend_hash_index_find(Z_ARRVAL(z_ret), j);
-            j++;
-            ZVAL_DUP(&z_tmp, z_cur);
-            add_index_zval(&z_tmp_array, i, &z_tmp);
+            z_cur = zend_hash_index_find(Z_ARRVAL(z_ret), j++);
+            Z_TRY_ADDREF_P(z_cur);
+            add_index_zval(&z_tmp_array, i, z_cur);
+
+            //z_cur = zend_hash_index_find(Z_ARRVAL(z_ret), j);
+            //j++;
+            //ZVAL_DUP(&z_tmp, z_cur);
+            //add_index_zval(&z_tmp_array, i, &z_tmp);
         }
         zval_dtor(&z_ret);
     }
@@ -935,17 +938,18 @@ PHP_METHOD(RedisArray, mget)
     /* copy temp array in the right order to return_value */
     for(i = 0; i < argc; ++i) {
         z_cur = zend_hash_index_find(Z_ARRVAL(z_tmp_array), i);
-        add_next_index_zval(return_value, &z_tmp);
+        Z_TRY_ADDREF_P(z_cur);
+        add_next_index_zval(return_value, z_cur);
     }
 
     /* cleanup */
     zval_ptr_dtor(&z_tmp_array);
+    zval_dtor(&z_fun);
     efree(argv);
     efree(pos);
     efree(redis_instances);
     efree(argc_each);
 }
-
 
 /* MSET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mset)
@@ -1006,12 +1010,12 @@ PHP_METHOD(RedisArray, mset)
 
         /* If the key isn't a string, make a string representation of it */
         if(type != HASH_KEY_IS_STRING) {
-        key_len = snprintf(kbuf, sizeof(kbuf), "%ld", (long)idx);
-        key = estrndup(kbuf, key_len);
-        key_free[free_idx++] = key;
+            key_len = snprintf(kbuf, sizeof(kbuf), "%ld", (long)idx);
+            key = estrndup(kbuf, key_len);
+            key_free[free_idx++] = key;
         } else {
-        key_len = key_zstr->len - 1; /* We don't want the null terminator */
-        key = key_zstr->val;
+            key_len = key_zstr->len;
+            key = key_zstr->val;
         }
 
         redis_instances[i] = ra_find_node(ra, key, (int)key_len, &pos[i] TSRMLS_CC);
@@ -1039,7 +1043,7 @@ PHP_METHOD(RedisArray, mset)
 
             ZVAL_DUP(&z_tmp, argv[i]);
 
-            add_assoc_zval_ex(&z_argarray, keys[i], key_lens[i] + 1, &z_tmp); /* +1 to count the \0 here */
+            add_assoc_zval_ex(&z_argarray, keys[i], key_lens[i], &z_tmp);
             found++;
         }
 
@@ -1222,32 +1226,32 @@ PHP_METHOD(RedisArray, multi)
     char *host;
     size_t host_len;
     long multi_value = MULTI;
-
+    
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
                 &object, redis_array_ce, &host, &host_len, &multi_value) == FAILURE) {
         RETURN_FALSE;
     }
-
+    
     if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
         RETURN_FALSE;
     }
-
+    
     /* find node */
     z_redis = ra_find_node_by_name(ra, host, host_len TSRMLS_CC);
     if(!z_redis) {
         RETURN_FALSE;
     }
-
+    
     if(multi_value != MULTI && multi_value != PIPELINE) {
         RETURN_FALSE;
     }
 
     /* save multi object */
     ra->z_multi_exec = z_redis;
-
+    
     /* switch redis instance to multi/exec mode. */
     ra_index_multi(z_redis, multi_value TSRMLS_CC);
-
+    
     /* return this. */
     RETURN_ZVAL(object, 1, 0);
 }

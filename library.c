@@ -1384,21 +1384,20 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
 
     char *response;
     int response_len;
+    zval z;
 
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC))
-                                    == NULL)
-    {
+    /* Handle null response */
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
         IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
-        return;
+            return;
         }
         RETURN_FALSE;
     }
+
+    /* Add to multi/exec tabulation or directly */
     IF_MULTI_OR_PIPELINE() {
-        zval z;
-        if(redis_unserialize(redis_sock, response, response_len, &z) == 1)
-        {
-            efree(response);
+        if(redis_unserialize(redis_sock, response, response_len, &z) == 1) {
             add_next_index_zval(z_tab, &z);
         } else {
             add_next_index_stringl(z_tab, response, response_len);
@@ -1408,11 +1407,10 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
                              return_value TSRMLS_CC) == 0)
         {
             RETVAL_STRINGL(response, response_len);
-            efree(response);
-        } else {
-            efree(response);
         }
     }
+
+    efree(response);
 }
 
 /* like string response, but never unserialized. */
@@ -1429,15 +1427,18 @@ redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     {
         IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
-        return;
+            return;
         }
         RETURN_FALSE;
     }
+
     IF_MULTI_OR_PIPELINE() {
         add_next_index_stringl(z_tab, response, response_len);
     } else {
-        RETURN_STRING(response);
+        RETVAL_STRINGL(response, response_len);
     }
+
+    efree(response);
 }
 
 /* Response for DEBUG object which is a formatted single line reply */
@@ -1791,9 +1792,9 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
     IF_MULTI_OR_PIPELINE() {
         add_next_index_zval(z_tab, &z_multi_result);
     } else {
-		ZVAL_DUP(return_value, &z_multi_result);
+        RETVAL_ZVAL(&z_multi_result, 0, 1);
     }
-    /*zval_copy_ctor(return_value); */
+
     return 0;
 }
 
@@ -1866,11 +1867,11 @@ redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 (unserialize == UNSERIALIZE_VALS && count % 2 != 0);
 
             if (unwrap && redis_unserialize(redis_sock, line, len, &z TSRMLS_CC)) {
-                efree(line);
                 add_next_index_zval(z_tab, &z);
             } else {
                 add_next_index_stringl(z_tab, line, len);
             }
+            efree(line);
         } else {
             add_next_index_bool(z_tab, 0);
         }

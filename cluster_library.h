@@ -313,7 +313,7 @@ typedef struct clusterMultiCmd {
 typedef struct clusterReply {
     REDIS_REPLY_TYPE type;         /* Our reply type */
     size_t integer;                /* Integer reply */
-    size_t len;                 /* Length of our string */
+    long long len;                 /* Length of our string */
     char *str;                     /* String reply */
     size_t elements;               /* Count of array elements */
     struct clusterReply **element; /* Array elements */

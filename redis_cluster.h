@@ -107,9 +107,6 @@ PHP_REDIS_API zend_class_entry *rediscluster_get_exception_base(int root);
 zend_object *create_cluster_context(zend_class_entry *class_type
                                          TSRMLS_DC);
 
-/* Free cluster context struct */
-void free_cluster_context(void *object TSRMLS_DC);
-
 /* Inittialize our class with PHP */
 void init_rediscluster(TSRMLS_D);
 

@@ -2041,8 +2041,7 @@ PHP_REDIS_API void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS,
     // If this is the tail of our multi command, we can set our returns
     if(mctx->last) {
         if(CLUSTER_IS_ATOMIC(c)) {
-            *return_value = *(mctx->z_multi);
-            efree(mctx->z_multi);
+            RETVAL_ZVAL(mctx->z_multi, 0, 1);
         } else {
             add_next_index_zval(&c->multi_resp, mctx->z_multi);
         }
@@ -2077,8 +2076,7 @@ PHP_REDIS_API void cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluste
     // Set return value if it's our last response
     if(mctx->last) {
         if(CLUSTER_IS_ATOMIC(c)) {
-            *return_value = *(mctx->z_multi);
-            efree(mctx->z_multi);
+            RETVAL_ZVAL(mctx->z_multi, 0, 1);
         } else {
             add_next_index_zval(&c->multi_resp, mctx->z_multi);
         }
@@ -2129,6 +2127,7 @@ PHP_REDIS_API void cluster_mset_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
         php_error_docref(0 TSRMLS_CC, E_ERROR,
             "Invalid reply type returned for MSET command");
         ZVAL_FALSE(return_value);
+        zval_dtor(mctx->z_multi);
         efree(mctx->z_multi);
         efree(mctx);
         return;
@@ -2275,8 +2274,7 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
                 add_assoc_zval(z_result, key, &z);
                 efree(line);
             } else {
-                add_assoc_stringl_ex(z_result, key, 1+key_len, line,
-                    line_len);
+                add_assoc_stringl_ex(z_result, key, key_len, line, line_len);
             }
             efree(key);
         }
@@ -2309,10 +2307,10 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
                 zval z;
                 if (redis_unserialize(redis_sock,key,key_len, &z TSRMLS_CC)) {
                     convert_to_string(&z);
-                    add_assoc_double_ex(z_result, Z_STRVAL(z), 1+Z_STRLEN(z), atof(line));
+                    add_assoc_double_ex(z_result, Z_STRVAL(z), Z_STRLEN(z), atof(line));
                     zval_dtor(&z);
                 } else {
-                    add_assoc_double_ex(z_result, key, 1+key_len, atof(line));
+                    add_assoc_double_ex(z_result, key, key_len, atof(line));
                 }
 
                 /* Free our key and line */
@@ -2331,7 +2329,7 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
 {
     char *line;
     int line_len,i=0;
-    zval **z_keys = ctx;
+    zval *z_keys = ctx;
 
     // Loop while we've got replies
     while(count--) {
@@ -2341,20 +2339,20 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
             zval z;
             if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
                 efree(line);
-                add_assoc_zval_ex(z_result,Z_STRVAL_P(z_keys[i]),
-                    1+Z_STRLEN_P(z_keys[i]), &z);
+                add_assoc_zval_ex(z_result,Z_STRVAL(z_keys[i]),
+                    Z_STRLEN(z_keys[i]), &z);
             } else {
-                add_assoc_stringl_ex(z_result, Z_STRVAL_P(z_keys[i]),
-                    1+Z_STRLEN_P(z_keys[i]), line, line_len);
+                add_assoc_stringl_ex(z_result, Z_STRVAL(z_keys[i]),
+                    Z_STRLEN(z_keys[i]), line, line_len);
             }
         } else {
-            add_assoc_bool_ex(z_result, Z_STRVAL_P(z_keys[i]),
-                1+Z_STRLEN_P(z_keys[i]), 0);
+            add_assoc_bool_ex(z_result, Z_STRVAL(z_keys[i]),
+                Z_STRLEN(z_keys[i]), 0);
         }
 
         // Clean up key context
-        zval_dtor(z_keys[i]);
-        efree(z_keys[i]);
+        zval_dtor(&z_keys[i]);
+        //efree(z_keys[i]);
 
         // Move to the next key
         i++;
