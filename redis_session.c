@@ -625,7 +625,7 @@ PS_READ_FUNC(rediscluster) {
 
     /* Attempt to read reply */
     reply = cluster_read_resp(c TSRMLS_CC);
-    if (!reply || c->err) {
+    if (!reply || c->err || reply->str == NULL) {
         if (reply) cluster_free_reply(reply, 1);
         return FAILURE;
     }
