@@ -3129,7 +3129,7 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
                 if(key_free) efree(key);
 
                 // Free our temporary arg if we created one
-                if(Z_TYPE(z_tmp) == IS_UNDEF) {
+                if(!Z_ISUNDEF(z_tmp)) {
                     zval_dtor(&z_tmp);
                 }
             }
