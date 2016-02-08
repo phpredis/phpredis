@@ -35,7 +35,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
     /* Load our seeds on construction */
     public function __construct() {
-        $str_nodemap_file = dirname($_SERVER['PHP_SELF']) . '/nodes/nodemap';
+        $str_nodemap_file = dirname(dirname($_SERVER['PHP_SELF'])) . '/nodes/nodemap';
 
         if (!file_exists($str_nodemap_file)) {
             fprintf(STDERR, "Error:  Can't find nodemap file for seeds!\n");
