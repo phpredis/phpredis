@@ -2223,6 +2223,7 @@ redis_read_variant_bulk(RedisSock *redis_sock, int size, zval **z_ret
 		return -1;
 	} else {
 		ZVAL_STRINGL(*z_ret, bulk_resp, size);
+		efree(bulk_resp);
 		return 0;
 	}
 }
