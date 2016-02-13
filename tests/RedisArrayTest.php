@@ -12,6 +12,12 @@ function custom_hash($str) {
     return $str;
 }
 
+function parseHostPort($str, &$host, &$port) {
+    $pos = strrpos($str, ':');
+    $host = substr($str, 0, $pos);
+    $port = substr($str, $pos+1);
+}
+
 class Redis_Array_Test extends TestSuite
 {
     private $strings;
@@ -19,7 +25,6 @@ class Redis_Array_Test extends TestSuite
     private $data = NULL;
 
     public function setUp() {
-
         // initialize strings.
         $n = REDIS_ARRAY_DATA_SIZE;
         $this->strings = array();
@@ -42,7 +47,13 @@ class Redis_Array_Test extends TestSuite
         
         // check each key individually using a new connection
         foreach($this->strings as $k => $v) {
-            list($host, $port) = explode(':', $this->ra->_target($k));
+            parseHostPort($this->ra->_target($k), $host, $port);
+
+            $target = $this->ra->_target($k);
+            $pos = strrpos($target, ':');
+
+            $host = substr($target, 0, $pos);
+            $port = substr($target, $pos+1);
 
             $r = new Redis;
             $r->pconnect($host, (int)$port);
@@ -180,7 +191,7 @@ class Redis_Rehashing_Test extends TestSuite
         // flush all servers first.
         global $serverList;
         foreach($serverList as $s) {
-            list($host, $port) = explode(':', $s);
+            parseHostPort($s, $host, $port);
 
             $r = new Redis();
             $r->pconnect($host, (int)$port, 0);
@@ -351,11 +362,8 @@ class Redis_Auto_Rehashing_Test extends TestSuite {
     // Read and migrate keys on fallback, causing the whole ring to be rehashed.
     public function testAllKeysHaveBeenMigrated() {
         foreach($this->strings as $k => $v) {
-            // get the target for each key
-            $target = $this->ra->_target($k);
+            parseHostPort($this->ra->_target($k), $host, $port);
 
-            // connect to the target host
-            list($host,$port) = explode(':', $target);
             $r = new Redis;
             $r->pconnect($host, $port);
 
@@ -528,12 +536,13 @@ class Redis_Distributor_Test extends TestSuite {
     }
 }
 
-function run_tests($className, $str_filter) {
+function run_tests($className, $str_filter, $str_host) {
         // reset rings
         global $newRing, $oldRing, $serverList;
-        $newRing = array('localhost:6379', 'localhost:6380', 'localhost:6381');
-        $oldRing = array();
-        $serverList = array('localhost:6379', 'localhost:6380', 'localhost:6381', 'localhost:6382');
+
+        $newRing = Array("$str_host:6379", "$str_host:6380", "$str_host:6381");
+        $oldRing = Array();
+        $serverList = Array("$str_host:6379", "$str_host:6380", "$str_host:6381", "$str_host:6382");
 
         // run
         TestSuite::run($className, $str_filter);

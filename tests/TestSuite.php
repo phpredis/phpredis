@@ -2,6 +2,9 @@
 
 // phpunit is such a pain to install, we're going with pure-PHP here.
 class TestSuite {
+    /* Host the tests will use */
+    private $str_host;
+
     private static $_boo_colorize = false;
 
     private static $BOLD_ON = "\033[1m";
@@ -18,8 +21,14 @@ class TestSuite {
     public static $errors = array();
     public static $warnings = array();
 
+    public function __construct($str_host) {
+        $this->str_host = $str_host;
+    }
+
+    public function getHost() { return $this->str_host; }
+
     public static function make_bold($str_msg) {
-        return self::$_boo_colorize 
+        return self::$_boo_colorize
             ? self::$BOLD_ON . $str_msg . self::$BOLD_OFF
             : $str_msg;
     }
@@ -56,7 +65,7 @@ class TestSuite {
     }
 
     protected function assertLess($a, $b) {
-        if($a < $b) 
+        if($a < $b)
             return;
 
         $bt = debug_backtrace(false);
@@ -85,12 +94,12 @@ class TestSuite {
 
     private static function getMaxTestLen($arr_methods, $str_limit) {
         $i_result = 0;
-        
+
         $str_limit = strtolower($str_limit);
         foreach ($arr_methods as $obj_method) {
             $str_name = strtolower($obj_method->name);
 
-            if (substr($str_name, 0, 4) != 'test') 
+            if (substr($str_name, 0, 4) != 'test')
                 continue;
             if ($str_limit && !strstr($str_name, $str_limit))
                 continue;
@@ -101,14 +110,14 @@ class TestSuite {
         }
         return $i_result;
     }
-    
+
     /* Flag colorization */
     public static function flagColorization($boo_override) {
         self::$_boo_colorize = $boo_override && function_exists('posix_isatty') &&
             posix_isatty(STDOUT);
     }
 
-    public static function run($className, $str_limit = NULL) {
+    public static function run($className, $str_limit = NULL, $str_host = NULL) {
         /* Lowercase our limit arg if we're passed one */
         $str_limit = $str_limit ? strtolower($str_limit) : $str_limit;
 
@@ -121,7 +130,7 @@ class TestSuite {
             $name = $m->name;
             if(substr($name, 0, 4) !== 'test')
                 continue;
-            
+
             /* If we're trying to limit to a specific test and can't match the
              * substring, skip */
             if ($str_limit && strstr(strtolower($name), $str_limit)===FALSE) {
@@ -132,7 +141,8 @@ class TestSuite {
             echo self::make_bold($str_out_name);
 
             $count = count($className::$errors);
-            $rt = new $className();
+            $rt = new $className($str_host);
+
             try {
                 $rt->setUp();
                 $rt->$name();

@@ -10,7 +10,7 @@ error_reporting(E_ALL);
 ini_set( 'display_errors','1');
 
 /* Grab options */
-$arr_args = getopt('', Array('class:', 'test:', 'nocolors'));
+$arr_args = getopt('', Array('host:', 'class:', 'test:', 'nocolors'));
 
 /* Grab the test the user is trying to run */
 $arr_valid_classes = Array('redis', 'redisarray', 'rediscluster');
@@ -19,6 +19,9 @@ $boo_colorize = !isset($arr_args['nocolors']);
 
 /* Get our test filter if provided one */
 $str_filter = isset($arr_args['test']) ? $arr_args['test'] : NULL;
+
+/* Grab override test host if it was passed */
+$str_host = isset($arr_args['host']) ? $arr_args['host'] : '127.0.0.1';
 
 /* Validate the class is known */
 if (!in_array($str_class, $arr_valid_classes)) {
@@ -36,21 +39,21 @@ echo "Note: these tests might take up to a minute. Don't worry :-)\n";
 echo "Testing class ";
 if ($str_class == 'redis') {
     echo TestSuite::make_bold("Redis") . "\n";
-    exit(TestSuite::run("Redis_Test", $str_filter));
+    exit(TestSuite::run("Redis_Test", $str_filter, $str_host));
 } else if ($str_class == 'redisarray') {
     echo TestSuite::make_bold("RedisArray") . "\n";
     global $useIndex;
-    foreach(array(false) as $useIndex) {
+    foreach(array(true, false) as $useIndex) {
         echo "\n".($useIndex?"WITH":"WITHOUT"). " per-node index:\n";
 
-        run_tests('Redis_Array_Test', $str_filter);
-        run_tests('Redis_Rehashing_Test', $str_filter);
-        run_tests('Redis_Auto_Rehashing_Test', $str_filter);
-//        run_tests('Redis_Multi_Exec_Test', $str_filter);
-        run_tests('Redis_Distributor_Test', $str_filter);
+        run_tests('Redis_Array_Test', $str_filter, $str_host);
+        run_tests('Redis_Rehashing_Test', $str_filter, $str_host);
+        run_tests('Redis_Auto_Rehashing_Test', $str_filter, $str_host);
+        run_tests('Redis_Multi_Exec_Test', $str_filter, $str_host);
+        run_tests('Redis_Distributor_Test', $str_filter, $str_host);
     }
 } else {
     echo TestSuite::make_bold("RedisCluster") . "\n";
-    exit(TestSuite::run("Redis_Cluster_Test", $str_filter));
+    exit(TestSuite::run("Redis_Cluster_Test", $str_filter, $str_host));
 }
 ?>

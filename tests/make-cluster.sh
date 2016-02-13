@@ -5,15 +5,16 @@
 # simplifying the process of running unit tests.
 #
 # Usage:
-#   ./make-cluster.sh start
-#   ./make-cluster.sh stop
+#   ./make-cluster.sh start [host]
+#   ./make-cluster.sh stop [host]
 #
 
-BASEDIR=`dirname $@`
+BASEDIR=`pwd`
 NODEDIR=$BASEDIR/nodes
 MAPFILE=$NODEDIR/nodemap
 
-# Nodes, replicas, ports, etc.  Change if you want different values
+# Host, nodes, replicas, ports, etc.  Change if you want different values
+HOST="127.0.0.1"
 NODES=12
 REPLICAS=3
 START_PORT=7000
@@ -38,7 +39,7 @@ spawnNode() {
     # Attempt to spawn the node
     verboseRun redis-server --cluster-enabled yes --dir $NODEDIR --port $PORT \
         --cluster-config-file node-$PORT.conf --daemonize yes --save \'\' \
-        --bind '127.0.0.1' --dbfilename node-$PORT.rdb
+        --bind $HOST --dbfilename node-$PORT.rdb
 
     # Abort if we can't spin this instance
     if [ $? -ne 0 ]; then 
@@ -54,7 +55,7 @@ spawnNodes() {
         spawnNode $PORT
 
         # Add this host:port to our nodemap so the tests can get seeds
-        echo "127.0.0.1:$PORT" >> $MAPFILE
+        echo "$HOST:$PORT" >> $MAPFILE
     done
 }
 
@@ -85,7 +86,7 @@ cleanConfigInfo() {
 initCluster() {
     TRIBARGS=""
     for PORT in `seq $START_PORT $END_PORT`; do
-        TRIBARGS="$TRIBARGS 127.0.0.1:$PORT"
+        TRIBARGS="$TRIBARGS $HOST:$PORT"
     done
 
     verboseRun redis-trib.rb create --replicas $REPLICAS $TRIBARGS
@@ -122,6 +123,11 @@ stopCluster() {
 checkExe redis-server
 checkExe redis-trib.rb
 
+# Override the host if we've got $2
+if [[ ! -z "$2" ]]; then
+   HOST=$2
+fi
+
 # Main entry point to start or stop/kill a cluster
 case "$1" in
     start)
@@ -131,6 +137,6 @@ case "$1" in
         stopCluster
         ;;
     *)
-        echo "Usage $0 [start|stop]"
+        echo "Usage $0 <start|stop> [host]"
         ;;
 esac
