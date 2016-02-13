@@ -1417,8 +1417,8 @@ PHP_METHOD(Redis, sort) {
             {
                 RETURN_FALSE;
             }
-            REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
         }
+        REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
     }
 }
 
