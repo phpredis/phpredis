@@ -1707,10 +1707,9 @@ PHP_REDIS_API void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS,
         RETURN_FALSE;
     }
 
-    if(response_len == 3 && strncmp(response, "+OK", 3) == 0) {
-        RETURN_TRUE;
-    }
-    RETURN_FALSE;
+    RETVAL_BOOL(response_len == 3 && strncmp(response, "+OK", 3) == 0);
+
+    efree(response);
 }
 
 /**

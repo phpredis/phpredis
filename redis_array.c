@@ -305,6 +305,10 @@ PHP_METHOD(RedisArray, __construct)
             break;
     }
 
+    /* Cleanup function and distribution if they were set */
+    if (!Z_ISUNDEF(z_fun)) zval_dtor(&z_fun);
+    if (!Z_ISUNDEF(z_dist)) zval_dtor(&z_dist);
+
     if(ra) {
         ra->auto_rehash = b_autorehash;
         ra->connect_timeout = d_connect_timeout;
@@ -314,13 +318,26 @@ PHP_METHOD(RedisArray, __construct)
     }
 }
 
+/* Helper function to destroy an allocated z_val array */
+static void free_zval_array(zval *array, size_t len) {
+    int i;
+
+    /* Call value destructor for each individual z_val */
+    for (i = 0; i < len; i++) {
+        zval_dtor(&array[i]);
+    }
+
+    /* Destroy the array itself */
+    efree(array);
+}
+
 static void
 ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args, zval *z_new_target) {
 
     zval *zp_tmp, z_tmp;
     char *key = NULL; /* set to avoid "unused-but-set-variable" */
     int key_len;
-    int i, j;
+    int i;
     zval *redis_inst;
     zval z_fun, *z_callargs;
     HashPosition pointer;
@@ -370,9 +387,10 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
     /* multi/exec */
     if(ra->z_multi_exec) {
-        call_user_function(&redis_ce->function_table, ra->z_multi_exec, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
-        efree(z_callargs);
+        call_user_function(&redis_ce->function_table, ra->z_multi_exec, &z_fun, &z_tmp, argc, z_callargs TSRMLS_CC);
+        free_zval_array(z_callargs, i); 
         zval_dtor(&z_fun);
+        zval_dtor(&z_tmp);
         RETURN_ZVAL(getThis(), 1, 0);
     }
 
@@ -404,10 +422,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
     }
 
     /* We duplicated argument zvals so free them */
-    for (j = 0; j < i; j++) {
-        zval_dtor(&z_callargs[j]);
-    }
-    efree(z_callargs);
+    free_zval_array(z_callargs, i);
 
     /* cleanup function name zval */
     zval_dtor(&z_fun);
@@ -563,7 +578,7 @@ PHP_METHOD(RedisArray, _rehash)
     if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
         RETURN_FALSE;
     }
-
+    
     if (ZEND_NUM_ARGS() == 0) {
         ra_rehash(ra, NULL, NULL TSRMLS_CC);
     } else {
