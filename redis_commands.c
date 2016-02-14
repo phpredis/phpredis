@@ -998,7 +998,7 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     for(i=1;i<argc;i++) {
         arg_free = redis_serialize(redis_sock, &z_args[i], &arg, &arg_len TSRMLS_CC);
         redis_cmd_append_sstr(&cmdstr, arg, arg_len);
-        //if(arg_free) efree(arg);
+        if (arg_free) efree(arg);
     }
 
     // Push out values

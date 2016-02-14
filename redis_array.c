@@ -1026,12 +1026,14 @@ PHP_METHOD(RedisArray, mset)
     }
 
 
+    /* Set up our function call */
+    ZVAL_STRING(&z_fun, "MSET");
+
     /* calls */
     for(n = 0; n < ra->count; ++n) { /* for each node */
         int found = 0;
 
         /* prepare call */
-        ZVAL_STRING(&z_fun, "MSET");
         redis_inst = &ra->redis[n];
 
         /* copy args */
@@ -1067,7 +1069,6 @@ PHP_METHOD(RedisArray, mset)
         }
 
         zval_dtor(&z_ret);
-
         zval_ptr_dtor(&z_argarray);
     }
 
@@ -1077,6 +1078,7 @@ PHP_METHOD(RedisArray, mset)
     }
 
     /* cleanup */
+    zval_dtor(&z_fun);
     efree(keys);
     efree(key_free);
     efree(key_lens);
