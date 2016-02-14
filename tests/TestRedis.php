@@ -40,13 +40,13 @@ if ($str_class == 'redis') {
 } else if ($str_class == 'redisarray') {
     echo TestSuite::make_bold("RedisArray") . "\n";
     global $useIndex;
-    foreach(array(false) as $useIndex) {
+    foreach(array(true, false) as $useIndex) {
         echo "\n".($useIndex?"WITH":"WITHOUT"). " per-node index:\n";
 
         run_tests('Redis_Array_Test', $str_filter);
         run_tests('Redis_Rehashing_Test', $str_filter);
         run_tests('Redis_Auto_Rehashing_Test', $str_filter);
-//        run_tests('Redis_Multi_Exec_Test', $str_filter);
+        run_tests('Redis_Multi_Exec_Test', $str_filter);
         run_tests('Redis_Distributor_Test', $str_filter);
     }
 } else {
