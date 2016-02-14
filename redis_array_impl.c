@@ -368,6 +368,7 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 	out[*out_len] = 0;
 	memcpy(out, Z_STRVAL(z_ret), *out_len);
 
+    zval_dtor(&z_argv0);
 	zval_dtor(&z_ret);
 	return out;
 }
@@ -420,6 +421,8 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
 		zval_dtor(&z_ret);
 		return 0;
 	}
+
+    zval_dtor(&z_argv0);
 
 	*pos = Z_LVAL(z_ret);
 	zval_dtor(&z_ret);
@@ -539,13 +542,12 @@ ra_index_del(zval *z_keys, zval *z_redis TSRMLS_DC) {
 
 void
 ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
-
 	/* Initialize key array */
 	zval z_keys, *z_entry_p;
 	HashPosition pos;
 	array_init_size(&z_keys, zend_hash_num_elements(Z_ARRVAL_P(z_pairs)));
-
-	/* Go through input array and add values to the key array */
+	
+    /* Go through input array and add values to the key array */
 	zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(z_pairs), &pos);
 	while ((z_entry_p = zend_hash_get_current_data_ex(Z_ARRVAL_P(z_pairs), &pos)) != NULL) {
 			zend_string *key;
@@ -587,8 +589,10 @@ ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC) {
 	/* run SADD */
 	call_user_function(&redis_ce->function_table, z_redis, &z_fun_sadd, &z_ret, 2, z_args TSRMLS_CC);
 
-	/* don't dtor z_ret, since we're returning z_redis */
-	zval_dtor(&z_args[1]);
+    zval_dtor(&z_ret);
+    zval_dtor(&z_fun_sadd);
+    zval_dtor(&z_args[0]);
+    zval_dtor(&z_args[1]);
 }
 
 void
@@ -617,13 +621,14 @@ ra_index_exec(zval *z_redis, zval *return_value, int keep_all TSRMLS_DC) {
 
 void
 ra_index_discard(zval *z_redis, zval *return_value TSRMLS_DC) {
-
-	zval z_fun_discard, z_ret;
+    zval z_fun_discard, z_ret;
 
 	/* run DISCARD */
 	ZVAL_STRING(&z_fun_discard, "DISCARD");
-	call_user_function(&redis_ce->function_table, z_redis, &z_fun_discard, &z_ret, 0, NULL TSRMLS_CC);
-
+    
+    call_user_function(&redis_ce->function_table, z_redis, &z_fun_discard, &z_ret, 0, NULL TSRMLS_CC);
+    
+    zval_dtor(&z_fun_discard);
 	zval_dtor(&z_ret);
 }
 
@@ -669,11 +674,11 @@ ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, con
 	char *key;
 	int key_len;
 
-	/* arg */
-	ZVAL_STRING(&z_arg, arg);
+	/* Function and argument */
+    ZVAL_STRING(&z_fun_smembers, cmd);
+    ZVAL_STRING(&z_arg, arg);
 
 	/* run SMEMBERS */
-	ZVAL_STRING(&z_fun_smembers, cmd);
 	call_user_function(&redis_ce->function_table, z_redis, &z_fun_smembers, &z_ret, 1, &z_arg TSRMLS_CC);
 	if(Z_TYPE(z_ret) != IS_ARRAY) { /* failure */
 		return -1;	/* TODO: log error. */
@@ -700,7 +705,9 @@ ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, con
 	}
 
 	/* cleanup */
-	zval_dtor(&z_ret);
+	zval_dtor(&z_fun_smembers);
+    zval_dtor(&z_arg);
+    zval_dtor(&z_ret);
 
 	return count;
 }
@@ -1064,8 +1071,7 @@ ra_move_list(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 
 void
 ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
-
-	long res[2], type, ttl;
+    long res[2], type, ttl;
 	zend_bool success = 0;
 	if (ra_get_key_type(z_from, key, key_len, z_from, res TSRMLS_CC)) {
 		type = res[0];
@@ -1074,7 +1080,7 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 		ra_index_multi(z_to, MULTI TSRMLS_CC);
 		switch(type) {
 			case REDIS_STRING:
-				success = ra_move_string(key, key_len, z_from, z_to, ttl TSRMLS_CC);
+                success = ra_move_string(key, key_len, z_from, z_to, ttl TSRMLS_CC);
 				break;
 
 			case REDIS_SET:
@@ -1086,11 +1092,11 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 				break;
 
 			case REDIS_ZSET:
-				success = ra_move_zset(key, key_len, z_from, z_to, ttl TSRMLS_CC);
+                success = ra_move_zset(key, key_len, z_from, z_to, ttl TSRMLS_CC);
 				break;
 
 			case REDIS_HASH:
-				success = ra_move_hash(key, key_len, z_from, z_to, ttl TSRMLS_CC);
+                success = ra_move_hash(key, key_len, z_from, z_to, ttl TSRMLS_CC);
 				break;
 
 			default:
@@ -1130,21 +1136,20 @@ static void zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z
 static void
 ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool b_index,
 		zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache TSRMLS_DC) {
-
 	char **keys;
 	int *key_lens;
 	long count, i;
 	int target_pos;
 	zval *z_target;
-
-	/* list all keys */
+	
+    /* list all keys */
 	if(b_index) {
 		count = ra_rehash_scan_index(z_redis, &keys, &key_lens TSRMLS_CC);
 	} else {
 		count = ra_rehash_scan_keys(z_redis, &keys, &key_lens TSRMLS_CC);
 	}
-
-	/* callback */
+    
+    /* callback */
 	if(z_cb && z_cb_cache) {
 		zval_rehash_callback(z_cb, z_cb_cache, hostname, count TSRMLS_CC);
 	}
