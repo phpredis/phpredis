@@ -1108,11 +1108,6 @@ ra_move_list(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
     return ra_move_collection(key, key_len, z_from, z_to, 3, cmd_list, 1, cmd_add, ttl TSRMLS_CC);
 }
 
-static void dumpMoveInfo(const char *key, int type) {
-    const char *tstring[] = {"notfound", "string", "set", "list", "zset", "hash"};
-    php_printf("Moving %s key %s\n", tstring[type], key);
-}
-
 void
 ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
     long res[2], type, ttl;
