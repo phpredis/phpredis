@@ -1839,9 +1839,8 @@ PHP_REDIS_API int redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
     IF_MULTI_OR_PIPELINE() {
         add_next_index_zval(z_tab, &z_multi_result);
     } else {
-		ZVAL_DUP(return_value, &z_multi_result);
+        ZVAL_COPY_VALUE(return_value, &z_multi_result);
     }
-    /*zval_copy_ctor(return_value); */
     return 0;
 }
 
