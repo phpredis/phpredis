@@ -46,7 +46,7 @@ extern zend_class_entry *spl_ce_RuntimeException;
 /* Helper to reselect the proper DB number when we reconnect */
 static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
     char *cmd, *response;
-    int cmd_len, response_len;
+    size_t cmd_len, response_len;
 
     cmd_len = redis_cmd_format_static(&cmd, "SELECT", "d", redis_sock->dbNumber);
 
@@ -73,7 +73,7 @@ static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
 /* Helper to resend AUTH <password> in the case of a reconnect */
 static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
     char *cmd, *response;
-    int cmd_len, response_len;
+    size_t cmd_len, response_len;
 
     cmd_len = redis_cmd_format_static(&cmd, "AUTH", "s", redis_sock->auth,
         strlen(redis_sock->auth));
@@ -728,7 +728,7 @@ redis_cmd_format(char **ret, char *format, ...) {
 /*
  * Append a command sequence to a Redis command
  */
-int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len) {
+int redis_cmd_append_str(char **cmd, size_t cmd_len, char *append, size_t append_len) {
 	/* Smart string buffer */
 	smart_string buf = {0};
 
@@ -756,7 +756,7 @@ int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len) 
  * Given a smart string, number of arguments, a keyword, and the length of the keyword
  * initialize our smart string with the proper Redis header for the command to follow
  */
-int redis_cmd_init_sstr(smart_string *str, int num_args, char *keyword, int keyword_len) {
+int redis_cmd_init_sstr(smart_string *str, size_t num_args, char *keyword, size_t keyword_len) {
     smart_string_appendc(str, '*');
     smart_string_append_long(str, num_args + 1);
     smart_string_appendl(str, _NL, sizeof(_NL) -1);
@@ -771,7 +771,7 @@ int redis_cmd_init_sstr(smart_string *str, int num_args, char *keyword, int keyw
 /*
  * Append a command sequence to a smart_string
  */
-int redis_cmd_append_sstr(smart_string *str, char *append, int append_len) {
+int redis_cmd_append_sstr(smart_string *str, char *append, size_t append_len) {
     smart_string_appendc(str, '$');
     smart_string_append_long(str, append_len);
     smart_string_appendl(str, _NL, sizeof(_NL) - 1);
@@ -794,9 +794,9 @@ int redis_cmd_append_sstr_int(smart_string *str, int append) {
 /*
  * Append a long to a smart string command
  */
-int redis_cmd_append_sstr_long(smart_string *str, long append) {
+int redis_cmd_append_sstr_long(smart_string *str, zend_long append) {
     char long_buf[32];
-    int long_len = snprintf(long_buf, sizeof(long_buf), "%ld", append);
+    int long_len = snprintf(long_buf, sizeof(long_buf), ZEND_LONG_FMT, append);
     return redis_cmd_append_sstr(str, long_buf, long_len);
 }
 
@@ -823,7 +823,7 @@ int redis_cmd_append_sstr_dbl(smart_string *str, double value) {
 /*
  * Append an integer command to a Redis command
  */
-int redis_cmd_append_int(char **cmd, int cmd_len, int append) {
+int redis_cmd_append_int(char **cmd, size_t cmd_len, int append) {
     char int_buf[32];
     int int_len;
 
@@ -1506,8 +1506,8 @@ PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
  * redis_sock_create
  */
 PHP_REDIS_API RedisSock*
-redis_sock_create(char *host, int host_len, unsigned short port, double timeout,
-                  int persistent, char *persistent_id, long retry_interval,
+redis_sock_create(char *host, size_t host_len, unsigned short port, double timeout,
+                  int persistent, char *persistent_id, zend_long retry_interval,
                   zend_bool lazy_connect)
 {
     RedisSock *redis_sock;
@@ -1690,7 +1690,7 @@ PHP_REDIS_API void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS,
                                RedisSock *redis_sock)
 {
     char *cmd;
-    int response_len, cmd_len;
+    size_t response_len, cmd_len;
     char * response;
 
     cmd_len = redis_cmd_format_static(&cmd, "DISCARD", "");
@@ -2046,7 +2046,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
 }
 
 PHP_REDIS_API int
-redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
+redis_unserialize(RedisSock* redis_sock, const char *val, size_t val_len,
                   zval *return_value TSRMLS_DC)
 {
 

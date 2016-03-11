@@ -275,7 +275,7 @@ typedef struct clusterKeyVal {
  * commands across more than 1 node (e.g. WATCH, MGET, MSET, etc) */
 typedef struct clusterDistList {
     clusterKeyVal *entry;
-    size_t len, size;
+    size_t	 len, size;
 } clusterDistList;
 
 /* Context for things like MGET/MSET/MSETNX.  When executing in MULTI mode,
@@ -334,20 +334,20 @@ void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *val
     TSRMLS_DC);
 
 /* Aggregation for multi commands like MGET, MSET, and MSETNX */
-void cluster_multi_init(clusterMultiCmd *mc, char *kw, int kw_len);
+void cluster_multi_init(clusterMultiCmd *mc, char *kw, size_t kw_len);
 void cluster_multi_free(clusterMultiCmd *mc);
-void cluster_multi_add(clusterMultiCmd *mc, char *data, int data_len);
+void cluster_multi_add(clusterMultiCmd *mc, char *data, size_t data_len);
 void cluster_multi_fini(clusterMultiCmd *mc);
 
 /* Hash a key to it's slot, using the Redis Cluster hash algorithm */
 unsigned short cluster_hash_key_zval(zval *key);
-unsigned short cluster_hash_key(const char *key, int len);
+unsigned short cluster_hash_key(const char *key, size_t len);
 
 /* Get the current time in miliseconds */
 long long mstime(void);
 
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
-    int cmd_len TSRMLS_DC);
+    size_t cmd_len TSRMLS_DC);
 
 PHP_REDIS_API void cluster_disconnect(redisCluster *c TSRMLS_DC);
 
@@ -359,7 +359,7 @@ PHP_REDIS_API int cluster_reset_multi(redisCluster *c);
 PHP_REDIS_API short cluster_find_slot(redisCluster *c, const char *host,
     unsigned short port);
 PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
-    int cmd_len, REDIS_REPLY_TYPE rtype TSRMLS_DC);
+    size_t cmd_len, REDIS_REPLY_TYPE rtype TSRMLS_DC);
 
 PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     int failover, int persistent);
@@ -436,7 +436,7 @@ PHP_REDIS_API void cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS,
 
 /* Response handler for ZSCAN, SSCAN, and HSCAN */
 PHP_REDIS_API int cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS,
-    redisCluster *c, REDIS_SCAN_TYPE type, long *it);
+    redisCluster *c, REDIS_SCAN_TYPE type, zend_long *it);
 
 /* INFO response handler */
 PHP_REDIS_API void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS,

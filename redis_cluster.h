@@ -64,7 +64,7 @@ static inline redisCluster *php_redis_fetch_object(zend_object *obj) {
 #define CLUSTER_PROCESS_CMD(cmdname, resp_func, readcmd) \
     redisCluster *c = Z_REDIS_OBJ_P(getThis()); \
     c->readonly = CLUSTER_IS_ATOMIC(c) && readcmd; \
-    char *cmd; int cmd_len; short slot; void *ctx=NULL; \
+    char *cmd; size_t cmd_len; short slot; void *ctx=NULL; \
     if(redis_##cmdname##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,c->flags, &cmd, \
                              &cmd_len, &slot, &ctx)==FAILURE) { \
         RETURN_FALSE; \
@@ -84,7 +84,7 @@ static inline redisCluster *php_redis_fetch_object(zend_object *obj) {
 #define CLUSTER_PROCESS_KW_CMD(kw, cmdfunc, resp_func, readcmd) \
     redisCluster *c = Z_REDIS_OBJ_P(getThis()); \
     c->readonly = CLUSTER_IS_ATOMIC(c) && readcmd; \
-    char *cmd; int cmd_len; short slot; void *ctx=NULL; \
+    char *cmd; size_t cmd_len; short slot; void *ctx=NULL; \
     if(cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len,\
                &slot,&ctx)==FAILURE) { \
         RETURN_FALSE; \

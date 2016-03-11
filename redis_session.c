@@ -206,7 +206,7 @@ PS_OPEN_FUNC(redis)
             int persistent = 0;
             int database = -1;
             char *prefix = NULL, *auth = NULL, *persistent_id = NULL;
-            long retry_interval = 0;
+            zend_long retry_interval = 0;
 
             /* translate unix: into file: */
             if (!strncmp(save_path+i, "unix:", sizeof("unix:")-1)) {

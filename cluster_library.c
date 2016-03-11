@@ -466,7 +466,7 @@ void cluster_multi_free(clusterMultiCmd *mc) {
 }
 
 /* Add an argument to a clusterMultiCmd */
-void cluster_multi_add(clusterMultiCmd *mc, char *data, int data_len) {
+void cluster_multi_add(clusterMultiCmd *mc, char *data, size_t data_len) {
     mc->argc++;
     redis_cmd_append_sstr(&(mc->args), data, data_len);
 }
@@ -512,7 +512,7 @@ static void ht_free_slave(zval *data) {
 }
 
 /* Get the hash slot for a given key */
-unsigned short cluster_hash_key(const char *key, int len) {
+unsigned short cluster_hash_key(const char *key, size_t len) {
     int s, e;
 
     // Find first occurrence of {, if any
@@ -1287,7 +1287,7 @@ PHP_REDIS_API short cluster_find_slot(redisCluster *c, const char *host,
 
 /* Send a command to a specific slot */
 PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
-                             int cmd_len, REDIS_REPLY_TYPE rtype TSRMLS_DC)
+                             size_t cmd_len, REDIS_REPLY_TYPE rtype TSRMLS_DC)
 {
     /* Point our cluster to this slot and it's socket */
     c->cmd_slot = slot;
@@ -1320,7 +1320,7 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
 /* Send a command to given slot in our cluster.  If we get a MOVED or ASK error
  * we attempt to send the command to the node as directed. */
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
-                                  int cmd_len TSRMLS_DC)
+                                  size_t cmd_len TSRMLS_DC)
 {
     int resp, timedout=0;
     long msstart;
@@ -1849,7 +1849,7 @@ PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 
 /* HSCAN, SSCAN, ZSCAN */
 PHP_REDIS_API int cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-                              REDIS_SCAN_TYPE type, long *it)
+                              REDIS_SCAN_TYPE type, zend_long *it)
 {
     char *pit;
 
