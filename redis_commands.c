@@ -2953,9 +2953,16 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
         case REDIS_OPT_READ_TIMEOUT:
             redis_sock->read_timeout = atof(val_str);
             if(redis_sock->stream) {
-                read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
+#ifdef PHP_WIN32
+                read_tv.tv_sec  = (long)redis_sock->read_timeout;
+                read_tv.tv_usec = (long)((redis_sock->read_timeout -
+                                         read_tv.tv_sec) * 1000000);
+#else
+				read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
                 read_tv.tv_usec = (int)((redis_sock->read_timeout -
                                          read_tv.tv_sec) * 1000000);
+#endif
+
                 php_stream_set_option(redis_sock->stream,
                                       PHP_STREAM_OPTION_READ_TIMEOUT, 0,
                                       &read_tv);
