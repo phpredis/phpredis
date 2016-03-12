@@ -1371,7 +1371,8 @@ PHP_METHOD(Redis, sDiffStore) {
 /* {{{ proto array Redis::sort(string key, array options) */
 PHP_METHOD(Redis, sort) {
     char *cmd;
-    int cmd_len, have_store;
+    int have_store;
+	size_t cmd_len;
     RedisSock *redis_sock;
 
     // Grab socket, handle command construction
@@ -1415,10 +1416,11 @@ PHP_REDIS_API void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
     int cmd_elements;
 
     char *cmd_lines[30];
-    int cmd_sizes[30];
+    size_t cmd_sizes[30];
 
-    int sort_len;
-    int i, pos;
+    size_t sort_len;
+    int i;
+	size_t pos;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
                                      "Os|sslls", &object, redis_ce, &key,
@@ -1485,7 +1487,7 @@ PHP_REDIS_API void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
 
             /* start */
             cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements],
-                "$%d", integer_length(sort_start));
+                "$%d", integer_length((int)sort_start));
             cmd_elements++;
             cmd_sizes[cmd_elements] = spprintf(&cmd_lines[cmd_elements], 0,
                 "%d", (int)sort_start);
@@ -1493,7 +1495,7 @@ PHP_REDIS_API void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
 
             /* count */
             cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements],
-                "$%d", integer_length(sort_count));
+                "$%d", integer_length((int)sort_count));
             cmd_elements++;
             cmd_sizes[cmd_elements] = spprintf(&cmd_lines[cmd_elements], 0,
                 "%d", (int)sort_count);
@@ -1780,7 +1782,7 @@ PHP_METHOD(Redis, select) {
         RETURN_FALSE;
     }
 
-    redis_sock->dbNumber = dbNumber;
+    redis_sock->dbNumber = (long)dbNumber;
 
     cmd_len = redis_cmd_format_static(&cmd, "SELECT", "d", dbNumber);
 
@@ -1831,7 +1833,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
             /* '*' + arg count + NL */
             cmd_len += 1 + integer_length(1 + 2 * argc) + 2;
             /* '$' + strlen(kw) + NL */
-            cmd_len += 1 + integer_length(kw_len) + 2;
+            cmd_len += 1 + integer_length((int)kw_len) + 2;
             /* kw + NL */
             cmd_len += kw_len + 2;
 
@@ -1881,9 +1883,9 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
             key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
             if(step == 0) { /* counting */
-                cmd_len += 1 + integer_length(key_len) + 2
+                cmd_len += 1 + integer_length((int)key_len) + 2
                         + key_len + 2
-                        + 1 + integer_length(val_len) + 2
+                        + 1 + integer_length((int)val_len) + 2
                         + val_len + 2;
             } else {
                 p += sprintf(p, "$%d" _NL, key_len);    /* key len */
@@ -2402,8 +2404,8 @@ PHP_METHOD(Redis, exec)
 
     IF_PIPELINE() {
         char *request = NULL;
-        int total = 0;
-        int offset = 0;
+        size_t total = 0;
+        size_t offset = 0;
 
         /* compute the total request size */
         for(ri = redis_sock->pipeline_head; ri; ri = ri->next) {
@@ -2451,7 +2453,8 @@ PHP_METHOD(Redis, exec)
 
 PHP_REDIS_API int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC) {
     char *resp;
-    int resp_len, ret = 0;
+    int ret = 0;
+	size_t resp_len;
 
     if ((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC)) == NULL) {
         return 0;
@@ -2682,7 +2685,7 @@ PHP_METHOD(Redis, slaveof)
 PHP_METHOD(Redis, object)
 {
     RedisSock *redis_sock;
-    char *cmd; int cmd_len;
+    char *cmd; size_t cmd_len;
     REDIS_REPLY_TYPE rtype;
 
     if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0) {

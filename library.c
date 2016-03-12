@@ -475,7 +475,7 @@ PHP_REDIS_API char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes 
 /**
  * redis_sock_read
  */
-PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
+PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, size_t *buf_len TSRMLS_DC)
 {
     char inbuf[1024];
     char *resp = NULL;
@@ -1716,7 +1716,7 @@ PHP_REDIS_API void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS,
  * redis_sock_set_err
  */
 PHP_REDIS_API int redis_sock_set_err(RedisSock *redis_sock, const char *msg,
-                              int msg_len)
+                              size_t msg_len)
 {
     // Allocate/Reallocate our last error member
     if(msg != NULL && msg_len > 0) {
