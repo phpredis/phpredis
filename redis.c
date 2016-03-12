@@ -40,6 +40,9 @@
 #include <ext/standard/php_smart_str.h>
 #include <ext/standard/php_var.h>
 #include <ext/standard/php_math.h>
+#ifdef PHP_WIN32
+# include <win32/time.h>
+#endif
 
 #include "library.h"
 

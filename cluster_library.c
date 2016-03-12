@@ -5,7 +5,9 @@
 #include "cluster_library.h"
 #include "crc16.h"
 #include <zend_exceptions.h>
-
+#ifdef PHP_WIN32
+# include <win32/time.h>
+#endif
 extern zend_class_entry *redis_cluster_exception_ce;
 
 /* Some debug methods that will go away when we're through with them */
