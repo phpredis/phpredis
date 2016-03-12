@@ -1022,7 +1022,8 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c TSRMLS_DC) {
 
 /* Fisher-Yates shuffle for integer array */
 static void fyshuffle(int *array, size_t len) {
-    int temp, n = len;
+    int temp;
+	size_t n = len;
     size_t r;
 
     /* Randomize */
@@ -2199,7 +2200,7 @@ int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result,
                         long long count, void *ctx TSRMLS_DC)
 {
     char *line;
-    int line_len;
+    size_t line_len;
 
     // Iterate over the number we have
     while(count--) {
@@ -2220,7 +2221,7 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
                     long long count, void *ctx TSRMLS_DC)
 {
     char *line;
-    int line_len;
+    size_t line_len;
 
     /* Iterate over the lines we have to process */
     while(count--) {
@@ -2249,7 +2250,7 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
                            long long count, void *ctx TSRMLS_DC)
 {
     char *line, *key;
-    int line_len, key_len;
+    size_t line_len, key_len;
     long long idx=0;
 
     // Our count wil need to be divisible by 2
@@ -2288,8 +2289,9 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
                            long long count, void *ctx TSRMLS_DC)
 {
     char *line, *key;
-    int line_len, key_len;
+    size_t key_len;
     long long idx=0;
+	size_t line_len;
 
     // Our context will need to be divisible by 2
     if(count %2 != 0) {
@@ -2328,7 +2330,8 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
                           long long count, void *ctx TSRMLS_DC)
 {
     char *line;
-    int line_len,i=0;
+    int i=0;
+	size_t line_len;
     zval *z_keys = ctx;
 
     // Loop while we've got replies

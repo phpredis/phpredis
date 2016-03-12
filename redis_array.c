@@ -866,7 +866,7 @@ PHP_METHOD(RedisArray, mget)
             zend_hash_move_forward_ex(h_keys, &pointer), ++i)
     {
         /* If we need to represent a long key as a string */
-        unsigned int key_len;
+        size_t key_len;
         char kbuf[40], *key_lookup;
 
         /* phpredis proper can only use string or long keys, so restrict to that here */
@@ -977,7 +977,7 @@ PHP_METHOD(RedisArray, mset)
     zval *redis_inst, **redis_instances, **argv;
     char *key, **keys, **key_free, kbuf[40];
     zend_string *key_zstr;
-    unsigned int key_len;
+    size_t key_len;
     int free_idx = 0;
     int type, *key_lens;
     zend_ulong idx;
@@ -1115,7 +1115,7 @@ PHP_METHOD(RedisArray, del)
     HashTable *h_keys;
     HashPosition pointer;
     zval *redis_inst, **redis_instances, **argv;;
-    long total = 0;
+    size_t total = 0;
     int free_zkeys = 0;
 
     /* Multi/exec support */

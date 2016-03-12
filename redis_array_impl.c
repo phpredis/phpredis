@@ -466,7 +466,7 @@ ra_find_node(RedisArray *ra, const char *key, size_t key_len, int *out_pos TSRML
 }
 
 zval *
-ra_find_node_by_name(RedisArray *ra, const char *host, int host_len TSRMLS_DC) {
+ra_find_node_by_name(RedisArray *ra, const char *host, size_t host_len TSRMLS_DC) {
 
     int i;
     for(i = 0; i < ra->count; ++i) {
