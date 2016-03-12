@@ -2893,7 +2893,7 @@ PHP_METHOD(Redis, wait) {
 }
 
 /* Construct a PUBSUB command */
-PHP_REDIS_API int
+PHP_REDIS_API size_t
 redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
                        zval *arg TSRMLS_DC)
 {
@@ -3175,7 +3175,7 @@ PHP_METHOD(Redis, evalsha)
 
     // Construct our EVALSHA command
     cmd_len = redis_build_eval_cmd(redis_sock, &cmd, "EVALSHA", sha, sha_len,
-        args, keys_count TSRMLS_CC);
+        args, (int)keys_count TSRMLS_CC);
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
