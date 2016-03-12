@@ -2332,6 +2332,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     HashTable *ht_opts;
     smart_str cmdstr = {0};
     int key_len, key_free;
+    HashTable *ht_argv;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|a", &key, &key_len,
                              &z_opts)==FAILURE)
@@ -2502,6 +2503,8 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         if(zend_hash_index_find(ht_off, 0, (void**)&z_off)==SUCCESS &&
            zend_hash_index_find(ht_off, 1, (void**)&z_cnt)==SUCCESS)
         {
+			long low, high;
+
             if((Z_TYPE_PP(z_off)!=IS_STRING && Z_TYPE_PP(z_off)!=IS_LONG) ||
                (Z_TYPE_PP(z_cnt)!=IS_STRING && Z_TYPE_PP(z_cnt)!=IS_LONG))
             {
@@ -2516,7 +2519,6 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             // Add LIMIT argument
             add_next_index_stringl(z_argv,"LIMIT",sizeof("LIMIT")-1,1);
 
-            long low, high;
             if(Z_TYPE_PP(z_off)==IS_STRING) {
                 low = atol(Z_STRVAL_PP(z_off));
             } else {
@@ -2535,7 +2537,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Start constructing our command
-    HashTable *ht_argv = Z_ARRVAL_P(z_argv);
+    ht_argv = Z_ARRVAL_P(z_argv);
     redis_cmd_init_sstr(&cmdstr, zend_hash_num_elements(ht_argv), "SORT",
         sizeof("SORT")-1);
 
@@ -2813,6 +2815,9 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw=NULL;
     zval *z_arg;
     int kw_len;
+	zval **z_ele;
+	HashTable *ht_arr;
+	smart_str cmdstr = {0};
 
     /* Parse our args */
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|sz", &kw, &kw_len, 
@@ -2846,9 +2851,7 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             return FAILURE;
         }
         
-        zval **z_ele;
-        HashTable *ht_arr = Z_ARRVAL_P(z_arg);
-        smart_str cmdstr = {0};
+        ht_arr = Z_ARRVAL_P(z_arg);
 
         redis_cmd_init_sstr(&cmdstr, 1 + arr_len, "COMMAND", sizeof("COMMAND")-1);
         redis_cmd_append_sstr(&cmdstr, "GETKEYS", sizeof("GETKEYS")-1);
@@ -3010,12 +3013,13 @@ void redis_serialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     zval *z_val;
     char *val;
     int val_len;
+    int val_free;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &z_val)==FAILURE) {
         RETURN_FALSE;
     }
 
-    int val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
+    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
 
     RETVAL_STRINGL(val, val_len, 1);
     if(val_free) STR_FREE(val);
