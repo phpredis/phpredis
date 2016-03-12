@@ -1285,7 +1285,7 @@ PHP_METHOD(Redis, sPop)
 PHP_METHOD(Redis, sRandMember)
 {
     char *cmd;
-    int cmd_len;
+    size_t cmd_len;
     short have_count;
     RedisSock *redis_sock;
 
@@ -3729,12 +3729,13 @@ PHP_METHOD(Redis, command) {
 /* }}} */
 
 /* Helper to format any combination of SCAN arguments */
-PHP_REDIS_API int
-redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
-                     int iter, char *pattern, int pattern_len, int count)
+PHP_REDIS_API size_t
+redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, size_t key_len,
+                     int iter, char *pattern, size_t pattern_len, int count)
 {
     char *keyword;
-    int arg_count = 0, cmd_len;
+    int arg_count = 0;
+	size_t cmd_len;
 
     /* Count our arguments +1 for key if it's got one, and + 2 for pattern */
     /* or count given that they each carry keywords with them. */
@@ -3794,9 +3795,10 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     HashTable *hash;
     char *pattern=NULL, *cmd, *key=NULL;
     size_t key_len = 0, pattern_len = 0;
-    int cmd_len, num_elements, key_free=0;
+    int num_elements, key_free=0;
+	size_t cmd_len;
     zend_long count=0;
-	long iter;
+	zend_long iter;
 
     /* Different prototype depending on if this is a key based scan */
     if(type != TYPE_SCAN) {
@@ -3869,7 +3871,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
 
         // Format our SCAN command
         cmd_len = redis_build_scan_cmd(&cmd, type, key, key_len, (int)iter,
-                                   pattern, pattern_len, count);
+                                   pattern, pattern_len, (int)count);
 
         /* Execute our command getting our new iterator value */
         REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);

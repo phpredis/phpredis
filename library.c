@@ -198,7 +198,7 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
 
 PHP_REDIS_API int
 redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                           REDIS_SCAN_TYPE type, long *iter)
+                           REDIS_SCAN_TYPE type, zend_long *iter)
 {
     REDIS_REPLY_TYPE reply_type;
     long reply_info;
@@ -550,7 +550,7 @@ void add_constant_long(zend_class_entry *ce, char *name, int value) {
 	zend_declare_class_constant_long(ce, name, strlen(name), value);
 }
 
-int
+size_t
 integer_length(int i) {
     int sz = 0;
     int ci = abs(i);
@@ -566,7 +566,7 @@ integer_length(int i) {
     return sz;
 }
 
-int
+size_t
 redis_cmd_format_header(char **ret, char *keyword, int arg_count) {
 	/* Our return buffer */
 	smart_string buf = {0};
@@ -590,7 +590,7 @@ redis_cmd_format_header(char **ret, char *keyword, int arg_count) {
 	return buf.len;
 }
 
-int
+size_t
 redis_cmd_format_static(char **ret, char *keyword, char *format, ...)
 {
     char *p = format;
@@ -671,7 +671,7 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...)
  *      Their data and their size (strlen).
  *      Supported formats are: %d, %i, %s, %l
  */
-int
+size_t
 redis_cmd_format(char **ret, char *format, ...) {
 
     smart_string buf = {0};
@@ -728,7 +728,7 @@ redis_cmd_format(char **ret, char *format, ...) {
 /*
  * Append a command sequence to a Redis command
  */
-int redis_cmd_append_str(char **cmd, size_t cmd_len, char *append, size_t append_len) {
+size_t redis_cmd_append_str(char **cmd, size_t cmd_len, char *append, size_t append_len) {
 	/* Smart string buffer */
 	smart_string buf = {0};
 
@@ -756,7 +756,7 @@ int redis_cmd_append_str(char **cmd, size_t cmd_len, char *append, size_t append
  * Given a smart string, number of arguments, a keyword, and the length of the keyword
  * initialize our smart string with the proper Redis header for the command to follow
  */
-int redis_cmd_init_sstr(smart_string *str, size_t num_args, char *keyword, size_t keyword_len) {
+size_t redis_cmd_init_sstr(smart_string *str, size_t num_args, char *keyword, size_t keyword_len) {
     smart_string_appendc(str, '*');
     smart_string_append_long(str, num_args + 1);
     smart_string_appendl(str, _NL, sizeof(_NL) -1);
@@ -771,7 +771,7 @@ int redis_cmd_init_sstr(smart_string *str, size_t num_args, char *keyword, size_
 /*
  * Append a command sequence to a smart_string
  */
-int redis_cmd_append_sstr(smart_string *str, char *append, size_t append_len) {
+size_t redis_cmd_append_sstr(smart_string *str, char *append, size_t append_len) {
     smart_string_appendc(str, '$');
     smart_string_append_long(str, append_len);
     smart_string_appendl(str, _NL, sizeof(_NL) - 1);
@@ -785,7 +785,7 @@ int redis_cmd_append_sstr(smart_string *str, char *append, size_t append_len) {
 /*
  * Append an integer to a smart string command
  */
-int redis_cmd_append_sstr_int(smart_string *str, int append) {
+size_t redis_cmd_append_sstr_int(smart_string *str, int append) {
     char int_buf[32];
     int int_len = snprintf(int_buf, sizeof(int_buf), "%d", append);
     return redis_cmd_append_sstr(str, int_buf, int_len);
@@ -794,7 +794,7 @@ int redis_cmd_append_sstr_int(smart_string *str, int append) {
 /*
  * Append a long to a smart string command
  */
-int redis_cmd_append_sstr_long(smart_string *str, zend_long append) {
+size_t redis_cmd_append_sstr_long(smart_string *str, zend_long append) {
     char long_buf[32];
     int long_len = snprintf(long_buf, sizeof(long_buf), ZEND_LONG_FMT, append);
     return redis_cmd_append_sstr(str, long_buf, long_len);
@@ -803,7 +803,7 @@ int redis_cmd_append_sstr_long(smart_string *str, zend_long append) {
 /*
  * Append a double to a smart string command
  */
-int redis_cmd_append_sstr_dbl(smart_string *str, double value) {
+size_t redis_cmd_append_sstr_dbl(smart_string *str, double value) {
     zend_string *dbl_str;
     int retval;
 
@@ -823,7 +823,7 @@ int redis_cmd_append_sstr_dbl(smart_string *str, double value) {
 /*
  * Append an integer command to a Redis command
  */
-int redis_cmd_append_int(char **cmd, size_t cmd_len, int append) {
+size_t redis_cmd_append_int(char **cmd, size_t cmd_len, int append) {
     char int_buf[32];
     int int_len;
 

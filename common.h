@@ -257,7 +257,7 @@ typedef struct fold_item {
 
 typedef struct request_item {
     char *request_str;
-    int request_size; /* size_t */
+    size_t request_size;
     struct request_item *next;
 } request_item;
 

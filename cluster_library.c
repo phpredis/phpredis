@@ -251,7 +251,7 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
  */
 
 /* Send a command to the specific socket and validate reply type */
-static int cluster_send_direct(RedisSock *redis_sock, char *cmd, int cmd_len,
+static int cluster_send_direct(RedisSock *redis_sock, char *cmd, size_t cmd_len,
                                REDIS_REPLY_TYPE type TSRMLS_DC)
 {
     char buf[1024];
