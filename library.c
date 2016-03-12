@@ -30,10 +30,12 @@
 #define SCORE_DECODE_DOUBLE 2
 
 #ifdef PHP_WIN32
-    # if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION <= 4
+# if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION <= 4
         /* This proto is available from 5.5 on only */
         PHP_REDIS_API int usleep(unsigned int useconds);
-    # endif
+# else	
+#  include <win32/time.h>
+# endif
 #endif
 
 extern zend_class_entry *redis_ce;
