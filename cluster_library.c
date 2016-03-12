@@ -434,7 +434,7 @@ int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
     }
 
     // Now actually add this key
-    retptr = cluster_dl_add_key(dl, key, key_len, key_free);
+    retptr = cluster_dl_add_key(dl, key, (int)key_len, key_free);
 
     // Push our return pointer if requested
     if(kv) *kv = retptr;
@@ -455,7 +455,7 @@ void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *z_val
 
     // Attach it to the provied keyval entry
     kv->val = val;
-    kv->val_len = val_len;
+    kv->val_len = (int)val_len;
     kv->val_free = val_free;
 }
 
@@ -521,7 +521,7 @@ unsigned short cluster_hash_key(const char *key, size_t len) {
     }
 
     // There is no '{', hash everything
-    if(s == len) return crc16(key, len) & REDIS_CLUSTER_MOD;
+    if(s == len) return crc16(key, (int)len) & REDIS_CLUSTER_MOD;
 
     // Found it, look for a tailing '}'
     for(e=s+1;e<len;e++) {
@@ -529,7 +529,7 @@ unsigned short cluster_hash_key(const char *key, size_t len) {
     }
 
     // Hash the whole key if we don't find a tailing } or if {} is empty
-    if(e == len || e == s+1) return crc16(key, len) & REDIS_CLUSTER_MOD;
+    if(e == len || e == s+1) return crc16(key, (int)len) & REDIS_CLUSTER_MOD;
 
     // Hash just the bit betweeen { and }
     return crc16((char*)key+s+1,e-s-1) & REDIS_CLUSTER_MOD;
@@ -551,7 +551,7 @@ long long mstime(void) {
 unsigned short cluster_hash_key_zval(zval *z_key) {
     const char *kptr;
     char buf[255];
-    int klen;
+    size_t klen;
 
     // Switch based on ZVAL type
     switch(Z_TYPE_P(z_key)) {
@@ -632,7 +632,7 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
 PHP_REDIS_API int
 cluster_node_add_slave(redisClusterNode *master, redisClusterNode *slave)
 {
-    ulong index;
+    zend_long index;
 
     // Allocate our slaves hash table if we haven't yet
     if(!master->slaves) {
@@ -656,7 +656,8 @@ cluster_node_add_slave(redisClusterNode *master, redisClusterNode *slave)
 
 /* Use the output of CLUSTER SLOTS to map our nodes */
 static int cluster_map_slots(redisCluster *c, clusterReply *r) {
-    int i,j, hlen, klen;
+    int i,j;
+	size_t hlen, klen;
     short low, high;
     clusterReply *r2, *r3;
     redisClusterNode *pnode, *master, *slave;
@@ -929,7 +930,7 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
     // Success, apply it
     c->redir_type = moved ? REDIR_MOVED : REDIR_ASK;
     strncpy(c->redir_host, host, sizeof(c->redir_host));
-    c->redir_host_len = port - host - 1;
+    c->redir_host_len = (int)(port - host - 1);
     c->redir_slot = (unsigned short)atoi(msg);
     c->redir_port = (unsigned short)atoi(port);
 
@@ -983,7 +984,7 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
             return 1;
         } else {
             // Capture the error string Redis returned
-            cluster_set_err(c, inbuf, strlen(inbuf)-2);
+            cluster_set_err(c, inbuf, (int)strlen(inbuf)-2);
             return 0;
         }
     }
@@ -1324,7 +1325,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
                                   size_t cmd_len TSRMLS_DC)
 {
     int resp, timedout=0;
-    long msstart;
+    int64_t msstart;
 
     /* Set the slot we're operating against as well as it's socket.  These can
      * change during our request loop if we have a master failure and are

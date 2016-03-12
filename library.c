@@ -435,7 +435,7 @@ redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
  */
 PHP_REDIS_API char *redis_sock_read_bulk_reply(RedisSock *redis_sock, size_t bytes TSRMLS_DC)
 {
-    int offset = 0;
+    size_t offset = 0;
     size_t got;
 
     char * reply;
@@ -572,7 +572,7 @@ redis_cmd_format_header(char **ret, char *keyword, int arg_count) {
 	smart_string buf = {0};
 
 	/* Keyword length */
-	int l = strlen(keyword);
+	size_t l = strlen(keyword);
 
     smart_string_appendc(&buf, '*');
     smart_string_append_long(&buf, arg_count + 1);

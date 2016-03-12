@@ -206,7 +206,7 @@ PHP_METHOD(RedisArray, __construct)
     RedisArray *ra = NULL;
     zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0;
     HashTable *hPrev = NULL, *hOpts = NULL;
-    long l_retry_interval = 0;
+    zend_long l_retry_interval = 0;
     zend_bool b_lazy_connect = 0;
     double d_connect_timeout = 0;
 
@@ -282,7 +282,7 @@ PHP_METHOD(RedisArray, __construct)
             if (Z_TYPE_P(z_connect_timeout_p) == IS_DOUBLE) {
                 d_connect_timeout = Z_DVAL_P(z_connect_timeout_p);
             } else if (Z_TYPE_P(z_connect_timeout_p) == IS_LONG) {
-                d_connect_timeout = Z_LVAL_P(z_connect_timeout_p);
+                d_connect_timeout = (double)Z_LVAL_P(z_connect_timeout_p);
             } else {
                 d_connect_timeout = atof(Z_STRVAL_P(z_connect_timeout_p));
             }
@@ -332,11 +332,11 @@ static void free_zval_array(zval *array, size_t len) {
 }
 
 static void
-ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args, zval *z_new_target) {
+ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, size_t cmd_len, zval *z_args, zval *z_new_target) {
 
     zval *zp_tmp, z_tmp;
     char *key = NULL; /* set to avoid "unused-but-set-variable" */
-    int key_len;
+    size_t key_len;
     int i;
     zval *redis_inst;
     zval z_fun, *z_callargs;
