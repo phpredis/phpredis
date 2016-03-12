@@ -2,17 +2,17 @@
 #define REDIS_LIBRARY_H
 
 void add_constant_long(zend_class_entry *ce, char *name, int value);
-int integer_length(int i);
-int redis_cmd_format(char **ret, char *format, ...);
-int redis_cmd_format_static(char **ret, char *keyword, char *format, ...);
-int redis_cmd_format_header(char **ret, char *keyword, int arg_count);
-int redis_cmd_append_str(char **cmd, size_t cmd_len, char *append, size_t append_len);
-int redis_cmd_init_sstr(smart_string *str, size_t num_args, char *keyword, size_t keyword_len);
-int redis_cmd_append_sstr(smart_string *str, char *append, size_t append_len);
-int redis_cmd_append_sstr_int(smart_string *str, int append);
-int redis_cmd_append_sstr_long(smart_string *str, zend_long append);
-int redis_cmd_append_int(char **cmd, size_t cmd_len, int append);
-int redis_cmd_append_sstr_dbl(smart_string *str, double value);
+size_t integer_length(int i);
+size_t redis_cmd_format(char **ret, char *format, ...);
+size_t redis_cmd_format_static(char **ret, char *keyword, char *format, ...);
+size_t redis_cmd_format_header(char **ret, char *keyword, int arg_count);
+size_t redis_cmd_append_str(char **cmd, size_t cmd_len, char *append, size_t append_len);
+size_t redis_cmd_init_sstr(smart_string *str, size_t num_args, char *keyword, size_t keyword_len);
+size_t redis_cmd_append_sstr(smart_string *str, char *append, size_t append_len);
+size_t redis_cmd_append_sstr_int(smart_string *str, int append);
+size_t redis_cmd_append_sstr_long(smart_string *str, zend_long append);
+size_t redis_cmd_append_int(char **cmd, size_t cmd_len, int append);
+size_t redis_cmd_append_sstr_dbl(smart_string *str, double value);
 
 PHP_REDIS_API char * redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC);
 PHP_REDIS_API int redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t* line_len TSRMLS_DC);
@@ -44,7 +44,8 @@ PHP_REDIS_API int redis_mbulk_reply_zipped_keys_int(INTERNAL_FUNCTION_PARAMETERS
 PHP_REDIS_API int redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 
-PHP_REDIS_API int redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, REDIS_SCAN_TYPE type, long *iter);
+PHP_REDIS_API int redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, REDIS_SCAN_TYPE type, zend_long *iter);
+PHP_REDIS_API size_t redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, size_t key_len, int iter, char *pattern, size_t pattern_len, int count);
 
 PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
