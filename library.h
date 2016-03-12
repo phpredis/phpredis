@@ -46,6 +46,7 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
 
 PHP_REDIS_API int redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, REDIS_SCAN_TYPE type, zend_long *iter);
 PHP_REDIS_API size_t redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, size_t key_len, int iter, char *pattern, size_t pattern_len, int count);
+PHP_REDIS_API size_t redis_build_script_exists_cmd(char **ret, zval *argv, int argc);
 
 PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);

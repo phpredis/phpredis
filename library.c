@@ -596,7 +596,7 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...)
     char *p = format;
     va_list ap;
     smart_string buf = {0};
-    int l = strlen(keyword);
+    size_t l = strlen(keyword);
     zend_string *dbl_str;
 
     va_start(ap, format);

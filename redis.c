@@ -2902,7 +2902,8 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
     zval *z_ele;
     char *key;
     size_t key_len;
-    int cmd_len, key_free;
+    int key_free;
+	size_t cmd_len;
     smart_string cmd = {0};
 
     if(type == PUBSUB_CHANNELS) {
@@ -3226,10 +3227,11 @@ PHP_METHOD(Redis, eval)
     REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
 }
 
-PHP_REDIS_API int
+PHP_REDIS_API size_t
 redis_build_script_exists_cmd(char **ret, zval *argv, int argc) {
     /* Our command length and iterator */
-    int cmd_len = 0, i;
+    int i;
+	size_t cmd_len = 0;
 
     // Start building our command
     cmd_len = redis_cmd_format_header(ret, "SCRIPT", argc + 1);
@@ -3353,7 +3355,8 @@ PHP_METHOD(Redis, migrate) {
     RedisSock *redis_sock;
     char *cmd, *host, *key;
     size_t host_len, key_len;
-    int cmd_len, key_free;
+    int key_free;
+	size_t cmd_len;
     zend_bool copy=0, replace=0;
     zend_long port, dest_db, timeout;
 
