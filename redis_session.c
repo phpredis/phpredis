@@ -548,7 +548,6 @@ PS_OPEN_FUNC(rediscluster) {
     {
         zval_ptr_dtor(&shuffle_retval);
     }
-    zval_dtor(&shuffle);
 
     /* Grab a copy of our config hash table and keep seeds array */
     ht_conf = Z_ARRVAL_P(z_conf);
