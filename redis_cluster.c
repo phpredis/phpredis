@@ -487,6 +487,7 @@ PHP_METHOD(RedisCluster, __construct) {
 
         redis_cluster_init(context, Z_ARRVAL_P(z_seeds), timeout, read_timeout,
             persistent TSRMLS_CC);
+        FREE_ZVAL(shuffle);
     } else {
         redis_cluster_load(context, name, name_len TSRMLS_CC);
     }
