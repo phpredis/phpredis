@@ -475,7 +475,7 @@ PHP_METHOD(RedisCluster, __construct) {
     /* If we've been passed only one argument, the user is attempting to connect
      * to a named cluster, stored in php.ini, otherwise we'll need manual seeds */
     if (ZEND_NUM_ARGS() > 1) {
-	MAKE_STD_ZVAL(shuffle);
+        MAKE_STD_ZVAL(shuffle);
         ZVAL_STRING(shuffle, "shuffle", 0);
         params[0] = &z_seeds;
 
