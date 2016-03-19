@@ -42,6 +42,8 @@
 #include "SAPI.h"
 #include "ext/standard/url.h"
 
+#define LOCK_TIMEOUT_SECONDS = 60
+
 ps_module ps_mod_redis = {
     PS_MOD(redis)
 };
@@ -657,8 +659,7 @@ int cluster_acquire_open_session_lock(redisCluster *c, char *key) {
     while (1) {
         // TODO: add timeout and return -1 if failed
 
-        cmdlen = redis_cmd_format_static(&cmd, "GETSET", "s", skey, skeylen, "1", 1);
-
+        cmdlen = redis_cmd_format_static(&cmd, "GETSET", "s", skey, skeylen, 1);
         if (cluster_send_command(c, slot, cmd, cmdlen TSRMLS_CC) < 0 || c->err) {
             retcode = FAILURE;
             break;
@@ -679,9 +680,12 @@ int cluster_acquire_open_session_lock(redisCluster *c, char *key) {
         }
     }
 
-    if (retcode != -1) {
-        // No error
-        // TODO: follow up with an EXPIRE skey
+    if (retcode != FAILURE) {
+        // Lock was acquired. Set expiration timer on it.
+        cmdlen = redis_cmd_format_static(&cmd, "EXPIRE", "s", skey, skeylen, LOCK_TIMEOUT_SECONDS);
+        if (cluster_send_command(c, slot, cmd, cmdlen TSRMLS_CC) < 0 || c->err) {
+            // TODO: log warning that lock could not expire
+        }
     }
 
     efree(cmd);
