@@ -657,7 +657,7 @@ int cluster_acquire_open_session_lock(redisCluster *c, char *key) {
     while (1) {
         // TODO: add timeout and return -1 if failed
 
-        cmdlen = redis_cmd_format_static(&cmd, "GETSET", "s", skey, skeylen);
+        cmdlen = redis_cmd_format_static(&cmd, "GETSET", "s", skey, skeylen, "1", 1);
 
         if (cluster_send_command(c, slot, cmd, cmdlen TSRMLS_CC) < 0 || c->err) {
             retcode = FAILURE;
