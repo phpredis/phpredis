@@ -1,0 +1,7 @@
+language: php
+php:
+  - '7.0'
+before_script:
+  - phpize && ./configure && make
+script:
+  - make test
