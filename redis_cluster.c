@@ -449,7 +449,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
 
 /* Create a RedisCluster Object */
 PHP_METHOD(RedisCluster, __construct) {
-    zval *object, *z_seeds=NULL;
+    zval *object, *z_seeds=NULL, **params[1], *shuffle, *retval;
     char *name;
     long name_len;
     double timeout = 0.0, read_timeout = 0.0;
@@ -475,8 +475,19 @@ PHP_METHOD(RedisCluster, __construct) {
     /* If we've been passed only one argument, the user is attempting to connect
      * to a named cluster, stored in php.ini, otherwise we'll need manual seeds */
     if (ZEND_NUM_ARGS() > 1) {
+        MAKE_STD_ZVAL(shuffle);
+        ZVAL_STRING(shuffle, "shuffle", 0);
+        params[0] = &z_seeds;
+
+        if (call_user_function_ex(CG(function_table), NULL, shuffle, &retval, 1,
+                                  params, 0, NULL TSRMLS_CC) == SUCCESS && retval)
+        {
+            zval_ptr_dtor(&retval);
+        }
+
         redis_cluster_init(context, Z_ARRVAL_P(z_seeds), timeout, read_timeout,
             persistent TSRMLS_CC);
+        FREE_ZVAL(shuffle);
     } else {
         redis_cluster_load(context, name, name_len TSRMLS_CC);
     }

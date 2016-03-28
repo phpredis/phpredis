@@ -517,7 +517,7 @@ static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
 
 PS_OPEN_FUNC(rediscluster) {
     redisCluster *c;
-    zval *z_conf, **z_val;
+    zval *z_conf, **z_val, **params[1], *shuffle, *shuffle_retval;
     HashTable *ht_conf, *ht_seeds;
     double timeout = 0, read_timeout = 0;
     int persistent = 0;
@@ -538,6 +538,17 @@ PS_OPEN_FUNC(rediscluster) {
         efree(z_conf);
         return FAILURE;
     }
+
+    /* Shuffle seeds */
+    MAKE_STD_ZVAL(shuffle);
+    ZVAL_STRING(shuffle, "shuffle", 0);
+    params[0] = z_val;
+    if (call_user_function_ex(CG(function_table), NULL, shuffle, &shuffle_retval, 1,
+                              params, 0, NULL TSRMLS_CC) == SUCCESS && shuffle_retval)
+    {
+        zval_ptr_dtor(&shuffle_retval);
+    }
+    FREE_ZVAL(shuffle);
 
     /* Grab a copy of our config hash table and keep seeds array */
     ht_conf = Z_ARRVAL_P(z_conf);
