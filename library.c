@@ -2156,6 +2156,30 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 
         case REDIS_SERIALIZER_IGBINARY:
 #ifdef HAVE_REDIS_IGBINARY
+            /*
+             * Check if the given string starts with an igbinary header.
+             *
+             * A modern igbinary string consists of the following format:
+             *
+             * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+             * | header (4) | type (1) | ... (n) |  NUL (1) |
+             * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+             *
+             * With header being either 0x00000001 or 0x00000002
+             * (encoded as big endian).
+             *
+             * Not all versions contain the trailing NULL byte though, so
+             * do not check for that.
+             */
+            if (val_len < 5
+                    || (memcmp(val, "\x00\x00\x00\x01", 4) != 0
+                    && memcmp(val, "\x00\x00\x00\x02", 4) != 0))
+            {
+                /* This is most definitely not an igbinary string, so do
+                   not try to unserialize this as one. */
+                return 0;
+            }
+
             if(!*return_value) {
                 MAKE_STD_ZVAL(*return_value);
                 rv_free = 1;
