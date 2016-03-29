@@ -699,10 +699,30 @@ PHP_METHOD(Redis, connect)
 }
 /* }}} */
 
+#ifdef DEBUG
+#define SAMPLE_SIZE	(size_t)100
+static void debug_read_dirty_data(int times_read, int bytes_read, int retry_for_empty_read) {
+    char s[SAMPLE_SIZE] = {0};
+    FILE* fp = fopen("/tmp/tmp_out", "a");
+    snprintf(s, SAMPLE_SIZE, "dirty data: times_read=%d, bytes_read=%d, retry_for_empty_read=%d\n", times_read, bytes_read, retry_for_empty_read);
+    fwrite((void*)s, SAMPLE_SIZE, 1, fp);
+    fclose(fp);
+}
+#define DEBUG_DIRTY_READ(n, s, i) debug_read_dirty_data(n, s, i)
+#else
+#define DEBUG_DIRTY_READ(n, s, i)
+#endif
+
+#define MAX_DIRTY_READ_RETRY	10
 /* {{{ proto boolean Redis::pconnect(string host, int port [, double timeout])
  */
 PHP_METHOD(Redis, pconnect)
 {
+    char inbuf[65536] = {0};
+    int max_clear_times = 2048; // read up to 128M *dirty* data after pconnect
+    int bytes_read = 0;
+    int max_retry_for_empty_read = MAX_DIRTY_READ_RETRY; // retry 10 times when read empty data (non-block mode)
+
     if (redis_connect(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1) == FAILURE) {
         RETURN_FALSE;
     } else {
@@ -710,6 +730,25 @@ PHP_METHOD(Redis, pconnect)
         RedisSock *redis_sock;
         if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
             RETURN_FALSE;
+        }
+
+        if(redis_sock->stream) {
+            php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_BLOCKING, 0, NULL); // set io to non-block
+            while (--max_clear_times >= 0) { // clear dirty data(late arrived and queued)
+                if(php_stream_gets(redis_sock->stream, inbuf, sizeof(inbuf) / sizeof(char)) == NULL) {
+                    if(--max_retry_for_empty_read < 0) {
+                       break;
+                    }
+                    ++max_clear_times; // restore max_clear_times
+                    continue;
+                }
+                bytes_read += strlen(inbuf);
+            }
+            php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_BLOCKING, 1, NULL);
+            // debug reading dirty data
+#ifdef DEBUG
+            debug_read_dirty_data(2048 - max_clear_times, bytes_read, MAX_DIRTY_READ_RETRY - max_retry_for_empty_read - 1);
+#endif
         }
 
         RETURN_TRUE;
