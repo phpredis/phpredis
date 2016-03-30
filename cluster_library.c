@@ -856,14 +856,21 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
     char *str, *psep, key[1024];
     int key_len;
     zval **z_seed;
+    int *seeds;
+    size_t i, count;
+
+    count = zend_hash_num_elements(ht_seeds);
+    seeds = emalloc(sizeof(int) * count);
+
+    for (i = 0; i < count; i++) seeds[i] = i;
+    fyshuffle(seeds, count);
 
     // Iterate our seeds array
-    for(zend_hash_internal_pointer_reset(ht_seeds);
-        zend_hash_has_more_elements(ht_seeds)==SUCCESS;
-        zend_hash_move_forward(ht_seeds))
-    {
+    for (i = 0; i < count; i++) {
         // Grab seed string
-        zend_hash_get_current_data(ht_seeds, (void**)&z_seed);
+        if (zend_hash_index_find(ht_seeds, seeds[i], (void**)&z_seed) != SUCCESS)  {
+            continue;
+        }
 
         // Skip anything that isn't a string
         if(Z_TYPE_PP(z_seed)!=IS_STRING)
@@ -889,6 +896,8 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
         zend_hash_update(cluster->seeds, key, key_len+1, (void*)&redis_sock,
             sizeof(RedisSock*),NULL);
     }
+
+    efree(seeds);
 
     // Success if at least one seed seems valid
     return zend_hash_num_elements(cluster->seeds) > 0 ? 0 : -1;
