@@ -608,6 +608,20 @@ static char **split_str_by_delim(char *str, char *delim, int *len) {
     return array;
 }
 
+/* Fisher-Yates shuffle for integer array */
+static void fyshuffle(int *array, size_t len) {
+    int temp, n = len;
+    size_t r;
+
+    /* Randomize */
+    while (n > 1) {
+        r = ((int)((double)n-- * (rand() / (RAND_MAX+1.0))));
+        temp = array[n];
+        array[n] = array[r];
+        array[r] = temp;
+    };
+}
+
 /* Execute a CLUSTER SLOTS command against the seed socket, and return the
  * reply or NULL on failure. */
 clusterReply* cluster_get_slots(RedisSock *redis_sock TSRMLS_DC)
@@ -849,35 +863,60 @@ PHP_REDIS_API void cluster_free(redisCluster *c) {
     efree(c);
 }
 
+/* Takes our input hash table and returns a straigt C array with elements,
+ * which have been randomized.  The return value needs to be freed. */
+static zval **cluster_shuffle_seeds(HashTable *seeds, int *len) {
+    zval **z_seeds, **z_seed;
+    int *map, i, count, index=0;
+
+    /* How many */
+    count = zend_hash_num_elements(seeds);
+
+    /* Allocate our return value and map */
+    z_seeds = ecalloc(count, sizeof(zval*));
+    map = emalloc(sizeof(int)*count);
+
+    /* Fill in and shuffle our map */
+    for (i = 0; i < count; i++) map[i] = i;
+    fyshuffle(map, count);
+
+    /* Iterate over our source array and use our map to create a random list */
+    for (zend_hash_internal_pointer_reset(seeds);
+         zend_hash_has_more_elements(seeds) == SUCCESS;
+         zend_hash_move_forward(seeds))
+    {
+        zend_hash_get_current_data(seeds, (void**)&z_seed);
+        z_seeds[map[index]] = *z_seed;
+        index++;
+    }
+
+    efree(map);
+
+    *len = count;
+    return z_seeds;
+}
+
 /* Initialize seeds */
 PHP_REDIS_API int
 cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
     RedisSock *redis_sock;
     char *str, *psep, key[1024];
-    int key_len;
-    zval **z_seed;
-    int *seeds;
-    size_t i, count;
+    int key_len, count, i;
+    zval **z_seeds, *z_seed;
 
-    count = zend_hash_num_elements(ht_seeds);
-    seeds = emalloc(sizeof(int) * count);
-
-    for (i = 0; i < count; i++) seeds[i] = i;
-    fyshuffle(seeds, count);
+    /* Get our seeds in a randomized array */
+    z_seeds = cluster_shuffle_seeds(ht_seeds, &count);
 
     // Iterate our seeds array
     for (i = 0; i < count; i++) {
-        // Grab seed string
-        if (zend_hash_index_find(ht_seeds, seeds[i], (void**)&z_seed) != SUCCESS)  {
-            continue;
-        }
+        z_seed = z_seeds[i];
 
-        // Skip anything that isn't a string
-        if(Z_TYPE_PP(z_seed)!=IS_STRING)
+        /* Has to be a string */
+        if (z_seed == NULL || Z_TYPE_P(z_seed) != IS_STRING)
             continue;
 
         // Grab a copy of the string
-        str = Z_STRVAL_PP(z_seed);
+        str = Z_STRVAL_P(z_seed);
 
         // Must be in host:port form
         if(!(psep = strchr(str, ':')))
@@ -897,15 +936,14 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
             sizeof(RedisSock*),NULL);
     }
 
-    efree(seeds);
+    efree(z_seeds);
 
     // Success if at least one seed seems valid
     return zend_hash_num_elements(cluster->seeds) > 0 ? 0 : -1;
 }
 
 /* Initial mapping of our cluster keyspace */
-PHP_REDIS_API int
-cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
+PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
     RedisSock **seed;
     clusterReply *slots=NULL;
     int mapped=0;
@@ -1058,20 +1096,6 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c TSRMLS_DC) {
         redis_sock_disconnect((*node)->sock TSRMLS_CC);
         (*node)->sock->lazy_connect = 1;
     }
-}
-
-/* Fisher-Yates shuffle for integer array */
-static void fyshuffle(int *array, size_t len) {
-    int temp, n = len;
-    size_t r;
-
-    /* Randomize */
-    while (n > 1) {
-        r = ((int)((double)n-- * (rand() / (RAND_MAX+1.0))));
-        temp = array[n];
-        array[n] = array[r];
-        array[r] = temp;
-    };
 }
 
 /* This method attempts to write our command at random to the master and any

@@ -458,8 +458,6 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
 int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
     long long count, void *ctx TSRMLS_DC);
 
-static void fyshuffle(int *array, size_t len);
-
 #endif
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
