@@ -37,32 +37,36 @@
 
 /* Simple macro to free our enqueued callbacks after we EXEC */
 #define CLUSTER_FREE_QUEUE(c) \
-    clusterFoldItem *_item = c->multi_head, *_tmp; \
-    while(_item) { \
-        _tmp = _item->next; \
-        efree(_item); \
-        _item = _tmp; \
-    } \
-    c->multi_head = c->multi_curr = NULL; \
+	{ \
+		clusterFoldItem *_item = c->multi_head, *_tmp; \
+		while(_item) { \
+			_tmp = _item->next; \
+			efree(_item); \
+			_item = _tmp; \
+		} \
+		c->multi_head = c->multi_curr = NULL; \
+	}
 
 /* Reset anything flagged as MULTI */
 #define CLUSTER_RESET_MULTI(c) \
-    redisClusterNode **_node; \
-    for(zend_hash_internal_pointer_reset(c->nodes); \
-        zend_hash_get_current_data(c->nodes, (void**)&_node); \
-        zend_hash_move_forward(c->nodes)) \
-    { \
-        (*_node)->sock->watching = 0; \
-        (*_node)->sock->mode     = ATOMIC; \
-    } \
-    c->flags->watching = 0; \
-    c->flags->mode     = ATOMIC; \
+	{ \
+		redisClusterNode **_node; \
+		for(zend_hash_internal_pointer_reset(c->nodes); \
+			zend_hash_get_current_data(c->nodes, (void**)&_node); \
+			zend_hash_move_forward(c->nodes)) \
+		{ \
+			(*_node)->sock->watching = 0; \
+			(*_node)->sock->mode     = ATOMIC; \
+		} \
+		c->flags->watching = 0; \
+		c->flags->mode     = ATOMIC; \
+	}
 
 /* Simple 1-1 command -> response macro */
 #define CLUSTER_PROCESS_CMD(cmdname, resp_func, readcmd) \
     redisCluster *c = GET_CONTEXT(); \
-    c->readonly = CLUSTER_IS_ATOMIC(c) && readcmd; \
     char *cmd; int cmd_len; short slot; void *ctx=NULL; \
+    c->readonly = CLUSTER_IS_ATOMIC(c) && readcmd; \
     if(redis_##cmdname##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,c->flags, &cmd, \
                              &cmd_len, &slot, &ctx)==FAILURE) { \
         RETURN_FALSE; \
@@ -81,8 +85,8 @@
 /* More generic processing, where only the keyword differs */
 #define CLUSTER_PROCESS_KW_CMD(kw, cmdfunc, resp_func, readcmd) \
     redisCluster *c = GET_CONTEXT(); \
-    c->readonly = CLUSTER_IS_ATOMIC(c) && readcmd; \
     char *cmd; int cmd_len; short slot; void *ctx=NULL; \
+    c->readonly = CLUSTER_IS_ATOMIC(c) && readcmd; \
     if(cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len,\
                &slot,&ctx)==FAILURE) { \
         RETURN_FALSE; \

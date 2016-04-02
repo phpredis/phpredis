@@ -40,6 +40,9 @@
 #include <ext/standard/php_smart_str.h>
 #include <ext/standard/php_var.h>
 #include <ext/standard/php_math.h>
+#ifdef PHP_WIN32
+# include <win32/time.h>
+#endif
 
 #include "library.h"
 
@@ -668,12 +671,14 @@ PHP_METHOD(Redis, __construct)
     Public Destructor
  */
 PHP_METHOD(Redis,__destruct) {
+    // Grab our socket
+    RedisSock *redis_sock;
+
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "") == FAILURE) {
         RETURN_FALSE;
     }
 
-    // Grab our socket
-    RedisSock *redis_sock;
+
     if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 1) < 0) {
         RETURN_FALSE;
     }

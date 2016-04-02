@@ -234,7 +234,7 @@ static void ht_free_node(void *data) {
 }
 
 /* Initialize/Register our RedisCluster exceptions */
-PHPAPI zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC) {
+PHP_REDIS_API zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC) {
 #if HAVE_SPL
     if(!root) {
         if(!spl_rte_ce) {
@@ -1600,10 +1600,11 @@ static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
                                zrange_cb fun)
 {
     redisCluster *c = GET_CONTEXT();
-    c->readonly = CLUSTER_IS_ATOMIC(c);
     cluster_cb cb;
     char *cmd; int cmd_len; short slot;
     int withscores=0;
+
+    c->readonly = CLUSTER_IS_ATOMIC(c);
 
     if(fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len,
            &withscores, &slot, NULL)==FAILURE)
