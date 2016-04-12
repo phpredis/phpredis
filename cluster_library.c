@@ -892,7 +892,7 @@ cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
         if(!mapped && slots) {
             memset(c->master, 0, sizeof(redisClusterNode*)*REDIS_CLUSTER_SLOTS);
         }
-        redis_sock_disconnect(*seed TSRMLS_CC);
+        redis_sock_disconnect(seed TSRMLS_CC);
     }
 
     // Clean up slots reply if we got one
