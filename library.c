@@ -10,6 +10,7 @@
 #endif
 #include <ext/standard/php_smart_string.h>
 #include <ext/standard/php_var.h>
+#include <zend_smart_str.h>
 #ifdef HAVE_REDIS_IGBINARY
 #include "igbinary/igbinary.h"
 #endif
@@ -2023,14 +2024,14 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
             return 1;
 
         case REDIS_SERIALIZER_PHP:
-
             PHP_VAR_SERIALIZE_INIT(ht);
             php_var_serialize(&sstr, z, &ht TSRMLS_CC);
-            *val = sstr.s->val;
+            *val = estrndup(sstr.s->val, sstr.s->len);
             *val_len = sstr.s->len;
+            smart_str_free(&sstr);
             PHP_VAR_SERIALIZE_DESTROY(ht);
 
-            return 0;
+            return 1;
 
         case REDIS_SERIALIZER_IGBINARY:
 #ifdef HAVE_REDIS_IGBINARY
