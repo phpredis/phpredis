@@ -176,6 +176,10 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     double d_connect_timeout = 0;
     HashTable *hHosts = NULL, *hPrev = NULL;
 
+    /* Initialize callbacks to undefined */
+    ZVAL_UNDEF(&z_fun);
+    ZVAL_UNDEF(&z_dist);
+
     /* find entry */
     if(!ra_find_name(name))
         return ra;
