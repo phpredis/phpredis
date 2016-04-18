@@ -1273,9 +1273,9 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     /* Now let's construct the command we want */
     if(exp_type && set_type) {
         /* SET <key> <value> NX|XX PX|EX <timeout> */
-        *cmd_len = redis_cmd_format_static(cmd, "SET", "ssssl", key, key_len,
-                                           val, val_len, set_type, 2, exp_type,
-                                           2, expire);
+        *cmd_len = redis_cmd_format_static(cmd, "SET", "sssls", key, key_len,
+                                           val, val_len, exp_type, 2, expire,
+                                           set_type, 2);
     } else if(exp_type) {
         /* SET <key> <value> PX|EX <timeout> */
         *cmd_len = redis_cmd_format_static(cmd, "SET", "sssl", key, key_len,
