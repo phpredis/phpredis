@@ -2928,6 +2928,9 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
 #ifdef HAVE_REDIS_IGBINARY
                 || val_long == REDIS_SERIALIZER_IGBINARY
 #endif
+#ifdef HAVE_REDIS_MSGPACK
+                || val_long == REDIS_SERIALIZER_MSGPACK
+#endif
                 || val_long == REDIS_SERIALIZER_PHP)
                 {
                     redis_sock->serializer = val_long;

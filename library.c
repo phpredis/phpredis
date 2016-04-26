@@ -14,6 +14,9 @@
 #ifdef HAVE_REDIS_IGBINARY
 #include "igbinary/igbinary.h"
 #endif
+#ifdef HAVE_REDIS_MSGPACK
+#include "msgpack/php_msgpack.h"
+#endif
 #include <zend_exceptions.h>
 #include "php_redis.h"
 #include "library.h"
@@ -2012,7 +2015,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
                     break;
 
                 default: /* copy */
-					ZVAL_DUP(&z_copy, z);
+                    ZVAL_DUP(&z_copy, z);
                     break;
             }
 
@@ -2032,6 +2035,17 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
             PHP_VAR_SERIALIZE_DESTROY(ht);
 
             return 1;
+
+        case REDIS_SERIALIZER_MSGPACK:
+#ifdef HAVE_REDIS_MSGPACK
+            php_msgpack_serialize(&sstr, z TSRMLS_CC);
+            *val = estrndup(sstr.s->val, sstr.s->len);
+            *val_len = sstr.s->len;
+            smart_str_free(&sstr);
+
+            return 1;
+#endif
+            return 0;
 
         case REDIS_SERIALIZER_IGBINARY:
 #ifdef HAVE_REDIS_IGBINARY
@@ -2068,6 +2082,12 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
             }
             PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
             return ret;
+        case REDIS_SERIALIZER_MSGPACK:
+#ifdef HAVE_REDIS_MSGPACK
+            php_msgpack_unserialize(return_value, (char *)val, val_len TSRMLS_CC);
+            return 1;
+#endif
+            return 0;
 
         case REDIS_SERIALIZER_IGBINARY:
 #ifdef HAVE_REDIS_IGBINARY
