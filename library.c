@@ -1763,6 +1763,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
     if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return -1;
     }
+
     if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
         redis_stream_close(redis_sock TSRMLS_CC);
         redis_sock->stream = NULL;
@@ -1786,11 +1787,73 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
         }
         return -1;
     }
+
     numElems = atoi(inbuf+1);
     array_init(&z_multi_result); /* pre-allocate array for multi's results. */
 
     redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         &z_multi_result, numElems, UNSERIALIZE_ALL);
+
+    IF_MULTI_OR_PIPELINE() {
+        add_next_index_zval(z_tab, &z_multi_result);
+    } else {
+        RETVAL_ZVAL(&z_multi_result, 0, 1);
+    }
+
+    return 0;
+}
+
+/**
+ * redis_sock_read_multibulk_reply_vals
+ *
+ * This is identical to redis_sock_read_multibulk_reply except that it unserializes vals only, rather than rely on
+ * the chosen unserializer to silently return 0 after a failed attempt (which msgpack does not do).
+ *
+ * Perhaps not the optimal solution, but the easiest way to resolve the problem of failed attempts to
+ * unserialize a key that hadn't been serialized to begin with in blpop, brpop.
+ *
+ */
+PHP_REDIS_API int redis_sock_read_multibulk_reply_vals(INTERNAL_FUNCTION_PARAMETERS,
+                                                  RedisSock *redis_sock, zval *z_tab,
+                                                  void *ctx)
+{
+    char inbuf[1024];
+    int numElems, err_len;
+    zval z_multi_result;
+
+    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
+        return -1;
+    }
+
+    if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
+        redis_stream_close(redis_sock TSRMLS_CC);
+        redis_sock->stream = NULL;
+        redis_sock->status = REDIS_SOCK_STATUS_FAILED;
+        redis_sock->mode = ATOMIC;
+        redis_sock->watching = 0;
+        zend_throw_exception(redis_exception_ce, "read error on connection", 0
+        TSRMLS_CC);
+        return -1;
+    }
+
+    if(inbuf[0] != '*') {
+        IF_MULTI_OR_PIPELINE() {
+            add_next_index_bool(z_tab, 0);
+        } else {
+            if (inbuf[0] == '-') {
+                err_len = strlen(inbuf+1) - 2;
+                redis_sock_set_err(redis_sock, inbuf+1, err_len);
+            }
+            RETVAL_FALSE;
+        }
+        return -1;
+    }
+
+    numElems = atoi(inbuf+1);
+    array_init(&z_multi_result); /* pre-allocate array for multi's results. */
+
+    redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                           &z_multi_result, numElems, UNSERIALIZE_VALS);
 
     IF_MULTI_OR_PIPELINE() {
         add_next_index_zval(z_tab, &z_multi_result);
@@ -2084,7 +2147,7 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
             return ret;
         case REDIS_SERIALIZER_MSGPACK:
 #ifdef HAVE_REDIS_MSGPACK
-            php_msgpack_unserialize(return_value, (char *)val, val_len TSRMLS_CC);
+            php_msgpack_unserialize(return_value, (char *)val, (size_t)val_len TSRMLS_CC);
             return 1;
 #endif
             return 0;

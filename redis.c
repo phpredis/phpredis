@@ -1197,14 +1197,14 @@ PHP_METHOD(Redis, rPop)
 /* {{{ proto string Redis::blPop(string key1, string key2, ..., int timeout) */
 PHP_METHOD(Redis, blPop)
 {
-    REDIS_PROCESS_CMD(blpop, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_CMD(blpop, redis_sock_read_multibulk_reply_vals);
 }
 /* }}} */
 
 /* {{{ proto string Redis::brPop(string key1, string key2, ..., int timeout) */
 PHP_METHOD(Redis, brPop)
 {
-    REDIS_PROCESS_CMD(brpop, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_CMD(brpop, redis_sock_read_multibulk_reply_vals);
 }
 /* }}} */
 
