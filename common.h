@@ -201,7 +201,7 @@ typedef enum _PUBSUB_TYPE {
 /* Process a command assuming our command where our command building
  * function is redis_<cmdname>_cmd */
 #define REDIS_PROCESS_CMD(cmdname, resp_func) \
-    RedisSock *redis_sock; char *cmd; int cmd_len; void *ctx=NULL; \
+    RedisSock *redis_sock; char *cmd; size_t cmd_len; void *ctx=NULL; \
     if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0 || \
        redis_##cmdname##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock, \
                              &cmd, &cmd_len, NULL, &ctx)==FAILURE) { \
@@ -216,7 +216,7 @@ typedef enum _PUBSUB_TYPE {
 /* Process a command but with a specific command building function
  * and keyword which is passed to us*/
 #define REDIS_PROCESS_KW_CMD(kw, cmdfunc, resp_func) \
-    RedisSock *redis_sock; char *cmd; int cmd_len; void *ctx=NULL; \
+    RedisSock *redis_sock; char *cmd; size_t cmd_len; void *ctx=NULL; \
     if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0 || \
        cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw, &cmd, \
                &cmd_len, NULL, &ctx)==FAILURE) { \
@@ -257,7 +257,7 @@ typedef struct fold_item {
 
 typedef struct request_item {
     char *request_str;
-    int request_size; /* size_t */
+    size_t request_size;
     struct request_item *next;
 } request_item;
 
@@ -280,7 +280,7 @@ typedef struct {
     long           dbNumber;
 
     char           *prefix;
-    int            prefix_len;
+    size_t            prefix_len;
 
     redis_mode     mode;
     fold_item      *head;

@@ -273,7 +273,7 @@ struct redis_queued_item {
     zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, ...);
 
     char *cmd; 
-    int cmd_len;
+    size_t cmd_len;
 
     struct redis_queued_item *next;
 };

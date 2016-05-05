@@ -30,9 +30,10 @@ extern int le_redis_sock;
 extern zend_class_entry *redis_ce;
 
 RedisArray*
-ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b_lazy_connect TSRMLS_DC)
+ra_load_hosts(RedisArray *ra, HashTable *hosts, zend_long retry_interval, zend_bool b_lazy_connect TSRMLS_DC)
 {
-    int i = 0, host_len;
+    int i = 0;
+	size_t host_len;
     zval *id;
     char *host, *p;
     short port;
@@ -171,7 +172,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     RedisArray *ra = NULL;
 
     zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0;
-    long l_retry_interval = 0;
+    zend_long l_retry_interval = 0;
     zend_bool b_lazy_connect = 0;
     double d_connect_timeout = 0;
     HashTable *hHosts = NULL, *hPrev = NULL;
@@ -273,7 +274,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
         if (Z_TYPE_P(z_data_p) == IS_DOUBLE) {
             d_connect_timeout = Z_DVAL_P(z_data_p);
         } else if (Z_TYPE_P(z_data_p) == IS_LONG) {
-            d_connect_timeout = Z_LVAL_P(z_data_p);
+            d_connect_timeout = (double) Z_LVAL_P(z_data_p);
         } else {
             d_connect_timeout = atof(Z_STRVAL_P(z_data_p));
         }
@@ -301,7 +302,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 
 RedisArray *
 ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev,
-              zend_bool b_index, zend_bool b_pconnect, long retry_interval,
+              zend_bool b_index, zend_bool b_pconnect, zend_long retry_interval,
               zend_bool b_lazy_connect, double connect_timeout TSRMLS_DC)
 {
     int count = zend_hash_num_elements(hosts);
@@ -345,7 +346,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 
 /* call userland key extraction function */
 char *
-ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS_DC) {
+ra_call_extractor(RedisArray *ra, const char *key, size_t key_len, size_t *out_len TSRMLS_DC) {
 
     char *out;
     zval z_ret;
@@ -378,7 +379,7 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 }
 
 static char *
-ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS_DC) {
+ra_extract_key(RedisArray *ra, const char *key, size_t key_len, size_t *out_len TSRMLS_DC) {
 
     char *start, *end, *out;
     *out_len = key_len;
@@ -405,7 +406,7 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS
 
 /* call userland key distributor function */
 zend_bool
-ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRMLS_DC) {
+ra_call_distributor(RedisArray *ra, const char *key, size_t key_len, int *pos TSRMLS_DC) {
 
     zval z_ret;
     zval z_argv0;
@@ -428,16 +429,17 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
 
     zval_dtor(&z_argv0);
 
-    *pos = Z_LVAL(z_ret);
+    *pos = (int)Z_LVAL(z_ret);
     zval_dtor(&z_ret);
     return 1;
 }
 
 zval *
-ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_DC) {
+ra_find_node(RedisArray *ra, const char *key, size_t key_len, int *out_pos TSRMLS_DC) {
     uint32_t hash;
     char *out;
-    int pos, out_len;
+    int pos;
+	size_t out_len;
 
     /* extract relevant part of the key */
     out = ra_extract_key(ra, key, key_len, &out_len TSRMLS_CC);
@@ -468,7 +470,7 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
 }
 
 zval *
-ra_find_node_by_name(RedisArray *ra, const char *host, int host_len TSRMLS_DC) {
+ra_find_node_by_name(RedisArray *ra, const char *host, size_t host_len TSRMLS_DC) {
 
     int i;
     for(i = 0; i < ra->count; ++i) {
@@ -481,7 +483,7 @@ ra_find_node_by_name(RedisArray *ra, const char *host, int host_len TSRMLS_DC) {
 
 
 char *
-ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len) {
+ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, size_t *key_len) {
 
     zval *zp_tmp;
     int key_pos = 0; /* TODO: change this depending on the command */
@@ -587,7 +589,7 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
 }
 
 void
-ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC) {
+ra_index_key(const char *key, size_t key_len, zval *z_redis TSRMLS_DC) {
 
     zval z_fun_sadd, z_ret, z_args[2];
 
@@ -654,10 +656,10 @@ ra_index_unwatch(zval *z_redis, zval *return_value TSRMLS_DC) {
 }
 
 zend_bool
-ra_is_write_cmd(RedisArray *ra, const char *cmd, int cmd_len) {
+ra_is_write_cmd(RedisArray *ra, const char *cmd, size_t cmd_len) {
 
     zend_bool ret;
-    int i;
+    size_t i;
     char *cmd_up = emalloc(1 + cmd_len);
 
     /* convert to uppercase */
@@ -674,14 +676,14 @@ ra_is_write_cmd(RedisArray *ra, const char *cmd, int cmd_len) {
 
 /* list keys from array index */
 static long
-ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, const char *arg TSRMLS_DC) {
+ra_rehash_scan(zval *z_redis, char ***keys, size_t **key_lens, const char *cmd, const char *arg TSRMLS_DC) {
 
     long count, i;
     zval z_fun_smembers, z_ret, z_arg, *z_data_p;
     HashTable *h_keys;
     HashPosition pointer;
     char *key;
-    int key_len;
+    size_t key_len;
 
     /* Function and argument */
     ZVAL_STRING(&z_fun_smembers, cmd);
@@ -697,7 +699,7 @@ ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, con
     /* allocate key array */
     count = zend_hash_num_elements(h_keys);
     *keys = emalloc(count * sizeof(char*));
-    *key_lens = emalloc(count * sizeof(int));
+    *key_lens = emalloc(count * sizeof(size_t));
 
     for (i = 0, zend_hash_internal_pointer_reset_ex(h_keys, &pointer);
             (z_data_p = zend_hash_get_current_data_ex(h_keys, &pointer)) != NULL;
@@ -722,23 +724,23 @@ ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, con
 }
 
 static long
-ra_rehash_scan_index(zval *z_redis, char ***keys, int **key_lens TSRMLS_DC) {
+ra_rehash_scan_index(zval *z_redis, char ***keys, size_t **key_lens TSRMLS_DC) {
     return ra_rehash_scan(z_redis, keys, key_lens, "SMEMBERS", PHPREDIS_INDEX_NAME TSRMLS_CC);
 }
 
 /* list keys using KEYS command */
 static long
-ra_rehash_scan_keys(zval *z_redis, char ***keys, int **key_lens TSRMLS_DC) {
+ra_rehash_scan_keys(zval *z_redis, char ***keys, size_t **key_lens TSRMLS_DC) {
     return ra_rehash_scan(z_redis, keys, key_lens, "KEYS", "*" TSRMLS_CC);
 }
 
 /* run TYPE to find the type */
 static zend_bool
-ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long *res TSRMLS_DC) {
+ra_get_key_type(zval *z_redis, const char *key, size_t key_len, zval *z_from, zend_long *res TSRMLS_DC) {
     int i;
     zval z_fun_type, z_ret, z_arg;
     zval *z_data;
-    long success = 1;
+    zend_bool success = 1;
 
     /* Pipelined */
     ra_index_multi(z_from, PIPELINE TSRMLS_CC);
@@ -792,7 +794,7 @@ ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long 
 
 /* delete key from source server index during rehashing */
 static void
-ra_remove_from_index(zval *z_redis, const char *key, int key_len TSRMLS_DC) {
+ra_remove_from_index(zval *z_redis, const char *key, size_t key_len TSRMLS_DC) {
 
     zval z_fun_srem, z_ret, z_args[2];
 
@@ -812,7 +814,7 @@ ra_remove_from_index(zval *z_redis, const char *key, int key_len TSRMLS_DC) {
 
 /* delete key from source server during rehashing */
 static zend_bool
-ra_del_key(const char *key, int key_len, zval *z_from TSRMLS_DC) {
+ra_del_key(const char *key, size_t key_len, zval *z_from TSRMLS_DC) {
     zval z_fun_del, z_ret, z_args;
 
     /* in a transaction */
@@ -838,7 +840,7 @@ ra_del_key(const char *key, int key_len, zval *z_from TSRMLS_DC) {
 }
 
 static zend_bool
-ra_expire_key(const char *key, int key_len, zval *z_to, long ttl TSRMLS_DC) {
+ra_expire_key(const char *key, size_t key_len, zval *z_to, zend_long ttl TSRMLS_DC) {
 
     zval z_fun_expire, z_ret, z_args[2];
 
@@ -855,7 +857,7 @@ ra_expire_key(const char *key, int key_len, zval *z_to, long ttl TSRMLS_DC) {
 }
 
 static zend_bool
-ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
+ra_move_zset(const char *key, size_t key_len, zval *z_from, zval *z_to, zend_long ttl TSRMLS_DC) {
     zval z_fun_zrange, z_fun_zadd, z_ret, z_ret_dest, z_args[4], *z_score_p, *z_zadd_args;
     int count;
     HashTable *h_zset_vals;
@@ -939,7 +941,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 }
 
 static zend_bool
-ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
+ra_move_string(const char *key, size_t key_len, zval *z_from, zval *z_to, zend_long ttl TSRMLS_DC) {
     zval z_fun_get, z_fun_set, z_ret, z_args[3];
     int i, argc = 0;
 
@@ -986,7 +988,7 @@ ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to, long ttl 
 }
 
 static zend_bool
-ra_move_hash(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
+ra_move_hash(const char *key, size_t key_len, zval *z_from, zval *z_to, zend_long ttl TSRMLS_DC) {
     zval z_fun_hgetall, z_fun_hmset, z_ret, z_ret_dest, z_args[2];
 
     /* run HGETALL on source */
@@ -1025,9 +1027,9 @@ ra_move_hash(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 }
 
 static zend_bool
-ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
+ra_move_collection(const char *key, size_t key_len, zval *z_from, zval *z_to,
         int list_count, const char **cmd_list,
-        int add_count, const char **cmd_add, long ttl TSRMLS_DC) {
+        int add_count, const char **cmd_add, zend_long ttl TSRMLS_DC) {
     zval z_fun_retrieve, z_fun_sadd, z_ret, *z_data_p, *z_retrieve_args, *z_sadd_args;
     int count, i;
     HashTable *h_set_vals;
@@ -1099,22 +1101,22 @@ ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 }
 
 static zend_bool
-ra_move_set(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
+ra_move_set(const char *key, size_t key_len, zval *z_from, zval *z_to, zend_long ttl TSRMLS_DC) {
     const char *cmd_list[] = {"SMEMBERS"};
     const char *cmd_add[] = {"SADD"};
     return ra_move_collection(key, key_len, z_from, z_to, 1, cmd_list, 1, cmd_add, ttl TSRMLS_CC);
 }
 
 static zend_bool
-ra_move_list(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
+ra_move_list(const char *key, size_t key_len, zval *z_from, zval *z_to, zend_long ttl TSRMLS_DC) {
     const char *cmd_list[] = {"LRANGE", "0", "-1"};
     const char *cmd_add[] = {"RPUSH"};
     return ra_move_collection(key, key_len, z_from, z_to, 3, cmd_list, 1, cmd_add, ttl TSRMLS_CC);
 }
 
 void
-ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
-    long res[2], type, ttl;
+ra_move_key(const char *key, size_t key_len, zval *z_from, zval *z_to TSRMLS_DC) {
+    zend_long res[2], type, ttl;
     zend_bool success = 0;
 
     if (ra_get_key_type(z_from, key, key_len, z_from, res TSRMLS_CC)) {
@@ -1183,7 +1185,7 @@ static void
 ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool b_index,
         zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache TSRMLS_DC) {
     char **keys;
-    int *key_lens;
+    size_t *key_lens;
     long count, i;
     int target_pos;
     zval *z_target;

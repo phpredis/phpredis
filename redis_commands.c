@@ -31,7 +31,7 @@
 
 /* A command that takes no arguments */
 int redis_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    char *kw, char **cmd, int *cmd_len, short *slot,
+                    char *kw, char **cmd, size_t *cmd_len, short *slot,
                     void **ctx)
 {
     *cmd_len = redis_cmd_format_static(cmd, kw, "");
@@ -41,7 +41,7 @@ int redis_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 /* Helper to construct a raw command.  Given that the cluster and non cluster
  * versions are different (RedisCluster needs an additional argument to direct
  * the command) we take the start of our array and count */
-int redis_build_raw_cmd(zval *z_args, int argc, char **cmd, int *cmd_len TSRMLS_DC)
+int redis_build_raw_cmd(zval *z_args, int argc, char **cmd, size_t *cmd_len TSRMLS_DC)
 {
     smart_string cmdstr = {0};
     int i;
@@ -85,7 +85,7 @@ int redis_build_raw_cmd(zval *z_args, int argc, char **cmd, int *cmd_len TSRMLS_
 
 /* Generic command where we just take a string and do nothing to it*/
 int redis_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
-                  char **cmd, int *cmd_len, short *slot, void **ctx)
+                  char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *arg;
     size_t arg_len;
@@ -105,7 +105,7 @@ int redis_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
 
 /* Key, long, zval (serialized) */
 int redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                           char *kw, char **cmd, int *cmd_len, short *slot,
+                           char *kw, char **cmd, size_t *cmd_len, short *slot,
                            void **ctx)
 {
     char *key = NULL, *val=NULL;
@@ -139,7 +139,7 @@ int redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* Generic key, long, string (unserialized) */
 int redis_key_long_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                           char *kw, char **cmd, int *cmd_len, short *slot,
+                           char *kw, char **cmd, size_t *cmd_len, short *slot,
                            void **ctx)
 {
     char *key, *val;
@@ -171,7 +171,7 @@ int redis_key_long_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* Generic command construction when we just take a key and value */
 int redis_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                 char *kw, char **cmd, int *cmd_len, short *slot,
+                 char *kw, char **cmd, size_t *cmd_len, short *slot,
                  void **ctx)
 {
     char *key, *val;
@@ -203,7 +203,7 @@ int redis_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* Generic command that takes a key and an unserialized value */
 int redis_key_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                      char *kw, char **cmd, int *cmd_len, short *slot,
+                      char *kw, char **cmd, size_t *cmd_len, short *slot,
                       void **ctx)
 {
     char *key, *val;
@@ -230,7 +230,7 @@ int redis_key_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* Key, string, string without serialization (ZCOUNT, ZREMRANGEBYSCORE) */
 int redis_key_str_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                          char *kw, char **cmd, int *cmd_len, short *slot,
+                          char *kw, char **cmd, size_t *cmd_len, short *slot,
                           void **ctx)
 {
     char *key, *val1, *val2;
@@ -262,7 +262,7 @@ int redis_key_str_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* Generic command that takes two keys */
 int redis_key_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                      char *kw, char **cmd, int *cmd_len, short *slot,
+                      char *kw, char **cmd, size_t *cmd_len, short *slot,
                       void **ctx)
 {
     char *key1, *key2;
@@ -307,7 +307,7 @@ int redis_key_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* Generic command construction where we take a key and a long */
 int redis_key_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                       char *kw, char **cmd, int *cmd_len, short *slot,
+                       char *kw, char **cmd, size_t *cmd_len, short *slot,
                        void **ctx)
 {
     char *key;
@@ -342,7 +342,7 @@ int redis_key_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* key, long, long */
 int redis_key_long_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                            char *kw, char **cmd, int *cmd_len, short *slot,
+                            char *kw, char **cmd, size_t *cmd_len, short *slot,
                             void **ctx)
 {
     char *key;
@@ -373,7 +373,7 @@ int redis_key_long_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* Generic command where we take a single key */
 int redis_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                  char *kw, char **cmd, int *cmd_len, short *slot,
+                  char *kw, char **cmd, size_t *cmd_len, short *slot,
                   void **ctx)
 {
     char *key;
@@ -402,7 +402,7 @@ int redis_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* Generic command where we take a key and a double */
 int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                      char *kw, char **cmd, int *cmd_len, short *slot,
+                      char *kw, char **cmd, size_t *cmd_len, short *slot,
                       void **ctx)
 {
     char *key;
@@ -431,8 +431,8 @@ int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 /* Generic to construct SCAN and variant commands */
-int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
-                       long it, char *pat, int pat_len, long count)
+size_t redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, size_t key_len,
+                       zend_long it, char *pat, size_t pat_len, zend_long count)
 {
     static char *kw[] = {"SCAN","SSCAN","HSCAN","ZSCAN"};
     int argc;
@@ -470,7 +470,7 @@ int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
 
 /* ZRANGE/ZREVRANGE */
 int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     char *kw, char **cmd, int *cmd_len, int *withscores,
+                     char *kw, char **cmd, size_t *cmd_len, int *withscores,
                      short *slot, void **ctx)
 {
     char *key;
@@ -505,7 +505,7 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* ZRANGEBYSCORE/ZREVRANGEBYSCORE */
 int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                            char *kw, char **cmd, int *cmd_len, int *withscores,
+                            char *kw, char **cmd, size_t *cmd_len, int *withscores,
                             short *slot, void **ctx)
 {
     char *key;
@@ -513,7 +513,7 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *start, *end;
     size_t key_len, start_len, end_len;
     int has_limit=0;
-    long limit_low, limit_high;
+    zend_long limit_low, limit_high;
     zval *z_opt=NULL, *z_ele;
     HashTable *ht_opt;
 
@@ -580,7 +580,7 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* ZUNIONSTORE, ZINTERSTORE */
 int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     char *kw, char **cmd, int *cmd_len, short *slot,
+                     char *kw, char **cmd, size_t *cmd_len, short *slot,
                      void **ctx)
 {
     char *key, *agg_op=NULL;
@@ -747,7 +747,7 @@ int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* SUBSCRIBE/PSUBSCRIBE */
 int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                        char *kw, char **cmd, int *cmd_len, short *slot,
+                        char *kw, char **cmd, size_t *cmd_len, short *slot,
                         void **ctx)
 {
     zval *z_arr, *z_chan;
@@ -811,7 +811,7 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* UNSUBSCRIBE/PUNSUBSCRIBE */
 int redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                          char *kw, char **cmd, int *cmd_len, short *slot,
+                          char *kw, char **cmd, size_t *cmd_len, short *slot,
                           void **ctx)
 {
     zval *z_arr, *z_chan;
@@ -857,7 +857,7 @@ int redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* ZRANGEBYLEX/ZREVRANGEBYLEX */
 int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                          char *kw, char **cmd, int *cmd_len, short *slot,
+                          char *kw, char **cmd, size_t *cmd_len, short *slot,
                           void **ctx)
 {
     char *key, *min, *max;
@@ -915,7 +915,7 @@ int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* ZLEXCOUNT/ZREMRANGEBYLEX */
 int redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                       char *kw, char **cmd, int *cmd_len, short *slot,
+                       char *kw, char **cmd, size_t *cmd_len, short *slot,
                        void **ctx)
 {
     char *key, *min, *max;
@@ -957,7 +957,7 @@ int redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 /* Commands that take a key followed by a variable list of serializable
  * values (RPUSH, LPUSH, SADD, SREM, etc...) */
 int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                         char *kw, char **cmd, int *cmd_len, short *slot,
+                         char *kw, char **cmd, size_t *cmd_len, short *slot,
                          void **ctx)
 {
     zval *z_args;
@@ -1014,7 +1014,7 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* Commands that take a key and then an array of values */
 int redis_key_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                      char *kw, char **cmd, int *cmd_len, short *slot,
+                      char *kw, char **cmd, size_t *cmd_len, short *slot,
                       void **ctx)
 {
     zval *z_arr, *z_val;
@@ -1064,7 +1064,7 @@ int redis_key_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
  * commands. */
 static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                           char *kw, int kw_len, int min_argc, int has_timeout,
-                          char **cmd, int *cmd_len, short *slot)
+                          char **cmd, size_t *cmd_len, short *slot)
 {
     zval *z_args, *z_ele;
     HashTable *ht_arr;
@@ -1073,7 +1073,7 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 	size_t key_len;
     int single_array = 0, argc = ZEND_NUM_ARGS();
     smart_string cmdstr = {0};
-    long timeout;
+    zend_long timeout;
     short kslot = -1;
 
     if(argc < min_argc) {
@@ -1195,13 +1195,13 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* SET */
 int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                  char **cmd, int *cmd_len, short *slot, void **ctx)
+                  char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     zval *z_value, *z_opts=NULL;
     char *key = NULL, *val = NULL, *exp_type = NULL, *set_type = NULL;
     int key_free, val_free;
     size_t key_len, val_len;
-    long expire = -1;
+    zend_long expire = -1;
 
     // Make sure the function is being called correctly
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|z", &key, &key_len,
@@ -1298,7 +1298,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* BRPOPLPUSH */
 int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                         char **cmd, int *cmd_len, short *slot, void **ctx)
+                         char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *key1, *key2;
     size_t key1_len, key2_len;
@@ -1353,7 +1353,7 @@ int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 /* Handle INCR(BY) and DECR(BY) depending on optional increment value */
 static int
 redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, int type,
-                       RedisSock *redis_sock, char **cmd, int *cmd_len,
+                       RedisSock *redis_sock, char **cmd, size_t *cmd_len,
                        short *slot, void **ctx)
 {
     char *key;
@@ -1398,7 +1398,7 @@ redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, int type,
 
 /* INCR */
 int redis_incr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                   char **cmd, int *cmd_len, short *slot, void **ctx)
+                   char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU,
         TYPE_INCR, redis_sock, cmd, cmd_len, slot, ctx);
@@ -1406,7 +1406,7 @@ int redis_incr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* DECR */
 int redis_decr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                   char **cmd, int *cmd_len, short *slot, void **ctx)
+                   char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU,
         TYPE_DECR, redis_sock, cmd, cmd_len, slot, ctx);
@@ -1414,7 +1414,7 @@ int redis_decr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* HINCRBY */
 int redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                      char **cmd, int *cmd_len, short *slot, void **ctx)
+                      char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *key, *mem;
     size_t key_len, mem_len;
@@ -1445,7 +1445,7 @@ int redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* HINCRBYFLOAT */
 int redis_hincrbyfloat_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                           char **cmd, int *cmd_len, short *slot, void **ctx)
+                           char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *key, *mem;
     size_t key_len, mem_len;
@@ -1477,7 +1477,7 @@ int redis_hincrbyfloat_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* HMGET */
 int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    char **cmd, int *cmd_len, short *slot, void **ctx)
+                    char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *key;
     zval *z_arr, *z_mem, *z_mems;
@@ -1563,7 +1563,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* HMSET */
 int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    char **cmd, int *cmd_len, short *slot, void **ctx)
+                    char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *key;
     int key_free, count, ktype;
@@ -1605,7 +1605,7 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         zend_string *mem_zstring;
         int val_free;
 		size_t val_len;
-        unsigned int mem_len;
+        size_t mem_len;
         zval *z_val;
 
         // Grab our key, and value for this element in our input
@@ -1649,7 +1649,7 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* BITPOS */
 int redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     char **cmd, int *cmd_len, short *slot, void **ctx)
+                     char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *key;
     int argc;
@@ -1691,7 +1691,7 @@ int redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* BITOP */
 int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    char **cmd, int *cmd_len, short *slot, void **ctx)
+                    char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     zval *z_args;
     char *key;
@@ -1754,7 +1754,7 @@ int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* BITCOUNT */
 int redis_bitcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     char **cmd, int *cmd_len, short *slot, void **ctx)
+                     char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *key;
     size_t key_len;
@@ -1785,7 +1785,7 @@ int redis_bitcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
  * and in the other case we key prefix */
 static int redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                             char *kw, int kw_len, int is_keys, char **cmd,
-                            int *cmd_len, short *slot)
+                            size_t *cmd_len, short *slot)
 {
     zval *z_arr, *z_ele;
     HashTable *ht_arr;
@@ -1896,7 +1896,7 @@ static int redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* PFADD */
 int redis_pfadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    char **cmd, int *cmd_len, short *slot, void **ctx)
+                    char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         "PFADD", sizeof("PFADD")-1, 0, cmd, cmd_len, slot);
@@ -1904,7 +1904,7 @@ int redis_pfadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* PFMERGE */
 int redis_pfmerge_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                      char **cmd, int *cmd_len, short *slot, void **ctx)
+                      char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         "PFMERGE", sizeof("PFMERGE")-1, 1, cmd, cmd_len, slot);
@@ -1912,7 +1912,7 @@ int redis_pfmerge_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* PFCOUNT */
 int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                      char **cmd, int *cmd_len, short *slot, void **ctx)
+                      char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     zval *z_keys, *z_key, z_tmp;
     HashTable *ht_keys;
@@ -2024,7 +2024,7 @@ int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                   char **cmd, int *cmd_len, short *slot, void **ctx)
+                   char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *pw;
     size_t pw_len;
@@ -2048,7 +2048,7 @@ int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* SETBIT */
 int redis_setbit_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     char **cmd, int *cmd_len, short *slot, void **ctx)
+                     char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *key;
     size_t key_len;
@@ -2082,7 +2082,7 @@ int redis_setbit_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* LINSERT */
 int redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                      char **cmd, int *cmd_len, short *slot, void **ctx)
+                      char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *key, *pivot, *pos, *val;
     size_t key_len, pos_len;
@@ -2127,7 +2127,7 @@ int redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* LREM */
 int redis_lrem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                   char **cmd, int *cmd_len, short *slot, void **ctx)
+                   char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *key, *val;
     size_t key_len;
@@ -2162,7 +2162,7 @@ int redis_lrem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    char **cmd, int *cmd_len, short *slot, void **ctx)
+                    char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *src, *dst, *val;
     size_t src_len, dst_len, val_len;
@@ -2209,7 +2209,7 @@ int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* Generic command construction for HSET and HSETNX */
 static int gen_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                        char *kw, char **cmd, int *cmd_len, short *slot)
+                        char *kw, char **cmd, size_t *cmd_len, short *slot)
 {
     char *key, *mem, *val;
     size_t mem_len, key_len, val_len;
@@ -2243,7 +2243,7 @@ static int gen_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* HSET */
 int redis_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                   char **cmd, int *cmd_len, short *slot, void **ctx)
+                   char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return gen_hset_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, "HSET",
         cmd, cmd_len, slot);
@@ -2251,7 +2251,7 @@ int redis_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* HSETNX */
 int redis_hsetnx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     char **cmd, int *cmd_len, short *slot, void **ctx)
+                     char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return gen_hset_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, "HSETNX",
         cmd, cmd_len, slot);
@@ -2259,7 +2259,7 @@ int redis_hsetnx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* SRANDMEMBER */
 int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                          char **cmd, int *cmd_len, short *slot, void **ctx,
+                          char **cmd, size_t *cmd_len, short *slot, void **ctx,
                           short *have_count)
 {
     char *key;
@@ -2299,7 +2299,7 @@ int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* ZINCRBY */
 int redis_zincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                      char **cmd, int *cmd_len, short *slot, void **ctx)
+                      char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *key, *mem;
     size_t key_len, mem_len;
@@ -2331,7 +2331,7 @@ int redis_zincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* SORT */
 int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                   int *using_store, char **cmd, int *cmd_len, short *slot,
+                   int *using_store, char **cmd, size_t *cmd_len, short *slot,
                    void **ctx)
 {
     zval *z_opts=NULL, *z_ele, z_argv;
@@ -2499,6 +2499,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     {
         HashTable *ht_off = Z_ARRVAL_P(z_ele);
         zval *z_off, *z_cnt;
+        zend_long low, high;
 
         if((z_off = zend_hash_index_find(ht_off, 0)) != NULL &&
            (z_cnt = zend_hash_index_find(ht_off, 1)) != NULL)
@@ -2516,7 +2517,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             // Add LIMIT argument
             add_next_index_stringl(&z_argv,"LIMIT",sizeof("LIMIT")-1);
 
-            long low, high;
+
             if(Z_TYPE_P(z_off) == IS_STRING) {
                 low = atol(Z_STRVAL_P(z_off));
             } else {
@@ -2565,7 +2566,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* HDEL */
 int redis_hdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                   char **cmd, int *cmd_len, short *slot, void **ctx)
+                   char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     zval *z_args;
     smart_string cmdstr = {0};
@@ -2620,7 +2621,7 @@ int redis_hdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* ZADD */
 int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                   char **cmd, int *cmd_len, short *slot, void **ctx)
+                   char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     zval *z_args;
     char *key, *val;
@@ -2680,7 +2681,7 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* OBJECT */
 int redis_object_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     REDIS_REPLY_TYPE *rtype, char **cmd, int *cmd_len,
+                     REDIS_REPLY_TYPE *rtype, char **cmd, size_t *cmd_len,
                      short *slot, void **ctx)
 {
     char *key, *subcmd;
@@ -2724,7 +2725,7 @@ int redis_object_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* DEL */
 int redis_del_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                  char **cmd, int *cmd_len, short *slot, void **ctx)
+                  char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         "DEL", sizeof("DEL")-1, 1, 0, cmd, cmd_len, slot);
@@ -2732,7 +2733,7 @@ int redis_del_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* WATCH */
 int redis_watch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    char **cmd, int *cmd_len, short *slot, void **ctx)
+                    char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         "WATCH", sizeof("WATCH")-1, 1, 0, cmd, cmd_len, slot);
@@ -2740,7 +2741,7 @@ int redis_watch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* BLPOP */
 int redis_blpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    char **cmd, int *cmd_len, short *slot, void **ctx)
+                    char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         "BLPOP", sizeof("BLPOP")-1, 2, 1, cmd, cmd_len, slot);
@@ -2748,7 +2749,7 @@ int redis_blpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* BRPOP */
 int redis_brpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    char **cmd, int *cmd_len, short *slot, void **ctx)
+                    char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         "BRPOP", sizeof("BRPOP")-1, 1, 1, cmd, cmd_len, slot);
@@ -2756,7 +2757,7 @@ int redis_brpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* SINTER */
 int redis_sinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     char **cmd, int *cmd_len, short *slot, void **ctx)
+                     char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         "SINTER", sizeof("SINTER")-1, 1, 0, cmd, cmd_len, slot);
@@ -2764,7 +2765,7 @@ int redis_sinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* SINTERSTORE */
 int redis_sinterstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                          char **cmd, int *cmd_len, short *slot, void **ctx)
+                          char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         "SINTERSTORE", sizeof("SINTERSTORE")-1, 1, 0, cmd, cmd_len, slot);
@@ -2772,7 +2773,7 @@ int redis_sinterstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* SUNION */
 int redis_sunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     char **cmd, int *cmd_len, short *slot, void **ctx)
+                     char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         "SUNION", sizeof("SUNION")-1, 1, 0, cmd, cmd_len, slot);
@@ -2780,7 +2781,7 @@ int redis_sunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* SUNIONSTORE */
 int redis_sunionstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                          char **cmd, int *cmd_len, short *slot, void **ctx)
+                          char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         "SUNIONSTORE", sizeof("SUNIONSTORE")-1, 2, 0, cmd, cmd_len, slot);
@@ -2788,7 +2789,7 @@ int redis_sunionstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* SDIFF */
 int redis_sdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    char **cmd, int *cmd_len, short *slot, void **ctx)
+                    char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, "SDIFF",
         sizeof("SDIFF")-1, 1, 0, cmd, cmd_len, slot);
@@ -2796,7 +2797,7 @@ int redis_sdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* SDIFFSTORE */
 int redis_sdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                         char **cmd, int *cmd_len, short *slot, void **ctx)
+                         char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         "SDIFFSTORE", sizeof("SDIFFSTORE")-1, 1, 0, cmd, cmd_len, slot);
@@ -2804,7 +2805,7 @@ int redis_sdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* COMMAND */
 int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                      char **cmd, int *cmd_len, short *slot, void **ctx)
+                      char **cmd, size_t *cmd_len, short *slot, void **ctx)
 {
     char *kw=NULL;
     zval *z_arg;
@@ -2950,9 +2951,16 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
         case REDIS_OPT_READ_TIMEOUT:
             redis_sock->read_timeout = atof(val_str);
             if(redis_sock->stream) {
-                read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
+#ifdef PHP_WIN32
+                read_tv.tv_sec  = (long)redis_sock->read_timeout;
+                read_tv.tv_usec = (long)((redis_sock->read_timeout -
+                                         read_tv.tv_sec) * 1000000);
+#else
+				read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
                 read_tv.tv_usec = (int)((redis_sock->read_timeout -
                                          read_tv.tv_sec) * 1000000);
+#endif
+
                 php_stream_set_option(redis_sock->stream,
                                       PHP_STREAM_OPTION_READ_TIMEOUT, 0,
                                       &read_tv);
@@ -2972,7 +2980,7 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                 val_long == REDIS_FAILOVER_ERROR ||
                 val_long == REDIS_FAILOVER_DISTRIBUTE)
             {
-                c->failover = val_long;
+                c->failover = (short) val_long;
                 RETURN_TRUE;
             } else {
                 RETURN_FALSE;
