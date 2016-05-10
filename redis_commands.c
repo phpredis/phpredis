@@ -495,17 +495,24 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 /* ZRANGEBYSCORE/ZREVRANGEBYSCORE */
+#define IS_WITHSCORES_ARG(s, l) \
+    (l == sizeof("withscores") && !strncasecmp(s,"withscores",sizeof("withscores")))
+#define IS_LIMIT_ARG(s, l) \
+    (l == sizeof("limit") && !strncasecmp(s,"limit",sizeof("limit")))
+
 int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                             char *kw, char **cmd, int *cmd_len, int *withscores,
                             short *slot, void **ctx)
 {
     char *key;
     int key_len, key_free;
-    char *start, *end;
+    char *start, *end, *optkey;
     int start_len, end_len;
-    int has_limit=0;
+    int has_limit=0, type;
     long limit_low, limit_high;
     zval *z_opt=NULL, **z_ele;
+    unsigned long idx;
+    unsigned int optlen;
     HashTable *ht_opt;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss|a", &key, &key_len,
@@ -518,26 +525,34 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Check for an options array
     if(z_opt && Z_TYPE_P(z_opt)==IS_ARRAY) {
         ht_opt = Z_ARRVAL_P(z_opt);
-
-        // Check for WITHSCORES
-        *withscores = (zend_hash_find(ht_opt,"withscores",sizeof("withscores"),
-                       (void**)&z_ele)==SUCCESS && Z_TYPE_PP(z_ele)==IS_BOOL &&
-                       Z_BVAL_PP(z_ele)==1);
-
-        // LIMIT
-        if(zend_hash_find(ht_opt,"limit",sizeof("limit"),(void**)&z_ele)
-                          ==SUCCESS)
+        for (zend_hash_internal_pointer_reset(ht_opt);
+             zend_hash_has_more_elements(ht_opt) == SUCCESS;
+             zend_hash_move_forward(ht_opt))
         {
-            HashTable *ht_limit = Z_ARRVAL_PP(z_ele);
-            zval **z_off, **z_cnt;
-            if(zend_hash_index_find(ht_limit,0,(void**)&z_off)==SUCCESS &&
-               zend_hash_index_find(ht_limit,1,(void**)&z_cnt)==SUCCESS &&
-               Z_TYPE_PP(z_off)==IS_LONG && Z_TYPE_PP(z_cnt)==IS_LONG)
-            {
-                has_limit  = 1;
-                limit_low  = Z_LVAL_PP(z_off);
-                limit_high = Z_LVAL_PP(z_cnt);
-            }
+           /* Grab current key and value */
+           type = zend_hash_get_current_key_ex(ht_opt, &optkey, &optlen, &idx, 0, NULL);
+           zend_hash_get_current_data(ht_opt, (void**)&z_ele);
+
+           /* All options require a string key type */
+           if (type != HASH_KEY_IS_STRING) continue;
+
+           /* Check for withscores and limit */
+           if (IS_WITHSCORES_ARG(optkey, optlen)) {
+               *withscores = Z_TYPE_PP(z_ele)==IS_BOOL && Z_BVAL_PP(z_ele)==1;
+           } else if(IS_LIMIT_ARG(optkey, optlen) &&
+                     Z_TYPE_PP(z_ele) == IS_ARRAY)
+           {
+                HashTable *htlimit = Z_ARRVAL_PP(z_ele);
+                zval **zoff, **zcnt;
+                if (zend_hash_index_find(htlimit,0,(void**)&zoff)==SUCCESS &&
+                    zend_hash_index_find(htlimit,1,(void**)&zcnt)==SUCCESS &&
+                    Z_TYPE_PP(zoff) == IS_LONG && Z_TYPE_PP(zcnt) == IS_LONG)
+                {
+                    has_limit = 1;
+                    limit_low = Z_LVAL_PP(zoff);
+                    limit_high = Z_LVAL_PP(zcnt);
+                }
+           }
         }
     }
 
