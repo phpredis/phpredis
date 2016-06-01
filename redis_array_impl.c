@@ -57,7 +57,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 		host_len = Z_STRLEN_PP(zpData);
 		port = 6379;
 
-		if((p = strchr(host, ':'))) { /* found port */
+		if((p = strrchr(host, ':'))) { /* found port */
 			host_len = p - host;
 			port = (short)atoi(p+1);
 		} else if(strchr(host,'/') != NULL) { /* unix socket */
