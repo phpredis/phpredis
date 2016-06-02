@@ -73,6 +73,13 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testRandomKey() {
+        /* Ensure some keys are present to test */
+        for ($i = 0; $i < 1000; $i++) {
+            if (rand(1, 2) == 1) {
+                $this->redis->set("key:$i", "val:$i");
+            }
+        }
+
         for ($i = 0; $i < 1000; $i++) {
             $k = $this->redis->randomKey("key:$i");
             $this->assertTrue($this->redis->exists($k));
