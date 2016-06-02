@@ -2388,7 +2388,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     zval *z_it;
     HashTable *hash;
     long it, num_ele;
-    zend_long count;
+    zend_long count=0;
 
     // Can't be in MULTI mode
     if(!CLUSTER_IS_ATOMIC(c)) {
