@@ -10,6 +10,7 @@ extern zend_class_entry *redis_cluster_exception_ce;
 
 /* Some debug methods that will go away when we're through with them */
 
+/*
 static void cluster_dump_nodes(redisCluster *c) {
     redisClusterNode *p;
 
@@ -39,7 +40,7 @@ static void cluster_log(char *fmt, ...)
     fprintf(stderr, "%s\n", buffer);
 }
 
-/* Debug function to dump a clusterReply structure recursively */
+// Debug function to dump a clusterReply structure recursively
 static void dump_reply(clusterReply *reply, int indent) {
     smart_string buf = {0};
     int i;
@@ -86,6 +87,7 @@ static void dump_reply(clusterReply *reply, int indent) {
         efree(buf.c);
     }
 }
+*/
 
 /* Recursively free our reply object.  If free_data is non-zero we'll also free
  * the payload data (strings) themselves.  If not, we just free the structs */
