@@ -117,7 +117,7 @@ static void
 cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
                                  clusterReply **element, int *err TSRMLS_DC)
 {
-    size_t idx = 0;
+    size_t idx = 0, sz;
     clusterReply *r;
     long len;
     char buf[1024];
@@ -138,10 +138,11 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
         switch(r->type) {
             case TYPE_ERR:
             case TYPE_LINE:
-                if(redis_sock_gets(sock, buf, sizeof(buf), &r->len) < 0) {
+                if(redis_sock_gets(sock, buf, sizeof(buf), &sz) < 0) {
                     *err = 1;
                     return;
                 }
+                r->len = (long long)sz;
                 break;
             case TYPE_INT:
                 r->integer = len;
