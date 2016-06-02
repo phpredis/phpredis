@@ -8,8 +8,7 @@
 
 extern zend_class_entry *redis_cluster_exception_ce;
 
-/* Some debug methods that will go away when we're through with them */
-
+/* Debugging methods/
 static void cluster_dump_nodes(redisCluster *c) {
     redisClusterNode **pp, *p;
 
@@ -40,7 +39,7 @@ static void cluster_log(char *fmt, ...)
     fprintf(stderr, "%s\n", buffer);
 }
 
-/* Debug function to dump a clusterReply structure recursively */
+// Debug function to dump a clusterReply structure recursively 
 static void dump_reply(clusterReply *reply, int indent) {
     smart_str buf = {0};
     int i;
@@ -87,6 +86,8 @@ static void dump_reply(clusterReply *reply, int indent) {
         efree(buf.c);
     }
 }
+*/
+
 
 /* Recursively free our reply object.  If free_data is non-zero we'll also free
  * the payload data (strings) themselves.  If not, we just free the structs */
@@ -116,7 +117,7 @@ static void
 cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
                                  clusterReply **element, int *err TSRMLS_DC)
 {
-    size_t idx = 0;
+    size_t idx = 0, sz;
     clusterReply *r;
     long len;
     char buf[1024];
@@ -137,10 +138,11 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
         switch(r->type) {
             case TYPE_ERR:
             case TYPE_LINE:
-                if(redis_sock_gets(sock,buf,sizeof(buf),&r->len TSRMLS_CC)<0) {
+                if(redis_sock_gets(sock,buf,sizeof(buf),&sz TSRMLS_CC)<0) {
                     *err = 1;
                     return;
                 }
+                r->len = (long long)sz;
                 break;
             case TYPE_INT:
                 r->integer = len;
@@ -580,32 +582,6 @@ unsigned short cluster_hash_key_zval(zval *z_key) {
 
     // Hash the string representation
     return cluster_hash_key(kptr, klen);
-}
-
-static char **split_str_by_delim(char *str, char *delim, int *len) {
-    char **array, *tok, *tok_buf;
-    int size=16;
-
-    *len = 0;
-
-    // Initial storage
-    array = emalloc(size * sizeof(char*));
-
-    tok = php_strtok_r(str, delim, &tok_buf);
-
-    while(tok) {
-        if(size == *len) {
-            size *= 2;
-            array = erealloc(array, size * sizeof(char*));
-        }
-
-        array[*len] = tok;
-        (*len)++;
-
-        tok = php_strtok_r(NULL, delim, &tok_buf);
-    }
-
-    return array;
 }
 
 /* Fisher-Yates shuffle for integer array */
