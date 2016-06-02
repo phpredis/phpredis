@@ -4,7 +4,6 @@ require_once(dirname($_SERVER['PHP_SELF'])."/TestSuite.php");
 
 class Redis_Test extends TestSuite
 {
-    const HOST = '127.0.0.1';
     const PORT = 6379;
     const AUTH = NULL; //replace with a string to use Redis authentication
 
@@ -21,7 +20,8 @@ class Redis_Test extends TestSuite
 
     protected function newInstance() {
         $r = new Redis();
-        $r->connect(self::HOST, self::PORT);
+
+        $r->connect($this->getHost(), self::PORT);
 
         if(self::AUTH) {
             $this->assertTrue($r->auth(self::AUTH));
@@ -4485,7 +4485,7 @@ class Redis_Test extends TestSuite
 
     public function testIntrospection() {
         // Simple introspection tests
-        $this->assertTrue($this->redis->getHost() === self::HOST);
+        $this->assertTrue($this->redis->getHost() === $this->getHost());
         $this->assertTrue($this->redis->getPort() === self::PORT);
         $this->assertTrue($this->redis->getAuth() === self::AUTH);
     }

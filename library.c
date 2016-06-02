@@ -1563,6 +1563,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     struct timeval tv, read_tv, *tv_ptr = NULL;
     char *host = NULL, *persistent_id = NULL;
 	zend_string *errstr;
+    const char *fmtstr = "%s:%d";
     int host_len, err = 0;
     php_netstream_data_t *sock;
     int tcp_flag = 1;
@@ -1585,8 +1586,15 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     } else {
         if(redis_sock->port == 0)
             redis_sock->port = 6379;
-        host_len = spprintf(&host, 0, "%s:%d", redis_sock->host,
-            redis_sock->port);
+
+#ifdef HAVE_IPV6
+        /* If we've got IPv6 and find a colon in our address, convert to proper
+         * IPv6 [host]:port format */
+        if (strchr(redis_sock->host, ':') != NULL) {
+            fmtstr = "[%s]:%d";
+        }
+#endif
+        host_len = spprintf(&host, 0, fmtstr, redis_sock->host, redis_sock->port);
     }
 
     if (redis_sock->persistent) {

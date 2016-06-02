@@ -846,8 +846,9 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
         // Grab a copy of the string
         str = Z_STRVAL_P(z_seed);
 
-        // Must be in host:port form
-        if(!(psep = strchr(str, ':')))
+        /* Make sure we have a colon for host:port.  Search right to left in the
+         * case of IPv6 */
+        if ((psep = strrchr(str, ':')) == NULL)
             continue;
 
         // Allocate a structure for this seed
@@ -922,12 +923,12 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
     /* Move past "MOVED" or "ASK */
     msg += moved ? MOVED_LEN : ASK_LEN;
 
-    // We need a slot seperator
-    if(!(host = strchr(msg, ' '))) return -1;
+    /* Make sure we can find host */
+    if ((host = strchr(msg, ' ')) == NULL) return -1;
     *host++ = '\0';
 
-    // We need a : that seperates host from port
-    if(!(port = strchr(host,':'))) return -1;
+    /* Find port, searching right to left in case of IPv6 */
+    if ((port = strrchr(host, ':')) == NULL) return -1;
     *port++ = '\0';
 
     // Success, apply it

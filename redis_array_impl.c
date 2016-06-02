@@ -61,13 +61,12 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
         host_len = Z_STRLEN_P(zpData);
         port = 6379;
 
-        /* Split host:port by colon */
-        if ((p = memchr(host, ':', host_len))) {
-            host_len = p - host;
-            port = (short)atoi(p+1);
-        } else if(strchr(host,'/') != NULL) { /* unix socket */
-            port = -1;
-        }
+		if(((p = strrchr(host, ':')))) { /* found port */
+			host_len = p - host;
+			port = (short)atoi(p+1);
+		} else if(strchr(host,'/') != NULL) { /* unix socket */
+		    port = -1;
+		}
 
         /* create Redis object */
         object_init_ex(&ra->redis[i], redis_ce);
