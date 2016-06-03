@@ -21,10 +21,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>michael.grunder@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2015-03-03</date>
+ <date>2016-06-02</date>
  <version>
-  <release>2.2.7</release>
-  <api>2.2.7</api>
+  <release>2.2.8</release>
+  <api>2.2.8</api>
  </version>
  <stability>
   <release>stable</release>
@@ -32,36 +32,51 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 2.2.7
-    
-    -- Improvements ---
-    
-    * Implemented PFADD, PFMERGE, and PFCOUNT command handling
-    * Implemented ZRANGEBYLEX command (holding off on ZREVRANGEBYLEX
-      as that won't be out until 3.0)
-    * Implemented getMode() so clients can detect whether we're in
-      ATOMIC/MULTI/PIPELINE mode.
-    * Implemented rawCommand() so clients can send arbitrary things to
-      the redis server
-    * Implemented DEBUG OBJECT (@michael-grunder, @isage)
-    * Added/abide by connect timeout for RedisArray
-    * Select to the last selected DB when phpredis reconnects
+    phpredis 2.2.8
 
-    -- Fixes ---
+    The main improvement in this version of phpredis is support for Redis
+    Cluster.  This version of phpredis is intended for versions of php older
+    than 7.
 
-    * Fix a possible invalid free in _serialize
-    * Added SAVE and BGSAVE to "distributable" commands for RedisArray
-    * @welting -- Fixed invalid "argc" calculation re HLL commands
-    * Allow clients to break out of the subscribe loop and return context.
-    * Fixes a memory leak in SCAN when OPT_SCAN_RETRY id.
-    * @remicollet -- Fix possible segfault when igbinary is enabled.
-    * Add a couple of cases where we throw on an error (LOADING/NOAUTH/MASTERDOWN)
-    * Fix several issues with serialization NARY
-    * @itcom -- Fix missing TSRMLS_CC and a TSRMLS_DC/TSRMLS_CC typo</notes>
+    In addition there have been many bug fixes and improvements to non cluster
+    related commands, which are listed below.
+
+    I've attempted to include everyone who contribued to the project in each fix
+    description and have included names or github user ids.
+
+    Thanks to everyone for submitting bug reports and pull requests.  A special
+    thanks to Remi Collet for helping with any and all packaging related issues
+
+    \o/
+    
+    --- Improvements ---
+
+    * Added randomization to our seed nodes to balance which instance is used
+      to map the keyspace (Vitaliy Stepanyuk) [32eb1c5f]
+    * Added support for IPv6 addresses
+
+    --- Fixes ---
+
+    * PHP liveness checking workaround (Shafreeck Sea) [c18d58b9]
+    * Various documentation and code formatting and style fixes (ares333,
+      sanpili, Bryan Nelson, linfangrong, Romero Malaquias, Viktor Szépe)
+    * Fix scan reply processing to use long instead of int to avoid overflow
+      (mixiaojiong).
+    * Fix potential segfault in Redis Cluster session storage (Sergei Lomakov)
+      [cc15aae]
+    * Fixed memory leak in discard function [17b1f427]
+    * Sanity check for igbinary unserialization (Maurus Cuelenaere) [3266b222, 
+      5528297a]
+    * Fix segfault occuring from unclosed socket connection for Redis Cluster
+      (CatKang) [04196aee]
+    * Case insensitive zRangeByScore options
+    * Fixed dreaded size_t vs long long compiler warning
+ </notes>
  <contents>
   <dir name="/">
    <file role='doc' name='README.markdown'/>
    <file role='doc' name='arrays.markdown'/>
+   <file role='doc' name='cluster.markdown'/>
    <file role='doc' name='CREDITS'/>
    <file role='doc' name='COPYING'/>
    <file role='src' name='config.m4'/>
@@ -74,15 +89,24 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='src' name='redis_array.h'/>
    <file role='src' name='redis_array_impl.c'/>
    <file role='src' name='redis_array_impl.h'/>
+   <file role='src' name='redis_cluster.c'/>
+   <file role='src' name='redis_cluster.h'/>
+   <file role='src' name='cluster_library.c'/>
+   <file role='src' name='cluster_library.h'/>
+   <file role='src' name='redis_commands.c'/>
+   <file role='src' name='redis_commands.h'/>
    <file role='src' name='redis.c'/>
+   <file role='src' name='crc16.h'/>
    <file role='src' name='redis_session.c'/>
    <file role='src' name='redis_session.h'/>
    <dir name='tests'>
-     <file role='test' name='array-tests.php' />
-     <file role='test' name='memory.php' />
-     <file role='test' name='mkring.sh' />
-     <file role='test' name='test.php' />
-     <file role='test' name='TestRedis.php' />
+     <file role='test' name='RedisArrayTest.php'/>
+     <file role='test' name='RedisClusterTest.php'/>
+     <file role='test' name='RedisTest.php'/>
+     <file role='test' name='TestRedis.php'/>
+     <file role='test' name='TestSuite.php'/>
+     <file role='test' name='make-cluster.sh'/>
+     <file role='test' name='mkring.sh'/>
    </dir> <!-- tests -->
   </dir> <!-- / -->
  </contents>
@@ -101,6 +125,53 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>redis</providesextension>
  <extsrcrelease/>
  <changelog>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>2.2.8</release><api>2.2.8</api></version>
+   <date>2016-06-02</date>
+   <notes>
+    phpredis 2.2.8
+
+    The main improvement in this version of phpredis is support for Redis
+    Cluster.  This version of phpredis is intended for versions of php older
+    than 7.
+
+    In addition there have been many bug fixes and improvements to non cluster
+    related commands, which are listed below.
+
+    I've attempted to include everyone who contribued to the project in each fix
+    description and have included names or github user ids.
+
+    Thanks to everyone for submitting bug reports and pull requests.  A special
+    thanks to Remi Collet for helping with any and all packaging related issues
+
+    \o/
+
+    --- Improvements ---
+
+    * Added randomization to our seed nodes to balance which instance is used
+      to map the keyspace (Vitaliy Stepanyuk) [32eb1c5f]
+    * Added support for IPv6 addresses
+
+    --- Fixes ---
+
+    * PHP liveness checking workaround (Shafreeck Sea) [c18d58b9]
+    * Various documentation and code formatting and style fixes (ares333,
+      sanpili, Bryan Nelson, linfangrong, Romero Malaquias, Viktor Szépe)
+    * Fix scan reply processing to use long instead of int to avoid overflow
+      (mixiaojiong).
+    * Fix potential segfault in Redis Cluster session storage (Sergei Lomakov)
+      [cc15aae]
+    * Fixed memory leak in discard function [17b1f427]
+    * Sanity check for igbinary unserialization (Maurus Cuelenaere) [3266b222,
+      5528297a]
+    * Fix segfault occuring from unclosed socket connection for Redis Cluster
+      (CatKang) [04196aee]
+    * Case insensitive zRangeByScore options
+    * Fixed dreaded size_t vs long long compiler warning
+   </notes>
+   </release>
+  
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>2.2.7</release><api>2.2.7</api></version>
