@@ -21,10 +21,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>michael.grunder@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2015-03-03</date>
+ <date>2016-03-03</date>
  <version>
-  <release>2.2.7</release>
-  <api>2.2.7</api>
+  <release>3.0.0</release>
+  <api>3.0.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -32,36 +32,43 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 2.2.7
-    
+    phpredis 3.0.0
+
+    This version of phpredis supports cluster and is intended for php versions
+    7.0.0 and higher.  To compile cluster-enabled phpredis for older versions
+    of php, please use the 2.2.8 pecl package.
+
+    A huge thanks goes out to Sean DuBois for doing all the work required to get
+    phpredis working in php 7.0!
+
     -- Improvements ---
-    
-    * Implemented PFADD, PFMERGE, and PFCOUNT command handling
-    * Implemented ZRANGEBYLEX command (holding off on ZREVRANGEBYLEX
-      as that won't be out until 3.0)
-    * Implemented getMode() so clients can detect whether we're in
-      ATOMIC/MULTI/PIPELINE mode.
-    * Implemented rawCommand() so clients can send arbitrary things to
-      the redis server
-    * Implemented DEBUG OBJECT (@michael-grunder, @isage)
-    * Added/abide by connect timeout for RedisArray
-    * Select to the last selected DB when phpredis reconnects
 
-    -- Fixes ---
+    * PHP 7 Support (Sean DuBois) [3159bd2, 567dc2f, daa4d9f, f2711e3, 9cb9d07,
+      9d51c89, 9ff8f49, 33bb629, cbdf65a, f30b7fd, c687a51, 6b3e773, 2bf8241,
+      771bd3d, 9221ca4, 4e00df6, e2407ca, 97fcfe6, 77e6200]
+    * Redis Cluster support
+    * Allow SINTERSTORE to take a single array argument again
+    * IPv6 support
 
-    * Fix a possible invalid free in _serialize
-    * Added SAVE and BGSAVE to "distributable" commands for RedisArray
-    * @welting -- Fixed invalid "argc" calculation re HLL commands
-    * Allow clients to break out of the subscribe loop and return context.
-    * Fixes a memory leak in SCAN when OPT_SCAN_RETRY id.
-    * @remicollet -- Fix possible segfault when igbinary is enabled.
-    * Add a couple of cases where we throw on an error (LOADING/NOAUTH/MASTERDOWN)
-    * Fix several issues with serialization NARY
-    * @itcom -- Fix missing TSRMLS_CC and a TSRMLS_DC/TSRMLS_CC typo</notes>
+    --- Fixes ---
+
+    * config.w32 fix (Jan-E) [495d308, c9e0b682]
+    * Exception handling improvement (Jan-E) [314a2c3c]
+    * Unit test fix for max int value (Jan-E) [659ea2aa]
+    * unsigned long -> zend_ulong fix (Jan-E) [4d66e3d4]
+    * Visual Stuio 14 fixes (Jan-E) [ea98401c]
+    * Segfault fix when looking up our socket (ephemeralsnow) [0126481a]
+    * Allow '-' and '+' in ZRANGEBYLEX (Patrick Pokatilo) [8bfa2188]
+    * Documentation fixes (Ares) [54b9a0ec]
+    * php7 related memory leak fix (Stuart Carnie) [b75bf3b4]
+    * Potential segfault fix in cluster session (Sergei Lomakov) [661fb5b1]
+    * php7 related serialization leak fix (Adam Harvey) [c40fc1d8]
+ </notes>
  <contents>
-  <dir name="/">
+   <dir name="/">
    <file role='doc' name='README.markdown'/>
    <file role='doc' name='arrays.markdown'/>
+   <file role='doc' name='cluster.markdown'/>
    <file role='doc' name='CREDITS'/>
    <file role='doc' name='COPYING'/>
    <file role='src' name='config.m4'/>
@@ -74,15 +81,24 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='src' name='redis_array.h'/>
    <file role='src' name='redis_array_impl.c'/>
    <file role='src' name='redis_array_impl.h'/>
+   <file role='src' name='redis_cluster.c'/>
+   <file role='src' name='redis_cluster.h'/>
+   <file role='src' name='cluster_library.c'/>
+   <file role='src' name='cluster_library.h'/>
+   <file role='src' name='redis_commands.c'/>
+   <file role='src' name='redis_commands.h'/>
    <file role='src' name='redis.c'/>
+   <file role='src' name='crc16.h'/>
    <file role='src' name='redis_session.c'/>
    <file role='src' name='redis_session.h'/>
    <dir name='tests'>
-     <file role='test' name='array-tests.php' />
-     <file role='test' name='memory.php' />
-     <file role='test' name='mkring.sh' />
-     <file role='test' name='test.php' />
-     <file role='test' name='TestRedis.php' />
+     <file role='test' name='RedisArrayTest.php'/>
+     <file role='test' name='RedisClusterTest.php'/>
+     <file role='test' name='RedisTest.php'/>
+     <file role='test' name='TestRedis.php'/>
+     <file role='test' name='TestSuite.php'/>
+     <file role='test' name='make-cluster.sh'/>
+     <file role='test' name='mkring.sh'/>
    </dir> <!-- tests -->
   </dir> <!-- / -->
  </contents>
@@ -101,6 +117,39 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>redis</providesextension>
  <extsrcrelease/>
  <changelog>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>3.0.0</release><api>3.0.0</api></version>
+   <date>2016-06-03</date>
+   <notes>
+      phpredis 3.0.0
+
+       -- Improvements ---
+
+       * Implemented PFADD, PFMERGE, and PFCOUNT command handling
+       * Implemented ZRANGEBYLEX command (holding off on ZREVRANGEBYLEX
+         as that won't be out until 3.0)
+       * Implemented getMode() so clients can detect whether we're in
+         ATOMIC/MULTI/PIPELINE mode.
+       * Implemented rawCommand() so clients can send arbitrary things to
+         the redis server
+       * Implemented DEBUG OBJECT (@michael-grunder, @isage)
+       * Added/abide by connect timeout for RedisArray
+       * Select to the last selected DB when phpredis reconnects
+
+       -- Fixes ---
+
+       * Fix a possible invalid free in _serialize
+       * Added SAVE and BGSAVE to "distributable" commands for RedisArray
+       * @welting -- Fixed invalid "argc" calculation re HLL commands
+       * Allow clients to break out of the subscribe loop and return context.
+       * Fixes a memory leak in SCAN when OPT_SCAN_RETRY id.
+       * @remicollet -- Fix possible segfault when igbinary is enabled.
+       * Add a couple of cases where we throw on an error (LOADING/NOAUTH/MASTERDOWN)
+       * Fix several issues with serialization NARY
+       * @itcom -- Fix missing TSRMLS_CC and a TSRMLS_DC/TSRMLS_CC typo
+   </notes>
+   </release>
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>2.2.7</release><api>2.2.7</api></version>
