@@ -41,7 +41,7 @@ int redis_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 /* Helper to construct a raw command.  Given that the cluster and non cluster
  * versions are different (RedisCluster needs an additional argument to direct
  * the command) we take the start of our array and count */
-int redis_build_raw_cmd(zval **z_args, int argc, char **cmd, int *cmd_len TSRMLS_DC) 
+int redis_build_raw_cmd(zval **z_args, int argc, char **cmd, int *cmd_len TSRMLS_DC)
 {
     smart_str cmdstr = {0};
     int i;
@@ -907,10 +907,10 @@ int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Construct command */
     if(argc == 3) {
-        *cmd_len = redis_cmd_format_static(cmd, kw, "sss", key, key_len, min, 
+        *cmd_len = redis_cmd_format_static(cmd, kw, "sss", key, key_len, min,
             min_len, max, max_len);
     } else {
-        *cmd_len = redis_cmd_format_static(cmd, kw, "ssssll", key, key_len, min, 
+        *cmd_len = redis_cmd_format_static(cmd, kw, "ssssll", key, key_len, min,
             min_len, max, max_len, "LIMIT", sizeof("LIMIT")-1, offset, count);
     }
 
@@ -925,7 +925,7 @@ int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* ZLEXCOUNT/ZREMRANGEBYLEX */
 int redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                       char *kw, char **cmd, int *cmd_len, short *slot, 
+                       char *kw, char **cmd, int *cmd_len, short *slot,
                        void **ctx)
 {
     char *key, *min, *max;
@@ -951,7 +951,7 @@ int redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
     /* Construct command */
-    *cmd_len = redis_cmd_format_static(cmd, kw, "sss", key, key_len, min, 
+    *cmd_len = redis_cmd_format_static(cmd, kw, "sss", key, key_len, min,
         min_len, max, max_len);
 
     /* set slot */
@@ -1033,7 +1033,7 @@ int redis_key_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     int key_len, val_len, key_free, val_free, argc = 1;
     char *key, *val;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa", &key, &key_len, 
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa", &key, &key_len,
                               &z_arr) == FAILURE ||
                               zend_hash_num_elements(Z_ARRVAL_P(z_arr)) == 0)
     {
@@ -1044,7 +1044,7 @@ int redis_key_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     ht_arr = Z_ARRVAL_P(z_arr);
     argc += zend_hash_num_elements(ht_arr);
     redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
-    
+
     /* Prefix if required and append the key name */
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
     redis_cmd_append_sstr(&cmdstr, key, key_len);
@@ -1351,16 +1351,16 @@ int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
-/* To maintain backward compatibility with earlier versions of phpredis, we 
+/* To maintain backward compatibility with earlier versions of phpredis, we
  * allow for an optional "increment by" argument for INCR and DECR even though
  * that's not how Redis proper works */
 #define TYPE_INCR 0
 #define TYPE_DECR 1
 
 /* Handle INCR(BY) and DECR(BY) depending on optional increment value */
-static int 
-redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, int type, 
-                       RedisSock *redis_sock, char **cmd, int *cmd_len, 
+static int
+redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, int type,
+                       RedisSock *redis_sock, char **cmd, int *cmd_len,
                        short *slot, void **ctx)
 {
     char *key;
@@ -1401,7 +1401,7 @@ redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, int type,
     /* Success */
     return SUCCESS;
 }
- 
+
 /* INCR */
 int redis_incr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char **cmd, int *cmd_len, short *slot, void **ctx)
@@ -1517,8 +1517,8 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         zend_hash_move_forward_ex(ht_arr, &ptr))
     {
         // We can only handle string or long values here
-        if ((Z_TYPE_PP(z_mem)==IS_STRING && Z_STRLEN_PP(z_mem)>0) 
-            || Z_TYPE_PP(z_mem)==IS_LONG) 
+        if ((Z_TYPE_PP(z_mem)==IS_STRING && Z_STRLEN_PP(z_mem)>0)
+            || Z_TYPE_PP(z_mem)==IS_LONG)
         {
             // Copy into our member array
             MAKE_STD_ZVAL(z_mems[valid]);
@@ -1948,7 +1948,7 @@ int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         /* Initialize the command with our number of arguments */
         redis_cmd_init_sstr(&cmdstr, num_keys, "PFCOUNT", sizeof("PFCOUNT")-1);
-        
+
         /* Append our key(s) */
         for (zend_hash_internal_pointer_reset_ex(ht_keys, &ptr);
              zend_hash_get_current_data_ex(ht_keys, (void**)&z_key, &ptr)==SUCCESS;
@@ -1971,7 +1971,7 @@ int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             /* Append this key to our command */
             key_free = redis_key_prefix(redis_sock, &key, &key_len);
             redis_cmd_append_sstr(&cmdstr, key, key_len);
-            
+
             /* Protect against CROSSLOT errors */
             if (slot) {
                 if (kslot == -1) {
@@ -1983,7 +1983,7 @@ int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                         efree(z_tmp);
                     }
                     efree(cmdstr.c);
-                    
+
                     php_error_docref(NULL TSRMLS_CC, E_WARNING,
                         "Not all keys hash to the same slot!");
                     return FAILURE;
@@ -2741,6 +2741,215 @@ int redis_object_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* GEODIST */
+int redis_geodist_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key, *source, *dest, *unit = NULL;
+    int keylen, sourcelen, destlen, unitlen;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss|s", &key, &keylen,
+                              &source, &sourcelen, &dest, &destlen, &unit,
+                              &unitlen) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    /* Construct command */
+    if (unit != NULL) {
+       *cmd_len = redis_cmd_format_static(cmd, "GEODIST", "ssss", key, keylen,
+           source, sourcelen, dest, destlen, unit, unitlen);
+    } else {
+       *cmd_len = redis_cmd_format_static(cmd, "GEODIST", "sss", key, keylen,
+           source, sourcelen, dest, destlen);
+    }
+
+    /* Set slot */
+    CMD_SET_SLOT(slot, key, keylen);
+
+    return SUCCESS;
+}
+
+/* Helper function to extract optional arguments for GEORADIUS and GEORADIUSBYMEMBER */
+static void get_georadius_opts(HashTable *ht, int *withcoord, int *withdist,
+                               int *withhash, long *count, geoSortType *sort)
+{
+    int type;
+    unsigned long idx;
+    unsigned int optkeylen;
+    char *optkey, *optstr;
+    zval **optval;
+
+    /* Iterate over our argument array, collating which ones we have */
+    for (zend_hash_internal_pointer_reset(ht);
+         zend_hash_has_more_elements(ht) == SUCCESS;
+         zend_hash_move_forward(ht))
+    {
+        /* Grab key and value */
+        type = zend_hash_get_current_key_ex(ht, &optkey, &optkeylen, &idx, 0, NULL);
+        zend_hash_get_current_data(ht, (void**)&optval);
+
+        /* If the key is numeric it's a non value option */
+        if (type == HASH_KEY_IS_LONG) {
+            /* Option needs to be a string */
+            if (Z_TYPE_PP(optval) != IS_STRING) continue;
+
+            optstr = Z_STRVAL_PP(optval);
+
+            if (!strcasecmp(optstr, "withcoord")) {
+                *withcoord = 1;
+            } else if (!strcasecmp(optstr, "withdist")) {
+                *withdist = 1;
+            } else if (!strcasecmp(optstr, "withhash")) {
+                *withhash = 1;
+            }
+        } else if (!strcasecmp(optkey, "count") && Z_TYPE_PP(optval) == IS_LONG) {
+            *count = Z_LVAL_PP(optval);
+        }
+    }
+}
+
+/* Helper to append options to a GEORADIUS or GEORADIUSBYMEMBER command */
+void append_georadius_opts(smart_str *str, int withcoord, int withdist,
+                           int withhash, long count, geoSortType sort)
+{
+    /* WITHCOORD option */
+    if (withcoord)
+        REDIS_CMD_APPEND_SSTR_STATIC(str, "WITHCOORD");
+
+    /* WITHDIST option */
+    if (withdist)
+        REDIS_CMD_APPEND_SSTR_STATIC(str, "WITHDIST");
+
+    /* WITHHASH option */
+    if (withhash)
+        REDIS_CMD_APPEND_SSTR_STATIC(str, "WITHHASH");
+
+    /* Append sort if it's not GEO_NONE */
+    if (sort == SORT_ASC) {
+        REDIS_CMD_APPEND_SSTR_STATIC(str, "ASC");
+    } else if (sort == SORT_DESC) {
+        REDIS_CMD_APPEND_SSTR_STATIC(str, "DESC");
+    }
+
+    /* Append our count if we've got one */
+    if (count > 0) {
+        REDIS_CMD_APPEND_SSTR_STATIC(str, "COUNT");
+        redis_cmd_append_sstr_long(str, count);
+    }
+}
+
+/* GEORADIUS */
+int redis_georadius_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                        char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key, *unit;
+    int keylen, keyfree, unitlen;
+    int withcoord = 0, withdist = 0, withhash = 0;
+    long count = 0;
+    geoSortType sort = SORT_NONE;
+    double lng, lat, radius;
+    zval *opts = NULL;
+    smart_str cmdstr = {0};
+    int argc;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sddds|a", &key, &keylen,
+                              &lng, &lat, &radius, &unit, &unitlen, &opts)
+                              == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    /* Parse any GEORADIUS options we have */
+    if (opts != NULL) {
+        get_georadius_opts(Z_ARRVAL_P(opts), &withcoord, &withdist, &withhash,
+            &count, &sort);
+    }
+
+    /* Calculate the number of arguments we're going to send, five required plus
+     * options. */
+    argc = 5 + withcoord + withdist + withhash + (sort != SORT_NONE);
+    if (count != 0) argc += 2;
+
+    /* Begin construction of our command */
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "GEORADIUS");
+
+    /* Apply any key prefix */
+    keyfree = redis_key_prefix(redis_sock, &key, &keylen);
+
+    /* Append required arguments */
+    redis_cmd_append_sstr(&cmdstr, key, keylen);
+    redis_cmd_append_sstr_dbl(&cmdstr, lng);
+    redis_cmd_append_sstr_dbl(&cmdstr, lat);
+    redis_cmd_append_sstr_dbl(&cmdstr, radius);
+    redis_cmd_append_sstr(&cmdstr, unit, unitlen);
+
+    /* Append optional arguments */
+    append_georadius_opts(&cmdstr, withcoord, withdist, withhash, count, sort);
+
+    /* Free key if it was prefixed */
+    if (keyfree) efree(key);
+
+    /* Set slot, command and len, and return */
+    CMD_SET_SLOT(slot, key, keylen);
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+/* GEORADIUSBYMEMBER key member radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count] */
+int redis_georadiusbymember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                                char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key, *mem, *unit;
+    int keylen, keyfree, memlen, unitlen, argc;
+    int withcoord = 0, withdist = 0, withhash = 0;
+    long count = 0;
+    double radius;
+    geoSortType sort = SORT_NONE;
+    zval *opts = NULL;
+    smart_str cmdstr = {0};
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssds|a", &key, &keylen,
+                              &mem, &memlen, &radius, &unit, &unitlen, &opts) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    if (opts != NULL) {
+        get_georadius_opts(Z_ARRVAL_P(opts), &withcoord, &withdist, &withhash, &count, &sort);
+    }
+
+    /* Calculate argc */
+    argc = 4 + withcoord + withdist + withhash + (sort != SORT_NONE);
+    if (count != 0) argc += 2;
+
+    /* Begin command construction*/
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "GEORADIUSBYMEMBER");
+
+    /* Prefix our key if we're prefixing */
+    keyfree = redis_key_prefix(redis_sock, &key, &keylen);
+
+    /* Append required arguments */
+    redis_cmd_append_sstr(&cmdstr, key, keylen);
+    redis_cmd_append_sstr(&cmdstr, mem, memlen);
+    redis_cmd_append_sstr_long(&cmdstr, radius);
+    redis_cmd_append_sstr(&cmdstr, unit, unitlen);
+
+    /* Append options */
+    append_georadius_opts(&cmdstr, withcoord, withdist, withhash, count, sort);
+
+    /* Free key if we prefixed */
+    if (keyfree) efree(key);
+
+    CMD_SET_SLOT(slot, key, keylen);
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 /* DEL */
 int redis_del_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   char **cmd, int *cmd_len, short *slot, void **ctx)
@@ -2830,8 +3039,8 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     int kw_len;
 
     /* Parse our args */
-    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|sz", &kw, &kw_len, 
-                             &z_arg)==FAILURE) 
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|sz", &kw, &kw_len,
+                             &z_arg)==FAILURE)
     {
         return FAILURE;
     }
@@ -2841,7 +3050,7 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         *cmd_len = redis_cmd_format_static(cmd, "COMMAND", "");
     } else if(kw && !z_arg) {
         /* Sanity check */
-        if(strncasecmp(kw, "info", sizeof("info")-1) || 
+        if(strncasecmp(kw, "info", sizeof("info")-1) ||
            Z_TYPE_P(z_arg)!=IS_STRING)
         {
             return FAILURE;
@@ -2855,12 +3064,12 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         /* Sanity check on args */
         if(strncasecmp(kw, "getkeys", sizeof("getkeys")-1) ||
-           Z_TYPE_P(z_arg)!=IS_ARRAY || 
+           Z_TYPE_P(z_arg)!=IS_ARRAY ||
            (arr_len=zend_hash_num_elements(Z_ARRVAL_P(z_arg)))<1)
         {
             return FAILURE;
         }
-        
+
         zval **z_ele;
         HashTable *ht_arr = Z_ARRVAL_P(z_arg);
         smart_str cmdstr = {0};
@@ -2986,7 +3195,7 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             break;
         case REDIS_OPT_FAILOVER:
             val_long = atol(val_str);
-            if (val_long == REDIS_FAILOVER_NONE || 
+            if (val_long == REDIS_FAILOVER_NONE ||
                 val_long == REDIS_FAILOVER_ERROR ||
                 val_long == REDIS_FAILOVER_DISTRIBUTE ||
                 val_long == REDIS_FAILOVER_DISTRIBUTE_SLAVES)
@@ -2995,7 +3204,7 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                 RETURN_TRUE;
             } else {
                 RETURN_FALSE;
-            } 
+            }
         default:
             RETURN_FALSE;
     }

@@ -197,6 +197,14 @@ PHP_METHOD(Redis, slowlog);
 PHP_METHOD(Redis, wait);
 PHP_METHOD(Redis, pubsub);
 
+/* Geoadd and friends */
+PHP_METHOD(Redis, geoadd);
+PHP_METHOD(Redis, geohash);
+PHP_METHOD(Redis, geopos);
+PHP_METHOD(Redis, geodist);
+PHP_METHOD(Redis, georadius);
+PHP_METHOD(Redis, georadiusbymember);
+
 PHP_METHOD(Redis, client);
 PHP_METHOD(Redis, command);
 PHP_METHOD(Redis, rawcommand);
