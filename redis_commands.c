@@ -2802,6 +2802,10 @@ static void get_georadius_opts(HashTable *ht, int *withcoord, int *withdist,
                 *withdist = 1;
             } else if (!strcasecmp(optstr, "withhash")) {
                 *withhash = 1;
+            } else if (!strcasecmp(optstr, "asc")) {
+                *sort = SORT_ASC;
+            } else if (!strcasecmp(optstr, "desc")) {
+                *sort = SORT_DESC;
             }
         } else if (!strcasecmp(optkey, "count") && Z_TYPE_PP(optval) == IS_LONG) {
             *count = Z_LVAL_PP(optval);
