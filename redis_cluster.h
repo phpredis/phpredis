@@ -238,6 +238,12 @@ PHP_METHOD(RedisCluster, pubsub);
 PHP_METHOD(RedisCluster, script);
 PHP_METHOD(RedisCluster, slowlog);
 PHP_METHOD(RedisCluster, command);
+PHP_METHOD(RedisCluster, geoadd);
+PHP_METHOD(RedisCluster, geohash);
+PHP_METHOD(RedisCluster, geopos);
+PHP_METHOD(RedisCluster, geodist);
+PHP_METHOD(RedisCluster, georadius);
+PHP_METHOD(RedisCluster, georadiusbymember);
 
 /* SCAN and friends */
 PHP_METHOD(RedisCluster, scan);

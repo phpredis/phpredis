@@ -222,6 +222,12 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, pubsub, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, script, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, slowlog, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, geoadd, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, geohash, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, geopos, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, geodist, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, georadius, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, georadiusbymember, NULL, ZEND_ACC_PUBLIC)
     {NULL, NULL, NULL}
 };
 
@@ -2792,6 +2798,35 @@ PHP_METHOD(RedisCluster, slowlog) {
 }
 /* }}} */
 
+/* {{{ proto int RedisCluster::geoadd(string key, float long float lat string mem, ...) */
+PHP_METHOD(RedisCluster, geoadd) {
+    CLUSTER_PROCESS_KW_CMD("GEOADD", redis_key_varval_cmd, cluster_long_resp, 0);
+}
+
+/* {{{ proto array RedisCluster::geohash(string key, string mem1, [string mem2...]) */
+PHP_METHOD(RedisCluster, geohash) {
+    CLUSTER_PROCESS_KW_CMD("GEOHASH", redis_key_varval_cmd, cluster_mbulk_raw_resp, 1);
+}
+
+/* {{{ proto array RedisCluster::geopos(string key, string mem1, [string mem2...]) */
+PHP_METHOD(RedisCluster, geopos) {
+    CLUSTER_PROCESS_KW_CMD("GEOPOS", redis_key_varval_cmd, cluster_variant_resp, 1);
+}
+
+/* {{{ proto array RedisCluster::geodist(string key, string mem1, string mem2 [string unit]) */
+PHP_METHOD(RedisCluster, geodist) {
+    CLUSTER_PROCESS_CMD(geodist, cluster_dbl_resp, 1);
+}
+
+/* {{{ proto array RedisCluster::georadius() }}} */
+PHP_METHOD(RedisCluster, georadius) {
+    CLUSTER_PROCESS_CMD(georadius, cluster_variant_resp, 1);
+}
+
+/* {{{ proto array RedisCluster::georadiusbymember() }}} */
+PHP_METHOD(RedisCluster, georadiusbymember) {
+    CLUSTER_PROCESS_CMD(georadiusbymember, cluster_variant_resp, 1)
+}
 
 /* {{{ proto array RedisCluster::role(string key)
  *     proto array RedisCluster::role(array host_port) */
