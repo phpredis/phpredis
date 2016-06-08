@@ -112,6 +112,28 @@ void cluster_free_reply(clusterReply *reply, int free_data) {
     efree(reply);
 }
 
+void gen_cluster_free_reply(clusterReply *reply) {
+    int i;
+
+    switch(reply->type) {
+        case TYPE_ERR:
+        case TYPE_LINE:
+        case TYPE_BULK:
+            if(reply->str)
+                free(reply->str);
+            break;
+        case TYPE_MULTIBULK:
+            for(i=0;i<reply->elements && reply->element[i]; i++) {
+                gen_cluster_free_reply(reply->element[i]);
+            }
+            free(reply->element);
+            break;
+        default:
+            break;
+    }
+    free(reply);
+}
+
 static void
 cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
                                  clusterReply **element, int *err TSRMLS_DC)
@@ -901,6 +923,7 @@ cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
     clusterReply *slots=NULL;
     int mapped=0;
 
+    static int flag;
     // Iterate over seeds until we can get slots
     for(zend_hash_internal_pointer_reset(c->seeds);
         !mapped && zend_hash_has_more_elements(c->seeds) == SUCCESS;
@@ -909,13 +932,21 @@ cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
         // Grab the redis_sock for this seed
         zend_hash_get_current_data(c->seeds, (void**)&seed);
 
-        // Attempt to connect to this seed node
-        if(redis_sock_connect(*seed TSRMLS_CC)!=0) {
-            continue;
+        // Parse out cluster nodes.  Flag mapped if we are valid
+        if (slots_meta) {
+            slots = slots_meta;
+            flag = 1;
+        } else {
+
+            // Attempt to connect to this seed node
+            if(redis_sock_connect(*seed TSRMLS_CC)!=0) {
+                continue;
+            }
+
+            slots = cluster_get_slots(*seed TSRMLS_CC);
+            flag = 0;
         }
 
-        // Parse out cluster nodes.  Flag mapped if we are valid
-        slots = cluster_get_slots(*seed TSRMLS_CC);
         if(slots) mapped = !cluster_map_slots(c, slots);
 
         // Bin anything mapped, if we failed somewhere
@@ -926,7 +957,11 @@ cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
     }
 
     // Clean up slots reply if we got one
-    if(slots) cluster_free_reply(slots, 1);
+    if(slots && !flag) {
+        fprintf(stderr, "modify global slots\n");
+        gen_cluster_dup_reply(slots, &slots_meta TSRMLS_CC);
+        cluster_free_reply(slots, 1);
+    }
 
     // Throw an exception if we couldn't map
     if(!mapped) {
@@ -958,6 +993,9 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
     *port++ = '\0';
 
     // Success, apply it
+    if (moved == REDIR_MOVED) {
+      slots_meta_reset(TSRMLS_CC);
+    }
     c->redir_type = moved ? REDIR_MOVED : REDIR_ASK;
     strncpy(c->redir_host, host, sizeof(c->redir_host));
     c->redir_host_len = port - host - 1;
@@ -2452,6 +2490,42 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
 
     // Success!
     return SUCCESS;
+}
+
+void gen_cluster_dup_reply(clusterReply *s, clusterReply **d TSRMLS_DC) {
+    *d = malloc(sizeof(clusterReply));
+    memset(*d, 0, sizeof(clusterReply));
+    size_t i;
+    (*d)->type = s->type;
+    switch(s->type) {
+        case TYPE_INT:
+            (*d)->integer = s->integer;
+            break;
+        case TYPE_LINE:
+        case TYPE_ERR:
+            return;
+        case TYPE_BULK:
+            (*d)->len = s->len;
+            (*d)->str = malloc(s->len+1);
+            memcpy((*d)->str, s->str, s->len+1);
+            break;
+        case TYPE_MULTIBULK:
+            (*d)->elements = s->elements;
+            if (s->elements != (size_t)-1) {
+                (*d)->element = calloc(s->elements, sizeof(clusterReply*));
+                for (i = 0; i < s->elements; ++i) {
+                    gen_cluster_dup_reply((s->element)[i], &(((*d)->element)[i]) TSRMLS_CC);
+                }
+            }
+    }
+    return;
+}
+
+void slots_meta_reset(TSRMLS_DC) {
+    if (slots_meta) {
+        gen_cluster_free_reply(slots_meta);
+    }
+    slots_meta = NULL;
 }
 
 /* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */

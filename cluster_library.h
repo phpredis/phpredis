@@ -324,6 +324,12 @@ clusterReply *cluster_read_resp(redisCluster *c TSRMLS_DC);
 clusterReply *cluster_read_sock_resp(RedisSock *redis_sock, 
     REDIS_REPLY_TYPE type, size_t reply_len TSRMLS_DC);
 void cluster_free_reply(clusterReply *reply, int free_data);
+void gen_cluster_free_reply(clusterReply *reply);
+void gen_cluster_dup_reply(clusterReply *src, clusterReply **dst TSRMLS_DC);
+
+clusterReply *slots_meta;
+void slots_meta_reset(TSRMLS_DC);
+
 
 /* Cluster distribution helpers for WATCH */
 HashTable *cluster_dist_create();

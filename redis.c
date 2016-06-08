@@ -42,6 +42,7 @@
 #include <ext/standard/php_math.h>
 
 #include "library.h"
+#include "cluster_library.h"
 
 #define R_SUB_CALLBACK_CLASS_TYPE 1
 #define R_SUB_CALLBACK_FT_TYPE 2
@@ -588,6 +589,7 @@ PHP_MINIT_FUNCTION(redis)
         NULL,
         "Redis Array", module_number
     );
+    slots_meta_reset(TSRMLS_CC);
 
     /* RedisException class */
     INIT_CLASS_ENTRY(redis_exception_class_entry, "RedisException", NULL);
@@ -624,6 +626,10 @@ PHP_MINIT_FUNCTION(redis)
  */
 PHP_MSHUTDOWN_FUNCTION(redis)
 {
+    if (slots_meta) {
+      gen_cluster_free_reply(slots_meta);
+      slots_meta = NULL;
+    }
     return SUCCESS;
 }
 
