@@ -98,7 +98,7 @@ phpredis can also connect to a unix domain socket: `session.save_path = "unix://
 
 ## Building on Windows
 
-See [instructions from @char101](https://github.com/nicolasff/phpredis/issues/213#issuecomment-11361242) on how to build phpredis on Windows.
+See [instructions from @char101](https://github.com/phpredis/phpredis/issues/213#issuecomment-11361242) on how to build phpredis on Windows.
 
 
 ## Distributed Redis Array

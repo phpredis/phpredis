@@ -8,8 +8,7 @@
 
 extern zend_class_entry *redis_cluster_exception_ce;
 
-/* Some debug methods that will go away when we're through with them */
-
+/* Debugging methods/
 static void cluster_dump_nodes(redisCluster *c) {
     redisClusterNode **pp, *p;
 
@@ -40,7 +39,7 @@ static void cluster_log(char *fmt, ...)
     fprintf(stderr, "%s\n", buffer);
 }
 
-/* Debug function to dump a clusterReply structure recursively */
+// Debug function to dump a clusterReply structure recursively 
 static void dump_reply(clusterReply *reply, int indent) {
     smart_str buf = {0};
     int i;
@@ -87,6 +86,8 @@ static void dump_reply(clusterReply *reply, int indent) {
         efree(buf.c);
     }
 }
+*/
+
 
 /* Recursively free our reply object.  If free_data is non-zero we'll also free
  * the payload data (strings) themselves.  If not, we just free the structs */
@@ -138,7 +139,7 @@ static void
 cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
                                  clusterReply **element, int *err TSRMLS_DC)
 {
-    size_t idx = 0;
+    size_t idx = 0, sz;
     clusterReply *r;
     long len;
     char buf[1024];
@@ -159,10 +160,11 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
         switch(r->type) {
             case TYPE_ERR:
             case TYPE_LINE:
-                if(redis_sock_gets(sock,buf,sizeof(buf),&r->len TSRMLS_CC)<0) {
+                if(redis_sock_gets(sock,buf,sizeof(buf),&sz TSRMLS_CC)<0) {
                     *err = 1;
                     return;
                 }
+                r->len = (long long)sz;
                 break;
             case TYPE_INT:
                 r->integer = len;
@@ -604,30 +606,18 @@ unsigned short cluster_hash_key_zval(zval *z_key) {
     return cluster_hash_key(kptr, klen);
 }
 
-static char **split_str_by_delim(char *str, char *delim, int *len) {
-    char **array, *tok, *tok_buf;
-    int size=16;
+/* Fisher-Yates shuffle for integer array */
+static void fyshuffle(int *array, size_t len) {
+    int temp, n = len;
+    size_t r;
 
-    *len = 0;
-
-    // Initial storage
-    array = emalloc(size * sizeof(char*));
-
-    tok = php_strtok_r(str, delim, &tok_buf);
-
-    while(tok) {
-        if(size == *len) {
-            size *= 2;
-            array = erealloc(array, size * sizeof(char*));
-        }
-
-        array[*len] = tok;
-        (*len)++;
-
-        tok = php_strtok_r(NULL, delim, &tok_buf);
-    }
-
-    return array;
+    /* Randomize */
+    while (n > 1) {
+        r = ((int)((double)n-- * (rand() / (RAND_MAX+1.0))));
+        temp = array[n];
+        array[n] = array[r];
+        array[r] = temp;
+    };
 }
 
 /* Execute a CLUSTER SLOTS command against the seed socket, and return the
@@ -871,31 +861,64 @@ PHP_REDIS_API void cluster_free(redisCluster *c) {
     efree(c);
 }
 
+/* Takes our input hash table and returns a straigt C array with elements,
+ * which have been randomized.  The return value needs to be freed. */
+static zval **cluster_shuffle_seeds(HashTable *seeds, int *len) {
+    zval **z_seeds, **z_seed;
+    int *map, i, count, index=0;
+
+    /* How many */
+    count = zend_hash_num_elements(seeds);
+
+    /* Allocate our return value and map */
+    z_seeds = ecalloc(count, sizeof(zval*));
+    map = emalloc(sizeof(int)*count);
+
+    /* Fill in and shuffle our map */
+    for (i = 0; i < count; i++) map[i] = i;
+    fyshuffle(map, count);
+
+    /* Iterate over our source array and use our map to create a random list */
+    for (zend_hash_internal_pointer_reset(seeds);
+         zend_hash_has_more_elements(seeds) == SUCCESS;
+         zend_hash_move_forward(seeds))
+    {
+        zend_hash_get_current_data(seeds, (void**)&z_seed);
+        z_seeds[map[index]] = *z_seed;
+        index++;
+    }
+
+    efree(map);
+
+    *len = count;
+    return z_seeds;
+}
+
 /* Initialize seeds */
 PHP_REDIS_API int
 cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
     RedisSock *redis_sock;
     char *str, *psep, key[1024];
-    int key_len;
-    zval **z_seed;
+    int key_len, count, i;
+    zval **z_seeds, *z_seed;
+
+    /* Get our seeds in a randomized array */
+    z_seeds = cluster_shuffle_seeds(ht_seeds, &count);
 
     // Iterate our seeds array
-    for(zend_hash_internal_pointer_reset(ht_seeds);
-        zend_hash_has_more_elements(ht_seeds)==SUCCESS;
-        zend_hash_move_forward(ht_seeds))
-    {
-        // Grab seed string
-        zend_hash_get_current_data(ht_seeds, (void**)&z_seed);
+    for (i = 0; i < count; i++) {
+        z_seed = z_seeds[i];
 
-        // Skip anything that isn't a string
-        if(Z_TYPE_PP(z_seed)!=IS_STRING)
+        /* Has to be a string */
+        if (z_seed == NULL || Z_TYPE_P(z_seed) != IS_STRING)
             continue;
 
         // Grab a copy of the string
-        str = Z_STRVAL_PP(z_seed);
+        str = Z_STRVAL_P(z_seed);
 
-        // Must be in host:port form
-        if(!(psep = strchr(str, ':')))
+        /* Make sure we have a colon for host:port.  Search right to left in the
+         * case of IPv6 */
+        if ((psep = strrchr(str, ':')) == NULL)
             continue;
 
         // Allocate a structure for this seed
@@ -912,13 +935,14 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
             sizeof(RedisSock*),NULL);
     }
 
+    efree(z_seeds);
+
     // Success if at least one seed seems valid
     return zend_hash_num_elements(cluster->seeds) > 0 ? 0 : -1;
 }
 
 /* Initial mapping of our cluster keyspace */
-PHP_REDIS_API int
-cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
+PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
     RedisSock **seed;
     clusterReply *slots=NULL;
     int mapped=0;
@@ -958,7 +982,6 @@ cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
 
     // Clean up slots reply if we got one
     if(slots && !flag) {
-        fprintf(stderr, "modify global slots\n");
         gen_cluster_dup_reply(slots, &slots_meta TSRMLS_CC);
         cluster_free_reply(slots, 1);
     }
@@ -984,12 +1007,12 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
     /* Move past "MOVED" or "ASK */
     msg += moved ? MOVED_LEN : ASK_LEN;
 
-    // We need a slot seperator
-    if(!(host = strchr(msg, ' '))) return -1;
+    /* Make sure we can find host */
+    if ((host = strchr(msg, ' ')) == NULL) return -1;
     *host++ = '\0';
 
-    // We need a : that seperates host from port
-    if(!(port = strchr(host,':'))) return -1;
+    /* Find port, searching right to left in case of IPv6 */
+    if ((port = strrchr(host, ':')) == NULL) return -1;
     *port++ = '\0';
 
     // Success, apply it
@@ -1087,20 +1110,6 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c TSRMLS_DC) {
         redis_sock_disconnect((*node)->sock TSRMLS_CC);
         (*node)->sock->lazy_connect = 1;
     }
-}
-
-/* Fisher-Yates shuffle for integer array */
-static void fyshuffle(int *array, size_t len) {
-    int temp, n = len;
-    size_t r;
-
-    /* Randomize */
-    while (n > 1) {
-        r = ((int)((double)n-- * (rand() / (RAND_MAX+1.0))));
-        temp = array[n];
-        array[n] = array[r];
-        array[r] = temp;
-    };
 }
 
 /* This method attempts to write our command at random to the master and any

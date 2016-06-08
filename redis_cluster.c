@@ -526,7 +526,6 @@ distcmd_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, short slot,
     {
         cluster_multi_free(mc);
         zval_dtor(z_ret);
-        efree(z_ret);
         efree(ctx);
         return -1;
     }
@@ -2038,7 +2037,7 @@ PHP_METHOD(RedisCluster, _redir) {
     size_t len;
 
     len = snprintf(buf, sizeof(buf), "%s:%d", c->redir_host, c->redir_port);
-    if(c->redir_host && c->redir_host_len) {
+    if(*c->redir_host && c->redir_host_len) {
         RETURN_STRINGL(buf, len, 1);
     } else {
         RETURN_NULL();

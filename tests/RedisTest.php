@@ -1,12 +1,20 @@
-<?php defined('PHPREDIS_TESTRUN') or die("Use TestRedis.php to run tests!\n"); 
+<?php defined('PHPREDIS_TESTRUN') or die("Use TestRedis.php to run tests!\n");
 
 require_once(dirname($_SERVER['PHP_SELF'])."/TestSuite.php");
 
 class Redis_Test extends TestSuite
 {
-    const HOST = '127.0.0.1';
     const PORT = 6379;
     const AUTH = NULL; //replace with a string to use Redis authentication
+
+    /* City lat/long */
+    protected $cities = Array(
+        'Chico'         => Array(-121.837478, 39.728494),
+        'Sacramento'    => Array(-121.494400, 38.581572),
+        'Gridley'       => Array(-121.693583, 39.363777),
+        'Marysville'    => Array(-121.591355, 39.145725),
+        'Cupertino'     => Array(-122.032182, 37.322998)
+    );
 
     /**
      * @var Redis
@@ -21,7 +29,8 @@ class Redis_Test extends TestSuite
 
     protected function newInstance() {
         $r = new Redis();
-        $r->connect(self::HOST, self::PORT);
+
+        $r->connect($this->getHost(), self::PORT);
 
         if(self::AUTH) {
             $this->assertTrue($r->auth(self::AUTH));
@@ -2414,7 +2423,7 @@ class Redis_Test extends TestSuite
 
     public function testFailedTransactions() {
         $this->redis->set('x', 42);
-    
+
         // failed transaction
         $this->redis->watch('x');
 
@@ -2539,7 +2548,7 @@ class Redis_Test extends TestSuite
             ->ttl('key')
             ->expireAt('key', '0000')
             ->exec();
-        
+
         $this->assertTrue(is_array($ret));
         $i = 0;
         $ttl = $ret[$i++];
@@ -4485,7 +4494,7 @@ class Redis_Test extends TestSuite
 
     public function testIntrospection() {
         // Simple introspection tests
-        $this->assertTrue($this->redis->getHost() === self::HOST);
+        $this->assertTrue($this->redis->getHost() === $this->getHost());
         $this->assertTrue($this->redis->getPort() === self::PORT);
         $this->assertTrue($this->redis->getAuth() === self::AUTH);
     }
@@ -4754,6 +4763,136 @@ class Redis_Test extends TestSuite
                 $this->redis->del('pf-merge-{key}');
             }
         }
+    }
+
+    //
+    // GEO* command tests
+    //
+
+    protected function addCities($key) {
+        $this->redis->del($key);
+        foreach ($this->cities as $city => $longlat) {
+            $this->redis->geoadd($key, $longlat[0], $longlat[1], $city);
+        }
+    }
+
+    /* GEOADD */
+    public function testGeoAdd() {
+        $this->redis->del('geokey');
+
+        /* Add them one at a time */
+        foreach ($this->cities as $city => $longlat) {
+            $this->assertEquals($this->redis->geoadd('geokey', $longlat[0], $longlat[1], $city), 1);
+        }
+
+        /* Add them again, all at once */
+        $args = ['geokey'];
+        foreach ($this->cities as $city => $longlat) {
+            $args = array_merge($args, Array($longlat[0], $longlat[1], $city));
+        }
+
+        /* They all exist, should be nothing added */
+        $this->assertEquals(call_user_func_array(Array($this->redis, 'geoadd'), $args), 0);
+    }
+
+    /* GEORADIUS */
+    public function genericGeoRadiusTest($cmd) {
+        /* Chico */
+        $city = 'Chico';
+        $lng = -121.837478;
+        $lat = 39.728494;
+
+        $this->addCities('gk');
+
+        /* Pre tested with redis-cli.  We're just verifying proper delivery of distance and unit */
+        if ($cmd == 'georadius') {
+            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 10, 'mi'), Array('Chico'));
+            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 30, 'mi'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 50, 'km'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 50000, 'm'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 150000, 'ft'), Array('Gridley', 'Chico'));
+            $args = Array('georadius', 'gk', $lng, $lat, 500, 'mi');
+        } else {
+            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 10, 'mi'), Array('Chico'));
+            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 30, 'mi'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 50, 'km'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 50000, 'm'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 150000, 'ft'), Array('Gridley', 'Chico'));
+            $args = Array('georadiusbymember', 'gk', $city, 500, 'mi');
+        }
+
+        /* Options */
+        $opts = Array('WITHCOORD', 'WITHDIST', 'WITHHASH');
+        $sortopts = Array('', 'ASC', 'DESC');
+
+        for ($i = 0; $i < count($opts); $i++) {
+            $subopts = array_slice($opts, 0, $i);
+            shuffle($subopts);
+
+            $subargs = $args;
+            foreach ($subopts as $opt) {
+                $subargs[] = $opt;
+            }
+
+            for ($c = 0; $c < 3; $c++) {
+                /* Add a count if we're past first iteration */
+                if ($c > 0) {
+                    $subopts['count'] = $c;
+                    $subargs[] = 'count';
+                    $subargs[] = $c;
+                }
+
+                /* Adding optional sort */
+                foreach ($sortopts as $sortopt) {
+                    $realargs = $subargs;
+                    $realopts = $subopts;
+                    if ($sortopt) {
+                        $realargs[] = $sortopt;
+                        $realopts[] = $sortopt;
+                    }
+
+                    $ret1 = call_user_func_array(Array($this->redis, 'rawcommand'), $realargs);
+                    if ($cmd == 'georadius') {
+                        $ret2 = $this->redis->$cmd('gk', $lng, $lat, 500, 'mi', $realopts);
+                    } else {
+                        $ret2 = $this->redis->$cmd('gk', $city, 500, 'mi', $realopts);
+                    }
+                    $this->assertEquals($ret1, $ret2);
+                }
+            }
+        }
+    }
+
+    public function testGeoRadius() {
+        $this->genericGeoRadiusTest('georadius');
+    }
+
+    public function testGeoRadiusByMember() {
+        $this->genericGeoRadiusTest('georadiusbymember');
+    }
+
+    public function testGeoPos() {
+        $this->addCities('gk');
+        $this->assertEquals($this->redis->geopos('gk', 'Chico', 'Sacramento'), $this->redis->rawCommand('geopos', 'gk', 'Chico', 'Sacramento'));
+        $this->assertEquals($this->redis->geopos('gk', 'Cupertino'), $this->redis->rawCommand('geopos', 'gk', 'Cupertino'));
+    }
+
+    public function testGeoHash() {
+        $this->addCities('gk');
+        $this->assertEquals($this->redis->geohash('gk', 'Chico', 'Sacramento'), $this->redis->rawCommand('geohash', 'gk', 'Chico', 'Sacramento'));
+        $this->assertEquals($this->redis->geohash('gk', 'Chico'), $this->redis->rawCommand('geohash', 'gk', 'Chico'));
+    }
+
+    public function testGeoDist() {
+        $this->addCities('gk');
+
+        $r1 = $this->redis->geodist('gk', 'Chico', 'Cupertino');
+        $r2 = $this->redis->rawCommand('geodist', 'gk', 'Chico', 'Cupertino');
+        $this->assertEquals(round($r1, 8), round($r2, 8));
+
+        $r1 = $this->redis->geodist('gk', 'Chico', 'Cupertino', 'km');
+        $r2 = $this->redis->rawCommand('geodist', 'gk', 'Chico', 'Cupertino', 'km');
+        $this->assertEquals(round($r1, 8), round($r2, 8));
     }
 
     /* Test a 'raw' command */
