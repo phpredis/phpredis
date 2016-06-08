@@ -501,5 +501,10 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->redis->rpush('mylist', 'A','B','C','D');
         $this->assertEquals($this->redis->lrange('mylist', 0, -1), Array('A','B','C','D'));
     }
+
+    protected function rawCommandArray($key, $args) {
+        array_unshift($args, $key);
+        return call_user_func_array(Array($this->redis, 'rawCommand'), $args);
+    }
 }
 ?>

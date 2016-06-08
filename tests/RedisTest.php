@@ -4769,6 +4769,10 @@ class Redis_Test extends TestSuite
     // GEO* command tests
     //
 
+    protected function rawCommandArray($key, $args) {
+        return call_user_func_array(Array($this->redis, 'rawCommand'), $args);
+    }
+
     protected function addCities($key) {
         $this->redis->del($key);
         foreach ($this->cities as $city => $longlat) {
@@ -4851,7 +4855,7 @@ class Redis_Test extends TestSuite
                         $realopts[] = $sortopt;
                     }
 
-                    $ret1 = call_user_func_array(Array($this->redis, 'rawcommand'), $realargs);
+                    $ret1 = $this->rawCommandArray('gk', $realargs);
                     if ($cmd == 'georadius') {
                         $ret2 = $this->redis->$cmd('gk', $lng, $lat, 500, 'mi', $realopts);
                     } else {
@@ -4873,25 +4877,25 @@ class Redis_Test extends TestSuite
 
     public function testGeoPos() {
         $this->addCities('gk');
-        $this->assertEquals($this->redis->geopos('gk', 'Chico', 'Sacramento'), $this->redis->rawCommand('geopos', 'gk', 'Chico', 'Sacramento'));
-        $this->assertEquals($this->redis->geopos('gk', 'Cupertino'), $this->redis->rawCommand('geopos', 'gk', 'Cupertino'));
+        $this->assertEquals($this->redis->geopos('gk', 'Chico', 'Sacramento'), $this->rawCommandArray('gk', Array('geopos', 'gk', 'Chico', 'Sacramento')));
+        $this->assertEquals($this->redis->geopos('gk', 'Cupertino'), $this->rawCommandArray('gk', Array('geopos', 'gk', 'Cupertino')));
     }
 
     public function testGeoHash() {
         $this->addCities('gk');
-        $this->assertEquals($this->redis->geohash('gk', 'Chico', 'Sacramento'), $this->redis->rawCommand('geohash', 'gk', 'Chico', 'Sacramento'));
-        $this->assertEquals($this->redis->geohash('gk', 'Chico'), $this->redis->rawCommand('geohash', 'gk', 'Chico'));
+        $this->assertEquals($this->redis->geohash('gk', 'Chico', 'Sacramento'), $this->rawCommandArray('gk', Array('geohash', 'gk', 'Chico', 'Sacramento')));
+        $this->assertEquals($this->redis->geohash('gk', 'Chico'), $this->rawCommandArray('gk', Array('geohash', 'gk', 'Chico')));
     }
 
     public function testGeoDist() {
         $this->addCities('gk');
 
         $r1 = $this->redis->geodist('gk', 'Chico', 'Cupertino');
-        $r2 = $this->redis->rawCommand('geodist', 'gk', 'Chico', 'Cupertino');
+        $r2 = $this->rawCommandArray('gk', Array('geodist', 'gk', 'Chico', 'Cupertino'));
         $this->assertEquals(round($r1, 8), round($r2, 8));
 
         $r1 = $this->redis->geodist('gk', 'Chico', 'Cupertino', 'km');
-        $r2 = $this->redis->rawCommand('geodist', 'gk', 'Chico', 'Cupertino', 'km');
+        $r2 = $this->rawCommandArray('gk', Array('geodist', 'gk', 'Chico', 'Cupertino', 'km'));
         $this->assertEquals(round($r1, 8), round($r2, 8));
     }
 
