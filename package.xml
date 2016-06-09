@@ -10,18 +10,18 @@ http://pear.php.net/dtd/package-2.0.xsd">
    This extension provides an API for communicating with Redis servers.
  </description>
  <lead>
-  <name>Nicolas Favre-Felix</name>
-  <user>nff</user>
-  <email>n.favrefelix@gmail.com</email>
-  <active>yes</active>
- </lead>
- <lead>
   <name>Michael Grunder</name>
   <user>mgrunder</user>
   <email>michael.grunder@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2016-03-03</date>
+ <lead>
+  <name>Nicolas Favre-Felix</name>
+  <user>nff</user>
+  <email>n.favrefelix@gmail.com</email>
+  <active>yes</active>
+ </lead>
+ <date>2016-06-09</date>
  <version>
   <release>3.0.0</release>
   <api>3.0.0</api>
@@ -105,8 +105,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <dependencies>
   <required>
    <php>
-    <min>5.2.0</min>
-    <max>6.0.0</max>
+    <min>7.0.0</min>
+    <max>7.1.0</max>
     <exclude>6.0.0</exclude>
    </php>
    <pearinstaller>
@@ -120,7 +120,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>3.0.0</release><api>3.0.0</api></version>
-   <date>2016-06-03</date>
+   <date>2016-06-09</date>
    <notes>
       phpredis 3.0.0
 
