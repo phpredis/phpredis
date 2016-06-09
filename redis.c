@@ -294,6 +294,14 @@ static zend_function_entry redis_functions[] = {
      /* Send a raw command and read raw results */
      PHP_ME(Redis, rawcommand, NULL, ZEND_ACC_PUBLIC)
 
+     /* geoadd and friends */
+     PHP_ME(Redis, geoadd, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, geohash, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, geopos, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, geodist, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, georadius, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, georadiusbymember, NULL, ZEND_ACC_PUBLIC)
+
      /* introspection */
      PHP_ME(Redis, getHost, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getPort, NULL, ZEND_ACC_PUBLIC)
@@ -3919,6 +3927,34 @@ PHP_METHOD(Redis, pfcount) {
 /* {{{ proto Redis::pfMerge(string dstkey, array keys) }}}*/
 PHP_METHOD(Redis, pfmerge) {
     REDIS_PROCESS_CMD(pfmerge, redis_boolean_response);
+}
+
+/* 
+ * GEO commands 
+ */
+
+PHP_METHOD(Redis, geoadd) {
+    REDIS_PROCESS_KW_CMD("GEOADD", redis_key_varval_cmd, redis_long_response);
+}
+
+PHP_METHOD(Redis, geohash) {
+    REDIS_PROCESS_KW_CMD("GEOHASH", redis_key_varval_cmd, redis_mbulk_reply_raw);
+}
+
+PHP_METHOD(Redis, geopos) {
+    REDIS_PROCESS_KW_CMD("GEOPOS", redis_key_varval_cmd, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, geodist) {
+    REDIS_PROCESS_CMD(geodist, redis_bulk_double_response);
+}
+
+PHP_METHOD(Redis, georadius) {
+    REDIS_PROCESS_CMD(georadius, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, georadiusbymember) {
+    REDIS_PROCESS_CMD(georadiusbymember, redis_read_variant_reply);
 }
 
 /* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */

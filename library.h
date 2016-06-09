@@ -1,6 +1,12 @@
 #ifndef REDIS_LIBRARY_H
 #define REDIS_LIBRARY_H
 
+#define REDIS_CMD_APPEND_SSTR_STATIC(sstr, str) \
+    redis_cmd_append_sstr(sstr, str, sizeof(str)-1);
+
+#define REDIS_CMD_INIT_SSTR_STATIC(sstr, argc, keyword) \
+    redis_cmd_init_sstr(sstr, argc, keyword, sizeof(keyword)-1);
+
 void add_constant_long(zend_class_entry *ce, char *name, int value);
 int integer_length(int i);
 int redis_cmd_format(char **ret, char *format, ...);
