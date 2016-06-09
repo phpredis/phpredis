@@ -2727,8 +2727,7 @@ int redis_geodist_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *key, *source, *dest, *unit = NULL;
-    int sourcelen, destlen, unitlen;
-    size_t keylen;
+    size_t keylen, sourcelen, destlen, unitlen;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss|s", &key, &keylen,
                               &source, &sourcelen, &dest, &destlen, &unit,
@@ -2822,15 +2821,14 @@ int redis_georadius_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                         char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *key, *unit;
-    int keyfree, unitlen;
     int withcoord = 0, withdist = 0, withhash = 0;
-    size_t keylen;
+    size_t keylen, unitlen;
     long count = 0;
     geoSortType sort = SORT_NONE;
     double lng, lat, radius;
     zval *opts = NULL;
     smart_string cmdstr = {0};
-    int argc;
+    int keyfree, argc;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sddds|a", &key, &keylen,
                               &lng, &lat, &radius, &unit, &unitlen, &opts)
@@ -2882,9 +2880,9 @@ int redis_georadiusbymember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
                                 char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *key, *mem, *unit;
-    int keyfree, memlen, unitlen, argc;
+    int keyfree, argc;
     int withcoord = 0, withdist = 0, withhash = 0;
-    size_t keylen;
+    size_t keylen, memlen, unitlen;
     long count = 0;
     double radius;
     geoSortType sort = SORT_NONE;
