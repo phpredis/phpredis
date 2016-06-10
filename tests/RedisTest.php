@@ -27,6 +27,10 @@ class Redis_Test extends TestSuite
         $this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
     }
 
+    protected function minVersionCheck($version) {
+        return version_compare($this->version, $version, "ge");
+    }
+
     protected function newInstance() {
         $r = new Redis();
 
@@ -4782,6 +4786,10 @@ class Redis_Test extends TestSuite
 
     /* GEOADD */
     public function testGeoAdd() {
+        if (!$this->minVersionCheck("3.2")) {
+            return $this->markTestSkipped();
+        }
+
         $this->redis->del('geokey');
 
         /* Add them one at a time */
@@ -4801,6 +4809,10 @@ class Redis_Test extends TestSuite
 
     /* GEORADIUS */
     public function genericGeoRadiusTest($cmd) {
+        if (!$this->minVersionCheck("3.2.0")) {
+            return $this->markTestSkipped();
+        }
+
         /* Chico */
         $city = 'Chico';
         $lng = -121.837478;
@@ -4868,26 +4880,46 @@ class Redis_Test extends TestSuite
     }
 
     public function testGeoRadius() {
+        if (!$this->minVersionCheck("3.2.0")) {
+            return $this->markTestSkipped();
+        }
+
         $this->genericGeoRadiusTest('georadius');
     }
 
     public function testGeoRadiusByMember() {
+        if (!$this->minVersionCheck("3.2.0")) {
+            return $this->markTestSkipped();
+        }
+
         $this->genericGeoRadiusTest('georadiusbymember');
     }
 
     public function testGeoPos() {
+        if (!$this->minVersionCheck("3.2.0")) {
+            return $this->markTestSkipped();
+        }
+
         $this->addCities('gk');
         $this->assertEquals($this->redis->geopos('gk', 'Chico', 'Sacramento'), $this->rawCommandArray('gk', Array('geopos', 'gk', 'Chico', 'Sacramento')));
         $this->assertEquals($this->redis->geopos('gk', 'Cupertino'), $this->rawCommandArray('gk', Array('geopos', 'gk', 'Cupertino')));
     }
 
     public function testGeoHash() {
+        if (!$this->minVersionCheck("3.2.0")) {
+            return $this->markTestSkipped();
+        }
+
         $this->addCities('gk');
         $this->assertEquals($this->redis->geohash('gk', 'Chico', 'Sacramento'), $this->rawCommandArray('gk', Array('geohash', 'gk', 'Chico', 'Sacramento')));
         $this->assertEquals($this->redis->geohash('gk', 'Chico'), $this->rawCommandArray('gk', Array('geohash', 'gk', 'Chico')));
     }
 
     public function testGeoDist() {
+        if (!$this->minVersionCheck("3.2.0")) {
+            return $this->markTestSkipped();
+        }
+
         $this->addCities('gk');
 
         $r1 = $this->redis->geodist('gk', 'Chico', 'Cupertino');
