@@ -6,7 +6,7 @@ require_once(dirname($_SERVER['PHP_SELF'])."/RedisArrayTest.php");
 require_once(dirname($_SERVER['PHP_SELF'])."/RedisClusterTest.php");
 
 /* Make sure errors go to stdout and are shown */
-error_reporting(E_ALL); 
+error_reporting(E_ALL);
 ini_set( 'display_errors','1');
 
 /* Grab options */
