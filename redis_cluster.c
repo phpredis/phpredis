@@ -39,7 +39,7 @@ zend_class_entry *redis_cluster_exception_ce;
 zend_class_entry *spl_rte_ce = NULL;
 
 /* Argument info for HSCAN, SSCAN, HSCAN */
-ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan_cl, 0, 0, 2)
     ZEND_ARG_INFO(0, str_key)
     ZEND_ARG_INFO(1, i_iterator)
     ZEND_ARG_INFO(0, str_pattern)
@@ -47,7 +47,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan, 0, 0, 2)
 ZEND_END_ARG_INFO();
 
 /* Argument infor for SCAN */
-ZEND_BEGIN_ARG_INFO_EX(arginfo_scan, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_scan_cl, 0, 0, 2)
     ZEND_ARG_INFO(1, i_iterator)
     ZEND_ARG_INFO(0, str_node)
     ZEND_ARG_INFO(0, str_pattern)
@@ -174,10 +174,10 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, punsubscribe, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, eval, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, evalsha, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, scan, arginfo_scan, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, sscan, arginfo_kscan, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, hscan, arginfo_kscan, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, scan, arginfo_scan_cl, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, sscan, arginfo_kscan_cl, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zscan, arginfo_kscan_cl, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, hscan, arginfo_kscan_cl, ZEND_ACC_PUBLIC)
    
     PHP_ME(RedisCluster, getmode, NULL, ZEND_ACC_PUBLIC) 
     PHP_ME(RedisCluster, getlasterror, NULL, ZEND_ACC_PUBLIC)
