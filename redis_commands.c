@@ -1298,7 +1298,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     CMD_SET_SLOT(slot,key,key_len);
 
     if(key_free) efree(key);
-    if(val_free) efree(val);
+    if(val_free) str_efree(val);
 
     return SUCCESS;
 }
