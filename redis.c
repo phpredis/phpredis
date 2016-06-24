@@ -2778,10 +2778,10 @@ PHP_METHOD(Redis, config)
     RedisSock *redis_sock;
     char *key = NULL, *val = NULL, *cmd, *op = NULL;
     int key_len, val_len, cmd_len, op_len;
-    enum {CFG_GET, CFG_SET} mode;
+    enum {CFG_GET, CFG_SET, CFG_REWRITE} mode;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
-                                     "Oss|s", &object, redis_ce, &op, &op_len,
+                                     "Os|ss*s", &object, redis_ce, &op, &op_len,
                                      &key, &key_len, &val, &val_len) == FAILURE)
     {
         RETURN_FALSE;
@@ -2792,7 +2792,10 @@ PHP_METHOD(Redis, config)
         mode = CFG_GET;
     } else if(strncasecmp(op, "SET", 3) == 0) {
         mode = CFG_SET;
-    } else {
+    } else if(strncasecmp(op, "REWRITE", 7) == 0) {
+        mode = CFG_REWRITE;
+
+    }else {
         RETURN_FALSE;
     }
 
@@ -2820,6 +2823,17 @@ PHP_METHOD(Redis, config)
                 INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
         }
         REDIS_PROCESS_RESPONSE(redis_boolean_response);
+
+    } else if (mode == CFG_REWRITE) {
+        cmd_len = redis_cmd_format_static(&cmd, "CONFIG", "s", op, op_len);
+
+        REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+        IF_ATOMIC() {
+            redis_boolean_response(
+                INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        }
+        REDIS_PROCESS_RESPONSE(redis_boolean_response);
+
     } else {
         RETURN_FALSE;
     }
