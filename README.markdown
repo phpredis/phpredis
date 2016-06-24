@@ -1421,10 +1421,12 @@ $redis->hLen('h'); /* returns 2 */
 _**Description**_: Removes a value from the hash stored at key. If the hash table doesn't exist, or the key doesn't exist, `FALSE` is returned.
 ##### *Parameters*
 *key*
-*hashKey*
+*hashKey1*
+*hashKey2*
+...
 
 ##### *Return value*
-*BOOL* `TRUE` in case of success, `FALSE` in case of failure
+*LONG* the number of deleted keys, 0 if the key doesn't exist, `FALSE` if the key isn't a hash.
 
 
 ### hKeys
