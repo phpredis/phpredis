@@ -2771,7 +2771,7 @@ PHP_METHOD(Redis, setOption) {
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::config(string op, string key [, mixed value]) */
+/* {{{ proto boolean Redis::config(string op [, string key [, mixed value]]) */
 PHP_METHOD(Redis, config)
 {
     zval *object;
@@ -2781,7 +2781,7 @@ PHP_METHOD(Redis, config)
     enum {CFG_GET, CFG_SET, CFG_REWRITE} mode;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
-                                     "Os|ss*s", &object, redis_ce, &op, &op_len,
+                                     "Os|sss*", &object, redis_ce, &op, &op_len,
                                      &key, &key_len, &val, &val_len) == FAILURE)
     {
         RETURN_FALSE;
