@@ -52,7 +52,7 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
 
 PHP_REDIS_API int redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, REDIS_SCAN_TYPE type, long *iter);
 
-PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS, 
+PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API int redis_unsubscribe_response(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
@@ -90,6 +90,7 @@ PHP_REDIS_API int redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
 
 PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
 
+
 #if ZEND_MODULE_API_NO >= 20100000
 #define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) do { \
 	char dbl_decsep; \
@@ -102,5 +103,15 @@ PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
 	dbl_str = _php_math_number_format(dbl, 16, '.', '\x00'); \
 	dbl_len = strlen(dbl_str);
 #endif
+
+/* Sentinel command handlers */
+PHP_REDIS_API int redis_sock_read_sentinel_servers_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
+PHP_REDIS_API int redis_sock_read_sentinel_server_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
+
+/*
+* Variant Read methods, mostly to implement eval
+*/
+
+const char *redis_reply_type_str(REDIS_REPLY_TYPE reply_type);
 
 #endif

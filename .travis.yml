@@ -1,0 +1,21 @@
+language: php
+php:
+    - 5.3
+    - 5.4
+    - 5.5
+    - 5.6
+    - nightly
+env:
+    - REPORT_EXIT_STATUS=1 NO_INTERACTION=1 TESTS="--show-all"
+services:
+    - redis-server
+before_script:
+    - wget download.redis.io/redis-stable/sentinel.conf
+    - redis-server sentinel.conf --sentinel > /dev/null &
+    - phpize && ./configure && make
+script:
+    - make test | tee test-output.txt && grep 'TEST SUMMARY$' test-output.txt > /dev/null ; test $? '!=' 0
+matrix:
+    fast_finish: true
+    allow_failures:
+        - php: nightly

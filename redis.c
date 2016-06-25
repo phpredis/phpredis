@@ -31,6 +31,8 @@
 #include "redis_commands.h"
 #include "redis_array.h"
 #include "redis_cluster.h"
+#include "redis_master_discovery.h"
+#include "redis_sentinel.h"
 #include <zend_exceptions.h>
 
 #ifdef PHP_SESSION
@@ -57,6 +59,8 @@ extern ps_module ps_mod_redis_cluster;
 
 extern zend_class_entry *redis_array_ce;
 extern zend_class_entry *redis_cluster_ce;
+extern zend_class_entry *redis_sentinel_ce;
+extern zend_class_entry *redis_master_discovery_ce;
 zend_class_entry *redis_ce;
 zend_class_entry *redis_exception_ce;
 extern zend_class_entry *redis_cluster_exception_ce;
@@ -64,6 +68,8 @@ zend_class_entry *spl_ce_RuntimeException = NULL;
 
 extern zend_function_entry redis_array_functions[];
 extern zend_function_entry redis_cluster_functions[];
+extern zend_function_entry redis_sentinel_functions[];
+extern zend_function_entry redis_master_discovery_functions[];
 
 PHP_INI_BEGIN()
     /* redis arrays */
@@ -565,6 +571,8 @@ PHP_MINIT_FUNCTION(redis)
     zend_class_entry redis_class_entry;
     zend_class_entry redis_array_class_entry;
     zend_class_entry redis_cluster_class_entry;
+    zend_class_entry redis_sentinel_class_entry;
+    zend_class_entry redis_master_discovery_class_entry;
     zend_class_entry redis_exception_class_entry;
     zend_class_entry redis_cluster_exception_class_entry;
 
@@ -590,6 +598,20 @@ PHP_MINIT_FUNCTION(redis)
     redis_cluster_ce = zend_register_internal_class(&redis_cluster_class_entry
         TSRMLS_CC);
     redis_cluster_ce->create_object = create_cluster_context;
+
+    /* RedisSentinel class */
+    INIT_CLASS_ENTRY(redis_sentinel_class_entry, "RedisSentinel", redis_sentinel_functions);
+    redis_sentinel_ce = zend_register_internal_class(&redis_sentinel_class_entry TSRMLS_CC);
+
+    /* RedisMasterDiscovery class */
+    INIT_CLASS_ENTRY(
+        redis_master_discovery_class_entry,
+        "RedisMasterDiscovery",
+        redis_master_discovery_functions
+    );
+    redis_master_discovery_ce = zend_register_internal_class(
+        &redis_master_discovery_class_entry TSRMLS_CC
+    );
 
     le_redis_array = zend_register_list_destructors_ex(
         redis_destructor_redis_array,
