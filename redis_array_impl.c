@@ -89,6 +89,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 
 		i++;
 	}
+	ra->count = i;
 
 	return ra;
 }
@@ -324,13 +325,11 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 RedisArray *
 ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, zend_bool b_pconnect, long retry_interval, zend_bool b_lazy_connect, double connect_timeout TSRMLS_DC) {
 
-	int count = zend_hash_num_elements(hosts);
 
 	/* create object */
 	RedisArray *ra = emalloc(sizeof(RedisArray));
 	ra->hosts = emalloc(count * sizeof(char*));
 	ra->redis = emalloc(count * sizeof(zval*));
-	ra->count = count;
 	ra->z_fun = NULL;
 	ra->z_dist = NULL;
 	ra->z_multi_exec = NULL;
