@@ -1376,13 +1376,13 @@ redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, int type,
         if (val == 1) {
            *cmd_len = redis_cmd_format_static(cmd,"INCR","s",key,key_len);
         } else {
-           *cmd_len = redis_cmd_format_static(cmd,"INCRBY","sd",key,key_len,val);
+           *cmd_len = redis_cmd_format_static(cmd,"INCRBY","sl",key,key_len,val);
         }
     } else {
         if (val == 1) {
             *cmd_len = redis_cmd_format_static(cmd,"DECR","s",key,key_len);
         } else {
-            *cmd_len = redis_cmd_format_static(cmd,"DECRBY","sd",key,key_len,val);
+            *cmd_len = redis_cmd_format_static(cmd,"DECRBY","sl",key,key_len,val);
         }
     }
 

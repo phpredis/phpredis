@@ -480,32 +480,35 @@ class Redis_Test extends TestSuite
         $this->redis->set('key', 0);
 
         $this->redis->incr('key');
-    $this->assertEquals(1, (int)$this->redis->get('key'));
+        $this->assertEquals(1, (int)$this->redis->get('key'));
 
         $this->redis->incr('key');
-    $this->assertEquals(2, (int)$this->redis->get('key'));
+        $this->assertEquals(2, (int)$this->redis->get('key'));
 
-    $this->redis->incrBy('key', 3);
-    $this->assertEquals(5, (int)$this->redis->get('key'));
+        $this->redis->incrBy('key', 3);
+        $this->assertEquals(5, (int)$this->redis->get('key'));
 
-    $this->redis->incrBy('key', 1);
-    $this->assertEquals(6, (int)$this->redis->get('key'));
+        $this->redis->incrBy('key', 1);
+        $this->assertEquals(6, (int)$this->redis->get('key'));
 
-    $this->redis->incrBy('key', -1);
-    $this->assertEquals(5, (int)$this->redis->get('key'));
+        $this->redis->incrBy('key', -1);
+        $this->assertEquals(5, (int)$this->redis->get('key'));
 
-    $this->redis->incr('key', 5);
-    $this->assertEquals(10, (int)$this->redis->get('key'));
+        $this->redis->incr('key', 5);
+        $this->assertEquals(10, (int)$this->redis->get('key'));
 
-    $this->redis->del('key');
+        $this->redis->del('key');
 
-    $this->redis->set('key', 'abc');
+        $this->redis->set('key', 'abc');
 
-    $this->redis->incr('key');
-    $this->assertTrue("abc" === $this->redis->get('key'));
+        $this->redis->incr('key');
+        $this->assertTrue("abc" === $this->redis->get('key'));
 
-    $this->redis->incr('key');
-    $this->assertTrue("abc" === $this->redis->get('key'));
+        $this->redis->incr('key');
+        $this->assertTrue("abc" === $this->redis->get('key'));
+
+        $this->redis->set('key', 0);
+        $this->assertEquals(2147483648, $this->redis->incr('key', 2147483648));
     }
 
     public function testIncrByFloat()
