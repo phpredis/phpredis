@@ -49,6 +49,14 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
     {
         if ((zpData = zend_hash_get_current_data(hosts)) == NULL || (Z_TYPE_P(zpData) != IS_STRING))
         {
+            for (i = 0; i < ra->count; i++) {
+                zval_dtor(&ra->redis[i]);
+                efree(&ra->redis[i]);
+                efree(ra->hosts[i]);
+            }
+            efree(ra->redis);
+            efree(ra->hosts);
+            zval_dtor(&ra->z_pure_cmds);
             zval_dtor(&z_cons);
             efree(ra);
             return NULL;
@@ -83,7 +91,8 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
         /* attach */
         id = zend_list_insert(redis_sock, le_redis_sock TSRMLS_CC);
         add_property_resource(&ra->redis[i], "socket", Z_RES_P(id));
-        i++;
+
+        ra->count = ++i;
     }
 
     /* Cleanup constructor zval */
@@ -309,6 +318,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
     RedisArray *ra = emalloc(sizeof(RedisArray));
     ra->hosts = emalloc(count * sizeof(char*));
     ra->redis = ecalloc(count, sizeof(zval));
+    ra->count = 0;
     ra->count = count;
     ra->index = b_index;
     ra->auto_rehash = 0;
