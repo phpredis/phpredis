@@ -53,8 +53,9 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 			}
 			efree(ra->redis);
 			efree(ra->hosts);
-			zval_dtor(&z_cons);
-			efree(ra);
+			zval_dtor(ra->z_pure_cmds);
+            efree(ra->z_pure_cmds);
+            efree(ra);
 			return NULL;
 		}
 
