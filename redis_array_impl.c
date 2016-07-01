@@ -319,7 +319,6 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
     ra->hosts = emalloc(count * sizeof(char*));
     ra->redis = ecalloc(count, sizeof(zval));
     ra->count = 0;
-    ra->count = count;
     ra->index = b_index;
     ra->auto_rehash = 0;
     ra->pconnect = b_pconnect;
