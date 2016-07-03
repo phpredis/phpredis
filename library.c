@@ -980,6 +980,7 @@ PHP_REDIS_API zval *redis_parse_info_response(char *response) {
         cur = pos + 1;
         pos = strchr(cur, '\r');
         if(pos == NULL) {
+            efree(key);
             break;
         }
         value = emalloc(pos - cur + 1);
@@ -1767,6 +1768,7 @@ PHP_REDIS_API void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS,
         efree(response);
         RETURN_TRUE;
     }
+    efree(response);
     RETURN_FALSE;
 }
 
@@ -2200,7 +2202,6 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
             if (rv_free==1) efree(*return_value);
 #endif
             return 0;
-            break;
     }
     return 0;
 }
@@ -2454,6 +2455,8 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             break;
         default:
             // Protocol error
+            zval_dtor(z_ret);
+            efree(z_ret);
             zend_throw_exception_ex(redis_exception_ce, 0 TSRMLS_CC, 
                 "protocol error, got '%c' as reply-type byte\n", reply_type);
             return FAILURE;
