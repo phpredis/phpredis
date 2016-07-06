@@ -737,6 +737,9 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
                                      == FAILURE)
     {
         return FAILURE;
+    } else if (!persistent) {
+        persistent_id = NULL;
+        persistent_id_len = -1;
     }
 
     if (timeout < 0L || timeout > INT_MAX) {
