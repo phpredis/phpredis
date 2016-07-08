@@ -114,7 +114,7 @@ typedef enum _PUBSUB_TYPE {
 
 #define MULTI_RESPONSE(callback) IF_MULTI_OR_PIPELINE() { \
     fold_item *f1, *current; \
-    f1 = malloc(sizeof(fold_item)); \
+    f1 = emalloc(sizeof(fold_item)); \
     f1->fun = (void *)callback; \
     f1->next = NULL; \
     current = redis_sock->current;\
@@ -124,8 +124,8 @@ typedef enum _PUBSUB_TYPE {
 
 #define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) request_item *tmp; \
     struct request_item *current_request;\
-    tmp = malloc(sizeof(request_item));\
-    tmp->request_str = calloc(cmd_len, 1);\
+    tmp = emalloc(sizeof(request_item));\
+    tmp->request_str = ecalloc(cmd_len, 1);\
     memcpy(tmp->request_str, cmd, cmd_len);\
     tmp->request_size = cmd_len;\
     tmp->next = NULL;\
@@ -147,7 +147,7 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_SAVE_CALLBACK(callback, closure_context) \
     IF_MULTI_OR_PIPELINE() { \
         fold_item *f1, *current; \
-        f1 = malloc(sizeof(fold_item)); \
+        f1 = emalloc(sizeof(fold_item)); \
         f1->fun = (void *)callback; \
         f1->ctx = closure_context; \
         f1->next = NULL; \

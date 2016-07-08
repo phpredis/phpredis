@@ -2374,7 +2374,7 @@ free_reply_callbacks(zval *z_this, RedisSock *redis_sock) {
 
     for(fi = head; fi; ) {
         fold_item *fi_next = fi->next;
-        free(fi);
+        efree(fi);
         fi = fi_next;
     }
     redis_sock->head = NULL;
@@ -2382,8 +2382,8 @@ free_reply_callbacks(zval *z_this, RedisSock *redis_sock) {
 
     for(ri = redis_sock->pipeline_head; ri; ) {
         struct request_item *ri_next = ri->next;
-        free(ri->request_str);
-        free(ri);
+        efree(ri->request_str);
+        efree(ri);
         ri = ri_next;
     }
     redis_sock->pipeline_head = NULL;
@@ -2441,7 +2441,7 @@ PHP_METHOD(Redis, exec)
             total += ri->request_size;
         }
         if(total) {
-            request = malloc(total);
+            request = emalloc(total);
         }
 
         /* concatenate individual elements one by one in the target buffer */
@@ -2452,12 +2452,12 @@ PHP_METHOD(Redis, exec)
 
         if(request != NULL) {
             if (redis_sock_write(redis_sock, request, total TSRMLS_CC) < 0) {
-                free(request);
+                efree(request);
                 free_reply_callbacks(object, redis_sock);
                 redis_sock->mode = ATOMIC;
                 RETURN_FALSE;
             }
-               free(request);
+               efree(request);
         } else {
                 redis_sock->mode = ATOMIC;
                 free_reply_callbacks(object, redis_sock);
