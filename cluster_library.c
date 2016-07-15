@@ -616,7 +616,7 @@ clusterReply* cluster_get_slots(RedisSock *redis_sock TSRMLS_DC)
 
     // Consume the rest of our response
     if((r = cluster_read_sock_resp(redis_sock, type, len TSRMLS_CC))==NULL ||
-       r->type != TYPE_MULTIBULK || r->elements < 3)
+       r->type != TYPE_MULTIBULK || r->elements < 1)
     {
         if(r) cluster_free_reply(r, 1);
         return NULL;
