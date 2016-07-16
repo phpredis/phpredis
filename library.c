@@ -439,18 +439,11 @@ PHP_REDIS_API char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes 
     int offset = 0;
     size_t got;
 
-    char * reply;
+    char *reply, c[2];
 
-    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
+    if (-1 == bytes || -1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return NULL;
     }
-
-    if (bytes == -1) {
-        return NULL;
-    } else {
-        char c;
-        int i;
-
         reply = emalloc(bytes+1);
 
         while(offset < bytes) {
@@ -464,10 +457,7 @@ PHP_REDIS_API char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes 
             }
             offset += got;
         }
-        for(i = 0; i < 2; i++) {
-            php_stream_read(redis_sock->stream, &c, 1);
-        }
-    }
+	php_stream_read(redis_sock->stream, c, 2);
 
     reply[bytes] = 0;
     return reply;
