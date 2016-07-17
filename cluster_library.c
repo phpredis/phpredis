@@ -690,6 +690,7 @@ static void node_add_slot_range(redisClusterNode *node, unsigned short low,
         node->slots = node->slotstail = rl;
     } else {
         node->slotstail->next = rl;
+        node->slotstail = rl;
     }
 }
 
