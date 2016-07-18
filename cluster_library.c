@@ -1879,7 +1879,7 @@ PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 
     // Success, make this array our return value
     if(CLUSTER_IS_ATOMIC(c)) {
-       ZVAL_DUP(return_value, &z_result);
+        ZVAL_COPY_VALUE(return_value, &z_result);
     } else {
         add_next_index_zval(&c->multi_resp, &z_result);
     }
@@ -2310,10 +2310,10 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
             zval z;
             if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
                 add_assoc_zval(z_result, key, &z);
-                efree(line);
             } else {
                 add_assoc_stringl_ex(z_result, key, key_len, line, line_len);
             }
+            efree(line);
             efree(key);
         }
     }
@@ -2376,21 +2376,19 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
         if(line != NULL) {
             zval z;
             if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
-                efree(line);
                 add_assoc_zval_ex(z_result,Z_STRVAL(z_keys[i]),
                     Z_STRLEN(z_keys[i]), &z);
             } else {
                 add_assoc_stringl_ex(z_result, Z_STRVAL(z_keys[i]),
                     Z_STRLEN(z_keys[i]), line, line_len);
             }
+            efree(line);
         } else {
-            add_assoc_bool_ex(z_result, Z_STRVAL(z_keys[i]),
-                Z_STRLEN(z_keys[i]), 0);
+            add_assoc_bool_ex(z_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), 0);
         }
 
         // Clean up key context
         zval_dtor(&z_keys[i]);
-        //efree(z_keys[i]);
 
         // Move to the next key
         i++;

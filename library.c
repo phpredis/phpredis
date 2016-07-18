@@ -444,22 +444,24 @@ PHP_REDIS_API char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes 
     if (-1 == bytes || -1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return NULL;
     }
-        reply = emalloc(bytes+1);
 
-        while(offset < bytes) {
-            got = php_stream_read(redis_sock->stream, reply + offset,
-                bytes-offset);
-            if (got <= 0) {
-                /* Error or EOF */
-                zend_throw_exception(redis_exception_ce,
-                    "socket error on read socket", 0 TSRMLS_CC);
-                break;
-            }
-            offset += got;
+    reply = emalloc(bytes+1);
+
+    while(offset < bytes) {
+        got = php_stream_read(redis_sock->stream, reply + offset, bytes-offset);
+        if (got <= 0) {
+            /* Error or EOF */
+            zend_throw_exception(redis_exception_ce,
+                "socket error on read socket", 0 TSRMLS_CC);
+            break;
         }
-	php_stream_read(redis_sock->stream, c, 2);
 
+        offset += got;
+    }
+
+    php_stream_read(redis_sock->stream, c, 2);
     reply[bytes] = 0;
+
     return reply;
 }
 
@@ -2137,7 +2139,7 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size,
 }
 
 PHP_REDIS_API int
-redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type, 
+redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
                       long *reply_info TSRMLS_DC)
 {
     // Make sure we haven't lost the connection, even trying to reconnect
