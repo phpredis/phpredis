@@ -3,14 +3,16 @@ dnl config.m4 for extension redis
 
 PHP_ARG_ENABLE(redis, whether to enable redis support,
 dnl Make sure that the comment is aligned:
-[  --enable-redis           Enable redis support])
+[  --enable-redis               Enable redis support])
 
-PHP_ARG_ENABLE(redis-session, whether to enable sessions,
+PHP_ARG_ENABLE(redis-session, whether to disable sessions,
 [  --disable-redis-session      Disable session support], yes, no)
 
 PHP_ARG_ENABLE(redis-igbinary, whether to enable igbinary serializer support,
 [  --enable-redis-igbinary      Enable igbinary serializer support], no, no)
 
+PHP_ARG_ENABLE(redis-msgpack, whether to enable msgpack serializer support,
+[  --enable-redis-msgpack       Include msgpack support], no, no)
 
 if test "$PHP_REDIS" != "no"; then
 
@@ -30,7 +32,7 @@ dnl Check for igbinary
     elif test -f "$phpincludedir/ext/igbinary/igbinary.h"; then
       igbinary_inc_path="$phpincludedir"
     else
-      for i in php php4 php5 php6; do
+      for i in php php4 php5 php6 php7; do
         if test -f "$prefix/include/$i/ext/igbinary/igbinary.h"; then
           igbinary_inc_path="$prefix/include/$i"
         fi
@@ -57,6 +59,48 @@ dnl Check for igbinary
     PHP_ADD_INCLUDE($IGBINARY_EXT_DIR)
   else
     IGBINARY_INCLUDES=""
+    AC_MSG_RESULT([disabled])
+  fi
+
+dnl Check for msgpack
+  if test "$PHP_REDIS_MSGPACK" != "no"; then
+    AC_MSG_CHECKING([for msgpack includes])
+    msgpack_inc_path=""
+
+    if test -f "$abs_srcdir/include/php/ext/msgpack/php_msgpack.h"; then
+      msgpack_inc_path="$abs_srcdir/include/php"
+    elif test -f "$abs_srcdir/ext/msgpack/php_msgpack.h"; then
+      msgpack_inc_path="$abs_srcdir"
+    elif test -f "$phpincludedir/ext/msgpack/php_msgpack.h"; then
+      msgpack_inc_path="$phpincludedir"
+    else
+      for i in php php4 php5 php6 php7; do
+        if test -f "$prefix/include/$i/ext/msgpack/php_msgpack.h"; then
+          msgpack_inc_path="$prefix/include/$i"
+        fi
+      done
+    fi
+
+    if test "$msgpack_inc_path" = ""; then
+      AC_MSG_ERROR([Cannot find php_msgpack.h])
+    else
+      AC_MSG_RESULT([$msgpack_inc_path])
+    fi
+  fi
+
+  AC_MSG_CHECKING([for redis msgpack support])
+  if test "$PHP_REDIS_MSGPACK" != "no"; then
+    AC_MSG_RESULT([enabled])
+    AC_DEFINE(HAVE_REDIS_MSGPACK,1,[Whether redis msgpack serializer is enabled])
+    MSGPACK_INCLUDES="-I$msgpack_inc_path"
+    MSGPACK_EXT_DIR="$msgpack_inc_path/ext"
+    ifdef([PHP_ADD_EXTENSION_DEP],
+    [
+      PHP_ADD_EXTENSION_DEP(redis, msgpack)
+    ])
+    PHP_ADD_INCLUDE($MSGPACK_EXT_DIR)
+  else
+    MSGPACK_INCLUDES=""
     AC_MSG_RESULT([disabled])
   fi
 

@@ -530,8 +530,13 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_ERROR"), REDIS_FAILOVER_ERROR TSRMLS_CC);
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE"), REDIS_FAILOVER_DISTRIBUTE TSRMLS_CC);
     }
+
 #ifdef HAVE_REDIS_IGBINARY
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_IGBINARY"), REDIS_SERIALIZER_IGBINARY TSRMLS_CC);
+#endif
+
+#ifdef HAVE_REDIS_MSGPACK
+    zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_MSGPACK"), REDIS_SERIALIZER_MSGPACK TSRMLS_CC);
 #endif
 
     zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5 TSRMLS_CC);
@@ -1203,14 +1208,14 @@ PHP_METHOD(Redis, rPop)
 /* {{{ proto string Redis::blPop(string key1, string key2, ..., int timeout) */
 PHP_METHOD(Redis, blPop)
 {
-    REDIS_PROCESS_CMD(blpop, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_CMD(blpop, redis_sock_read_multibulk_reply_vals);
 }
 /* }}} */
 
 /* {{{ proto string Redis::brPop(string key1, string key2, ..., int timeout) */
 PHP_METHOD(Redis, brPop)
 {
-    REDIS_PROCESS_CMD(brpop, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_CMD(brpop, redis_sock_read_multibulk_reply_vals);
 }
 /* }}} */
 
