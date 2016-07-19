@@ -530,9 +530,10 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_ERROR"), REDIS_FAILOVER_ERROR TSRMLS_CC);
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE"), REDIS_FAILOVER_DISTRIBUTE TSRMLS_CC);
     }
-#ifdef HAVE_REDIS_IGBINARY
-    zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_IGBINARY"), REDIS_SERIALIZER_IGBINARY TSRMLS_CC);
-#endif
+
+    #ifdef HAVE_REDIS_IGBINARY
+        zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_IGBINARY"), REDIS_SERIALIZER_IGBINARY TSRMLS_CC);
+    #endif
 
     zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5 TSRMLS_CC);
     zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
@@ -605,10 +606,10 @@ PHP_MINIT_FUNCTION(redis)
     add_class_constants(redis_ce, 0 TSRMLS_CC);
     add_class_constants(redis_cluster_ce, 1 TSRMLS_CC);
     
-#ifdef PHP_SESSION
-    php_session_register_module(&ps_mod_redis);
-    php_session_register_module(&ps_mod_redis_cluster);
-#endif
+    #ifdef PHP_SESSION
+        php_session_register_module(&ps_mod_redis);
+        php_session_register_module(&ps_mod_redis_cluster);
+    #endif
 
     return SUCCESS;
 }
