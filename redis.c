@@ -548,11 +548,6 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
 
     zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5 TSRMLS_CC);
     zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
-
-#ifdef PHP_SESSION
-    php_session_register_module(&ps_mod_redis);
-    php_session_register_module(&ps_mod_redis_cluster);
-#endif
 }
 
 /**
@@ -623,6 +618,11 @@ PHP_MINIT_FUNCTION(redis)
     /* Add shared class constants to Redis and RedisCluster objects */
     add_class_constants(redis_ce, 0 TSRMLS_CC);
     add_class_constants(redis_cluster_ce, 1 TSRMLS_CC);
+    
+#ifdef PHP_SESSION
+    php_session_register_module(&ps_mod_redis);
+    php_session_register_module(&ps_mod_redis_cluster);
+#endif
 
     return SUCCESS;
 }
