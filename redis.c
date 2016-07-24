@@ -786,9 +786,9 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
         }
     }
 
-    redis_sock = redis_sock_create(host, host_len, port, timeout, persistent,
+    redis_sock = redis_sock_create(host, host_len, port, NULL, 0, timeout, persistent, 
         persistent_id, retry_interval, 0);
-
+    
     if (redis_sock_server_open(redis_sock, 1 TSRMLS_CC) < 0) {
         redis_free_socket(redis_sock);
         return FAILURE;

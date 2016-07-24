@@ -337,8 +337,8 @@ void free_cluster_context(void *object TSRMLS_DC) {
 }
 
 /* Attempt to connect to a Redis cluster provided seeds and timeout options */
-void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
-                        double read_timeout, int persistent TSRMLS_DC)
+void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, char *auth, int auth_len, 
+            double timeout, double read_timeout, int persistent TSRMLS_DC)
 {
     // Validate timeout
     if(timeout < 0L || timeout > INT_MAX) {
@@ -356,6 +356,13 @@ void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
     if(zend_hash_num_elements(ht_seeds)==0) {
         zend_throw_exception(redis_cluster_exception_ce,
             "Must pass seeds", 0 TSRMLS_CC);
+    }
+
+    // Redis Cluster auth
+    if (auth && auth_len > 0){
+        c->auth = ecalloc(auth_len, 1);
+        memcpy(c->auth, auth, auth_len);
+        c->auth_len = auth_len;
     }
 
     /* Set our timeout and read_timeout which we'll pass through to the
@@ -443,7 +450,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
     }
 
     /* Attempt to create/connect to the cluster */
-    redis_cluster_init(c, ht_seeds, timeout, read_timeout, persistent TSRMLS_CC);    
+    redis_cluster_init(c, ht_seeds, NULL, 0, timeout, read_timeout, persistent TSRMLS_CC);    
 
     /* Clean up our arrays */
     zval_dtor(z_seeds);
@@ -463,14 +470,16 @@ PHP_METHOD(RedisCluster, __construct) {
     zval *object, *z_seeds=NULL;
     char *name;
     long name_len;
+    char *auth = NULL;
+    int auth_len = 0;
     double timeout = 0.0, read_timeout = 0.0;
     zend_bool persistent = 0;
     redisCluster *context = GET_CONTEXT();
 
     // Parse arguments
     if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
-                                    "Os|addb", &object, redis_cluster_ce, &name,
-                                    &name_len, &z_seeds, &timeout,
+                                    "Os|asddb", &object, redis_cluster_ce, &name,
+                                    &name_len, &z_seeds, &auth, &auth_len, &timeout,
                                     &read_timeout, &persistent)==FAILURE)
     {
         RETURN_FALSE;
@@ -486,7 +495,7 @@ PHP_METHOD(RedisCluster, __construct) {
     /* If we've been passed only one argument, the user is attempting to connect
      * to a named cluster, stored in php.ini, otherwise we'll need manual seeds */
     if (ZEND_NUM_ARGS() > 1) {
-        redis_cluster_init(context, Z_ARRVAL_P(z_seeds), timeout, read_timeout,
+        redis_cluster_init(context, Z_ARRVAL_P(z_seeds), auth, auth_len, timeout, read_timeout,
             persistent TSRMLS_CC);
     } else {
         redis_cluster_load(context, name, name_len TSRMLS_CC);

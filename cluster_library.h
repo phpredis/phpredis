@@ -52,11 +52,26 @@
     memcmp(SLOT_SOCK(c,c->redir_slot)->host,c->redir_host,c->redir_host_len))
 
 /* Lazy connect logic */
+#if 0
 #define CLUSTER_LAZY_CONNECT(s) \
     if(s->lazy_connect) { \
         s->lazy_connect = 0; \
         redis_sock_server_open(s, 1 TSRMLS_CC); \
     }
+#endif
+#define CLUSTER_LAZY_CONNECT(s) \
+    int needs_auth = 0;   \
+    if(s->lazy_connect) { \
+        s->lazy_connect = 0; \
+        if(s->auth && s->auth_len && s->status != REDIS_SOCK_STATUS_CONNECTED) {\
+            needs_auth = 1;\
+        }\
+        redis_sock_server_open(s, 1 TSRMLS_CC); \
+        if(needs_auth) {\
+            resend_auth(s TSRMLS_CC);\
+        }\
+    }
+
 
 /* Clear out our "last error" */
 #define CLUSTER_CLEAR_ERROR(c) \
@@ -175,6 +190,10 @@ typedef struct clusterFoldItem clusterFoldItem;
 typedef struct redisCluster {
     /* Object reference for Zend */
     zend_object std;
+
+    /*RedisCluster auth*/
+    char *auth;
+    int auth_len;
 
     /* Timeout and read timeout (for normal operations) */
     double timeout;

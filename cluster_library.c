@@ -606,6 +606,10 @@ clusterReply* cluster_get_slots(RedisSock *redis_sock TSRMLS_DC)
     REDIS_REPLY_TYPE type;
     long len;
 
+    if (redis_sock->auth && redis_sock->auth_len && resend_auth(redis_sock TSRMLS_CC) != 0) {
+        return -1;
+    }
+
     // Send the command to the socket and consume reply type
     if(redis_sock_write(redis_sock, RESP_CLUSTER_SLOTS_CMD,
                         sizeof(RESP_CLUSTER_SLOTS_CMD)-1 TSRMLS_CC)<0 ||
@@ -639,8 +643,8 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
     node->slaves = NULL;
 
     // Attach socket
-    node->sock = redis_sock_create(host, host_len, port, c->timeout,
-        c->persistent, NULL, 0, 1);
+    node->sock = redis_sock_create(host, host_len, port, c->auth, c->auth_len,
+        c->timeout, c->persistent, NULL, 0, 1);
 
     return node;
 }
@@ -901,8 +905,8 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
 
         // Allocate a structure for this seed
         redis_sock = redis_sock_create(str, psep-str,
-            (unsigned short)atoi(psep+1), cluster->timeout,
-            cluster->persistent, NULL, 0, 0);
+            (unsigned short)atoi(psep+1), cluster->auth, cluster->auth_len,
+            cluster->timeout, cluster->persistent, NULL, 0, 0);
 
         // Index this seed by host/port
         key_len = snprintf(key, sizeof(key), "%s:%u", redis_sock->host,
