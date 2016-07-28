@@ -546,11 +546,12 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 zval **zoff, **zcnt;
                 if (zend_hash_index_find(htlimit,0,(void**)&zoff)==SUCCESS &&
                     zend_hash_index_find(htlimit,1,(void**)&zcnt)==SUCCESS &&
-                    Z_TYPE_PP(zoff) == IS_LONG && Z_TYPE_PP(zcnt) == IS_LONG)
-                {
+                    (Z_TYPE_PP(zoff) == IS_LONG || Z_TYPE_PP(zoff) == IS_STRING) &&
+                    (Z_TYPE_PP(zcnt) == IS_LONG || Z_TYPE_PP(zcnt) == IS_STRING)
+                ) {
                     has_limit = 1;
-                    limit_low = Z_LVAL_PP(zoff);
-                    limit_high = Z_LVAL_PP(zcnt);
+                    limit_low = (Z_TYPE_PP(zoff) == IS_LONG) ? Z_LVAL_PP(zoff) : atol(Z_STRVAL_PP(zoff));
+                    limit_high = (Z_TYPE_PP(zcnt) == IS_LONG) ? Z_LVAL_PP(zcnt) : atol(Z_STRVAL_PP(zcnt));
                 }
            }
         }
@@ -3281,4 +3282,4 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     }
 }
 
-/* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
+/* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */
