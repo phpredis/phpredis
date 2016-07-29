@@ -537,12 +537,11 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             HashTable *ht_limit = Z_ARRVAL_P(z_ele);
             zval *z_off, *z_cnt;
             if((z_off = zend_hash_index_find(ht_limit,0)) != NULL &&
-               (z_cnt = zend_hash_index_find(ht_limit,1)) != NULL &&
-               Z_TYPE_P(z_off) == IS_LONG && Z_TYPE_P(z_cnt) == IS_LONG)
+               (z_cnt = zend_hash_index_find(ht_limit,1)) != NULL)
             {
                 has_limit  = 1;
-                limit_low  = Z_LVAL_P(z_off);
-                limit_high = Z_LVAL_P(z_cnt);
+                limit_low  = zval_get_long(z_off);
+                limit_high = zval_get_long(z_cnt);
             }
         }
     }
