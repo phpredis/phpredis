@@ -500,6 +500,25 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 #define IS_LIMIT_ARG(s, l) \
     (l == sizeof("limit") && !strncasecmp(s,"limit",sizeof("limit")))
 
+/* Helper to get the long value stored in a zval, whether it's actually stored
+ * as a long or is a string that contains a long */
+static int zval_get_long(zval *zv, long *lval)
+{
+    /* If it's already a long, just set and return success */
+    if (Z_TYPE_P(zv) == IS_LONG) {
+        *lval = Z_LVAL_P(zv);
+        return SUCCESS;
+    }
+
+    /* If our zval isn't a string, or doesn't translate into a long, fail */
+    if (Z_TYPE_P(zv) != IS_STRING || is_numeric_string(Z_STRVAL_P(zv), Z_STRLEN_P(zv), lval, NULL, 0) != IS_LONG) {
+        return FAILURE;
+    }
+
+    /* Success */
+    return SUCCESS;
+}
+
 int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                             char *kw, char **cmd, int *cmd_len, int *withscores,
                             short *slot, void **ctx)
@@ -509,7 +528,7 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *start, *end, *optkey;
     int start_len, end_len;
     int has_limit=0, type;
-    long limit_low, limit_high;
+    long offset, count;
     zval *z_opt=NULL, **z_ele;
     unsigned long idx;
     unsigned int optlen;
@@ -544,13 +563,19 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
            {
                 HashTable *htlimit = Z_ARRVAL_PP(z_ele);
                 zval **zoff, **zcnt;
+
+                /* We need two arguments (offset and count) */
                 if (zend_hash_index_find(htlimit,0,(void**)&zoff)==SUCCESS &&
-                    zend_hash_index_find(htlimit,1,(void**)&zcnt)==SUCCESS &&
-                    Z_TYPE_PP(zoff) == IS_LONG && Z_TYPE_PP(zcnt) == IS_LONG)
+                    zend_hash_index_find(htlimit,1,(void**)&zcnt)==SUCCESS)
                 {
-                    has_limit = 1;
-                    limit_low = Z_LVAL_PP(zoff);
-                    limit_high = Z_LVAL_PP(zcnt);
+                    /* Set our limit if we can get valid longs from both args */
+                    has_limit = zval_get_long(*zoff, &offset) == SUCCESS &&
+                                zval_get_long(*zcnt, &count) == SUCCESS;
+
+                    /* Inform the user there is a problem if we don't have a limit */
+                    if (!has_limit) {
+                        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Offset and limit must be long values.  Ignoring.");
+                    }
                 }
            }
         }
@@ -564,8 +589,8 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if(*withscores) {
         if(has_limit) {
             *cmd_len = redis_cmd_format_static(cmd, kw, "ssssdds", key, key_len,
-                start, start_len, end, end_len, "LIMIT", 5, limit_low,
-                limit_high, "WITHSCORES", 10);
+                start, start_len, end, end_len, "LIMIT", 5, offset,
+                count, "WITHSCORES", 10);
         } else {
             *cmd_len = redis_cmd_format_static(cmd, kw, "ssss", key, key_len,
                 start, start_len, end, end_len, "WITHSCORES", 10);
@@ -573,8 +598,7 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     } else {
         if(has_limit) {
             *cmd_len = redis_cmd_format_static(cmd, kw, "ssssdd", key, key_len,
-                start, start_len, end, end_len, "LIMIT", 5, limit_low,
-                limit_high);
+                start, start_len, end, end_len, "LIMIT", 5, offset, count);
         } else {
             *cmd_len = redis_cmd_format_static(cmd, kw, "sss", key, key_len,
                 start, start_len, end, end_len);
@@ -3153,7 +3177,7 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
     switch(option) {
         case REDIS_OPT_SERIALIZER:
             val_long = atol(val_str);
-            test_val = val_long == REDIS_SERIALIZER_NONE || val_long == REDIS_SERIALIZER_PHP;            
+            test_val = val_long == REDIS_SERIALIZER_NONE || val_long == REDIS_SERIALIZER_PHP;
 #ifdef HAVE_REDIS_IGBINARY
             test_val = test_val || val_long == REDIS_SERIALIZER_IGBINARY;
 #endif
