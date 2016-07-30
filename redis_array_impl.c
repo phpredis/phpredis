@@ -413,9 +413,7 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 	}
 
 	*out_len = Z_STRLEN(z_ret);
-	out = emalloc(*out_len + 1);
-	out[*out_len] = 0;
-	memcpy(out, Z_STRVAL(z_ret), *out_len);
+    out = estrndup(Z_STRVAL(z_ret), *out_len);
 
 	zval_dtor(&z_ret);
 	return out;
@@ -424,7 +422,7 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 static char *
 ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS_DC) {
 
-	char *start, *end, *out;
+	char *start, *end;
 	*out_len = key_len;
 
 	if(ra->z_fun)
@@ -440,11 +438,7 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS
 
 	/* found substring */
 	*out_len = end - start - 1;
-	out = emalloc(*out_len + 1);
-	out[*out_len] = 0;
-	memcpy(out, start+1, *out_len);
-
-	return out;
+    return estrndup(start + 1, *out_len);
 }
 
 /* call userland key distributor function */
@@ -764,10 +758,8 @@ ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, con
 		key_len = Z_STRLEN_PP(z_data_pp);
 
 		/* copy key and length */
-		(*keys)[i] = emalloc(1 + key_len);
-		memcpy((*keys)[i], key, key_len);
+		(*keys)[i] = estrndup(key, key_len);
 		(*key_lens)[i] = key_len;
-		(*keys)[i][key_len] = 0; /* null-terminate string */
 	}
 
 	/* cleanup */
