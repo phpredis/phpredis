@@ -1322,7 +1322,11 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     CMD_SET_SLOT(slot,key,key_len);
 
     if(key_free) efree(key);
+#if PHP_VERSION_ID >= 50400
     if(val_free) str_efree(val);
+#else
+    if(val_free) efree(val);
+#endif
 
     return SUCCESS;
 }
