@@ -1777,7 +1777,7 @@ PHP_METHOD(Redis, select) {
         RETURN_FALSE;
     }
 
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+    if (dbNumber < 0 || redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;
     }
 
@@ -2656,7 +2656,7 @@ PHP_METHOD(Redis, slaveof)
     {
         RETURN_FALSE;
     }
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+    if (port < 0 || redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;
     }
 
@@ -3686,13 +3686,13 @@ PHP_METHOD(Redis, rawcommand) {
     zval *z_args;
 
     /* Sanity check on arguments */
-	z_args = (zval *) safe_emalloc(sizeof(zval), argc, 0);
     if (argc < 1) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "Must pass at least one command keyword");
-        efree(z_args);
         RETURN_FALSE;
-    } else if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
+    }
+    z_args = (zval *) safe_emalloc(sizeof(zval), argc, 0);
+    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "Internal PHP error parsing arguments");
         efree(z_args);
@@ -3950,4 +3950,4 @@ PHP_METHOD(Redis, georadiusbymember) {
     REDIS_PROCESS_CMD(georadiusbymember, redis_read_variant_reply);
 }
 
-/* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
+/* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */
