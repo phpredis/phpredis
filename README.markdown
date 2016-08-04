@@ -3018,7 +3018,6 @@ The return value can be various types depending on what the server itself return
 
 ##### *Example*
 ```php
-
 /* Returns: true */
 $redis->rawCommand("set", "foo", "bar"); 
 
