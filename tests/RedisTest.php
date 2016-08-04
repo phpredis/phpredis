@@ -4801,7 +4801,7 @@ class Redis_Test extends TestSuite
         }
 
         /* Add them again, all at once */
-        $args = ['geokey'];
+        $args = Array('geokey');
         foreach ($this->cities as $city => $longlat) {
             $args = array_merge($args, Array($longlat[0], $longlat[1], $city));
         }
