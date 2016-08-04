@@ -3000,7 +3000,7 @@ $redis->pubSub("channels"); /*All channels */
 $redis->pubSub("channels", "*pattern*"); /* Just channels matching your pattern */
 $redis->pubSub("numsub", Array("chan1", "chan2")); /*Get subscriber counts for 'chan1' and 'chan2'*/
 $redis->pubSub("numpat"); /* Get the number of pattern subscribers */
-```
+
 
 ~~~
 
@@ -3019,6 +3019,7 @@ The return value can be various types depending on what the server itself return
 
 ##### *Example*
 ```php
+
 /* Returns: true */
 $redis->rawCommand("set", "foo", "bar"); 
 
