@@ -1047,10 +1047,11 @@ PHP_REDIS_API void redis_parse_client_list_response(char *response, zval *z_resu
                     /* Add as a long or string, depending */
                     if(is_numeric == 1) {
                         add_assoc_long(&z_sub_result, key, atol(value));
-                        efree(value);
                     } else {
                         add_assoc_string(&z_sub_result, key, value);
                     }
+                    efree(value); // Either way, it doesn't use the original string.
+
                     // If we hit a '\n', then we can add this user to our list
                     if(*p == '\n') {
                         /* Add our user */
