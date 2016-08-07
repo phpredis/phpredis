@@ -13,7 +13,9 @@ if (PHP_REDIS != "no") {
 	}
 
 	if (PHP_REDIS_IGBINARY != "no") {
-		if (CHECK_HEADER_ADD_INCLUDE("igbinary.h", "CFLAGS_REDIS", configure_module_dirname + "\\..\\igbinary")) {
+		// If igbinary/igbinary.h is found in the pecl dir,
+		// then add the pecl dir to the list of directories to search for headers. (Makes #include "igbinary/igbinary.h" work)
+		if (CHECK_HEADER_ADD_INCLUDE("igbinary/igbinary.h", "CFLAGS_REDIS", configure_module_dirname + "\\..")) {
 
 			ADD_EXTENSION_DEP("redis", "igbinary");
 			AC_DEFINE("HAVE_REDIS_IGBINARY", 1);
