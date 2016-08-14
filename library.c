@@ -528,18 +528,20 @@ void add_constant_long(zend_class_entry *ce, char *name, int value) {
 
 int
 integer_length(int i) {
-    int sz = 0;
-    int ci = abs(i);
-    while (ci > 0) {
-        ci /= 10;
+    int sz = 1;
+
+    if (i < 0) { /* allow for neg sign as well. */
+        i = -i;
         sz++;
     }
-    if (i == 0) { /* log 0 doesn't make sense. */
-        sz = 1;
-    } else if (i < 0) { /* allow for neg sign as well. */
-        sz++;
+    for (;;) {
+        if (i < 10) return sz;
+        if (i < 100) return sz + 1;
+        if (i < 1000) return sz + 2;
+        // Skip ahead by 4 orders of magnitude
+        i /= 10000U;
+        sz += 4;
     }
-    return sz;
 }
 
 int
