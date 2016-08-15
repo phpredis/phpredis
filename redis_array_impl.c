@@ -425,17 +425,11 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS
 	char *start, *end;
 	*out_len = key_len;
 
-	if(ra->z_fun)
+	if(ra->z_fun) {
 		return ra_call_extractor(ra, key, key_len, out_len TSRMLS_CC);
-
-	/* look for '{' */
-	start = strchr(key, '{');
-	if(!start) return estrndup(key, key_len);
-
-	/* look for '}' */
-	end = strchr(start + 1, '}');
-	if(!end) return estrndup(key, key_len);
-
+    } else if ((start = strchr(key, '{')) == NULL || (end = strchr(start + 1, '}')) == NULL) {
+        return estrndup(key, key_len);
+    }
 	/* found substring */
 	*out_len = end - start - 1;
     return estrndup(start + 1, *out_len);
@@ -766,17 +760,6 @@ ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, con
 	zval_dtor(&z_ret);
 
 	return count;
-}
-
-static long
-ra_rehash_scan_index(zval *z_redis, char ***keys, int **key_lens TSRMLS_DC) {
-	return ra_rehash_scan(z_redis, keys, key_lens, "SMEMBERS", PHPREDIS_INDEX_NAME TSRMLS_CC);
-}
-
-/* list keys using KEYS command */
-static long
-ra_rehash_scan_keys(zval *z_redis, char ***keys, int **key_lens TSRMLS_DC) {
-	return ra_rehash_scan(z_redis, keys, key_lens, "KEYS", "*" TSRMLS_CC);
 }
 
 /* run TYPE to find the type */
@@ -1254,9 +1237,9 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 
 	/* list all keys */
 	if(b_index) {
-		count = ra_rehash_scan_index(z_redis, &keys, &key_lens TSRMLS_CC);
+		count = ra_rehash_scan(z_redis, &keys, &key_lens, "SMEMBERS", PHPREDIS_INDEX_NAME TSRMLS_CC);
 	} else {
-		count = ra_rehash_scan_keys(z_redis, &keys, &key_lens TSRMLS_CC);
+		count = ra_rehash_scan(z_redis, &keys, &key_lens, "KEYS", "*" TSRMLS_CC);
 	}
 
 	/* callback */
@@ -1274,12 +1257,11 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 			/* php_printf("move [%s] from [%s] to [%s]\n", keys[i], hostname, ra->hosts[target_pos]); */
 			ra_move_key(keys[i], key_lens[i], z_redis, z_target TSRMLS_CC);
 		}
-	}
 
-	/* cleanup */
-	for(i = 0; i < count; ++i) {
+	    /* cleanup */
 		efree(keys[i]);
 	}
+
 	efree(keys);
 	efree(key_lens);
 }
