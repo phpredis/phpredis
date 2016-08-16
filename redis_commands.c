@@ -3250,4 +3250,4 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     }
 }
 
-/* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
+/* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */
