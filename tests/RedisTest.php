@@ -4944,5 +4944,9 @@ class Redis_Test extends TestSuite
         $this->redis->rpush('mylist', 'A', 'B', 'C', 'D');
         $this->assertEquals($this->redis->lrange('mylist', 0, -1), Array('A','B','C','D'));
     }
+
+    public function testResetStatCommand() {
+        $this->assertTrue( $this->redis->resetStat() );
+    }
 }
 ?>
