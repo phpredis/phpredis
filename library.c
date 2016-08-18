@@ -1578,7 +1578,7 @@ redis_sock_create(char *host, int host_len, unsigned short port, char *auth,
     redis_sock->read_timeout = timeout;
 
     if (auth && auth_len){
-        redis_sock->auth = ecalloc(auth_len, 1);
+        redis_sock->auth = ecalloc(auth_len + 1, 1);
         memcpy(redis_sock->auth, auth, auth_len);
         redis_sock->auth_len = auth_len; 
     }

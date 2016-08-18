@@ -607,7 +607,7 @@ clusterReply* cluster_get_slots(RedisSock *redis_sock TSRMLS_DC)
     long len;
 
     if (redis_sock->auth && redis_sock->auth_len && resend_auth(redis_sock TSRMLS_CC) != 0) {
-        return -1;
+        return NULL;
     }
 
     // Send the command to the socket and consume reply type

@@ -360,7 +360,7 @@ void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, char *auth, int au
 
     // Redis Cluster auth
     if (auth && auth_len > 0){
-        c->auth = ecalloc(auth_len, 1);
+        c->auth = ecalloc(auth_len + 1, 1);
         memcpy(c->auth, auth, auth_len);
         c->auth_len = auth_len;
     }
