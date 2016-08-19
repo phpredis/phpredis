@@ -76,6 +76,7 @@ PHP_INI_BEGIN()
 
     /* redis cluster */
     PHP_INI_ENTRY("redis.clusters.seeds", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.clusters.auth", "", PHP_INI_ALL, NULL)    
     PHP_INI_ENTRY("redis.clusters.timeout", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.read_timeout", "", PHP_INI_ALL, NULL)
 PHP_INI_END()

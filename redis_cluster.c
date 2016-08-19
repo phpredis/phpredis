@@ -386,12 +386,14 @@ void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, char *auth, int au
 
 /* Attempt to load a named cluster configured in php.ini */
 void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
-    zval *z_seeds, *z_timeout, *z_read_timeout, *z_persistent, **z_value;
+    zval *z_seeds, *z_auth, *z_timeout, *z_read_timeout, *z_persistent, **z_value;
     char *iptr;
     double timeout=0, read_timeout=0;
     int persistent = 0;
     HashTable *ht_seeds = NULL;
-
+	char *auth = NULL;
+	int auth_len = 0;
+	
     /* Seeds */
     MAKE_STD_ZVAL(z_seeds);
     array_init(z_seeds);
@@ -406,7 +408,28 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
         zend_throw_exception(redis_cluster_exception_ce, "Couldn't find seeds for cluster", 0 TSRMLS_CC);
         return;
     }
-    
+
+    /* auth */
+    MAKE_STD_ZVAL(z_auth);
+    array_init(z_auth);
+    if ((iptr = INI_STR("redis.clusters.auth")) != NULL) {
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_auth TSRMLS_CC);
+    }
+    if (zend_hash_find(Z_ARRVAL_P(z_auth), name, name_len+1, (void**)&z_value) != FAILURE) {
+        if (Z_TYPE_PP(z_value) == IS_STRING) {
+            auth_len = strlen(Z_STRVAL_PP(z_value));
+            auth = ecalloc(auth_len + 1, 1);
+            auth = memcpy(auth, Z_STRVAL_PP(z_value), auth_len);
+        } else {
+            zval_dtor(z_seeds);
+            efree(z_seeds);
+            zval_dtor(z_auth);
+            efree(z_auth);
+            zend_throw_exception(redis_cluster_exception_ce, "Couldn't find legal auth for cluster", 0 TSRMLS_CC);
+            return;
+        }
+    }
+
     /* Connection timeout */
     MAKE_STD_ZVAL(z_timeout);
     array_init(z_timeout);
@@ -450,11 +473,14 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
     }
 
     /* Attempt to create/connect to the cluster */
-    redis_cluster_init(c, ht_seeds, NULL, 0, timeout, read_timeout, persistent TSRMLS_CC);    
+    redis_cluster_init(c, ht_seeds, auth, auth_len, timeout, read_timeout, persistent TSRMLS_CC);    
 
     /* Clean up our arrays */
     zval_dtor(z_seeds);
     efree(z_seeds);
+    zval_dtor(z_auth);
+    efree(z_auth);
+    efree(auth);
     zval_dtor(z_timeout);
     efree(z_timeout);
     zval_dtor(z_read_timeout);
