@@ -391,8 +391,8 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
     double timeout=0, read_timeout=0;
     int persistent = 0;
     HashTable *ht_seeds = NULL;
-	char *auth = NULL;
-	int auth_len = 0;
+    char *auth = NULL;
+    int auth_len = 0;
 	
     /* Seeds */
     MAKE_STD_ZVAL(z_seeds);
