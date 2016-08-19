@@ -486,7 +486,6 @@ PHP_REDIS_API char *redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes 
 PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
 {
     char inbuf[1024];
-    char *resp = NULL;
     size_t err_len;
 
     if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {

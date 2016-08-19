@@ -20,12 +20,13 @@
   +----------------------------------------------------------------------+
 */
 
+#include "common.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 #ifdef PHP_SESSION
-#include "common.h"
 #include "ext/standard/info.h"
 #include "php_redis.h"
 #include "redis_session.h"
