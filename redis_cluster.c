@@ -37,7 +37,6 @@ zend_class_entry *redis_cluster_ce;
 
 /* Exception handler */
 zend_class_entry *redis_cluster_exception_ce;
-static zend_class_entry *spl_rte_ce = NULL;
 
 /* Handlers for RedisCluster */
 zend_object_handlers RedisCluster_handlers;
