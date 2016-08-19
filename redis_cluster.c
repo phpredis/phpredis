@@ -36,6 +36,7 @@ zend_class_entry *redis_cluster_ce;
 
 /* Exception handler */
 zend_class_entry *redis_cluster_exception_ce;
+static zend_class_entry *spl_rte_ce = NULL;
 
 /* Argument info for HSCAN, SSCAN, HSCAN */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan_cl, 0, 0, 2)
