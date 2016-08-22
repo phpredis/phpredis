@@ -97,6 +97,7 @@ typedef enum _PUBSUB_TYPE {
 
 #define IF_MULTI_OR_PIPELINE() if(redis_sock->mode == MULTI || redis_sock->mode == PIPELINE)
 #define IF_PIPELINE() if(redis_sock->mode == PIPELINE)
+#define IF_NOT_PIPELINE() if(redis_sock->mode != PIPELINE)
 #define IF_NOT_MULTI() if(redis_sock->mode != MULTI)
 #define IF_NOT_ATOMIC() if(redis_sock->mode != ATOMIC)
 #define IF_ATOMIC() if(redis_sock->mode == ATOMIC)
