@@ -360,8 +360,7 @@ void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, char *auth, int au
 
     // Redis Cluster auth
     if (auth && auth_len > 0){
-        c->auth = ecalloc(auth_len + 1, 1);
-        memcpy(c->auth, auth, auth_len);
+        c->auth = estrndup(auth, auth_len);
         c->auth_len = auth_len;
     }
 
@@ -418,8 +417,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
     if (zend_hash_find(Z_ARRVAL_P(z_auth), name, name_len+1, (void**)&z_value) != FAILURE) {
         if (Z_TYPE_PP(z_value) == IS_STRING) {
             auth_len = strlen(Z_STRVAL_PP(z_value));
-            auth = ecalloc(auth_len + 1, 1);
-            auth = memcpy(auth, Z_STRVAL_PP(z_value), auth_len);
+            auth = estrndup(auth, auth_len);
         } else {
             zval_dtor(z_seeds);
             efree(z_seeds);
