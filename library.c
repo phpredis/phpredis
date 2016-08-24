@@ -8,7 +8,6 @@
 #include <netinet/tcp.h>  /* TCP_NODELAY */
 #include <sys/socket.h>
 #endif
-#include <ext/standard/php_smart_str.h>
 #include <ext/standard/php_var.h>
 #ifdef HAVE_REDIS_IGBINARY
 #include "igbinary/igbinary.h"

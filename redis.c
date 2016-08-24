@@ -37,7 +37,6 @@
 #include "ext/session/php_session.h"
 #endif
 
-#include <ext/standard/php_smart_str.h>
 #include <ext/standard/php_var.h>
 #include <ext/standard/php_math.h>
 
@@ -687,7 +686,7 @@ PHP_METHOD(Redis,__destruct) {
     }
 
     // If we think we're in MULTI mode, send a discard
-    if(redis_sock->mode == MULTI) {
+    IF_MULTI() {
         // Discard any multi commands, and free any callbacks that have been
         // queued
         send_discard_static(redis_sock TSRMLS_CC);
