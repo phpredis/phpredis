@@ -1,5 +1,7 @@
 # PhpRedis
 
+[![Build Status](https://travis-ci.org/phpredis/phpredis.svg?branch=develop)](https://travis-ci.org/phpredis/phpredis)
+
 The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 This code has been developed and maintained by Owlient from November 2009 to March 2011.
 
@@ -23,6 +25,7 @@ You can send comments, patches, questions [here on github](https://github.com/ph
    * [Lists](#lists)
    * [Sets](#sets)
    * [Sorted sets](#sorted-sets)
+   * [Geocoding](#geocoding)
    * [Pub/sub](#pubsub)
    * [Transactions](#transactions)
    * [Scripting](#scripting)
@@ -2998,7 +3001,37 @@ _**Description**_: A command allowing you to get information on the Redis pub/su
 $redis->pubSub("channels"); /*All channels */
 $redis->pubSub("channels", "*pattern*"); /* Just channels matching your pattern */
 $redis->pubSub("numsub", Array("chan1", "chan2")); /*Get subscriber counts for 'chan1' and 'chan2'*/
-$redsi->pubSub("numpat"); /* Get the number of pattern subscribers */
+$redis->pubSub("numpat"); /* Get the number of pattern subscribers */
+
+
+~~~
+
+## Generic
+1. [rawCommand](#rawcommand) - Execute any generic command against the server.
+
+### rawCommand
+-----
+_**Description**_: A method to execute any arbitrary command against the a Redis server
+
+##### *Parameters*
+This method is variadic and takes a dynamic number of arguments of various types (string, long, double), but must be passed at least one argument (the command keyword itself).
+
+##### *Return value*
+The return value can be various types depending on what the server itself returns.   No post processing is done to the returned value and must be handled by the client code.
+
+##### *Example*
+```php
+/* Returns: true */
+$redis->rawCommand("set", "foo", "bar"); 
+
+/* Returns: "bar" */
+$redis->rawCommand("get", "foo"); 
+
+/* Returns: 3 */
+$redis->rawCommand("rpush", "mylist", "one", 2, 3.5)); 
+
+/* Returns: ["one", "2", "3.5000000000000000"] */
+$redis->rawCommand("lrange", "mylist", 0, -1);
 ```
 
 ## Transactions

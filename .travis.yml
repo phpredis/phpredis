@@ -1,0 +1,12 @@
+sudo: required
+language: php
+php:
+  - 5.3
+  - 5.4
+  - 5.5
+  - 5.6
+services: redis-server
+before_install: phpize
+install: ./configure --prefix=/usr && sudo make install
+before_script: echo 'extension = redis.so' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+script: php tests/TestRedis.php

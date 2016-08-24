@@ -20,8 +20,6 @@
   +----------------------------------------------------------------------+
 */
 
-#include "common.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -275,6 +273,9 @@ PS_OPEN_FUNC(redis)
 
             if ((url->path == NULL && url->host == NULL) || weight <= 0 || timeout <= 0) {
                 php_url_free(url);
+                if (persistent_id) efree(persistent_id);
+                if (prefix) efree(prefix);
+                if (auth) efree(auth);
                 redis_pool_free(pool TSRMLS_CC);
                 PS_SET_MOD_DATA(NULL);
                 return FAILURE;

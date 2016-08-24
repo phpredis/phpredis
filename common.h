@@ -97,6 +97,7 @@ typedef enum _PUBSUB_TYPE {
 
 #define IF_MULTI_OR_PIPELINE() if(redis_sock->mode == MULTI || redis_sock->mode == PIPELINE)
 #define IF_PIPELINE() if(redis_sock->mode == PIPELINE)
+#define IF_NOT_PIPELINE() if(redis_sock->mode != PIPELINE)
 #define IF_NOT_MULTI() if(redis_sock->mode != MULTI)
 #define IF_NOT_ATOMIC() if(redis_sock->mode != ATOMIC)
 #define IF_ATOMIC() if(redis_sock->mode == ATOMIC)
@@ -227,6 +228,13 @@ typedef enum _PUBSUB_TYPE {
         resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx); \
     } \
     REDIS_PROCESS_RESPONSE_CLOSURE(resp_func,ctx);
+
+#define REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock) \
+    redis_stream_close(redis_sock TSRMLS_CC); \
+    redis_sock->stream = NULL; \
+    redis_sock->mode = ATOMIC; \
+    redis_sock->status = REDIS_SOCK_STATUS_FAILED; \
+    redis_sock->watching = 0
 
 /* Extended SET argument detection */
 #define IS_EX_ARG(a) \
