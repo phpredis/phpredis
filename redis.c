@@ -2389,14 +2389,12 @@ PHP_METHOD(Redis, exec)
     char *cmd;
     int cmd_len;
     zval *object;
-    struct request_item *ri;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
-                                     &object, redis_ce) == FAILURE) {
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
+                                     "O", &object, redis_ce) == FAILURE ||
+        redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0
+    ) {
         RETURN_FALSE;
-    }
-       if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-           RETURN_FALSE;
     }
 
     IF_MULTI() {
@@ -2425,47 +2423,30 @@ PHP_METHOD(Redis, exec)
 
     IF_PIPELINE() {
         char *request = NULL;
-        int total = 0;
-        int offset = 0;
+        int total = 0, offset = 0;
+        struct request_item *ri;
 
         /* compute the total request size */
         for(ri = redis_sock->pipeline_head; ri; ri = ri->next) {
             total += ri->request_size;
         }
-        if(total) {
-            request = malloc(total);
-        }
-
-        /* concatenate individual elements one by one in the target buffer */
-        for(ri = redis_sock->pipeline_head; ri; ri = ri->next) {
-            memcpy(request + offset, ri->request_str, ri->request_size);
-            offset += ri->request_size;
-        }
-
-        if(request != NULL) {
-            if (redis_sock_write(redis_sock, request, total TSRMLS_CC) < 0) {
-                free(request);
-                free_reply_callbacks(object, redis_sock);
-                redis_sock->mode = ATOMIC;
-                RETURN_FALSE;
+        if (total) {
+            request = emalloc(total);
+            /* concatenate individual elements one by one in the target buffer */
+            for (ri = redis_sock->pipeline_head; ri; ri = ri->next) {
+                memcpy(request + offset, ri->request_str, ri->request_size);
+                offset += ri->request_size;
             }
-               free(request);
+            if (redis_sock_write(redis_sock, request, total TSRMLS_CC) < 0 ||
+                redis_sock_read_multibulk_pipeline_reply(
+                    INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock) < 0
+            ) {
+                ZVAL_FALSE(return_value);
+            }
+            efree(request);
         } else {
-                redis_sock->mode = ATOMIC;
-                free_reply_callbacks(object, redis_sock);
-
-                /* Empty array when no command was run. */
-                array_init(return_value);
-                return;
-        }
-
-        if (redis_sock_read_multibulk_pipeline_reply(
-            INTERNAL_FUNCTION_PARAM_PASSTHRU,
-            redis_sock) < 0)
-        {
-            redis_sock->mode = ATOMIC;
-            free_reply_callbacks(object, redis_sock);
-            RETURN_FALSE;
+            /* Empty array when no command was run. */
+            array_init(return_value);
         }
         redis_sock->mode = ATOMIC;
         free_reply_callbacks(object, redis_sock);
@@ -2515,23 +2496,21 @@ PHP_METHOD(Redis, pipeline)
     RedisSock *redis_sock;
     zval *object;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
-                                     &object, redis_ce) == FAILURE) {
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
+                                     "O", &object, redis_ce) == FAILURE ||
+        redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0
+    ) {
         RETURN_FALSE;
     }
 
-    /* if the flag is activated, send the command, the reply will be "QUEUED"
-     * or -ERR */
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
-        RETURN_FALSE;
+    IF_NOT_PIPELINE() {
+        redis_sock->mode = PIPELINE;
+
+        /* NB : we keep the function fold, to detect the last function.
+         * We need the response format of the n - 1 command. So, we can delete
+         * when n > 2, the { 1 .. n - 2} commands */
+        free_reply_callbacks(getThis(), redis_sock);
     }
-    redis_sock->mode = PIPELINE;
-
-    /* NB : we keep the function fold, to detect the last function.
-     * We need the response format of the n - 1 command. So, we can delete
-     * when n > 2, the { 1 .. n - 2} commands */
-    free_reply_callbacks(getThis(), redis_sock);
-
     RETURN_ZVAL(getThis(), 1, 0);
 }
 
@@ -3969,4 +3948,4 @@ PHP_METHOD(Redis, georadiusbymember) {
     REDIS_PROCESS_CMD(georadiusbymember, redis_read_variant_reply);
 }
 
-/* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
+/* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */
