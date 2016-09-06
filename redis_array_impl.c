@@ -722,7 +722,6 @@ ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, con
 	long count, i;
 	zval z_fun_smembers, z_ret, *z_arg, **z_data_pp;
 	HashTable *h_keys;
-	HashPosition pointer;
 	char *key;
 	int key_len;
 
@@ -744,17 +743,16 @@ ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, con
 	*keys = emalloc(count * sizeof(char*));
 	*key_lens = emalloc(count * sizeof(int));
 
-	for (i = 0, zend_hash_internal_pointer_reset_ex(h_keys, &pointer);
-			zend_hash_get_current_data_ex(h_keys, (void**) &z_data_pp, &pointer) == SUCCESS;
-			zend_hash_move_forward_ex(h_keys, &pointer), ++i) {
-
+    i = 0;
+    ZEND_HASH_FOREACH_VAL(h_keys, z_data_pp) {
 		key = Z_STRVAL_PP(z_data_pp);
 		key_len = Z_STRLEN_PP(z_data_pp);
 
 		/* copy key and length */
 		(*keys)[i] = estrndup(key, key_len);
 		(*key_lens)[i] = key_len;
-	}
+        i++;
+	} ZEND_HASH_FOREACH_END();
 
 	/* cleanup */
 	zval_dtor(&z_ret);

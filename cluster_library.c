@@ -41,29 +41,29 @@ static void cluster_log(char *fmt, ...)
 
 // Debug function to dump a clusterReply structure recursively 
 static void dump_reply(clusterReply *reply, int indent) {
-    smart_str buf = {0};
+    smart_string buf = {0};
     int i;
 
     switch(reply->type) {
         case TYPE_ERR:
-            smart_str_appendl(&buf, "(error) ", sizeof("(error) ")-1);
-            smart_str_appendl(&buf, reply->str, reply->len);
+            smart_string_appendl(&buf, "(error) ", sizeof("(error) ")-1);
+            smart_string_appendl(&buf, reply->str, reply->len);
             break;
         case TYPE_LINE:
-            smart_str_appendl(&buf, reply->str, reply->len);
+            smart_string_appendl(&buf, reply->str, reply->len);
             break;
         case TYPE_INT:
-            smart_str_appendl(&buf, "(integer) ", sizeof("(integer) ")-1);
-            smart_str_append_long(&buf, reply->integer);
+            smart_string_appendl(&buf, "(integer) ", sizeof("(integer) ")-1);
+            smart_string_append_long(&buf, reply->integer);
             break;
         case TYPE_BULK:
-            smart_str_appendl(&buf,"\"", 1);
-            smart_str_appendl(&buf, reply->str, reply->len);
-            smart_str_appendl(&buf, "\"", 1);
+            smart_string_appendl(&buf,"\"", 1);
+            smart_string_appendl(&buf, reply->str, reply->len);
+            smart_string_appendl(&buf, "\"", 1);
             break;
         case TYPE_MULTIBULK:
             if(reply->elements == (size_t)-1) {
-                smart_str_appendl(&buf, "(nil)", sizeof("(nil)")-1);
+                smart_string_appendl(&buf, "(nil)", sizeof("(nil)")-1);
             } else {
                 for(i=0;i<reply->elements;i++) {
                     dump_reply(reply->element[i], indent+2);
@@ -79,7 +79,7 @@ static void dump_reply(clusterReply *reply, int indent) {
             php_printf(" ");
         }
 
-        smart_str_0(&buf);
+        smart_string_0(&buf);
         php_printf("%s", buf.c);
         php_printf("\n");
 
@@ -478,7 +478,7 @@ void cluster_multi_add(clusterMultiCmd *mc, char *data, int data_len) {
 void cluster_multi_fini(clusterMultiCmd *mc) {
     mc->cmd.len = 0;
     redis_cmd_init_sstr(&(mc->cmd), mc->argc, mc->kw, mc->kw_len);
-    smart_str_appendl(&(mc->cmd), mc->args.c, mc->args.len);
+    smart_string_appendl(&(mc->cmd), mc->args.c, mc->args.len);
 }
 
 /* Set our last error string encountered */
@@ -2464,4 +2464,4 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
     return SUCCESS;
 }
 
-/* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
+/* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

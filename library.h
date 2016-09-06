@@ -13,12 +13,12 @@ int redis_cmd_format(char **ret, char *format, ...);
 int redis_cmd_format_static(char **ret, char *keyword, char *format, ...);
 int redis_cmd_format_header(char **ret, char *keyword, int arg_count);
 int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len);
-int redis_cmd_init_sstr(smart_str *str, int num_args, char *keyword, int keyword_len);
-int redis_cmd_append_sstr(smart_str *str, char *append, int append_len);
-int redis_cmd_append_sstr_int(smart_str *str, int append);
-int redis_cmd_append_sstr_long(smart_str *str, long append);
+int redis_cmd_init_sstr(smart_string *str, int num_args, char *keyword, int keyword_len);
+int redis_cmd_append_sstr(smart_string *str, char *append, int append_len);
+int redis_cmd_append_sstr_int(smart_string *str, int append);
+int redis_cmd_append_sstr_long(smart_string *str, long append);
 int redis_cmd_append_int(char **cmd, int cmd_len, int append);
-int redis_cmd_append_sstr_dbl(smart_str *str, double value);
+int redis_cmd_append_sstr_dbl(smart_string *str, double value);
 
 PHP_REDIS_API char * redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC);
 PHP_REDIS_API int redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t* line_len TSRMLS_DC);
@@ -72,11 +72,6 @@ redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len);
 
 PHP_REDIS_API int
 redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval **return_value TSRMLS_DC);
-
-PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock);
-PHP_REDIS_API void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
-PHP_REDIS_API int redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len);
-
 
 /*
 * Variant Read methods, mostly to implement eval

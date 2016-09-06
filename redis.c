@@ -37,7 +37,6 @@
 #include "ext/session/php_session.h"
 #endif
 
-#include <ext/standard/php_smart_str.h>
 #include <ext/standard/php_var.h>
 #include <ext/standard/php_math.h>
 
@@ -687,7 +686,7 @@ PHP_METHOD(Redis,__destruct) {
     }
 
     // If we think we're in MULTI mode, send a discard
-    if(redis_sock->mode == MULTI) {
+    IF_MULTI() {
         // Discard any multi commands, and free any callbacks that have been
         // queued
         send_discard_static(redis_sock TSRMLS_CC);
@@ -970,9 +969,8 @@ PHP_METHOD(Redis, getMultiple)
 {
     zval *object, *z_args, **z_ele;
     HashTable *hash;
-    HashPosition ptr;
     RedisSock *redis_sock;
-    smart_str cmd = {0};
+    smart_string cmd = {0};
     int arg_count;
 
     /* Make sure we have proper arguments */
@@ -998,10 +996,7 @@ PHP_METHOD(Redis, getMultiple)
     redis_cmd_init_sstr(&cmd, arg_count, "MGET", 4);
 
     /* Iterate through and grab our keys */
-    for(zend_hash_internal_pointer_reset_ex(hash, &ptr);
-        zend_hash_get_current_data_ex(hash, (void**)&z_ele, &ptr) == SUCCESS;
-        zend_hash_move_forward_ex(hash, &ptr))
-    {
+    ZEND_HASH_FOREACH_VAL(hash, z_ele) {
         char *key;
         int key_len, key_free;
         zval *z_tmp = NULL;
@@ -1035,7 +1030,7 @@ PHP_METHOD(Redis, getMultiple)
             efree(z_tmp);
             z_tmp = NULL;
         }
-    }
+    } ZEND_HASH_FOREACH_END();
 
     /* Kick off our command */
     REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
@@ -2551,7 +2546,6 @@ PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
 {
     zval *object, *array, **data;
     HashTable *arr_hash;
-    HashPosition pointer;
     RedisSock *redis_sock;
     char *cmd = "", *old_cmd = NULL;
     int cmd_len, array_count;
@@ -2574,11 +2568,7 @@ PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
         RETURN_FALSE;
     }
 
-    for (zend_hash_internal_pointer_reset_ex(arr_hash, &pointer);
-         zend_hash_get_current_data_ex(arr_hash, (void**) &data,
-                                       &pointer) == SUCCESS;
-         zend_hash_move_forward_ex(arr_hash, &pointer)) {
-
+    ZEND_HASH_FOREACH_VAL(arr_hash, data) {
         if (Z_TYPE_PP(data) == IS_STRING) {
             char *old_cmd = NULL;
             if(*cmd) {
@@ -2589,7 +2579,7 @@ PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
                 efree(old_cmd);
             }
         }
-    }
+    } ZEND_HASH_FOREACH_END();
 
     old_cmd = cmd;
     cmd_len = spprintf(&cmd, 0, "%s %s\r\n", unsub_cmd, cmd);
@@ -2899,11 +2889,10 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
                        zval *arg TSRMLS_DC)
 {
     HashTable *ht_chan;
-    HashPosition ptr;
     zval **z_ele;
     char *key;
     int cmd_len, key_len, key_free;
-    smart_str cmd = {0};
+    smart_string cmd = {0};
 
     if(type == PUBSUB_CHANNELS) {
         if(arg) {
@@ -2937,10 +2926,7 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
         redis_cmd_append_sstr(&cmd, "NUMSUB", sizeof("NUMSUB")-1);
 
         /* Iterate our elements */
-        for(zend_hash_internal_pointer_reset_ex(ht_chan, &ptr);
-            zend_hash_get_current_data_ex(ht_chan,(void**)&z_ele,&ptr)==SUCCESS;
-            zend_hash_move_forward_ex(ht_chan, &ptr))
-        {
+        ZEND_HASH_FOREACH_VAL(ht_chan, z_ele) {
             char *key;
             int key_len, key_free;
             zval *z_tmp = NULL;
@@ -2973,7 +2959,7 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
                 efree(z_tmp);
                 z_tmp = NULL;
             }
-        }
+        } ZEND_HASH_FOREACH_END();
 
         /* Set return */
         *ret = cmd.c;
@@ -3070,7 +3056,6 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
 {
     zval **elem;
     HashTable *args_hash;
-    HashPosition hash_pos;
     int cmd_len, args_count = 0;
     int eval_cmd_count = 2;
 
@@ -3093,11 +3078,7 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
             cmd_len = redis_cmd_append_int(ret, cmd_len, keys_count);
 
             // Iterate the values in our "keys" array
-            for(zend_hash_internal_pointer_reset_ex(args_hash, &hash_pos);
-                zend_hash_get_current_data_ex(args_hash,(void **)&elem,
-                                              &hash_pos) == SUCCESS;
-                zend_hash_move_forward_ex(args_hash, &hash_pos))
-            {
+            ZEND_HASH_FOREACH_VAL(args_hash, elem) {
                 zval *z_tmp = NULL;
                 char *key, *old_cmd;
                 int key_len, key_free;
@@ -3137,7 +3118,7 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
                     zval_dtor(z_tmp);
                     efree(z_tmp);
                 }
-            }
+            } ZEND_HASH_FOREACH_END();
         }
     }
 

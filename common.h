@@ -1,9 +1,28 @@
 #include "php.h"
 #include "php_ini.h"
-#include <ext/standard/php_smart_str.h>
 
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
+
+#if (PHP_MAJOR_VERSION < 7)
+#include <ext/standard/php_smart_str.h>
+typedef smart_str smart_string;
+#define smart_string_0(x) smart_str_0(x)
+#define smart_string_appendc(dest, c) smart_str_appendc(dest, c)
+#define smart_string_append_long(dest, val) smart_str_append_long(dest, val)
+#define smart_string_appendl(dest, src, len) smart_str_appendl(dest, src, len)
+
+#define ZEND_HASH_FOREACH_VAL(ht, _val) do { \
+    HashPosition _hpos; \
+    for (zend_hash_internal_pointer_reset_ex(ht, &_hpos); \
+         zend_hash_get_current_data_ex(ht, (void **) &_val, &_hpos) == SUCCESS; \
+         zend_hash_move_forward_ex(ht, &_hpos) \
+    )
+
+#define ZEND_HASH_FOREACH_END() } while(0)
+#else
+#include <ext/standard/php_smart_string.h>
+#endif
 
 /* NULL check so Eclipse doesn't go crazy */
 #ifndef NULL
@@ -101,7 +120,7 @@ typedef enum _PUBSUB_TYPE {
 #define IF_NOT_MULTI() if(redis_sock->mode != MULTI)
 #define IF_NOT_ATOMIC() if(redis_sock->mode != ATOMIC)
 #define IF_ATOMIC() if(redis_sock->mode == ATOMIC)
-#define ELSE_IF_MULTI() else if(redis_sock->mode == MULTI) { \
+#define ELSE_IF_MULTI() else IF_MULTI() { \
     if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) { \
         RETURN_ZVAL(getThis(), 1, 0);\
     } else { \
@@ -161,7 +180,7 @@ typedef enum _PUBSUB_TYPE {
 }
 
 #define REDIS_ELSE_IF_MULTI(function, closure_context) \
-    else if(redis_sock->mode == MULTI) { \
+    else IF_MULTI() { \
         if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) {\
             REDIS_SAVE_CALLBACK(function, closure_context); \
             RETURN_ZVAL(getThis(), 1, 0);\
@@ -177,14 +196,12 @@ typedef enum _PUBSUB_TYPE {
 }
 
 #define REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len) \
-    IF_MULTI_OR_ATOMIC() { \
-        SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len); \
-        efree(cmd); \
-    }\
     IF_PIPELINE() { \
         PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len); \
-        efree(cmd); \
-    }
+    } else { \
+        SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len); \
+    } \
+    efree(cmd);
 
 #define REDIS_PROCESS_RESPONSE_CLOSURE(function, closure_context) \
     REDIS_ELSE_IF_MULTI(function, closure_context) \
