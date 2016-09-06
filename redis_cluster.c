@@ -1830,7 +1830,6 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     size_t lua_len, key_len;
     zval *z_arr=NULL, *z_ele;
     HashTable *ht_arr;
-    HashPosition ptr;
     zend_long num_keys = 0;
     short slot;
     smart_string cmdstr = {0};
@@ -1855,10 +1854,7 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
     // Iterate over our args if we have any
     if(args_count > 0) {
-        for(zend_hash_internal_pointer_reset_ex(ht_arr, &ptr);
-            (z_ele = zend_hash_get_current_data_ex(ht_arr, &ptr)) != NULL;
-            zend_hash_move_forward_ex(ht_arr, &ptr))
-        {
+		ZEND_HASH_FOREACH_VAL(ht_arr, z_ele) {
             convert_to_string(z_ele);
             key = Z_STRVAL_P(z_ele);
             key_len = Z_STRLEN_P(z_ele);
@@ -1885,7 +1881,7 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
             /* Free key if we prefixed */
             if(key_free) efree(key);
-        }
+        } ZEND_HASH_FOREACH_END();
     } else {
         /* Pick a slot at random, we're being told there are no keys */
         slot = rand() % REDIS_CLUSTER_MOD;
