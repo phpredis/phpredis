@@ -334,7 +334,6 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	int i;
 	zval *redis_inst;
 	zval z_fun, **z_callargs;
-	HashPosition pointer;
 	HashTable *h_args;
 
 	int argc;
@@ -372,13 +371,11 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	z_callargs = emalloc(argc * sizeof(zval*));
 
 	/* copy args to array */
-	for (i = 0, zend_hash_internal_pointer_reset_ex(h_args, &pointer);
-			zend_hash_get_current_data_ex(h_args, (void**) &zp_tmp,
-				&pointer) == SUCCESS;
-			++i, zend_hash_move_forward_ex(h_args, &pointer)) {
-
+    i = 0;
+    ZEND_HASH_FOREACH_VAL(h_args, zp_tmp) {
 		z_callargs[i] = *zp_tmp;
-	}
+        i++;
+    } ZEND_HASH_FOREACH_END();
 
 	/* multi/exec */
 	if(ra->z_multi_exec) {
@@ -845,7 +842,6 @@ PHP_METHOD(RedisArray, mget)
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
 	HashTable *h_keys;
-	HashPosition pointer;
 	zval **redis_instances, **argv;
 
 	/* Multi/exec support */
@@ -875,11 +871,8 @@ PHP_METHOD(RedisArray, mget)
 	memset(argc_each, 0, ra->count * sizeof(int));
 
 	/* associate each key to a redis node */
-	for (i = 0, zend_hash_internal_pointer_reset_ex(h_keys, &pointer);
-			zend_hash_get_current_data_ex(h_keys, (void**) &data,
-				&pointer) == SUCCESS;
-			zend_hash_move_forward_ex(h_keys, &pointer), ++i)
-	{
+    i = 0;
+    ZEND_HASH_FOREACH_VAL(h_keys, data) {
 	    /* If we need to represent a long key as a string */
 	    unsigned int key_len;
 	    char kbuf[40], *key_lookup;
@@ -908,7 +901,8 @@ PHP_METHOD(RedisArray, mget)
 
 		argc_each[pos[i]]++;	/* count number of keys per node */
 		argv[i] = *data;
-	}
+        i++;
+	} ZEND_HASH_FOREACH_END();
 
 	/* prepare return value */
 	array_init(return_value);
@@ -1139,7 +1133,6 @@ PHP_METHOD(RedisArray, del)
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
 	HashTable *h_keys;
-	HashPosition pointer;
 	zval **redis_instances, *redis_inst, **argv;
 	long total = 0;
 	int free_zkeys = 0;
@@ -1193,11 +1186,8 @@ PHP_METHOD(RedisArray, del)
 	memset(argc_each, 0, ra->count * sizeof(int));
 
 	/* associate each key to a redis node */
-	for (i = 0, zend_hash_internal_pointer_reset_ex(h_keys, &pointer);
-			zend_hash_get_current_data_ex(h_keys, (void**) &data,
-				&pointer) == SUCCESS;
-			zend_hash_move_forward_ex(h_keys, &pointer), ++i) {
-
+    i = 0;
+    ZEND_HASH_FOREACH_VAL(h_keys, data) {
 		if (Z_TYPE_PP(data) != IS_STRING) {
 			php_error_docref(NULL TSRMLS_CC, E_ERROR, "DEL: all keys must be string.");
 			efree(pos);
@@ -1207,7 +1197,8 @@ PHP_METHOD(RedisArray, del)
 		redis_instances[i] = ra_find_node(ra, Z_STRVAL_PP(data), Z_STRLEN_PP(data), &pos[i] TSRMLS_CC);
 		argc_each[pos[i]]++;	/* count number of keys per node */
 		argv[i] = *data;
-	}
+        i++;
+	} ZEND_HASH_FOREACH_END();
 
 	/* calls */
 	for(n = 0; n < ra->count; ++n) { /* for each node */

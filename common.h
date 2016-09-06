@@ -5,6 +5,15 @@
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
 
+#define ZEND_HASH_FOREACH_VAL(ht, _val) do { \
+    HashPosition _hpos; \
+    for (zend_hash_internal_pointer_reset_ex(ht, &_hpos); \
+         zend_hash_get_current_data_ex(ht, (void **) &_val, &_hpos) == SUCCESS; \
+         zend_hash_move_forward_ex(ht, &_hpos) \
+    )
+
+#define ZEND_HASH_FOREACH_END() } while(0)
+
 /* NULL check so Eclipse doesn't go crazy */
 #ifndef NULL
 #define NULL   ((void *) 0)
