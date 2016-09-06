@@ -303,8 +303,8 @@ typedef struct clusterMultiCmd {
     int argc;
 
     /* The full command, built into cmd, and args as we aggregate */
-    smart_str cmd;
-    smart_str args;
+    smart_string cmd;
+    smart_string args;
 } clusterMultiCmd;
 
 /* Hiredis like structure for processing any sort of reply Redis Cluster might
@@ -460,4 +460,4 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
 
 #endif
 
-/* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
+/* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

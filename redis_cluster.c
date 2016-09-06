@@ -1854,7 +1854,7 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     HashTable *ht_arr;
     long num_keys = 0;
     short slot;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
 
     /* Parse args */
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|al", &lua, &lua_len,
@@ -2077,7 +2077,7 @@ PHP_METHOD(RedisCluster, watch) {
     redisCluster *c = GET_CONTEXT();
     HashTable *ht_dist;
     clusterDistList **dl;
-    smart_str cmd = {0};
+    smart_string cmd = {0};
     zval **z_args;
     int argc = ZEND_NUM_ARGS(), i;
     ulong slot;
@@ -2351,7 +2351,7 @@ cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
 static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) 
 {
     redisCluster *c = GET_CONTEXT();
-    smart_str cmd = {0};
+    smart_string cmd = {0};
     zval **z_args;
     short slot;
     int i, argc = ZEND_NUM_ARGS();

@@ -43,7 +43,7 @@ int redis_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
  * the command) we take the start of our array and count */
 int redis_build_raw_cmd(zval **z_args, int argc, char **cmd, int *cmd_len TSRMLS_DC)
 {
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
     int i;
 
     /* Make sure our first argument is a string */
@@ -428,7 +428,7 @@ int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
 {
     static char *kw[] = {"SCAN","SSCAN","HSCAN","ZSCAN"};
     int argc;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
 
     // Figure out our argument count
     argc = 1 + (type!=TYPE_SCAN) + (pat_len>0?2:0) + (count>0?2:0);
@@ -620,7 +620,7 @@ int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     int key_free, key_len;
     zval *z_keys, *z_weights=NULL, **z_ele;
     HashTable *ht_keys, *ht_weights=NULL;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
     int argc = 2, agg_op_len=0, keys_count;
 
     // Parse args
@@ -780,7 +780,7 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     zval *z_arr, **z_chan;
     HashTable *ht_chan;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
     subscribeContext *sctx = emalloc(sizeof(subscribeContext));
     int key_len, key_free;
     char *key;
@@ -839,7 +839,7 @@ int redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     zval *z_arr, **z_chan;
     HashTable *ht_arr;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
     subscribeContext *sctx = emalloc(sizeof(subscribeContext));
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &z_arr)==FAILURE) {
@@ -978,7 +978,7 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                          void **ctx)
 {
     zval **z_args;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
     char *arg;
     int arg_free, arg_len, i;
     int argc = ZEND_NUM_ARGS();
@@ -1036,7 +1036,7 @@ int redis_key_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     zval *z_arr, **z_val;
     HashTable *ht_arr;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
     int key_len, val_len, key_free, val_free, argc = 1;
     char *key, *val;
 
@@ -1083,7 +1083,7 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key;
     int key_free, key_len, i, tail;
     int single_array = 0, argc = ZEND_NUM_ARGS();
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
     long timeout;
     short kslot = -1;
 
@@ -1495,7 +1495,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zval *z_arr, **z_mems, **z_mem;
     int i, count, valid=0, key_len, key_free;
     HashTable *ht_arr;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
 
     // Parse arguments
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa", &key, &key_len,
@@ -1581,7 +1581,7 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zval *z_arr;
     HashTable *ht_vals;
     HashPosition pos;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
 
     // Parse args
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa", &key, &key_len,
@@ -1702,7 +1702,7 @@ int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zval **z_args;
     char *key;
     int key_len, i, key_free, argc = ZEND_NUM_ARGS();
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
     short kslot;
 
     // Allocate space for args, parse them as an array
@@ -1796,7 +1796,7 @@ static int redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     zval *z_arr, **z_ele;
     HashTable *ht_arr;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
     char *mem, *key;
     int key_len, key_free;
     int mem_len, mem_free, argc=1;
@@ -1923,7 +1923,7 @@ int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     zval *z_keys, **z_key, *z_tmp = NULL;
     HashTable *ht_keys;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
     int num_keys, key_len, key_free;
     char *key;
     short kslot=-1;
@@ -2341,7 +2341,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zval *z_opts=NULL, **z_ele, *z_argv;
     char *key;
     HashTable *ht_opts;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
     int key_len, key_free;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|a", &key, &key_len,
@@ -2582,7 +2582,7 @@ int redis_hdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     zval **z_args;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
     char *arg;
     int arg_free, arg_len, i;
     int argc = ZEND_NUM_ARGS();
@@ -2641,7 +2641,7 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key, *val;
     int key_len, key_free, val_len, val_free;
     int argc = ZEND_NUM_ARGS(), i;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
 
     z_args = emalloc(argc * sizeof(zval*));
     if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
@@ -2810,7 +2810,7 @@ static void get_georadius_opts(HashTable *ht, int *withcoord, int *withdist,
 }
 
 /* Helper to append options to a GEORADIUS or GEORADIUSBYMEMBER command */
-void append_georadius_opts(smart_str *str, int withcoord, int withdist,
+void append_georadius_opts(smart_string *str, int withcoord, int withdist,
                            int withhash, long count, geoSortType sort)
 {
     /* WITHCOORD option */
@@ -2850,7 +2850,7 @@ int redis_georadius_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     geoSortType sort = SORT_NONE;
     double lng, lat, radius;
     zval *opts = NULL;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
     int argc;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sddds|a", &key, &keylen,
@@ -2909,7 +2909,7 @@ int redis_georadiusbymember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
     double radius;
     geoSortType sort = SORT_NONE;
     zval *opts = NULL;
-    smart_str cmdstr = {0};
+    smart_string cmdstr = {0};
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssds|a", &key, &keylen,
                               &mem, &memlen, &radius, &unit, &unitlen, &opts) == FAILURE)
@@ -3072,7 +3072,7 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         zval **z_ele;
         HashTable *ht_arr = Z_ARRVAL_P(z_arg);
-        smart_str cmdstr = {0};
+        smart_string cmdstr = {0};
 
         redis_cmd_init_sstr(&cmdstr, 1 + arr_len, "COMMAND", sizeof("COMMAND")-1);
         redis_cmd_append_sstr(&cmdstr, "GETKEYS", sizeof("GETKEYS")-1);

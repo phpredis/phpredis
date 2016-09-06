@@ -970,7 +970,7 @@ PHP_METHOD(Redis, getMultiple)
     zval *object, *z_args, **z_ele;
     HashTable *hash;
     RedisSock *redis_sock;
-    smart_str cmd = {0};
+    smart_string cmd = {0};
     int arg_count;
 
     /* Make sure we have proper arguments */
@@ -2892,7 +2892,7 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
     zval **z_ele;
     char *key;
     int cmd_len, key_len, key_free;
-    smart_str cmd = {0};
+    smart_string cmd = {0};
 
     if(type == PUBSUB_CHANNELS) {
         if(arg) {

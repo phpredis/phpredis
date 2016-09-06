@@ -1,9 +1,16 @@
 #include "php.h"
 #include "php_ini.h"
-#include <ext/standard/php_smart_str.h>
 
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
+
+#if (PHP_MAJOR_VERSION < 7)
+#include <ext/standard/php_smart_str.h>
+typedef smart_str smart_string;
+#define smart_string_0(x) smart_str_0(x)
+#define smart_string_appendc(dest, c) smart_str_appendc(dest, c)
+#define smart_string_append_long(dest, val) smart_str_append_long(dest, val)
+#define smart_string_appendl(dest, src, len) smart_str_appendl(dest, src, len)
 
 #define ZEND_HASH_FOREACH_VAL(ht, _val) do { \
     HashPosition _hpos; \
@@ -13,6 +20,9 @@
     )
 
 #define ZEND_HASH_FOREACH_END() } while(0)
+#else
+#include <ext/standard/php_smart_string.h>
+#endif
 
 /* NULL check so Eclipse doesn't go crazy */
 #ifndef NULL
