@@ -135,21 +135,21 @@ void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
 PHP_REDIS_API int redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
 {
 
-    zval **socket;
+    zval *socket;
     int resource_type;
 
-    if (Z_TYPE_P(id) != IS_OBJECT || zend_hash_find(Z_OBJPROP_P(id), "socket",
-                                  sizeof("socket"), (void **) &socket) == FAILURE) {
+    if (Z_TYPE_P(id) != IS_OBJECT || (socket = zend_hash_str_find(Z_OBJPROP_P(id),
+            "socket", sizeof("socket") - 1)) == NULL) {
         return -1;
     }
 
-    *ra = (RedisArray *) zend_list_find(Z_LVAL_PP(socket), &resource_type);
+    *ra = (RedisArray *) zend_list_find(Z_LVAL_P(socket), &resource_type);
 
     if (!*ra || resource_type != le_redis_array) {
             return -1;
     }
 
-    return Z_LVAL_PP(socket);
+    return Z_LVAL_P(socket);
 }
 
 uint32_t rcrc32(const char *s, size_t sz) {
@@ -207,7 +207,7 @@ uint32_t rcrc32(const char *s, size_t sz) {
     Public constructor */
 PHP_METHOD(RedisArray, __construct)
 {
-	zval *z0, *z_fun = NULL, *z_dist = NULL, **zpData, *z_opts = NULL;
+	zval *z0, *z_fun = NULL, *z_dist = NULL, *zpData, *z_opts = NULL;
 	int id;
 	RedisArray *ra = NULL;
 	zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0;
@@ -222,76 +222,76 @@ PHP_METHOD(RedisArray, __construct)
 
 	/* extract options */
 	if(z_opts) {
-		zval **z_retry_interval_pp;
-		zval **z_connect_timeout_pp;
+		zval *z_retry_interval_p;
+		zval *z_connect_timeout_p;
 
 		hOpts = Z_ARRVAL_P(z_opts);
 
 		/* extract previous ring. */
-		if(FAILURE != zend_hash_find(hOpts, "previous", sizeof("previous"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_ARRAY
-			&& zend_hash_num_elements(Z_ARRVAL_PP(zpData)) != 0) {
+        if ((zpData = zend_hash_str_find(hOpts, "previous", sizeof("previous") - 1)) != NULL && Z_TYPE_P(zpData) == IS_ARRAY
+            && zend_hash_num_elements(Z_ARRVAL_P(zpData)) != 0
+        ) {
 			/* consider previous array as non-existent if empty. */
-				hPrev = Z_ARRVAL_PP(zpData);
+            hPrev = Z_ARRVAL_P(zpData);
 		}
 
 		/* extract function name. */
-		if(FAILURE != zend_hash_find(hOpts, "function", sizeof("function"), (void**)&zpData)) {
+        if ((zpData = zend_hash_str_find(hOpts, "function", sizeof("function") - 1)) != NULL) {
 			MAKE_STD_ZVAL(z_fun);
-			*z_fun = **zpData;
+			*z_fun = *zpData;
 			zval_copy_ctor(z_fun);
 		}
 
 		/* extract function name. */
-		if(FAILURE != zend_hash_find(hOpts, "distributor", sizeof("distributor"), (void**)&zpData)) {
+        if ((zpData = zend_hash_str_find(hOpts, "distributor", sizeof("distributor") - 1)) != NULL) {
 			MAKE_STD_ZVAL(z_dist);
-			*z_dist = **zpData;
+			*z_dist = *zpData;
 			zval_copy_ctor(z_dist);
 		}
 
 		/* extract index option. */
-		if(FAILURE != zend_hash_find(hOpts, "index", sizeof("index"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_BOOL) {
-			b_index = Z_BVAL_PP(zpData);
+        if ((zpData = zend_hash_str_find(hOpts, "index", sizeof("index") - 1)) != NULL && Z_TYPE_P(zpData) == IS_BOOL) {
+            b_index = Z_BVAL_P(zpData);
 		}
 
 		/* extract autorehash option. */
-		if(FAILURE != zend_hash_find(hOpts, "autorehash", sizeof("autorehash"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_BOOL) {
-			b_autorehash = Z_BVAL_PP(zpData);
+        if ((zpData = zend_hash_str_find(hOpts, "autorehash", sizeof("autorehash") - 1)) != NULL && Z_TYPE_P(zpData) == IS_BOOL) {
+            b_autorehash = Z_BVAL_P(zpData);
 		}
 
 		/* pconnect */
-		if(FAILURE != zend_hash_find(hOpts, "pconnect", sizeof("pconnect"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_BOOL) {
-		    b_pconnect = Z_BVAL_PP(zpData);
+        if ((zpData = zend_hash_str_find(hOpts, "pconnect", sizeof("pconnect") - 1)) != NULL && Z_TYPE_P(zpData) == IS_BOOL) {
+            b_pconnect = Z_BVAL_P(zpData);
 		}
 
 		/* extract retry_interval option. */
-        if (FAILURE != zend_hash_find(hOpts, "retry_interval", sizeof("retry_interval"), (void**)&z_retry_interval_pp)) {
-			if (Z_TYPE_PP(z_retry_interval_pp) == IS_LONG || Z_TYPE_PP(z_retry_interval_pp) == IS_STRING) {
-				if (Z_TYPE_PP(z_retry_interval_pp) == IS_LONG) {
-					l_retry_interval = Z_LVAL_PP(z_retry_interval_pp);
-				}
-				else {
-					l_retry_interval = atol(Z_STRVAL_PP(z_retry_interval_pp));
+        if ((z_retry_interval_p = zend_hash_str_find(hOpts, "retry_interval", sizeof("retry_interval") - 1)) != NULL) {
+            if (Z_TYPE_P(z_retry_interval_p) == IS_LONG || Z_TYPE_P(z_retry_interval_p) == IS_STRING) {
+                if (Z_TYPE_P(z_retry_interval_p) == IS_LONG) {
+                    l_retry_interval = Z_LVAL_P(z_retry_interval_p);
+                } else {
+                    l_retry_interval = atol(Z_STRVAL_P(z_retry_interval_p));
 				}
 			}
 		}
 
 		/* extract lazy connect option. */
-		if(FAILURE != zend_hash_find(hOpts, "lazy_connect", sizeof("lazy_connect"), (void**)&zpData) && Z_TYPE_PP(zpData) == IS_BOOL) {
-			b_lazy_connect = Z_BVAL_PP(zpData);
+        if ((zpData = zend_hash_str_find(hOpts, "lazy_connect", sizeof("lazy_connect") - 1)) != NULL && Z_TYPE_P(zpData) == IS_BOOL) {
+			b_lazy_connect = Z_BVAL_P(zpData);
 		}
 		
 		/* extract connect_timeout option */		
-		if (FAILURE != zend_hash_find(hOpts, "connect_timeout", sizeof("connect_timeout"), (void**)&z_connect_timeout_pp)) {
-			if (Z_TYPE_PP(z_connect_timeout_pp) == IS_DOUBLE || 
-                Z_TYPE_PP(z_connect_timeout_pp) == IS_STRING ||
-                Z_TYPE_PP(z_connect_timeout_pp) == IS_LONG) 
-            {
-				if (Z_TYPE_PP(z_connect_timeout_pp) == IS_DOUBLE) {
-					d_connect_timeout = Z_DVAL_PP(z_connect_timeout_pp);
-				} else if (Z_TYPE_PP(z_connect_timeout_pp) == IS_LONG) {
-                    d_connect_timeout = Z_LVAL_PP(z_connect_timeout_pp);
+        if ((z_connect_timeout_p = zend_hash_str_find(hOpts, "connect_timeout", sizeof("connect_timeout") - 1)) != NULL) {
+            if (Z_TYPE_P(z_connect_timeout_p) == IS_DOUBLE ||
+                Z_TYPE_P(z_connect_timeout_p) == IS_STRING ||
+                Z_TYPE_P(z_connect_timeout_p) == IS_LONG
+            ) {
+                if (Z_TYPE_P(z_connect_timeout_p) == IS_DOUBLE) {
+                    d_connect_timeout = Z_DVAL_P(z_connect_timeout_p);
+                } else if (Z_TYPE_P(z_connect_timeout_p) == IS_LONG) {
+                    d_connect_timeout = Z_LVAL_P(z_connect_timeout_p);
                 } else {
-					d_connect_timeout = atof(Z_STRVAL_PP(z_connect_timeout_pp));
+                    d_connect_timeout = atof(Z_STRVAL_P(z_connect_timeout_p));
 				}
 			}
 		}		

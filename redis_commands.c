@@ -2338,7 +2338,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    int *using_store, char **cmd, int *cmd_len, short *slot,
                    void **ctx)
 {
-    zval *z_opts=NULL, **z_ele, *z_argv;
+    zval *z_opts=NULL, *z_ele, *z_argv;
     char *key;
     HashTable *ht_opts;
     smart_string cmdstr = {0};
@@ -2383,10 +2383,10 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     ht_opts = Z_ARRVAL_P(z_opts);
 
     // Handle BY pattern
-    if((zend_hash_find(ht_opts, "by", sizeof("by"), (void**)&z_ele)==SUCCESS ||
-       zend_hash_find(ht_opts, "BY", sizeof("BY"), (void**)&z_ele)==SUCCESS) &&
-       Z_TYPE_PP(z_ele)==IS_STRING)
-    {
+    if (((z_ele = zend_hash_str_find(ht_opts, "by", sizeof("by") - 1)) != NULL ||
+         (z_ele = zend_hash_str_find(ht_opts, "BY", sizeof("BY") - 1)) != NULL
+        ) && Z_TYPE_P(z_ele) == IS_STRING
+    ) {
         // "BY" option is disabled in cluster
         if(slot) {
             php_error_docref(NULL TSRMLS_CC, E_WARNING,
@@ -2399,26 +2399,26 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         // ... BY <pattern>
         add_next_index_stringl(z_argv, "BY", sizeof("BY")-1, 1);
-        add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),Z_STRLEN_PP(z_ele),1);
+        add_next_index_stringl(z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), 1);
     }
 
     // Handle ASC/DESC option
-    if((zend_hash_find(ht_opts,"sort",sizeof("sort"),(void**)&z_ele)==SUCCESS ||
-       zend_hash_find(ht_opts,"SORT",sizeof("SORT"),(void**)&z_ele)==SUCCESS) &&
-       Z_TYPE_PP(z_ele)==IS_STRING)
-    {
+    if (((z_ele = zend_hash_str_find(ht_opts, "sort", sizeof("sort") - 1)) != NULL ||
+         (z_ele = zend_hash_str_find(ht_opts, "SORT", sizeof("SORT") - 1)) != NULL
+        ) && Z_TYPE_P(z_ele) == IS_STRING
+    ) {
         // 'asc'|'desc'
-        add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),Z_STRLEN_PP(z_ele),1);
+        add_next_index_stringl(z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), 1);
     }
 
     // STORE option
-    if((zend_hash_find(ht_opts,"store",6,(void**)&z_ele)==SUCCESS ||
-        zend_hash_find(ht_opts,"STORE",6,(void**)&z_ele)==SUCCESS) &&
-        Z_TYPE_PP(z_ele)==IS_STRING)
-    {
+    if (((z_ele = zend_hash_str_find(ht_opts, "store", sizeof("store") - 1)) != NULL ||
+         (z_ele = zend_hash_str_find(ht_opts, "STORE", sizeof("STORE") - 1)) != NULL
+        ) && Z_TYPE_P(z_ele) == IS_STRING
+    ) {
         // Slot verification
         int cross_slot = slot && *slot != cluster_hash_key(
-            Z_STRVAL_PP(z_ele),Z_STRLEN_PP(z_ele));
+            Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
 
         if(cross_slot) {
             php_error_docref(0 TSRMLS_CC, E_WARNING,
@@ -2431,17 +2431,17 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         // STORE <key>
         add_next_index_stringl(z_argv,"STORE",sizeof("STORE")-1, 1);
-        add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),Z_STRLEN_PP(z_ele),1);
+        add_next_index_stringl(z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), 1);
 
         // We are using STORE
         *using_store = 1;
     }
 
     // GET option
-    if((zend_hash_find(ht_opts,"get",4,(void**)&z_ele)==SUCCESS ||
-        zend_hash_find(ht_opts,"GET",4,(void**)&z_ele)==SUCCESS) &&
-        (Z_TYPE_PP(z_ele)==IS_STRING || Z_TYPE_PP(z_ele)==IS_ARRAY))
-    {
+    if (((z_ele = zend_hash_str_find(ht_opts, "get", sizeof("get") - 1)) != NULL ||
+         (z_ele = zend_hash_str_find(ht_opts, "GET", sizeof("GET") - 1)) != NULL
+        ) && (Z_TYPE_P(z_ele) == IS_STRING || Z_TYPE_P(z_ele) == IS_ARRAY)
+    ) {
         // Disabled in cluster
         if(slot) {
             php_error_docref(NULL TSRMLS_CC, E_WARNING,
@@ -2453,12 +2453,12 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         }
 
         // If it's a string just add it
-        if(Z_TYPE_PP(z_ele)==IS_STRING) {
+        if (Z_TYPE_P(z_ele) == IS_STRING) {
             add_next_index_stringl(z_argv,"GET",sizeof("GET")-1,1);
-            add_next_index_stringl(z_argv,Z_STRVAL_PP(z_ele),
-                Z_STRLEN_PP(z_ele), 1);
+            add_next_index_stringl(z_argv,Z_STRVAL_P(z_ele),
+                Z_STRLEN_P(z_ele), 1);
         } else {
-            HashTable *ht_keys = Z_ARRVAL_PP(z_ele);
+            HashTable *ht_keys = Z_ARRVAL_P(z_ele);
             int added=0;
 
             for(zend_hash_internal_pointer_reset(ht_keys);
@@ -2495,19 +2495,19 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // ALPHA
-    if((zend_hash_find(ht_opts,"alpha",6,(void**)&z_ele)==SUCCESS ||
-        zend_hash_find(ht_opts,"ALPHA",6,(void**)&z_ele)==SUCCESS) &&
-        Z_TYPE_PP(z_ele)==IS_BOOL && Z_BVAL_PP(z_ele)==1)
-    {
+    if (((z_ele = zend_hash_str_find(ht_opts, "alpha", sizeof("alpha") - 1)) != NULL ||
+         (z_ele = zend_hash_str_find(ht_opts, "ALPHA", sizeof("ALPHA") - 1)) != NULL
+        ) && Z_TYPE_P(z_ele) == IS_BOOL && Z_BVAL_P(z_ele) == 1
+    ) {
         add_next_index_stringl(z_argv, "ALPHA", sizeof("ALPHA")-1,1);
     }
 
     // LIMIT <offset> <count>
-    if((zend_hash_find(ht_opts,"limit",6,(void**)&z_ele)==SUCCESS ||
-        zend_hash_find(ht_opts,"LIMIT",6,(void**)&z_ele)==SUCCESS) &&
-        Z_TYPE_PP(z_ele)==IS_ARRAY)
-    {
-        HashTable *ht_off = Z_ARRVAL_PP(z_ele);
+    if (((z_ele = zend_hash_str_find(ht_opts, "limit", sizeof("limit") - 1)) != NULL ||
+         (z_ele = zend_hash_str_find(ht_opts, "LIMIT", sizeof("LIMIT") - 1)) != NULL
+        ) && Z_TYPE_P(z_ele) == IS_ARRAY
+    ) {
+        HashTable *ht_off = Z_ARRVAL_P(z_ele);
         zval **z_off, **z_cnt;
 
         if(zend_hash_index_find(ht_off, 0, (void**)&z_off)==SUCCESS &&
@@ -2551,16 +2551,17 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         sizeof("SORT")-1);
 
     // Iterate through our arguments
+    zval **z_ele_pp;
     for(zend_hash_internal_pointer_reset(ht_argv);
-        zend_hash_get_current_data(ht_argv, (void**)&z_ele)==SUCCESS;
+        zend_hash_get_current_data(ht_argv, (void**)&z_ele_pp)==SUCCESS;
         zend_hash_move_forward(ht_argv))
     {
         // Args are strings or longs
-        if(Z_TYPE_PP(z_ele)==IS_STRING) {
-            redis_cmd_append_sstr(&cmdstr,Z_STRVAL_PP(z_ele),
-                Z_STRLEN_PP(z_ele));
+        if(Z_TYPE_PP(z_ele_pp)==IS_STRING) {
+            redis_cmd_append_sstr(&cmdstr,Z_STRVAL_PP(z_ele_pp),
+                Z_STRLEN_PP(z_ele_pp));
         } else {
-            redis_cmd_append_sstr_long(&cmdstr, Z_LVAL_PP(z_ele));
+            redis_cmd_append_sstr_long(&cmdstr, Z_LVAL_PP(z_ele_pp));
         }
     }
 

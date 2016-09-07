@@ -677,7 +677,7 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
     int i,j, hlen, klen;
     short low, high;
     clusterReply *r2, *r3;
-    redisClusterNode **ppnode, *master, *slave;
+    redisClusterNode *pnode, *master, *slave;
     unsigned short port;
     char *host, key[1024];
 
@@ -702,12 +702,12 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
 
         // If the node is new, create and add to nodes.  Otherwise use it.
         klen = snprintf(key,sizeof(key),"%s:%ld",host,port);
-        if(zend_hash_find(c->nodes,key,klen+1,(void**)&ppnode)==FAILURE) {
+        if ((pnode = zend_hash_str_find_ptr(c->nodes, key, klen)) == NULL) {
             master = cluster_node_create(c, host, hlen, port, low, 0);
             zend_hash_update(c->nodes, key, klen+1, (void*)&master,
                 sizeof(redisClusterNode*), NULL);
         } else {
-            master = *ppnode;
+            master = pnode;
         }
 
         // Attach slaves
@@ -749,7 +749,7 @@ PHP_REDIS_API void cluster_free_node(redisClusterNode *node) {
 
 /* Get or create a redisClusterNode that corresponds to the asking redirection */
 static redisClusterNode *cluster_get_asking_node(redisCluster *c TSRMLS_DC) {
-    redisClusterNode **ppNode;
+    redisClusterNode *pNode;
     char key[1024];
     int key_len;
 
@@ -757,16 +757,16 @@ static redisClusterNode *cluster_get_asking_node(redisCluster *c TSRMLS_DC) {
     key_len = snprintf(key, sizeof(key), "%s:%u", c->redir_host, c->redir_port);
 
     /* See if we've already attached to it */
-    if (zend_hash_find(c->nodes, key, key_len+1, (void**)&ppNode) == SUCCESS) {
-        return *ppNode;
+    if ((pNode = zend_hash_str_find_ptr(c->nodes, key, key_len)) != NULL) {
+        return pNode;
     }
 
     /* This host:port is unknown to us, so add it */
-    *ppNode = cluster_node_create(c, c->redir_host, c->redir_host_len,
+    pNode = cluster_node_create(c, c->redir_host, c->redir_host_len,
         c->redir_port, c->redir_slot, 0);
 
     /* Return the node */
-   return *ppNode;
+   return pNode;
 }
 
 /* Get or create a node at the host:port we were asked to check, and return the
@@ -1233,18 +1233,12 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
 static redisClusterNode *cluster_find_node(redisCluster *c, const char *host,
                                            unsigned short port)
 {
-    redisClusterNode **ret = NULL;
     int key_len;
     char key[1024];
 
     key_len = snprintf(key,sizeof(key),"%s:%d", host, port);
 
-    if(zend_hash_find(c->nodes, key, key_len+1, (void**)&ret)==SUCCESS) {
-        return *ret;
-    }
-
-    /* Not found */
-    return NULL;
+    return zend_hash_str_find_ptr(c->nodes, key, key_len);
 }
 
 /* Provided a redisCluster object, the slot where we thought data was and

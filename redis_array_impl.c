@@ -171,9 +171,9 @@ ra_find_name(const char *name) {
 /* laod array from INI settings */
 RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 
-	zval *z_params_hosts, **z_hosts;
-	zval *z_params_prev, **z_prev;
-	zval *z_params_funs, **z_data_pp, *z_fun = NULL, *z_dist = NULL;
+	zval *z_params_hosts, *z_hosts;
+	zval *z_params_prev, *z_prev;
+	zval *z_params_funs, *z_data, *z_fun = NULL, *z_dist = NULL;
 	zval *z_params_index;
 	zval *z_params_autorehash;
 	zval *z_params_retry_interval;
@@ -187,7 +187,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 	zend_bool b_lazy_connect = 0;
 	double d_connect_timeout = 0;
 	HashTable *hHosts = NULL, *hPrev = NULL;
-    size_t name_len = strlen(name) + 1;
+    size_t name_len = strlen(name);
     char *iptr;
 
 	/* find entry */
@@ -200,8 +200,8 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     if ((iptr = INI_STR("redis.arrays.hosts")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_params_hosts TSRMLS_CC);
     }
-	if (zend_hash_find(Z_ARRVAL_P(z_params_hosts), name, name_len, (void **) &z_hosts) != FAILURE) {
-		hHosts = Z_ARRVAL_PP(z_hosts);
+	if ((z_hosts = zend_hash_str_find(Z_ARRVAL_P(z_params_hosts), name, name_len)) != NULL) {
+		hHosts = Z_ARRVAL_P(z_hosts);
 	}
 
 	/* find previous hosts */
@@ -210,8 +210,8 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     if ((iptr = INI_STR("redis.arrays.previous")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_params_prev TSRMLS_CC);
     }
-	if (zend_hash_find(Z_ARRVAL_P(z_params_prev), name, name_len, (void **) &z_prev) != FAILURE) {
-		hPrev = Z_ARRVAL_PP(z_prev);
+	if ((z_prev = zend_hash_str_find(Z_ARRVAL_P(z_params_prev), name, name_len)) != NULL) {
+		hPrev = Z_ARRVAL_P(z_prev);
 	}
 
 	/* find function */
@@ -220,9 +220,9 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     if ((iptr = INI_STR("redis.arrays.functions")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_params_funs TSRMLS_CC);
     }
-	if (zend_hash_find(Z_ARRVAL_P(z_params_funs), name, name_len, (void **) &z_data_pp) != FAILURE) {
+	if ((z_data = zend_hash_str_find(Z_ARRVAL_P(z_params_funs), name, name_len)) != NULL) {
 		MAKE_STD_ZVAL(z_fun);
-		*z_fun = **z_data_pp;
+		*z_fun = *z_data;
 		zval_copy_ctor(z_fun);
 	}
 
@@ -232,9 +232,9 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     if ((iptr = INI_STR("redis.arrays.distributor")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_params_funs TSRMLS_CC);
     }
-	if (zend_hash_find(Z_ARRVAL_P(z_params_funs), name, name_len, (void **) &z_data_pp) != FAILURE) {
+	if ((z_data = zend_hash_str_find(Z_ARRVAL_P(z_params_funs), name, name_len)) != NULL) {
 		MAKE_STD_ZVAL(z_dist);
-		*z_dist = **z_data_pp;
+		*z_dist = *z_data;
 		zval_copy_ctor(z_dist);
 	}
 
@@ -244,8 +244,8 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     if ((iptr = INI_STR("redis.arrays.index")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_params_index TSRMLS_CC);
     }
-	if (zend_hash_find(Z_ARRVAL_P(z_params_index), name, name_len, (void **) &z_data_pp) != FAILURE) {
-		if(Z_TYPE_PP(z_data_pp) == IS_STRING && strncmp(Z_STRVAL_PP(z_data_pp), "1", 1) == 0) {
+	if ((z_data = zend_hash_str_find(Z_ARRVAL_P(z_params_index), name, name_len)) != NULL) {
+		if (Z_TYPE_P(z_data) == IS_STRING && strncmp(Z_STRVAL_P(z_data), "1", 1) == 0) {
 			b_index = 1;
 		}
 	}
@@ -256,8 +256,8 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     if ((iptr = INI_STR("redis.arrays.autorehash")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_params_autorehash TSRMLS_CC);
     }
-	if (zend_hash_find(Z_ARRVAL_P(z_params_autorehash), name, name_len, (void **) &z_data_pp) != FAILURE) {
-		if(Z_TYPE_PP(z_data_pp) == IS_STRING && strncmp(Z_STRVAL_PP(z_data_pp), "1", 1) == 0) {
+	if ((z_data = zend_hash_str_find(Z_ARRVAL_P(z_params_autorehash), name, name_len)) != NULL) {
+		if(Z_TYPE_P(z_data) == IS_STRING && strncmp(Z_STRVAL_P(z_data), "1", 1) == 0) {
 			b_autorehash = 1;
 		}
 	}
@@ -268,13 +268,13 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     if ((iptr = INI_STR("redis.arrays.retryinterval")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_params_retry_interval TSRMLS_CC);
     }
-	if (zend_hash_find(Z_ARRVAL_P(z_params_retry_interval), name, name_len, (void **) &z_data_pp) != FAILURE) {
-		if (Z_TYPE_PP(z_data_pp) == IS_LONG || Z_TYPE_PP(z_data_pp) == IS_STRING) {
-			if (Z_TYPE_PP(z_data_pp) == IS_LONG) {
-				l_retry_interval = Z_LVAL_PP(z_data_pp);
+	if ((z_data = zend_hash_str_find(Z_ARRVAL_P(z_params_retry_interval), name, name_len)) != NULL) {
+		if (Z_TYPE_P(z_data) == IS_LONG || Z_TYPE_P(z_data) == IS_STRING) {
+			if (Z_TYPE_P(z_data) == IS_LONG) {
+				l_retry_interval = Z_LVAL_P(z_data);
 			}
 			else {
-				l_retry_interval = atol(Z_STRVAL_PP(z_data_pp));
+				l_retry_interval = atol(Z_STRVAL_P(z_data));
 			}
 		}
 	}
@@ -285,8 +285,8 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     if ((iptr = INI_STR("redis.arrays.pconnect")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_params_pconnect TSRMLS_CC);
     }
-    if (zend_hash_find(Z_ARRVAL_P(z_params_pconnect), name, name_len, (void**) &z_data_pp) != FAILURE) {
-        if(Z_TYPE_PP(z_data_pp) == IS_STRING && strncmp(Z_STRVAL_PP(z_data_pp), "1", 1) == 0) {
+    if ((z_data = zend_hash_str_find(Z_ARRVAL_P(z_params_pconnect), name, name_len)) != NULL) {
+        if(Z_TYPE_P(z_data) == IS_STRING && strncmp(Z_STRVAL_P(z_data), "1", 1) == 0) {
             b_pconnect = 1;
         }
     }
@@ -297,8 +297,8 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     if ((iptr = INI_STR("redis.arrays.lazyconnect")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_params_lazy_connect TSRMLS_CC);
     }
-	if (zend_hash_find(Z_ARRVAL_P(z_params_lazy_connect), name, name_len, (void **) &z_data_pp) != FAILURE) {
-		if(Z_TYPE_PP(z_data_pp) == IS_STRING && strncmp(Z_STRVAL_PP(z_data_pp), "1", 1) == 0) {
+	if ((z_data = zend_hash_str_find(Z_ARRVAL_P(z_params_lazy_connect), name, name_len)) != NULL) {
+		if (Z_TYPE_P(z_data) == IS_STRING && strncmp(Z_STRVAL_P(z_data), "1", 1) == 0) {
             b_lazy_connect = 1;
         }
     }
@@ -309,17 +309,17 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     if ((iptr = INI_STR("redis.arrays.connecttimeout")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_params_connect_timeout TSRMLS_CC);
     }
-	if (zend_hash_find(Z_ARRVAL_P(z_params_connect_timeout), name, name_len, (void **) &z_data_pp) != FAILURE) {
-		if (Z_TYPE_PP(z_data_pp) == IS_DOUBLE || 
-            Z_TYPE_PP(z_data_pp) == IS_STRING ||
-            Z_TYPE_PP(z_data_pp) == IS_LONG) 
-        {
-			if (Z_TYPE_PP(z_data_pp) == IS_DOUBLE) {
-				d_connect_timeout = Z_DVAL_PP(z_data_pp);
-			} else if (Z_TYPE_PP(z_data_pp) == IS_LONG) {
-                d_connect_timeout = Z_LVAL_PP(z_data_pp);
+    if ((z_data = zend_hash_str_find(Z_ARRVAL_P(z_params_connect_timeout), name, name_len)) != NULL) {
+        if (Z_TYPE_P(z_data) == IS_DOUBLE || 
+            Z_TYPE_P(z_data) == IS_STRING ||
+            Z_TYPE_P(z_data) == IS_LONG
+        ) {
+            if (Z_TYPE_P(z_data) == IS_DOUBLE) {
+                d_connect_timeout = Z_DVAL_P(z_data);
+            } else if (Z_TYPE_P(z_data) == IS_LONG) {
+                d_connect_timeout = Z_LVAL_P(z_data);
             } else {
-				d_connect_timeout = atof(Z_STRVAL_PP(z_data_pp));
+                d_connect_timeout = atof(Z_STRVAL_P(z_data));
 			}
 		}
 	}
