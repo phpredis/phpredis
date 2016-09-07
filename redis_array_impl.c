@@ -80,7 +80,8 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 		call_user_function(&redis_ce->function_table, &ra->redis[i], &z_cons, &z_ret, 0, NULL TSRMLS_CC);
 
 		/* create socket */
-		redis_sock = redis_sock_create(host, host_len, port, ra->connect_timeout, ra->pconnect, NULL, retry_interval, b_lazy_connect);
+		redis_sock = redis_sock_create(host, host_len, port, NULL, 0, ra->connect_timeout, ra->pconnect, 
+		        NULL, retry_interval, b_lazy_connect);
 
 	    if (!b_lazy_connect)
     	{

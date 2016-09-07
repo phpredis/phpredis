@@ -2050,6 +2050,7 @@ int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Free previously allocated password, and update
     if(redis_sock->auth) efree(redis_sock->auth);
     redis_sock->auth = estrndup(pw, pw_len);
+    redis_sock->auth_len = pw_len;
 
     // Success
     return SUCCESS;

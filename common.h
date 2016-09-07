@@ -292,6 +292,7 @@ typedef struct {
     char           *host;
     short          port;
     char           *auth;
+    int            auth_len;
     double         timeout;
     double         read_timeout;
     long           retry_interval;
