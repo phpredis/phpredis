@@ -1216,18 +1216,12 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
 static redisClusterNode *cluster_find_node(redisCluster *c, const char *host,
                                            unsigned short port)
 {
-    redisClusterNode *ret = NULL;
     int key_len;
     char key[1024];
 
     key_len = snprintf(key,sizeof(key),"%s:%d", host, port);
 
-    if((ret = zend_hash_str_find_ptr(c->nodes, key, key_len+1)) != NULL) {
-        return ret;
-    }
-
-    /* Not found */
-    return NULL;
+    return zend_hash_str_find_ptr(c->nodes, key, key_len+1);
 }
 
 /* Provided a redisCluster object, the slot where we thought data was and

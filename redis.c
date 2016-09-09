@@ -2857,7 +2857,6 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
                        zval *arg TSRMLS_DC)
 {
     HashTable *ht_chan;
-    HashPosition ptr;
     zval *z_ele;
     char *key;
     size_t key_len;

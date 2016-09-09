@@ -698,7 +698,6 @@ ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, con
     long count, i;
     zval z_fun_smembers, z_ret, z_arg, *z_data_p;
     HashTable *h_keys;
-    HashPosition pointer;
     char *key;
     int key_len;
 
