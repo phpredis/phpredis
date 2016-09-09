@@ -456,6 +456,13 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->ttl('key') ===7);
         $this->assertTrue($this->redis->get('key') === 'val');
     }
+    
+    public function testPSetEx() {
+        $this->redis->del('key');
+        $this->assertTrue($this->redis->psetex('key', 7 * 1000, 'val') === TRUE);
+        $this->assertTrue($this->redis->ttl('key') ===7);
+        $this->assertTrue($this->redis->get('key') === 'val');
+    }
 
     public function testSetNX() {
 
