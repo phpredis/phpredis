@@ -989,7 +989,7 @@ PHP_METHOD(RedisArray, mget)
 /* MSET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mset)
 {
-	zval *object, *z_keys, z_fun, *z_argarray, **data, z_ret;
+	zval *object, *z_keys, z_fun, *z_argarray, *data, z_ret;
 	int i, n;
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
@@ -1034,7 +1034,7 @@ PHP_METHOD(RedisArray, mset)
 			zend_hash_move_forward(h_keys), i++)
 	{
 	    /* We have to skip the element if we can't get the array value */
-        if(zend_hash_get_current_data(h_keys, (void**)&data) == FAILURE) {
+        if ((data = zend_hash_get_current_data(h_keys)) == NULL) {
             continue;
         }
 
@@ -1052,7 +1052,7 @@ PHP_METHOD(RedisArray, mset)
 
 		redis_instances[i] = ra_find_node(ra, key, (int)key_len, &pos[i] TSRMLS_CC);
 		argc_each[pos[i]]++;	/* count number of keys per node */
-		argv[i] = *data;
+		argv[i] = data;
 		keys[i] = key;
 		key_lens[i] = (int)key_len;
 	}

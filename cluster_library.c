@@ -10,14 +10,15 @@ extern zend_class_entry *redis_cluster_exception_ce;
 
 /* Debugging methods/
 static void cluster_dump_nodes(redisCluster *c) {
-    redisClusterNode **pp, *p;
+    redisClusterNode *p;
 
     for(zend_hash_internal_pointer_reset(c->nodes);
         zend_hash_has_more_elements(c->nodes)==SUCCESS;
         zend_hash_move_forward(c->nodes))
     {
-        zend_hash_get_current_data(c->nodes, (void**)&pp);
-        p = *pp;
+        if ((p = zend_hash_get_current_data_ptr(c->nodes)) == NULL) {
+            continue;
+        }
 
         const char *slave = (p->slave) ? "slave" : "master";
         php_printf("%d %s %d %d", p->sock->port, slave,p->sock->prefix_len,
@@ -842,7 +843,7 @@ PHP_REDIS_API void cluster_free(redisCluster *c) {
 /* Takes our input hash table and returns a straigt C array with elements,
  * which have been randomized.  The return value needs to be freed. */
 static zval **cluster_shuffle_seeds(HashTable *seeds, int *len) {
-    zval **z_seeds, **z_seed;
+    zval **z_seeds;
     int *map, i, count, index=0;
 
     /* How many */
@@ -861,9 +862,7 @@ static zval **cluster_shuffle_seeds(HashTable *seeds, int *len) {
          zend_hash_has_more_elements(seeds) == SUCCESS;
          zend_hash_move_forward(seeds))
     {
-        zend_hash_get_current_data(seeds, (void**)&z_seed);
-        z_seeds[map[index]] = *z_seed;
-        index++;
+        z_seeds[map[index++]] = zend_hash_get_current_data(seeds);
     }
 
     efree(map);
@@ -921,7 +920,7 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
 
 /* Initial mapping of our cluster keyspace */
 PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
-    RedisSock **seed;
+    RedisSock *seed;
     clusterReply *slots=NULL;
     int mapped=0;
 
@@ -931,22 +930,24 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
         zend_hash_move_forward(c->seeds))
     {
         // Grab the redis_sock for this seed
-        zend_hash_get_current_data(c->seeds, (void**)&seed);
+        if ((seed = zend_hash_get_current_data_ptr(c->seeds)) == NULL) {
+            continue;
+        }
 
         // Attempt to connect to this seed node
-        if(redis_sock_connect(*seed TSRMLS_CC)!=0) {
+        if (redis_sock_connect(seed TSRMLS_CC) != 0) {
             continue;
         }
 
         // Parse out cluster nodes.  Flag mapped if we are valid
-        slots = cluster_get_slots(*seed TSRMLS_CC);
+        slots = cluster_get_slots(seed TSRMLS_CC);
         if(slots) mapped = !cluster_map_slots(c, slots);
 
         // Bin anything mapped, if we failed somewhere
         if(!mapped && slots) {
             memset(c->master, 0, sizeof(redisClusterNode*)*REDIS_CLUSTER_SLOTS);
         }
-        redis_sock_disconnect(*seed TSRMLS_CC);
+        redis_sock_disconnect(seed TSRMLS_CC);
     }
 
     // Clean up slots reply if we got one
@@ -1064,14 +1065,14 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
 
 /* Disconnect from each node we're connected to */
 PHP_REDIS_API void cluster_disconnect(redisCluster *c TSRMLS_DC) {
-    redisClusterNode **node;
+    redisClusterNode *node;
 
     for(zend_hash_internal_pointer_reset(c->nodes);
-        zend_hash_get_current_data(c->nodes, (void**)&node)==SUCCESS;
+        (node = zend_hash_get_current_data_ptr(c->nodes)) != NULL;
         zend_hash_move_forward(c->nodes))
     {
-        redis_sock_disconnect((*node)->sock TSRMLS_CC);
-        (*node)->sock->lazy_connect = 1;
+        redis_sock_disconnect(node->sock TSRMLS_CC);
+        node->sock->lazy_connect = 1;
     }
 }
 
@@ -1156,7 +1157,7 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
 static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
                               int direct TSRMLS_DC)
 {
-    redisClusterNode **seed_node;
+    redisClusterNode *seed_node;
     RedisSock *redis_sock;
     int failover, nomaster;
 
@@ -1209,18 +1210,20 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
         zend_hash_move_forward(c->nodes))
     {
         /* Grab node */
-        zend_hash_get_current_data(c->nodes, (void**)&seed_node);
+        if ((seed_node = zend_hash_get_current_data_ptr(c->nodes)) == NULL) {
+            continue;
+        }
 
         /* Skip this node if it's the one that failed, or if it's a slave */
-        if((*seed_node)->sock == redis_sock || (*seed_node)->slave) continue;
+        if(seed_node->sock == redis_sock || seed_node->slave) continue;
 
         /* Connect to this node if we haven't already */
-        CLUSTER_LAZY_CONNECT((*seed_node)->sock);
+        CLUSTER_LAZY_CONNECT(seed_node->sock);
 
         /* Attempt to write our request to this node */
-        if (CLUSTER_SEND_PAYLOAD((*seed_node)->sock, cmd, sz)) {
-            c->cmd_slot = (*seed_node)->slot;
-            c->cmd_sock = (*seed_node)->sock;
+        if (CLUSTER_SEND_PAYLOAD(seed_node->sock, cmd, sz)) {
+            c->cmd_slot = seed_node->slot;
+            c->cmd_sock = seed_node->sock;
             return 0;
         }
     }

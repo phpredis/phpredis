@@ -47,13 +47,13 @@
 
 /* Reset anything flagged as MULTI */
 #define CLUSTER_RESET_MULTI(c) \
-    redisClusterNode **_node; \
+    redisClusterNode *_node; \
     for(zend_hash_internal_pointer_reset(c->nodes); \
-        zend_hash_get_current_data(c->nodes, (void**)&_node); \
+        (_node = zend_hash_get_current_data_ptr(c->nodes)) != NULL; \
         zend_hash_move_forward(c->nodes)) \
     { \
-        (*_node)->sock->watching = 0; \
-        (*_node)->sock->mode     = ATOMIC; \
+        _node->sock->watching = 0; \
+        _node->sock->mode = ATOMIC; \
     } \
     c->flags->watching = 0; \
     c->flags->mode     = ATOMIC; \

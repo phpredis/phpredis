@@ -1233,39 +1233,39 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
         unsigned int tablekey_len;
         int hkey_len;
         unsigned long idx;
-        zval **z_key_pp, **z_value_pp;
+        zval *z_key_p, *z_value_p;
 
         zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
-        if(zend_hash_get_current_data(keytable, (void**)&z_key_pp) == FAILURE) {
+        if ((z_key_p = zend_hash_get_current_data(keytable)) == NULL) {
             continue;   /* this should never happen, according to the PHP people. */
         }
 
         /* get current value, a key */
-        convert_to_string(*z_key_pp);
-        hkey = Z_STRVAL_PP(z_key_pp);
-        hkey_len = Z_STRLEN_PP(z_key_pp);
+        convert_to_string(z_key_p);
+        hkey = Z_STRVAL_P(z_key_p);
+        hkey_len = Z_STRLEN_P(z_key_p);
 
         /* move forward */
         zend_hash_move_forward(keytable);
 
         /* fetch again */
         zend_hash_get_current_key_ex(keytable, &tablekey, &tablekey_len, &idx, 0, NULL);
-        if(zend_hash_get_current_data(keytable, (void**)&z_value_pp) == FAILURE) {
+        if ((z_value_p = zend_hash_get_current_data(keytable)) == NULL) {
             continue;   /* this should never happen, according to the PHP people. */
         }
 
         /* get current value, a hash value now. */
-        hval = Z_STRVAL_PP(z_value_pp);
+        hval = Z_STRVAL_P(z_value_p);
 
         /* Decode the score depending on flag */
-        if (decode == SCORE_DECODE_INT && Z_STRLEN_PP(z_value_pp) > 0) {
+        if (decode == SCORE_DECODE_INT && Z_STRLEN_P(z_value_p) > 0) {
             add_assoc_long_ex(z_ret, hkey, 1+hkey_len, atoi(hval+1));
         } else if (decode == SCORE_DECODE_DOUBLE) {
             add_assoc_double_ex(z_ret, hkey, 1+hkey_len, atof(hval));
         } else {
             zval *z = NULL;
             MAKE_STD_ZVAL(z);
-            *z = **z_value_pp;
+            *z = *z_value_p;
             zval_copy_ctor(z);
             add_assoc_zval_ex(z_ret, hkey, 1+hkey_len, z);
         }
