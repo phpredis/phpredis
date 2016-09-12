@@ -376,14 +376,11 @@ PHP_REDIS_API zend_class_entry *redis_get_exception_base(int root TSRMLS_DC)
 #if HAVE_SPL
         if (!root) {
                 if (!spl_ce_RuntimeException) {
-                        zend_class_entry **pce;
+                        zend_class_entry *pce;
 
-                        if (zend_hash_find(CG(class_table), "runtimeexception",
-                                           sizeof("RuntimeException"),
-                                           (void**)&pce) == SUCCESS)
-                        {
-                                spl_ce_RuntimeException = *pce;
-                                return *pce;
+                        if ((pce = zend_hash_str_find_ptr(CG(class_table), "runtimeexception", sizeof("RuntimeException") - 1))) {
+                                spl_ce_RuntimeException = pce;
+                                return pce;
                         }
                 } else {
                         return spl_ce_RuntimeException;
@@ -442,12 +439,11 @@ PHP_REDIS_API int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC,
                           int no_throw)
 {
 
-    zval **socket;
+    zval *socket;
     int resource_type;
 
-    if (Z_TYPE_P(id) != IS_OBJECT || zend_hash_find(Z_OBJPROP_P(id), "socket",
-        sizeof("socket"), (void **) &socket) == FAILURE)
-    {
+    if (Z_TYPE_P(id) != IS_OBJECT || (socket = zend_hash_str_find(Z_OBJPROP_P(id),
+        "socket", sizeof("socket") - 1)) == NULL) {
         // Throw an exception unless we've been requested not to
         if(!no_throw) {
             zend_throw_exception(redis_exception_ce, "Redis server went away",
@@ -456,7 +452,7 @@ PHP_REDIS_API int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC,
         return -1;
     }
 
-    *redis_sock = (RedisSock *)zend_list_find(Z_LVAL_PP(socket),
+    *redis_sock = (RedisSock *)zend_list_find(Z_LVAL_P(socket),
         &resource_type);
 
     if (!*redis_sock || resource_type != le_redis_sock) {
@@ -475,7 +471,7 @@ PHP_REDIS_API int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC,
         }
     }
 
-    return Z_LVAL_PP(socket);
+    return Z_LVAL_P(socket);
 }
 
 /**
@@ -725,8 +721,7 @@ PHP_METHOD(Redis, pconnect)
 /* }}} */
 
 PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
-    zval *object;
-    zval **socket;
+    zval *object, *socket;
     int host_len, id;
     char *host = NULL;
     long port = -1;
@@ -775,13 +770,12 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 
     /* if there is a redis sock already we have to remove it from the list */
     if (redis_sock_get(object, &redis_sock TSRMLS_CC, 1) > 0) {
-        if (zend_hash_find(Z_OBJPROP_P(object), "socket",
-                    sizeof("socket"), (void **) &socket) == FAILURE)
+        if ((socket = zend_hash_str_find(Z_OBJPROP_P(object), "socket", sizeof("socket") - 1)) == NULL)
         {
             /* maybe there is a socket but the id isn't known.. what to do? */
         } else {
             /* The refcount should be decreased and destructor invoked */
-            zend_list_delete(Z_LVAL_PP(socket));
+            zend_list_delete(Z_LVAL_P(socket));
         }
     }
 

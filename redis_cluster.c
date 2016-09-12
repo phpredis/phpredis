@@ -244,14 +244,11 @@ PHPAPI zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC) {
 #if HAVE_SPL
     if(!root) {
         if(!spl_rte_ce) {
-            zend_class_entry **pce;
+            zend_class_entry *pce;
 
-            if(zend_hash_find(CG(class_table), "runtimeexception",
-                              sizeof("runtimeexception"), (void**)&pce)
-                              ==SUCCESS)
-            {
-                spl_rte_ce = *pce;
-                return *pce;
+            if ((pce = zend_hash_str_find_ptr(CG(class_table), "runtimeexception", sizeof("runtimeexception") - 1))) {
+                spl_rte_ce = pce;
+                return pce;
             }
         } else {
             return spl_rte_ce;
@@ -379,7 +376,7 @@ void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
 
 /* Attempt to load a named cluster configured in php.ini */
 void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
-    zval *z_seeds, *z_timeout, *z_read_timeout, *z_persistent, **z_value;
+    zval *z_seeds, *z_timeout, *z_read_timeout, *z_persistent, *z_value;
     char *iptr;
     double timeout=0, read_timeout=0;
     int persistent = 0;
@@ -391,8 +388,8 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
     if ((iptr = INI_STR("redis.clusters.seeds")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_seeds TSRMLS_CC);
     }
-    if (zend_hash_find(Z_ARRVAL_P(z_seeds), name, name_len+1, (void**)&z_value) != FAILURE) {
-        ht_seeds = Z_ARRVAL_PP(z_value);
+    if ((z_value = zend_hash_str_find(Z_ARRVAL_P(z_seeds), name, name_len)) != NULL) {
+        ht_seeds = Z_ARRVAL_P(z_value);
     } else {
         zval_dtor(z_seeds);
         efree(z_seeds);
@@ -406,11 +403,11 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
     if ((iptr = INI_STR("redis.clusters.timeout")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_timeout TSRMLS_CC);
     }
-    if (zend_hash_find(Z_ARRVAL_P(z_timeout), name, name_len+1, (void**)&z_value) != FAILURE) {
-        if (Z_TYPE_PP(z_value) == IS_STRING) {
-            timeout = atof(Z_STRVAL_PP(z_value));
-        } else if (Z_TYPE_PP(z_value) == IS_DOUBLE) {
-            timeout = Z_DVAL_PP(z_value);
+    if ((z_value = zend_hash_str_find(Z_ARRVAL_P(z_timeout), name, name_len)) != NULL) {
+        if (Z_TYPE_P(z_value) == IS_STRING) {
+            timeout = atof(Z_STRVAL_P(z_value));
+        } else if (Z_TYPE_P(z_value) == IS_DOUBLE) {
+            timeout = Z_DVAL_P(z_value);
         }
     }
 
@@ -420,11 +417,11 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
     if ((iptr = INI_STR("redis.clusters.read_timeout")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_read_timeout TSRMLS_CC);
     }
-    if (zend_hash_find(Z_ARRVAL_P(z_read_timeout), name, name_len+1, (void**)&z_value) != FAILURE) {
-        if (Z_TYPE_PP(z_value) == IS_STRING) {
-            read_timeout = atof(Z_STRVAL_PP(z_value));
-        } else if (Z_TYPE_PP(z_value) == IS_DOUBLE) {
-            read_timeout = Z_DVAL_PP(z_value);
+    if ((z_value = zend_hash_str_find(Z_ARRVAL_P(z_read_timeout), name, name_len)) != NULL) {
+        if (Z_TYPE_P(z_value) == IS_STRING) {
+            read_timeout = atof(Z_STRVAL_P(z_value));
+        } else if (Z_TYPE_P(z_value) == IS_DOUBLE) {
+            read_timeout = Z_DVAL_P(z_value);
         }
     }
 
@@ -434,11 +431,11 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
     if ((iptr = INI_STR("redis.clusters.persistent")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_persistent TSRMLS_CC);
     }
-    if (zend_hash_find(Z_ARRVAL_P(z_persistent), name, name_len+1, (void**)&z_value) != FAILURE) {
-        if (Z_TYPE_PP(z_value) == IS_STRING) {
-            persistent = atoi(Z_STRVAL_PP(z_value));
-        } else if (Z_TYPE_PP(z_value) == IS_LONG) {
-            persistent = Z_LVAL_PP(z_value);
+    if ((z_value = zend_hash_str_find(Z_ARRVAL_P(z_persistent), name, name_len)) != NULL) {
+        if (Z_TYPE_P(z_value) == IS_STRING) {
+            persistent = atoi(Z_STRVAL_P(z_value));
+        } else if (Z_TYPE_P(z_value) == IS_LONG) {
+            persistent = Z_LVAL_P(z_value);
         }
     }
 

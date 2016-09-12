@@ -189,7 +189,7 @@ redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
 PS_OPEN_FUNC(redis)
 {
     php_url *url;
-    zval *params, **param;
+    zval *params, *param;
     int i, j, path_len;
 
     redis_pool *pool = redis_pool_new(TSRMLS_C);
@@ -241,32 +241,32 @@ PS_OPEN_FUNC(redis)
 
                 sapi_module.treat_data(PARSE_STRING, estrdup(url->query), params TSRMLS_CC);
 
-                if (zend_hash_find(Z_ARRVAL_P(params), "weight", sizeof("weight"), (void **) &param) != FAILURE) {
-                    convert_to_long_ex(param);
-                    weight = Z_LVAL_PP(param);
+                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "weight", sizeof("weight") - 1)) != NULL) {
+                    convert_to_long_ex(&param);
+                    weight = Z_LVAL_P(param);
                 }
-                if (zend_hash_find(Z_ARRVAL_P(params), "timeout", sizeof("timeout"), (void **) &param) != FAILURE) {
-                    timeout = atof(Z_STRVAL_PP(param));
+                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "timeout", sizeof("timeout") - 1)) != NULL) {
+                    timeout = atof(Z_STRVAL_P(param));
                 }
-                if (zend_hash_find(Z_ARRVAL_P(params), "persistent", sizeof("persistent"), (void **) &param) != FAILURE) {
-                    persistent = (atol(Z_STRVAL_PP(param)) == 1 ? 1 : 0);
+                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "persistent", sizeof("persistent") - 1)) != NULL) {
+                    persistent = (atol(Z_STRVAL_P(param)) == 1 ? 1 : 0);
                 }
-                if (zend_hash_find(Z_ARRVAL_P(params), "persistent_id", sizeof("persistent_id"), (void **) &param) != FAILURE) {
-                    persistent_id = estrndup(Z_STRVAL_PP(param), Z_STRLEN_PP(param));
+                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "persistent_id", sizeof("persistent_id") - 1)) != NULL) {
+                    persistent_id = estrndup(Z_STRVAL_P(param), Z_STRLEN_P(param));
                 }
-                if (zend_hash_find(Z_ARRVAL_P(params), "prefix", sizeof("prefix"), (void **) &param) != FAILURE) {
-                    prefix = estrndup(Z_STRVAL_PP(param), Z_STRLEN_PP(param));
+                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "prefix", sizeof("prefix") - 1)) != NULL) {
+                    prefix = estrndup(Z_STRVAL_P(param), Z_STRLEN_P(param));
                 }
-                if (zend_hash_find(Z_ARRVAL_P(params), "auth", sizeof("auth"), (void **) &param) != FAILURE) {
-                    auth = estrndup(Z_STRVAL_PP(param), Z_STRLEN_PP(param));
+                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "auth", sizeof("auth") - 1)) != NULL) {
+                    auth = estrndup(Z_STRVAL_P(param), Z_STRLEN_P(param));
                 }
-                if (zend_hash_find(Z_ARRVAL_P(params), "database", sizeof("database"), (void **) &param) != FAILURE) {
-                    convert_to_long_ex(param);
-                    database = Z_LVAL_PP(param);
+                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "database", sizeof("database") - 1)) != NULL) {
+                    convert_to_long_ex(&param);
+                    database = Z_LVAL_P(param);
                 }
-                if (zend_hash_find(Z_ARRVAL_P(params), "retry_interval", sizeof("retry_interval"), (void **) &param) != FAILURE) {
-                    convert_to_long_ex(param);
-                    retry_interval = Z_LVAL_PP(param);
+                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "retry_interval", sizeof("retry_interval") - 1)) != NULL) {
+                    convert_to_long_ex(&param);
+                    retry_interval = Z_LVAL_P(param);
                 }
 
                 zval_ptr_dtor(&params);
@@ -470,12 +470,12 @@ PS_GC_FUNC(redis)
 static void session_conf_timeout(HashTable *ht_conf, const char *key, int key_len,
                                  double *val)
 {
-    zval **z_val;
+    zval *z_val;
 
-    if (zend_hash_find(ht_conf, key, key_len, (void**)&z_val) == SUCCESS &&
-        Z_TYPE_PP(z_val) == IS_STRING) 
-    {
-        *val = atof(Z_STRVAL_PP(z_val));
+    if ((z_val = zend_hash_str_find(ht_conf, key, key_len - 1)) != NULL &&
+        Z_TYPE_P(z_val) == IS_STRING
+    ) {
+        *val = atof(Z_STRVAL_P(z_val));
     }
 }
 
@@ -484,16 +484,16 @@ static void session_conf_timeout(HashTable *ht_conf, const char *key, int key_le
  * 'false' */
 static void session_conf_bool(HashTable *ht_conf, char *key, int keylen,
                               int *retval) {
-    zval **z_val;
+    zval *z_val;
     char *str;
     int strlen;
 
     /* See if we have the option, and it's a string */   
-    if (zend_hash_find(ht_conf, key, keylen, (void**)&z_val) == SUCCESS &&
-        Z_TYPE_PP(z_val) == IS_STRING)
-    {
-        str = Z_STRVAL_PP(z_val);
-        strlen = Z_STRLEN_PP(z_val);
+    if ((z_val = zend_hash_str_find(ht_conf, key, keylen - 1)) != NULL &&
+        Z_TYPE_P(z_val) == IS_STRING
+    ) {
+        str = Z_STRVAL_P(z_val);
+        strlen = Z_STRLEN_P(z_val);
 
         /* true/yes/1 are treated as true.  Everything else is false */
         *retval = (strlen == 4 && !strncasecmp(str, "true", 4)) ||
@@ -519,7 +519,7 @@ static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
 
 PS_OPEN_FUNC(rediscluster) {
     redisCluster *c;
-    zval *z_conf, **z_val;
+    zval *z_conf, *z_val;
     HashTable *ht_conf, *ht_seeds;
     double timeout = 0, read_timeout = 0;
     int persistent = 0;
@@ -533,8 +533,8 @@ PS_OPEN_FUNC(rediscluster) {
 
     /* Sanity check that we're able to parse and have a seeds array */
     if (Z_TYPE_P(z_conf) != IS_ARRAY ||
-        zend_hash_find(Z_ARRVAL_P(z_conf), "seed", sizeof("seed"), (void**)&z_val) == FAILURE ||
-        Z_TYPE_PP(z_val) != IS_ARRAY)
+        (z_val = zend_hash_str_find(Z_ARRVAL_P(z_conf), "seed", sizeof("seed") - 1)) == NULL ||
+        Z_TYPE_P(z_val) != IS_ARRAY)
     {
         zval_dtor(z_conf);
         efree(z_conf);
@@ -543,7 +543,7 @@ PS_OPEN_FUNC(rediscluster) {
 
     /* Grab a copy of our config hash table and keep seeds array */
     ht_conf = Z_ARRVAL_P(z_conf);
-    ht_seeds = Z_ARRVAL_PP(z_val);
+    ht_seeds = Z_ARRVAL_P(z_val);
 
     /* Grab timeouts if they were specified */
     session_conf_timeout(ht_conf, "timeout", sizeof("timeout"), &timeout);
@@ -562,23 +562,23 @@ PS_OPEN_FUNC(rediscluster) {
     }
 
     /* Look for a specific prefix */
-    if (zend_hash_find(ht_conf, "prefix", sizeof("prefix"), (void**)&z_val) == SUCCESS &&
-        Z_TYPE_PP(z_val) == IS_STRING && Z_STRLEN_PP(z_val) > 0) 
-    {
-        prefix = Z_STRVAL_PP(z_val);
-        prefix_len = Z_STRLEN_PP(z_val);
+    if ((z_val = zend_hash_str_find(ht_conf, "prefix", sizeof("prefix") - 1)) != NULL &&
+        Z_TYPE_P(z_val) == IS_STRING && Z_STRLEN_P(z_val) > 0
+    ) {
+        prefix = Z_STRVAL_P(z_val);
+        prefix_len = Z_STRLEN_P(z_val);
     } else {
         prefix = "PHPREDIS_CLUSTER_SESSION:";
         prefix_len = sizeof("PHPREDIS_CLUSTER_SESSION:")-1;
     }
 
     /* Look for a specific failover setting */
-    if (zend_hash_find(ht_conf, "failover", sizeof("failover"), (void**)&z_val) == SUCCESS &&
-        Z_TYPE_PP(z_val) == IS_STRING)
-    {
-        if (!strcasecmp(Z_STRVAL_PP(z_val), "error")) {
+    if ((z_val = zend_hash_str_find(ht_conf, "failover", sizeof("failover") - 1)) != NULL &&
+        Z_TYPE_P(z_val) == IS_STRING
+    ) {
+        if (!strcasecmp(Z_STRVAL_P(z_val), "error")) {
             failover = REDIS_FAILOVER_ERROR;
-        } else if (!strcasecmp(Z_STRVAL_PP(z_val), "distribute")) {
+        } else if (!strcasecmp(Z_STRVAL_P(z_val), "distribute")) {
             failover = REDIS_FAILOVER_DISTRIBUTE;
         }
     }
