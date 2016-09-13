@@ -42,6 +42,30 @@ zend_hash_str_find_ptr(const HashTable *ht, const char *str, size_t len)
     }
     return NULL;
 }
+
+#undef zend_hash_get_current_data
+static zend_always_inline zval *
+zend_hash_get_current_data(HashTable *ht)
+{
+    zval **zv;
+
+    if (zend_hash_get_current_data_ex(ht, (void **)&zv, NULL) == SUCCESS) {
+        return *zv;
+    }
+    return NULL;
+}
+
+static zend_always_inline void *
+zend_hash_get_current_data_ptr(HashTable *ht)
+{
+    void **ptr;
+
+    if (zend_hash_get_current_data_ex(ht, (void **)&ptr, NULL) == SUCCESS) {
+        return *ptr;
+    }
+    return NULL;
+}
+
 #else
 #include <ext/standard/php_smart_string.h>
 #endif

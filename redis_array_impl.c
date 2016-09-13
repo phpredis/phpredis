@@ -35,7 +35,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 	int i = 0, host_len, id;
 	char *host, *p;
 	short port;
-	zval **zpData, z_cons, z_ret;
+	zval *zpData, z_cons, z_ret;
 	RedisSock *redis_sock  = NULL;
 
 	/* function calls on the Redis object */
@@ -44,7 +44,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 	/* init connections */
 	for (zend_hash_internal_pointer_reset(hosts); zend_hash_has_more_elements(hosts) == SUCCESS; zend_hash_move_forward(hosts))
 	{
-		if ((zend_hash_get_current_data(hosts, (void **) &zpData) == FAILURE) || (Z_TYPE_PP(zpData) != IS_STRING))
+		if ((zpData = zend_hash_get_current_data(hosts)) == NULL || Z_TYPE_P(zpData) != IS_STRING)
 		{
 			for(i=0;i<ra->count;i++) {
 				zval_dtor(ra->redis[i]);
@@ -59,11 +59,11 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 			return NULL;
 		}
 
-		ra->hosts[i] = estrdup(Z_STRVAL_PP(zpData));
+		ra->hosts[i] = estrdup(Z_STRVAL_P(zpData));
 
 		/* default values */
-		host = Z_STRVAL_PP(zpData);
-		host_len = Z_STRLEN_PP(zpData);
+		host = Z_STRVAL_P(zpData);
+		host_len = Z_STRLEN_P(zpData);
 		port = 6379;
 
 		if((p = strrchr(host, ':'))) { /* found port */
@@ -766,7 +766,7 @@ ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long 
 
 	int i;
 	zval z_fun_type, z_ret, *z_arg;
-	zval **z_data;
+	zval *z_data;
 	long success = 1;
 
 	MAKE_STD_ZVAL(z_arg);
@@ -795,17 +795,12 @@ ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long 
 				zend_hash_has_more_elements(retHash) == SUCCESS;
 				zend_hash_move_forward(retHash)) {
 
-			if(zend_hash_get_current_data(retHash, (void**)&z_data) == FAILURE) {
-				success = 0;
-				break;
-			}
-			if(Z_TYPE_PP(z_data) != IS_LONG) {
+			if ((z_data = zend_hash_get_current_data(retHash)) == NULL || Z_TYPE_P(z_data) != IS_LONG) {
 				success = 0;
 				break;
 			}
 			/* Get the result - Might change in the future to handle doubles as well */
-			res[i] = Z_LVAL_PP(z_data);
-			i++;
+			res[i++] = Z_LVAL_P(z_data);
 		}
 	}
 	zval_dtor(&z_ret);
@@ -883,7 +878,7 @@ ra_expire_key(const char *key, int key_len, zval *z_to, long ttl TSRMLS_DC) {
 static zend_bool
 ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
 
-	zval z_fun_zrange, z_fun_zadd, z_ret, z_ret_dest, *z_args[4], **z_zadd_args, **z_score_pp;
+	zval z_fun_zrange, z_fun_zadd, z_ret, z_ret_dest, *z_args[4], **z_zadd_args, *z_score_p;
 	int count;
 	HashTable *h_zset_vals;
 	char *val;
@@ -923,14 +918,14 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 			zend_hash_has_more_elements(h_zset_vals) == SUCCESS;
 			zend_hash_move_forward(h_zset_vals)) {
 
-		if(zend_hash_get_current_data(h_zset_vals, (void**)&z_score_pp) == FAILURE) {
+		if ((z_score_p = zend_hash_get_current_data(h_zset_vals)) == NULL) {
 			continue;
 		}
 
 		/* add score */
-		convert_to_double(*z_score_pp);
+		convert_to_double(z_score_p);
 		MAKE_STD_ZVAL(z_zadd_args[i]);
-		ZVAL_DOUBLE(z_zadd_args[i], Z_DVAL_PP(z_score_pp));
+		ZVAL_DOUBLE(z_zadd_args[i], Z_DVAL_P(z_score_p));
 
 		/* add value */
 		MAKE_STD_ZVAL(z_zadd_args[i+1]);
@@ -1056,7 +1051,7 @@ ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 		int list_count, const char **cmd_list,
 		int add_count, const char **cmd_add, long ttl TSRMLS_DC) {
 
-	zval z_fun_retrieve, z_fun_sadd, z_ret, **z_retrieve_args, **z_sadd_args, **z_data_pp;
+	zval z_fun_retrieve, z_fun_sadd, z_ret, **z_retrieve_args, **z_sadd_args, *z_data_p;
 	int count, i;
 	HashTable *h_set_vals;
 
@@ -1099,13 +1094,13 @@ ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 			zend_hash_has_more_elements(h_set_vals) == SUCCESS;
 			zend_hash_move_forward(h_set_vals), i++) {
 
-		if(zend_hash_get_current_data(h_set_vals, (void**)&z_data_pp) == FAILURE) {
+		if ((z_data_p = zend_hash_get_current_data(h_set_vals)) == NULL) {
 			continue;
 		}
 
 		/* add set elements */
 		MAKE_STD_ZVAL(z_sadd_args[i+1]);
-		*(z_sadd_args[i+1]) = **z_data_pp;
+		*(z_sadd_args[i+1]) = *z_data_p;
 		zval_copy_ctor(z_sadd_args[i+1]);
 	}
 

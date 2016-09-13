@@ -982,7 +982,7 @@ PHP_METHOD(RedisCluster, exists) {
 /* {{{ proto array Redis::keys(string pattern) */
 PHP_METHOD(RedisCluster, keys) {
     redisCluster *c = GET_CONTEXT();
-    redisClusterNode **node;
+    redisClusterNode *node;
     int pat_len, pat_free, cmd_len;
     char *pat, *cmd;
     clusterReply *resp;
@@ -1008,14 +1008,14 @@ PHP_METHOD(RedisCluster, keys) {
 
     /* Iterate over our known nodes */
     for(zend_hash_internal_pointer_reset(c->nodes);
-        zend_hash_get_current_data(c->nodes, (void**)&node)==SUCCESS;
+        (node = zend_hash_get_current_data_ptr(c->nodes)) != NULL;
         zend_hash_move_forward(c->nodes))
     {
-        if(cluster_send_slot(c, (*node)->slot, cmd, cmd_len, TYPE_MULTIBULK
+        if (cluster_send_slot(c, node->slot, cmd, cmd_len, TYPE_MULTIBULK
                              TSRMLS_CC)<0)
         {
             php_error_docref(0 TSRMLS_CC, E_ERROR, "Can't send KEYS to %s:%d",
-                (*node)->sock->host, (*node)->sock->port);
+                node->sock->host, node->sock->port);
             efree(cmd);
             RETURN_FALSE;
         }
@@ -1024,8 +1024,8 @@ PHP_METHOD(RedisCluster, keys) {
         resp = cluster_read_resp(c TSRMLS_CC);
         if(!resp) {
             php_error_docref(0 TSRMLS_CC, E_WARNING, 
-                "Can't read response from %s:%d", (*node)->sock->host, 
-                (*node)->sock->port);
+                "Can't read response from %s:%d", node->sock->host, 
+                node->sock->port);
             continue;
         }
 
@@ -2009,7 +2009,7 @@ PHP_METHOD(RedisCluster, _unserialize) {
 PHP_METHOD(RedisCluster, _masters) {
     redisCluster *c = GET_CONTEXT();
     zval *z_ret, *z_sub;
-    redisClusterNode **node;
+    redisClusterNode *node;
     char *host;
     short port;
 
@@ -2017,11 +2017,11 @@ PHP_METHOD(RedisCluster, _masters) {
     array_init(z_ret);
 
     for(zend_hash_internal_pointer_reset(c->nodes);
-        zend_hash_get_current_data(c->nodes, (void**)&node)==SUCCESS;
+        (node = zend_hash_get_current_data_ptr(c->nodes)) != NULL;
         zend_hash_move_forward(c->nodes))
     {
-        host = (*node)->sock->host;
-        port = (*node)->sock->port;
+        host = node->sock->host;
+        port = node->sock->port;
 
         MAKE_STD_ZVAL(z_sub);
         array_init(z_sub);
@@ -2073,7 +2073,7 @@ PHP_METHOD(RedisCluster, multi) {
 PHP_METHOD(RedisCluster, watch) {
     redisCluster *c = GET_CONTEXT();
     HashTable *ht_dist;
-    clusterDistList **dl;
+    clusterDistList *dl;
     smart_string cmd = {0};
     zval **z_args;
     int argc = ZEND_NUM_ARGS(), i;
@@ -2122,7 +2122,7 @@ PHP_METHOD(RedisCluster, watch) {
         zend_hash_move_forward(ht_dist))
     {
         // Grab the clusterDistList pointer itself
-        if(zend_hash_get_current_data(ht_dist, (void**)&dl)==FAILURE) {
+        if ((dl = zend_hash_get_current_data_ptr(ht_dist)) == NULL) {
             zend_throw_exception(redis_cluster_exception_ce,
                 "Internal error in a PHP HashTable", 0 TSRMLS_CC);
             cluster_dist_free(ht_dist);
@@ -2132,10 +2132,10 @@ PHP_METHOD(RedisCluster, watch) {
         }
 
         // Construct our watch command for this node
-        redis_cmd_init_sstr(&cmd, (*dl)->len, "WATCH", sizeof("WATCH")-1);
-        for(i=0;i<(*dl)->len;i++) {
-            redis_cmd_append_sstr(&cmd, (*dl)->entry[i].key, 
-                (*dl)->entry[i].key_len);
+        redis_cmd_init_sstr(&cmd, dl->len, "WATCH", sizeof("WATCH")-1);
+        for (i = 0; i < dl->len; i++) {
+            redis_cmd_append_sstr(&cmd, dl->entry[i].key, 
+                dl->entry[i].key_len);
         }
 
         // If we get a failure from this, we have to abort

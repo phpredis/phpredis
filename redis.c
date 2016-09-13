@@ -1856,15 +1856,13 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
             int val_len;
             unsigned long idx;
             int type;
-            zval **z_value_pp;
+            zval *z_value_p;
             int val_free, key_free;
             char buf[32];
 
             type = zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx,
                 0, NULL);
-            if(zend_hash_get_current_data(keytable, (void**)&z_value_pp)
-                                          == FAILURE)
-            {
+            if ((z_value_p = zend_hash_get_current_data(keytable)) == NULL) {
                 /* Should never happen, according to the PHP people */
                 continue;
             }
@@ -1884,7 +1882,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
             if(step == 0)
                 argc++; /* found a valid arg */
 
-            val_free = redis_serialize(redis_sock, *z_value_pp, &val, &val_len
+            val_free = redis_serialize(redis_sock, z_value_p, &val, &val_len
                 TSRMLS_CC);
             key_free = redis_key_prefix(redis_sock, &key, (int*)&key_len);
 
