@@ -1920,8 +1920,7 @@ _**Description**_: Trims an existing list so that it will contain only a specifi
 *stop*
 
 ##### *Return value*
-*Array*
-*Bool* return `FALSE` if the key identify a non-list value.
+*Bool* return `TRUE` in case of success, `FALSE` in case of failure. If the key identify a non-list value.
 
 ##### *Example*
 ~~~
