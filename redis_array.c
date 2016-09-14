@@ -328,7 +328,7 @@ PHP_METHOD(RedisArray, __construct)
 static void
 ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args, zval *z_new_target) {
 
-	zval **zp_tmp, z_tmp;
+	zval *zp_tmp, z_tmp;
 	char *key = NULL; /* set to avoid "unused-but-set-variable" */
 	int key_len;
 	int i;
@@ -373,8 +373,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	/* copy args to array */
     i = 0;
     ZEND_HASH_FOREACH_VAL(h_args, zp_tmp) {
-		z_callargs[i] = *zp_tmp;
-        i++;
+		z_callargs[i++] = zp_tmp;
     } ZEND_HASH_FOREACH_END();
 
 	/* multi/exec */
@@ -837,7 +836,7 @@ PHP_METHOD(RedisArray, select)
 /* MGET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mget)
 {
-	zval *object, *z_keys, z_fun, *z_argarray, **data, *z_ret, **z_cur, *z_tmp_array, *z_tmp;
+	zval *object, *z_keys, z_fun, *z_argarray, *data, *z_ret, **z_cur, *z_tmp_array, *z_tmp;
 	int i, j, n;
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
@@ -878,7 +877,7 @@ PHP_METHOD(RedisArray, mget)
 	    char kbuf[40], *key_lookup;
 
 	    /* phpredis proper can only use string or long keys, so restrict to that here */
-	    if(Z_TYPE_PP(data) != IS_STRING && Z_TYPE_PP(data) != IS_LONG) {
+	    if (Z_TYPE_P(data) != IS_STRING && Z_TYPE_P(data) != IS_LONG) {
 	        php_error_docref(NULL TSRMLS_CC, E_ERROR, "MGET: all keys must be strings or longs");
 	        efree(argv);
 	        efree(pos);
@@ -888,11 +887,11 @@ PHP_METHOD(RedisArray, mget)
 	    }
 
 	    /* Convert to a string for hash lookup if it isn't one */
-	    if(Z_TYPE_PP(data) == IS_STRING) {
-	        key_len = Z_STRLEN_PP(data);
-            key_lookup = Z_STRVAL_PP(data);
+	    if (Z_TYPE_P(data) == IS_STRING) {
+	        key_len = Z_STRLEN_P(data);
+            key_lookup = Z_STRVAL_P(data);
 	    } else {
-	        key_len = snprintf(kbuf, sizeof(kbuf), "%ld", Z_LVAL_PP(data));
+	        key_len = snprintf(kbuf, sizeof(kbuf), "%ld", Z_LVAL_P(data));
 	        key_lookup = (char*)kbuf;
 	    }
 
@@ -900,8 +899,7 @@ PHP_METHOD(RedisArray, mget)
         redis_instances[i] = ra_find_node(ra, key_lookup, key_len, &pos[i] TSRMLS_CC);
 
 		argc_each[pos[i]]++;	/* count number of keys per node */
-		argv[i] = *data;
-        i++;
+		argv[i++] = data;
 	} ZEND_HASH_FOREACH_END();
 
 	/* prepare return value */
@@ -1128,7 +1126,7 @@ PHP_METHOD(RedisArray, mset)
 /* DEL will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, del)
 {
-	zval *object, *z_keys, z_fun, *z_argarray, **data, *z_ret, *z_tmp, **z_args;
+	zval *object, *z_keys, z_fun, *z_argarray, *data, *z_ret, *z_tmp, **z_args;
 	int i, n;
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
@@ -1188,16 +1186,15 @@ PHP_METHOD(RedisArray, del)
 	/* associate each key to a redis node */
     i = 0;
     ZEND_HASH_FOREACH_VAL(h_keys, data) {
-		if (Z_TYPE_PP(data) != IS_STRING) {
+		if (Z_TYPE_P(data) != IS_STRING) {
 			php_error_docref(NULL TSRMLS_CC, E_ERROR, "DEL: all keys must be string.");
 			efree(pos);
 			RETURN_FALSE;
 		}
 
-		redis_instances[i] = ra_find_node(ra, Z_STRVAL_PP(data), Z_STRLEN_PP(data), &pos[i] TSRMLS_CC);
+		redis_instances[i] = ra_find_node(ra, Z_STRVAL_P(data), Z_STRLEN_P(data), &pos[i] TSRMLS_CC);
 		argc_each[pos[i]]++;	/* count number of keys per node */
-		argv[i] = *data;
-        i++;
+		argv[i++] = data;
 	} ZEND_HASH_FOREACH_END();
 
 	/* calls */

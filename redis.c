@@ -960,7 +960,7 @@ PHP_METHOD(Redis, decrBy){
  */
 PHP_METHOD(Redis, getMultiple)
 {
-    zval *object, *z_args, **z_ele;
+    zval *object, *z_args, *z_ele;
     HashTable *hash;
     RedisSock *redis_sock;
     smart_string cmd = {0};
@@ -995,12 +995,12 @@ PHP_METHOD(Redis, getMultiple)
         zval *z_tmp = NULL;
 
         /* If the key isn't a string, turn it into one */
-        if(Z_TYPE_PP(z_ele) == IS_STRING) {
-            key = Z_STRVAL_PP(z_ele);
-            key_len = Z_STRLEN_PP(z_ele);
+        if (Z_TYPE_P(z_ele) == IS_STRING) {
+            key = Z_STRVAL_P(z_ele);
+            key_len = Z_STRLEN_P(z_ele);
         } else {
             MAKE_STD_ZVAL(z_tmp);
-            *z_tmp = **z_ele;
+            *z_tmp = *z_ele;
             zval_copy_ctor(z_tmp);
             convert_to_string(z_tmp);
 
@@ -2535,7 +2535,7 @@ PHP_METHOD(Redis, subscribe) {
 PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
                                     char *unsub_cmd)
 {
-    zval *object, *array, **data;
+    zval *object, *array, *data;
     HashTable *arr_hash;
     RedisSock *redis_sock;
     char *cmd = "", *old_cmd = NULL;
@@ -2560,12 +2560,12 @@ PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     ZEND_HASH_FOREACH_VAL(arr_hash, data) {
-        if (Z_TYPE_PP(data) == IS_STRING) {
+        if (Z_TYPE_P(data) == IS_STRING) {
             char *old_cmd = NULL;
             if(*cmd) {
                 old_cmd = cmd;
             }
-            cmd_len = spprintf(&cmd, 0, "%s %s", cmd, Z_STRVAL_PP(data));
+            cmd_len = spprintf(&cmd, 0, "%s %s", cmd, Z_STRVAL_P(data));
             if(old_cmd) {
                 efree(old_cmd);
             }
@@ -2880,7 +2880,7 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
                        zval *arg TSRMLS_DC)
 {
     HashTable *ht_chan;
-    zval **z_ele;
+    zval *z_ele;
     char *key;
     int cmd_len, key_len, key_free;
     smart_string cmd = {0};
@@ -2922,12 +2922,12 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
             int key_len, key_free;
             zval *z_tmp = NULL;
 
-            if(Z_TYPE_PP(z_ele) == IS_STRING) {
-                key = Z_STRVAL_PP(z_ele);
-                key_len = Z_STRLEN_PP(z_ele);
+            if (Z_TYPE_P(z_ele) == IS_STRING) {
+                key = Z_STRVAL_P(z_ele);
+                key_len = Z_STRLEN_P(z_ele);
             } else {
                 MAKE_STD_ZVAL(z_tmp);
-                *z_tmp = **z_ele;
+                *z_tmp = *z_ele;
                 zval_copy_ctor(z_tmp);
                 convert_to_string(z_tmp);
 
@@ -3045,7 +3045,7 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
                      char *value, int val_len, zval *args, int keys_count
                      TSRMLS_DC)
 {
-    zval **elem;
+    zval *elem;
     HashTable *args_hash;
     int cmd_len, args_count = 0;
     int eval_cmd_count = 2;
@@ -3074,13 +3074,13 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
                 char *key, *old_cmd;
                 int key_len, key_free;
 
-				if(Z_TYPE_PP(elem) == IS_STRING) {
-					key = Z_STRVAL_PP(elem);
-					key_len = Z_STRLEN_PP(elem);
+				if (Z_TYPE_P(elem) == IS_STRING) {
+					key = Z_STRVAL_P(elem);
+					key_len = Z_STRLEN_P(elem);
 				} else {
 					/* Convert it to a string */
 					MAKE_STD_ZVAL(z_tmp);
-					*z_tmp = **elem;
+					*z_tmp = *elem;
 					zval_copy_ctor(z_tmp);
 					convert_to_string(z_tmp);
 

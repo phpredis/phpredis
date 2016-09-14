@@ -1847,7 +1847,7 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     redisClusterNode *node=NULL;
     char *lua, *key;
     int key_free, args_count=0, lua_len, key_len;
-    zval *z_arr=NULL, **z_ele;
+    zval *z_arr=NULL, *z_ele;
     HashTable *ht_arr;
     long num_keys = 0;
     short slot;
@@ -1874,9 +1874,9 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     // Iterate over our args if we have any
     if(args_count > 0) {
 		ZEND_HASH_FOREACH_VAL(ht_arr, z_ele) {
-            convert_to_string(*z_ele);
-            key = Z_STRVAL_PP(z_ele);
-            key_len = Z_STRLEN_PP(z_ele);
+            convert_to_string(z_ele);
+            key = Z_STRVAL_P(z_ele);
+            key_len = Z_STRLEN_P(z_ele);
 
             /* If we're still on a key, prefix it check node */
             if(num_keys-- > 0) {
