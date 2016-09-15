@@ -720,7 +720,7 @@ static long
 ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, const char *arg TSRMLS_DC) {
 
 	long count, i;
-	zval z_fun_smembers, z_ret, *z_arg, **z_data_pp;
+	zval z_fun_smembers, z_ret, *z_arg, *z_data_p;
 	HashTable *h_keys;
 	char *key;
 	int key_len;
@@ -744,9 +744,9 @@ ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, con
 	*key_lens = emalloc(count * sizeof(int));
 
     i = 0;
-    ZEND_HASH_FOREACH_VAL(h_keys, z_data_pp) {
-		key = Z_STRVAL_PP(z_data_pp);
-		key_len = Z_STRLEN_PP(z_data_pp);
+    ZEND_HASH_FOREACH_VAL(h_keys, z_data_p) {
+		key = Z_STRVAL_P(z_data_p);
+		key_len = Z_STRLEN_P(z_data_p);
 
 		/* copy key and length */
 		(*keys)[i] = estrndup(key, key_len);

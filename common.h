@@ -13,13 +13,16 @@ typedef smart_str smart_string;
 #define smart_string_appendl(dest, src, len) smart_str_appendl(dest, src, len)
 
 #define ZEND_HASH_FOREACH_VAL(ht, _val) do { \
+    zval **_pData; \
     HashPosition _hpos; \
     for (zend_hash_internal_pointer_reset_ex(ht, &_hpos); \
-         zend_hash_get_current_data_ex(ht, (void **) &_val, &_hpos) == SUCCESS; \
+         zend_hash_get_current_data_ex(ht, (void **) &_pData, &_hpos) == SUCCESS; \
          zend_hash_move_forward_ex(ht, &_hpos) \
-    )
+    ) { _val = *_pData;
 
-#define ZEND_HASH_FOREACH_END() } while(0)
+#define ZEND_HASH_FOREACH_END() \
+        } \
+    } while(0)
 
 static zend_always_inline zval *
 zend_hash_str_find(const HashTable *ht, const char *key, size_t len)
