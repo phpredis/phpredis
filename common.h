@@ -69,6 +69,27 @@ zend_hash_get_current_data_ptr(HashTable *ht)
     return NULL;
 }
 
+#undef zend_get_parameters_array
+#define zend_get_parameters_array(ht, param_count, argument_array) \
+    inline_zend_get_parameters_array(ht, param_count, argument_array TSRMLS_CC)
+
+static zend_always_inline int
+inline_zend_get_parameters_array(int ht, int param_count, zval *argument_array TSRMLS_DC)
+{
+    int i, ret = FAILURE;
+    zval **zv = ecalloc(param_count, sizeof(zval *));
+
+    if (_zend_get_parameters_array(ht, param_count, zv TSRMLS_CC) == SUCCESS) {
+        for (i = 0; i < param_count; i++) {
+            argument_array[i] = *zv[i];
+            zval_copy_ctor(&argument_array[i]);
+        }
+        ret = SUCCESS;
+    }
+    efree(zv);
+    return ret;
+}
+
 #else
 #include <ext/standard/php_smart_string.h>
 #endif
