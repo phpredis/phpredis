@@ -836,7 +836,7 @@ PHP_METHOD(RedisArray, select)
 /* MGET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mget)
 {
-	zval *object, *z_keys, z_fun, *z_argarray, *data, *z_ret, **z_cur, *z_tmp_array, *z_tmp;
+	zval *object, *z_keys, z_fun, *z_argarray, *data, *z_ret, *z_cur, *z_tmp_array, *z_tmp;
 	int i, j, n;
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
@@ -951,11 +951,10 @@ PHP_METHOD(RedisArray, mget)
 
 		    if(pos[i] != n) continue;
 
-			zend_hash_index_find(Z_ARRVAL_P(z_ret), j, (void**)&z_cur);
-			j++;
+			z_cur = zend_hash_index_find(Z_ARRVAL_P(z_ret), j++);
 
 			MAKE_STD_ZVAL(z_tmp);
-			*z_tmp = **z_cur;
+			*z_tmp = *z_cur;
 			zval_copy_ctor(z_tmp);
 			INIT_PZVAL(z_tmp);
 			add_index_zval(z_tmp_array, i, z_tmp);
@@ -966,10 +965,10 @@ PHP_METHOD(RedisArray, mget)
 
 	/* copy temp array in the right order to return_value */
 	for(i = 0; i < argc; ++i) {
-		zend_hash_index_find(Z_ARRVAL_P(z_tmp_array), i, (void**)&z_cur);
+		z_cur = zend_hash_index_find(Z_ARRVAL_P(z_tmp_array), i);
 
 		MAKE_STD_ZVAL(z_tmp);
-		*z_tmp = **z_cur;
+		*z_tmp = *z_cur;
 		zval_copy_ctor(z_tmp);
 		INIT_PZVAL(z_tmp);
 		add_next_index_zval(return_value, z_tmp);
@@ -1129,7 +1128,7 @@ PHP_METHOD(RedisArray, del)
 	zval *object, *z_keys, z_fun, *z_argarray, *data, *z_ret, *z_tmp, *z_args;
 	int i, n;
 	RedisArray *ra;
-	int *pos, argc, *argc_each;
+	int *pos, argc = ZEND_NUM_ARGS(), *argc_each;
 	HashTable *h_keys;
 	zval **redis_instances, *redis_inst, **argv;
 	long total = 0;
@@ -1139,21 +1138,21 @@ PHP_METHOD(RedisArray, del)
 	HANDLE_MULTI_EXEC("DEL");
 
 	/* get all args in z_args */
-	z_args = emalloc(ZEND_NUM_ARGS() * sizeof(zval));
-	if(zend_get_parameters_array(ht, ZEND_NUM_ARGS(), z_args) == FAILURE) {
+	z_args = emalloc(argc * sizeof(zval));
+	if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
 		efree(z_args);
 		RETURN_FALSE;
 	}
 
 	/* if single array arg, point z_keys to it. */
-	if(ZEND_NUM_ARGS() == 1 && Z_TYPE(z_args[0]) == IS_ARRAY) {
+	if (argc == 1 && Z_TYPE(z_args[0]) == IS_ARRAY) {
 		z_keys = &z_args[0];
 	} else {
 		/* copy all elements to z_keys */
 		MAKE_STD_ZVAL(z_keys);
 		array_init(z_keys);
 		free_zkeys = 1;
-		for(i = 0; i < ZEND_NUM_ARGS(); ++i) {
+		for (i = 0; i < argc; ++i) {
 			MAKE_STD_ZVAL(z_tmp);
 			*z_tmp = z_args[i];
 			zval_copy_ctor(z_tmp);

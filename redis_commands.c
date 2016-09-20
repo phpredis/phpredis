@@ -564,15 +564,15 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                *withscores = (Z_TYPE_P(z_ele) == IS_BOOL && Z_BVAL_P(z_ele) == 1);
            } else if (IS_LIMIT_ARG(optkey, optlen) && Z_TYPE_P(z_ele) == IS_ARRAY) {
                 HashTable *htlimit = Z_ARRVAL_P(z_ele);
-                zval **zoff, **zcnt;
+                zval *zoff, *zcnt;
 
                 /* We need two arguments (offset and count) */
-                if (zend_hash_index_find(htlimit,0,(void**)&zoff)==SUCCESS &&
-                    zend_hash_index_find(htlimit,1,(void**)&zcnt)==SUCCESS)
-                {
+                if ((zoff = zend_hash_index_find(htlimit, 0)) != NULL &&
+                    (zcnt = zend_hash_index_find(htlimit, 1)) != NULL
+                ) {
                     /* Set our limit if we can get valid longs from both args */
-                    has_limit = zval_get_long(*zoff, &offset) == SUCCESS &&
-                                zval_get_long(*zcnt, &count) == SUCCESS;
+                    has_limit = zval_get_long(zoff, &offset) == SUCCESS &&
+                                zval_get_long(zcnt, &count) == SUCCESS;
 
                     /* Inform the user there is a problem if we don't have a limit */
                     if (!has_limit) {
@@ -992,7 +992,7 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Make sure we at least have a key, and we can get other args
     z_args = emalloc(argc * sizeof(zval));
-    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
+    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
         return FAILURE;
     }
@@ -1096,7 +1096,7 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Allocate args
     z_args = emalloc(argc * sizeof(zval));
-    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
+    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
         return FAILURE;
     }
@@ -1714,7 +1714,7 @@ int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Allocate space for args, parse them as an array
     z_args = emalloc(argc * sizeof(zval));
-    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE ||
+    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
        argc < 3 || Z_TYPE(z_args[0]) != IS_STRING)
     {
         efree(z_args);
@@ -2513,14 +2513,14 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ) && Z_TYPE_P(z_ele) == IS_ARRAY
     ) {
         HashTable *ht_off = Z_ARRVAL_P(z_ele);
-        zval **z_off, **z_cnt;
+        zval *z_off, *z_cnt;
 
-        if(zend_hash_index_find(ht_off, 0, (void**)&z_off)==SUCCESS &&
-           zend_hash_index_find(ht_off, 1, (void**)&z_cnt)==SUCCESS)
-        {
-            if((Z_TYPE_PP(z_off)!=IS_STRING && Z_TYPE_PP(z_off)!=IS_LONG) ||
-               (Z_TYPE_PP(z_cnt)!=IS_STRING && Z_TYPE_PP(z_cnt)!=IS_LONG))
-            {
+        if ((z_off = zend_hash_index_find(ht_off, 0)) != NULL &&
+            (z_cnt = zend_hash_index_find(ht_off, 1)) != NULL
+        ) {
+            if ((Z_TYPE_P(z_off) != IS_STRING && Z_TYPE_P(z_off) != IS_LONG) ||
+                (Z_TYPE_P(z_cnt) != IS_STRING && Z_TYPE_P(z_cnt) != IS_LONG)
+            ) {
                 php_error_docref(NULL TSRMLS_CC, E_WARNING,
                     "LIMIT options on SORT command must be longs or strings");
                 if(key_free) efree(key);
@@ -2533,15 +2533,15 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             add_next_index_stringl(z_argv,"LIMIT",sizeof("LIMIT")-1,1);
 
             long low, high;
-            if(Z_TYPE_PP(z_off)==IS_STRING) {
-                low = atol(Z_STRVAL_PP(z_off));
+            if (Z_TYPE_P(z_off) == IS_STRING) {
+                low = atol(Z_STRVAL_P(z_off));
             } else {
-                low = Z_LVAL_PP(z_off);
+                low = Z_LVAL_P(z_off);
             }
-            if(Z_TYPE_PP(z_cnt)==IS_STRING) {
-                high = atol(Z_STRVAL_PP(z_cnt));
+            if (Z_TYPE_P(z_cnt) == IS_STRING) {
+                high = atol(Z_STRVAL_P(z_cnt));
             } else {
-                high = Z_LVAL_PP(z_cnt);
+                high = Z_LVAL_P(z_cnt);
             }
 
             // Add our two LIMIT arguments
@@ -2599,7 +2599,7 @@ int redis_hdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Grab arguments as an array
     z_args = emalloc(argc * sizeof(zval));
-    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
+    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
         return FAILURE;
     }
@@ -2649,7 +2649,7 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     smart_string cmdstr = {0};
 
     z_args = emalloc(argc * sizeof(zval));
-    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
+    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
         return FAILURE;
     }

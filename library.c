@@ -259,7 +259,12 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
                                     void *ctx)
 {
     subscribeContext *sctx = (subscribeContext*)ctx;
-    zval **z_tmp, *z_ret, **z_args[4];
+    zval *z_tmp, *z_ret;
+#if (PHP_MAJOR_VERSION < 7)
+    zval **z_args[4];
+#else
+    zval z_args[4];
+#endif
 
     // Consume response(s) from subscribe, which will vary on argc
     while(sctx->argc--) {
@@ -271,9 +276,7 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
         }
 
         // We'll need to find the command response
-        if(zend_hash_index_find(Z_ARRVAL_P(z_tab), 0, (void**)&z_tmp)
-                                ==FAILURE)
-        {
+        if ((z_tmp = zend_hash_index_find(Z_ARRVAL_P(z_tab), 0)) == NULL) {
             zval_dtor(z_tab);
             efree(z_tab);
             efree(sctx);
@@ -281,7 +284,7 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
         }
 
         // Make sure the command response matches the command we called
-        if(strcasecmp(Z_STRVAL_PP(z_tmp), sctx->kw) !=0) {
+        if(strcasecmp(Z_STRVAL_P(z_tmp), sctx->kw) !=0) {
             zval_dtor(z_tab);
             efree(z_tab);
             efree(sctx);
@@ -298,7 +301,7 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
 
     /* Multibulk response, {[pattern], type, channel, payload } */
     while(1) {
-        zval **z_type, **z_chan, **z_pat, **z_data;
+        zval *z_type, *z_chan, *z_pat, *z_data;
         HashTable *ht_tab;
         int tab_idx=1, is_pmsg;
 
@@ -308,47 +311,57 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
 
         ht_tab = Z_ARRVAL_P(z_tab);
         
-        if(zend_hash_index_find(ht_tab, 0, (void**)&z_type)==FAILURE ||
-           Z_TYPE_PP(z_type) != IS_STRING) 
-        {
+        if ((z_type = zend_hash_index_find(ht_tab, 0)) == NULL ||
+           Z_TYPE_P(z_type) != IS_STRING
+        ) {
             break;
         }
         
         // Check for message or pmessage
-        if(!strncmp(Z_STRVAL_PP(z_type), "message", 7) ||
-           !strncmp(Z_STRVAL_PP(z_type), "pmessage", 8))
+        if(!strncmp(Z_STRVAL_P(z_type), "message", 7) ||
+           !strncmp(Z_STRVAL_P(z_type), "pmessage", 8))
         {
-            is_pmsg = *Z_STRVAL_PP(z_type)=='p';
+            is_pmsg = *Z_STRVAL_P(z_type)=='p';
         } else {
             break;
         }
 
         // Extract pattern if it's a pmessage
         if(is_pmsg) {
-            if(zend_hash_index_find(ht_tab, tab_idx++, (void**)&z_pat)
-                                    ==FAILURE)
-            {
+            if ((z_pat = zend_hash_index_find(ht_tab, tab_idx++)) == NULL) {
                 break;
             }
         }
 
         // Extract channel and data
-        if(zend_hash_index_find(ht_tab, tab_idx++, (void**)&z_chan)==FAILURE ||
-           zend_hash_index_find(ht_tab, tab_idx++, (void**)&z_data)==FAILURE)
-        {
+        if ((z_chan = zend_hash_index_find(ht_tab, tab_idx++)) == NULL ||
+            (z_data = zend_hash_index_find(ht_tab, tab_idx++)) == NULL
+        ) {
             break;
         }
 
         // Different args for SUBSCRIBE and PSUBSCRIBE
+#if (PHP_MAJOR_VERSION < 7)
         z_args[0] = &getThis();
         if(is_pmsg) {
-            z_args[1] = z_pat;
-            z_args[2] = z_chan;
-            z_args[3] = z_data;
+            z_args[1] = &z_pat;
+            z_args[2] = &z_chan;
+            z_args[3] = &z_data;
         } else {
-            z_args[1] = z_chan;
-            z_args[2] = z_data;
+            z_args[1] = &z_chan;
+            z_args[2] = &z_data;
         }
+#else
+        z_args[0] = *getThis();
+        if(is_pmsg) {
+            z_args[1] = *z_pat;
+            z_args[2] = *z_chan;
+            z_args[3] = *z_data;
+        } else {
+            z_args[1] = *z_chan;
+            z_args[2] = *z_data;
+        }
+#endif
 
         // Set arg count
         sctx->cb.param_count = tab_idx;
@@ -382,7 +395,7 @@ PHP_REDIS_API int redis_unsubscribe_response(INTERNAL_FUNCTION_PARAMETERS,
                                       void *ctx)
 {
     subscribeContext *sctx = (subscribeContext*)ctx;
-    zval **z_chan, *z_ret;
+    zval *z_chan, *z_ret;
     int i=0;
 
     MAKE_STD_ZVAL(z_ret);
@@ -392,15 +405,13 @@ PHP_REDIS_API int redis_unsubscribe_response(INTERNAL_FUNCTION_PARAMETERS,
         z_tab = redis_sock_read_multibulk_reply_zval(
             INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 
-        if(!z_tab || zend_hash_index_find(Z_ARRVAL_P(z_tab), 1, 
-                                          (void**)&z_chan)==FAILURE)
-        {
+        if (!z_tab || (z_chan = zend_hash_index_find(Z_ARRVAL_P(z_tab), 1)) == NULL) {
             zval_dtor(z_ret);
             efree(z_ret);
             return -1;
         }
 
-        add_assoc_bool(z_ret, Z_STRVAL_PP(z_chan), 1);
+        add_assoc_bool(z_ret, Z_STRVAL_P(z_chan), 1);
 
         zval_dtor(z_tab);
         efree(z_tab);

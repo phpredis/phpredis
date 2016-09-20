@@ -2093,8 +2093,8 @@ PHP_METHOD(RedisCluster, watch) {
     ht_dist = cluster_dist_create();
 
     // Allocate args, and grab them
-    z_args = emalloc(sizeof(zval)*argc);
-    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
+    z_args = emalloc(sizeof(zval) * argc);
+    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
         cluster_dist_free(ht_dist);
         RETURN_FALSE;
@@ -2247,7 +2247,7 @@ static short
 cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC) 
 {
     int key_len, key_free;
-    zval **z_host, **z_port, *z_tmp = NULL;
+    zval *z_host, *z_port, *z_tmp = NULL;
     short slot;
     char *key;
 
@@ -2279,18 +2279,18 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
             efree(z_tmp);
         }
     } else if (Z_TYPE_P(z_arg) == IS_ARRAY && 
-               zend_hash_index_find(Z_ARRVAL_P(z_arg),0,(void**)&z_host)!=FAILURE &&
-               zend_hash_index_find(Z_ARRVAL_P(z_arg),1,(void**)&z_port)!=FAILURE &&
-               Z_TYPE_PP(z_host)==IS_STRING && Z_TYPE_PP(z_port)==IS_LONG)
-    {
+		(z_host = zend_hash_index_find(Z_ARRVAL_P(z_arg), 0)) != NULL &&
+		(z_port = zend_hash_index_find(Z_ARRVAL_P(z_arg), 1)) != NULL &&
+		Z_TYPE_P(z_host) == IS_STRING && Z_TYPE_P(z_port) == IS_LONG
+	) {
         /* Attempt to find this specific node by host:port */
-        slot = cluster_find_slot(c,(const char *)Z_STRVAL_PP(z_host),
-            (unsigned short)Z_LVAL_PP(z_port));
+        slot = cluster_find_slot(c,(const char *)Z_STRVAL_P(z_host),
+            (unsigned short)Z_LVAL_P(z_port));
 
         /* Inform the caller if they've passed bad data */
         if(slot < 0) { 
             php_error_docref(0 TSRMLS_CC, E_WARNING, "Unknown node %s:%ld",
-                Z_STRVAL_PP(z_host), Z_LVAL_PP(z_port));
+                Z_STRVAL_P(z_host), Z_LVAL_P(z_port));
         }
     } else {
         php_error_docref(0 TSRMLS_CC, E_WARNING,
@@ -2371,7 +2371,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     z_args = emalloc(argc * sizeof(zval));
 
     /* Grab args */
-    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
+    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
         RETURN_FALSE;
     }
