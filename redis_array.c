@@ -1126,7 +1126,7 @@ PHP_METHOD(RedisArray, mset)
 /* DEL will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, del)
 {
-	zval *object, *z_keys, z_fun, *z_argarray, *data, *z_ret, *z_tmp, **z_args;
+	zval *object, *z_keys, z_fun, *z_argarray, *data, *z_ret, *z_tmp, *z_args;
 	int i, n;
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
@@ -1139,15 +1139,15 @@ PHP_METHOD(RedisArray, del)
 	HANDLE_MULTI_EXEC("DEL");
 
 	/* get all args in z_args */
-	z_args = emalloc(ZEND_NUM_ARGS() * sizeof(zval*));
+	z_args = emalloc(ZEND_NUM_ARGS() * sizeof(zval));
 	if(zend_get_parameters_array(ht, ZEND_NUM_ARGS(), z_args) == FAILURE) {
 		efree(z_args);
 		RETURN_FALSE;
 	}
 
 	/* if single array arg, point z_keys to it. */
-	if(ZEND_NUM_ARGS() == 1 && Z_TYPE_P(z_args[0]) == IS_ARRAY) {
-		z_keys = z_args[0];
+	if(ZEND_NUM_ARGS() == 1 && Z_TYPE(z_args[0]) == IS_ARRAY) {
+		z_keys = &z_args[0];
 	} else {
 		/* copy all elements to z_keys */
 		MAKE_STD_ZVAL(z_keys);
@@ -1155,7 +1155,7 @@ PHP_METHOD(RedisArray, del)
 		free_zkeys = 1;
 		for(i = 0; i < ZEND_NUM_ARGS(); ++i) {
 			MAKE_STD_ZVAL(z_tmp);
-			*z_tmp = *z_args[i];
+			*z_tmp = z_args[i];
 			zval_copy_ctor(z_tmp);
 			INIT_PZVAL(z_tmp);
 

@@ -635,7 +635,7 @@ static int get_key_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
 }
 
 /* Turn variable arguments into a HashTable for processing */
-static HashTable *method_args_to_ht(zval **z_args, int argc) {
+static HashTable *method_args_to_ht(zval *z_args, int argc) {
     HashTable *ht_ret;
     int i;
 
@@ -645,7 +645,7 @@ static HashTable *method_args_to_ht(zval **z_args, int argc) {
 
     /* Populate our return hash table with our arguments */
     for (i = 0; i < argc; i++) {
-        zend_hash_next_index_insert(ht_ret, &z_args[i], sizeof(zval*), NULL);
+        zend_hash_next_index_insert(ht_ret, &z_args[i], sizeof(zval), NULL);
     }
 
     /* Return our hash table */
@@ -659,7 +659,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     redisCluster *c = GET_CONTEXT();
     clusterMultiCmd mc = {0};
     clusterKeyValHT kv;
-    zval **z_args;
+    zval *z_args;
     HashTable *ht_arr;
     HashPosition ptr;
     int i=1, argc = ZEND_NUM_ARGS(), ht_free=0;
@@ -669,15 +669,15 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     if (!argc) return -1;
 
     /* Extract our arguments into an array */
-    z_args = emalloc(sizeof(zval*)*argc);
+    z_args = emalloc(sizeof(zval)*argc);
     if (zend_get_parameters_array(ht, ZEND_NUM_ARGS(), z_args) == FAILURE) {
         efree(z_args);
         return -1;
     }
 
     /* Determine if we're working with a single array or variadic args */
-    if (argc == 1 && Z_TYPE_P(z_args[0]) == IS_ARRAY) {
-        ht_arr = Z_ARRVAL_P(z_args[0]);
+    if (argc == 1 && Z_TYPE(z_args[0]) == IS_ARRAY) {
+        ht_arr = Z_ARRVAL(z_args[0]);
         argc = zend_hash_num_elements(ht_arr);
         if (!argc) {
             efree(z_args);
@@ -2075,7 +2075,7 @@ PHP_METHOD(RedisCluster, watch) {
     HashTable *ht_dist;
     clusterDistList *dl;
     smart_string cmd = {0};
-    zval **z_args;
+    zval *z_args;
     int argc = ZEND_NUM_ARGS(), i;
     ulong slot;
 
@@ -2093,7 +2093,7 @@ PHP_METHOD(RedisCluster, watch) {
     ht_dist = cluster_dist_create();
 
     // Allocate args, and grab them
-    z_args = emalloc(sizeof(zval*)*argc);
+    z_args = emalloc(sizeof(zval)*argc);
     if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
         efree(z_args);
         cluster_dist_free(ht_dist);
@@ -2103,11 +2103,11 @@ PHP_METHOD(RedisCluster, watch) {
     // Loop through arguments, prefixing if needed
     for(i=0;i<argc;i++) {
         // We'll need the key as a string
-        convert_to_string(z_args[i]);
+        convert_to_string(&z_args[i]);
 
         // Add this key to our distribution handler
-        if(cluster_dist_add_key(c, ht_dist, Z_STRVAL_P(z_args[i]), 
-                                Z_STRLEN_P(z_args[i]), NULL) == FAILURE)
+        if(cluster_dist_add_key(c, ht_dist, Z_STRVAL(z_args[i]), 
+                                Z_STRLEN(z_args[i]), NULL) == FAILURE)
         {
             zend_throw_exception(redis_cluster_exception_ce,
                 "Can't issue WATCH command as the keyspace isn't fully mapped",
@@ -2349,7 +2349,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
 {
     redisCluster *c = GET_CONTEXT();
     smart_string cmd = {0};
-    zval **z_args;
+    zval *z_args;
     short slot;
     int i, argc = ZEND_NUM_ARGS();
 
@@ -2368,7 +2368,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     }
 
     /* Allocate an array to process arguments */
-    z_args = emalloc(argc * sizeof(zval*));
+    z_args = emalloc(argc * sizeof(zval));
 
     /* Grab args */
     if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
@@ -2377,7 +2377,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     }
 
     /* First argument needs to be the "where" */
-    if((slot = cluster_cmd_get_slot(c, z_args[0] TSRMLS_CC))<0) {
+    if((slot = cluster_cmd_get_slot(c, &z_args[0] TSRMLS_CC))<0) {
         RETURN_FALSE;
     }
 
@@ -2386,9 +2386,9 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
 
     /* Iterate, appending args */
     for(i=1;i<argc;i++) {
-        convert_to_string(z_args[i]);
-        redis_cmd_append_sstr(&cmd, Z_STRVAL_P(z_args[i]), 
-            Z_STRLEN_P(z_args[i]));
+        convert_to_string(&z_args[i]);
+        redis_cmd_append_sstr(&cmd, Z_STRVAL(z_args[i]), 
+            Z_STRLEN(z_args[i]));
     }
 
     /* Send it off */
@@ -2934,11 +2934,11 @@ PHP_METHOD(RedisCluster, rawcommand) {
     int argc = ZEND_NUM_ARGS(), cmd_len;
     redisCluster *c = GET_CONTEXT();
     char *cmd = NULL;
-    zval **z_args;
+    zval *z_args;
     short slot;
 
     /* Sanity check on our arguments */
-    z_args = emalloc(argc * sizeof(zval*));
+    z_args = emalloc(argc * sizeof(zval));
     if (argc < 2) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "You must pass at least node information as well as at least a command.");
@@ -2949,8 +2949,8 @@ PHP_METHOD(RedisCluster, rawcommand) {
             "Internal PHP error parsing method parameters.");
         efree(z_args);
         RETURN_FALSE;
-    } else if (redis_build_raw_cmd(z_args+1, argc-1, &cmd, &cmd_len TSRMLS_CC) ||
-               (slot = cluster_cmd_get_slot(c, z_args[0] TSRMLS_CC))<0) 
+    } else if (redis_build_raw_cmd(&z_args[1], argc-1, &cmd, &cmd_len TSRMLS_CC) ||
+               (slot = cluster_cmd_get_slot(c, &z_args[0] TSRMLS_CC))<0) 
     {
         if (cmd) efree(cmd);
         efree(z_args);

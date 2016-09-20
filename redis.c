@@ -3199,7 +3199,7 @@ PHP_METHOD(Redis, eval)
 }
 
 PHP_REDIS_API int
-redis_build_script_exists_cmd(char **ret, zval **argv, int argc) {
+redis_build_script_exists_cmd(char **ret, zval *argv, int argc) {
 	/* Our command length and iterator */
 	int cmd_len = 0, i;
 
@@ -3210,11 +3210,11 @@ redis_build_script_exists_cmd(char **ret, zval **argv, int argc) {
 	/* Iterate our arguments */
 	for(i=0;i<argc;i++) {
 		/* Convert our argument to a string if we need to */
-		convert_to_string(argv[i]);
+		convert_to_string(&argv[i]);
 
         // Append this script sha to our SCRIPT EXISTS command
-        cmd_len = redis_cmd_append_str(ret, cmd_len, Z_STRVAL_P(argv[i]),
-            Z_STRLEN_P(argv[i]));
+        cmd_len = redis_cmd_append_str(ret, cmd_len, Z_STRVAL(argv[i]),
+            Z_STRLEN(argv[i]));
     }
 
 	/* Success */
@@ -3227,7 +3227,7 @@ redis_build_script_exists_cmd(char **ret, zval **argv, int argc) {
  * {{{ proto int Reids::script('exists', script_sha1 [, script_sha2, ...])
  */
 PHP_METHOD(Redis, script) {
-    zval **z_args;
+    zval *z_args;
     RedisSock *redis_sock;
     int cmd_len, argc;
     char *cmd;
@@ -3241,29 +3241,29 @@ PHP_METHOD(Redis, script) {
 	argc = ZEND_NUM_ARGS();
 
 	/* Allocate an array big enough to store our arguments */
-	z_args = emalloc(argc * sizeof(zval*));
+	z_args = emalloc(argc * sizeof(zval));
 
 	/* Make sure we can grab our arguments, we have a string directive */
 	if(zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
-	   (argc < 1 || Z_TYPE_P(z_args[0]) != IS_STRING))
+	   (argc < 1 || Z_TYPE(z_args[0]) != IS_STRING))
 	{
 		efree(z_args);
 		RETURN_FALSE;
 	}
 
     // Branch based on the directive
-    if(!strcasecmp(Z_STRVAL_P(z_args[0]), "flush") ||
-       !strcasecmp(Z_STRVAL_P(z_args[0]), "kill"))
+    if(!strcasecmp(Z_STRVAL(z_args[0]), "flush") ||
+       !strcasecmp(Z_STRVAL(z_args[0]), "kill"))
     {
         // Simple SCRIPT FLUSH, or SCRIPT_KILL command
         cmd_len = redis_cmd_format_static(&cmd, "SCRIPT", "s",
-                                          Z_STRVAL_P(z_args[0]),
-                                          Z_STRLEN_P(z_args[0]));
-    } else if(!strcasecmp(Z_STRVAL_P(z_args[0]), "load")) {
+                                          Z_STRVAL(z_args[0]),
+                                          Z_STRLEN(z_args[0]));
+    } else if(!strcasecmp(Z_STRVAL(z_args[0]), "load")) {
         // Make sure we have a second argument, and it's not empty.  If it is
         // empty, we can just return an empty array (which is what Redis does)
-        if(argc < 2 || Z_TYPE_P(z_args[1]) != IS_STRING ||
-           Z_STRLEN_P(z_args[1]) < 1)
+        if(argc < 2 || Z_TYPE(z_args[1]) != IS_STRING ||
+           Z_STRLEN(z_args[1]) < 1)
         {
             // Free our args
             efree(z_args);
@@ -3272,9 +3272,9 @@ PHP_METHOD(Redis, script) {
 
         // Format our SCRIPT LOAD command
         cmd_len = redis_cmd_format_static(&cmd, "SCRIPT", "ss",
-                                          "LOAD", 4, Z_STRVAL_P(z_args[1]),
-                                          Z_STRLEN_P(z_args[1]));
-	} else if(!strcasecmp(Z_STRVAL_P(z_args[0]), "exists")) {
+                                          "LOAD", 4, Z_STRVAL(z_args[1]),
+                                          Z_STRLEN(z_args[1]));
+	} else if(!strcasecmp(Z_STRVAL(z_args[0]), "exists")) {
 		/* Construct our SCRIPT EXISTS command */
 		cmd_len = redis_build_script_exists_cmd(&cmd, &(z_args[1]), argc-1);
 	} else {
@@ -3655,7 +3655,7 @@ PHP_METHOD(Redis, rawcommand) {
     int argc = ZEND_NUM_ARGS(), cmd_len;
     char *cmd = NULL;
     RedisSock *redis_sock;
-    zval **z_args;
+    zval *z_args;
 
     /* Sanity check on arguments */
     if (argc < 1) {
@@ -3663,7 +3663,7 @@ PHP_METHOD(Redis, rawcommand) {
             "Must pass at least one command keyword");
         RETURN_FALSE;
     }
-    z_args = emalloc(argc * sizeof(zval*));
+    z_args = emalloc(argc * sizeof(zval));
     if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "Internal PHP error parsing arguments");
