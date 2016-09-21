@@ -515,18 +515,18 @@ ra_find_node_by_name(RedisArray *ra, const char *host, int host_len TSRMLS_DC) {
 char *
 ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len) {
 
-	zval **zp_tmp;
+	zval *zp_tmp;
 	int key_pos = 0; /* TODO: change this depending on the command */
 
-	if(	zend_hash_num_elements(Z_ARRVAL_P(z_args)) == 0
-		|| zend_hash_index_find(Z_ARRVAL_P(z_args), key_pos, (void**) &zp_tmp) == FAILURE
-		|| Z_TYPE_PP(zp_tmp) != IS_STRING) {
-
+	if (zend_hash_num_elements(Z_ARRVAL_P(z_args)) == 0 ||
+        (zp_tmp = zend_hash_index_find(Z_ARRVAL_P(z_args), key_pos)) == NULL ||
+        Z_TYPE_P(zp_tmp) != IS_STRING
+    ) {
 		return NULL;
 	}
 
-	*key_len = Z_STRLEN_PP(zp_tmp);
-	return Z_STRVAL_PP(zp_tmp);
+	*key_len = Z_STRLEN_P(zp_tmp);
+	return Z_STRVAL_P(zp_tmp);
 }
 
 void
@@ -561,9 +561,7 @@ ra_index_change_keys(const char *cmd, zval *z_keys, zval *z_redis TSRMLS_DC) {
 
 	/* prepare keys */
 	for(i = 0; i < argc - 1; ++i) {
-		zval **zpp;
-		zend_hash_index_find(Z_ARRVAL_P(z_keys), i, (void**)&zpp);
-		z_args[i+1] = *zpp;
+		z_args[i+1] = zend_hash_index_find(Z_ARRVAL_P(z_keys), i);
 	}
 
 	/* run cmd */
@@ -649,7 +647,7 @@ ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC) {
 void
 ra_index_exec(zval *z_redis, zval *return_value, int keep_all TSRMLS_DC) {
 
-	zval z_fun_exec, z_ret, **zp_tmp;
+	zval z_fun_exec, z_ret, *zp_tmp;
 
 	/* run EXEC */
 	ZVAL_STRING(&z_fun_exec, "EXEC", 0);
@@ -662,8 +660,8 @@ ra_index_exec(zval *z_redis, zval *return_value, int keep_all TSRMLS_DC) {
 				if(keep_all) {
 						*return_value = z_ret;
 						zval_copy_ctor(return_value);
-				} else if(zend_hash_index_find(Z_ARRVAL(z_ret), 0, (void**)&zp_tmp) != FAILURE) {
-						*return_value = **zp_tmp;
+				} else if ((zp_tmp = zend_hash_index_find(Z_ARRVAL(z_ret), 0)) != NULL) {
+						*return_value = *zp_tmp;
 						zval_copy_ctor(return_value);
 				}
 		}

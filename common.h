@@ -69,6 +69,30 @@ zend_hash_get_current_data_ptr(HashTable *ht)
     return NULL;
 }
 
+static int (*_zend_hash_index_find)(const HashTable *, ulong, void **) = &zend_hash_index_find;
+#define zend_hash_index_find(ht, h) inline_zend_hash_index_find(ht, h)
+
+static zend_always_inline zval *
+inline_zend_hash_index_find(const HashTable *ht, zend_ulong h)
+{
+    zval **zv;
+    if (_zend_hash_index_find(ht, h, (void **)&zv) == SUCCESS) {
+        return *zv;
+    }
+    return NULL;
+}
+
+static zend_always_inline void *
+zend_hash_index_find_ptr(const HashTable *ht, zend_ulong h)
+{
+    void **ptr;
+
+    if (_zend_hash_index_find(ht, h, (void **)&ptr) == SUCCESS) {
+        return *ptr;
+    }
+    return NULL;
+}
+
 #undef zend_get_parameters_array
 #define zend_get_parameters_array(ht, param_count, argument_array) \
     inline_zend_get_parameters_array(ht, param_count, argument_array TSRMLS_CC)
@@ -82,7 +106,6 @@ inline_zend_get_parameters_array(int ht, int param_count, zval *argument_array T
     if (_zend_get_parameters_array(ht, param_count, zv TSRMLS_CC) == SUCCESS) {
         for (i = 0; i < param_count; i++) {
             argument_array[i] = *zv[i];
-            zval_copy_ctor(&argument_array[i]);
         }
         ret = SUCCESS;
     }

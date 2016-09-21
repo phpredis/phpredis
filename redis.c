@@ -2542,7 +2542,7 @@ PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
     int cmd_len, array_count;
 
     int i;
-    zval *z_tab, **z_channel;
+    zval *z_tab, *z_channel;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
                                      &object, redis_ce, &array) == FAILURE) {
@@ -2590,12 +2590,10 @@ PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
             INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 
         if(Z_TYPE_P(z_tab) == IS_ARRAY) {
-            if (zend_hash_index_find(Z_ARRVAL_P(z_tab), 1, (void**)&z_channel)
-                                     == FAILURE)
-            {
+            if ((z_channel = zend_hash_index_find(Z_ARRVAL_P(z_tab), 1)) == NULL) {
                 RETURN_FALSE;
             }
-            add_assoc_bool(return_value, Z_STRVAL_PP(z_channel), 1);
+            add_assoc_bool(return_value, Z_STRVAL_P(z_channel), 1);
         } else {
             //error
             efree(z_tab);
@@ -3244,7 +3242,7 @@ PHP_METHOD(Redis, script) {
 	z_args = emalloc(argc * sizeof(zval));
 
 	/* Make sure we can grab our arguments, we have a string directive */
-	if(zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
+	if (zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
 	   (argc < 1 || Z_TYPE(z_args[0]) != IS_STRING))
 	{
 		efree(z_args);
