@@ -13,16 +13,13 @@ typedef smart_str smart_string;
 #define smart_string_appendl(dest, src, len) smart_str_appendl(dest, src, len)
 
 #define ZEND_HASH_FOREACH_VAL(ht, _val) do { \
-    zval **_pData; \
     HashPosition _hpos; \
     for (zend_hash_internal_pointer_reset_ex(ht, &_hpos); \
-         zend_hash_get_current_data_ex(ht, (void **) &_pData, &_hpos) == SUCCESS; \
+         (_val = zend_hash_get_current_data_ex(ht, &_hpos)) != NULL; \
          zend_hash_move_forward_ex(ht, &_hpos) \
-    ) { _val = *_pData;
+    )
 
-#define ZEND_HASH_FOREACH_END() \
-        } \
-    } while(0)
+#define ZEND_HASH_FOREACH_END() } while(0)
 
 static zend_always_inline zval *
 zend_hash_str_find(const HashTable *ht, const char *key, size_t len)
@@ -89,6 +86,32 @@ zend_hash_index_find_ptr(const HashTable *ht, zend_ulong h)
 
     if (_zend_hash_index_find(ht, h, (void **)&ptr) == SUCCESS) {
         return *ptr;
+    }
+    return NULL;
+}
+
+static int (*_zend_hash_get_current_data_ex)(HashTable *, void **, HashPosition *) = &zend_hash_get_current_data_ex;
+#define zend_hash_get_current_data_ex(ht, pos) inline_zend_hash_get_current_data_ex(ht, pos)
+static zend_always_inline zval *
+inline_zend_hash_get_current_data_ex(HashTable *ht, HashPosition *pos)
+{
+    zval **zv;
+    if (_zend_hash_get_current_data_ex(ht, (void **)&zv, pos) == SUCCESS) {
+        return *zv;
+    }
+    return NULL;
+}
+
+#undef zend_hash_next_index_insert
+#define zend_hash_next_index_insert(ht, pData) \
+    _zend_hash_next_index_insert(ht, pData ZEND_FILE_LINE_CC)
+static zend_always_inline zval *
+_zend_hash_next_index_insert(HashTable *ht, zval *pData ZEND_FILE_LINE_DC)
+{
+    if (_zend_hash_index_update_or_next_insert(ht, 0, &pData, sizeof(pData),
+            NULL, HASH_NEXT_INSERT ZEND_FILE_LINE_CC) == SUCCESS
+    ) {
+        return pData;
     }
     return NULL;
 }

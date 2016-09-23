@@ -567,7 +567,7 @@ typedef struct clusterKeyValHT {
 static int get_key_val_ht(redisCluster *c, HashTable *ht, HashPosition *ptr, 
                           clusterKeyValHT *kv TSRMLS_DC)
 {
-    zval **z_val;
+    zval *z_val;
     unsigned int key_len;
     ulong idx;
 
@@ -593,14 +593,14 @@ static int get_key_val_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
     kv->slot     = cluster_hash_key(kv->key, kv->key_len);
 
     // Now grab our value
-    if(zend_hash_get_current_data_ex(ht, (void**)&z_val, ptr)==FAILURE) {
+    if ((z_val = zend_hash_get_current_data_ex(ht, ptr)) == NULL) {
         zend_throw_exception(redis_cluster_exception_ce,
             "Internal Zend HashTable error", 0 TSRMLS_CC);
         return -1;
     }
 
     // Serialize our value if required
-    kv->val_free = redis_serialize(c->flags,*z_val,&(kv->val),&(kv->val_len)
+    kv->val_free = redis_serialize(c->flags,z_val,&(kv->val),&(kv->val_len)
         TSRMLS_CC);
 
     // Success
@@ -611,9 +611,9 @@ static int get_key_val_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
 static int get_key_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
                       clusterKeyValHT *kv TSRMLS_DC)
 {
-    zval **z_key;
+    zval *z_key;
 
-    if(zend_hash_get_current_data_ex(ht, (void**)&z_key, ptr)==FAILURE) {
+    if ((z_key = zend_hash_get_current_data_ex(ht, ptr)) == NULL) {
         // Shouldn't happen, but check anyway
         zend_throw_exception(redis_cluster_exception_ce,
             "Internal Zend HashTable error", 0 TSRMLS_CC);
@@ -621,10 +621,10 @@ static int get_key_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
     }
 
     // Always want to work with strings
-    convert_to_string(*z_key);
+    convert_to_string(z_key);
 
-    kv->key = Z_STRVAL_PP(z_key);
-    kv->key_len = Z_STRLEN_PP(z_key);
+    kv->key = Z_STRVAL_P(z_key);
+    kv->key_len = Z_STRLEN_P(z_key);
     kv->key_free = redis_key_prefix(c->flags, &(kv->key), &(kv->key_len));
 
     // Hash our key
@@ -645,7 +645,7 @@ static HashTable *method_args_to_ht(zval *z_args, int argc) {
 
     /* Populate our return hash table with our arguments */
     for (i = 0; i < argc; i++) {
-        zend_hash_next_index_insert(ht_ret, &z_args[i], sizeof(zval), NULL);
+        zend_hash_next_index_insert(ht_ret, &z_args[i]);
     }
 
     /* Return our hash table */
@@ -669,8 +669,8 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     if (!argc) return -1;
 
     /* Extract our arguments into an array */
-    z_args = emalloc(sizeof(zval)*argc);
-    if (zend_get_parameters_array(ht, ZEND_NUM_ARGS(), z_args) == FAILURE) {
+    z_args = ecalloc(argc, sizeof(zval));
+    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
         return -1;
     }
@@ -688,9 +688,6 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
         ht_free = 1;
     }
 
-    /* We no longer need our array args */
-    efree(z_args);
-
     /* MGET is readonly, DEL is not */
     c->readonly = kw_len == 4 && CLUSTER_IS_ATOMIC(c);
 
@@ -701,6 +698,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     // it's the first iteration every time, needlessly
     zend_hash_internal_pointer_reset_ex(ht_arr, &ptr);
     if(get_key_ht(c, ht_arr, &ptr, &kv TSRMLS_CC)<0) {
+		efree(z_args);
         return -1;
     }
 
@@ -722,6 +720,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
                 zend_hash_destroy(ht_arr);
                 efree(ht_arr);
             }
+			efree(z_args);
             return -1;
         }
     
@@ -736,6 +735,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
                     zend_hash_destroy(ht_arr);
                     efree(ht_arr);
                 }
+				efree(z_args);
                 return -1;
             }
         }
@@ -752,6 +752,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
         zend_hash_move_forward_ex(ht_arr, &ptr);
     }
+	efree(z_args);
 
     // If we've got straggler(s) process them
     if(mc.argc > 0) {

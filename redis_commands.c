@@ -1618,12 +1618,12 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         char *mem, *val, kbuf[40];
         int val_len, val_free;
         unsigned int mem_len;
-        zval **z_val;
+        zval *z_val;
 
         // Grab our key, and value for this element in our input
         ktype = zend_hash_get_current_key_ex(ht_vals, &mem,
             &mem_len, &idx, 0, &pos);
-        zend_hash_get_current_data_ex(ht_vals, (void**)&z_val, &pos);
+        z_val = zend_hash_get_current_data_ex(ht_vals, &pos);
 
         // If the hash key is an integer, convert it to a string
         if(ktype != HASH_KEY_IS_STRING) {
@@ -1635,7 +1635,7 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         }
 
         // Serialize value (if directed)
-        val_free = redis_serialize(redis_sock, *z_val, &val, &val_len TSRMLS_CC);
+        val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
 
         // Append the key and value to our command
         redis_cmd_append_sstr(&cmdstr, mem, mem_len);
