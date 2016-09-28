@@ -136,6 +136,8 @@ inline_zend_get_parameters_array(int ht, int param_count, zval *argument_array T
     return ret;
 }
 
+typedef zend_rsrc_list_entry zend_resource;
+
 #else
 #include <ext/standard/php_smart_string.h>
 #endif
