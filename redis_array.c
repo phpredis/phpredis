@@ -117,7 +117,7 @@ static void redis_array_free(RedisArray *ra) {
 }
 
 int le_redis_array;
-void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC)
+void redis_destructor_redis_array(zend_resource * rsrc TSRMLS_DC)
 {
     RedisArray *ra = (RedisArray*)rsrc->ptr;
 

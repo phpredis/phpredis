@@ -8,7 +8,7 @@
 #endif
 #include "common.h"
 
-void redis_destructor_redis_array(zend_rsrc_list_entry * rsrc TSRMLS_DC);
+void redis_destructor_redis_array(zend_resource * rsrc TSRMLS_DC);
 
 PHP_METHOD(RedisArray, __construct);
 PHP_METHOD(RedisArray, __call);

@@ -425,7 +425,7 @@ static int send_discard_static(RedisSock *redis_sock TSRMLS_DC) {
 /**
  * redis_destructor_redis_sock
  */
-static void redis_destructor_redis_sock(zend_rsrc_list_entry * rsrc TSRMLS_DC)
+static void redis_destructor_redis_sock(zend_resource * rsrc TSRMLS_DC)
 {
     RedisSock *redis_sock = (RedisSock *) rsrc->ptr;
     redis_sock_disconnect(redis_sock TSRMLS_CC);
