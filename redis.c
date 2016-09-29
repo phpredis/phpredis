@@ -726,7 +726,7 @@ PHP_METHOD(Redis, pconnect)
 
 PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
     zval *object, *socket;
-    int host_len, id;
+    int host_len;
     char *host = NULL;
     long port = -1;
     long retry_interval = 0;
@@ -779,7 +779,11 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
             /* maybe there is a socket but the id isn't known.. what to do? */
         } else {
             /* The refcount should be decreased and destructor invoked */
+#if (PHP_MAJOR_VERSION < 7)
             zend_list_delete(Z_LVAL_P(socket));
+#else
+            zend_list_delete(Z_RES_P(socket));
+#endif
         }
     }
 
@@ -790,13 +794,18 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
         redis_free_socket(redis_sock);
         return FAILURE;
     }
-
+#if (PHP_MAJOR_VERSION < 7)
+    int id;
 #if PHP_VERSION_ID >= 50400
     id = zend_list_insert(redis_sock, le_redis_sock TSRMLS_CC);
 #else
     id = zend_list_insert(redis_sock, le_redis_sock);
 #endif
     add_property_resource(object, "socket", id);
+#else
+    zval *id = zend_list_insert(redis_sock, le_redis_sock TSRMLS_CC);
+    add_property_resource(object, "socket", Z_RES_P(id));
+#endif
 
     return SUCCESS;
 }

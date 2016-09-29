@@ -214,7 +214,6 @@ uint32_t rcrc32(const char *s, size_t sz) {
 PHP_METHOD(RedisArray, __construct)
 {
 	zval *z0, *z_fun = NULL, *z_dist = NULL, *zpData, *z_opts = NULL;
-	int id;
 	RedisArray *ra = NULL;
 	zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0;
 	HashTable *hPrev = NULL, *hOpts = NULL;
@@ -322,12 +321,18 @@ PHP_METHOD(RedisArray, __construct)
 		ra->auto_rehash = b_autorehash;
 		ra->connect_timeout = d_connect_timeout;
 		if(ra->prev) ra->prev->auto_rehash = b_autorehash;
+#if (PHP_MAJOR_VERSION < 7)
+        int id;
 #if PHP_VERSION_ID >= 50400
 		id = zend_list_insert(ra, le_redis_array TSRMLS_CC);
 #else
 		id = zend_list_insert(ra, le_redis_array);
 #endif
 		add_property_resource(getThis(), "socket", id);
+#else
+        zval *id = zend_list_insert(ra, le_redis_array TSRMLS_CC);
+        add_property_resource(getThis(), "socket", Z_RES_P(id));
+#endif
 	}
 }
 
@@ -847,7 +852,7 @@ PHP_METHOD(RedisArray, mget)
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
 	HashTable *h_keys;
-	zval **redis_instances, **argv;
+	zval **argv;
 
 	/* Multi/exec support */
 	HANDLE_MULTI_EXEC("MGET");
@@ -869,8 +874,6 @@ PHP_METHOD(RedisArray, mget)
 	argc = zend_hash_num_elements(h_keys);
 	argv = emalloc(argc * sizeof(zval*));
 	pos = emalloc(argc * sizeof(int));
-	redis_instances = emalloc(argc * sizeof(zval*));
-	memset(redis_instances, 0, argc * sizeof(zval*));
 
 	argc_each = emalloc(ra->count * sizeof(int));
 	memset(argc_each, 0, ra->count * sizeof(int));
@@ -887,7 +890,6 @@ PHP_METHOD(RedisArray, mget)
 	        php_error_docref(NULL TSRMLS_CC, E_ERROR, "MGET: all keys must be strings or longs");
 	        efree(argv);
 	        efree(pos);
-	        efree(redis_instances);
 	        efree(argc_each);
 	        RETURN_FALSE;
 	    }
@@ -902,7 +904,9 @@ PHP_METHOD(RedisArray, mget)
 	    }
 
 		/* Find our node */
-        redis_instances[i] = ra_find_node(ra, key_lookup, key_len, &pos[i] TSRMLS_CC);
+        if (ra_find_node(ra, key_lookup, key_len, &pos[i] TSRMLS_CC) == NULL) {
+            /* TODO: handle */
+        }
 
 		argc_each[pos[i]]++;	/* count number of keys per node */
 		argv[i++] = data;
@@ -948,7 +952,6 @@ PHP_METHOD(RedisArray, mget)
 		        efree(z_ret);
 		        zval_ptr_dtor(&z_tmp_array);
 		        efree(pos);
-		        efree(redis_instances);
 		        efree(argc_each);
 
 		        /* failure */
@@ -984,7 +987,6 @@ PHP_METHOD(RedisArray, mget)
 	zval_ptr_dtor(&z_tmp_array);
 	efree(argv);
 	efree(pos);
-	efree(redis_instances);
 	efree(argc_each);
 }
 
@@ -997,7 +999,7 @@ PHP_METHOD(RedisArray, mset)
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
 	HashTable *h_keys;
-	zval **redis_instances, *redis_inst, **argv;
+	zval *redis_inst, **argv;
 	char *key, **keys, **key_free, kbuf[40];
 	unsigned int key_len, free_idx = 0;
 	int type, *key_lens;
@@ -1022,8 +1024,6 @@ PHP_METHOD(RedisArray, mset)
 	pos = emalloc(argc * sizeof(int));
 	keys = emalloc(argc * sizeof(char*));
 	key_lens = emalloc(argc * sizeof(int));
-	redis_instances = emalloc(argc * sizeof(zval*));
-	memset(redis_instances, 0, argc * sizeof(zval*));
 
 	/* Allocate an array holding the indexes of any keys that need freeing */
 	key_free = emalloc(argc * sizeof(char*));
@@ -1053,7 +1053,9 @@ PHP_METHOD(RedisArray, mset)
 	        key_len--; /* We don't want the null terminator */
 	    }
 
-		redis_instances[i] = ra_find_node(ra, key, (int)key_len, &pos[i] TSRMLS_CC);
+        if (ra_find_node(ra, key, (int)key_len, &pos[i] TSRMLS_CC) == NULL) {
+            // TODO: handle
+        }
 		argc_each[pos[i]]++;	/* count number of keys per node */
 		argv[i] = data;
 		keys[i] = key;
@@ -1122,7 +1124,6 @@ PHP_METHOD(RedisArray, mset)
 	efree(key_lens);
 	efree(argv);
 	efree(pos);
-	efree(redis_instances);
 	efree(argc_each);
 
 	RETURN_TRUE;
@@ -1136,7 +1137,7 @@ PHP_METHOD(RedisArray, del)
 	RedisArray *ra;
 	int *pos, argc = ZEND_NUM_ARGS(), *argc_each;
 	HashTable *h_keys;
-	zval **redis_instances, *redis_inst, **argv;
+	zval *redis_inst, **argv;
 	long total = 0;
 	int free_zkeys = 0;
 
@@ -1182,8 +1183,6 @@ PHP_METHOD(RedisArray, del)
 	argc = zend_hash_num_elements(h_keys);
 	argv = emalloc(argc * sizeof(zval*));
 	pos = emalloc(argc * sizeof(int));
-	redis_instances = emalloc(argc * sizeof(zval*));
-	memset(redis_instances, 0, argc * sizeof(zval*));
 
 	argc_each = emalloc(ra->count * sizeof(int));
 	memset(argc_each, 0, ra->count * sizeof(int));
@@ -1197,7 +1196,9 @@ PHP_METHOD(RedisArray, del)
 			RETURN_FALSE;
 		}
 
-		redis_instances[i] = ra_find_node(ra, Z_STRVAL_P(data), Z_STRLEN_P(data), &pos[i] TSRMLS_CC);
+        if (ra_find_node(ra, Z_STRVAL_P(data), Z_STRLEN_P(data), &pos[i] TSRMLS_CC) == NULL) {
+            // TODO: handle
+        }
 		argc_each[pos[i]]++;	/* count number of keys per node */
 		argv[i++] = data;
 	} ZEND_HASH_FOREACH_END();
@@ -1256,7 +1257,6 @@ PHP_METHOD(RedisArray, del)
 	/* cleanup */
 	efree(argv);
 	efree(pos);
-	efree(redis_instances);
 	efree(argc_each);
 
 	if(free_zkeys) {
