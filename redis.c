@@ -438,9 +438,7 @@ static void redis_destructor_redis_sock(zend_resource * rsrc TSRMLS_DC)
 PHP_REDIS_API int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC,
                           int no_throw)
 {
-
     zval *socket;
-    int resource_type;
 
     if (Z_TYPE_P(id) != IS_OBJECT || (socket = zend_hash_str_find(Z_OBJPROP_P(id),
         "socket", sizeof("socket") - 1)) == NULL) {
@@ -452,10 +450,16 @@ PHP_REDIS_API int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC,
         return -1;
     }
 
-    *redis_sock = (RedisSock *)zend_list_find(Z_LVAL_P(socket),
-        &resource_type);
-
+#if (PHP_MAJOR_VERSION < 7)
+    int resource_type;
+    *redis_sock = (RedisSock *)zend_list_find(Z_LVAL_P(socket), &resource_type);
     if (!*redis_sock || resource_type != le_redis_sock) {
+#else
+    if (Z_RES_P(socket) == NULL ||
+        !(*redis_sock = (RedisSock *)Z_RES_P(socket)->ptr) ||
+        Z_RES_P(socket)->type != le_redis_sock
+    ) {
+#endif
         // Throw an exception unless we've been requested not to
         if(!no_throw) {
             zend_throw_exception(redis_exception_ce, "Redis server went away",
@@ -471,7 +475,7 @@ PHP_REDIS_API int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC,
         }
     }
 
-    return Z_LVAL_P(socket);
+    return 0;
 }
 
 /**
