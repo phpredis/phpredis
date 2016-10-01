@@ -1193,12 +1193,9 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
         zend_hash_move_forward(keytable)) {
 
         char *hkey, *hval;
-		zend_string *tablekey;
         int hkey_len;
-        zend_ulong idx;
         zval *z_key_p, *z_value_p;
 
-        zend_hash_get_current_key(keytable, &tablekey, &idx);
         if((z_key_p = zend_hash_get_current_data(keytable)) == NULL) {
             continue;   /* this should never happen, according to the PHP people. */
         }
@@ -1212,7 +1209,6 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
         zend_hash_move_forward(keytable);
 
         /* fetch again */
-        zend_hash_get_current_key(keytable, &tablekey, &idx);
         if((z_value_p = zend_hash_get_current_data(keytable)) == NULL) {
             continue;   /* this should never happen, according to the PHP people. */
         }
