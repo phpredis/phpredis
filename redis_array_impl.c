@@ -94,7 +94,11 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 #else
 		id = zend_list_insert(redis_sock, le_redis_sock);
 #endif
+#if (PHP_MAJOR_VERSION < 7)
 		add_property_resource(ra->redis[i], "socket", id);
+#else
+		add_property_resource(ra->redis[i], "socket", Z_RES_P(id));
+#endif
 
 		ra->count = ++i;
 	}
