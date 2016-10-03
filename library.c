@@ -2011,7 +2011,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len
     HashTable ht;
 #endif
     smart_string sstr = {0};
-    zval *z_copy;
+    zval z_copy;
 #ifdef HAVE_REDIS_IGBINARY
     size_t sz;
     uint8_t *val8;
@@ -2027,27 +2027,22 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len
                     return 0;
 
                 case IS_OBJECT:
-                    MAKE_STD_ZVAL(z_copy);
-                    ZVAL_STRINGL(z_copy, "Object", 6, 1);
-                    break;
+                    *val = "Object";
+                    *val_len = 6;
+                    return 0;
 
                 case IS_ARRAY:
-                    MAKE_STD_ZVAL(z_copy);
-                    ZVAL_STRINGL(z_copy, "Array", 5, 1);
-                    break;
+                    *val = "Array";
+                    *val_len = 5;
+                    return 0;
 
                 default: /* copy */
-                    MAKE_STD_ZVAL(z_copy);
-                    *z_copy = *z;
-                    zval_copy_ctor(z_copy);
-                    break;
+                    z_copy = *z;
+                    zval_copy_ctor(&z_copy);
+                    convert_to_string(&z_copy);
+                    *val = Z_STRVAL(z_copy);
+                    *val_len = Z_STRLEN(z_copy);
             }
-
-            /* return string */
-            convert_to_string(z_copy);
-            *val = Z_STRVAL_P(z_copy);
-            *val_len = Z_STRLEN_P(z_copy);
-            efree(z_copy);
             return 1;
 
         case REDIS_SERIALIZER_PHP:
@@ -2076,7 +2071,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len
                 return 1;
             }
 #endif
-            return 0;
+            break;
     }
     return 0;
 }
