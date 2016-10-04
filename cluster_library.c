@@ -1477,9 +1477,8 @@ PHP_REDIS_API void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
                               TSRMLS_CC) == 0)
         {
             CLUSTER_RETURN_STRING(c, resp, c->reply_len);
-        } else {
-            efree(resp);
         }
+        efree(resp);
     } else {
         zval z;
         if (redis_unserialize(c->flags, resp, c->reply_len, &z TSRMLS_CC)) {
