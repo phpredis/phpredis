@@ -881,12 +881,10 @@ static zend_bool
 ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
 
 	zval z_fun_zrange, z_fun_zadd, z_ret, z_ret_dest, *z_args[4], **z_zadd_args, *z_score_p;
-	int count;
+	int i, count;
 	HashTable *h_zset_vals;
-	char *val;
-	unsigned int val_len;
-	int i;
-	unsigned long idx;
+    zend_string *zkey;
+	ulong idx;
 
 	/* run ZRANGE key 0 -1 WITHSCORES on source */
 	ZVAL_STRINGL(&z_fun_zrange, "ZRANGE", 6, 0);
@@ -916,14 +914,8 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	count = zend_hash_num_elements(h_zset_vals);
 	z_zadd_args = emalloc((1 + 2*count) * sizeof(zval*));
 
-	for(i = 1, zend_hash_internal_pointer_reset(h_zset_vals);
-			zend_hash_has_more_elements(h_zset_vals) == SUCCESS;
-			zend_hash_move_forward(h_zset_vals)) {
-
-		if ((z_score_p = zend_hash_get_current_data(h_zset_vals)) == NULL) {
-			continue;
-		}
-
+    i = 1;
+    ZEND_HASH_FOREACH_KEY_VAL(h_zset_vals, idx, zkey, z_score_p) {
 		/* add score */
 		convert_to_double(z_score_p);
 		MAKE_STD_ZVAL(z_zadd_args[i]);
@@ -931,19 +923,13 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 
 		/* add value */
 		MAKE_STD_ZVAL(z_zadd_args[i+1]);
-		switch (zend_hash_get_current_key_ex(h_zset_vals, &val, &val_len, &idx, 0, NULL)) {
-			case HASH_KEY_IS_STRING:
-				ZVAL_STRINGL(z_zadd_args[i+1], val, (int)val_len-1, 0); /* we have to remove 1 because it is an array key. */
-				break;
-			case HASH_KEY_IS_LONG:
-				ZVAL_LONG(z_zadd_args[i+1], (long)idx);
-				break;
-			default:
-				return -1; /* Todo: log error */
-				break;
-		}
+        if (zkey) {
+            ZVAL_STRINGL(z_zadd_args[i+1], zkey->val, zkey->len - 1, 0);
+        } else {
+			ZVAL_LONG(z_zadd_args[i+1], (long)idx);
+        }
 		i += 2;
-	}
+	} ZEND_HASH_FOREACH_END();
 
 	/* run ZADD on target */
 	ZVAL_STRINGL(&z_fun_zadd, "ZADD", 4, 0);

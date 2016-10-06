@@ -12,14 +12,43 @@ typedef smart_str smart_string;
 #define smart_string_append_long(dest, val) smart_str_append_long(dest, val)
 #define smart_string_appendl(dest, src, len) smart_str_appendl(dest, src, len)
 
+typedef struct {
+    size_t len;
+    char *val;
+} zend_string;
+
+#define ZEND_HASH_FOREACH_KEY_VAL(ht, _h, _key, _val) do { \
+    HashPosition _hpos; \
+    for (zend_hash_internal_pointer_reset_ex(ht, &_hpos); \
+         (_val = zend_hash_get_current_data_ex(ht, &_hpos)) != NULL; \
+         zend_hash_move_forward_ex(ht, &_hpos) \
+    ) { \
+        zend_string _zstr = {0}; \
+        char *_str_index; uint _str_length; ulong _num_index; \
+        switch (zend_hash_get_current_key_ex(ht, &_str_index, &_str_length, &_num_index, 0, &_hpos)) { \
+            case HASH_KEY_IS_STRING: \
+                _zstr.len = _str_length; \
+                _zstr.val = _str_index; \
+                _key = &_zstr; \
+                break; \
+            case HASH_KEY_IS_LONG: \
+                _key = NULL; \
+                _h = _num_index; \
+                break; \
+            default: \
+                continue; \
+        }
+
 #define ZEND_HASH_FOREACH_VAL(ht, _val) do { \
     HashPosition _hpos; \
     for (zend_hash_internal_pointer_reset_ex(ht, &_hpos); \
          (_val = zend_hash_get_current_data_ex(ht, &_hpos)) != NULL; \
          zend_hash_move_forward_ex(ht, &_hpos) \
-    )
+    ) {
 
-#define ZEND_HASH_FOREACH_END() } while(0)
+#define ZEND_HASH_FOREACH_END() \
+    } \
+} while(0)
 
 static zend_always_inline zval *
 zend_hash_str_find(const HashTable *ht, const char *key, size_t len)

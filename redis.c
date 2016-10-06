@@ -1851,37 +1851,24 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
                 kw_len, kw);
         }
 
+        ulong idx;
+        zend_string *zkey;
+        zval *z_value_p;
         keytable = Z_ARRVAL_P(z_array);
-        for(zend_hash_internal_pointer_reset(keytable);
-                zend_hash_has_more_elements(keytable) == SUCCESS;
-                zend_hash_move_forward(keytable)) {
-
+        ZEND_HASH_FOREACH_KEY_VAL(keytable, idx, zkey, z_value_p) {
             char *key, *val;
             unsigned int key_len;
             int val_len;
-            unsigned long idx;
-            int type;
-            zval *z_value_p;
             int val_free, key_free;
             char buf[32];
 
-            type = zend_hash_get_current_key_ex(keytable, &key, &key_len, &idx,
-                0, NULL);
-            if ((z_value_p = zend_hash_get_current_data(keytable)) == NULL) {
-                /* Should never happen, according to the PHP people */
-                continue;
-            }
-
-            // If the key isn't a string, use the index value returned when
-            // grabbing it.  We typecast to long, because they could actually
-            // be negative.
-            if(type != HASH_KEY_IS_STRING) {
+            if (zkey) {
+                key = zkey->val;
+                key_len = zkey->len - 1;
+            } else {
                 // Create string representation of our index
                 key_len = snprintf(buf, sizeof(buf), "%ld", (long)idx);
                 key = (char*)buf;
-            } else if(key_len > 0) {
-                // When not an integer key, the length will include the \0
-                key_len--;
             }
 
             if(step == 0)
@@ -1908,7 +1895,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
 
             if(val_free) STR_FREE(val);
             if(key_free) efree(key);
-        }
+        } ZEND_HASH_FOREACH_END();
     }
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);

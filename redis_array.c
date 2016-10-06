@@ -1000,10 +1000,10 @@ PHP_METHOD(RedisArray, mset)
 	int *pos, argc, *argc_each;
 	HashTable *h_keys;
 	zval *redis_inst, **argv;
-	char *key, **keys, **key_free, kbuf[40];
-	unsigned int key_len, free_idx = 0;
-	int type, *key_lens;
-	unsigned long idx;
+    char *key, **keys, kbuf[40];
+    int key_len, *key_lens;
+    zend_string *zkey;
+    ulong idx;
 
 	/* Multi/exec support */
 	HANDLE_MULTI_EXEC("MSET");
@@ -1025,42 +1025,30 @@ PHP_METHOD(RedisArray, mset)
 	keys = emalloc(argc * sizeof(char*));
 	key_lens = emalloc(argc * sizeof(int));
 
-	/* Allocate an array holding the indexes of any keys that need freeing */
-	key_free = emalloc(argc * sizeof(char*));
-
 	argc_each = emalloc(ra->count * sizeof(int));
 	memset(argc_each, 0, ra->count * sizeof(int));
 
 	/* associate each key to a redis node */
-	for(i = 0, zend_hash_internal_pointer_reset(h_keys);
-			zend_hash_has_more_elements(h_keys) == SUCCESS;
-			zend_hash_move_forward(h_keys), i++)
-	{
-	    /* We have to skip the element if we can't get the array value */
-        if ((data = zend_hash_get_current_data(h_keys)) == NULL) {
-            continue;
-        }
-
-		/* Grab our key */
-	    type = zend_hash_get_current_key_ex(h_keys, &key, &key_len, &idx, 0, NULL);
-
+    i = 0;
+    ZEND_HASH_FOREACH_KEY_VAL(h_keys, idx, zkey, data) {
 	    /* If the key isn't a string, make a string representation of it */
-	    if(type != HASH_KEY_IS_STRING) {
+        if (zkey) {
+            key_len = zkey->len - 1;
+            key = zkey->val;
+        } else {
 	        key_len = snprintf(kbuf, sizeof(kbuf), "%ld", (long)idx);
-	        key = estrndup(kbuf, key_len);
-	        key_free[free_idx++]=key;
-	    } else {
-	        key_len--; /* We don't want the null terminator */
-	    }
+            key = kbuf;
+        }
 
         if (ra_find_node(ra, key, (int)key_len, &pos[i] TSRMLS_CC) == NULL) {
             // TODO: handle
         }
 		argc_each[pos[i]]++;	/* count number of keys per node */
-		argv[i] = data;
-		keys[i] = key;
+		keys[i] = estrndup(key, key_len);
 		key_lens[i] = (int)key_len;
-	}
+		argv[i] = data;
+        i++;
+	} ZEND_HASH_FOREACH_END();
 
 
 	/* calls */
@@ -1114,13 +1102,12 @@ PHP_METHOD(RedisArray, mset)
 	}
 
 	/* Free any keys that we needed to allocate memory for, because they weren't strings */
-	for(i=0; i<free_idx; i++) {
-	    efree(key_free[i]);
+	for(i = 0; i < argc; i++) {
+	    efree(keys[i]);
 	}
 
 	/* cleanup */
 	efree(keys);
-	efree(key_free);
 	efree(key_lens);
 	efree(argv);
 	efree(pos);
