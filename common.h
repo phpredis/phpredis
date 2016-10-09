@@ -167,6 +167,15 @@ inline_zend_get_parameters_array(int ht, int param_count, zval *argument_array T
 
 typedef zend_rsrc_list_entry zend_resource;
 
+#undef RETVAL_STRING
+#define RETVAL_STRING(s) ZVAL_STRING(return_value, s, 1)
+#undef RETURN_STRING
+#define RETURN_STRING(s) { RETVAL_STRING(s); return; }
+#undef RETVAL_STRINGL
+#define RETVAL_STRINGL(s, l) ZVAL_STRINGL(return_value, s, l, 1)
+#undef RETURN_STRINGL
+#define RETURN_STRINGL(s, l) { RETVAL_STRINGL(s, l); return; }
+
 #else
 #include <ext/standard/php_smart_string.h>
 #endif

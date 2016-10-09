@@ -3089,7 +3089,7 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             RETURN_LONG(redis_sock->serializer);
         case REDIS_OPT_PREFIX:
             if(redis_sock->prefix) {
-                RETURN_STRINGL(redis_sock->prefix, redis_sock->prefix_len, 1);
+                RETURN_STRINGL(redis_sock->prefix, redis_sock->prefix_len);
             }
             RETURN_NULL();
         case REDIS_OPT_READ_TIMEOUT:
@@ -3193,9 +3193,10 @@ void redis_prefix_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
 
     if(redis_sock->prefix != NULL && redis_sock->prefix_len>0) {
         redis_key_prefix(redis_sock, &key, &key_len);
-        RETURN_STRINGL(key, key_len, 0);
+        RETVAL_STRINGL(key, key_len);
+        efree(key);
     } else {
-        RETURN_STRINGL(key, key_len, 1);
+        RETURN_STRINGL(key, key_len);
     }
 }
 
@@ -3212,7 +3213,7 @@ void redis_serialize_handler(INTERNAL_FUNCTION_PARAMETERS,
 
     int val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
 
-    RETVAL_STRINGL(val, val_len, 1);
+    RETVAL_STRINGL(val, val_len);
     if(val_free) STR_FREE(val);
 }
 
@@ -3244,7 +3245,7 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
         RETURN_ZVAL(z_ret, 0, 1);
     } else {
         // Just return the value that was passed to us
-        RETURN_STRINGL(value, value_len, 1);
+        RETURN_STRINGL(value, value_len);
     }
 }
 
