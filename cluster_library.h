@@ -116,7 +116,7 @@
 /* Helper to return a string value */
 #define CLUSTER_RETURN_STRING(c, str, len) \
     if(CLUSTER_IS_ATOMIC(c)) { \
-        RETURN_STRINGL(str, len, 0); \
+        RETURN_STRINGL(str, len); \
     } else { \
         add_next_index_stringl(c->multi_resp, str, len, 0); \
     } \

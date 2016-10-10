@@ -1866,7 +1866,7 @@ PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisClust
                 RETVAL_TRUE;
                 break;
             case TYPE_BULK:
-                RETVAL_STRINGL(r->str, r->len, 0);
+                RETVAL_STRINGL(r->str, r->len);
                 break;
             case TYPE_MULTIBULK:
                 MAKE_STD_ZVAL(z_arr);

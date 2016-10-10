@@ -1206,7 +1206,7 @@ PHP_REDIS_API void redis_long_response(INTERNAL_FUNCTION_PARAMETERS,
             }
         } else {
             if(ret > LONG_MAX) { /* overflow */
-                RETURN_STRINGL(response+1, response_len-1, 1);
+                RETURN_STRINGL(response+1, response_len-1);
             } else {
                 efree(response);
                 RETURN_LONG((long)ret);
@@ -1430,10 +1430,9 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
         if(redis_unserialize(redis_sock, response, response_len,
                              &return_value TSRMLS_CC) == 0)
         {
-            RETURN_STRINGL(response, response_len, 0);
-        } else {
-            efree(response);
+            RETVAL_STRINGL(response, response_len);
         }
+        efree(response);
     }
 }
 
@@ -1458,7 +1457,8 @@ redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     IF_MULTI_OR_PIPELINE() {
         add_next_index_stringl(z_tab, response, response_len, 0);
     } else {
-        RETURN_STRINGL(response, response_len, 0);
+        RETVAL_STRINGL(response, response_len);
+        efree(response);
     }
 }
 

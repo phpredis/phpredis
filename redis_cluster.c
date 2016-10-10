@@ -1952,7 +1952,7 @@ PHP_METHOD(RedisCluster, getlasterror) {
     redisCluster *c = GET_CONTEXT();
 
     if(c->err != NULL && c->err_len > 0) {
-        RETURN_STRINGL(c->err, c->err_len, 1);
+        RETURN_STRINGL(c->err, c->err_len);
     } else {
         RETURN_NULL();
     }
@@ -2043,7 +2043,7 @@ PHP_METHOD(RedisCluster, _redir) {
 
     len = snprintf(buf, sizeof(buf), "%s:%d", c->redir_host, c->redir_port);
     if(*c->redir_host && c->redir_host_len) {
-        RETURN_STRINGL(buf, len, 1);
+        RETURN_STRINGL(buf, len);
     } else {
         RETURN_NULL();
     }
