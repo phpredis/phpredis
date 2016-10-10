@@ -89,8 +89,7 @@ static void redis_array_free(RedisArray *ra) {
 
     /* Redis objects */
     for(i=0;i<ra->count;i++) {
-        zval_dtor(ra->redis[i]);
-        efree(ra->redis[i]);
+        zval_dtor(&ra->redis[i]);
         efree(ra->hosts[i]);
     }
     efree(ra->redis);
@@ -488,7 +487,7 @@ PHP_METHOD(RedisArray, _target)
 
 	redis_inst = ra_find_node(ra, key, key_len, &i TSRMLS_CC);
 	if(redis_inst) {
-		ZVAL_STRING(return_value, ra->hosts[i], 1);
+        RETURN_STRING(ra->hosts[i]);
 	} else {
 		RETURN_NULL();
 	}
@@ -588,7 +587,7 @@ PHP_METHOD(RedisArray, _rehash)
 
 static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
 {
-	zval *object, z_fun, *z_tmp;
+	zval *object, z_fun, *z_tmp, *redis_inst;
 	int i;
 	RedisArray *ra;
 
@@ -610,8 +609,9 @@ static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *metho
 		MAKE_STD_ZVAL(z_tmp);
 
 		/* Call each node in turn */
-		call_user_function(&redis_ce->function_table, &ra->redis[i],
-				&z_fun, z_tmp, 0, NULL TSRMLS_CC);
+        redis_inst = &ra->redis[i];
+        call_user_function(&redis_ce->function_table, &redis_inst, &z_fun,
+                            z_tmp, 0, NULL TSRMLS_CC);
 
 		add_assoc_zval(return_value, ra->hosts[i], z_tmp);
 	}
@@ -650,7 +650,7 @@ PHP_METHOD(RedisArray, bgsave)
 
 PHP_METHOD(RedisArray, keys)
 {
-	zval *object, *z_args[1], *z_tmp, z_fun;
+	zval *object, *z_args[1], *z_tmp, z_fun, *redis_inst;
 	RedisArray *ra;
 	char *pattern;
 	int pattern_len, i;
@@ -683,7 +683,9 @@ PHP_METHOD(RedisArray, keys)
 		MAKE_STD_ZVAL(z_tmp);
 
 		/* Call KEYS on each node */
-		call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 1, z_args TSRMLS_CC);
+        redis_inst = &ra->redis[i];
+        call_user_function(&redis_ce->function_table, &redis_inst, &z_fun,
+                            z_tmp, 1, z_args TSRMLS_CC);
 
 		/* Add the result for this host */
 		add_assoc_zval(return_value, ra->hosts[i], z_tmp);
@@ -695,7 +697,7 @@ PHP_METHOD(RedisArray, keys)
 
 PHP_METHOD(RedisArray, getOption)
 {
-	zval *object, z_fun, *z_tmp, *z_args[1];
+	zval *object, z_fun, *z_tmp, *z_args[1], *redis_inst;
 	int i;
 	RedisArray *ra;
 	long opt;
@@ -722,8 +724,9 @@ PHP_METHOD(RedisArray, getOption)
 		MAKE_STD_ZVAL(z_tmp);
 
 		/* Call each node in turn */
-		call_user_function(&redis_ce->function_table, &ra->redis[i],
-				&z_fun, z_tmp, 1, z_args TSRMLS_CC);
+        redis_inst = &ra->redis[i];
+        call_user_function(&redis_ce->function_table, &redis_inst, &z_fun,
+                            z_tmp, 1, z_args TSRMLS_CC);
 
 		add_assoc_zval(return_value, ra->hosts[i], z_tmp);
 	}
@@ -734,7 +737,7 @@ PHP_METHOD(RedisArray, getOption)
 
 PHP_METHOD(RedisArray, setOption)
 {
-	zval *object, z_fun, *z_tmp, *z_args[2];
+	zval *object, z_fun, *z_tmp, *z_args[2], *redis_inst;
 	int i;
 	RedisArray *ra;
 	long opt;
@@ -765,8 +768,9 @@ PHP_METHOD(RedisArray, setOption)
 		MAKE_STD_ZVAL(z_tmp);
 
 		/* Call each node in turn */
-		call_user_function(&redis_ce->function_table, &ra->redis[i],
-				&z_fun, z_tmp, 2, z_args TSRMLS_CC);
+        redis_inst = &ra->redis[i];
+        call_user_function(&redis_ce->function_table, &redis_inst, &z_fun,
+                            z_tmp, 2, z_args TSRMLS_CC);
 
 		add_assoc_zval(return_value, ra->hosts[i], z_tmp);
 	}
@@ -778,7 +782,7 @@ PHP_METHOD(RedisArray, setOption)
 
 PHP_METHOD(RedisArray, select)
 {
-	zval *object, z_fun, *z_tmp, *z_args[2];
+	zval *object, z_fun, *z_tmp, *z_args[2], *redis_inst;
 	int i;
 	RedisArray *ra;
 	long opt;
@@ -801,12 +805,12 @@ PHP_METHOD(RedisArray, select)
 
 	array_init(return_value);
 	for(i = 0; i < ra->count; ++i) {
-
 		MAKE_STD_ZVAL(z_tmp);
 
 		/* Call each node in turn */
-		call_user_function(&redis_ce->function_table, &ra->redis[i],
-				&z_fun, z_tmp, 1, z_args TSRMLS_CC);
+        redis_inst = &ra->redis[i];
+        call_user_function(&redis_ce->function_table, &redis_inst, &z_fun,
+                            z_tmp, 1, z_args TSRMLS_CC);
 
 		add_assoc_zval(return_value, ra->hosts[i], z_tmp);
 	}
@@ -852,7 +856,7 @@ PHP_METHOD(RedisArray, mget)
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
 	HashTable *h_keys;
-	zval **argv;
+	zval **argv, *redis_inst;
 
 	/* Multi/exec support */
 	HANDLE_MULTI_EXEC("MGET");
@@ -938,8 +942,9 @@ PHP_METHOD(RedisArray, mget)
 
 		/* call MGET on the node */
 		MAKE_STD_ZVAL(z_ret);
-		call_user_function(&redis_ce->function_table, &ra->redis[n],
-				&z_fun, z_ret, 1, &z_argarray TSRMLS_CC);
+        redis_inst = &ra->redis[n];
+        call_user_function(&redis_ce->function_table, &redis_inst, &z_fun,
+                            z_ret, 1, &z_argarray TSRMLS_CC);
 
 		/* cleanup args array */
 		zval_ptr_dtor(&z_argarray);
@@ -1055,10 +1060,6 @@ PHP_METHOD(RedisArray, mset)
 	for(n = 0; n < ra->count; ++n) { /* for each node */
 		int found = 0;
 
-		/* prepare call */
-		ZVAL_STRING(&z_fun, "MSET", 0);
-		redis_inst = ra->redis[n];
-
 		/* copy args */
 		MAKE_STD_ZVAL(z_argarray);
 		array_init(z_argarray);
@@ -1083,13 +1084,16 @@ PHP_METHOD(RedisArray, mset)
 			continue;				/* don't run empty MSETs */
 		}
 
+        /* prepare call */
+        ZVAL_STRING(&z_fun, "MSET", 0);
+        redis_inst = &ra->redis[n];
 		if(ra->index) { /* add MULTI */
 			ra_index_multi(redis_inst, MULTI TSRMLS_CC);
 		}
 
 		/* call */
-		call_user_function(&redis_ce->function_table, &ra->redis[n],
-				&z_fun, &z_ret, 1, &z_argarray TSRMLS_CC);
+        call_user_function(&redis_ce->function_table, &redis_inst, &z_fun,
+                            &z_ret, 1, &z_argarray TSRMLS_CC);
 
 		if(ra->index) {
 			ra_index_keys(z_argarray, redis_inst TSRMLS_CC); /* use SADD to add keys to node index */
@@ -1194,7 +1198,6 @@ PHP_METHOD(RedisArray, del)
 	for(n = 0; n < ra->count; ++n) { /* for each node */
 
 		int found = 0;
-		redis_inst = ra->redis[n];
 
 		/* copy args */
 		MAKE_STD_ZVAL(z_argarray);
@@ -1217,14 +1220,15 @@ PHP_METHOD(RedisArray, del)
 			continue;
 		}
 
+		redis_inst = &ra->redis[n];
 		if(ra->index) { /* add MULTI */
 			ra_index_multi(redis_inst, MULTI TSRMLS_CC);
 		}
 
 		/* call */
 		MAKE_STD_ZVAL(z_ret);
-		call_user_function(&redis_ce->function_table, &redis_inst,
-				&z_fun, z_ret, 1, &z_argarray TSRMLS_CC);
+        call_user_function(&redis_ce->function_table, &redis_inst, &z_fun,
+                            z_ret, 1, &z_argarray TSRMLS_CC);
 
 		if(ra->index) {
 			ra_index_del(z_argarray, redis_inst TSRMLS_CC); /* use SREM to remove keys from node index */
