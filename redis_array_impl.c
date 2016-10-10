@@ -583,46 +583,34 @@ ra_index_del(zval *z_keys, zval *z_redis TSRMLS_DC) {
 void
 ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
 
+    zval z_keys, *z_val;
+    zend_string *zkey;
+    ulong idx;
 	/* Initialize key array */
-	zval *z_keys;
-	MAKE_STD_ZVAL(z_keys);
-    HashPosition pos;
 #if PHP_VERSION_ID > 50300
-	array_init_size(z_keys, zend_hash_num_elements(Z_ARRVAL_P(z_pairs)));
+	array_init_size(&z_keys, zend_hash_num_elements(Z_ARRVAL_P(z_pairs)));
 #else
-	array_init(z_keys);
+	array_init(&z_keys);
 #endif
 
 	/* Go through input array and add values to the key array */
-	zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(z_pairs), &pos);
-	while (zend_hash_get_current_data_ex(Z_ARRVAL_P(z_pairs), &pos) != NULL) {
-			char *key;
-			unsigned int key_len;
-			unsigned long num_key;
-			zval *z_new;
-			MAKE_STD_ZVAL(z_new);
+    ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(z_pairs), idx, zkey, z_val) {
+        zval *z_new;
+        MAKE_STD_ZVAL(z_new);
 
-			switch (zend_hash_get_current_key_ex(Z_ARRVAL_P(z_pairs), &key, &key_len, &num_key, 1, &pos)) {
-				case HASH_KEY_IS_STRING:
-					ZVAL_STRINGL(z_new, key, (int)key_len - 1, 0);
-					zend_hash_next_index_insert(Z_ARRVAL_P(z_keys), z_new);
-					break;
-
-				case HASH_KEY_IS_LONG:
-					Z_TYPE_P(z_new) = IS_LONG;
-					Z_LVAL_P(z_new) = (long)num_key;
-					zend_hash_next_index_insert(Z_ARRVAL_P(z_keys), z_new);
-					break;
-			}
-			zend_hash_move_forward_ex(Z_ARRVAL_P(z_pairs), &pos);
-	}
+        if (zkey) {
+            ZVAL_STRINGL(z_new, zkey->val, zkey->len, 1);
+        } else {
+            ZVAL_LONG(z_new, idx);
+        }
+        zend_hash_next_index_insert(Z_ARRVAL(z_keys), z_new);
+    } ZEND_HASH_FOREACH_END();
 
 	/* add keys to index */
-	ra_index_change_keys("SADD", z_keys, z_redis TSRMLS_CC);
+	ra_index_change_keys("SADD", &z_keys, z_redis TSRMLS_CC);
 
 	/* cleanup */
-	zval_dtor(z_keys);
-	efree(z_keys);
+	zval_dtor(&z_keys);
 }
 
 void
