@@ -1038,7 +1038,7 @@ PHP_METHOD(RedisCluster, keys) {
             }
 
             add_next_index_stringl(z_ret, resp->element[i]->str,
-                resp->element[i]->len, 0);
+                resp->element[i]->len);
         }
 
         /* Free response, don't free data */
@@ -2027,7 +2027,7 @@ PHP_METHOD(RedisCluster, _masters) {
         MAKE_STD_ZVAL(z_sub);
         array_init(z_sub);
 
-        add_next_index_stringl(z_sub, host, strlen(host), 1);
+        add_next_index_stringl(z_sub, host, strlen(host));
         add_next_index_long(z_sub, port);
         add_next_index_zval(z_ret, z_sub);
     }

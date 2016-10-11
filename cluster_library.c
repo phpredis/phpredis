@@ -1488,6 +1488,7 @@ PHP_REDIS_API void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS,
 
     // Return our response raw
     CLUSTER_RETURN_STRING(c, resp, c->reply_len);
+    efree(resp);
 }
 
 /* BULK response handler */
@@ -1508,18 +1509,16 @@ PHP_REDIS_API void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
                               TSRMLS_CC) == 0)
         {
             CLUSTER_RETURN_STRING(c, resp, c->reply_len);
-        } else {
-            efree(resp);
         }
     } else {
         zval *z = NULL;
         if (redis_unserialize(c->flags, resp, c->reply_len, &z TSRMLS_CC)) {
-            efree(resp);
             add_next_index_zval(c->multi_resp, z);
         } else {
-            add_next_index_stringl(c->multi_resp, resp, c->reply_len, 0);
+            add_next_index_stringl(c->multi_resp, resp, c->reply_len);
         }
     }
+    efree(resp);
 }
 
 /* Bulk response where we expect a double */
@@ -1820,10 +1819,12 @@ static void cluster_mbulk_variant_resp(clusterReply *r, zval *z_ret)
             add_next_index_bool(z_ret, 1);
             break;
         case TYPE_BULK:
-            if (r->len > -1)
-                add_next_index_stringl(z_ret, r->str, r->len, 0);
-            else
+            if (r->len > -1) {
+                add_next_index_stringl(z_ret, r->str, r->len);
+                efree(r->str);
+            } else {
                 add_next_index_null(z_ret);
+            }
             break;
         case TYPE_MULTIBULK:
             MAKE_STD_ZVAL(z_sub_ele);
@@ -1895,7 +1896,8 @@ PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisClust
                 add_next_index_bool(c->multi_resp, 1);
                 break;
             case TYPE_BULK:
-                add_next_index_stringl(c->multi_resp, r->str, r->len, 0);
+                add_next_index_stringl(c->multi_resp, r->str, r->len);
+                efree(r->str);
                 break;
             case TYPE_MULTIBULK:
                 cluster_mbulk_variant_resp(r, c->multi_resp);
@@ -2315,7 +2317,8 @@ int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result,
         if(line == NULL) return FAILURE;
 
         // Add to our result array
-        add_next_index_stringl(z_result, line, line_len, 0);
+        add_next_index_stringl(z_result, line, line_len);
+        efree(line);
     }
 
     // Success!
@@ -2338,10 +2341,10 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
             zval *z = NULL;
             if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
                 add_next_index_zval(z_result, z);
-                efree(line);
             } else {
-                add_next_index_stringl(z_result, line, line_len, 0);
+                add_next_index_stringl(z_result, line, line_len);
             }
+            efree(line);
         } else {
             if (line) efree(line);
             add_next_index_bool(z_result, 0);

@@ -2353,7 +2353,8 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     array_init(z_argv);
 
     // SORT <key>
-    add_next_index_stringl(z_argv, key, key_len, !key_free);
+    add_next_index_stringl(z_argv, key, key_len);
+    if (key_free) efree(key);
 
     // Set slot
     CMD_SET_SLOT(slot,key,key_len);
@@ -2377,8 +2378,8 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         }
 
         // ... BY <pattern>
-        add_next_index_stringl(z_argv, "BY", sizeof("BY")-1, 1);
-        add_next_index_stringl(z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), 1);
+        add_next_index_stringl(z_argv, "BY", sizeof("BY") - 1);
+        add_next_index_stringl(z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
     }
 
     // Handle ASC/DESC option
@@ -2387,7 +2388,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ) && Z_TYPE_P(z_ele) == IS_STRING
     ) {
         // 'asc'|'desc'
-        add_next_index_stringl(z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), 1);
+        add_next_index_stringl(z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
     }
 
     // STORE option
@@ -2409,8 +2410,8 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         }
 
         // STORE <key>
-        add_next_index_stringl(z_argv,"STORE",sizeof("STORE")-1, 1);
-        add_next_index_stringl(z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), 1);
+        add_next_index_stringl(z_argv, "STORE", sizeof("STORE") - 1);
+        add_next_index_stringl(z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
 
         // We are using STORE
         *using_store = 1;
@@ -2433,9 +2434,8 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         // If it's a string just add it
         if (Z_TYPE_P(z_ele) == IS_STRING) {
-            add_next_index_stringl(z_argv,"GET",sizeof("GET")-1,1);
-            add_next_index_stringl(z_argv,Z_STRVAL_P(z_ele),
-                Z_STRLEN_P(z_ele), 1);
+            add_next_index_stringl(z_argv, "GET", sizeof("GET") - 1);
+            add_next_index_stringl(z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
         } else {
             HashTable *ht_keys = Z_ARRVAL_P(z_ele);
             int added=0;
@@ -2451,11 +2451,10 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     continue;
                 }
                 /* Add get per thing we're getting */
-                add_next_index_stringl(z_argv, "GET", sizeof("GET")-1, 1);
+                add_next_index_stringl(z_argv, "GET", sizeof("GET") - 1);
 
                 // Add this key to our argv array
-                add_next_index_stringl(z_argv, Z_STRVAL_P(z_key),
-                    Z_STRLEN_P(z_key), 1);
+                add_next_index_stringl(z_argv, Z_STRVAL_P(z_key), Z_STRLEN_P(z_key));
                 added++;
             }
 
@@ -2476,7 +2475,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
          (z_ele = zend_hash_str_find(ht_opts, "ALPHA", sizeof("ALPHA") - 1)) != NULL
         ) && Z_TYPE_P(z_ele) == IS_BOOL && Z_BVAL_P(z_ele) == 1
     ) {
-        add_next_index_stringl(z_argv, "ALPHA", sizeof("ALPHA")-1,1);
+        add_next_index_stringl(z_argv, "ALPHA", sizeof("ALPHA") - 1);
     }
 
     // LIMIT <offset> <count>
@@ -2502,7 +2501,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             }
 
             // Add LIMIT argument
-            add_next_index_stringl(z_argv,"LIMIT",sizeof("LIMIT")-1,1);
+            add_next_index_stringl(z_argv, "LIMIT", sizeof("LIMIT") - 1);
 
             long low, high;
             if (Z_TYPE_P(z_off) == IS_STRING) {
