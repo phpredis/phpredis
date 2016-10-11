@@ -35,7 +35,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 	int i = 0, host_len, id;
 	char *host, *p;
 	short port;
-	zval *zpData, z_cons, z_ret;
+	zval *zpData, z_cons, z_ret, *redis_inst;
 	RedisSock *redis_sock  = NULL;
 
 	/* function calls on the Redis object */
@@ -47,8 +47,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 		if ((zpData = zend_hash_get_current_data(hosts)) == NULL || Z_TYPE_P(zpData) != IS_STRING)
 		{
 			for(i=0;i<ra->count;i++) {
-				zval_dtor(ra->redis[i]);
-				efree(ra->redis[i]);
+				zval_dtor(&ra->redis[i]);
 				efree(ra->hosts[i]);
 			}
 			efree(ra->redis);
@@ -74,10 +73,10 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
         }
 
 		/* create Redis object */
-		MAKE_STD_ZVAL(ra->redis[i]);
-		object_init_ex(ra->redis[i], redis_ce);
-		INIT_PZVAL(ra->redis[i]);
-		call_user_function(&redis_ce->function_table, &ra->redis[i], &z_cons, &z_ret, 0, NULL TSRMLS_CC);
+        redis_inst = &ra->redis[i];
+        object_init_ex(redis_inst, redis_ce);
+        INIT_PZVAL(redis_inst);
+        call_user_function(&redis_ce->function_table, &redis_inst, &z_cons, &z_ret, 0, NULL TSRMLS_CC);
 
 		/* create socket */
 		redis_sock = redis_sock_create(host, host_len, port, ra->connect_timeout, ra->pconnect, NULL, retry_interval, b_lazy_connect);
@@ -95,9 +94,9 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 		id = zend_list_insert(redis_sock, le_redis_sock);
 #endif
 #if (PHP_MAJOR_VERSION < 7)
-		add_property_resource(ra->redis[i], "socket", id);
+		add_property_resource(&ra->redis[i], "socket", id);
 #else
-		add_property_resource(ra->redis[i], "socket", Z_RES_P(id));
+		add_property_resource(&ra->redis[i], "socket", Z_RES_P(id));
 #endif
 
 		ra->count = ++i;
@@ -363,8 +362,8 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 
 	/* create object */
 	RedisArray *ra = emalloc(sizeof(RedisArray));
-	ra->hosts = emalloc(count * sizeof(char*));
-	ra->redis = emalloc(count * sizeof(zval*));
+	ra->hosts = ecalloc(count, sizeof(char *));
+	ra->redis = ecalloc(count, sizeof(zval));
 	ra->count = 0;
 	ra->z_fun = NULL;
 	ra->z_dist = NULL;
@@ -500,7 +499,7 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
     }
     if(out_pos) *out_pos = pos;
 
-    return ra->redis[pos];
+    return &ra->redis[pos];
 }
 
 zval *
@@ -509,7 +508,7 @@ ra_find_node_by_name(RedisArray *ra, const char *host, int host_len TSRMLS_DC) {
 	int i;
 	for(i = 0; i < ra->count; ++i) {
 		if(strncmp(ra->hosts[i], host, host_len) == 0) {
-			return ra->redis[i];
+			return &ra->redis[i];
 		}
 	}
 	return NULL;
@@ -584,46 +583,34 @@ ra_index_del(zval *z_keys, zval *z_redis TSRMLS_DC) {
 void
 ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
 
+    zval z_keys, *z_val;
+    zend_string *zkey;
+    ulong idx;
 	/* Initialize key array */
-	zval *z_keys;
-	MAKE_STD_ZVAL(z_keys);
-    HashPosition pos;
 #if PHP_VERSION_ID > 50300
-	array_init_size(z_keys, zend_hash_num_elements(Z_ARRVAL_P(z_pairs)));
+	array_init_size(&z_keys, zend_hash_num_elements(Z_ARRVAL_P(z_pairs)));
 #else
-	array_init(z_keys);
+	array_init(&z_keys);
 #endif
 
 	/* Go through input array and add values to the key array */
-	zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(z_pairs), &pos);
-	while (zend_hash_get_current_data_ex(Z_ARRVAL_P(z_pairs), &pos) != NULL) {
-			char *key;
-			unsigned int key_len;
-			unsigned long num_key;
-			zval *z_new;
-			MAKE_STD_ZVAL(z_new);
+    ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(z_pairs), idx, zkey, z_val) {
+        zval *z_new;
+        MAKE_STD_ZVAL(z_new);
 
-			switch (zend_hash_get_current_key_ex(Z_ARRVAL_P(z_pairs), &key, &key_len, &num_key, 1, &pos)) {
-				case HASH_KEY_IS_STRING:
-					ZVAL_STRINGL(z_new, key, (int)key_len - 1, 0);
-					zend_hash_next_index_insert(Z_ARRVAL_P(z_keys), z_new);
-					break;
-
-				case HASH_KEY_IS_LONG:
-					Z_TYPE_P(z_new) = IS_LONG;
-					Z_LVAL_P(z_new) = (long)num_key;
-					zend_hash_next_index_insert(Z_ARRVAL_P(z_keys), z_new);
-					break;
-			}
-			zend_hash_move_forward_ex(Z_ARRVAL_P(z_pairs), &pos);
-	}
+        if (zkey) {
+            ZVAL_STRINGL(z_new, zkey->val, zkey->len, 1);
+        } else {
+            ZVAL_LONG(z_new, idx);
+        }
+        zend_hash_next_index_insert(Z_ARRVAL(z_keys), z_new);
+    } ZEND_HASH_FOREACH_END();
 
 	/* add keys to index */
-	ra_index_change_keys("SADD", z_keys, z_redis TSRMLS_CC);
+	ra_index_change_keys("SADD", &z_keys, z_redis TSRMLS_CC);
 
 	/* cleanup */
-	zval_dtor(z_keys);
-	efree(z_keys);
+	zval_dtor(&z_keys);
 }
 
 void
@@ -1256,7 +1243,7 @@ ra_rehash(RedisArray *ra, zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cac
 		return;	/* TODO: compare the two rings for equality */
 
 	for(i = 0; i < ra->prev->count; ++i) {
-		ra_rehash_server(ra, ra->prev->redis[i], ra->prev->hosts[i], ra->index, z_cb, z_cb_cache TSRMLS_CC);
+		ra_rehash_server(ra, &ra->prev->redis[i], ra->prev->hosts[i], ra->index, z_cb, z_cb_cache TSRMLS_CC);
 	}
 }
 
