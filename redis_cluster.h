@@ -10,8 +10,13 @@
 #define REDIS_CLUSTER_MOD   (REDIS_CLUSTER_SLOTS-1)
 
 /* Get attached object context */
+#if (PHP_MAJOR_VERSION < 7)
 #define GET_CONTEXT() \
     ((redisCluster*)zend_object_store_get_object(getThis() TSRMLS_CC))
+#else
+#define GET_CONTEXT() \
+    ((redisCluster *)((char *)getThis() - XtOffsetOf(redisCluster, std)))
+#endif
 
 /* Command building/processing is identical for every command */
 #define CLUSTER_BUILD_CMD(name, c, cmd, cmd_len, slot) \

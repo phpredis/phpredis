@@ -595,8 +595,12 @@ PHP_MINIT_FUNCTION(redis)
     INIT_CLASS_ENTRY(redis_exception_class_entry, "RedisException", NULL);
     redis_exception_ce = zend_register_internal_class_ex(
         &redis_exception_class_entry,
+#if (PHP_MAJOR_VERSION < 7)
         redis_get_exception_base(0 TSRMLS_CC),
         NULL TSRMLS_CC
+#else
+        redis_get_exception_base(0)
+#endif
     );
 
     /* RedisClusterException class */
@@ -604,8 +608,12 @@ PHP_MINIT_FUNCTION(redis)
         "RedisClusterException", NULL);
     redis_cluster_exception_ce = zend_register_internal_class_ex(
         &redis_cluster_exception_class_entry,
+#if (PHP_MAJOR_VERSION < 7)
         rediscluster_get_exception_base(0 TSRMLS_CC),
         NULL TSRMLS_CC
+#else
+        rediscluster_get_exception_base(0)
+#endif
     );
 
     le_redis_sock = zend_register_list_destructors_ex(
