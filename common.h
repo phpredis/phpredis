@@ -167,6 +167,9 @@ inline_zend_get_parameters_array(int ht, int param_count, zval *argument_array T
 
 typedef zend_rsrc_list_entry zend_resource;
 
+static int (*_add_next_index_stringl)(zval *, const char *, uint, int) = &add_next_index_stringl;
+#define add_next_index_stringl(arg, str, length) _add_next_index_stringl(arg, str, length, 1);
+
 #undef RETVAL_STRING
 #define RETVAL_STRING(s) ZVAL_STRING(return_value, s, 1)
 #undef RETURN_STRING

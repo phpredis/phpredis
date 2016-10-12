@@ -1199,7 +1199,7 @@ PHP_REDIS_API void redis_long_response(INTERNAL_FUNCTION_PARAMETERS,
 #endif
         IF_MULTI_OR_PIPELINE() {
             if(ret > LONG_MAX) { /* overflow */
-                add_next_index_stringl(z_tab, response+1, response_len-1, 1);
+                add_next_index_stringl(z_tab, response + 1, response_len - 1);
             } else {
                 efree(response);
                 add_next_index_long(z_tab, (long)ret);
@@ -1421,10 +1421,9 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
         if(redis_unserialize(redis_sock, response, response_len,
                              &z TSRMLS_CC) == 1)
         {
-            efree(response);
             add_next_index_zval(z_tab, z);
         } else {
-            add_next_index_stringl(z_tab, response, response_len, 0);
+            add_next_index_stringl(z_tab, response, response_len);
         }
     } else {
         if(redis_unserialize(redis_sock, response, response_len,
@@ -1432,8 +1431,8 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
         {
             RETVAL_STRINGL(response, response_len);
         }
-        efree(response);
     }
+    efree(response);
 }
 
 /* like string response, but never unserialized. */
@@ -1455,11 +1454,11 @@ redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         RETURN_FALSE;
     }
     IF_MULTI_OR_PIPELINE() {
-        add_next_index_stringl(z_tab, response, response_len, 0);
+        add_next_index_stringl(z_tab, response, response_len);
     } else {
         RETVAL_STRINGL(response, response_len);
-        efree(response);
     }
+    efree(response);
 }
 
 /* Response for DEBUG object which is a formatted single line reply */
@@ -1888,11 +1887,11 @@ redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 (unserialize == UNSERIALIZE_VALS && count % 2 != 0);
 
             if (unwrap && redis_unserialize(redis_sock, line, len, &z TSRMLS_CC)) {
-                efree(line);
                 add_next_index_zval(z_tab, z);
             } else {
-                add_next_index_stringl(z_tab, line, len, 0);
+                add_next_index_stringl(z_tab, line, len);
             }
+            efree(line);
         } else {
             add_next_index_bool(z_tab, 0);
         }
