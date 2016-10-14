@@ -12,14 +12,43 @@ typedef smart_str smart_string;
 #define smart_string_append_long(dest, val) smart_str_append_long(dest, val)
 #define smart_string_appendl(dest, src, len) smart_str_appendl(dest, src, len)
 
+typedef struct {
+    size_t len;
+    char *val;
+} zend_string;
+
+#define ZEND_HASH_FOREACH_KEY_VAL(ht, _h, _key, _val) do { \
+    HashPosition _hpos; \
+    for (zend_hash_internal_pointer_reset_ex(ht, &_hpos); \
+         (_val = zend_hash_get_current_data_ex(ht, &_hpos)) != NULL; \
+         zend_hash_move_forward_ex(ht, &_hpos) \
+    ) { \
+        zend_string _zstr = {0}; \
+        char *_str_index; uint _str_length; ulong _num_index; \
+        switch (zend_hash_get_current_key_ex(ht, &_str_index, &_str_length, &_num_index, 0, &_hpos)) { \
+            case HASH_KEY_IS_STRING: \
+                _zstr.len = _str_length; \
+                _zstr.val = _str_index; \
+                _key = &_zstr; \
+                break; \
+            case HASH_KEY_IS_LONG: \
+                _key = NULL; \
+                _h = _num_index; \
+                break; \
+            default: \
+                continue; \
+        }
+
 #define ZEND_HASH_FOREACH_VAL(ht, _val) do { \
     HashPosition _hpos; \
     for (zend_hash_internal_pointer_reset_ex(ht, &_hpos); \
-         zend_hash_get_current_data_ex(ht, (void **) &_val, &_hpos) == SUCCESS; \
+         (_val = zend_hash_get_current_data_ex(ht, &_hpos)) != NULL; \
          zend_hash_move_forward_ex(ht, &_hpos) \
-    )
+    ) {
 
-#define ZEND_HASH_FOREACH_END() } while(0)
+#define ZEND_HASH_FOREACH_END() \
+    } \
+} while(0)
 
 static zend_always_inline zval *
 zend_hash_str_find(const HashTable *ht, const char *key, size_t len)
@@ -65,6 +94,90 @@ zend_hash_get_current_data_ptr(HashTable *ht)
     }
     return NULL;
 }
+
+static int (*_zend_hash_index_find)(const HashTable *, ulong, void **) = &zend_hash_index_find;
+#define zend_hash_index_find(ht, h) inline_zend_hash_index_find(ht, h)
+
+static zend_always_inline zval *
+inline_zend_hash_index_find(const HashTable *ht, zend_ulong h)
+{
+    zval **zv;
+    if (_zend_hash_index_find(ht, h, (void **)&zv) == SUCCESS) {
+        return *zv;
+    }
+    return NULL;
+}
+
+static zend_always_inline void *
+zend_hash_index_find_ptr(const HashTable *ht, zend_ulong h)
+{
+    void **ptr;
+
+    if (_zend_hash_index_find(ht, h, (void **)&ptr) == SUCCESS) {
+        return *ptr;
+    }
+    return NULL;
+}
+
+static int (*_zend_hash_get_current_data_ex)(HashTable *, void **, HashPosition *) = &zend_hash_get_current_data_ex;
+#define zend_hash_get_current_data_ex(ht, pos) inline_zend_hash_get_current_data_ex(ht, pos)
+static zend_always_inline zval *
+inline_zend_hash_get_current_data_ex(HashTable *ht, HashPosition *pos)
+{
+    zval **zv;
+    if (_zend_hash_get_current_data_ex(ht, (void **)&zv, pos) == SUCCESS) {
+        return *zv;
+    }
+    return NULL;
+}
+
+#undef zend_hash_next_index_insert
+#define zend_hash_next_index_insert(ht, pData) \
+    _zend_hash_next_index_insert(ht, pData ZEND_FILE_LINE_CC)
+static zend_always_inline zval *
+_zend_hash_next_index_insert(HashTable *ht, zval *pData ZEND_FILE_LINE_DC)
+{
+    if (_zend_hash_index_update_or_next_insert(ht, 0, &pData, sizeof(pData),
+            NULL, HASH_NEXT_INSERT ZEND_FILE_LINE_CC) == SUCCESS
+    ) {
+        return pData;
+    }
+    return NULL;
+}
+
+#undef zend_get_parameters_array
+#define zend_get_parameters_array(ht, param_count, argument_array) \
+    inline_zend_get_parameters_array(ht, param_count, argument_array TSRMLS_CC)
+
+static zend_always_inline int
+inline_zend_get_parameters_array(int ht, int param_count, zval *argument_array TSRMLS_DC)
+{
+    int i, ret = FAILURE;
+    zval **zv = ecalloc(param_count, sizeof(zval *));
+
+    if (_zend_get_parameters_array(ht, param_count, zv TSRMLS_CC) == SUCCESS) {
+        for (i = 0; i < param_count; i++) {
+            argument_array[i] = *zv[i];
+        }
+        ret = SUCCESS;
+    }
+    efree(zv);
+    return ret;
+}
+
+typedef zend_rsrc_list_entry zend_resource;
+
+static int (*_add_next_index_stringl)(zval *, const char *, uint, int) = &add_next_index_stringl;
+#define add_next_index_stringl(arg, str, length) _add_next_index_stringl(arg, str, length, 1);
+
+#undef RETVAL_STRING
+#define RETVAL_STRING(s) ZVAL_STRING(return_value, s, 1)
+#undef RETURN_STRING
+#define RETURN_STRING(s) { RETVAL_STRING(s); return; }
+#undef RETVAL_STRINGL
+#define RETVAL_STRINGL(s, l) ZVAL_STRINGL(return_value, s, l, 1)
+#undef RETURN_STRINGL
+#define RETURN_STRINGL(s, l) { RETVAL_STRINGL(s, l); return; }
 
 #else
 #include <ext/standard/php_smart_string.h>

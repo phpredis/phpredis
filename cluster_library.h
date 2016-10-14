@@ -116,9 +116,9 @@
 /* Helper to return a string value */
 #define CLUSTER_RETURN_STRING(c, str, len) \
     if(CLUSTER_IS_ATOMIC(c)) { \
-        RETURN_STRINGL(str, len, 0); \
+        RETVAL_STRINGL(str, len); \
     } else { \
-        add_next_index_stringl(c->multi_resp, str, len, 0); \
+        add_next_index_stringl(c->multi_resp, str, len); \
     } \
 
 /* Return a LONG value */
@@ -151,7 +151,7 @@ typedef enum CLUSTER_REDIR_TYPE {
 typedef int  (*mbulk_cb)(RedisSock*,zval*,long long, void* TSRMLS_DC);
 
 /* Specific destructor to free a cluster object */
-// void redis_destructor_redis_cluster(zend_rsrc_list_entry *rsrc TSRMLS_DC);
+// void redis_destructor_redis_cluster(zend_resource *rsrc TSRMLS_DC);
 
 /* A Redis Cluster master node */
 typedef struct redisClusterNode {
