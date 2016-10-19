@@ -179,6 +179,27 @@ static int (*_add_next_index_stringl)(zval *, const char *, uint, int) = &add_ne
 #undef RETURN_STRINGL
 #define RETURN_STRINGL(s, l) { RETVAL_STRINGL(s, l); return; }
 
+static int (*_call_user_function)(HashTable *, zval **, zval *, zval *, zend_uint, zval *[] TSRMLS_DC) = &call_user_function;
+#define call_user_function(function_table, object, function_name, retval_ptr, param_count, params) \
+    inline_call_user_function(function_table, object, function_name, retval_ptr, param_count, params TSRMLS_CC)
+
+static zend_always_inline int
+inline_call_user_function(HashTable *function_table, zval *object, zval *function_name, zval *retval_ptr, zend_uint param_count, zval params[] TSRMLS_DC)
+{
+    int i, ret;
+    zval **_params = NULL;
+    if (!params) param_count = 0;
+    if (param_count > 0) {
+        _params = ecalloc(param_count, sizeof(zval *));
+        for (i = 0; i < param_count; i++) {
+            _params[i] = &params[i];
+        }
+    }
+    ret = _call_user_function(function_table, &object, function_name, retval_ptr, param_count, _params TSRMLS_CC);
+    if (_params) efree(_params);
+    return ret;
+}
+
 #else
 #include <ext/standard/php_smart_string.h>
 #endif
