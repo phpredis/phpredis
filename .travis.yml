@@ -6,7 +6,7 @@ php:
   - 5.5
   - 5.6
 before_install: phpize
-install: ./configure --prefix=/usr && sudo make install
+install: ./configure CFLAGS=-Wall --prefix=/usr && sudo make install
 before_script:
   - gem install redis
   - mkdir -p tests/nodes/ && echo >> tests/nodes/nodemap
