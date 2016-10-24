@@ -668,7 +668,7 @@ PHP_METHOD(RedisArray, keys)
 	}
 
 	/* Set up our function call (KEYS) */
-	ZVAL_STRING(&z_fun, "KEYS", 0);
+	ZVAL_STRINGL(&z_fun, "KEYS", 4, 0);
 
 	/* We will be passing with one string argument (the pattern) */
 	ZVAL_STRINGL(z_args, pattern, pattern_len, 0);
@@ -706,7 +706,7 @@ PHP_METHOD(RedisArray, getOption)
 	}
 
 	/* prepare call */
-	ZVAL_STRING(&z_fun, "getOption", 0);
+	ZVAL_STRINGL(&z_fun, "getOption", 9, 0);
 
 	/* copy arg */
 	ZVAL_LONG(&z_args[0], opt);
@@ -742,7 +742,7 @@ PHP_METHOD(RedisArray, setOption)
 	}
 
 	/* prepare call */
-	ZVAL_STRING(&z_fun, "setOption", 0);
+	ZVAL_STRINGL(&z_fun, "setOption", 9, 0);
 
 	/* copy args */
 	ZVAL_LONG(&z_args[0], opt);
@@ -777,7 +777,7 @@ PHP_METHOD(RedisArray, select)
 	}
 
 	/* prepare call */
-	ZVAL_STRING(&z_fun, "select", 0);
+	ZVAL_STRINGL(&z_fun, "select", 6,  0);
 
 	/* copy args */
     ZVAL_LONG(&z_args[0], opt);
@@ -845,7 +845,7 @@ PHP_METHOD(RedisArray, mget)
 	}
 
 	/* prepare call */
-	ZVAL_STRING(&z_fun, "MGET", 0);
+	ZVAL_STRINGL(&z_fun, "MGET", 4, 0);
 
 	/* init data structures */
 	h_keys = Z_ARRVAL_P(z_keys);
@@ -1057,7 +1057,7 @@ PHP_METHOD(RedisArray, mset)
 		}
 
         /* prepare call */
-        ZVAL_STRING(&z_fun, "MSET", 0);
+        ZVAL_STRINGL(&z_fun, "MSET", 4, 0);
         redis_inst = &ra->redis[n];
 		if(ra->index) { /* add MULTI */
 			ra_index_multi(redis_inst, MULTI TSRMLS_CC);
@@ -1138,7 +1138,7 @@ PHP_METHOD(RedisArray, del)
 	}
 
 	/* prepare call */
-	ZVAL_STRING(&z_fun, "DEL", 0);
+	ZVAL_STRINGL(&z_fun, "DEL", 3, 0);
 
 	/* init data structures */
 	h_keys = Z_ARRVAL_P(z_keys);

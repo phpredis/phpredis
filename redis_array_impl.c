@@ -39,7 +39,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 	RedisSock *redis_sock  = NULL;
 
 	/* function calls on the Redis object */
-	ZVAL_STRING(&z_cons, "__construct", 0);
+	ZVAL_STRINGL(&z_cons, "__construct", 11, 0);
 
 	/* init connections */
 	for (zend_hash_internal_pointer_reset(hosts); zend_hash_has_more_elements(hosts) == SUCCESS; zend_hash_move_forward(hosts))
@@ -394,8 +394,7 @@ char *
 ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS_DC) {
 
 	char *out;
-	zval z_ret;
-	zval *z_argv0;
+	zval z_ret, z_argv[1];
 
 	/* check that we can call the extractor function */
 	if(!zend_is_callable_ex(ra->z_fun, NULL, 0, NULL, NULL, NULL, NULL TSRMLS_CC)) {
@@ -405,10 +404,9 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 	/* convert_to_string(ra->z_fun); */
 
 	/* call extraction function */
-	MAKE_STD_ZVAL(z_argv0);
-	ZVAL_STRINGL(z_argv0, key, key_len, 0);
-	call_user_function(EG(function_table), NULL, ra->z_fun, &z_ret, 1, z_argv0);
-	efree(z_argv0);
+	INIT_ZVAL(z_argv[0]);
+	ZVAL_STRINGL(&z_argv[0], key, key_len, 0);
+	call_user_function(EG(function_table), NULL, ra->z_fun, &z_ret, 1, z_argv);
 
 	if(Z_TYPE(z_ret) != IS_STRING) {
 		zval_dtor(&z_ret);
@@ -538,7 +536,7 @@ ra_index_multi(zval *z_redis, long multi_value TSRMLS_DC) {
 	zval z_args[1];
 
 	/* run MULTI */
-	ZVAL_STRING(&z_fun_multi, "MULTI", 0);
+	ZVAL_STRINGL(&z_fun_multi, "MULTI", 5, 0);
     INIT_ZVAL(z_args[0]);
     ZVAL_LONG(&z_args[0], multi_value);
     call_user_function(&redis_ce->function_table, z_redis, &z_fun_multi, &z_ret, 1, z_args);
@@ -633,7 +631,7 @@ ra_index_exec(zval *z_redis, zval *return_value, int keep_all TSRMLS_DC) {
 	zval z_fun_exec, z_ret, *zp_tmp;
 
 	/* run EXEC */
-	ZVAL_STRING(&z_fun_exec, "EXEC", 0);
+	ZVAL_STRINGL(&z_fun_exec, "EXEC", 4, 0);
 	call_user_function(&redis_ce->function_table, z_redis, &z_fun_exec, &z_ret, 0, NULL);
 
 
@@ -661,7 +659,7 @@ ra_index_discard(zval *z_redis, zval *return_value TSRMLS_DC) {
 	zval z_fun_discard, z_ret;
 
 	/* run DISCARD */
-	ZVAL_STRING(&z_fun_discard, "DISCARD", 0);
+	ZVAL_STRINGL(&z_fun_discard, "DISCARD", 7, 0);
 	call_user_function(&redis_ce->function_table, z_redis, &z_fun_discard, &z_ret, 0, NULL);
 
 	zval_dtor(&z_ret);
@@ -673,7 +671,7 @@ ra_index_unwatch(zval *z_redis, zval *return_value TSRMLS_DC) {
 	zval z_fun_unwatch, z_ret;
 
 	/* run UNWATCH */
-	ZVAL_STRING(&z_fun_unwatch, "UNWATCH", 0);
+	ZVAL_STRINGL(&z_fun_unwatch, "UNWATCH", 7, 0);
 	call_user_function(&redis_ce->function_table, z_redis, &z_fun_unwatch, &z_ret, 0, NULL);
 
 	zval_dtor(&z_ret);
@@ -701,20 +699,19 @@ static long
 ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, const char *arg TSRMLS_DC) {
 
 	long count, i;
-	zval z_fun_smembers, z_ret, *z_arg, *z_data_p;
+	zval z_fun_smembers, z_ret, z_arg[1], *z_data_p;
 	HashTable *h_keys;
 	char *key;
 	int key_len;
 
 	/* arg */
-    MAKE_STD_ZVAL(z_arg);
-    ZVAL_STRING(z_arg, arg, 1);
+    INIT_ZVAL(z_arg[0]);
+    ZVAL_STRING(&z_arg[0], arg, 1);
 
 	/* run SMEMBERS */
 	ZVAL_STRING(&z_fun_smembers, cmd, 0);
     call_user_function(&redis_ce->function_table, z_redis, &z_fun_smembers, &z_ret, 1, z_arg);
-    zval_dtor(z_arg);
-    efree(z_arg);
+    zval_dtor(&z_arg[0]);
 	if(Z_TYPE(z_ret) != IS_ARRAY) { /* failure */
 		return -1;	/* TODO: log error. */
 	}
@@ -747,7 +744,7 @@ static zend_bool
 ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long *res TSRMLS_DC) {
 
 	int i;
-	zval z_fun_type, z_ret, *z_arg;
+	zval z_fun_type, z_ret, z_arg[1];
 	zval *z_data;
 	long success = 1;
 
@@ -755,8 +752,8 @@ ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long 
 	ra_index_multi(z_from, PIPELINE TSRMLS_CC);
 
 	/* prepare args */
-    MAKE_STD_ZVAL(z_arg);
-	ZVAL_STRINGL(z_arg, key, key_len, 0);
+    INIT_ZVAL(z_arg[0]);
+	ZVAL_STRINGL(&z_arg[0], key, key_len, 0);
 
 	ZVAL_STRINGL(&z_fun_type, "TYPE", 4, 0);
 	/* run TYPE */
@@ -765,8 +762,6 @@ ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long 
 	ZVAL_STRINGL(&z_fun_type, "TTL", 3, 0);
 	/* run TYPE */
 	call_user_function(&redis_ce->function_table, z_redis, &z_fun_type, &z_ret, 1, z_arg);
-
-    efree(z_arg);
 
 	/* Get the result from the pipeline. */
 	ra_index_exec(z_from, &z_ret, 1 TSRMLS_CC);
@@ -816,17 +811,16 @@ ra_remove_from_index(zval *z_redis, const char *key, int key_len TSRMLS_DC) {
 static zend_bool
 ra_del_key(const char *key, int key_len, zval *z_from TSRMLS_DC) {
 
-	zval z_fun_del, z_ret, *z_args;
+	zval z_fun_del, z_ret, z_args[1];
 
 	/* in a transaction */
 	ra_index_multi(z_from, MULTI TSRMLS_CC);
 
 	/* run DEL on source */
-	MAKE_STD_ZVAL(z_args);
+	INIT_ZVAL(z_args[0]);
 	ZVAL_STRINGL(&z_fun_del, "DEL", 3, 0);
-	ZVAL_STRINGL(z_args, key, key_len, 0);
+	ZVAL_STRINGL(&z_args[0], key, key_len, 0);
 	call_user_function(&redis_ce->function_table, z_from, &z_fun_del, &z_ret, 1, z_args);
-	efree(z_args);
 
 	/* remove key from index */
 	ra_remove_from_index(z_from, key, key_len TSRMLS_CC);
