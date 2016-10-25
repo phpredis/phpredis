@@ -170,12 +170,25 @@ typedef zend_rsrc_list_entry zend_resource;
 static int (*_add_next_index_stringl)(zval *, const char *, uint, int) = &add_next_index_stringl;
 #define add_next_index_stringl(arg, str, length) _add_next_index_stringl(arg, str, length, 1);
 
+#undef ZVAL_STRING
+#define ZVAL_STRING(z, s) do { \
+    const char *_s=(s); \
+    ZVAL_STRINGL(z, _s, strlen(_s)); \
+} while (0)
 #undef RETVAL_STRING
-#define RETVAL_STRING(s) ZVAL_STRING(return_value, s, 1)
+#define RETVAL_STRING(s) ZVAL_STRING(return_value, s)
 #undef RETURN_STRING
 #define RETURN_STRING(s) { RETVAL_STRING(s); return; }
+#undef ZVAL_STRINGL
+#define ZVAL_STRINGL(z, s, l) do { \
+    const char *__s=(s); int __l=l; \
+    zval *__z = (z); \
+    Z_STRLEN_P(__z) = __l; \
+    Z_STRVAL_P(__z) = estrndup(__s, __l); \
+    Z_TYPE_P(__z) = IS_STRING; \
+} while(0)
 #undef RETVAL_STRINGL
-#define RETVAL_STRINGL(s, l) ZVAL_STRINGL(return_value, s, l, 1)
+#define RETVAL_STRINGL(s, l) ZVAL_STRINGL(return_value, s, l)
 #undef RETURN_STRINGL
 #define RETURN_STRINGL(s, l) { RETVAL_STRINGL(s, l); return; }
 

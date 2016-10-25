@@ -39,13 +39,14 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 	RedisSock *redis_sock  = NULL;
 
 	/* function calls on the Redis object */
-	ZVAL_STRINGL(&z_cons, "__construct", 11, 0);
+	ZVAL_STRINGL(&z_cons, "__construct", 11);
 
 	/* init connections */
 	for (zend_hash_internal_pointer_reset(hosts); zend_hash_has_more_elements(hosts) == SUCCESS; zend_hash_move_forward(hosts))
 	{
 		if ((zpData = zend_hash_get_current_data(hosts)) == NULL || Z_TYPE_P(zpData) != IS_STRING)
 		{
+            zval_dtor(&z_cons);
 			for(i=0;i<ra->count;i++) {
 				zval_dtor(&ra->redis[i]);
 				efree(ra->hosts[i]);
@@ -101,6 +102,8 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 
 		ra->count = ++i;
 	}
+
+    zval_dtor(&z_cons);
 
 	return ra;
 }
@@ -405,10 +408,11 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 
 	/* call extraction function */
 	INIT_ZVAL(z_argv[0]);
-	ZVAL_STRINGL(&z_argv[0], key, key_len, 0);
+	ZVAL_STRINGL(&z_argv[0], key, key_len);
 	call_user_function(EG(function_table), NULL, ra->z_fun, &z_ret, 1, z_argv);
 
 	if(Z_TYPE(z_ret) != IS_STRING) {
+		zval_dtor(&z_argv[0]);
 		zval_dtor(&z_ret);
 		return NULL;
 	}
@@ -416,6 +420,7 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 	*out_len = Z_STRLEN(z_ret);
     out = estrndup(Z_STRVAL(z_ret), *out_len);
 
+	zval_dtor(&z_argv[0]);
 	zval_dtor(&z_ret);
 	return out;
 }
@@ -452,15 +457,17 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
 
 	/* call extraction function */
     INIT_ZVAL(z_argv[0]);
-    ZVAL_STRINGL(&z_argv[0], key, key_len, 0);
+    ZVAL_STRINGL(&z_argv[0], key, key_len);
     call_user_function(EG(function_table), NULL, ra->z_dist, &z_ret, 1, z_argv);
 
 	if(Z_TYPE(z_ret) != IS_LONG) {
+		zval_dtor(&z_argv[0]);
 		zval_dtor(&z_ret);
 		return 0;
 	}
 
 	*pos = Z_LVAL(z_ret);
+	zval_dtor(&z_argv[0]);
 	zval_dtor(&z_ret);
 	return 1;
 }
@@ -536,10 +543,11 @@ ra_index_multi(zval *z_redis, long multi_value TSRMLS_DC) {
 	zval z_args[1];
 
 	/* run MULTI */
-	ZVAL_STRINGL(&z_fun_multi, "MULTI", 5, 0);
+	ZVAL_STRINGL(&z_fun_multi, "MULTI", 5);
     INIT_ZVAL(z_args[0]);
     ZVAL_LONG(&z_args[0], multi_value);
     call_user_function(&redis_ce->function_table, z_redis, &z_fun_multi, &z_ret, 1, z_args);
+    zval_dtor(&z_fun_multi);
 }
 
 static void
@@ -553,9 +561,9 @@ ra_index_change_keys(const char *cmd, zval *z_keys, zval *z_redis TSRMLS_DC) {
     z_args = ecalloc(argc, sizeof(zval));
 
 	/* prepare first parameters */
-	ZVAL_STRING(&z_fun, cmd, 0);
+	ZVAL_STRING(&z_fun, cmd);
     INIT_ZVAL(z_args[0]);
-    ZVAL_STRINGL(&z_args[0], PHPREDIS_INDEX_NAME, sizeof(PHPREDIS_INDEX_NAME) - 1, 0);
+    ZVAL_STRINGL(&z_args[0], PHPREDIS_INDEX_NAME, sizeof(PHPREDIS_INDEX_NAME) - 1);
 
 	/* prepare keys */
 	for(i = 0; i < argc - 1; ++i) {
@@ -567,6 +575,8 @@ ra_index_change_keys(const char *cmd, zval *z_keys, zval *z_redis TSRMLS_DC) {
     call_user_function(&redis_ce->function_table, z_redis, &z_fun, &z_ret, argc, z_args);
 
 	/* don't dtor z_ret, since we're returning z_redis */
+    zval_dtor(&z_args[0]);
+    zval_dtor(&z_fun);
 	efree(z_args);		/* free container */
 }
 
@@ -594,7 +604,7 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
         MAKE_STD_ZVAL(z_new);
 
         if (zkey) {
-            ZVAL_STRINGL(z_new, zkey->val, zkey->len, 1);
+            ZVAL_STRINGL(z_new, zkey->val, zkey->len);
         } else {
             ZVAL_LONG(z_new, idx);
         }
@@ -614,15 +624,18 @@ ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC) {
     zval z_fun_sadd, z_ret, z_args[2];
 
 	/* prepare args */
-	ZVAL_STRINGL(&z_fun_sadd, "SADD", 4, 0);
+	ZVAL_STRINGL(&z_fun_sadd, "SADD", 4);
 
     INIT_ZVAL(z_args[0]);
-    ZVAL_STRINGL(&z_args[0], PHPREDIS_INDEX_NAME, sizeof(PHPREDIS_INDEX_NAME) - 1, 0);
+    ZVAL_STRINGL(&z_args[0], PHPREDIS_INDEX_NAME, sizeof(PHPREDIS_INDEX_NAME) - 1);
     INIT_ZVAL(z_args[1]);
-    ZVAL_STRINGL(&z_args[1], key, key_len, 0);
+    ZVAL_STRINGL(&z_args[1], key, key_len);
 
 	/* run SADD */
     call_user_function(&redis_ce->function_table, z_redis, &z_fun_sadd, &z_ret, 2, z_args);
+    zval_dtor(&z_fun_sadd);
+    zval_dtor(&z_args[1]);
+    zval_dtor(&z_args[0]);
 }
 
 void
@@ -631,9 +644,9 @@ ra_index_exec(zval *z_redis, zval *return_value, int keep_all TSRMLS_DC) {
 	zval z_fun_exec, z_ret, *zp_tmp;
 
 	/* run EXEC */
-	ZVAL_STRINGL(&z_fun_exec, "EXEC", 4, 0);
+	ZVAL_STRINGL(&z_fun_exec, "EXEC", 4);
 	call_user_function(&redis_ce->function_table, z_redis, &z_fun_exec, &z_ret, 0, NULL);
-
+    zval_dtor(&z_fun_exec);
 
 	/* extract first element of exec array and put into return_value. */
 	if(Z_TYPE(z_ret) == IS_ARRAY) {
@@ -659,9 +672,10 @@ ra_index_discard(zval *z_redis, zval *return_value TSRMLS_DC) {
 	zval z_fun_discard, z_ret;
 
 	/* run DISCARD */
-	ZVAL_STRINGL(&z_fun_discard, "DISCARD", 7, 0);
+	ZVAL_STRINGL(&z_fun_discard, "DISCARD", 7);
 	call_user_function(&redis_ce->function_table, z_redis, &z_fun_discard, &z_ret, 0, NULL);
 
+	zval_dtor(&z_fun_discard);
 	zval_dtor(&z_ret);
 }
 
@@ -671,9 +685,10 @@ ra_index_unwatch(zval *z_redis, zval *return_value TSRMLS_DC) {
 	zval z_fun_unwatch, z_ret;
 
 	/* run UNWATCH */
-	ZVAL_STRINGL(&z_fun_unwatch, "UNWATCH", 7, 0);
+	ZVAL_STRINGL(&z_fun_unwatch, "UNWATCH", 7);
 	call_user_function(&redis_ce->function_table, z_redis, &z_fun_unwatch, &z_ret, 0, NULL);
 
+	zval_dtor(&z_fun_unwatch);
 	zval_dtor(&z_ret);
 }
 
@@ -706,11 +721,12 @@ ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, con
 
 	/* arg */
     INIT_ZVAL(z_arg[0]);
-    ZVAL_STRING(&z_arg[0], arg, 1);
+    ZVAL_STRING(&z_arg[0], arg);
 
 	/* run SMEMBERS */
-	ZVAL_STRING(&z_fun_smembers, cmd, 0);
+	ZVAL_STRING(&z_fun_smembers, cmd);
     call_user_function(&redis_ce->function_table, z_redis, &z_fun_smembers, &z_ret, 1, z_arg);
+    zval_dtor(&z_fun_smembers);
     zval_dtor(&z_arg[0]);
 	if(Z_TYPE(z_ret) != IS_ARRAY) { /* failure */
 		return -1;	/* TODO: log error. */
@@ -753,15 +769,17 @@ ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long 
 
 	/* prepare args */
     INIT_ZVAL(z_arg[0]);
-	ZVAL_STRINGL(&z_arg[0], key, key_len, 0);
+	ZVAL_STRINGL(&z_arg[0], key, key_len);
 
-	ZVAL_STRINGL(&z_fun_type, "TYPE", 4, 0);
+	ZVAL_STRINGL(&z_fun_type, "TYPE", 4);
 	/* run TYPE */
 	call_user_function(&redis_ce->function_table, z_redis, &z_fun_type, &z_ret, 1, z_arg);
+    zval_dtor(&z_fun_type);
 
-	ZVAL_STRINGL(&z_fun_type, "TTL", 3, 0);
+	ZVAL_STRINGL(&z_fun_type, "TTL", 3);
 	/* run TYPE */
 	call_user_function(&redis_ce->function_table, z_redis, &z_fun_type, &z_ret, 1, z_arg);
+    zval_dtor(&z_fun_type);
 
 	/* Get the result from the pipeline. */
 	ra_index_exec(z_from, &z_ret, 1 TSRMLS_CC);
@@ -779,6 +797,7 @@ ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long 
 			res[i++] = Z_LVAL_P(z_data);
 		}
 	}
+	zval_dtor(&z_arg[0]);
 	zval_dtor(&z_ret);
 	return success;
 }
@@ -787,23 +806,22 @@ ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long 
 static void
 ra_remove_from_index(zval *z_redis, const char *key, int key_len TSRMLS_DC) {
 
-	zval z_fun_srem, z_ret, *z_args;
+	zval z_fun_srem, z_ret, z_args[2];
 
-    z_args = ecalloc(2, sizeof(zval));
     INIT_ZVAL(z_args[0]);
     INIT_ZVAL(z_args[1]);
 
 	/* run SREM on source index */
-	ZVAL_STRINGL(&z_fun_srem, "SREM", 4, 0);
-    ZVAL_STRINGL(&z_args[0], PHPREDIS_INDEX_NAME, sizeof(PHPREDIS_INDEX_NAME) - 1, 1);
-    ZVAL_STRINGL(&z_args[1], key, key_len, 1);
+	ZVAL_STRINGL(&z_fun_srem, "SREM", 4);
+    ZVAL_STRINGL(&z_args[0], PHPREDIS_INDEX_NAME, sizeof(PHPREDIS_INDEX_NAME) - 1);
+    ZVAL_STRINGL(&z_args[1], key, key_len);
 
     call_user_function(&redis_ce->function_table, z_redis, &z_fun_srem, &z_ret, 2, z_args);
 
     /* cleanup */
-    zval_dtor(&z_args[0]);
+    zval_dtor(&z_fun_srem);
     zval_dtor(&z_args[1]);
-    efree(z_args);
+    zval_dtor(&z_args[0]);
 }
 
 
@@ -818,9 +836,11 @@ ra_del_key(const char *key, int key_len, zval *z_from TSRMLS_DC) {
 
 	/* run DEL on source */
 	INIT_ZVAL(z_args[0]);
-	ZVAL_STRINGL(&z_fun_del, "DEL", 3, 0);
-	ZVAL_STRINGL(&z_args[0], key, key_len, 0);
+	ZVAL_STRINGL(&z_fun_del, "DEL", 3);
+	ZVAL_STRINGL(&z_args[0], key, key_len);
 	call_user_function(&redis_ce->function_table, z_from, &z_fun_del, &z_ret, 1, z_args);
+    zval_dtor(&z_fun_del);
+    zval_dtor(&z_args[0]);
 
 	/* remove key from index */
 	ra_remove_from_index(z_from, key, key_len TSRMLS_CC);
@@ -839,10 +859,12 @@ ra_expire_key(const char *key, int key_len, zval *z_to, long ttl TSRMLS_DC) {
 	if (ttl > 0)
 	{
 		/* run EXPIRE on target */
-		ZVAL_STRINGL(&z_fun_expire, "EXPIRE", 6, 0);
-        ZVAL_STRINGL(&z_args[0], key, key_len, 0);
+		ZVAL_STRINGL(&z_fun_expire, "EXPIRE", 6);
+        ZVAL_STRINGL(&z_args[0], key, key_len);
         ZVAL_LONG(&z_args[1], ttl);
         call_user_function(&redis_ce->function_table, z_to, &z_fun_expire, &z_ret, 2, z_args);
+        zval_dtor(&z_fun_expire);
+        zval_dtor(&z_args[0]);
 	}
 
 	return 1;
@@ -858,15 +880,20 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	ulong idx;
 
 	/* run ZRANGE key 0 -1 WITHSCORES on source */
-	ZVAL_STRINGL(&z_fun_zrange, "ZRANGE", 6, 0);
+	ZVAL_STRINGL(&z_fun_zrange, "ZRANGE", 6);
 	for(i = 0; i < 4; ++i) {
 		INIT_ZVAL(z_args[i]);
 	}
-	ZVAL_STRINGL(&z_args[0], key, key_len, 0);
-	ZVAL_STRINGL(&z_args[1], "0", 1, 0);
-	ZVAL_STRINGL(&z_args[2], "-1", 2, 0);
+	ZVAL_STRINGL(&z_args[0], key, key_len);
+	ZVAL_STRINGL(&z_args[1], "0", 1);
+	ZVAL_STRINGL(&z_args[2], "-1", 2);
 	ZVAL_BOOL(&z_args[3], 1);
 	call_user_function(&redis_ce->function_table, z_from, &z_fun_zrange, &z_ret, 4, z_args);
+    zval_dtor(&z_fun_zrange);
+    zval_dtor(&z_args[2]);
+    zval_dtor(&z_args[1]);
+    zval_dtor(&z_args[0]);
+
 
 	if(Z_TYPE(z_ret) != IS_ARRAY) { /* key not found or replaced */
 		/* TODO: report? */
@@ -881,7 +908,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
     z_zadd_args = ecalloc((1 + 2*count), sizeof(zval));
 
     INIT_ZVAL(z_zadd_args[0]);
-    ZVAL_STRINGL(&z_zadd_args[0], key, key_len, 0);
+    ZVAL_STRINGL(&z_zadd_args[0], key, key_len);
 
     i = 1;
     ZEND_HASH_FOREACH_KEY_VAL(h_zset_vals, idx, zkey, z_score_p) {
@@ -892,7 +919,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 		/* add value */
         INIT_ZVAL(z_zadd_args[i+1]);
         if (zkey) {
-            ZVAL_STRINGL(&z_zadd_args[i+1], zkey->val, zkey->len - 1, 0);
+            ZVAL_STRINGL(&z_zadd_args[i+1], zkey->val, zkey->len - 1);
         } else {
             ZVAL_LONG(&z_zadd_args[i+1], (long)idx);
         }
@@ -900,16 +927,20 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	} ZEND_HASH_FOREACH_END();
 
 	/* run ZADD on target */
-	ZVAL_STRINGL(&z_fun_zadd, "ZADD", 4, 0);
+	ZVAL_STRINGL(&z_fun_zadd, "ZADD", 4);
     call_user_function(&redis_ce->function_table, z_to, &z_fun_zadd, &z_ret_dest, 1 + 2 * count, z_zadd_args);
 
 	/* Expire if needed */
 	ra_expire_key(key, key_len, z_to, ttl TSRMLS_CC);
 
 	/* cleanup */
+    zval_dtor(&z_fun_zadd);
     zval_dtor(&z_ret);
 
     /* Free the array itself */
+    for (i = 0; i < 1 + 2 * count; i++) {
+        zval_dtor(&z_zadd_args[i]);
+    }
     efree(z_zadd_args);
 
 	return 1;
@@ -921,9 +952,10 @@ ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to, long ttl 
     zval z_fun_get, z_fun_set, z_ret, z_args[3];
 
 	/* run GET on source */
-	ZVAL_STRINGL(&z_fun_get, "GET", 3, 0);
-    ZVAL_STRINGL(&z_args[0], key, key_len, 0);
+	ZVAL_STRINGL(&z_fun_get, "GET", 3);
+    ZVAL_STRINGL(&z_args[0], key, key_len);
     call_user_function(&redis_ce->function_table, z_from, &z_fun_get, &z_ret, 1, z_args);
+    zval_dtor(&z_fun_get);
 
 	if(Z_TYPE(z_ret) != IS_STRING) { /* key not found or replaced */
 		/* TODO: report? */
@@ -932,52 +964,55 @@ ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to, long ttl 
 
 	/* run SET on target */
 	if (ttl > 0) {
-        ZVAL_STRINGL(&z_fun_set, "SETEX", 5, 0);
-        ZVAL_STRINGL(&z_args[0], key, key_len, 0);
+        ZVAL_STRINGL(&z_fun_set, "SETEX", 5);
         ZVAL_LONG(&z_args[1], ttl);
-        ZVAL_STRINGL(&z_args[2], Z_STRVAL(z_ret), Z_STRLEN(z_ret), 1); /* copy z_ret to arg 1 */
+        ZVAL_STRINGL(&z_args[2], Z_STRVAL(z_ret), Z_STRLEN(z_ret)); /* copy z_ret to arg 1 */
 		zval_dtor(&z_ret); /* free memory from our previous call */
         call_user_function(&redis_ce->function_table, z_to, &z_fun_set, &z_ret, 3, z_args);
 		/* cleanup */
         zval_dtor(&z_args[2]);
     } else {
-        ZVAL_STRINGL(&z_fun_set, "SET", 3, 0);
-        ZVAL_STRINGL(&z_args[0], key, key_len, 0);
-        ZVAL_STRINGL(&z_args[1], Z_STRVAL(z_ret), Z_STRLEN(z_ret), 1); /* copy z_ret to arg 1 */
+        ZVAL_STRINGL(&z_fun_set, "SET", 3);
+        ZVAL_STRINGL(&z_args[1], Z_STRVAL(z_ret), Z_STRLEN(z_ret)); /* copy z_ret to arg 1 */
 		zval_dtor(&z_ret); /* free memory from our previous return value */
         call_user_function(&redis_ce->function_table, z_to, &z_fun_set, &z_ret, 2, z_args);
 		/* cleanup */
         zval_dtor(&z_args[1]);
 	}
+    zval_dtor(&z_fun_set);
+    zval_dtor(&z_args[0]);
 
 	return 1;
 }
 
 static zend_bool
 ra_move_hash(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TSRMLS_DC) {
-	zval z_fun_hgetall, z_fun_hmset, z_ret, z_ret_dest, z_args[2];
+	zval z_fun_hgetall, z_fun_hmset, z_ret_dest, z_args[2];
 
 	/* run HGETALL on source */
-	ZVAL_STRINGL(&z_fun_hgetall, "HGETALL", 7, 0);
-	ZVAL_STRINGL(&z_args[0], key, key_len, 0);
-	call_user_function(&redis_ce->function_table, z_from, &z_fun_hgetall, &z_ret, 1, z_args);
+	ZVAL_STRINGL(&z_fun_hgetall, "HGETALL", 7);
+	ZVAL_STRINGL(&z_args[0], key, key_len);
+	call_user_function(&redis_ce->function_table, z_from, &z_fun_hgetall, &z_args[1], 1, z_args);
+    zval_dtor(&z_fun_hgetall);
 
-	if(Z_TYPE(z_ret) != IS_ARRAY) { /* key not found or replaced */
+	if (Z_TYPE(z_args[1]) != IS_ARRAY) { /* key not found or replaced */
 		/* TODO: report? */
+        zval_dtor(&z_args[1]);
+        zval_dtor(&z_args[0]);
 		return 0;
 	}
 
 	/* run HMSET on target */
-	ZVAL_STRINGL(&z_fun_hmset, "HMSET", 5, 0);
-	ZVAL_STRINGL(&z_args[0], key, key_len, 0);
-	z_args[1] = z_ret; /* copy z_ret to arg 1 */
+	ZVAL_STRINGL(&z_fun_hmset, "HMSET", 5);
 	call_user_function(&redis_ce->function_table, z_to, &z_fun_hmset, &z_ret_dest, 2, z_args);
+    zval_dtor(&z_fun_hmset);
 
 	/* Expire if needed */
 	ra_expire_key(key, key_len, z_to, ttl TSRMLS_CC);
 
 	/* cleanup */
-    zval_dtor(&z_ret);
+    zval_dtor(&z_args[1]);
+    zval_dtor(&z_args[0]);
 
 	return 1;
 }
@@ -992,22 +1027,23 @@ ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 	HashTable *h_set_vals;
 
 	/* run retrieval command on source */
-	ZVAL_STRING(&z_fun_retrieve, cmd_list[0], 0);	/* set the command */
+	ZVAL_STRING(&z_fun_retrieve, cmd_list[0]);	/* set the command */
 
     z_retrieve_args = ecalloc(list_count, sizeof(zval));
 	/* set the key */
     INIT_ZVAL(z_retrieve_args[0]);
-    ZVAL_STRINGL(&z_retrieve_args[0], key, key_len, 1);
+    ZVAL_STRINGL(&z_retrieve_args[0], key, key_len);
 
 	/* possibly add some other args if they were provided. */
 	for(i = 1; i < list_count; ++i) {
         INIT_ZVAL(z_retrieve_args[i]);
-        ZVAL_STRING(&z_retrieve_args[i], cmd_list[i], 1);
+        ZVAL_STRING(&z_retrieve_args[i], cmd_list[i]);
 	}
 
     call_user_function(&redis_ce->function_table, z_from, &z_fun_retrieve, &z_ret, list_count, z_retrieve_args);
 
 	/* cleanup */
+    zval_dtor(&z_fun_retrieve);
 	for(i = 0; i < list_count; ++i) {
         zval_dtor(&z_retrieve_args[i]);
 	}
@@ -1021,10 +1057,10 @@ ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 	/* run SADD/RPUSH on target */
 	h_set_vals = Z_ARRVAL(z_ret);
 	count = 1 + zend_hash_num_elements(h_set_vals);
-	ZVAL_STRING(&z_fun_sadd, cmd_add[0], 0);
+	ZVAL_STRING(&z_fun_sadd, cmd_add[0]);
     z_sadd_args = ecalloc(count, sizeof(zval));
     INIT_ZVAL(z_sadd_args[0]);
-    ZVAL_STRINGL(&z_sadd_args[0], key, key_len, 1);
+    ZVAL_STRINGL(&z_sadd_args[0], key, key_len);
 
     i = 1;
     ZEND_HASH_FOREACH_VAL(h_set_vals, z_data_p) {
@@ -1044,6 +1080,7 @@ ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 	ra_expire_key(key, key_len, z_to, ttl TSRMLS_CC);
 
 	/* cleanup */
+    zval_dtor(&z_fun_sadd);
     for (i = 0; i < count; i++) {
         zval_dtor(&z_sadd_args[i]);
     }
@@ -1131,7 +1168,7 @@ static void zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z
 
 	/* run cb(hostname, count) */
 	MAKE_STD_ZVAL(z_host);
-	ZVAL_STRING(z_host, hostname, 0);
+	ZVAL_STRING(z_host, hostname);
 	z_args[0] = &z_host;
 	MAKE_STD_ZVAL(z_count);
 	ZVAL_LONG(z_count, count);
@@ -1140,6 +1177,7 @@ static void zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z
 	zend_call_function(z_cb, z_cb_cache TSRMLS_CC);
 
 	/* cleanup */
+	zval_dtor(z_host);
 	efree(z_host);
 	efree(z_count);
 	if(z_ret)
