@@ -555,15 +555,6 @@ PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_D
     return NULL;
 }
 
-void add_constant_long(zend_class_entry *ce, char *name, int value) {
-    zval *constval;
-    constval = pemalloc(sizeof(zval), 1);
-    INIT_PZVAL(constval);
-    ZVAL_LONG(constval, value);
-    zend_hash_add(&ce->constants_table, name, 1 + strlen(name),
-        (void*)&constval, sizeof(zval*), NULL);
-}
-
 int
 integer_length(int i) {
     int sz = 0;
@@ -611,8 +602,7 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...)
     va_list ap;
     smart_string buf = {0};
     int l = strlen(keyword);
-    char *dbl_str;
-    int dbl_len;
+    zend_string *dbl_str;
 
     va_start(ap, format);
 
@@ -641,11 +631,11 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...)
             case 'f':
             case 'F': {
                 double d = va_arg(ap, double);
-                REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, d)
-                smart_string_append_long(&buf, dbl_len);
+                REDIS_DOUBLE_TO_STRING(dbl_str, d);
+                smart_string_append_long(&buf, dbl_str->len);
                 smart_string_appendl(&buf, _NL, sizeof(_NL) - 1);
-                smart_string_appendl(&buf, dbl_str, dbl_len);
-                efree(dbl_str);
+                smart_string_appendl(&buf, dbl_str->val, dbl_str->len);
+                zend_string_release(dbl_str);
             }
                 break;
 
@@ -692,8 +682,7 @@ redis_cmd_format(char **ret, char *format, ...) {
     smart_string buf = {0};
     va_list ap;
     char *p = format;
-    char *dbl_str;
-    int dbl_len;
+    zend_string *dbl_str;
 
     va_start(ap, format);
 
@@ -710,11 +699,11 @@ redis_cmd_format(char **ret, char *format, ...) {
                 case 'F':
                 case 'f': {
                     double d = va_arg(ap, double);
-                    REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, d)
-                    smart_string_append_long(&buf, dbl_len);
+                    REDIS_DOUBLE_TO_STRING(dbl_str, d);
+                    smart_string_append_long(&buf, dbl_str->len);
                     smart_string_appendl(&buf, _NL, sizeof(_NL) - 1);
-                    smart_string_appendl(&buf, dbl_str, dbl_len);
-                    efree(dbl_str);
+                    smart_string_appendl(&buf, dbl_str->val, dbl_str->len);
+                    zend_string_release(dbl_str);
                 }
                     break;
 
@@ -820,17 +809,17 @@ int redis_cmd_append_sstr_long(smart_string *str, long append) {
  * Append a double to a smart string command
  */
 int redis_cmd_append_sstr_dbl(smart_string *str, double value) {
-    char *dbl_str;
-    int dbl_len, retval;
+    zend_string *dbl_str;
+    int retval;
 
     /* Convert to double */
-    REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, value);
+    REDIS_DOUBLE_TO_STRING(dbl_str, value);
 
     // Append the string
-    retval = redis_cmd_append_sstr(str, dbl_str, dbl_len);
+    retval = redis_cmd_append_sstr(str, dbl_str->val, dbl_str->len);
 
     /* Free our double string */
-    efree(dbl_str);
+    zend_string_release(dbl_str);
 
     /* Return new length */
     return retval;

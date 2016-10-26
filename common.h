@@ -17,6 +17,10 @@ typedef struct {
     char *val;
 } zend_string;
 
+#define zend_string_release(s) do { \
+    if ((s) && (s)->val) efree((s)->val); \
+} while (0)
+
 #define ZEND_HASH_FOREACH_KEY_VAL(ht, _h, _key, _val) do { \
     HashPosition _hpos; \
     for (zend_hash_internal_pointer_reset_ex(ht, &_hpos); \

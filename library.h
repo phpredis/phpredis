@@ -7,7 +7,6 @@
 #define REDIS_CMD_INIT_SSTR_STATIC(sstr, argc, keyword) \
     redis_cmd_init_sstr(sstr, argc, keyword, sizeof(keyword)-1);
 
-void add_constant_long(zend_class_entry *ce, char *name, int value);
 int integer_length(int i);
 int redis_cmd_format(char **ret, char *format, ...);
 int redis_cmd_format_static(char **ret, char *keyword, char *format, ...);
@@ -85,17 +84,28 @@ PHP_REDIS_API int redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
 
 PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
 
+#if (PHP_MAJOR_VERSION < 7)
 #if ZEND_MODULE_API_NO >= 20100000
-#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) do { \
-	char dbl_decsep; \
-	dbl_decsep = '.'; \
-    dbl_str = _php_math_number_format_ex(dbl, 16, &dbl_decsep, 1, NULL, 0); \
-	dbl_len = strlen(dbl_str); \
-	} while (0);
+#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl) do { \
+    char dbl_decsep = '.'; \
+    zend_string _zstr = {0}; \
+    _zstr.val = _php_math_number_format_ex(dbl, 16, &dbl_decsep, 1, NULL, 0); \
+    _zstr.len = strlen(_zstr.val); \
+    dbl_str = &_zstr; \
+} while (0);
 #else
-#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl_len, dbl) \
-	dbl_str = _php_math_number_format(dbl, 16, '.', '\x00'); \
-	dbl_len = strlen(dbl_str);
+#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl) do { \
+    zend_string _zstr = {0}; \
+    _zstr.val = _php_math_number_format(dbl, 16, '.', '\x00'); \
+    _zstr.len = strlen(_zstr.val); \
+    dbl_str = &_zstr; \
+} while (0)
+#endif
+#else
+#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl) do { \
+    char dbl_decsep = '.'; \
+    dbl_str = _php_math_number_format_ex(dbl, 16, &dbl_decsep, 1, NULL, 0); \
+} while (0);
 #endif
 
 #endif
