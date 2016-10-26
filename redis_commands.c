@@ -552,7 +552,7 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
            /* Check for withscores and limit */
            if (IS_WITHSCORES_ARG(zkey->val, zkey->len)) {
-               *withscores = (Z_TYPE_P(z_ele) == IS_BOOL && Z_BVAL_P(z_ele) == 1);
+               *withscores = (ZEND_SAME_FAKE_TYPE(_IS_BOOL, Z_TYPE_P(z_ele)) && Z_LVAL_P(z_ele));
            } else if (IS_LIMIT_ARG(zkey->val, zkey->len) && Z_TYPE_P(z_ele) == IS_ARRAY) {
                 HashTable *htlimit = Z_ARRVAL_P(z_ele);
                 zval *zoff, *zcnt;
@@ -2472,8 +2472,8 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // ALPHA
     if (((z_ele = zend_hash_str_find(ht_opts, "alpha", sizeof("alpha") - 1)) != NULL ||
-         (z_ele = zend_hash_str_find(ht_opts, "ALPHA", sizeof("ALPHA") - 1)) != NULL
-        ) && Z_TYPE_P(z_ele) == IS_BOOL && Z_BVAL_P(z_ele) == 1
+         (z_ele = zend_hash_str_find(ht_opts, "ALPHA", sizeof("ALPHA") - 1)) != NULL) &&
+         (ZEND_SAME_FAKE_TYPE(_IS_BOOL, Z_TYPE_P(z_ele)) && Z_LVAL_P(z_ele))
     ) {
         add_next_index_stringl(z_argv, "ALPHA", sizeof("ALPHA") - 1);
     }

@@ -213,6 +213,12 @@ inline_call_user_function(HashTable *function_table, zval *object, zval *functio
     return ret;
 }
 
+#define _IS_BOOL IS_BOOL
+#define ZEND_SAME_FAKE_TYPE(faketype, realtype) ((faketype) == (realtype))
+
+static int (*_add_assoc_stringl_ex)(zval *, const char *, uint, char *, uint, int) = &add_assoc_stringl_ex;
+#define add_assoc_stringl_ex(_arg, _key, _key_len, _str, _length) _add_assoc_stringl_ex(_arg, _key, _key_len, _str, _length, 1)
+
 #else
 #include <ext/standard/php_smart_string.h>
 #endif

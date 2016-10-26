@@ -33,10 +33,11 @@
 #include "redis_array_impl.h"
 
 /* Simple macro to detect failure in a RedisArray call */
-#define RA_CALL_FAILED(rv, cmd) \
-    ((Z_TYPE_P(rv) == IS_BOOL && Z_BVAL_P(rv) == 0) || \
+#define RA_CALL_FAILED(rv, cmd) ( \
+    (ZEND_SAME_FAKE_TYPE(_IS_BOOL, Z_TYPE_P(rv)) && !Z_LVAL_P(rv)) || \
     (Z_TYPE_P(rv) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(rv)) == 0) || \
-    (Z_TYPE_P(rv) == IS_LONG && Z_LVAL_P(rv) == 0 && !strcasecmp(cmd, "TYPE"))) \
+    (Z_TYPE_P(rv) == IS_LONG && Z_LVAL_P(rv) == 0 && !strcasecmp(cmd, "TYPE")) \
+)
 
 extern zend_class_entry *redis_ce;
 zend_class_entry *redis_array_ce;
@@ -254,18 +255,18 @@ PHP_METHOD(RedisArray, __construct)
 		}
 
 		/* extract index option. */
-        if ((zpData = zend_hash_str_find(hOpts, "index", sizeof("index") - 1)) != NULL && Z_TYPE_P(zpData) == IS_BOOL) {
-            b_index = Z_BVAL_P(zpData);
+        if ((zpData = zend_hash_str_find(hOpts, "index", sizeof("index") - 1)) != NULL && ZEND_SAME_FAKE_TYPE(_IS_BOOL, Z_TYPE_P(zpData))) {
+            b_index = Z_LVAL_P(zpData);
 		}
 
 		/* extract autorehash option. */
-        if ((zpData = zend_hash_str_find(hOpts, "autorehash", sizeof("autorehash") - 1)) != NULL && Z_TYPE_P(zpData) == IS_BOOL) {
-            b_autorehash = Z_BVAL_P(zpData);
+        if ((zpData = zend_hash_str_find(hOpts, "autorehash", sizeof("autorehash") - 1)) != NULL && ZEND_SAME_FAKE_TYPE(_IS_BOOL, Z_TYPE_P(zpData))) {
+            b_autorehash = Z_LVAL_P(zpData);
 		}
 
 		/* pconnect */
-        if ((zpData = zend_hash_str_find(hOpts, "pconnect", sizeof("pconnect") - 1)) != NULL && Z_TYPE_P(zpData) == IS_BOOL) {
-            b_pconnect = Z_BVAL_P(zpData);
+        if ((zpData = zend_hash_str_find(hOpts, "pconnect", sizeof("pconnect") - 1)) != NULL && ZEND_SAME_FAKE_TYPE(_IS_BOOL, Z_TYPE_P(zpData))) {
+            b_pconnect = Z_LVAL_P(zpData);
 		}
 
 		/* extract retry_interval option. */
@@ -280,8 +281,8 @@ PHP_METHOD(RedisArray, __construct)
 		}
 
 		/* extract lazy connect option. */
-        if ((zpData = zend_hash_str_find(hOpts, "lazy_connect", sizeof("lazy_connect") - 1)) != NULL && Z_TYPE_P(zpData) == IS_BOOL) {
-			b_lazy_connect = Z_BVAL_P(zpData);
+        if ((zpData = zend_hash_str_find(hOpts, "lazy_connect", sizeof("lazy_connect") - 1)) != NULL && ZEND_SAME_FAKE_TYPE(_IS_BOOL, Z_TYPE_P(zpData))) {
+            b_lazy_connect = Z_LVAL_P(zpData);
 		}
 		
 		/* extract connect_timeout option */		
