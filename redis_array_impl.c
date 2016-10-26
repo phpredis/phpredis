@@ -1159,28 +1159,28 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 static void zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache,
 	const char *hostname, long count TSRMLS_DC) {
 
-	zval *z_ret = NULL, **z_args[2];
-	zval *z_host, *z_count;
+    zval *z_ret = NULL, z_args[2];
+    zval *z_host = &z_args[0], *z_count = &z_args[1];
 
-	z_cb->retval_ptr_ptr = &z_ret;
-	z_cb->params = (struct _zval_struct ***)&z_args;
+    ZVAL_STRING(z_host, hostname);
+    ZVAL_LONG(z_count, count);
+
+#if (PHP_MAJOR_VERSION < 7)
+    zval **z_args_pp[2] = { &z_host, &z_count };
+    z_cb->params = z_args_pp;
+    z_cb->retval_ptr_ptr = &z_ret;
+#else
+    z_cb->params = z_args;
+    z_cb->retval = z_ret;
+#endif
 	z_cb->param_count = 2;
 	z_cb->no_separation = 0;
 
 	/* run cb(hostname, count) */
-	MAKE_STD_ZVAL(z_host);
-	ZVAL_STRING(z_host, hostname);
-	z_args[0] = &z_host;
-	MAKE_STD_ZVAL(z_count);
-	ZVAL_LONG(z_count, count);
-	z_args[1] = &z_count;
-
 	zend_call_function(z_cb, z_cb_cache TSRMLS_CC);
 
 	/* cleanup */
-	zval_dtor(z_host);
-	efree(z_host);
-	efree(z_count);
+    zval_dtor(z_host);
 	if(z_ret)
 		efree(z_ret);
 }
