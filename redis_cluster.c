@@ -36,7 +36,13 @@ zend_class_entry *redis_cluster_ce;
 
 /* Exception handler */
 zend_class_entry *redis_cluster_exception_ce;
+
+#if (PHP_MAJOR_VERSION < 7)
 static zend_class_entry *spl_rte_ce = NULL;
+#else
+/* Handlers for RedisCluster */
+zend_object_handlers RedisCluster_handlers;
+#endif
 
 /* Argument info for HSCAN, SSCAN, HSCAN */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan_cl, 0, 0, 2)
@@ -263,14 +269,22 @@ PHPAPI zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC) {
 }
 
 /* Create redisCluster context */
+#if (PHP_MAJOR_VERSION < 7)
 zend_object_value
 create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
-    zend_object_value retval;
     redisCluster *cluster;
 
     // Allocate our actual struct
     cluster = emalloc(sizeof(redisCluster));
     memset(cluster, 0, sizeof(redisCluster));
+#else
+zend_object *
+create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
+    redisCluster *cluster;
+
+    // Allocate our actual struct
+    cluster = emalloc(sizeof(redisCluster) + sizeof(zval) * (class_type->default_properties_count - 1));
+#endif
     
     // We're not currently subscribed anywhere
     cluster->subscribed_slot = -1;
@@ -291,7 +305,8 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
 
     // Initialize it
     zend_object_std_init(&cluster->std, class_type TSRMLS_CC);
-
+#if (PHP_MAJOR_VERSION < 7)
+    zend_object_value retval;
 #if PHP_VERSION_ID < 50399
     zval *tmp;
 
@@ -306,6 +321,15 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
     retval.handlers = zend_get_std_object_handlers();
 
     return retval;
+#else
+	object_properties_init(&cluster->std, class_type);
+	memcpy(&RedisCluster_handlers, zend_get_std_object_handlers(), sizeof(RedisCluster_handlers));
+	RedisCluster_handlers.free_obj = free_cluster_context;
+
+	cluster->std.handlers = &RedisCluster_handlers;
+
+	return &cluster->std;
+#endif
 }
 
 /* Free redisCluster context */

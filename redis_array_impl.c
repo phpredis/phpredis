@@ -990,9 +990,10 @@ ra_move_hash(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 	zval z_fun_hgetall, z_fun_hmset, z_ret_dest, z_args[2];
 
 	/* run HGETALL on source */
-	ZVAL_STRINGL(&z_fun_hgetall, "HGETALL", 7);
-	ZVAL_STRINGL(&z_args[0], key, key_len);
-	call_user_function(&redis_ce->function_table, z_from, &z_fun_hgetall, &z_args[1], 1, z_args);
+    INIT_ZVAL(z_args[0]);
+    ZVAL_STRINGL(&z_args[0], key, key_len);
+    ZVAL_STRINGL(&z_fun_hgetall, "HGETALL", 7);
+    call_user_function(&redis_ce->function_table, z_from, &z_fun_hgetall, &z_args[1], 1, z_args);
     zval_dtor(&z_fun_hgetall);
 
 	if (Z_TYPE(z_args[1]) != IS_ARRAY) { /* key not found or replaced */
