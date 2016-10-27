@@ -222,8 +222,18 @@ inline_call_user_function(HashTable *function_table, zval *object, zval *functio
 #define _IS_BOOL IS_BOOL
 #define ZEND_SAME_FAKE_TYPE(faketype, realtype) ((faketype) == (realtype))
 
+#undef add_assoc_string
+#define add_assoc_string(__arg, __key, __str) add_assoc_string_ex(__arg, __key, strlen(__key), __str)
+static int (*_add_assoc_string_ex)(zval *, const char *, uint, char *, int) = &add_assoc_string_ex;
+#define add_assoc_string_ex(_arg, _key, _key_len, _str) _add_assoc_string_ex(_arg, _key, _key_len + 1, _str, 1)
+
 static int (*_add_assoc_stringl_ex)(zval *, const char *, uint, char *, uint, int) = &add_assoc_stringl_ex;
-#define add_assoc_stringl_ex(_arg, _key, _key_len, _str, _length) _add_assoc_stringl_ex(_arg, _key, _key_len, _str, _length, 1)
+#define add_assoc_stringl_ex(_arg, _key, _key_len, _str, _length) _add_assoc_stringl_ex(_arg, _key, _key_len + 1, _str, _length, 1)
+
+#undef add_assoc_zval
+#define add_assoc_zval(__arg, __key, __value) add_assoc_zval_ex(__arg, __key, strlen(__key), __value)
+static int (*_add_assoc_zval_ex)(zval *, const char *, uint, zval *) = &add_assoc_zval_ex;
+#define add_assoc_zval_ex(_arg, _key, _key_len, _value) _add_assoc_zval_ex(_arg, _key, _key_len + 1, _value);
 
 #else
 #include <ext/standard/php_smart_string.h>

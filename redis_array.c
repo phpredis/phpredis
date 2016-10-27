@@ -1057,7 +1057,7 @@ PHP_METHOD(RedisArray, mset)
 			zval_copy_ctor(z_tmp);
 			INIT_PZVAL(z_tmp);
 
-			add_assoc_zval_ex(z_argarray, keys[i], key_lens[i] + 1, z_tmp); /* +1 to count the \0 here */
+			add_assoc_zval_ex(z_argarray, keys[i], key_lens[i], z_tmp);
 			found++;
 		}
 
