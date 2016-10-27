@@ -17,6 +17,10 @@ typedef struct {
     char *val;
 } zend_string;
 
+#define zend_string_release(s) do { \
+    if ((s) && (s)->val) efree((s)->val); \
+} while (0)
+
 #define ZEND_HASH_FOREACH_KEY_VAL(ht, _h, _key, _val) do { \
     HashPosition _hpos; \
     for (zend_hash_internal_pointer_reset_ex(ht, &_hpos); \
@@ -167,6 +171,8 @@ inline_zend_get_parameters_array(int ht, int param_count, zval *argument_array T
 
 typedef zend_rsrc_list_entry zend_resource;
 
+static int (*_add_next_index_string)(zval *, const char *, int) = &add_next_index_string;
+#define add_next_index_string(arg, str) _add_next_index_string(arg, str, 1);
 static int (*_add_next_index_stringl)(zval *, const char *, uint, int) = &add_next_index_stringl;
 #define add_next_index_stringl(arg, str, length) _add_next_index_stringl(arg, str, length, 1);
 

@@ -1623,11 +1623,6 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
 {
     subscribeContext *sctx = (subscribeContext*)ctx;
     zval *z_tab, *z_tmp, *z_ret;
-#if (PHP_MAJOR_VERSION < 7)
-    zval **z_args[4];
-#else
-    zval z_args[4];
-#endif
     int pull=0;
 
 
@@ -1656,7 +1651,13 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
     }
 
     // Set up our callback pointers
+#if (PHP_MAJOR_VERSION < 7)
+    zval **z_args[4];
     sctx->cb.retval_ptr_ptr = &z_ret;
+#else
+    zval z_args[4];
+    sctx->cb.retval = z_ret;
+#endif
     sctx->cb.params = z_args;
     sctx->cb.no_separation = 0;
 

@@ -469,7 +469,7 @@ PHP_METHOD(RedisArray, _hosts)
 
 	array_init(return_value);
 	for(i = 0; i < ra->count; ++i) {
-		add_next_index_string(return_value, ra->hosts[i], 1);
+		add_next_index_string(return_value, ra->hosts[i]);
 	}
 }
 
