@@ -1931,7 +1931,7 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
             }
             efree(response);
         } else {
-            add_assoc_bool_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), 0);
+            add_assoc_bool_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), Z_STRLEN_P(z_keys[i]), 0);
         }
     zval_dtor(z_keys[i]);
     efree(z_keys[i]);

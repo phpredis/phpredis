@@ -502,25 +502,6 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 #define IS_LIMIT_ARG(s, l) \
     (l == sizeof("limit") && !strncasecmp(s,"limit",sizeof("limit")))
 
-/* Helper to get the long value stored in a zval, whether it's actually stored
- * as a long or is a string that contains a long */
-static int zval_get_long(zval *zv, long *lval)
-{
-    /* If it's already a long, just set and return success */
-    if (Z_TYPE_P(zv) == IS_LONG) {
-        *lval = Z_LVAL_P(zv);
-        return SUCCESS;
-    }
-
-    /* If our zval isn't a string, or doesn't translate into a long, fail */
-    if (Z_TYPE_P(zv) != IS_STRING || is_numeric_string(Z_STRVAL_P(zv), Z_STRLEN_P(zv), lval, NULL, 0) != IS_LONG) {
-        return FAILURE;
-    }
-
-    /* Success */
-    return SUCCESS;
-}
-
 int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                             char *kw, char **cmd, int *cmd_len, int *withscores,
                             short *slot, void **ctx)
@@ -562,13 +543,9 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     (zcnt = zend_hash_index_find(htlimit, 1)) != NULL
                 ) {
                     /* Set our limit if we can get valid longs from both args */
-                    has_limit = zval_get_long(zoff, &offset) == SUCCESS &&
-                                zval_get_long(zcnt, &count) == SUCCESS;
-
-                    /* Inform the user there is a problem if we don't have a limit */
-                    if (!has_limit) {
-                        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Offset and limit must be long values.  Ignoring.");
-                    }
+                    offset = zval_get_long(zoff);
+                    count = zval_get_long(zcnt);
+                    has_limit = 1;
                 }
            }
         } ZEND_HASH_FOREACH_END();

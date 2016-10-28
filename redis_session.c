@@ -242,8 +242,7 @@ PS_OPEN_FUNC(redis)
                 sapi_module.treat_data(PARSE_STRING, estrdup(url->query), params TSRMLS_CC);
 
                 if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "weight", sizeof("weight") - 1)) != NULL) {
-                    convert_to_long_ex(&param);
-                    weight = Z_LVAL_P(param);
+                    weight = zval_get_long(param);
                 }
                 if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "timeout", sizeof("timeout") - 1)) != NULL) {
                     timeout = atof(Z_STRVAL_P(param));
@@ -261,12 +260,10 @@ PS_OPEN_FUNC(redis)
                     auth = estrndup(Z_STRVAL_P(param), Z_STRLEN_P(param));
                 }
                 if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "database", sizeof("database") - 1)) != NULL) {
-                    convert_to_long_ex(&param);
-                    database = Z_LVAL_P(param);
+                    database = zval_get_long(param);
                 }
                 if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "retry_interval", sizeof("retry_interval") - 1)) != NULL) {
-                    convert_to_long_ex(&param);
-                    retry_interval = Z_LVAL_P(param);
+                    retry_interval = zval_get_long(param);
                 }
 
                 zval_ptr_dtor(&params);

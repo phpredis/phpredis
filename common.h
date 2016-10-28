@@ -54,6 +54,8 @@ typedef struct {
     } \
 } while(0)
 
+#define zend_hash_str_exists(ht, str, len) zend_hash_exists(ht, str, len + 1)
+
 static zend_always_inline zval *
 zend_hash_str_find(const HashTable *ht, const char *key, size_t len)
 {
@@ -72,6 +74,24 @@ zend_hash_str_find_ptr(const HashTable *ht, const char *str, size_t len)
 
     if (zend_hash_find(ht, str, len + 1, (void **)&ptr) == SUCCESS) {
         return *ptr;
+    }
+    return NULL;
+}
+
+static zend_always_inline void *
+zend_hash_str_update_ptr(HashTable *ht, const char *str, size_t len, void *pData)
+{
+    if (zend_hash_update(ht, str, len + 1, (void *)&pData, sizeof(void *), NULL) == SUCCESS) {
+        return pData;
+    }
+    return NULL;
+}
+
+static zend_always_inline void *
+zend_hash_index_update_ptr(HashTable *ht, zend_ulong h, void *pData)
+{
+    if (zend_hash_index_update(ht, h, (void **)&pData, sizeof(void *), NULL) == SUCCESS) {
+        return pData;
     }
     return NULL;
 }
@@ -222,6 +242,11 @@ inline_call_user_function(HashTable *function_table, zval *object, zval *functio
 #define _IS_BOOL IS_BOOL
 #define ZEND_SAME_FAKE_TYPE(faketype, realtype) ((faketype) == (realtype))
 
+#undef add_assoc_bool
+#define add_assoc_bool(__arg, __key, __b) add_assoc_bool_ex(__arg, __key, strlen(__key), __b)
+static int (*_add_assoc_bool_ex)(zval *, const char *, uint, int) = &add_assoc_bool_ex;
+#define add_assoc_bool_ex(_arg, _key, _key_len, _b) _add_assoc_bool_ex(_arg, _key, _key_len + 1, _b)
+
 #undef add_assoc_string
 #define add_assoc_string(__arg, __key, __str) add_assoc_string_ex(__arg, __key, strlen(__key), __str)
 static int (*_add_assoc_string_ex)(zval *, const char *, uint, char *, int) = &add_assoc_string_ex;
@@ -234,6 +259,33 @@ static int (*_add_assoc_stringl_ex)(zval *, const char *, uint, char *, uint, in
 #define add_assoc_zval(__arg, __key, __value) add_assoc_zval_ex(__arg, __key, strlen(__key), __value)
 static int (*_add_assoc_zval_ex)(zval *, const char *, uint, zval *) = &add_assoc_zval_ex;
 #define add_assoc_zval_ex(_arg, _key, _key_len, _value) _add_assoc_zval_ex(_arg, _key, _key_len + 1, _value);
+
+typedef long zend_long;
+static zend_always_inline zend_long
+zval_get_long(zval *op)
+{
+    switch (Z_TYPE_P(op)) {
+        case IS_BOOL:
+        case IS_LONG:
+            return Z_LVAL_P(op);
+        case IS_DOUBLE:
+            return zend_dval_to_lval(Z_DVAL_P(op));
+        case IS_STRING:
+            {
+                double dval;
+                zend_long lval;
+                zend_uchar type = is_numeric_string(Z_STRVAL_P(op), Z_STRLEN_P(op), &lval, &dval, 0);
+                if (type == IS_LONG) {
+                    return lval;
+                } else if (type == IS_DOUBLE) {
+                    return zend_dval_to_lval(dval);
+                }
+            }
+            break;
+        EMPTY_SWITCH_DEFAULT_CASE()
+    }
+    return 0;
+}
 
 #else
 #include <ext/standard/php_smart_string.h>
