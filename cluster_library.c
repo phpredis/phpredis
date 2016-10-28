@@ -2474,7 +2474,7 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
             efree(line);
         } else {
             add_assoc_bool_ex(z_result, Z_STRVAL_P(z_keys[i]),
-                1+Z_STRLEN_P(z_keys[i]), 0);
+                Z_STRLEN_P(z_keys[i]), 0);
         }
 
         // Clean up key context
