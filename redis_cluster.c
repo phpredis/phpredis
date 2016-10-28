@@ -231,13 +231,23 @@ zend_function_entry redis_cluster_functions[] = {
 };
 
 /* Our context seeds will be a hash table with RedisSock* pointers */
-static void ht_free_seed(void *data) {
+#if (PHP_MAJOR_VERSION < 7)
+static void ht_free_seed(void *data)
+#else
+static void ht_free_seed(zval *data)
+#endif
+{
     RedisSock *redis_sock = *(RedisSock**)data;
     if(redis_sock) redis_free_socket(redis_sock);
 }
 
 /* Free redisClusterNode objects we've stored */
-static void ht_free_node(void *data) {
+#if (PHP_MAJOR_VERSION < 7)
+static void ht_free_node(void *data)
+#else
+static void ht_free_node(zval *data)
+#endif
+{
     redisClusterNode *node = *(redisClusterNode**)data;
     cluster_free_node(node);
 }

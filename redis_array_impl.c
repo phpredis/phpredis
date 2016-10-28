@@ -705,7 +705,7 @@ ra_is_write_cmd(RedisArray *ra, const char *cmd, int cmd_len) {
 		cmd_up[i] = toupper(cmd[i]);
 	cmd_up[cmd_len] = 0;
 
-	ret = zend_hash_exists(Z_ARRVAL_P(ra->z_pure_cmds), cmd_up, cmd_len+1);
+	ret = zend_hash_str_exists(Z_ARRVAL_P(ra->z_pure_cmds), cmd_up, cmd_len);
 
 	efree(cmd_up);
 	return !ret;

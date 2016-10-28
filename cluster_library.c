@@ -346,7 +346,12 @@ PHP_REDIS_API int cluster_send_discard(redisCluster *c, short slot TSRMLS_DC) {
  * */
 
 /* Free cluster distribution list inside a HashTable */
-static void cluster_dist_free_ht(void *p) {
+#if (PHP_MAJOR_VERSION < 7)
+static void cluster_dist_free_ht(void *p)
+#else
+static void cluster_dist_free_ht(zval *p)
+#endif
+{
     clusterDistList *dl = *(clusterDistList**)p;
     int i;
 
@@ -433,10 +438,9 @@ int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
     }
 
     // Look for this slot
-    if ((dl = zend_hash_index_find_ptr(ht, (ulong)slot)) == NULL) {
+    if ((dl = zend_hash_index_find_ptr(ht, (zend_ulong)slot)) == NULL) {
         dl = cluster_dl_create();
-        zend_hash_index_update(ht, (ulong)slot, (void**)&dl,
-            sizeof(clusterDistList*), NULL);
+        zend_hash_index_update_ptr(ht, (zend_ulong)slot, dl);
     }
 
     // Now actually add this key
@@ -510,7 +514,12 @@ static void cluster_set_err(redisCluster *c, char *err, int err_len)
 }
 
 /* Destructor for slaves */
-static void ht_free_slave(void *data) {
+#if (PHP_MAJOR_VERSION < 7)
+static void ht_free_slave(void *data)
+#else
+static void ht_free_slave(zval *data)
+#endif
+{
     if(*(redisClusterNode**)data) {
         cluster_free_node(*(redisClusterNode**)data);
     }
@@ -662,8 +671,7 @@ cluster_node_add_slave(redisClusterNode *master, redisClusterNode *slave)
         index = master->slaves->nNextFreeElement;
     }
 
-    return zend_hash_index_update(master->slaves, index, (void*)&slave,
-        sizeof(redisClusterNode*), NULL) != SUCCESS;
+    return zend_hash_index_update_ptr(master->slaves, index, slave) != NULL;
 }
 
 /* Sanity check/validation for CLUSTER SLOTS command */
@@ -706,8 +714,7 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
         klen = snprintf(key,sizeof(key),"%s:%ld",host,port);
         if ((pnode = zend_hash_str_find_ptr(c->nodes, key, klen)) == NULL) {
             master = cluster_node_create(c, host, hlen, port, low, 0);
-            zend_hash_update(c->nodes, key, klen+1, (void*)&master,
-                sizeof(redisClusterNode*), NULL);
+            zend_hash_str_update_ptr(c->nodes, key, klen, master);
         } else {
             master = pnode;
         }
@@ -778,13 +785,23 @@ static RedisSock *cluster_get_asking_sock(redisCluster *c TSRMLS_DC) {
 }
 
 /* Our context seeds will be a hash table with RedisSock* pointers */
-static void ht_free_seed(void *data) {
+#if (PHP_MAJOR_VERSION < 7)
+static void ht_free_seed(void *data)
+#else
+static void ht_free_seed(zval *data)
+#endif
+{
     RedisSock *redis_sock = *(RedisSock**)data;
     if(redis_sock) redis_free_socket(redis_sock);
 }
 
 /* Free redisClusterNode objects we've stored */
-static void ht_free_node(void *data) {
+#if (PHP_MAJOR_VERSION < 7)
+static void ht_free_node(void *data)
+#else
+static void ht_free_node(zval *data)
+#endif
+{
     redisClusterNode *node = *(redisClusterNode**)data;
     cluster_free_node(node);
 }
@@ -909,8 +926,7 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
             redis_sock->port);
 
         // Add to our seed HashTable
-        zend_hash_update(cluster->seeds, key, key_len+1, (void*)&redis_sock,
-            sizeof(RedisSock*),NULL);
+        zend_hash_str_update_ptr(cluster->seeds, key, key_len, redis_sock);
     }
 
     efree(z_seeds);
@@ -1272,8 +1288,7 @@ static void cluster_update_slot(redisCluster *c TSRMLS_DC) {
 
             /* Our node is new, so keep track of it for cleanup */
             klen = snprintf(key,sizeof(key),"%s:%ld",c->redir_host,c->redir_port);
-            zend_hash_update(c->nodes, key, klen+1, (void*)&node,
-                sizeof(redisClusterNode*), NULL);
+            zend_hash_str_update_ptr(c->nodes, key, klen, node);
 
             /* Now point our slot at the node */
             c->master[c->redir_slot] = node;
