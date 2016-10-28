@@ -32,7 +32,7 @@ extern zend_class_entry *redis_ce;
 RedisArray*
 ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b_lazy_connect TSRMLS_DC)
 {
-	int i = 0, host_len, id;
+	int i = 0, host_len;
 	char *host, *p;
 	short port;
 	zval *zpData, z_cons, z_ret, *redis_inst;
@@ -89,14 +89,16 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 		}
 
 		/* attach */
+#if (PHP_MAJOR_VERSION < 7)
+        int id;
 #if PHP_VERSION_ID >= 50400
 		id = zend_list_insert(redis_sock, le_redis_sock TSRMLS_CC);
 #else
 		id = zend_list_insert(redis_sock, le_redis_sock);
 #endif
-#if (PHP_MAJOR_VERSION < 7)
 		add_property_resource(&ra->redis[i], "socket", id);
 #else
+        zval *id = zend_list_insert(redis_sock, le_redis_sock TSRMLS_CC);
 		add_property_resource(&ra->redis[i], "socket", Z_RES_P(id));
 #endif
 
@@ -1162,6 +1164,7 @@ static void zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z
     zval *z_ret = NULL, z_args[2];
     zval *z_host = &z_args[0], *z_count = &z_args[1];
 
+    INIT_ZVAL(z_args[0]);
     ZVAL_STRING(z_host, hostname);
     ZVAL_LONG(z_count, count);
 

@@ -971,10 +971,10 @@ PHP_REDIS_API zval *redis_parse_info_response(char *response) {
 
         if(is_numeric == 1) {
             add_assoc_long(z_ret, key, atol(value));
-            efree(value);
         } else {
-            add_assoc_string(z_ret, key, value, 0);
+            add_assoc_string(z_ret, key, value);
         }
+        efree(value);
         efree(key);
     }
 
@@ -1061,10 +1061,10 @@ PHP_REDIS_API zval* redis_parse_client_list_response(char *response) {
                     /* Add as a long or string, depending */
                     if(is_numeric == 1) {
                         add_assoc_long(z_sub_result, key, atol(value));
-                        efree(value);
                     } else {
-                        add_assoc_string(z_sub_result, key, value, 0);
+                        add_assoc_string(z_sub_result, key, value);
                     }
+                    efree(value);
                     // If we hit a '\n', then we can add this user to our list
                     if(*p == '\n') {
                         /* Add our user */
@@ -1262,7 +1262,7 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
             MAKE_STD_ZVAL(z);
             *z = *z_value_p;
             zval_copy_ctor(z);
-            add_assoc_zval_ex(z_ret, hkey, 1+hkey_len, z);
+            add_assoc_zval_ex(z_ret, hkey, hkey_len, z);
         }
     }
     
@@ -1496,7 +1496,7 @@ PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
         if(is_numeric) {
             add_assoc_long(z_result, p, atol(p2));
         } else {
-            add_assoc_string(z_result, p, p2, 1);
+            add_assoc_string(z_result, p, p2);
         }
 
         p = p3;
@@ -1609,7 +1609,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     }
 
     redis_sock->stream = php_stream_xport_create(host, host_len, 
-        ENFORCE_SAFE_MODE, STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT,
+        0, STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT,
         persistent_id, tv_ptr, NULL, &errstr, &err);
 
     if (persistent_id) {
@@ -1925,9 +1925,9 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
         if(response != NULL) {
             zval *z = NULL;
             if(redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
-                add_assoc_zval_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), z);
+                add_assoc_zval_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), Z_STRLEN_P(z_keys[i]), z);
             } else {
-                add_assoc_stringl_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), 1+Z_STRLEN_P(z_keys[i]), response, response_len);
+                add_assoc_stringl_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), Z_STRLEN_P(z_keys[i]), response, response_len);
             }
             efree(response);
         } else {
