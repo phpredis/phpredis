@@ -8,7 +8,6 @@
 #include <netinet/tcp.h>  /* TCP_NODELAY */
 #include <sys/socket.h>
 #endif
-#include <ext/standard/php_var.h>
 #ifdef HAVE_REDIS_IGBINARY
 #include "igbinary/igbinary.h"
 #endif
@@ -1563,7 +1562,7 @@ redis_sock_create(char *host, int host_len, unsigned short port, double timeout,
 PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 {
     struct timeval tv, read_tv, *tv_ptr = NULL;
-    char *host = NULL, *persistent_id = NULL, *errstr = NULL;
+    char *host = NULL, *persistent_id = NULL;
     const char *fmtstr = "%s:%d";
     int host_len, err = 0;
     php_netstream_data_t *sock;
@@ -1610,7 +1609,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     redis_sock->stream = php_stream_xport_create(host, host_len, 
         0, STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT,
-        persistent_id, tv_ptr, NULL, &errstr, &err);
+        persistent_id, tv_ptr, NULL, NULL, &err);
 
     if (persistent_id) {
         efree(persistent_id);
@@ -1619,7 +1618,6 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     efree(host);
 
     if (!redis_sock->stream) {
-        if (errstr) efree(errstr);
         return -1;
     }
 
@@ -1997,7 +1995,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len
 #else
     HashTable ht;
 #endif
-    smart_string sstr = {0};
+    smart_str sstr = {0};
     zval z_copy;
 #ifdef HAVE_REDIS_IGBINARY
     size_t sz;
@@ -2039,9 +2037,15 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len
 #else
             zend_hash_init(&ht, 10, NULL, NULL, 0);
 #endif
-            php_var_serialize(&sstr, &z, &ht TSRMLS_CC);
-            *val = sstr.c;
+            php_var_serialize(&sstr, z, &ht);
+#if (PHP_MAJOR_VERSION < 7)
+            *val = estrndup(sstr.c, sstr.len);
             *val_len = (int)sstr.len;
+#else
+            *val = estrndup(sstr.s->val, sstr.s->len);
+            *val_len = sstr.s->len;
+#endif
+            smart_str_free(&sstr);
 #if ZEND_MODULE_API_NO >= 20100000
             PHP_VAR_SERIALIZE_DESTROY(ht);
 #else
@@ -2085,8 +2089,8 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 #else
             memset(&var_hash, 0, sizeof(var_hash));
 #endif
-            if(!php_var_unserialize(return_value, (const unsigned char**)&val,
-                    (const unsigned char*)val + val_len, &var_hash TSRMLS_CC)) {
+            if(!php_var_unserialize(*return_value, (const unsigned char**)&val,
+                    (const unsigned char*)val + val_len, &var_hash)) {
                 if(rv_free==1) efree(*return_value);
                 ret = 0;
             } else {
