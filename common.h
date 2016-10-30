@@ -4,6 +4,7 @@
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
 
+#include <ext/standard/php_var.h>
 #if (PHP_MAJOR_VERSION < 7)
 #include <ext/standard/php_smart_str.h>
 typedef smart_str smart_string;
@@ -286,6 +287,11 @@ zval_get_long(zval *op)
     }
     return 0;
 }
+
+static void (*_php_var_serialize)(smart_str *, zval **, php_serialize_data_t * TSRMLS_DC) = &php_var_serialize;
+#define php_var_serialize(buf, struc, data) _php_var_serialize(buf, &struc, data TSRMLS_CC)
+static int (*_php_var_unserialize)(zval **, const unsigned char **, const unsigned char *, php_unserialize_data_t * TSRMLS_DC) = &php_var_unserialize;
+#define php_var_unserialize(rval, p, max, var_hash) _php_var_unserialize(&rval, p, max, var_hash TSRMLS_CC)
 
 #else
 #include <ext/standard/php_smart_string.h>
