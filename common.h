@@ -55,6 +55,10 @@ typedef struct {
     } \
 } while(0)
 
+#undef zend_hash_get_current_key
+#define zend_hash_get_current_key(ht, str_index, num_index) \
+    zend_hash_get_current_key_ex(ht, str_index, NULL, num_index, 0, NULL)
+
 #define zend_hash_str_exists(ht, str, len) zend_hash_exists(ht, str, len + 1)
 
 static zend_always_inline zval *
