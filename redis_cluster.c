@@ -599,19 +599,26 @@ static int get_key_val_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
                           clusterKeyValHT *kv TSRMLS_DC)
 {
     zval *z_val;
-    unsigned int key_len;
-    ulong idx;
+	zend_ulong idx;
 
     // Grab the key, convert it to a string using provided kbuf buffer if it's
     // a LONG style key
-    switch(zend_hash_get_current_key_ex(ht, &(kv->key), &key_len, &idx, 0, ptr)) 
-    {
+#if (PHP_MAJOR_VERSION < 7)
+	int key_len;
+	switch(zend_hash_get_current_key_ex(ht, &(kv->key), &key_len, &idx, 0, ptr)) {
+		case HASH_KEY_IS_STRING:
+			kv->key_len = (int)(key_len-1);
+#else
+	zend_string *zkey;
+	switch (zend_hash_get_current_key_ex(ht, &zkey, &idx, ptr)) {
+		case HASH_KEY_IS_STRING:
+			kv->key_len = zkey->len;
+			kv->key = zkey->val;
+#endif
+            break;
         case HASH_KEY_IS_LONG:
             kv->key_len = snprintf(kv->kbuf,sizeof(kv->kbuf),"%ld",(long)idx);
             kv->key     = kv->kbuf;
-            break;
-        case HASH_KEY_IS_STRING: 
-            kv->key_len = (int)(key_len-1);
             break;
         default:
             zend_throw_exception(redis_cluster_exception_ce,
@@ -2150,7 +2157,7 @@ PHP_METHOD(RedisCluster, watch) {
 
     // Iterate over each node we'll be sending commands to
     for(zend_hash_internal_pointer_reset(ht_dist);
-        zend_hash_get_current_key(ht_dist,NULL,&slot, 0)==HASH_KEY_IS_LONG;
+		zend_hash_get_current_key(ht_dist, NULL, &slot) == HASH_KEY_IS_LONG;
         zend_hash_move_forward(ht_dist))
     {
         // Grab the clusterDistList pointer itself
