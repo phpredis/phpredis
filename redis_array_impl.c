@@ -402,7 +402,11 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 	zval z_ret, z_argv[1];
 
 	/* check that we can call the extractor function */
+#if (PHP_MAJOR_VERSION < 7)
 	if(!zend_is_callable_ex(ra->z_fun, NULL, 0, NULL, NULL, NULL, NULL TSRMLS_CC)) {
+#else
+	if (!zend_is_callable_ex(ra->z_fun, NULL, 0, NULL, NULL, NULL)) {
+#endif
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call extractor function");
 		return NULL;
 	}
@@ -451,7 +455,11 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
 	zval z_argv[1];
 
 	/* check that we can call the extractor function */
+#if (PHP_MAJOR_VERSION < 7)
 	if(!zend_is_callable_ex(ra->z_dist, NULL, 0, NULL, NULL, NULL, NULL TSRMLS_CC)) {
+#else
+	if (!zend_is_callable_ex(ra->z_dist, NULL, 0, NULL, NULL, NULL)) {
+#endif
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call distributor function");
 		return 0;
 	}
