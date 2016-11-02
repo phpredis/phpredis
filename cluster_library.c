@@ -2432,11 +2432,11 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
                 zval *z = NULL;
                 if (redis_unserialize(redis_sock,key,key_len, &z TSRMLS_CC)) {
                     convert_to_string(z);
-                    add_assoc_double_ex(z_result, Z_STRVAL_P(z), 1+Z_STRLEN_P(z), atof(line));
+                    add_assoc_double_ex(z_result, Z_STRVAL_P(z), Z_STRLEN_P(z), atof(line));
                     zval_dtor(z);
                     efree(z);
                 } else {
-                    add_assoc_double_ex(z_result, key, 1+key_len, atof(line));
+                    add_assoc_double_ex(z_result, key, key_len, atof(line));
                 }
 
                 /* Free our key and line */
