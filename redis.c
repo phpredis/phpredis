@@ -26,7 +26,6 @@
 
 #include "common.h"
 #include "ext/standard/info.h"
-#include "php_ini.h"
 #include "php_redis.h"
 #include "redis_commands.h"
 #include "redis_array.h"
@@ -1901,8 +1900,8 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
                 memcpy(p, _NL, 2); p += 2;
             }
 
-            if(val_free) STR_FREE(val);
-            if(key_free) efree(key);
+            if (val_free) efree(val);
+            if (key_free) efree(key);
         } ZEND_HASH_FOREACH_END();
     }
 

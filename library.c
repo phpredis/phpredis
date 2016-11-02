@@ -900,7 +900,7 @@ PHP_REDIS_API void redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
 PHP_REDIS_API void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
     char *response;
     int response_len;
-    zval *z_ret;
+    zval zv, *z_ret = &zv;
 
     /* Read bulk response */
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
@@ -908,7 +908,7 @@ PHP_REDIS_API void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
     }
 
     /* Parse it into a zval array */
-    z_ret = redis_parse_info_response(response);
+    redis_parse_info_response(response, z_ret);
 
     /* Free source response */
     efree(response);
@@ -920,12 +920,12 @@ PHP_REDIS_API void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
     }
 }
 
-PHP_REDIS_API zval *redis_parse_info_response(char *response) {
-    zval *z_ret;
+PHP_REDIS_API void
+redis_parse_info_response(char *response, zval *z_ret)
+{
     char *key, *value, *p, *cur, *pos;
     int is_numeric;
 
-    MAKE_STD_ZVAL(z_ret);
     array_init(z_ret);
 
     cur = response;
@@ -976,8 +976,6 @@ PHP_REDIS_API zval *redis_parse_info_response(char *response) {
         efree(value);
         efree(key);
     }
-
-    return z_ret;
 }
 
 /*
