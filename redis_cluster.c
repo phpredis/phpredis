@@ -604,7 +604,7 @@ static int get_key_val_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
     // Grab the key, convert it to a string using provided kbuf buffer if it's
     // a LONG style key
 #if (PHP_MAJOR_VERSION < 7)
-	int key_len;
+	uint key_len;
 	switch(zend_hash_get_current_key_ex(ht, &(kv->key), &key_len, &idx, 0, ptr)) {
 		case HASH_KEY_IS_STRING:
 			kv->key_len = (int)(key_len-1);
@@ -862,7 +862,7 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     cluster_multi_add(&mc, kv.key, kv.key_len);
     cluster_multi_add(&mc, kv.val, kv.val_len);
     if(kv.key_free) efree(kv.key);
-    if(kv.val_free) STR_FREE(kv.val);
+    if(kv.val_free) efree(kv.val);
 
     // While we've got more keys to set
     slot = kv.slot;
@@ -887,7 +887,7 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
         // Free our key and value if we need to
         if(kv.key_free) efree(kv.key);
-        if(kv.val_free) STR_FREE(kv.val);
+        if(kv.val_free) efree(kv.val);
 
         // Update our slot, increment position
         slot = kv.slot;

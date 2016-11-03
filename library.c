@@ -1893,7 +1893,7 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
     int i, numElems;
     zval *z_multi_result;
 
-    zval **z_keys = ctx;
+    zval *z_keys = ctx;
 
     if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return -1;
@@ -1921,16 +1921,15 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
         if(response != NULL) {
             zval *z = NULL;
             if(redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
-                add_assoc_zval_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), Z_STRLEN_P(z_keys[i]), z);
+                add_assoc_zval_ex(z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), z);
             } else {
-                add_assoc_stringl_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), Z_STRLEN_P(z_keys[i]), response, response_len);
+                add_assoc_stringl_ex(z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), response, response_len);
             }
             efree(response);
         } else {
-            add_assoc_bool_ex(z_multi_result, Z_STRVAL_P(z_keys[i]), Z_STRLEN_P(z_keys[i]), 0);
+            add_assoc_bool_ex(z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), 0);
         }
-    zval_dtor(z_keys[i]);
-    efree(z_keys[i]);
+        zval_dtor(&z_keys[i]);
     }
     efree(z_keys);
 

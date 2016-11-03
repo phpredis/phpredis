@@ -2455,7 +2455,7 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
 {
     char *line;
     int line_len,i=0;
-    zval **z_keys = ctx;
+    zval *z_keys = ctx;
 
     // Loop while we've got replies
     while(count--) {
@@ -2464,21 +2464,20 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
         if(line != NULL) {
             zval *z = NULL;
             if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
-                add_assoc_zval_ex(z_result,Z_STRVAL_P(z_keys[i]),
-                    Z_STRLEN_P(z_keys[i]), z);
+                add_assoc_zval_ex(z_result,Z_STRVAL(z_keys[i]),
+                    Z_STRLEN(z_keys[i]), z);
             } else {
-                add_assoc_stringl_ex(z_result, Z_STRVAL_P(z_keys[i]),
-                    Z_STRLEN_P(z_keys[i]), line, line_len);
+                add_assoc_stringl_ex(z_result, Z_STRVAL(z_keys[i]),
+                    Z_STRLEN(z_keys[i]), line, line_len);
             }
             efree(line);
         } else {
-            add_assoc_bool_ex(z_result, Z_STRVAL_P(z_keys[i]),
-                Z_STRLEN_P(z_keys[i]), 0);
+            add_assoc_bool_ex(z_result, Z_STRVAL(z_keys[i]),
+                Z_STRLEN(z_keys[i]), 0);
         }
 
         // Clean up key context
-        zval_dtor(z_keys[i]);
-        efree(z_keys[i]);
+        zval_dtor(&z_keys[i]);
 
         // Move to the next key
         i++;
