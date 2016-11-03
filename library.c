@@ -900,7 +900,7 @@ PHP_REDIS_API void redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
 PHP_REDIS_API void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
     char *response;
     int response_len;
-    zval *z_ret;
+    zval zv, *z_ret = &zv;
 
     /* Read bulk response */
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
@@ -908,7 +908,7 @@ PHP_REDIS_API void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
     }
 
     /* Parse it into a zval array */
-    z_ret = redis_parse_info_response(response);
+    redis_parse_info_response(response, z_ret);
 
     /* Free source response */
     efree(response);
@@ -920,12 +920,12 @@ PHP_REDIS_API void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
     }
 }
 
-PHP_REDIS_API zval *redis_parse_info_response(char *response) {
-    zval *z_ret;
+PHP_REDIS_API void
+redis_parse_info_response(char *response, zval *z_ret)
+{
     char *key, *value, *p, *cur, *pos;
     int is_numeric;
 
-    MAKE_STD_ZVAL(z_ret);
     array_init(z_ret);
 
     cur = response;
@@ -976,8 +976,6 @@ PHP_REDIS_API zval *redis_parse_info_response(char *response) {
         efree(value);
         efree(key);
     }
-
-    return z_ret;
 }
 
 /*
@@ -1253,9 +1251,9 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
 
         /* Decode the score depending on flag */
         if (decode == SCORE_DECODE_INT && Z_STRLEN_P(z_value_p) > 0) {
-            add_assoc_long_ex(z_ret, hkey, 1+hkey_len, atoi(hval+1));
+            add_assoc_long_ex(z_ret, hkey, hkey_len, atoi(hval+1));
         } else if (decode == SCORE_DECODE_DOUBLE) {
-            add_assoc_double_ex(z_ret, hkey, 1+hkey_len, atof(hval));
+            add_assoc_double_ex(z_ret, hkey, hkey_len, atof(hval));
         } else {
             zval *z = NULL;
             MAKE_STD_ZVAL(z);

@@ -252,6 +252,16 @@ inline_call_user_function(HashTable *function_table, zval *object, zval *functio
 static int (*_add_assoc_bool_ex)(zval *, const char *, uint, int) = &add_assoc_bool_ex;
 #define add_assoc_bool_ex(_arg, _key, _key_len, _b) _add_assoc_bool_ex(_arg, _key, _key_len + 1, _b)
 
+#undef add_assoc_long
+#define add_assoc_long(__arg, __key, __n) add_assoc_long_ex(__arg, __key, strlen(__key), __n)
+static int (*_add_assoc_long_ex)(zval *, const char *, uint, long) = &add_assoc_long_ex;
+#define add_assoc_long_ex(_arg, _key, _key_len, _n) _add_assoc_long_ex(_arg, _key, _key_len + 1, _n)
+
+#undef add_assoc_double
+#define add_assoc_double(__arg, __key, __d) add_assoc_double_ex(__arg, __key, strlen(__key), __d)
+static int (*_add_assoc_double_ex)(zval *, const char *, uint, double) = &add_assoc_double_ex;
+#define add_assoc_double_ex(_arg, _key, _key_len, _d) _add_assoc_double_ex(_arg, _key, _key_len + 1, _d)
+
 #undef add_assoc_string
 #define add_assoc_string(__arg, __key, __str) add_assoc_string_ex(__arg, __key, strlen(__key), __str)
 static int (*_add_assoc_string_ex)(zval *, const char *, uint, char *, int) = &add_assoc_string_ex;

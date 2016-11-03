@@ -2026,7 +2026,7 @@ PHP_REDIS_API int cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
 PHP_REDIS_API void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                               void *ctx)
 {
-    zval *z_result;
+    zval zv, *z_result = &zv;
     char *info;
 
     // Read our bulk response
@@ -2036,13 +2036,12 @@ PHP_REDIS_API void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     }
 
     /* Parse response, free memory */
-    z_result = redis_parse_info_response(info);
+    redis_parse_info_response(info, z_result);
     efree(info);
 
     // Return our array
     if(CLUSTER_IS_ATOMIC(c)) {
-        *return_value = *z_result;
-        efree(z_result);
+        RETVAL_ZVAL(z_result, 0, 1);
     } else {
         add_next_index_zval(c->multi_resp, z_result);
     }
@@ -2433,11 +2432,11 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
                 zval *z = NULL;
                 if (redis_unserialize(redis_sock,key,key_len, &z TSRMLS_CC)) {
                     convert_to_string(z);
-                    add_assoc_double_ex(z_result, Z_STRVAL_P(z), 1+Z_STRLEN_P(z), atof(line));
+                    add_assoc_double_ex(z_result, Z_STRVAL_P(z), Z_STRLEN_P(z), atof(line));
                     zval_dtor(z);
                     efree(z);
                 } else {
-                    add_assoc_double_ex(z_result, key, 1+key_len, atof(line));
+                    add_assoc_double_ex(z_result, key, key_len, atof(line));
                 }
 
                 /* Free our key and line */
