@@ -1122,7 +1122,7 @@ ra_move_list(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 void
 ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 
-	long res[2], type, ttl;
+	long res[2] = {0}, type, ttl;
 	zend_bool success = 0;
 	if (ra_get_key_type(z_from, key, key_len, z_from, res TSRMLS_CC)) {
 		type = res[0];
@@ -1224,7 +1224,7 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 		/* check that we're not moving to the same node. */
 		z_target = ra_find_node(ra, keys[i], key_lens[i], &target_pos TSRMLS_CC);
 
-		if(strcmp(hostname, ra->hosts[target_pos])) { /* different host */
+		if (z_target && strcmp(hostname, ra->hosts[target_pos])) { /* different host */
 			/* php_printf("move [%s] from [%s] to [%s]\n", keys[i], hostname, ra->hosts[target_pos]); */
 			ra_move_key(keys[i], key_lens[i], z_redis, z_target TSRMLS_CC);
 		}

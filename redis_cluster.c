@@ -1889,7 +1889,7 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     zval *z_arr=NULL, *z_ele;
     HashTable *ht_arr;
     long num_keys = 0;
-    short slot;
+    short slot = 0;
     smart_string cmdstr = {0};
 
     /* Parse args */

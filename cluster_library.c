@@ -589,6 +589,9 @@ unsigned short cluster_hash_key_zval(zval *z_key) {
             kptr = "Object";
             klen = sizeof("Object")-1;
             break;
+        default:
+            kptr = "";
+            klen = 0;
     }
 
     // Hash the string representation
@@ -1498,6 +1501,7 @@ PHP_REDIS_API void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS,
             RETURN_FALSE;
         } else {
             add_next_index_bool(c->multi_resp, 0);
+            return;
         }
     }
 

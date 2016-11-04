@@ -341,8 +341,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
 	zval *zp_tmp, z_tmp;
 	char *key = NULL; /* set to avoid "unused-but-set-variable" */
-	int key_len;
-	int i;
+	int i, key_len = 0;
 	zval *redis_inst;
 	zval z_fun, *z_callargs;
 	HashTable *h_args;
