@@ -130,7 +130,7 @@ int redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Set the slot if directed
     CMD_SET_SLOT(slot,key,key_len);
 
-    if(val_free) STR_FREE(val);
+    if(val_free) efree(val);
     if(key_free) efree(key);
 
     return SUCCESS;
@@ -192,7 +192,7 @@ int redis_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Set our slot if directed
     CMD_SET_SLOT(slot,key,key_len);
 
-    if(val_free) STR_FREE(val);
+    if(val_free) efree(val);
     if(key_free) efree(key);
 
     return SUCCESS;
@@ -985,7 +985,7 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     for(i=1;i<argc;i++) {
         arg_free = redis_serialize(redis_sock, &z_args[i], &arg, &arg_len TSRMLS_CC);
         redis_cmd_append_sstr(&cmdstr, arg, arg_len);
-        if(arg_free) STR_FREE(arg);
+        if(arg_free) efree(arg);
     }
 
     // Push out values
@@ -1032,7 +1032,7 @@ int redis_key_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     ZEND_HASH_FOREACH_VAL(ht_arr, z_val) {
         val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
         redis_cmd_append_sstr(&cmdstr, val, val_len);
-        if (val_free) STR_FREE(val);
+        if (val_free) efree(val);
     } ZEND_HASH_FOREACH_END();
 
     *cmd_len = cmdstr.len;
@@ -1264,11 +1264,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     CMD_SET_SLOT(slot,key,key_len);
 
     if(key_free) efree(key);
-#if PHP_VERSION_ID >= 50400
-    if(val_free) str_efree(val);
-#else
     if(val_free) efree(val);
-#endif
 
     return SUCCESS;
 }
@@ -1454,7 +1450,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *key;
-    zval *z_arr, **z_mems, *z_mem;
+    zval *z_arr, *z_mems, *z_mem;
     int i, count, valid=0, key_len, key_free;
     HashTable *ht_arr;
     smart_string cmdstr = {0};
@@ -1478,7 +1474,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
     // Allocate memory for mems+1 so we can have a sentinel
-    z_mems = ecalloc(count+1, sizeof(zval*));
+    z_mems = ecalloc(count + 1, sizeof(zval));
 
     // Iterate over our member array
     ZEND_HASH_FOREACH_VAL(ht_arr, z_mem) {
@@ -1487,10 +1483,9 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             || Z_TYPE_P(z_mem) == IS_LONG
         ) {
             // Copy into our member array
-            MAKE_STD_ZVAL(z_mems[valid]);
-            *z_mems[valid] = *z_mem;
-            zval_copy_ctor(z_mems[valid]);
-            convert_to_string(z_mems[valid]);
+            z_mems[valid] = *z_mem;
+            zval_copy_ctor(&z_mems[valid]);
+            convert_to_string(&z_mems[valid]);
 
             // Increment the member count to actually send
             valid++;
@@ -1506,7 +1501,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Sentinel so we can free this even if it's used and then we discard
     // the transaction manually or there is a transaction failure
-    z_mems[valid]=NULL;
+    ZVAL_NULL(&z_mems[valid]);
 
     // Start command construction
     redis_cmd_init_sstr(&cmdstr, valid+1, "HMGET", sizeof("HMGET")-1);
@@ -1514,8 +1509,8 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Iterate over members, appending as arguments
     for(i=0;i<valid;i++) {
-        redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(z_mems[i]),
-            Z_STRLEN_P(z_mems[i]));
+        redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_mems[i]),
+            Z_STRLEN(z_mems[i]));
     }
 
     // Set our slot
@@ -1591,7 +1586,7 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_cmd_append_sstr(&cmdstr, val, val_len);
 
         // Free our value if we serialized it
-        if (val_free) STR_FREE(val);
+        if (val_free) efree(val);
     } ZEND_HASH_FOREACH_END();
 
     // Set slot if directed
@@ -1842,11 +1837,7 @@ static int redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         // Clean up prefixed or serialized data
 
         if(mem_free) {
-            if(!is_keys) {
-                STR_FREE(mem);
-            } else {
-                efree(mem);
-            }
+            efree(mem);
         }
     } ZEND_HASH_FOREACH_END();
 
@@ -2080,9 +2071,9 @@ int redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     CMD_SET_SLOT(slot, key, key_len);
 
     // Clean up
-    if(val_free) STR_FREE(val);
+    if(val_free) efree(val);
     if(key_free) efree(key);
-    if(pivot_free) STR_FREE(pivot);
+    if(pivot_free) efree(pivot);
 
     // Success
     return SUCCESS;
@@ -2115,7 +2106,7 @@ int redis_lrem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     CMD_SET_SLOT(slot, key, key_len);
 
     // Cleanup
-    if(val_free) STR_FREE(val);
+    if(val_free) efree(val);
     if(key_free) efree(key);
 
     // Success!
@@ -2147,7 +2138,7 @@ int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         if(slot1 != slot2) {
             php_error_docref(0 TSRMLS_CC, E_WARNING,
                 "Source and destination keys don't hash to the same slot!");
-            if(val_free) STR_FREE(val);
+            if(val_free) efree(val);
             if(src_free) efree(src);
             if(dst_free) efree(dst);
             return FAILURE;
@@ -2160,7 +2151,7 @@ int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         dst_len, val, val_len);
 
     // Cleanup
-    if(val_free) STR_FREE(val);
+    if(val_free) efree(val);
     if(src_free) efree(src);
     if(dst_free) efree(dst);
 
@@ -2195,7 +2186,7 @@ static int gen_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     CMD_SET_SLOT(slot,key,key_len);
 
     /* Cleanup our key and value */
-    if (val_free) STR_FREE(val);
+    if (val_free) efree(val);
     if (key_free) efree(key);
 
     // Success
@@ -2284,7 +2275,7 @@ int redis_zincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Cleanup
     if(key_free) efree(key);
-    if(mem_free) STR_FREE(mem);
+    if(mem_free) efree(mem);
 
     return SUCCESS;
 }
@@ -2634,7 +2625,7 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_cmd_append_sstr(&cmdstr, val, val_len);
 
         // Free value if we serialized
-        if(val_free) STR_FREE(val);
+        if(val_free) efree(val);
     }
 
     // Push output values
@@ -3190,7 +3181,7 @@ void redis_serialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     int val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
 
     RETVAL_STRINGL(val, val_len);
-    if(val_free) STR_FREE(val);
+    if(val_free) efree(val);
 }
 
 void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
