@@ -2986,11 +2986,16 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     /* Construct our command */
     if(!kw) {
         *cmd_len = redis_cmd_format_static(cmd, "COMMAND", "");
-    } else if(kw && !z_arg) {
+    } else if (!z_arg) {
         /* Sanity check */
-        if(strncasecmp(kw, "info", sizeof("info")-1) ||
-           Z_TYPE_P(z_arg)!=IS_STRING)
-        {
+        if (strncasecmp(kw, "count", sizeof("count") - 1)) {
+            return FAILURE;
+        }
+        /* COMMAND COUNT */
+        *cmd_len = redis_cmd_format_static(cmd, "COMMAND", "s", "COUNT", sizeof("COUNT") - 1);
+    } else if (Z_TYPE_P(z_arg) == IS_STRING) {
+        /* Sanity check */
+        if (strncasecmp(kw, "info", sizeof("info") - 1)) {
             return FAILURE;
         }
 

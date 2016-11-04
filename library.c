@@ -836,10 +836,10 @@ PHP_REDIS_API void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, Redi
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
         IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
+            return;
         } else {
             RETURN_FALSE;
         }
-        return;
     }
 
     ret = atof(response);
@@ -859,6 +859,7 @@ PHP_REDIS_API void redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
     if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
         IF_MULTI_OR_PIPELINE() {
             add_next_index_bool(z_tab, 0);
+            return;
         } else {
             RETURN_FALSE;
         }
@@ -1940,7 +1941,7 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
 PHP_REDIS_API int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz 
                             TSRMLS_DC)
 {
-    if(redis_sock && redis_sock->status == REDIS_SOCK_STATUS_DISCONNECTED) {
+    if (!redis_sock || redis_sock->status == REDIS_SOCK_STATUS_DISCONNECTED) {
         zend_throw_exception(redis_exception_ce, "Connection closed", 
             0 TSRMLS_CC);
         return -1;

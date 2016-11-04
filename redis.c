@@ -2454,9 +2454,8 @@ redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
                                            int numElems)
 {
 
-    fold_item *head = redis_sock->head;
-    fold_item *current = redis_sock->current;
-    for(current = head; current; current = current->next) {
+    fold_item *current;
+    for (current = redis_sock->head; current; current = current->next) {
         fold_this_item(INTERNAL_FUNCTION_PARAM_PASSTHRU, current, redis_sock,
             z_tab);
     }
@@ -2552,7 +2551,7 @@ PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
             if(*cmd) {
                 old_cmd = cmd;
             }
-            cmd_len = spprintf(&cmd, 0, "%s %s", cmd, Z_STRVAL_P(data));
+            spprintf(&cmd, 0, "%s %s", cmd, Z_STRVAL_P(data));
             if(old_cmd) {
                 efree(old_cmd);
             }
