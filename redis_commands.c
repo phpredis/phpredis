@@ -88,7 +88,7 @@ int redis_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
                   char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *arg;
-    int arg_len;
+    size_t arg_len;
 
     // Parse args
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &arg, &arg_len)
@@ -1181,8 +1181,9 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     zval *z_value, *z_opts=NULL;
     char *key = NULL, *val = NULL, *exp_type = NULL, *set_type = NULL;
-    int key_len, val_len, key_free, val_free;
+    int key_free, val_free;
     long expire = -1;
+    size_t key_len, val_len;
 
     // Make sure the function is being called correctly
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|z", &key, &key_len,
@@ -1608,8 +1609,9 @@ int redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *key;
-    int argc, key_len, key_free;
+    int argc, key_free;
     long bit, start, end;
+    size_t key_len;
 
     argc = ZEND_NUM_ARGS();
     if(zend_parse_parameters(argc TSRMLS_CC, "sl|ll", &key, &key_len, &bit,
@@ -2285,7 +2287,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    int *using_store, char **cmd, int *cmd_len, short *slot,
                    void **ctx)
 {
-    zval *z_opts=NULL, *z_ele, *z_argv;
+    zval *z_opts=NULL, *z_ele, z_argv;
     char *key;
     HashTable *ht_opts;
     smart_string cmdstr = {0};
@@ -2317,11 +2319,10 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Create our hash table to hold our sort arguments
-    ALLOC_INIT_ZVAL(z_argv);
-    array_init(z_argv);
+    array_init(&z_argv);
 
     // SORT <key>
-    add_next_index_stringl(z_argv, key, key_len);
+    add_next_index_stringl(&z_argv, key, key_len);
     if (key_free) efree(key);
 
     // Set slot
@@ -2340,14 +2341,13 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             php_error_docref(NULL TSRMLS_CC, E_WARNING,
                 "SORT BY option is not allowed in Redis Cluster");
             if(key_free) efree(key);
-            zval_dtor(z_argv);
-            efree(z_argv);
+            zval_dtor(&z_argv);
             return FAILURE;
         }
 
         // ... BY <pattern>
-        add_next_index_stringl(z_argv, "BY", sizeof("BY") - 1);
-        add_next_index_stringl(z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
+        add_next_index_stringl(&z_argv, "BY", sizeof("BY") - 1);
+        add_next_index_stringl(&z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
     }
 
     // Handle ASC/DESC option
@@ -2356,7 +2356,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ) && Z_TYPE_P(z_ele) == IS_STRING
     ) {
         // 'asc'|'desc'
-        add_next_index_stringl(z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
+        add_next_index_stringl(&z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
     }
 
     // STORE option
@@ -2372,14 +2372,13 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             php_error_docref(0 TSRMLS_CC, E_WARNING,
                 "Error, SORT key and STORE key have different slots!");
             if(key_free) efree(key);
-            zval_dtor(z_argv);
-            efree(z_argv);
+            zval_dtor(&z_argv);
             return FAILURE;
         }
 
         // STORE <key>
-        add_next_index_stringl(z_argv, "STORE", sizeof("STORE") - 1);
-        add_next_index_stringl(z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
+        add_next_index_stringl(&z_argv, "STORE", sizeof("STORE") - 1);
+        add_next_index_stringl(&z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
 
         // We are using STORE
         *using_store = 1;
@@ -2395,15 +2394,14 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             php_error_docref(NULL TSRMLS_CC, E_WARNING,
                 "GET option for SORT disabled in Redis Cluster");
             if(key_free) efree(key);
-            zval_dtor(z_argv);
-            efree(z_argv);
+            zval_dtor(&z_argv);
             return FAILURE;
         }
 
         // If it's a string just add it
         if (Z_TYPE_P(z_ele) == IS_STRING) {
-            add_next_index_stringl(z_argv, "GET", sizeof("GET") - 1);
-            add_next_index_stringl(z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
+            add_next_index_stringl(&z_argv, "GET", sizeof("GET") - 1);
+            add_next_index_stringl(&z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
         } else {
             HashTable *ht_keys = Z_ARRVAL_P(z_ele);
             int added=0;
@@ -2419,10 +2417,10 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     continue;
                 }
                 /* Add get per thing we're getting */
-                add_next_index_stringl(z_argv, "GET", sizeof("GET") - 1);
+                add_next_index_stringl(&z_argv, "GET", sizeof("GET") - 1);
 
                 // Add this key to our argv array
-                add_next_index_stringl(z_argv, Z_STRVAL_P(z_key), Z_STRLEN_P(z_key));
+                add_next_index_stringl(&z_argv, Z_STRVAL_P(z_key), Z_STRLEN_P(z_key));
                 added++;
             }
 
@@ -2431,8 +2429,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 php_error_docref(NULL TSRMLS_CC, E_WARNING,
                     "Array of GET values requested, but none are valid");
                 if(key_free) efree(key);
-                zval_dtor(z_argv);
-                efree(z_argv);
+                zval_dtor(&z_argv);
                 return FAILURE;
             }
         }
@@ -2443,7 +2440,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
          (z_ele = zend_hash_str_find(ht_opts, "ALPHA", sizeof("ALPHA") - 1)) != NULL) &&
          (ZEND_SAME_FAKE_TYPE(_IS_BOOL, Z_TYPE_P(z_ele)) && Z_LVAL_P(z_ele))
     ) {
-        add_next_index_stringl(z_argv, "ALPHA", sizeof("ALPHA") - 1);
+        add_next_index_stringl(&z_argv, "ALPHA", sizeof("ALPHA") - 1);
     }
 
     // LIMIT <offset> <count>
@@ -2463,13 +2460,12 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 php_error_docref(NULL TSRMLS_CC, E_WARNING,
                     "LIMIT options on SORT command must be longs or strings");
                 if(key_free) efree(key);
-                zval_dtor(z_argv);
-                efree(z_argv);
+                zval_dtor(&z_argv);
                 return FAILURE;
             }
 
             // Add LIMIT argument
-            add_next_index_stringl(z_argv, "LIMIT", sizeof("LIMIT") - 1);
+            add_next_index_stringl(&z_argv, "LIMIT", sizeof("LIMIT") - 1);
 
             long low, high;
             if (Z_TYPE_P(z_off) == IS_STRING) {
@@ -2484,13 +2480,13 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             }
 
             // Add our two LIMIT arguments
-            add_next_index_long(z_argv, low);
-            add_next_index_long(z_argv, high);
+            add_next_index_long(&z_argv, low);
+            add_next_index_long(&z_argv, high);
         }
     }
 
     // Start constructing our command
-    HashTable *ht_argv = Z_ARRVAL_P(z_argv);
+    HashTable *ht_argv = Z_ARRVAL_P(&z_argv);
     redis_cmd_init_sstr(&cmdstr, zend_hash_num_elements(ht_argv), "SORT",
         sizeof("SORT")-1);
 
@@ -2510,8 +2506,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Clean up our arguments array.  Note we don't have to free any prefixed
      * key as that we didn't duplicate the pointer if we prefixed */
-    zval_dtor(z_argv);
-    efree(z_argv);
+    zval_dtor(&z_argv);
 
     // Push our length and command
     *cmd_len = cmdstr.len;
