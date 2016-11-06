@@ -308,6 +308,7 @@ static int (*_php_var_unserialize)(zval **, const unsigned char **, const unsign
 #define php_var_unserialize(rval, p, max, var_hash) _php_var_unserialize(&rval, p, max, var_hash TSRMLS_CC)
 
 #else
+#include <zend_smart_str.h>
 #include <ext/standard/php_smart_string.h>
 #endif
 
