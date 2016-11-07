@@ -929,7 +929,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 		/* add value */
         INIT_ZVAL(z_zadd_args[i+1]);
         if (zkey) {
-            ZVAL_STRINGL(&z_zadd_args[i+1], zkey->val, zkey->len - 1);
+            ZVAL_STRINGL(&z_zadd_args[i+1], zkey->val, zkey->len);
         } else {
             ZVAL_LONG(&z_zadd_args[i+1], (long)idx);
         }
