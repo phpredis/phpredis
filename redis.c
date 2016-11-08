@@ -1019,8 +1019,7 @@ PHP_METHOD(Redis, getMultiple)
             key = Z_STRVAL_P(z_ele);
             key_len = Z_STRLEN_P(z_ele);
         } else {
-            z_tmp = *z_ele;
-            zval_copy_ctor(&z_tmp);
+            ZVAL_ZVAL(&z_tmp, z_ele, 1, 0);
             convert_to_string(&z_tmp);
 
             key = Z_STRVAL(z_tmp);
