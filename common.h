@@ -32,7 +32,7 @@ typedef struct {
         char *_str_index; uint _str_length; ulong _num_index; \
         switch (zend_hash_get_current_key_ex(ht, &_str_index, &_str_length, &_num_index, 0, &_hpos)) { \
             case HASH_KEY_IS_STRING: \
-                _zstr.len = _str_length; \
+                _zstr.len = _str_length - 1; \
                 _zstr.val = _str_index; \
                 _key = &_zstr; \
                 break; \

@@ -2055,7 +2055,6 @@ PHP_REDIS_API void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
 PHP_REDIS_API void cluster_client_list_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                                      void *ctx)
 {
-    zval *z_result;
     char *info;
 
     /* Read the bulk response */
@@ -2064,13 +2063,19 @@ PHP_REDIS_API void cluster_client_list_resp(INTERNAL_FUNCTION_PARAMETERS, redisC
         CLUSTER_RETURN_FALSE(c);
     }
 
+#if (PHP_MAJOR_VERSION < 7)
+    zval *z_result;
+    MAKE_STD_ZVAL(z_result);
+#else
+    zval zv, *z_result = &zv;
+#endif
+
     /* Parse it and free the bulk string */
-    z_result = redis_parse_client_list_response(info);
+    redis_parse_client_list_response(info, z_result);
     efree(info);
 
     if (CLUSTER_IS_ATOMIC(c)) {
-        *return_value = *z_result;
-        efree(z_result);
+        RETVAL_ZVAL(z_result, 0, 1);
     } else {
         add_next_index_zval(c->multi_resp, z_result);
     }

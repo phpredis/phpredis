@@ -1871,7 +1871,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
 
             if (zkey) {
                 key = zkey->val;
-                key_len = zkey->len - 1;
+                key_len = zkey->len;
             } else {
                 // Create string representation of our index
                 key_len = snprintf(buf, sizeof(buf), "%ld", (long)idx);

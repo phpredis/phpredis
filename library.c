@@ -973,15 +973,21 @@ redis_parse_info_response(char *response, zval *z_ret)
 PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab) {
     char *resp;
     int resp_len;
-    zval *z_ret;
 
     /* Make sure we can read the bulk response from Redis */
     if ((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
     }
 
+#if (PHP_MAJOR_VERSION < 7)
+    zval *z_ret;
+    MAKE_STD_ZVAL(z_ret);
+#else
+    zval zv, *z_ret = &zv;
+#endif
+
     /* Parse it out */
-    z_ret = redis_parse_client_list_response(resp);
+    redis_parse_client_list_response(resp, z_ret);
 
     /* Free our response */
     efree(resp);
@@ -994,17 +1000,22 @@ PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
     }
 }
 
-PHP_REDIS_API zval* redis_parse_client_list_response(char *response) {
-    zval *z_result, *z_sub_result;
+PHP_REDIS_API void
+redis_parse_client_list_response(char *response, zval *z_ret)
+{
     char *p, *lpos, *kpos = NULL, *vpos = NULL, *p2, *key, *value;
     int klen = 0, done = 0, is_numeric;
 
     // Allocate memory for our response
-    MAKE_STD_ZVAL(z_result);
-    array_init(z_result);
+    array_init(z_ret);
 
     /* Allocate memory for one user (there should be at least one, namely us!) */
+#if (PHP_MAJOR_VERSION < 7)
+    zval *z_sub_result;
     ALLOC_INIT_ZVAL(z_sub_result);
+#else
+    zval zv, *z_sub_result = &zv;
+#endif
     array_init(z_sub_result);
 
     // Pointers for parsing
@@ -1053,11 +1064,13 @@ PHP_REDIS_API zval* redis_parse_client_list_response(char *response) {
                     // If we hit a '\n', then we can add this user to our list
                     if(*p == '\n') {
                         /* Add our user */
-                        add_next_index_zval(z_result, z_sub_result);
+                        add_next_index_zval(z_ret, z_sub_result);
 
                         /* If we have another user, make another one */
                         if(*(p+1) != '\0') {
+#if (PHP_MAJOR_VERSION < 7)
                             ALLOC_INIT_ZVAL(z_sub_result);
+#endif
                             array_init(z_sub_result);
                         }
                     }
@@ -1066,10 +1079,9 @@ PHP_REDIS_API zval* redis_parse_client_list_response(char *response) {
                     efree(key);
                 } else {
                     // Something is wrong
-                    zval_dtor(z_result);
-                    MAKE_STD_ZVAL(z_result);
-                    ZVAL_BOOL(z_result, 0);
-                    return z_result;
+                    zval_dtor(z_ret);
+                    ZVAL_BOOL(z_ret, 0);
+                    return;
                 }
 
                 /* Move forward */
@@ -1091,9 +1103,6 @@ PHP_REDIS_API zval* redis_parse_client_list_response(char *response) {
         /* Increment */
         p++;
     }
-
-    /* Return our parsed response */
-    return z_result;
 }
 
 PHP_REDIS_API void 
@@ -1242,10 +1251,11 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
         } else if (decode == SCORE_DECODE_DOUBLE) {
             add_assoc_double_ex(z_ret, hkey, hkey_len, atof(hval));
         } else {
-            zval *z = NULL;
+            zval zv, *z = &zv;
+#if (PHP_MAJOR_VERSION < 7)
             MAKE_STD_ZVAL(z);
-            *z = *z_value_p;
-            zval_copy_ctor(z);
+#endif
+            ZVAL_ZVAL(z, z_value_p, 1, 0);
             add_assoc_zval_ex(z_ret, hkey, hkey_len, z);
         }
     }
@@ -1253,6 +1263,7 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
     /* replace */
     zval_dtor(z_tab);
     ZVAL_ZVAL(z_tab, z_ret, 1, 0);
+    zval_dtor(z_ret);
 }
 
 static int
@@ -1386,7 +1397,10 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
         RETURN_FALSE;
     }
     IF_MULTI_OR_PIPELINE() {
-        zval *z = NULL;
+        zval zv, *z = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+        z = NULL;
+#endif
         if(redis_unserialize(redis_sock, response, response_len,
                              &z TSRMLS_CC) == 1)
         {
@@ -1436,7 +1450,6 @@ PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
 {
     char *resp, *p, *p2, *p3, *p4;
     int is_numeric,  resp_len;
-    zval *z_result;
 
     /* Add or return false if we can't read from the socket */
     if((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC))==NULL) {
@@ -1447,7 +1460,12 @@ PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
         RETURN_FALSE;
     }
 
+#if (PHP_MAJOR_VERSION < 7)
+    zval *z_result;
     MAKE_STD_ZVAL(z_result);
+#else
+    zval zv, *z_result = &zv;
+#endif
     array_init(z_result);
 
     /* Skip the '+' */
@@ -1850,7 +1868,10 @@ redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     while(count > 0) {
         line = redis_sock_read(redis_sock, &len TSRMLS_CC);
         if (line != NULL) {
-            zval *z = NULL;
+            zval zv, *z = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+            z = NULL;
+#endif
             int unwrap;
 
             /* We will attempt unserialization, if we're unserializing everything,
@@ -1913,7 +1934,10 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
     for(i = 0; i < numElems; ++i) {
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
         if(response != NULL) {
-            zval *z = NULL;
+            zval zv, *z = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+            z = NULL;
+#endif
             if(redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
                 add_assoc_zval_ex(z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), z);
             } else {
@@ -2277,7 +2301,7 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval *z_ret
 {
     long reply_info;
     REDIS_REPLY_TYPE reply_type;
-    zval *z_subelem;
+    zval zv, *z_subelem = &zv;
 
     // Iterate while we have elements
     while(elements > 0) {
@@ -2295,7 +2319,9 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval *z_ret
         switch(reply_type) {
             case TYPE_ERR:
             case TYPE_LINE:
+#if (PHP_MAJOR_VERSION < 7)
                 ALLOC_INIT_ZVAL(z_subelem);
+#endif
                 redis_read_variant_line(redis_sock, reply_type, z_subelem 
                     TSRMLS_CC);
                 add_next_index_zval(z_ret, z_subelem);
@@ -2306,7 +2332,9 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval *z_ret
                 break;
             case TYPE_BULK:
                 // Init a zval for our bulk response, read and add it
+#if (PHP_MAJOR_VERSION < 7)
                 ALLOC_INIT_ZVAL(z_subelem);
+#endif
                 redis_read_variant_bulk(redis_sock, reply_info, z_subelem 
                     TSRMLS_CC);
                 add_next_index_zval(z_ret, z_subelem);
@@ -2314,7 +2342,9 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval *z_ret
             case TYPE_MULTIBULK:
                 // Construct an array for our sub element, and add it, 
                 // and recurse
+#if (PHP_MAJOR_VERSION < 7)
                 ALLOC_INIT_ZVAL(z_subelem);
+#endif
                 array_init(z_subelem);
                 add_next_index_zval(z_ret, z_subelem);
                 redis_read_multibulk_recursive(redis_sock, reply_info, 
