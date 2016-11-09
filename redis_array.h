@@ -50,7 +50,7 @@ typedef struct RedisArray_ {
 	zend_bool pconnect;     /* should we use pconnect */
 	zval *z_fun;			/* key extractor, callable */
 	zval *z_dist;			/* key distributor, callable */
-	zval *z_pure_cmds;		/* hash table */
+	zval z_pure_cmds;		/* hash table */
 	double connect_timeout; /* socket connect timeout */
 
 	struct RedisArray_ *prev;

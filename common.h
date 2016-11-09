@@ -237,6 +237,7 @@ inline_call_user_function(HashTable *function_table, zval *object, zval *functio
         _params = ecalloc(param_count, sizeof(zval *));
         for (i = 0; i < param_count; i++) {
             _params[i] = &params[i];
+            INIT_PZVAL(_params[i]);
         }
     }
     ret = _call_user_function(function_table, &object, function_name, retval_ptr, param_count, _params TSRMLS_CC);
