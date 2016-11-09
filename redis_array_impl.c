@@ -369,8 +369,6 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	ra->hosts = ecalloc(count, sizeof(char *));
 	ra->redis = ecalloc(count, sizeof(zval));
 	ra->count = 0;
-	ra->z_fun = NULL;
-	ra->z_dist = NULL;
 	ra->z_multi_exec = NULL;
 	ra->index = b_index;
 	ra->auto_rehash = 0;
@@ -386,8 +384,8 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect, connect_timeout TSRMLS_CC) : NULL;
 
 	/* Set hash function and distribtor if provided */
-    ra->z_fun = z_fun;
-    ra->z_dist = z_dist;
+    ZVAL_ZVAL(&ra->z_fun, z_fun, 1, 0);
+    ZVAL_ZVAL(&ra->z_dist, z_dist, 1, 0);
     
     return ra;
 }
@@ -402,9 +400,9 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 
 	/* check that we can call the extractor function */
 #if (PHP_MAJOR_VERSION < 7)
-	if(!zend_is_callable_ex(ra->z_fun, NULL, 0, NULL, NULL, NULL, NULL TSRMLS_CC)) {
+    if (!zend_is_callable_ex(&ra->z_fun, NULL, 0, NULL, NULL, NULL, NULL TSRMLS_CC)) {
 #else
-	if (!zend_is_callable_ex(ra->z_fun, NULL, 0, NULL, NULL, NULL)) {
+    if (!zend_is_callable_ex(&ra->z_fun, NULL, 0, NULL, NULL, NULL)) {
 #endif
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call extractor function");
 		return NULL;
@@ -413,7 +411,7 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 
 	/* call extraction function */
 	ZVAL_STRINGL(&z_argv[0], key, key_len);
-	call_user_function(EG(function_table), NULL, ra->z_fun, &z_ret, 1, z_argv);
+	call_user_function(EG(function_table), NULL, &ra->z_fun, &z_ret, 1, z_argv);
 
 	if(Z_TYPE(z_ret) != IS_STRING) {
 		zval_dtor(&z_argv[0]);
@@ -435,7 +433,7 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS
 	char *start, *end;
 	*out_len = key_len;
 
-	if(ra->z_fun) {
+	if (Z_TYPE(ra->z_fun) != IS_NULL) {
 		return ra_call_extractor(ra, key, key_len, out_len TSRMLS_CC);
     } else if ((start = strchr(key, '{')) == NULL || (end = strchr(start + 1, '}')) == NULL) {
         return estrndup(key, key_len);
@@ -454,9 +452,9 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
 
 	/* check that we can call the extractor function */
 #if (PHP_MAJOR_VERSION < 7)
-	if(!zend_is_callable_ex(ra->z_dist, NULL, 0, NULL, NULL, NULL, NULL TSRMLS_CC)) {
+    if (!zend_is_callable_ex(&ra->z_dist, NULL, 0, NULL, NULL, NULL, NULL TSRMLS_CC)) {
 #else
-	if (!zend_is_callable_ex(ra->z_dist, NULL, 0, NULL, NULL, NULL)) {
+    if (!zend_is_callable_ex(&ra->z_dist, NULL, 0, NULL, NULL, NULL)) {
 #endif
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call distributor function");
 		return 0;
@@ -465,7 +463,7 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
 
 	/* call extraction function */
     ZVAL_STRINGL(&z_argv[0], key, key_len);
-    call_user_function(EG(function_table), NULL, ra->z_dist, &z_ret, 1, z_argv);
+    call_user_function(EG(function_table), NULL, &ra->z_dist, &z_ret, 1, z_argv);
 
 	if(Z_TYPE(z_ret) != IS_LONG) {
 		zval_dtor(&z_argv[0]);
@@ -489,7 +487,7 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
     out = ra_extract_key(ra, key, key_len, &out_len TSRMLS_CC);
     if(!out) return NULL;
 
-    if(ra->z_dist) {
+    if (Z_TYPE(ra->z_dist) != IS_NULL) {
         if (!ra_call_distributor(ra, key, key_len, &pos TSRMLS_CC)) {
             efree(out);
             return NULL;
@@ -658,11 +656,10 @@ ra_index_exec(zval *z_redis, zval *return_value, int keep_all TSRMLS_DC) {
 	if(Z_TYPE(z_ret) == IS_ARRAY) {
 		if(return_value) {
 				if(keep_all) {
-						*return_value = z_ret;
-						zval_copy_ctor(return_value);
+                    zp_tmp = &z_ret;
+                    RETVAL_ZVAL(zp_tmp, 1, 0);
 				} else if ((zp_tmp = zend_hash_index_find(Z_ARRVAL(z_ret), 0)) != NULL) {
-						*return_value = *zp_tmp;
-						zval_copy_ctor(return_value);
+                    RETVAL_ZVAL(zp_tmp, 1, 0);
 				}
 		}
 		zval_dtor(&z_ret);
@@ -1148,19 +1145,21 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 static void zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache,
 	const char *hostname, long count TSRMLS_DC) {
 
-    zval *z_ret = NULL, z_args[2];
-    zval *z_host = &z_args[0], *z_count = &z_args[1];
+    zval z_args[2];
 
-    ZVAL_STRING(z_host, hostname);
-    ZVAL_LONG(z_count, count);
+    ZVAL_STRING(&z_args[0], hostname);
+    ZVAL_LONG(&z_args[1], count);
 
 #if (PHP_MAJOR_VERSION < 7)
-    zval **z_args_pp[2] = { &z_host, &z_count };
+    zval *z_ret = NULL,
+        *z_host = &z_args[0], *z_count = &z_args[1],
+        **z_args_pp[2] = { &z_host, &z_count };
     z_cb->params = z_args_pp;
     z_cb->retval_ptr_ptr = &z_ret;
 #else
+    zval z_ret;
     z_cb->params = z_args;
-    z_cb->retval = z_ret;
+    z_cb->retval = &z_ret;
 #endif
 	z_cb->param_count = 2;
 	z_cb->no_separation = 0;
@@ -1169,9 +1168,11 @@ static void zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z
 	zend_call_function(z_cb, z_cb_cache TSRMLS_CC);
 
 	/* cleanup */
-    zval_dtor(z_host);
+    zval_dtor(&z_args[0]);
+#if (PHP_MAJOR_VERSION < 7)
 	if(z_ret)
 		efree(z_ret);
+#endif
 }
 
 static void
