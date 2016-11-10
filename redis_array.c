@@ -97,16 +97,10 @@ static void redis_array_free(RedisArray *ra) {
     efree(ra->hosts);
 
     /* delete hash function */
-    if(ra->z_fun) {
-        zval_dtor(ra->z_fun);
-        efree(ra->z_fun);
-    }
+    zval_dtor(&ra->z_fun);
 
     /* Distributor */
-    if(ra->z_dist) {
-        zval_dtor(ra->z_dist);
-        efree(ra->z_dist);
-    }
+    zval_dtor(&ra->z_dist);
 
     /* Delete pur commands */
     zval_dtor(&ra->z_pure_cmds);
@@ -212,7 +206,7 @@ uint32_t rcrc32(const char *s, size_t sz) {
     Public constructor */
 PHP_METHOD(RedisArray, __construct)
 {
-	zval *z0, *z_fun = NULL, *z_dist = NULL, *zpData, *z_opts = NULL;
+	zval *z0, z_fun, z_dist, *zpData, *z_opts = NULL;
 	RedisArray *ra = NULL;
 	zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0;
 	HashTable *hPrev = NULL, *hOpts = NULL;
@@ -240,17 +234,17 @@ PHP_METHOD(RedisArray, __construct)
 		}
 
 		/* extract function name. */
-        if ((zpData = zend_hash_str_find(hOpts, "function", sizeof("function") - 1)) != NULL) {
-			MAKE_STD_ZVAL(z_fun);
-			*z_fun = *zpData;
-			zval_copy_ctor(z_fun);
+        if ((zpData = zend_hash_str_find(hOpts, "function", sizeof("function") - 1)) == NULL) {
+            ZVAL_NULL(&z_fun);
+        } else {
+            ZVAL_ZVAL(&z_fun, zpData, 1, 0);
 		}
 
 		/* extract function name. */
-        if ((zpData = zend_hash_str_find(hOpts, "distributor", sizeof("distributor") - 1)) != NULL) {
-			MAKE_STD_ZVAL(z_dist);
-			*z_dist = *zpData;
-			zval_copy_ctor(z_dist);
+        if ((zpData = zend_hash_str_find(hOpts, "distributor", sizeof("distributor") - 1)) == NULL) {
+            ZVAL_NULL(&z_dist);
+        } else {
+            ZVAL_ZVAL(&z_dist, zpData, 1, 0);
 		}
 
 		/* extract index option. */
@@ -308,13 +302,15 @@ PHP_METHOD(RedisArray, __construct)
 			break;
 
 		case IS_ARRAY:
-			ra = ra_make_array(Z_ARRVAL_P(z0), z_fun, z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout TSRMLS_CC);
+			ra = ra_make_array(Z_ARRVAL_P(z0), &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout TSRMLS_CC);
 			break;
 
 		default:
 			WRONG_PARAM_COUNT;
 			break;
 	}
+    zval_dtor(&z_dist);
+    zval_dtor(&z_fun);
 
 	if(ra) {
 		ra->auto_rehash = b_autorehash;
@@ -522,7 +518,7 @@ PHP_METHOD(RedisArray, _instance)
 
 PHP_METHOD(RedisArray, _function)
 {
-	zval *object;
+	zval *object, *z_fun;
 	RedisArray *ra;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
@@ -534,17 +530,13 @@ PHP_METHOD(RedisArray, _function)
 		RETURN_FALSE;
 	}
 
-	if(ra->z_fun) {
-		*return_value = *ra->z_fun;
-		zval_copy_ctor(return_value);
-	} else {
-		RETURN_NULL();
-	}
+    z_fun = &ra->z_fun;
+    RETURN_ZVAL(z_fun, 1, 0);
 }
 
 PHP_METHOD(RedisArray, _distributor)
 {
-	zval *object;
+	zval *object, *z_dist;
 	RedisArray *ra;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
@@ -556,12 +548,8 @@ PHP_METHOD(RedisArray, _distributor)
 		RETURN_FALSE;
 	}
 
-	if(ra->z_fun) {
-		*return_value = *ra->z_fun;
-		zval_copy_ctor(return_value);
-	} else {
-		RETURN_NULL();
-	}
+    z_dist = &ra->z_dist;
+    RETURN_ZVAL(z_dist, 1, 0);
 }
 
 PHP_METHOD(RedisArray, _rehash)
@@ -589,7 +577,7 @@ PHP_METHOD(RedisArray, _rehash)
 
 static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
 {
-	zval *object, z_fun, *z_tmp;
+	zval *object, z_fun;
 	int i;
 	RedisArray *ra;
 
@@ -607,8 +595,10 @@ static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *metho
 
 	array_init(return_value);
 	for(i = 0; i < ra->count; ++i) {
-
+        zval zv, *z_tmp = &zv;
+#if (PHP_MAJOR_VERSION < 7)
 		MAKE_STD_ZVAL(z_tmp);
+#endif
 
 		/* Call each node in turn */
         call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 0, NULL);
@@ -651,7 +641,7 @@ PHP_METHOD(RedisArray, bgsave)
 
 PHP_METHOD(RedisArray, keys)
 {
-	zval *object, z_args[1], *z_tmp, z_fun;
+	zval *object, z_args[1], z_fun;
 	RedisArray *ra;
 	char *pattern;
 	int pattern_len, i;
@@ -679,8 +669,11 @@ PHP_METHOD(RedisArray, keys)
 
 	/* Iterate our RedisArray nodes */
 	for(i=0; i<ra->count; ++i) {
+        zval zv, *z_tmp = &zv;
+#if (PHP_MAJOR_VERSION < 7)
 		/* Return for this node */
 		MAKE_STD_ZVAL(z_tmp);
+#endif
 
 		/* Call KEYS on each node */
         call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 1, z_args);
@@ -694,7 +687,7 @@ PHP_METHOD(RedisArray, keys)
 
 PHP_METHOD(RedisArray, getOption)
 {
-	zval *object, z_fun, *z_tmp, z_args[1];
+	zval *object, z_fun, z_args[1];
 	int i;
 	RedisArray *ra;
 	long opt;
@@ -716,8 +709,10 @@ PHP_METHOD(RedisArray, getOption)
 
 	array_init(return_value);
 	for(i = 0; i < ra->count; ++i) {
-
+        zval zv, *z_tmp = &zv;
+#if (PHP_MAJOR_VERSION < 7)
 		MAKE_STD_ZVAL(z_tmp);
+#endif
 
 		/* Call each node in turn */
         call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 1, z_args);
@@ -729,7 +724,7 @@ PHP_METHOD(RedisArray, getOption)
 
 PHP_METHOD(RedisArray, setOption)
 {
-	zval *object, z_fun, *z_tmp, z_args[2];
+	zval *object, z_fun, z_args[2];
 	int i;
 	RedisArray *ra;
 	long opt;
@@ -754,8 +749,10 @@ PHP_METHOD(RedisArray, setOption)
 
 	array_init(return_value);
 	for(i = 0; i < ra->count; ++i) {
-
+        zval zv, *z_tmp = &zv;
+#if (PHP_MAJOR_VERSION < 7)
 		MAKE_STD_ZVAL(z_tmp);
+#endif
 
 		/* Call each node in turn */
         call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 2, z_args);
@@ -768,7 +765,7 @@ PHP_METHOD(RedisArray, setOption)
 
 PHP_METHOD(RedisArray, select)
 {
-    zval *object, z_fun, *z_tmp, z_args[1];
+    zval *object, z_fun, z_args[1];
 	int i;
 	RedisArray *ra;
 	long opt;
@@ -790,7 +787,10 @@ PHP_METHOD(RedisArray, select)
 
 	array_init(return_value);
 	for(i = 0; i < ra->count; ++i) {
+        zval zv, *z_tmp = &zv;
+#if (PHP_MAJOR_VERSION < 7)
 		MAKE_STD_ZVAL(z_tmp);
+#endif
 
 		/* Call each node in turn */
         call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 1, z_args);
@@ -799,7 +799,7 @@ PHP_METHOD(RedisArray, select)
 	}
     zval_dtor(&z_fun);
 }
-
+#if (PHP_MAJOR_VERSION < 7)
 #define HANDLE_MULTI_EXEC(cmd) do {\
 	if (redis_array_get(getThis(), &ra TSRMLS_CC) >= 0 && ra->z_multi_exec) {\
 		int i, num_varargs;\
@@ -828,6 +828,29 @@ PHP_METHOD(RedisArray, select)
 		return;\
 	}\
 }while(0)
+#else
+#define HANDLE_MULTI_EXEC(cmd) do { \
+    if (redis_array_get(getThis(), &ra TSRMLS_CC) >= 0 && ra->z_multi_exec) { \
+        int i, num_varargs; \
+        zval *varargs = NULL, z_arg_array; \
+        if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O*", \
+                                            &object, redis_array_ce, &varargs, &num_varargs) == FAILURE) { \
+            RETURN_FALSE;\
+        } \
+        /* copy all args into a zval hash table */\
+        array_init(&z_arg_array); \
+        for (i = 0; i < num_varargs; i++) { \
+            zval z_tmp; \
+            ZVAL_ZVAL(&z_tmp, &varargs[i], 1, 0); \
+            add_next_index_zval(&z_arg_array, &z_tmp); \
+        } \
+        /* call */\
+        ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, sizeof(cmd) - 1, &z_arg_array, NULL); \
+        zval_dtor(&z_arg_array); \
+        return; \
+    } \
+} while(0)
+#endif
 
 /* MGET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mget)
