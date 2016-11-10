@@ -189,7 +189,7 @@ redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
 PS_OPEN_FUNC(redis)
 {
     php_url *url;
-    zval *params, *param;
+    zval params, *param;
     int i, j, path_len;
 
     redis_pool *pool = redis_pool_new(TSRMLS_C);
@@ -236,37 +236,36 @@ PS_OPEN_FUNC(redis)
 
             /* parse parameters */
             if (url->query != NULL) {
-                MAKE_STD_ZVAL(params);
-                array_init(params);
+                array_init(&params);
 
-                sapi_module.treat_data(PARSE_STRING, estrdup(url->query), params TSRMLS_CC);
+                sapi_module.treat_data(PARSE_STRING, estrdup(url->query), &params TSRMLS_CC);
 
-                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "weight", sizeof("weight") - 1)) != NULL) {
+                if ((param = zend_hash_str_find(Z_ARRVAL(params), "weight", sizeof("weight") - 1)) != NULL) {
                     weight = zval_get_long(param);
                 }
-                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "timeout", sizeof("timeout") - 1)) != NULL) {
+                if ((param = zend_hash_str_find(Z_ARRVAL(params), "timeout", sizeof("timeout") - 1)) != NULL) {
                     timeout = atof(Z_STRVAL_P(param));
                 }
-                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "persistent", sizeof("persistent") - 1)) != NULL) {
+                if ((param = zend_hash_str_find(Z_ARRVAL(params), "persistent", sizeof("persistent") - 1)) != NULL) {
                     persistent = (atol(Z_STRVAL_P(param)) == 1 ? 1 : 0);
                 }
-                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "persistent_id", sizeof("persistent_id") - 1)) != NULL) {
+                if ((param = zend_hash_str_find(Z_ARRVAL(params), "persistent_id", sizeof("persistent_id") - 1)) != NULL) {
                     persistent_id = estrndup(Z_STRVAL_P(param), Z_STRLEN_P(param));
                 }
-                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "prefix", sizeof("prefix") - 1)) != NULL) {
+                if ((param = zend_hash_str_find(Z_ARRVAL(params), "prefix", sizeof("prefix") - 1)) != NULL) {
                     prefix = estrndup(Z_STRVAL_P(param), Z_STRLEN_P(param));
                 }
-                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "auth", sizeof("auth") - 1)) != NULL) {
+                if ((param = zend_hash_str_find(Z_ARRVAL(params), "auth", sizeof("auth") - 1)) != NULL) {
                     auth = estrndup(Z_STRVAL_P(param), Z_STRLEN_P(param));
                 }
-                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "database", sizeof("database") - 1)) != NULL) {
+                if ((param = zend_hash_str_find(Z_ARRVAL(params), "database", sizeof("database") - 1)) != NULL) {
                     database = zval_get_long(param);
                 }
-                if ((param = zend_hash_str_find(Z_ARRVAL_P(params), "retry_interval", sizeof("retry_interval") - 1)) != NULL) {
+                if ((param = zend_hash_str_find(Z_ARRVAL(params), "retry_interval", sizeof("retry_interval") - 1)) != NULL) {
                     retry_interval = zval_get_long(param);
                 }
 
-                zval_ptr_dtor(&params);
+                zval_dtor(&params);
             }
 
             if ((url->path == NULL && url->host == NULL) || weight <= 0 || timeout <= 0) {
@@ -545,7 +544,7 @@ static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
 
 PS_OPEN_FUNC(rediscluster) {
     redisCluster *c;
-    zval *z_conf, *z_val;
+    zval z_conf, *z_val;
     HashTable *ht_conf, *ht_seeds;
     double timeout = 0, read_timeout = 0;
     int persistent = 0;
@@ -553,22 +552,20 @@ PS_OPEN_FUNC(rediscluster) {
     char *prefix;
 
     /* Parse configuration for session handler */
-    MAKE_STD_ZVAL(z_conf);
-    array_init(z_conf);
-    sapi_module.treat_data(PARSE_STRING, estrdup(save_path), z_conf TSRMLS_CC);
+    array_init(&z_conf);
+    sapi_module.treat_data(PARSE_STRING, estrdup(save_path), &z_conf TSRMLS_CC);
 
     /* Sanity check that we're able to parse and have a seeds array */
-    if (Z_TYPE_P(z_conf) != IS_ARRAY ||
-        (z_val = zend_hash_str_find(Z_ARRVAL_P(z_conf), "seed", sizeof("seed") - 1)) == NULL ||
+    if (Z_TYPE(z_conf) != IS_ARRAY ||
+        (z_val = zend_hash_str_find(Z_ARRVAL(z_conf), "seed", sizeof("seed") - 1)) == NULL ||
         Z_TYPE_P(z_val) != IS_ARRAY)
     {
-        zval_dtor(z_conf);
-        efree(z_conf);
+        zval_dtor(&z_conf);
         return FAILURE;
     }
 
     /* Grab a copy of our config hash table and keep seeds array */
-    ht_conf = Z_ARRVAL_P(z_conf);
+    ht_conf = Z_ARRVAL(z_conf);
     ht_seeds = Z_ARRVAL_P(z_val);
 
     /* Grab timeouts if they were specified */
@@ -582,8 +579,7 @@ PS_OPEN_FUNC(rediscluster) {
     if (timeout < 0 || read_timeout < 0) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "Can't set negative timeout values in session configuration");
-        zval_dtor(z_conf);
-        efree(z_conf);
+        zval_dtor(&z_conf);
         return FAILURE;
     }
 
@@ -623,8 +619,7 @@ PS_OPEN_FUNC(rediscluster) {
     }
 
     /* Cleanup */
-    zval_dtor(z_conf);
-    efree(z_conf);
+    zval_dtor(&z_conf);
     
     return retval;
 }

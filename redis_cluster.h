@@ -15,7 +15,7 @@
     ((redisCluster*)zend_object_store_get_object(getThis() TSRMLS_CC))
 #else
 #define GET_CONTEXT() \
-    ((redisCluster *)((char *)getThis() - XtOffsetOf(redisCluster, std)))
+    ((redisCluster *)((char *)Z_OBJ_P(getThis()) - XtOffsetOf(redisCluster, std)))
 #endif
 
 /* Command building/processing is identical for every command */
@@ -106,15 +106,18 @@
 /* For the creation of RedisCluster specific exceptions */
 PHP_REDIS_API zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC);
 
-/* Create cluster context */
 #if (PHP_MAJOR_VERSION < 7)
+/* Create cluster context */
 zend_object_value create_cluster_context(zend_class_entry *class_type TSRMLS_DC);
-#else
-zend_object *create_cluster_context(zend_class_entry *class_type TSRMLS_DC);
-#endif
-
 /* Free cluster context struct */
 void free_cluster_context(void *object TSRMLS_DC);
+#else
+/* Create cluster context */
+zend_object *create_cluster_context(zend_class_entry *class_type TSRMLS_DC);
+/* Free cluster context struct */
+void free_cluster_context(zend_object *object);
+#endif
+
 
 /* Inittialize our class with PHP */
 void init_rediscluster(TSRMLS_D);
