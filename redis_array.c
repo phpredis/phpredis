@@ -218,6 +218,8 @@ PHP_METHOD(RedisArray, __construct)
 		RETURN_FALSE;
 	}
 
+    ZVAL_NULL(&z_fun);
+    ZVAL_NULL(&z_dist);
 	/* extract options */
 	if(z_opts) {
 		zval *z_retry_interval_p;
@@ -234,16 +236,12 @@ PHP_METHOD(RedisArray, __construct)
 		}
 
 		/* extract function name. */
-        if ((zpData = zend_hash_str_find(hOpts, "function", sizeof("function") - 1)) == NULL) {
-            ZVAL_NULL(&z_fun);
-        } else {
+        if ((zpData = zend_hash_str_find(hOpts, "function", sizeof("function") - 1)) != NULL) {
             ZVAL_ZVAL(&z_fun, zpData, 1, 0);
 		}
 
 		/* extract function name. */
-        if ((zpData = zend_hash_str_find(hOpts, "distributor", sizeof("distributor") - 1)) == NULL) {
-            ZVAL_NULL(&z_dist);
-        } else {
+        if ((zpData = zend_hash_str_find(hOpts, "distributor", sizeof("distributor") - 1)) != NULL) {
             ZVAL_ZVAL(&z_dist, zpData, 1, 0);
 		}
 
@@ -1124,7 +1122,7 @@ PHP_METHOD(RedisArray, mset)
 /* DEL will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, del)
 {
-	zval *object, *z_keys, z_fun, *z_argarray, *data, *z_ret, *z_tmp, *z_args;
+	zval *object, z_keys, z_fun, *data, z_ret, *z_tmp, *z_args;
 	int i, n;
 	RedisArray *ra;
 	int *pos, argc = ZEND_NUM_ARGS(), *argc_each;
@@ -1145,25 +1143,28 @@ PHP_METHOD(RedisArray, del)
 
 	/* if single array arg, point z_keys to it. */
 	if (argc == 1 && Z_TYPE(z_args[0]) == IS_ARRAY) {
-		z_keys = &z_args[0];
+		z_keys = z_args[0];
 	} else {
 		/* copy all elements to z_keys */
-		MAKE_STD_ZVAL(z_keys);
-		array_init(z_keys);
-		free_zkeys = 1;
+		array_init(&z_keys);
 		for (i = 0; i < argc; ++i) {
+            zval *z_arg = &z_args[i];
+#if (PHP_MAJOR_VERSION < 7)
 			MAKE_STD_ZVAL(z_tmp);
-			*z_tmp = z_args[i];
-			zval_copy_ctor(z_tmp);
-			INIT_PZVAL(z_tmp);
-
+#else
+            zval zv;
+            z_tmp = &zv;
+#endif
+            ZVAL_ZVAL(z_tmp, z_arg, 1, 0);
 			/* add copy to z_keys */
-			add_next_index_zval(z_keys, z_tmp);
+			add_next_index_zval(&z_keys, z_tmp);
 		}
+		free_zkeys = 1;
 	}
 
 
 	if (redis_array_get(getThis(), &ra TSRMLS_CC) < 0) {
+        efree(z_args);
 		RETURN_FALSE;
 	}
 
@@ -1171,7 +1172,7 @@ PHP_METHOD(RedisArray, del)
 	ZVAL_STRINGL(&z_fun, "DEL", 3);
 
 	/* init data structures */
-	h_keys = Z_ARRVAL_P(z_keys);
+	h_keys = Z_ARRVAL(z_keys);
 	argc = zend_hash_num_elements(h_keys);
 	argv = emalloc(argc * sizeof(zval*));
 	pos = emalloc(argc * sizeof(int));
@@ -1184,6 +1185,7 @@ PHP_METHOD(RedisArray, del)
     ZEND_HASH_FOREACH_VAL(h_keys, data) {
 		if (Z_TYPE_P(data) != IS_STRING) {
 			php_error_docref(NULL TSRMLS_CC, E_ERROR, "DEL: all keys must be string.");
+            efree(argv);
 			efree(pos);
 			RETURN_FALSE;
 		}
@@ -1199,25 +1201,26 @@ PHP_METHOD(RedisArray, del)
 	for(n = 0; n < ra->count; ++n) { /* for each node */
 
 		int found = 0;
+        zval z_argarray;
 
 		/* copy args */
-		MAKE_STD_ZVAL(z_argarray);
-		array_init(z_argarray);
+		array_init(&z_argarray);
 		for(i = 0; i < argc; ++i) {
 			if(pos[i] != n) continue;
 
+#if (PHP_MAJOR_VERSION < 7)
 			MAKE_STD_ZVAL(z_tmp);
-			*z_tmp = *argv[i];
-			zval_copy_ctor(z_tmp);
-			INIT_PZVAL(z_tmp);
-
-			add_next_index_zval(z_argarray, z_tmp);
+#else
+            zval zv;
+            z_tmp = &zv;
+#endif
+            ZVAL_ZVAL(z_tmp, argv[i], 1, 0);
+			add_next_index_zval(&z_argarray, z_tmp);
 			found++;
 		}
 
 		if(!found) {	/* don't run empty DELs */
-			zval_dtor(z_argarray);
-			efree(z_argarray);
+			zval_dtor(&z_argarray);
 			continue;
 		}
 
@@ -1227,22 +1230,19 @@ PHP_METHOD(RedisArray, del)
 		}
 
 		/* call */
-		MAKE_STD_ZVAL(z_ret);
-        call_user_function(&redis_ce->function_table, redis_inst, &z_fun, z_ret, 1, z_argarray);
+        call_user_function(&redis_ce->function_table, redis_inst, &z_fun, &z_ret, 1, &z_argarray);
 
 		if(ra->index) {
-			ra_index_del(z_argarray, redis_inst TSRMLS_CC); /* use SREM to remove keys from node index */
+			ra_index_del(&z_argarray, redis_inst TSRMLS_CC); /* use SREM to remove keys from node index */
 			ra_index_exec(redis_inst, z_tmp, 0 TSRMLS_CC); /* run EXEC */
 			total += Z_LVAL_P(z_tmp);	/* increment total from multi/exec block */
 		} else {
-			total += Z_LVAL_P(z_ret);	/* increment total from single command */
+			total += Z_LVAL(z_ret);	/* increment total from single command */
 		}
 
-		zval_dtor(z_ret);
-		efree(z_ret);
+		zval_dtor(&z_ret);
 
-		zval_dtor(z_argarray);
-		efree(z_argarray);
+		zval_dtor(&z_argarray);
 	}
 
 	/* cleanup */
@@ -1252,8 +1252,7 @@ PHP_METHOD(RedisArray, del)
 	efree(argc_each);
 
 	if(free_zkeys) {
-		zval_dtor(z_keys);
-		efree(z_keys);
+		zval_dtor(&z_keys);
 	}
 
 	efree(z_args);

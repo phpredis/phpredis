@@ -340,7 +340,13 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
 }
 
 /* Free redisCluster context */
-void free_cluster_context(void *object TSRMLS_DC) {
+void
+#if (PHP_MAJOR_VERSION < 7)
+free_cluster_context(void *object TSRMLS_DC)
+#else
+free_cluster_context(zend_object *object)
+#endif
+{
     redisCluster *cluster;
 
     // Grab context
@@ -385,7 +391,6 @@ void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
         zend_throw_exception(redis_cluster_exception_ce,
             "Must pass seeds", 0 TSRMLS_CC);
     }
-
     /* Set our timeout and read_timeout which we'll pass through to the
      * socket type operations */
     c->timeout = timeout;
@@ -919,10 +924,9 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
 /* {{{ proto array RedisCluster::del(string key1, string key2, ... keyN) */
 PHP_METHOD(RedisCluster, del) {
-    zval *z_ret;
+    zval *z_ret = emalloc(sizeof(zval));
 
     // Initialize a LONG value to zero for our return
-    MAKE_STD_ZVAL(z_ret);
     ZVAL_LONG(z_ret, 0);
 
     // Parse args, process

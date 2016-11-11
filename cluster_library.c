@@ -1936,7 +1936,7 @@ PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisClust
 PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
                                    redisCluster *c, mbulk_cb cb, void *ctx)
 {
-    zval *z_result;
+    zval zv, *z_result = &zv;
 
     /* Return FALSE if we didn't get a multi-bulk response */
     if (c->reply_type != TYPE_MULTIBULK) {
@@ -1944,7 +1944,9 @@ PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     /* Allocate our array */
+#if (PHP_MAJOR_VERSION < 7)
     MAKE_STD_ZVAL(z_result);
+#endif
     array_init(z_result);
 
     /* Consume replies as long as there are more than zero */
@@ -1954,16 +1956,14 @@ PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 
         /* Call our specified callback */
         if (cb(c->cmd_sock, z_result, c->reply_len, ctx TSRMLS_CC)==FAILURE) {
-            zval_dtor(z_result);
-            FREE_ZVAL(z_result);
+            zval_ptr_dtor(z_result);
             CLUSTER_RETURN_FALSE(c);
         }
     }
 
     // Success, make this array our return value
     if(CLUSTER_IS_ATOMIC(c)) {
-        *return_value = *z_result;
-        efree(z_result);
+        RETVAL_ZVAL(z_result, 0, 1);
     } else {
         add_next_index_zval(c->multi_resp, z_result);
     }
