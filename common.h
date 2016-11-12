@@ -245,9 +245,6 @@ inline_call_user_function(HashTable *function_table, zval *object, zval *functio
     return ret;
 }
 
-#define _IS_BOOL IS_BOOL
-#define ZEND_SAME_FAKE_TYPE(faketype, realtype) ((faketype) == (realtype))
-
 #undef add_assoc_bool
 #define add_assoc_bool(__arg, __key, __b) add_assoc_bool_ex(__arg, __key, strlen(__key), __b)
 static int (*_add_assoc_bool_ex)(zval *, const char *, uint, int) = &add_assoc_bool_ex;

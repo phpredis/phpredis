@@ -1500,7 +1500,7 @@ PHP_REDIS_API void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS,
         if(c->flags->mode != MULTI) {
             RETURN_FALSE;
         } else {
-            add_next_index_bool(c->multi_resp, 0);
+            add_next_index_bool(&c->multi_resp, 0);
             return;
         }
     }
@@ -1530,11 +1530,14 @@ PHP_REDIS_API void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
             CLUSTER_RETURN_STRING(c, resp, c->reply_len);
         }
     } else {
-        zval *z = NULL;
+        zval zv, *z = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+        z = NULL;
+#endif
         if (redis_unserialize(c->flags, resp, c->reply_len, &z TSRMLS_CC)) {
-            add_next_index_zval(c->multi_resp, z);
+            add_next_index_zval(&c->multi_resp, z);
         } else {
-            add_next_index_stringl(c->multi_resp, resp, c->reply_len);
+            add_next_index_stringl(&c->multi_resp, resp, c->reply_len);
         }
     }
     efree(resp);
@@ -1641,31 +1644,28 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
                              void *ctx)
 {
     subscribeContext *sctx = (subscribeContext*)ctx;
-    zval *z_tab, *z_tmp, *z_ret;
+    zval z_tab, *z_tmp, *z_ret;
     int pull=0;
 
 
     // Consume each MULTI BULK response (one per channel/pattern)
     while(sctx->argc--) {
-        z_tab = cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-            pull, mbulk_resp_loop_raw);
-
-        if(!z_tab) {
+        if (!cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
+            pull, mbulk_resp_loop_raw, &z_tab)
+        ) {
             efree(sctx);
             RETURN_FALSE;
         }
 
-        if ((z_tmp = zend_hash_index_find(Z_ARRVAL_P(z_tab), 0)) == NULL ||
+        if ((z_tmp = zend_hash_index_find(Z_ARRVAL(z_tab), 0)) == NULL ||
             strcasecmp(Z_STRVAL_P(z_tmp), sctx->kw) != 0
         ) {
-            zval_dtor(z_tab);
-            FREE_ZVAL(z_tab);
+            zval_dtor(&z_tab);
             efree(sctx);
             RETURN_FALSE;
         }
 
-        zval_dtor(z_tab);
-        efree(z_tab);
+        zval_dtor(&z_tab);
         pull = 1;
     }
 
@@ -1690,10 +1690,9 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
         int tab_idx=1, is_pmsg;
 
         // Get the next subscribe response
-        z_tab = cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
-            1, mbulk_resp_loop);
-
-        if (!z_tab || (z_type = zend_hash_index_find(Z_ARRVAL_P(z_tab), 0)) == NULL) {
+        if (!cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, 1, mbulk_resp_loop, &z_tab) ||
+            (z_type = zend_hash_index_find(Z_ARRVAL(z_tab), 0)) == NULL
+        ) {
             break;
         }
 
@@ -1703,18 +1702,17 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
         ) {
             is_pmsg = *Z_STRVAL_P(z_type) == 'p';
         } else {
-            zval_dtor(z_tab);
-            efree(z_tab);
+            zval_dtor(&z_tab);
             continue;
         }
 
-        if (is_pmsg && (z_pat = zend_hash_index_find(Z_ARRVAL_P(z_tab), tab_idx++)) == NULL) {
+        if (is_pmsg && (z_pat = zend_hash_index_find(Z_ARRVAL(z_tab), tab_idx++)) == NULL) {
             break;
         }
 
         // Extract channel and data
-        if ((z_chan = zend_hash_index_find(Z_ARRVAL_P(z_tab), tab_idx++)) == NULL ||
-           (z_data = zend_hash_index_find(Z_ARRVAL_P(z_tab), tab_idx++)) == NULL
+        if ((z_chan = zend_hash_index_find(Z_ARRVAL(z_tab), tab_idx++)) == NULL ||
+           (z_data = zend_hash_index_find(Z_ARRVAL(z_tab), tab_idx++)) == NULL
         ) {
             break;
         }
@@ -1759,19 +1757,15 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
         // If we have a return value, free it
         if(z_ret) zval_ptr_dtor(&z_ret);
 
-        zval_dtor(z_tab);
-        efree(z_tab);
+        zval_dtor(&z_tab);
     }
 
     // We're no longer subscribing, due to an error
     c->subscribed_slot = -1;
 
     // Cleanup
+    zval_dtor(&z_tab);
     efree(sctx);
-    if(z_tab) {
-        zval_dtor(z_tab);
-        efree(z_tab);
-    }
 
     // Failure
     RETURN_FALSE;
@@ -1782,7 +1776,7 @@ PHP_REDIS_API void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
                                redisCluster *c, void *ctx)
 {
     subscribeContext *sctx = (subscribeContext*)ctx;
-    zval *z_tab, *z_chan, *z_flag;
+    zval z_tab, *z_chan, *z_flag;
     int pull = 0, argc = sctx->argc;
 
     efree(sctx);
@@ -1790,25 +1784,20 @@ PHP_REDIS_API void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
 
     // Consume each response
     while(argc--) {
-        z_tab = cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-            c, pull, mbulk_resp_loop_raw);
-
         // Fail if we didn't get an array or can't find index 1
-        if(!z_tab || (z_chan = zend_hash_index_find(Z_ARRVAL_P(z_tab), 1)) == NULL) {
-            if(z_tab) {
-                zval_dtor(z_tab);
-                efree(z_tab);
-            }
+        if (!cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, pull, mbulk_resp_loop_raw, &z_tab) ||
+            (z_chan = zend_hash_index_find(Z_ARRVAL(z_tab), 1)) == NULL
+        ) {
+            zval_dtor(&z_tab);
             zval_dtor(return_value);
             RETURN_FALSE;
         }
 
         // Find the flag for this channel/pattern
-        if ((z_flag = zend_hash_index_find(Z_ARRVAL_P(z_tab), 2)) == NULL ||
+        if ((z_flag = zend_hash_index_find(Z_ARRVAL(z_tab), 2)) == NULL ||
             Z_STRLEN_P(z_flag) != 2
         ) {
-            zval_dtor(z_tab);
-            efree(z_tab);
+            zval_dtor(&z_tab);
             zval_dtor(return_value);
             RETURN_FALSE;
         }
@@ -1819,8 +1808,7 @@ PHP_REDIS_API void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
         // Add result
         add_assoc_bool(return_value, Z_STRVAL_P(z_chan), flag[1]=='1');
 
-        zval_dtor(z_tab);
-        efree(z_tab);
+        zval_dtor(&z_tab);
         pull = 1;
     }
 }
@@ -1866,7 +1854,7 @@ PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisClust
                                  void *ctx)
 {
     clusterReply *r;
-    zval *z_arr;
+    zval zv, *z_arr = &zv;
     int i;
 
     // Make sure we can read it
@@ -1890,15 +1878,12 @@ PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisClust
                 RETVAL_STRINGL(r->str, r->len);
                 break;
             case TYPE_MULTIBULK:
-                MAKE_STD_ZVAL(z_arr);
                 array_init(z_arr);
 
                 for(i=0;i<r->elements;i++) {
                     cluster_mbulk_variant_resp(r->element[i], z_arr);
                 }
-
-                *return_value = *z_arr;
-                efree(z_arr);
+                RETVAL_ZVAL(z_arr, 1, 0);
                 break;
             default:
                 RETVAL_FALSE;
@@ -1907,23 +1892,23 @@ PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisClust
     } else {
         switch(r->type) {
             case TYPE_INT:
-                add_next_index_long(c->multi_resp, r->integer);
+                add_next_index_long(&c->multi_resp, r->integer);
                 break;
             case TYPE_ERR:
-                add_next_index_bool(c->multi_resp, 0);
+                add_next_index_bool(&c->multi_resp, 0);
                 break;
             case TYPE_LINE:
-                add_next_index_bool(c->multi_resp, 1);
+                add_next_index_bool(&c->multi_resp, 1);
                 break;
             case TYPE_BULK:
-                add_next_index_stringl(c->multi_resp, r->str, r->len);
+                add_next_index_stringl(&c->multi_resp, r->str, r->len);
                 efree(r->str);
                 break;
             case TYPE_MULTIBULK:
-                cluster_mbulk_variant_resp(r, c->multi_resp);
+                cluster_mbulk_variant_resp(r, &c->multi_resp);
                 break;
             default:
-                add_next_index_bool(c->multi_resp, 0);
+                add_next_index_bool(&c->multi_resp, 0);
                 break;
         }
     }
@@ -1965,7 +1950,7 @@ PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     if(CLUSTER_IS_ATOMIC(c)) {
         RETVAL_ZVAL(z_result, 0, 1);
     } else {
-        add_next_index_zval(c->multi_resp, z_result);
+        add_next_index_zval(&c->multi_resp, z_result);
     }
 }
 
@@ -2047,7 +2032,7 @@ PHP_REDIS_API void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     if(CLUSTER_IS_ATOMIC(c)) {
         RETVAL_ZVAL(z_result, 0, 1);
     } else {
-        add_next_index_zval(c->multi_resp, z_result);
+        add_next_index_zval(&c->multi_resp, z_result);
     }
 }
 
@@ -2056,6 +2041,7 @@ PHP_REDIS_API void cluster_client_list_resp(INTERNAL_FUNCTION_PARAMETERS, redisC
                                      void *ctx)
 {
     char *info;
+    zval zv, *z_result = &zv;
 
     /* Read the bulk response */
     info = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len TSRMLS_CC);
@@ -2064,10 +2050,7 @@ PHP_REDIS_API void cluster_client_list_resp(INTERNAL_FUNCTION_PARAMETERS, redisC
     }
 
 #if (PHP_MAJOR_VERSION < 7)
-    zval *z_result;
     MAKE_STD_ZVAL(z_result);
-#else
-    zval zv, *z_result = &zv;
 #endif
 
     /* Parse it and free the bulk string */
@@ -2077,16 +2060,14 @@ PHP_REDIS_API void cluster_client_list_resp(INTERNAL_FUNCTION_PARAMETERS, redisC
     if (CLUSTER_IS_ATOMIC(c)) {
         RETVAL_ZVAL(z_result, 0, 1);
     } else {
-        add_next_index_zval(c->multi_resp, z_result);
+        add_next_index_zval(&c->multi_resp, z_result);
     }
 }
 
 /* MULTI BULK response loop where we might pull the next one */
 PHP_REDIS_API zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
-                                     redisCluster *c, int pull, mbulk_cb cb)
+                                     redisCluster *c, int pull, mbulk_cb cb, zval *z_ret)
 {
-    zval *z_result;
-
     // Pull our next response if directed
     if(pull) {
         if(cluster_check_response(c, &c->reply_type TSRMLS_CC)<0)
@@ -2100,25 +2081,23 @@ PHP_REDIS_API zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
         return NULL;
     }
 
-    MAKE_STD_ZVAL(z_result);
-    array_init(z_result);
+    array_init(z_ret);
 
     // Call our callback
-    if(cb(c->cmd_sock, z_result, c->reply_len, NULL TSRMLS_CC)==FAILURE) {
-        zval_dtor(z_result);
-        FREE_ZVAL(z_result);
+    if(cb(c->cmd_sock, z_ret, c->reply_len, NULL TSRMLS_CC)==FAILURE) {
+        zval_dtor(z_ret);
         return NULL;
     }
 
-    return z_result;
+    return z_ret;
 }
 
 /* MULTI MULTI BULK reply (for EXEC) */
 PHP_REDIS_API void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
                                      redisCluster *c, void *ctx)
 {
-    MAKE_STD_ZVAL(c->multi_resp);
-    array_init(c->multi_resp);
+    zval *multi_resp = &c->multi_resp;
+    array_init(multi_resp);
 
     clusterFoldItem *fi = c->multi_head;
     while(fi) {
@@ -2131,23 +2110,21 @@ PHP_REDIS_API void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
             c->cmd_sock = SLOT_SOCK(c, fi->slot);
 
             if(cluster_check_response(c, &c->reply_type TSRMLS_CC)<0) {
-                zval_dtor(c->multi_resp);
-                efree(c->multi_resp);
+                zval_dtor(multi_resp);
                 RETURN_FALSE;
             }
 
             fi->callback(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, fi->ctx);
         } else {
             /* Just add false */
-            add_next_index_bool(c->multi_resp, 0);
+            add_next_index_bool(multi_resp, 0);
         }
         fi = fi->next;
     }
 
     // Set our return array
     zval_dtor(return_value);
-    *return_value = *c->multi_resp;
-    efree(c->multi_resp);
+    RETVAL_ZVAL(multi_resp, 0, 1);
 }
 
 /* Generic handler for MGET */
@@ -2176,7 +2153,7 @@ PHP_REDIS_API void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS,
             *return_value = *(mctx->z_multi);
             efree(mctx->z_multi);
         } else {
-            add_next_index_zval(c->multi_resp, mctx->z_multi);
+            add_next_index_zval(&c->multi_resp, mctx->z_multi);
         }
     }
 
@@ -2212,7 +2189,7 @@ PHP_REDIS_API void cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluste
             *return_value = *(mctx->z_multi);
             efree(mctx->z_multi);
         } else {
-            add_next_index_zval(c->multi_resp, mctx->z_multi);
+            add_next_index_zval(&c->multi_resp, mctx->z_multi);
         }
     }
 
@@ -2241,7 +2218,7 @@ PHP_REDIS_API void cluster_del_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
         if(CLUSTER_IS_ATOMIC(c)) {
             ZVAL_LONG(return_value, Z_LVAL_P(mctx->z_multi));
         } else {
-            add_next_index_long(c->multi_resp, Z_LVAL_P(mctx->z_multi));
+            add_next_index_long(&c->multi_resp, Z_LVAL_P(mctx->z_multi));
         }
         efree(mctx->z_multi);
     }
@@ -2269,9 +2246,9 @@ PHP_REDIS_API void cluster_mset_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     // Set our return if it's the last call
     if(mctx->last) {
         if(CLUSTER_IS_ATOMIC(c)) {
-            ZVAL_BOOL(return_value, Z_BVAL_P(mctx->z_multi));
+            ZVAL_BOOL(return_value, Z_LVAL_P(mctx->z_multi));
         } else {
-            add_next_index_bool(c->multi_resp, Z_BVAL_P(mctx->z_multi));
+            add_next_index_bool(&c->multi_resp, Z_LVAL_P(mctx->z_multi));
         }
         efree(mctx->z_multi);
     }

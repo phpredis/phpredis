@@ -89,7 +89,7 @@
     if(CLUSTER_IS_ATOMIC(c)) { \
         RETURN_FALSE; \
     } else { \
-        add_next_index_bool(c->multi_resp, 0); \
+        add_next_index_bool(&c->multi_resp, 0); \
         return; \
     }
 
@@ -102,7 +102,7 @@
             RETURN_FALSE; \
         } \
     } else { \
-        add_next_index_bool(c->multi_resp, b); \
+        add_next_index_bool(&c->multi_resp, b); \
     }
 
 /* Helper to respond with a double or add it to our MULTI response */
@@ -110,7 +110,7 @@
     if(CLUSTER_IS_ATOMIC(c)) { \
         RETURN_DOUBLE(d); \
     } else { \
-        add_next_index_double(c->multi_resp, d); \
+        add_next_index_double(&c->multi_resp, d); \
     }
 
 /* Helper to return a string value */
@@ -118,7 +118,7 @@
     if(CLUSTER_IS_ATOMIC(c)) { \
         RETVAL_STRINGL(str, len); \
     } else { \
-        add_next_index_stringl(c->multi_resp, str, len); \
+        add_next_index_stringl(&c->multi_resp, str, len); \
     } \
 
 /* Return a LONG value */
@@ -126,7 +126,7 @@
     if(CLUSTER_IS_ATOMIC(c)) { \
         RETURN_LONG(val); \
     } else { \
-        add_next_index_long(c->multi_resp, val); \
+        add_next_index_long(&c->multi_resp, val); \
     }
 
 /* Macro to clear out a clusterMultiCmd structure */
@@ -211,7 +211,7 @@ typedef struct redisCluster {
     char multi_len[REDIS_CLUSTER_SLOTS];
 
     /* Variable to store MULTI response */
-    zval *multi_resp;
+    zval multi_resp;
 
     /* Flag for when we get a CLUSTERDOWN error */
     short clusterdown;
@@ -422,7 +422,7 @@ PHP_REDIS_API void cluster_mbulk_assoc_resp(INTERNAL_FUNCTION_PARAMETERS,
 PHP_REDIS_API void cluster_multi_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 PHP_REDIS_API zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS, 
-    redisCluster *c, int pull, mbulk_cb cb);
+    redisCluster *c, int pull, mbulk_cb cb, zval *z_ret);
 
 /* Handlers for things like DEL/MGET/MSET/MSETNX */
 PHP_REDIS_API void cluster_del_resp(INTERNAL_FUNCTION_PARAMETERS, 

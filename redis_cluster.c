@@ -412,34 +412,31 @@ void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
 
 /* Attempt to load a named cluster configured in php.ini */
 void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
-    zval *z_seeds, *z_timeout, *z_read_timeout, *z_persistent, *z_value;
+    zval z_seeds, z_timeout, z_read_timeout, z_persistent, *z_value;
     char *iptr;
     double timeout=0, read_timeout=0;
     int persistent = 0;
     HashTable *ht_seeds = NULL;
 
     /* Seeds */
-    MAKE_STD_ZVAL(z_seeds);
-    array_init(z_seeds);
+    array_init(&z_seeds);
     if ((iptr = INI_STR("redis.clusters.seeds")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_seeds TSRMLS_CC);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_seeds TSRMLS_CC);
     }
-    if ((z_value = zend_hash_str_find(Z_ARRVAL_P(z_seeds), name, name_len)) != NULL) {
+    if ((z_value = zend_hash_str_find(Z_ARRVAL(z_seeds), name, name_len)) != NULL) {
         ht_seeds = Z_ARRVAL_P(z_value);
     } else {
-        zval_dtor(z_seeds);
-        efree(z_seeds);
+        zval_dtor(&z_seeds);
         zend_throw_exception(redis_cluster_exception_ce, "Couldn't find seeds for cluster", 0 TSRMLS_CC);
         return;
     }
     
     /* Connection timeout */
-    MAKE_STD_ZVAL(z_timeout);
-    array_init(z_timeout);
+    array_init(&z_timeout);
     if ((iptr = INI_STR("redis.clusters.timeout")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_timeout TSRMLS_CC);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_timeout TSRMLS_CC);
     }
-    if ((z_value = zend_hash_str_find(Z_ARRVAL_P(z_timeout), name, name_len)) != NULL) {
+    if ((z_value = zend_hash_str_find(Z_ARRVAL(z_timeout), name, name_len)) != NULL) {
         if (Z_TYPE_P(z_value) == IS_STRING) {
             timeout = atof(Z_STRVAL_P(z_value));
         } else if (Z_TYPE_P(z_value) == IS_DOUBLE) {
@@ -448,12 +445,11 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
     }
 
     /* Read timeout */
-    MAKE_STD_ZVAL(z_read_timeout);
-    array_init(z_read_timeout);
+    array_init(&z_read_timeout);
     if ((iptr = INI_STR("redis.clusters.read_timeout")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_read_timeout TSRMLS_CC);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_read_timeout TSRMLS_CC);
     }
-    if ((z_value = zend_hash_str_find(Z_ARRVAL_P(z_read_timeout), name, name_len)) != NULL) {
+    if ((z_value = zend_hash_str_find(Z_ARRVAL(z_read_timeout), name, name_len)) != NULL) {
         if (Z_TYPE_P(z_value) == IS_STRING) {
             read_timeout = atof(Z_STRVAL_P(z_value));
         } else if (Z_TYPE_P(z_value) == IS_DOUBLE) {
@@ -462,12 +458,11 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
     }
 
     /* Persistent connections */
-    MAKE_STD_ZVAL(z_persistent);
-    array_init(z_persistent);
+    array_init(&z_persistent);
     if ((iptr = INI_STR("redis.clusters.persistent")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), z_persistent TSRMLS_CC);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_persistent TSRMLS_CC);
     }
-    if ((z_value = zend_hash_str_find(Z_ARRVAL_P(z_persistent), name, name_len)) != NULL) {
+    if ((z_value = zend_hash_str_find(Z_ARRVAL(z_persistent), name, name_len)) != NULL) {
         if (Z_TYPE_P(z_value) == IS_STRING) {
             persistent = atoi(Z_STRVAL_P(z_value));
         } else if (Z_TYPE_P(z_value) == IS_LONG) {
@@ -479,12 +474,10 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
     redis_cluster_init(c, ht_seeds, timeout, read_timeout, persistent TSRMLS_CC);    
 
     /* Clean up our arrays */
-    zval_dtor(z_seeds);
-    efree(z_seeds);
-    zval_dtor(z_timeout);
-    efree(z_timeout);
-    zval_dtor(z_read_timeout);
-    efree(z_read_timeout);
+    zval_dtor(&z_seeds);
+    zval_dtor(&z_timeout);
+    zval_dtor(&z_read_timeout);
+    zval_dtor(&z_persistent);
 }
 
 /*
@@ -975,10 +968,9 @@ PHP_METHOD(RedisCluster, mset) {
 
 /* {{{ proto array RedisCluster::msetnx(array keyvalues) */
 PHP_METHOD(RedisCluster, msetnx) {
-    zval *z_ret;
+    zval *z_ret = emalloc(sizeof(zval));
 
     // Array response 
-    MAKE_STD_ZVAL(z_ret);
     array_init(z_ret);
 
     // Parse args and process.  If we get a failure, free mem and return FALSE
@@ -2051,12 +2043,11 @@ PHP_METHOD(RedisCluster, _unserialize) {
 /* {{{ proto array RedisCluster::_masters() */
 PHP_METHOD(RedisCluster, _masters) {
     redisCluster *c = GET_CONTEXT();
-    zval *z_ret, *z_sub;
     redisClusterNode *node;
+    zval zv, *z_ret = &zv;
     char *host;
     short port;
 
-    MAKE_STD_ZVAL(z_ret);
     array_init(z_ret);
 
     for(zend_hash_internal_pointer_reset(c->nodes);
@@ -2066,7 +2057,10 @@ PHP_METHOD(RedisCluster, _masters) {
         host = node->sock->host;
         port = node->sock->port;
 
+        zval z, *z_sub = &z;
+#if (PHP_MAJOR_VERSION < 7)
         MAKE_STD_ZVAL(z_sub);
+#endif
         array_init(z_sub);
 
         add_next_index_stringl(z_sub, host, strlen(host));
@@ -2074,8 +2068,7 @@ PHP_METHOD(RedisCluster, _masters) {
         add_next_index_zval(z_ret, z_sub);
     }
 
-    *return_value = *z_ret;
-    efree(z_ret);
+    RETVAL_ZVAL(z_ret, 0, 1);
 }
 
 PHP_METHOD(RedisCluster, _redir) {
@@ -3032,4 +3025,4 @@ PHP_METHOD(RedisCluster, command) {
     CLUSTER_PROCESS_CMD(command, cluster_variant_resp, 0);
 }
 
-/* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
+/* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

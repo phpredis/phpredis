@@ -1562,7 +1562,7 @@ redis_sock_create(char *host, int host_len, unsigned short port, double timeout,
 PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 {
     struct timeval tv, read_tv, *tv_ptr = NULL;
-    char *host = NULL, *persistent_id = NULL;
+    char host[1024], *persistent_id = NULL;
     const char *fmtstr = "%s:%d";
     int host_len, err = 0;
     php_netstream_data_t *sock;
@@ -1582,7 +1582,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     read_tv.tv_usec = (int)((redis_sock->read_timeout-read_tv.tv_sec)*1000000);
 
     if(redis_sock->host[0] == '/' && redis_sock->port < 1) {
-        host_len = spprintf(&host, 0, "unix://%s", redis_sock->host);
+        host_len = snprintf(host, sizeof(host), "unix://%s", redis_sock->host);
     } else {
         if(redis_sock->port == 0)
             redis_sock->port = 6379;
@@ -1594,7 +1594,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
             fmtstr = "[%s]:%d";
         }
 #endif
-        host_len = spprintf(&host, 0, fmtstr, redis_sock->host, redis_sock->port);
+        host_len = snprintf(host, sizeof(host), fmtstr, redis_sock->host, redis_sock->port);
     }
 
     if (redis_sock->persistent) {
@@ -1614,8 +1614,6 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     if (persistent_id) {
         efree(persistent_id);
     }
-
-    efree(host);
 
     if (!redis_sock->stream) {
         return -1;
