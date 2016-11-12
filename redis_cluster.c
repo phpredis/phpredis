@@ -2711,7 +2711,8 @@ PHP_METHOD(RedisCluster, info) {
     redisCluster *c = GET_CONTEXT();
     REDIS_REPLY_TYPE rtype;
     char *cmd, *opt=NULL;
-    int cmd_len, opt_len;
+    int cmd_len;
+    size_t opt_len;
     void *ctx = NULL;
     zval *z_arg;
     short slot;
