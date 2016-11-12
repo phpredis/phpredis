@@ -975,11 +975,9 @@ PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
         RETURN_FALSE;
     }
 
-#if (PHP_MAJOR_VERSION < 7)
-    zval *z_ret;
-    MAKE_STD_ZVAL(z_ret);
-#else
     zval zv, *z_ret = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+    MAKE_STD_ZVAL(z_ret);
 #endif
 
     /* Parse it out */
@@ -1287,11 +1285,9 @@ redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return -1;
     }
     numElems = atoi(inbuf+1);
-#if (PHP_MAJOR_VERSION < 7)
-    zval *z_multi_result;
-    MAKE_STD_ZVAL(z_multi_result);
-#else
     zval zv, *z_multi_result = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+    MAKE_STD_ZVAL(z_multi_result);
 #endif
     array_init(z_multi_result); /* pre-allocate array for multi's results. */
 
@@ -1456,11 +1452,9 @@ PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
         RETURN_FALSE;
     }
 
-#if (PHP_MAJOR_VERSION < 7)
-    zval *z_result;
-    MAKE_STD_ZVAL(z_result);
-#else
     zval zv, *z_result = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+    MAKE_STD_ZVAL(z_result);
 #endif
     array_init(z_result);
 
@@ -1783,11 +1777,9 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
         return -1;
     }
     numElems = atoi(inbuf+1);
-#if (PHP_MAJOR_VERSION < 7)
-    zval *z_multi_result;
-    MAKE_STD_ZVAL(z_multi_result);
-#else
     zval zv, *z_multi_result = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+    MAKE_STD_ZVAL(z_multi_result);
 #endif
     array_init(z_multi_result); /* pre-allocate array for multi's results. */
 
@@ -1832,11 +1824,9 @@ PHP_REDIS_API int redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
         return -1;
     }
     numElems = atoi(inbuf+1);
-#if (PHP_MAJOR_VERSION < 7)
-    zval *z_multi_result;
-    MAKE_STD_ZVAL(z_multi_result);
-#else
     zval zv, *z_multi_result = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+    MAKE_STD_ZVAL(z_multi_result);
 #endif
     array_init(z_multi_result); /* pre-allocate array for multi's results. */
 
@@ -1917,11 +1907,9 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
         return -1;
     }
     numElems = atoi(inbuf+1);
-#if (PHP_MAJOR_VERSION < 7)
-    zval *z_multi_result;
-    MAKE_STD_ZVAL(z_multi_result);
-#else
     zval zv, *z_multi_result = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+    MAKE_STD_ZVAL(z_multi_result);
 #endif
     array_init(z_multi_result); /* pre-allocate array for multi's results. */
 
@@ -2371,11 +2359,9 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return -1;
     }
 
-#if (PHP_MAJOR_VERSION < 7)
-    zval *z_ret;
-    MAKE_STD_ZVAL(z_ret);
-#else
     zval zv, *z_ret = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+    MAKE_STD_ZVAL(z_ret);
 #endif
 	/* Switch based on our top level reply type */
 	switch(reply_type) {
