@@ -1816,7 +1816,7 @@ PHP_REDIS_API void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
 /* Recursive MULTI BULK -> PHP style response handling */
 static void cluster_mbulk_variant_resp(clusterReply *r, zval *z_ret)
 {
-    zval *z_sub_ele;
+    zval zv, *z_sub_ele = &zv;
     int i;
 
     switch(r->type) {
@@ -1835,7 +1835,9 @@ static void cluster_mbulk_variant_resp(clusterReply *r, zval *z_ret)
             }
             break;
         case TYPE_MULTIBULK:
+#if (PHP_MAJOR_VERSION < 7)
             MAKE_STD_ZVAL(z_sub_ele);
+#endif
             array_init(z_sub_ele);
             for(i=0;i<r->elements;i++) {
                 cluster_mbulk_variant_resp(r->element[i], z_sub_ele);
