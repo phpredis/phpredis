@@ -258,7 +258,7 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
                                     void *ctx)
 {
     subscribeContext *sctx = (subscribeContext*)ctx;
-    zval *z_tmp, *z_ret, z_resp;
+    zval *z_tmp, z_resp;
 
     // Consume response(s) from subscribe, which will vary on argc
     while(sctx->argc--) {
@@ -287,11 +287,11 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
     }
 
 #if (PHP_MAJOR_VERSION < 7)
-    zval **z_args[4];
+    zval *z_ret, **z_args[4];
     sctx->cb.retval_ptr_ptr = &z_ret;
 #else
-    zval z_args[4];
-    sctx->cb.retval = z_ret;
+    zval z_ret, z_args[4];
+    sctx->cb.retval = &z_ret;
 #endif
     sctx->cb.params = z_args;
     sctx->cb.no_separation = 0;
@@ -370,8 +370,7 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
         }
 
         // If we have a return value free it
-        if(z_ret) zval_ptr_dtor(&z_ret);
-
+        zval_ptr_dtor(&z_ret);
         zval_dtor(&z_resp);
     }
 
