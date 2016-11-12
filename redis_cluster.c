@@ -917,7 +917,13 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
 /* {{{ proto array RedisCluster::del(string key1, string key2, ... keyN) */
 PHP_METHOD(RedisCluster, del) {
-    zval *z_ret = emalloc(sizeof(zval));
+    zval *z_ret;
+
+#if (PHP_MAJOR_VERSION < 7)
+    MAKE_STD_ZVAL(z_ret);
+#else
+    z_ret = emalloc(sizeof(zval));
+#endif
 
     // Initialize a LONG value to zero for our return
     ZVAL_LONG(z_ret, 0);
@@ -936,7 +942,11 @@ PHP_METHOD(RedisCluster, mget) {
     zval *z_ret;
 
     // Array response
+#if (PHP_MAJOR_VERSION < 7)
     MAKE_STD_ZVAL(z_ret);
+#else
+    z_ret = emalloc(sizeof(zval));
+#endif
     array_init(z_ret);
 
     // Parse args, process
@@ -954,7 +964,11 @@ PHP_METHOD(RedisCluster, mset) {
     zval *z_ret;
 
     // Response, defaults to TRUE
+#if (PHP_MAJOR_VERSION < 7)
     MAKE_STD_ZVAL(z_ret);
+#else
+    z_ret = emalloc(sizeof(zval));
+#endif
     ZVAL_TRUE(z_ret);
 
     // Parse args and process.  If we get a failure, free zval and return FALSE.
@@ -968,9 +982,14 @@ PHP_METHOD(RedisCluster, mset) {
 
 /* {{{ proto array RedisCluster::msetnx(array keyvalues) */
 PHP_METHOD(RedisCluster, msetnx) {
-    zval *z_ret = emalloc(sizeof(zval));
+    zval *z_ret;
 
     // Array response 
+#if (PHP_MAJOR_VERSION < 7)
+    MAKE_STD_ZVAL(z_ret);
+#else
+    z_ret = emalloc(sizeof(zval));
+#endif
     array_init(z_ret);
 
     // Parse args and process.  If we get a failure, free mem and return FALSE
@@ -1021,7 +1040,7 @@ PHP_METHOD(RedisCluster, keys) {
     int pat_len, pat_free, cmd_len;
     char *pat, *cmd;
     clusterReply *resp;
-    zval *z_ret;
+    zval zv, *z_ret = &zv;
     int i;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &pat, &pat_len)
@@ -1035,7 +1054,6 @@ PHP_METHOD(RedisCluster, keys) {
     cmd_len = redis_cmd_format_static(&cmd, "KEYS", "s", pat, pat_len);
     if(pat_free) efree(pat);
 
-    MAKE_STD_ZVAL(z_ret);
     array_init(z_ret);
 
     /* Treat as readonly */
@@ -2283,7 +2301,7 @@ static short
 cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC) 
 {
     int key_len, key_free;
-    zval *z_host, *z_port, *z_tmp = NULL;
+    zval *z_host, *z_port, z_tmp;
     short slot;
     char *key;
 
@@ -2292,17 +2310,17 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
     if(Z_TYPE_P(z_arg)==IS_STRING || Z_TYPE_P(z_arg)==IS_LONG ||
        Z_TYPE_P(z_arg)==IS_DOUBLE) 
     {
+        ZVAL_NULL(&z_tmp);
         /* Allow for any scalar here */
-        if (Z_TYPE_P(z_arg) != IS_STRING) {
-            MAKE_STD_ZVAL(z_tmp);
-            *z_tmp = *z_arg;
-            zval_copy_ctor(z_tmp);
-            convert_to_string(z_tmp);
-            z_arg = z_tmp;
+        if (Z_TYPE_P(z_arg) == IS_STRING) {
+            key = Z_STRVAL_P(z_arg);
+            key_len = Z_STRLEN_P(z_arg);
+        } else {
+            ZVAL_ZVAL(&z_tmp, z_arg, 1, 0);
+            convert_to_string(&z_tmp);
+            key = Z_STRVAL(z_tmp);
+            key_len = Z_STRLEN(z_tmp);
         }
-
-        key = Z_STRVAL_P(z_arg);
-        key_len = Z_STRLEN_P(z_arg);
 
         /* Hash it */
         key_free = redis_key_prefix(c->flags, &key, &key_len);
@@ -2310,10 +2328,7 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
         if(key_free) efree(key);
 
         /* Destroy our temp value if we had to convert it */
-        if (z_tmp) {
-            zval_dtor(z_tmp);
-            efree(z_tmp);
-        }
+        zval_dtor(&z_tmp);
     } else if (Z_TYPE_P(z_arg) == IS_ARRAY && 
 		(z_host = zend_hash_index_find(Z_ARRVAL_P(z_arg), 0)) != NULL &&
 		(z_port = zend_hash_index_find(Z_ARRVAL_P(z_arg), 1)) != NULL &&

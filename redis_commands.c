@@ -373,7 +373,8 @@ int redis_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   void **ctx)
 {
     char *key;
-    int key_len, key_free;
+    size_t key_len;
+    int key_free;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &key, &key_len)
                              ==FAILURE)

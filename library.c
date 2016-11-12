@@ -931,9 +931,7 @@ redis_parse_info_response(char *response, zval *z_ret)
         if(pos == NULL) {
             break;
         }
-        key = emalloc(pos - cur + 1);
-        memcpy(key, cur, pos-cur);
-        key[pos-cur] = 0;
+        key = estrndup(cur, pos - cur);
 
         /* value */
         cur = pos + 1;
@@ -942,9 +940,7 @@ redis_parse_info_response(char *response, zval *z_ret)
             efree(key);
             break;
         }
-        value = emalloc(pos - cur + 1);
-        memcpy(value, cur, pos-cur);
-        value[pos-cur] = 0;
+        value = estrndup(cur, pos - cur);
         pos += 2; /* \r, \n */
         cur = pos;
 
