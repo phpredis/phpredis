@@ -60,11 +60,11 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 			return NULL;
 		}
 
-		ra->hosts[i] = estrdup(Z_STRVAL_P(zpData));
 
 		/* default values */
 		host = Z_STRVAL_P(zpData);
 		host_len = Z_STRLEN_P(zpData);
+		ra->hosts[i] = estrndup(host, host_len);
 		port = 6379;
 
 		if((p = strrchr(host, ':'))) { /* found port */

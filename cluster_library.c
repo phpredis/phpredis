@@ -1642,7 +1642,7 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
                              void *ctx)
 {
     subscribeContext *sctx = (subscribeContext*)ctx;
-    zval z_tab, *z_tmp, *z_ret;
+    zval z_tab, *z_tmp;
     int pull=0;
 
 
@@ -1669,11 +1669,11 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
 
     // Set up our callback pointers
 #if (PHP_MAJOR_VERSION < 7)
-    zval **z_args[4];
+    zval *z_ret, **z_args[4];
     sctx->cb.retval_ptr_ptr = &z_ret;
 #else
-    zval z_args[4];
-    sctx->cb.retval = z_ret;
+    zval z_ret, z_args[4];
+    sctx->cb.retval = &z_ret;
 #endif
     sctx->cb.params = z_args;
     sctx->cb.no_separation = 0;
@@ -1753,7 +1753,7 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
         }
 
         // If we have a return value, free it
-        if(z_ret) zval_ptr_dtor(&z_ret);
+        zval_ptr_dtor(&z_ret);
 
         zval_dtor(&z_tab);
     }
@@ -1941,7 +1941,10 @@ PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 
         /* Call our specified callback */
         if (cb(c->cmd_sock, z_result, c->reply_len, ctx TSRMLS_CC)==FAILURE) {
-            zval_ptr_dtor(z_result);
+            zval_dtor(z_result);
+#if (PHP_MAJOR_VERSION < 7)
+            efree(z_result);
+#endif
             CLUSTER_RETURN_FALSE(c);
         }
     }

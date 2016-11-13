@@ -1456,9 +1456,9 @@ PHP_REDIS_API void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
     }
 
     /* first line, sort. */
-    cmd_lines[1] = estrdup("$4");
+    cmd_lines[1] = estrndup("$4", 2);
     cmd_sizes[1] = 2;
-    cmd_lines[2] = estrdup("SORT");
+    cmd_lines[2] = estrndup("SORT", 4);
     cmd_sizes[2] = 4;
 
     /* Prefix our key if we need to */
@@ -1466,9 +1466,7 @@ PHP_REDIS_API void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
 
     /* second line, key */
     cmd_sizes[3] = redis_cmd_format(&cmd_lines[3], "$%d", key_len);
-    cmd_lines[4] = emalloc(key_len + 1);
-    memcpy(cmd_lines[4], key, key_len);
-    cmd_lines[4][key_len] = 0;
+    cmd_lines[4] = estrndup(key, key_len);
     cmd_sizes[4] = key_len;
 
     /* If we prefixed our key, free it */
@@ -1477,28 +1475,26 @@ PHP_REDIS_API void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
     cmd_elements = 5;
     if(pattern && pattern_len) {
             /* BY */
-            cmd_lines[cmd_elements] = estrdup("$2");
+            cmd_lines[cmd_elements] = estrndup("$2", 2);
             cmd_sizes[cmd_elements] = 2;
             cmd_elements++;
-            cmd_lines[cmd_elements] = estrdup("BY");
+            cmd_lines[cmd_elements] = estrndup("BY", 2);
             cmd_sizes[cmd_elements] = 2;
             cmd_elements++;
 
             /* pattern */
             cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements],                "$%d", pattern_len);
             cmd_elements++;
-            cmd_lines[cmd_elements] = emalloc(pattern_len + 1);
-            memcpy(cmd_lines[cmd_elements], pattern, pattern_len);
-            cmd_lines[cmd_elements][pattern_len] = 0;
+            cmd_lines[cmd_elements] = estrndup(pattern, pattern_len);
             cmd_sizes[cmd_elements] = pattern_len;
             cmd_elements++;
     }
     if(sort_start >= 0 && sort_count >= 0) {
             /* LIMIT */
-            cmd_lines[cmd_elements] = estrdup("$5");
+            cmd_lines[cmd_elements] = estrndup("$5", 2);
             cmd_sizes[cmd_elements] = 2;
             cmd_elements++;
-            cmd_lines[cmd_elements] = estrdup("LIMIT");
+            cmd_lines[cmd_elements] = estrndup("LIMIT", 5);
             cmd_sizes[cmd_elements] = 5;
             cmd_elements++;
 
@@ -1520,10 +1516,10 @@ PHP_REDIS_API void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
     }
     if(get && get_len) {
             /* GET */
-            cmd_lines[cmd_elements] = estrdup("$3");
+            cmd_lines[cmd_elements] = estrndup("$3", 2);
             cmd_sizes[cmd_elements] = 2;
             cmd_elements++;
-            cmd_lines[cmd_elements] = estrdup("GET");
+            cmd_lines[cmd_elements] = estrndup("GET", 3);
             cmd_sizes[cmd_elements] = 3;
             cmd_elements++;
 
@@ -1531,9 +1527,7 @@ PHP_REDIS_API void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
             cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements],
                 "$%d", get_len);
             cmd_elements++;
-            cmd_lines[cmd_elements] = emalloc(get_len + 1);
-            memcpy(cmd_lines[cmd_elements], get, get_len);
-            cmd_lines[cmd_elements][get_len] = 0;
+            cmd_lines[cmd_elements] = estrndup(get, get_len);
             cmd_sizes[cmd_elements] = get_len;
             cmd_elements++;
     }
@@ -1543,27 +1537,25 @@ PHP_REDIS_API void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
     cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements], "$%d",
         sort_len);
     cmd_elements++;
-    cmd_lines[cmd_elements] = emalloc(sort_len + 1);
-    memcpy(cmd_lines[cmd_elements], sort, sort_len);
-    cmd_lines[cmd_elements][sort_len] = 0;
+    cmd_lines[cmd_elements] = estrndup(sort, sort_len);
     cmd_sizes[cmd_elements] = sort_len;
     cmd_elements++;
 
     if(use_alpha) {
             /* ALPHA */
-            cmd_lines[cmd_elements] = estrdup("$5");
+            cmd_lines[cmd_elements] = estrndup("$5", 2);
             cmd_sizes[cmd_elements] = 2;
             cmd_elements++;
-            cmd_lines[cmd_elements] = estrdup("ALPHA");
+            cmd_lines[cmd_elements] = estrndup("ALPHA", 5);
             cmd_sizes[cmd_elements] = 5;
             cmd_elements++;
     }
     if(store && store_len) {
             /* STORE */
-            cmd_lines[cmd_elements] = estrdup("$5");
+            cmd_lines[cmd_elements] = estrndup("$5", 2);
             cmd_sizes[cmd_elements] = 2;
             cmd_elements++;
-            cmd_lines[cmd_elements] = estrdup("STORE");
+            cmd_lines[cmd_elements] = estrndup("STORE", 5);
             cmd_sizes[cmd_elements] = 5;
             cmd_elements++;
 
@@ -1571,9 +1563,7 @@ PHP_REDIS_API void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
             cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements],
                 "$%d", store_len);
             cmd_elements++;
-            cmd_lines[cmd_elements] = emalloc(store_len + 1);
-            memcpy(cmd_lines[cmd_elements], store, store_len);
-            cmd_lines[cmd_elements][store_len] = 0;
+            cmd_lines[cmd_elements] = estrndup(store, store_len);
             cmd_sizes[cmd_elements] = store_len;
             cmd_elements++;
     }
