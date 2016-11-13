@@ -304,10 +304,11 @@ static void (*_php_var_serialize)(smart_str *, zval **, php_serialize_data_t * T
 #define php_var_serialize(buf, struc, data) _php_var_serialize(buf, &struc, data TSRMLS_CC)
 static int (*_php_var_unserialize)(zval **, const unsigned char **, const unsigned char *, php_unserialize_data_t * TSRMLS_DC) = &php_var_unserialize;
 #define php_var_unserialize(rval, p, max, var_hash) _php_var_unserialize(&rval, p, max, var_hash TSRMLS_CC)
-
+typedef int strlen_t;
 #else
 #include <zend_smart_str.h>
 #include <ext/standard/php_smart_string.h>
+typedef size_t strlen_t;
 #endif
 
 /* NULL check so Eclipse doesn't go crazy */

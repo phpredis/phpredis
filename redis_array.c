@@ -453,7 +453,7 @@ PHP_METHOD(RedisArray, __call)
 	zval *z_args;
 
 	char *cmd;
-	size_t cmd_len;
+	strlen_t cmd_len;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa",
 				&object, redis_array_ce, &cmd, &cmd_len, &z_args) == FAILURE) {
@@ -493,8 +493,9 @@ PHP_METHOD(RedisArray, _target)
 	zval *object;
 	RedisArray *ra;
 	char *key;
-	int key_len, i;
+	strlen_t key_len;
 	zval *redis_inst;
+    int i;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
 				&object, redis_array_ce, &key, &key_len) == FAILURE) {
@@ -518,7 +519,7 @@ PHP_METHOD(RedisArray, _instance)
 	zval *object;
 	RedisArray *ra;
 	char *target;
-	int target_len;
+	strlen_t target_len;
 	zval *z_redis;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
@@ -666,7 +667,8 @@ PHP_METHOD(RedisArray, keys)
 	zval *object, z_args[1], z_fun;
 	RedisArray *ra;
 	char *pattern;
-	int pattern_len, i;
+	strlen_t pattern_len;
+    int i;
 
 	/* Make sure the prototype is correct */
 	if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
@@ -751,7 +753,7 @@ PHP_METHOD(RedisArray, setOption)
 	RedisArray *ra;
 	long opt;
 	char *val_str;
-	int val_len;
+	strlen_t val_len;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ols",
 				&object, redis_array_ce, &opt, &val_str, &val_len) == FAILURE) {
@@ -1289,7 +1291,7 @@ PHP_METHOD(RedisArray, multi)
 	RedisArray *ra;
 	zval *z_redis;
 	char *host;
-	int host_len;
+	strlen_t host_len;
 	long multi_value = MULTI;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
