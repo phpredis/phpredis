@@ -1423,7 +1423,7 @@ PHP_REDIS_API void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
     RedisSock *redis_sock;
     char *key = NULL, *pattern = NULL, *get = NULL, *store = NULL, *cmd;
     int cmd_len, key_free;
-    long sort_start = -1, sort_count = -1;
+    zend_long sort_start = -1, sort_count = -1;
     strlen_t key_len, pattern_len, get_len, store_len;
 
     int cmd_elements;
@@ -1773,7 +1773,7 @@ PHP_METHOD(Redis, select) {
 
     char *cmd;
     int cmd_len;
-    long dbNumber;
+    zend_long dbNumber;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol",
                                      &object, redis_ce, &dbNumber) == FAILURE) {
@@ -2199,7 +2199,7 @@ PHP_METHOD(Redis, multi)
     int response_len, cmd_len;
     char * response;
     zval *object;
-    long multi_value = MULTI;
+    zend_long multi_value = MULTI;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
                                      "O|l", &object, redis_ce, &multi_value)
@@ -2599,7 +2599,7 @@ PHP_METHOD(Redis, slaveof)
     RedisSock *redis_sock;
     char *cmd = "", *host = NULL;
     strlen_t host_len;
-    long port = 6379;
+    zend_long port = 6379;
     int cmd_len;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
@@ -2754,7 +2754,7 @@ PHP_METHOD(Redis, slowlog) {
     char *arg, *cmd;
     int cmd_len;
     strlen_t arg_len;
-    long option;
+    zend_long option;
     enum {SLOWLOG_GET, SLOWLOG_LEN, SLOWLOG_RESET} mode;
 
     // Make sure we can get parameters
@@ -2808,7 +2808,7 @@ PHP_METHOD(Redis, slowlog) {
 PHP_METHOD(Redis, wait) {
     zval *object;
     RedisSock *redis_sock;
-    long num_slaves, timeout;
+    zend_long num_slaves, timeout;
     char *cmd;
     int cmd_len;
 
@@ -3086,7 +3086,7 @@ PHP_METHOD(Redis, evalsha)
     char *cmd, *sha;
     int cmd_len;
     strlen_t sha_len;
-    long keys_count = 0;
+    zend_long keys_count = 0;
     RedisSock *redis_sock;
 
     if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
@@ -3124,7 +3124,7 @@ PHP_METHOD(Redis, eval)
     char *script, *cmd = "";
     int cmd_len;
     strlen_t script_len;
-    long keys_count = 0;
+    zend_long keys_count = 0;
 
     // Attempt to parse parameters
     if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
@@ -3283,7 +3283,7 @@ PHP_METHOD(Redis, migrate) {
     int cmd_len, key_free;
     strlen_t host_len, key_len;
     zend_bool copy=0, replace=0;
-    long port, dest_db, timeout;
+    zend_long port, dest_db, timeout;
 
     // Parse arguments
     if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
@@ -3723,7 +3723,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     char *pattern=NULL, *cmd, *key=NULL;
     int cmd_len, num_elements, key_free=0;
     strlen_t key_len = 0, pattern_len = 0;
-    long count=0, iter;
+    zend_long count=0, iter;
 
     /* Different prototype depending on if this is a key based scan */
     if(type != TYPE_SCAN) {
