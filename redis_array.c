@@ -394,7 +394,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	}
 
 	/* pass call through */
-	ZVAL_STRING(&z_fun, cmd);	/* method name */
+	ZVAL_STRINGL(&z_fun, cmd, cmd_len); /* method name */
 	z_callargs = ecalloc(argc + 1, sizeof(zval));
 
 	/* copy args to array */
@@ -714,7 +714,7 @@ PHP_METHOD(RedisArray, getOption)
 	zval *object, z_fun, z_args[1];
 	int i;
 	RedisArray *ra;
-	long opt;
+	zend_long opt;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol",
 				&object, redis_array_ce, &opt) == FAILURE) {
@@ -751,7 +751,7 @@ PHP_METHOD(RedisArray, setOption)
 	zval *object, z_fun, z_args[2];
 	int i;
 	RedisArray *ra;
-	long opt;
+	zend_long opt;
 	char *val_str;
 	strlen_t val_len;
 
@@ -792,7 +792,7 @@ PHP_METHOD(RedisArray, select)
     zval *object, z_fun, z_args[1];
 	int i;
 	RedisArray *ra;
-	long opt;
+	zend_long opt;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ol",
 				&object, redis_array_ce, &opt) == FAILURE) {
@@ -1292,7 +1292,7 @@ PHP_METHOD(RedisArray, multi)
 	zval *z_redis;
 	char *host;
 	strlen_t host_len;
-	long multi_value = MULTI;
+	zend_long multi_value = MULTI;
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",
 				&object, redis_array_ce, &host, &host_len, &multi_value) == FAILURE) {

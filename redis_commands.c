@@ -111,7 +111,7 @@ int redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key = NULL, *val=NULL;
     int val_len, val_free, key_free;
     strlen_t key_len;
-    long expire;
+    zend_long expire;
     zval *z_val;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "slz", &key, &key_len,
@@ -145,7 +145,7 @@ int redis_key_long_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key, *val;
     strlen_t key_len, val_len;
     int key_free;
-    long lval;
+    zend_long lval;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sls", &key, &key_len,
                              &lval, &val, &val_len)==FAILURE)
@@ -316,7 +316,7 @@ int redis_key_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key;
     int key_free;
     strlen_t key_len;
-    long lval;
+    zend_long lval;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sl", &key, &key_len,
                              &lval)==FAILURE)
@@ -351,7 +351,7 @@ int redis_key_long_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key;
     int key_free;
     strlen_t key_len;
-    long val1, val2;
+    zend_long val1, val2;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sll", &key, &key_len,
                              &val1, &val2)==FAILURE)
@@ -479,7 +479,7 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key;
     int key_free;
     strlen_t key_len;
-    long start, end;
+    zend_long start, end;
     zend_bool ws=0;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sll|b", &key, &key_len,
@@ -857,7 +857,7 @@ int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key, *min, *max;
     strlen_t key_len, min_len, max_len;
     int key_free, argc = ZEND_NUM_ARGS();
-    long offset, count;
+    zend_long offset, count;
 
     /* We need either 3 or 5 arguments for this to be valid */
     if(argc != 3 && argc != 5) {
@@ -1285,7 +1285,7 @@ int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     strlen_t key1_len, key2_len;
     int key1_free, key2_free;
     short slot1, slot2;
-    long timeout;
+    zend_long timeout;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssl", &key1, &key1_len,
                              &key2, &key2_len, &timeout)==FAILURE)
@@ -1340,7 +1340,7 @@ redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, int type,
     char *key;
     int key_free;
     strlen_t key_len;
-    long val = 1;
+    zend_long val = 1;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &key, &key_len,
                               &val)==FAILURE)
@@ -1400,7 +1400,7 @@ int redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key, *mem;
     strlen_t key_len, mem_len;
     int key_free;
-    long byval;
+    zend_long byval;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssl", &key, &key_len,
                              &mem, &mem_len, &byval)==FAILURE)
@@ -1622,7 +1622,7 @@ int redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *key;
     int argc, key_free;
-    long bit, start, end;
+    zend_long bit, start, end;
     strlen_t key_len;
 
     argc = ZEND_NUM_ARGS();
@@ -1732,7 +1732,7 @@ int redis_bitcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key;
     int key_free;
     strlen_t key_len;
-    long start = 0, end = -1;
+    zend_long start = 0, end = -1;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|ll", &key, &key_len,
                              &start, &end)==FAILURE)
@@ -2008,7 +2008,7 @@ int redis_setbit_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key;
     strlen_t key_len;
     int key_free;
-    long offset;
+    zend_long offset;
     zend_bool val;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "slb", &key, &key_len,
@@ -2086,7 +2086,7 @@ int redis_lrem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key, *val;
     strlen_t key_len, val_len;
     int key_free, val_free;
-    long count = 0;
+    zend_long count = 0;
     zval *z_val;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|l", &key, &key_len,
@@ -2218,7 +2218,7 @@ int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key;
     strlen_t key_len;
     int key_free;
-    long count;
+    zend_long count;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &key, &key_len,
                              &count)==FAILURE)
@@ -3048,7 +3048,7 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                              RedisSock *redis_sock, redisCluster *c)
 {
-    long option;
+    zend_long option;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &option)
                               == FAILURE)
@@ -3079,7 +3079,8 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
 void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                              RedisSock *redis_sock, redisCluster *c)
 {
-    long option, val_long;
+    long val_long;
+    zend_long option;
     char *val_str;
     struct timeval read_tv;
     strlen_t val_len;

@@ -862,7 +862,7 @@ PHP_REDIS_API void cluster_free(redisCluster *c) {
 /* Takes our input hash table and returns a straigt C array with elements,
  * which have been randomized.  The return value needs to be freed. */
 static zval **cluster_shuffle_seeds(HashTable *seeds, int *len) {
-    zval **z_seeds;
+    zval **z_seeds, *z_ele;
     int *map, i, count, index=0;
 
     /* How many */
@@ -877,12 +877,9 @@ static zval **cluster_shuffle_seeds(HashTable *seeds, int *len) {
     fyshuffle(map, count);
 
     /* Iterate over our source array and use our map to create a random list */
-    for (zend_hash_internal_pointer_reset(seeds);
-         zend_hash_has_more_elements(seeds) == SUCCESS;
-         zend_hash_move_forward(seeds))
-    {
-        z_seeds[map[index++]] = zend_hash_get_current_data(seeds);
-    }
+    ZEND_HASH_FOREACH_VAL(seeds, z_ele) {
+        z_seeds[map[index++]] = z_ele;
+    } ZEND_HASH_FOREACH_END();
 
     efree(map);
 
