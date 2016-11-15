@@ -1085,6 +1085,8 @@ PHP_METHOD(RedisArray, mset)
 	} ZEND_HASH_FOREACH_END();
 
 
+    /* prepare call */
+    ZVAL_STRINGL(&z_fun, "MSET", 4);
 	/* calls */
 	for(n = 0; n < ra->count; ++n) { /* for each node */
 		int found = 0;
@@ -1093,11 +1095,9 @@ PHP_METHOD(RedisArray, mset)
 		array_init(&z_argarray);
 		for(i = 0; i < argc; ++i) {
 			if(pos[i] != n) continue;
-#if (PHP_MAJOR_VERSION < 7)
-            zval *z_tmp;
-            MAKE_STD_ZVAL(z_tmp);
-#else
             zval zv, *z_tmp = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+            MAKE_STD_ZVAL(z_tmp);
 #endif
             ZVAL_ZVAL(z_tmp, argv[i], 1, 0);
 			add_assoc_zval_ex(&z_argarray, keys[i], key_lens[i], z_tmp);
@@ -1110,25 +1110,21 @@ PHP_METHOD(RedisArray, mset)
 			continue;				/* don't run empty MSETs */
 		}
 
-        /* prepare call */
-        ZVAL_STRINGL(&z_fun, "MSET", 4);
 		if(ra->index) { /* add MULTI */
 			ra_index_multi(&ra->redis[n], MULTI TSRMLS_CC);
 		}
 
 		/* call */
         call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
+		zval_dtor(&z_ret);
 
 		if(ra->index) {
 			ra_index_keys(&z_argarray, &ra->redis[n] TSRMLS_CC); /* use SADD to add keys to node index */
 			ra_index_exec(&ra->redis[n], NULL, 0 TSRMLS_CC); /* run EXEC */
 		}
-
-		zval_dtor(&z_fun);
-		zval_dtor(&z_ret);
-
 		zval_dtor(&z_argarray);
 	}
+	zval_dtor(&z_fun);
 
 	/* Free any keys that we needed to allocate memory for, because they weren't strings */
 	for(i = 0; i < argc; i++) {
@@ -1162,7 +1158,9 @@ PHP_METHOD(RedisArray, del)
 
 	/* get all args in z_args */
 	z_args = emalloc(argc * sizeof(zval));
-	if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
+	if (zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
+        redis_array_get(getThis(), &ra TSRMLS_CC) < 0
+    ) {
 		efree(z_args);
 		RETURN_FALSE;
 	}
@@ -1188,12 +1186,6 @@ PHP_METHOD(RedisArray, del)
 		free_zkeys = 1;
 	}
 
-
-	if (redis_array_get(getThis(), &ra TSRMLS_CC) < 0) {
-        efree(z_args);
-		RETURN_FALSE;
-	}
-
 	/* prepare call */
 	ZVAL_STRINGL(&z_fun, "DEL", 3);
 
@@ -1211,6 +1203,8 @@ PHP_METHOD(RedisArray, del)
     ZEND_HASH_FOREACH_VAL(h_keys, data) {
 		if (Z_TYPE_P(data) != IS_STRING) {
 			php_error_docref(NULL TSRMLS_CC, E_ERROR, "DEL: all keys must be string.");
+            if (free_zkeys) zval_dtor(&z_keys);
+            efree(z_args);
             efree(argv);
 			efree(pos);
 			RETURN_FALSE;

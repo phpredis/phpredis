@@ -1003,11 +1003,9 @@ redis_parse_client_list_response(char *response, zval *z_ret)
     array_init(z_ret);
 
     /* Allocate memory for one user (there should be at least one, namely us!) */
-#if (PHP_MAJOR_VERSION < 7)
-    zval *z_sub_result;
-    ALLOC_INIT_ZVAL(z_sub_result);
-#else
     zval zv, *z_sub_result = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+    ALLOC_INIT_ZVAL(z_sub_result);
 #endif
     array_init(z_sub_result);
 
@@ -1244,7 +1242,7 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
         } else if (decode == SCORE_DECODE_DOUBLE) {
             add_assoc_double_ex(z_ret, hkey, hkey_len, atof(hval));
         } else {
-            zval zv, *z = &zv;
+            zval zv0, *z = &zv0;
 #if (PHP_MAJOR_VERSION < 7)
             MAKE_STD_ZVAL(z);
 #endif
@@ -1702,12 +1700,8 @@ PHP_REDIS_API void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS,
         RETURN_FALSE;
     }
 
-    if(response_len == 3 && strncmp(response, "+OK", 3) == 0) {
-        efree(response);
-        RETURN_TRUE;
-    }
+    RETVAL_BOOL(response_len == 3 && strncmp(response, "+OK", 3) == 0);
     efree(response);
-    RETURN_FALSE;
 }
 
 /**
@@ -1915,7 +1909,7 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
     for(i = 0; i < numElems; ++i) {
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
         if(response != NULL) {
-            zval zv, *z = &zv;
+            zval zv0, *z = &zv0;
 #if (PHP_MAJOR_VERSION < 7)
             z = NULL;
 #endif
@@ -2386,6 +2380,9 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             }
             break;
         default:
+#if (PHP_MAJOR_VERSION < 7)
+            efree(z_ret);
+#endif
             // Protocol error
             zend_throw_exception_ex(redis_exception_ce, 0 TSRMLS_CC, 
                 "protocol error, got '%c' as reply-type byte\n", reply_type);
