@@ -3257,7 +3257,7 @@ PHP_METHOD(Redis, script) {
 
 /* {{{ proto DUMP key */
 PHP_METHOD(Redis, dump) {
-    REDIS_PROCESS_KW_CMD("DUMP", redis_key_cmd, redis_ping_response);
+    REDIS_PROCESS_KW_CMD("DUMP", redis_key_cmd, redis_string_response);
 }
 /* }}} */
 
