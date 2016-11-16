@@ -2290,6 +2290,8 @@ class Redis_Test extends TestSuite
         $this->assertTrue(3 === $this->redis->hIncrBy('h', 'x', 1));
         $this->assertTrue(2 === $this->redis->hIncrBy('h', 'x', -1));
         $this->assertTrue("2" === $this->redis->hGet('h', 'x'));
+        $this->assertTrue(1000000000002 === $this->redis->hIncrBy('h', 'x', 1000000000000));
+        $this->assertTrue("1000000000002" === $this->redis->hGet('h', 'x'));
 
         $this->redis->hSet('h', 'y', 'not-a-number');
         $this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'y', 1));
@@ -2300,6 +2302,7 @@ class Redis_Test extends TestSuite
             $this->assertTrue(1.5 === $this->redis->hIncrByFloat('h','x', 1.5));
             $this->assertTrue(3.0 === $this->redis->hincrByFloat('h','x', 1.5));
             $this->assertTrue(1.5 === $this->redis->hincrByFloat('h','x', -1.5));
+            $this->assertTrue(1000000000001.5 === $this->redis->hincrByFloat('h','x', 1000000000000));
 
             $this->redis->hset('h','y','not-a-number');
             $this->assertTrue(FALSE === $this->redis->hIncrByFloat('h', 'y', 1.5));

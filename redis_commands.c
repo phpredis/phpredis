@@ -1412,7 +1412,7 @@ int redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     key_free = redis_key_prefix(redis_sock, &key, (int *)&key_len);
 
     // Construct command
-    *cmd_len = redis_cmd_format_static(cmd, "HINCRBY", "ssd", key, key_len, mem,
+    *cmd_len = redis_cmd_format_static(cmd, "HINCRBY", "ssl", key, key_len, mem,
                                        mem_len, byval);
     // Set slot
     CMD_SET_SLOT(slot,key,key_len);
