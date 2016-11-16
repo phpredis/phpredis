@@ -2290,8 +2290,8 @@ class Redis_Test extends TestSuite
         $this->assertTrue(3 === $this->redis->hIncrBy('h', 'x', 1));
         $this->assertTrue(2 === $this->redis->hIncrBy('h', 'x', -1));
         $this->assertTrue("2" === $this->redis->hGet('h', 'x'));
-        $this->assertTrue( 1000000000002 === $this->redis->hIncrBy('h', 'x', 1000000000000));
-        $this->assertTrue( "1000000000002" === $this->redis->hGet('h', 'x'));
+        $this->assertTrue(1000000000002 === $this->redis->hIncrBy('h', 'x', 1000000000000));
+        $this->assertTrue("1000000000002" === $this->redis->hGet('h', 'x'));
 
         $this->redis->hSet('h', 'y', 'not-a-number');
         $this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'y', 1));
