@@ -406,8 +406,9 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
 	/* multi/exec */
 	if(ra->z_multi_exec) {
-		call_user_function(&redis_ce->function_table, ra->z_multi_exec, &z_fun, return_value, argc, z_callargs);
+		call_user_function(&redis_ce->function_table, ra->z_multi_exec, &z_fun, &z_tmp, argc, z_callargs);
         zval_dtor(&z_fun);
+        zval_dtor(&z_tmp);
 		efree(z_callargs);
 		RETURN_ZVAL(getThis(), 1, 0);
 	}
@@ -824,8 +825,8 @@ PHP_METHOD(RedisArray, select)
     zval_dtor(&z_fun);
 }
 #if (PHP_MAJOR_VERSION < 7)
-#define HANDLE_MULTI_EXEC(cmd) do {\
-	if (redis_array_get(getThis(), &ra TSRMLS_CC) >= 0 && ra->z_multi_exec) {\
+#define HANDLE_MULTI_EXEC(ra, cmd) do { \
+    if (ra && ra->z_multi_exec) { \
 		int i, num_varargs;\
 		zval ***varargs = NULL;\
 		zval z_arg_array;\
@@ -853,8 +854,8 @@ PHP_METHOD(RedisArray, select)
 	}\
 }while(0)
 #else
-#define HANDLE_MULTI_EXEC(cmd) do { \
-    if (redis_array_get(getThis(), &ra TSRMLS_CC) >= 0 && ra->z_multi_exec) { \
+#define HANDLE_MULTI_EXEC(ra, cmd) do { \
+    if (ra && ra->z_multi_exec) { \
         int i, num_varargs; \
         zval *varargs = NULL, z_arg_array; \
         if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O*", \
@@ -886,15 +887,15 @@ PHP_METHOD(RedisArray, mget)
 	HashTable *h_keys;
 	zval **argv;
 
+    if (redis_array_get(getThis(), &ra TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
 	/* Multi/exec support */
-	HANDLE_MULTI_EXEC("MGET");
+    HANDLE_MULTI_EXEC(ra, "MGET");
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
 				&object, redis_array_ce, &z_keys) == FAILURE) {
-		RETURN_FALSE;
-	}
-
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
 		RETURN_FALSE;
 	}
 
@@ -978,6 +979,7 @@ PHP_METHOD(RedisArray, mget)
             zval_dtor(&z_ret);
             zval_dtor(&z_tmp_array);
             zval_dtor(&z_fun);
+	        efree(argv);
             efree(pos);
             efree(argc_each);
 
@@ -1039,15 +1041,15 @@ PHP_METHOD(RedisArray, mset)
     zend_string *zkey;
     ulong idx;
 
+    if (redis_array_get(getThis(), &ra TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
+
 	/* Multi/exec support */
-	HANDLE_MULTI_EXEC("MSET");
+    HANDLE_MULTI_EXEC(ra, "MSET");
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
 				&object, redis_array_ce, &z_keys) == FAILURE) {
-		RETURN_FALSE;
-	}
-
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
 		RETURN_FALSE;
 	}
 
@@ -1089,6 +1091,9 @@ PHP_METHOD(RedisArray, mset)
     ZVAL_STRINGL(&z_fun, "MSET", 4);
 	/* calls */
 	for(n = 0; n < ra->count; ++n) { /* for each node */
+	    /* We don't even need to make a call to this node if no keys go there */
+	    if(!argc_each[n]) continue;
+
 		int found = 0;
 
 		/* copy args */
@@ -1153,14 +1158,15 @@ PHP_METHOD(RedisArray, del)
 	long total = 0;
 	int free_zkeys = 0;
 
+    if (redis_array_get(getThis(), &ra TSRMLS_CC) < 0) {
+        RETURN_FALSE;
+    }
 	/* Multi/exec support */
-	HANDLE_MULTI_EXEC("DEL");
+    HANDLE_MULTI_EXEC(ra, "DEL");
 
 	/* get all args in z_args */
 	z_args = emalloc(argc * sizeof(zval));
-	if (zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
-        redis_array_get(getThis(), &ra TSRMLS_CC) < 0
-    ) {
+	if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
 		efree(z_args);
 		RETURN_FALSE;
 	}
@@ -1219,6 +1225,8 @@ PHP_METHOD(RedisArray, del)
 
 	/* calls */
 	for(n = 0; n < ra->count; ++n) { /* for each node */
+	    /* We don't even need to make a call to this node if no keys go there */
+	    if(!argc_each[n]) continue;
 
 		int found = 0;
         zval z_argarray;
@@ -1253,16 +1261,14 @@ PHP_METHOD(RedisArray, del)
         call_user_function(&redis_ce->function_table, redis_inst, &z_fun, &z_ret, 1, &z_argarray);
 
 		if(ra->index) {
+            zval_dtor(&z_ret);
 			ra_index_del(&z_argarray, redis_inst TSRMLS_CC); /* use SREM to remove keys from node index */
-			ra_index_exec(redis_inst, z_tmp, 0 TSRMLS_CC); /* run EXEC */
-			total += Z_LVAL_P(z_tmp);	/* increment total from multi/exec block */
-		} else {
-			total += Z_LVAL(z_ret);	/* increment total from single command */
+			ra_index_exec(redis_inst, &z_ret, 0 TSRMLS_CC); /* run EXEC */
 		}
-
-		zval_dtor(&z_ret);
+		total += Z_LVAL(z_ret);	/* increment total */
 
 		zval_dtor(&z_argarray);
+		zval_dtor(&z_ret);
 	}
 
 	/* cleanup */
