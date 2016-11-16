@@ -3202,25 +3202,17 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     // We only need to attempt unserialization if we have a serializer running
-    if(redis_sock->serializer != REDIS_SERIALIZER_NONE) {
-        zval zv, *z_ret = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-        z_ret = NULL;
-#endif
-        if(redis_unserialize(redis_sock, value, value_len, &z_ret
-                             TSRMLS_CC) == 0)
-        {
-            // Badly formed input, throw an execption
-            zend_throw_exception(ex,
-                "Invalid serialized data, or unserialization error",
-                0 TSRMLS_CC);
-            RETURN_FALSE;
-        }
-        RETURN_ZVAL(z_ret, 0, 1);
-    } else {
+    if (redis_sock->serializer == REDIS_SERIALIZER_NONE) {
         // Just return the value that was passed to us
         RETURN_STRINGL(value, value_len);
     }
+    zval zv, *z_ret = &zv;
+    if (redis_unserialize(redis_sock, value, value_len, &z_ret TSRMLS_CC) == 0) {
+        // Badly formed input, throw an execption
+        zend_throw_exception(ex, "Invalid serialized data, or unserialization error", 0 TSRMLS_CC);
+        RETURN_FALSE;
+    }
+    RETURN_ZVAL(z_ret, 1, 0);
 }
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */
