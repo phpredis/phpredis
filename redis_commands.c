@@ -305,6 +305,9 @@ int redis_key_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     *cmd_len = redis_cmd_format_static(cmd, kw, "ss", key1, key1_len, key2,
                                        key2_len);
 
+    if (key1_free) efree(key1);
+    if (key2_free) efree(key2);
+
     return SUCCESS;
 }
 
@@ -339,6 +342,7 @@ int redis_key_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Set slot if directed
     CMD_SET_SLOT(slot, key, key_len);
 
+    if (key_free) efree(key);
     // Success!
     return SUCCESS;
 }
@@ -1101,10 +1105,7 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     redis_cmd_init_sstr(&cmdstr, argc, kw, kw_len);
 
     if(single_array) {
-        for(zend_hash_internal_pointer_reset(ht_arr);
-            (z_ele = zend_hash_get_current_data(ht_arr)) != NULL;
-            zend_hash_move_forward(ht_arr))
-        {
+        ZEND_HASH_FOREACH_VAL(ht_arr, z_ele) {
             convert_to_string(z_ele);
             key = Z_STRVAL_P(z_ele);
             key_len = Z_STRLEN_P(z_ele);
@@ -1125,7 +1126,7 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             // Append this key, free it if we prefixed
             redis_cmd_append_sstr(&cmdstr, key, key_len);
             if(key_free) efree(key);
-        }
+        } ZEND_HASH_FOREACH_END();
         if(has_timeout) {
             redis_cmd_append_sstr_long(&cmdstr, timeout);
         }
@@ -1495,8 +1496,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             || Z_TYPE_P(z_mem) == IS_LONG
         ) {
             // Copy into our member array
-            z_mems[valid] = *z_mem;
-            zval_copy_ctor(&z_mems[valid]);
+            ZVAL_ZVAL(&z_mems[valid], z_mem, 1, 0);
             convert_to_string(&z_mems[valid]);
 
             // Increment the member count to actually send
@@ -3021,13 +3021,10 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_cmd_init_sstr(&cmdstr, 1 + arr_len, "COMMAND", sizeof("COMMAND")-1);
         redis_cmd_append_sstr(&cmdstr, "GETKEYS", sizeof("GETKEYS")-1);
 
-        for(zend_hash_internal_pointer_reset(ht_arr);
-            (z_ele = zend_hash_get_current_data(ht_arr)) != NULL;
-            zend_hash_move_forward(ht_arr))
-        {
+        ZEND_HASH_FOREACH_VAL(ht_arr, z_ele) {
             convert_to_string(z_ele);
             redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
-        }
+        } ZEND_HASH_FOREACH_END();
 
         *cmd = cmdstr.c;
         *cmd_len = cmdstr.len;
