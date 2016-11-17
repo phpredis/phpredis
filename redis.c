@@ -1008,6 +1008,7 @@ PHP_METHOD(Redis, getMultiple)
         int key_len, key_free;
         zval z_tmp;
 
+        ZVAL_NULL(&z_tmp);
         /* If the key isn't a string, turn it into one */
         if (Z_TYPE_P(z_ele) == IS_STRING) {
             key = Z_STRVAL_P(z_ele);
@@ -1015,7 +1016,6 @@ PHP_METHOD(Redis, getMultiple)
         } else {
             ZVAL_ZVAL(&z_tmp, z_ele, 1, 0);
             convert_to_string(&z_tmp);
-
             key = Z_STRVAL(z_tmp);
             key_len = Z_STRLEN(z_tmp);
         }
@@ -1028,6 +1028,7 @@ PHP_METHOD(Redis, getMultiple)
 
         /* Free our key if it was prefixed */
         if(key_free) efree(key);
+        zval_dtor(&z_tmp);
     } ZEND_HASH_FOREACH_END();
 
     /* Kick off our command */
@@ -2891,14 +2892,13 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
             int key_len, key_free;
             zval z_tmp;
 
+            ZVAL_NULL(&z_tmp);
             if (Z_TYPE_P(z_ele) == IS_STRING) {
                 key = Z_STRVAL_P(z_ele);
                 key_len = Z_STRLEN_P(z_ele);
             } else {
-                z_tmp = *z_ele;
-                zval_copy_ctor(&z_tmp);
+                ZVAL_ZVAL(&z_tmp, z_ele, 1, 0);
                 convert_to_string(&z_tmp);
-
                 key = Z_STRVAL(z_tmp);
                 key_len = Z_STRLEN(z_tmp);
             }
@@ -2911,6 +2911,7 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
 
             /* Free key if prefixed */
             if(key_free) efree(key);
+            zval_dtor(&z_tmp);
         } ZEND_HASH_FOREACH_END();
 
         /* Set return */
@@ -3036,15 +3037,14 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
                 char *key, *old_cmd;
                 int key_len, key_free;
 
+                ZVAL_NULL(&z_tmp);
 				if (Z_TYPE_P(elem) == IS_STRING) {
 					key = Z_STRVAL_P(elem);
 					key_len = Z_STRLEN_P(elem);
 				} else {
 					/* Convert it to a string */
-					z_tmp = *elem;
-					zval_copy_ctor(&z_tmp);
+                    ZVAL_ZVAL(&z_tmp, elem, 1, 0);
 					convert_to_string(&z_tmp);
-
                     key = Z_STRVAL(z_tmp);
                     key_len = Z_STRLEN(z_tmp);
                 }
@@ -3064,6 +3064,7 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
 
 				/* Free our key, old command if we need to */
 				if(key_free) efree(key);
+                zval_dtor(&z_tmp);
             } ZEND_HASH_FOREACH_END();
         }
     }
