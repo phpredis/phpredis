@@ -1387,20 +1387,17 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
     }
     IF_MULTI_OR_PIPELINE() {
         zval zv, *z = &zv;
+        if (redis_unserialize(redis_sock, response, response_len, z TSRMLS_CC)) {
 #if (PHP_MAJOR_VERSION < 7)
-        z = NULL;
+            MAKE_STD_ZVAL(z);
+            *z = zv;
 #endif
-        if(redis_unserialize(redis_sock, response, response_len,
-                             &z TSRMLS_CC) == 1)
-        {
             add_next_index_zval(z_tab, z);
         } else {
             add_next_index_stringl(z_tab, response, response_len);
         }
     } else {
-        if(redis_unserialize(redis_sock, response, response_len,
-                             &return_value TSRMLS_CC) == 0)
-        {
+        if (!redis_unserialize(redis_sock, response, response_len, return_value TSRMLS_CC)) {
             RETVAL_STRINGL(response, response_len);
         }
     }
@@ -1846,9 +1843,6 @@ redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         line = redis_sock_read(redis_sock, &len TSRMLS_CC);
         if (line != NULL) {
             zval zv, *z = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-            z = NULL;
-#endif
             int unwrap;
 
             /* We will attempt unserialization, if we're unserializing everything,
@@ -1858,7 +1852,11 @@ redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 (unserialize == UNSERIALIZE_KEYS && count % 2 == 0) ||
                 (unserialize == UNSERIALIZE_VALS && count % 2 != 0);
 
-            if (unwrap && redis_unserialize(redis_sock, line, len, &z TSRMLS_CC)) {
+            if (unwrap && redis_unserialize(redis_sock, line, len, z TSRMLS_CC)) {
+#if (PHP_MAJOR_VERSION < 7)
+                MAKE_STD_ZVAL(z);
+                *z = zv;
+#endif
                 add_next_index_zval(z_tab, z);
             } else {
                 add_next_index_stringl(z_tab, line, len);
@@ -1910,10 +1908,11 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
         if(response != NULL) {
             zval zv0, *z = &zv0;
+            if (redis_unserialize(redis_sock, response, response_len, z TSRMLS_CC)) {
 #if (PHP_MAJOR_VERSION < 7)
-            z = NULL;
+                MAKE_STD_ZVAL(z);
+                *z = zv0;
 #endif
-            if(redis_unserialize(redis_sock, response, response_len, &z TSRMLS_CC) == 1) {
                 add_assoc_zval_ex(z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), z);
             } else {
                 add_assoc_stringl_ex(z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), response, response_len);
@@ -2053,29 +2052,21 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len
 
 PHP_REDIS_API int
 redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
-                  zval **return_value TSRMLS_DC)
+                  zval *z_ret TSRMLS_DC)
 {
 
     php_unserialize_data_t var_hash;
-    int ret, rv_free = 0;
+    int ret;
 
     switch(redis_sock->serializer) {
-        case REDIS_SERIALIZER_NONE:
-            return 0;
-
         case REDIS_SERIALIZER_PHP:
-            if(!*return_value) {
-                MAKE_STD_ZVAL(*return_value);
-                rv_free = 1;
-            }
 #if ZEND_MODULE_API_NO >= 20100000
             PHP_VAR_UNSERIALIZE_INIT(var_hash);
 #else
             memset(&var_hash, 0, sizeof(var_hash));
 #endif
-            if(!php_var_unserialize(*return_value, (const unsigned char**)&val,
+            if (!php_var_unserialize(z_ret, (const unsigned char**)&val,
                     (const unsigned char*)val + val_len, &var_hash)) {
-                if(rv_free==1) efree(*return_value);
                 ret = 0;
             } else {
                 ret = 1;
@@ -2114,16 +2105,11 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
                 return 0;
             }
 
-            if(!*return_value) {
-                MAKE_STD_ZVAL(*return_value);
-                rv_free = 1;
-            }
             if(igbinary_unserialize((const uint8_t *)val, (size_t)val_len, 
-                                    return_value TSRMLS_CC) == 0) 
+                                    z_ret TSRMLS_CC) == 0) 
             {
                 return 1;
             }
-            if (rv_free==1) efree(*return_value);
 #endif
             return 0;
     }

@@ -1519,17 +1519,16 @@ PHP_REDIS_API void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     }
 
     if (CLUSTER_IS_ATOMIC(c)) {
-        if (redis_unserialize(c->flags, resp, c->reply_len, &return_value
-                              TSRMLS_CC) == 0)
-        {
+        if (!redis_unserialize(c->flags, resp, c->reply_len, return_value TSRMLS_CC)) {
             CLUSTER_RETURN_STRING(c, resp, c->reply_len);
         }
     } else {
         zval zv, *z = &zv;
+        if (redis_unserialize(c->flags, resp, c->reply_len, z TSRMLS_CC)) {
 #if (PHP_MAJOR_VERSION < 7)
-        z = NULL;
+            MAKE_STD_ZVAL(z);
+            *z = zv;
 #endif
-        if (redis_unserialize(c->flags, resp, c->reply_len, &z TSRMLS_CC)) {
             add_next_index_zval(&c->multi_resp, z);
         } else {
             add_next_index_stringl(&c->multi_resp, resp, c->reply_len);
@@ -2343,10 +2342,11 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
 
         if (line != NULL) {
             zval zv, *z = &zv;
+            if (redis_unserialize(redis_sock, line, line_len, z TSRMLS_CC)) {
 #if (PHP_MAJOR_VERSION < 7)
-            z = NULL;
+                MAKE_STD_ZVAL(z);
+                *z = zv;
 #endif
-            if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
                 add_next_index_zval(z_result, z);
             } else {
                 add_next_index_stringl(z_result, line, line_len);
@@ -2387,10 +2387,11 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
         } else {
             /* Attempt serialization */
             zval zv, *z = &zv;
+            if (redis_unserialize(redis_sock, line, line_len, z TSRMLS_CC)) {
 #if (PHP_MAJOR_VERSION < 7)
-            z = NULL;
+                MAKE_STD_ZVAL(z);
+                *z = zv;
 #endif
-            if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
                 add_assoc_zval(z_result, key, z);
             } else {
                 add_assoc_stringl_ex(z_result, key, key_len, line, line_len);
@@ -2425,7 +2426,7 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
                 key_len = line_len;
             } else {
                 zval zv, *z = &zv;
-                if (redis_unserialize(redis_sock,key,key_len, &z TSRMLS_CC)) {
+                if (redis_unserialize(redis_sock,key,key_len, z TSRMLS_CC)) {
                     convert_to_string(z);
                     add_assoc_double_ex(z_result, Z_STRVAL_P(z), Z_STRLEN_P(z), atof(line));
                     zval_dtor(z);
@@ -2457,10 +2458,11 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
 
         if(line != NULL) {
             zval zv, *z = &zv;
+            if (redis_unserialize(redis_sock, line, line_len, z TSRMLS_CC)) {
 #if (PHP_MAJOR_VERSION < 7)
-            z = NULL;
+                MAKE_STD_ZVAL(z);
+                *z = zv;
 #endif
-            if(redis_unserialize(redis_sock, line, line_len, &z TSRMLS_CC)==1) {
                 add_assoc_zval_ex(z_result,Z_STRVAL(z_keys[i]),
                     Z_STRLEN(z_keys[i]), z);
             } else {
