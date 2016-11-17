@@ -2439,11 +2439,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // ALPHA
     if (((z_ele = zend_hash_str_find(ht_opts, "alpha", sizeof("alpha") - 1)) != NULL ||
          (z_ele = zend_hash_str_find(ht_opts, "ALPHA", sizeof("ALPHA") - 1)) != NULL) &&
-#if (PHP_MAJOR_VERSION < 7)
-         (Z_TYPE_P(z_ele) == IS_BOOL && Z_LVAL_P(z_ele))
-#else
-         (Z_TYPE_P(z_ele) == IS_TRUE)
-#endif
+         zval_is_true(z_ele)
     ) {
         add_next_index_stringl(&z_argv, "ALPHA", sizeof("ALPHA") - 1);
     }

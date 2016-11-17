@@ -2242,15 +2242,10 @@ PHP_REDIS_API void cluster_mset_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
 
     // Set our return if it's the last call
     if(mctx->last) {
-#if (PHP_MAJOR_VERSION < 7)
-        zend_bool bval = Z_LVAL_P(mctx->z_multi);
-#else
-        zend_bool bval = (Z_TYPE_P(mctx->z_multi) == IS_TRUE);
-#endif
         if(CLUSTER_IS_ATOMIC(c)) {
-            ZVAL_BOOL(return_value, bval);
+            ZVAL_BOOL(return_value, zval_is_true(mctx->z_multi));
         } else {
-            add_next_index_bool(&c->multi_resp, bval);
+            add_next_index_bool(&c->multi_resp, zval_is_true(mctx->z_multi));
         }
         efree(mctx->z_multi);
     }

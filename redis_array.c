@@ -25,7 +25,6 @@
 #include "ext/standard/info.h"
 #include "php_ini.h"
 #include "php_redis.h"
-#include "redis_array.h"
 #include <zend_exceptions.h>
 
 #include "library.h"
@@ -255,29 +254,17 @@ PHP_METHOD(RedisArray, __construct)
 
 		/* extract index option. */
         if ((zpData = zend_hash_str_find(hOpts, "index", sizeof("index") - 1)) != NULL) {
-#if (PHP_MAJOR_VERSION < 7)
-            b_index = (Z_TYPE_P(zpData) == IS_BOOL && Z_LVAL_P(zpData));
-#else
-            b_index = (Z_TYPE_P(zpData) == IS_TRUE);
-#endif
+            b_index = zval_is_true(zpData);
 		}
 
 		/* extract autorehash option. */
         if ((zpData = zend_hash_str_find(hOpts, "autorehash", sizeof("autorehash") - 1)) != NULL) {
-#if (PHP_MAJOR_VERSION < 7)
-            b_autorehash = (Z_TYPE_P(zpData) == IS_BOOL && Z_LVAL_P(zpData));
-#else
-            b_autorehash = (Z_TYPE_P(zpData) == IS_TRUE);
-#endif
+            b_autorehash = zval_is_true(zpData);
 		}
 
 		/* pconnect */
         if ((zpData = zend_hash_str_find(hOpts, "pconnect", sizeof("pconnect") - 1)) != NULL) {
-#if (PHP_MAJOR_VERSION < 7)
-            b_pconnect = (Z_TYPE_P(zpData) == IS_BOOL && Z_LVAL_P(zpData));
-#else
-            b_pconnect = (Z_TYPE_P(zpData) == IS_TRUE);
-#endif
+            b_pconnect = zval_is_true(zpData);
 		}
 
 		/* extract retry_interval option. */
@@ -293,11 +280,7 @@ PHP_METHOD(RedisArray, __construct)
 
 		/* extract lazy connect option. */
         if ((zpData = zend_hash_str_find(hOpts, "lazy_connect", sizeof("lazy_connect") - 1)) != NULL) {
-#if (PHP_MAJOR_VERSION < 7)
-            b_lazy_connect = (Z_TYPE_P(zpData) == IS_BOOL && Z_LVAL_P(zpData));
-#else
-            b_lazy_connect = (Z_TYPE_P(zpData) == IS_TRUE);
-#endif
+            b_lazy_connect = zval_is_true(zpData);
 		}
 		
 		/* extract connect_timeout option */		
