@@ -2009,8 +2009,10 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len
                 default: /* copy */
                     ZVAL_ZVAL(&z_copy, z, 1, 0);
                     convert_to_string(&z_copy);
-                    *val = Z_STRVAL(z_copy);
+                    *val = estrndup(Z_STRVAL(z_copy), Z_STRLEN(z_copy));
                     *val_len = Z_STRLEN(z_copy);
+                    zval_dtor(&z_copy);
+                    return 1;
             }
             break;
         case REDIS_SERIALIZER_PHP:
