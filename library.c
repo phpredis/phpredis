@@ -64,6 +64,51 @@ static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
     return 0;
 }
 
+
+/* Helper to ensure we always get the latest persistent stream in case its been closed */
+ int get_persistent(RedisSock *redis_sock TSRMLS_DC) {
+    php_stream *stream = NULL;
+    char *persistent_id;
+    if (!redis_sock->persistent){
+        return 0;
+    }
+    if (redis_sock->persistent) {
+        if (redis_sock->persistent_id) {
+            spprintf(&persistent_id, 0, "phpredis:%s:%s", redis_sock->host,
+                redis_sock->persistent_id);
+        } else {
+
+            spprintf(&persistent_id, 0, "phpredis:%s:%f", redis_sock->host,
+                redis_sock->timeout);
+        }
+    }
+    switch(php_stream_from_persistent_id(persistent_id, &stream)) {
+      case PHP_STREAM_PERSISTENT_SUCCESS:
+            /* use a 0 second timeout when checking if the socket
+ *            * has already died */
+           if (PHP_STREAM_OPTION_RETURN_OK == php_stream_set_option(stream, PHP_STREAM_OPTION_CHECK_LIVENESS, 0, NULL)) {
+               redis_sock->stream=stream;
+           }
+	   else{
+               /* dead - kill it */
+               php_stream_pclose(stream);
+               stream = NULL;
+           }
+       /* fall through */
+
+       case PHP_STREAM_PERSISTENT_FAILURE:
+       default:
+       /* failed; get a new one */
+       ;
+   }
+   efree(persistent_id);
+   redis_sock->stream=stream;
+   return 0;
+
+
+}
+
+
 /* Helper to resend AUTH <password> in the case of a reconnect */
 static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
     char *cmd, *response;

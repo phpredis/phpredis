@@ -527,6 +527,7 @@ typedef enum _PUBSUB_TYPE {
                &cmd_len, NULL, &ctx)==FAILURE) { \
             RETURN_FALSE; \
     } \
+    get_persistent(redis_sock);\
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
     IF_ATOMIC() { \
         resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx); \
