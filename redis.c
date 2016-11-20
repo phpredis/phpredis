@@ -2390,12 +2390,13 @@ PHP_METHOD(Redis, exec)
             total += ri->request_size;
         }
         if (total) {
-            request = emalloc(total);
+            request = emalloc(total + 1);
             /* concatenate individual elements one by one in the target buffer */
             for (ri = redis_sock->pipeline_head; ri; ri = ri->next) {
                 memcpy(request + offset, ri->request_str, ri->request_size);
                 offset += ri->request_size;
             }
+            request[total] = '\0';
             if (redis_sock_write(redis_sock, request, total TSRMLS_CC) < 0 ||
                 redis_sock_read_multibulk_pipeline_reply(
                     INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock) < 0

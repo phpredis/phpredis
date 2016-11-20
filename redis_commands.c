@@ -545,11 +545,7 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
            /* Check for withscores and limit */
            if (IS_WITHSCORES_ARG(zkey->val, zkey->len)) {
-#if (PHP_MAJOR_VERSION < 7)
-               *withscores = (Z_TYPE_P(z_ele) == IS_BOOL && Z_LVAL_P(z_ele));
-#else
-               *withscores = (Z_TYPE_P(z_ele) == IS_TRUE);
-#endif
+               *withscores = zval_is_true(z_ele);
            } else if (IS_LIMIT_ARG(zkey->val, zkey->len) && Z_TYPE_P(z_ele) == IS_ARRAY) {
                 HashTable *htlimit = Z_ARRVAL_P(z_ele);
                 zval *zoff, *zcnt;
@@ -1234,7 +1230,11 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 }
 
                 /* Expiry can't be set < 1 */
-                if (expire < 1) return FAILURE;
+                if (expire < 1) {
+                    if (key_free) efree(key);
+                    if (val_free) efree(val);
+                    return FAILURE;
+                }
             } else if (Z_TYPE_P(v) == IS_STRING && IS_NX_XX_ARG(Z_STRVAL_P(v))) {
                 set_type = Z_STRVAL_P(v);
             }
@@ -1242,7 +1242,11 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     } else if(z_opts && Z_TYPE_P(z_opts) == IS_LONG) {
         /* Grab expiry and fail if it's < 1 */
         expire = Z_LVAL_P(z_opts);
-        if (expire < 1) return FAILURE;
+        if (expire < 1) {
+            if (key_free) efree(key);
+            if (val_free) efree(val);
+            return FAILURE;
+        }
     }
 
     /* Now let's construct the command we want */
@@ -1323,6 +1327,8 @@ int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
            key1_len, key2, key2_len, timeout);
     }
 
+    if (key1_free) efree(key1);
+    if (key2_free) efree(key2);
     return SUCCESS;
 }
 
@@ -1707,6 +1713,7 @@ int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 php_error_docref(NULL TSRMLS_CC, E_WARNING,
                     "Warning, not all keys hash to the same slot!");
                 if(key_free) efree(key);
+                efree(z_args);
                 return FAILURE;
             }
             *slot = kslot;
@@ -2341,7 +2348,6 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         if(slot) {
             php_error_docref(NULL TSRMLS_CC, E_WARNING,
                 "SORT BY option is not allowed in Redis Cluster");
-            if(key_free) efree(key);
             zval_dtor(&z_argv);
             return FAILURE;
         }
@@ -2372,7 +2378,6 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         if(cross_slot) {
             php_error_docref(0 TSRMLS_CC, E_WARNING,
                 "Error, SORT key and STORE key have different slots!");
-            if(key_free) efree(key);
             zval_dtor(&z_argv);
             return FAILURE;
         }
@@ -2394,7 +2399,6 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         if(slot) {
             php_error_docref(NULL TSRMLS_CC, E_WARNING,
                 "GET option for SORT disabled in Redis Cluster");
-            if(key_free) efree(key);
             zval_dtor(&z_argv);
             return FAILURE;
         }
@@ -2429,7 +2433,6 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             if(added==0) {
                 php_error_docref(NULL TSRMLS_CC, E_WARNING,
                     "Array of GET values requested, but none are valid");
-                if(key_free) efree(key);
                 zval_dtor(&z_argv);
                 return FAILURE;
             }
@@ -2460,7 +2463,6 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             ) {
                 php_error_docref(NULL TSRMLS_CC, E_WARNING,
                     "LIMIT options on SORT command must be longs or strings");
-                if(key_free) efree(key);
                 zval_dtor(&z_argv);
                 return FAILURE;
             }
@@ -2492,10 +2494,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         sizeof("SORT")-1);
 
     // Iterate through our arguments
-    for(zend_hash_internal_pointer_reset(ht_argv);
-        (z_ele = zend_hash_get_current_data(ht_argv)) != NULL;
-        zend_hash_move_forward(ht_argv))
-    {
+    ZEND_HASH_FOREACH_VAL(ht_argv, z_ele) {
         // Args are strings or longs
         if (Z_TYPE_P(z_ele) == IS_STRING) {
             redis_cmd_append_sstr(&cmdstr,Z_STRVAL_P(z_ele),
@@ -2503,7 +2502,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         } else {
             redis_cmd_append_sstr_long(&cmdstr, Z_LVAL_P(z_ele));
         }
-    }
+    } ZEND_HASH_FOREACH_END();
 
     /* Clean up our arguments array.  Note we don't have to free any prefixed
      * key as that we didn't duplicate the pointer if we prefixed */

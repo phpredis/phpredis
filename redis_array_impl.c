@@ -80,6 +80,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 #endif
         object_init_ex(&ra->redis[i], redis_ce);
         call_user_function(&redis_ce->function_table, &ra->redis[i], &z_cons, &z_ret, 0, NULL);
+        zval_dtor(&z_ret);
 
 		/* create socket */
 		redis_sock = redis_sock_create(host, host_len, port, ra->connect_timeout, ra->pconnect, NULL, retry_interval, b_lazy_connect);
@@ -341,6 +342,8 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     zval_dtor(&z_params_pconnect);
     zval_dtor(&z_params_connect_timeout);
     zval_dtor(&z_params_lazy_connect);
+    zval_dtor(&z_dist);
+    zval_dtor(&z_fun);
 
 	return ra;
 }
@@ -923,6 +926,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 
 	/* cleanup */
     zval_dtor(&z_fun_zadd);
+    zval_dtor(&z_ret_dest);
     zval_dtor(&z_ret);
 
     /* Free the array itself */
@@ -947,6 +951,8 @@ ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to, long ttl 
 
 	if(Z_TYPE(z_ret) != IS_STRING) { /* key not found or replaced */
 		/* TODO: report? */
+        zval_dtor(&z_args[0]);
+        zval_dtor(&z_ret);
 		return 0;
 	}
 
@@ -1038,6 +1044,7 @@ ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 
 	if(Z_TYPE(z_ret) != IS_ARRAY) { /* key not found or replaced */
 		/* TODO: report? */
+        zval_dtor(&z_ret);
 		return 0;
 	}
 

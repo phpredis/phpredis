@@ -2058,7 +2058,7 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 {
 
     php_unserialize_data_t var_hash;
-    int ret;
+    int ret = 0;
 
     switch(redis_sock->serializer) {
         case REDIS_SERIALIZER_PHP:
@@ -2067,10 +2067,9 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 #else
             memset(&var_hash, 0, sizeof(var_hash));
 #endif
-            if (!php_var_unserialize(z_ret, (const unsigned char**)&val,
-                    (const unsigned char*)val + val_len, &var_hash)) {
-                ret = 0;
-            } else {
+            if (php_var_unserialize(z_ret, (const unsigned char**)&val,
+                    (const unsigned char*)val + val_len, &var_hash)
+            ) {
                 ret = 1;
             }
 #if ZEND_MODULE_API_NO >= 20100000
@@ -2078,8 +2077,7 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 #else
             var_destroy(&var_hash);
 #endif
-
-            return ret;
+            break;
 
         case REDIS_SERIALIZER_IGBINARY:
 #ifdef HAVE_REDIS_IGBINARY
@@ -2108,14 +2106,14 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
             }
 
             if(igbinary_unserialize((const uint8_t *)val, (size_t)val_len, 
-                                    z_ret TSRMLS_CC) == 0) 
-            {
-                return 1;
+                                    z_ret TSRMLS_CC) == 0
+            ) {
+                ret = 1;
             }
 #endif
-            return 0;
+            break;
     }
-    return 0;
+    return ret;
 }
 
 PHP_REDIS_API int
