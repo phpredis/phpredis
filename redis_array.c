@@ -1137,7 +1137,7 @@ PHP_METHOD(RedisArray, del)
 	RedisArray *ra;
 	int *pos, argc = ZEND_NUM_ARGS(), *argc_each;
 	HashTable *h_keys;
-	zval *redis_inst, **argv;
+	zval **argv;
 	long total = 0;
 	int free_zkeys = 0;
 
@@ -1175,9 +1175,6 @@ PHP_METHOD(RedisArray, del)
 		free_zkeys = 1;
 	}
 
-	/* prepare call */
-	ZVAL_STRINGL(&z_fun, "DEL", 3);
-
 	/* init data structures */
 	h_keys = Z_ARRVAL(z_keys);
 	argc = zend_hash_num_elements(h_keys);
@@ -1196,6 +1193,7 @@ PHP_METHOD(RedisArray, del)
             efree(z_args);
             efree(argv);
 			efree(pos);
+			efree(argc_each);
 			RETURN_FALSE;
 		}
 
@@ -1205,6 +1203,9 @@ PHP_METHOD(RedisArray, del)
 		argc_each[pos[i]]++;	/* count number of keys per node */
 		argv[i++] = data;
 	} ZEND_HASH_FOREACH_END();
+
+	/* prepare call */
+	ZVAL_STRINGL(&z_fun, "DEL", 3);
 
 	/* calls */
 	for(n = 0; n < ra->count; ++n) { /* for each node */
@@ -1235,18 +1236,17 @@ PHP_METHOD(RedisArray, del)
 			continue;
 		}
 
-		redis_inst = &ra->redis[n];
 		if(ra->index) { /* add MULTI */
-			ra_index_multi(redis_inst, MULTI TSRMLS_CC);
+			ra_index_multi(&ra->redis[n], MULTI TSRMLS_CC);
 		}
 
 		/* call */
-        call_user_function(&redis_ce->function_table, redis_inst, &z_fun, &z_ret, 1, &z_argarray);
+        call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
 
 		if(ra->index) {
             zval_dtor(&z_ret);
-			ra_index_del(&z_argarray, redis_inst TSRMLS_CC); /* use SREM to remove keys from node index */
-			ra_index_exec(redis_inst, &z_ret, 0 TSRMLS_CC); /* run EXEC */
+			ra_index_del(&z_argarray, &ra->redis[n] TSRMLS_CC); /* use SREM to remove keys from node index */
+			ra_index_exec(&ra->redis[n], &z_ret, 0 TSRMLS_CC); /* run EXEC */
 		}
 		total += Z_LVAL(z_ret);	/* increment total */
 
