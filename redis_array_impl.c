@@ -42,24 +42,14 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 	ZVAL_STRINGL(&z_cons, "__construct", 11);
 
 	/* init connections */
-	for (zend_hash_internal_pointer_reset(hosts); zend_hash_has_more_elements(hosts) == SUCCESS; zend_hash_move_forward(hosts))
-	{
-		if ((zpData = zend_hash_get_current_data(hosts)) == NULL || Z_TYPE_P(zpData) != IS_STRING)
-		{
+    for (zend_hash_internal_pointer_reset(hosts);
+         zend_hash_has_more_elements(hosts) == SUCCESS;
+         zend_hash_move_forward(hosts)
+    ) {
+        if ((zpData = zend_hash_get_current_data(hosts)) == NULL || Z_TYPE_P(zpData) != IS_STRING) {
             zval_dtor(&z_cons);
-			for(i=0;i<ra->count;i++) {
-				zval_dtor(&ra->redis[i]);
-				efree(ra->hosts[i]);
-			}
-			efree(ra->redis);
-			efree(ra->hosts);
-			zval_dtor(&ra->z_pure_cmds);
-			zval_dtor(&ra->z_dist);
-			zval_dtor(&ra->z_fun);
-            efree(ra);
-			return NULL;
-		}
-
+            return NULL;
+        }
 
 		/* default values */
 		host = Z_STRVAL_P(zpData);
@@ -272,15 +262,12 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_retry_interval TSRMLS_CC);
     }
 	if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_retry_interval), name, name_len)) != NULL) {
-		if (Z_TYPE_P(z_data) == IS_LONG || Z_TYPE_P(z_data) == IS_STRING) {
-			if (Z_TYPE_P(z_data) == IS_LONG) {
-				l_retry_interval = Z_LVAL_P(z_data);
-			}
-			else {
-				l_retry_interval = atol(Z_STRVAL_P(z_data));
-			}
-		}
-	}
+        if (Z_TYPE_P(z_data) == IS_LONG) {
+            l_retry_interval = Z_LVAL_P(z_data);
+        } else if (Z_TYPE_P(z_data) == IS_STRING) {
+            l_retry_interval = atol(Z_STRVAL_P(z_data));
+        }
+    }
 
 	/* find pconnect option */
     array_init(&z_params_pconnect);
@@ -310,19 +297,14 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_connect_timeout TSRMLS_CC);
     }
     if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_connect_timeout), name, name_len)) != NULL) {
-        if (Z_TYPE_P(z_data) == IS_DOUBLE || 
-            Z_TYPE_P(z_data) == IS_STRING ||
-            Z_TYPE_P(z_data) == IS_LONG
-        ) {
-            if (Z_TYPE_P(z_data) == IS_DOUBLE) {
-                d_connect_timeout = Z_DVAL_P(z_data);
-            } else if (Z_TYPE_P(z_data) == IS_LONG) {
-                d_connect_timeout = Z_LVAL_P(z_data);
-            } else {
-                d_connect_timeout = atof(Z_STRVAL_P(z_data));
-			}
-		}
-	}
+        if (Z_TYPE_P(z_data) == IS_DOUBLE) {
+            d_connect_timeout = Z_DVAL_P(z_data);
+        } else if (Z_TYPE_P(z_data) == IS_STRING)  {
+            d_connect_timeout = atof(Z_STRVAL_P(z_data));
+        } else if (Z_TYPE_P(z_data) == IS_LONG) {
+            d_connect_timeout = Z_LVAL_P(z_data);
+        }
+    }
 	
 	/* create RedisArray object */
 	ra = ra_make_array(hHosts, &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout TSRMLS_CC);
@@ -351,7 +333,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 RedisArray *
 ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, zend_bool b_pconnect, long retry_interval, zend_bool b_lazy_connect, double connect_timeout TSRMLS_DC) {
 
-    int count;
+    int i, count;
     RedisArray *ra;
 
     if (!hosts) return NULL;
@@ -368,13 +350,20 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	ra->pconnect = b_pconnect;
 	ra->connect_timeout = connect_timeout;
 
-	/* init array data structures */
-	ra_init_function_table(ra);
+    if (ra_load_hosts(ra, hosts, retry_interval, b_lazy_connect TSRMLS_CC) == NULL) {
+        for (i = 0; i < ra->count; ++i) {
+            zval_dtor(&ra->redis[i]);
+            efree(ra->hosts[i]);
+        }
+        efree(ra->redis);
+        efree(ra->hosts);
+        efree(ra);
+        return NULL;
+    }
+    ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect, connect_timeout TSRMLS_CC) : NULL;
 
-	if(NULL == ra_load_hosts(ra, hosts, retry_interval, b_lazy_connect TSRMLS_CC)) {
-		return NULL;
-	}
-	ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect, connect_timeout TSRMLS_CC) : NULL;
+    /* init array data structures */
+    ra_init_function_table(ra);
 
 	/* Set hash function and distribtor if provided */
     ZVAL_ZVAL(&ra->z_fun, z_fun, 1, 0);
