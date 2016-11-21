@@ -229,9 +229,6 @@ PHP_METHOD(RedisArray, __construct)
     ZVAL_NULL(&z_dist);
 	/* extract options */
 	if(z_opts) {
-		zval *z_retry_interval_p;
-		zval *z_connect_timeout_p;
-
 		hOpts = Z_ARRVAL_P(z_opts);
 
 		/* extract previous ring. */
@@ -268,15 +265,13 @@ PHP_METHOD(RedisArray, __construct)
 		}
 
 		/* extract retry_interval option. */
-        if ((z_retry_interval_p = zend_hash_str_find(hOpts, "retry_interval", sizeof("retry_interval") - 1)) != NULL) {
-            if (Z_TYPE_P(z_retry_interval_p) == IS_LONG || Z_TYPE_P(z_retry_interval_p) == IS_STRING) {
-                if (Z_TYPE_P(z_retry_interval_p) == IS_LONG) {
-                    l_retry_interval = Z_LVAL_P(z_retry_interval_p);
-                } else {
-                    l_retry_interval = atol(Z_STRVAL_P(z_retry_interval_p));
-				}
-			}
-		}
+        if ((zpData = zend_hash_str_find(hOpts, "retry_interval", sizeof("retry_interval") - 1)) != NULL) {
+            if (Z_TYPE_P(zpData) == IS_LONG) {
+                l_retry_interval = Z_LVAL_P(zpData);
+            } else if (Z_TYPE_P(zpData) == IS_STRING) {
+                l_retry_interval = atol(Z_STRVAL_P(zpData));
+            }
+        }
 
 		/* extract lazy connect option. */
         if ((zpData = zend_hash_str_find(hOpts, "lazy_connect", sizeof("lazy_connect") - 1)) != NULL) {
@@ -284,20 +279,15 @@ PHP_METHOD(RedisArray, __construct)
 		}
 		
 		/* extract connect_timeout option */		
-        if ((z_connect_timeout_p = zend_hash_str_find(hOpts, "connect_timeout", sizeof("connect_timeout") - 1)) != NULL) {
-            if (Z_TYPE_P(z_connect_timeout_p) == IS_DOUBLE ||
-                Z_TYPE_P(z_connect_timeout_p) == IS_STRING ||
-                Z_TYPE_P(z_connect_timeout_p) == IS_LONG
-            ) {
-                if (Z_TYPE_P(z_connect_timeout_p) == IS_DOUBLE) {
-                    d_connect_timeout = Z_DVAL_P(z_connect_timeout_p);
-                } else if (Z_TYPE_P(z_connect_timeout_p) == IS_LONG) {
-                    d_connect_timeout = Z_LVAL_P(z_connect_timeout_p);
-                } else {
-                    d_connect_timeout = atof(Z_STRVAL_P(z_connect_timeout_p));
-				}
-			}
-		}		
+        if ((zpData = zend_hash_str_find(hOpts, "connect_timeout", sizeof("connect_timeout") - 1)) != NULL) {
+            if (Z_TYPE_P(zpData) == IS_DOUBLE) {
+                d_connect_timeout = Z_DVAL_P(zpData);
+            } else if (Z_TYPE_P(zpData) == IS_LONG) {
+                d_connect_timeout = Z_LVAL_P(zpData);
+            } else if (Z_TYPE_P(zpData) == IS_STRING) {
+                d_connect_timeout = atof(Z_STRVAL_P(zpData));
+            }
+        }
 	}
 
 	/* extract either name of list of hosts from z0 */
