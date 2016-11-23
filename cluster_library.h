@@ -173,6 +173,10 @@ typedef struct clusterFoldItem clusterFoldItem;
 
 /* RedisCluster implementation structure */
 typedef struct redisCluster {
+#if (PHP_MAJOR_VERSION < 7)
+    zend_object std;
+#endif
+
     /* Timeout and read timeout (for normal operations) */
     double timeout;
     double read_timeout;
@@ -242,8 +246,10 @@ typedef struct redisCluster {
     unsigned short     redir_slot;
     unsigned short     redir_port;
 
+#if (PHP_MAJOR_VERSION >= 7)
     /* Zend object handler */
     zend_object std;
+#endif
 } redisCluster;
 
 /* RedisCluster response processing callback */

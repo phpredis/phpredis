@@ -342,7 +342,11 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
 
 /* Helper to retrieve the redisCluster object from the zend_object member */
 static redisCluster *getClusterObject(zend_object *object) {
+#if (PHP_MAJOR_VERSION < 7)
+    return (redisCluster*)object;
+#else
     return (redisCluster*)((char*)(object) - XtOffsetOf(redisCluster, std));
+#endif
 }
 
 /* Free redisCluster context */
