@@ -331,12 +331,18 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
 #else
 	object_properties_init(&cluster->std, class_type);
 	memcpy(&RedisCluster_handlers, zend_get_std_object_handlers(), sizeof(RedisCluster_handlers));
-	RedisCluster_handlers.free_obj = free_cluster_context;
+	RedisCluster_handlers.offset = XtOffsetOf(redisCluster, std);
+    RedisCluster_handlers.free_obj = free_cluster_context;
 
 	cluster->std.handlers = &RedisCluster_handlers;
 
 	return &cluster->std;
 #endif
+}
+
+/* Helper to retrieve the redisCluster object from the zend_object member */
+static redisCluster *getClusterObject(zend_object *object) {
+    return (redisCluster*)((char*)(object) - XtOffsetOf(redisCluster, std));
 }
 
 /* Free redisCluster context */
@@ -347,10 +353,7 @@ free_cluster_context(void *object TSRMLS_DC)
 free_cluster_context(zend_object *object)
 #endif
 {
-    redisCluster *cluster;
-
-    // Grab context
-    cluster = (redisCluster*)object;
+    redisCluster *cluster = getClusterObject(object);
 
     // Free any allocated prefix, as well as the struct
     if(cluster->flags->prefix) efree(cluster->flags->prefix);
@@ -366,8 +369,11 @@ free_cluster_context(zend_object *object)
 
     if(cluster->err) efree(cluster->err);
 
-    // Finally, free the redisCluster structure itself
+    zend_object_std_dtor(&cluster->std TSRMLS_CC);
+
+#if (PHP_MAJOR_VERSION < 7)
     efree(cluster);
+#endif
 }
 
 /* Attempt to connect to a Redis cluster provided seeds and timeout options */

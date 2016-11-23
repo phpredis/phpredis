@@ -173,9 +173,6 @@ typedef struct clusterFoldItem clusterFoldItem;
 
 /* RedisCluster implementation structure */
 typedef struct redisCluster {
-    /* Object reference for Zend */
-    zend_object std;
-
     /* Timeout and read timeout (for normal operations) */
     double timeout;
     double read_timeout;
@@ -244,6 +241,9 @@ typedef struct redisCluster {
     int                redir_host_len;
     unsigned short     redir_slot;
     unsigned short     redir_port;
+
+    /* Zend object handler */
+    zend_object std;
 } redisCluster;
 
 /* RedisCluster response processing callback */
