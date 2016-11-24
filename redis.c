@@ -431,11 +431,8 @@ static void redis_destructor_redis_sock(zend_resource * rsrc TSRMLS_DC)
     redis_free_socket(redis_sock);
 }
 
-/**
- * redis_sock_get
- */
-PHP_REDIS_API int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC,
-                          int no_throw)
+static zend_always_inline int
+redis_sock_get_instance(zval *id, RedisSock **redis_sock TSRMLS_DC, int no_throw)
 {
     zval *socket;
 
@@ -466,6 +463,19 @@ PHP_REDIS_API int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC,
         }
         return -1;
     }
+    return 0;
+}
+
+/**
+ * redis_sock_get
+ */
+PHP_REDIS_API int
+redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC, int no_throw)
+{
+    if (redis_sock_get_instance(id, redis_sock TSRMLS_CC, no_throw) < 0) {
+        return -1;
+    }
+
     if ((*redis_sock)->lazy_connect)
     {
         (*redis_sock)->lazy_connect = 0;
@@ -2670,7 +2680,7 @@ PHP_METHOD(Redis, object)
 PHP_METHOD(Redis, getOption)  {
     RedisSock *redis_sock;
 
-    if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
+    if (redis_sock_get_instance(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;
     }
 
@@ -2683,7 +2693,7 @@ PHP_METHOD(Redis, getOption)  {
 PHP_METHOD(Redis, setOption) {
     RedisSock *redis_sock;
 
-    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0) {
+    if (redis_sock_get_instance(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;
     }
 
