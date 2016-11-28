@@ -340,25 +340,15 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
 #endif
 }
 
-/* Helper to retrieve the redisCluster object from the zend_object member */
-static redisCluster *getClusterObject(zend_object *object) {
-#if (PHP_MAJOR_VERSION < 7)
-    return (redisCluster*)object;
-#else
-    return (redisCluster*)((char*)(object) - XtOffsetOf(redisCluster, std));
-#endif
-}
-
 /* Free redisCluster context */
 void
 #if (PHP_MAJOR_VERSION < 7)
-free_cluster_context(void *object TSRMLS_DC)
+free_cluster_context(void *object TSRMLS_DC) {
+    redisCluster *cluster = (redisCluster*)object;
 #else
-free_cluster_context(zend_object *object)
+free_cluster_context(zend_object *object) {
+    redisCluster *cluster = (redisCluster*)((char*)(object) - XtOffsetOf(redisCluster, std));
 #endif
-{
-    redisCluster *cluster = getClusterObject(object);
-
     // Free any allocated prefix, as well as the struct
     if(cluster->flags->prefix) efree(cluster->flags->prefix);
     efree(cluster->flags);
@@ -1949,6 +1939,7 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
                 /* validate that this key maps to the same node */
                 if(node && c->master[slot] != node) {
+                    if (key_free) efree(key);
                     php_error_docref(NULL TSRMLS_CC, E_WARNING,
                         "Keys appear to map to different nodes");
                     RETURN_FALSE;
@@ -1980,7 +1971,7 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     } else {
         void *ctx = NULL;
         CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_resp, ctx);
-        RETURN_ZVAL(getThis(), 1, 0);
+        RETVAL_ZVAL(getThis(), 1, 0);
     }
 
     efree(cmdstr.c);
