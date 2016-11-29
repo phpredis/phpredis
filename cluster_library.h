@@ -60,11 +60,9 @@
 
 /* Clear out our "last error" */
 #define CLUSTER_CLEAR_ERROR(c) \
-    if(c->err) { \
-        efree(c->err); \
-        c->err = NULL; \
-        c->err_len = 0; \
-    } \
+    if(c->err) efree(c->err); \
+    c->err = NULL; \
+    c->err_len = 0; \
     c->clusterdown = 0;
 
 /* Protected sending of data down the wire to a RedisSock->stream */
