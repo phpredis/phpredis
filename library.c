@@ -1704,34 +1704,23 @@ PHP_REDIS_API void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS,
 /**
  * redis_sock_set_err
  */
-PHP_REDIS_API int redis_sock_set_err(RedisSock *redis_sock, const char *msg, 
-                              int msg_len) 
+PHP_REDIS_API void
+redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len)
 {
-    // Allocate/Reallocate our last error member
-    if(msg != NULL && msg_len > 0) {
-        if(redis_sock->err == NULL) {
-            redis_sock->err = emalloc(msg_len + 1);
-        } else if(msg_len > redis_sock->err_len) {
-            redis_sock->err = erealloc(redis_sock->err, msg_len +1);
-        }
+    // Free our last error
+    if (redis_sock->err != NULL) {
+        efree(redis_sock->err);
+    }
 
-        // Copy in our new error message, set new length, and null terminate
-        memcpy(redis_sock->err, msg, msg_len);
-        redis_sock->err[msg_len] = '\0';
+    if (msg != NULL && msg_len > 0) {
+        // Copy in our new error message
+        redis_sock->err = estrndup(msg, msg_len);
         redis_sock->err_len = msg_len;
     } else {
-        // Free our last error
-        if(redis_sock->err != NULL) {
-            efree(redis_sock->err);
-        }
-
         // Set to null, with zero length
         redis_sock->err = NULL;
         redis_sock->err_len = 0;
     }
-
-    // Success
-    return 0;
 }
 
 /**

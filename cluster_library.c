@@ -486,26 +486,22 @@ void cluster_multi_fini(clusterMultiCmd *mc) {
 }
 
 /* Set our last error string encountered */
-static void cluster_set_err(redisCluster *c, char *err, int err_len)
+static void
+cluster_set_err(redisCluster *c, char *err, int err_len)
 {
-    if(err && err_len>0) {
-        if(err_len >= sizeof("CLUSTERDOWN")-1 &&
-           !memcmp(err, "CLUSTERDOWN", sizeof("CLUSTERDOWN")-1))
-        {
+    // Free our last error
+    if (c->err != NULL) {
+        efree(c->err);
+    }
+    if (err != NULL && err_len > 0) {
+        if (err_len >= sizeof("CLUSTERDOWN") - 1 &&
+            !memcmp(err, "CLUSTERDOWN", sizeof("CLUSTERDOWN") - 1)
+        ) {
             c->clusterdown = 1;
-            return;
         }
-
-        if(c->err == NULL) {
-            c->err = emalloc(err_len+1);
-        } else if(err_len > c->err_len) {
-            c->err = erealloc(c->err, err_len + 1);
-        }
-        memcpy(c->err,err,err_len);
-        c->err[err_len]='\0';
+        c->err = estrndup(err, err_len);
         c->err_len = err_len;
     } else {
-        if(c->err) efree(c->err);
         c->err = NULL;
         c->err_len = 0;
     }
