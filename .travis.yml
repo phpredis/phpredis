@@ -12,6 +12,8 @@ env: CC=gcc
 matrix:
   include:
     - env: CC=clang
+      php: 5.6
+    - env: CC=clang
       php: 7.0
     - env: CC=clang
       php: 7.1
