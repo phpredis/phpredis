@@ -300,6 +300,22 @@ zval_get_long(zval *op)
     return 0;
 }
 
+static zend_always_inline double
+zval_get_double(zval *op)
+{
+    switch (Z_TYPE_P(op)) {
+        case IS_BOOL:
+        case IS_LONG:
+            return (double)Z_LVAL_P(op);
+        case IS_DOUBLE:
+            return Z_DVAL_P(op);
+        case IS_STRING:
+            return zend_strtod(Z_STRVAL_P(op), NULL);
+        EMPTY_SWITCH_DEFAULT_CASE()
+    }
+    return 0.0;
+}
+
 static void (*_php_var_serialize)(smart_str *, zval **, php_serialize_data_t * TSRMLS_DC) = &php_var_serialize;
 #define php_var_serialize(buf, struc, data) _php_var_serialize(buf, &struc, data TSRMLS_CC)
 static int (*_php_var_unserialize)(zval **, const unsigned char **, const unsigned char *, php_unserialize_data_t * TSRMLS_DC) = &php_var_unserialize;
