@@ -91,6 +91,7 @@ PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
     zend_string _zstr = {0}; \
     _zstr.val = _php_math_number_format_ex(dbl, 16, &dbl_decsep, 1, NULL, 0); \
     _zstr.len = strlen(_zstr.val); \
+    _zstr.gc = 0x10; \
     dbl_str = &_zstr; \
 } while (0);
 #else
@@ -98,6 +99,7 @@ PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
     zend_string _zstr = {0}; \
     _zstr.val = _php_math_number_format(dbl, 16, '.', '\x00'); \
     _zstr.len = strlen(_zstr.val); \
+    _zstr.gc = 0x10; \
     dbl_str = &_zstr; \
 } while (0)
 #endif

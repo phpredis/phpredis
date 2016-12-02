@@ -1014,31 +1014,17 @@ PHP_METHOD(Redis, getMultiple)
 
     /* Iterate through and grab our keys */
     ZEND_HASH_FOREACH_VAL(hash, z_ele) {
-        char *key;
-        int key_len, key_free;
-        zval z_tmp;
-
-        ZVAL_NULL(&z_tmp);
-        /* If the key isn't a string, turn it into one */
-        if (Z_TYPE_P(z_ele) == IS_STRING) {
-            key = Z_STRVAL_P(z_ele);
-            key_len = Z_STRLEN_P(z_ele);
-        } else {
-            ZVAL_ZVAL(&z_tmp, z_ele, 1, 0);
-            convert_to_string(&z_tmp);
-            key = Z_STRVAL(z_tmp);
-            key_len = Z_STRLEN(z_tmp);
-        }
-
+        zend_string *zstr = zval_get_string(z_ele);
+        char *key = zstr->val;
+        int key_len = zstr->len;
         /* Apply key prefix if necissary */
-        key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
+        int key_free = redis_key_prefix(redis_sock, &key, &key_len);
         /* Append this key to our command */
         redis_cmd_append_sstr(&cmd, key, key_len);
-
+        /* release zend_string */
+        zend_string_release(zstr);
         /* Free our key if it was prefixed */
         if(key_free) efree(key);
-        zval_dtor(&z_tmp);
     } ZEND_HASH_FOREACH_END();
 
     /* Kick off our command */
@@ -2899,20 +2885,9 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
 
         /* Iterate our elements */
         ZEND_HASH_FOREACH_VAL(ht_chan, z_ele) {
-            char *key;
-            int key_len, key_free;
-            zval z_tmp;
-
-            ZVAL_NULL(&z_tmp);
-            if (Z_TYPE_P(z_ele) == IS_STRING) {
-                key = Z_STRVAL_P(z_ele);
-                key_len = Z_STRLEN_P(z_ele);
-            } else {
-                ZVAL_ZVAL(&z_tmp, z_ele, 1, 0);
-                convert_to_string(&z_tmp);
-                key = Z_STRVAL(z_tmp);
-                key_len = Z_STRLEN(z_tmp);
-            }
+            zend_string *zstr = zval_get_string(z_ele);
+            char *key = zstr->val;
+            int key_len = zstr->len;
 
             /* Apply prefix if required */
             key_free = redis_key_prefix(redis_sock, &key, &key_len);
@@ -2920,9 +2895,9 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
             /* Append this channel */
             redis_cmd_append_sstr(&cmd, key, key_len);
 
+            zend_string_release(zstr);
             /* Free key if prefixed */
             if(key_free) efree(key);
-            zval_dtor(&z_tmp);
         } ZEND_HASH_FOREACH_END();
 
         /* Set return */
@@ -3044,28 +3019,16 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
 
             // Iterate the values in our "keys" array
             ZEND_HASH_FOREACH_VAL(args_hash, elem) {
-                zval z_tmp;
-                char *key, *old_cmd;
-                int key_len, key_free;
-
-                ZVAL_NULL(&z_tmp);
-				if (Z_TYPE_P(elem) == IS_STRING) {
-					key = Z_STRVAL_P(elem);
-					key_len = Z_STRLEN_P(elem);
-				} else {
-					/* Convert it to a string */
-                    ZVAL_ZVAL(&z_tmp, elem, 1, 0);
-					convert_to_string(&z_tmp);
-                    key = Z_STRVAL(z_tmp);
-                    key_len = Z_STRLEN(z_tmp);
-                }
+                zend_string *zstr = zval_get_string(elem);
+                char *key = zstr->val;
+                int key_len = zstr->len;
 
 				/* Keep track of the old command pointer */
-				old_cmd = *ret;
+				char *old_cmd = *ret;
 
                 // If this is still a key argument, prefix it if we've been set
                 // up to prefix keys
-                key_free = keys_count-- > 0 ? redis_key_prefix(redis_sock,
+                int key_free = keys_count-- > 0 ? redis_key_prefix(redis_sock,
                     &key, &key_len) : 0;
 
                 // Append this key to our EVAL command, free our old command
@@ -3073,9 +3036,9 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
                     cmd_len, key_len, key, key_len);
                 efree(old_cmd);
 
+                zend_string_release(zstr);
 				/* Free our key, old command if we need to */
 				if(key_free) efree(key);
-                zval_dtor(&z_tmp);
             } ZEND_HASH_FOREACH_END();
         }
     }
@@ -3178,12 +3141,12 @@ redis_build_script_exists_cmd(char **ret, zval *argv, int argc) {
 
 	/* Iterate our arguments */
 	for(i=0;i<argc;i++) {
-		/* Convert our argument to a string if we need to */
-		convert_to_string(&argv[i]);
+        zend_string *zstr = zval_get_string(&argv[i]);
 
         // Append this script sha to our SCRIPT EXISTS command
-        cmd_len = redis_cmd_append_str(ret, cmd_len, Z_STRVAL(argv[i]),
-            Z_STRLEN(argv[i]));
+        cmd_len = redis_cmd_append_str(ret, cmd_len, zstr->val, zstr->len);
+
+        zend_string_release(zstr);
     }
 
 	/* Success */

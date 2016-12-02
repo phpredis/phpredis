@@ -5,6 +5,7 @@
 #define REDIS_COMMON_H
 
 #include <ext/standard/php_var.h>
+#include <ext/standard/php_math.h>
 #if (PHP_MAJOR_VERSION < 7)
 #include <ext/standard/php_smart_str.h>
 typedef smart_str smart_string;
@@ -14,12 +15,16 @@ typedef smart_str smart_string;
 #define smart_string_appendl(dest, src, len) smart_str_appendl(dest, src, len)
 
 typedef struct {
+    short gc;
     size_t len;
     char *val;
 } zend_string;
 
 #define zend_string_release(s) do { \
-    if ((s) && (s)->val) efree((s)->val); \
+    if ((s) && (s)->gc) { \
+        if ((s)->gc & 0x10 && (s)->val) efree((s)->val); \
+        if ((s)->gc & 0x01) efree((s)); \
+    } \
 } while (0)
 
 #define ZEND_HASH_FOREACH_KEY_VAL(ht, _h, _key, _val) do { \
@@ -314,6 +319,40 @@ zval_get_double(zval *op)
         EMPTY_SWITCH_DEFAULT_CASE()
     }
     return 0.0;
+}
+
+static zend_always_inline zend_string *
+zval_get_string(zval *op)
+{
+    zend_string *zstr = ecalloc(1, sizeof(zend_string));
+
+    zstr->val = "";
+    zstr->len = 0;
+    switch (Z_TYPE_P(op)) {
+        case IS_STRING:
+            zstr->val = Z_STRVAL_P(op);
+            zstr->len = Z_STRLEN_P(op);
+            break;
+        case IS_BOOL:
+            if (Z_LVAL_P(op)) {
+                zstr->val = "1";
+                zstr->len = 1;
+            }
+            break;
+        case IS_LONG: {
+            zstr->gc = 0x10;
+            zstr->len = spprintf(&zstr->val, 0, "%ld", Z_LVAL_P(op));
+            break;
+        }
+        case IS_DOUBLE: {
+            zstr->gc = 0x10;
+            zstr->len = spprintf(&zstr->val, 0, "%g", Z_DVAL_P(op));
+            break;
+        }
+        EMPTY_SWITCH_DEFAULT_CASE()
+    }
+    zstr->gc |= 0x01;
+    return zstr;
 }
 
 static void (*_php_var_serialize)(smart_str *, zval **, php_serialize_data_t * TSRMLS_DC) = &php_var_serialize;

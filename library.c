@@ -15,7 +15,6 @@
 #include "php_redis.h"
 #include "library.h"
 #include "redis_commands.h"
-#include <ext/standard/php_math.h>
 #include <ext/standard/php_rand.h>
 
 #define UNSERIALIZE_NONE 0
@@ -1212,8 +1211,6 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
         zend_hash_has_more_elements(keytable) == SUCCESS;
         zend_hash_move_forward(keytable)) {
 
-        char *hkey, *hval;
-        int hkey_len;
         zval *z_key_p, *z_value_p;
 
         if ((z_key_p = zend_hash_get_current_data(keytable)) == NULL) {
@@ -1221,34 +1218,34 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
         }
 
         /* get current value, a key */
-        convert_to_string(z_key_p);
-        hkey = Z_STRVAL_P(z_key_p);
-        hkey_len = Z_STRLEN_P(z_key_p);
+        zend_string *hkey = zval_get_string(z_key_p);
 
         /* move forward */
         zend_hash_move_forward(keytable);
 
         /* fetch again */
         if ((z_value_p = zend_hash_get_current_data(keytable)) == NULL) {
+            zend_string_release(hkey);
             continue;   /* this should never happen, according to the PHP people. */
         }
 
         /* get current value, a hash value now. */
-        hval = Z_STRVAL_P(z_value_p);
+        char *hval = Z_STRVAL_P(z_value_p);
 
         /* Decode the score depending on flag */
         if (decode == SCORE_DECODE_INT && Z_STRLEN_P(z_value_p) > 0) {
-            add_assoc_long_ex(z_ret, hkey, hkey_len, atoi(hval+1));
+            add_assoc_long_ex(z_ret, hkey->val, hkey->len, atoi(hval+1));
         } else if (decode == SCORE_DECODE_DOUBLE) {
-            add_assoc_double_ex(z_ret, hkey, hkey_len, atof(hval));
+            add_assoc_double_ex(z_ret, hkey->val, hkey->len, atof(hval));
         } else {
             zval zv0, *z = &zv0;
 #if (PHP_MAJOR_VERSION < 7)
             MAKE_STD_ZVAL(z);
 #endif
             ZVAL_ZVAL(z, z_value_p, 1, 0);
-            add_assoc_zval_ex(z_ret, hkey, hkey_len, z);
+            add_assoc_zval_ex(z_ret, hkey->val, hkey->len, z);
         }
+        zend_string_release(hkey);
     }
     
     /* replace */
@@ -1995,13 +1992,13 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len
                     *val_len = 5;
                     break;
 
-                default: /* copy */
-                    ZVAL_ZVAL(&z_copy, z, 1, 0);
-                    convert_to_string(&z_copy);
-                    *val = estrndup(Z_STRVAL(z_copy), Z_STRLEN(z_copy));
-                    *val_len = Z_STRLEN(z_copy);
-                    zval_dtor(&z_copy);
+                default: { /* copy */
+                    zend_string *zstr = zval_get_string(z);
+                    *val = estrndup(zstr->val, zstr->len);
+                    *val_len = zstr->len;
+                    zend_string_release(zstr);
                     return 1;
+                }
             }
             break;
         case REDIS_SERIALIZER_PHP:

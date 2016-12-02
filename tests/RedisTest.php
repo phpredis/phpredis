@@ -1960,8 +1960,9 @@ class Redis_Test extends TestSuite
 
         $this->assertTrue(1 === $this->redis->zAdd('key', 0, 'val0'));
         $this->assertTrue(1 === $this->redis->zAdd('key', 2, 'val2'));
-        $this->assertTrue(1 === $this->redis->zAdd('key', 1, 'val1'));
-        $this->assertTrue(1 === $this->redis->zAdd('key', 3, 'val3'));
+        $this->assertTrue(1 === $this->redis->zAdd('key', array(), 1, 'val1')); // empty options
+        $this->assertTrue(1 === $this->redis->zAdd('key', array('nx'), 3, 'val3')); // nx option
+        $this->assertTrue(0 === $this->redis->zAdd('key', array('xx'), 3, 'val3')); // xx option
         $this->assertTrue(2 === $this->redis->zAdd('key', 4, 'val4', 5, 'val5')); // multiple parameters
 
         $this->assertTrue(array('val0', 'val1', 'val2', 'val3', 'val4', 'val5') === $this->redis->zRange('key', 0, -1));
