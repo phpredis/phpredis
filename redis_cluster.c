@@ -2435,9 +2435,9 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
 
     /* Iterate, appending args */
     for(i=1;i<argc;i++) {
-        convert_to_string(&z_args[i]);
-        redis_cmd_append_sstr(&cmd, Z_STRVAL(z_args[i]), 
-            Z_STRLEN(z_args[i]));
+        zend_string *zstr = zval_get_string(&z_args[i]);
+        redis_cmd_append_sstr(&cmd, zstr->val, zstr->len);
+        zend_string_release(zstr);
     }
 
     /* Send it off */
