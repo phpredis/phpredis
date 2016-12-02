@@ -2420,8 +2420,9 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
             } else {
                 zval zv, *z = &zv;
                 if (redis_unserialize(redis_sock,key,key_len, z TSRMLS_CC)) {
-                    convert_to_string(z);
-                    add_assoc_double_ex(z_result, Z_STRVAL_P(z), Z_STRLEN_P(z), atof(line));
+                    zend_string *zstr = zval_get_string(z);
+                    add_assoc_double_ex(z_result, zstr->val, zstr->len, atof(line));
+                    zend_string_release(zstr);
                     zval_dtor(z);
                 } else {
                     add_assoc_double_ex(z_result, key, key_len, atof(line));

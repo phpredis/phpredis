@@ -389,7 +389,6 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call extractor function");
 		return NULL;
 	}
-	/* convert_to_string(ra->z_fun); */
 
 	/* call extraction function */
 	ZVAL_STRINGL(&z_argv[0], key, key_len);
@@ -441,7 +440,6 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call distributor function");
 		return 0;
 	}
-	/* convert_to_string(ra->z_fun); */
 
 	/* call extraction function */
     ZVAL_STRINGL(&z_argv[0], key, key_len);

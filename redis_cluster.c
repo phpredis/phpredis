@@ -1906,6 +1906,7 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     short slot = 0;
     smart_string cmdstr = {0};
     strlen_t lua_len;
+    zend_string *zstr;
 
     /* Parse args */
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|al", &lua, &lua_len,
@@ -1928,9 +1929,9 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     // Iterate over our args if we have any
     if(args_count > 0) {
 		ZEND_HASH_FOREACH_VAL(ht_arr, z_ele) {
-            convert_to_string(z_ele);
-            key = Z_STRVAL_P(z_ele);
-            key_len = Z_STRLEN_P(z_ele);
+            zstr = zval_get_string(z_ele);
+            key = zstr->val;
+            key_len = zstr->len;
 
             /* If we're still on a key, prefix it check node */
             if(num_keys-- > 0) {
@@ -1939,6 +1940,7 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 
                 /* validate that this key maps to the same node */
                 if(node && c->master[slot] != node) {
+                    zend_string_release(zstr);
                     if (key_free) efree(key);
                     php_error_docref(NULL TSRMLS_CC, E_WARNING,
                         "Keys appear to map to different nodes");
@@ -1953,6 +1955,7 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
             /* Append this key/argument */
             redis_cmd_append_sstr(&cmdstr, key, key_len);
 
+            zend_string_release(zstr);
             /* Free key if we prefixed */
             if(key_free) efree(key);
         } ZEND_HASH_FOREACH_END();
@@ -2134,6 +2137,7 @@ PHP_METHOD(RedisCluster, watch) {
     zval *z_args;
     int argc = ZEND_NUM_ARGS(), i;
     ulong slot;
+    zend_string *zstr;
 
     // Disallow in MULTI mode
     if(c->flags->mode == MULTI) {
@@ -2159,17 +2163,17 @@ PHP_METHOD(RedisCluster, watch) {
     // Loop through arguments, prefixing if needed
     for(i=0;i<argc;i++) {
         // We'll need the key as a string
-        convert_to_string(&z_args[i]);
+        zstr = zval_get_string(&z_args[i]);
 
         // Add this key to our distribution handler
-        if(cluster_dist_add_key(c, ht_dist, Z_STRVAL(z_args[i]), 
-                                Z_STRLEN(z_args[i]), NULL) == FAILURE)
-        {
+        if (cluster_dist_add_key(c, ht_dist, zstr->val, zstr->len, NULL) == FAILURE) {
             zend_throw_exception(redis_cluster_exception_ce,
                 "Can't issue WATCH command as the keyspace isn't fully mapped",
                 0 TSRMLS_CC);
+            zend_string_release(zstr);
             RETURN_FALSE;
         }
+        zend_string_release(zstr);
     }
 
     // Iterate over each node we'll be sending commands to
@@ -2303,34 +2307,26 @@ static short
 cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC) 
 {
     int key_len, key_free;
-    zval *z_host, *z_port, z_tmp;
+    zval *z_host, *z_port;
     short slot;
     char *key;
+    zend_string *zstr;
 
     /* If it's a string, treat it as a key.  Otherwise, look for a two
      * element array */
     if(Z_TYPE_P(z_arg)==IS_STRING || Z_TYPE_P(z_arg)==IS_LONG ||
        Z_TYPE_P(z_arg)==IS_DOUBLE) 
     {
-        ZVAL_NULL(&z_tmp);
         /* Allow for any scalar here */
-        if (Z_TYPE_P(z_arg) == IS_STRING) {
-            key = Z_STRVAL_P(z_arg);
-            key_len = Z_STRLEN_P(z_arg);
-        } else {
-            ZVAL_ZVAL(&z_tmp, z_arg, 1, 0);
-            convert_to_string(&z_tmp);
-            key = Z_STRVAL(z_tmp);
-            key_len = Z_STRLEN(z_tmp);
-        }
+        zstr = zval_get_string(z_arg);
+        key = zstr->val;
+        key_len = zstr->len;
 
         /* Hash it */
         key_free = redis_key_prefix(c->flags, &key, &key_len);
         slot = cluster_hash_key(key, key_len);
+        zend_string_release(zstr);
         if(key_free) efree(key);
-
-        /* Destroy our temp value if we had to convert it */
-        zval_dtor(&z_tmp);
     } else if (Z_TYPE_P(z_arg) == IS_ARRAY && 
 		(z_host = zend_hash_index_find(Z_ARRVAL_P(z_arg), 0)) != NULL &&
 		(z_port = zend_hash_index_find(Z_ARRVAL_P(z_arg), 1)) != NULL &&
