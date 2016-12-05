@@ -36,9 +36,6 @@
 #include "ext/session/php_session.h"
 #endif
 
-#include <ext/standard/php_var.h>
-#include <ext/standard/php_math.h>
-
 #include "library.h"
 
 #define R_SUB_CALLBACK_CLASS_TYPE 1
