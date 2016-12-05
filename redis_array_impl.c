@@ -962,6 +962,7 @@ ra_move_string(const char *key, int key_len, zval *z_from, zval *z_to, long ttl 
 	}
     zval_dtor(&z_fun_set);
     zval_dtor(&z_args[0]);
+    zval_dtor(&z_ret);
 
 	return 1;
 }
@@ -1178,6 +1179,7 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 
 	/* callback */
 	if(z_cb && z_cb_cache) {
+        ZVAL_NULL(&z_ret);
 		zval_rehash_callback(z_cb, z_cb_cache, hostname, count, &z_ret TSRMLS_CC);
         zval_dtor(&z_ret);
 	}
