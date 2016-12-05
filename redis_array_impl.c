@@ -1159,6 +1159,9 @@ static void zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z
 
 	/* cleanup */
     zval_dtor(&z_args[0]);
+#if (PHP_MAJOR_VERSION < 7)
+    zval_ptr_dtor(&z_ret);
+#endif
 }
 
 static void
