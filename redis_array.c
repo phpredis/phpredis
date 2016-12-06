@@ -853,7 +853,7 @@ PHP_METHOD(RedisArray, select)
 /* MGET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mget)
 {
-	zval *object, *z_keys, z_fun, z_argarray, *data, z_ret, *z_cur, z_tmp_array, *z_tmp;
+	zval *object, *z_keys, z_argarray, *data, z_ret, *z_cur, z_tmp_array, *z_tmp;
 	int i, j, n;
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
@@ -872,8 +872,6 @@ PHP_METHOD(RedisArray, mget)
 		RETURN_FALSE;
 	}
 
-	/* prepare call */
-	ZVAL_STRINGL(&z_fun, "MGET", 4);
 
 	/* init data structures */
 	h_keys = Z_ARRVAL_P(z_keys);
@@ -940,8 +938,12 @@ PHP_METHOD(RedisArray, mget)
 			add_next_index_zval(&z_argarray, z_tmp);
 		}
 
+        zval z_fun;
+        /* prepare call */
+        ZVAL_STRINGL(&z_fun, "MGET", 4);
 		/* call MGET on the node */
         call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
+        zval_dtor(&z_fun);
 
 		/* cleanup args array */
 		zval_dtor(&z_argarray);
@@ -951,7 +953,6 @@ PHP_METHOD(RedisArray, mget)
             /* cleanup */
             zval_dtor(&z_ret);
             zval_dtor(&z_tmp_array);
-            zval_dtor(&z_fun);
 	        efree(argv);
             efree(pos);
             efree(argc_each);
@@ -994,7 +995,6 @@ PHP_METHOD(RedisArray, mget)
 
 	/* cleanup */
 	zval_dtor(&z_tmp_array);
-    zval_dtor(&z_fun);
 	efree(argv);
 	efree(pos);
 	efree(argc_each);
@@ -1004,7 +1004,7 @@ PHP_METHOD(RedisArray, mget)
 /* MSET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mset)
 {
-	zval *object, *z_keys, z_fun, z_argarray, *data, z_ret, **argv;
+	zval *object, *z_keys, z_argarray, *data, z_ret, **argv;
 	int i, n;
 	RedisArray *ra;
 	int *pos, argc, *argc_each;
@@ -1060,8 +1060,6 @@ PHP_METHOD(RedisArray, mset)
 	} ZEND_HASH_FOREACH_END();
 
 
-    /* prepare call */
-    ZVAL_STRINGL(&z_fun, "MSET", 4);
 	/* calls */
 	for(n = 0; n < ra->count; ++n) { /* for each node */
 	    /* We don't even need to make a call to this node if no keys go there */
@@ -1092,8 +1090,12 @@ PHP_METHOD(RedisArray, mset)
 			ra_index_multi(&ra->redis[n], MULTI TSRMLS_CC);
 		}
 
+        zval z_fun;
+        /* prepare call */
+        ZVAL_STRINGL(&z_fun, "MSET", 4);
 		/* call */
         call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
+		zval_dtor(&z_fun);
 		zval_dtor(&z_ret);
 
 		if(ra->index) {
@@ -1102,7 +1104,6 @@ PHP_METHOD(RedisArray, mset)
 		}
 		zval_dtor(&z_argarray);
 	}
-	zval_dtor(&z_fun);
 
 	/* Free any keys that we needed to allocate memory for, because they weren't strings */
 	for(i = 0; i < argc; i++) {
