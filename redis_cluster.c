@@ -2994,13 +2994,13 @@ PHP_METHOD(RedisCluster, rawcommand) {
     short slot;
 
     /* Sanity check on our arguments */
-    z_args = emalloc(argc * sizeof(zval));
     if (argc < 2) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "You must pass at least node information as well as at least a command.");
-        efree(z_args);
         RETURN_FALSE;
-    } else if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
+    }
+    z_args = emalloc(argc * sizeof(zval));
+    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "Internal PHP error parsing method parameters.");
         efree(z_args);
@@ -3022,7 +3022,6 @@ PHP_METHOD(RedisCluster, rawcommand) {
         zend_throw_exception(redis_cluster_exception_ce,
             "Unable to send command to the specified node", 0 TSRMLS_CC);
         efree(cmd);
-        efree(z_args);
         RETURN_FALSE;
     }
 
