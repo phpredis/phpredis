@@ -3032,6 +3032,8 @@ $ret == array(
 */
 ~~~
 
+If the transaction is using `WATCH`, a Null Block String may be returned if the transaction fails.
+
 ### watch, unwatch
 -----
 _**Description**_: Watches a key for modifications by another client.
