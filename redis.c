@@ -432,35 +432,29 @@ static zend_always_inline int
 redis_sock_get_instance(zval *id, RedisSock **redis_sock TSRMLS_DC, int no_throw)
 {
     zval *socket;
+    int resource_type = 0;
 
-    if (Z_TYPE_P(id) != IS_OBJECT || (socket = zend_hash_str_find(Z_OBJPROP_P(id),
-        "socket", sizeof("socket") - 1)) == NULL) {
-        // Throw an exception unless we've been requested not to
-        if(!no_throw) {
-            zend_throw_exception(redis_exception_ce, "Redis server went away",
-                0 TSRMLS_CC);
-        }
-        return -1;
-    }
-
-#if (PHP_MAJOR_VERSION < 7)
-    int resource_type;
-    *redis_sock = (RedisSock *)zend_list_find(Z_LVAL_P(socket), &resource_type);
-    if (!*redis_sock || resource_type != le_redis_sock) {
-#else
-    if (Z_RES_P(socket) == NULL ||
-        !(*redis_sock = (RedisSock *)Z_RES_P(socket)->ptr) ||
-        Z_RES_P(socket)->type != le_redis_sock
+    if (Z_TYPE_P(id) == IS_OBJECT &&
+        (socket = zend_hash_str_find(Z_OBJPROP_P(id), "socket", sizeof("socket") - 1)) != NULL
     ) {
-#endif
-        // Throw an exception unless we've been requested not to
-        if(!no_throw) {
-            zend_throw_exception(redis_exception_ce, "Redis server went away",
-                0 TSRMLS_CC);
+#if (PHP_MAJOR_VERSION < 7)
+        *redis_sock = (RedisSock *)zend_list_find(Z_LVAL_P(socket), &resource_type);
+#else
+        *redis_sock = NULL;
+        if (Z_RES_P(socket) != NULL) {
+            *redis_sock = (RedisSock *)Z_RES_P(socket)->ptr;
+            resource_type = Z_RES_P(socket)->type;
         }
-        return -1;
+#endif
+        if (*redis_sock && resource_type == le_redis_sock) {
+            return 0;
+        }
     }
-    return 0;
+    // Throw an exception unless we've been requested not to
+    if (!no_throw) {
+        zend_throw_exception(redis_exception_ce, "Redis server went away", 0 TSRMLS_CC);
+    }
+    return -1;
 }
 
 /**
@@ -781,7 +775,7 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
     }
 
     /* if there is a redis sock already we have to remove it from the list */
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 1) > 0) {
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 1) >= 0) {
         if ((socket = zend_hash_str_find(Z_OBJPROP_P(object), "socket", sizeof("socket") - 1)) == NULL)
         {
             /* maybe there is a socket but the id isn't known.. what to do? */

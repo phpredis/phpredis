@@ -329,14 +329,10 @@ PHP_METHOD(RedisArray, __construct)
 static void
 ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args, zval *z_new_target) {
 
-	zval *zp_tmp, z_tmp;
+	zval z_tmp, z_fun, *redis_inst, *z_callargs, *zp_tmp;
 	char *key = NULL; /* set to avoid "unused-but-set-variable" */
-	int i, key_len = 0;
-	zval *redis_inst;
-	zval z_fun, *z_callargs;
+	int i, key_len = 0, argc;
 	HashTable *h_args;
-
-	int argc;
 	zend_bool b_write_cmd = 0;
 
 	h_args = Z_ARRVAL_P(z_args);
@@ -400,19 +396,21 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	} else { /* call directly through. */
 		call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, argc, z_callargs);
 
-		/* check if we have an error. */
-		if(RA_CALL_FAILED(return_value,cmd) && ra->prev && !b_write_cmd) { /* there was an error reading, try with prev ring. */
-            /* Free previous return value */
-            zval_dtor(return_value);
+        if (!b_write_cmd) {
+            /* check if we have an error. */
+            if (ra->prev && RA_CALL_FAILED(return_value, cmd)) { /* there was an error reading, try with prev ring. */
+                /* Free previous return value */
+                zval_dtor(return_value);
 
-            /* ERROR, FALLBACK TO PREVIOUS RING and forward a reference to the first redis instance we were looking at. */
-			ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra->prev, cmd, cmd_len, z_args, z_new_target?z_new_target:redis_inst);
-		}
+                /* ERROR, FALLBACK TO PREVIOUS RING and forward a reference to the first redis instance we were looking at. */
+                ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra->prev, cmd, cmd_len, z_args, z_new_target ? z_new_target : redis_inst);
+            }
 
-		/* Autorehash if the key was found on the previous node if this is a read command and auto rehashing is on */
-		if(!RA_CALL_FAILED(return_value,cmd) && !b_write_cmd && z_new_target && ra->auto_rehash) { /* move key from old ring to new ring */
-		    ra_move_key(key, key_len, redis_inst, z_new_target TSRMLS_CC);
-		}
+            /* Autorehash if the key was found on the previous node if this is a read command and auto rehashing is on */
+            if (ra->auto_rehash && z_new_target && !RA_CALL_FAILED(return_value, cmd)) { /* move key from old ring to new ring */
+                ra_move_key(key, key_len, redis_inst, z_new_target TSRMLS_CC);
+            }
+        }
 	}
 
 	/* cleanup */
