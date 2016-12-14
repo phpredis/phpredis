@@ -3108,9 +3108,15 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
         case REDIS_OPT_SERIALIZER:
             val_long = atol(val_str);
             test_val = val_long == REDIS_SERIALIZER_NONE || val_long == REDIS_SERIALIZER_PHP;
+
 #ifdef HAVE_REDIS_IGBINARY
             test_val = test_val || val_long == REDIS_SERIALIZER_IGBINARY;
 #endif
+
+#ifdef HAVE_REDIS_MSGPACK
+        test_val = test_val || val_long == REDIS_SERIALIZER_MSGPACK;
+#endif
+
                 if(test_val)
                 {
                     redis_sock->serializer = val_long;

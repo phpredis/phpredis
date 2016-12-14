@@ -11,6 +11,9 @@
 #ifdef HAVE_REDIS_IGBINARY
 #include "igbinary/igbinary.h"
 #endif
+#ifdef HAVE_REDIS_MSGPACK
+#include "msgpack/php_msgpack.h"
+#endif
 #include <zend_exceptions.h>
 #include "php_redis.h"
 #include "library.h"
@@ -1733,6 +1736,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
     if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return -1;
     }
+
     if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
         REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
         zend_throw_exception(redis_exception_ce, "read error on connection", 0 
@@ -1752,6 +1756,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
         }
         return -1;
     }
+
     numElems = atoi(inbuf+1);
     zval zv, *z_multi_result = &zv;
 #if (PHP_MAJOR_VERSION < 7)
@@ -1770,6 +1775,67 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
     /*zval_copy_ctor(return_value); */
     return 0;
 }
+
+/**
+ * redis_sock_read_multibulk_reply_vals
+ *
+ * This is identical to redis_sock_read_multibulk_reply except that it unserializes vals only, rather than rely on
+ * the chosen unserializer to silently return 0 after a failed attempt (which msgpack does not do).
+ *
+ * Perhaps not the optimal solution, but the easiest way to resolve the problem of failed attempts to
+ * unserialize a key that hadn't been serialized to begin with in blpop, brpop.
+ *
+ */
+PHP_REDIS_API int redis_sock_read_multibulk_reply_vals(INTERNAL_FUNCTION_PARAMETERS,
+                                                  RedisSock *redis_sock, zval *z_tab,
+                                                  void *ctx)
+{
+    char inbuf[1024];
+    int numElems, err_len;
+
+    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
+        return -1;
+    }
+
+    if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
+        REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
+        zend_throw_exception(redis_exception_ce, "read error on connection", 0
+        TSRMLS_CC);
+        return -1;
+    }
+
+    if(inbuf[0] != '*') {
+        IF_MULTI_OR_PIPELINE() {
+            add_next_index_bool(z_tab, 0);
+        } else {
+            if (inbuf[0] == '-') {
+                err_len = strlen(inbuf+1) - 2;
+                redis_sock_set_err(redis_sock, inbuf+1, err_len);
+            }
+            RETVAL_FALSE;
+        }
+        return -1;
+    }
+
+    numElems = atoi(inbuf+1);
+    zval zv, *z_multi_result = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+    MAKE_STD_ZVAL(z_multi_result);
+#endif
+    array_init(z_multi_result); /* pre-allocate array for multi's results. */
+
+    redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                           z_multi_result, numElems, UNSERIALIZE_VALS);
+
+    IF_MULTI_OR_PIPELINE() {
+        add_next_index_zval(z_tab, z_multi_result);
+    } else {
+        RETVAL_ZVAL(z_multi_result, 0, 1);
+    }
+    /*zval_copy_ctor(return_value); */
+    return 0;
+}
+
 
 /* Like multibulk reply, but don't touch the values, they won't be unserialized
  * (this is used by HKEYS). */
@@ -2024,6 +2090,16 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len
 
             return 1;
 
+        case REDIS_SERIALIZER_MSGPACK:
+#ifdef HAVE_REDIS_MSGPACK
+            php_msgpack_serialize(&sstr, z TSRMLS_CC);
+            *val = estrndup(sstr.s->val, sstr.s->len);
+            *val_len = sstr.s->len;
+            smart_str_free(&sstr);
+
+            return 1;
+#endif
+            break;
         case REDIS_SERIALIZER_IGBINARY:
 #ifdef HAVE_REDIS_IGBINARY
             if(igbinary_serialize(&val8, (size_t *)&sz, z TSRMLS_CC) == 0) {
@@ -2034,6 +2110,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len
 #endif
             break;
     }
+
     return 0;
 }
 
@@ -2061,6 +2138,19 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
             PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
 #else
             var_destroy(&var_hash);
+#endif
+            break;
+
+        case REDIS_SERIALIZER_MSGPACK:
+#ifdef HAVE_REDIS_MSGPACK
+            /*
+             * Would like to be able to check to see if a string is msgpack'd (like with igbinary, below),
+             * but I don't believe there's an easy way to do that as there's no consistent header or
+             * other simple indication of packed-ness in msgpacked binary sequences, as far as I know.
+             */
+
+            php_msgpack_unserialize(z_ret, (char *)val, (size_t)val_len TSRMLS_CC);
+            ret = 1;
 #endif
             break;
 
@@ -2098,6 +2188,7 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 #endif
             break;
     }
+
     return ret;
 }
 

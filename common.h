@@ -436,6 +436,7 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_SERIALIZER_NONE        0
 #define REDIS_SERIALIZER_PHP         1
 #define REDIS_SERIALIZER_IGBINARY    2
+#define REDIS_SERIALIZER_MSGPACK     3
 
 /* SCAN options */
 #define REDIS_SCAN_NORETRY 0
