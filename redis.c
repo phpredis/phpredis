@@ -693,6 +693,10 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE_SLAVES"), REDIS_FAILOVER_DISTRIBUTE_SLAVES TSRMLS_CC);
     }
 
+#ifdef HAVE_REDIS_MSGPACK
+    zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_MSGPACK"), REDIS_SERIALIZER_MSGPACK TSRMLS_CC);
+#endif
+
     zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5 TSRMLS_CC);
     zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
 }
