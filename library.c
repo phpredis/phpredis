@@ -2087,14 +2087,16 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
             {
                 /* This is most definitely not an igbinary string, so do
                    not try to unserialize this as one. */
-                return 0;
+                break;
             }
 
-            if(igbinary_unserialize((const uint8_t *)val, (size_t)val_len, 
-                                    z_ret TSRMLS_CC) == 0
-            ) {
-                ret = 1;
-            }
+#if (PHP_MAJOR_VERSION < 7)
+            INIT_PZVAL(z_ret);
+            ret = !igbinary_unserialize((const uint8_t *)val, (size_t)val_len, &z_ret TSRMLS_CC);
+#else
+            ret = !igbinary_unserialize((const uint8_t *)val, (size_t)val_len, z_ret TSRMLS_CC);
+#endif
+
 #endif
             break;
     }
