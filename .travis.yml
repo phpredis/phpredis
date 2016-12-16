@@ -28,8 +28,10 @@ matrix:
 addons:
   apt:
     packages: clang
-before_install: phpize
-install: ./configure CFLAGS=-Wall --prefix=/usr && sudo make install
+before_install:
+  - phpize
+  - if [ $(phpenv version-name) lt 7 ]; then pecl install igbinary-1.2.1; ./configure --enable-redis-igbinary CFLAGS=-Wall; else ./configure CFLAGS=-Wall; fi
+install: make install
 before_script:
   - gem install redis
   - mkdir -p tests/nodes/ && echo >> tests/nodes/nodemap
