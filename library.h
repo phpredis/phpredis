@@ -88,19 +88,17 @@ PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
 #if ZEND_MODULE_API_NO >= 20100000
 #define REDIS_DOUBLE_TO_STRING(dbl_str, dbl) do { \
     char dbl_decsep = '.'; \
-    zend_string _zstr = {0}; \
-    _zstr.val = _php_math_number_format_ex(dbl, 16, &dbl_decsep, 1, NULL, 0); \
-    _zstr.len = strlen(_zstr.val); \
-    _zstr.gc = 0x10; \
-    dbl_str = &_zstr; \
+    dbl_str = emalloc(sizeof(zend_string)); \
+    dbl_str->val = _php_math_number_format_ex(dbl, 16, &dbl_decsep, 1, NULL, 0); \
+    dbl_str->len = strlen(dbl_str->val); \
+    dbl_str->gc = 0x11; \
 } while (0);
 #else
 #define REDIS_DOUBLE_TO_STRING(dbl_str, dbl) do { \
-    zend_string _zstr = {0}; \
-    _zstr.val = _php_math_number_format(dbl, 16, '.', '\x00'); \
-    _zstr.len = strlen(_zstr.val); \
-    _zstr.gc = 0x10; \
-    dbl_str = &_zstr; \
+    dbl_str = emalloc(sizeof(zend_string)); \
+    dbl_str->val = _php_math_number_format(dbl, 16, '.', '\x00'); \
+    dbl_str->len = strlen(dbl_str->val); \
+    dbl_str->gc = 0x11; \
 } while (0)
 #endif
 #else
