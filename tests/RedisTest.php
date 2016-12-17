@@ -4960,5 +4960,14 @@ class Redis_Test extends TestSuite
         $this->redis->rpush('mylist', 'A', 'B', 'C', 'D');
         $this->assertEquals($this->redis->lrange('mylist', 0, -1), Array('A','B','C','D'));
     }
+
+    public function testSession()
+    {
+        ini_set('session.save_handler', 'redis');
+        ini_set('session.save_path', 'tcp://localhost:6379');
+        @session_start();
+        session_write_close();
+        $this->assertTrue($this->redis->exists('PHPREDIS_SESSION:' . session_id()));
+    }
 }
 ?>

@@ -506,5 +506,16 @@ class Redis_Cluster_Test extends Redis_Test {
         array_unshift($args, $key);
         return call_user_func_array(Array($this->redis, 'rawCommand'), $args);
     }
+
+    public function testSession()
+    {
+        ini_set('session.save_handler', 'rediscluster');
+        ini_set('session.save_path', implode('&', array_map(function ($seed) {
+            return 'seed[]=' . $seed;
+        }, self::$_arr_node_map)) . '&failover=error');
+        @session_start();
+        session_write_close();
+        $this->assertTrue($this->redis->exists('PHPREDIS_CLUSTER_SESSION:' . session_id()));
+    }
 }
 ?>
