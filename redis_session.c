@@ -360,7 +360,7 @@ PS_READ_FUNC(redis)
     resp = redis_session_key(rpm, key->val, key->len, &resp_len);
 #endif
     cmd_len = redis_cmd_format_static(&cmd, "GET", "s", resp, resp_len);
-    
+
     efree(resp);
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
@@ -368,15 +368,26 @@ PS_READ_FUNC(redis)
     }
     efree(cmd);
 
-    /* read response */
-    if ((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC)) == NULL) {
+    /* Read response from Redis.  If we get a NULL response from redis_sock_read
+     * this can indicate an error, OR a "NULL bulk" reply (empty session data)
+     * in which case we can reply with success. */
+    if ((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC)) == NULL && resp_len != -1) {
         return FAILURE;
     }
 #if (PHP_MAJOR_VERSION < 7)
-    *val = resp;
-    *vallen = resp_len;
+    if (resp_len < 0) {
+        *val = STR_EMPTY_ALLOC();
+        *vallen = 0;
+    } else {
+        *val = resp;
+        *vallen = resp_len;
+    }
 #else
-    *val = zend_string_init(resp, resp_len, 0);
+    if (resp_len < 0) {
+        *val = ZSTR_EMPTY_ALLOC();
+    } else {
+        *val = zend_string_init(resp, resp_len, 0);
+    }
     efree(resp);
 #endif
 
