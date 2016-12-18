@@ -4965,7 +4965,9 @@ class Redis_Test extends TestSuite
     {
         ini_set('session.save_handler', 'redis');
         ini_set('session.save_path', 'tcp://localhost:6379');
-        @session_start();
+        if (!@session_start()) {
+            return $this->markTestSkipped();
+        }
         session_write_close();
         $this->assertTrue($this->redis->exists('PHPREDIS_SESSION:' . session_id()));
     }
