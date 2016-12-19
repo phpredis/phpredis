@@ -343,12 +343,26 @@ static zend_function_entry redis_functions[] = {
 
      PHP_MALIAS(Redis, evaluate, eval, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, evaluateSha, evalsha, NULL, ZEND_ACC_PUBLIC)
+/* PHP_FE_END exists since 5.3.7 */
+#ifdef PHP_FE_END
+     PHP_FE_END
+#else
      {NULL, NULL, NULL}
+#endif
+};
+
+static const zend_module_dep redis_deps[] = {
+#ifdef HAVE_REDIS_IGBINARY
+     ZEND_MOD_REQUIRED("igbinary")
+#endif
+     ZEND_MOD_END
 };
 
 zend_module_entry redis_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
-     STANDARD_MODULE_HEADER,
+     STANDARD_MODULE_HEADER_EX,
+     NULL,
+     redis_deps,
 #endif
      "redis",
      NULL,
@@ -666,6 +680,11 @@ PHP_MINFO_FUNCTION(redis)
     php_info_print_table_start();
     php_info_print_table_header(2, "Redis Support", "enabled");
     php_info_print_table_row(2, "Redis Version", PHP_REDIS_VERSION);
+#ifdef HAVE_REDIS_IGBINARY
+    php_info_print_table_row(2, "Available serializers", "php, igbinary");
+#else
+    php_info_print_table_row(2, "Available serializers", "php");
+#endif
     php_info_print_table_end();
 }
 
