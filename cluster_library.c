@@ -1678,7 +1678,7 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
     /* Multibulk response, {[pattern], type, channel, payload} */
     while(1) {
         /* Arguments */
-        zval *z_type, *z_chan, *z_pat, *z_data;
+        zval *z_type, *z_chan, *z_pat=NULL, *z_data;
         int tab_idx=1, is_pmsg;
 
         // Get the next subscribe response
@@ -2358,8 +2358,8 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
 int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
                            long long count, void *ctx TSRMLS_DC)
 {
-    char *line, *key;
-    int line_len, key_len;
+    char *line, *key = NULL;
+    int line_len, key_len=0;
     long long idx=0;
 
     // Our count wil need to be divisible by 2
@@ -2401,8 +2401,8 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
 int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
                            long long count, void *ctx TSRMLS_DC)
 {
-    char *line, *key;
-    int line_len, key_len;
+    char *line, *key=NULL;
+    int line_len, key_len=0;
     long long idx=0;
 
     // Our context will need to be divisible by 2

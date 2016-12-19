@@ -4,6 +4,8 @@
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
 
+#define PHPREDIS_NOTUSED(v) ((void)v)
+
 #include <ext/standard/php_var.h>
 #include <ext/standard/php_math.h>
 #if (PHP_MAJOR_VERSION < 7)
@@ -19,6 +21,7 @@ typedef struct {
     size_t len;
     char *val;
 } zend_string;
+
 
 #define zend_string_release(s) do { \
     if ((s) && (s)->gc) { \
@@ -201,9 +204,9 @@ inline_zend_get_parameters_array(int ht, int param_count, zval *argument_array T
 
 typedef zend_rsrc_list_entry zend_resource;
 
-static int (*_add_next_index_string)(zval *, const char *, int) = &add_next_index_string;
+extern int (*_add_next_index_string)(zval *, const char *, int);
 #define add_next_index_string(arg, str) _add_next_index_string(arg, str, 1);
-static int (*_add_next_index_stringl)(zval *, const char *, uint, int) = &add_next_index_stringl;
+extern int (*_add_next_index_stringl)(zval *, const char *, uint, int);
 #define add_next_index_stringl(arg, str, length) _add_next_index_stringl(arg, str, length, 1);
 
 #undef ZVAL_STRING
@@ -252,30 +255,30 @@ inline_call_user_function(HashTable *function_table, zval *object, zval *functio
 
 #undef add_assoc_bool
 #define add_assoc_bool(__arg, __key, __b) add_assoc_bool_ex(__arg, __key, strlen(__key), __b)
-static int (*_add_assoc_bool_ex)(zval *, const char *, uint, int) = &add_assoc_bool_ex;
+extern int (*_add_assoc_bool_ex)(zval *, const char *, uint, int);
 #define add_assoc_bool_ex(_arg, _key, _key_len, _b) _add_assoc_bool_ex(_arg, _key, _key_len + 1, _b)
 
 #undef add_assoc_long
 #define add_assoc_long(__arg, __key, __n) add_assoc_long_ex(__arg, __key, strlen(__key), __n)
-static int (*_add_assoc_long_ex)(zval *, const char *, uint, long) = &add_assoc_long_ex;
+extern int (*_add_assoc_long_ex)(zval *, const char *, uint, long);
 #define add_assoc_long_ex(_arg, _key, _key_len, _n) _add_assoc_long_ex(_arg, _key, _key_len + 1, _n)
 
 #undef add_assoc_double
 #define add_assoc_double(__arg, __key, __d) add_assoc_double_ex(__arg, __key, strlen(__key), __d)
-static int (*_add_assoc_double_ex)(zval *, const char *, uint, double) = &add_assoc_double_ex;
+extern int (*_add_assoc_double_ex)(zval *, const char *, uint, double);
 #define add_assoc_double_ex(_arg, _key, _key_len, _d) _add_assoc_double_ex(_arg, _key, _key_len + 1, _d)
 
 #undef add_assoc_string
 #define add_assoc_string(__arg, __key, __str) add_assoc_string_ex(__arg, __key, strlen(__key), __str)
-static int (*_add_assoc_string_ex)(zval *, const char *, uint, char *, int) = &add_assoc_string_ex;
+extern int (*_add_assoc_string_ex)(zval *, const char *, uint, char *, int);
 #define add_assoc_string_ex(_arg, _key, _key_len, _str) _add_assoc_string_ex(_arg, _key, _key_len + 1, _str, 1)
 
-static int (*_add_assoc_stringl_ex)(zval *, const char *, uint, char *, uint, int) = &add_assoc_stringl_ex;
+extern int (*_add_assoc_stringl_ex)(zval *, const char *, uint, char *, uint, int);
 #define add_assoc_stringl_ex(_arg, _key, _key_len, _str, _length) _add_assoc_stringl_ex(_arg, _key, _key_len + 1, _str, _length, 1)
 
 #undef add_assoc_zval
 #define add_assoc_zval(__arg, __key, __value) add_assoc_zval_ex(__arg, __key, strlen(__key), __value)
-static int (*_add_assoc_zval_ex)(zval *, const char *, uint, zval *) = &add_assoc_zval_ex;
+extern int (*_add_assoc_zval_ex)(zval *, const char *, uint, zval *);
 #define add_assoc_zval_ex(_arg, _key, _key_len, _value) _add_assoc_zval_ex(_arg, _key, _key_len + 1, _value);
 
 typedef long zend_long;
@@ -355,9 +358,9 @@ zval_get_string(zval *op)
     return zstr;
 }
 
-static void (*_php_var_serialize)(smart_str *, zval **, php_serialize_data_t * TSRMLS_DC) = &php_var_serialize;
+extern void (*_php_var_serialize)(smart_str *, zval **, php_serialize_data_t * TSRMLS_DC);
 #define php_var_serialize(buf, struc, data) _php_var_serialize(buf, &struc, data TSRMLS_CC)
-static int (*_php_var_unserialize)(zval **, const unsigned char **, const unsigned char *, php_unserialize_data_t * TSRMLS_DC) = &php_var_unserialize;
+extern int (*_php_var_unserialize)(zval **, const unsigned char **, const unsigned char *, php_unserialize_data_t * TSRMLS_DC);
 #define php_var_unserialize(rval, p, max, var_hash) _php_var_unserialize(&rval, p, max, var_hash TSRMLS_CC)
 typedef int strlen_t;
 #else
