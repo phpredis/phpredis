@@ -513,7 +513,9 @@ class Redis_Cluster_Test extends Redis_Test {
         ini_set('session.save_path', implode('&', array_map(function ($seed) {
             return 'seed[]=' . $seed;
         }, self::$_arr_node_map)) . '&failover=error');
-        @session_start();
+        if (!@session_start()) {
+            return $this->markTestSkipped();
+        }
         session_write_close();
         $this->assertTrue($this->redis->exists('PHPREDIS_CLUSTER_SESSION:' . session_id()));
     }
