@@ -455,6 +455,7 @@ redis_sock_get_instance(zval *id, RedisSock **redis_sock TSRMLS_DC, int no_throw
         *redis_sock = (RedisSock *)zend_list_find(Z_LVAL_P(socket), &resource_type);
 #else
         *redis_sock = NULL;
+
         if (Z_RES_P(socket) != NULL) {
             *redis_sock = (RedisSock *)Z_RES_P(socket)->ptr;
             resource_type = Z_RES_P(socket)->type;
@@ -2674,7 +2675,7 @@ PHP_METHOD(Redis, object)
 
 /* {{{ proto string Redis::getOption($option) */
 PHP_METHOD(Redis, getOption)  {
-    RedisSock *redis_sock;
+    RedisSock *redis_sock = NULL;
 
     if (redis_sock_get_instance(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;
@@ -2687,7 +2688,7 @@ PHP_METHOD(Redis, getOption)  {
 
 /* {{{ proto string Redis::setOption(string $option, mixed $value) */
 PHP_METHOD(Redis, setOption) {
-    RedisSock *redis_sock;
+    RedisSock *redis_sock = NULL;
 
     if (redis_sock_get_instance(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
         RETURN_FALSE;

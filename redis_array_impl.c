@@ -586,6 +586,8 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
         zval zv, *z_new = &zv;
 #if (PHP_MAJOR_VERSION < 7)
         MAKE_STD_ZVAL(z_new);
+#else
+        PHPREDIS_NOTUSED(z_val);
 #endif
 
         if (zkey) {

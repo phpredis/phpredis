@@ -529,6 +529,8 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     ulong idx;
     HashTable *ht_opt;
 
+    PHPREDIS_NOTUSED(idx);
+
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss|a", &key, &key_len,
                              &start, &start_len, &end, &end_len, &z_opt)
                              ==FAILURE)
@@ -1051,7 +1053,7 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     int key_free, key_len, i, tail;
     int single_array = 0, argc = ZEND_NUM_ARGS();
     smart_string cmdstr = {0};
-    long timeout;
+    long timeout = 0;
     short kslot = -1;
     zend_string *zstr;
 
@@ -1210,6 +1212,8 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         zend_string *zkey;
         ulong idx;
         zval *v;
+
+        PHPREDIS_NOTUSED(idx);
 
         /* Iterate our option array */
         ZEND_HASH_FOREACH_KEY_VAL(kt, idx, zkey, v) {
@@ -2733,6 +2737,8 @@ static void get_georadius_opts(HashTable *ht, int *withcoord, int *withdist,
     char *optstr;
     zend_string *zkey;
     zval *optval;
+
+    PHPREDIS_NOTUSED(idx);
 
     /* Iterate over our argument array, collating which ones we have */
     ZEND_HASH_FOREACH_KEY_VAL(ht, idx, zkey, optval) {
