@@ -346,9 +346,18 @@ static zend_function_entry redis_functions[] = {
      {NULL, NULL, NULL}
 };
 
+static const zend_module_dep redis_deps[] = {
+#ifdef HAVE_REDIS_IGBINARY
+     ZEND_MOD_REQUIRED("igbinary")
+#endif
+     ZEND_MOD_END
+};
+
 zend_module_entry redis_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
-     STANDARD_MODULE_HEADER,
+     STANDARD_MODULE_HEADER_EX,
+     NULL,
+     redis_deps,
 #endif
      "redis",
      NULL,
