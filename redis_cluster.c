@@ -227,12 +227,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, geodist, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, georadius, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, georadiusbymember, NULL, ZEND_ACC_PUBLIC)
-/* PHP_FE_END exists since 5.3.7 */
-#ifdef PHP_FE_END
-     PHP_FE_END
-#else
-     {NULL, NULL, NULL}
-#endif
+    PHP_FE_END
 };
 
 /* Our context seeds will be a hash table with RedisSock* pointers */

@@ -363,6 +363,17 @@ extern void (*_php_var_serialize)(smart_str *, zval **, php_serialize_data_t * T
 extern int (*_php_var_unserialize)(zval **, const unsigned char **, const unsigned char *, php_unserialize_data_t * TSRMLS_DC);
 #define php_var_unserialize(rval, p, max, var_hash) _php_var_unserialize(&rval, p, max, var_hash TSRMLS_CC)
 typedef int strlen_t;
+
+/* PHP_MOD_END exists since 5.3.7 */
+#ifndef ZEND_MOD_END
+#define ZEND_MOD_END { NULL, NULL, NULL, 0 }
+#endif
+
+/* PHP_FE_END exists since 5.3.7 */
+#ifndef PHP_FE_END
+#define PHP_FE_END { NULL, NULL, NULL }
+#endif
+
 #else
 #include <zend_smart_str.h>
 #include <ext/standard/php_smart_string.h>

@@ -89,12 +89,7 @@ zend_function_entry redis_array_functions[] = {
      /* Aliases */
      PHP_MALIAS(RedisArray, delete, del, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(RedisArray, getMultiple, mget, NULL, ZEND_ACC_PUBLIC)
-/* PHP_FE_END exists since 5.3.7 */
-#ifdef PHP_FE_END
      PHP_FE_END
-#else
-     {NULL, NULL, NULL}
-#endif
 };
 
 static void redis_array_free(RedisArray *ra) {

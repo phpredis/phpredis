@@ -343,12 +343,7 @@ static zend_function_entry redis_functions[] = {
 
      PHP_MALIAS(Redis, evaluate, eval, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, evaluateSha, evalsha, NULL, ZEND_ACC_PUBLIC)
-/* PHP_FE_END exists since 5.3.7 */
-#ifdef PHP_FE_END
      PHP_FE_END
-#else
-     {NULL, NULL, NULL}
-#endif
 };
 
 static const zend_module_dep redis_deps[] = {
