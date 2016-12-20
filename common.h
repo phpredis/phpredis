@@ -457,7 +457,7 @@ typedef enum _PUBSUB_TYPE {
 
 /* GETBIT/SETBIT offset range limits */
 #define BITOP_MIN_OFFSET 0
-#define BITOP_MAX_OFFSET 4294967295
+#define BITOP_MAX_OFFSET 4294967295U
 
 /* Specific error messages we want to throw against */
 #define REDIS_ERR_LOADING_MSG "LOADING Redis is loading the dataset in memory"
