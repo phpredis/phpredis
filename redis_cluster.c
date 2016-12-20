@@ -2714,7 +2714,7 @@ PHP_METHOD(RedisCluster, info) {
     REDIS_REPLY_TYPE rtype;
     char *cmd, *opt=NULL;
     int cmd_len;
-    strlen_t opt_len;
+    strlen_t opt_len = 0;
     void *ctx = NULL;
     zval *z_arg;
     short slot;
@@ -2766,7 +2766,7 @@ PHP_METHOD(RedisCluster, client) {
     redisCluster *c = GET_CONTEXT();
     char *cmd, *opt=NULL, *arg=NULL;
     int cmd_len;
-    strlen_t opt_len, arg_len;
+    strlen_t opt_len, arg_len = 0;
     REDIS_REPLY_TYPE rtype;
     zval *z_node;
     short slot;

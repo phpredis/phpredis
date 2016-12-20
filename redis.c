@@ -750,7 +750,7 @@ PHP_METHOD(Redis, pconnect)
 PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
     zval *object, *socket;
     char *host = NULL, *persistent_id = NULL;
-    long port = -1, retry_interval = 0;
+    zend_long port = -1, retry_interval = 0;
     strlen_t host_len, persistent_id_len;
     double timeout = 0.0;
     RedisSock *redis_sock  = NULL;
@@ -2758,7 +2758,7 @@ PHP_METHOD(Redis, slowlog) {
     char *arg, *cmd;
     int cmd_len;
     strlen_t arg_len;
-    zend_long option;
+    zend_long option = 0;
     enum {SLOWLOG_GET, SLOWLOG_LEN, SLOWLOG_RESET} mode;
 
     // Make sure we can get parameters

@@ -551,8 +551,8 @@ PHP_METHOD(RedisArray, _rehash)
 {
 	zval *object;
 	RedisArray *ra;
-	zend_fcall_info z_cb;
-	zend_fcall_info_cache z_cb_cache;
+	zend_fcall_info z_cb = {0};
+	zend_fcall_info_cache z_cb_cache = {0};
 
 	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|f",
 				&object, redis_array_ce, &z_cb, &z_cb_cache) == FAILURE) {
