@@ -2139,7 +2139,7 @@ PHP_METHOD(RedisCluster, watch) {
     smart_string cmd = {0};
     zval *z_args;
     int argc = ZEND_NUM_ARGS(), i;
-    ulong slot;
+    zend_ulong slot;
     zend_string *zstr;
 
     // Disallow in MULTI mode
