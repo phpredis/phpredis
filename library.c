@@ -2118,7 +2118,7 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 }
 
 PHP_REDIS_API int
-redis_key_prefix(RedisSock *redis_sock, char **key, int *key_len) {
+redis_key_prefix(RedisSock *redis_sock, char **key, strlen_t *key_len) {
     int ret_len;
     char *ret;
 

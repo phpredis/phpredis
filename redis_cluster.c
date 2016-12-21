@@ -585,7 +585,8 @@ typedef struct clusterKeyValHT {
     char kbuf[22];
 
     char  *key;
-    int   key_len, key_free;
+    strlen_t key_len;
+    int key_free;
     short slot;
 
     char *val;
@@ -1050,7 +1051,7 @@ PHP_METHOD(RedisCluster, keys) {
     }
 
     /* Prefix and then build our command */
-    pat_free = redis_key_prefix(c->flags, &pat, (int *)&pat_len);
+    pat_free = redis_key_prefix(c->flags, &pat, &pat_len);
     cmd_len = redis_cmd_format_static(&cmd, "KEYS", "s", pat, pat_len);
     if(pat_free) efree(pat);
 
@@ -1899,7 +1900,8 @@ static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 {
     redisClusterNode *node=NULL;
     char *lua, *key;
-    int key_free, args_count=0, key_len;
+    int key_free, args_count=0;
+    strlen_t key_len;
     zval *z_arr=NULL, *z_ele;
     HashTable *ht_arr;
     zend_long num_keys = 0;
@@ -2306,7 +2308,8 @@ PHP_METHOD(RedisCluster, discard) {
 static short
 cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC) 
 {
-    int key_len, key_free;
+    strlen_t key_len;
+    int key_free;
     zval *z_host, *z_port;
     short slot;
     char *key;
@@ -2499,7 +2502,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     // Apply any key prefix we have, get the slot
-    key_free = redis_key_prefix(c->flags, &key, (int *)&key_len);
+    key_free = redis_key_prefix(c->flags, &key, &key_len);
     slot = cluster_hash_key(key, key_len);
 
     // If SCAN_RETRY is set, loop until we get a zero iterator or until

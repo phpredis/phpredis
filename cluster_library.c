@@ -418,7 +418,7 @@ static clusterKeyVal *cluster_dl_add_key(clusterDistList *dl, char *key,
 /* Add a key, returning a pointer to the entry where passed for easy adding
  * of values to match this key */
 int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
-                          int key_len, clusterKeyVal **kv)
+                          strlen_t key_len, clusterKeyVal **kv)
 {
     int key_free;
     short slot;
