@@ -455,7 +455,8 @@ void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *z_val
                          TSRMLS_DC)
 {
     char *val;
-    int val_len, val_free;
+    strlen_t val_len;
+    int val_free;
 
     // Serialize our value
     val_free = redis_serialize(c->flags, z_val, &val, &val_len TSRMLS_CC);

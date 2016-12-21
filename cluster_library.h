@@ -333,7 +333,7 @@ void cluster_free_reply(clusterReply *reply, int free_data);
 HashTable *cluster_dist_create();
 void cluster_dist_free(HashTable *ht);
 int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key, 
-    int key_len, clusterKeyVal **kv);
+    strlen_t key_len, clusterKeyVal **kv);
 void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *val 
     TSRMLS_DC);
 

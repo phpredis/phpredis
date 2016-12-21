@@ -1972,7 +1972,7 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
 }
 
 PHP_REDIS_API int
-redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len 
+redis_serialize(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len
                 TSRMLS_DC) 
 {
 #if ZEND_MODULE_API_NO >= 20100000
@@ -2024,7 +2024,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len
             php_var_serialize(&sstr, z, &ht);
 #if (PHP_MAJOR_VERSION < 7)
             *val = estrndup(sstr.c, sstr.len);
-            *val_len = (int)sstr.len;
+            *val_len = sstr.len;
 #else
             *val = estrndup(sstr.s->val, sstr.s->len);
             *val_len = sstr.s->len;
@@ -2042,7 +2042,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, int *val_len
 #ifdef HAVE_REDIS_IGBINARY
             if(igbinary_serialize(&val8, (size_t *)&sz, z TSRMLS_CC) == 0) {
                 *val = (char*)val8;
-                *val_len = (int)sz;
+                *val_len = sz;
                 return 1;
             }
 #endif

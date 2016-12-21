@@ -590,7 +590,8 @@ typedef struct clusterKeyValHT {
     short slot;
 
     char *val;
-    int  val_len, val_free;
+    strlen_t val_len;
+    int val_free;
 } clusterKeyValHT;
 
 /* Helper to pull a key/value pair from a HashTable */

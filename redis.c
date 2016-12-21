@@ -1853,7 +1853,7 @@ generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun) {
         ZEND_HASH_FOREACH_KEY_VAL(keytable, idx, zkey, z_value_p) {
             char *key, *val;
             strlen_t key_len;
-            int val_len;
+            strlen_t val_len;
             int val_free, key_free;
             char buf[32];
 
