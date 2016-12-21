@@ -34,6 +34,7 @@ TestSuite::flagColorization($boo_colorize);
 
 /* Let the user know this can take a bit of time */
 echo "Note: these tests might take up to a minute. Don't worry :-)\n";
+echo "Using PHP version " . PHP_VERSION . "\n";
 
 /* Depending on the classes being tested, run our tests on it */
 echo "Testing class ";
