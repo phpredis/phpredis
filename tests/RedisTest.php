@@ -167,8 +167,8 @@ class Redis_Test extends TestSuite
         // Verify valid offset ranges
         $this->assertFalse($this->redis->getBit('key', -1));
 
-        $this->redis->setBit('key', 4294967295, 1);
-        $this->assertEquals(1, $this->redis->getBit('key', 4294967295));
+        $this->redis->setBit('key', 0x7fffffff, 1);
+        $this->assertEquals(1, $this->redis->getBit('key', 0x7fffffff));
     }
 
     public function testBitPos() {
@@ -476,6 +476,9 @@ class Redis_Test extends TestSuite
     }
 
     public function testExpireAtWithLong() {
+        if (PHP_INT_SIZE != 8) {
+            $this->markTestSkipped('64 bits only');
+        }
         $longExpiryTimeExceedingInt = 3153600000;
         $this->redis->del('key');
         $this->assertTrue($this->redis->setex('key', $longExpiryTimeExceedingInt, 'val') === TRUE);
@@ -515,7 +518,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue("abc" === $this->redis->get('key'));
 
         $this->redis->set('key', 0);
-        $this->assertEquals(2147483648, $this->redis->incrby('key', 2147483648));
+        $this->assertEquals(PHP_INT_MAX, $this->redis->incrby('key', PHP_INT_MAX));
     }
 
     public function testIncrByFloat()
@@ -550,7 +553,7 @@ class Redis_Test extends TestSuite
         $this->redis->setOption(Redis::OPT_PREFIX, 'someprefix:');
         $this->redis->del('key');
         $this->redis->incrbyfloat('key',1.8);
-        $this->assertEquals('1.8', $this->redis->get('key'));
+        $this->assertEquals(1.8, floatval($this->redis->get('key'))); // convert to float to avoid rounding issue on arm
         $this->redis->setOption(Redis::OPT_PREFIX, '');
         $this->assertTrue($this->redis->exists('someprefix:key'));
         $this->redis->del('someprefix:key');
@@ -2296,8 +2299,8 @@ class Redis_Test extends TestSuite
         $this->assertTrue(3 === $this->redis->hIncrBy('h', 'x', 1));
         $this->assertTrue(2 === $this->redis->hIncrBy('h', 'x', -1));
         $this->assertTrue("2" === $this->redis->hGet('h', 'x'));
-        $this->assertTrue(1000000000002 === $this->redis->hIncrBy('h', 'x', 1000000000000));
-        $this->assertTrue("1000000000002" === $this->redis->hGet('h', 'x'));
+        $this->assertTrue(PHP_INT_MAX === $this->redis->hIncrBy('h', 'x', PHP_INT_MAX-2));
+        $this->assertTrue("".PHP_INT_MAX === $this->redis->hGet('h', 'x'));
 
         $this->redis->hSet('h', 'y', 'not-a-number');
         $this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'y', 1));
