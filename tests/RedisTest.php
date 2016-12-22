@@ -553,7 +553,7 @@ class Redis_Test extends TestSuite
         $this->redis->setOption(Redis::OPT_PREFIX, 'someprefix:');
         $this->redis->del('key');
         $this->redis->incrbyfloat('key',1.8);
-        $this->assertEquals('1.8', $this->redis->get('key'));
+        $this->assertEquals(1.8, floatval($this->redis->get('key'))); // convert to float to avoid rounding issue on arm
         $this->redis->setOption(Redis::OPT_PREFIX, '');
         $this->assertTrue($this->redis->exists('someprefix:key'));
         $this->redis->del('someprefix:key');
