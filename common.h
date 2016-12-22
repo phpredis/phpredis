@@ -364,9 +364,9 @@ extern int (*_php_var_unserialize)(zval **, const unsigned char **, const unsign
 #define php_var_unserialize(rval, p, max, var_hash) _php_var_unserialize(&rval, p, max, var_hash TSRMLS_CC)
 typedef int strlen_t;
 
-/* PHP_MOD_END exists since 5.3.7 */
+/* If ZEND_MOD_END isn't defined, use legacy version */
 #ifndef ZEND_MOD_END
-#define ZEND_MOD_END { NULL, NULL, NULL, 0 }
+#define ZEND_MOD_END { NULL, NULL, NULL }
 #endif
 
 /* PHP_FE_END exists since 5.3.7 */
