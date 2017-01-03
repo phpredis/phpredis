@@ -32,6 +32,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testWait()     { return $this->markTestSkipped(); }
     public function testSelect()   { return $this->markTestSkipped(); }
     public function testReconnectSelect() { return $this->markTestSkipped(); }
+    public function testMultipleConnect() { return $this->markTestSkipped(); }
 
     /* Load our seeds on construction */
     public function __construct() {

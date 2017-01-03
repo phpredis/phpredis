@@ -4974,5 +4974,15 @@ class Redis_Test extends TestSuite
         session_write_close();
         $this->assertTrue($this->redis->exists('PHPREDIS_SESSION:' . session_id()));
     }
+
+    public function testMultipleConnect() {
+        $host = $this->redis->GetHost();
+        $port = $this->redis->GetPort();
+
+        for($i = 0; $i < 5; $i++) {
+            $this->redis->connect($host, $port);
+            $this->assertEquals($this->redis->ping(), "+PONG");
+        }
+    }
 }
 ?>
