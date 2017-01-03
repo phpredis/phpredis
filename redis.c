@@ -799,7 +799,7 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 #if (PHP_MAJOR_VERSION < 7)
             zend_list_delete(Z_LVAL_P(socket));
 #else
-            zend_list_delete(Z_RES_P(socket));
+            zend_list_close(Z_RES_P(socket));
 #endif
         }
     }
