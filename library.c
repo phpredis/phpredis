@@ -1117,36 +1117,20 @@ redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     char *response;
     int response_len;
-    char ret;
+    zend_bool ret = 0;
 
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) == NULL) {
-        IF_MULTI_OR_PIPELINE() {
-            add_next_index_bool(z_tab, 0);
-            return;
-        }
-        RETURN_FALSE;
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) != NULL) {
+        ret = (*response == '+');
+        efree(response);
     }
-    ret = response[0];
-    efree(response);
 
+    if (ret && success_callback != NULL) {
+        success_callback(redis_sock);
+    }
     IF_MULTI_OR_PIPELINE() {
-        if (ret == '+') {
-            if (success_callback != NULL) {
-                success_callback(redis_sock);
-            }
-            add_next_index_bool(z_tab, 1);
-        } else {
-            add_next_index_bool(z_tab, 0);
-        }
+        add_next_index_bool(z_tab, ret);
     } else {
-        if (ret == '+') {
-            if (success_callback != NULL) {
-                success_callback(redis_sock);
-            }
-            RETURN_TRUE;
-        } else {
-            RETURN_FALSE;
-        }
+        RETURN_BOOL(ret);
     }
 }
 
