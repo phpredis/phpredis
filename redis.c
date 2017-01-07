@@ -2228,10 +2228,7 @@ PHP_METHOD(Redis, multi)
     IF_MULTI() {
         cmd_len = redis_cmd_format_static(&cmd, "MULTI", "");
 
-        if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
-            efree(cmd);
-            RETURN_FALSE;
-        }
+	SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
         efree(cmd);
 
         if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC))
@@ -2361,10 +2358,7 @@ PHP_METHOD(Redis, exec)
     IF_MULTI() {
         cmd_len = redis_cmd_format_static(&cmd, "EXEC", "");
 
-        if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
-            efree(cmd);
-            RETURN_FALSE;
-        }
+	SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
         efree(cmd);
 
         if(redis_sock_read_multibulk_multi_reply(
@@ -2551,10 +2545,7 @@ PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
     cmd_len = spprintf(&cmd, 0, "%s %s\r\n", unsub_cmd, cmd);
     efree(old_cmd);
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
-        efree(cmd);
-        RETURN_FALSE;
-    }
+    SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
     efree(cmd);
 
     array_init(return_value);
