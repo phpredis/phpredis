@@ -66,7 +66,7 @@ static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
 
 
 /* Helper to ensure we always get the latest persistent stream in case its been closed */
- int get_persistent(RedisSock *redis_sock TSRMLS_DC) {
+ int get_persistent_redis(RedisSock *redis_sock TSRMLS_DC) {
     php_stream *stream = NULL;
     char *persistent_id;
     if (!redis_sock->persistent){
