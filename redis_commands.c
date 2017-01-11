@@ -1626,6 +1626,33 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* HSTRLEN */
+int
+redis_hstrlen_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                  char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key, *field;
+    strlen_t key_len, field_len;
+    int key_free;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &key, &key_len,
+                              &field, &field_len) == FAILURE
+    ) {
+        return FAILURE;
+    }
+    // Prefix key
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    *cmd_len = redis_cmd_format_static(cmd, "HSTRLEN", "ss", key, key_len, field, field_len);
+
+    // Set our slot
+    CMD_SET_SLOT(slot, key, key_len);
+
+    if (key_free) efree(key);
+
+    return SUCCESS;
+}
+
 /* BITPOS */
 int redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char **cmd, int *cmd_len, short *slot, void **ctx)
