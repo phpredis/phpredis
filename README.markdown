@@ -1355,6 +1355,7 @@ $redis->migrate('backup', 6379, 'foo', 0, 3600, false, true); /* just REPLACE fl
 * [hSetNx](#hsetnx) - Set the value of a hash field, only if the field does not exist
 * [hVals](#hvals) - Get all the values in a hash
 * [hScan](#hscan) - Scan a hash key for members
+* [hStrLen](#hstrlen) - Get the string length of the value associated with field in the hash
 
 ### hSet
 -----
@@ -1638,6 +1639,15 @@ while($arr_keys = $redis->hScan('hash', $it)) {
     }
 }
 ~~~
+
+##### hStrLen
+-----
+ **Description**_: Get the string length of the value associated with field in the hash stored at key.
+##### *Parameters*
+*key*: String
+*field*: String
+##### *Return value*
+*LONG* the string length of the value associated with field, or zero when field is not present in the hash or key does not exist at all.
 
 ## Lists
 

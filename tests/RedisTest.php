@@ -2354,6 +2354,15 @@ class Redis_Test extends TestSuite
         $this->assertTrue('Array' === $h1['y']);
         $this->assertTrue('Object' === $h1['z']);
         $this->assertTrue('' === $h1['t']);
+
+        // hstrlen
+        if (version_compare($this->version, '3.2.0', 'ge')) {
+            $this->redis->del('h');
+            $this->assertTrue(0 === $this->redis->hStrLen('h', 'x')); // key doesn't exist
+            $this->redis->hSet('h', 'foo', 'bar');
+            $this->assertTrue(0 === $this->redis->hStrLen('h', 'x')); // field is not present in the hash
+            $this->assertTrue(3 === $this->redis->hStrLen('h', 'foo'));
+	}
     }
 
     public function testSetRange() {
