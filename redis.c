@@ -75,6 +75,26 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("redis.clusters.read_timeout", "", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_void, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_connect, 0, 0, 2)
+    ZEND_ARG_INFO(0, host)
+    ZEND_ARG_INFO(0, port)
+    ZEND_ARG_INFO(0, timeout)
+    ZEND_ARG_INFO(0, retry_interval)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pconnect, 0, 0, 2)
+    ZEND_ARG_INFO(0, host)
+    ZEND_ARG_INFO(0, port)
+    ZEND_ARG_INFO(0, timeout)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_echo, 0, 0, 1)
+    ZEND_ARG_INFO(0, msg)
+ZEND_END_ARG_INFO()
+
 /**
  * Argument info for the SCAN proper
  */
@@ -82,7 +102,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_scan, 0, 0, 1)
     ZEND_ARG_INFO(1, i_iterator)
     ZEND_ARG_INFO(0, str_pattern)
     ZEND_ARG_INFO(0, i_count)
-ZEND_END_ARG_INFO();
+ZEND_END_ARG_INFO()
 
 /**
  * Argument info for key scanning
@@ -92,20 +112,20 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan, 0, 0, 2)
     ZEND_ARG_INFO(1, i_iterator)
     ZEND_ARG_INFO(0, str_pattern)
     ZEND_ARG_INFO(0, i_count)
-ZEND_END_ARG_INFO();
+ZEND_END_ARG_INFO()
 
 #ifdef ZTS
 ZEND_DECLARE_MODULE_GLOBALS(redis)
 #endif
 
 static zend_function_entry redis_functions[] = {
-     PHP_ME(Redis, __construct, NULL, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, __destruct, NULL, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, connect, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, pconnect, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, close, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, ping, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, echo, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, __construct, arginfo_void, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, __destruct, arginfo_void, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, connect, arginfo_connect, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pconnect, arginfo_pconnect, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, close, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, ping, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, echo, arginfo_echo, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, get, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, set, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setex, NULL, ZEND_ACC_PUBLIC)
