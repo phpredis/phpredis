@@ -27,37 +27,41 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2016-12-14</date>
+ <date>2017-01-16</date>
  <version>
-  <release>3.1.0</release>
-  <api>3.1.0</api>
+  <release>3.1.1RC2</release>
+  <api>3.1.1RC2</api>
  </version>
  <stability>
-  <release>stable</release>
-  <api>stable</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 3.1.0
+    phpredis 3.1.1RC2
 
-    In this version of phpredis codebase was unified to work with all versions of php \o/
-    Also many bug fixes and some improvements has been made.
-    
-    --- Improvements ---
+    * Additional test updates for 32 bit systems (@remicollet)
+    * ARM rounding issue in tests (@remicollet)
+    * Use new zend_list_close instead of zend_list_delete when reconnecting.
+    * Refactoring of redis_boolean_response_impl and redis_sock_write (@yatsukhnenko)
 
-    * Support the client to Redis Cluster just having one master (andyli) [892e5646]
-    * Allow both long and strings that are longs for zrangebyscore offset/limit (Michael Grunder) [bdcdd2aa]
-    * Process NX|XX, CH and INCR options in zAdd command (Pavlo Yatsukhnenko) [71c9f7c8]
+    phpredis 3.1.1.RC1
 
-    --- Fixes ---
+    This release contains mostly fixes for issues introduced when merging
+    the php 5 and 7 codebase into a single branch.
 
-    * Fix incrby/decrby for large integers (Michael Grunder) [3a12758a]
-    * Use static declarations for spl_ce_RuntimeException decl (Jeremy Mikola) [a9857d69]
-    * Fixed method call problem causes session handler to display two times (ZiHang Gao) [24f86c49]
-    * psetex method returns '+OK' on success, not true (sitri@ndxbn) [afcd8445]
-    * Fix integer overflow for long (>32bit) increments in hIncrBy (iyesin) [58e1d799]
-    * Move zend_object handler to the end (Michael Grunder) [34107966]
-    * Using setOption on redis array causes immediate connection (Pavlo Yatsukhnenko) [f1a85b38]
+    * Fixed a segfault in igbinary serialization (@yatsukhnenko)
+    * Restore 2.2.8/3.0.0 functionality to distinguish between an error
+      and simply empty session data. (@remicollet)
+    * Fix double to string conversion function (@yatsukhnenko)
+    * Use PHP_FE_END definition when available (@remicollet)
+    * Fixed various 'static function declared but not used' warnings
+    * Fixes to various calls which were typecasting pointers to the
+      wrong size. (@remicollet)
+
+    * Added php session unit test (@yatsukhnenko)
+    * Added explicit module dependancy for igbinary (@remicollet)
+    * Added phpinfo serialization information (@remicollet)
  </notes>
  <contents>
   <dir name="/">
@@ -111,6 +115,39 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>redis</providesextension>
  <extsrcrelease/>
  <changelog>
+   <release>
+   <stability><release>beta</release><api>beta</api></stability>
+   <version><release>3.1.1RC2</release><api>3.1.1RC2</api></version>
+   <date>2017-01-16</date>
+   <notes>
+
+    phpredis 3.1.1RC2
+
+    * Additional test updates for 32 bit systems (@remicollet)
+    * ARM rounding issue in tests (@remicollet)
+    * Use new zend_list_close instead of zend_list_delete when reconnecting.
+    * Refactoring of redis_boolean_response_impl and redis_sock_write (@yatsukhnenko)
+
+    phpredis 3.1.1.RC1
+
+    This release contains mostly fixes for issues introduced when merging
+    the php 5 and 7 codebase into a single branch.
+
+    * Fixed a segfault in igbinary serialization (@yatsukhnenko)
+    * Restore 2.2.8/3.0.0 functionality to distinguish between an error
+      and simply empty session data. (@remicollet)
+    * Fix double to string conversion function (@yatsukhnenko)
+    * Use PHP_FE_END definition when available (@remicollet)
+    * Fixed various 'static function declared but not used' warnings
+    * Fixes to various calls which were typecasting pointers to the
+      wrong size. (@remicollet)
+
+    * Added php session unit test (@yatsukhnenko)
+    * Added explicit module dependancy for igbinary (@remicollet)
+    * Added phpinfo serialization information (@remicollet)
+   </notes>
+   </release>
+
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>3.1.0</release><api>3.1.0</api></version>
