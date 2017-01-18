@@ -358,10 +358,6 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	/* check if write cmd */
 	b_write_cmd = ra_is_write_cmd(ra, cmd, cmd_len);
 
-	if(ra->index && b_write_cmd && !ra->z_multi_exec) { /* add MULTI + SADD */
-		ra_index_multi(redis_inst, MULTI TSRMLS_CC);
-	}
-
 	/* pass call through */
 	ZVAL_STRINGL(&z_fun, cmd, cmd_len); /* method name */
 	z_callargs = ecalloc(argc + 1, sizeof(zval));
@@ -384,6 +380,8 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
 	/* CALL! */
 	if(ra->index && b_write_cmd) {
+        /* add MULTI + SADD */
+        ra_index_multi(redis_inst, MULTI TSRMLS_CC);
 		/* call using discarded temp value and extract exec results after. */
 		call_user_function(&redis_ce->function_table, redis_inst, &z_fun, &z_tmp, argc, z_callargs);
 		zval_dtor(&z_tmp);

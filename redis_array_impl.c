@@ -375,10 +375,10 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 
 /* call userland key extraction function */
 char *
-ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS_DC) {
-
-	char *out;
-	zval z_ret, z_argv[1];
+ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS_DC)
+{
+    char *out = NULL;
+    zval z_ret, z_argv;
 
 	/* check that we can call the extractor function */
 #if (PHP_MAJOR_VERSION < 7)
@@ -391,19 +391,15 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 	}
 
 	/* call extraction function */
-	ZVAL_STRINGL(&z_argv[0], key, key_len);
-	call_user_function(EG(function_table), NULL, &ra->z_fun, &z_ret, 1, z_argv);
+    ZVAL_STRINGL(&z_argv, key, key_len);
+    call_user_function(EG(function_table), NULL, &ra->z_fun, &z_ret, 1, &z_argv);
 
-	if(Z_TYPE(z_ret) != IS_STRING) {
-		zval_dtor(&z_argv[0]);
-		zval_dtor(&z_ret);
-		return NULL;
-	}
+    if (Z_TYPE(z_ret) == IS_STRING) {
+        *out_len = Z_STRLEN(z_ret);
+        out = estrndup(Z_STRVAL(z_ret), *out_len);
+    }
 
-	*out_len = Z_STRLEN(z_ret);
-    out = estrndup(Z_STRVAL(z_ret), *out_len);
-
-	zval_dtor(&z_argv[0]);
+	zval_dtor(&z_argv);
 	zval_dtor(&z_ret);
 	return out;
 }
@@ -426,10 +422,10 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS
 
 /* call userland key distributor function */
 zend_bool
-ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRMLS_DC) {
-
-	zval z_ret;
-	zval z_argv[1];
+ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRMLS_DC)
+{
+    zend_bool ret = 0;
+    zval z_ret, z_argv;
 
 	/* check that we can call the extractor function */
 #if (PHP_MAJOR_VERSION < 7)
@@ -442,19 +438,17 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
 	}
 
 	/* call extraction function */
-    ZVAL_STRINGL(&z_argv[0], key, key_len);
-    call_user_function(EG(function_table), NULL, &ra->z_dist, &z_ret, 1, z_argv);
+    ZVAL_STRINGL(&z_argv, key, key_len);
+    call_user_function(EG(function_table), NULL, &ra->z_dist, &z_ret, 1, &z_argv);
 
-	if(Z_TYPE(z_ret) != IS_LONG) {
-		zval_dtor(&z_argv[0]);
-		zval_dtor(&z_ret);
-		return 0;
-	}
+    if (Z_TYPE(z_ret) == IS_LONG) {
+        *pos = Z_LVAL(z_ret);
+        ret = 1;
+    }
 
-	*pos = Z_LVAL(z_ret);
-	zval_dtor(&z_argv[0]);
+    zval_dtor(&z_argv);
 	zval_dtor(&z_ret);
-	return 1;
+    return ret;
 }
 
 zval *
