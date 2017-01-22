@@ -133,7 +133,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_mget, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_del, 0, 0, 1)
-    ZEND_ARG_VARIADIC_INFO(0, keys)
+    ZEND_ARG_INFO(0, ...)
 ZEND_END_ARG_INFO()
 
 /**
