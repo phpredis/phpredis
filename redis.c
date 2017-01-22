@@ -136,6 +136,32 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_del, 0, 0, 1)
     ZEND_ARG_INFO(0, ...)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_getrange, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, start)
+    ZEND_ARG_INFO(0, end)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_offset, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, offset)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_offset_value, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, offset)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_keys, 0, 0, 1)
+    ZEND_ARG_INFO(0, pattern)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sort, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_ARRAY_INFO(0, options, 0)
+ZEND_END_ARG_INFO()
+
 /**
  * Argument info for the SCAN proper
  */
@@ -186,13 +212,13 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, decrBy, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, type, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, append, arginfo_key_value, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, getRange, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, setRange, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, getBit, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, setBit, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getRange, arginfo_getrange, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setRange, arginfo_key_offset_value, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getBit, arginfo_key_offset, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setBit, arginfo_key_offset_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, strlen, arginfo_key, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, getKeys, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sort, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getKeys, arginfo_keys, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sort, arginfo_sort, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sortAsc, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sortAscAlpha, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sortDesc, NULL, ZEND_ACC_PUBLIC)
