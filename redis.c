@@ -175,6 +175,19 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_blrpop, 0, 0, 2)
     ZEND_ARG_INFO(0, ...)
     ZEND_ARG_INFO(0, timeout)
 ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_lrem, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, value)
+    ZEND_ARG_INFO(0, count)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_ltrim, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, start)
+    ZEND_ARG_INFO(0, stop)
+ZEND_END_ARG_INFO()
+
 /**
  * Argument info for the SCAN proper
  */
@@ -245,8 +258,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, blPop, arginfo_blrpop, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, brPop, arginfo_blrpop, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lSize, arginfo_key, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lRemove, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, listTrim, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lRemove, arginfo_lrem, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, listTrim, arginfo_ltrim, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lGet, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lGetRange, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lSet, NULL, ZEND_ACC_PUBLIC)
