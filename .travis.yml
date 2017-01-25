@@ -10,27 +10,26 @@ php:
   - nightly
 env: CC=gcc
 matrix:
-  include:
-    - env: CC=clang
-      php: 5.4
-    - env: CC=clang
-      php: 5.5
-    - env: CC=clang
-      php: 5.6
-    - env: CC=clang
-      php: 7.0
-    - env: CC=clang
-      php: 7.1
-    - env: CC=clang
-      php: nightly
   allow_failures:
     - php: nightly
+  include:
+    - php: 5.4
+      env: CC=clang
+    - php: 5.5
+      env: CC=clang
+    - php: 5.6
+      env: CC=clang
+    - php: 7.0
+      env: CC=clang
+    - php: 7.1
+      env: CC=clang
 addons:
   apt:
     packages: clang
 before_install:
   - phpize
-  - if [ $(phpenv version-name) lt 7 ]; then pecl install igbinary-1.2.1; ./configure --enable-redis-igbinary CFLAGS=-Wall; else ./configure CFLAGS=-Wall; fi
+  - pecl install igbinary
+  - ./configure --enable-redis-igbinary CFLAGS=-Wall
 install: make install
 before_script:
   - gem install redis
