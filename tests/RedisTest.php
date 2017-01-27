@@ -1407,6 +1407,9 @@ class Redis_Test extends TestSuite
             $this->redis->sAdd('{set}t', $i);
         }
 
+        /* Regression test for passing a single array */
+        $this->assertEquals($this->redis->sInterStore(Array('{set}k', '{set}x', '{set}y')), count(array_intersect($x,$y)));
+
         $count = $this->redis->sInterStore('{set}k', '{set}x', '{set}y');  // odd prime numbers
         $this->assertEquals($count, $this->redis->scard('{set}k'));
         foreach(array_intersect($x, $y) as $i) {
