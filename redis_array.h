@@ -58,5 +58,13 @@ typedef struct RedisArray_ {
 
 uint32_t rcrc32(const char *s, size_t sz);
 
+#if (PHP_MAJOR_VERSION < 7)
+zend_object_value create_redis_array_object(zend_class_entry *ce TSRMLS_DC);
+void free_redis_array_object(void *object TSRMLS_DC);
+#else
+zend_object *create_redis_array_object(zend_class_entry *ce TSRMLS_DC);
+void free_redis_array_object(zend_object *object);
+#endif
+
 
 #endif

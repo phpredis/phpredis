@@ -43,7 +43,6 @@
 #define R_SUB_CLOSURE_TYPE 3
 
 int le_redis_sock;
-extern int le_redis_array;
 
 #ifdef PHP_SESSION
 extern ps_module ps_mod_redis;
@@ -583,23 +582,14 @@ PHP_MINIT_FUNCTION(redis)
     redis_ce = zend_register_internal_class(&redis_class_entry TSRMLS_CC);
 
     /* RedisArray class */
-    INIT_CLASS_ENTRY(redis_array_class_entry, "RedisArray",
-        redis_array_functions);
-    redis_array_ce = zend_register_internal_class(&redis_array_class_entry
-        TSRMLS_CC);
+    INIT_CLASS_ENTRY(redis_array_class_entry, "RedisArray", redis_array_functions);
+    redis_array_ce = zend_register_internal_class(&redis_array_class_entry TSRMLS_CC);
+    redis_array_ce->create_object = create_redis_array_object;
 
     /* RedisCluster class */
-    INIT_CLASS_ENTRY(redis_cluster_class_entry, "RedisCluster",
-        redis_cluster_functions);
-    redis_cluster_ce = zend_register_internal_class(&redis_cluster_class_entry
-        TSRMLS_CC);
+    INIT_CLASS_ENTRY(redis_cluster_class_entry, "RedisCluster", redis_cluster_functions);
+    redis_cluster_ce = zend_register_internal_class(&redis_cluster_class_entry TSRMLS_CC);
     redis_cluster_ce->create_object = create_cluster_context;
-
-    le_redis_array = zend_register_list_destructors_ex(
-        redis_destructor_redis_array,
-        NULL,
-        "Redis Array", module_number
-    );
 
     /* RedisException class */
     INIT_CLASS_ENTRY(redis_exception_class_entry, "RedisException", NULL);

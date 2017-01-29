@@ -92,7 +92,9 @@ zend_function_entry redis_array_functions[] = {
      PHP_FE_END
 };
 
-static void redis_array_free(RedisArray *ra) {
+static void
+redis_array_free(RedisArray *ra)
+{
     int i;
 
     /* Redis objects */
@@ -116,46 +118,106 @@ static void redis_array_free(RedisArray *ra) {
     efree(ra);
 }
 
-int le_redis_array;
-void redis_destructor_redis_array(zend_resource * rsrc TSRMLS_DC)
+#if (PHP_MAJOR_VERSION < 7)
+typedef struct {
+    zend_object std;
+    RedisArray *ra;
+} redis_array_object;
+
+void
+free_redis_array_object(void *object TSRMLS_DC)
 {
-    RedisArray *ra = (RedisArray*)rsrc->ptr;
+    redis_array_object *obj = (redis_array_object *)object;
 
-    /* Free previous ring if it's set */
-    if(ra->prev) redis_array_free(ra->prev);
-
-    /* Free parent array */
-    redis_array_free(ra);
+    zend_object_std_dtor(&obj->std TSRMLS_CC);
+    if (obj->ra) {
+        if (obj->ra->prev) redis_array_free(obj->ra->prev);
+        redis_array_free(obj->ra);
+    }
+    efree(obj);
 }
 
+zend_object_value
+create_redis_array_object(zend_class_entry *ce TSRMLS_DC)
+{
+    zend_object_value retval;
+    redis_array_object *obj = ecalloc(1, sizeof(redis_array_object));
+    memset(obj, 0, sizeof(redis_array_object));
+
+    zend_object_std_init(&obj->std, ce TSRMLS_CC);
+
+#if PHP_VERSION_ID < 50399
+    zval *tmp;
+    zend_hash_copy(obj->std.properties, &ce->default_properties,
+        (copy_ctor_func_t)zval_add_ref, (void *)&tmp, sizeof(zval *));
+#endif
+
+    retval.handle = zend_objects_store_put(obj,
+        (zend_objects_store_dtor_t)zend_objects_destroy_object,
+        (zend_objects_free_object_storage_t)free_redis_array_object,
+        NULL TSRMLS_CC);
+    retval.handlers = zend_get_std_object_handlers();
+
+    return retval;
+}
+#else
+typedef struct {
+    RedisArray *ra;
+    zend_object std;
+} redis_array_object;
+
+zend_object_handlers redis_array_object_handlers;
+
+void
+free_redis_array_object(zend_object *object)
+{
+    redis_array_object *obj = (redis_array_object *)((char *)(object) - XtOffsetOf(redis_array_object, std));
+
+    if (obj->ra) {
+        if (obj->ra->prev) redis_array_free(obj->ra->prev);
+        redis_array_free(obj->ra);
+    }
+    zend_object_std_dtor(&obj->std TSRMLS_CC);
+}
+
+zend_object *
+create_redis_array_object(zend_class_entry *ce TSRMLS_DC)
+{
+    redis_array_object *obj = ecalloc(1, sizeof(redis_array_object) + zend_object_properties_size(ce));
+
+    memset(obj, 0, sizeof(redis_array_object));
+    zend_object_std_init(&obj->std, ce TSRMLS_CC);
+    object_properties_init(&obj->std, ce);
+
+    memcpy(&redis_array_object_handlers, zend_get_std_object_handlers(), sizeof(redis_array_object_handlers));
+    redis_array_object_handlers.offset = XtOffsetOf(redis_array_object, std);
+    redis_array_object_handlers.free_obj = free_redis_array_object;
+    obj->std.handlers = &redis_array_object_handlers;
+
+    return &obj->std;
+}
+#endif
 
 /**
  * redis_array_get
  */
-PHP_REDIS_API int redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
+PHP_REDIS_API int
+redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
 {
+    redis_array_object *obj;
 
-    zval *socket;
-
-    if (Z_TYPE_P(id) != IS_OBJECT || (socket = zend_hash_str_find(Z_OBJPROP_P(id),
-            "socket", sizeof("socket") - 1)) == NULL) {
-        return -1;
-    }
-
+    if (Z_TYPE_P(id) == IS_OBJECT) {
 #if (PHP_MAJOR_VERSION < 7)
-    int resource_type;
-    *ra = (RedisArray *)zend_list_find(Z_LVAL_P(socket), &resource_type);
-    if (!*ra || resource_type != le_redis_array) {
+        obj = (redis_array_object *)zend_objects_get_address(id TSRMLS_CC);
 #else
-    if (Z_RES_P(socket) == NULL ||
-        !(*ra = (RedisArray *)Z_RES_P(socket)->ptr) ||
-        Z_RES_P(socket)->type != le_redis_array
-    ) {
+        obj = (redis_array_object *)((char *)Z_OBJ_P(id) - XtOffsetOf(redis_array_object, std));
 #endif
-        return -1;
+        if (obj->ra) {
+            *ra = obj->ra;
+            return 0;
+        }
     }
-
-    return 0;
+    return -1;
 }
 
 uint32_t rcrc32(const char *s, size_t sz) {
@@ -220,6 +282,7 @@ PHP_METHOD(RedisArray, __construct)
 	long l_retry_interval = 0;
   	zend_bool b_lazy_connect = 0;
 	double d_connect_timeout = 0;
+    redis_array_object *obj;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|a", &z0, &z_opts) == FAILURE) {
 		RETURN_FALSE;
@@ -302,7 +365,6 @@ PHP_METHOD(RedisArray, __construct)
 
 		default:
 			WRONG_PARAM_COUNT;
-			break;
 	}
     zval_dtor(&z_dist);
     zval_dtor(&z_fun);
@@ -312,17 +374,11 @@ PHP_METHOD(RedisArray, __construct)
 		ra->connect_timeout = d_connect_timeout;
 		if(ra->prev) ra->prev->auto_rehash = b_autorehash;
 #if (PHP_MAJOR_VERSION < 7)
-        int id;
-#if PHP_VERSION_ID >= 50400
-		id = zend_list_insert(ra, le_redis_array TSRMLS_CC);
+        obj = (redis_array_object *)zend_objects_get_address(getThis() TSRMLS_CC);
 #else
-		id = zend_list_insert(ra, le_redis_array);
+        obj = (redis_array_object *)((char *)Z_OBJ_P(getThis()) - XtOffsetOf(redis_array_object, std));
 #endif
-		add_property_resource(getThis(), "socket", id);
-#else
-        zval *id = zend_list_insert(ra, le_redis_array TSRMLS_CC);
-        add_property_resource(getThis(), "socket", Z_RES_P(id));
-#endif
+        obj->ra = ra;
 	}
 }
 
