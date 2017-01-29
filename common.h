@@ -680,6 +680,18 @@ typedef struct {
 } RedisSock;
 /* }}} */
 
+#if (PHP_MAJOR_VERSION < 7)
+typedef struct {
+    zend_object std;
+    RedisSock *sock;
+} redis_object;
+#else
+typedef struct {
+    RedisSock *sock;
+    zend_object std;
+} redis_object;
+#endif
+
 void
 free_reply_callbacks(zval *z_this, RedisSock *redis_sock);
 

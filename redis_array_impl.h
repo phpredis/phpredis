@@ -7,7 +7,6 @@
 #include <stdint.h>
 #endif
 
-#include "common.h"
 #include "redis_array.h"
 
 RedisArray *ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b_lazy_connect TSRMLS_DC);
