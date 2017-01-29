@@ -26,7 +26,6 @@
 
 #define PHPREDIS_INDEX_NAME	"__phpredis_array_index__"
 
-extern int le_redis_sock;
 extern zend_class_entry *redis_ce;
 
 RedisArray*
@@ -36,7 +35,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 	char *host, *p;
 	short port;
 	zval *zpData, z_cons, z_ret;
-	RedisSock *redis_sock  = NULL;
+    redis_object *redis;
 
 	/* function calls on the Redis object */
 	ZVAL_STRINGL(&z_cons, "__construct", 11);
@@ -72,28 +71,20 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
         call_user_function(&redis_ce->function_table, &ra->redis[i], &z_cons, &z_ret, 0, NULL);
         zval_dtor(&z_ret);
 
+#if (PHP_MAJOR_VERSION < 7)
+        redis = (redis_object *)zend_objects_get_address(&ra->redis[i] TSRMLS_CC);
+#else
+        redis = (redis_object *)((char *)Z_OBJ_P(&ra->redis[i]) - XtOffsetOf(redis_object, std));
+#endif
+
 		/* create socket */
-		redis_sock = redis_sock_create(host, host_len, port, ra->connect_timeout, ra->pconnect, NULL, retry_interval, b_lazy_connect);
+		redis->sock = redis_sock_create(host, host_len, port, ra->connect_timeout, ra->pconnect, NULL, retry_interval, b_lazy_connect);
 
 	    if (!b_lazy_connect)
     	{
 			/* connect */
-			redis_sock_server_open(redis_sock, 1 TSRMLS_CC);
+			redis_sock_server_open(redis->sock, 1 TSRMLS_CC);
 		}
-
-		/* attach */
-#if (PHP_MAJOR_VERSION < 7)
-        int id;
-#if PHP_VERSION_ID >= 50400
-		id = zend_list_insert(redis_sock, le_redis_sock TSRMLS_CC);
-#else
-		id = zend_list_insert(redis_sock, le_redis_sock);
-#endif
-		add_property_resource(&ra->redis[i], "socket", id);
-#else
-        zval *id = zend_list_insert(redis_sock, le_redis_sock TSRMLS_CC);
-		add_property_resource(&ra->redis[i], "socket", Z_RES_P(id));
-#endif
 
 		ra->count = ++i;
 	}

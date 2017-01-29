@@ -42,8 +42,6 @@
 #define R_SUB_CALLBACK_FT_TYPE 2
 #define R_SUB_CLOSURE_TYPE 3
 
-int le_redis_sock;
-
 #ifdef PHP_SESSION
 extern ps_module ps_mod_redis;
 extern ps_module ps_mod_redis_cluster;
@@ -602,36 +600,90 @@ static int send_discard_static(RedisSock *redis_sock TSRMLS_DC) {
     return result;
 }
 
-/**
- * redis_destructor_redis_sock
- */
-static void redis_destructor_redis_sock(zend_resource * rsrc TSRMLS_DC)
+#if (PHP_MAJOR_VERSION < 7)
+void
+free_redis_object(void *object TSRMLS_DC)
 {
-    RedisSock *redis_sock = (RedisSock *) rsrc->ptr;
-    redis_sock_disconnect(redis_sock TSRMLS_CC);
-    redis_free_socket(redis_sock);
+    redis_object *redis = (redis_object *)object;
+
+    zend_object_std_dtor(&redis->std TSRMLS_CC);
+    if (redis->sock) {
+        redis_sock_disconnect(redis->sock TSRMLS_CC);
+        redis_free_socket(redis->sock);
+    }
+    efree(redis);
 }
+
+zend_object_value
+create_redis_object(zend_class_entry *ce TSRMLS_DC)
+{
+    zend_object_value retval;
+    redis_object *redis = ecalloc(1, sizeof(redis_object));
+
+    memset(redis, 0, sizeof(redis_object));
+    zend_object_std_init(&redis->std, ce TSRMLS_CC);
+
+#if PHP_VERSION_ID < 50399
+    zval *tmp;
+    zend_hash_copy(redis->std.properties, &ce->default_properties,
+        (copy_ctor_func_t)zval_add_ref, (void *)&tmp, sizeof(zval *));
+#endif
+
+    retval.handle = zend_objects_store_put(redis,
+        (zend_objects_store_dtor_t)zend_objects_destroy_object,
+        (zend_objects_free_object_storage_t)free_redis_object,
+        NULL TSRMLS_CC);
+    retval.handlers = zend_get_std_object_handlers();
+
+    return retval;
+}
+#else
+zend_object_handlers redis_object_handlers;
+
+void
+free_redis_object(zend_object *object)
+{
+    redis_object *redis = (redis_object *)((char *)(object) - XtOffsetOf(redis_object, std));
+
+    zend_object_std_dtor(&redis->std TSRMLS_CC);
+    if (redis->sock) {
+        redis_sock_disconnect(redis->sock TSRMLS_CC);
+        redis_free_socket(redis->sock);
+    }
+}
+
+zend_object *
+create_redis_object(zend_class_entry *ce TSRMLS_DC)
+{
+    redis_object *redis = ecalloc(1, sizeof(redis_object) + zend_object_properties_size(ce));
+
+    redis->sock = NULL;
+
+    zend_object_std_init(&redis->std, ce TSRMLS_CC);
+    object_properties_init(&redis->std, ce);
+
+    memcpy(&redis_object_handlers, zend_get_std_object_handlers(), sizeof(redis_object_handlers));
+    redis_object_handlers.offset = XtOffsetOf(redis_object, std);
+    redis_object_handlers.free_obj = free_redis_object;
+    redis->std.handlers = &redis_object_handlers;
+
+    return &redis->std;
+}
+#endif
 
 static zend_always_inline int
 redis_sock_get_instance(zval *id, RedisSock **redis_sock TSRMLS_DC, int no_throw)
 {
-    zval *socket;
-    int resource_type = 0;
+    redis_object *redis;
 
-    if (Z_TYPE_P(id) == IS_OBJECT &&
-        (socket = zend_hash_str_find(Z_OBJPROP_P(id), "socket", sizeof("socket") - 1)) != NULL
-    ) {
+    if (Z_TYPE_P(id) == IS_OBJECT) {
 #if (PHP_MAJOR_VERSION < 7)
-        *redis_sock = (RedisSock *)zend_list_find(Z_LVAL_P(socket), &resource_type);
+        redis = (redis_object *)zend_objects_get_address(id TSRMLS_CC);
 #else
-        *redis_sock = NULL;
-
-        if (Z_RES_P(socket) != NULL) {
-            *redis_sock = (RedisSock *)Z_RES_P(socket)->ptr;
-            resource_type = Z_RES_P(socket)->type;
-        }
+        redis = (redis_object *)((char *)Z_OBJ_P(id) - XtOffsetOf(redis_object, std));
 #endif
-        if (*redis_sock && resource_type == le_redis_sock) {
+        if (redis->sock) {
+            *redis_sock = redis->sock;
             return 0;
         }
     }
@@ -756,6 +808,7 @@ PHP_MINIT_FUNCTION(redis)
     /* Redis class */
     INIT_CLASS_ENTRY(redis_class_entry, "Redis", redis_functions);
     redis_ce = zend_register_internal_class(&redis_class_entry TSRMLS_CC);
+    redis_ce->create_object = create_redis_object;
 
     /* RedisArray class */
     INIT_CLASS_ENTRY(redis_array_class_entry, "RedisArray", redis_array_functions);
@@ -790,12 +843,6 @@ PHP_MINIT_FUNCTION(redis)
 #else
         rediscluster_get_exception_base(0)
 #endif
-    );
-
-    le_redis_sock = zend_register_list_destructors_ex(
-        redis_destructor_redis_sock,
-        NULL,
-        redis_sock_name, module_number
     );
 
     /* Add shared class constants to Redis and RedisCluster objects */
@@ -913,13 +960,15 @@ PHP_METHOD(Redis, pconnect)
 }
 /* }}} */
 
-PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
-    zval *object, *socket;
+PHP_REDIS_API int
+redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
+{
+    zval *object;
     char *host = NULL, *persistent_id = NULL;
     zend_long port = -1, retry_interval = 0;
     strlen_t host_len, persistent_id_len;
     double timeout = 0.0;
-    RedisSock *redis_sock  = NULL;
+    redis_object *redis;
 
 #ifdef ZTS
     /* not sure how in threaded mode this works so disabled persistence at
@@ -955,40 +1004,24 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
         port = 6379;
     }
 
-    /* if there is a redis sock already we have to remove it from the list */
-    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 1) >= 0) {
-        if ((socket = zend_hash_str_find(Z_OBJPROP_P(object), "socket", sizeof("socket") - 1)) == NULL)
-        {
-            /* maybe there is a socket but the id isn't known.. what to do? */
-        } else {
-            /* The refcount should be decreased and destructor invoked */
 #if (PHP_MAJOR_VERSION < 7)
-            zend_list_delete(Z_LVAL_P(socket));
+    redis = (redis_object *)zend_objects_get_address(object TSRMLS_CC);
 #else
-            zend_list_close(Z_RES_P(socket));
+    redis = (redis_object *)((char *)Z_OBJ_P(object) - XtOffsetOf(redis_object, std));
 #endif
-        }
+    /* if there is a redis sock already we have to remove it */
+    if (redis->sock) {
+        redis_sock_disconnect(redis->sock TSRMLS_CC);
+        redis_free_socket(redis->sock);
     }
 
-    redis_sock = redis_sock_create(host, host_len, port, timeout, persistent,
+    redis->sock = redis_sock_create(host, host_len, port, timeout, persistent,
         persistent_id, retry_interval, 0);
 
-    if (redis_sock_server_open(redis_sock, 1 TSRMLS_CC) < 0) {
-        redis_free_socket(redis_sock);
+    if (redis_sock_server_open(redis->sock, 1 TSRMLS_CC) < 0) {
+        redis_free_socket(redis->sock);
         return FAILURE;
     }
-#if (PHP_MAJOR_VERSION < 7)
-    int id;
-#if PHP_VERSION_ID >= 50400
-    id = zend_list_insert(redis_sock, le_redis_sock TSRMLS_CC);
-#else
-    id = zend_list_insert(redis_sock, le_redis_sock);
-#endif
-    add_property_resource(object, "socket", id);
-#else
-    zval *id = zend_list_insert(redis_sock, le_redis_sock TSRMLS_CC);
-    add_property_resource(object, "socket", Z_RES_P(id));
-#endif
 
     return SUCCESS;
 }
