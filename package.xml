@@ -27,25 +27,25 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2017-01-16</date>
+ <date>2017-02-01</date>
  <version>
-  <release>3.1.1RC2</release>
-  <api>3.1.1RC2</api>
+  <release>3.1.1</release>
+  <api>3.1.1</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 3.1.1RC2
+    phpredis 3.1.1
 
     * Additional test updates for 32 bit systems (@remicollet)
     * ARM rounding issue in tests (@remicollet)
     * Use new zend_list_close instead of zend_list_delete when reconnecting.
     * Refactoring of redis_boolean_response_impl and redis_sock_write (@yatsukhnenko)
 
-    phpredis 3.1.1.RC1
+    phpredis 3.1.1
 
     This release contains mostly fixes for issues introduced when merging
     the php 5 and 7 codebase into a single branch.
@@ -116,19 +116,19 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <extsrcrelease/>
  <changelog>
    <release>
-   <stability><release>beta</release><api>beta</api></stability>
-   <version><release>3.1.1RC2</release><api>3.1.1RC2</api></version>
-   <date>2017-01-16</date>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>3.1.1</release><api>3.1.1</api></version>
+   <date>2017-02-01</date>
    <notes>
 
-    phpredis 3.1.1RC2
+    phpredis 3.1.1
 
     * Additional test updates for 32 bit systems (@remicollet)
     * ARM rounding issue in tests (@remicollet)
     * Use new zend_list_close instead of zend_list_delete when reconnecting.
     * Refactoring of redis_boolean_response_impl and redis_sock_write (@yatsukhnenko)
 
-    phpredis 3.1.1.RC1
+    phpredis 3.1.1
 
     This release contains mostly fixes for issues introduced when merging
     the php 5 and 7 codebase into a single branch.
