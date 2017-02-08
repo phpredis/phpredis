@@ -1176,6 +1176,8 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 		count = ra_rehash_scan(z_redis, &keys, &key_lens, "KEYS", "*" TSRMLS_CC);
 	}
 
+    if (count < 0) return;
+
 	/* callback */
 	if(z_cb && z_cb_cache) {
         ZVAL_NULL(&z_ret);
