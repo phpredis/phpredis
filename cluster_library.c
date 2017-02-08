@@ -1870,7 +1870,7 @@ PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisClust
                 RETVAL_TRUE;
                 break;
             case TYPE_BULK:
-                if (r->len > -1) {
+                if (r->len > 0) {
                     RETVAL_STRINGL(r->str, r->len);
                 } else {
                     RETVAL_NULL();

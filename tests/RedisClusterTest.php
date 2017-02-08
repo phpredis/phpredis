@@ -345,6 +345,21 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertTrue(1 === $this->redis->eval($scr,Array($str_key), 1));
         $this->assertTrue(1 === $this->redis->evalsha($sha,Array($str_key), 1));
     }
+    
+    public function testEvalBulkResponse() {
+        $str_key1 = uniqid() . '-' . rand(1,1000) . '{hash}';
+        $str_key2 = uniqid() . '-' . rand(1,1000) . '{hash}';
+
+        $this->redis->script($str_key1, 'flush');
+        $this->redis->script($str_key2, 'flush');
+
+        $scr = "return {KEYS[1],KEYS[2]}";
+
+        $result = $this->redis->eval($scr,Array($str_key1, $str_key2), 2);
+
+        $this->assertTrue($str_key1 === $result[0]);
+        $this->assertTrue($str_key2 === $result[1]);
+    }
 
     public function testEvalBulkEmptyResponse() {
         $str_key1 = uniqid() . '-' . rand(1,1000) . '{hash}';
