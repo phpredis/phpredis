@@ -1870,10 +1870,10 @@ PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisClust
                 RETVAL_TRUE;
                 break;
             case TYPE_BULK:
-                if (r->len > 0) {
-                    RETVAL_STRINGL(r->str, r->len);
-                } else {
+                if (r->len < 0) {
                     RETVAL_NULL();
+                } else {
+                    RETVAL_STRINGL(r->str, r->len);
                 }
                 break;
             case TYPE_MULTIBULK:
@@ -1900,8 +1900,12 @@ PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisClust
                 add_next_index_bool(&c->multi_resp, 1);
                 break;
             case TYPE_BULK:
-                add_next_index_stringl(&c->multi_resp, r->str, r->len);
-                efree(r->str);
+                if (r->len < 0) {
+                    add_next_index_null(&c->multi_resp);
+                } else {
+                    add_next_index_stringl(&c->multi_resp, r->str, r->len);
+                    efree(r->str);
+                }
                 break;
             case TYPE_MULTIBULK:
                 cluster_mbulk_variant_resp(r, &c->multi_resp);
