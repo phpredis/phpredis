@@ -923,54 +923,50 @@ PHP_REDIS_API void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
 PHP_REDIS_API void
 redis_parse_info_response(char *response, zval *z_ret)
 {
-    char *key, *value, *p, *cur, *pos;
-    int is_numeric;
+    char *cur, *pos;
 
     array_init(z_ret);
 
     cur = response;
     while(1) {
         /* skip comments and empty lines */
-        if(*cur == '#' || *cur == '\r') {
-            if(!(cur = strchr(cur, '\n')))
+        if (*cur == '#' || *cur == '\r') {
+            if ((cur = strstr(cur, _NL)) == NULL) {
                 break;
-            cur++;
+            }
+            cur += 2;
             continue;
         }
 
         /* key */
-        pos = strchr(cur, ':');
-        if(pos == NULL) {
+        if ((pos = strchr(cur, ':')) == NULL) {
             break;
         }
-        key = estrndup(cur, pos - cur);
+        char *key = cur;
+        int key_len = pos - cur;
+        key[key_len] = '\0';
 
         /* value */
         cur = pos + 1;
-        pos = strchr(cur, '\r');
-        if(pos == NULL) {
-            efree(key);
+        if ((pos = strstr(cur, _NL)) == NULL) {
             break;
         }
-        value = estrndup(cur, pos - cur);
-        pos += 2; /* \r, \n */
-        cur = pos;
+        char *value = cur;
+        int value_len = pos - cur;
+        value[value_len] = '\0';
 
-        is_numeric = 1;
-        for(p = value; *p; ++p) {
-            if(*p < '0' || *p > '9') {
-                is_numeric = 0;
-                break;
-            }
-        }
-
-        if(is_numeric == 1) {
-            add_assoc_long(z_ret, key, atol(value));
+        double dval;
+        zend_long lval;
+        zend_uchar type = is_numeric_string(value, value_len, &lval, &dval, 0);
+        if (type == IS_LONG) {
+            add_assoc_long_ex(z_ret, key, key_len, lval);
+        } else if (type == IS_DOUBLE) {
+            add_assoc_double_ex(z_ret, key, key_len, dval);
         } else {
-            add_assoc_string(z_ret, key, value);
+            add_assoc_stringl_ex(z_ret, key, key_len, value, value_len);
         }
-        efree(value);
-        efree(key);
+
+        cur = pos + 2; /* \r, \n */
     }
 }
 
