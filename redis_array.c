@@ -185,7 +185,8 @@ create_redis_array_object(zend_class_entry *ce TSRMLS_DC)
 {
     redis_array_object *obj = ecalloc(1, sizeof(redis_array_object) + zend_object_properties_size(ce));
 
-    memset(obj, 0, sizeof(redis_array_object));
+    obj->ra = NULL;
+
     zend_object_std_init(&obj->std, ce TSRMLS_CC);
     object_properties_init(&obj->std, ce);
 
@@ -201,8 +202,8 @@ create_redis_array_object(zend_class_entry *ce TSRMLS_DC)
 /**
  * redis_array_get
  */
-PHP_REDIS_API int
-redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
+PHP_REDIS_API RedisArray *
+redis_array_get(zval *id TSRMLS_DC)
 {
     redis_array_object *obj;
 
@@ -213,11 +214,10 @@ redis_array_get(zval *id, RedisArray **ra TSRMLS_DC)
         obj = (redis_array_object *)((char *)Z_OBJ_P(id) - XtOffsetOf(redis_array_object, std));
 #endif
         if (obj->ra) {
-            *ra = obj->ra;
-            return 0;
+            return obj->ra;
         }
     }
-    return -1;
+    return NULL;
 }
 
 uint32_t rcrc32(const char *s, size_t sz) {
@@ -486,7 +486,7 @@ PHP_METHOD(RedisArray, __call)
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
 		RETURN_FALSE;
 	}
 
@@ -504,7 +504,7 @@ PHP_METHOD(RedisArray, _hosts)
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
 		RETURN_FALSE;
 	}
 
@@ -528,7 +528,7 @@ PHP_METHOD(RedisArray, _target)
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
 		RETURN_FALSE;
 	}
 
@@ -553,7 +553,7 @@ PHP_METHOD(RedisArray, _instance)
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
 		RETURN_FALSE;
 	}
 
@@ -575,7 +575,7 @@ PHP_METHOD(RedisArray, _function)
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
 		RETURN_FALSE;
 	}
 
@@ -593,7 +593,7 @@ PHP_METHOD(RedisArray, _distributor)
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
 		RETURN_FALSE;
 	}
 
@@ -613,7 +613,7 @@ PHP_METHOD(RedisArray, _rehash)
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
 		RETURN_FALSE;
 	}
 
@@ -635,7 +635,7 @@ static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *metho
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
 		RETURN_FALSE;
 	}
 
@@ -704,7 +704,7 @@ PHP_METHOD(RedisArray, keys)
 	}
 
 	/* Make sure we can grab our RedisArray object */
-	if(redis_array_get(object, &ra TSRMLS_CC) < 0) {
+    if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
 		RETURN_FALSE;
 	}
 
@@ -747,7 +747,7 @@ PHP_METHOD(RedisArray, getOption)
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
 		RETURN_FALSE;
 	}
 
@@ -786,7 +786,7 @@ PHP_METHOD(RedisArray, setOption)
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
 		RETURN_FALSE;
 	}
 
@@ -825,7 +825,7 @@ PHP_METHOD(RedisArray, select)
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
 		RETURN_FALSE;
 	}
 
@@ -912,7 +912,7 @@ PHP_METHOD(RedisArray, mget)
 	HashTable *h_keys;
 	zval **argv;
 
-    if (redis_array_get(getThis(), &ra TSRMLS_CC) < 0) {
+    if ((ra = redis_array_get(getThis() TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
     }
 
@@ -1066,7 +1066,7 @@ PHP_METHOD(RedisArray, mset)
     zend_string *zkey;
     ulong idx;
 
-    if (redis_array_get(getThis(), &ra TSRMLS_CC) < 0) {
+    if ((ra = redis_array_get(getThis() TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
     }
 
@@ -1184,7 +1184,7 @@ PHP_METHOD(RedisArray, del)
 	long total = 0;
 	int free_zkeys = 0;
 
-    if (redis_array_get(getThis(), &ra TSRMLS_CC) < 0) {
+    if ((ra = redis_array_get(getThis() TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
     }
 	/* Multi/exec support */
@@ -1325,7 +1325,7 @@ PHP_METHOD(RedisArray, multi)
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
 		RETURN_FALSE;
 	}
 
@@ -1359,7 +1359,7 @@ PHP_METHOD(RedisArray, exec)
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0 || !ra->z_multi_exec) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL || !ra->z_multi_exec) {
 		RETURN_FALSE;
 	}
 
@@ -1380,7 +1380,7 @@ PHP_METHOD(RedisArray, discard)
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0 || !ra->z_multi_exec) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL || !ra->z_multi_exec) {
 		RETURN_FALSE;
 	}
 
@@ -1401,7 +1401,7 @@ PHP_METHOD(RedisArray, unwatch)
 		RETURN_FALSE;
 	}
 
-	if (redis_array_get(object, &ra TSRMLS_CC) < 0 || !ra->z_multi_exec) {
+	if ((ra = redis_array_get(object TSRMLS_CC)) == NULL || !ra->z_multi_exec) {
 		RETURN_FALSE;
 	}
 
