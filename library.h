@@ -59,7 +59,7 @@ PHP_REDIS_API int redis_unsubscribe_response(INTERNAL_FUNCTION_PARAMETERS,
 PHP_REDIS_API int redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz TSRMLS_DC);
 PHP_REDIS_API void redis_stream_close(RedisSock *redis_sock TSRMLS_DC);
 PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC);
-PHP_REDIS_API int redis_sock_get(zval *id, RedisSock **redis_sock TSRMLS_DC, int nothrow);
+PHP_REDIS_API RedisSock *redis_sock_get(zval *id TSRMLS_DC, int nothrow);
 PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock);
 PHP_REDIS_API void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 PHP_REDIS_API void redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len);
