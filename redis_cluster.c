@@ -282,22 +282,18 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
     redisCluster *cluster;
 
     // Allocate our actual struct
-    cluster = emalloc(sizeof(redisCluster));
-    memset(cluster, 0, sizeof(redisCluster));
+    cluster = ecalloc(1, sizeof(redisCluster));
 #else
 zend_object *
 create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
     redisCluster *cluster;
 
     // Allocate our actual struct
-    cluster = emalloc(sizeof(redisCluster) + sizeof(zval) * (class_type->default_properties_count - 1));
+    cluster = ecalloc(1, sizeof(redisCluster) + sizeof(zval) * (class_type->default_properties_count - 1));
 #endif
     
     // We're not currently subscribed anywhere
     cluster->subscribed_slot = -1;
-
-    // Assume we're up initially
-    cluster->clusterdown = 0;
 
     // Allocate our RedisSock we'll use to store prefix/serialization flags
     cluster->flags = ecalloc(1, sizeof(RedisSock));
