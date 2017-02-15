@@ -2036,7 +2036,7 @@ PHP_REDIS_API void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
 
     // Return our array
     if(CLUSTER_IS_ATOMIC(c)) {
-        RETVAL_ZVAL(z_result, 1, 0);
+        RETVAL_ZVAL(z_result, 0, 1);
     } else {
         add_next_index_zval(&c->multi_resp, z_result);
     }
