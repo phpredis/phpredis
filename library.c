@@ -140,10 +140,10 @@ PHP_REDIS_API void redis_stream_close(RedisSock *redis_sock TSRMLS_DC) {
     }
 }
 
-PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
+PHP_REDIS_API int
+redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
 {
-    int eof;
-    int count = 0;
+    int count;
 
     if (!redis_sock->stream) {
         return -1;
@@ -164,24 +164,24 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
      * Bug fix of php: https://github.com/php/php-src/pull/1456
      * */
     errno = 0;
-    eof = php_stream_eof(redis_sock->stream);
-    for (; eof; count++) {
-        if((MULTI == redis_sock->mode) || redis_sock->watching || count == 10) {
-            /* too many failures */
-            if(redis_sock->stream) { /* close stream if still here */
-                REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
-            }
-            if(!no_throw) {
-                zend_throw_exception(redis_exception_ce, "Connection lost", 
-                    0 TSRMLS_CC);
-            }
-        return -1;
+    if (php_stream_eof(redis_sock->stream) == 0) {
+        /* Success */
+        return 0;
+    } else if (redis_sock->mode == MULTI || redis_sock->watching) {
+        REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
+        if (!no_throw) {
+            zend_throw_exception(redis_exception_ce,
+                "Connection lost and socket is in MULTI/watching mode",
+                0 TSRMLS_CC);
         }
-        if(redis_sock->stream) { /* close existing stream before reconnecting */
+        return -1;
+    }
+    /* TODO: configurable max retry count */
+    for (count = 0; count < 10; ++count) {
+        /* close existing stream before reconnecting */
+        if (redis_sock->stream) {
             redis_stream_close(redis_sock TSRMLS_CC);
             redis_sock->stream = NULL;
-            redis_sock->mode   = ATOMIC;
-            redis_sock->watching = 0;
         }
         // Wait for a while before trying to reconnect
         if (redis_sock->retry_interval) {
@@ -189,28 +189,32 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
             long retry_interval = (count ? redis_sock->retry_interval : (php_rand(TSRMLS_C) % redis_sock->retry_interval));
             usleep(retry_interval);
         }
-        redis_sock_connect(redis_sock TSRMLS_CC); /* reconnect */
-        if(redis_sock->stream) { /*  check for EOF again. */
+        /* reconnect */
+        if (redis_sock_connect(redis_sock TSRMLS_CC) == 0) {
+            /* check for EOF again. */
             errno = 0;
-            eof = php_stream_eof(redis_sock->stream);
+            if (php_stream_eof(redis_sock->stream) == 0) {
+                /* If we're using a password, attempt a reauthorization */
+                if (redis_sock->auth && resend_auth(redis_sock TSRMLS_CC) != 0) {
+                    break;
+                }
+                /* If we're using a non-zero db, reselect it */
+                if (redis_sock->dbNumber && reselect_db(redis_sock TSRMLS_CC) != 0) {
+                    break;
+                }
+                /* Success */
+                return 0;
+            }
         }
     }
-
-    /* We've connected if we have a count */
-    if (count) {
-        /* If we're using a password, attempt a reauthorization */
-        if (redis_sock->auth && resend_auth(redis_sock TSRMLS_CC) != 0) {
-            return -1;
-        }
-
-        /* If we're using a non-zero db, reselect it */
-        if (redis_sock->dbNumber && reselect_db(redis_sock TSRMLS_CC) != 0) {
-            return -1;
-        }
+    /* close stream if still here */
+    if (redis_sock->stream) {
+        REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
     }
-
-    /* Success */
-    return 0;
+    if (!no_throw) {
+        zend_throw_exception(redis_exception_ce, "Connection lost", 0 TSRMLS_CC);
+    }
+    return -1;
 }
 
 
