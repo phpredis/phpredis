@@ -1020,6 +1020,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 
     if (redis_sock_server_open(redis->sock, 1 TSRMLS_CC) < 0) {
         redis_free_socket(redis->sock);
+        redis->sock = NULL;
         return FAILURE;
     }
 
