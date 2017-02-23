@@ -350,7 +350,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	ra->pconnect = b_pconnect;
 	ra->connect_timeout = connect_timeout;
 
-    if (ra_load_hosts(ra, hosts, retry_interval, b_lazy_connect TSRMLS_CC) == NULL) {
+    if (ra_load_hosts(ra, hosts, retry_interval, b_lazy_connect TSRMLS_CC) == NULL || !ra->count) {
         for (i = 0; i < ra->count; ++i) {
             zval_dtor(&ra->redis[i]);
             efree(ra->hosts[i]);
