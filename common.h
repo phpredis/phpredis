@@ -467,36 +467,12 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_ERR_SYNC_MSG    "MASTERDOWN Link with MASTER is down and slave-serve-stale-data is set to 'no'"
 #define REDIS_ERR_SYNC_KW     "MASTERDOWN"
 
-#define IF_MULTI() if(redis_sock->mode == MULTI)
-#define IF_MULTI_OR_ATOMIC() if(redis_sock->mode == MULTI || redis_sock->mode == ATOMIC)\
-
-#define IF_MULTI_OR_PIPELINE() if(redis_sock->mode == MULTI || redis_sock->mode == PIPELINE)
-#define IF_PIPELINE() if(redis_sock->mode == PIPELINE)
-#define IF_NOT_PIPELINE() if(redis_sock->mode != PIPELINE)
-#define IF_NOT_MULTI() if(redis_sock->mode != MULTI)
-#define IF_NOT_ATOMIC() if(redis_sock->mode != ATOMIC)
-#define IF_ATOMIC() if(redis_sock->mode == ATOMIC)
-#define ELSE_IF_MULTI() else IF_MULTI() { \
-    if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) { \
-        RETURN_ZVAL(getThis(), 1, 0);\
-    } else { \
-        RETURN_FALSE; \
-    } \
-}
-
-#define ELSE_IF_PIPELINE() else IF_PIPELINE() { \
-    RETURN_ZVAL(getThis(), 1, 0);\
-}
-
-#define MULTI_RESPONSE(callback) IF_MULTI_OR_PIPELINE() { \
-    fold_item *f1, *current; \
-    f1 = malloc(sizeof(fold_item)); \
-    f1->fun = (void *)callback; \
-    f1->next = NULL; \
-    current = redis_sock->current;\
-    if(current) current->next = f1; \
-    redis_sock->current = f1; \
-  }
+#define IF_ATOMIC() if (redis_sock->mode == ATOMIC)
+#define IF_NOT_ATOMIC() if (redis_sock->mode != ATOMIC)
+#define IF_MULTI() if (redis_sock->mode == MULTI)
+#define IF_NOT_MULTI() if (redis_sock->mode != MULTI)
+#define IF_PIPELINE() if (redis_sock->mode == PIPELINE)
+#define IF_NOT_PIPELINE() if (redis_sock->mode != PIPELINE)
 
 #define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) request_item *tmp; \
     struct request_item *current_request;\
@@ -521,7 +497,7 @@ typedef enum _PUBSUB_TYPE {
 }
 
 #define REDIS_SAVE_CALLBACK(callback, closure_context) \
-    IF_MULTI_OR_PIPELINE() { \
+    IF_NOT_ATOMIC() { \
         fold_item *f1, *current; \
         f1 = malloc(sizeof(fold_item)); \
         f1->fun = (void *)callback; \
