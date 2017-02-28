@@ -2445,25 +2445,18 @@ PHP_REDIS_API int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC) {
     return ret;
 }
 
-PHP_REDIS_API void fold_this_item(INTERNAL_FUNCTION_PARAMETERS, fold_item *item,
-                           RedisSock *redis_sock, zval *z_tab)
-{
-    item->fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, item->ctx
-        TSRMLS_CC);
-}
-
 PHP_REDIS_API int
 redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
                                            RedisSock *redis_sock, zval *z_tab,
                                            int numElems)
 {
+    fold_item *fi;
 
-    fold_item *current;
-    for (current = redis_sock->head; current; current = current->next) {
-        fold_this_item(INTERNAL_FUNCTION_PARAM_PASSTHRU, current, redis_sock,
-            z_tab);
+    for (fi = redis_sock->head; fi; fi = fi->next) {
+        fi->fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab,
+            fi->ctx TSRMLS_CC);
     }
-    redis_sock->current = current;
+    redis_sock->current = fi;
     return 0;
 }
 
