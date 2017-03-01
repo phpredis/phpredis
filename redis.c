@@ -2606,18 +2606,18 @@ PHP_METHOD(Redis, exec)
     }
 }
 
-PHP_REDIS_API int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC) {
+PHP_REDIS_API int
+redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC)
+{
     char *resp;
-    int resp_len, ret = 0;
+    int resp_len, ret = FAILURE;
 
-    if ((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC)) == NULL) {
-        return 0;
+    if ((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC)) != NULL) {
+        if (strncmp(resp, "+QUEUED", 7) == 0) {
+            ret = SUCCESS;
+        }
+        efree(resp);
     }
-
-    if(strncmp(resp, "+QUEUED", 7) == 0) {
-        ret = 1;
-    }
-    efree(resp);
     return ret;
 }
 
