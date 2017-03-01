@@ -474,21 +474,20 @@ typedef enum _PUBSUB_TYPE {
 #define IF_PIPELINE() if (redis_sock->mode == PIPELINE)
 #define IF_NOT_PIPELINE() if (redis_sock->mode != PIPELINE)
 
-#define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) request_item *tmp; \
-    struct request_item *current_request;\
-    tmp = malloc(sizeof(request_item));\
+#define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) do { \
+    request_item *tmp = malloc(sizeof(request_item)); \
     tmp->request_str = calloc(cmd_len, 1);\
     memcpy(tmp->request_str, cmd, cmd_len);\
     tmp->request_size = cmd_len;\
     tmp->next = NULL;\
-    current_request = redis_sock->pipeline_current; \
-    if(current_request) {\
-        current_request->next = tmp;\
+    if (redis_sock->pipeline_current) { \
+        redis_sock->pipeline_current->next = tmp; \
     } \
     redis_sock->pipeline_current = tmp; \
     if(NULL == redis_sock->pipeline_head) { \
         redis_sock->pipeline_head = redis_sock->pipeline_current;\
-    }
+    } \
+} while (0)
 
 #define SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len) \
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) { \
@@ -496,29 +495,27 @@ typedef enum _PUBSUB_TYPE {
     RETURN_FALSE; \
 }
 
-#define REDIS_SAVE_CALLBACK(callback, closure_context) \
-    IF_NOT_ATOMIC() { \
-        fold_item *f1, *current; \
-        f1 = malloc(sizeof(fold_item)); \
-        f1->fun = (void *)callback; \
-        f1->ctx = closure_context; \
-        f1->next = NULL; \
-        current = redis_sock->current;\
-        if(current) current->next = f1; \
-        redis_sock->current = f1; \
-        if(NULL == redis_sock->head) { \
-            redis_sock->head = redis_sock->current;\
-        }\
-}
+#define REDIS_SAVE_CALLBACK(callback, closure_context) do { \
+    fold_item *f1 = malloc(sizeof(fold_item)); \
+    f1->fun = (void *)callback; \
+    f1->ctx = closure_context; \
+    f1->next = NULL; \
+    if (redis_sock->current) { \
+        redis_sock->current->next = f1; \
+    } \
+    redis_sock->current = f1; \
+    if (NULL == redis_sock->head) { \
+        redis_sock->head = redis_sock->current; \
+    } \
+} while (0)
 
 #define REDIS_ELSE_IF_MULTI(function, closure_context) \
     else IF_MULTI() { \
-        if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) {\
-            REDIS_SAVE_CALLBACK(function, closure_context); \
-            RETURN_ZVAL(getThis(), 1, 0);\
-        } else {\
-            RETURN_FALSE;\
-        }\
+        if (redis_response_enqueued(redis_sock TSRMLS_CC) != SUCCESS) { \
+            RETURN_FALSE; \
+        } \
+        REDIS_SAVE_CALLBACK(function, closure_context); \
+        RETURN_ZVAL(getThis(), 1, 0);\
 }
 
 #define REDIS_ELSE_IF_PIPELINE(function, closure_context) \
