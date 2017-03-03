@@ -509,21 +509,6 @@ typedef enum _PUBSUB_TYPE {
     } \
 } while (0)
 
-#define REDIS_ELSE_IF_MULTI(function, closure_context) \
-    else IF_MULTI() { \
-        if (redis_response_enqueued(redis_sock TSRMLS_CC) != SUCCESS) { \
-            RETURN_FALSE; \
-        } \
-        REDIS_SAVE_CALLBACK(function, closure_context); \
-        RETURN_ZVAL(getThis(), 1, 0);\
-}
-
-#define REDIS_ELSE_IF_PIPELINE(function, closure_context) \
-    else IF_PIPELINE() { \
-        REDIS_SAVE_CALLBACK(function, closure_context); \
-        RETURN_ZVAL(getThis(), 1, 0); \
-}
-
 #define REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len) \
     IF_PIPELINE() { \
         PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len); \
@@ -533,11 +518,17 @@ typedef enum _PUBSUB_TYPE {
     efree(cmd);
 
 #define REDIS_PROCESS_RESPONSE_CLOSURE(function, closure_context) \
-    REDIS_ELSE_IF_MULTI(function, closure_context) \
-    REDIS_ELSE_IF_PIPELINE(function, closure_context);
+    IF_MULTI() { \
+        if (redis_response_enqueued(redis_sock TSRMLS_CC) != SUCCESS) { \
+            RETURN_FALSE; \
+        } \
+    } \
+    REDIS_SAVE_CALLBACK(function, closure_context); \
+    RETURN_ZVAL(getThis(), 1, 0); \
 
-#define REDIS_PROCESS_RESPONSE(function) \
-    REDIS_PROCESS_RESPONSE_CLOSURE(function, NULL)
+#define REDIS_PROCESS_RESPONSE(function) else { \
+    REDIS_PROCESS_RESPONSE_CLOSURE(function, NULL) \
+}
 
 /* Clear redirection info */
 #define REDIS_MOVED_CLEAR(redis_sock) \
@@ -557,8 +548,9 @@ typedef enum _PUBSUB_TYPE {
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
     IF_ATOMIC() { \
         resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx); \
-    } \
-    REDIS_PROCESS_RESPONSE_CLOSURE(resp_func,ctx);
+    } else { \
+        REDIS_PROCESS_RESPONSE_CLOSURE(resp_func, ctx) \
+    }
 
 /* Process a command but with a specific command building function 
  * and keyword which is passed to us*/
@@ -572,8 +564,9 @@ typedef enum _PUBSUB_TYPE {
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
     IF_ATOMIC() { \
         resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx); \
-    } \
-    REDIS_PROCESS_RESPONSE_CLOSURE(resp_func,ctx);
+    } else { \
+        REDIS_PROCESS_RESPONSE_CLOSURE(resp_func, ctx) \
+    }
 
 #define REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock) \
     redis_stream_close(redis_sock TSRMLS_CC); \
