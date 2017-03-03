@@ -658,7 +658,4 @@ typedef struct {
 } redis_object;
 #endif
 
-void
-free_reply_callbacks(zval *z_this, RedisSock *redis_sock);
-
 #endif
