@@ -424,6 +424,30 @@ static int send_discard_static(RedisSock *redis_sock TSRMLS_DC) {
     return result;
 }
 
+static void
+free_reply_callbacks(RedisSock *redis_sock)
+{
+    fold_item *fi;
+    request_item *ri;
+
+    for (fi = redis_sock->head; fi; ) {
+        fold_item *fi_next = fi->next;
+        free(fi);
+        fi = fi_next;
+    }
+    redis_sock->head = NULL;
+    redis_sock->current = NULL;
+
+    for (ri = redis_sock->pipeline_head; ri; ) {
+        struct request_item *ri_next = ri->next;
+        free(ri->request_str);
+        free(ri);
+        ri = ri_next;
+    }
+    redis_sock->pipeline_head = NULL;
+    redis_sock->pipeline_current = NULL;
+}
+
 #if (PHP_MAJOR_VERSION < 7)
 void
 free_redis_object(void *object TSRMLS_DC)
@@ -750,7 +774,7 @@ PHP_METHOD(Redis,__destruct) {
         // Discard any multi commands, and free any callbacks that have been
         // queued
         send_discard_static(redis_sock TSRMLS_CC);
-        free_reply_callbacks(getThis(), redis_sock);
+        free_reply_callbacks(redis_sock);
     }
 }
 
@@ -2266,7 +2290,7 @@ PHP_METHOD(Redis, multi)
         RETURN_FALSE;
     }
     IF_PIPELINE() {
-        free_reply_callbacks(getThis(), redis_sock);
+        free_reply_callbacks(redis_sock);
         RETURN_ZVAL(getThis(), 1, 0);
     }
 }
@@ -2300,7 +2324,7 @@ redis_sock_read_multibulk_pipeline_reply(INTERNAL_FUNCTION_PARAMETERS,
         redis_sock, return_value, 0);
 
     /* free allocated function/request memory */
-    free_reply_callbacks(getThis(), redis_sock);
+    free_reply_callbacks(redis_sock);
 
     return 0;
 
@@ -2336,30 +2360,6 @@ PHP_REDIS_API int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAME
     return 0;
 }
 
-void
-free_reply_callbacks(zval *z_this, RedisSock *redis_sock) {
-
-    fold_item *fi;
-    fold_item *head = redis_sock->head;
-    request_item *ri;
-
-    for(fi = head; fi; ) {
-        fold_item *fi_next = fi->next;
-        free(fi);
-        fi = fi_next;
-    }
-    redis_sock->head = NULL;
-    redis_sock->current = NULL;
-
-    for(ri = redis_sock->pipeline_head; ri; ) {
-        struct request_item *ri_next = ri->next;
-        free(ri->request_str);
-        free(ri);
-        ri = ri_next;
-    }
-    redis_sock->pipeline_head = NULL;
-    redis_sock->pipeline_current = NULL;
-}
 
 /* exec */
 PHP_METHOD(Redis, exec)
@@ -2387,12 +2387,12 @@ PHP_METHOD(Redis, exec)
            redis_sock) < 0)
         {
             zval_dtor(return_value);
-            free_reply_callbacks(object, redis_sock);
+            free_reply_callbacks(redis_sock);
             redis_sock->mode = ATOMIC;
             redis_sock->watching = 0;
             RETURN_FALSE;
         }
-        free_reply_callbacks(object, redis_sock);
+        free_reply_callbacks(redis_sock);
         redis_sock->mode = ATOMIC;
         redis_sock->watching = 0;
     }
@@ -2426,7 +2426,7 @@ PHP_METHOD(Redis, exec)
             array_init(return_value);
         }
         redis_sock->mode = ATOMIC;
-        free_reply_callbacks(object, redis_sock);
+        free_reply_callbacks(redis_sock);
     }
 }
 
@@ -2478,7 +2478,7 @@ PHP_METHOD(Redis, pipeline)
         /* NB : we keep the function fold, to detect the last function.
          * We need the response format of the n - 1 command. So, we can delete
          * when n > 2, the { 1 .. n - 2} commands */
-        free_reply_callbacks(getThis(), redis_sock);
+        free_reply_callbacks(redis_sock);
     }
     RETURN_ZVAL(getThis(), 1, 0);
 }
