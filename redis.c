@@ -206,6 +206,22 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_linsert, 0, 0, 4)
     ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sadd_array, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_ARRAY_INFO(0, options, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_smove, 0, 0, 3)
+    ZEND_ARG_INFO(0, src)
+    ZEND_ARG_INFO(0, dst)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_srand_member, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, count)
+ZEND_END_ARG_INFO()
+
 /**
  * Argument info for the SCAN proper
  */
@@ -283,12 +299,12 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, lSet, arginfo_lset, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lInsert, arginfo_linsert, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sAdd, arginfo_key_value, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sAddArray, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sAddArray, arginfo_sadd_array, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sSize, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sRemove, arginfo_key_value, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sMove, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sMove, arginfo_smove, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sPop, arginfo_key, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sRandMember, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sRandMember, arginfo_srand_member, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sContains, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sMembers, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sInter, NULL, ZEND_ACC_PUBLIC)
