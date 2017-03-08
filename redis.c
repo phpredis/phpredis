@@ -2250,9 +2250,8 @@ PHP_METHOD(Redis, multi)
 {
 
     RedisSock *redis_sock;
-    char *cmd;
-    int response_len, cmd_len;
-    char * response;
+    char *resp, *cmd;
+    int resp_len, cmd_len;
     zval *object;
     zend_long multi_value = MULTI;
 
@@ -2269,37 +2268,44 @@ PHP_METHOD(Redis, multi)
         RETURN_FALSE;
     }
 
-    if(multi_value == MULTI || multi_value == PIPELINE) {
-        redis_sock->mode = multi_value;
+    if (multi_value == PIPELINE) {
+        IF_PIPELINE() {
+            php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                "Already in pipeline mode");
+        } else IF_MULTI() {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "Can't activate pipeline in multi mode!");
+            RETURN_FALSE;
+        } else {
+            free_reply_callbacks(redis_sock);
+            redis_sock->mode = PIPELINE;
+        }
+    } else if (multi_value == MULTI) {
+        IF_MULTI() {
+            php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                "Already in multi mode");
+        } else IF_PIPELINE() {
+            php_error_docref(NULL TSRMLS_CC, E_ERROR,
+                "Can't activate multi in pipeline mode!");
+            RETURN_FALSE;
+        } else {
+            cmd_len = redis_cmd_format_static(&cmd, "MULTI", "");
+            SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
+            efree(cmd);
+
+            if ((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC)) == NULL) {
+                RETURN_FALSE;
+            } else if (strncmp(resp, "+OK", 3) != 0) {
+                efree(resp);
+                RETURN_FALSE;
+            }
+            efree(resp);
+            redis_sock->mode = MULTI;
+        }
     } else {
         RETURN_FALSE;
     }
-
-    redis_sock->current = NULL;
-
-    IF_MULTI() {
-        cmd_len = redis_cmd_format_static(&cmd, "MULTI", "");
-
-	SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
-        efree(cmd);
-
-        if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC))
-                                        == NULL)
-        {
-            RETURN_FALSE;
-        }
-
-        if(strncmp(response, "+OK", 3) == 0) {
-            efree(response);
-            RETURN_ZVAL(getThis(), 1, 0);
-        }
-        efree(response);
-        RETURN_FALSE;
-    }
-    IF_PIPELINE() {
-        free_reply_callbacks(redis_sock);
-        RETURN_ZVAL(getThis(), 1, 0);
-    }
+    RETURN_ZVAL(getThis(), 1, 0);
 }
 
 /* discard */
@@ -2463,13 +2469,19 @@ PHP_METHOD(Redis, pipeline)
         RETURN_FALSE;
     }
 
-    IF_NOT_PIPELINE() {
-        redis_sock->mode = PIPELINE;
-
+    IF_MULTI() {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+            "Can't activate pipeline in multi mode!");
+        RETURN_FALSE;
+    } else IF_PIPELINE() {
+       php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "Already in pipeline mode");
+    } else {
         /* NB : we keep the function fold, to detect the last function.
          * We need the response format of the n - 1 command. So, we can delete
          * when n > 2, the { 1 .. n - 2} commands */
         free_reply_callbacks(redis_sock);
+        redis_sock->mode = PIPELINE;
     }
     RETURN_ZVAL(getThis(), 1, 0);
 }
