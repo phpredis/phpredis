@@ -265,26 +265,10 @@ PHP_REDIS_API int redis_sock_read_multibulk_multi_reply_loop(
     INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, 
     int numElems);
 
-/* pipeline */
-PHP_REDIS_API request_item* get_pipeline_head(zval *object);
-PHP_REDIS_API void set_pipeline_head(zval *object, request_item *head);
-PHP_REDIS_API request_item* get_pipeline_current(zval *object);
-PHP_REDIS_API void set_pipeline_current(zval *object, request_item *current);
-
 #ifndef _MSC_VER
 ZEND_BEGIN_MODULE_GLOBALS(redis)
 ZEND_END_MODULE_GLOBALS(redis)
 #endif
-
-struct redis_queued_item {
-    /* reading function */
-    zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, ...);
-
-    char *cmd; 
-    int cmd_len;
-
-    struct redis_queued_item *next;
-};
 
 extern zend_module_entry redis_module_entry;
 
