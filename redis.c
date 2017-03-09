@@ -605,7 +605,6 @@ static void
 free_reply_callbacks(RedisSock *redis_sock)
 {
     fold_item *fi;
-    request_item *ri;
 
     for (fi = redis_sock->head; fi; ) {
         fold_item *fi_next = fi->next;
@@ -614,15 +613,6 @@ free_reply_callbacks(RedisSock *redis_sock)
     }
     redis_sock->head = NULL;
     redis_sock->current = NULL;
-
-    for (ri = redis_sock->pipeline_head; ri; ) {
-        struct request_item *ri_next = ri->next;
-        free(ri->request_str);
-        free(ri);
-        ri = ri_next;
-    }
-    redis_sock->pipeline_head = NULL;
-    redis_sock->pipeline_current = NULL;
 }
 
 #if (PHP_MAJOR_VERSION < 7)
@@ -2570,36 +2560,24 @@ PHP_METHOD(Redis, exec)
     }
 
     IF_PIPELINE() {
-        char *request = NULL;
-        int total = 0, offset = 0;
-        struct request_item *ri;
-
-        /* compute the total request size */
-        for(ri = redis_sock->pipeline_head; ri; ri = ri->next) {
-            total += ri->request_size;
-        }
-        if (total) {
-            request = emalloc(total + 1);
-            /* concatenate individual elements one by one in the target buffer */
-            for (ri = redis_sock->pipeline_head; ri; ri = ri->next) {
-                memcpy(request + offset, ri->request_str, ri->request_size);
-                offset += ri->request_size;
-            }
-            request[total] = '\0';
-            if (redis_sock_write(redis_sock, request, total TSRMLS_CC) < 0) {
+        if (redis_sock->pipeline_cmd == NULL) {
+            /* Empty array when no command was run. */
+            array_init(return_value);
+        } else {
+            if (redis_sock_write(redis_sock, redis_sock->pipeline_cmd,
+                    redis_sock->pipeline_len TSRMLS_CC) < 0) {
                 ZVAL_FALSE(return_value);
             } else {
                 array_init(return_value);
                 redis_sock_read_multibulk_multi_reply_loop(
                     INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, return_value, 0);
             }
-            efree(request);
-        } else {
-            /* Empty array when no command was run. */
-            array_init(return_value);
+            efree(redis_sock->pipeline_cmd);
+            redis_sock->pipeline_cmd = NULL;
+            redis_sock->pipeline_len = 0;
         }
-        redis_sock->mode = ATOMIC;
         free_reply_callbacks(redis_sock);
+        redis_sock->mode = ATOMIC;
     }
 }
 
