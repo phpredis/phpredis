@@ -1522,8 +1522,9 @@ redis_sock_create(char *host, int host_len, unsigned short port, double timeout,
     redis_sock->mode = ATOMIC;
     redis_sock->head = NULL;
     redis_sock->current = NULL;
-    redis_sock->pipeline_head = NULL;
-    redis_sock->pipeline_current = NULL;
+
+    redis_sock->pipeline_cmd = NULL;
+    redis_sock->pipeline_len = 0;
 
     redis_sock->err = NULL;
     redis_sock->err_len = 0;
@@ -1938,6 +1939,9 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
 {
     if(redis_sock->prefix) {
         efree(redis_sock->prefix);
+    }
+    if (redis_sock->pipeline_cmd) {
+        efree(redis_sock->pipeline_cmd);
     }
     if(redis_sock->err) {
         efree(redis_sock->err);
