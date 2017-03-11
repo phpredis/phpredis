@@ -241,6 +241,16 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_auth, 0, 0, 1)
     ZEND_ARG_INFO(0, password)
 ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_info, 0, 0, 0)
+    ZEND_ARG_INFO(0, option)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_move, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, dbindex)
+ZEND_END_ARG_INFO()
+
 /**
  * Argument info for the SCAN proper
  */
@@ -343,9 +353,9 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, ttl, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, pttl, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, persist, arginfo_key, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, info, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, select, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, move, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, info, arginfo_info, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, select, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, move, arginfo_move, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, bgrewriteaof, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, slaveof, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, object, NULL, ZEND_ACC_PUBLIC)
