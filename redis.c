@@ -2490,6 +2490,7 @@ PHP_METHOD(Redis, discard)
     }
 
     redis_sock->mode = ATOMIC;
+    free_reply_callbacks(redis_sock);
     redis_send_discard(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 }
 
