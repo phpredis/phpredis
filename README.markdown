@@ -1640,9 +1640,9 @@ while($arr_keys = $redis->hScan('hash', $it)) {
 }
 ~~~
 
-##### hStrLen
+### hStrLen
 -----
- **Description**_: Get the string length of the value associated with field in the hash stored at key.
+_**Description**_: Get the string length of the value associated with field in the hash stored at key.
 ##### *Parameters*
 *key*: String
 *field*: String

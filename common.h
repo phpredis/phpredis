@@ -22,7 +22,6 @@ typedef struct {
     char *val;
 } zend_string;
 
-
 #define zend_string_release(s) do { \
     if ((s) && (s)->gc) { \
         if ((s)->gc & 0x10 && (s)->val) efree((s)->val); \
@@ -475,18 +474,15 @@ typedef enum _PUBSUB_TYPE {
 #define IF_NOT_PIPELINE() if (redis_sock->mode != PIPELINE)
 
 #define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) do { \
-    request_item *tmp = malloc(sizeof(request_item)); \
-    tmp->request_str = calloc(cmd_len, 1);\
-    memcpy(tmp->request_str, cmd, cmd_len);\
-    tmp->request_size = cmd_len;\
-    tmp->next = NULL;\
-    if (redis_sock->pipeline_current) { \
-        redis_sock->pipeline_current->next = tmp; \
+    if (redis_sock->pipeline_cmd == NULL) { \
+        redis_sock->pipeline_cmd = estrndup(cmd, cmd_len); \
+    } else { \
+        redis_sock->pipeline_cmd = erealloc(redis_sock->pipeline_cmd, \
+            redis_sock->pipeline_len + cmd_len); \
+        memcpy(&redis_sock->pipeline_cmd[redis_sock->pipeline_len], \
+            cmd, cmd_len); \
     } \
-    redis_sock->pipeline_current = tmp; \
-    if(NULL == redis_sock->pipeline_head) { \
-        redis_sock->pipeline_head = redis_sock->pipeline_current;\
-    } \
+    redis_sock->pipeline_len += cmd_len; \
 } while (0)
 
 #define SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len) \
@@ -602,12 +598,6 @@ typedef struct fold_item {
     struct fold_item *next;
 } fold_item;
 
-typedef struct request_item {
-    char *request_str; 
-    int request_size; /* size_t */
-    struct request_item *next;
-} request_item;
-
 /* {{{ struct RedisSock */
 typedef struct {
     php_stream     *stream;
@@ -633,8 +623,8 @@ typedef struct {
     fold_item      *head;
     fold_item      *current;
 
-    request_item   *pipeline_head;
-    request_item   *pipeline_current;
+    char           *pipeline_cmd;
+    size_t         pipeline_len;
 
     char           *err;
     int            err_len;
