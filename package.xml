@@ -27,7 +27,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2017-03-16</date>
+ <date>2017-03-24</date>
  <version>
   <release>3.1.2</release>
   <api>3.1.2</api>
