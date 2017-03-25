@@ -48,7 +48,7 @@ if ($str_class == 'redis') {
         echo "\n".($useIndex?"WITH":"WITHOUT"). " per-node index:\n";
 
         /* The various RedisArray subtests we can run */
-        $arr_ra_tests = ['Redis_Array_Test', 'Redis_Rehashing_Test', 'Redis_Auto_Rehashing_Test', 'Redis_Multi_Exec_Test', 'Redis_Distributor_Test'];
+        $arr_ra_tests = Array('Redis_Array_Test', 'Redis_Rehashing_Test', 'Redis_Auto_Rehashing_Test', 'Redis_Multi_Exec_Test', 'Redis_Distributor_Test');
         foreach ($arr_ra_tests as $str_test) {
             /* Run until we encounter a failure */
             if (run_tests($str_test, $str_filter, $str_host) != 0) {
