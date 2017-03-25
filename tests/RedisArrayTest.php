@@ -548,7 +548,7 @@ function run_tests($className, $str_filter, $str_host) {
         $serverList = Array("$str_host:6379", "$str_host:6380", "$str_host:6381", "$str_host:6382");
 
         // run
-        TestSuite::run($className, $str_filter);
+        return TestSuite::run($className, $str_filter);
 }
 
 ?>
