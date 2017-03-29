@@ -722,7 +722,7 @@ redis_sock_get(zval *id TSRMLS_DC, int no_throw)
 
     if (redis_sock->lazy_connect) {
         redis_sock->lazy_connect = 0;
-        if (redis_sock_server_open(redis_sock, 1 TSRMLS_CC) < 0) {
+        if (redis_sock_server_open(redis_sock TSRMLS_CC) < 0) {
             return NULL;
         }
     }
@@ -1033,7 +1033,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     redis->sock = redis_sock_create(host, host_len, port, timeout, persistent,
         persistent_id, retry_interval, 0);
 
-    if (redis_sock_server_open(redis->sock, 1 TSRMLS_CC) < 0) {
+    if (redis_sock_server_open(redis->sock TSRMLS_CC) < 0) {
         redis_free_socket(redis->sock);
         redis->sock = NULL;
         return FAILURE;

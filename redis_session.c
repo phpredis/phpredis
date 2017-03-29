@@ -167,7 +167,7 @@ redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
             if(rpm->auth && rpm->auth_len && rpm->redis_sock->status != REDIS_SOCK_STATUS_CONNECTED) {
                     needs_auth = 1;
             }
-            redis_sock_server_open(rpm->redis_sock, 0 TSRMLS_CC);
+            redis_sock_server_open(rpm->redis_sock TSRMLS_CC);
             if(needs_auth) {
                 redis_pool_member_auth(rpm TSRMLS_CC);
             }
