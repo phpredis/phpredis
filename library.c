@@ -1640,15 +1640,6 @@ redis_sock_server_open(RedisSock *redis_sock, int force_connect TSRMLS_DC)
         case REDIS_SOCK_STATUS_CONNECTED:
             res = 0;
         break;
-        case REDIS_SOCK_STATUS_UNKNOWN:
-            if (force_connect > 0 && redis_sock_connect(redis_sock TSRMLS_CC) < 0) {
-                res = -1;
-            } else {
-                res = 0;
-
-                redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
-            }
-        break;
     }
 
     return res;
