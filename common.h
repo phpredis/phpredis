@@ -386,8 +386,7 @@ typedef size_t strlen_t;
 
 #define REDIS_SOCK_STATUS_FAILED       0
 #define REDIS_SOCK_STATUS_DISCONNECTED 1
-#define REDIS_SOCK_STATUS_UNKNOWN      2
-#define REDIS_SOCK_STATUS_CONNECTED    3
+#define REDIS_SOCK_STATUS_CONNECTED    2
 
 #define _NL "\r\n"
 
