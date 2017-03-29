@@ -1630,7 +1630,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
  * redis_sock_server_open
  */
 PHP_REDIS_API int 
-redis_sock_server_open(RedisSock *redis_sock, int force_connect TSRMLS_DC)
+redis_sock_server_open(RedisSock *redis_sock TSRMLS_DC)
 {
     int res = -1;
 
