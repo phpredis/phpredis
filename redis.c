@@ -2501,12 +2501,10 @@ PHP_REDIS_API int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAME
 
     char inbuf[1024];
     int numElems;
+    size_t len;
 
-    redis_check_eof(redis_sock, 0 TSRMLS_CC);
-
-    php_stream_gets(redis_sock->stream, inbuf, 1024);
-    if(inbuf[0] != '*') {
-        return -1;
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len TSRMLS_CC) < 0) {
+        return - 1;
     }
 
     /* number of responses */
