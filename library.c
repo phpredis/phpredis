@@ -2111,6 +2111,7 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size,
         // Throw a read error exception
         zend_throw_exception(redis_exception_ce, "read error on connection", 
             0 TSRMLS_CC);
+        return -1;
     }
 
 	/* We don't need \r\n */
