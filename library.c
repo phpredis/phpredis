@@ -435,15 +435,9 @@ redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
 {
     char inbuf[1024];
     int numElems;
+    size_t len;
 
-    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
-        return NULL;
-    }
-
-    if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
-        REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
-        zend_throw_exception(redis_exception_ce, 
-            "read error on connection", 0 TSRMLS_CC);
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len TSRMLS_CC) < 0) {
         return NULL;
     }
 
@@ -503,30 +497,23 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_DC)
 /**
  * redis_sock_read
  */
-PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
+PHP_REDIS_API char *
+redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
 {
     char inbuf[1024];
-    size_t err_len;
+    size_t len;
 
     *buf_len = 0;
-    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
-        return NULL;
-    }
-
-    if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
-        REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
-        zend_throw_exception(redis_exception_ce, "read error on connection", 
-                             0 TSRMLS_CC);
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len TSRMLS_CC) < 0) {
         return NULL;
     }
 
     switch(inbuf[0]) {
         case '-':
-            err_len = strlen(inbuf+1) - 2;
-            redis_sock_set_err(redis_sock, inbuf+1, err_len);
+            redis_sock_set_err(redis_sock, inbuf+1, len);
 
             /* Filter our ERROR through the few that should actually throw */
-            redis_error_throw(inbuf + 1, err_len TSRMLS_CC);
+            redis_error_throw(inbuf + 1, len TSRMLS_CC);
 
             /* Handle stale data error */
             if(memcmp(inbuf + 1, "-ERR SYNC ", 10) == 0) {
@@ -547,10 +534,10 @@ PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_D
 
         case '+':
         case ':':
-	    /* Single Line Reply */
-            /* :123\r\n */
-            *buf_len = strlen(inbuf) - 2;
-            if(*buf_len >= 2) {
+            /* Single Line Reply */
+            /* +OK or :123 */
+            if (len > 1) {
+                *buf_len = len;
                 return estrndup(inbuf, *buf_len);
             }
         default:
@@ -1266,13 +1253,9 @@ redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char inbuf[1024];
     int numElems;
+    size_t len;
 
-    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
-        return -1;
-    }
-    if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
-        REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
-        zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len TSRMLS_CC) < 0) {
         return -1;
     }
 
@@ -1723,15 +1706,10 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
                                            void *ctx)
 {
     char inbuf[1024];
-    int numElems, err_len;
+    int numElems;
+    size_t len;
 
-    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
-        return -1;
-    }
-    if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
-        REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
-        zend_throw_exception(redis_exception_ce, "read error on connection", 0 
-            TSRMLS_CC);
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len TSRMLS_CC) < 0) {
         return -1;
     }
 
@@ -1740,8 +1718,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
             add_next_index_bool(z_tab, 0);
         } else {
             if (inbuf[0] == '-') {
-                err_len = strlen(inbuf+1) - 2;
-                redis_sock_set_err(redis_sock, inbuf+1, err_len);
+                redis_sock_set_err(redis_sock, inbuf+1, len);
             }
             RETVAL_FALSE;
         }
@@ -1768,17 +1745,14 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
 
 /* Like multibulk reply, but don't touch the values, they won't be unserialized
  * (this is used by HKEYS). */
-PHP_REDIS_API int redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+PHP_REDIS_API int
+redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
     char inbuf[1024];
-    int numElems, err_len;
+    int numElems;
+    size_t len;
 
-    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
-        return -1;
-    }
-    if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
-        REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
-        zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len TSRMLS_CC) < 0) {
         return -1;
     }
 
@@ -1787,8 +1761,7 @@ PHP_REDIS_API int redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
             add_next_index_bool(z_tab, 0);
         } else {
             if (inbuf[0] == '-') {
-                err_len = strlen(inbuf+1) - 2;
-                redis_sock_set_err(redis_sock, inbuf+1, err_len);
+                redis_sock_set_err(redis_sock, inbuf+1, len);
             }
             RETVAL_FALSE;
         }
@@ -1858,15 +1831,11 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
     char inbuf[1024], *response;
     int response_len;
     int i, numElems;
+    size_t len;
 
     zval *z_keys = ctx;
 
-    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
-        return -1;
-    }
-    if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
-        REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
-        zend_throw_exception(redis_exception_ce, "read error on connection", 0 TSRMLS_CC);
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len TSRMLS_CC) < 0) {
         return -1;
     }
 
