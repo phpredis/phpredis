@@ -1597,7 +1597,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     php_stream_auto_cleanup(redis_sock->stream);
 
-    if(tv.tv_sec != 0 || tv.tv_usec != 0) {
+    if (read_tv.tv_sec != 0 || read_tv.tv_usec != 0) {
         php_stream_set_option(redis_sock->stream,PHP_STREAM_OPTION_READ_TIMEOUT,
             0, &read_tv);
     }
