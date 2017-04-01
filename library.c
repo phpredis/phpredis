@@ -1597,7 +1597,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     php_stream_auto_cleanup(redis_sock->stream);
 
-    if(tv.tv_sec != 0 || tv.tv_usec != 0) {
+    if (read_tv.tv_sec != 0 || read_tv.tv_usec != 0) {
         php_stream_set_option(redis_sock->stream,PHP_STREAM_OPTION_READ_TIMEOUT,
             0, &read_tv);
     }
@@ -1791,36 +1791,33 @@ redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                        zval *z_tab, int count, int unserialize)
 {
     char *line;
-    int len;
+    int i, len;
 
-    while(count > 0) {
-        line = redis_sock_read(redis_sock, &len TSRMLS_CC);
-        if (line != NULL) {
-            zval zv, *z = &zv;
-            int unwrap;
-
-            /* We will attempt unserialization, if we're unserializing everything,
-             * or if we're unserializing keys and we're on a key, or we're
-             * unserializing values and we're on a value! */
-            unwrap = unserialize == UNSERIALIZE_ALL ||
-                (unserialize == UNSERIALIZE_KEYS && count % 2 == 0) ||
-                (unserialize == UNSERIALIZE_VALS && count % 2 != 0);
-
-            if (unwrap && redis_unserialize(redis_sock, line, len, z TSRMLS_CC)) {
-#if (PHP_MAJOR_VERSION < 7)
-                MAKE_STD_ZVAL(z);
-                *z = zv;
-#endif
-                add_next_index_zval(z_tab, z);
-            } else {
-                add_next_index_stringl(z_tab, line, len);
-            }
-            efree(line);
-        } else {
+    for (i = 0; i < count; ++i) {
+        if ((line = redis_sock_read(redis_sock, &len TSRMLS_CC)) == NULL) {
             add_next_index_bool(z_tab, 0);
+            continue;
         }
 
-        count--;
+        /* We will attempt unserialization, if we're unserializing everything,
+         * or if we're unserializing keys and we're on a key, or we're
+         * unserializing values and we're on a value! */
+        int unwrap = (
+            (unserialize == UNSERIALIZE_ALL) ||
+            (unserialize == UNSERIALIZE_KEYS && i % 2 == 0) ||
+            (unserialize == UNSERIALIZE_VALS && i % 2 != 0)
+        );
+        zval zv, *z = &zv;
+        if (unwrap && redis_unserialize(redis_sock, line, len, z TSRMLS_CC)) {
+#if (PHP_MAJOR_VERSION < 7)
+            MAKE_STD_ZVAL(z);
+            *z = zv;
+#endif
+            add_next_index_zval(z_tab, z);
+        } else {
+            add_next_index_stringl(z_tab, line, len);
+        }
+        efree(line);
     }
 }
 

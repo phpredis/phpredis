@@ -3138,7 +3138,6 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
     char *val_str;
     struct timeval read_tv;
     strlen_t val_len;
-    int test_val;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &option,
                               &val_str, &val_len) == FAILURE)
@@ -3149,18 +3148,15 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
     switch(option) {
         case REDIS_OPT_SERIALIZER:
             val_long = atol(val_str);
-            test_val = val_long == REDIS_SERIALIZER_NONE || val_long == REDIS_SERIALIZER_PHP;
+            if (val_long == REDIS_SERIALIZER_NONE || val_long == REDIS_SERIALIZER_PHP
 #ifdef HAVE_REDIS_IGBINARY
-            test_val = test_val || val_long == REDIS_SERIALIZER_IGBINARY;
+                || val_long == REDIS_SERIALIZER_IGBINARY
 #endif
-                if(test_val)
-                {
-                    redis_sock->serializer = val_long;
-                    RETURN_TRUE;
-                } else {
-                    RETURN_FALSE;
-                }
-                break;
+            ) {
+                redis_sock->serializer = val_long;
+                RETURN_TRUE;
+            }
+            break;
         case REDIS_OPT_PREFIX:
             if(redis_sock->prefix) {
                 efree(redis_sock->prefix);
@@ -3190,7 +3186,6 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                 redis_sock->scan = val_long;
                 RETURN_TRUE;
             }
-            RETURN_FALSE;
             break;
         case REDIS_OPT_FAILOVER:
             val_long = atol(val_str);
@@ -3201,12 +3196,11 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             {
                 c->failover = val_long;
                 RETURN_TRUE;
-            } else {
-                RETURN_FALSE;
             }
-        default:
-            RETURN_FALSE;
+            break;
+        EMPTY_SWITCH_DEFAULT_CASE()
     }
+    RETURN_FALSE;
 }
 
 void redis_prefix_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
