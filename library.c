@@ -1171,11 +1171,11 @@ PHP_REDIS_API void redis_long_response(INTERNAL_FUNCTION_PARAMETERS,
             }
         } else {
             if(ret > LONG_MAX) { /* overflow */
-                RETURN_STRINGL(response+1, response_len-1);
+                RETVAL_STRINGL(response + 1, response_len - 1);
             } else {
-                efree(response);
-                RETURN_LONG((long)ret);
+                RETVAL_LONG((long)ret);
             }
+            efree(response);
         }
     } else {
         efree(response);
@@ -1321,39 +1321,22 @@ PHP_REDIS_API int redis_mbulk_reply_zipped_vals(INTERNAL_FUNCTION_PARAMETERS, Re
         z_tab, UNSERIALIZE_VALS, SCORE_DECODE_NONE);
 }
 
-PHP_REDIS_API void redis_1_response(INTERNAL_FUNCTION_PARAMETERS, 
-                             RedisSock *redis_sock, zval *z_tab, void *ctx) 
+PHP_REDIS_API void
+redis_1_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
-
     char *response;
     int response_len;
-    char ret;
+    zend_bool ret = 0;
 
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) 
-                                    == NULL) 
-    {
-        IF_NOT_ATOMIC() {
-            add_next_index_bool(z_tab, 0);
-            return;
-        } else {
-            RETURN_FALSE;
-        }
+    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) != NULL) {
+        ret = (response[1] == '1');
+        efree(response);
     }
-    ret = response[1];
-    efree(response);
 
     IF_NOT_ATOMIC() {
-        if(ret == '1') {
-            add_next_index_bool(z_tab, 1);
-        } else {
-            add_next_index_bool(z_tab, 0);
-        }
+        add_next_index_bool(z_tab, ret);
     } else {
-        if (ret == '1') {
-            RETURN_TRUE;
-        } else {
-            RETURN_FALSE;
-        }
+        RETURN_BOOL(ret);
     }
 }
 
