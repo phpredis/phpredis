@@ -23,6 +23,7 @@
 #include "php_variables.h"
 #include "SAPI.h"
 #include "ext/standard/url.h"
+#include "ext/standard/crc32.h"
 
 #define PHPREDIS_INDEX_NAME	"__phpredis_array_index__"
 
@@ -460,9 +461,14 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
         efree(out);
     } else {
         uint64_t h64;
+        unsigned long ret = 0xffffffff;
+        size_t i;
 
         /* hash */
-        hash = rcrc32(out, out_len);
+        for (i = 0; i < out_len; ++i) {
+            CRC32(ret, (unsigned char)out[i]);
+        }
+        hash = (ret ^ 0xffffffff);
         efree(out);
         
         /* get position on ring */
