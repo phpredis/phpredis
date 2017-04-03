@@ -23,7 +23,6 @@
 
 #include "common.h"
 #include "ext/standard/info.h"
-#include "ext/standard/crc32.h"
 #include "php_ini.h"
 #include "php_redis.h"
 #include <zend_exceptions.h>
@@ -219,17 +218,6 @@ redis_array_get(zval *id TSRMLS_DC)
         }
     }
     return NULL;
-}
-
-uint32_t rcrc32(const char *s, size_t sz) {
-	unsigned long ret = 0xffffffff;
-	size_t i;
-
-	for (i = 0; i < sz; i++) {
-        CRC32(ret, (unsigned char)s[i]);
-	}
-	return (ret ^ 0xFFFFFFFF);
-
 }
 
 /* {{{ proto RedisArray RedisArray::__construct()
