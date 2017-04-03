@@ -1005,11 +1005,11 @@ PHP_METHOD(RedisArray, mget)
 /* MSET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mset)
 {
-	zval *object, *z_keys, z_argarray, *data, z_ret, **argv;
-	int i, n;
-	RedisArray *ra;
-	int *pos, argc, *argc_each;
-	HashTable *h_keys;
+    zval *object, *z_keys, z_argarray, *data, z_ret, **argv;
+    int i = 0, n;
+    RedisArray *ra;
+    int *pos, argc, *argc_each;
+    HashTable *h_keys;
     char *key, **keys, kbuf[40];
     int key_len, *key_lens;
     zend_string *zkey;
@@ -1019,106 +1019,110 @@ PHP_METHOD(RedisArray, mset)
         RETURN_FALSE;
     }
 
-	/* Multi/exec support */
+    /* Multi/exec support */
     HANDLE_MULTI_EXEC(ra, "MSET");
 
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
-				&object, redis_array_ce, &z_keys) == FAILURE) {
-		RETURN_FALSE;
-	}
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
+                                     &object, redis_array_ce, &z_keys) == FAILURE)
+    {
+        RETURN_FALSE;
+    }
 
-	/* init data structures */
-	h_keys = Z_ARRVAL_P(z_keys);
-	argc = zend_hash_num_elements(h_keys);
-	argv = emalloc(argc * sizeof(zval*));
-	pos = emalloc(argc * sizeof(int));
-	keys = emalloc(argc * sizeof(char*));
-	key_lens = emalloc(argc * sizeof(int));
+    /* init data structures */
+    h_keys = Z_ARRVAL_P(z_keys);
+    argc = zend_hash_num_elements(h_keys);
+    argv = emalloc(argc * sizeof(zval*));
+    pos = emalloc(argc * sizeof(int));
+    keys = emalloc(argc * sizeof(char*));
+    key_lens = emalloc(argc * sizeof(int));
 
-	argc_each = emalloc(ra->count * sizeof(int));
-	memset(argc_each, 0, ra->count * sizeof(int));
+    argc_each = emalloc(ra->count * sizeof(int));
+    memset(argc_each, 0, ra->count * sizeof(int));
 
-	/* associate each key to a redis node */
-    i = 0;
+    /* associate each key to a redis node */
     ZEND_HASH_FOREACH_KEY_VAL(h_keys, idx, zkey, data) {
-	    /* If the key isn't a string, make a string representation of it */
+        /* If the key isn't a string, make a string representation of it */
         if (zkey) {
             key_len = zkey->len;
             key = zkey->val;
         } else {
-	        key_len = snprintf(kbuf, sizeof(kbuf), "%lu", idx);
+            key_len = snprintf(kbuf, sizeof(kbuf), "%lu", idx);
             key = kbuf;
         }
 
         if (ra_find_node(ra, key, (int)key_len, &pos[i] TSRMLS_CC) == NULL) {
             // TODO: handle
         }
-		argc_each[pos[i]]++;	/* count number of keys per node */
-		keys[i] = estrndup(key, key_len);
-		key_lens[i] = (int)key_len;
-		argv[i] = data;
+
+        argc_each[pos[i]]++;	/* count number of keys per node */
+        keys[i] = estrndup(key, key_len);
+        key_lens[i] = (int)key_len;
+        argv[i] = data;
         i++;
-	} ZEND_HASH_FOREACH_END();
+    } ZEND_HASH_FOREACH_END();
 
 
-	/* calls */
-	for(n = 0; n < ra->count; ++n) { /* for each node */
-	    /* We don't even need to make a call to this node if no keys go there */
-	    if(!argc_each[n]) continue;
+    /* calls */
+    for (n = 0; n < ra->count; ++n) { /* for each node */
+        /* We don't even need to make a call to this node if no keys go there */
+        if(!argc_each[n]) continue;
 
-		int found = 0;
+        int found = 0;
 
-		/* copy args */
-		array_init(&z_argarray);
-		for(i = 0; i < argc; ++i) {
-			if(pos[i] != n) continue;
+        /* copy args */
+        array_init(&z_argarray);
+        for(i = 0; i < argc; ++i) {
+            if(pos[i] != n) continue;
+
             zval zv, *z_tmp = &zv;
 #if (PHP_MAJOR_VERSION < 7)
             MAKE_STD_ZVAL(z_tmp);
 #endif
             ZVAL_ZVAL(z_tmp, argv[i], 1, 0);
-			add_assoc_zval_ex(&z_argarray, keys[i], key_lens[i], z_tmp);
-			found++;
-		}
+            add_assoc_zval_ex(&z_argarray, keys[i], key_lens[i], z_tmp);
+            found++;
+        }
 
-		if(!found)
-		{
-			zval_dtor(&z_argarray);
-			continue;				/* don't run empty MSETs */
-		}
+        if(!found) {
+            zval_dtor(&z_argarray);
+            continue; /* don't run empty MSETs */
+        }
 
-		if(ra->index) { /* add MULTI */
-			ra_index_multi(&ra->redis[n], MULTI TSRMLS_CC);
-		}
+        if(ra->index) { /* add MULTI */
+            ra_index_multi(&ra->redis[n], MULTI TSRMLS_CC);
+        }
 
         zval z_fun;
+
         /* prepare call */
         ZVAL_STRINGL(&z_fun, "MSET", 4);
-		/* call */
+
+        /* call */
         call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
-		zval_dtor(&z_fun);
-		zval_dtor(&z_ret);
+        zval_dtor(&z_fun);
+        zval_dtor(&z_ret);
 
-		if(ra->index) {
-			ra_index_keys(&z_argarray, &ra->redis[n] TSRMLS_CC); /* use SADD to add keys to node index */
-			ra_index_exec(&ra->redis[n], NULL, 0 TSRMLS_CC); /* run EXEC */
-		}
-		zval_dtor(&z_argarray);
-	}
+        if(ra->index) {
+            ra_index_keys(&z_argarray, &ra->redis[n] TSRMLS_CC); /* use SADD to add keys to node index */
+            ra_index_exec(&ra->redis[n], NULL, 0 TSRMLS_CC); /* run EXEC */
+        }
 
-	/* Free any keys that we needed to allocate memory for, because they weren't strings */
-	for(i = 0; i < argc; i++) {
-	    efree(keys[i]);
-	}
+        zval_dtor(&z_argarray);
+    }
 
-	/* cleanup */
-	efree(keys);
-	efree(key_lens);
-	efree(argv);
-	efree(pos);
-	efree(argc_each);
+    /* Free any keys that we needed to allocate memory for, because they weren't strings */
+    for(i = 0; i < argc; i++) {
+        efree(keys[i]);
+    }
 
-	RETURN_TRUE;
+    /* cleanup */
+    efree(keys);
+    efree(key_lens);
+    efree(argv);
+    efree(pos);
+    efree(argc_each);
+
+    RETURN_TRUE;
 }
 
 /* DEL will distribute the call to several nodes and regroup the values. */
