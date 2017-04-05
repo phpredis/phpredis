@@ -2500,7 +2500,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAME
                                       RedisSock *redis_sock)
 {
 
-    char inbuf[1024];
+    char inbuf[4096];
     int numElems;
     size_t len;
 

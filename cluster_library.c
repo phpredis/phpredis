@@ -1034,7 +1034,7 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
 
     // In the event of an ERROR, check if it's a MOVED/ASK error
     if(*reply_type == TYPE_ERR) {
-        char inbuf[1024];
+        char inbuf[4096];
         int moved;
 
         // Attempt to read the error

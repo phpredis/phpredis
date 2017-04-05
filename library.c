@@ -433,7 +433,7 @@ PHP_REDIS_API zval *
 redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, 
                                      RedisSock *redis_sock, zval *z_tab)
 {
-    char inbuf[1024];
+    char inbuf[4096];
     int numElems;
     size_t len;
 
@@ -500,7 +500,7 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_DC)
 PHP_REDIS_API char *
 redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
 {
-    char inbuf[1024];
+    char inbuf[4096];
     size_t len;
 
     *buf_len = 0;
@@ -1251,7 +1251,7 @@ static int
 redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                          zval *z_tab, int unserialize, int decode)
 {
-    char inbuf[1024];
+    char inbuf[4096];
     int numElems;
     size_t len;
 
@@ -1688,7 +1688,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
                                            RedisSock *redis_sock, zval *z_tab, 
                                            void *ctx)
 {
-    char inbuf[1024];
+    char inbuf[4096];
     int numElems;
     size_t len;
 
@@ -1731,7 +1731,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
 PHP_REDIS_API int
 redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
-    char inbuf[1024];
+    char inbuf[4096];
     int numElems;
     size_t len;
 
@@ -1808,7 +1808,7 @@ redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
  * keys with their returned values */
 PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
-    char inbuf[1024], *response;
+    char inbuf[4096], *response;
     int response_len;
     int i, numElems;
     size_t len;
@@ -2147,7 +2147,7 @@ redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type,
                         zval *z_ret TSRMLS_DC) 
 {
     // Buffer to read our single line reply
-    char inbuf[1024];
+    char inbuf[4096];
     size_t line_size;
 
 	/* Attempt to read our single line reply */
