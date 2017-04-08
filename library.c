@@ -1467,9 +1467,10 @@ PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
  * redis_sock_create
  */
 PHP_REDIS_API RedisSock* 
-redis_sock_create(char *host, int host_len, unsigned short port, double timeout, 
-                  int persistent, char *persistent_id, long retry_interval,
-                  zend_bool lazy_connect)
+redis_sock_create(char *host, int host_len, unsigned short port,
+                  double timeout, double read_timeout,
+                  int persistent, char *persistent_id,
+                  long retry_interval, zend_bool lazy_connect)
 {
     RedisSock *redis_sock;
 
@@ -1490,7 +1491,7 @@ redis_sock_create(char *host, int host_len, unsigned short port, double timeout,
 
     redis_sock->port    = port;
     redis_sock->timeout = timeout;
-    redis_sock->read_timeout = timeout;
+    redis_sock->read_timeout = read_timeout;
 
     redis_sock->serializer = REDIS_SERIALIZER_NONE;
     redis_sock->mode = ATOMIC;

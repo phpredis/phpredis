@@ -807,7 +807,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     char *host = NULL, *persistent_id = NULL;
     zend_long port = -1, retry_interval = 0;
     strlen_t host_len, persistent_id_len;
-    double timeout = 0.0;
+    double timeout = 0.0, read_timeout = 0.0;
     redis_object *redis;
 
 #ifdef ZTS
@@ -817,10 +817,10 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 #endif
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
-                                     "Os|ldsl", &object, redis_ce, &host,
+                                     "Os|ldsld", &object, redis_ce, &host,
                                      &host_len, &port, &timeout, &persistent_id,
-                                     &persistent_id_len, &retry_interval)
-                                     == FAILURE)
+                                     &persistent_id_len, &retry_interval,
+                                     &read_timeout) == FAILURE)
     {
         return FAILURE;
     } else if (!persistent) {
@@ -828,8 +828,14 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     }
 
     if (timeout < 0L || timeout > INT_MAX) {
-        zend_throw_exception(redis_exception_ce, "Invalid timeout",
-            0 TSRMLS_CC);
+        zend_throw_exception(redis_exception_ce,
+            "Invalid connect timeout", 0 TSRMLS_CC);
+        return FAILURE;
+    }
+
+    if (read_timeout < 0L || read_timeout > INT_MAX) {
+        zend_throw_exception(redis_exception_ce,
+            "Invalid read timeout", 0 TSRMLS_CC);
         return FAILURE;
     }
 
@@ -855,7 +861,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
         redis_free_socket(redis->sock);
     }
 
-    redis->sock = redis_sock_create(host, host_len, port, timeout, persistent,
+    redis->sock = redis_sock_create(host, host_len, port, timeout, read_timeout, persistent,
         persistent_id, retry_interval, 0);
 
     if (redis_sock_server_open(redis->sock TSRMLS_CC) < 0) {

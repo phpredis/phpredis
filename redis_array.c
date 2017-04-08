@@ -230,7 +230,7 @@ PHP_METHOD(RedisArray, __construct)
 	HashTable *hPrev = NULL, *hOpts = NULL;
 	long l_retry_interval = 0;
   	zend_bool b_lazy_connect = 0;
-	double d_connect_timeout = 0;
+	double d_connect_timeout = 0, read_timeout = 0.0;
     redis_array_object *obj;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|a", &z0, &z_opts) == FAILURE) {
@@ -300,6 +300,17 @@ PHP_METHOD(RedisArray, __construct)
                 d_connect_timeout = atof(Z_STRVAL_P(zpData));
             }
         }
+
+        /* extract read_timeout option */
+        if ((zpData = zend_hash_str_find(hOpts, "read_timeout", sizeof("read_timeout") - 1)) != NULL) {
+            if (Z_TYPE_P(zpData) == IS_DOUBLE) {
+                read_timeout = Z_DVAL_P(zpData);
+            } else if (Z_TYPE_P(zpData) == IS_LONG) {
+                read_timeout = Z_LVAL_P(zpData);
+            } else if (Z_TYPE_P(zpData) == IS_STRING) {
+                read_timeout = atof(Z_STRVAL_P(zpData));
+            }
+        }
 	}
 
 	/* extract either name of list of hosts from z0 */
@@ -309,7 +320,7 @@ PHP_METHOD(RedisArray, __construct)
 			break;
 
 		case IS_ARRAY:
-			ra = ra_make_array(Z_ARRVAL_P(z0), &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout TSRMLS_CC);
+			ra = ra_make_array(Z_ARRVAL_P(z0), &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout, read_timeout TSRMLS_CC);
 			break;
 
 		default:

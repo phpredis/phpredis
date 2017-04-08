@@ -79,7 +79,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 #endif
 
 		/* create socket */
-		redis->sock = redis_sock_create(host, host_len, port, ra->connect_timeout, ra->pconnect, NULL, retry_interval, b_lazy_connect);
+		redis->sock = redis_sock_create(host, host_len, port, ra->connect_timeout, ra->read_timeout, ra->pconnect, NULL, retry_interval, b_lazy_connect);
 
 	    if (!b_lazy_connect)
     	{
@@ -173,13 +173,14 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     zval z_params_retry_interval;
     zval z_params_pconnect;
     zval z_params_connect_timeout;
+    zval z_params_read_timeout;
     zval z_params_lazy_connect;
 	RedisArray *ra = NULL;
 
 	zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0;
 	long l_retry_interval = 0;
 	zend_bool b_lazy_connect = 0;
-	double d_connect_timeout = 0;
+	double d_connect_timeout = 0, read_timeout = 0.0;
 	HashTable *hHosts = NULL, *hPrev = NULL;
     size_t name_len = strlen(name);
     char *iptr;
@@ -297,9 +298,25 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
             d_connect_timeout = Z_LVAL_P(z_data);
         }
     }
+
+    /* find read timeout option */
+	array_init(&z_params_connect_timeout);
+    if ((iptr = INI_STR("redis.arrays.readtimeout")) != NULL) {
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_read_timeout TSRMLS_CC);
+    }
+    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_read_timeout), name, name_len)) != NULL) {
+        if (Z_TYPE_P(z_data) == IS_DOUBLE) {
+            read_timeout = Z_DVAL_P(z_data);
+        } else if (Z_TYPE_P(z_data) == IS_STRING)  {
+            read_timeout = atof(Z_STRVAL_P(z_data));
+        } else if (Z_TYPE_P(z_data) == IS_LONG) {
+            read_timeout = Z_LVAL_P(z_data);
+        }
+    }
+
 	
 	/* create RedisArray object */
-	ra = ra_make_array(hHosts, &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout TSRMLS_CC);
+	ra = ra_make_array(hHosts, &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout, read_timeout TSRMLS_CC);
     if (ra) {
         ra->auto_rehash = b_autorehash;
         if(ra->prev) ra->prev->auto_rehash = b_autorehash;
@@ -315,6 +332,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     zval_dtor(&z_params_retry_interval);
     zval_dtor(&z_params_pconnect);
     zval_dtor(&z_params_connect_timeout);
+    zval_dtor(&z_params_read_timeout);
     zval_dtor(&z_params_lazy_connect);
     zval_dtor(&z_dist);
     zval_dtor(&z_fun);
@@ -323,7 +341,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 }
 
 RedisArray *
-ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, zend_bool b_pconnect, long retry_interval, zend_bool b_lazy_connect, double connect_timeout TSRMLS_DC) {
+ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, zend_bool b_pconnect, long retry_interval, zend_bool b_lazy_connect, double connect_timeout, double read_timeout TSRMLS_DC) {
 
     int i, count;
     RedisArray *ra;
@@ -341,6 +359,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	ra->auto_rehash = 0;
 	ra->pconnect = b_pconnect;
 	ra->connect_timeout = connect_timeout;
+	ra->read_timeout = read_timeout;
 
     if (ra_load_hosts(ra, hosts, retry_interval, b_lazy_connect TSRMLS_CC) == NULL || !ra->count) {
         for (i = 0; i < ra->count; ++i) {
@@ -352,7 +371,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
         efree(ra);
         return NULL;
     }
-    ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect, connect_timeout TSRMLS_CC) : NULL;
+    ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect, connect_timeout, read_timeout TSRMLS_CC) : NULL;
 
     /* init array data structures */
     ra_init_function_table(ra);

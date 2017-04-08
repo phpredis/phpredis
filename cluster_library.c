@@ -649,7 +649,7 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
 
     // Attach socket
     node->sock = redis_sock_create(host, host_len, port, c->timeout,
-        c->persistent, NULL, 0, 1);
+        c->read_timeout, c->persistent, NULL, 0, 1);
 
     return node;
 }
@@ -916,7 +916,7 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
         // Allocate a structure for this seed
         redis_sock = redis_sock_create(str, psep-str,
             (unsigned short)atoi(psep+1), cluster->timeout,
-            cluster->persistent, NULL, 0, 0);
+            cluster->read_timeout, cluster->persistent, NULL, 0, 0);
 
         // Index this seed by host/port
         key_len = snprintf(key, sizeof(key), "%s:%u", redis_sock->host,

@@ -82,7 +82,7 @@ You can install install it using Homebrew:
 phpredis can be used to store PHP sessions. To do this, configure `session.save_handler` and `session.save_path` in your php.ini to tell phpredis where to store the sessions:
 ~~~
 session.save_handler = redis
-session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeout=2.5, tcp://host3:6379?weight=2"
+session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeout=2.5, tcp://host3:6379?weight=2&read_timeout=2.5"
 ~~~
 
 `session.save_path` can have a simple `host:port` format too, but you need to provide the `tcp://` scheme if you want to use the parameters. The following parameters are available:
@@ -202,6 +202,7 @@ _**Description**_: Connects to a Redis instance.
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)
 *reserved*: should be NULL if retry_interval is specified
 *retry_interval*: int, value in milliseconds (optional)
+*read_timeout*: float, value in seconds (optional, default is 0 meaning unlimited)
 
 ##### *Return value*
 
@@ -238,6 +239,7 @@ persistent equivalents.
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)
 *persistent_id*: string. identity for the requested persistent connection
 *retry_interval*: int, value in milliseconds (optional)
+*read_timeout*: float, value in seconds (optional, default is 0 meaning unlimited)
 
 ##### *Return value*
 
