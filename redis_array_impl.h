@@ -11,7 +11,7 @@
 
 RedisArray *ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b_lazy_connect TSRMLS_DC);
 RedisArray *ra_load_array(const char *name TSRMLS_DC);
-RedisArray *ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, zend_bool b_pconnect, long retry_interval, zend_bool b_lazy_connect, double connect_timeout TSRMLS_DC);
+RedisArray *ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, zend_bool b_pconnect, long retry_interval, zend_bool b_lazy_connect, double connect_timeout, double read_timeout TSRMLS_DC);
 zval *ra_find_node_by_name(RedisArray *ra, const char *host, int host_len TSRMLS_DC);
 zval *ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_DC);
 void ra_init_function_table(RedisArray *ra);
