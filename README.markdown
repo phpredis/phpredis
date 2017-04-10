@@ -1008,18 +1008,37 @@ _**Description**_:  Scan the keyspace for keys
 *LONG, Optional*: Count of keys per iteration (only a suggestion to Redis)
 
 ##### *Return value*
-*Array, boolean*:  This function will return an array of keys or FALSE if there are no more keys
+*Array, boolean*:  This function will return an array of keys or FALSE if Redis returned zero keys
 
 ##### *Example*
 ~~~
-$it = NULL; /* Initialize our iterator to NULL */
+
+/* Without enabling Redis::SCAN_RETRY (default condition) */
+$it = NULL;
 do {
-    // Use global option $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY); to ignore empty results
+    // Scan for some keys
     $arr_keys = $redis->scan($it);
-    foreach($arr_keys as $str_key) {
-        echo "Here is a key: $str_key\n";
+
+    // Redis may return empty results, so protect against that
+    if ($arr_keys !== FALSE) {
+        foreach($arr_keys as $str_key) {
+            echo "Here is a key: $str_key\n";
+        }
     }
 } while ($it > 0);
+echo "No more keys to scan!\n";
+
+/* With Redis::SCAN_RETRY enabled */
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+$it = NULL;
+
+/* phpredis will retry the SCAN command if empty results are returned from the
+   server, so no empty results check is required. */
+while ($arr_keys = $redis->scan($it)) {
+    foreach ($arr_keys as $str_key) {
+        echo "Here is a key: $str_key\n";
+    }
+}
 echo "No more keys to scan!\n";
 ~~~
 
