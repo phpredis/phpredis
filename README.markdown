@@ -1013,13 +1013,14 @@ _**Description**_:  Scan the keyspace for keys
 ##### *Example*
 ~~~
 $it = NULL; /* Initialize our iterator to NULL */
-$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY); /* retry when we get no keys back */
-while($arr_keys = $redis->scan($it)) {
+do {
+    // Use global option $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY); to ignore empty results
+    $arr_keys = $redis->scan($it);
     foreach($arr_keys as $str_key) {
         echo "Here is a key: $str_key\n";
     }
-    echo "No more keys to scan!\n";
-}
+} while ($it > 0);
+echo "No more keys to scan!\n";
 ~~~
 
 ### object
