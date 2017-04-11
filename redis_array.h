@@ -52,6 +52,7 @@ typedef struct RedisArray_ {
 	zval z_dist;            /* key distributor, callable */
 	zval z_pure_cmds;		/* hash table */
 	double connect_timeout; /* socket connect timeout */
+	double read_timeout;    /* socket read timeout */
 
 	struct RedisArray_ *prev;
 } RedisArray;

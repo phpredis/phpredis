@@ -438,6 +438,8 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
             timeout = atof(Z_STRVAL_P(z_value));
         } else if (Z_TYPE_P(z_value) == IS_DOUBLE) {
             timeout = Z_DVAL_P(z_value);
+        } else if (Z_TYPE_P(z_value) == IS_LONG) {
+            timeout = Z_LVAL_P(z_value);
         }
     }
 
@@ -451,6 +453,8 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
             read_timeout = atof(Z_STRVAL_P(z_value));
         } else if (Z_TYPE_P(z_value) == IS_DOUBLE) {
             read_timeout = Z_DVAL_P(z_value);
+        } else if (Z_TYPE_P(z_value) == IS_LONG) {
+            timeout = Z_LVAL_P(z_value);
         }
     }
 
