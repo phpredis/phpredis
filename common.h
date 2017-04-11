@@ -454,14 +454,6 @@ typedef enum _PUBSUB_TYPE {
 #define BITOP_MIN_OFFSET 0
 #define BITOP_MAX_OFFSET 4294967295U
 
-/* Specific error messages we want to throw against */
-#define REDIS_ERR_LOADING_MSG "LOADING Redis is loading the dataset in memory"
-#define REDIS_ERR_LOADING_KW  "LOADING"
-#define REDIS_ERR_AUTH_MSG    "NOAUTH Authentication required."
-#define REDIS_ERR_AUTH_KW     "NOAUTH"
-#define REDIS_ERR_SYNC_MSG    "MASTERDOWN Link with MASTER is down and slave-serve-stale-data is set to 'no'"
-#define REDIS_ERR_SYNC_KW     "MASTERDOWN"
-
 #define IF_ATOMIC() if (redis_sock->mode == ATOMIC)
 #define IF_NOT_ATOMIC() if (redis_sock->mode != ATOMIC)
 #define IF_MULTI() if (redis_sock->mode == MULTI)
