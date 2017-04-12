@@ -112,23 +112,15 @@ static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
  *    2) AUTH
  *    3) LOADING
  */
-static void redis_error_throw(char *err, size_t err_len TSRMLS_DC) {
-    /* Handle stale data error (slave syncing with master) */
-    if (err_len == sizeof(REDIS_ERR_SYNC_MSG) - 1 &&
-        !memcmp(err,REDIS_ERR_SYNC_KW,sizeof(REDIS_ERR_SYNC_KW)-1))
-    {
-        zend_throw_exception(redis_exception_ce,
-            "SYNC with master in progress or master down!", 0 TSRMLS_CC);
-    } else if (err_len == sizeof(REDIS_ERR_LOADING_MSG) - 1 &&
-               !memcmp(err,REDIS_ERR_LOADING_KW,sizeof(REDIS_ERR_LOADING_KW)-1))
-    {
-        zend_throw_exception(redis_exception_ce,
-            "Redis is LOADING the dataset", 0 TSRMLS_CC);
-    } else if (err_len == sizeof(REDIS_ERR_AUTH_MSG) -1 &&
-               !memcmp(err,REDIS_ERR_AUTH_KW,sizeof(REDIS_ERR_AUTH_KW)-1))
-    {
-        zend_throw_exception(redis_exception_ce,
-            "Failed to AUTH connection", 0 TSRMLS_CC);
+static void
+redis_error_throw(RedisSock *redis_sock TSRMLS_DC)
+{
+    if (redis_sock != NULL && redis_sock->err != NULL &&
+        memcmp(redis_sock->err, "ERR", sizeof("ERR") - 1) != 0 &&
+        memcmp(redis_sock->err, "NOSCRIPT", sizeof("NOSCRIPT") - 1) != 0 &&
+        memcmp(redis_sock->err, "WRONGTYPE", sizeof("WRONGTYPE") - 1) != 0
+    ) {
+        zend_throw_exception(redis_exception_ce, redis_sock->err, 0 TSRMLS_CC);
     }
 }
 
@@ -513,13 +505,8 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
             redis_sock_set_err(redis_sock, inbuf+1, len);
 
             /* Filter our ERROR through the few that should actually throw */
-            redis_error_throw(inbuf + 1, len TSRMLS_CC);
+            redis_error_throw(redis_sock TSRMLS_CC);
 
-            /* Handle stale data error */
-            if(memcmp(inbuf + 1, "-ERR SYNC ", 10) == 0) {
-                zend_throw_exception(redis_exception_ce, 
-                    "SYNC with master in progress", 0 TSRMLS_CC);
-            }
             return NULL;
         case '$':
             *buf_len = atoi(inbuf + 1);
@@ -2159,11 +2146,11 @@ redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type,
     // If this is an error response, check if it is a SYNC error, and throw in 
     // that case
     if(reply_type == TYPE_ERR) {
-        /* Handle throwable errors */
-        redis_error_throw(inbuf, line_size TSRMLS_CC);
-
 		/* Set our last error */
 		redis_sock_set_err(redis_sock, inbuf, line_size);
+
+        /* Handle throwable errors */
+        redis_error_throw(redis_sock TSRMLS_CC);
 
 		/* Set our response to FALSE */
 		ZVAL_FALSE(z_ret);
