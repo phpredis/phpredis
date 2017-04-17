@@ -1133,7 +1133,13 @@ PHP_METHOD(RedisCluster, lset) {
 
 /* {{{ proto string RedisCluster::spop(string key) */
 PHP_METHOD(RedisCluster, spop) {
-    CLUSTER_PROCESS_KW_CMD("SPOP", redis_key_cmd, cluster_bulk_resp, 0);
+    if (ZEND_NUM_ARGS() == 1) {
+        CLUSTER_PROCESS_KW_CMD("SPOP", redis_key_cmd, cluster_bulk_resp, 0);
+    } else if (ZEND_NUM_ARGS() == 2) {
+        CLUSTER_PROCESS_KW_CMD("SPOP", redis_key_long_cmd, cluster_mbulk_resp, 0);
+    } else {
+        ZEND_WRONG_PARAM_COUNT();
+    }
 }
 /* }}} */
 

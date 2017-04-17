@@ -343,6 +343,7 @@ int redis_key_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     CMD_SET_SLOT(slot, key, key_len);
 
     if (key_free) efree(key);
+
     // Success!
     return SUCCESS;
 }

@@ -2103,7 +2103,7 @@ $redis->lSize('key1');/* 2 */
 * [sIsMember, sContains](#sismember-scontains) - Determine if a given value is a member of a set
 * [sMembers, sGetMembers](#smembers-sgetmembers) - Get all the members in a set
 * [sMove](#smove) - Move a member from one set to another
-* [sPop](#spop) - Remove and return a random member from a set
+* [sPop](#spop) - Remove and return one or more members of a set at random
 * [sRandMember](#srandmember) - Get one or multiple random members from a set
 * [sRem, sRemove](#srem-sremove) - Remove one or more members from a set
 * [sUnion](#sunion) - Add multiple sets
@@ -2373,9 +2373,13 @@ $redis->sMove('key1', 'key2', 'member13'); /* 'key1' =>  {'member11', 'member12'
 _**Description**_: Removes and returns a random element from the set value at Key.
 ##### *Parameters*
 *key*
-##### *Return value*
+*count*: Integer, optional
+##### *Return value (without count argument)*
 *String* "popped" value
 *Bool* `FALSE` if set identified by key is empty or doesn't exist.
+##### *Return value (with count argument)*
+*Array*: Member(s) returned or an empty array if the set doesn't exist
+*Bool*: `FALSE` on error if the key is not a set
 ##### *Example*
 ~~~
 $redis->sAdd('key1' , 'member1');
@@ -2383,6 +2387,10 @@ $redis->sAdd('key1' , 'member2');
 $redis->sAdd('key1' , 'member3'); /* 'key1' => {'member3', 'member1', 'member2'}*/
 $redis->sPop('key1'); /* 'member1', 'key1' => {'member3', 'member2'} */
 $redis->sPop('key1'); /* 'member3', 'key1' => {'member2'} */
+
+/* With count */
+$redis->sAdd('key2', 'member1', 'member2', 'member3');
+$redis->sPop('key2', 3); /* Will return all members but in no particular order */
 ~~~
 
 ### sRandMember
