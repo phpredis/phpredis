@@ -1154,19 +1154,46 @@ class Redis_Test extends TestSuite
     public function testsPop()
     {
         $this->redis->del('set0');
-    $this->assertTrue($this->redis->sPop('set0') === FALSE);
+        $this->assertTrue($this->redis->sPop('set0') === FALSE);
 
         $this->redis->sAdd('set0', 'val');
         $this->redis->sAdd('set0', 'val2');
 
-    $v0 = $this->redis->sPop('set0');
-    $this->assertTrue(1 === $this->redis->scard('set0'));
-    $this->assertTrue($v0 === 'val' || $v0 === 'val2');
-    $v1 = $this->redis->sPop('set0');
-    $this->assertTrue(0 === $this->redis->scard('set0'));
-    $this->assertTrue(($v0 === 'val' && $v1 === 'val2') || ($v1 === 'val' && $v0 === 'val2'));
+        $v0 = $this->redis->sPop('set0');
+        $this->assertTrue(1 === $this->redis->scard('set0'));
+        $this->assertTrue($v0 === 'val' || $v0 === 'val2');
+        $v1 = $this->redis->sPop('set0');
+        $this->assertTrue(0 === $this->redis->scard('set0'));
+        $this->assertTrue(($v0 === 'val' && $v1 === 'val2') || ($v1 === 'val' && $v0 === 'val2'));
 
-    $this->assertTrue($this->redis->sPop('set0') === FALSE);
+        $this->assertTrue($this->redis->sPop('set0') === FALSE);
+    }
+
+    public function testsPopWithCount() {
+        if (!$this->minVersionCheck("3.2")) {
+            return $this->markTestSkipped();
+        }
+
+        $set = 'set0';
+        $prefix = 'member';
+        $count = 5;
+
+        /* Add a few members */
+        $this->redis->del($set);
+        for ($i = 0; $i < $count; $i++) {
+            $this->redis->sadd($set, $prefix.$i);
+        }
+
+        /* Pop them all */
+        $ret = $this->redis->sPop($set, $i);
+
+        /* Make sure we got an arary and the count is right */
+        if ($this->assertTrue(is_array($ret)) && $this->assertTrue(count($ret) == $count)) {
+            /* Probably overkill but validate the actual returned members */
+            for ($i = 0; $i < $count; $i++) {
+                $this->assertTrue(in_array($prefix.$i, $ret));
+            }
+        }
     }
 
     public function testsRandMember() {
