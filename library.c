@@ -1153,7 +1153,6 @@ PHP_REDIS_API void redis_long_response(INTERNAL_FUNCTION_PARAMETERS,
             if(ret > LONG_MAX) { /* overflow */
                 add_next_index_stringl(z_tab, response + 1, response_len - 1);
             } else {
-                efree(response);
                 add_next_index_long(z_tab, (long)ret);
             }
         } else {
@@ -1162,16 +1161,15 @@ PHP_REDIS_API void redis_long_response(INTERNAL_FUNCTION_PARAMETERS,
             } else {
                 RETVAL_LONG((long)ret);
             }
-            efree(response);
         }
     } else {
-        efree(response);
         IF_NOT_ATOMIC() {
           add_next_index_null(z_tab);
         } else {
-            RETURN_FALSE;
+            RETVAL_FALSE;
         }
     }
+    efree(response);
 }
 
 /* Helper method to convert [key, value, key, value] into [key => value,
@@ -1614,7 +1612,7 @@ PHP_REDIS_API int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
             redis_sock->watching = 0;
 
             /* Stil valid? */
-            if(redis_sock->stream && !redis_sock->persistent) {
+            if (!redis_sock->persistent) {
                 php_stream_close(redis_sock->stream);
             }
             redis_sock->stream = NULL;
@@ -2104,6 +2102,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
     if((*reply_type = php_stream_getc(redis_sock->stream)) == EOF) {
         zend_throw_exception(redis_exception_ce, "socket error on read socket", 
             0 TSRMLS_CC);
+        return -1;
     }
 
     // If this is a BULK, MULTI BULK, or simply an INTEGER response, we can 
