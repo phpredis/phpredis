@@ -348,7 +348,7 @@ zval_get_string(zval *op)
         }
         case IS_DOUBLE: {
             zstr->gc = 0x10;
-            zstr->len = spprintf(&zstr->val, 0, "%g", Z_DVAL_P(op));
+            zstr->len = spprintf(&zstr->val, 0, "%.16g", Z_DVAL_P(op));
             break;
         }
         EMPTY_SWITCH_DEFAULT_CASE()
