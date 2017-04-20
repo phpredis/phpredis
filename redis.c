@@ -38,10 +38,6 @@
 
 #include "library.h"
 
-#define R_SUB_CALLBACK_CLASS_TYPE 1
-#define R_SUB_CALLBACK_FT_TYPE 2
-#define R_SUB_CLOSURE_TYPE 3
-
 #ifdef PHP_SESSION
 extern ps_module ps_mod_redis;
 extern ps_module ps_mod_redis_cluster;
@@ -2542,7 +2538,7 @@ PHP_METHOD(Redis, exec)
 {
     RedisSock *redis_sock;
     char *cmd;
-    int cmd_len;
+    int cmd_len, ret;
     zval *object;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
@@ -2557,19 +2553,15 @@ PHP_METHOD(Redis, exec)
         SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
         efree(cmd);
 
-        if(redis_sock_read_multibulk_multi_reply(
-           INTERNAL_FUNCTION_PARAM_PASSTHRU,
-           redis_sock) < 0)
-        {
-            zval_dtor(return_value);
-            free_reply_callbacks(redis_sock);
-            redis_sock->mode = ATOMIC;
-            redis_sock->watching = 0;
-            RETURN_FALSE;
-        }
+        ret = redis_sock_read_multibulk_multi_reply(
+            INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
         free_reply_callbacks(redis_sock);
         redis_sock->mode = ATOMIC;
         redis_sock->watching = 0;
+        if (ret < 0) {
+            zval_dtor(return_value);
+            RETURN_FALSE;
+        }
     }
 
     IF_PIPELINE() {

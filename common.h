@@ -434,9 +434,9 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_PREFIX             2
 #define REDIS_OPT_READ_TIMEOUT       3
 #define REDIS_OPT_SCAN               4
+#define REDIS_OPT_FAILOVER           5
 
 /* cluster options */
-#define REDIS_OPT_FAILOVER               5
 #define REDIS_FAILOVER_NONE              0
 #define REDIS_FAILOVER_ERROR             1
 #define REDIS_FAILOVER_DISTRIBUTE        2
