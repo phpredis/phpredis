@@ -84,28 +84,4 @@ PHP_REDIS_API int redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
 
 PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
 
-#if (PHP_MAJOR_VERSION < 7)
-#if ZEND_MODULE_API_NO >= 20100000
-#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl) do { \
-    char dbl_decsep = '.'; \
-    dbl_str = emalloc(sizeof(zend_string)); \
-    dbl_str->val = _php_math_number_format_ex(dbl, 16, &dbl_decsep, 1, NULL, 0); \
-    dbl_str->len = strlen(dbl_str->val); \
-    dbl_str->gc = 0x11; \
-} while (0);
-#else
-#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl) do { \
-    dbl_str = emalloc(sizeof(zend_string)); \
-    dbl_str->val = _php_math_number_format(dbl, 16, '.', '\x00'); \
-    dbl_str->len = strlen(dbl_str->val); \
-    dbl_str->gc = 0x11; \
-} while (0)
-#endif
-#else
-#define REDIS_DOUBLE_TO_STRING(dbl_str, dbl) do { \
-    char dbl_decsep = '.'; \
-    dbl_str = _php_math_number_format_ex(dbl, 16, &dbl_decsep, 1, NULL, 0); \
-} while (0);
-#endif
-
 #endif
