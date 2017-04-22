@@ -94,7 +94,7 @@ static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
                 redis_sock->timeout);
         }
     }
-    switch(php_stream_from_persistent_id(persistent_id, &stream)) {
+    switch(php_stream_from_persistent_id(persistent_id, &stream TSRMLS_DC)) {
       case PHP_STREAM_PERSISTENT_SUCCESS:
             /* use a 0 second timeout when checking if the socket
  *            * has already died */
