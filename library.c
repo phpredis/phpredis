@@ -78,7 +78,7 @@ static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
 
 
 /* Helper to ensure we always get the latest persistent stream in case its been closed */
- int get_persistent_redis(RedisSock *redis_sock TSRMLS_DC) {
+ int get_persistent_redis(RedisSock *redis_sock TSRMLS_CC) {
     php_stream *stream = NULL;
     char *persistent_id;
     if (!redis_sock->persistent){
@@ -94,7 +94,7 @@ static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
                 redis_sock->timeout);
         }
     }
-    switch(php_stream_from_persistent_id(persistent_id, &stream TSRMLS_DC)) {
+    switch(php_stream_from_persistent_id(persistent_id, &stream TSRMLS_CC)) {
       case PHP_STREAM_PERSISTENT_SUCCESS:
             /* use a 0 second timeout when checking if the socket
  *            * has already died */
