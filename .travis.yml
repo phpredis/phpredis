@@ -10,20 +10,27 @@ php:
   - nightly
 env: CC=gcc
 matrix:
-  include:
-    - env: CC=clang
-      php: 7.0
-    - env: CC=clang
-      php: 7.1
-    - env: CC=clang
-      php: nightly
   allow_failures:
     - php: nightly
+  include:
+    - php: 5.4
+      env: CC=clang
+    - php: 5.5
+      env: CC=clang
+    - php: 5.6
+      env: CC=clang
+    - php: 7.0
+      env: CC=clang
+    - php: 7.1
+      env: CC=clang
 addons:
   apt:
     packages: clang
-before_install: phpize
-install: ./configure CFLAGS=-Wall --prefix=/usr && sudo make install
+before_install:
+  - phpize
+  - pecl install igbinary
+  - ./configure --enable-redis-igbinary CFLAGS=-Wall
+install: make install
 before_script:
   - gem install redis
   - mkdir -p tests/nodes/ && echo >> tests/nodes/nodemap

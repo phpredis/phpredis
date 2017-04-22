@@ -13,15 +13,11 @@ To maintain consistency with the RedisArray class, one can create and connect to
 $obj_cluster = new RedisCluster(NULL, Array('host:7000', 'host:7001', 'host:7003'));
 
 // Connect and specify timeout and read_timeout
-$obj_cluster = new RedisCluster(
-    NULL, Array("host:7000", "host:7001"), 1.5, 1.5
-);
+$obj_cluster = new RedisCluster(NULL, Array("host:7000", "host:7001"), 1.5, 1.5);
 
 // Connect with read/write timeout as well as specify that phpredis should use
 // persistent connections to each node.
-$obj_cluster = new RedisCluster(
-    NULL, Array("host:7000", "host:7001"), 1.5, 1.5, true
-);
+$obj_cluster = new RedisCluster(NULL, Array("host:7000", "host:7001"), 1.5, 1.5, true);
 
 </pre>
 

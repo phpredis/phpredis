@@ -55,16 +55,14 @@
 #define CLUSTER_LAZY_CONNECT(s) \
     if(s->lazy_connect) { \
         s->lazy_connect = 0; \
-        redis_sock_server_open(s, 1 TSRMLS_CC); \
+        redis_sock_server_open(s TSRMLS_CC); \
     }
 
 /* Clear out our "last error" */
 #define CLUSTER_CLEAR_ERROR(c) \
-    if(c->err) { \
-        efree(c->err); \
-        c->err = NULL; \
-        c->err_len = 0; \
-    } \
+    if(c->err) efree(c->err); \
+    c->err = NULL; \
+    c->err_len = 0; \
     c->clusterdown = 0;
 
 /* Protected sending of data down the wire to a RedisSock->stream */
@@ -173,8 +171,9 @@ typedef struct clusterFoldItem clusterFoldItem;
 
 /* RedisCluster implementation structure */
 typedef struct redisCluster {
-    /* Object reference for Zend */
+#if (PHP_MAJOR_VERSION < 7)
     zend_object std;
+#endif
 
     /* Timeout and read timeout (for normal operations) */
     double timeout;
@@ -244,6 +243,11 @@ typedef struct redisCluster {
     int                redir_host_len;
     unsigned short     redir_slot;
     unsigned short     redir_port;
+
+#if (PHP_MAJOR_VERSION >= 7)
+    /* Zend object handler */
+    zend_object std;
+#endif
 } redisCluster;
 
 /* RedisCluster response processing callback */
@@ -329,7 +333,7 @@ void cluster_free_reply(clusterReply *reply, int free_data);
 HashTable *cluster_dist_create();
 void cluster_dist_free(HashTable *ht);
 int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key, 
-    int key_len, clusterKeyVal **kv);
+    strlen_t key_len, clusterKeyVal **kv);
 void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *val 
     TSRMLS_DC);
 

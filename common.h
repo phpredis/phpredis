@@ -4,7 +4,10 @@
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
 
+#define PHPREDIS_NOTUSED(v) ((void)v)
+
 #include <ext/standard/php_var.h>
+#include <ext/standard/php_math.h>
 #if (PHP_MAJOR_VERSION < 7)
 #include <ext/standard/php_smart_str.h>
 typedef smart_str smart_string;
@@ -14,12 +17,16 @@ typedef smart_str smart_string;
 #define smart_string_appendl(dest, src, len) smart_str_appendl(dest, src, len)
 
 typedef struct {
+    short gc;
     size_t len;
     char *val;
 } zend_string;
 
 #define zend_string_release(s) do { \
-    if ((s) && (s)->val) efree((s)->val); \
+    if ((s) && (s)->gc) { \
+        if ((s)->gc & 0x10 && (s)->val) efree((s)->val); \
+        if ((s)->gc & 0x01) efree((s)); \
+    } \
 } while (0)
 
 #define ZEND_HASH_FOREACH_KEY_VAL(ht, _h, _key, _val) do { \
@@ -196,9 +203,9 @@ inline_zend_get_parameters_array(int ht, int param_count, zval *argument_array T
 
 typedef zend_rsrc_list_entry zend_resource;
 
-static int (*_add_next_index_string)(zval *, const char *, int) = &add_next_index_string;
+extern int (*_add_next_index_string)(zval *, const char *, int);
 #define add_next_index_string(arg, str) _add_next_index_string(arg, str, 1);
-static int (*_add_next_index_stringl)(zval *, const char *, uint, int) = &add_next_index_stringl;
+extern int (*_add_next_index_stringl)(zval *, const char *, uint, int);
 #define add_next_index_stringl(arg, str, length) _add_next_index_stringl(arg, str, length, 1);
 
 #undef ZVAL_STRING
@@ -247,30 +254,30 @@ inline_call_user_function(HashTable *function_table, zval *object, zval *functio
 
 #undef add_assoc_bool
 #define add_assoc_bool(__arg, __key, __b) add_assoc_bool_ex(__arg, __key, strlen(__key), __b)
-static int (*_add_assoc_bool_ex)(zval *, const char *, uint, int) = &add_assoc_bool_ex;
+extern int (*_add_assoc_bool_ex)(zval *, const char *, uint, int);
 #define add_assoc_bool_ex(_arg, _key, _key_len, _b) _add_assoc_bool_ex(_arg, _key, _key_len + 1, _b)
 
 #undef add_assoc_long
 #define add_assoc_long(__arg, __key, __n) add_assoc_long_ex(__arg, __key, strlen(__key), __n)
-static int (*_add_assoc_long_ex)(zval *, const char *, uint, long) = &add_assoc_long_ex;
+extern int (*_add_assoc_long_ex)(zval *, const char *, uint, long);
 #define add_assoc_long_ex(_arg, _key, _key_len, _n) _add_assoc_long_ex(_arg, _key, _key_len + 1, _n)
 
 #undef add_assoc_double
 #define add_assoc_double(__arg, __key, __d) add_assoc_double_ex(__arg, __key, strlen(__key), __d)
-static int (*_add_assoc_double_ex)(zval *, const char *, uint, double) = &add_assoc_double_ex;
+extern int (*_add_assoc_double_ex)(zval *, const char *, uint, double);
 #define add_assoc_double_ex(_arg, _key, _key_len, _d) _add_assoc_double_ex(_arg, _key, _key_len + 1, _d)
 
 #undef add_assoc_string
 #define add_assoc_string(__arg, __key, __str) add_assoc_string_ex(__arg, __key, strlen(__key), __str)
-static int (*_add_assoc_string_ex)(zval *, const char *, uint, char *, int) = &add_assoc_string_ex;
+extern int (*_add_assoc_string_ex)(zval *, const char *, uint, char *, int);
 #define add_assoc_string_ex(_arg, _key, _key_len, _str) _add_assoc_string_ex(_arg, _key, _key_len + 1, _str, 1)
 
-static int (*_add_assoc_stringl_ex)(zval *, const char *, uint, char *, uint, int) = &add_assoc_stringl_ex;
+extern int (*_add_assoc_stringl_ex)(zval *, const char *, uint, char *, uint, int);
 #define add_assoc_stringl_ex(_arg, _key, _key_len, _str, _length) _add_assoc_stringl_ex(_arg, _key, _key_len + 1, _str, _length, 1)
 
 #undef add_assoc_zval
 #define add_assoc_zval(__arg, __key, __value) add_assoc_zval_ex(__arg, __key, strlen(__key), __value)
-static int (*_add_assoc_zval_ex)(zval *, const char *, uint, zval *) = &add_assoc_zval_ex;
+extern int (*_add_assoc_zval_ex)(zval *, const char *, uint, zval *);
 #define add_assoc_zval_ex(_arg, _key, _key_len, _value) _add_assoc_zval_ex(_arg, _key, _key_len + 1, _value);
 
 typedef long zend_long;
@@ -300,11 +307,72 @@ zval_get_long(zval *op)
     return 0;
 }
 
-static void (*_php_var_serialize)(smart_str *, zval **, php_serialize_data_t * TSRMLS_DC) = &php_var_serialize;
+static zend_always_inline double
+zval_get_double(zval *op)
+{
+    switch (Z_TYPE_P(op)) {
+        case IS_BOOL:
+        case IS_LONG:
+            return (double)Z_LVAL_P(op);
+        case IS_DOUBLE:
+            return Z_DVAL_P(op);
+        case IS_STRING:
+            return zend_strtod(Z_STRVAL_P(op), NULL);
+        EMPTY_SWITCH_DEFAULT_CASE()
+    }
+    return 0.0;
+}
+
+static zend_always_inline zend_string *
+zval_get_string(zval *op)
+{
+    zend_string *zstr = ecalloc(1, sizeof(zend_string));
+
+    zstr->val = "";
+    zstr->len = 0;
+    switch (Z_TYPE_P(op)) {
+        case IS_STRING:
+            zstr->val = Z_STRVAL_P(op);
+            zstr->len = Z_STRLEN_P(op);
+            break;
+        case IS_BOOL:
+            if (Z_LVAL_P(op)) {
+                zstr->val = "1";
+                zstr->len = 1;
+            }
+            break;
+        case IS_LONG: {
+            zstr->gc = 0x10;
+            zstr->len = spprintf(&zstr->val, 0, "%ld", Z_LVAL_P(op));
+            break;
+        }
+        case IS_DOUBLE: {
+            zstr->gc = 0x10;
+            zstr->len = spprintf(&zstr->val, 0, "%.16g", Z_DVAL_P(op));
+            break;
+        }
+        EMPTY_SWITCH_DEFAULT_CASE()
+    }
+    zstr->gc |= 0x01;
+    return zstr;
+}
+
+extern void (*_php_var_serialize)(smart_str *, zval **, php_serialize_data_t * TSRMLS_DC);
 #define php_var_serialize(buf, struc, data) _php_var_serialize(buf, &struc, data TSRMLS_CC)
-static int (*_php_var_unserialize)(zval **, const unsigned char **, const unsigned char *, php_unserialize_data_t * TSRMLS_DC) = &php_var_unserialize;
+extern int (*_php_var_unserialize)(zval **, const unsigned char **, const unsigned char *, php_unserialize_data_t * TSRMLS_DC);
 #define php_var_unserialize(rval, p, max, var_hash) _php_var_unserialize(&rval, p, max, var_hash TSRMLS_CC)
 typedef int strlen_t;
+
+/* If ZEND_MOD_END isn't defined, use legacy version */
+#ifndef ZEND_MOD_END
+#define ZEND_MOD_END { NULL, NULL, NULL }
+#endif
+
+/* PHP_FE_END exists since 5.3.7 */
+#ifndef PHP_FE_END
+#define PHP_FE_END { NULL, NULL, NULL }
+#endif
+
 #else
 #include <zend_smart_str.h>
 #include <ext/standard/php_smart_string.h>
@@ -316,13 +384,9 @@ typedef size_t strlen_t;
 #define NULL   ((void *) 0)
 #endif
 
-#define redis_sock_name "Redis Socket Buffer"
 #define REDIS_SOCK_STATUS_FAILED       0
 #define REDIS_SOCK_STATUS_DISCONNECTED 1
-#define REDIS_SOCK_STATUS_UNKNOWN      2
-#define REDIS_SOCK_STATUS_CONNECTED    3
-
-#define redis_multi_access_type_name "Redis Multi type access"
+#define REDIS_SOCK_STATUS_CONNECTED    2
 
 #define _NL "\r\n"
 
@@ -370,9 +434,9 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_PREFIX             2
 #define REDIS_OPT_READ_TIMEOUT       3
 #define REDIS_OPT_SCAN               4
+#define REDIS_OPT_FAILOVER           5
 
 /* cluster options */
-#define REDIS_OPT_FAILOVER               5
 #define REDIS_FAILOVER_NONE              0
 #define REDIS_FAILOVER_ERROR             1
 #define REDIS_FAILOVER_DISTRIBUTE        2
@@ -388,62 +452,26 @@ typedef enum _PUBSUB_TYPE {
 
 /* GETBIT/SETBIT offset range limits */
 #define BITOP_MIN_OFFSET 0
-#define BITOP_MAX_OFFSET 4294967295
+#define BITOP_MAX_OFFSET 4294967295U
 
-/* Specific error messages we want to throw against */
-#define REDIS_ERR_LOADING_MSG "LOADING Redis is loading the dataset in memory"
-#define REDIS_ERR_LOADING_KW  "LOADING"
-#define REDIS_ERR_AUTH_MSG    "NOAUTH Authentication required."
-#define REDIS_ERR_AUTH_KW     "NOAUTH"
-#define REDIS_ERR_SYNC_MSG    "MASTERDOWN Link with MASTER is down and slave-serve-stale-data is set to 'no'"
-#define REDIS_ERR_SYNC_KW     "MASTERDOWN"
+#define IF_ATOMIC() if (redis_sock->mode == ATOMIC)
+#define IF_NOT_ATOMIC() if (redis_sock->mode != ATOMIC)
+#define IF_MULTI() if (redis_sock->mode == MULTI)
+#define IF_NOT_MULTI() if (redis_sock->mode != MULTI)
+#define IF_PIPELINE() if (redis_sock->mode == PIPELINE)
+#define IF_NOT_PIPELINE() if (redis_sock->mode != PIPELINE)
 
-#define IF_MULTI() if(redis_sock->mode == MULTI)
-#define IF_MULTI_OR_ATOMIC() if(redis_sock->mode == MULTI || redis_sock->mode == ATOMIC)\
-
-#define IF_MULTI_OR_PIPELINE() if(redis_sock->mode == MULTI || redis_sock->mode == PIPELINE)
-#define IF_PIPELINE() if(redis_sock->mode == PIPELINE)
-#define IF_NOT_PIPELINE() if(redis_sock->mode != PIPELINE)
-#define IF_NOT_MULTI() if(redis_sock->mode != MULTI)
-#define IF_NOT_ATOMIC() if(redis_sock->mode != ATOMIC)
-#define IF_ATOMIC() if(redis_sock->mode == ATOMIC)
-#define ELSE_IF_MULTI() else IF_MULTI() { \
-    if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) { \
-        RETURN_ZVAL(getThis(), 1, 0);\
+#define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) do { \
+    if (redis_sock->pipeline_cmd == NULL) { \
+        redis_sock->pipeline_cmd = estrndup(cmd, cmd_len); \
     } else { \
-        RETURN_FALSE; \
+        redis_sock->pipeline_cmd = erealloc(redis_sock->pipeline_cmd, \
+            redis_sock->pipeline_len + cmd_len); \
+        memcpy(&redis_sock->pipeline_cmd[redis_sock->pipeline_len], \
+            cmd, cmd_len); \
     } \
-}
-
-#define ELSE_IF_PIPELINE() else IF_PIPELINE() { \
-    RETURN_ZVAL(getThis(), 1, 0);\
-}
-
-#define MULTI_RESPONSE(callback) IF_MULTI_OR_PIPELINE() { \
-    fold_item *f1, *current; \
-    f1 = malloc(sizeof(fold_item)); \
-    f1->fun = (void *)callback; \
-    f1->next = NULL; \
-    current = redis_sock->current;\
-    if(current) current->next = f1; \
-    redis_sock->current = f1; \
-  }
-
-#define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) request_item *tmp; \
-    struct request_item *current_request;\
-    tmp = malloc(sizeof(request_item));\
-    tmp->request_str = calloc(cmd_len, 1);\
-    memcpy(tmp->request_str, cmd, cmd_len);\
-    tmp->request_size = cmd_len;\
-    tmp->next = NULL;\
-    current_request = redis_sock->pipeline_current; \
-    if(current_request) {\
-        current_request->next = tmp;\
-    } \
-    redis_sock->pipeline_current = tmp; \
-    if(NULL == redis_sock->pipeline_head) { \
-        redis_sock->pipeline_head = redis_sock->pipeline_current;\
-    }
+    redis_sock->pipeline_len += cmd_len; \
+} while (0)
 
 #define SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len) \
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) { \
@@ -451,36 +479,19 @@ typedef enum _PUBSUB_TYPE {
     RETURN_FALSE; \
 }
 
-#define REDIS_SAVE_CALLBACK(callback, closure_context) \
-    IF_MULTI_OR_PIPELINE() { \
-        fold_item *f1, *current; \
-        f1 = malloc(sizeof(fold_item)); \
-        f1->fun = (void *)callback; \
-        f1->ctx = closure_context; \
-        f1->next = NULL; \
-        current = redis_sock->current;\
-        if(current) current->next = f1; \
-        redis_sock->current = f1; \
-        if(NULL == redis_sock->head) { \
-            redis_sock->head = redis_sock->current;\
-        }\
-}
-
-#define REDIS_ELSE_IF_MULTI(function, closure_context) \
-    else IF_MULTI() { \
-        if(redis_response_enqueued(redis_sock TSRMLS_CC) == 1) {\
-            REDIS_SAVE_CALLBACK(function, closure_context); \
-            RETURN_ZVAL(getThis(), 1, 0);\
-        } else {\
-            RETURN_FALSE;\
-        }\
-}
-
-#define REDIS_ELSE_IF_PIPELINE(function, closure_context) \
-    else IF_PIPELINE() { \
-        REDIS_SAVE_CALLBACK(function, closure_context); \
-        RETURN_ZVAL(getThis(), 1, 0); \
-}
+#define REDIS_SAVE_CALLBACK(callback, closure_context) do { \
+    fold_item *f1 = malloc(sizeof(fold_item)); \
+    f1->fun = (void *)callback; \
+    f1->ctx = closure_context; \
+    f1->next = NULL; \
+    if (redis_sock->current) { \
+        redis_sock->current->next = f1; \
+    } \
+    redis_sock->current = f1; \
+    if (NULL == redis_sock->head) { \
+        redis_sock->head = redis_sock->current; \
+    } \
+} while (0)
 
 #define REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len) \
     IF_PIPELINE() { \
@@ -491,11 +502,17 @@ typedef enum _PUBSUB_TYPE {
     efree(cmd);
 
 #define REDIS_PROCESS_RESPONSE_CLOSURE(function, closure_context) \
-    REDIS_ELSE_IF_MULTI(function, closure_context) \
-    REDIS_ELSE_IF_PIPELINE(function, closure_context);
+    IF_MULTI() { \
+        if (redis_response_enqueued(redis_sock TSRMLS_CC) != SUCCESS) { \
+            RETURN_FALSE; \
+        } \
+    } \
+    REDIS_SAVE_CALLBACK(function, closure_context); \
+    RETURN_ZVAL(getThis(), 1, 0); \
 
-#define REDIS_PROCESS_RESPONSE(function) \
-    REDIS_PROCESS_RESPONSE_CLOSURE(function, NULL)
+#define REDIS_PROCESS_RESPONSE(function) else { \
+    REDIS_PROCESS_RESPONSE_CLOSURE(function, NULL) \
+}
 
 /* Clear redirection info */
 #define REDIS_MOVED_CLEAR(redis_sock) \
@@ -507,7 +524,7 @@ typedef enum _PUBSUB_TYPE {
  * function is redis_<cmdname>_cmd */
 #define REDIS_PROCESS_CMD(cmdname, resp_func) \
     RedisSock *redis_sock; char *cmd; int cmd_len; void *ctx=NULL; \
-    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0 || \
+    if ((redis_sock = redis_sock_get(getThis() TSRMLS_CC, 0)) == NULL || \
        redis_##cmdname##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock, \
                              &cmd, &cmd_len, NULL, &ctx)==FAILURE) { \
             RETURN_FALSE; \
@@ -515,14 +532,15 @@ typedef enum _PUBSUB_TYPE {
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
     IF_ATOMIC() { \
         resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx); \
-    } \
-    REDIS_PROCESS_RESPONSE_CLOSURE(resp_func,ctx);
+    } else { \
+        REDIS_PROCESS_RESPONSE_CLOSURE(resp_func, ctx) \
+    }
 
 /* Process a command but with a specific command building function 
  * and keyword which is passed to us*/
 #define REDIS_PROCESS_KW_CMD(kw, cmdfunc, resp_func) \
     RedisSock *redis_sock; char *cmd; int cmd_len; void *ctx=NULL; \
-    if(redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0 || \
+    if ((redis_sock = redis_sock_get(getThis() TSRMLS_CC, 0)) == NULL || \
        cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw, &cmd, \
                &cmd_len, NULL, &ctx)==FAILURE) { \
             RETURN_FALSE; \
@@ -531,8 +549,9 @@ typedef enum _PUBSUB_TYPE {
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
     IF_ATOMIC() { \
         resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx); \
-    } \
-    REDIS_PROCESS_RESPONSE_CLOSURE(resp_func,ctx);
+    } else { \
+        REDIS_PROCESS_RESPONSE_CLOSURE(resp_func, ctx) \
+    }
 
 #define REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock) \
     redis_stream_close(redis_sock TSRMLS_CC); \
@@ -568,12 +587,6 @@ typedef struct fold_item {
     struct fold_item *next;
 } fold_item;
 
-typedef struct request_item {
-    char *request_str; 
-    int request_size; /* size_t */
-    struct request_item *next;
-} request_item;
-
 /* {{{ struct RedisSock */
 typedef struct {
     php_stream     *stream;
@@ -599,8 +612,8 @@ typedef struct {
     fold_item      *head;
     fold_item      *current;
 
-    request_item   *pipeline_head;
-    request_item   *pipeline_current;
+    char           *pipeline_cmd;
+    size_t         pipeline_len;
 
     char           *err;
     int            err_len;
@@ -612,7 +625,16 @@ typedef struct {
 } RedisSock;
 /* }}} */
 
-void
-free_reply_callbacks(zval *z_this, RedisSock *redis_sock);
+#if (PHP_MAJOR_VERSION < 7)
+typedef struct {
+    zend_object std;
+    RedisSock *sock;
+} redis_object;
+#else
+typedef struct {
+    RedisSock *sock;
+    zend_object std;
+} redis_object;
+#endif
 
 #endif

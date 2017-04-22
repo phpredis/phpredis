@@ -32,6 +32,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testWait()     { return $this->markTestSkipped(); }
     public function testSelect()   { return $this->markTestSkipped(); }
     public function testReconnectSelect() { return $this->markTestSkipped(); }
+    public function testMultipleConnect() { return $this->markTestSkipped(); }
 
     /* Load our seeds on construction */
     public function __construct() {
@@ -344,6 +345,69 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertTrue(1 === $this->redis->eval($scr,Array($str_key), 1));
         $this->assertTrue(1 === $this->redis->evalsha($sha,Array($str_key), 1));
     }
+    
+    public function testEvalBulkResponse() {
+        $str_key1 = uniqid() . '-' . rand(1,1000) . '{hash}';
+        $str_key2 = uniqid() . '-' . rand(1,1000) . '{hash}';
+
+        $this->redis->script($str_key1, 'flush');
+        $this->redis->script($str_key2, 'flush');
+
+        $scr = "return {KEYS[1],KEYS[2]}";
+
+        $result = $this->redis->eval($scr,Array($str_key1, $str_key2), 2);
+
+        $this->assertTrue($str_key1 === $result[0]);
+        $this->assertTrue($str_key2 === $result[1]);
+    }
+
+    public function testEvalBulkResponseMulti() {
+        $str_key1 = uniqid() . '-' . rand(1,1000) . '{hash}';
+        $str_key2 = uniqid() . '-' . rand(1,1000) . '{hash}';
+
+        $this->redis->script($str_key1, 'flush');
+        $this->redis->script($str_key2, 'flush');
+
+        $scr = "return {KEYS[1],KEYS[2]}";
+
+        $this->redis->multi();
+        $this->redis->eval($scr,Array($str_key1, $str_key2), 2);
+
+        $result = $this->redis->exec();
+
+        $this->assertTrue($str_key1 === $result[0][0]);
+        $this->assertTrue($str_key2 === $result[0][1]);
+    }
+
+    public function testEvalBulkEmptyResponse() {
+        $str_key1 = uniqid() . '-' . rand(1,1000) . '{hash}';
+        $str_key2 = uniqid() . '-' . rand(1,1000) . '{hash}';
+
+        $this->redis->script($str_key1, 'flush');
+        $this->redis->script($str_key2, 'flush');
+
+        $scr = "for _,key in ipairs(KEYS) do redis.call('SET', key, 'value') end";
+
+        $result = $this->redis->eval($scr,Array($str_key1, $str_key2), 2);
+
+        $this->assertTrue(null === $result);
+    }
+
+    public function testEvalBulkEmptyResponseMulti() {
+        $str_key1 = uniqid() . '-' . rand(1,1000) . '{hash}';
+        $str_key2 = uniqid() . '-' . rand(1,1000) . '{hash}';
+
+        $this->redis->script($str_key1, 'flush');
+        $this->redis->script($str_key2, 'flush');
+
+        $scr = "for _,key in ipairs(KEYS) do redis.call('SET', key, 'value') end";
+
+        $this->redis->multi();
+        $this->redis->eval($scr,Array($str_key1, $str_key2), 2);
+        $result = $this->redis->exec();
+
+        $this->assertTrue(null === $result[0]);
+    }
 
     /* Cluster specific introspection stuff */
     public function testIntrospection() {
@@ -505,6 +569,19 @@ class Redis_Cluster_Test extends Redis_Test {
     protected function rawCommandArray($key, $args) {
         array_unshift($args, $key);
         return call_user_func_array(Array($this->redis, 'rawCommand'), $args);
+    }
+
+    public function testSession()
+    {
+        ini_set('session.save_handler', 'rediscluster');
+        ini_set('session.save_path', implode('&', array_map(function ($seed) {
+            return 'seed[]=' . $seed;
+        }, self::$_arr_node_map)) . '&failover=error');
+        if (!@session_start()) {
+            return $this->markTestSkipped();
+        }
+        session_write_close();
+        $this->assertTrue($this->redis->exists('PHPREDIS_CLUSTER_SESSION:' . session_id()));
     }
 }
 ?>

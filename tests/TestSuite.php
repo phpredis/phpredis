@@ -52,16 +52,18 @@ class TestSuite {
     }
 
     protected function assertFalse($bool) {
-        $this->assertTrue(!$bool);
+        return $this->assertTrue(!$bool);
     }
 
     protected function assertTrue($bool) {
         if($bool)
-            return;
+            return true;
 
         $bt = debug_backtrace(false);
         self::$errors []= sprintf("Assertion failed: %s:%d (%s)\n",
             $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+
+        return false;
     }
 
     protected function assertLess($a, $b) {

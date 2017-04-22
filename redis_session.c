@@ -167,7 +167,7 @@ redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
             if(rpm->auth && rpm->auth_len && rpm->redis_sock->status != REDIS_SOCK_STATUS_CONNECTED) {
                     needs_auth = 1;
             }
-            redis_sock_server_open(rpm->redis_sock, 0 TSRMLS_CC);
+            redis_sock_server_open(rpm->redis_sock TSRMLS_CC);
             if(needs_auth) {
                 redis_pool_member_auth(rpm TSRMLS_CC);
             }
@@ -206,7 +206,7 @@ PS_OPEN_FUNC(redis)
 
         if (i < j) {
             int weight = 1;
-            double timeout = 86400.0;
+            double timeout = 86400.0, read_timeout = 0.0;
             int persistent = 0;
             int database = -1;
             char *prefix = NULL, *auth = NULL, *persistent_id = NULL;
@@ -246,6 +246,9 @@ PS_OPEN_FUNC(redis)
                 if ((param = zend_hash_str_find(Z_ARRVAL(params), "timeout", sizeof("timeout") - 1)) != NULL) {
                     timeout = atof(Z_STRVAL_P(param));
                 }
+                if ((param = zend_hash_str_find(Z_ARRVAL(params), "read_timeout", sizeof("read_timeout") - 1)) != NULL) {
+                    read_timeout = atof(Z_STRVAL_P(param));
+                }
                 if ((param = zend_hash_str_find(Z_ARRVAL(params), "persistent", sizeof("persistent") - 1)) != NULL) {
                     persistent = (atol(Z_STRVAL_P(param)) == 1 ? 1 : 0);
                 }
@@ -280,9 +283,9 @@ PS_OPEN_FUNC(redis)
 
             RedisSock *redis_sock;
             if(url->host) {
-                redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, persistent, persistent_id, retry_interval, 0);
+                redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
             } else { /* unix */
-                redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, persistent, persistent_id, retry_interval, 0);
+                redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
             }
             redis_pool_add(pool, redis_sock, weight, database, prefix, auth TSRMLS_CC);
 
@@ -360,7 +363,7 @@ PS_READ_FUNC(redis)
     resp = redis_session_key(rpm, key->val, key->len, &resp_len);
 #endif
     cmd_len = redis_cmd_format_static(&cmd, "GET", "s", resp, resp_len);
-    
+
     efree(resp);
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
@@ -368,15 +371,26 @@ PS_READ_FUNC(redis)
     }
     efree(cmd);
 
-    /* read response */
-    if ((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC)) == NULL) {
+    /* Read response from Redis.  If we get a NULL response from redis_sock_read
+     * this can indicate an error, OR a "NULL bulk" reply (empty session data)
+     * in which case we can reply with success. */
+    if ((resp = redis_sock_read(redis_sock, &resp_len TSRMLS_CC)) == NULL && resp_len != -1) {
         return FAILURE;
     }
 #if (PHP_MAJOR_VERSION < 7)
-    *val = resp;
-    *vallen = resp_len;
+    if (resp_len < 0) {
+        *val = STR_EMPTY_ALLOC();
+        *vallen = 0;
+    } else {
+        *val = resp;
+        *vallen = resp_len;
+    }
 #else
-    *val = zend_string_init(resp, resp_len, 0);
+    if (resp_len < 0) {
+        *val = ZSTR_EMPTY_ALLOC();
+    } else {
+        *val = zend_string_init(resp, resp_len, 0);
+    }
     efree(resp);
 #endif
 

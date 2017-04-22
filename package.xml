@@ -21,56 +21,47 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>michael.grunder@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2016-06-02</date>
+ <lead>
+  <name>Pavlo Yatsukhnenko</name>
+  <user>yatsukhnenko</user>
+  <email>p.yatsukhnenko@gmail.com</email>
+  <active>yes</active>
+ </lead>
+ <date>2017-01-16</date>
  <version>
-  <release>2.2.8</release>
-  <api>2.2.8</api>
+  <release>3.1.1RC2</release>
+  <api>3.1.1RC2</api>
  </version>
  <stability>
-  <release>stable</release>
-  <api>stable</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 2.2.8
+    phpredis 3.1.1RC2
 
-    The main improvement in this version of phpredis is support for Redis
-    Cluster.  This version of phpredis is intended for versions of php older
-    than 7.
+    * Additional test updates for 32 bit systems (@remicollet)
+    * ARM rounding issue in tests (@remicollet)
+    * Use new zend_list_close instead of zend_list_delete when reconnecting.
+    * Refactoring of redis_boolean_response_impl and redis_sock_write (@yatsukhnenko)
 
-    In addition there have been many bug fixes and improvements to non cluster
-    related commands, which are listed below.
+    phpredis 3.1.1.RC1
 
-    I've attempted to include everyone who contribued to the project in each fix
-    description and have included names or github user ids.
+    This release contains mostly fixes for issues introduced when merging
+    the php 5 and 7 codebase into a single branch.
 
-    Thanks to everyone for submitting bug reports and pull requests.  A special
-    thanks to Remi Collet for helping with any and all packaging related issues
+    * Fixed a segfault in igbinary serialization (@yatsukhnenko)
+    * Restore 2.2.8/3.0.0 functionality to distinguish between an error
+      and simply empty session data. (@remicollet)
+    * Fix double to string conversion function (@yatsukhnenko)
+    * Use PHP_FE_END definition when available (@remicollet)
+    * Fixed various 'static function declared but not used' warnings
+    * Fixes to various calls which were typecasting pointers to the
+      wrong size. (@remicollet)
 
-    \o/
-    
-    --- Improvements ---
-
-    * Added randomization to our seed nodes to balance which instance is used
-      to map the keyspace (Vitaliy Stepanyuk) [32eb1c5f]
-    * Added support for IPv6 addresses
-
-    --- Fixes ---
-
-    * PHP liveness checking workaround (Shafreeck Sea) [c18d58b9]
-    * Various documentation and code formatting and style fixes (ares333,
-      sanpili, Bryan Nelson, linfangrong, Romero Malaquias, Viktor Szépe)
-    * Fix scan reply processing to use long instead of int to avoid overflow
-      (mixiaojiong).
-    * Fix potential segfault in Redis Cluster session storage (Sergei Lomakov)
-      [cc15aae]
-    * Fixed memory leak in discard function [17b1f427]
-    * Sanity check for igbinary unserialization (Maurus Cuelenaere) [3266b222, 
-      5528297a]
-    * Fix segfault occuring from unclosed socket connection for Redis Cluster
-      (CatKang) [04196aee]
-    * Case insensitive zRangeByScore options
-    * Fixed dreaded size_t vs long long compiler warning
+    * Added php session unit test (@yatsukhnenko)
+    * Added explicit module dependancy for igbinary (@remicollet)
+    * Added phpinfo serialization information (@remicollet)
  </notes>
  <contents>
   <dir name="/">
@@ -114,8 +105,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <required>
    <php>
     <min>5.2.0</min>
-    <max>6.0.0</max>
-    <exclude>6.0.0</exclude>
+    <max>7.9.99</max>
    </php>
    <pearinstaller>
     <min>1.4.0b1</min>
@@ -125,6 +115,67 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>redis</providesextension>
  <extsrcrelease/>
  <changelog>
+   <release>
+   <stability><release>beta</release><api>beta</api></stability>
+   <version><release>3.1.1RC2</release><api>3.1.1RC2</api></version>
+   <date>2017-01-16</date>
+   <notes>
+
+    phpredis 3.1.1RC2
+
+    * Additional test updates for 32 bit systems (@remicollet)
+    * ARM rounding issue in tests (@remicollet)
+    * Use new zend_list_close instead of zend_list_delete when reconnecting.
+    * Refactoring of redis_boolean_response_impl and redis_sock_write (@yatsukhnenko)
+
+    phpredis 3.1.1.RC1
+
+    This release contains mostly fixes for issues introduced when merging
+    the php 5 and 7 codebase into a single branch.
+
+    * Fixed a segfault in igbinary serialization (@yatsukhnenko)
+    * Restore 2.2.8/3.0.0 functionality to distinguish between an error
+      and simply empty session data. (@remicollet)
+    * Fix double to string conversion function (@yatsukhnenko)
+    * Use PHP_FE_END definition when available (@remicollet)
+    * Fixed various 'static function declared but not used' warnings
+    * Fixes to various calls which were typecasting pointers to the
+      wrong size. (@remicollet)
+
+    * Added php session unit test (@yatsukhnenko)
+    * Added explicit module dependancy for igbinary (@remicollet)
+    * Added phpinfo serialization information (@remicollet)
+   </notes>
+   </release>
+
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>3.1.0</release><api>3.1.0</api></version>
+   <date>2016-12-14</date>
+   <notes>
+    phpredis 3.1.0
+
+    In this version of phpredis codebase was unified to work with all versions of php \o/
+    Also many bug fixes and some improvements has been made.
+
+    --- Improvements ---
+
+    * Support the client to Redis Cluster just having one master (andyli) [892e5646]
+    * Allow both long and strings that are longs for zrangebyscore offset/limit (Michael Grunder) [bdcdd2aa]
+    * Process NX|XX, CH and INCR options in zAdd command (Pavlo Yatsukhnenko) [71c9f7c8]
+
+    --- Fixes ---
+
+    * Fix incrby/decrby for large integers (Michael Grunder) [3a12758a]
+    * Use static declarations for spl_ce_RuntimeException decl (Jeremy Mikola) [a9857d69]
+    * Fixed method call problem causes session handler to display two times (ZiHang Gao) [24f86c49]
+    * psetex method returns '+OK' on success, not true (sitri@ndxbn) [afcd8445]
+    * Fix integer overflow for long (>32bit) increments in hIncrBy (iyesin) [58e1d799]
+    * Move zend_object handler to the end (Michael Grunder) [34107966]
+    * Using setOption on redis array causes immediate connection (Pavlo Yatsukhnenko) [f1a85b38]
+   </notes>
+   </release>
+
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>2.2.8</release><api>2.2.8</api></version>

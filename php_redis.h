@@ -25,7 +25,7 @@
 #define PHP_REDIS_H
 
 /* phpredis version */
-#define PHP_REDIS_VERSION "3.1.0-rc1"
+#define PHP_REDIS_VERSION "3.1.1RC2"
 
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, __destruct);
@@ -114,7 +114,6 @@ PHP_METHOD(Redis, zDelete);
 PHP_METHOD(Redis, zRange);
 PHP_METHOD(Redis, zRevRange);
 PHP_METHOD(Redis, zRangeByScore);
-PHP_METHOD(Redis, zRangeByLex);
 PHP_METHOD(Redis, zRevRangeByScore);
 PHP_METHOD(Redis, zRangeByLex);
 PHP_METHOD(Redis, zRevRangeByLex);
@@ -174,6 +173,7 @@ PHP_METHOD(Redis, hIncrBy);
 PHP_METHOD(Redis, hIncrByFloat);
 PHP_METHOD(Redis, hMset);
 PHP_METHOD(Redis, hMget);
+PHP_METHOD(Redis, hStrLen);
 
 PHP_METHOD(Redis, multi);
 PHP_METHOD(Redis, discard);
@@ -265,26 +265,10 @@ PHP_REDIS_API int redis_sock_read_multibulk_multi_reply_loop(
     INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, 
     int numElems);
 
-/* pipeline */
-PHP_REDIS_API request_item* get_pipeline_head(zval *object);
-PHP_REDIS_API void set_pipeline_head(zval *object, request_item *head);
-PHP_REDIS_API request_item* get_pipeline_current(zval *object);
-PHP_REDIS_API void set_pipeline_current(zval *object, request_item *current);
-
 #ifndef _MSC_VER
 ZEND_BEGIN_MODULE_GLOBALS(redis)
 ZEND_END_MODULE_GLOBALS(redis)
 #endif
-
-struct redis_queued_item {
-    /* reading function */
-    zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, ...);
-
-    char *cmd; 
-    int cmd_len;
-
-    struct redis_queued_item *next;
-};
 
 extern zend_module_entry redis_module_entry;
 

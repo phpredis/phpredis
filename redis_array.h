@@ -8,8 +8,6 @@
 #endif
 #include "common.h"
 
-void redis_destructor_redis_array(zend_resource * rsrc TSRMLS_DC);
-
 PHP_METHOD(RedisArray, __construct);
 PHP_METHOD(RedisArray, __call);
 PHP_METHOD(RedisArray, _hosts);
@@ -52,11 +50,18 @@ typedef struct RedisArray_ {
 	zval z_dist;            /* key distributor, callable */
 	zval z_pure_cmds;		/* hash table */
 	double connect_timeout; /* socket connect timeout */
+	double read_timeout;    /* socket read timeout */
 
 	struct RedisArray_ *prev;
 } RedisArray;
 
-uint32_t rcrc32(const char *s, size_t sz);
+#if (PHP_MAJOR_VERSION < 7)
+zend_object_value create_redis_array_object(zend_class_entry *ce TSRMLS_DC);
+void free_redis_array_object(void *object TSRMLS_DC);
+#else
+zend_object *create_redis_array_object(zend_class_entry *ce TSRMLS_DC);
+void free_redis_array_object(zend_object *object);
+#endif
 
 
 #endif

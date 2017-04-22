@@ -5,7 +5,7 @@
 The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 This code has been developed and maintained by Owlient from November 2009 to March 2011.
 
-You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to n.favrefelix@gmail.com ([@yowgi](http://twitter.com/yowgi)), or to michael.grunder@gmail.com ([@grumi78](http://twitter.com/grumi78)).
+You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to n.favrefelix@gmail.com ([@yowgi](https://twitter.com/yowgi)), to michael.grunder@gmail.com ([@grumi78](https://twitter.com/grumi78)) or to p.yatsukhnenko@gmail.com ([@yatsukhnenko](https://twitter.com/yatsukhnenko)).
 
 
 # Table of contents
@@ -82,7 +82,7 @@ You can install install it using Homebrew:
 phpredis can be used to store PHP sessions. To do this, configure `session.save_handler` and `session.save_path` in your php.ini to tell phpredis where to store the sessions:
 ~~~
 session.save_handler = redis
-session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeout=2.5, tcp://host3:6379?weight=2"
+session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeout=2.5, tcp://host3:6379?weight=2&read_timeout=2.5"
 ~~~
 
 `session.save_path` can have a simple `host:port` format too, but you need to provide the `tcp://` scheme if you want to use the parameters. The following parameters are available:
@@ -202,6 +202,7 @@ _**Description**_: Connects to a Redis instance.
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)
 *reserved*: should be NULL if retry_interval is specified
 *retry_interval*: int, value in milliseconds (optional)
+*read_timeout*: float, value in seconds (optional, default is 0 meaning unlimited)
 
 ##### *Return value*
 
@@ -238,6 +239,7 @@ persistent equivalents.
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)
 *persistent_id*: string. identity for the requested persistent connection
 *retry_interval*: int, value in milliseconds (optional)
+*read_timeout*: float, value in seconds (optional, default is 0 meaning unlimited)
 
 ##### *Return value*
 
@@ -1008,18 +1010,38 @@ _**Description**_:  Scan the keyspace for keys
 *LONG, Optional*: Count of keys per iteration (only a suggestion to Redis)
 
 ##### *Return value*
-*Array, boolean*:  This function will return an array of keys or FALSE if there are no more keys
+*Array, boolean*:  This function will return an array of keys or FALSE if Redis returned zero keys
 
 ##### *Example*
 ~~~
-$it = NULL; /* Initialize our iterator to NULL */
-$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY); /* retry when we get no keys back */
-while($arr_keys = $redis->scan($it)) {
-    foreach($arr_keys as $str_key) {
+
+/* Without enabling Redis::SCAN_RETRY (default condition) */
+$it = NULL;
+do {
+    // Scan for some keys
+    $arr_keys = $redis->scan($it);
+
+    // Redis may return empty results, so protect against that
+    if ($arr_keys !== FALSE) {
+        foreach($arr_keys as $str_key) {
+            echo "Here is a key: $str_key\n";
+        }
+    }
+} while ($it > 0);
+echo "No more keys to scan!\n";
+
+/* With Redis::SCAN_RETRY enabled */
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+$it = NULL;
+
+/* phpredis will retry the SCAN command if empty results are returned from the
+   server, so no empty results check is required. */
+while ($arr_keys = $redis->scan($it)) {
+    foreach ($arr_keys as $str_key) {
         echo "Here is a key: $str_key\n";
     }
-    echo "No more keys to scan!\n";
 }
+echo "No more keys to scan!\n";
 ~~~
 
 ### object
@@ -1355,6 +1377,7 @@ $redis->migrate('backup', 6379, 'foo', 0, 3600, false, true); /* just REPLACE fl
 * [hSetNx](#hsetnx) - Set the value of a hash field, only if the field does not exist
 * [hVals](#hvals) - Get all the values in a hash
 * [hScan](#hscan) - Scan a hash key for members
+* [hStrLen](#hstrlen) - Get the string length of the value associated with field in the hash
 
 ### hSet
 -----
@@ -1638,6 +1661,15 @@ while($arr_keys = $redis->hScan('hash', $it)) {
     }
 }
 ~~~
+
+### hStrLen
+-----
+_**Description**_: Get the string length of the value associated with field in the hash stored at key.
+##### *Parameters*
+*key*: String
+*field*: String
+##### *Return value*
+*LONG* the string length of the value associated with field, or zero when field is not present in the hash or key does not exist at all.
 
 ## Lists
 
@@ -2071,7 +2103,7 @@ $redis->lSize('key1');/* 2 */
 * [sIsMember, sContains](#sismember-scontains) - Determine if a given value is a member of a set
 * [sMembers, sGetMembers](#smembers-sgetmembers) - Get all the members in a set
 * [sMove](#smove) - Move a member from one set to another
-* [sPop](#spop) - Remove and return a random member from a set
+* [sPop](#spop) - Remove and return one or more members of a set at random
 * [sRandMember](#srandmember) - Get one or multiple random members from a set
 * [sRem, sRemove](#srem-sremove) - Remove one or more members from a set
 * [sUnion](#sunion) - Add multiple sets
@@ -2341,9 +2373,13 @@ $redis->sMove('key1', 'key2', 'member13'); /* 'key1' =>  {'member11', 'member12'
 _**Description**_: Removes and returns a random element from the set value at Key.
 ##### *Parameters*
 *key*
-##### *Return value*
+*count*: Integer, optional
+##### *Return value (without count argument)*
 *String* "popped" value
 *Bool* `FALSE` if set identified by key is empty or doesn't exist.
+##### *Return value (with count argument)*
+*Array*: Member(s) returned or an empty array if the set doesn't exist
+*Bool*: `FALSE` on error if the key is not a set
 ##### *Example*
 ~~~
 $redis->sAdd('key1' , 'member1');
@@ -2351,6 +2387,10 @@ $redis->sAdd('key1' , 'member2');
 $redis->sAdd('key1' , 'member3'); /* 'key1' => {'member3', 'member1', 'member2'}*/
 $redis->sPop('key1'); /* 'member1', 'key1' => {'member3', 'member2'} */
 $redis->sPop('key1'); /* 'member3', 'key1' => {'member2'} */
+
+/* With count */
+$redis->sAdd('key2', 'member1', 'member2', 'member3');
+$redis->sPop('key2', 3); /* Will return all members but in no particular order */
 ~~~
 
 ### sRandMember
