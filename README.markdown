@@ -1344,19 +1344,26 @@ $redis->restore('bar', 0, $val); // The key 'bar', will now be equal to the key 
 ### migrate
 -----
 _**Description**_: Migrates a key to a different Redis instance.
+
+**Note:**: Redis introduced migrating multiple keys in 3.0.6, so you must have at least
+that version in order to call `migrate` with an array of keys.
+
 ##### *Parameters*
-*host* string.  The destination host
-*port* integer.  The TCP port to connect to.
-*key* string. The key to migrate.
-*destination-db* integer.  The target DB.
-*timeout* integer.  The maximum amount of time given to this transfer.
-*copy* boolean, optional.  Should we send the COPY flag to redis
-*replace* boolean, optional.  Should we send the REPLACE flag to redis
+*host* string.  The destination host  
+*port* integer.  The TCP port to connect to.  
+*key(s)* string or array.  
+*destination-db* integer.  The target DB.  
+*timeout* integer.  The maximum amount of time given to this transfer.  
+*copy* boolean, optional.  Should we send the COPY flag to redis.  
+*replace* boolean, optional.  Should we send the REPLACE flag to redis  
 ##### *Examples*
 ~~~
 $redis->migrate('backup', 6379, 'foo', 0, 3600);
 $redis->migrate('backup', 6379, 'foo', 0, 3600, true, true); /* copy and replace */
 $redis->migrate('backup', 6379, 'foo', 0, 3600, false, true); /* just REPLACE flag */
+
+/* Migrate multiple keys (requires Redis >= 3.0.6)
+$redis->migrate('backup', 6379, ['key1', 'key2', 'key3'], 0, 3600);
 ~~~
 
 
