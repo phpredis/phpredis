@@ -3426,64 +3426,7 @@ PHP_METHOD(Redis, debug) {
 /* {{{ proto Redis::migrate(host port key dest-db timeout [bool copy,
  *                          bool replace]) */
 PHP_METHOD(Redis, migrate) {
-    zval *object;
-    RedisSock *redis_sock;
-    char *cmd, *host, *key;
-    int cmd_len, key_free;
-    strlen_t host_len, key_len;
-    zend_bool copy=0, replace=0;
-    zend_long port, dest_db, timeout;
-
-    // Parse arguments
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
-                                    "Oslsll|bb", &object, redis_ce, &host,
-                                    &host_len, &port, &key, &key_len, &dest_db,
-                                    &timeout, &copy, &replace) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-	/* Grabg our socket */
-    if ((redis_sock = redis_sock_get(object TSRMLS_CC, 0)) == NULL) {
-		RETURN_FALSE;
-	}
-
-    // Prefix our key if we need to, build our command
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    /* Construct our command */
-    if(copy && replace) {
-        cmd_len = redis_cmd_format_static(&cmd, "MIGRATE", "sdsddss",
-                                          host, host_len, port, key, key_len,
-                                          dest_db, timeout, "COPY",
-                                          sizeof("COPY")-1, "REPLACE",
-                                          sizeof("REPLACE")-1);
-    } else if(copy) {
-        cmd_len = redis_cmd_format_static(&cmd, "MIGRATE", "sdsdds",
-                                          host, host_len, port, key, key_len,
-                                          dest_db, timeout, "COPY",
-                                          sizeof("COPY")-1);
-    } else if(replace) {
-        cmd_len = redis_cmd_format_static(&cmd, "MIGRATE", "sdsdds",
-                                          host, host_len, port, key, key_len,
-                                          dest_db, timeout, "REPLACE",
-                                          sizeof("REPLACE")-1);
-    } else {
-        cmd_len = redis_cmd_format_static(&cmd, "MIGRATE", "sdsdd",
-                                          host, host_len, port, key, key_len,
-                                          dest_db, timeout);
-    }
-
-    /* Free our key if we prefixed it */
-	if(key_free) efree(key);
-
-    // Kick off our MIGRATE request
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
-        redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-            NULL, NULL);
-    }
-    REDIS_PROCESS_RESPONSE(redis_boolean_response);
+    REDIS_PROCESS_CMD(migrate, redis_boolean_response);
 }
 
 /* {{{ proto Redis::_prefix(key) */
