@@ -3020,7 +3020,7 @@ int redis_migrate_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             keyfree = redis_key_prefix(redis_sock, &key, &keylen);
 
             /* Append the key */
-            redis_cmd_append_sstr(&cmdstr, zstr->val, zstr->len);
+            redis_cmd_append_sstr(&cmdstr, key, keylen);
 
             zend_string_release(zstr);
             if (keyfree) efree(key);
