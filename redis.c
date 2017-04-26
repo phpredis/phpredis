@@ -395,7 +395,6 @@ PHP_REDIS_API zend_class_entry *redis_get_exception_base(int root TSRMLS_DC)
 
 /* Send a static DISCARD in case we're in MULTI mode. */
 static int send_discard_static(RedisSock *redis_sock TSRMLS_DC) {
-
     int result = FAILURE;
     char *cmd, *resp;
     int resp_len, cmd_len;
@@ -683,7 +682,7 @@ PHP_MINIT_FUNCTION(redis)
     /* Add shared class constants to Redis and RedisCluster objects */
     add_class_constants(redis_ce, 0 TSRMLS_CC);
     add_class_constants(redis_cluster_ce, 1 TSRMLS_CC);
-    
+
 #ifdef PHP_SESSION
     php_session_register_module(&ps_mod_redis);
     php_session_register_module(&ps_mod_redis_cluster);
@@ -1063,16 +1062,8 @@ PHP_METHOD(Redis, getMultiple)
     /* Iterate through and grab our keys */
     ZEND_HASH_FOREACH_VAL(hash, z_ele) {
         zend_string *zstr = zval_get_string(z_ele);
-        char *key = zstr->val;
-        strlen_t key_len = zstr->len;
-        /* Apply key prefix if necissary */
-        int key_free = redis_key_prefix(redis_sock, &key, &key_len);
-        /* Append this key to our command */
-        redis_cmd_append_sstr(&cmd, key, key_len);
-        /* release zend_string */
+        redis_cmd_append_sstr_key(&cmd, zstr->val, zstr->len, redis_sock, NULL);
         zend_string_release(zstr);
-        /* Free our key if it was prefixed */
-        if(key_free) efree(key);
     } ZEND_HASH_FOREACH_END();
 
     /* Kick off our command */
@@ -1797,9 +1788,8 @@ PHP_METHOD(Redis, info) {
     }
 
     /* Build a standalone INFO command or one with an option */
-    if(opt != NULL) {
-        cmd_len = redis_cmd_format_static(&cmd, "INFO", "s", opt,
-                                          opt_len);
+    if (opt != NULL) {
+        cmd_len = redis_cmd_format_static(&cmd, "INFO", "s", opt, opt_len);
     } else {
         cmd_len = redis_cmd_format_static(&cmd, "INFO", "");
     }
@@ -2845,33 +2835,21 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
 {
     HashTable *ht_chan;
     zval *z_ele;
-    char *key;
-    int cmd_len, key_free;
-    strlen_t key_len;
+    int cmd_len;
     smart_string cmd = {0};
 
     if(type == PUBSUB_CHANNELS) {
         if(arg) {
-            /* Get string argument and length. */
-            key = Z_STRVAL_P(arg);
-            key_len = Z_STRLEN_P(arg);
-
-            /* Prefix if necissary */
-            key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
             // With a pattern
-            cmd_len = redis_cmd_format_static(ret, "PUBSUB", "ss",
-                "CHANNELS", sizeof("CHANNELS")-1, key, key_len);
-
-            /* Free the channel name if we prefixed it */
-            if(key_free) efree(key);
+            cmd_len = redis_spprintf(redis_sock, NULL TSRMLS_CC, ret, "PUBSUB",
+                                     "sk", "CHANNELS", sizeof("CHANNELS") - 1,
+                                     Z_STRVAL_P(arg), Z_STRLEN_P(arg));
 
             /* Return command length */
             return cmd_len;
         } else {
             // No pattern
-            return redis_cmd_format_static(ret, "PUBSUB", "s",
-                "CHANNELS", sizeof("CHANNELS")-1);
+            return redis_cmd_format_static(ret, "PUBSUB", "s", "CHANNELS", sizeof("CHANNELS")-1);
         }
     } else if(type == PUBSUB_NUMSUB) {
         ht_chan = Z_ARRVAL_P(arg);
@@ -2884,18 +2862,8 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
         /* Iterate our elements */
         ZEND_HASH_FOREACH_VAL(ht_chan, z_ele) {
             zend_string *zstr = zval_get_string(z_ele);
-            char *key = zstr->val;
-            strlen_t key_len = zstr->len;
-
-            /* Apply prefix if required */
-            key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-            /* Append this channel */
-            redis_cmd_append_sstr(&cmd, key, key_len);
-
+            redis_cmd_append_sstr_key(&cmd, zstr->val, zstr->len, redis_sock, NULL);
             zend_string_release(zstr);
-            /* Free key if prefixed */
-            if(key_free) efree(key);
         } ZEND_HASH_FOREACH_END();
 
         /* Set return */
@@ -3044,8 +3012,7 @@ redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
     // If there weren't any arguments (none passed, or an empty array),
     // construct a standard no args command
     if(args_count < 1) {
-        cmd_len = redis_cmd_format_static(ret, keyword, "sd", value,
-                                          val_len, 0);
+        cmd_len = redis_cmd_format_static(ret, keyword, "sd", value, val_len, 0);
     }
 
 	/* Return our command length */
