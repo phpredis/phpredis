@@ -1,6 +1,9 @@
 #ifndef REDIS_LIBRARY_H
 #define REDIS_LIBRARY_H
 
+#define REDIS_SPPRINTF(ret, kw, fmt, ...) \
+    redis_spprintf(redis_sock, slot TSRMLS_CC, ret, kw, fmt, __VA_ARGS__)
+
 #define REDIS_CMD_APPEND_SSTR_STATIC(sstr, str) \
     redis_cmd_append_sstr(sstr, str, sizeof(str)-1);
 
@@ -21,6 +24,10 @@ int redis_cmd_append_sstr_int(smart_string *str, int append);
 int redis_cmd_append_sstr_long(smart_string *str, long append);
 int redis_cmd_append_int(char **cmd, int cmd_len, int append);
 int redis_cmd_append_sstr_dbl(smart_string *str, double value);
+int redis_cmd_append_sstr_zval(smart_string *str, zval *z, RedisSock *redis_sock TSRMLS_DC);
+int redis_cmd_append_sstr_key(smart_string *str, char *key, strlen_t len, RedisSock *redis_sock, short *slot);
+
+PHP_REDIS_API int redis_spprintf(RedisSock *redis_sock, short *slot TSRMLS_DC, char **ret, char *kw, char *fmt, ...);
 
 PHP_REDIS_API char * redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC);
 PHP_REDIS_API int redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t* line_len TSRMLS_DC);

@@ -108,9 +108,8 @@ int redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                            char *kw, char **cmd, int *cmd_len, short *slot,
                            void **ctx)
 {
-    char *key = NULL, *val=NULL;
-    int val_free, key_free;
-    strlen_t key_len, val_len;
+    char *key = NULL;
+    strlen_t key_len;
     zend_long expire;
     zval *z_val;
 
@@ -120,19 +119,7 @@ int redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Serialize value, prefix key
-    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    // Construct our command
-    *cmd_len = redis_cmd_format_static(cmd, kw, "sls", key, key_len, expire,
-                                      val, val_len);
-
-    // Set the slot if directed
-    CMD_SET_SLOT(slot,key,key_len);
-
-    if(val_free) efree(val);
-    if(key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, kw, "klv", key, key_len, expire, z_val);
 
     return SUCCESS;
 }
@@ -144,7 +131,6 @@ int redis_key_long_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *key, *val;
     strlen_t key_len, val_len;
-    int key_free;
     zend_long lval;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sls", &key, &key_len,
@@ -153,18 +139,7 @@ int redis_key_long_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix our key if requested
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    // Construct command
-    *cmd_len = redis_cmd_format_static(cmd, kw, "sds", key, key_len, (int)lval,
-        val, val_len);
-
-    // Set slot
-    CMD_SET_SLOT(slot,key,key_len);
-
-    // Free our key if we prefixed
-    if(key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, kw, "kds", key, key_len, (int)lval, val, val_len);
 
     return SUCCESS;
 }
@@ -174,9 +149,8 @@ int redis_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                  char *kw, char **cmd, int *cmd_len, short *slot,
                  void **ctx)
 {
-    char *key, *val;
-    int key_free, val_free;
-    strlen_t key_len, val_len;
+    char *key;
+    strlen_t key_len;
     zval *z_val;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz", &key, &key_len,
@@ -185,18 +159,7 @@ int redis_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    // Construct our command
-    *cmd_len = redis_cmd_format_static(cmd, kw, "ss", key, key_len, val,
-                                       val_len);
-
-    // Set our slot if directed
-    CMD_SET_SLOT(slot,key,key_len);
-
-    if(val_free) efree(val);
-    if(key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, kw, "kv", key, key_len, z_val);
 
     return SUCCESS;
 }
@@ -208,7 +171,6 @@ int redis_key_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *key, *val;
     strlen_t key_len, val_len;
-    int key_free;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &key, &key_len,
                              &val, &val_len)==FAILURE)
@@ -216,17 +178,8 @@ int redis_key_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix key
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
     // Construct command
-    *cmd_len = redis_cmd_format_static(cmd, kw, "ss", key, key_len, val,
-                                       val_len);
-
-    // Set slot if directed
-    CMD_SET_SLOT(slot,key,key_len);
-
-    if (key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, kw, "ks", key, key_len, val, val_len);
 
     return SUCCESS;
 }
@@ -236,28 +189,16 @@ int redis_key_str_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                           char *kw, char **cmd, int *cmd_len, short *slot,
                           void **ctx)
 {
-    char *key, *val1, *val2;
-    strlen_t key_len, val1_len, val2_len;
-    int key_free;
+    char *k, *v1, *v2;
+    strlen_t klen, v1len, v2len;
 
-    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss", &key, &key_len,
-                             &val1, &val1_len, &val2, &val2_len)==FAILURE)
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss", &k, &klen,
+                             &v1, &v1len, &v2, &v2len)==FAILURE)
     {
         return FAILURE;
     }
 
-    // Prefix key
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    // Construct command
-    *cmd_len = redis_cmd_format_static(cmd, kw, "sss", key, key_len, val1,
-        val1_len, val2, val2_len);
-
-    // Set slot
-    CMD_SET_SLOT(slot,key,key_len);
-
-    // Free key if prefixed
-    if(key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, kw, "kss", k, klen, v1, v1len, v2, v2len);
 
     // Success!
     return SUCCESS;
@@ -268,32 +209,31 @@ int redis_key_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char *kw, char **cmd, int *cmd_len, short *slot,
                       void **ctx)
 {
-    char *key1, *key2;
-    strlen_t key1_len, key2_len;
-    int key1_free, key2_free;
+    char *k1, *k2;
+    strlen_t k1len, k2len;
+    int k1free, k2free;
 
-    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &key1, &key1_len,
-                             &key2, &key2_len)==FAILURE)
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &k1, &k1len,
+                             &k2, &k2len)==FAILURE)
     {
         return FAILURE;
     }
 
     // Prefix both keys
-    key1_free = redis_key_prefix(redis_sock, &key1, &key1_len);
-    key2_free = redis_key_prefix(redis_sock, &key2, &key2_len);
+    k1free = redis_key_prefix(redis_sock, &k1, &k1len);
+    k2free = redis_key_prefix(redis_sock, &k2, &k2len);
 
     // If a slot is requested, we can test that they hash the same
     if(slot) {
         // Slots where these keys resolve
-        short slot1 = cluster_hash_key(key1, key1_len);
-        short slot2 = cluster_hash_key(key2, key2_len);
+        short slot1 = cluster_hash_key(k1, k1len);
+        short slot2 = cluster_hash_key(k2, k2len);
 
         // Check if Redis would give us a CROSSLOT error
         if(slot1 != slot2) {
-            php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                "Keys don't hash to the same slot");
-            if(key1_free) efree(key1);
-            if(key2_free) efree(key2);
+            php_error_docref(0 TSRMLS_CC, E_WARNING, "Keys don't hash to the same slot");
+            if(k1free) efree(k1);
+            if(k2free) efree(k2);
             return FAILURE;
         }
 
@@ -301,12 +241,13 @@ int redis_key_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         *slot = slot1;
     }
 
-    // Construct our command
-    *cmd_len = redis_cmd_format_static(cmd, kw, "ss", key1, key1_len, key2,
-                                       key2_len);
+    /* Send keys as normal strings because we manually prefixed to check against
+     * cross slot error. */
+    *cmd_len = REDIS_SPPRINTF(cmd, kw, "ss", k1, k1len, k2, k2len);
 
-    if (key1_free) efree(key1);
-    if (key2_free) efree(key2);
+    /* Clean keys up if we prefixed */
+    if (k1free) efree(k1);
+    if (k2free) efree(k2);
 
     return SUCCESS;
 }
@@ -317,32 +258,16 @@ int redis_key_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                        void **ctx)
 {
     char *key;
-    int key_free;
-    strlen_t key_len;
+    strlen_t keylen;
     zend_long lval;
 
-    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sl", &key, &key_len,
-                             &lval)==FAILURE)
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sl", &key, &keylen, &lval)
+                              ==FAILURE)
     {
         return FAILURE;
     }
 
-    // Prefix key
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    // Disallow zero length keys (for now)
-    if(key_len == 0) {
-        if(key_free) efree(key);
-        return FAILURE;
-    }
-
-    // Construct our command
-    *cmd_len = redis_cmd_format_static(cmd, kw, "sl", key, key_len, lval);
-
-    // Set slot if directed
-    CMD_SET_SLOT(slot, key, key_len);
-
-    if (key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, kw, "kl", key, keylen, lval);
 
     // Success!
     return SUCCESS;
@@ -354,7 +279,6 @@ int redis_key_long_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                             void **ctx)
 {
     char *key;
-    int key_free;
     strlen_t key_len;
     zend_long val1, val2;
 
@@ -364,17 +288,7 @@ int redis_key_long_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix our key
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    // Construct command
-    *cmd_len = redis_cmd_format_static(cmd, kw, "sll", key, key_len, val1,
-                                       val2);
-
-    // Set slot
-    CMD_SET_SLOT(slot,key,key_len);
-
-    if(key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, kw, "kll", key, key_len, val1, val2);
 
     return SUCCESS;
 }
@@ -386,7 +300,6 @@ int redis_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *key;
     strlen_t key_len;
-    int key_free;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &key, &key_len)
                              ==FAILURE)
@@ -394,16 +307,7 @@ int redis_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix our key
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    // Construct our command
-    *cmd_len = redis_cmd_format_static(cmd, kw, "s", key, key_len);
-
-    // Set slot if directed
-    CMD_SET_SLOT(slot,key,key_len);
-
-    if(key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, kw, "k", key, key_len);
 
     return SUCCESS;
 }
@@ -415,7 +319,6 @@ int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *key;
     strlen_t key_len;
-    int key_free;
     double val;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sd", &key, &key_len,
@@ -424,16 +327,7 @@ int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix our key
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    // Construct our command
-    *cmd_len = redis_cmd_format_static(cmd, kw, "sf", key, key_len, val);
-
-    // Set slot if directed
-    CMD_SET_SLOT(slot,key,key_len);
-
-    if(key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, kw, "kf", key, key_len, val);
 
     return SUCCESS;
 }
@@ -482,7 +376,6 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      short *slot, void **ctx)
 {
     char *key;
-    int key_free;
     strlen_t key_len;
     zend_long start, end;
     zend_bool ws=0;
@@ -493,19 +386,14 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
     if(ws) {
-        *cmd_len = redis_cmd_format_static(cmd, kw, "sdds", key, key_len, start,
-            end, "WITHSCORES", sizeof("WITHSCORES")-1);
+        *cmd_len = REDIS_SPPRINTF(cmd, kw, "kdds", key, key_len, start, end,
+            "WITHSCORES", sizeof("WITHSCORES") - 1);
     } else {
-        *cmd_len = redis_cmd_format_static(cmd, kw, "sdd", key, key_len, start,
-            end);
+        *cmd_len = REDIS_SPPRINTF(cmd, kw, "kdd", key, key_len, start, end);
     }
 
-    CMD_SET_SLOT(slot, key, key_len);
-
-    // Free key, push out WITHSCORES option
-    if(key_free) efree(key);
+    // Push out WITHSCORES option
     *withscores = ws;
 
     return SUCCESS;
@@ -522,7 +410,7 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                             short *slot, void **ctx)
 {
     char *key, *start, *end;
-    int key_free, has_limit=0;
+    int has_limit=0;
     long offset, count;
     strlen_t key_len, start_len, end_len;
     zval *z_opt=NULL, *z_ele;
@@ -566,32 +454,25 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         } ZEND_HASH_FOREACH_END();
     }
 
-    // Prefix our key, set slot
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    CMD_SET_SLOT(slot,key,key_len);
-
     // Construct our command
-    if(*withscores) {
-        if(has_limit) {
-            *cmd_len = redis_cmd_format_static(cmd, kw, "ssssdds", key, key_len,
-                start, start_len, end, end_len, "LIMIT", 5, offset,
-                count, "WITHSCORES", 10);
+    if (*withscores) {
+        if (has_limit) {
+            *cmd_len = REDIS_SPPRINTF(cmd, kw, "ksssdds", key, key_len,
+                start, start_len, end, end_len, "LIMIT", 5, offset, count,
+                "WITHSCORES", 10);
         } else {
-            *cmd_len = redis_cmd_format_static(cmd, kw, "ssss", key, key_len,
-                start, start_len, end, end_len, "WITHSCORES", 10);
+            *cmd_len = REDIS_SPPRINTF(cmd, kw, "ksss", key, key_len, start,
+                start_len, end, end_len, "WITHSCORES", 10);
         }
     } else {
-        if(has_limit) {
-            *cmd_len = redis_cmd_format_static(cmd, kw, "ssssdd", key, key_len,
-                start, start_len, end, end_len, "LIMIT", 5, offset, count);
+        if (has_limit) {
+            *cmd_len = REDIS_SPPRINTF(cmd, kw, "ksssdd", key, key_len, start,
+                start_len, end, end_len, "LIMIT", 5, offset, count);
         } else {
-            *cmd_len = redis_cmd_format_static(cmd, kw, "sss", key, key_len,
-                start, start_len, end, end_len);
+            *cmd_len = REDIS_SPPRINTF(cmd, kw, "kss", key, key_len, start,
+                start_len, end, end_len);
         }
     }
-
-    // Free our key if we prefixed
-    if(key_free) efree(key);
 
     return SUCCESS;
 }
@@ -850,25 +731,23 @@ int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *key, *min, *max;
     strlen_t key_len, min_len, max_len;
-    int key_free, argc = ZEND_NUM_ARGS();
+    int argc = ZEND_NUM_ARGS();
     zend_long offset, count;
 
     /* We need either 3 or 5 arguments for this to be valid */
-    if(argc != 3 && argc != 5) {
-        php_error_docref(0 TSRMLS_CC, E_WARNING,
-            "Must pass either 3 or 5 arguments");
+    if (argc != 3 && argc != 5) {
+        php_error_docref(0 TSRMLS_CC, E_WARNING, "Must pass either 3 or 5 arguments");
         return FAILURE;
     }
 
-    if(zend_parse_parameters(argc TSRMLS_CC, "sss|ll", &key,
-                             &key_len, &min, &min_len, &max, &max_len,
-                             &offset, &count)==FAILURE)
+    if(zend_parse_parameters(argc TSRMLS_CC, "sss|ll", &key, &key_len, &min, &min_len,
+                             &max, &max_len, &offset, &count)==FAILURE)
     {
         return FAILURE;
     }
 
     /* min and max must start with '(' or '[', or be either '-' or '+' */
-    if(min_len < 1 || max_len < 1 ||
+    if (min_len < 1 || max_len < 1 ||
        (min[0] != '(' && min[0] != '[' &&
        (min[0] != '-' || min_len > 1) && (min[0] != '+' || min_len > 1)) ||
        (max[0] != '(' && max[0] != '[' &&
@@ -879,23 +758,14 @@ int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    /* Prefix key */
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
     /* Construct command */
-    if(argc == 3) {
-        *cmd_len = redis_cmd_format_static(cmd, kw, "sss", key, key_len, min,
-            min_len, max, max_len);
+    if (argc == 3) {
+        *cmd_len = REDIS_SPPRINTF(cmd, kw, "kss", key, key_len, min, min_len,
+            max, max_len);
     } else {
-        *cmd_len = redis_cmd_format_static(cmd, kw, "ssssll", key, key_len, min,
-            min_len, max, max_len, "LIMIT", sizeof("LIMIT")-1, offset, count);
+        *cmd_len = REDIS_SPPRINTF(cmd, kw, "ksssll", key, key_len, min, min_len,
+            max, max_len, "LIMIT", 5, offset, count);
     }
-
-    /* Pick our slot */
-    CMD_SET_SLOT(slot,key,key_len);
-
-    /* Free key if we prefixed */
-    if(key_free) efree(key);
 
     return SUCCESS;
 }
@@ -907,7 +777,6 @@ int redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *key, *min, *max;
     strlen_t key_len, min_len, max_len;
-    int key_free;
 
     /* Parse args */
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss", &key, &key_len,
@@ -925,18 +794,9 @@ int redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    /* Prefix key if we need to */
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
     /* Construct command */
-    *cmd_len = redis_cmd_format_static(cmd, kw, "sss", key, key_len, min,
-        min_len, max, max_len);
-
-    /* set slot */
-    CMD_SET_SLOT(slot,key,key_len);
-
-    /* Free key if prefixed */
-    if(key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, kw, "kss", key, key_len, min, min_len,
+        max, max_len);
 
     return SUCCESS;
 }
@@ -966,28 +826,17 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Grab the first argument (our key) as a string
-    zend_string *zstr = zval_get_string(&z_args[0]);
-    arg = zstr->val;
-    arg_len = zstr->len;
-
-    // Prefix if required
-    arg_free = redis_key_prefix(redis_sock, &arg, &arg_len);
-
-    // Start command construction
+    /* Initialize our command */
     redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
-    redis_cmd_append_sstr(&cmdstr, arg, arg_len);
 
-    // Set our slot, free key prefix if we prefixed it
-    CMD_SET_SLOT(slot,arg,arg_len);
+    /* Append key */
+    zend_string *zstr = zval_get_string(&z_args[0]);
+    redis_cmd_append_sstr_key(&cmdstr, zstr->val, zstr->len, redis_sock, slot);
     zend_string_release(zstr);
-    if(arg_free) efree(arg);
 
-    // Add our members
-    for(i=1;i<argc;i++) {
-        arg_free = redis_serialize(redis_sock, &z_args[i], &arg, &arg_len TSRMLS_CC);
-        redis_cmd_append_sstr(&cmdstr, arg, arg_len);
-        if(arg_free) efree(arg);
+    /* Add members */
+    for (i = 1; i < argc; i++ ){
+        redis_cmd_append_sstr_zval(&cmdstr, &z_args[i], redis_sock TSRMLS_CC);
     }
 
     // Push out values
@@ -1187,10 +1036,9 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     zval *z_value, *z_opts=NULL;
-    char *key = NULL, *val = NULL, *exp_type = NULL, *set_type = NULL;
-    int key_free, val_free;
+    char *key = NULL, *exp_type = NULL, *set_type = NULL;
     long expire = -1;
-    strlen_t key_len, val_len;
+    strlen_t key_len;
 
     // Make sure the function is being called correctly
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|z", &key, &key_len,
@@ -1206,10 +1054,6 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     {
         return FAILURE;
     }
-
-    // Serialize and key prefix if required
-    val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
     // Check for an options array
     if(z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
@@ -1236,8 +1080,6 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
                 /* Expiry can't be set < 1 */
                 if (expire < 1) {
-                    if (key_free) efree(key);
-                    if (val_free) efree(val);
                     return FAILURE;
                 }
             } else if (Z_TYPE_P(v) == IS_STRING && IS_NX_XX_ARG(Z_STRVAL_P(v))) {
@@ -1248,8 +1090,6 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         /* Grab expiry and fail if it's < 1 */
         expire = Z_LVAL_P(z_opts);
         if (expire < 1) {
-            if (key_free) efree(key);
-            if (val_free) efree(val);
             return FAILURE;
         }
     }
@@ -1257,32 +1097,24 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     /* Now let's construct the command we want */
     if(exp_type && set_type) {
         /* SET <key> <value> NX|XX PX|EX <timeout> */
-        *cmd_len = redis_cmd_format_static(cmd, "SET", "sssls", key, key_len,
-                                           val, val_len, exp_type, 2, expire,
-                                           set_type, 2);
+        *cmd_len = REDIS_SPPRINTF(cmd, "SET", "kvsls", key, key_len, z_value,
+                                     exp_type, 2, expire, set_type, 2);
     } else if(exp_type) {
         /* SET <key> <value> PX|EX <timeout> */
-        *cmd_len = redis_cmd_format_static(cmd, "SET", "sssl", key, key_len,
-                                           val, val_len, exp_type, 2, expire);
+        *cmd_len = REDIS_SPPRINTF(cmd, "SET", "kvsl", key, key_len, z_value,
+                                     exp_type, 2, expire);
     } else if(set_type) {
         /* SET <key> <value> NX|XX */
-        *cmd_len = redis_cmd_format_static(cmd, "SET", "sss", key, key_len, val,
-                                           val_len, set_type, 2);
+        *cmd_len = REDIS_SPPRINTF(cmd, "SET", "kvs", key, key_len, z_value,
+                                     set_type, 2);
     } else if(expire > 0) {
         /* Backward compatible SETEX redirection */
-        *cmd_len = redis_cmd_format_static(cmd, "SETEX", "sls", key, key_len,
-                                           expire, val, val_len);
+        *cmd_len = REDIS_SPPRINTF(cmd, "SETEX", "klv", key, key_len, expire,
+                                     z_value);
     } else {
         /* SET <key> <value> */
-        *cmd_len = redis_cmd_format_static(cmd, "SET", "ss", key, key_len, val,
-                                           val_len);
+        *cmd_len = REDIS_SPPRINTF(cmd, "SET", "kv", key, key_len, z_value);
     }
-
-    // If we've been passed a slot pointer, return the key's slot
-    CMD_SET_SLOT(slot,key,key_len);
-
-    if(key_free) efree(key);
-    if(val_free) efree(val);
 
     return SUCCESS;
 }
@@ -1308,7 +1140,7 @@ int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     key2_free = redis_key_prefix(redis_sock, &key2, &key2_len);
 
     // In cluster mode, verify the slots match
-    if(slot) {
+    if (slot) {
         slot1 = cluster_hash_key(key1, key1_len);
         slot2 = cluster_hash_key(key2, key2_len);
         if(slot1 != slot2) {
@@ -1325,11 +1157,11 @@ int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Consistency with Redis, if timeout < 0 use RPOPLPUSH
     if(timeout < 0) {
-        *cmd_len = redis_cmd_format_static(cmd, "RPOPLPUSH", "ss", key1,
-           key1_len, key2, key2_len);
+        *cmd_len = REDIS_SPPRINTF(cmd, "RPOPLPUSH", "ss", key1, key1_len,
+                                     key2, key2_len);
     } else {
-        *cmd_len = redis_cmd_format_static(cmd, "BRPOPLPUSH", "ssd", key1,
-           key1_len, key2, key2_len, timeout);
+        *cmd_len = REDIS_SPPRINTF(cmd, "BRPOPLPUSH", "ssd", key1, key1_len,
+                                     key2, key2_len, timeout);
     }
 
     if (key1_free) efree(key1);
@@ -1350,7 +1182,6 @@ redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, int type,
                        short *slot, void **ctx)
 {
     char *key;
-    int key_free;
     strlen_t key_len;
     zend_long val = 1;
 
@@ -1360,30 +1191,21 @@ redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, int type,
         return FAILURE;
     }
 
-    /* Prefix the key if required */
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
     /* If our value is 1 we use INCR/DECR.  For other values, treat the call as
      * an INCRBY or DECRBY call */
     if (type == TYPE_INCR) {
         if (val == 1) {
-           *cmd_len = redis_cmd_format_static(cmd,"INCR","s",key,key_len);
+            *cmd_len = REDIS_SPPRINTF(cmd, "INCR", "k", key, key_len);
         } else {
-           *cmd_len = redis_cmd_format_static(cmd,"INCRBY","sl",key,key_len,val);
+            *cmd_len = REDIS_SPPRINTF(cmd, "INCRBY", "kl", key, key_len, val);
         }
     } else {
         if (val == 1) {
-            *cmd_len = redis_cmd_format_static(cmd,"DECR","s",key,key_len);
+            *cmd_len = REDIS_SPPRINTF(cmd, "DECR", "k", key, key_len);
         } else {
-            *cmd_len = redis_cmd_format_static(cmd,"DECRBY","sl",key,key_len,val);
+            *cmd_len = REDIS_SPPRINTF(cmd, "DECRBY", "kl", key, key_len, val);
         }
     }
-
-    /* Set our slot */
-    CMD_SET_SLOT(slot,key,key_len);
-
-    /* Free our key if we prefixed */
-    if (key_free) efree(key);
 
     /* Success */
     return SUCCESS;
@@ -1411,7 +1233,6 @@ int redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *key, *mem;
     strlen_t key_len, mem_len;
-    int key_free;
     zend_long byval;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssl", &key, &key_len,
@@ -1420,17 +1241,8 @@ int redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix our key if necissary
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
     // Construct command
-    *cmd_len = redis_cmd_format_static(cmd, "HINCRBY", "ssl", key, key_len, mem,
-                                       mem_len, byval);
-    // Set slot
-    CMD_SET_SLOT(slot,key,key_len);
-
-    /* Free the key if we prefixed */
-    if (key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, "HINCRBY", "ksl", key, key_len, mem, mem_len, byval);
 
     // Success
     return SUCCESS;
@@ -1442,7 +1254,6 @@ int redis_hincrbyfloat_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *key, *mem;
     strlen_t key_len, mem_len;
-    int key_free;
     double byval;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssd", &key, &key_len,
@@ -1451,18 +1262,9 @@ int redis_hincrbyfloat_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix key
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
     // Construct command
-    *cmd_len = redis_cmd_format_static(cmd, "HINCRBYFLOAT", "ssf", key, key_len,
-        mem, mem_len, byval);
-
-    // Set slot
-    CMD_SET_SLOT(slot,key,key_len);
-
-    /* Free the key if we prefixed */
-    if (key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, "HINCRBYFLOAT", "ksf", key, key_len, mem,
+                                 mem_len, byval);
 
     // Success
     return SUCCESS;
@@ -1524,6 +1326,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Start command construction
     redis_cmd_init_sstr(&cmdstr, valid+1, "HMGET", sizeof("HMGET")-1);
+
     // Prefix our key
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
@@ -1634,22 +1437,14 @@ redis_hstrlen_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *key, *field;
     strlen_t key_len, field_len;
-    int key_free;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &key, &key_len,
                               &field, &field_len) == FAILURE
     ) {
         return FAILURE;
     }
-    // Prefix key
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
-    *cmd_len = redis_cmd_format_static(cmd, "HSTRLEN", "ss", key, key_len, field, field_len);
-
-    // Set our slot
-    CMD_SET_SLOT(slot, key, key_len);
-
-    if (key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, "HSTRLEN", "ks", key, key_len, field, field_len);
 
     return SUCCESS;
 }
@@ -1659,7 +1454,7 @@ int redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *key;
-    int argc, key_free;
+    int argc;
     zend_long bit, start, end;
     strlen_t key_len;
 
@@ -1675,25 +1470,16 @@ int redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix key
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
     // Construct command based on arg count
     if(argc == 2) {
-        *cmd_len = redis_cmd_format_static(cmd, "BITPOS", "sd", key, key_len,
-            bit);
+        *cmd_len = REDIS_SPPRINTF(cmd, "BITPOS", "kd", key, key_len, bit);
     } else if(argc == 3) {
-        *cmd_len = redis_cmd_format_static(cmd, "BITPOS", "sdd", key, key_len,
-            bit, start);
+        *cmd_len = REDIS_SPPRINTF(cmd, "BITPOS", "kdd", key, key_len, bit,
+                                     start);
     } else {
-        *cmd_len = redis_cmd_format_static(cmd, "BITPOS", "sddd", key, key_len,
-            bit, start, end);
+        *cmd_len = REDIS_SPPRINTF(cmd, "BITPOS", "kddd", key, key_len, bit,
+                                     start, end);
     }
-
-    // Set our slot
-    CMD_SET_SLOT(slot, key, key_len);
-
-    if (key_free) efree(key);
 
     return SUCCESS;
 }
@@ -1724,8 +1510,7 @@ int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Initialize command construction, add our operation argument
     redis_cmd_init_sstr(&cmdstr, argc, "BITOP", sizeof("BITOP")-1);
-    redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[0]),
-        Z_STRLEN(z_args[0]));
+    redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
 
     // Now iterate over our keys argument
     for(i=1;i<argc;i++) {
@@ -1773,7 +1558,6 @@ int redis_bitcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *key;
-    int key_free;
     strlen_t key_len;
     zend_long start = 0, end = -1;
 
@@ -1783,16 +1567,8 @@ int redis_bitcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix key, construct command
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    *cmd_len = redis_cmd_format_static(cmd, "BITCOUNT", "sdd", key, key_len,
-        (int)start, (int)end);
-
-    // Set our slot
-    CMD_SET_SLOT(slot,key,key_len);
-
-    // Fre key if we prefixed it
-    if(key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, "BITCOUNT", "kdd", key, key_len,
+                                 (int)start, (int)end);
 
     return SUCCESS;
 }
@@ -1872,14 +1648,9 @@ static int redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         // Append our key or member
         redis_cmd_append_sstr(&cmdstr, mem, mem_len);
 
-        // Clean up our temp val if it was used
+        // Clean up any allocated memory
         if (zstr) zend_string_release(zstr);
-
-        // Clean up prefixed or serialized data
-
-        if(mem_free) {
-            efree(mem);
-        }
+        if(mem_free) efree(mem);
     } ZEND_HASH_FOREACH_END();
 
     // Push output arguments
@@ -2023,7 +1794,6 @@ int redis_setbit_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *key;
     strlen_t key_len;
-    int key_free;
     zend_long offset;
     zend_bool val;
 
@@ -2040,13 +1810,7 @@ int redis_setbit_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    *cmd_len = redis_cmd_format_static(cmd, "SETBIT", "sld", key, key_len,
-        offset, (int)val);
-
-    CMD_SET_SLOT(slot, key, key_len);
-
-    if(key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, "SETBIT", "kld", key, key_len, offset, (int)val);
 
     return SUCCESS;
 }
@@ -2055,9 +1819,8 @@ int redis_setbit_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *key, *pivot, *pos, *val;
-    strlen_t key_len, pivot_len, pos_len, val_len;
-    int key_free, pivot_free, val_free;
+    char *key, *pos;
+    strlen_t key_len, pos_len;
     zval *z_val, *z_pivot;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sszz", &key, &key_len,
@@ -2073,23 +1836,9 @@ int redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix key, serialize value and position
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
-    pivot_free = redis_serialize(redis_sock, z_pivot, &pivot, &pivot_len
-        TSRMLS_CC);
-
-    // Construct command
-    *cmd_len = redis_cmd_format_static(cmd, "LINSERT", "ssss", key, key_len,
-        pos, pos_len, pivot, pivot_len, val, val_len);
-
-    // Set slot
-    CMD_SET_SLOT(slot, key, key_len);
-
-    // Clean up
-    if(val_free) efree(val);
-    if(key_free) efree(key);
-    if(pivot_free) efree(pivot);
+    /* Construct command */
+    *cmd_len = REDIS_SPPRINTF(cmd, "LINSERT", "ksvv", key, key_len, pos,
+                                 pos_len, z_pivot, z_val);
 
     // Success
     return SUCCESS;
@@ -2099,9 +1848,8 @@ int redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_lrem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *key, *val;
-    strlen_t key_len, val_len;
-    int key_free, val_free;
+    char *key;
+    strlen_t key_len;
     zend_long count = 0;
     zval *z_val;
 
@@ -2111,20 +1859,8 @@ int redis_lrem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix key, serialize value
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
-
-    // Construct command
-    *cmd_len = redis_cmd_format_static(cmd, "LREM", "sds", key, key_len, count,
-        val, val_len);
-
-    // Set slot
-    CMD_SET_SLOT(slot, key, key_len);
-
-    // Cleanup
-    if(val_free) efree(val);
-    if(key_free) efree(key);
+    /* Construct command */
+    *cmd_len = REDIS_SPPRINTF(cmd, "LREM", "kdv", key, key_len, count, z_val);
 
     // Success!
     return SUCCESS;
@@ -2133,9 +1869,9 @@ int redis_lrem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *src, *dst, *val;
-    strlen_t src_len, dst_len, val_len;
-    int val_free, src_free, dst_free;
+    char *src, *dst;
+    strlen_t src_len, dst_len;
+    int src_free, dst_free;
     zval *z_val;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssz", &src, &src_len,
@@ -2144,18 +1880,16 @@ int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
     src_free = redis_key_prefix(redis_sock, &src, &src_len);
     dst_free = redis_key_prefix(redis_sock, &dst, &dst_len);
 
     // Protect against a CROSSSLOT error
-    if(slot) {
+    if (slot) {
         short slot1 = cluster_hash_key(src, src_len);
         short slot2 = cluster_hash_key(dst, dst_len);
         if(slot1 != slot2) {
             php_error_docref(0 TSRMLS_CC, E_WARNING,
                 "Source and destination keys don't hash to the same slot!");
-            if(val_free) efree(val);
             if(src_free) efree(src);
             if(dst_free) efree(dst);
             return FAILURE;
@@ -2164,11 +1898,10 @@ int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Construct command
-    *cmd_len = redis_cmd_format_static(cmd, "SMOVE", "sss", src, src_len, dst,
-        dst_len, val, val_len);
+    *cmd_len = REDIS_SPPRINTF(cmd, "SMOVE", "ssv", src, src_len, dst,
+        dst_len, z_val);
 
     // Cleanup
-    if(val_free) efree(val);
     if(src_free) efree(src);
     if(dst_free) efree(dst);
 
@@ -2180,9 +1913,8 @@ int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 static int gen_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                         char *kw, char **cmd, int *cmd_len, short *slot)
 {
-    char *key, *mem, *val;
-    strlen_t key_len, mem_len, val_len;
-    int val_free, key_free;
+    char *key, *mem;
+    strlen_t key_len, mem_len;
     zval *z_val;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssz", &key, &key_len,
@@ -2191,20 +1923,8 @@ static int gen_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix/serialize
-    val_free = redis_serialize(redis_sock, z_val, &val, &val_len TSRMLS_CC);
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    // Construct command
-    *cmd_len = redis_cmd_format_static(cmd, kw, "sss", key, key_len, mem,
-        mem_len, val, val_len);
-
-    // Set slot
-    CMD_SET_SLOT(slot,key,key_len);
-
-    /* Cleanup our key and value */
-    if (val_free) efree(val);
-    if (key_free) efree(key);
+    /* Construct command */
+    *cmd_len = REDIS_SPPRINTF(cmd, kw, "ksv", key, key_len, mem, mem_len, z_val);
 
     // Success
     return SUCCESS;
@@ -2233,7 +1953,6 @@ int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *key;
     strlen_t key_len;
-    int key_free;
     zend_long count;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &key, &key_len,
@@ -2242,26 +1961,15 @@ int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix key if requested
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
     // Set our have count flag
     *have_count = ZEND_NUM_ARGS() == 2;
 
     // Two args means we have the optional COUNT
-    if(*have_count) {
-        *cmd_len = redis_cmd_format_static(cmd, "SRANDMEMBER", "sl", key,
-            key_len, count);
+    if (*have_count) {
+        *cmd_len = REDIS_SPPRINTF(cmd, "SRANDMEMBER", "kl", key, key_len, count);
     } else {
-        *cmd_len = redis_cmd_format_static(cmd, "SRANDMEMBER", "s", key,
-            key_len);
+        *cmd_len = REDIS_SPPRINTF(cmd, "SRANDMEMBER", "k", key, key_len);
     }
-
-    // Set slot
-    CMD_SET_SLOT(slot,key,key_len);
-
-    // Cleanup
-    if(key_free) efree(key);
 
     return SUCCESS;
 }
@@ -2270,9 +1978,8 @@ int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_zincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *key, *mem;
-    strlen_t key_len, mem_len;
-    int key_free, mem_free;
+    char *key;
+    strlen_t key_len;
     double incrby;
     zval *z_val;
 
@@ -2282,18 +1989,7 @@ int redis_zincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix key, serialize
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    mem_free = redis_serialize(redis_sock, z_val, &mem, &mem_len TSRMLS_CC);
-
-    *cmd_len = redis_cmd_format_static(cmd, "ZINCRBY", "sfs", key, key_len,
-        incrby, mem, mem_len);
-
-    CMD_SET_SLOT(slot,key,key_len);
-
-    // Cleanup
-    if(key_free) efree(key);
-    if(mem_free) efree(mem);
+    *cmd_len = REDIS_SPPRINTF(cmd, "ZINCRBY", "kfv", key, key_len, incrby, z_val);
 
     return SUCCESS;
 }
@@ -2700,7 +2396,6 @@ int redis_object_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *key, *subcmd;
     strlen_t key_len, subcmd_len;
-    int key_free;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss", &subcmd,
                              &subcmd_len, &key, &key_len)==FAILURE)
@@ -2708,16 +2403,8 @@ int redis_object_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Prefix our key
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
     // Format our command
-    *cmd_len = redis_cmd_format_static(cmd, "OBJECT", "ss", subcmd, subcmd_len,
-        key, key_len);
-
-    // Set our slot, free key if we prefixed
-    CMD_SET_SLOT(slot,key,key_len);
-    if(key_free) efree(key);
+    *cmd_len = REDIS_SPPRINTF(cmd, "OBJECT", "sk", subcmd, subcmd_len, key, key_len);
 
     // Push the reply type to our caller
     if(subcmd_len == 8 && (!strncasecmp(subcmd,"refcount",8) ||
@@ -2753,15 +2440,12 @@ int redis_geodist_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Construct command */
     if (unit != NULL) {
-       *cmd_len = redis_cmd_format_static(cmd, "GEODIST", "ssss", key, keylen,
-           source, sourcelen, dest, destlen, unit, unitlen);
+        *cmd_len = REDIS_SPPRINTF(cmd, "GEODIST", "ksss", key, keylen, source,
+                                     sourcelen, dest, destlen, unit, unitlen);
     } else {
-       *cmd_len = redis_cmd_format_static(cmd, "GEODIST", "sss", key, keylen,
-           source, sourcelen, dest, destlen);
+        *cmd_len = REDIS_SPPRINTF(cmd, "GEODIST", "kss", key, keylen, source,
+                                     sourcelen, dest, destlen);
     }
-
-    /* Set slot */
-    CMD_SET_SLOT(slot, key, keylen);
 
     return SUCCESS;
 }
