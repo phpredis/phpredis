@@ -345,7 +345,7 @@ PHP_METHOD(RedisArray, __construct)
 static void
 ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args, zval *z_new_target) {
 
-	zval z_tmp, z_fun, *redis_inst, *z_callargs, *zp_tmp;
+	zval z_fun, *redis_inst, *z_callargs, *zp_tmp;
 	char *key = NULL; /* set to avoid "unused-but-set-variable" */
 	int i, key_len = 0, argc;
 	HashTable *h_args;
@@ -358,10 +358,12 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 		redis_inst = ra->z_multi_exec; /* we already have the instance */
 	} else {
 		/* extract key and hash it. */
-		if(!(key = ra_find_key(ra, z_args, cmd, &key_len))) {
+        if ((zp_tmp = zend_hash_index_find(h_args, 0)) == NULL || Z_TYPE_P(zp_tmp) != IS_STRING) {
 			php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not find key");
 			RETURN_FALSE;
-		}
+        }
+        key = Z_STRVAL_P(zp_tmp);
+        key_len = Z_STRLEN_P(zp_tmp);
 
 		/* find node */
 		redis_inst = ra_find_node(ra, key, key_len, NULL TSRMLS_CC);
@@ -370,9 +372,6 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 			RETURN_FALSE;
 		}
 	}
-
-	/* check if write cmd */
-	b_write_cmd = ra_is_write_cmd(ra, cmd, cmd_len);
 
 	/* pass call through */
 	ZVAL_STRINGL(&z_fun, cmd, cmd_len); /* method name */
@@ -387,20 +386,23 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
 	/* multi/exec */
 	if(ra->z_multi_exec) {
-		call_user_function(&redis_ce->function_table, ra->z_multi_exec, &z_fun, &z_tmp, argc, z_callargs);
+        call_user_function(&redis_ce->function_table, ra->z_multi_exec, &z_fun, return_value, argc, z_callargs);
+        zval_dtor(return_value);
         zval_dtor(&z_fun);
-        zval_dtor(&z_tmp);
 		efree(z_callargs);
 		RETURN_ZVAL(getThis(), 1, 0);
 	}
+
+    /* check if write cmd */
+    b_write_cmd = ra_is_write_cmd(ra, cmd, cmd_len);
 
 	/* CALL! */
 	if(ra->index && b_write_cmd) {
         /* add MULTI + SADD */
         ra_index_multi(redis_inst, MULTI TSRMLS_CC);
 		/* call using discarded temp value and extract exec results after. */
-		call_user_function(&redis_ce->function_table, redis_inst, &z_fun, &z_tmp, argc, z_callargs);
-		zval_dtor(&z_tmp);
+        call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, argc, z_callargs);
+        zval_dtor(return_value);
 
 		/* add keys to index. */
 		ra_index_key(key, key_len, redis_inst TSRMLS_CC);
