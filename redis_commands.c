@@ -809,9 +809,7 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     zval *z_args;
     smart_string cmdstr = {0};
-    char *arg;
-    int arg_free;
-    strlen_t arg_len, i;
+    strlen_t i;
     int argc = ZEND_NUM_ARGS();
 
     // We at least need a key and one value
