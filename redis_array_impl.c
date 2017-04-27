@@ -401,6 +401,7 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 		return NULL;
 	}
 
+    ZVAL_NULL(&z_ret);
 	/* call extraction function */
     ZVAL_STRINGL(&z_argv, key, key_len);
     call_user_function(EG(function_table), NULL, &ra->z_fun, &z_ret, 1, &z_argv);
@@ -448,6 +449,7 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
 		return 0;
 	}
 
+    ZVAL_NULL(&z_ret);
 	/* call extraction function */
     ZVAL_STRINGL(&z_argv, key, key_len);
     call_user_function(EG(function_table), NULL, &ra->z_dist, &z_ret, 1, &z_argv);
@@ -511,24 +513,6 @@ ra_find_node_by_name(RedisArray *ra, const char *host, int host_len TSRMLS_DC) {
 		}
 	}
 	return NULL;
-}
-
-
-char *
-ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len) {
-
-	zval *zp_tmp;
-	int key_pos = 0; /* TODO: change this depending on the command */
-
-	if (zend_hash_num_elements(Z_ARRVAL_P(z_args)) == 0 ||
-        (zp_tmp = zend_hash_index_find(Z_ARRVAL_P(z_args), key_pos)) == NULL ||
-        Z_TYPE_P(zp_tmp) != IS_STRING
-    ) {
-		return NULL;
-	}
-
-	*key_len = Z_STRLEN_P(zp_tmp);
-	return Z_STRVAL_P(zp_tmp);
 }
 
 void

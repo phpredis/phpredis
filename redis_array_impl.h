@@ -17,7 +17,6 @@ zval *ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TS
 void ra_init_function_table(RedisArray *ra);
 
 void ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC);
-char * ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len);
 void ra_index_multi(zval *z_redis, long multi_value TSRMLS_DC);
 
 void ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC);
