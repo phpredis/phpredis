@@ -1440,207 +1440,117 @@ PHP_METHOD(Redis, sort) {
     }
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    if(have_store) {
-        IF_ATOMIC() {
-            redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-                NULL, NULL);
+    IF_ATOMIC() {
+        if (redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                     redis_sock, NULL, NULL) < 0)
+        {
+            RETURN_FALSE;
         }
-        REDIS_PROCESS_RESPONSE(redis_long_response);
-    } else {
-        IF_ATOMIC() {
-            if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                               redis_sock, NULL, NULL)<0)
-            {
-                RETURN_FALSE;
-            }
-        }
-        REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
     }
+    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
 }
 
-PHP_REDIS_API void generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sort,
-                             int use_alpha)
+static void
+generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, int desc, int alpha)
 {
-
-    zval *object;
+    zval *object, *zele, *zget = NULL;
     RedisSock *redis_sock;
-    char *key = NULL, *pattern = NULL, *get = NULL, *store = NULL, *cmd;
-    int cmd_len, key_free;
-    zend_long sort_start = -1, sort_count = -1;
-    strlen_t key_len, pattern_len, get_len, store_len;
+    zend_string *zpattern;
+    char *key = NULL, *pattern = NULL, *store = NULL;
+    strlen_t keylen, patternlen, storelen;
+    zend_long offset = -1, count = -1;
+    int argc = 1; /* SORT key is the simplest SORT command */
+    smart_string cmd = {0};
 
-    int cmd_elements;
-
-    char *cmd_lines[30];
-    int cmd_sizes[30];
-
-    int sort_len;
-    int i, pos;
-
+    /* Parse myriad of sort arguments */
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
-                                     "Os|sslls", &object, redis_ce, &key,
-                                     &key_len, &pattern, &pattern_len, &get,
-                                     &get_len, &sort_start, &sort_count, &store,
-                                     &store_len) == FAILURE)
+                                     "Os|s!z!lls", &object, redis_ce, &key,
+                                     &keylen, &pattern, &patternlen, &zget,
+                                     &offset, &count, &store, &storelen)
+                                     == FAILURE)
     {
         RETURN_FALSE;
     }
 
-    if (key_len == 0 || (redis_sock = redis_sock_get(object TSRMLS_CC, 0)) == NULL) {
+    /* Ensure we're sorting something, and we can get context */
+    if (keylen == 0 || !(redis_sock = redis_sock_get(object TSRMLS_CC, 0)))
         RETURN_FALSE;
+
+    /* Start calculating argc depending on input arguments */
+    if (pattern && patternlen)     argc += 2; /* BY pattern */
+    if (offset >= 0 && count >= 0) argc += 3; /* LIMIT offset count */
+    if (alpha)                     argc += 1; /* ALPHA */
+    if (store)                     argc += 2; /* STORE destination */
+    if (desc)                      argc += 1; /* DESC (ASC is the default) */
+
+    /* GET is special.  It can be 0 .. N arguments depending what we have */
+    if (zget) {
+        if (Z_TYPE_P(zget) == IS_ARRAY)
+            argc += zend_hash_num_elements(Z_ARRVAL_P(zget));
+        else if (Z_STRLEN_P(zget) > 0) {
+            argc += 2; /* GET pattern */
+        }
     }
 
-    /* first line, sort. */
-    cmd_lines[1] = estrndup("$4", 2);
-    cmd_sizes[1] = 2;
-    cmd_lines[2] = estrndup("SORT", 4);
-    cmd_sizes[2] = 4;
+    /* Start constructing final command and append key */
+    redis_cmd_init_sstr(&cmd, argc, "SORT", 4);
+    redis_cmd_append_sstr_key(&cmd, key, keylen, redis_sock, NULL);
 
-    /* Prefix our key if we need to */
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    /* second line, key */
-    cmd_sizes[3] = redis_cmd_format(&cmd_lines[3], "$%d", key_len);
-    cmd_lines[4] = estrndup(key, key_len);
-    cmd_sizes[4] = key_len;
-
-    /* If we prefixed our key, free it */
-    if(key_free) efree(key);
-
-    cmd_elements = 5;
-    if(pattern && pattern_len) {
-            /* BY */
-            cmd_lines[cmd_elements] = estrndup("$2", 2);
-            cmd_sizes[cmd_elements] = 2;
-            cmd_elements++;
-            cmd_lines[cmd_elements] = estrndup("BY", 2);
-            cmd_sizes[cmd_elements] = 2;
-            cmd_elements++;
-
-            /* pattern */
-            cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements],                "$%d", pattern_len);
-            cmd_elements++;
-            cmd_lines[cmd_elements] = estrndup(pattern, pattern_len);
-            cmd_sizes[cmd_elements] = pattern_len;
-            cmd_elements++;
-    }
-    if(sort_start >= 0 && sort_count >= 0) {
-            /* LIMIT */
-            cmd_lines[cmd_elements] = estrndup("$5", 2);
-            cmd_sizes[cmd_elements] = 2;
-            cmd_elements++;
-            cmd_lines[cmd_elements] = estrndup("LIMIT", 5);
-            cmd_sizes[cmd_elements] = 5;
-            cmd_elements++;
-
-            /* start */
-            cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements],
-                "$%d", integer_length(sort_start));
-            cmd_elements++;
-            cmd_sizes[cmd_elements] = spprintf(&cmd_lines[cmd_elements], 0,
-                "%d", (int)sort_start);
-            cmd_elements++;
-
-            /* count */
-            cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements],
-                "$%d", integer_length(sort_count));
-            cmd_elements++;
-            cmd_sizes[cmd_elements] = spprintf(&cmd_lines[cmd_elements], 0,
-                "%d", (int)sort_count);
-            cmd_elements++;
-    }
-    if(get && get_len) {
-            /* GET */
-            cmd_lines[cmd_elements] = estrndup("$3", 2);
-            cmd_sizes[cmd_elements] = 2;
-            cmd_elements++;
-            cmd_lines[cmd_elements] = estrndup("GET", 3);
-            cmd_sizes[cmd_elements] = 3;
-            cmd_elements++;
-
-            /* pattern */
-            cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements],
-                "$%d", get_len);
-            cmd_elements++;
-            cmd_lines[cmd_elements] = estrndup(get, get_len);
-            cmd_sizes[cmd_elements] = get_len;
-            cmd_elements++;
+    /* BY pattern */
+    if (pattern && patternlen) {
+        redis_cmd_append_sstr(&cmd, "BY", sizeof("BY") - 1);
+        redis_cmd_append_sstr(&cmd, pattern, patternlen);
     }
 
-    /* add ASC or DESC */
-    sort_len = strlen(sort);
-    cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements], "$%d",
-        sort_len);
-    cmd_elements++;
-    cmd_lines[cmd_elements] = estrndup(sort, sort_len);
-    cmd_sizes[cmd_elements] = sort_len;
-    cmd_elements++;
-
-    if(use_alpha) {
-            /* ALPHA */
-            cmd_lines[cmd_elements] = estrndup("$5", 2);
-            cmd_sizes[cmd_elements] = 2;
-            cmd_elements++;
-            cmd_lines[cmd_elements] = estrndup("ALPHA", 5);
-            cmd_sizes[cmd_elements] = 5;
-            cmd_elements++;
-    }
-    if(store && store_len) {
-            /* STORE */
-            cmd_lines[cmd_elements] = estrndup("$5", 2);
-            cmd_sizes[cmd_elements] = 2;
-            cmd_elements++;
-            cmd_lines[cmd_elements] = estrndup("STORE", 5);
-            cmd_sizes[cmd_elements] = 5;
-            cmd_elements++;
-
-            /* store key */
-            cmd_sizes[cmd_elements] = redis_cmd_format(&cmd_lines[cmd_elements],
-                "$%d", store_len);
-            cmd_elements++;
-            cmd_lines[cmd_elements] = estrndup(store, store_len);
-            cmd_sizes[cmd_elements] = store_len;
-            cmd_elements++;
+    /* LIMIT offset count */
+    if (offset >= 0 && count >= 0) {
+        redis_cmd_append_sstr(&cmd, "LIMIT", sizeof("LIMIT") - 1);
+        redis_cmd_append_sstr_long(&cmd, offset);
+        redis_cmd_append_sstr_long(&cmd, count);
     }
 
-    /* first line has the star */
-    cmd_sizes[0] = spprintf(&cmd_lines[0], 0, "*%d", (cmd_elements-1)/2);
-
-    /* compute the command size */
-    cmd_len = 0;
-    for(i = 0; i < cmd_elements; ++i) {
-        /* Each line followed by a _NL (\r\n) */
-        cmd_len += cmd_sizes[i] + sizeof(_NL) - 1;
+    /* Handle any number of GET pattern arguments we've been passed */
+    if (zget != NULL) {
+        if (Z_TYPE_P(zget) == IS_ARRAY) {
+            ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(zget), zele) {
+                zpattern = zval_get_string(zele);
+                redis_cmd_append_sstr(&cmd, "GET", sizeof("GET") - 1);
+                redis_cmd_append_sstr(&cmd, zpattern->val, zpattern->len);
+            } ZEND_HASH_FOREACH_END();
+        } else {
+            zpattern = zval_get_string(zget);
+            redis_cmd_append_sstr(&cmd, "GET", sizeof("GET") - 1);
+            redis_cmd_append_sstr(&cmd, zpattern->val, zpattern->len);
+            zend_string_release(zpattern);
+        }
     }
 
-    /* copy all lines into the final command. */
-    cmd = emalloc(1 + cmd_len);
-    pos = 0;
-    for(i = 0; i < cmd_elements; ++i) {
-        memcpy(cmd + pos, cmd_lines[i], cmd_sizes[i]);
-        pos += cmd_sizes[i];
-        memcpy(cmd + pos, _NL, sizeof(_NL) - 1);
-        pos += sizeof(_NL) - 1;
+    /* Append optional DESC and ALPHA modifiers */
+    if (desc)  redis_cmd_append_sstr(&cmd, "DESC", sizeof("DESC") - 1);
+    if (alpha) redis_cmd_append_sstr(&cmd, "ALPHA", sizeof("ALPHA") - 1);
 
-        /* free every line */
-        efree(cmd_lines[i]);
+    /* Finally append STORE if we've got it */
+    if (store && storelen) {
+        redis_cmd_append_sstr(&cmd, "STORE", sizeof("STORE") - 1);
+        redis_cmd_append_sstr_key(&cmd, store, storelen, redis_sock, NULL);
     }
 
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
     IF_ATOMIC() {
-        if (redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                            redis_sock, NULL, NULL) < 0) {
+        if (redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                     redis_sock, NULL, NULL) < 0)
+        {
             RETURN_FALSE;
         }
     }
-    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
 }
 
 /* {{{ proto array Redis::sortAsc(string key, string pattern, string get,
  *                                int start, int end, bool getList]) */
 PHP_METHOD(Redis, sortAsc)
 {
-    generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ASC", 0);
+    generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0, 0);
 }
 /* }}} */
 
@@ -1648,7 +1558,7 @@ PHP_METHOD(Redis, sortAsc)
  *                                     int start, int end, bool getList]) */
 PHP_METHOD(Redis, sortAscAlpha)
 {
-    generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ASC", 1);
+    generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, 0, 1);
 }
 /* }}} */
 
@@ -1656,7 +1566,7 @@ PHP_METHOD(Redis, sortAscAlpha)
  *                                 int start, int end, bool getList]) */
 PHP_METHOD(Redis, sortDesc)
 {
-    generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DESC", 0);
+    generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1, 0);
 }
 /* }}} */
 
@@ -1664,7 +1574,7 @@ PHP_METHOD(Redis, sortDesc)
  *                                      int start, int end, bool getList]) */
 PHP_METHOD(Redis, sortDescAlpha)
 {
-    generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DESC", 1);
+    generic_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1, 1);
 }
 /* }}} */
 
