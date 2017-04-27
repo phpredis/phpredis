@@ -581,16 +581,6 @@ int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         // Process our weights
         ZEND_HASH_FOREACH_VAL(ht_weights, z_ele) {
             // Ignore non numeric args unless they're inf/-inf
-            if (Z_TYPE_P(z_ele) != IS_LONG && Z_TYPE_P(z_ele) != IS_DOUBLE &&
-               strncasecmp(Z_STRVAL_P(z_ele), "inf", sizeof("inf")) != 0 &&
-               strncasecmp(Z_STRVAL_P(z_ele), "-inf", sizeof("-inf")) != 0 &&
-               strncasecmp(Z_STRVAL_P(z_ele), "+inf", sizeof("+inf")) != 0
-            ) {
-                php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                    "Weights must be numeric or '-inf','inf','+inf'");
-                efree(cmdstr.c);
-                return FAILURE;
-            }
 
             switch (Z_TYPE_P(z_ele)) {
                 case IS_LONG:
@@ -599,10 +589,30 @@ int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 case IS_DOUBLE:
                     redis_cmd_append_sstr_dbl(&cmdstr, Z_DVAL_P(z_ele));
                     break;
-                case IS_STRING:
-                    redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(z_ele),
-                        Z_STRLEN_P(z_ele));
-                    break;
+                case IS_STRING: {
+                    double dval;
+                    zend_long lval;
+                    zend_uchar type = is_numeric_string(Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), &lval, &dval, 0);
+                    if (type == IS_LONG) {
+                        redis_cmd_append_sstr_long(&cmdstr, lval);
+                        break;
+                    } else if (type == IS_DOUBLE) {
+                        redis_cmd_append_sstr_dbl(&cmdstr, dval);
+                        break;
+                    } else if (strncasecmp(Z_STRVAL_P(z_ele), "-inf", sizeof("-inf") - 1) == 0 ||
+                               strncasecmp(Z_STRVAL_P(z_ele), "+inf", sizeof("+inf") - 1) == 0 ||
+                               strncasecmp(Z_STRVAL_P(z_ele), "inf", sizeof("inf") - 1) == 0
+                    ) {
+                        redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
+                        break;
+                    }
+                    // fall through
+                }
+                default:
+                    php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                        "Weights must be numeric or '-inf','inf','+inf'");
+                    efree(cmdstr.c);
+                    return FAILURE;
             }
         } ZEND_HASH_FOREACH_END();
     }
