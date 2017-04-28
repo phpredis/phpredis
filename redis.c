@@ -2815,146 +2815,15 @@ PHP_METHOD(Redis, pubsub) {
     }
 }
 
-// Construct an EVAL or EVALSHA command, with option argument array and number
-// of arguments that are keys parameter
-PHP_REDIS_API int
-redis_build_eval_cmd(RedisSock *redis_sock, char **ret, char *keyword,
-                     char *value, int val_len, zval *args, int keys_count
-                     TSRMLS_DC)
-{
-    zval *elem;
-    HashTable *args_hash;
-    int cmd_len, args_count = 0;
-    int eval_cmd_count = 2;
-
-    // If we've been provided arguments, we'll want to include those in our eval
-    // command
-    if(args != NULL) {
-        // Init our hash array value, and grab the count
-        args_hash = Z_ARRVAL_P(args);
-        args_count = zend_hash_num_elements(args_hash);
-
-        // We only need to process the arguments if the array is non empty
-        if(args_count >  0) {
-            // Header for our EVAL command
-            cmd_len = redis_cmd_format_header(ret, keyword,
-                eval_cmd_count + args_count);
-
-            // Now append the script itself, and the number of arguments to
-            // treat as keys
-            cmd_len = redis_cmd_append_str(ret, cmd_len, value, val_len);
-            cmd_len = redis_cmd_append_int(ret, cmd_len, keys_count);
-
-            // Iterate the values in our "keys" array
-            ZEND_HASH_FOREACH_VAL(args_hash, elem) {
-                zend_string *zstr = zval_get_string(elem);
-                char *key = zstr->val;
-                strlen_t key_len = zstr->len;
-
-				/* Keep track of the old command pointer */
-				char *old_cmd = *ret;
-
-                // If this is still a key argument, prefix it if we've been set
-                // up to prefix keys
-                int key_free = keys_count-- > 0 ? redis_key_prefix(redis_sock,
-                    &key, &key_len) : 0;
-
-                // Append this key to our EVAL command, free our old command
-                cmd_len = redis_cmd_format(ret, "%s$%d" _NL "%s" _NL, *ret,
-                    cmd_len, key_len, key, key_len);
-                efree(old_cmd);
-
-                zend_string_release(zstr);
-				/* Free our key, old command if we need to */
-				if(key_free) efree(key);
-            } ZEND_HASH_FOREACH_END();
-        }
-    }
-
-    // If there weren't any arguments (none passed, or an empty array),
-    // construct a standard no args command
-    if(args_count < 1) {
-        cmd_len = redis_cmd_format_static(ret, keyword, "sd", value, val_len, 0);
-    }
-
-	/* Return our command length */
-	return cmd_len;
-}
-
-/* {{{ proto variant Redis::evalsha(string sha1, [array keys, long num_keys]) */
-PHP_METHOD(Redis, evalsha)
-{
-    zval *object, *args= NULL;
-    char *cmd, *sha;
-    int cmd_len;
-    strlen_t sha_len;
-    zend_long keys_count = 0;
-    RedisSock *redis_sock;
-
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
-                                    "Os|al", &object, redis_ce, &sha, &sha_len,
-                                    &args, &keys_count) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-	/* Attempt to grab socket */
-    if ((redis_sock = redis_sock_get(object TSRMLS_CC, 0)) == NULL) {
-		RETURN_FALSE;
-	}
-
-    // Construct our EVALSHA command
-    cmd_len = redis_build_eval_cmd(redis_sock, &cmd, "EVALSHA", sha, sha_len,
-        args, keys_count TSRMLS_CC);
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
-        if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                    redis_sock, NULL, NULL) < 0)
-        {
-            RETURN_FALSE;
-        }
-    }
-    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
-}
-
 /* {{{ proto variant Redis::eval(string script, [array keys, long num_keys]) */
 PHP_METHOD(Redis, eval)
 {
-    zval *object, *args = NULL;
-    RedisSock *redis_sock;
-    char *script, *cmd = "";
-    int cmd_len;
-    strlen_t script_len;
-    zend_long keys_count = 0;
+    REDIS_PROCESS_KW_CMD("EVAL", redis_eval_cmd, redis_read_variant_reply);
+}
 
-    // Attempt to parse parameters
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
-                                    "Os|al", &object, redis_ce, &script,
-                                    &script_len, &args, &keys_count)
-                                    == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-	/* Attempt to grab socket */
-    if ((redis_sock = redis_sock_get(object TSRMLS_CC, 0)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    // Construct our EVAL command
-    cmd_len = redis_build_eval_cmd(redis_sock, &cmd, "EVAL", script, script_len,
-        args, keys_count TSRMLS_CC);
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
-        if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                    redis_sock, NULL, NULL) < 0)
-        {
-            RETURN_FALSE;
-        }
-    }
-    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+/* {{{ proto variant Redis::evalsha(string sha1, [array keys, long num_keys]) */
+PHP_METHOD(Redis, evalsha) {
+    REDIS_PROCESS_KW_CMD("EVALSHA", redis_eval_cmd, redis_read_variant_reply);
 }
 
 PHP_REDIS_API int

@@ -801,6 +801,72 @@ int redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* EVAL and EVALSHA */
+int redis_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *lua;
+    int argc = 0;
+    zval *z_arr = NULL, *z_ele;
+    HashTable *ht_arr;
+    zend_long num_keys = 0;
+    smart_string cmdstr = {0};
+    strlen_t lua_len;
+    zend_string *zstr;
+    short prevslot = -1;
+
+    /* Parse args */
+    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|al", &lua, &lua_len,
+                             &z_arr, &num_keys)==FAILURE)
+    {
+        return FAILURE;
+    }
+
+    /* Grab arg count */
+    if (z_arr != NULL) {
+        ht_arr = Z_ARRVAL_P(z_arr);
+        argc = zend_hash_num_elements(ht_arr);
+    }
+
+    /* EVAL[SHA] {script || sha1} {num keys}  */
+    redis_cmd_init_sstr(&cmdstr, 2 + argc, kw, strlen(kw));
+    redis_cmd_append_sstr(&cmdstr, lua, lua_len);
+    redis_cmd_append_sstr_long(&cmdstr, num_keys);
+
+    // Iterate over our args if we have any
+    if (argc > 0) {
+        ZEND_HASH_FOREACH_VAL(ht_arr, z_ele) {
+            zstr = zval_get_string(z_ele);
+
+            /* If we're still on a key, prefix it check slot */
+            if (num_keys-- > 0) {
+                redis_cmd_append_sstr_key(&cmdstr, zstr->val, zstr->len, redis_sock, slot);
+
+                /* If we have been passed a slot, all keys must match */
+                if (slot) {
+                    if (prevslot != -1 && prevslot != *slot) {
+                        zend_string_release(zstr);
+                        php_error_docref(0 TSRMLS_CC, E_WARNING, "All keys do not map to the same slot");
+                        return FAILURE;
+                    }
+                    prevslot = *slot;
+                }
+            } else {
+                redis_cmd_append_sstr(&cmdstr, zstr->val, zstr->len);
+            }
+
+            zend_string_release(zstr);
+        } ZEND_HASH_FOREACH_END();
+    } else {
+        /* Any slot will do */
+        CMD_RAND_SLOT(slot);
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    return SUCCESS;
+}
+
 /* Commands that take a key followed by a variable list of serializable
  * values (RPUSH, LPUSH, SADD, SREM, etc...) */
 int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
