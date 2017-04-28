@@ -3004,25 +3004,23 @@ PHP_METHOD(Redis, evalsha) {
 
 PHP_REDIS_API int
 redis_build_script_exists_cmd(char **ret, zval *argv, int argc) {
-	/* Our command length and iterator */
-	int cmd_len = 0, i;
+	smart_string cmd = {0};
+    zend_string *zstr;
+    int i;
 
     // Start building our command
-    cmd_len = redis_cmd_format_header(ret, "SCRIPT", argc + 1);
-    cmd_len = redis_cmd_append_str(ret, cmd_len, "EXISTS", 6);
+    REDIS_CMD_INIT_SSTR_STATIC(&cmd, 1 + argc, "SCRIPT");
+    redis_cmd_append_sstr(&cmd, "EXISTS", 6);
 
-	/* Iterate our arguments */
-	for(i=0;i<argc;i++) {
-        zend_string *zstr = zval_get_string(&argv[i]);
-
-        // Append this script sha to our SCRIPT EXISTS command
-        cmd_len = redis_cmd_append_str(ret, cmd_len, zstr->val, zstr->len);
-
+    for (i = 0; i < argc; i++) {
+        zstr = zval_get_string(&argv[i]);
+        redis_cmd_append_sstr(&cmd, zstr->val, zstr->len);
         zend_string_release(zstr);
     }
 
 	/* Success */
-	return cmd_len;
+    *ret = cmd.c;
+	return cmd.len;
 }
 
 /* {{{ proto status Redis::script('flush')
@@ -3451,12 +3449,13 @@ PHP_REDIS_API int
 redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
                      int iter, char *pattern, int pattern_len, int count)
 {
+    smart_string cmdstr = {0};
     char *keyword;
-    int arg_count, cmd_len;
+    int argc;
 
     /* Count our arguments +1 for key if it's got one, and + 2 for pattern */
     /* or count given that they each carry keywords with them. */
-    arg_count = 1 + (key_len>0) + (pattern_len>0?2:0) + (count>0?2:0);
+    argc = 1 + (key_len > 0) + (pattern_len > 0 ? 2 : 0) + (count > 0 ? 2 : 0);
 
     /* Turn our type into a keyword */
     switch(type) {
@@ -3476,32 +3475,25 @@ redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     }
 
     /* Start the command */
-    cmd_len = redis_cmd_format_header(cmd, keyword, arg_count);
-
-    /* Add the key in question if we have one */
-    if(key_len) {
-        cmd_len = redis_cmd_append_str(cmd, cmd_len, key, key_len);
-    }
-
-    /* Add our iterator */
-    cmd_len = redis_cmd_append_int(cmd, cmd_len, iter);
+    redis_cmd_init_sstr(&cmdstr, argc, keyword, strlen(keyword));
+    if (key_len) redis_cmd_append_sstr(&cmdstr, key, key_len);
+    redis_cmd_append_sstr_int(&cmdstr, iter);
 
     /* Append COUNT if we've got it */
     if(count) {
-        cmd_len = redis_cmd_append_str(cmd, cmd_len, "COUNT",
-            sizeof("COUNT")-1);
-        cmd_len = redis_cmd_append_int(cmd, cmd_len, count);
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "COUNT");
+        redis_cmd_append_sstr_int(&cmdstr, count);
     }
 
     /* Append MATCH if we've got it */
     if(pattern_len) {
-        cmd_len = redis_cmd_append_str(cmd, cmd_len, "MATCH",
-            sizeof("MATCH")-1);
-        cmd_len = redis_cmd_append_str(cmd, cmd_len, pattern, pattern_len);
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "MATCH");
+        redis_cmd_append_sstr(&cmdstr, pattern, pattern_len);
     }
 
     /* Return our command length */
-    return cmd_len;
+    *cmd = cmdstr.c;
+    return cmdstr.len;
 }
 
 /* {{{ proto redis::scan(&$iterator, [pattern, [count]]) */
