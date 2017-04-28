@@ -34,7 +34,7 @@ int redis_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char *kw, char **cmd, int *cmd_len, short *slot,
                     void **ctx)
 {
-    *cmd_len = redis_cmd_format_static(cmd, kw, "");
+    *cmd_len = REDIS_SPPRINTF(cmd, kw, "");
     return SUCCESS;
 }
 
@@ -98,7 +98,7 @@ int redis_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
     }
 
     // Build the command without molesting the string
-    *cmd_len = redis_cmd_format_static(cmd, kw, "s", arg, arg_len);
+    *cmd_len = REDIS_SPPRINTF(cmd, kw, "s", arg, arg_len);
 
     return SUCCESS;
 }
@@ -1842,7 +1842,7 @@ int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Construct our AUTH command
-    *cmd_len = redis_cmd_format_static(cmd, "AUTH", "s", pw, pw_len);
+    *cmd_len = REDIS_SPPRINTF(cmd, "AUTH", "s", pw, pw_len);
 
     // Free previously allocated password, and update
     if(redis_sock->auth) efree(redis_sock->auth);
@@ -2079,18 +2079,13 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Default that we're not using store
     *using_store = 0;
 
-    // Handle key prefixing
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
     // If we don't have an options array, the command is quite simple
-    if(!z_opts || zend_hash_num_elements(Z_ARRVAL_P(z_opts)) == 0) {
+    if (!z_opts || zend_hash_num_elements(Z_ARRVAL_P(z_opts)) == 0) {
         // Construct command
-        *cmd_len = redis_cmd_format_static(cmd, "SORT", "s", key, key_len);
+        *cmd_len = REDIS_SPPRINTF(cmd, "SORT", "k", key, key_len);
 
-        // Push out slot, store flag, and clean up
+        /* Not storing */
         *using_store = 0;
-        CMD_SET_SLOT(slot,key,key_len);
-        if(key_free) efree(key);
 
         return SUCCESS;
     }
@@ -2099,6 +2094,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     array_init(&z_argv);
 
     // SORT <key>
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
     add_next_index_stringl(&z_argv, key, key_len);
     if (key_free) efree(key);
 
@@ -2877,14 +2873,14 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Construct our command */
     if(!kw) {
-        *cmd_len = redis_cmd_format_static(cmd, "COMMAND", "");
+        *cmd_len = REDIS_SPPRINTF(cmd, "COMMAND", "");
     } else if (!z_arg) {
         /* Sanity check */
         if (strncasecmp(kw, "count", sizeof("count") - 1)) {
             return FAILURE;
         }
         /* COMMAND COUNT */
-        *cmd_len = redis_cmd_format_static(cmd, "COMMAND", "s", "COUNT", sizeof("COUNT") - 1);
+        *cmd_len = REDIS_SPPRINTF(cmd, "COMMAND", "s", "COUNT", sizeof("COUNT") - 1);
     } else if (Z_TYPE_P(z_arg) == IS_STRING) {
         /* Sanity check */
         if (strncasecmp(kw, "info", sizeof("info") - 1)) {
@@ -2892,8 +2888,8 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         }
 
         /* COMMAND INFO <cmd> */
-        *cmd_len = redis_cmd_format_static(cmd, "COMMAND", "ss", "INFO",
-            sizeof("INFO")-1, Z_STRVAL_P(z_arg), Z_STRLEN_P(z_arg));
+        *cmd_len = REDIS_SPPRINTF(cmd, "COMMAND", "ss", "INFO", sizeof("INFO") - 1,
+            Z_STRVAL_P(z_arg), Z_STRLEN_P(z_arg));
     } else {
         int arr_len;
 

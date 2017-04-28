@@ -54,7 +54,8 @@ static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
     char *cmd, *response;
     int cmd_len, response_len;
 
-    cmd_len = redis_cmd_format_static(&cmd, "SELECT", "d", redis_sock->dbNumber);
+    cmd_len = redis_spprintf(redis_sock, NULL TSRMLS_CC, &cmd, "SELECT", "d",
+                             redis_sock->dbNumber);
 
     if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
@@ -81,8 +82,8 @@ static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
     char *cmd, *response;
     int cmd_len, response_len;
 
-    cmd_len = redis_cmd_format_static(&cmd, "AUTH", "s", redis_sock->auth,
-        strlen(redis_sock->auth));
+    cmd_len = redis_spprintf(redis_sock, NULL TSRMLS_CC, &cmd, "AUTH", "s",
+                             redis_sock->auth, strlen(redis_sock->auth));
 
     if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
@@ -1623,7 +1624,7 @@ PHP_REDIS_API void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS,
     int response_len, cmd_len;
     char * response;
 
-    cmd_len = redis_cmd_format_static(&cmd, "DISCARD", "");
+    cmd_len = redis_spprintf(redis_sock, NULL TSRMLS_CC, &cmd, "DISCARD", "");
 
     SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
     efree(cmd);

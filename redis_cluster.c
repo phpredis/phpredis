@@ -1044,7 +1044,7 @@ PHP_METHOD(RedisCluster, keys) {
     char *pat, *cmd;
     clusterReply *resp;
     zval zv, *z_ret = &zv;
-    int i, pat_free, cmd_len;
+    int i, cmd_len;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &pat, &pat_len)
                              ==FAILURE)
@@ -1053,9 +1053,7 @@ PHP_METHOD(RedisCluster, keys) {
     }
 
     /* Prefix and then build our command */
-    pat_free = redis_key_prefix(c->flags, &pat, &pat_len);
-    cmd_len = redis_cmd_format_static(&cmd, "KEYS", "s", pat, pat_len);
-    if(pat_free) efree(pat);
+    cmd_len = redis_spprintf(c->flags, NULL TSRMLS_CC, &cmd, "KEYS", "k", pat, pat_len);
 
     array_init(z_ret);
 
@@ -2297,7 +2295,7 @@ cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
     }
 
     // Construct our command
-    cmd_len = redis_cmd_format_static(&cmd, kw, "");
+    cmd_len = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, kw, "");
 
     // Kick off our command
     if(cluster_send_slot(c, slot, cmd, cmd_len, reply_type TSRMLS_CC)<0) {
@@ -2652,14 +2650,14 @@ PHP_METHOD(RedisCluster, info) {
     c->readonly = 0;
 
     slot = cluster_cmd_get_slot(c, z_arg TSRMLS_CC);
-    if(slot<0) {
+    if (slot < 0) {
         RETURN_FALSE;
     }
 
-    if(opt != NULL) {
-        cmd_len = redis_cmd_format_static(&cmd, "INFO", "s", opt, opt_len);
+    if (opt != NULL) {
+        cmd_len = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "INFO", "s", opt, opt_len);
     } else {
-        cmd_len = redis_cmd_format_static(&cmd, "INFO", "");
+        cmd_len = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "INFO", "");
     }
 
     rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
@@ -2726,10 +2724,11 @@ PHP_METHOD(RedisCluster, client) {
 
     /* Construct the command */
     if (ZEND_NUM_ARGS() == 3) {
-        cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "ss", opt, opt_len,
-            arg, arg_len);
+        cmd_len = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "CLIENT", "ss",
+            opt, opt_len, arg, arg_len);
     } else if(ZEND_NUM_ARGS() == 2) {
-        cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "s", opt, opt_len);
+        cmd_len = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "CLIENT", "s",
+            opt, opt_len);
     } else {
         zend_wrong_param_count(TSRMLS_C);
         RETURN_FALSE;
@@ -2883,7 +2882,7 @@ PHP_METHOD(RedisCluster, echo) {
     }
 
     /* Construct our command */
-    cmd_len = redis_cmd_format_static(&cmd, "ECHO", "s", msg, msg_len);
+    cmd_len = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "ECHO", "s", msg, msg_len);
 
     /* Send it off */
     rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
