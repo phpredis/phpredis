@@ -549,23 +549,25 @@ ZEND_GET_MODULE(redis)
 PHP_REDIS_API zend_class_entry *redis_get_exception_base(int root TSRMLS_DC)
 {
 #if HAVE_SPL
-        if (!root) {
-                if (!spl_ce_RuntimeException) {
-                        zend_class_entry *pce;
+    if (!root) {
+        if (!spl_ce_RuntimeException) {
+            zend_class_entry *pce;
 
-                        if ((pce = zend_hash_str_find_ptr(CG(class_table), "runtimeexception", sizeof("RuntimeException") - 1))) {
-                                spl_ce_RuntimeException = pce;
-                                return pce;
-                        }
-                } else {
-                        return spl_ce_RuntimeException;
-                }
+            if ((pce = zend_hash_str_find_ptr(CG(class_table), "runtimeexception",
+                                              sizeof("RuntimeException") - 1)))
+            {
+                spl_ce_RuntimeException = pce;
+                return pce;
+            }
+        } else {
+            return spl_ce_RuntimeException;
         }
+    }
 #endif
 #if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
-        return zend_exception_get_default();
+    return zend_exception_get_default();
 #else
-        return zend_exception_get_default(TSRMLS_C);
+    return zend_exception_get_default(TSRMLS_C);
 #endif
 }
 
@@ -576,7 +578,7 @@ static int send_discard_static(RedisSock *redis_sock TSRMLS_DC) {
     int resp_len, cmd_len;
 
     /* format our discard command */
-    cmd_len = redis_cmd_format_static(&cmd, "DISCARD", "");
+    cmd_len = REDIS_SPPRINTF(&cmd, "DISCARD", "");
 
     /* send our DISCARD command */
     if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) >= 0 &&
@@ -1874,9 +1876,9 @@ PHP_METHOD(Redis, info) {
 
     /* Build a standalone INFO command or one with an option */
     if (opt != NULL) {
-        cmd_len = redis_cmd_format_static(&cmd, "INFO", "s", opt, opt_len);
+        cmd_len = REDIS_SPPRINTF(&cmd, "INFO", "s", opt, opt_len);
     } else {
-        cmd_len = redis_cmd_format_static(&cmd, "INFO", "");
+        cmd_len = REDIS_SPPRINTF(&cmd, "INFO", "");
     }
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -1909,8 +1911,7 @@ PHP_METHOD(Redis, select) {
     }
 
     redis_sock->dbNumber = dbNumber;
-
-    cmd_len = redis_cmd_format_static(&cmd, "SELECT", "d", dbNumber);
+    cmd_len = REDIS_SPPRINTF(&cmd, "SELECT", "d", dbNumber);
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     IF_ATOMIC() {
@@ -2298,11 +2299,9 @@ PHP_METHOD(Redis, multi)
 
     if (multi_value == PIPELINE) {
         IF_PIPELINE() {
-            php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                "Already in pipeline mode");
+            php_error_docref(NULL TSRMLS_CC, E_WARNING, "Already in pipeline mode");
         } else IF_MULTI() {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Can't activate pipeline in multi mode!");
+            php_error_docref(NULL TSRMLS_CC, E_ERROR, "Can't activate pipeline in multi mode!");
             RETURN_FALSE;
         } else {
             free_reply_callbacks(redis_sock);
@@ -2310,14 +2309,12 @@ PHP_METHOD(Redis, multi)
         }
     } else if (multi_value == MULTI) {
         IF_MULTI() {
-            php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                "Already in multi mode");
+            php_error_docref(NULL TSRMLS_CC, E_WARNING, "Already in multi mode");
         } else IF_PIPELINE() {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Can't activate multi in pipeline mode!");
+            php_error_docref(NULL TSRMLS_CC, E_ERROR, "Can't activate multi in pipeline mode!");
             RETURN_FALSE;
         } else {
-            cmd_len = redis_cmd_format_static(&cmd, "MULTI", "");
+            cmd_len = REDIS_SPPRINTF(&cmd, "MULTI", "");
             SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
             efree(cmd);
 
@@ -2401,7 +2398,7 @@ PHP_METHOD(Redis, exec)
     }
 
     IF_MULTI() {
-        cmd_len = redis_cmd_format_static(&cmd, "EXEC", "");
+        cmd_len = REDIS_SPPRINTF(&cmd, "EXEC", "");
         SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
         efree(cmd);
 
@@ -2635,12 +2632,10 @@ PHP_METHOD(Redis, slaveof)
         RETURN_FALSE;
     }
 
-    if(host && host_len) {
-        cmd_len = redis_cmd_format_static(&cmd, "SLAVEOF", "sd", host,
-                                          host_len, (int)port);
+    if (host && host_len) {
+        cmd_len = REDIS_SPPRINTF(&cmd, "SLAVEOF", "sd", host, host_len, (int)port);
     } else {
-        cmd_len = redis_cmd_format_static(&cmd, "SLAVEOF", "ss", "NO",
-                                          2, "ONE", 3);
+        cmd_len = REDIS_SPPRINTF(&cmd, "SLAVEOF", "ss", "NO", 2, "ONE", 3);
     }
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -2744,8 +2739,7 @@ PHP_METHOD(Redis, config)
     }
 
     if (mode == CFG_GET && val == NULL) {
-        cmd_len = redis_cmd_format_static(&cmd, "CONFIG", "ss", op, op_len,
-            key, key_len);
+        cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "ss", op, op_len, key, key_len);
 
         REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len)
         IF_ATOMIC() {
@@ -2754,8 +2748,7 @@ PHP_METHOD(Redis, config)
         REDIS_PROCESS_RESPONSE(redis_mbulk_reply_zipped_raw);
 
     } else if(mode == CFG_SET && val != NULL) {
-        cmd_len = redis_cmd_format_static(&cmd, "CONFIG", "sss", op,
-                                          op_len, key, key_len, val, val_len);
+        cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "sss", op, op_len, key, key_len, val, val_len);
 
         REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len)
         IF_ATOMIC() {
@@ -2807,12 +2800,10 @@ PHP_METHOD(Redis, slowlog) {
 
     // Create our command.  For everything except SLOWLOG GET (with an arg) it's
     // just two parts
-    if(mode == SLOWLOG_GET && ZEND_NUM_ARGS() == 2) {
-        cmd_len = redis_cmd_format_static(&cmd, "SLOWLOG", "sl", arg,
-                                          arg_len, option);
+    if (mode == SLOWLOG_GET && ZEND_NUM_ARGS() == 2) {
+        cmd_len = REDIS_SPPRINTF(&cmd, "SLOWLOG", "sl", arg, arg_len, option);
     } else {
-        cmd_len = redis_cmd_format_static(&cmd, "SLOWLOG", "s", arg,
-                                          arg_len);
+        cmd_len = REDIS_SPPRINTF(&cmd, "SLOWLOG", "s", arg, arg_len);
     }
 
     /* Kick off our command */
@@ -2854,8 +2845,7 @@ PHP_METHOD(Redis, wait) {
     }
 
     // Construct the command
-    cmd_len = redis_cmd_format_static(&cmd, "WAIT", "ll", num_slaves,
-                                      timeout);
+    cmd_len = REDIS_SPPRINTF(&cmd, "WAIT", "ll", num_slaves, timeout);
 
     /* Kick it off */
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
@@ -2873,28 +2863,22 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
 {
     HashTable *ht_chan;
     zval *z_ele;
-    int cmd_len;
     smart_string cmd = {0};
 
-    if(type == PUBSUB_CHANNELS) {
-        if(arg) {
-            // With a pattern
-            cmd_len = redis_spprintf(redis_sock, NULL TSRMLS_CC, ret, "PUBSUB",
-                                     "sk", "CHANNELS", sizeof("CHANNELS") - 1,
-                                     Z_STRVAL_P(arg), Z_STRLEN_P(arg));
-
-            /* Return command length */
-            return cmd_len;
+    if (type == PUBSUB_CHANNELS) {
+        if (arg) {
+            /* With a pattern */
+            return REDIS_SPPRINTF(ret, "PUBSUB", "sk", "CHANNELS", sizeof("CHANNELS") - 1,
+                                  Z_STRVAL_P(arg), Z_STRLEN_P(arg));
         } else {
-            // No pattern
-            return redis_cmd_format_static(ret, "PUBSUB", "s", "CHANNELS", sizeof("CHANNELS")-1);
+            /* No pattern */
+            return REDIS_SPPRINTF(ret, "PUBSUB", "s", "CHANNELS", sizeof("CHANNELS") - 1);
         }
-    } else if(type == PUBSUB_NUMSUB) {
+    } else if (type == PUBSUB_NUMSUB) {
         ht_chan = Z_ARRVAL_P(arg);
 
         // Add PUBSUB and NUMSUB bits
-        redis_cmd_init_sstr(&cmd, zend_hash_num_elements(ht_chan)+1, "PUBSUB",
-            sizeof("PUBSUB")-1);
+        redis_cmd_init_sstr(&cmd, zend_hash_num_elements(ht_chan)+1, "PUBSUB", sizeof("PUBSUB")-1);
         redis_cmd_append_sstr(&cmd, "NUMSUB", sizeof("NUMSUB")-1);
 
         /* Iterate our elements */
@@ -2907,9 +2891,8 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
         /* Set return */
         *ret = cmd.c;
         return cmd.len;
-    } else if(type == PUBSUB_NUMPAT) {
-        return redis_cmd_format_static(ret, "PUBSUB", "s", "NUMPAT",
-            sizeof("NUMPAT")-1);
+    } else if (type == PUBSUB_NUMPAT) {
+        return REDIS_SPPRINTF(ret, "PUBSUB", "s", "NUMPAT", sizeof("NUMPAT") - 1);
     }
 
     /* Shouldn't ever happen */
@@ -3058,9 +3041,7 @@ PHP_METHOD(Redis, script) {
        !strcasecmp(Z_STRVAL(z_args[0]), "kill"))
     {
         // Simple SCRIPT FLUSH, or SCRIPT_KILL command
-        cmd_len = redis_cmd_format_static(&cmd, "SCRIPT", "s",
-                                          Z_STRVAL(z_args[0]),
-                                          Z_STRLEN(z_args[0]));
+        cmd_len = REDIS_SPPRINTF(&cmd, "SCRIPT", "s", Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
     } else if(!strcasecmp(Z_STRVAL(z_args[0]), "load")) {
         // Make sure we have a second argument, and it's not empty.  If it is
         // empty, we can just return an empty array (which is what Redis does)
@@ -3073,9 +3054,8 @@ PHP_METHOD(Redis, script) {
         }
 
         // Format our SCRIPT LOAD command
-        cmd_len = redis_cmd_format_static(&cmd, "SCRIPT", "ss",
-                                          "LOAD", 4, Z_STRVAL(z_args[1]),
-                                          Z_STRLEN(z_args[1]));
+        cmd_len = REDIS_SPPRINTF(&cmd, "SCRIPT", "ss", "LOAD", 4, Z_STRVAL(z_args[1]),
+                                 Z_STRLEN(z_args[1]));
 	} else if(!strcasecmp(Z_STRVAL(z_args[0]), "exists")) {
 		/* Construct our SCRIPT EXISTS command */
 		cmd_len = redis_build_script_exists_cmd(&cmd, &(z_args[1]), argc-1);
@@ -3370,12 +3350,10 @@ PHP_METHOD(Redis, client) {
     }
 
     /* Build our CLIENT command */
-    if(ZEND_NUM_ARGS() == 2) {
-        cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "ss",
-                                          opt, opt_len, arg, arg_len);
+    if (ZEND_NUM_ARGS() == 2) {
+        cmd_len = REDIS_SPPRINTF(&cmd, "CLIENT", "ss", opt, opt_len, arg, arg_len);
     } else {
-        cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "s",
-                                          opt, opt_len);
+        cmd_len = REDIS_SPPRINTF(&cmd, "CLIENT", "s", opt, opt_len);
     }
 
     /* Execute our queue command */

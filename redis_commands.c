@@ -25,6 +25,12 @@
 #include "redis_commands.h"
 #include <zend_exceptions.h>
 
+/* Local passthrough macro for command construction.  Given that these methods
+ * are generic (so they work whether the caller is Redis or RedisCluster) we
+ * will always have redis_sock, slot*, and TSRMLS_CC */
+#define REDIS_CMD_SPPRINTF(ret, kw, fmt, ...) \
+    redis_spprintf(redis_sock, slot TSRMLS_CC, ret, kw, fmt, ##__VA_ARGS__)
+
 /* Generic commands based on method signature and what kind of things we're
  * processing.  Lots of Redis commands take something like key, value, or
  * key, value long.  Each unique signature like this is written only once */
@@ -34,7 +40,7 @@ int redis_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char *kw, char **cmd, int *cmd_len, short *slot,
                     void **ctx)
 {
-    *cmd_len = REDIS_SPPRINTF(cmd, kw, "");
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "");
     return SUCCESS;
 }
 
@@ -98,7 +104,7 @@ int redis_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
     }
 
     // Build the command without molesting the string
-    *cmd_len = REDIS_SPPRINTF(cmd, kw, "s", arg, arg_len);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "s", arg, arg_len);
 
     return SUCCESS;
 }
@@ -119,7 +125,7 @@ int redis_key_long_val_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    *cmd_len = REDIS_SPPRINTF(cmd, kw, "klv", key, key_len, expire, z_val);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "klv", key, key_len, expire, z_val);
 
     return SUCCESS;
 }
@@ -139,7 +145,7 @@ int redis_key_long_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    *cmd_len = REDIS_SPPRINTF(cmd, kw, "kds", key, key_len, (int)lval, val, val_len);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kds", key, key_len, (int)lval, val, val_len);
 
     return SUCCESS;
 }
@@ -159,7 +165,7 @@ int redis_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    *cmd_len = REDIS_SPPRINTF(cmd, kw, "kv", key, key_len, z_val);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kv", key, key_len, z_val);
 
     return SUCCESS;
 }
@@ -179,7 +185,7 @@ int redis_key_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Construct command
-    *cmd_len = REDIS_SPPRINTF(cmd, kw, "ks", key, key_len, val, val_len);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ks", key, key_len, val, val_len);
 
     return SUCCESS;
 }
@@ -198,7 +204,7 @@ int redis_key_str_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    *cmd_len = REDIS_SPPRINTF(cmd, kw, "kss", k, klen, v1, v1len, v2, v2len);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kss", k, klen, v1, v1len, v2, v2len);
 
     // Success!
     return SUCCESS;
@@ -243,7 +249,7 @@ int redis_key_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Send keys as normal strings because we manually prefixed to check against
      * cross slot error. */
-    *cmd_len = REDIS_SPPRINTF(cmd, kw, "ss", k1, k1len, k2, k2len);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ss", k1, k1len, k2, k2len);
 
     /* Clean keys up if we prefixed */
     if (k1free) efree(k1);
@@ -267,7 +273,7 @@ int redis_key_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    *cmd_len = REDIS_SPPRINTF(cmd, kw, "kl", key, keylen, lval);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kl", key, keylen, lval);
 
     // Success!
     return SUCCESS;
@@ -288,7 +294,7 @@ int redis_key_long_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    *cmd_len = REDIS_SPPRINTF(cmd, kw, "kll", key, key_len, val1, val2);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kll", key, key_len, val1, val2);
 
     return SUCCESS;
 }
@@ -307,7 +313,7 @@ int redis_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    *cmd_len = REDIS_SPPRINTF(cmd, kw, "k", key, key_len);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "k", key, key_len);
 
     return SUCCESS;
 }
@@ -327,7 +333,7 @@ int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    *cmd_len = REDIS_SPPRINTF(cmd, kw, "kf", key, key_len, val);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kf", key, key_len, val);
 
     return SUCCESS;
 }
@@ -387,10 +393,10 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     if(ws) {
-        *cmd_len = REDIS_SPPRINTF(cmd, kw, "kdds", key, key_len, start, end,
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kdds", key, key_len, start, end,
             "WITHSCORES", sizeof("WITHSCORES") - 1);
     } else {
-        *cmd_len = REDIS_SPPRINTF(cmd, kw, "kdd", key, key_len, start, end);
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kdd", key, key_len, start, end);
     }
 
     // Push out WITHSCORES option
@@ -457,19 +463,19 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Construct our command
     if (*withscores) {
         if (has_limit) {
-            *cmd_len = REDIS_SPPRINTF(cmd, kw, "ksssdds", key, key_len,
+            *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ksssdds", key, key_len,
                 start, start_len, end, end_len, "LIMIT", 5, offset, count,
                 "WITHSCORES", 10);
         } else {
-            *cmd_len = REDIS_SPPRINTF(cmd, kw, "ksss", key, key_len, start,
+            *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ksss", key, key_len, start,
                 start_len, end, end_len, "WITHSCORES", 10);
         }
     } else {
         if (has_limit) {
-            *cmd_len = REDIS_SPPRINTF(cmd, kw, "ksssdd", key, key_len, start,
+            *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ksssdd", key, key_len, start,
                 start_len, end, end_len, "LIMIT", 5, offset, count);
         } else {
-            *cmd_len = REDIS_SPPRINTF(cmd, kw, "kss", key, key_len, start,
+            *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kss", key, key_len, start,
                 start_len, end, end_len);
         }
     }
@@ -770,10 +776,10 @@ int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Construct command */
     if (argc == 3) {
-        *cmd_len = REDIS_SPPRINTF(cmd, kw, "kss", key, key_len, min, min_len,
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kss", key, key_len, min, min_len,
             max, max_len);
     } else {
-        *cmd_len = REDIS_SPPRINTF(cmd, kw, "ksssll", key, key_len, min, min_len,
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ksssll", key, key_len, min, min_len,
             max, max_len, "LIMIT", 5, offset, count);
     }
 
@@ -805,7 +811,7 @@ int redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Construct command */
-    *cmd_len = REDIS_SPPRINTF(cmd, kw, "kss", key, key_len, min, min_len,
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kss", key, key_len, min, min_len,
         max, max_len);
 
     return SUCCESS;
@@ -1171,23 +1177,23 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     /* Now let's construct the command we want */
     if(exp_type && set_type) {
         /* SET <key> <value> NX|XX PX|EX <timeout> */
-        *cmd_len = REDIS_SPPRINTF(cmd, "SET", "kvsls", key, key_len, z_value,
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kvsls", key, key_len, z_value,
                                      exp_type, 2, expire, set_type, 2);
     } else if(exp_type) {
         /* SET <key> <value> PX|EX <timeout> */
-        *cmd_len = REDIS_SPPRINTF(cmd, "SET", "kvsl", key, key_len, z_value,
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kvsl", key, key_len, z_value,
                                      exp_type, 2, expire);
     } else if(set_type) {
         /* SET <key> <value> NX|XX */
-        *cmd_len = REDIS_SPPRINTF(cmd, "SET", "kvs", key, key_len, z_value,
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kvs", key, key_len, z_value,
                                      set_type, 2);
     } else if(expire > 0) {
         /* Backward compatible SETEX redirection */
-        *cmd_len = REDIS_SPPRINTF(cmd, "SETEX", "klv", key, key_len, expire,
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SETEX", "klv", key, key_len, expire,
                                      z_value);
     } else {
         /* SET <key> <value> */
-        *cmd_len = REDIS_SPPRINTF(cmd, "SET", "kv", key, key_len, z_value);
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kv", key, key_len, z_value);
     }
 
     return SUCCESS;
@@ -1231,10 +1237,10 @@ int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Consistency with Redis, if timeout < 0 use RPOPLPUSH
     if(timeout < 0) {
-        *cmd_len = REDIS_SPPRINTF(cmd, "RPOPLPUSH", "ss", key1, key1_len,
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "RPOPLPUSH", "ss", key1, key1_len,
                                      key2, key2_len);
     } else {
-        *cmd_len = REDIS_SPPRINTF(cmd, "BRPOPLPUSH", "ssd", key1, key1_len,
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "BRPOPLPUSH", "ssd", key1, key1_len,
                                      key2, key2_len, timeout);
     }
 
@@ -1269,15 +1275,15 @@ redis_atomic_increment(INTERNAL_FUNCTION_PARAMETERS, int type,
      * an INCRBY or DECRBY call */
     if (type == TYPE_INCR) {
         if (val == 1) {
-            *cmd_len = REDIS_SPPRINTF(cmd, "INCR", "k", key, key_len);
+            *cmd_len = REDIS_CMD_SPPRINTF(cmd, "INCR", "k", key, key_len);
         } else {
-            *cmd_len = REDIS_SPPRINTF(cmd, "INCRBY", "kl", key, key_len, val);
+            *cmd_len = REDIS_CMD_SPPRINTF(cmd, "INCRBY", "kl", key, key_len, val);
         }
     } else {
         if (val == 1) {
-            *cmd_len = REDIS_SPPRINTF(cmd, "DECR", "k", key, key_len);
+            *cmd_len = REDIS_CMD_SPPRINTF(cmd, "DECR", "k", key, key_len);
         } else {
-            *cmd_len = REDIS_SPPRINTF(cmd, "DECRBY", "kl", key, key_len, val);
+            *cmd_len = REDIS_CMD_SPPRINTF(cmd, "DECRBY", "kl", key, key_len, val);
         }
     }
 
@@ -1316,7 +1322,7 @@ int redis_hincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Construct command
-    *cmd_len = REDIS_SPPRINTF(cmd, "HINCRBY", "ksl", key, key_len, mem, mem_len, byval);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "HINCRBY", "ksl", key, key_len, mem, mem_len, byval);
 
     // Success
     return SUCCESS;
@@ -1337,7 +1343,7 @@ int redis_hincrbyfloat_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Construct command
-    *cmd_len = REDIS_SPPRINTF(cmd, "HINCRBYFLOAT", "ksf", key, key_len, mem,
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "HINCRBYFLOAT", "ksf", key, key_len, mem,
                                  mem_len, byval);
 
     // Success
@@ -1518,7 +1524,7 @@ redis_hstrlen_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    *cmd_len = REDIS_SPPRINTF(cmd, "HSTRLEN", "ks", key, key_len, field, field_len);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "HSTRLEN", "ks", key, key_len, field, field_len);
 
     return SUCCESS;
 }
@@ -1546,12 +1552,12 @@ int redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Construct command based on arg count
     if(argc == 2) {
-        *cmd_len = REDIS_SPPRINTF(cmd, "BITPOS", "kd", key, key_len, bit);
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "BITPOS", "kd", key, key_len, bit);
     } else if(argc == 3) {
-        *cmd_len = REDIS_SPPRINTF(cmd, "BITPOS", "kdd", key, key_len, bit,
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "BITPOS", "kdd", key, key_len, bit,
                                      start);
     } else {
-        *cmd_len = REDIS_SPPRINTF(cmd, "BITPOS", "kddd", key, key_len, bit,
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "BITPOS", "kddd", key, key_len, bit,
                                      start, end);
     }
 
@@ -1641,7 +1647,7 @@ int redis_bitcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    *cmd_len = REDIS_SPPRINTF(cmd, "BITCOUNT", "kdd", key, key_len,
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "BITCOUNT", "kdd", key, key_len,
                                  (int)start, (int)end);
 
     return SUCCESS;
@@ -1852,7 +1858,7 @@ int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Construct our AUTH command
-    *cmd_len = REDIS_SPPRINTF(cmd, "AUTH", "s", pw, pw_len);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "AUTH", "s", pw, pw_len);
 
     // Free previously allocated password, and update
     if(redis_sock->auth) efree(redis_sock->auth);
@@ -1884,7 +1890,7 @@ int redis_setbit_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    *cmd_len = REDIS_SPPRINTF(cmd, "SETBIT", "kld", key, key_len, offset, (int)val);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SETBIT", "kld", key, key_len, offset, (int)val);
 
     return SUCCESS;
 }
@@ -1911,7 +1917,7 @@ int redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Construct command */
-    *cmd_len = REDIS_SPPRINTF(cmd, "LINSERT", "ksvv", key, key_len, pos,
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "LINSERT", "ksvv", key, key_len, pos,
                                  pos_len, z_pivot, z_val);
 
     // Success
@@ -1934,7 +1940,7 @@ int redis_lrem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Construct command */
-    *cmd_len = REDIS_SPPRINTF(cmd, "LREM", "kdv", key, key_len, count, z_val);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "LREM", "kdv", key, key_len, count, z_val);
 
     // Success!
     return SUCCESS;
@@ -1972,7 +1978,7 @@ int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Construct command
-    *cmd_len = REDIS_SPPRINTF(cmd, "SMOVE", "ssv", src, src_len, dst,
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SMOVE", "ssv", src, src_len, dst,
         dst_len, z_val);
 
     // Cleanup
@@ -1998,7 +2004,7 @@ static int gen_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Construct command */
-    *cmd_len = REDIS_SPPRINTF(cmd, kw, "ksv", key, key_len, mem, mem_len, z_val);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ksv", key, key_len, mem, mem_len, z_val);
 
     // Success
     return SUCCESS;
@@ -2040,9 +2046,9 @@ int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Two args means we have the optional COUNT
     if (*have_count) {
-        *cmd_len = REDIS_SPPRINTF(cmd, "SRANDMEMBER", "kl", key, key_len, count);
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SRANDMEMBER", "kl", key, key_len, count);
     } else {
-        *cmd_len = REDIS_SPPRINTF(cmd, "SRANDMEMBER", "k", key, key_len);
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SRANDMEMBER", "k", key, key_len);
     }
 
     return SUCCESS;
@@ -2063,7 +2069,7 @@ int redis_zincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    *cmd_len = REDIS_SPPRINTF(cmd, "ZINCRBY", "kfv", key, key_len, incrby, z_val);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "ZINCRBY", "kfv", key, key_len, incrby, z_val);
 
     return SUCCESS;
 }
@@ -2092,7 +2098,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // If we don't have an options array, the command is quite simple
     if (!z_opts || zend_hash_num_elements(Z_ARRVAL_P(z_opts)) == 0) {
         // Construct command
-        *cmd_len = REDIS_SPPRINTF(cmd, "SORT", "k", key, key_len);
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SORT", "k", key, key_len);
 
         /* Not storing */
         *using_store = 0;
@@ -2474,7 +2480,7 @@ int redis_object_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Format our command
-    *cmd_len = REDIS_SPPRINTF(cmd, "OBJECT", "sk", subcmd, subcmd_len, key, key_len);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "OBJECT", "sk", subcmd, subcmd_len, key, key_len);
 
     // Push the reply type to our caller
     if(subcmd_len == 8 && (!strncasecmp(subcmd,"refcount",8) ||
@@ -2510,10 +2516,10 @@ int redis_geodist_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Construct command */
     if (unit != NULL) {
-        *cmd_len = REDIS_SPPRINTF(cmd, "GEODIST", "ksss", key, keylen, source,
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "GEODIST", "ksss", key, keylen, source,
                                      sourcelen, dest, destlen, unit, unitlen);
     } else {
-        *cmd_len = REDIS_SPPRINTF(cmd, "GEODIST", "kss", key, keylen, source,
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "GEODIST", "kss", key, keylen, source,
                                      sourcelen, dest, destlen);
     }
 
@@ -2883,14 +2889,14 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Construct our command */
     if(!kw) {
-        *cmd_len = REDIS_SPPRINTF(cmd, "COMMAND", "");
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "COMMAND", "");
     } else if (!z_arg) {
         /* Sanity check */
         if (strncasecmp(kw, "count", sizeof("count") - 1)) {
             return FAILURE;
         }
         /* COMMAND COUNT */
-        *cmd_len = REDIS_SPPRINTF(cmd, "COMMAND", "s", "COUNT", sizeof("COUNT") - 1);
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "COMMAND", "s", "COUNT", sizeof("COUNT") - 1);
     } else if (Z_TYPE_P(z_arg) == IS_STRING) {
         /* Sanity check */
         if (strncasecmp(kw, "info", sizeof("info") - 1)) {
@@ -2898,7 +2904,7 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         }
 
         /* COMMAND INFO <cmd> */
-        *cmd_len = REDIS_SPPRINTF(cmd, "COMMAND", "ss", "INFO", sizeof("INFO") - 1,
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "COMMAND", "ss", "INFO", sizeof("INFO") - 1,
             Z_STRVAL_P(z_arg), Z_STRLEN_P(z_arg));
     } else {
         int arr_len;
