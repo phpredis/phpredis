@@ -723,33 +723,6 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...)
 }
 
 /*
- * Append a command sequence to a Redis command
- */
-int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len) {
-	/* Smart string buffer */
-	smart_string buf = {0};
-
-	/* Append the current command to our smart_string */
-	smart_string_appendl(&buf, *cmd, cmd_len);
-
-	/* Append our new command sequence */
-	smart_string_appendc(&buf, '$');
-	smart_string_append_long(&buf, append_len);
-	smart_string_appendl(&buf, _NL, sizeof(_NL) -1);
-	smart_string_appendl(&buf, append, append_len);
-	smart_string_appendl(&buf, _NL, sizeof(_NL) -1);
-
-	/* Free our old command */
-	efree(*cmd);
-
-	/* Set our return pointer */
-	*cmd = buf.c;
-
-	/* Return new command length */
-	return buf.len;
-}
-
-/*
  * Given a smart string, number of arguments, a keyword, and the length of the keyword
  * initialize our smart string with the proper Redis header for the command to follow
  */
@@ -841,20 +814,6 @@ int redis_cmd_append_sstr_key(smart_string *str, char *key, strlen_t len, RedisS
     if (free) efree(key);
 
     return retval;
-}
-
-/*
- * Append an integer command to a Redis command
- */
-int redis_cmd_append_int(char **cmd, int cmd_len, int append) {
-    char int_buf[32];
-    int int_len;
-
-    // Conver to an int, capture length
-    int_len = snprintf(int_buf, sizeof(int_buf), "%d", append);
-
-	/* Return the new length */
-	return redis_cmd_append_str(cmd, cmd_len, int_buf, int_len);
 }
 
 PHP_REDIS_API void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
