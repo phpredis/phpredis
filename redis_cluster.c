@@ -1904,110 +1904,15 @@ PHP_METHOD(RedisCluster, punsubscribe) {
 }
 /* }}} */
 
-/* Parse arguments for EVAL or EVALSHA in the context of cluster.  If we aren't
- * provided any "keys" as arguments, the only choice is to send the command to
- * a random node in the cluster.  If we are passed key arguments the best we
- * can do is make sure they all map to the same "node", as we don't know what
- * the user is actually doing in the LUA source itself. */
-/* EVAL/EVALSHA */
-static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-                            char *kw, int kw_len)
-{
-    redisClusterNode *node=NULL;
-    char *lua, *key;
-    int key_free, args_count=0;
-    strlen_t key_len;
-    zval *z_arr=NULL, *z_ele;
-    HashTable *ht_arr;
-    zend_long num_keys = 0;
-    short slot = 0;
-    smart_string cmdstr = {0};
-    strlen_t lua_len;
-    zend_string *zstr;
-
-    /* Parse args */
-    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|al", &lua, &lua_len,
-                             &z_arr, &num_keys)==FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-    /* Grab arg count */
-    if(z_arr != NULL) {
-        ht_arr = Z_ARRVAL_P(z_arr);
-        args_count = zend_hash_num_elements(ht_arr);
-    }
-
-    /* Format header, add script or SHA, and the number of args which are keys */
-    redis_cmd_init_sstr(&cmdstr, 2 + args_count, kw, kw_len);
-    redis_cmd_append_sstr(&cmdstr, lua, lua_len);
-    redis_cmd_append_sstr_long(&cmdstr, num_keys);
-
-    // Iterate over our args if we have any
-    if(args_count > 0) {
-		ZEND_HASH_FOREACH_VAL(ht_arr, z_ele) {
-            zstr = zval_get_string(z_ele);
-            key = zstr->val;
-            key_len = zstr->len;
-
-            /* If we're still on a key, prefix it check node */
-            if(num_keys-- > 0) {
-                key_free = redis_key_prefix(c->flags, &key, &key_len);
-                slot = cluster_hash_key(key, key_len);
-
-                /* validate that this key maps to the same node */
-                if(node && c->master[slot] != node) {
-                    zend_string_release(zstr);
-                    if (key_free) efree(key);
-                    php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                        "Keys appear to map to different nodes");
-                    RETURN_FALSE;
-                }
-
-                node = c->master[slot];
-            } else {
-                key_free = 0;
-            }
-
-            /* Append this key/argument */
-            redis_cmd_append_sstr(&cmdstr, key, key_len);
-
-            zend_string_release(zstr);
-            /* Free key if we prefixed */
-            if(key_free) efree(key);
-        } ZEND_HASH_FOREACH_END();
-    } else {
-        /* Pick a slot at random, we're being told there are no keys */
-        slot = rand() % REDIS_CLUSTER_MOD;
-    }
-
-    if(cluster_send_command(c, slot, cmdstr.c, cmdstr.len TSRMLS_CC)<0) {
-        efree(cmdstr.c);
-        RETURN_FALSE;
-    }
-
-    if(CLUSTER_IS_ATOMIC(c)) {
-        cluster_variant_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
-    } else {
-        void *ctx = NULL;
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_resp, ctx);
-        RETVAL_ZVAL(getThis(), 1, 0);
-    }
-
-    efree(cmdstr.c);
-}
-
 /* {{{ proto mixed RedisCluster::eval(string script, [array args, int numkeys) */
 PHP_METHOD(RedisCluster, eval) {
-    cluster_eval_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, GET_CONTEXT(), 
-        "EVAL", 4);
+    CLUSTER_PROCESS_KW_CMD("EVAL", redis_eval_cmd, cluster_variant_resp, 0);
 }
 /* }}} */
 
 /* {{{ proto mixed RedisCluster::evalsha(string sha, [array args, int numkeys]) */
 PHP_METHOD(RedisCluster, evalsha) {
-    cluster_eval_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, GET_CONTEXT(), 
-        "EVALSHA", 7);
+    CLUSTER_PROCESS_KW_CMD("EVALSHA", redis_eval_cmd, cluster_variant_resp, 0);
 }
 /* }}} */
 

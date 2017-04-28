@@ -28,14 +28,6 @@ typedef enum geoSortType {
     SORT_DESC
 } geoSortType;
 
-/* GEORADIUS and GEORADIUSBYMEMBER options */
-/*typedef struct geoRadiusOpts = {
-    int withcoord;
-    int withdist;
-    int withhash;
-    geoSortType sort;
-};*/
-
 /* Construct a raw command */
 int redis_build_raw_cmd(zval *z_args, int argc, char **cmd, int *cmd_len TSRMLS_DC);
 
@@ -114,6 +106,9 @@ int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
+
+int redis_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 /* Commands which need a unique construction mechanism.  This is either because
@@ -240,7 +235,7 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
-                       long it, char *pat, int pat_len, long count);
+    long it, char *pat, int pat_len, long count);
 
 int redis_geodist_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
