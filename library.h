@@ -14,7 +14,6 @@
 #define REDIS_CMD_INIT_SSTR_STATIC(sstr, argc, keyword) \
     redis_cmd_init_sstr(sstr, argc, keyword, sizeof(keyword)-1);
 
-int integer_length(int i);
 int redis_cmd_init_sstr(smart_string *str, int num_args, char *keyword, int keyword_len);
 int redis_cmd_append_sstr(smart_string *str, char *append, int append_len);
 int redis_cmd_append_sstr_int(smart_string *str, int append);
