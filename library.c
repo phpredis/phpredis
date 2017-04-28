@@ -555,30 +555,6 @@ integer_length(int i) {
     return sz;
 }
 
-int
-redis_cmd_format_header(char **ret, char *keyword, int arg_count) {
-	/* Our return buffer */
-	smart_string buf = {0};
-
-	/* Keyword length */
-	int l = strlen(keyword);
-
-    smart_string_appendc(&buf, '*');
-    smart_string_append_long(&buf, arg_count + 1);
-    smart_string_appendl(&buf, _NL, sizeof(_NL) -1);
-    smart_string_appendc(&buf, '$');
-    smart_string_append_long(&buf, l);
-    smart_string_appendl(&buf, _NL, sizeof(_NL) -1);
-    smart_string_appendl(&buf, keyword, l);
-    smart_string_appendl(&buf, _NL, sizeof(_NL) - 1);
-
-	/* Set our return pointer */
-	*ret = buf.c;
-
-	/* Return the length */
-	return buf.len;
-}
-
 /* A simple union to store the various arg types we might handle in our
  * redis_spprintf command formatting function */
 union resparg {
