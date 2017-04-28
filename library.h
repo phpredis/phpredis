@@ -15,7 +15,6 @@
 
 int integer_length(int i);
 int redis_cmd_format_static(char **ret, char *keyword, char *format, ...);
-int redis_cmd_format_header(char **ret, char *keyword, int arg_count);
 int redis_cmd_append_str(char **cmd, int cmd_len, char *append, int append_len);
 int redis_cmd_init_sstr(smart_string *str, int num_args, char *keyword, int keyword_len);
 int redis_cmd_append_sstr(smart_string *str, char *append, int append_len);
