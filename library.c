@@ -746,65 +746,6 @@ redis_cmd_format_static(char **ret, char *keyword, char *format, ...)
     return buf.len;
 }
 
-/**
- * This command behave somehow like printf, except that strings need 2
- * arguments:
- *      Their data and their size (strlen).
- *      Supported formats are: %d, %i, %s, %l
- */
-int
-redis_cmd_format(char **ret, char *format, ...) {
-
-    smart_string buf = {0};
-    va_list ap;
-    char *p = format;
-
-    va_start(ap, format);
-
-    while (*p) {
-        if (*p == '%') {
-            switch (*(++p)) {
-                case 's': {
-                    char *tmp = va_arg(ap, char*);
-                    int tmp_len = va_arg(ap, int);
-                    smart_string_appendl(&buf, tmp, tmp_len);
-                }
-                    break;
-
-                case 'F':
-                case 'f': {
-                    double d = va_arg(ap, double);
-                    char tmp[64];
-                    int len = snprintf(tmp, sizeof(tmp), "%.16g", d);
-                    smart_string_append_long(&buf, len);
-                    smart_string_appendl(&buf, _NL, sizeof(_NL) - 1);
-                    smart_string_appendl(&buf, tmp, len);
-                }
-                    break;
-
-                case 'd':
-                case 'i': {
-                    int i = va_arg(ap, int);
-                    char tmp[32];
-                    int tmp_len = snprintf(tmp, sizeof(tmp), "%d", i);
-                    smart_string_appendl(&buf, tmp, tmp_len);
-                }
-                    break;
-            }
-        } else {
-            smart_string_appendc(&buf, *p);
-        }
-
-        p++;
-    }
-
-    smart_string_0(&buf);
-
-    *ret = buf.c;
-
-    return buf.len;
-}
-
 /*
  * Append a command sequence to a Redis command
  */
