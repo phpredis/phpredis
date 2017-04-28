@@ -540,22 +540,6 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
     return NULL;
 }
 
-int
-integer_length(int i) {
-    int sz = 0;
-    int ci = abs(i);
-    while (ci > 0) {
-        ci /= 10;
-        sz++;
-    }
-    if (i == 0) { /* log 0 doesn't make sense. */
-        sz = 1;
-    } else if (i < 0) { /* allow for neg sign as well. */
-        sz++;
-    }
-    return sz;
-}
-
 /* A simple union to store the various arg types we might handle in our
  * redis_spprintf command formatting function */
 union resparg {
