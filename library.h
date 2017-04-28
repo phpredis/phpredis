@@ -1,8 +1,9 @@
 #ifndef REDIS_LIBRARY_H
 #define REDIS_LIBRARY_H
 
+/* Non cluster command helper */
 #define REDIS_SPPRINTF(ret, kw, fmt, ...) \
-    redis_spprintf(redis_sock, slot TSRMLS_CC, ret, kw, fmt, ##__VA_ARGS__)
+    redis_spprintf(redis_sock, NULL TSRMLS_CC, ret, kw, fmt, ##__VA_ARGS__)
 
 #define REDIS_CMD_APPEND_SSTR_STATIC(sstr, str) \
     redis_cmd_append_sstr(sstr, str, sizeof(str)-1);
