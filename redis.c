@@ -1694,6 +1694,7 @@ generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, int desc, int alpha)
                 zpattern = zval_get_string(zele);
                 redis_cmd_append_sstr(&cmd, "GET", sizeof("GET") - 1);
                 redis_cmd_append_sstr(&cmd, zpattern->val, zpattern->len);
+                zend_string_release(zpattern);
             } ZEND_HASH_FOREACH_END();
         } else {
             zpattern = zval_get_string(zget);
