@@ -116,22 +116,22 @@ redis_pool_free(redis_pool *pool TSRMLS_DC) {
     efree(pool);
 }
 
-void
+static void
 redis_pool_member_auth(redis_pool_member *rpm TSRMLS_DC) {
     RedisSock *redis_sock = rpm->redis_sock;
     char *response, *cmd;
     int response_len, cmd_len;
 
-    if(!rpm->auth || !rpm->auth_len) { /* no password given. */
-            return;
+    /* Short circuit if we don't have a password */
+    if(!rpm->auth || !rpm->auth_len) {
+        return;
     }
-    cmd_len = redis_cmd_format_static(&cmd, "AUTH", "s", rpm->auth,
-                                      rpm->auth_len);
 
+    cmd_len = REDIS_SPPRINTF(&cmd, "AUTH", "s", rpm->auth, rpm->auth_len);
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) >= 0) {
-            if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC))) {
-                    efree(response);
-            }
+        if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC))) {
+            efree(response);
+        }
     }
     efree(cmd);
 }
@@ -142,8 +142,7 @@ redis_pool_member_select(redis_pool_member *rpm TSRMLS_DC) {
     char *response, *cmd;
     int response_len, cmd_len;
 
-    cmd_len = redis_cmd_format_static(&cmd, "SELECT", "d", rpm->database);
-
+    cmd_len = REDIS_SPPRINTF(&cmd, "SELECT", "d", rpm->database);
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) >= 0) {
         if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC))) {
             efree(response);
@@ -362,7 +361,7 @@ PS_READ_FUNC(redis)
 #else
     resp = redis_session_key(rpm, key->val, key->len, &resp_len);
 #endif
-    cmd_len = redis_cmd_format_static(&cmd, "GET", "s", resp, resp_len);
+    cmd_len = REDIS_SPPRINTF(&cmd, "GET", "s", resp, resp_len);
 
     efree(resp);
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
@@ -419,10 +418,13 @@ PS_WRITE_FUNC(redis)
     /* send SET command */
 #if (PHP_MAJOR_VERSION < 7)
     session = redis_session_key(rpm, key, strlen(key), &session_len);
-    cmd_len = redis_cmd_format_static(&cmd, "SETEX", "sds", session, session_len, INI_INT("session.gc_maxlifetime"), val, vallen);
+    cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "sds", session, session_len,
+                             INI_INT("session.gc_maxlifetime"), val, vallen);
 #else
     session = redis_session_key(rpm, key->val, key->len, &session_len);
-    cmd_len = redis_cmd_format_static(&cmd, "SETEX", "sds", session, session_len, INI_INT("session.gc_maxlifetime"), val->val, val->len);
+    cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "sds", session, session_len,
+                             INI_INT("session.gc_maxlifetime"), val->val,
+                             val->len);
 #endif
     efree(session);
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
@@ -470,7 +472,7 @@ PS_DESTROY_FUNC(redis)
 #else
     session = redis_session_key(rpm, key->val, key->len, &session_len);
 #endif
-    cmd_len = redis_cmd_format_static(&cmd, "DEL", "s", session, session_len);
+    cmd_len = REDIS_SPPRINTF(&cmd, "DEL", "s", session, session_len);
     efree(session);
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
@@ -653,7 +655,7 @@ PS_READ_FUNC(rediscluster) {
 #else
     skey = cluster_session_key(c, key->val, key->len, &skeylen, &slot);
 #endif
-    cmdlen = redis_cmd_format_static(&cmd, "GET", "s", skey, skeylen);
+    cmdlen = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "GET", "s", skey, skeylen);
     efree(skey);
 
     /* Attempt to kick off our command */
@@ -700,10 +702,14 @@ PS_WRITE_FUNC(rediscluster) {
     /* Set up command and slot info */
 #if (PHP_MAJOR_VERSION < 7)
     skey = cluster_session_key(c, key, strlen(key), &skeylen, &slot);
-    cmdlen = redis_cmd_format_static(&cmd, "SETEX", "sds", skey, skeylen, INI_INT("session.gc_maxlifetime"), val, vallen);
+    cmdlen = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "SETEX", "sds", skey,
+                            skeylen, INI_INT("session.gc_maxlifetime"), val,
+                            vallen);
 #else
     skey = cluster_session_key(c, key->val, key->len, &skeylen, &slot);
-    cmdlen = redis_cmd_format_static(&cmd, "SETEX", "sds", skey, skeylen, INI_INT("session.gc_maxlifetime"), val->val, val->len);
+    cmdlen = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "SETEX", "sds", skey,
+                            skeylen, INI_INT("session.gc_maxlifetime"),
+                            val->val, val->len);
 #endif
     efree(skey);
 
@@ -745,7 +751,7 @@ PS_DESTROY_FUNC(rediscluster) {
 #else
     skey = cluster_session_key(c, key->val, key->len, &skeylen, &slot);
 #endif
-    cmdlen = redis_cmd_format_static(&cmd, "DEL", "s", skey, skeylen);
+    cmdlen = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "DEL", "s", skey, skeylen);
     efree(skey);
 
     /* Attempt to send command */
