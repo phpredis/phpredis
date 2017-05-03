@@ -572,7 +572,7 @@ redis_spprintf(RedisSock *redis_sock, short *slot TSRMLS_DC, char **ret, char *k
     va_list ap;
     union resparg arg;
     char *dup;
-    int free;
+    int argfree;
     strlen_t arglen;
 
     va_start(ap, fmt);
@@ -594,16 +594,16 @@ redis_spprintf(RedisSock *redis_sock, short *slot TSRMLS_DC, char **ret, char *k
             case 'k':
                 arg.str = va_arg(ap, char*);
                 arglen = va_arg(ap, strlen_t);
-                free = redis_key_prefix(redis_sock, &arg.str, &arglen);
+                argfree = redis_key_prefix(redis_sock, &arg.str, &arglen);
                 redis_cmd_append_sstr(&cmd, arg.str, arglen);
                 if (slot) *slot = cluster_hash_key(arg.str, arglen);
-                if (free) efree(arg.str);
+                if (argfree) efree(arg.str);
                 break;
             case 'v':
                 arg.zv = va_arg(ap, zval*);
-                free = redis_serialize(redis_sock, arg.zv, &dup, &arglen TSRMLS_CC);
+                argfree = redis_serialize(redis_sock, arg.zv, &dup, &arglen TSRMLS_CC);
                 redis_cmd_append_sstr(&cmd, dup, arglen);
-                if (free) efree(dup);
+                if (argfree) efree(dup);
                 break;
             case 'f':
             case 'F':
@@ -705,11 +705,11 @@ redis_cmd_append_sstr_dbl(smart_string *str, double value)
 int redis_cmd_append_sstr_zval(smart_string *str, zval *z, RedisSock *redis_sock TSRMLS_DC) {
     char *val;
     strlen_t vallen;
-    int free, retval;
+    int valfree, retval;
 
-    free = redis_serialize(redis_sock, z, &val, &vallen TSRMLS_CC);
+    valfree = redis_serialize(redis_sock, z, &val, &vallen TSRMLS_CC);
     retval = redis_cmd_append_sstr(str, val, vallen);
-    if (free) efree(val);
+    if (valfree) efree(val);
 
     return retval;
 }
@@ -717,12 +717,12 @@ int redis_cmd_append_sstr_zval(smart_string *str, zval *z, RedisSock *redis_sock
 /* Append a string key to a redis command.  This function takes care of prefixing the key
  * for the caller and setting the slot argument if it is passed non null */
 int redis_cmd_append_sstr_key(smart_string *str, char *key, strlen_t len, RedisSock *redis_sock, short *slot) {
-    int free, retval;
+    int valfree, retval;
 
-    free = redis_key_prefix(redis_sock, &key, &len);
+    valfree = redis_key_prefix(redis_sock, &key, &len);
     if (slot) *slot = cluster_hash_key(key, len);
     retval = redis_cmd_append_sstr(str, key, len);
-    if (free) efree(key);
+    if (valfree) efree(key);
 
     return retval;
 }
