@@ -4256,6 +4256,24 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE);       // get ok
     }
 
+    public function testCompressionLZF()
+    {
+        if (!defined('Redis::COMPRESSION_LZF')) {
+            $this->markTestSkipped();
+        }
+        $this->checkCompression(Redis::COMPRESSION_LZF);
+    }
+
+    private function checkCompression($mode)
+    {
+        $this->assertTrue($this->redis->setOption(Redis::OPT_COMPRESSION, $mode) === TRUE);  // set ok
+        $this->assertTrue($this->redis->getOption(Redis::OPT_COMPRESSION) === $mode);    // get ok
+
+        $val = 'xxxxxxxxxx';
+        $this->redis->set('key', $val);
+        $this->assertEquals($val, $this->redis->get('key'));
+    }
+
     public function testDumpRestore() {
 
         if (version_compare($this->version, "2.5.0", "lt")) {

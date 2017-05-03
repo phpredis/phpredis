@@ -92,6 +92,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='src' name='crc16.h'/>
    <file role='src' name='redis_session.c'/>
    <file role='src' name='redis_session.h'/>
+   <file role='src' name='liblzf/lzf.h'/>
+   <file role='src' name='liblzf/lzf_c.c'/>
+   <file role='src' name='liblzf/lzf_d.c'/>
    <dir name='tests'>
      <file role='test' name='RedisArrayTest.php'/>
      <file role='test' name='RedisClusterTest.php'/>
@@ -117,6 +120,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>redis</providesextension>
  <extsrcrelease>
   <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
+  <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
    <release>

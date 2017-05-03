@@ -1,0 +1,3 @@
+[submodule "liblzf"]
+	path = liblzf
+	url = https://github.com/nemequ/liblzf.git
