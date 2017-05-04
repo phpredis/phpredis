@@ -1262,7 +1262,13 @@ PHP_METHOD(Redis, sMove)
 /* {{{ proto string Redis::sPop(string key) */
 PHP_METHOD(Redis, sPop)
 {
-    REDIS_PROCESS_KW_CMD("SPOP", redis_key_cmd, redis_string_response);
+    if (ZEND_NUM_ARGS() == 1) {
+        REDIS_PROCESS_KW_CMD("SPOP", redis_key_cmd, redis_string_response);
+    } else if (ZEND_NUM_ARGS() == 2) {
+        REDIS_PROCESS_KW_CMD("SPOP", redis_key_long_cmd, redis_sock_read_multibulk_reply);
+    } else {
+        ZEND_WRONG_PARAM_COUNT();
+    }	
 }
 /* }}} */
 
