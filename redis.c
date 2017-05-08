@@ -2379,6 +2379,7 @@ PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     ZEND_HASH_FOREACH_VAL(arr_hash, data) {
+        ZVAL_DEREF(data);
         if (Z_TYPE_P(data) == IS_STRING) {
             char *old_cmd = NULL;
             if(*cmd) {

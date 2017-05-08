@@ -373,6 +373,9 @@ typedef int strlen_t;
 #define PHP_FE_END { NULL, NULL, NULL }
 #endif
 
+/* References don't need any actions */
+#define ZVAL_DEREF(v) PHPREDIS_NOTUSED(v)
+
 #else
 #include <zend_smart_str.h>
 #include <ext/standard/php_smart_string.h>

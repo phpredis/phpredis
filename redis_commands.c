@@ -439,7 +439,7 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ZEND_HASH_FOREACH_KEY_VAL(ht_opt, idx, zkey, z_ele) {
            /* All options require a string key type */
            if (!zkey) continue;
-
+           ZVAL_DEREF(z_ele);
            /* Check for withscores and limit */
            if (IS_WITHSCORES_ARG(zkey->val, zkey->len)) {
                *withscores = zval_is_true(z_ele);
@@ -587,7 +587,7 @@ int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         // Process our weights
         ZEND_HASH_FOREACH_VAL(ht_weights, z_ele) {
             // Ignore non numeric args unless they're inf/-inf
-
+            ZVAL_DEREF(z_ele);
             switch (Z_TYPE_P(z_ele)) {
                 case IS_LONG:
                     redis_cmd_append_sstr_long(&cmdstr, Z_LVAL_P(z_ele));
@@ -1146,6 +1146,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         /* Iterate our option array */
         ZEND_HASH_FOREACH_KEY_VAL(kt, idx, zkey, v) {
+            ZVAL_DEREF(v);
             /* Detect PX or EX argument and validate timeout */
             if (zkey && IS_EX_PX_ARG(zkey->val)) {
                 /* Set expire type */
@@ -1381,6 +1382,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Iterate over our member array
     ZEND_HASH_FOREACH_VAL(ht_arr, z_mem) {
+        ZVAL_DEREF(z_mem);
         // We can only handle string or long values here
         if ((Z_TYPE_P(z_mem) == IS_STRING && Z_STRLEN_P(z_mem) > 0)
             || Z_TYPE_P(z_mem) == IS_LONG
@@ -2539,6 +2541,7 @@ static void get_georadius_opts(HashTable *ht, int *withcoord, int *withdist,
 
     /* Iterate over our argument array, collating which ones we have */
     ZEND_HASH_FOREACH_KEY_VAL(ht, idx, zkey, optval) {
+        ZVAL_DEREF(optval);
         /* If the key is numeric it's a non value option */
         if (zkey) {
             if (zkey->len == 5 && !strcasecmp(zkey->val, "count") && Z_TYPE_P(optval) == IS_LONG) {
