@@ -2047,6 +2047,11 @@ class Redis_Test extends TestSuite
         $this->assertTrue(array('val1', 'val2') === $this->redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 2))));
         $this->assertTrue(array('val0', 'val1') === $this->redis->zRangeByScore('key', 0, 1, array('limit' => array(0, 100))));
 
+        // limits as references
+        $limit = array(0, 100);
+        foreach ($limit as &$val) {}
+        $this->assertTrue(array('val0', 'val1') === $this->redis->zRangeByScore('key', 0, 1, array('limit' => $limit)));
+
         $this->assertTrue(array('val3') === $this->redis->zRevRangeByScore('key', 3, 0, array('limit' => array(0, 1))));
         $this->assertTrue(array('val3', 'val2') === $this->redis->zRevRangeByScore('key', 3, 0, array('limit' => array(0, 2))));
         $this->assertTrue(array('val2', 'val1') === $this->redis->zRevRangeByScore('key', 3, 0, array('limit' => array(1, 2))));
@@ -2375,6 +2380,11 @@ class Redis_Test extends TestSuite
         $this->assertTrue('x' === $this->redis->hGet('h', '123'));
         $this->assertTrue('456' === $this->redis->hGet('h', 'y'));
         $this->assertTrue(array(123 => 'x', 'y' => '456') === $this->redis->hMget('h', array('123', 'y')));
+
+        // references
+        $keys = array(123, 'y');
+        foreach ($keys as &$key) {}
+        $this->assertTrue(array(123 => 'x', 'y' => '456') === $this->redis->hMget('h', $keys));
 
         // check non-string types.
         $this->redis->del('h1');
