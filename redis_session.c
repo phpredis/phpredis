@@ -297,6 +297,8 @@ PS_OPEN_FUNC(redis)
         return SUCCESS;
     }
 
+    redis_pool_free(pool TSRMLS_CC);
+    PS_SET_MOD_DATA(NULL);
     return FAILURE;
 }
 /* }}} */
