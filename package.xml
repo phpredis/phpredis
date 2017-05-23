@@ -27,41 +27,25 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2017-01-16</date>
+ <date>2017-03-24</date>
  <version>
-  <release>3.1.1RC2</release>
-  <api>3.1.1RC2</api>
+  <release>3.1.2</release>
+  <api>3.1.2</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 3.1.1RC2
+    phpredis 3.1.2
 
-    * Additional test updates for 32 bit systems (@remicollet)
-    * ARM rounding issue in tests (@remicollet)
-    * Use new zend_list_close instead of zend_list_delete when reconnecting.
-    * Refactoring of redis_boolean_response_impl and redis_sock_write (@yatsukhnenko)
-
-    phpredis 3.1.1.RC1
-
-    This release contains mostly fixes for issues introduced when merging
-    the php 5 and 7 codebase into a single branch.
-
-    * Fixed a segfault in igbinary serialization (@yatsukhnenko)
-    * Restore 2.2.8/3.0.0 functionality to distinguish between an error
-      and simply empty session data. (@remicollet)
-    * Fix double to string conversion function (@yatsukhnenko)
-    * Use PHP_FE_END definition when available (@remicollet)
-    * Fixed various 'static function declared but not used' warnings
-    * Fixes to various calls which were typecasting pointers to the
-      wrong size. (@remicollet)
-
-    * Added php session unit test (@yatsukhnenko)
-    * Added explicit module dependancy for igbinary (@remicollet)
-    * Added phpinfo serialization information (@remicollet)
+    * RedisArray segfault fix [564ce3] (Pavlo Yatsukhnenko)
+    * Small memory leak fix [645888b] (Mike Grunder)
+    * Segfault fix when recreating RedisCluster objects [abf7d4] (Michael Grunder)
+    * Fix for RedisCluster bulk response parsing [4121c4] (Alberto Fernández)
+    * Re allow single array for sInterStore [6ef0c2, d01966] (Michael Grunder)
+    * Better TravisCI integration [4fd2f6] (Pavlo Yatsukhnenko)
  </notes>
  <contents>
   <dir name="/">
@@ -104,7 +88,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <dependencies>
   <required>
    <php>
-    <min>5.2.0</min>
+    <min>5.3.0</min>
     <max>7.9.99</max>
    </php>
    <pearinstaller>
@@ -113,8 +97,27 @@ http://pear.php.net/dtd/package-2.0.xsd">
   </required>
  </dependencies>
  <providesextension>redis</providesextension>
- <extsrcrelease/>
+ <extsrcrelease>
+  <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
+ </extsrcrelease>
  <changelog>
+
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>3.1.2</release><api>3.1.2</api></version>
+   <date>2017-03-16</date>
+   <notes>
+   phpredis 3.1.2
+
+   * RedisArray segfault fix [564ce3] (Pavlo Yatsukhnenko)
+   * Small memory leak fix [645888b] (Mike Grunder)
+   * Segfault fix when recreating RedisCluster objects [abf7d4] (Michael Grunder)
+   * Fix for RedisCluster bulk response parsing [4121c4] (Alberto Fernández)
+   * Re allow single array for sInterStore [6ef0c2, d01966] (Michael Grunder)
+   * Better TravisCI integration [4fd2f6] (Pavlo Yatsukhnenko)
+   </notes>
+   </release>
+
    <release>
    <stability><release>beta</release><api>beta</api></stability>
    <version><release>3.1.1RC2</release><api>3.1.1RC2</api></version>
@@ -222,7 +225,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fixed dreaded size_t vs long long compiler warning
    </notes>
    </release>
-  
+
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>2.2.7</release><api>2.2.7</api></version>
