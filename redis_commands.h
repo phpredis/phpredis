@@ -21,8 +21,23 @@ typedef struct subscribeContext {
     zend_fcall_info_cache cb_cache;
 } subscribeContext;
 
+/* Georadius sort type */
+typedef enum geoSortType {
+    SORT_NONE,
+    SORT_ASC,
+    SORT_DESC
+} geoSortType;
+
+/* GEORADIUS and GEORADIUSBYMEMBER options */
+/*typedef struct geoRadiusOpts = {
+    int withcoord;
+    int withdist;
+    int withhash;
+    geoSortType sort;
+};*/
+
 /* Construct a raw command */
-int redis_build_raw_cmd(zval **z_args, int argc, char **cmd, int *cmd_len TSRMLS_DC);
+int redis_build_raw_cmd(zval *z_args, int argc, char **cmd, int *cmd_len TSRMLS_DC);
 
 /* Redis command generics.  Many commands share common prototypes meaning that
  * we can write one function to handle all of them.  For example, there are
@@ -224,6 +239,15 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
                        long it, char *pat, int pat_len, long count);
 
+int redis_geodist_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char **cmd, int *cmd_len, short *slot, void **ctx);
+
+int redis_georadius_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char **cmd, int *cmd_len, short *slot, void **ctx);
+
+int redis_georadiusbymember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char **cmd, int *cmd_len, short *slot, void **ctx);
+
 /* Commands that don't communicate with Redis at all (such as getOption, 
  * setOption, _prefix, _serialize, etc).  These can be handled in one place
  * with the method of grabbing our RedisSock* object in different ways 
@@ -242,4 +266,4 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
 
 #endif
 
-/* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
+/* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

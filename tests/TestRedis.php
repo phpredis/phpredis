@@ -6,7 +6,7 @@ require_once(dirname($_SERVER['PHP_SELF'])."/RedisArrayTest.php");
 require_once(dirname($_SERVER['PHP_SELF'])."/RedisClusterTest.php");
 
 /* Make sure errors go to stdout and are shown */
-error_reporting(E_ALL); 
+error_reporting(E_ALL);
 ini_set( 'display_errors','1');
 
 /* Grab options */
@@ -34,6 +34,7 @@ TestSuite::flagColorization($boo_colorize);
 
 /* Let the user know this can take a bit of time */
 echo "Note: these tests might take up to a minute. Don't worry :-)\n";
+echo "Using PHP version " . PHP_VERSION . " (" . (PHP_INT_SIZE*8) . " bits)\n";
 
 /* Depending on the classes being tested, run our tests on it */
 echo "Testing class ";

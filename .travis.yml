@@ -1,0 +1,45 @@
+sudo: required
+language: php
+php:
+  - 5.3
+  - 5.4
+  - 5.5
+  - 5.6
+  - 7.0
+  - 7.1
+  - nightly
+env: CC=gcc
+matrix:
+  allow_failures:
+    - php: nightly
+  include:
+    - php: 5.4
+      env: CC=clang
+    - php: 5.5
+      env: CC=clang
+    - php: 5.6
+      env: CC=clang
+    - php: 7.0
+      env: CC=clang
+    - php: 7.1
+      env: CC=clang
+addons:
+  apt:
+    packages: clang
+before_install:
+  - phpize
+  - pecl install igbinary
+  - ./configure --enable-redis-igbinary CFLAGS=-Wall
+install: make install
+before_script:
+  - gem install redis
+  - mkdir -p tests/nodes/ && echo >> tests/nodes/nodemap
+  - for PORT in $(seq 6379 6382); do redis-server --port $PORT --daemonize yes; done
+  - for PORT in $(seq 7000 7011); do redis-server --port $PORT --cluster-enabled yes --cluster-config-file $PORT.conf --daemonize yes; echo 127.0.0.1:$PORT >> tests/nodes/nodemap; done
+  - wget https://raw.githubusercontent.com/antirez/redis/unstable/src/redis-trib.rb
+  - echo yes | ruby redis-trib.rb create --replicas 3 127.0.0.1:7000 127.0.0.1:7001 127.0.0.1:7002 127.0.0.1:7003 127.0.0.1:7004 127.0.0.1:7005 127.0.0.1:7006 127.0.0.1:7007 127.0.0.1:7008 127.0.0.1:7009 127.0.0.1:7010 127.0.0.1:7011
+  - echo 'extension = redis.so' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+script:
+  - php tests/TestRedis.php --class Redis
+  - php tests/TestRedis.php --class RedisArray
+  - php tests/TestRedis.php --class RedisCluster

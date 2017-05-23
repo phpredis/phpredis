@@ -10,8 +10,13 @@
 #define REDIS_CLUSTER_MOD   (REDIS_CLUSTER_SLOTS-1)
 
 /* Get attached object context */
+#if (PHP_MAJOR_VERSION < 7)
 #define GET_CONTEXT() \
     ((redisCluster*)zend_object_store_get_object(getThis() TSRMLS_CC))
+#else
+#define GET_CONTEXT() \
+    ((redisCluster *)((char *)Z_OBJ_P(getThis()) - XtOffsetOf(redisCluster, std)))
+#endif
 
 /* Command building/processing is identical for every command */
 #define CLUSTER_BUILD_CMD(name, c, cmd, cmd_len, slot) \
@@ -47,13 +52,13 @@
 
 /* Reset anything flagged as MULTI */
 #define CLUSTER_RESET_MULTI(c) \
-    redisClusterNode **_node; \
+    redisClusterNode *_node; \
     for(zend_hash_internal_pointer_reset(c->nodes); \
-        zend_hash_get_current_data(c->nodes, (void**)&_node); \
+        (_node = zend_hash_get_current_data_ptr(c->nodes)) != NULL; \
         zend_hash_move_forward(c->nodes)) \
     { \
-        (*_node)->sock->watching = 0; \
-        (*_node)->sock->mode     = ATOMIC; \
+        _node->sock->watching = 0; \
+        _node->sock->mode = ATOMIC; \
     } \
     c->flags->watching = 0; \
     c->flags->mode     = ATOMIC; \
@@ -101,12 +106,18 @@
 /* For the creation of RedisCluster specific exceptions */
 PHP_REDIS_API zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC);
 
+#if (PHP_MAJOR_VERSION < 7)
 /* Create cluster context */
-zend_object_value create_cluster_context(zend_class_entry *class_type 
-                                         TSRMLS_DC);
-
+zend_object_value create_cluster_context(zend_class_entry *class_type TSRMLS_DC);
 /* Free cluster context struct */
 void free_cluster_context(void *object TSRMLS_DC);
+#else
+/* Create cluster context */
+zend_object *create_cluster_context(zend_class_entry *class_type TSRMLS_DC);
+/* Free cluster context struct */
+void free_cluster_context(zend_object *object);
+#endif
+
 
 /* Inittialize our class with PHP */
 void init_rediscluster(TSRMLS_D);
@@ -239,6 +250,12 @@ PHP_METHOD(RedisCluster, pubsub);
 PHP_METHOD(RedisCluster, script);
 PHP_METHOD(RedisCluster, slowlog);
 PHP_METHOD(RedisCluster, command);
+PHP_METHOD(RedisCluster, geoadd);
+PHP_METHOD(RedisCluster, geohash);
+PHP_METHOD(RedisCluster, geopos);
+PHP_METHOD(RedisCluster, geodist);
+PHP_METHOD(RedisCluster, georadius);
+PHP_METHOD(RedisCluster, georadiusbymember);
 
 /* SCAN and friends */
 PHP_METHOD(RedisCluster, scan);

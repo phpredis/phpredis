@@ -25,7 +25,7 @@
 #define PHP_REDIS_H
 
 /* phpredis version */
-#define PHP_REDIS_VERSION "2.2.8-rc1"
+#define PHP_REDIS_VERSION "3.1.2"
 
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, __destruct);
@@ -196,6 +196,14 @@ PHP_METHOD(Redis, config);
 PHP_METHOD(Redis, slowlog);
 PHP_METHOD(Redis, wait);
 PHP_METHOD(Redis, pubsub);
+
+/* Geoadd and friends */
+PHP_METHOD(Redis, geoadd);
+PHP_METHOD(Redis, geohash);
+PHP_METHOD(Redis, geopos);
+PHP_METHOD(Redis, geodist);
+PHP_METHOD(Redis, georadius);
+PHP_METHOD(Redis, georadiusbymember);
 
 PHP_METHOD(Redis, client);
 PHP_METHOD(Redis, command);
