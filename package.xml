@@ -97,7 +97,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
   </required>
  </dependencies>
  <providesextension>redis</providesextension>
- <extsrcrelease/>
+ <extsrcrelease>
+  <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
+ </extsrcrelease>
  <changelog>
 
    <release>
