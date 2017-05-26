@@ -2264,7 +2264,7 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
         }
     } else {
         php_error_docref(0 TSRMLS_CC, E_WARNING,
-            "Direted commands musty be passed a key or [host,port] array");
+            "You must pass a key or [host,port] array");
         return -1;
     }
 
