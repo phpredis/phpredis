@@ -27,25 +27,45 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2017-03-24</date>
+ <date>2017-06-01</date>
  <version>
-  <release>3.1.2</release>
-  <api>3.1.2</api>
+  <release>3.1.3RC1</release>
+  <api>3.1.3RC1</api>
  </version>
  <stability>
-  <release>stable</release>
-  <api>stable</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 3.1.2
+    phpredis 3.1.3RC1
 
-    * RedisArray segfault fix [564ce3] (Pavlo Yatsukhnenko)
-    * Small memory leak fix [645888b] (Mike Grunder)
-    * Segfault fix when recreating RedisCluster objects [abf7d4] (Michael Grunder)
-    * Fix for RedisCluster bulk response parsing [4121c4] (Alberto Fernández)
-    * Re allow single array for sInterStore [6ef0c2, d01966] (Michael Grunder)
-    * Better TravisCI integration [4fd2f6] (Pavlo Yatsukhnenko)
+    This release contains two big improvements:
+      1. Adding a new printf like command construction function with additionaly format specifiers specific to phpredis.
+      2. Implementation of custom objects for Redis and RedisArray wich eliminates double hash lookup.
+    Also many small improvements and bug fixes were made.
+
+    * A printf like method to construct a Redis RESP command [a4a0ed, d75081, bdd287, 0eaeae, b3d00d] (Michael Grunder)
+    * Use custom objects instead of zend_list for storing Redis/RedisArray [a765f8, 8fa85a] (Pavlo Yatsukhnenko)
+    * Make sure redisCluster members are all initialized on (re)creation [162d88] (Michael Grunder)
+    * Fix Null Bulk String response parsing in cluster library [058753] (Alberto Fernández)
+    * Add hStrLen command [c52077, fb88e1] (Pavlo Yatsukhnenko)
+    * Add optional COUNT argument to sPop [d2e203] (Michael Grunder)
+    * Allow sInterStore to take one arg [26aec4, 4cd06b] (Michael Grunder)
+    * Allow MIGRATE to accept multiple keys [9aa3db] (Michael Grunder)
+    * Allow using numeric string in zInter command [ba0070] (Pavlo Yatsukhnenko)
+    * Use crc32 table from PHP distro [f81694] (Pavlo Yatsukhnenko)
+    * Use ZVAL_DEREF macros for dereference input variables [ad4596] (Pavlo Yatsukhnenko)
+    * Add configureoption tag to package.xml [750963] (Pavlo Yatsukhnenko)
+    * Fix read_timeout [18149e, b56dc4] (Pavlo Yatsukhnenko)
+    * Fix zval_get_string impl for PHP5 [4e56ba] (Pavlo Yatsukhnenko)
+    * Fix Redis/RedisArray segfaults [be5c1f, 635c3a, 1f8dde, 43e1e0] (Pavlo Yatsukhnenko)
+    * Fix memory leak and potential segfault [aa6ff7, 88efaa] (Michael Grunder)
+    * Throw exception for all non recoverable errors [e37239] (Pavlo Yatsukhnenko)
+    * Increase read buffers size [520e06] (Pavlo Yatsukhnenko)
+    * Better documentation [f0c25a, c5991f, 9ec9ae] (Michael Grunder)
+    * Better TravisCI integration [e37c08] (Pavlo Yatsukhnenko)
+    * Refactoring (Pavlo Yatsukhnenko, Michael Grunder)
  </notes>
  <contents>
   <dir name="/">
@@ -101,6 +121,41 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
  </extsrcrelease>
  <changelog>
+   <release>
+   <stability><release>beta</release><api>beta</api></stability>
+   <version><release>3.1.3RC1</release><api>3.1.3RC1</api></version>
+   <date>2017-06-01</date>
+   <notes>
+    phpredis 3.1.3RC1
+
+    This release contains two big improvements:
+      1. Adding a new printf like command construction function with additionaly format specifiers specific to phpredis.
+      2. Implementation of custom objects for Redis and RedisArray wich eliminates double hash lookup.
+    Also many small improvements and bug fixes were made.
+
+    * A printf like method to construct a Redis RESP command [a4a0ed, d75081, bdd287, 0eaeae, b3d00d] (Michael Grunder)
+    * Use custom objects instead of zend_list for storing Redis/RedisArray [a765f8, 8fa85a] (Pavlo Yatsukhnenko)
+    * Make sure redisCluster members are all initialized on (re)creation [162d88] (Michael Grunder)
+    * Fix Null Bulk String response parsing in cluster library [058753] (Alberto Fernández)
+    * Add hStrLen command [c52077, fb88e1] (Pavlo Yatsukhnenko)
+    * Add optional COUNT argument to sPop [d2e203] (Michael Grunder)
+    * Allow sInterStore to take one arg [26aec4, 4cd06b] (Michael Grunder)
+    * Allow MIGRATE to accept multiple keys [9aa3db] (Michael Grunder)
+    * Allow using numeric string in zInter command [ba0070] (Pavlo Yatsukhnenko)
+    * Use crc32 table from PHP distro [f81694] (Pavlo Yatsukhnenko)
+    * Use ZVAL_DEREF macros for dereference input variables [ad4596] (Pavlo Yatsukhnenko)
+    * Add configureoption tag to package.xml [750963] (Pavlo Yatsukhnenko)
+    * Fix read_timeout [18149e, b56dc4] (Pavlo Yatsukhnenko)
+    * Fix zval_get_string impl for PHP5 [4e56ba] (Pavlo Yatsukhnenko)
+    * Fix Redis/RedisArray segfaults [be5c1f, 635c3a, 1f8dde, 43e1e0] (Pavlo Yatsukhnenko)
+    * Fix memory leak and potential segfault [aa6ff7, 88efaa] (Michael Grunder)
+    * Throw exception for all non recoverable errors [e37239] (Pavlo Yatsukhnenko)
+    * Increase read buffers size [520e06] (Pavlo Yatsukhnenko)
+    * Better documentation [f0c25a, c5991f, 9ec9ae] (Michael Grunder)
+    * Better TravisCI integration [e37c08] (Pavlo Yatsukhnenko)
+    * Refactoring (Pavlo Yatsukhnenko, Michael Grunder)
+   </notes>
+   </release>
 
    <release>
    <stability><release>stable</release><api>stable</api></stability>
