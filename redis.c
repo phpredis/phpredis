@@ -132,6 +132,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_del, 0, 0, 1)
     ZEND_ARG_INFO(0, key)
 #if PHP_VERSION_ID >= 50600
     ZEND_ARG_VARIADIC_INFO(0, other_keys)
+#else
+    ZEND_ARG_INFO(0, ...)
 #endif
 ZEND_END_ARG_INFO()
 
