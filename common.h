@@ -16,6 +16,28 @@ typedef smart_str smart_string;
 #define smart_string_append_long(dest, val) smart_str_append_long(dest, val)
 #define smart_string_appendl(dest, src, len) smart_str_appendl(dest, src, len)
 
+/**
+ * Define this for OLD php - 5.2
+ * Taken from Zend.h from php-5.3+
+ */
+#ifndef zend_always_inline
+
+#if defined(__GNUC__)
+#if __GNUC__ >= 3
+#define zend_always_inline inline __attribute__((always_inline))
+#else
+#define zend_always_inline inline
+#endif
+
+#elif defined(_MSC_VER)
+#define zend_always_inline __forceinline
+#else
+#define zend_always_inline inline
+#endif
+
+#endif
+
+
 typedef struct {
     short gc;
     size_t len;
