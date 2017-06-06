@@ -298,4 +298,28 @@ PHP_METHOD(RedisCluster, _unserialize);
 PHP_METHOD(RedisCluster, _masters);
 PHP_METHOD(RedisCluster, _redir);
 
+/* Finite sorted sets */
+PHP_METHOD(RedisCluster, xAdd);
+PHP_METHOD(RedisCluster, xIncrBy);
+PHP_METHOD(RedisCluster, xRange);
+PHP_METHOD(RedisCluster, xRevRange);
+PHP_METHOD(RedisCluster, xScore);
+PHP_METHOD(RedisCluster, xDelete);
+PHP_METHOD(RedisCluster, xCard);
+PHP_METHOD(RedisCluster, xSetOptions);
+PHP_METHOD(RedisCluster, xGetFinity);
+PHP_METHOD(RedisCluster, xGetPruning);
+PHP_METHOD(RedisCluster, xRangeByScore);
+PHP_METHOD(RedisCluster, xRevRangeByScore);
+PHP_METHOD(RedisCluster, xRangeByLex);
+PHP_METHOD(RedisCluster, xRevRangeByLex);
+PHP_METHOD(RedisCluster, xRank);
+PHP_METHOD(RedisCluster, xRevRank);
+PHP_METHOD(RedisCluster, xCount);
+PHP_METHOD(RedisCluster, xLexCount);
+PHP_METHOD(RedisCluster, xRemRangeByScore);
+PHP_METHOD(RedisCluster, xRemRangeByRank);
+PHP_METHOD(RedisCluster, xRemRangeByLex);
+PHP_METHOD(RedisCluster, xScan);
+
 #endif
