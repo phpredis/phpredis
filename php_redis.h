@@ -237,8 +237,6 @@ PHP_METHOD(Redis, getMode);
 
 PHP_MINIT_FUNCTION(redis);
 PHP_MSHUTDOWN_FUNCTION(redis);
-PHP_RINIT_FUNCTION(redis);
-PHP_RSHUTDOWN_FUNCTION(redis);
 PHP_MINFO_FUNCTION(redis);
 
 /* Redis response handler function callback prototype */
