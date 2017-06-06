@@ -237,6 +237,14 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     long it, char *pat, int pat_len, long count);
 
+/* finite sorted sets */
+typedef int (*xadd_cb)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *,
+                       char**,int*,int*,short*,void**);
+
+int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
+                   char **cmd, int *cmd_len, int *ele, short *slot, void **ctx);
+
+
 int redis_geodist_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
