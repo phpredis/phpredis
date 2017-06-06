@@ -114,6 +114,7 @@ PHP_METHOD(Redis, zDelete);
 PHP_METHOD(Redis, zRange);
 PHP_METHOD(Redis, zRevRange);
 PHP_METHOD(Redis, zRangeByScore);
+PHP_METHOD(Redis, zRangeByLex);
 PHP_METHOD(Redis, zRevRangeByScore);
 PHP_METHOD(Redis, zRangeByLex);
 PHP_METHOD(Redis, zRevRangeByLex);
@@ -230,6 +231,45 @@ PHP_METHOD(Redis, isConnected);
 PHP_METHOD(Redis, getPersistentID);
 PHP_METHOD(Redis, getAuth);
 PHP_METHOD(Redis, getMode);
+
+/* Finite sorted sets */
+PHP_METHOD(Redis, xAdd);
+PHP_METHOD(Redis, xIncrBy);
+PHP_METHOD(Redis, xRange);
+PHP_METHOD(Redis, xRevRange);
+PHP_METHOD(Redis, xScore);
+PHP_METHOD(Redis, xDelete);
+PHP_METHOD(Redis, xCard);
+PHP_METHOD(Redis, xSetOptions);
+PHP_METHOD(Redis, xGetFinity);
+PHP_METHOD(Redis, xGetPruning);
+PHP_METHOD(Redis, xRangeByScore);
+PHP_METHOD(Redis, xRevRangeByScore);
+PHP_METHOD(Redis, xRangeByLex);
+PHP_METHOD(Redis, xRevRangeByLex);
+PHP_METHOD(Redis, xRank);
+PHP_METHOD(Redis, xRevRank);
+PHP_METHOD(Redis, xCount);
+PHP_METHOD(Redis, xLexCount);
+PHP_METHOD(Redis, xRemRangeByScore);
+PHP_METHOD(Redis, xRemRangeByRank);
+PHP_METHOD(Redis, xRemRangeByLex);
+PHP_METHOD(Redis, xScan);
+
+/* Ordered sets */
+PHP_METHOD(Redis, oAdd);
+PHP_METHOD(Redis, oRange);
+PHP_METHOD(Redis, oRevRange);
+PHP_METHOD(Redis, oDelete);
+PHP_METHOD(Redis, oCard);
+PHP_METHOD(Redis, oGetMaxlen);
+PHP_METHOD(Redis, oGetFinity);
+PHP_METHOD(Redis, oRangeByMember);
+PHP_METHOD(Redis, oRevRangeByMember);
+PHP_METHOD(Redis, oRemRangeByRank);
+
+PHP_METHOD(Redis, getid);
+PHP_METHOD(Redis, mgetid);
 
 #ifdef ZTS
 #include "TSRM.h"
