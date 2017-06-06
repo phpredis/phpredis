@@ -1627,6 +1627,8 @@ PHP_REDIS_API void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
         CLUSTER_RETURN_LONG(c, REDIS_HASH);
     } else if (strncmp(c->line_reply, "zset", 4)==0) {
         CLUSTER_RETURN_LONG(c, REDIS_ZSET);
+    } else if (strncmp(c->line_reply, "xset", 4)==0) {
+        CLUSTER_RETURN_LONG(c, REDIS_XSET);
     } else {
         CLUSTER_RETURN_LONG(c, REDIS_NOT_FOUND);
     }
@@ -2007,6 +2009,7 @@ PHP_REDIS_API int cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
             cluster_mbulk_zipstr_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,c,NULL);
             break;
         case TYPE_ZSCAN:
+        case TYPE_XSCAN:
             cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU,c,NULL);
             break;
         default:
