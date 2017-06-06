@@ -3053,6 +3053,109 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
     RETURN_FALSE;
 }
 
+/*
+ * finite sorted set commands
+ */
+int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
+                   char **cmd, int *cmd_len, int *ele, short *slot, void **ctx) {
+    zval *z_args;
+    char *key, *val;
+    int key_free, val_free;
+    strlen_t key_len, val_len;
+    int argc = ZEND_NUM_ARGS(), i;
+    smart_string cmdstr = {0};
+    int optionidx = 1;
+    long finity = 0;
+    char *pruning = NULL;
+    int elements = 0;
+
+    z_args = ecalloc(argc, sizeof(zval));
+    if(zend_get_parameters_array(ht, argc, z_args)==FAILURE) {
+        efree(z_args);
+        return FAILURE;
+    }
+
+    // Option
+    while (optionidx < argc) {
+        convert_to_string(&z_args[optionidx]);
+        if (!strcasecmp(Z_STRVAL(z_args[optionidx]), "finity")) {
+            if (argc <= optionidx+1) { efree(z_args); return FAILURE; }
+            convert_to_long(&z_args[optionidx+1]);
+            if (Z_TYPE(z_args[optionidx+1])!=IS_LONG || Z_LVAL(z_args[optionidx+1])<=0) { efree(z_args); return FAILURE; }
+            finity = Z_LVAL(z_args[optionidx+1]);
+            optionidx += 2;
+        } else if (!strcasecmp(Z_STRVAL(z_args[optionidx]), "pruning")) {
+            if (argc <= optionidx+1) { efree(z_args); return FAILURE; }
+            convert_to_string(&z_args[optionidx+1]);
+            if (!strcasecmp(Z_STRVAL(z_args[optionidx+1]), "minscore")) {
+                pruning = "MINSCORE";
+            } else if (!strcasecmp(Z_STRVAL(z_args[optionidx+1]), "maxscore")) {
+                pruning = "MAXSCORE";
+            } else { efree(z_args); return FAILURE; }
+            optionidx += 2;
+        } else if (!strcasecmp(Z_STRVAL(z_args[optionidx]), "elements")) {
+            elements = 1;
+            optionidx++;
+        } else break;
+    }
+
+    // Check kw agrc
+    if (!strcasecmp(kw, "XADD")) {
+        if (((argc-optionidx) < 2) || (argc-optionidx)%2 != 0) { efree(z_args); return FAILURE; }
+    } else if (!strcasecmp(kw, "XINCRBY")) {
+        if ((argc-optionidx) != 2) { efree(z_args); return FAILURE; }
+    } else if (!strcasecmp(kw, "XSETOPTIONS")) {
+        if (argc < 3 || ((argc-optionidx) != 0)) { efree(z_args); return FAILURE; }
+    } else { efree(z_args); return FAILURE; }
+
+    // Need key, [FINITY nums] [PRUNING minscore|maxscore] [ELEMENTS] score, value, [score, value...] */
+    if(argc>0) convert_to_string(&z_args[0]);
+    if (Z_TYPE(z_args[0])!=IS_STRING) { efree(z_args); return FAILURE; }
+
+    // Prefix our key
+    key = Z_STRVAL(z_args[0]);
+    key_len = Z_STRLEN(z_args[0]);
+    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+    // Start command construction
+    redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
+    redis_cmd_append_sstr(&cmdstr, key, key_len);
+
+    // Set our slot, free key if we prefixed it
+    CMD_SET_SLOT(slot,key,key_len);
+    if(key_free) efree(key);
+
+    // Option
+    if (finity) { redis_cmd_append_sstr(&cmdstr, "FINITY", 6); redis_cmd_append_sstr_long(&cmdstr, finity); }
+    if (pruning) { redis_cmd_append_sstr(&cmdstr, "PRUNING", 7); redis_cmd_append_sstr(&cmdstr, pruning, strlen(pruning)); }
+    if (elements) { redis_cmd_append_sstr(&cmdstr, "ELEMENTS", 8); }
+
+    // Now the rest of our arguments
+    for(i=optionidx;i<argc;i+=2) {
+        // Convert score to a double, serialize value if requested
+        convert_to_double(&z_args[i]);
+        val_free = redis_serialize(redis_sock, &z_args[i+1], &val, &val_len
+        TSRMLS_CC);
+
+        // Append score and member
+        redis_cmd_append_sstr_dbl(&cmdstr, Z_DVAL(z_args[i]));
+        redis_cmd_append_sstr(&cmdstr, val, val_len);
+
+        // Free value if we serialized
+        if(val_free) efree(val);
+    }
+
+    // Push output values
+    *cmd     = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    *ele     = elements;
+
+    // Cleanup args
+    efree(z_args);
+
+    return SUCCESS;
+}
+
 void redis_prefix_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     char *key;
     strlen_t key_len;
