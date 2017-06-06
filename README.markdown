@@ -110,7 +110,7 @@ See [dedicated page](https://github.com/phpredis/phpredis/blob/master/arrays.mar
 
 ## Redis Cluster support
 
-See [dedicated page](https://github.com/phpredis/phpredis/blob/feature/redis_cluster/cluster.markdown#readme).
+See [dedicated page](https://github.com/phpredis/phpredis/blob/develop/cluster.markdown#readme).
 
 ## Running the unit tests
 
