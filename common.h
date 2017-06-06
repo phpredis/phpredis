@@ -400,6 +400,8 @@ typedef size_t strlen_t;
 #define REDIS_LIST      3
 #define REDIS_ZSET      4
 #define REDIS_HASH      5
+#define REDIS_XSET      6
+#define REDIS_OSET      7
 
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
@@ -422,7 +424,8 @@ typedef enum _REDIS_SCAN_TYPE {
     TYPE_SCAN,
     TYPE_SSCAN,
     TYPE_HSCAN,
-    TYPE_ZSCAN
+    TYPE_ZSCAN,
+    TYPE_XSCAN
 } REDIS_SCAN_TYPE;
 
 /* PUBSUB subcommands */
