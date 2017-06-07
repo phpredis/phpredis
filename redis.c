@@ -3528,7 +3528,7 @@ static void generic_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, xadd_cb fun
     RedisSock *redis_sock;
     int elements=0;
 
-    if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0)<0) {
+    if ((redis_sock = redis_sock_get(getThis() TSRMLS_CC, 0)) == NULL) {
         RETURN_FALSE;
     }
 
