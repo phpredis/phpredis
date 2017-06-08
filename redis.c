@@ -296,6 +296,41 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_evalsha, 0, 0, 1)
 ZEND_END_ARG_INFO()
 /* }}} */
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pairs, 0, 0, 1)
+    ZEND_ARG_ARRAY_INFO(0, pairs, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_rpoplpush, 0, 0, 2)
+    ZEND_ARG_INFO(0, src)
+    ZEND_ARG_INFO(0, dst)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_brpoplpush, 0, 0, 3)
+    ZEND_ARG_INFO(0, src)
+    ZEND_ARG_INFO(0, dst)
+    ZEND_ARG_INFO(0, timeout)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zadd, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, score)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zrem, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, member)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, other_members)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zrange, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, start)
+    ZEND_ARG_INFO(0, end)
+    ZEND_ARG_INFO(0, scores)
+ZEND_END_ARG_INFO()
 /**
  * Argument info for the SCAN proper
  */
@@ -409,14 +444,14 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, bitpos, arginfo_bitpos, ZEND_ACC_PUBLIC)
 
      /* 1.1 */
-     PHP_ME(Redis, mset, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, msetnx, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, rpoplpush, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, brpoplpush, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zAdd, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zDelete, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zRange, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zRevRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, mset, arginfo_pairs, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, msetnx, arginfo_pairs, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, rpoplpush, arginfo_rpoplpush, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, brpoplpush, arginfo_brpoplpush, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zAdd, arginfo_zadd, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zDelete, arginfo_zrem, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRange, arginfo_zrange, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRevRange, arginfo_zrange, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRevRangeByScore, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRangeByLex, NULL, ZEND_ACC_PUBLIC)
