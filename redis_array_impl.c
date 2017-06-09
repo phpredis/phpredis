@@ -96,43 +96,43 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 }
 
 /* List pure functions */
-void ra_init_function_table(RedisArray *ra) {
+void
+ra_init_function_table(RedisArray *ra)
+{
+    array_init(&ra->z_pure_cmds);
 
-	array_init(&ra->z_pure_cmds);
-
-	add_assoc_bool(&ra->z_pure_cmds, "HGET", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "HGETALL", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "HKEYS", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "HLEN", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "SRANDMEMBER", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "HMGET", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "STRLEN", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "SUNION", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "HVALS", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "TYPE", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "EXISTS", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "LINDEX", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "SCARD", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "LLEN", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "SDIFF", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "ZCARD", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "ZCOUNT", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "LRANGE", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "ZRANGE", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "ZRANK", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "GET", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "GETBIT", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "SINTER", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "GETRANGE", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "ZREVRANGE", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "SISMEMBER", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "ZREVRANGEBYSCORE", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "ZREVRANK", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "HEXISTS", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "ZSCORE", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "HGET", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "OBJECT", 1);
-	add_assoc_bool(&ra->z_pure_cmds, "SMEMBERS", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "EXISTS", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "GET", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "GETBIT", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "GETRANGE", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "HEXISTS", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "HGET", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "HGETALL", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "HKEYS", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "HLEN", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "HMGET", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "HVALS", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "LINDEX", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "LLEN", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "LRANGE", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "OBJECT", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "SCARD", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "SDIFF", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "SINTER", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "SISMEMBER", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "SMEMBERS", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "SRANDMEMBER", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "STRLEN", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "SUNION", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "TYPE", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "ZCARD", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "ZCOUNT", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "ZRANGE", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "ZRANK", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "ZREVRANGE", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "ZREVRANGEBYSCORE", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "ZREVRANK", 1);
+    add_assoc_bool(&ra->z_pure_cmds, "ZSCORE", 1);
 }
 
 static int
