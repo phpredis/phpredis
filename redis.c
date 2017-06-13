@@ -358,6 +358,24 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_key_member, 0, 0, 2)
     ZEND_ARG_INFO(0, member)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zstore, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_ARRAY_INFO(0, keys, 0)
+    ZEND_ARG_ARRAY_INFO(0, weights, 0)
+    ZEND_ARG_INFO(0, aggregate)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zincrby, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, value)
+    ZEND_ARG_INFO(0, member)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_timestamp, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, timestamp)
+ZEND_END_ARG_INFO()
+
 /**
  * Argument info for the SCAN proper
  */
@@ -492,12 +510,12 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zScore, arginfo_key_member, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRank, arginfo_key_member, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRevRank, arginfo_key_member, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zInter, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zUnion, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zIncrBy, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, expireAt, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, pexpire, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, pexpireAt, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zInter, arginfo_zstore, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zUnion, arginfo_zstore, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zIncrBy, arginfo_zincrby, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, expireAt, arginfo_key_timestamp, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pexpire, arginfo_key_timestamp, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pexpireAt, arginfo_key_timestamp, ZEND_ACC_PUBLIC)
 
      /* 1.2 */
      PHP_ME(Redis, hGet, NULL, ZEND_ACC_PUBLIC)
