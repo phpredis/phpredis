@@ -400,6 +400,13 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_key_timestamp, 0, 0, 2)
     ZEND_ARG_INFO(0, timestamp)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_watch, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, other_keys)
+#endif
+ZEND_END_ARG_INFO()
+
 /**
  * Argument info for the SCAN proper
  */
@@ -557,12 +564,12 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, hMget, arginfo_hmget, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hStrLen, arginfo_key_member, ZEND_ACC_PUBLIC)
 
-     PHP_ME(Redis, multi, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, discard, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, exec, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, pipeline, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, watch, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, unwatch, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, multi, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, discard, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, exec, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pipeline, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, watch, arginfo_watch, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, unwatch, arginfo_void, ZEND_ACC_PUBLIC)
 
      PHP_ME(Redis, publish, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, subscribe, NULL, ZEND_ACC_PUBLIC)
