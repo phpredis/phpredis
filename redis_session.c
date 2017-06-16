@@ -670,17 +670,26 @@ PS_READ_FUNC(rediscluster) {
 
     /* Attempt to read reply */
     reply = cluster_read_resp(c TSRMLS_CC);
-    if (!reply || c->err || reply->str == NULL) {
+    if (!reply || c->err) {
         if (reply) cluster_free_reply(reply, 1);
         return FAILURE;
     }
 
     /* Push reply value to caller */
 #if (PHP_MAJOR_VERSION < 7)
-    *val = reply->str;
-    *vallen = reply->len;
+    if (reply->str == NULL) {
+        *val = STR_EMPTY_ALLOC();
+        *vallen = 0;
+    } else {
+        *val = reply->str;
+        *vallen = reply->len;
+    }
 #else
-    *val = zend_string_init(reply->str, reply->len, 0);
+    if (reply->str == NULL) {
+        *val = ZSTR_EMPTY_ALLOC();
+    } else {
+        *val = zend_string_init(reply->str, reply->len, 0);
+    }
 #endif
 
     /* Clean up */
