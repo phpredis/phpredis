@@ -481,6 +481,62 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_migrate, 0, 0, 5)
     ZEND_ARG_INFO(0, replace)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_client, 0, 0, 1)
+    ZEND_ARG_INFO(0, cmd)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, args)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_command, 0, 0, 0)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, args)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pfadd, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_ARRAY_INFO(0, elements, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pfmerge, 0, 0, 2)
+    ZEND_ARG_INFO(0, dstkey)
+    ZEND_ARG_ARRAY_INFO(0, keys, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_getoption, 0, 0, 1)
+    ZEND_ARG_INFO(0, option)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_setoption, 0, 0, 2)
+    ZEND_ARG_INFO(0, option)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_config, 0, 0, 2)
+    ZEND_ARG_INFO(0, cmd)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_slowlog, 0, 0, 1)
+    ZEND_ARG_INFO(0, arg)
+    ZEND_ARG_INFO(0, option)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_rawcommand, 0, 0, 1)
+    ZEND_ARG_INFO(0, cmd)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, args)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
 /**
  * Argument info for the SCAN proper
  */
@@ -669,8 +725,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, _serialize, arginfo_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _unserialize, arginfo_value, ZEND_ACC_PUBLIC)
 
-     PHP_ME(Redis, client, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, command, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, client, arginfo_client, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, command, arginfo_command, ZEND_ACC_PUBLIC)
 
      /* SCAN and friends */
      PHP_ME(Redis, scan, arginfo_scan, ZEND_ACC_PUBLIC)
@@ -679,22 +735,22 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sscan, arginfo_kscan, ZEND_ACC_PUBLIC)
 
      /* HyperLogLog commands */
-     PHP_ME(Redis, pfadd, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, pfcount, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, pfmerge, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pfadd, arginfo_pfadd, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pfcount, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, pfmerge, arginfo_pfmerge, ZEND_ACC_PUBLIC)
 
      /* options */
-     PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, setOption, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, getOption, arginfo_getoption, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setOption, arginfo_setoption, ZEND_ACC_PUBLIC)
 
      /* config */
-     PHP_ME(Redis, config, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, config, arginfo_config, ZEND_ACC_PUBLIC)
 
      /* slowlog */
-     PHP_ME(Redis, slowlog, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, slowlog, arginfo_slowlog, ZEND_ACC_PUBLIC)
 
      /* Send a raw command and read raw results */
-     PHP_ME(Redis, rawcommand, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, rawcommand, arginfo_rawcommand, ZEND_ACC_PUBLIC)
 
      /* geoadd and friends */
      PHP_ME(Redis, geoadd, NULL, ZEND_ACC_PUBLIC)
