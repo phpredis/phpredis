@@ -3059,7 +3059,8 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
 int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
                    char **cmd, int *cmd_len, int *ele, short *slot, void **ctx) {
     zval *z_args;
-    char *key, *val;
+    char *val, *key;
+    zend_string *zstr;
     int key_free, val_free;
     strlen_t key_len, val_len;
     int argc = ZEND_NUM_ARGS(), i;
@@ -3077,27 +3078,55 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw
 
     // Option
     while (optionidx < argc) {
-        convert_to_string(&z_args[optionidx]);
-        if (!strcasecmp(Z_STRVAL(z_args[optionidx]), "finity")) {
-            if (argc <= optionidx+1) { efree(z_args); return FAILURE; }
-            convert_to_long(&z_args[optionidx+1]);
-            if (Z_TYPE(z_args[optionidx+1])!=IS_LONG || Z_LVAL(z_args[optionidx+1])<=0) { efree(z_args); return FAILURE; }
-            finity = Z_LVAL(z_args[optionidx+1]);
+	    zend_string *str = zval_get_string(&z_args[optionidx]);
+
+        if (!strcasecmp(ZSTR_VAL(str), "finity")) {
+            if (argc <= optionidx+1) { 
+		        zend_string_release(str); 
+                efree(z_args); 
+                return FAILURE; 
+            }
+
+            finity = zval_get_long(&z_args[optionidx+1]);
+            if (finity<=0) { 
+		        zend_string_release(str); 
+                efree(z_args); 
+                return FAILURE; 
+            }
             optionidx += 2;
-        } else if (!strcasecmp(Z_STRVAL(z_args[optionidx]), "pruning")) {
-            if (argc <= optionidx+1) { efree(z_args); return FAILURE; }
-            convert_to_string(&z_args[optionidx+1]);
-            if (!strcasecmp(Z_STRVAL(z_args[optionidx+1]), "minscore")) {
+        } else if (!strcasecmp(ZSTR_VAL(str), "pruning")) {
+	        zend_string *sstr;
+            if (argc <= optionidx+1) { 
+		        zend_string_release(str); 
+                efree(z_args); 
+                return FAILURE; 
+            }
+
+            sstr = zval_get_string(&z_args[optionidx+1]);
+            if (!strcasecmp(ZSTR_VAL(sstr), "minscore")) {
                 pruning = "MINSCORE";
-            } else if (!strcasecmp(Z_STRVAL(z_args[optionidx+1]), "maxscore")) {
+            } else if (!strcasecmp(ZSTR_VAL(sstr), "maxscore")) {
                 pruning = "MAXSCORE";
-            } else { efree(z_args); return FAILURE; }
+            } else {
+		        zend_string_release(str); 
+	            zend_string_release(sstr); 
+                efree(z_args); 
+                return FAILURE; 
+            }
+
+	        zend_string_release(sstr);
             optionidx += 2;
-        } else if (!strcasecmp(Z_STRVAL(z_args[optionidx]), "elements")) {
+        } else if (!strcasecmp(ZSTR_VAL(str), "elements")) {
             elements = 1;
             optionidx++;
-        } else break;
+        } else {
+            break;
+        }
+
+        zend_string_release(str);
     }
+
+    // Need key, [FINITY nums] [PRUNING minscore|maxscore] [ELEMENTS] score, value, [score, value...] */
 
     // Check kw agrc
     if (!strcasecmp(kw, "XADD")) {
@@ -3108,13 +3137,10 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw
         if (argc < 3 || ((argc-optionidx) != 0)) { efree(z_args); return FAILURE; }
     } else { efree(z_args); return FAILURE; }
 
-    // Need key, [FINITY nums] [PRUNING minscore|maxscore] [ELEMENTS] score, value, [score, value...] */
-    if(argc>0) convert_to_string(&z_args[0]);
-    if (Z_TYPE(z_args[0])!=IS_STRING) { efree(z_args); return FAILURE; }
-
     // Prefix our key
-    key = Z_STRVAL(z_args[0]);
-    key_len = Z_STRLEN(z_args[0]);
+    zstr = zval_get_string(&z_args[0]);
+    key = zstr->val;
+    key_len = zstr->len;
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
     // Start command construction
@@ -3123,6 +3149,7 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw
 
     // Set our slot, free key if we prefixed it
     CMD_SET_SLOT(slot,key,key_len);
+    zend_string_release(zstr);
     if(key_free) efree(key);
 
     // Option
@@ -3133,12 +3160,11 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw
     // Now the rest of our arguments
     for(i=optionidx;i<argc;i+=2) {
         // Convert score to a double, serialize value if requested
-        convert_to_double(&z_args[i]);
-        val_free = redis_serialize(redis_sock, &z_args[i+1], &val, &val_len
-        TSRMLS_CC);
+	    double dval = zval_get_double(&z_args[i]);
+        val_free = redis_serialize(redis_sock, &z_args[i+1], &val, &val_len TSRMLS_CC);
 
         // Append score and member
-        redis_cmd_append_sstr_dbl(&cmdstr, Z_DVAL(z_args[i]));
+        redis_cmd_append_sstr_dbl(&cmdstr, dval);
         redis_cmd_append_sstr(&cmdstr, val, val_len);
 
         // Free value if we serialized
