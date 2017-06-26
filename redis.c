@@ -329,16 +329,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_zadd, 0, 0, 3)
     ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_zrem, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, member)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, other_members)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_zrange, 0, 0, 3)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, start)
@@ -372,13 +362,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_key_member, 0, 0, 2)
     ZEND_ARG_INFO(0, member)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_key_member_value, 0, 0, 3)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, member)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_hdel, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_members, 0, 0, 2)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, member)
 #if PHP_VERSION_ID >= 50600
@@ -386,6 +370,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_hdel, 0, 0, 2)
 #else
     ZEND_ARG_INFO(0, ...)
 #endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_member_value, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, member)
+    ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_hmget, 0, 0, 2)
@@ -563,26 +553,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_geoadd, 0, 0, 4)
 #endif
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_geohash, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, member)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, other_members)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_geopos, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, member)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, other_members)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_geodist, 0, 0, 3)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, src)
@@ -725,7 +695,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, rpoplpush, arginfo_rpoplpush, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, brpoplpush, arginfo_brpoplpush, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zAdd, arginfo_zadd, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zDelete, arginfo_zrem, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zDelete, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRange, arginfo_zrange, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRevRange, arginfo_zrange, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRangeByScore, arginfo_zrangebyscore, ZEND_ACC_PUBLIC)
@@ -752,7 +722,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, hGet, arginfo_key_member, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hSet, arginfo_key_member_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hSetNx, arginfo_key_member_value, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, hDel, arginfo_hdel, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, hDel, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hLen, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hKeys, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, hVals, arginfo_key, ZEND_ACC_PUBLIC)
@@ -824,8 +794,8 @@ static zend_function_entry redis_functions[] = {
 
      /* geoadd and friends */
      PHP_ME(Redis, geoadd, arginfo_geoadd, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, geohash, arginfo_geohash, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, geopos, arginfo_geopos, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, geohash, arginfo_key_members, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, geopos, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, geodist, arginfo_geodist, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, georadius, arginfo_georadius, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, georadiusbymember, arginfo_georadiusbymember, ZEND_ACC_PUBLIC)
@@ -854,8 +824,8 @@ static zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, zunionstore, zUnion, arginfo_zstore, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zinterstore, zInter, arginfo_zstore, ZEND_ACC_PUBLIC)
 
-     PHP_MALIAS(Redis, zRemove, zDelete, arginfo_zrem, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zRem, zDelete, arginfo_zrem, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zRemove, zDelete, arginfo_key_members, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zRem, zDelete, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zRemoveRangeByScore, zDeleteRangeByScore, arginfo_key_min_max, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zRemRangeByScore, zDeleteRangeByScore, arginfo_key_min_max, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zRemRangeByRank, zDeleteRangeByRank, arginfo_key_min_max, ZEND_ACC_PUBLIC)
