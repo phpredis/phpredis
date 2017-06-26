@@ -551,6 +551,62 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_wait, 0, 0, 2)
     ZEND_ARG_INFO(0, timeout)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_geoadd, 0, 0, 4)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, lng)
+    ZEND_ARG_INFO(0, lat)
+    ZEND_ARG_INFO(0, member)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, other_triples)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_geohash, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, member)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, other_members)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_geopos, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, member)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, other_members)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_geodist, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, src)
+    ZEND_ARG_INFO(0, dst)
+    ZEND_ARG_INFO(0, unit)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_georadius, 0, 0, 5)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, lng)
+    ZEND_ARG_INFO(0, lan)
+    ZEND_ARG_INFO(0, radius)
+    ZEND_ARG_INFO(0, unit)
+    ZEND_ARG_ARRAY_INFO(0, opts, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_georadiusbymember, 0, 0, 4)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, member)
+    ZEND_ARG_INFO(0, radius)
+    ZEND_ARG_INFO(0, unit)
+    ZEND_ARG_ARRAY_INFO(0, opts, 0)
+ZEND_END_ARG_INFO()
+
 /**
  * Argument info for the SCAN proper
  */
@@ -767,12 +823,12 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, rawcommand, arginfo_rawcommand, ZEND_ACC_PUBLIC)
 
      /* geoadd and friends */
-     PHP_ME(Redis, geoadd, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, geohash, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, geopos, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, geodist, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, georadius, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, georadiusbymember, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, geoadd, arginfo_geoadd, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, geohash, arginfo_geohash, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, geopos, arginfo_geopos, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, geodist, arginfo_geodist, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, georadius, arginfo_georadius, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, georadiusbymember, arginfo_georadiusbymember, ZEND_ACC_PUBLIC)
 
      /* introspection */
      PHP_ME(Redis, getHost, arginfo_void, ZEND_ACC_PUBLIC)
