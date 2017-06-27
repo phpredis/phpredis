@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2017-06-01</date>
+ <date>2017-06-27</date>
  <version>
-  <release>3.1.3RC1</release>
-  <api>3.1.3RC1</api>
+  <release>3.1.3RC2</release>
+  <api>3.1.3RC2</api>
  </version>
  <stability>
   <release>beta</release>
@@ -38,7 +38,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 3.1.3RC1
+    phpredis 3.1.3RC2
 
     This release contains two big improvements:
       1. Adding a new printf like command construction function with additionaly format specifiers specific to phpredis.
@@ -62,6 +62,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix Redis/RedisArray segfaults [be5c1f, 635c3a, 1f8dde, 43e1e0] (Pavlo Yatsukhnenko)
     * Fix memory leak and potential segfault [aa6ff7, 88efaa] (Michael Grunder)
     * Throw exception for all non recoverable errors [e37239] (Pavlo Yatsukhnenko)
+    * Assume "NULL bulk" reply as success (empty session data) [4a81e1] (Pavlo Yatsukhnenko)
     * Increase read buffers size [520e06] (Pavlo Yatsukhnenko)
     * Better documentation [f0c25a, c5991f, 9ec9ae] (Michael Grunder)
     * Better TravisCI integration [e37c08] (Pavlo Yatsukhnenko)
@@ -123,10 +124,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <changelog>
    <release>
    <stability><release>beta</release><api>beta</api></stability>
-   <version><release>3.1.3RC1</release><api>3.1.3RC1</api></version>
-   <date>2017-06-01</date>
+   <version><release>3.1.3RC2</release><api>3.1.3RC2</api></version>
+   <date>2017-06-27</date>
    <notes>
-    phpredis 3.1.3RC1
+    phpredis 3.1.3RC2
 
     This release contains two big improvements:
       1. Adding a new printf like command construction function with additionaly format specifiers specific to phpredis.
@@ -150,6 +151,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix Redis/RedisArray segfaults [be5c1f, 635c3a, 1f8dde, 43e1e0] (Pavlo Yatsukhnenko)
     * Fix memory leak and potential segfault [aa6ff7, 88efaa] (Michael Grunder)
     * Throw exception for all non recoverable errors [e37239] (Pavlo Yatsukhnenko)
+    * Assume "NULL bulk" reply as success (empty session data) [4a81e1] (Pavlo Yatsukhnenko)
     * Increase read buffers size [520e06] (Pavlo Yatsukhnenko)
     * Better documentation [f0c25a, c5991f, 9ec9ae] (Michael Grunder)
     * Better TravisCI integration [e37c08] (Pavlo Yatsukhnenko)
