@@ -906,7 +906,9 @@ PHP_REDIS_API zend_class_entry *redis_get_exception_base(int root TSRMLS_DC)
 }
 
 /* Send a static DISCARD in case we're in MULTI mode. */
-static int send_discard_static(RedisSock *redis_sock TSRMLS_DC) {
+static int
+redis_send_discard(RedisSock *redis_sock TSRMLS_DC)
+{
     int result = FAILURE;
     char *cmd, *resp;
     int resp_len, cmd_len;
@@ -1255,7 +1257,7 @@ PHP_METHOD(Redis,__destruct) {
     IF_MULTI() {
         // Discard any multi commands, and free any callbacks that have been
         // queued
-        send_discard_static(redis_sock TSRMLS_CC);
+        redis_send_discard(redis_sock TSRMLS_CC);
         free_reply_callbacks(redis_sock);
     }
 }
@@ -2673,7 +2675,7 @@ PHP_METHOD(Redis, discard)
 
     redis_sock->mode = ATOMIC;
     free_reply_callbacks(redis_sock);
-    redis_send_discard(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+    RETURN_BOOL(redis_send_discard(redis_sock TSRMLS_CC) == SUCCESS);
 }
 
 /* redis_sock_read_multibulk_multi_reply */

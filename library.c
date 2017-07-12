@@ -1527,28 +1527,6 @@ PHP_REDIS_API int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
     return 0;
 }
 
-PHP_REDIS_API void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS,
-                               RedisSock *redis_sock)
-{
-    char *cmd;
-    int response_len, cmd_len;
-    char * response;
-
-    cmd_len = redis_spprintf(redis_sock, NULL TSRMLS_CC, &cmd, "DISCARD", "");
-
-    SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
-    efree(cmd);
-
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC))
-                                    == NULL)
-    {
-        RETURN_FALSE;
-    }
-
-    RETVAL_BOOL(response_len == 3 && strncmp(response, "+OK", 3) == 0);
-    efree(response);
-}
-
 /**
  * redis_sock_set_err
  */
