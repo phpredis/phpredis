@@ -19,10 +19,11 @@ set -e
 
 case "$1" in
     configure)
-	    cat > /etc/php5/conf.d/redis.ini <<EOF
+	    cat > /etc/php/7.0/mods-available/redis.ini <<EOF
 ; uncomment the next line to enable the module
 extension=redis.so
 EOF
+      phpenmod -v 7.0 redis
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

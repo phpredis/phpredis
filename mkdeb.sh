@@ -4,18 +4,14 @@ phpize
 make clean all
 DIR=`php-config --extension-dir | cut -c 2-`
 
-rm -rf debian
+mkdir -p deb
+mkdir -p deb/DEBIAN
+mkdir -p deb/$DIR
 
-mkdir -p debian
-mkdir -p debian/DEBIAN
-mkdir -p debian/$DIR
+cp debian/* deb/DEBIAN/
 
-cp debian.control debian/DEBIAN/control
+cp modules/redis.so deb/$DIR
 
-UBUNTU=`uname -v | grep -ci ubuntu`
-mkdir -p debian/etc/php/7.0/conf.d/
-echo "extension=redis.so" >> debian/etc/php/7.0/conf.d/redis.ini
+dpkg -b deb phpredis-`git rev-parse --abbrev-ref HEAD`_`uname -m`.deb
 
-cp modules/redis.so debian/$DIR
-dpkg -b debian phpredis-`git describe --abbrev=0 --tags`_`uname -m`.deb
-rm -rf debian/
+rm -rf deb
