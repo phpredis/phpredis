@@ -47,11 +47,14 @@ if ($str_class == 'redis') {
     foreach(array(true, false) as $useIndex) {
         echo "\n".($useIndex?"WITH":"WITHOUT"). " per-node index:\n";
 
-        run_tests('Redis_Array_Test', $str_filter, $str_host);
-        run_tests('Redis_Rehashing_Test', $str_filter, $str_host);
-        run_tests('Redis_Auto_Rehashing_Test', $str_filter, $str_host);
-        run_tests('Redis_Multi_Exec_Test', $str_filter, $str_host);
-        run_tests('Redis_Distributor_Test', $str_filter, $str_host);
+        /* The various RedisArray subtests we can run */
+        $arr_ra_tests = Array('Redis_Array_Test', 'Redis_Rehashing_Test', 'Redis_Auto_Rehashing_Test', 'Redis_Multi_Exec_Test', 'Redis_Distributor_Test');
+        foreach ($arr_ra_tests as $str_test) {
+            /* Run until we encounter a failure */
+            if (run_tests($str_test, $str_filter, $str_host) != 0) {
+                exit(1);
+            }
+        }
     }
 } else {
     echo TestSuite::make_bold("RedisCluster") . "\n";

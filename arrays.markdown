@@ -55,6 +55,13 @@ The connect_timeout value is a double and is used to specify a timeout in number
 $ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("connect_timeout" => 0.5));
 </pre>
 
+#### Specifying the "read_timeout" parameter
+The read_timeout value is a double and is used to specify a timeout in number of seconds when waiting response from the server.
+<pre>
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("read_timeout" => 0.5));
+</pre>
+
+
 #### Defining arrays in Redis.ini
 
 Because php.ini parameters must be pre-defined, Redis Arrays must all share the same .ini settings.

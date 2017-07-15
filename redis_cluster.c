@@ -126,6 +126,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, hmset, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hdel, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, hincrbyfloat, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, hstrlen, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, dump, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrank, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrevrank, NULL, ZEND_ACC_PUBLIC)
@@ -437,6 +438,8 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
             timeout = atof(Z_STRVAL_P(z_value));
         } else if (Z_TYPE_P(z_value) == IS_DOUBLE) {
             timeout = Z_DVAL_P(z_value);
+        } else if (Z_TYPE_P(z_value) == IS_LONG) {
+            timeout = Z_LVAL_P(z_value);
         }
     }
 
@@ -450,6 +453,8 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
             read_timeout = atof(Z_STRVAL_P(z_value));
         } else if (Z_TYPE_P(z_value) == IS_DOUBLE) {
             read_timeout = Z_DVAL_P(z_value);
+        } else if (Z_TYPE_P(z_value) == IS_LONG) {
+            timeout = Z_LVAL_P(z_value);
         }
     }
 
@@ -1039,7 +1044,7 @@ PHP_METHOD(RedisCluster, keys) {
     char *pat, *cmd;
     clusterReply *resp;
     zval zv, *z_ret = &zv;
-    int i, pat_free, cmd_len;
+    int i, cmd_len;
 
     if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &pat, &pat_len)
                              ==FAILURE)
@@ -1048,9 +1053,7 @@ PHP_METHOD(RedisCluster, keys) {
     }
 
     /* Prefix and then build our command */
-    pat_free = redis_key_prefix(c->flags, &pat, &pat_len);
-    cmd_len = redis_cmd_format_static(&cmd, "KEYS", "s", pat, pat_len);
-    if(pat_free) efree(pat);
+    cmd_len = redis_spprintf(c->flags, NULL TSRMLS_CC, &cmd, "KEYS", "k", pat, pat_len);
 
     array_init(z_ret);
 
@@ -1128,7 +1131,13 @@ PHP_METHOD(RedisCluster, lset) {
 
 /* {{{ proto string RedisCluster::spop(string key) */
 PHP_METHOD(RedisCluster, spop) {
-    CLUSTER_PROCESS_KW_CMD("SPOP", redis_key_cmd, cluster_bulk_resp, 0);
+    if (ZEND_NUM_ARGS() == 1) {
+        CLUSTER_PROCESS_KW_CMD("SPOP", redis_key_cmd, cluster_bulk_resp, 0);
+    } else if (ZEND_NUM_ARGS() == 2) {
+        CLUSTER_PROCESS_KW_CMD("SPOP", redis_key_long_cmd, cluster_mbulk_resp, 0);
+    } else {
+        ZEND_WRONG_PARAM_COUNT();
+    }
 }
 /* }}} */
 
@@ -1467,6 +1476,13 @@ PHP_METHOD(RedisCluster, hmget) {
     CLUSTER_PROCESS_CMD(hmget, cluster_mbulk_assoc_resp, 1);
 }
 /* }}} */
+
+/* {{{ proto array RedisCluster::hstrlen(string key, string field) */
+PHP_METHOD(RedisCluster, hstrlen) {
+    CLUSTER_PROCESS_CMD(hstrlen, cluster_long_resp, 1);
+}
+/* }}} */
+
 
 /* {{{ proto string RedisCluster::dump(string key) */
 PHP_METHOD(RedisCluster, dump) {
@@ -1886,110 +1902,15 @@ PHP_METHOD(RedisCluster, punsubscribe) {
 }
 /* }}} */
 
-/* Parse arguments for EVAL or EVALSHA in the context of cluster.  If we aren't
- * provided any "keys" as arguments, the only choice is to send the command to
- * a random node in the cluster.  If we are passed key arguments the best we
- * can do is make sure they all map to the same "node", as we don't know what
- * the user is actually doing in the LUA source itself. */
-/* EVAL/EVALSHA */
-static void cluster_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-                            char *kw, int kw_len)
-{
-    redisClusterNode *node=NULL;
-    char *lua, *key;
-    int key_free, args_count=0;
-    strlen_t key_len;
-    zval *z_arr=NULL, *z_ele;
-    HashTable *ht_arr;
-    zend_long num_keys = 0;
-    short slot = 0;
-    smart_string cmdstr = {0};
-    strlen_t lua_len;
-    zend_string *zstr;
-
-    /* Parse args */
-    if(zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|al", &lua, &lua_len,
-                             &z_arr, &num_keys)==FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-    /* Grab arg count */
-    if(z_arr != NULL) {
-        ht_arr = Z_ARRVAL_P(z_arr);
-        args_count = zend_hash_num_elements(ht_arr);
-    }
-
-    /* Format header, add script or SHA, and the number of args which are keys */
-    redis_cmd_init_sstr(&cmdstr, 2 + args_count, kw, kw_len);
-    redis_cmd_append_sstr(&cmdstr, lua, lua_len);
-    redis_cmd_append_sstr_long(&cmdstr, num_keys);
-
-    // Iterate over our args if we have any
-    if(args_count > 0) {
-		ZEND_HASH_FOREACH_VAL(ht_arr, z_ele) {
-            zstr = zval_get_string(z_ele);
-            key = zstr->val;
-            key_len = zstr->len;
-
-            /* If we're still on a key, prefix it check node */
-            if(num_keys-- > 0) {
-                key_free = redis_key_prefix(c->flags, &key, &key_len);
-                slot = cluster_hash_key(key, key_len);
-
-                /* validate that this key maps to the same node */
-                if(node && c->master[slot] != node) {
-                    zend_string_release(zstr);
-                    if (key_free) efree(key);
-                    php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                        "Keys appear to map to different nodes");
-                    RETURN_FALSE;
-                }
-
-                node = c->master[slot];
-            } else {
-                key_free = 0;
-            }
-
-            /* Append this key/argument */
-            redis_cmd_append_sstr(&cmdstr, key, key_len);
-
-            zend_string_release(zstr);
-            /* Free key if we prefixed */
-            if(key_free) efree(key);
-        } ZEND_HASH_FOREACH_END();
-    } else {
-        /* Pick a slot at random, we're being told there are no keys */
-        slot = rand() % REDIS_CLUSTER_MOD;
-    }
-
-    if(cluster_send_command(c, slot, cmdstr.c, cmdstr.len TSRMLS_CC)<0) {
-        efree(cmdstr.c);
-        RETURN_FALSE;
-    }
-
-    if(CLUSTER_IS_ATOMIC(c)) {
-        cluster_variant_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
-    } else {
-        void *ctx = NULL;
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_resp, ctx);
-        RETVAL_ZVAL(getThis(), 1, 0);
-    }
-
-    efree(cmdstr.c);
-}
-
 /* {{{ proto mixed RedisCluster::eval(string script, [array args, int numkeys) */
 PHP_METHOD(RedisCluster, eval) {
-    cluster_eval_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, GET_CONTEXT(), 
-        "EVAL", 4);
+    CLUSTER_PROCESS_KW_CMD("EVAL", redis_eval_cmd, cluster_variant_resp, 0);
 }
 /* }}} */
 
 /* {{{ proto mixed RedisCluster::evalsha(string sha, [array args, int numkeys]) */
 PHP_METHOD(RedisCluster, evalsha) {
-    cluster_eval_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, GET_CONTEXT(), 
-        "EVALSHA", 7);
+    CLUSTER_PROCESS_KW_CMD("EVALSHA", redis_eval_cmd, cluster_variant_resp, 0);
 }
 /* }}} */
 
@@ -2374,7 +2295,7 @@ cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
     }
 
     // Construct our command
-    cmd_len = redis_cmd_format_static(&cmd, kw, "");
+    cmd_len = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, kw, "");
 
     // Kick off our command
     if(cluster_send_slot(c, slot, cmd, cmd_len, reply_type TSRMLS_CC)<0) {
@@ -2729,14 +2650,14 @@ PHP_METHOD(RedisCluster, info) {
     c->readonly = 0;
 
     slot = cluster_cmd_get_slot(c, z_arg TSRMLS_CC);
-    if(slot<0) {
+    if (slot < 0) {
         RETURN_FALSE;
     }
 
-    if(opt != NULL) {
-        cmd_len = redis_cmd_format_static(&cmd, "INFO", "s", opt, opt_len);
+    if (opt != NULL) {
+        cmd_len = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "INFO", "s", opt, opt_len);
     } else {
-        cmd_len = redis_cmd_format_static(&cmd, "INFO", "");
+        cmd_len = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "INFO", "");
     }
 
     rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
@@ -2803,10 +2724,11 @@ PHP_METHOD(RedisCluster, client) {
 
     /* Construct the command */
     if (ZEND_NUM_ARGS() == 3) {
-        cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "ss", opt, opt_len,
-            arg, arg_len);
+        cmd_len = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "CLIENT", "ss",
+            opt, opt_len, arg, arg_len);
     } else if(ZEND_NUM_ARGS() == 2) {
-        cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "s", opt, opt_len);
+        cmd_len = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "CLIENT", "s",
+            opt, opt_len);
     } else {
         zend_wrong_param_count(TSRMLS_C);
         RETURN_FALSE;
@@ -2960,7 +2882,7 @@ PHP_METHOD(RedisCluster, echo) {
     }
 
     /* Construct our command */
-    cmd_len = redis_cmd_format_static(&cmd, "ECHO", "s", msg, msg_len);
+    cmd_len = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "ECHO", "s", msg, msg_len);
 
     /* Send it off */
     rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;

@@ -7,18 +7,16 @@
 #include <stdint.h>
 #endif
 
-#include "common.h"
 #include "redis_array.h"
 
 RedisArray *ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b_lazy_connect TSRMLS_DC);
 RedisArray *ra_load_array(const char *name TSRMLS_DC);
-RedisArray *ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, zend_bool b_pconnect, long retry_interval, zend_bool b_lazy_connect, double connect_timeout TSRMLS_DC);
+RedisArray *ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, zend_bool b_pconnect, long retry_interval, zend_bool b_lazy_connect, double connect_timeout, double read_timeout TSRMLS_DC);
 zval *ra_find_node_by_name(RedisArray *ra, const char *host, int host_len TSRMLS_DC);
 zval *ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_DC);
 void ra_init_function_table(RedisArray *ra);
 
 void ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC);
-char * ra_find_key(RedisArray *ra, zval *z_args, const char *cmd, int *key_len);
 void ra_index_multi(zval *z_redis, long multi_value TSRMLS_DC);
 
 void ra_index_key(const char *key, int key_len, zval *z_redis TSRMLS_DC);

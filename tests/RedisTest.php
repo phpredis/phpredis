@@ -1154,19 +1154,46 @@ class Redis_Test extends TestSuite
     public function testsPop()
     {
         $this->redis->del('set0');
-    $this->assertTrue($this->redis->sPop('set0') === FALSE);
+        $this->assertTrue($this->redis->sPop('set0') === FALSE);
 
         $this->redis->sAdd('set0', 'val');
         $this->redis->sAdd('set0', 'val2');
 
-    $v0 = $this->redis->sPop('set0');
-    $this->assertTrue(1 === $this->redis->scard('set0'));
-    $this->assertTrue($v0 === 'val' || $v0 === 'val2');
-    $v1 = $this->redis->sPop('set0');
-    $this->assertTrue(0 === $this->redis->scard('set0'));
-    $this->assertTrue(($v0 === 'val' && $v1 === 'val2') || ($v1 === 'val' && $v0 === 'val2'));
+        $v0 = $this->redis->sPop('set0');
+        $this->assertTrue(1 === $this->redis->scard('set0'));
+        $this->assertTrue($v0 === 'val' || $v0 === 'val2');
+        $v1 = $this->redis->sPop('set0');
+        $this->assertTrue(0 === $this->redis->scard('set0'));
+        $this->assertTrue(($v0 === 'val' && $v1 === 'val2') || ($v1 === 'val' && $v0 === 'val2'));
 
-    $this->assertTrue($this->redis->sPop('set0') === FALSE);
+        $this->assertTrue($this->redis->sPop('set0') === FALSE);
+    }
+
+    public function testsPopWithCount() {
+        if (!$this->minVersionCheck("3.2")) {
+            return $this->markTestSkipped();
+        }
+
+        $set = 'set0';
+        $prefix = 'member';
+        $count = 5;
+
+        /* Add a few members */
+        $this->redis->del($set);
+        for ($i = 0; $i < $count; $i++) {
+            $this->redis->sadd($set, $prefix.$i);
+        }
+
+        /* Pop them all */
+        $ret = $this->redis->sPop($set, $i);
+
+        /* Make sure we got an arary and the count is right */
+        if ($this->assertTrue(is_array($ret)) && $this->assertTrue(count($ret) == $count)) {
+            /* Probably overkill but validate the actual returned members */
+            for ($i = 0; $i < $count; $i++) {
+                $this->assertTrue(in_array($prefix.$i, $ret));
+            }
+        }
     }
 
     public function testsRandMember() {
@@ -2020,6 +2047,11 @@ class Redis_Test extends TestSuite
         $this->assertTrue(array('val1', 'val2') === $this->redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 2))));
         $this->assertTrue(array('val0', 'val1') === $this->redis->zRangeByScore('key', 0, 1, array('limit' => array(0, 100))));
 
+        // limits as references
+        $limit = array(0, 100);
+        foreach ($limit as &$val) {}
+        $this->assertTrue(array('val0', 'val1') === $this->redis->zRangeByScore('key', 0, 1, array('limit' => $limit)));
+
         $this->assertTrue(array('val3') === $this->redis->zRevRangeByScore('key', 3, 0, array('limit' => array(0, 1))));
         $this->assertTrue(array('val3', 'val2') === $this->redis->zRevRangeByScore('key', 3, 0, array('limit' => array(0, 2))));
         $this->assertTrue(array('val2', 'val1') === $this->redis->zRevRangeByScore('key', 3, 0, array('limit' => array(1, 2))));
@@ -2349,6 +2381,11 @@ class Redis_Test extends TestSuite
         $this->assertTrue('456' === $this->redis->hGet('h', 'y'));
         $this->assertTrue(array(123 => 'x', 'y' => '456') === $this->redis->hMget('h', array('123', 'y')));
 
+        // references
+        $keys = array(123, 'y');
+        foreach ($keys as &$key) {}
+        $this->assertTrue(array(123 => 'x', 'y' => '456') === $this->redis->hMget('h', $keys));
+
         // check non-string types.
         $this->redis->del('h1');
         $this->assertTrue(TRUE === $this->redis->hMSet('h1', array('x' => 0, 'y' => array(), 'z' => new stdclass(), 't' => NULL)));
@@ -2357,6 +2394,15 @@ class Redis_Test extends TestSuite
         $this->assertTrue('Array' === $h1['y']);
         $this->assertTrue('Object' === $h1['z']);
         $this->assertTrue('' === $h1['t']);
+
+        // hstrlen
+        if (version_compare($this->version, '3.2.0', 'ge')) {
+            $this->redis->del('h');
+            $this->assertTrue(0 === $this->redis->hStrLen('h', 'x')); // key doesn't exist
+            $this->redis->hSet('h', 'foo', 'bar');
+            $this->assertTrue(0 === $this->redis->hStrLen('h', 'x')); // field is not present in the hash
+            $this->assertTrue(3 === $this->redis->hStrLen('h', 'foo'));
+	}
     }
 
     public function testSetRange() {
