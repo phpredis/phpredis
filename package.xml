@@ -27,18 +27,18 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2017-06-27</date>
+ <date>2017-07-15</date>
  <version>
-  <release>3.1.3RC2</release>
-  <api>3.1.3RC2</api>
+  <release>3.1.3</release>
+  <api>3.1.3</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 3.1.3RC2
+    phpredis 3.1.3
 
     This release contains two big improvements:
       1. Adding a new printf like command construction function with additionaly format specifiers specific to phpredis.
@@ -123,11 +123,11 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
    <release>
-   <stability><release>beta</release><api>beta</api></stability>
-   <version><release>3.1.3RC2</release><api>3.1.3RC2</api></version>
-   <date>2017-06-27</date>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>3.1.3</release><api>3.1.3</api></version>
+   <date>2017-07-15</date>
    <notes>
-    phpredis 3.1.3RC2
+    phpredis 3.1.3
 
     This release contains two big improvements:
       1. Adding a new printf like command construction function with additionaly format specifiers specific to phpredis.
