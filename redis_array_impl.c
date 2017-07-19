@@ -300,7 +300,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     }
 
     /* find read timeout option */
-	array_init(&z_params_connect_timeout);
+	array_init(&z_params_read_timeout);
     if ((iptr = INI_STR("redis.arrays.readtimeout")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_read_timeout TSRMLS_CC);
     }

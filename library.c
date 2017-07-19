@@ -430,6 +430,7 @@ redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
     int numElems;
     size_t len;
 
+    ZVAL_NULL(z_tab);
     if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len TSRMLS_CC) < 0) {
         return NULL;
     }
@@ -1787,6 +1788,8 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len
     uint8_t *val8;
 #endif
 
+    *val = NULL;
+    *val_len = 0;
     switch(redis_sock->serializer) {
         case REDIS_SERIALIZER_NONE:
             switch(Z_TYPE_P(z)) {
@@ -1977,6 +1980,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
     // Make sure we haven't lost the connection, even trying to reconnect
     if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         // Failure
+        *reply_type = EOF;
         return -1;
     }
 

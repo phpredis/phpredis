@@ -2074,6 +2074,7 @@ PHP_REDIS_API void cluster_client_list_resp(INTERNAL_FUNCTION_PARAMETERS, redisC
 PHP_REDIS_API zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
                                      redisCluster *c, int pull, mbulk_cb cb, zval *z_ret)
 {
+    ZVAL_NULL(z_ret);
     // Pull our next response if directed
     if(pull) {
         if(cluster_check_response(c, &c->reply_type TSRMLS_CC)<0)
