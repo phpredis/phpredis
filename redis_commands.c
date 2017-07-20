@@ -3064,9 +3064,9 @@ void redis_prefix_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     }
 
     if(redis_sock->prefix != NULL && redis_sock->prefix_len>0) {
-        redis_key_prefix(redis_sock, &key, &key_len);
+        int keyfree = redis_key_prefix(redis_sock, &key, &key_len);
         RETVAL_STRINGL(key, key_len);
-        efree(key);
+        if (keyfree) efree(key);
     } else {
         RETURN_STRINGL(key, key_len);
     }
