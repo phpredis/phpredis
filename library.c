@@ -1466,8 +1466,9 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     /* set TCP_NODELAY */
     sock = (php_netstream_data_t*)redis_sock->stream->abstract;
-    setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag,
-        sizeof(int));
+    if (setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag, sizeof(int)) < 0) {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR, "Can't activate TCP_NODELAY option!");
+    }
 
     php_stream_auto_cleanup(redis_sock->stream);
 
