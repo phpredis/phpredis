@@ -625,6 +625,8 @@ redis_spprintf(RedisSock *redis_sock, short *slot TSRMLS_DC, char **ret, char *k
 
         fmt++;
     }
+    /* varargs cleanup */
+    va_end(ap);
 
     /* Null terminate */
     smart_string_0(&cmd);
