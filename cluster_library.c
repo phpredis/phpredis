@@ -998,7 +998,7 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
 
     // Success, apply it
     c->redir_type = moved ? REDIR_MOVED : REDIR_ASK;
-    strncpy(c->redir_host, host, sizeof(c->redir_host));
+    strncpy(c->redir_host, host, sizeof(c->redir_host) - 1);
     c->redir_host_len = port - host - 1;
     c->redir_slot = (unsigned short)atoi(msg);
     c->redir_port = (unsigned short)atoi(port);
