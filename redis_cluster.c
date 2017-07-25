@@ -37,7 +37,6 @@ zend_class_entry *redis_cluster_ce;
 /* Exception handler */
 zend_class_entry *redis_cluster_exception_ce;
 
-static zend_class_entry *spl_rte_ce = NULL;
 /* Handlers for RedisCluster */
 zend_object_handlers RedisCluster_handlers;
 
@@ -251,29 +250,6 @@ static void ht_free_node(zval *data)
 {
     redisClusterNode *node = *(redisClusterNode**)data;
     cluster_free_node(node);
-}
-
-/* Initialize/Register our RedisCluster exceptions */
-PHPAPI zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC) {
-#if HAVE_SPL
-    if(!root) {
-        if(!spl_rte_ce) {
-            zend_class_entry *pce;
-
-            if ((pce = zend_hash_str_find_ptr(CG(class_table), "runtimeexception", sizeof("runtimeexception") - 1))) {
-                spl_rte_ce = pce;
-                return pce;
-            }
-        } else {
-            return spl_rte_ce;
-        }
-    }
-#endif
-#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
-    return zend_exception_get_default();
-#else
-    return zend_exception_get_default(TSRMLS_C);
-#endif
 }
 
 /* Create redisCluster context */
