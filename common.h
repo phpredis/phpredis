@@ -328,6 +328,7 @@ zval_get_string(zval *op)
 {
     zend_string *zstr = ecalloc(1, sizeof(zend_string));
 
+    zstr->gc = 0;
     zstr->val = "";
     zstr->len = 0;
     switch (Z_TYPE_P(op)) {
