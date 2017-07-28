@@ -54,7 +54,7 @@ static zend_class_entry *runtime_exception_ce = NULL;
 PHP_REDIS_API zend_class_entry *
 redis_get_exception_base(TSRMLS_D)
 {
-    if (runtime_exception_ce = NULL) {
+    if (runtime_exception_ce == NULL) {
 #if HAVE_SPL
         runtime_exception_ce = zend_hash_str_find_ptr(CG(class_table), "RuntimeException", sizeof("RuntimeException") - 1);
 #else
