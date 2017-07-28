@@ -976,9 +976,7 @@ PHP_METHOD(RedisArray, mget)
         }
 
 		for(i = 0, j = 0; i < argc; ++i) {
-		    if(pos[i] != n) continue;
-
-			z_cur = zend_hash_index_find(Z_ARRVAL(z_ret), j++);
+            if (pos[i] != n || (z_cur = zend_hash_index_find(Z_ARRVAL(z_ret), j++)) == NULL) continue;
 
 #if (PHP_MAJOR_VERSION < 7)
 			MAKE_STD_ZVAL(z_tmp);
@@ -995,7 +993,7 @@ PHP_METHOD(RedisArray, mget)
 	array_init(return_value);
 	/* copy temp array in the right order to return_value */
 	for(i = 0; i < argc; ++i) {
-		z_cur = zend_hash_index_find(Z_ARRVAL(z_tmp_array), i);
+        if ((z_cur = zend_hash_index_find(Z_ARRVAL(z_tmp_array), i)) == NULL) continue;
 
 #if (PHP_MAJOR_VERSION < 7)
 		MAKE_STD_ZVAL(z_tmp);

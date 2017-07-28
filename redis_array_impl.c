@@ -545,7 +545,12 @@ ra_index_change_keys(const char *cmd, zval *z_keys, zval *z_redis TSRMLS_DC) {
 
 	/* prepare keys */
 	for(i = 0; i < argc - 1; ++i) {
-        z_args[i+1] = *zend_hash_index_find(Z_ARRVAL_P(z_keys), i);
+        zval *zv = zend_hash_index_find(Z_ARRVAL_P(z_keys), i);
+        if (zv == NULL) {
+            ZVAL_NULL(&z_args[i+1]);
+        } else {
+            z_args[i+1] = *zv;
+        }
 	}
 
 	/* run cmd */
