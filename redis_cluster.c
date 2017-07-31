@@ -1077,7 +1077,7 @@ PHP_METHOD(RedisCluster, keys) {
     efree(cmd);
 
     /* Return our keys */
-    RETURN_ZVAL(z_ret, 0, 1);
+    RETURN_ZVAL(z_ret, 1, 0);
 }
 /* }}} */
 
@@ -1987,7 +1987,7 @@ PHP_METHOD(RedisCluster, _masters) {
         add_next_index_zval(z_ret, z_sub);
     }
 
-    RETVAL_ZVAL(z_ret, 0, 1);
+    RETVAL_ZVAL(z_ret, 1, 0);
 }
 
 PHP_METHOD(RedisCluster, _redir) {
