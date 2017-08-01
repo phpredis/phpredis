@@ -548,10 +548,10 @@ static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
                                  int *skeylen, short *slot) {
     char *skey;
 
-    *skeylen = keylen + c->flags->prefix_len;
+    *skeylen = keylen + ZSTR_LEN(c->flags->prefix);
     skey = emalloc(*skeylen);
-    memcpy(skey, c->flags->prefix, c->flags->prefix_len);
-    memcpy(skey + c->flags->prefix_len, key, keylen);
+    memcpy(skey, ZSTR_VAL(c->flags->prefix), ZSTR_LEN(c->flags->prefix));
+    memcpy(skey + ZSTR_LEN(c->flags->prefix), key, keylen);
     
     *slot = cluster_hash_key(skey, *skeylen);
 
@@ -624,8 +624,7 @@ PS_OPEN_FUNC(rediscluster) {
     c = cluster_create(timeout, read_timeout, failover, persistent);
     if (!cluster_init_seeds(c, ht_seeds) && !cluster_map_keyspace(c TSRMLS_CC)) {
         /* Set up our prefix */
-        c->flags->prefix = estrndup(prefix, prefix_len);
-        c->flags->prefix_len = prefix_len;
+        c->flags->prefix = zend_string_init(prefix, prefix_len, 0);
 
         PS_SET_MOD_DATA(c);
         retval = SUCCESS;

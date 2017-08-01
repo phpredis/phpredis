@@ -45,9 +45,10 @@ extern ps_module ps_mod_redis_cluster;
 
 extern zend_class_entry *redis_array_ce;
 extern zend_class_entry *redis_cluster_ce;
+extern zend_class_entry *redis_cluster_exception_ce;
+
 zend_class_entry *redis_ce;
 zend_class_entry *redis_exception_ce;
-extern zend_class_entry *redis_cluster_exception_ce;
 
 extern zend_function_entry redis_array_functions[];
 extern zend_function_entry redis_cluster_functions[];
@@ -3511,11 +3512,10 @@ PHP_METHOD(Redis, getLastError) {
     }
 
 	/* Return our last error or NULL if we don't have one */
-	if(redis_sock->err != NULL && redis_sock->err_len > 0) {
-		RETURN_STRINGL(redis_sock->err, redis_sock->err_len);
-	} else {
-		RETURN_NULL();
-	}
+    if (redis_sock->err) {
+        RETURN_STRINGL(ZSTR_VAL(redis_sock->err), ZSTR_LEN(redis_sock->err));
+    }
+    RETURN_NULL();
 }
 
 /* {{{ proto Redis::clearLastError() */
@@ -3535,10 +3535,10 @@ PHP_METHOD(Redis, clearLastError) {
     }
 
     // Clear error message
-    if(redis_sock->err) {
-        efree(redis_sock->err);
+    if (redis_sock->err) {
+        zend_string_release(redis_sock->err);
+        redis_sock->err = NULL;
     }
-    redis_sock->err = NULL;
 
     RETURN_TRUE;
 }
@@ -3599,7 +3599,7 @@ PHP_METHOD(Redis, getHost) {
     RedisSock *redis_sock;
 
     if((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU))) {
-        RETURN_STRING(redis_sock->host);
+        RETURN_STRINGL(ZSTR_VAL(redis_sock->host), ZSTR_LEN(redis_sock->host));
     } else {
         RETURN_FALSE;
     }
@@ -3655,30 +3655,24 @@ PHP_METHOD(Redis, getReadTimeout) {
 PHP_METHOD(Redis, getPersistentID) {
     RedisSock *redis_sock;
 
-    if((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU))) {
-        if(redis_sock->persistent_id != NULL) {
-            RETURN_STRING(redis_sock->persistent_id);
-        } else {
-            RETURN_NULL();
-        }
-    } else {
+    if ((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU)) == NULL) {
         RETURN_FALSE;
+    } else if (redis_sock->persistent_id == NULL) {
+        RETURN_NULL();
     }
+    RETURN_STRINGL(ZSTR_VAL(redis_sock->persistent_id), ZSTR_LEN(redis_sock->persistent_id));
 }
 
 /* {{{ proto Redis::getAuth */
 PHP_METHOD(Redis, getAuth) {
     RedisSock *redis_sock;
 
-    if((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU))) {
-        if(redis_sock->auth != NULL) {
-            RETURN_STRING(redis_sock->auth);
-        } else {
-            RETURN_NULL();
-        }
-    } else {
+    if ((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU)) == NULL) {
         RETURN_FALSE;
+    } else if (redis_sock->auth == NULL) {
+        RETURN_NULL();
     }
+    RETURN_STRINGL(ZSTR_VAL(redis_sock->auth), ZSTR_LEN(redis_sock->auth));
 }
 
 /*

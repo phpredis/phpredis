@@ -334,7 +334,7 @@ free_cluster_context(zend_object *object) {
     zend_hash_destroy(cluster->nodes);
     efree(cluster->nodes);
 
-    if(cluster->err) efree(cluster->err);
+    if (cluster->err) zend_string_release(cluster->err);
 
     zend_object_std_dtor(&cluster->std TSRMLS_CC);
 
@@ -1043,7 +1043,7 @@ PHP_METHOD(RedisCluster, keys) {
                              TSRMLS_CC)<0)
         {
             php_error_docref(0 TSRMLS_CC, E_ERROR, "Can't send KEYS to %s:%d",
-                node->sock->host, node->sock->port);
+                ZSTR_VAL(node->sock->host), node->sock->port);
             efree(cmd);
             RETURN_FALSE;
         }
@@ -1052,7 +1052,7 @@ PHP_METHOD(RedisCluster, keys) {
         resp = cluster_read_resp(c TSRMLS_CC);
         if(!resp) {
             php_error_docref(0 TSRMLS_CC, E_WARNING, 
-                "Can't read response from %s:%d", node->sock->host, 
+                "Can't read response from %s:%d", ZSTR_VAL(node->sock->host), 
                 node->sock->port);
             continue;
         }
@@ -1902,11 +1902,10 @@ PHP_METHOD(RedisCluster, getmode) {
 PHP_METHOD(RedisCluster, getlasterror) {
     redisCluster *c = GET_CONTEXT();
 
-    if(c->err != NULL && c->err_len > 0) {
-        RETURN_STRINGL(c->err, c->err_len);
-    } else {
-        RETURN_NULL();
+    if (c->err) {
+        RETURN_STRINGL(ZSTR_VAL(c->err), ZSTR_LEN(c->err));
     }
+    RETURN_NULL();
 }
 /* }}} */
 
@@ -1914,9 +1913,10 @@ PHP_METHOD(RedisCluster, getlasterror) {
 PHP_METHOD(RedisCluster, clearlasterror) {
     redisCluster *c = GET_CONTEXT();
     
-    if (c->err) efree(c->err);
-    c->err = NULL;
-    c->err_len = 0;
+    if (c->err) {
+        zend_string_release(c->err);
+        c->err = NULL;
+    }
     
     RETURN_TRUE;
 }
@@ -1962,15 +1962,11 @@ PHP_METHOD(RedisCluster, _masters) {
     redisCluster *c = GET_CONTEXT();
     redisClusterNode *node;
     zval zv, *z_ret = &zv;
-    char *host;
-    short port;
 
     array_init(z_ret);
 
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
         if (node == NULL) break;
-        host = node->sock->host;
-        port = node->sock->port;
 
         zval z, *z_sub = &z;
 #if (PHP_MAJOR_VERSION < 7)
@@ -1978,8 +1974,8 @@ PHP_METHOD(RedisCluster, _masters) {
 #endif
         array_init(z_sub);
 
-        add_next_index_stringl(z_sub, host, strlen(host));
-        add_next_index_long(z_sub, port);
+        add_next_index_stringl(z_sub, ZSTR_VAL(node->sock->host), ZSTR_LEN(node->sock->host));
+        add_next_index_long(z_sub, node->sock->port);
         add_next_index_zval(z_ret, z_sub);
     } ZEND_HASH_FOREACH_END();
 
