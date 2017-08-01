@@ -88,5 +88,4 @@ PHP_REDIS_API int redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
 
 PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
 
-PHP_REDIS_API zend_class_entry *redis_get_exception_base(TSRMLS_D);
 #endif

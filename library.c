@@ -49,25 +49,6 @@
 extern zend_class_entry *redis_ce;
 extern zend_class_entry *redis_exception_ce;
 
-static zend_class_entry *runtime_exception_ce = NULL;
-
-PHP_REDIS_API zend_class_entry *
-redis_get_exception_base(TSRMLS_D)
-{
-    if (runtime_exception_ce == NULL) {
-#if HAVE_SPL
-        runtime_exception_ce = zend_hash_str_find_ptr(CG(class_table), "RuntimeException", sizeof("RuntimeException") - 1);
-#else
-    #if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
-        runtime_exception_ce = zend_exception_get_default();
-    #else
-        runtime_exception_ce = zend_exception_get_default(TSRMLS_C);
-    #endif
-#endif
-    }
-    return runtime_exception_ce;
-}
-
 /* Helper to reselect the proper DB number when we reconnect */
 static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
     char *cmd, *response;

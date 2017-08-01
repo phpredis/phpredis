@@ -1121,6 +1121,8 @@ PHP_MINIT_FUNCTION(redis)
     zend_class_entry redis_exception_class_entry;
     zend_class_entry redis_cluster_exception_class_entry;
 
+    zend_class_entry *exception_ce = NULL;
+
     /* Seed random generator (for RedisCluster failover) */
     gettimeofday(&tv, NULL);
     srand(tv.tv_usec * tv.tv_sec);
@@ -1142,15 +1144,27 @@ PHP_MINIT_FUNCTION(redis)
     redis_cluster_ce = zend_register_internal_class(&redis_cluster_class_entry TSRMLS_CC);
     redis_cluster_ce->create_object = create_cluster_context;
 
+
+    /* Base Exception class */
+#if HAVE_SPL
+    exception_ce = zend_hash_str_find_ptr(CG(class_table), "RuntimeException", sizeof("RuntimeException") - 1);
+#endif
+    if (exception_ce == NULL) {
+#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
+        exception_ce = zend_exception_get_default();
+#else
+        exception_ce = zend_exception_get_default(TSRMLS_C);
+#endif
+    }
+
     /* RedisException class */
     INIT_CLASS_ENTRY(redis_exception_class_entry, "RedisException", NULL);
     redis_exception_ce = zend_register_internal_class_ex(
         &redis_exception_class_entry,
 #if (PHP_MAJOR_VERSION < 7)
-        redis_get_exception_base(TSRMLS_C),
-        NULL TSRMLS_CC
+        exception_ce, NULL TSRMLS_CC
 #else
-        redis_get_exception_base(TSRMLS_C)
+        exception_ce
 #endif
     );
 
@@ -1160,10 +1174,9 @@ PHP_MINIT_FUNCTION(redis)
     redis_cluster_exception_ce = zend_register_internal_class_ex(
         &redis_cluster_exception_class_entry,
 #if (PHP_MAJOR_VERSION < 7)
-        redis_get_exception_base(TSRMLS_C),
-        NULL TSRMLS_CC
+        exception_ce, NULL TSRMLS_CC
 #else
-        redis_get_exception_base(TSRMLS_C)
+        exception_ce
 #endif
     );
 
