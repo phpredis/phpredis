@@ -242,13 +242,19 @@ inline_call_user_function(HashTable *function_table, zval *object, zval *functio
     if (!params) param_count = 0;
     if (param_count > 0) {
         _params = ecalloc(param_count, sizeof(zval *));
-        for (i = 0; i < param_count; i++) {
-            _params[i] = &params[i];
-            INIT_PZVAL(_params[i]);
+        for (i = 0; i < param_count; ++i) {
+            zval *zv = &params[i];
+            MAKE_STD_ZVAL(_params[i]);
+            ZVAL_ZVAL(_params[i], zv, 1, 0);
         }
     }
     ret = _call_user_function(function_table, &object, function_name, retval_ptr, param_count, _params TSRMLS_CC);
-    if (_params) efree(_params);
+    if (_params) {
+        for (i = 0; i < param_count; ++i) {
+            zval_ptr_dtor(&_params[i]);
+        }
+        efree(_params);
+    }
     return ret;
 }
 
