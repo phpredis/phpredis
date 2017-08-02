@@ -589,8 +589,8 @@ static int get_key_val_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
 	zend_string *zkey;
 	switch (zend_hash_get_current_key_ex(ht, &zkey, &idx, ptr)) {
 		case HASH_KEY_IS_STRING:
-			kv->key_len = zkey->len;
-			kv->key = zkey->val;
+			kv->key_len = ZSTR_LEN(zkey);
+			kv->key = ZSTR_VAL(zkey);
 #endif
             break;
         case HASH_KEY_IS_LONG:
@@ -2062,7 +2062,7 @@ PHP_METHOD(RedisCluster, watch) {
         zstr = zval_get_string(&z_args[i]);
 
         // Add this key to our distribution handler
-        if (cluster_dist_add_key(c, ht_dist, zstr->val, zstr->len, NULL) == FAILURE) {
+        if (cluster_dist_add_key(c, ht_dist, ZSTR_VAL(zstr), ZSTR_LEN(zstr), NULL) == FAILURE) {
             zend_throw_exception(redis_cluster_exception_ce,
                 "Can't issue WATCH command as the keyspace isn't fully mapped",
                 0 TSRMLS_CC);
@@ -2216,8 +2216,8 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
     {
         /* Allow for any scalar here */
         zstr = zval_get_string(z_arg);
-        key = zstr->val;
-        key_len = zstr->len;
+        key = ZSTR_VAL(zstr);
+        key_len = ZSTR_LEN(zstr);
 
         /* Hash it */
         key_free = redis_key_prefix(c->flags, &key, &key_len);
@@ -2333,7 +2333,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     /* Iterate, appending args */
     for(i=1;i<argc;i++) {
         zend_string *zstr = zval_get_string(&z_args[i]);
-        redis_cmd_append_sstr(&cmd, zstr->val, zstr->len);
+        redis_cmd_append_sstr(&cmd, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
         zend_string_release(zstr);
     }
 

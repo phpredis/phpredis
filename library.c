@@ -590,7 +590,7 @@ redis_spprintf(RedisSock *redis_sock, short *slot TSRMLS_DC, char **ret, char *k
                 break;
             case 'S':
                 arg.zstr = va_arg(ap, zend_string*);
-                redis_cmd_append_sstr(&cmd, arg.zstr->val, arg.zstr->len);
+                redis_cmd_append_sstr(&cmd, ZSTR_VAL(arg.zstr), ZSTR_LEN(arg.zstr));
                 break;
             case 'k':
                 arg.str = va_arg(ap, char*);
@@ -1119,16 +1119,16 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
 
         /* Decode the score depending on flag */
         if (decode == SCORE_DECODE_INT && Z_STRLEN_P(z_value_p) > 0) {
-            add_assoc_long_ex(z_ret, hkey->val, hkey->len, atoi(hval+1));
+            add_assoc_long_ex(z_ret, ZSTR_VAL(hkey), ZSTR_LEN(hkey), atoi(hval+1));
         } else if (decode == SCORE_DECODE_DOUBLE) {
-            add_assoc_double_ex(z_ret, hkey->val, hkey->len, atof(hval));
+            add_assoc_double_ex(z_ret, ZSTR_VAL(hkey), ZSTR_LEN(hkey), atof(hval));
         } else {
             zval zv0, *z = &zv0;
 #if (PHP_MAJOR_VERSION < 7)
             MAKE_STD_ZVAL(z);
 #endif
             ZVAL_ZVAL(z, z_value_p, 1, 0);
-            add_assoc_zval_ex(z_ret, hkey->val, hkey->len, z);
+            add_assoc_zval_ex(z_ret, ZSTR_VAL(hkey), ZSTR_LEN(hkey), z);
         }
         zend_string_release(hkey);
     }
@@ -1814,8 +1814,8 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len
 
                 default: { /* copy */
                     zend_string *zstr = zval_get_string(z);
-                    *val = estrndup(zstr->val, zstr->len);
-                    *val_len = zstr->len;
+                    *val = estrndup(ZSTR_VAL(zstr), ZSTR_LEN(zstr));
+                    *val_len = ZSTR_LEN(zstr);
                     zend_string_release(zstr);
                     return 1;
                 }
@@ -1833,8 +1833,8 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len
             *val = estrndup(sstr.c, sstr.len);
             *val_len = sstr.len;
 #else
-            *val = estrndup(sstr.s->val, sstr.s->len);
-            *val_len = sstr.s->len;
+            *val = estrndup(ZSTR_VAL(sstr.s), ZSTR_LEN(sstr.s));
+            *val_len = ZSTR_LEN(sstr.s);
 #endif
             smart_str_free(&sstr);
 #if ZEND_MODULE_API_NO >= 20100000

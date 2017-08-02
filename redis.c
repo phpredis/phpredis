@@ -1547,7 +1547,7 @@ PHP_METHOD(Redis, getMultiple)
     /* Iterate through and grab our keys */
     ZEND_HASH_FOREACH_VAL(hash, z_ele) {
         zend_string *zstr = zval_get_string(z_ele);
-        redis_cmd_append_sstr_key(&cmd, zstr->val, zstr->len, redis_sock, NULL);
+        redis_cmd_append_sstr_key(&cmd, ZSTR_VAL(zstr), ZSTR_LEN(zstr), redis_sock, NULL);
         zend_string_release(zstr);
     } ZEND_HASH_FOREACH_END();
 
@@ -2004,13 +2004,13 @@ generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, int desc, int alpha)
             ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(zget), zele) {
                 zpattern = zval_get_string(zele);
                 redis_cmd_append_sstr(&cmd, "GET", sizeof("GET") - 1);
-                redis_cmd_append_sstr(&cmd, zpattern->val, zpattern->len);
+                redis_cmd_append_sstr(&cmd, ZSTR_VAL(zpattern), ZSTR_LEN(zpattern));
                 zend_string_release(zpattern);
             } ZEND_HASH_FOREACH_END();
         } else {
             zpattern = zval_get_string(zget);
             redis_cmd_append_sstr(&cmd, "GET", sizeof("GET") - 1);
-            redis_cmd_append_sstr(&cmd, zpattern->val, zpattern->len);
+            redis_cmd_append_sstr(&cmd, ZSTR_VAL(zpattern), ZSTR_LEN(zpattern));
             zend_string_release(zpattern);
         }
     }
@@ -2273,7 +2273,7 @@ void generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun)
     ZEND_HASH_FOREACH_KEY_VAL(htargs, idx, zkey,  zmem) {
         /* Handle string or numeric keys */
         if (zkey) {
-            redis_cmd_append_sstr_key(&cmd, zkey->val, zkey->len, redis_sock, NULL);
+            redis_cmd_append_sstr_key(&cmd, ZSTR_VAL(zkey), ZSTR_LEN(zkey), redis_sock, NULL);
         } else {
             keylen = snprintf(buf, sizeof(buf), "%ld", (long)idx);
             redis_cmd_append_sstr_key(&cmd, buf, (strlen_t)keylen, redis_sock, NULL);
@@ -3197,7 +3197,7 @@ redis_build_pubsub_cmd(RedisSock *redis_sock, char **ret, PUBSUB_TYPE type,
         /* Iterate our elements */
         ZEND_HASH_FOREACH_VAL(ht_chan, z_ele) {
             zend_string *zstr = zval_get_string(z_ele);
-            redis_cmd_append_sstr_key(&cmd, zstr->val, zstr->len, redis_sock, NULL);
+            redis_cmd_append_sstr_key(&cmd, ZSTR_VAL(zstr), ZSTR_LEN(zstr), redis_sock, NULL);
             zend_string_release(zstr);
         } ZEND_HASH_FOREACH_END();
 
@@ -3310,7 +3310,7 @@ redis_build_script_exists_cmd(char **ret, zval *argv, int argc) {
 
     for (i = 0; i < argc; i++) {
         zstr = zval_get_string(&argv[i]);
-        redis_cmd_append_sstr(&cmd, zstr->val, zstr->len);
+        redis_cmd_append_sstr(&cmd, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
         zend_string_release(zstr);
     }
 

@@ -1054,8 +1054,8 @@ PHP_METHOD(RedisArray, mset)
     ZEND_HASH_FOREACH_KEY_VAL(h_keys, idx, zkey, data) {
         /* If the key isn't a string, make a string representation of it */
         if (zkey) {
-            key_len = zkey->len;
-            key = zkey->val;
+            key_len = ZSTR_LEN(zkey);
+            key = ZSTR_VAL(zkey);
         } else {
             key_len = snprintf(kbuf, sizeof(kbuf), "%lu", idx);
             key = kbuf;

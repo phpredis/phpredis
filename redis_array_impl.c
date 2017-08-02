@@ -590,7 +590,7 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
 #endif
 
         if (zkey) {
-            ZVAL_STRINGL(z_new, zkey->val, zkey->len);
+            ZVAL_STRINGL(z_new, ZSTR_VAL(zkey), ZSTR_LEN(zkey));
         } else {
             ZVAL_LONG(z_new, idx);
         }
@@ -898,7 +898,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 
 		/* add value */
         if (zkey) {
-            ZVAL_STRINGL(&z_zadd_args[i+1], zkey->val, zkey->len);
+            ZVAL_STRINGL(&z_zadd_args[i+1], ZSTR_VAL(zkey), ZSTR_LEN(zkey));
         } else {
             ZVAL_LONG(&z_zadd_args[i+1], (long)idx);
         }

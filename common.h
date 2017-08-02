@@ -22,9 +22,12 @@ typedef struct {
     char *val;
 } zend_string;
 
+#define ZSTR_VAL(s) (s)->val
+#define ZSTR_LEN(s) (s)->len
+
 #define zend_string_release(s) do { \
     if ((s) && (s)->gc) { \
-        if ((s)->gc & 0x10 && (s)->val) efree((s)->val); \
+        if ((s)->gc & 0x10 && ZSTR_VAL(s)) efree(ZSTR_VAL(s)); \
         if ((s)->gc & 0x01) efree((s)); \
     } \
 } while (0)
@@ -210,21 +213,22 @@ extern int (*_add_next_index_stringl)(zval *, const char *, uint, int);
 
 #undef ZVAL_STRING
 #define ZVAL_STRING(z, s) do { \
-    const char *_s=(s); \
+    const char *_s = (s); \
     ZVAL_STRINGL(z, _s, strlen(_s)); \
 } while (0)
 #undef RETVAL_STRING
 #define RETVAL_STRING(s) ZVAL_STRING(return_value, s)
 #undef RETURN_STRING
 #define RETURN_STRING(s) { RETVAL_STRING(s); return; }
+
 #undef ZVAL_STRINGL
 #define ZVAL_STRINGL(z, s, l) do { \
-    const char *__s=(s); int __l=l; \
+    const char *__s = (s); int __l = l; \
     zval *__z = (z); \
     Z_STRLEN_P(__z) = __l; \
     Z_STRVAL_P(__z) = estrndup(__s, __l); \
     Z_TYPE_P(__z) = IS_STRING; \
-} while(0)
+} while (0)
 #undef RETVAL_STRINGL
 #define RETVAL_STRINGL(s, l) ZVAL_STRINGL(return_value, s, l)
 #undef RETURN_STRINGL
@@ -335,27 +339,27 @@ zval_get_string(zval *op)
     zend_string *zstr = ecalloc(1, sizeof(zend_string));
 
     zstr->gc = 0;
-    zstr->val = "";
-    zstr->len = 0;
+    ZSTR_VAL(zstr) = "";
+    ZSTR_LEN(zstr) = 0;
     switch (Z_TYPE_P(op)) {
         case IS_STRING:
-            zstr->val = Z_STRVAL_P(op);
-            zstr->len = Z_STRLEN_P(op);
+            ZSTR_VAL(zstr) = Z_STRVAL_P(op);
+            ZSTR_LEN(zstr) = Z_STRLEN_P(op);
             break;
         case IS_BOOL:
             if (Z_LVAL_P(op)) {
-                zstr->val = "1";
-                zstr->len = 1;
+                ZSTR_VAL(zstr) = "1";
+                ZSTR_LEN(zstr) = 1;
             }
             break;
         case IS_LONG: {
             zstr->gc = 0x10;
-            zstr->len = spprintf(&zstr->val, 0, "%ld", Z_LVAL_P(op));
+            ZSTR_LEN(zstr) = spprintf(&ZSTR_VAL(zstr), 0, "%ld", Z_LVAL_P(op));
             break;
         }
         case IS_DOUBLE: {
             zstr->gc = 0x10;
-            zstr->len = spprintf(&zstr->val, 0, "%.16g", Z_DVAL_P(op));
+            ZSTR_LEN(zstr) = spprintf(&ZSTR_VAL(zstr), 0, "%.16g", Z_DVAL_P(op));
             break;
         }
         EMPTY_SWITCH_DEFAULT_CASE()
