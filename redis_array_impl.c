@@ -1135,34 +1135,49 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 }
 
 /* callback with the current progress, with hostname and count */
-static void zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache,
-	const char *hostname, long count, zval *z_ret TSRMLS_DC) {
+static void
+zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache,
+	const char *hostname, long count TSRMLS_DC) {
 
+    zval zv, *z_ret = &zv;
+
+    ZVAL_NULL(z_ret);
+#if (PHP_MAJOR_VERSION < 7)
+    zval *z_host, *z_count, **z_args_pp[2];
+
+    MAKE_STD_ZVAL(z_host);
+    ZVAL_STRING(z_host, hostname);
+    z_args_pp[0] = &z_host;
+
+    MAKE_STD_ZVAL(z_count);
+    ZVAL_LONG(z_count, count);
+    z_args_pp[1] = &z_count;
+
+    z_cb->params = z_args_pp;
+    z_cb->retval_ptr_ptr = &z_ret;
+#else
     zval z_args[2];
 
     ZVAL_STRING(&z_args[0], hostname);
     ZVAL_LONG(&z_args[1], count);
 
-#if (PHP_MAJOR_VERSION < 7)
-    zval *z_host = &z_args[0], *z_count = &z_args[1],
-        **z_args_pp[2] = { &z_host, &z_count };
-    z_cb->params = z_args_pp;
-    z_cb->retval_ptr_ptr = &z_ret;
-#else
     z_cb->params = z_args;
     z_cb->retval = z_ret;
 #endif
-	z_cb->param_count = 2;
 	z_cb->no_separation = 0;
+	z_cb->param_count = 2;
 
 	/* run cb(hostname, count) */
 	zend_call_function(z_cb, z_cb_cache TSRMLS_CC);
 
 	/* cleanup */
-    zval_dtor(&z_args[0]);
 #if (PHP_MAJOR_VERSION < 7)
-    zval_ptr_dtor(&z_ret);
+    zval_ptr_dtor(&z_host);
+    zval_ptr_dtor(&z_count);
+#else
+    zval_dtor(&z_args[0]);
 #endif
+    zval_dtor(z_ret);
 }
 
 static void
@@ -1172,7 +1187,7 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 	char **keys;
 	long count, i;
 	int *key_lens, target_pos;
-	zval *z_target, z_ret;
+	zval *z_target;
 
 	/* list all keys */
 	if(b_index) {
@@ -1185,9 +1200,7 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
 
 	/* callback */
 	if(z_cb && z_cb_cache) {
-        ZVAL_NULL(&z_ret);
-		zval_rehash_callback(z_cb, z_cb_cache, hostname, count, &z_ret TSRMLS_CC);
-        zval_dtor(&z_ret);
+		zval_rehash_callback(z_cb, z_cb_cache, hostname, count TSRMLS_CC);
 	}
 
 	/* for each key, redistribute */
