@@ -112,7 +112,8 @@ redis_array_free(RedisArray *ra)
     zval_dtor(&ra->z_dist);
 
     /* Delete pur commands */
-    zval_dtor(&ra->z_pure_cmds);
+    zend_hash_destroy(ra->pure_cmds);
+    FREE_HASHTABLE(ra->pure_cmds);
 
     /* Free structure itself */
     efree(ra);
@@ -213,9 +214,7 @@ redis_array_get(zval *id TSRMLS_DC)
 #else
         obj = (redis_array_object *)((char *)Z_OBJ_P(id) - XtOffsetOf(redis_array_object, std));
 #endif
-        if (obj->ra) {
-            return obj->ra;
-        }
+        return obj->ra;
     }
     return NULL;
 }

@@ -99,40 +99,41 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 void
 ra_init_function_table(RedisArray *ra)
 {
-    array_init(&ra->z_pure_cmds);
+    ALLOC_HASHTABLE(ra->pure_cmds);
+    zend_hash_init(ra->pure_cmds, 0, NULL, NULL, 0);
 
-    add_assoc_bool(&ra->z_pure_cmds, "EXISTS", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "GET", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "GETBIT", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "GETRANGE", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "HEXISTS", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "HGET", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "HGETALL", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "HKEYS", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "HLEN", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "HMGET", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "HVALS", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "LINDEX", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "LLEN", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "LRANGE", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "OBJECT", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "SCARD", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "SDIFF", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "SINTER", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "SISMEMBER", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "SMEMBERS", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "SRANDMEMBER", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "STRLEN", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "SUNION", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "TYPE", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZCARD", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZCOUNT", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZRANGE", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZRANK", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZREVRANGE", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZREVRANGEBYSCORE", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZREVRANK", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZSCORE", 1);
+    zend_hash_str_update_ptr(ra->pure_cmds, "EXISTS", sizeof("EXISTS") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "GET", sizeof("GET") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "GETBIT", sizeof("GETBIT") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "GETRANGE", sizeof("GETRANGE") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "HEXISTS", sizeof("HEXISTS") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "HGET", sizeof("HGET") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "HGETALL", sizeof("HGETALL") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "HKEYS", sizeof("HKEYS") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "HLEN", sizeof("HLEN") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "HMGET", sizeof("HMGET") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "HVALS", sizeof("HVALS") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "LINDEX", sizeof("LINDEX") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "LLEN", sizeof("LLEN") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "LRANGE", sizeof("LRANGE") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "OBJECT", sizeof("OBJECT") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "SCARD", sizeof("SCARD") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "SDIFF", sizeof("SDIFF") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "SINTER", sizeof("SINTER") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "SISMEMBER", sizeof("SISMEMBER") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "SMEMBERS", sizeof("SMEMBERS") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "SRANDMEMBER", sizeof("SRANDMEMBER") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "STRLEN", sizeof("STRLEN") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "SUNION", sizeof("SUNION") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "TYPE", sizeof("TYPE") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZCARD", sizeof("ZCARD") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZCOUNT", sizeof("ZCOUNT") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZRANGE", sizeof("ZRANGE") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZRANK", sizeof("ZRANK") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZREVRANGE", sizeof("ZREVRANGE") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZREVRANGEBYSCORE", sizeof("ZREVRANGEBYSCORE") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZREVRANK", sizeof("ZREVRANK") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZSCORE", sizeof("ZSCORE") - 1, NULL);
 }
 
 static int
@@ -687,7 +688,7 @@ ra_is_write_cmd(RedisArray *ra, const char *cmd, int cmd_len) {
 		cmd_up[i] = toupper(cmd[i]);
 	cmd_up[cmd_len] = 0;
 
-	ret = zend_hash_str_exists(Z_ARRVAL(ra->z_pure_cmds), cmd_up, cmd_len);
+	ret = zend_hash_str_exists(ra->pure_cmds, cmd_up, cmd_len);
 
 	efree(cmd_up);
 	return !ret;
