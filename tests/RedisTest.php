@@ -2533,6 +2533,27 @@ class Redis_Test extends TestSuite
         $this->redis->setOption(Redis::OPT_PREFIX, "");
     }
 
+    public function testPipelineMultiExec()
+    {
+        if (!$this->havePipeline()) {
+            $this->markTestSkipped();
+        }
+
+        $ret = $this->redis->pipeline()->multi()->exec()->exec();
+        $this->assertTrue(is_array($ret));
+        $this->assertEquals(1, count($ret)); // empty transaction
+
+        $ret = $this->redis->pipeline()
+            ->ping()
+            ->multi()->set('x', 42)->incr('x')->exec()
+            ->ping()
+            ->multi()->get('x')->del('x')->exec()
+            ->ping()
+            ->exec();
+        $this->assertTrue(is_array($ret));
+        $this->assertEquals(5, count($ret)); // should be 5 atomic operations
+    }
+
     protected function sequence($mode) {
         $ret = $this->redis->multi($mode)
             ->set('x', 42)
