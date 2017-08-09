@@ -42,11 +42,8 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 	ZVAL_STRINGL(&z_cons, "__construct", 11);
 
 	/* init connections */
-    for (zend_hash_internal_pointer_reset(hosts);
-         zend_hash_has_more_elements(hosts) == SUCCESS;
-         zend_hash_move_forward(hosts)
-    ) {
-        if ((zpData = zend_hash_get_current_data(hosts)) == NULL || Z_TYPE_P(zpData) != IS_STRING) {
+    ZEND_HASH_FOREACH_VAL(hosts, zpData) {
+        if (Z_TYPE_P(zpData) != IS_STRING) {
             zval_dtor(&z_cons);
             return NULL;
         }
@@ -88,7 +85,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 		}
 
 		ra->count = ++i;
-	}
+	} ZEND_HASH_FOREACH_END();
 
     zval_dtor(&z_cons);
 
