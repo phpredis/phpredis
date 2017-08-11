@@ -2191,17 +2191,12 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             add_next_index_stringl(&z_argv, "GET", sizeof("GET") - 1);
             add_next_index_stringl(&z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
         } else {
-            HashTable *ht_keys = Z_ARRVAL_P(z_ele);
             int added=0;
+            zval *z_key;
 
-            for(zend_hash_internal_pointer_reset(ht_keys);
-                zend_hash_has_more_elements(ht_keys)==SUCCESS;
-                zend_hash_move_forward(ht_keys))
-            {
-                zval *z_key;
-
+            ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_ele), z_key) {
                 // If we can't get the data, or it's not a string, skip
-                if ((z_key = zend_hash_get_current_data(ht_keys)) == NULL || Z_TYPE_P(z_key) != IS_STRING) {
+                if (z_key == NULL || Z_TYPE_P(z_key) != IS_STRING) {
                     continue;
                 }
                 /* Add get per thing we're getting */
@@ -2210,7 +2205,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 // Add this key to our argv array
                 add_next_index_stringl(&z_argv, Z_STRVAL_P(z_key), Z_STRLEN_P(z_key));
                 added++;
-            }
+            } ZEND_HASH_FOREACH_END();
 
             // Make sure we were able to add at least one
             if(added==0) {
