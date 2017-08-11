@@ -374,12 +374,12 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
 	/* pass call through */
 	ZVAL_STRINGL(&z_fun, cmd, cmd_len); /* method name */
-	z_callargs = ecalloc(argc + 1, sizeof(zval));
+	z_callargs = ecalloc(argc, sizeof(zval));
 
 	/* copy args to array */
     i = 0;
     ZEND_HASH_FOREACH_VAL(h_args, zp_tmp) {
-        z_callargs[i] = *zp_tmp;
+        ZVAL_ZVAL(&z_callargs[i], zp_tmp, 1, 0);
         i++;
     } ZEND_HASH_FOREACH_END();
 
@@ -388,6 +388,9 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
         call_user_function(&redis_ce->function_table, ra->z_multi_exec, &z_fun, return_value, argc, z_callargs);
         zval_dtor(return_value);
         zval_dtor(&z_fun);
+        for (i = 0; i < argc; ++i) {
+            zval_dtor(&z_callargs[i]);
+        }
 		efree(z_callargs);
 		RETURN_ZVAL(getThis(), 1, 0);
 	}
@@ -430,6 +433,9 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
 	/* cleanup */
     zval_dtor(&z_fun);
+    for (i = 0; i < argc; ++i) {
+        zval_dtor(&z_callargs[i]);
+    }
 	efree(z_callargs);
 }
 
