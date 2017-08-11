@@ -583,9 +583,8 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
         zval zv, *z_new = &zv;
 #if (PHP_MAJOR_VERSION < 7)
         MAKE_STD_ZVAL(z_new);
-#else
-        PHPREDIS_NOTUSED(z_val);
 #endif
+        PHPREDIS_NOTUSED(z_val);
 
         if (zkey) {
             ZVAL_STRINGL(z_new, ZSTR_VAL(zkey), ZSTR_LEN(zkey));
@@ -695,46 +694,43 @@ ra_is_write_cmd(RedisArray *ra, const char *cmd, int cmd_len) {
 static zend_bool
 ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long *res TSRMLS_DC) {
 
-	int i;
-	zval z_fun_type, z_ret, z_arg[1];
-	zval *z_data;
+	int i = 0;
+	zval z_fun, z_ret, z_arg, *z_data;
 	long success = 1;
 
 	/* Pipelined */
 	ra_index_multi(z_from, PIPELINE TSRMLS_CC);
 
 	/* prepare args */
-	ZVAL_STRINGL(&z_arg[0], key, key_len);
+	ZVAL_STRINGL(&z_arg, key, key_len);
 
 	/* run TYPE */
-	ZVAL_STRINGL(&z_fun_type, "TYPE", 4);
-	call_user_function(&redis_ce->function_table, z_redis, &z_fun_type, &z_ret, 1, z_arg);
-    zval_dtor(&z_fun_type);
+    ZVAL_NULL(&z_ret);
+	ZVAL_STRINGL(&z_fun, "TYPE", 4);
+	call_user_function(&redis_ce->function_table, z_redis, &z_fun, &z_ret, 1, &z_arg);
+    zval_dtor(&z_fun);
 	zval_dtor(&z_ret);
 
 	/* run TYPE */
-	ZVAL_STRINGL(&z_fun_type, "TTL", 3);
-	call_user_function(&redis_ce->function_table, z_redis, &z_fun_type, &z_ret, 1, z_arg);
-    zval_dtor(&z_fun_type);
+    ZVAL_NULL(&z_ret);
+	ZVAL_STRINGL(&z_fun, "TTL", 3);
+	call_user_function(&redis_ce->function_table, z_redis, &z_fun, &z_ret, 1, &z_arg);
+    zval_dtor(&z_fun);
 	zval_dtor(&z_ret);
 
 	/* Get the result from the pipeline. */
 	ra_index_exec(z_from, &z_ret, 1 TSRMLS_CC);
-	if(Z_TYPE(z_ret) == IS_ARRAY) {
-        HashTable *retHash = Z_ARRVAL(z_ret);
-		for(i = 0, zend_hash_internal_pointer_reset(retHash);
-				zend_hash_has_more_elements(retHash) == SUCCESS;
-				zend_hash_move_forward(retHash)) {
-
-			if ((z_data = zend_hash_get_current_data(retHash)) == NULL || Z_TYPE_P(z_data) != IS_LONG) {
+    if (Z_TYPE(z_ret) == IS_ARRAY) {
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL(z_ret), z_data) {
+            if (z_data == NULL || Z_TYPE_P(z_data) != IS_LONG) {
 				success = 0;
 				break;
 			}
 			/* Get the result - Might change in the future to handle doubles as well */
 			res[i++] = Z_LVAL_P(z_data);
-		}
+        } ZEND_HASH_FOREACH_END();
 	}
-	zval_dtor(&z_arg[0]);
+	zval_dtor(&z_arg);
 	zval_dtor(&z_ret);
 	return success;
 }

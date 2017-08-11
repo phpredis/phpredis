@@ -1270,13 +1270,6 @@ PHP_METHOD(Redis, pconnect)
     if (redis_connect(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1) == FAILURE) {
         RETURN_FALSE;
     } else {
-        /* FIXME: should we remove whole `else` block? */
-        /* reset multi/exec state if there is one. */
-        RedisSock *redis_sock;
-        if ((redis_sock = redis_sock_get(getThis() TSRMLS_CC, 0)) == NULL) {
-            RETURN_FALSE;
-        }
-
         RETURN_TRUE;
     }
 }

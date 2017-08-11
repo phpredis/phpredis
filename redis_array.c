@@ -814,25 +814,23 @@ PHP_METHOD(RedisArray, select)
 #define HANDLE_MULTI_EXEC(ra, cmd) do { \
     if (ra && ra->z_multi_exec) { \
 		int i, num_varargs;\
-		zval ***varargs = NULL;\
-		zval z_arg_array;\
+		zval ***varargs = NULL, *z_arg_array; \
 		if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O*",\
 								&object, redis_array_ce, &varargs, &num_varargs) == FAILURE) {\
 				RETURN_FALSE;\
 		}\
 		/* copy all args into a zval hash table */\
-		array_init(&z_arg_array);\
+        MAKE_STD_ZVAL(z_arg_array); \
+		array_init(z_arg_array);\
 		for(i = 0; i < num_varargs; ++i) {\
 			zval *z_tmp;\
-			MAKE_STD_ZVAL(z_tmp);\
-			*z_tmp = **varargs[i];\
-			zval_copy_ctor(z_tmp);\
-			INIT_PZVAL(z_tmp);\
-			add_next_index_zval(&z_arg_array, z_tmp);\
+            MAKE_STD_ZVAL(z_tmp); \
+            ZVAL_ZVAL(z_tmp, *varargs[i], 1, 0); \
+            add_next_index_zval(z_arg_array, z_tmp); \
 		}\
 		/* call */\
-		ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, sizeof(cmd)-1, &z_arg_array, NULL);\
-		zval_dtor(&z_arg_array);\
+        ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, sizeof(cmd) - 1, z_arg_array, NULL); \
+        zval_ptr_dtor(&z_arg_array); \
 		if(varargs) {\
 			efree(varargs);\
 		}\
