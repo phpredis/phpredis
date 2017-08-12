@@ -18,10 +18,13 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
+PHP_VERSION=`php-config --version | cut -d'-' -f1 | cut -d"." -f1,2`
+
 case "$1" in
     purge)
-	if [ -e /etc/php5/conf.d/redis.ini ]; then
-		rm -f /etc/php5/conf.d/redis.ini
+	if [ -e /etc/php/$PHP_VERSION/mods-available/redis.ini ]; then
+    phpdismod -v $PHP_VERSION redis
+		rm -f /etc/php/$PHP_VERSION/mods-available/redis.ini
 	fi
     ;;
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
