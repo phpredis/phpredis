@@ -2605,19 +2605,20 @@ PHP_METHOD(Redis, multi)
     }
 
     if (multi_value == PIPELINE) {
-        IF_PIPELINE() {
-            php_error_docref(NULL TSRMLS_CC, E_WARNING, "Already in pipeline mode");
-        } else IF_MULTI() {
+        /* Cannot enter pipeline mode in a MULTI block */
+        IF_MULTI() {
             php_error_docref(NULL TSRMLS_CC, E_ERROR, "Can't activate pipeline in multi mode!");
             RETURN_FALSE;
-        } else {
+        }
+
+        /* Enable PIPELINE if we're not already in one */
+        IF_ATOMIC() {
             free_reply_callbacks(redis_sock);
             REDIS_ENABLE_MODE(redis_sock, PIPELINE);
         }
     } else if (multi_value == MULTI) {
-        IF_MULTI() {
-            php_error_docref(NULL TSRMLS_CC, E_WARNING, "Already in multi mode");
-        } else {
+        /* Don't want to do anything if we're alredy in MULTI mode */
+        IF_NOT_MULTI() {
             cmd_len = REDIS_SPPRINTF(&cmd, "MULTI", "");
             IF_PIPELINE() {
                 PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len);
@@ -2638,8 +2639,10 @@ PHP_METHOD(Redis, multi)
             }
         }
     } else {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unknown mode sent to Redis::multi");
         RETURN_FALSE;
     }
+
     RETURN_ZVAL(getThis(), 1, 0);
 }
 
@@ -2821,21 +2824,22 @@ PHP_METHOD(Redis, pipeline)
         RETURN_FALSE;
     }
 
-    IF_PIPELINE() {
-        php_error_docref(NULL TSRMLS_CC, E_WARNING,
-            "Already in pipeline mode");
-    } else {
-        IF_MULTI() {
-            php_error_docref(NULL TSRMLS_CC, E_ERROR,
-                "Can't activate pipeline in multi mode!");
-            RETURN_FALSE;
-        }
+    /* User cannot enter MULTI mode if already in a pipeline */
+    IF_MULTI() {
+        php_error_docref(NULL TSRMLS_CC, E_ERROR, "Can't activate pipeline in multi mode!");
+        RETURN_FALSE;
+    }
+
+    /* Enable pipeline mode unless we're already in that mode in which case this
+     * is just a NO OP */
+    IF_ATOMIC() {
         /* NB : we keep the function fold, to detect the last function.
          * We need the response format of the n - 1 command. So, we can delete
          * when n > 2, the { 1 .. n - 2} commands */
         free_reply_callbacks(redis_sock);
         REDIS_ENABLE_MODE(redis_sock, PIPELINE);
     }
+
     RETURN_ZVAL(getThis(), 1, 0);
 }
 
