@@ -2554,6 +2554,31 @@ class Redis_Test extends TestSuite
         $this->assertEquals(5, count($ret)); // should be 5 atomic operations
     }
 
+    /* Github issue #1211 (ignore redundant calls to pipeline or multi) */
+    public function testDoublePipeNoOp() {
+        /* Only the first pipeline should be honored */
+        for ($i = 0; $i < 6; $i++) {
+            $this->redis->pipeline();
+        }
+
+        /* Set and get in our pipeline */
+        $this->redis->set('pipecount','over9000')->get('pipecount');
+
+        $data = $this->redis->exec();
+        $this->assertEquals(Array(true,'over9000'), $data);
+
+        /* Only the first MULTI should be honored */
+        for ($i = 0; $i < 6; $i++) {
+            $this->redis->multi();
+        }
+
+        /* Set and get in our MULTI block */
+        $this->redis->set('multicount', 'over9000')->get('multicount');
+
+        $data = $this->redis->exec();
+        $this->assertEquals(Array(true, 'over9000'), $data);
+    }
+
     protected function sequence($mode) {
         $ret = $this->redis->multi($mode)
             ->set('x', 42)
