@@ -1467,10 +1467,11 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
         return -1;
     }
 
-    /* Attempt to set TCP_NODELAY if we're not using a unix socket */
+    /* Attempt to set TCP_NODELAY if we're not using a unix socket. */
     sock = (php_netstream_data_t*)redis_sock->stream->abstract;
     if (!usocket) {
-        setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag, sizeof(int));
+        err = setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag, sizeof(int));
+        PHPREDIS_NOTUSED(err);
     }
 
     php_stream_auto_cleanup(redis_sock->stream);
