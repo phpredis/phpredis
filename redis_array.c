@@ -1092,7 +1092,11 @@ PHP_METHOD(RedisArray, mset)
 #if (PHP_MAJOR_VERSION < 7)
             MAKE_STD_ZVAL(z_tmp);
 #endif
-            ZVAL_ZVAL(z_tmp, argv[i], 1, 0);
+            if (argv[i] == NULL) {
+                ZVAL_NULL(z_tmp);
+            } else {
+                ZVAL_ZVAL(z_tmp, argv[i], 1, 0);
+            }
             add_assoc_zval_ex(&z_argarray, keys[i], key_lens[i], z_tmp);
             found++;
         }

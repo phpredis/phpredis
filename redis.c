@@ -2774,10 +2774,11 @@ redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
 {
     fold_item *fi;
 
-    for (fi = redis_sock->head; fi; fi = fi->next) {
+    for (fi = redis_sock->head; fi; /* void */) {
         if (fi->fun) {
             fi->fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab,
                 fi->ctx TSRMLS_CC);
+            fi = fi->next;
             continue;
         }
         size_t len;
@@ -2804,6 +2805,7 @@ redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
         int num = atol(inbuf + 1);
         if (num > 0 && redis_read_multibulk_recursive(redis_sock, num, z_ret TSRMLS_CC) < 0) {
         }
+        if (fi) fi = fi->next;
     }
     redis_sock->current = fi;
     return 0;

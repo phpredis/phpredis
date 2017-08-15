@@ -40,7 +40,7 @@ typedef struct {
     ) { \
         zend_string _zstr = {0}; \
         char *_str_index; uint _str_length; ulong _num_index; \
-        _val = zend_hash_get_current_data_ex(ht, &_hpos); \
+        _h = 0; _key = NULL; _val = zend_hash_get_current_data_ex(ht, &_hpos); \
         switch (zend_hash_get_current_key_ex(ht, &_str_index, &_str_length, &_num_index, 0, &_hpos)) { \
             case HASH_KEY_IS_STRING: \
                 _zstr.len = _str_length - 1; \
@@ -48,7 +48,6 @@ typedef struct {
                 _key = &_zstr; \
                 break; \
             case HASH_KEY_IS_LONG: \
-                _key = NULL; \
                 _h = _num_index; \
                 break; \
             default: \
