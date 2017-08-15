@@ -12,11 +12,8 @@ extern zend_class_entry *redis_cluster_exception_ce;
 static void cluster_dump_nodes(redisCluster *c) {
     redisClusterNode *p;
 
-    for(zend_hash_internal_pointer_reset(c->nodes);
-        zend_hash_has_more_elements(c->nodes)==SUCCESS;
-        zend_hash_move_forward(c->nodes))
-    {
-        if ((p = zend_hash_get_current_data_ptr(c->nodes)) == NULL) {
+    ZEND_HASH_FOREACH_PTR(c->nodes, p) {
+        if (p == NULL) {
             continue;
         }
 
@@ -25,7 +22,7 @@ static void cluster_dump_nodes(redisCluster *c) {
             p->slot);
 
         php_printf("\n");
-    }
+    } ZEND_HASH_FOREACH_END();
 }
 
 static void cluster_log(char *fmt, ...)
@@ -939,30 +936,24 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
     int mapped=0;
 
     // Iterate over seeds until we can get slots
-    for(zend_hash_internal_pointer_reset(c->seeds);
-        !mapped && zend_hash_has_more_elements(c->seeds) == SUCCESS;
-        zend_hash_move_forward(c->seeds))
-    {
-        // Grab the redis_sock for this seed
-        if ((seed = zend_hash_get_current_data_ptr(c->seeds)) == NULL) {
-            continue;
-        }
-
+    ZEND_HASH_FOREACH_PTR(c->seeds, seed) {
         // Attempt to connect to this seed node
-        if (redis_sock_connect(seed TSRMLS_CC) != 0) {
+        if (seed == NULL || redis_sock_connect(seed TSRMLS_CC) != 0) {
             continue;
         }
 
         // Parse out cluster nodes.  Flag mapped if we are valid
         slots = cluster_get_slots(seed TSRMLS_CC);
-        if(slots) mapped = !cluster_map_slots(c, slots);
-
-        // Bin anything mapped, if we failed somewhere
-        if(!mapped && slots) {
-            memset(c->master, 0, sizeof(redisClusterNode*)*REDIS_CLUSTER_SLOTS);
+        if (slots) {
+            mapped = !cluster_map_slots(c, slots);
+            // Bin anything mapped, if we failed somewhere
+            if (!mapped) {
+                memset(c->master, 0, sizeof(redisClusterNode*)*REDIS_CLUSTER_SLOTS);
+            }
         }
         redis_sock_disconnect(seed TSRMLS_CC);
-    }
+        if (mapped) break;
+    } ZEND_HASH_FOREACH_END();
 
     // Clean up slots reply if we got one
     if(slots) cluster_free_reply(slots, 1);
@@ -1081,13 +1072,11 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
 PHP_REDIS_API void cluster_disconnect(redisCluster *c TSRMLS_DC) {
     redisClusterNode *node;
 
-    for(zend_hash_internal_pointer_reset(c->nodes);
-        (node = zend_hash_get_current_data_ptr(c->nodes)) != NULL;
-        zend_hash_move_forward(c->nodes))
-    {
+    ZEND_HASH_FOREACH_PTR(c->nodes, node) {
+        if (node == NULL) break;
         redis_sock_disconnect(node->sock TSRMLS_CC);
         node->sock->lazy_connect = 1;
-    }
+    } ZEND_HASH_FOREACH_END();
 }
 
 /* This method attempts to write our command at random to the master and any
@@ -1219,17 +1208,9 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
     if(direct) return -1;
 
     /* Fall back by attempting the request against every known node */
-    for(zend_hash_internal_pointer_reset(c->nodes);
-        zend_hash_has_more_elements(c->nodes)==SUCCESS;
-        zend_hash_move_forward(c->nodes))
-    {
-        /* Grab node */
-        if ((seed_node = zend_hash_get_current_data_ptr(c->nodes)) == NULL) {
-            continue;
-        }
-
+    ZEND_HASH_FOREACH_PTR(c->nodes, seed_node) {
         /* Skip this node if it's the one that failed, or if it's a slave */
-        if(seed_node->sock == redis_sock || seed_node->slave) continue;
+        if (seed_node == NULL || seed_node->sock == redis_sock || seed_node->slave) continue;
 
         /* Connect to this node if we haven't already */
         CLUSTER_LAZY_CONNECT(seed_node->sock);
@@ -1240,7 +1221,7 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
             c->cmd_sock = seed_node->sock;
             return 0;
         }
-    }
+    } ZEND_HASH_FOREACH_END();
 
     /* We were unable to write to any node in our cluster */
     return -1;

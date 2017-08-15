@@ -63,6 +63,14 @@ typedef struct {
     ) { \
          _val = zend_hash_get_current_data_ex(ht, &_hpos); \
 
+#define ZEND_HASH_FOREACH_PTR(ht, _ptr) do { \
+    HashPosition _hpos; \
+    for (zend_hash_internal_pointer_reset_ex(ht, &_hpos); \
+         zend_hash_has_more_elements_ex(ht, &_hpos) == SUCCESS; \
+         zend_hash_move_forward_ex(ht, &_hpos) \
+    ) { \
+         _ptr = zend_hash_get_current_data_ptr_ex(ht, &_hpos); \
+
 #define ZEND_HASH_FOREACH_END() \
     } \
 } while(0)
@@ -126,15 +134,16 @@ zend_hash_get_current_data(HashTable *ht)
 }
 
 static zend_always_inline void *
-zend_hash_get_current_data_ptr(HashTable *ht)
+zend_hash_get_current_data_ptr_ex(HashTable *ht, HashPosition *pos)
 {
     void **ptr;
 
-    if (zend_hash_get_current_data_ex(ht, (void **)&ptr, NULL) == SUCCESS) {
+    if (zend_hash_get_current_data_ex(ht, (void **)&ptr, pos) == SUCCESS) {
         return *ptr;
     }
     return NULL;
 }
+#define zend_hash_get_current_data_ptr(ht) zend_hash_get_current_data_ptr_ex(ht, NULL)
 
 static int (*_zend_hash_index_find)(const HashTable *, ulong, void **) = &zend_hash_index_find;
 #define zend_hash_index_find(ht, h) inline_zend_hash_index_find(ht, h)

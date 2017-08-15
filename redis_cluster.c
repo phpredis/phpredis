@@ -1037,10 +1037,8 @@ PHP_METHOD(RedisCluster, keys) {
     c->readonly = CLUSTER_IS_ATOMIC(c);
 
     /* Iterate over our known nodes */
-    for(zend_hash_internal_pointer_reset(c->nodes);
-        (node = zend_hash_get_current_data_ptr(c->nodes)) != NULL;
-        zend_hash_move_forward(c->nodes))
-    {
+    ZEND_HASH_FOREACH_PTR(c->nodes, node) {
+        if (node == NULL) break;
         if (cluster_send_slot(c, node->slot, cmd, cmd_len, TYPE_MULTIBULK
                              TSRMLS_CC)<0)
         {
@@ -1072,7 +1070,7 @@ PHP_METHOD(RedisCluster, keys) {
 
         /* Free response, don't free data */
         cluster_free_reply(resp, 0);
-    }
+    } ZEND_HASH_FOREACH_END();
 
     efree(cmd);
 
@@ -1969,10 +1967,8 @@ PHP_METHOD(RedisCluster, _masters) {
 
     array_init(z_ret);
 
-    for(zend_hash_internal_pointer_reset(c->nodes);
-        (node = zend_hash_get_current_data_ptr(c->nodes)) != NULL;
-        zend_hash_move_forward(c->nodes))
-    {
+    ZEND_HASH_FOREACH_PTR(c->nodes, node) {
+        if (node == NULL) break;
         host = node->sock->host;
         port = node->sock->port;
 
@@ -1985,7 +1981,7 @@ PHP_METHOD(RedisCluster, _masters) {
         add_next_index_stringl(z_sub, host, strlen(host));
         add_next_index_long(z_sub, port);
         add_next_index_zval(z_ret, z_sub);
-    }
+    } ZEND_HASH_FOREACH_END();
 
     RETVAL_ZVAL(z_ret, 1, 0);
 }
@@ -2073,18 +2069,17 @@ PHP_METHOD(RedisCluster, watch) {
     }
 
     // Iterate over each node we'll be sending commands to
-    for(zend_hash_internal_pointer_reset(ht_dist);
-		zend_hash_get_current_key(ht_dist, NULL, &slot) == HASH_KEY_IS_LONG;
-        zend_hash_move_forward(ht_dist))
-    {
+    ZEND_HASH_FOREACH_PTR(ht_dist, dl) {
         // Grab the clusterDistList pointer itself
-        if ((dl = zend_hash_get_current_data_ptr(ht_dist)) == NULL) {
+        if (dl == NULL) {
             zend_throw_exception(redis_cluster_exception_ce,
                 "Internal error in a PHP HashTable", 0 TSRMLS_CC);
             cluster_dist_free(ht_dist);
             efree(z_args);
             efree(cmd.c);
             RETURN_FALSE;
+        } else if (zend_hash_get_current_key(ht_dist, NULL, &slot) != HASH_KEY_IS_LONG) {
+            break;
         }
 
         // Construct our watch command for this node
@@ -2104,7 +2099,7 @@ PHP_METHOD(RedisCluster, watch) {
 
         // Zero out our command buffer
         cmd.len = 0;
-    }
+    } ZEND_HASH_FOREACH_END();
 
     // Cleanup
     cluster_dist_free(ht_dist);
