@@ -1411,7 +1411,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     struct timeval tv, read_tv, *tv_ptr = NULL;
     char host[1024], *persistent_id = NULL;
     const char *fmtstr = "%s:%d";
-    int host_len, err = 0;
+    int host_len, usocket = 0, err = 0;
     php_netstream_data_t *sock;
     int tcp_flag = 1;
 
@@ -1430,6 +1430,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     if(redis_sock->host[0] == '/' && redis_sock->port < 1) {
         host_len = snprintf(host, sizeof(host), "unix://%s", redis_sock->host);
+        usocket = 1;
     } else {
         if(redis_sock->port == 0)
             redis_sock->port = 6379;
@@ -1466,10 +1467,11 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
         return -1;
     }
 
-    /* set TCP_NODELAY */
+    /* Attempt to set TCP_NODELAY if we're not using a unix socket. */
     sock = (php_netstream_data_t*)redis_sock->stream->abstract;
-    if (setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag, sizeof(int)) < 0) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR, "Can't activate TCP_NODELAY option!");
+    if (!usocket) {
+        err = setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag, sizeof(int));
+        PHPREDIS_NOTUSED(err);
     }
 
     php_stream_auto_cleanup(redis_sock->stream);
