@@ -119,7 +119,8 @@ redis_error_throw(RedisSock *redis_sock TSRMLS_DC)
     if (redis_sock != NULL && redis_sock->err != NULL &&
         memcmp(redis_sock->err, "ERR", sizeof("ERR") - 1) != 0 &&
         memcmp(redis_sock->err, "NOSCRIPT", sizeof("NOSCRIPT") - 1) != 0 &&
-        memcmp(redis_sock->err, "WRONGTYPE", sizeof("WRONGTYPE") - 1) != 0
+        memcmp(redis_sock->err, "WRONGTYPE", sizeof("WRONGTYPE") - 1) != 0 &&
+        memcmp(redis_sock->err, "READONLY", sizeof("READONLY") - 1) != 0
     ) {
         zend_throw_exception(redis_exception_ce, redis_sock->err, 0 TSRMLS_CC);
     }
