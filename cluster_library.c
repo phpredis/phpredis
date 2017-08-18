@@ -489,19 +489,16 @@ cluster_set_err(redisCluster *c, char *err, int err_len)
 {
     // Free our last error
     if (c->err != NULL) {
-        efree(c->err);
+        zend_string_release(c->err);
+        c->err = NULL;
     }
     if (err != NULL && err_len > 0) {
+        c->err = zend_string_init(err, err_len, 0);
         if (err_len >= sizeof("CLUSTERDOWN") - 1 &&
             !memcmp(err, "CLUSTERDOWN", sizeof("CLUSTERDOWN") - 1)
         ) {
             c->clusterdown = 1;
         }
-        c->err = estrndup(err, err_len);
-        c->err_len = err_len;
-    } else {
-        c->err = NULL;
-        c->err_len = 0;
     }
 }
 
@@ -819,7 +816,6 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     c->failover = failover;
     c->persistent = persistent;
     c->err = NULL;
-    c->err_len = 0;
 
     /* Set up our waitms based on timeout */
     c->waitms  = (long)(1000 * timeout);
@@ -849,7 +845,7 @@ PHP_REDIS_API void cluster_free(redisCluster *c) {
     efree(c->nodes);
 
     /* Free any error we've got */
-    if (c->err) efree(c->err);
+    if (c->err) zend_string_release(c->err);
 
     /* Free structure itself */
     efree(c);
@@ -1328,7 +1324,7 @@ PHP_REDIS_API short cluster_find_slot(redisCluster *c, const char *host,
     for(i=0;i<REDIS_CLUSTER_SLOTS;i++) {
         if(c->master[i] && c->master[i]->sock &&
            c->master[i]->sock->port == port &&
-           !strcasecmp(c->master[i]->sock->host, host))
+           !strcasecmp(ZSTR_VAL(c->master[i]->sock->host), host))
         {
             return i;
         }
