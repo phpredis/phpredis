@@ -1063,7 +1063,7 @@ PHP_METHOD(RedisCluster, getset) {
 
 /* {{{ proto int RedisCluster::exists(string key) */
 PHP_METHOD(RedisCluster, exists) {
-    CLUSTER_PROCESS_KW_CMD("EXISTS", redis_key_cmd, cluster_1_resp, 1);
+    CLUSTER_PROCESS_CMD(exists, cluster_long_resp, 1);
 }
 /* }}} */
 
