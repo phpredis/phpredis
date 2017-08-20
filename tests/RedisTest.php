@@ -593,7 +593,7 @@ class Redis_Test extends TestSuite
         $this->assertEquals(1, $this->redis->exists('key'));
 
         /* Add multiple keys */
-        $mkeys = [];
+        $mkeys = Array();
         for ($i = 0; $i < 10; $i++) {
             if (rand(1, 2) == 1) {
                 $mkey = "{exists}key:$i";
@@ -604,7 +604,7 @@ class Redis_Test extends TestSuite
 
         /* Test passing an array as well as the keys variadic */
         $this->assertEquals(count($mkeys), $this->redis->exists($mkeys));
-        $this->assertEquals(count($mkeys), call_user_func_array([$this->redis, 'exists'], $mkeys));
+        $this->assertEquals(count($mkeys), call_user_func_array(Array($this->redis, 'exists'), $mkeys));
     }
 
     public function testGetKeys()
