@@ -1562,7 +1562,7 @@ PHP_METHOD(Redis, getMultiple)
  */
 PHP_METHOD(Redis, exists)
 {
-    REDIS_PROCESS_KW_CMD("EXISTS", redis_key_cmd, redis_1_response);
+    REDIS_PROCESS_CMD(exists, redis_long_response);
 }
 /* }}} */
 
