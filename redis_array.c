@@ -45,7 +45,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_void, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_ctor, 0, 0, 1)
-    ZEND_ARG_ARRAY_INFO(0, hosts, 0)
+    ZEND_ARG_INFO(0, name_or_hosts)
     ZEND_ARG_ARRAY_INFO(0, options, 0)
 ZEND_END_ARG_INFO()
 
@@ -98,9 +98,9 @@ zend_function_entry redis_array_functions[] = {
 
 	 /* Multi/Exec */
      PHP_ME(RedisArray, multi, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, exec, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, discard, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, unwatch, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, exec, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, discard, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, unwatch, arginfo_void, ZEND_ACC_PUBLIC)
 
      /* Aliases */
      PHP_MALIAS(RedisArray, delete, del, NULL, ZEND_ACC_PUBLIC)
