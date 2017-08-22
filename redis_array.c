@@ -32,45 +32,61 @@
 #include "redis_array_impl.h"
 
 /* Simple macro to detect failure in a RedisArray call */
-#if (PHP_MAJOR_VERSION < 7)
 #define RA_CALL_FAILED(rv, cmd) ( \
-    (Z_TYPE_P(rv) == IS_BOOL && !Z_LVAL_P(rv)) || \
+    PHPREDIS_ZVAL_IS_STRICT_FALSE(rv) || \
     (Z_TYPE_P(rv) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(rv)) == 0) || \
     (Z_TYPE_P(rv) == IS_LONG && Z_LVAL_P(rv) == 0 && !strcasecmp(cmd, "TYPE")) \
 )
-#else
-#define RA_CALL_FAILED(rv, cmd) ( \
-    (Z_TYPE_P(rv) == IS_FALSE) || \
-    (Z_TYPE_P(rv) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(rv)) == 0) || \
-    (Z_TYPE_P(rv) == IS_LONG && Z_LVAL_P(rv) == 0 && !strcasecmp(cmd, "TYPE")) \
-)
-#endif
 
 extern zend_class_entry *redis_ce;
 zend_class_entry *redis_array_ce;
 
-ZEND_BEGIN_ARG_INFO_EX(__redis_array_call_args, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_void, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_ctor, 0, 0, 1)
+    ZEND_ARG_ARRAY_INFO(0, hosts, 0)
+    ZEND_ARG_ARRAY_INFO(0, options, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_call, 0, 0, 2)
 	ZEND_ARG_INFO(0, function_name)
 	ZEND_ARG_INFO(0, arguments)
 ZEND_END_ARG_INFO()
 
-zend_function_entry redis_array_functions[] = {
-     PHP_ME(RedisArray, __construct, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, __call, __redis_array_call_args, ZEND_ACC_PUBLIC)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_target, 0, 0, 1)
+	ZEND_ARG_INFO(0, key)
+ZEND_END_ARG_INFO()
 
-     PHP_ME(RedisArray, _hosts, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, _target, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, _instance, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, _function, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, _distributor, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, _rehash, NULL, ZEND_ACC_PUBLIC)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_instance, 0, 0, 1)
+	ZEND_ARG_INFO(0, host)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_rehash, 0, 0, 0)
+	ZEND_ARG_INFO(0, callable)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_select, 0, 0, 1)
+	ZEND_ARG_INFO(0, index)
+ZEND_END_ARG_INFO()
+
+zend_function_entry redis_array_functions[] = {
+     PHP_ME(RedisArray, __construct, arginfo_ctor, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, __call, arginfo_call, ZEND_ACC_PUBLIC)
+
+     PHP_ME(RedisArray, _hosts, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, _target, arginfo_target, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, _instance, arginfo_instance, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, _function, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, _distributor, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, _rehash, arginfo_rehash, ZEND_ACC_PUBLIC)
 
      /* special implementation for a few functions */
-     PHP_ME(RedisArray, select, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, info, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, ping, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, flushdb, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, flushall, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, select, arginfo_select, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, info, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, ping, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, flushdb, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, flushall, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, mget, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, mset, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, del, NULL, ZEND_ACC_PUBLIC)

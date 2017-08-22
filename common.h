@@ -397,6 +397,8 @@ extern int (*_php_var_unserialize)(zval **, const unsigned char **, const unsign
 #define php_var_unserialize(rval, p, max, var_hash) _php_var_unserialize(&rval, p, max, var_hash TSRMLS_CC)
 typedef int strlen_t;
 
+#define PHPREDIS_ZVAL_IS_STRICT_FALSE(z) (Z_TYPE_P(z) == IS_BOOL && !Z_BVAL_P(z))
+
 /* If ZEND_MOD_END isn't defined, use legacy version */
 #ifndef ZEND_MOD_END
 #define ZEND_MOD_END { NULL, NULL, NULL }
@@ -414,6 +416,7 @@ typedef int strlen_t;
 #include <zend_smart_str.h>
 #include <ext/standard/php_smart_string.h>
 typedef size_t strlen_t;
+#define PHPREDIS_ZVAL_IS_STRICT_FALSE(z) (Z_TYPE_P(z) == IS_FALSE)
 #endif
 
 /* NULL check so Eclipse doesn't go crazy */
