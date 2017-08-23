@@ -460,8 +460,8 @@ class Redis_Multi_Exec_Test extends TestSuite {
             ->exec();
 
         $this->assertTrue($out[0] === 2);
-        $this->assertTrue($this->ra->exists('1_{employee:joe}_group') === FALSE);
-        $this->assertTrue($this->ra->exists('1_{employee:joe}_salary') === FALSE);
+        $this->assertEquals(0, $this->ra->exists('1_{employee:joe}_group'));
+        $this->assertEquals(0, $this->ra->exists('1_{employee:joe}_salary'));
     }
 
     public function testDiscard() {
