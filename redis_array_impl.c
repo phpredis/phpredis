@@ -431,10 +431,10 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS
 }
 
 /* call userland key distributor function */
-zend_bool
-ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRMLS_DC)
+int
+ra_call_distributor(RedisArray *ra, const char *key, int key_len TSRMLS_DC)
 {
-    zend_bool ret = 0;
+    int ret;
     zval z_ret, z_argv;
 
 	/* check that we can call the extractor function */
@@ -444,7 +444,7 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
     if (!zend_is_callable_ex(&ra->z_dist, NULL, 0, NULL, NULL, NULL)) {
 #endif
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call distributor function");
-		return 0;
+		return -1;
 	}
 
     ZVAL_NULL(&z_ret);
@@ -452,10 +452,7 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
     ZVAL_STRINGL(&z_argv, key, key_len);
     call_user_function(EG(function_table), NULL, &ra->z_dist, &z_ret, 1, &z_argv);
 
-    if (Z_TYPE(z_ret) == IS_LONG) {
-        *pos = Z_LVAL(z_ret);
-        ret = 1;
-    }
+    ret = (Z_TYPE(z_ret) == IS_LONG) ? Z_LVAL(z_ret) : -1;
 
     zval_dtor(&z_argv);
 	zval_dtor(&z_ret);
@@ -473,13 +470,12 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
     if(!out) return NULL;
 
     if (Z_TYPE(ra->z_dist) != IS_NULL) {
-        if (!ra_call_distributor(ra, key, key_len, &pos TSRMLS_CC)) {
+        pos = ra_call_distributor(ra, key, key_len TSRMLS_CC);
+        if (pos < 0 || pos >= ra->count) {
             efree(out);
             return NULL;
         }
-        efree(out);
     } else {
-        uint64_t h64;
         unsigned long ret = 0xffffffff;
         size_t i;
 
@@ -488,14 +484,12 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
             CRC32(ret, (unsigned char)out[i]);
         }
         hash = (ret ^ 0xffffffff);
-        efree(out);
         
         /* get position on ring */
-        h64 = hash;
-        h64 *= ra->count;
-        h64 /= 0xffffffff;
-        pos = (int)h64;
+        pos = (int)(hash * ra->count / 0xffffffff);
     }
+    efree(out);
+
     if(out_pos) *out_pos = pos;
 
     return &ra->redis[pos];
