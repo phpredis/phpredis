@@ -40,6 +40,26 @@ zend_class_entry *redis_cluster_exception_ce;
 /* Handlers for RedisCluster */
 zend_object_handlers RedisCluster_handlers;
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_void, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_value, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_ctor, 0, 0, 1)
+    ZEND_ARG_INFO(0, name)
+    ZEND_ARG_ARRAY_INFO(0, seeds, 0)
+    ZEND_ARG_INFO(0, timeout)
+    ZEND_ARG_INFO(0, read_timeout)
+    ZEND_ARG_INFO(0, persistent)
+ZEND_END_ARG_INFO();
+
 /* Argument info for HSCAN, SSCAN, HSCAN */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan_cl, 0, 0, 2)
     ZEND_ARG_INFO(0, str_key)
@@ -58,10 +78,10 @@ ZEND_END_ARG_INFO();
 
 /* Function table */
 zend_function_entry redis_cluster_functions[] = {
-    PHP_ME(RedisCluster, __construct, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, close, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, get, NULL, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, set, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, __construct, arginfo_ctor, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, close, arginfo_void, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, get, arginfo_key, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, set, arginfo_key_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, mget, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, mset, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, msetnx, NULL, ZEND_ACC_PUBLIC)
