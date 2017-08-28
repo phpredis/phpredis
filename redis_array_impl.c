@@ -344,8 +344,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
     int i, count;
     RedisArray *ra;
 
-    if (!hosts) return NULL;
-    count = zend_hash_num_elements(hosts);
+    if (!hosts || (count = zend_hash_num_elements(hosts)) == 0) return NULL;
 
 	/* create object */
 	ra = emalloc(sizeof(RedisArray));

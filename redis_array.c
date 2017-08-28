@@ -394,7 +394,9 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 	zend_bool b_write_cmd = 0;
 
 	h_args = Z_ARRVAL_P(z_args);
-	argc = zend_hash_num_elements(h_args);
+    if ((argc = zend_hash_num_elements(h_args)) == 0) {
+        RETURN_FALSE;
+    }
 
 	if(ra->z_multi_exec) {
 		redis_inst = ra->z_multi_exec; /* we already have the instance */
@@ -935,7 +937,9 @@ PHP_METHOD(RedisArray, mget)
 
 	/* init data structures */
 	h_keys = Z_ARRVAL_P(z_keys);
-	argc = zend_hash_num_elements(h_keys);
+    if ((argc = zend_hash_num_elements(h_keys)) == 0) {
+        RETURN_FALSE;
+    }
 	argv = emalloc(argc * sizeof(zval*));
 	pos = emalloc(argc * sizeof(int));
 
@@ -1087,7 +1091,9 @@ PHP_METHOD(RedisArray, mset)
 
     /* init data structures */
     h_keys = Z_ARRVAL_P(z_keys);
-    argc = zend_hash_num_elements(h_keys);
+    if ((argc = zend_hash_num_elements(h_keys)) == 0) {
+        RETURN_FALSE;
+    }
     argv = emalloc(argc * sizeof(zval*));
     pos = emalloc(argc * sizeof(int));
     keys = emalloc(argc * sizeof(char*));
@@ -1234,7 +1240,11 @@ PHP_METHOD(RedisArray, del)
 
 	/* init data structures */
 	h_keys = Z_ARRVAL(z_keys);
-	argc = zend_hash_num_elements(h_keys);
+    if ((argc = zend_hash_num_elements(h_keys)) == 0) {
+        if (free_zkeys) zval_dtor(&z_keys);
+        efree(z_args);
+        RETURN_FALSE;
+    }
 	argv = emalloc(argc * sizeof(zval*));
 	pos = emalloc(argc * sizeof(int));
 
