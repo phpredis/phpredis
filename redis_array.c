@@ -41,9 +41,6 @@
 extern zend_class_entry *redis_ce;
 zend_class_entry *redis_array_ce;
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_void, 0, 0, 0)
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_ctor, 0, 0, 1)
     ZEND_ARG_INFO(0, name_or_hosts)
     ZEND_ARG_ARRAY_INFO(0, options, 0)

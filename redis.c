@@ -68,10 +68,6 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("redis.clusters.read_timeout", "", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
-/** Argument info for any function expecting 0 args */
-ZEND_BEGIN_ARG_INFO_EX(arginfo_void, 0, 0, 0)
-ZEND_END_ARG_INFO()
-
 /** {{{ Argument info for commands in redis 1.0 */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_connect, 0, 0, 2)
     ZEND_ARG_INFO(0, host)
@@ -90,14 +86,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_echo, 0, 0, 1)
     ZEND_ARG_INFO(0, msg)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_key, 0, 0, 1)
-    ZEND_ARG_INFO(0, key)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_value, 0, 0, 1)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_set, 0, 0, 2)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, value)
@@ -108,11 +96,6 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_key_expire_value, 0, 0, 3)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, expire)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_key_value, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
