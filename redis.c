@@ -82,23 +82,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pconnect, 0, 0, 2)
     ZEND_ARG_INFO(0, timeout)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_echo, 0, 0, 1)
-    ZEND_ARG_INFO(0, msg)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_set, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, value)
-    ZEND_ARG_INFO(0, timeout)
-    ZEND_ARG_INFO(0, opt)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_key_expire_value, 0, 0, 3)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, expire)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_key_newkey, 0, 0, 2)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, newkey)
@@ -161,17 +144,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_generic_sort, 0, 0, 1)
     ZEND_ARG_INFO(0, getList)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_blrpop, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, timeout_or_key)
-// Can't have variadic keys before timeout.
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, extra_args)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_lrem, 0, 0, 3)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, value)
@@ -184,57 +156,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_ltrim, 0, 0, 3)
     ZEND_ARG_INFO(0, stop)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_lget, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, index)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_lset, 0, 0, 3)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, index)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_linsert, 0, 0, 4)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, position)
-    ZEND_ARG_INFO(0, pivot)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_sadd_array, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_ARRAY_INFO(0, options, 0)
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_smove, 0, 0, 3)
     ZEND_ARG_INFO(0, src)
     ZEND_ARG_INFO(0, dst)
     ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_srand_member, 0, 0, 1)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, count)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_nkeys, 0, 0, 1)
-    ZEND_ARG_INFO(0, key)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, other_keys)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_dst_nkeys, 0, 0, 2)
-    ZEND_ARG_INFO(0, dst)
-    ZEND_ARG_INFO(0, key)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, other_keys)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_set_timeout, 0, 0, 2)
@@ -299,21 +224,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_evalsha, 0, 0, 1)
     ZEND_ARG_INFO(0, num_keys)
 ZEND_END_ARG_INFO()
 /* }}} */
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_pairs, 0, 0, 1)
-    ZEND_ARG_ARRAY_INFO(0, pairs, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_rpoplpush, 0, 0, 2)
-    ZEND_ARG_INFO(0, src)
-    ZEND_ARG_INFO(0, dst)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_brpoplpush, 0, 0, 3)
-    ZEND_ARG_INFO(0, src)
-    ZEND_ARG_INFO(0, dst)
-    ZEND_ARG_INFO(0, timeout)
-ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_zadd, 0, 0, 3)
     ZEND_ARG_INFO(0, key)
@@ -641,7 +551,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, lSize, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lRemove, arginfo_lrem, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, listTrim, arginfo_ltrim, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lGet, arginfo_lget, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lGet, arginfo_lindex, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lGetRange, arginfo_key_start_end, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lSet, arginfo_lset, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lInsert, arginfo_linsert, ZEND_ACC_PUBLIC)
@@ -828,7 +738,7 @@ static zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, keys, getKeys, arginfo_keys, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, lrem, lRemove, arginfo_lrem, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, ltrim, listTrim, arginfo_ltrim, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, lindex, lGet, arginfo_lget, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, lindex, lGet, arginfo_lindex, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, lrange, lGetRange, arginfo_key_start_end, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, scard, sSize, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, srem, sRemove, arginfo_key_value, ZEND_ACC_PUBLIC)
