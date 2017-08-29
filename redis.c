@@ -82,11 +82,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_pconnect, 0, 0, 2)
     ZEND_ARG_INFO(0, timeout)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_key_newkey, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, newkey)
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_mget, 0, 0, 1)
     ZEND_ARG_ARRAY_INFO(0, keys, 0)
 ZEND_END_ARG_INFO()
@@ -109,30 +104,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_del, 0, 0, 1)
 #endif
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_key_start_end, 0, 0, 3)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, start)
-    ZEND_ARG_INFO(0, end)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_key_offset, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, offset)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_key_offset_value, 0, 0, 3)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, offset)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_keys, 0, 0, 1)
     ZEND_ARG_INFO(0, pattern)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_sort, 0, 0, 1)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_ARRAY_INFO(0, options, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_generic_sort, 0, 0, 1)
@@ -150,29 +123,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_lrem, 0, 0, 3)
     ZEND_ARG_INFO(0, count)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_ltrim, 0, 0, 3)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, start)
-    ZEND_ARG_INFO(0, stop)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_smove, 0, 0, 3)
-    ZEND_ARG_INFO(0, src)
-    ZEND_ARG_INFO(0, dst)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_set_timeout, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, timeout)
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_auth, 0, 0, 1)
     ZEND_ARG_INFO(0, password)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_info, 0, 0, 0)
-    ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_select, 0, 0, 1)
@@ -189,179 +141,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_slaveof, 0, 0, 0)
     ZEND_ARG_INFO(0, port)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_object, 0, 0, 2)
-    ZEND_ARG_INFO(0, field)
-    ZEND_ARG_INFO(0, key)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_bitop, 0, 0, 3)
-    ZEND_ARG_INFO(0, operation)
-    ZEND_ARG_INFO(0, ret_key)
-    ZEND_ARG_INFO(0, key)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, other_keys)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_bitpos, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, bit)
-    ZEND_ARG_INFO(0, start)
-    ZEND_ARG_INFO(0, end)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_eval, 0, 0, 1)
-    ZEND_ARG_INFO(0, script)
-    ZEND_ARG_INFO(0, args)
-    ZEND_ARG_INFO(0, num_keys)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_evalsha, 0, 0, 1)
-    ZEND_ARG_INFO(0, script_sha)
-    ZEND_ARG_INFO(0, args)
-    ZEND_ARG_INFO(0, num_keys)
-ZEND_END_ARG_INFO()
 /* }}} */
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_zadd, 0, 0, 3)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, score)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_zrange, 0, 0, 3)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, start)
-    ZEND_ARG_INFO(0, end)
-    ZEND_ARG_INFO(0, scores)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_zrangebyscore, 0, 0, 3)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, start)
-    ZEND_ARG_INFO(0, end)
-    ZEND_ARG_ARRAY_INFO(0, options, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_zrangebylex, 0, 0, 3)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, min)
-    ZEND_ARG_INFO(0, max)
-    ZEND_ARG_INFO(0, offset)
-    ZEND_ARG_INFO(0, limit)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_key_min_max, 0, 0, 3)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, min)
-    ZEND_ARG_INFO(0, max)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_key_member, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, member)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_key_members, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, member)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, other_members)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_key_member_value, 0, 0, 3)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, member)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_hmget, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_ARRAY_INFO(0, keys, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_hmset, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_ARRAY_INFO(0, pairs, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_zstore, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_ARRAY_INFO(0, keys, 0)
-    ZEND_ARG_ARRAY_INFO(0, weights, 1)
-    ZEND_ARG_INFO(0, aggregate)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_zincrby, 0, 0, 3)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, value)
-    ZEND_ARG_INFO(0, member)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_key_timestamp, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, timestamp)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_watch, 0, 0, 1)
-    ZEND_ARG_INFO(0, key)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, other_keys)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_publish, 0, 0, 2)
-    ZEND_ARG_INFO(0, channel)
-    ZEND_ARG_INFO(0, message)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_subscribe, 0, 0, 1)
-    ZEND_ARG_ARRAY_INFO(0, channels, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_psubscribe, 0, 0, 1)
-    ZEND_ARG_ARRAY_INFO(0, patterns, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_unsubscribe, 0, 0, 1)
-    ZEND_ARG_INFO(0, channel)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, other_channels)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_punsubscribe, 0, 0, 1)
-    ZEND_ARG_INFO(0, pattern)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, other_patterns)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_script, 0, 0, 1)
-    ZEND_ARG_INFO(0, cmd)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, args)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_restore, 0, 0, 3)
-    ZEND_ARG_INFO(0, ttl)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_migrate, 0, 0, 5)
     ZEND_ARG_INFO(0, host)
@@ -373,110 +153,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_migrate, 0, 0, 5)
     ZEND_ARG_INFO(0, replace)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_client, 0, 0, 1)
-    ZEND_ARG_INFO(0, cmd)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, args)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_command, 0, 0, 0)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, args)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_pfadd, 0, 0, 2)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_ARRAY_INFO(0, elements, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_pfmerge, 0, 0, 2)
-    ZEND_ARG_INFO(0, dstkey)
-    ZEND_ARG_ARRAY_INFO(0, keys, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_getoption, 0, 0, 1)
-    ZEND_ARG_INFO(0, option)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_setoption, 0, 0, 2)
-    ZEND_ARG_INFO(0, option)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_config, 0, 0, 2)
-    ZEND_ARG_INFO(0, cmd)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_slowlog, 0, 0, 1)
-    ZEND_ARG_INFO(0, arg)
-    ZEND_ARG_INFO(0, option)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_rawcommand, 0, 0, 1)
-    ZEND_ARG_INFO(0, cmd)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, args)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_pubsub, 0, 0, 1)
-    ZEND_ARG_INFO(0, cmd)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, args)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_wait, 0, 0, 2)
     ZEND_ARG_INFO(0, numslaves)
     ZEND_ARG_INFO(0, timeout)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_geoadd, 0, 0, 4)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, lng)
-    ZEND_ARG_INFO(0, lat)
-    ZEND_ARG_INFO(0, member)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, other_triples)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_geodist, 0, 0, 3)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, src)
-    ZEND_ARG_INFO(0, dst)
-    ZEND_ARG_INFO(0, unit)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_georadius, 0, 0, 5)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, lng)
-    ZEND_ARG_INFO(0, lan)
-    ZEND_ARG_INFO(0, radius)
-    ZEND_ARG_INFO(0, unit)
-    ZEND_ARG_ARRAY_INFO(0, opts, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_georadiusbymember, 0, 0, 4)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, member)
-    ZEND_ARG_INFO(0, radius)
-    ZEND_ARG_INFO(0, unit)
-    ZEND_ARG_ARRAY_INFO(0, opts, 0)
 ZEND_END_ARG_INFO()
 
 /**
@@ -570,7 +249,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sUnionStore, arginfo_dst_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sDiff, arginfo_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sDiffStore, arginfo_dst_nkeys, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, setTimeout, arginfo_set_timeout, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, setTimeout, arginfo_expire, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, save, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, bgSave, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lastSave, arginfo_void, ZEND_ACC_PUBLIC)
@@ -722,7 +401,7 @@ static zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, lLen, lSize, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, sGetMembers, sMembers, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, mget, getMultiple, arginfo_mget, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, expire, setTimeout, arginfo_set_timeout, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, expire, setTimeout, arginfo_expire, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zunionstore, zUnion, arginfo_zstore, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zinterstore, zInter, arginfo_zstore, ZEND_ACC_PUBLIC)
 
