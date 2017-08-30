@@ -27,25 +27,47 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2017-03-24</date>
+ <date>2017-08-30</date>
  <version>
-  <release>3.1.2</release>
-  <api>3.1.2</api>
+  <release>3.1.4</release>
+  <api>3.1.4</api>
  </version>
  <stability>
   <release>stable</release>
-  <api>stable</api>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 3.1.2
+    phpredis 3.1.4
 
-    * RedisArray segfault fix [564ce3] (Pavlo Yatsukhnenko)
-    * Small memory leak fix [645888b] (Mike Grunder)
-    * Segfault fix when recreating RedisCluster objects [abf7d4] (Michael Grunder)
-    * Fix for RedisCluster bulk response parsing [4121c4] (Alberto Fernández)
-    * Re allow single array for sInterStore [6ef0c2, d01966] (Michael Grunder)
-    * Better TravisCI integration [4fd2f6] (Pavlo Yatsukhnenko)
+    The primary new feature phpredis 3.1.4 is the ability to send MULTI .. EXEC blocks in pipeline mode.  There are
+    also many bugfixes and minor improvements to the api, listed below:
+
+    * Allow mixing MULTI and PIPELINE modes!  [5874b0] (Pavlo Yatsukhnenko)
+    * Let EXISTS take multiple keys [cccc39] (Michael Grunder)
+
+    * Added integration for coverty static analysis and fixed several warnings 
+      [faac8b0, eff7398, 4766c25, 0438ab4, 1e0b065, 733732a, 26eeda5, 735025, 42f1c9, af71d4] (Pavlo Yatsukhnenko)
+    * Added arginfo inrospection structures [81a0303, d5609fc, e5660be, 3c60e1f, 50dcb15, 6c2c6fa, 
+      212e323, e23be2c, 682593d, f8de702, 4ef3acd, f116be9, 5c111dd, 9caa029, 0d69650, 6859828, 024e593, 
+      3643ab6, f576fab, 122d41f, a09d0e6] (Tyson Andre, Pavlo Yatsukhnenko)
+    * Fixed link to redis cluster documentation [3b0b06] (Pavlo Yatsukhnenko)
+    * Remove unused PHP_RINIT and PHP_RSHUTDOWN functions [c760bf] (Pavlo Yatsukhnenko)
+    * Removed duplicate HGET in redis array hash table, formatting [d0b9c5] (Pavlo Yatsukhnenko)
+    * Treat NULL bulk as success for session read [659450] (Pavlo Yatsukhnenko)
+    * Refactor redis_send_discard [ea15ce] (Pavlo Yatsukhnenko)
+    * Updated runtime exception handling [8dcaa4, 7c1407] (Pavlo Yatsukhnenko)
+    * Added a github issue template [61aba9] (Pavlo Yatsukhnenko)
+    * Initialize gc member of zend_string [37f569) (Pavlo Yatsukhnenko)
+    * Fix valgrind warnings [471ce07, 1ab89e1, b624a8b] (Pavlo Yatsukhnenko)
+    * Fix php5/php7 compatibility layer [1ab89e, 4e3225] (Pavlo Yatsukhnenko)
+    * Fix typo in README.markdown [e47e44] (Mark Shehata)
+    * Improve redis array rehash [577a91] (Pavlo Yatsukhnenko)
+    * Change redis array pure_cmds from zval to hashtable [a56ed7] (Pavlo Yatsukhnenko)
+    * Don't try to set TCP_NODELAY on a unix socket and don't warn on multiple
+      calls to pipeline [d11798, 77aeba] (Michael Grunder)
+    * Use zend_string rather than char* for various context fields (err, prefix, etc) [2bf7b2] (Pavlo Yatsukhnenko)
+    * Various other library fixes [142b51, 4452f6, e672f4, 658ee3, c9df77, 4a0a46] (Pavlo Yatsukhnenko)
  </notes>
  <contents>
   <dir name="/">
@@ -101,6 +123,80 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
  </extsrcrelease>
  <changelog>
+   <release>
+   <stability><release>stable</release><api>beta</api></stability>
+   <version><release>3.1.4RC1</release><api>3.1.4RC1</api></version>
+   <date>2017-08-30</date>
+   <notes>
+    phpredis 3.1.4
+
+    The primary new feature phpredis 3.1.4 is the ability to send MULTI .. EXEC blocks in pipeline mode.  There are
+    also many bugfixes and minor improvements to the api, listed below:
+
+    * Allow mixing MULTI and PIPELINE modes!  [5874b0] (Pavlo Yatsukhnenko)
+    * Let EXISTS take multiple keys [cccc39] (Michael Grunder)
+
+    * Added integration for coverty static analysis and fixed several warnings 
+      [faac8b0, eff7398, 4766c25, 0438ab4, 1e0b065, 733732a, 26eeda5, 735025, 42f1c9, af71d4] (Pavlo Yatsukhnenko)
+    * Added arginfo inrospection structures [81a0303, d5609fc, e5660be, 3c60e1f, 50dcb15, 6c2c6fa, 
+      212e323, e23be2c, 682593d, f8de702, 4ef3acd, f116be9, 5c111dd, 9caa029, 0d69650, 6859828, 024e593, 
+      3643ab6, f576fab, 122d41f, a09d0e6] (Tyson Andre, Pavlo Yatsukhnenko)
+    * Fixed link to redis cluster documentation [3b0b06] (Pavlo Yatsukhnenko)
+    * Remove unused PHP_RINIT and PHP_RSHUTDOWN functions [c760bf] (Pavlo Yatsukhnenko)
+    * Removed duplicate HGET in redis array hash table, formatting [d0b9c5] (Pavlo Yatsukhnenko)
+    * Treat NULL bulk as success for session read [659450] (Pavlo Yatsukhnenko)
+    * Refactor redis_send_discard [ea15ce] (Pavlo Yatsukhnenko)
+    * Updated runtime exception handling [8dcaa4, 7c1407] (Pavlo Yatsukhnenko)
+    * Added a github issue template [61aba9] (Pavlo Yatsukhnenko)
+    * Initialize gc member of zend_string [37f569) (Pavlo Yatsukhnenko)
+    * Fix valgrind warnings [471ce07, 1ab89e1, b624a8b] (Pavlo Yatsukhnenko)
+    * Fix php5/php7 compatibility layer [1ab89e, 4e3225] (Pavlo Yatsukhnenko)
+    * Fix typo in README.markdown [e47e44] (Mark Shehata)
+    * Improve redis array rehash [577a91] (Pavlo Yatsukhnenko)
+    * Change redis array pure_cmds from zval to hashtable [a56ed7] (Pavlo Yatsukhnenko)
+    * Don't try to set TCP_NODELAY on a unix socket and don't warn on multiple
+      calls to pipeline [d11798, 77aeba] (Michael Grunder)
+    * Use zend_string rather than char* for various context fields (err, prefix, etc) [2bf7b2] (Pavlo Yatsukhnenko)
+    * Various other library fixes [142b51, 4452f6, e672f4, 658ee3, c9df77, 4a0a46] (Pavlo Yatsukhnenko)
+   </notes>
+   </release>
+
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>3.1.3</release><api>3.1.3</api></version>
+   <date>2017-07-15</date>
+   <notes>
+    phpredis 3.1.3
+
+    This release contains two big improvements:
+      1. Adding a new printf like command construction function with additionaly format specifiers specific to phpredis.
+      2. Implementation of custom objects for Redis and RedisArray wich eliminates double hash lookup.
+    Also many small improvements and bug fixes were made.
+
+    * A printf like method to construct a Redis RESP command [a4a0ed, d75081, bdd287, 0eaeae, b3d00d] (Michael Grunder)
+    * Use custom objects instead of zend_list for storing Redis/RedisArray [a765f8, 8fa85a] (Pavlo Yatsukhnenko)
+    * Make sure redisCluster members are all initialized on (re)creation [162d88] (Michael Grunder)
+    * Fix Null Bulk String response parsing in cluster library [058753] (Alberto Fernández)
+    * Add hStrLen command [c52077, fb88e1] (Pavlo Yatsukhnenko)
+    * Add optional COUNT argument to sPop [d2e203] (Michael Grunder)
+    * Allow sInterStore to take one arg [26aec4, 4cd06b] (Michael Grunder)
+    * Allow MIGRATE to accept multiple keys [9aa3db] (Michael Grunder)
+    * Allow using numeric string in zInter command [ba0070] (Pavlo Yatsukhnenko)
+    * Use crc32 table from PHP distro [f81694] (Pavlo Yatsukhnenko)
+    * Use ZVAL_DEREF macros for dereference input variables [ad4596] (Pavlo Yatsukhnenko)
+    * Add configureoption tag to package.xml [750963] (Pavlo Yatsukhnenko)
+    * Fix read_timeout [18149e, b56dc4] (Pavlo Yatsukhnenko)
+    * Fix zval_get_string impl for PHP5 [4e56ba] (Pavlo Yatsukhnenko)
+    * Fix Redis/RedisArray segfaults [be5c1f, 635c3a, 1f8dde, 43e1e0] (Pavlo Yatsukhnenko)
+    * Fix memory leak and potential segfault [aa6ff7, 88efaa] (Michael Grunder)
+    * Throw exception for all non recoverable errors [e37239] (Pavlo Yatsukhnenko)
+    * Assume "NULL bulk" reply as success (empty session data) [4a81e1] (Pavlo Yatsukhnenko)
+    * Increase read buffers size [520e06] (Pavlo Yatsukhnenko)
+    * Better documentation [f0c25a, c5991f, 9ec9ae] (Michael Grunder)
+    * Better TravisCI integration [e37c08] (Pavlo Yatsukhnenko)
+    * Refactoring (Pavlo Yatsukhnenko, Michael Grunder)
+   </notes>
+   </release>
 
    <release>
    <stability><release>stable</release><api>stable</api></stability>
