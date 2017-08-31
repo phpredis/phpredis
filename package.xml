@@ -29,16 +29,16 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </lead>
  <date>2017-08-31</date>
  <version>
-  <release>3.1.4</release>
-  <api>3.1.4</api>
+  <release>3.1.4RC1</release>
+  <api>3.1.4RC1</api>
  </version>
  <stability>
-  <release>stable</release>
+  <release>beta</release>
   <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 3.1.4
+    phpredis 3.1.4RC1
 
     The primary new feature phpredis 3.1.4 is the ability to send MULTI .. EXEC blocks in pipeline mode.  There are
     also many bugfixes and minor improvements to the api, listed below:
@@ -124,11 +124,11 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
    <release>
-   <stability><release>stable</release><api>beta</api></stability>
+   <stability><release>beta</release><api>beta</api></stability>
    <version><release>3.1.4RC1</release><api>3.1.4RC1</api></version>
    <date>2017-08-31</date>
    <notes>
-    phpredis 3.1.4
+    phpredis 3.1.4RC1
 
     The primary new feature phpredis 3.1.4 is the ability to send MULTI .. EXEC blocks in pipeline mode.  There are
     also many bugfixes and minor improvements to the api, listed below:
