@@ -27,7 +27,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2017-08-30</date>
+ <date>2017-08-31</date>
  <version>
   <release>3.1.4</release>
   <api>3.1.4</api>
@@ -126,7 +126,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <release>
    <stability><release>stable</release><api>beta</api></stability>
    <version><release>3.1.4RC1</release><api>3.1.4RC1</api></version>
-   <date>2017-08-30</date>
+   <date>2017-08-31</date>
    <notes>
     phpredis 3.1.4
 
