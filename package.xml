@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2017-08-31</date>
+ <date>2017-09-12</date>
  <version>
-  <release>3.1.4RC1</release>
-  <api>3.1.4RC1</api>
+  <release>3.1.4RC2</release>
+  <api>3.1.4RC2</api>
  </version>
  <stability>
   <release>beta</release>
@@ -38,13 +38,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 3.1.4RC1
+    phpredis 3.1.4RC2
 
     The primary new feature phpredis 3.1.4 is the ability to send MULTI .. EXEC blocks in pipeline mode.  There are
     also many bugfixes and minor improvements to the api, listed below:
 
     * Allow mixing MULTI and PIPELINE modes!  [5874b0] (Pavlo Yatsukhnenko)
-    * Let EXISTS take multiple keys [cccc39] (Michael Grunder)
 
     * Added integration for coverty static analysis and fixed several warnings 
       [faac8b0, eff7398, 4766c25, 0438ab4, 1e0b065, 733732a, 26eeda5, 735025, 42f1c9, af71d4] (Pavlo Yatsukhnenko)
@@ -125,16 +124,15 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <changelog>
    <release>
    <stability><release>beta</release><api>beta</api></stability>
-   <version><release>3.1.4RC1</release><api>3.1.4RC1</api></version>
-   <date>2017-08-31</date>
+   <version><release>3.1.4RC2</release><api>3.1.4RC2</api></version>
+   <date>2017-09-12</date>
    <notes>
-    phpredis 3.1.4RC1
+    phpredis 3.1.4RC2
 
     The primary new feature phpredis 3.1.4 is the ability to send MULTI .. EXEC blocks in pipeline mode.  There are
     also many bugfixes and minor improvements to the api, listed below:
 
     * Allow mixing MULTI and PIPELINE modes!  [5874b0] (Pavlo Yatsukhnenko)
-    * Let EXISTS take multiple keys [cccc39] (Michael Grunder)
 
     * Added integration for coverty static analysis and fixed several warnings 
       [faac8b0, eff7398, 4766c25, 0438ab4, 1e0b065, 733732a, 26eeda5, 735025, 42f1c9, af71d4] (Pavlo Yatsukhnenko)
