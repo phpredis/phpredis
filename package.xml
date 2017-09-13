@@ -27,7 +27,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2017-09-12</date>
+ <date>2017-09-13</date>
  <version>
   <release>3.1.4RC2</release>
   <api>3.1.4RC2</api>
@@ -43,13 +43,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
     The primary new feature phpredis 3.1.4 is the ability to send MULTI .. EXEC blocks in pipeline mode.  There are
     also many bugfixes and minor improvements to the api, listed below:
 
-    * Allow mixing MULTI and PIPELINE modes!  [5874b0] (Pavlo Yatsukhnenko)
+    * Allow mixing MULTI and PIPELINE modes (experimental)!  [5874b0] (Pavlo Yatsukhnenko)
 
     * Added integration for coverty static analysis and fixed several warnings 
       [faac8b0, eff7398, 4766c25, 0438ab4, 1e0b065, 733732a, 26eeda5, 735025, 42f1c9, af71d4] (Pavlo Yatsukhnenko)
-    * Added arginfo inrospection structures [81a0303, d5609fc, e5660be, 3c60e1f, 50dcb15, 6c2c6fa, 
-      212e323, e23be2c, 682593d, f8de702, 4ef3acd, f116be9, 5c111dd, 9caa029, 0d69650, 6859828, 024e593, 
-      3643ab6, f576fab, 122d41f, a09d0e6] (Tyson Andre, Pavlo Yatsukhnenko)
     * Fixed link to redis cluster documentation [3b0b06] (Pavlo Yatsukhnenko)
     * Remove unused PHP_RINIT and PHP_RSHUTDOWN functions [c760bf] (Pavlo Yatsukhnenko)
     * Removed duplicate HGET in redis array hash table, formatting [d0b9c5] (Pavlo Yatsukhnenko)
