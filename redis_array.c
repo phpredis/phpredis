@@ -99,7 +99,7 @@ ZEND_END_ARG_INFO()
 
 zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, __construct, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, __call, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, __call, arginfo_call, ZEND_ACC_PUBLIC)
 
      PHP_ME(RedisArray, _hosts, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _target, NULL, ZEND_ACC_PUBLIC)
