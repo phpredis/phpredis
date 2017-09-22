@@ -776,16 +776,17 @@ $redis->delete(array('key3', 'key4')); /* return 2 */
 _**Description**_: Verify if the specified key exists.
 
 ##### *Parameters*
-*key*
+*one or multiple keys*
 
 ##### *Return value*
-*BOOL*: If the key exists, return `TRUE`, otherwise return `FALSE`.
+*INT*: It returns the total number of keys existing
 
 ##### *Examples*
 ~~~
-$redis->set('key', 'value');
-$redis->exists('key'); /*  TRUE */
-$redis->exists('NonExistingKey'); /* FALSE */
+$redis->set('key1', 'value');
+$redis->set('key2', 'value');
+$redis->exists('key1', 'key2'); /* int(2) */
+$redis->exists('NonExistingKey'); /* int(0) */
 ~~~
 
 ### incr, incrBy
@@ -3070,13 +3071,13 @@ The return value can be various types depending on what the server itself return
 ##### *Example*
 ```php
 /* Returns: true */
-$redis->rawCommand("set", "foo", "bar"); 
+$redis->rawCommand("set", "foo", "bar");
 
 /* Returns: "bar" */
-$redis->rawCommand("get", "foo"); 
+$redis->rawCommand("get", "foo");
 
 /* Returns: 3 */
-$redis->rawCommand("rpush", "mylist", "one", 2, 3.5)); 
+$redis->rawCommand("rpush", "mylist", "one", 2, 3.5));
 
 /* Returns: ["one", "2", "3.5000000000000000"] */
 $redis->rawCommand("lrange", "mylist", 0, -1);
