@@ -55,17 +55,24 @@ extern zend_function_entry redis_cluster_functions[];
 
 PHP_INI_BEGIN()
     /* redis arrays */
-    PHP_INI_ENTRY("redis.arrays.names", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.arrays.hosts", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.arrays.previous", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.arrays.functions", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.arrays.index", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.autorehash", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.connecttimeout", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.distributor", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.functions", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.hosts", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.index", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.lazyconnect", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.names", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.pconnect", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.previous", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.readtimeout", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.retryinterval", "", PHP_INI_ALL, NULL)
 
     /* redis cluster */
+    PHP_INI_ENTRY("redis.clusters.persistent", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.clusters.read_timeout", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.seeds", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.timeout", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.clusters.read_timeout", "", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
 /** {{{ Argument info for commands in redis 1.0 */
