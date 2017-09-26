@@ -583,5 +583,9 @@ class Redis_Cluster_Test extends Redis_Test {
         session_write_close();
         $this->assertTrue($this->redis->exists('PHPREDIS_CLUSTER_SESSION:' . session_id()));
     }
+
+    public function testReplyLiterString() {
+        $this->assertTrue($this->redis->rawCommand("mykey", "ping"));
+    }
 }
 ?>
