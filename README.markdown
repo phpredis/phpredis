@@ -99,6 +99,8 @@ Sessions have a lifetime expressed in seconds and stored in the INI variable "se
 The session handler requires a version of Redis with the `SETEX` command (at least 2.0).
 phpredis can also connect to a unix domain socket: `session.save_path = "unix:///var/run/redis/redis.sock?persistent=1&weight=1&database=0`.
 
+WARNING: The session handler does NOT implement locking at this time. Concurrent requests with the same session ID may interfere with each other.
+
 
 ## Building on Windows
 
