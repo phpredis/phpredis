@@ -42,11 +42,8 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 	ZVAL_STRINGL(&z_cons, "__construct", 11);
 
 	/* init connections */
-    for (zend_hash_internal_pointer_reset(hosts);
-         zend_hash_has_more_elements(hosts) == SUCCESS;
-         zend_hash_move_forward(hosts)
-    ) {
-        if ((zpData = zend_hash_get_current_data(hosts)) == NULL || Z_TYPE_P(zpData) != IS_STRING) {
+    ZEND_HASH_FOREACH_VAL(hosts, zpData) {
+        if (Z_TYPE_P(zpData) != IS_STRING) {
             zval_dtor(&z_cons);
             return NULL;
         }
@@ -88,7 +85,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 		}
 
 		ra->count = ++i;
-	}
+	} ZEND_HASH_FOREACH_END();
 
     zval_dtor(&z_cons);
 
@@ -99,40 +96,41 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
 void
 ra_init_function_table(RedisArray *ra)
 {
-    array_init(&ra->z_pure_cmds);
+    ALLOC_HASHTABLE(ra->pure_cmds);
+    zend_hash_init(ra->pure_cmds, 0, NULL, NULL, 0);
 
-    add_assoc_bool(&ra->z_pure_cmds, "EXISTS", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "GET", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "GETBIT", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "GETRANGE", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "HEXISTS", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "HGET", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "HGETALL", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "HKEYS", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "HLEN", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "HMGET", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "HVALS", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "LINDEX", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "LLEN", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "LRANGE", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "OBJECT", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "SCARD", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "SDIFF", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "SINTER", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "SISMEMBER", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "SMEMBERS", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "SRANDMEMBER", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "STRLEN", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "SUNION", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "TYPE", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZCARD", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZCOUNT", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZRANGE", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZRANK", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZREVRANGE", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZREVRANGEBYSCORE", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZREVRANK", 1);
-    add_assoc_bool(&ra->z_pure_cmds, "ZSCORE", 1);
+    zend_hash_str_update_ptr(ra->pure_cmds, "EXISTS", sizeof("EXISTS") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "GET", sizeof("GET") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "GETBIT", sizeof("GETBIT") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "GETRANGE", sizeof("GETRANGE") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "HEXISTS", sizeof("HEXISTS") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "HGET", sizeof("HGET") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "HGETALL", sizeof("HGETALL") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "HKEYS", sizeof("HKEYS") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "HLEN", sizeof("HLEN") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "HMGET", sizeof("HMGET") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "HVALS", sizeof("HVALS") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "LINDEX", sizeof("LINDEX") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "LLEN", sizeof("LLEN") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "LRANGE", sizeof("LRANGE") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "OBJECT", sizeof("OBJECT") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "SCARD", sizeof("SCARD") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "SDIFF", sizeof("SDIFF") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "SINTER", sizeof("SINTER") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "SISMEMBER", sizeof("SISMEMBER") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "SMEMBERS", sizeof("SMEMBERS") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "SRANDMEMBER", sizeof("SRANDMEMBER") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "STRLEN", sizeof("STRLEN") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "SUNION", sizeof("SUNION") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "TYPE", sizeof("TYPE") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZCARD", sizeof("ZCARD") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZCOUNT", sizeof("ZCOUNT") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZRANGE", sizeof("ZRANGE") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZRANK", sizeof("ZRANK") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZREVRANGE", sizeof("ZREVRANGE") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZREVRANGEBYSCORE", sizeof("ZREVRANGEBYSCORE") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZREVRANK", sizeof("ZREVRANK") - 1, NULL);
+    zend_hash_str_update_ptr(ra->pure_cmds, "ZSCORE", sizeof("ZSCORE") - 1, NULL);
 }
 
 static int
@@ -300,7 +298,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     }
 
     /* find read timeout option */
-	array_init(&z_params_connect_timeout);
+	array_init(&z_params_read_timeout);
     if ((iptr = INI_STR("redis.arrays.readtimeout")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_read_timeout TSRMLS_CC);
     }
@@ -346,8 +344,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
     int i, count;
     RedisArray *ra;
 
-    if (!hosts) return NULL;
-    count = zend_hash_num_elements(hosts);
+    if (!hosts || (count = zend_hash_num_elements(hosts)) == 0) return NULL;
 
 	/* create object */
 	ra = emalloc(sizeof(RedisArray));
@@ -433,10 +430,10 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS
 }
 
 /* call userland key distributor function */
-zend_bool
-ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRMLS_DC)
+int
+ra_call_distributor(RedisArray *ra, const char *key, int key_len TSRMLS_DC)
 {
-    zend_bool ret = 0;
+    int ret;
     zval z_ret, z_argv;
 
 	/* check that we can call the extractor function */
@@ -446,7 +443,7 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
     if (!zend_is_callable_ex(&ra->z_dist, NULL, 0, NULL, NULL, NULL)) {
 #endif
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Could not call distributor function");
-		return 0;
+		return -1;
 	}
 
     ZVAL_NULL(&z_ret);
@@ -454,10 +451,7 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len, int *pos TSRML
     ZVAL_STRINGL(&z_argv, key, key_len);
     call_user_function(EG(function_table), NULL, &ra->z_dist, &z_ret, 1, &z_argv);
 
-    if (Z_TYPE(z_ret) == IS_LONG) {
-        *pos = Z_LVAL(z_ret);
-        ret = 1;
-    }
+    ret = (Z_TYPE(z_ret) == IS_LONG) ? Z_LVAL(z_ret) : -1;
 
     zval_dtor(&z_argv);
 	zval_dtor(&z_ret);
@@ -475,13 +469,12 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
     if(!out) return NULL;
 
     if (Z_TYPE(ra->z_dist) != IS_NULL) {
-        if (!ra_call_distributor(ra, key, key_len, &pos TSRMLS_CC)) {
+        pos = ra_call_distributor(ra, key, key_len TSRMLS_CC);
+        if (pos < 0 || pos >= ra->count) {
             efree(out);
             return NULL;
         }
-        efree(out);
     } else {
-        uint64_t h64;
         unsigned long ret = 0xffffffff;
         size_t i;
 
@@ -490,14 +483,12 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
             CRC32(ret, (unsigned char)out[i]);
         }
         hash = (ret ^ 0xffffffff);
-        efree(out);
         
         /* get position on ring */
-        h64 = hash;
-        h64 *= ra->count;
-        h64 /= 0xffffffff;
-        pos = (int)h64;
+        pos = (int)(hash * ra->count / 0xffffffff);
     }
+    efree(out);
+
     if(out_pos) *out_pos = pos;
 
     return &ra->redis[pos];
@@ -545,7 +536,12 @@ ra_index_change_keys(const char *cmd, zval *z_keys, zval *z_redis TSRMLS_DC) {
 
 	/* prepare keys */
 	for(i = 0; i < argc - 1; ++i) {
-        z_args[i+1] = *zend_hash_index_find(Z_ARRVAL_P(z_keys), i);
+        zval *zv = zend_hash_index_find(Z_ARRVAL_P(z_keys), i);
+        if (zv == NULL) {
+            ZVAL_NULL(&z_args[i+1]);
+        } else {
+            z_args[i+1] = *zv;
+        }
 	}
 
 	/* run cmd */
@@ -580,12 +576,11 @@ ra_index_keys(zval *z_pairs, zval *z_redis TSRMLS_DC) {
         zval zv, *z_new = &zv;
 #if (PHP_MAJOR_VERSION < 7)
         MAKE_STD_ZVAL(z_new);
-#else
-        PHPREDIS_NOTUSED(z_val);
 #endif
+        PHPREDIS_NOTUSED(z_val);
 
         if (zkey) {
-            ZVAL_STRINGL(z_new, zkey->val, zkey->len);
+            ZVAL_STRINGL(z_new, ZSTR_VAL(zkey), ZSTR_LEN(zkey));
         } else {
             ZVAL_LONG(z_new, idx);
         }
@@ -682,102 +677,53 @@ ra_is_write_cmd(RedisArray *ra, const char *cmd, int cmd_len) {
 		cmd_up[i] = toupper(cmd[i]);
 	cmd_up[cmd_len] = 0;
 
-	ret = zend_hash_str_exists(Z_ARRVAL(ra->z_pure_cmds), cmd_up, cmd_len);
+	ret = zend_hash_str_exists(ra->pure_cmds, cmd_up, cmd_len);
 
 	efree(cmd_up);
 	return !ret;
-}
-
-/* list keys from array index */
-static long
-ra_rehash_scan(zval *z_redis, char ***keys, int **key_lens, const char *cmd, const char *arg TSRMLS_DC) {
-
-	long count, i;
-	zval z_fun_smembers, z_ret, z_arg[1], *z_data_p;
-	HashTable *h_keys;
-	char *key;
-	int key_len;
-
-	/* arg */
-    ZVAL_STRING(&z_arg[0], arg);
-
-	/* run SMEMBERS */
-	ZVAL_STRING(&z_fun_smembers, cmd);
-    call_user_function(&redis_ce->function_table, z_redis, &z_fun_smembers, &z_ret, 1, z_arg);
-    zval_dtor(&z_fun_smembers);
-    zval_dtor(&z_arg[0]);
-	if(Z_TYPE(z_ret) != IS_ARRAY) { /* failure */
-	    zval_dtor(&z_ret);
-		return -1;	/* TODO: log error. */
-	}
-	h_keys = Z_ARRVAL(z_ret);
-
-	/* allocate key array */
-	count = zend_hash_num_elements(h_keys);
-	*keys = emalloc(count * sizeof(char*));
-	*key_lens = emalloc(count * sizeof(int));
-
-    i = 0;
-    ZEND_HASH_FOREACH_VAL(h_keys, z_data_p) {
-		key = Z_STRVAL_P(z_data_p);
-		key_len = Z_STRLEN_P(z_data_p);
-
-		/* copy key and length */
-		(*keys)[i] = estrndup(key, key_len);
-		(*key_lens)[i] = key_len;
-        i++;
-	} ZEND_HASH_FOREACH_END();
-
-	/* cleanup */
-	zval_dtor(&z_ret);
-
-	return count;
 }
 
 /* run TYPE to find the type */
 static zend_bool
 ra_get_key_type(zval *z_redis, const char *key, int key_len, zval *z_from, long *res TSRMLS_DC) {
 
-	int i;
-	zval z_fun_type, z_ret, z_arg[1];
-	zval *z_data;
+	int i = 0;
+	zval z_fun, z_ret, z_arg, *z_data;
 	long success = 1;
 
 	/* Pipelined */
 	ra_index_multi(z_from, PIPELINE TSRMLS_CC);
 
 	/* prepare args */
-	ZVAL_STRINGL(&z_arg[0], key, key_len);
+	ZVAL_STRINGL(&z_arg, key, key_len);
 
 	/* run TYPE */
-	ZVAL_STRINGL(&z_fun_type, "TYPE", 4);
-	call_user_function(&redis_ce->function_table, z_redis, &z_fun_type, &z_ret, 1, z_arg);
-    zval_dtor(&z_fun_type);
+    ZVAL_NULL(&z_ret);
+	ZVAL_STRINGL(&z_fun, "TYPE", 4);
+	call_user_function(&redis_ce->function_table, z_redis, &z_fun, &z_ret, 1, &z_arg);
+    zval_dtor(&z_fun);
 	zval_dtor(&z_ret);
 
 	/* run TYPE */
-	ZVAL_STRINGL(&z_fun_type, "TTL", 3);
-	call_user_function(&redis_ce->function_table, z_redis, &z_fun_type, &z_ret, 1, z_arg);
-    zval_dtor(&z_fun_type);
+    ZVAL_NULL(&z_ret);
+	ZVAL_STRINGL(&z_fun, "TTL", 3);
+	call_user_function(&redis_ce->function_table, z_redis, &z_fun, &z_ret, 1, &z_arg);
+    zval_dtor(&z_fun);
 	zval_dtor(&z_ret);
 
 	/* Get the result from the pipeline. */
 	ra_index_exec(z_from, &z_ret, 1 TSRMLS_CC);
-	if(Z_TYPE(z_ret) == IS_ARRAY) {
-        HashTable *retHash = Z_ARRVAL(z_ret);
-		for(i = 0, zend_hash_internal_pointer_reset(retHash);
-				zend_hash_has_more_elements(retHash) == SUCCESS;
-				zend_hash_move_forward(retHash)) {
-
-			if ((z_data = zend_hash_get_current_data(retHash)) == NULL || Z_TYPE_P(z_data) != IS_LONG) {
+    if (Z_TYPE(z_ret) == IS_ARRAY) {
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL(z_ret), z_data) {
+            if (z_data == NULL || Z_TYPE_P(z_data) != IS_LONG) {
 				success = 0;
 				break;
 			}
 			/* Get the result - Might change in the future to handle doubles as well */
 			res[i++] = Z_LVAL_P(z_data);
-		}
+        } ZEND_HASH_FOREACH_END();
 	}
-	zval_dtor(&z_arg[0]);
+	zval_dtor(&z_arg);
 	zval_dtor(&z_ret);
 	return success;
 }
@@ -893,7 +839,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 
 		/* add value */
         if (zkey) {
-            ZVAL_STRINGL(&z_zadd_args[i+1], zkey->val, zkey->len);
+            ZVAL_STRINGL(&z_zadd_args[i+1], ZSTR_VAL(zkey), ZSTR_LEN(zkey));
         } else {
             ZVAL_LONG(&z_zadd_args[i+1], (long)idx);
         }
@@ -1130,78 +1076,101 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 }
 
 /* callback with the current progress, with hostname and count */
-static void zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache,
-	const char *hostname, long count, zval *z_ret TSRMLS_DC) {
+static void
+zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache,
+	const char *hostname, long count TSRMLS_DC) {
 
+    zval zv, *z_ret = &zv;
+
+    ZVAL_NULL(z_ret);
+#if (PHP_MAJOR_VERSION < 7)
+    zval *z_host, *z_count, **z_args_pp[2];
+
+    MAKE_STD_ZVAL(z_host);
+    ZVAL_STRING(z_host, hostname);
+    z_args_pp[0] = &z_host;
+
+    MAKE_STD_ZVAL(z_count);
+    ZVAL_LONG(z_count, count);
+    z_args_pp[1] = &z_count;
+
+    z_cb->params = z_args_pp;
+    z_cb->retval_ptr_ptr = &z_ret;
+#else
     zval z_args[2];
 
     ZVAL_STRING(&z_args[0], hostname);
     ZVAL_LONG(&z_args[1], count);
 
-#if (PHP_MAJOR_VERSION < 7)
-    zval *z_host = &z_args[0], *z_count = &z_args[1],
-        **z_args_pp[2] = { &z_host, &z_count };
-    z_cb->params = z_args_pp;
-    z_cb->retval_ptr_ptr = &z_ret;
-#else
     z_cb->params = z_args;
     z_cb->retval = z_ret;
 #endif
-	z_cb->param_count = 2;
 	z_cb->no_separation = 0;
+	z_cb->param_count = 2;
 
 	/* run cb(hostname, count) */
 	zend_call_function(z_cb, z_cb_cache TSRMLS_CC);
 
 	/* cleanup */
-    zval_dtor(&z_args[0]);
 #if (PHP_MAJOR_VERSION < 7)
-    zval_ptr_dtor(&z_ret);
+    zval_ptr_dtor(&z_host);
+    zval_ptr_dtor(&z_count);
+#else
+    zval_dtor(&z_args[0]);
 #endif
+    zval_dtor(z_ret);
 }
 
 static void
 ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool b_index,
 		zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache TSRMLS_DC) {
 
-	char **keys;
-	long count, i;
-	int *key_lens, target_pos;
-	zval *z_target, z_ret;
+    HashTable *h_keys;
+    long count = 0;
+    zval z_fun, z_ret, z_argv, *z_ele;
 
-	/* list all keys */
-	if(b_index) {
-		count = ra_rehash_scan(z_redis, &keys, &key_lens, "SMEMBERS", PHPREDIS_INDEX_NAME TSRMLS_CC);
-	} else {
-		count = ra_rehash_scan(z_redis, &keys, &key_lens, "KEYS", "*" TSRMLS_CC);
-	}
+    /* list all keys */
+    if (b_index) {
+        ZVAL_STRING(&z_fun, "SMEMBERS");
+        ZVAL_STRING(&z_argv, PHPREDIS_INDEX_NAME);
+    } else {
+        ZVAL_STRING(&z_fun, "KEYS");
+        ZVAL_STRING(&z_argv, "*");
+    }
+    ZVAL_NULL(&z_ret);
+    call_user_function(&redis_ce->function_table, z_redis, &z_fun, &z_ret, 1, &z_argv);
+    zval_dtor(&z_argv);
+    zval_dtor(&z_fun);
 
-    if (count < 0) return;
+    if (Z_TYPE(z_ret) == IS_ARRAY) {
+        h_keys = Z_ARRVAL(z_ret);
+        count = zend_hash_num_elements(h_keys);
+    }
+
+    if (!count) {
+        zval_dtor(&z_ret);
+        return;
+    }
 
 	/* callback */
 	if(z_cb && z_cb_cache) {
-        ZVAL_NULL(&z_ret);
-		zval_rehash_callback(z_cb, z_cb_cache, hostname, count, &z_ret TSRMLS_CC);
-        zval_dtor(&z_ret);
+		zval_rehash_callback(z_cb, z_cb_cache, hostname, count TSRMLS_CC);
 	}
 
-	/* for each key, redistribute */
-	for(i = 0; i < count; ++i) {
+    /* for each key, redistribute */
+    ZEND_HASH_FOREACH_VAL(h_keys, z_ele) {
+        int pos = 0;
+        /* check that we're not moving to the same node. */
+        zval *z_target = ra_find_node(ra, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), &pos TSRMLS_CC);
 
-		/* check that we're not moving to the same node. */
-		z_target = ra_find_node(ra, keys[i], key_lens[i], &target_pos TSRMLS_CC);
+        if (z_target && strcmp(hostname, ra->hosts[pos])) { /* different host */
+            ra_move_key(Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), z_redis, z_target TSRMLS_CC);
+        }
 
-		if (z_target && strcmp(hostname, ra->hosts[target_pos])) { /* different host */
-			/* php_printf("move [%s] from [%s] to [%s]\n", keys[i], hostname, ra->hosts[target_pos]); */
-			ra_move_key(keys[i], key_lens[i], z_redis, z_target TSRMLS_CC);
-		}
+    } ZEND_HASH_FOREACH_END();
 
-	    /* cleanup */
-		efree(keys[i]);
-	}
-
-	efree(keys);
-	efree(key_lens);
+    /* cleanup */
+    zval_dtor(&z_ret);
 }
 
 void

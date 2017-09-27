@@ -83,7 +83,7 @@ static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
     int cmd_len, response_len;
 
     cmd_len = redis_spprintf(redis_sock, NULL TSRMLS_CC, &cmd, "AUTH", "s",
-                             redis_sock->auth, strlen(redis_sock->auth));
+                             ZSTR_VAL(redis_sock->auth), ZSTR_LEN(redis_sock->auth));
 
     if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
@@ -117,11 +117,11 @@ static void
 redis_error_throw(RedisSock *redis_sock TSRMLS_DC)
 {
     if (redis_sock != NULL && redis_sock->err != NULL &&
-        memcmp(redis_sock->err, "ERR", sizeof("ERR") - 1) != 0 &&
-        memcmp(redis_sock->err, "NOSCRIPT", sizeof("NOSCRIPT") - 1) != 0 &&
-        memcmp(redis_sock->err, "WRONGTYPE", sizeof("WRONGTYPE") - 1) != 0
+        memcmp(ZSTR_VAL(redis_sock->err), "ERR", sizeof("ERR") - 1) != 0 &&
+        memcmp(ZSTR_VAL(redis_sock->err), "NOSCRIPT", sizeof("NOSCRIPT") - 1) != 0 &&
+        memcmp(ZSTR_VAL(redis_sock->err), "WRONGTYPE", sizeof("WRONGTYPE") - 1) != 0
     ) {
-        zend_throw_exception(redis_exception_ce, redis_sock->err, 0 TSRMLS_CC);
+        zend_throw_exception(redis_exception_ce, ZSTR_VAL(redis_sock->err), 0 TSRMLS_CC);
     }
 }
 
@@ -430,6 +430,7 @@ redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
     int numElems;
     size_t len;
 
+    ZVAL_NULL(z_tab);
     if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len TSRMLS_CC) < 0) {
         return NULL;
     }
@@ -589,7 +590,7 @@ redis_spprintf(RedisSock *redis_sock, short *slot TSRMLS_DC, char **ret, char *k
                 break;
             case 'S':
                 arg.zstr = va_arg(ap, zend_string*);
-                redis_cmd_append_sstr(&cmd, arg.zstr->val, arg.zstr->len);
+                redis_cmd_append_sstr(&cmd, ZSTR_VAL(arg.zstr), ZSTR_LEN(arg.zstr));
                 break;
             case 'k':
                 arg.str = va_arg(ap, char*);
@@ -624,6 +625,8 @@ redis_spprintf(RedisSock *redis_sock, short *slot TSRMLS_DC, char **ret, char *k
 
         fmt++;
     }
+    /* varargs cleanup */
+    va_end(ap);
 
     /* Null terminate */
     smart_string_0(&cmd);
@@ -1116,16 +1119,16 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
 
         /* Decode the score depending on flag */
         if (decode == SCORE_DECODE_INT && Z_STRLEN_P(z_value_p) > 0) {
-            add_assoc_long_ex(z_ret, hkey->val, hkey->len, atoi(hval+1));
+            add_assoc_long_ex(z_ret, ZSTR_VAL(hkey), ZSTR_LEN(hkey), atoi(hval+1));
         } else if (decode == SCORE_DECODE_DOUBLE) {
-            add_assoc_double_ex(z_ret, hkey->val, hkey->len, atof(hval));
+            add_assoc_double_ex(z_ret, ZSTR_VAL(hkey), ZSTR_LEN(hkey), atof(hval));
         } else {
             zval zv0, *z = &zv0;
 #if (PHP_MAJOR_VERSION < 7)
             MAKE_STD_ZVAL(z);
 #endif
             ZVAL_ZVAL(z, z_value_p, 1, 0);
-            add_assoc_zval_ex(z_ret, hkey->val, hkey->len, z);
+            add_assoc_zval_ex(z_ret, ZSTR_VAL(hkey), ZSTR_LEN(hkey), z);
         }
         zend_string_release(hkey);
     }
@@ -1364,7 +1367,7 @@ redis_sock_create(char *host, int host_len, unsigned short port,
     RedisSock *redis_sock;
 
     redis_sock         = ecalloc(1, sizeof(RedisSock));
-    redis_sock->host   = estrndup(host, host_len);
+    redis_sock->host = zend_string_init(host, host_len, 0);
     redis_sock->stream = NULL;
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->watching = 0;
@@ -1374,8 +1377,8 @@ redis_sock_create(char *host, int host_len, unsigned short port,
     redis_sock->lazy_connect = lazy_connect;
     redis_sock->persistent_id = NULL;
 
-    if(persistent_id) {
-        redis_sock->persistent_id = estrdup(persistent_id);
+    if (persistent_id) {
+        redis_sock->persistent_id = zend_string_init(persistent_id, strlen(persistent_id), 0);
     }
 
     redis_sock->port    = port;
@@ -1391,7 +1394,6 @@ redis_sock_create(char *host, int host_len, unsigned short port,
     redis_sock->pipeline_len = 0;
 
     redis_sock->err = NULL;
-    redis_sock->err_len = 0;
 
     redis_sock->scan = REDIS_SCAN_NORETRY;
 
@@ -1408,7 +1410,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     struct timeval tv, read_tv, *tv_ptr = NULL;
     char host[1024], *persistent_id = NULL;
     const char *fmtstr = "%s:%d";
-    int host_len, err = 0;
+    int host_len, usocket = 0, err = 0;
     php_netstream_data_t *sock;
     int tcp_flag = 1;
 
@@ -1425,8 +1427,9 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
     read_tv.tv_usec = (int)((redis_sock->read_timeout-read_tv.tv_sec)*1000000);
 
-    if(redis_sock->host[0] == '/' && redis_sock->port < 1) {
-        host_len = snprintf(host, sizeof(host), "unix://%s", redis_sock->host);
+    if (ZSTR_VAL(redis_sock->host)[0] == '/' && redis_sock->port < 1) {
+        host_len = snprintf(host, sizeof(host), "unix://%s", ZSTR_VAL(redis_sock->host));
+        usocket = 1;
     } else {
         if(redis_sock->port == 0)
             redis_sock->port = 6379;
@@ -1434,17 +1437,17 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 #ifdef HAVE_IPV6
         /* If we've got IPv6 and find a colon in our address, convert to proper
          * IPv6 [host]:port format */
-        if (strchr(redis_sock->host, ':') != NULL) {
+        if (strchr(ZSTR_VAL(redis_sock->host), ':') != NULL) {
             fmtstr = "[%s]:%d";
         }
 #endif
-        host_len = snprintf(host, sizeof(host), fmtstr, redis_sock->host, redis_sock->port);
+        host_len = snprintf(host, sizeof(host), fmtstr, ZSTR_VAL(redis_sock->host), redis_sock->port);
     }
 
     if (redis_sock->persistent) {
         if (redis_sock->persistent_id) {
             spprintf(&persistent_id, 0, "phpredis:%s:%s", host,
-                redis_sock->persistent_id);
+                ZSTR_VAL(redis_sock->persistent_id));
         } else {
             spprintf(&persistent_id, 0, "phpredis:%s:%f", host,
                 redis_sock->timeout);
@@ -1463,10 +1466,12 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
         return -1;
     }
 
-    /* set TCP_NODELAY */
+    /* Attempt to set TCP_NODELAY if we're not using a unix socket. */
     sock = (php_netstream_data_t*)redis_sock->stream->abstract;
-    setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag,
-        sizeof(int));
+    if (!usocket) {
+        err = setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag, sizeof(int));
+        PHPREDIS_NOTUSED(err);
+    }
 
     php_stream_auto_cleanup(redis_sock->stream);
 
@@ -1527,28 +1532,6 @@ PHP_REDIS_API int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
     return 0;
 }
 
-PHP_REDIS_API void redis_send_discard(INTERNAL_FUNCTION_PARAMETERS,
-                               RedisSock *redis_sock)
-{
-    char *cmd;
-    int response_len, cmd_len;
-    char * response;
-
-    cmd_len = redis_spprintf(redis_sock, NULL TSRMLS_CC, &cmd, "DISCARD", "");
-
-    SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
-    efree(cmd);
-
-    if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC))
-                                    == NULL)
-    {
-        RETURN_FALSE;
-    }
-
-    RETVAL_BOOL(response_len == 3 && strncmp(response, "+OK", 3) == 0);
-    efree(response);
-}
-
 /**
  * redis_sock_set_err
  */
@@ -1557,17 +1540,13 @@ redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len)
 {
     // Free our last error
     if (redis_sock->err != NULL) {
-        efree(redis_sock->err);
+        zend_string_release(redis_sock->err);
+        redis_sock->err = NULL;
     }
 
     if (msg != NULL && msg_len > 0) {
         // Copy in our new error message
-        redis_sock->err = estrndup(msg, msg_len);
-        redis_sock->err_len = msg_len;
-    } else {
-        // Set to null, with zero length
-        redis_sock->err = NULL;
-        redis_sock->err_len = 0;
+        redis_sock->err = zend_string_init(msg, msg_len, 0);
     }
 }
 
@@ -1775,22 +1754,24 @@ redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz TSRMLS_DC)
  */
 PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
 {
-    if(redis_sock->prefix) {
-        efree(redis_sock->prefix);
+    if (redis_sock->prefix) {
+        zend_string_release(redis_sock->prefix);
     }
     if (redis_sock->pipeline_cmd) {
         efree(redis_sock->pipeline_cmd);
     }
-    if(redis_sock->err) {
-        efree(redis_sock->err);
+    if (redis_sock->err) {
+        zend_string_release(redis_sock->err);
     }
-    if(redis_sock->auth) {
-        efree(redis_sock->auth);
+    if (redis_sock->auth) {
+        zend_string_release(redis_sock->auth);
     }
-    if(redis_sock->persistent_id) {
-        efree(redis_sock->persistent_id);
+    if (redis_sock->persistent_id) {
+        zend_string_release(redis_sock->persistent_id);
     }
-    efree(redis_sock->host);
+    if (redis_sock->host) {
+        zend_string_release(redis_sock->host);
+    }
     efree(redis_sock);
 }
 
@@ -1809,6 +1790,8 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len
     uint8_t *val8;
 #endif
 
+    *val = NULL;
+    *val_len = 0;
     switch(redis_sock->serializer) {
         case REDIS_SERIALIZER_NONE:
             switch(Z_TYPE_P(z)) {
@@ -1830,8 +1813,8 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len
 
                 default: { /* copy */
                     zend_string *zstr = zval_get_string(z);
-                    *val = estrndup(zstr->val, zstr->len);
-                    *val_len = zstr->len;
+                    *val = estrndup(ZSTR_VAL(zstr), ZSTR_LEN(zstr));
+                    *val_len = ZSTR_LEN(zstr);
                     zend_string_release(zstr);
                     return 1;
                 }
@@ -1849,8 +1832,8 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len
             *val = estrndup(sstr.c, sstr.len);
             *val_len = sstr.len;
 #else
-            *val = estrndup(sstr.s->val, sstr.s->len);
-            *val_len = sstr.s->len;
+            *val = estrndup(ZSTR_VAL(sstr.s), ZSTR_LEN(sstr.s));
+            *val_len = ZSTR_LEN(sstr.s);
 #endif
             smart_str_free(&sstr);
 #if ZEND_MODULE_API_NO >= 20100000
@@ -1945,14 +1928,14 @@ redis_key_prefix(RedisSock *redis_sock, char **key, strlen_t *key_len) {
     int ret_len;
     char *ret;
 
-    if(redis_sock->prefix == NULL || redis_sock->prefix_len == 0) {
+    if (redis_sock->prefix == NULL) {
         return 0;
     }
 
-    ret_len = redis_sock->prefix_len + *key_len;
+    ret_len = ZSTR_LEN(redis_sock->prefix) + *key_len;
     ret = ecalloc(1 + ret_len, 1);
-    memcpy(ret, redis_sock->prefix, redis_sock->prefix_len);
-    memcpy(ret + redis_sock->prefix_len, *key, *key_len);
+    memcpy(ret, ZSTR_VAL(redis_sock->prefix), ZSTR_LEN(redis_sock->prefix));
+    memcpy(ret + ZSTR_LEN(redis_sock->prefix), *key, *key_len);
 
     *key = ret;
     *key_len = ret_len;
@@ -1999,6 +1982,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
     // Make sure we haven't lost the connection, even trying to reconnect
     if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         // Failure
+        *reply_type = EOF;
         return -1;
     }
 

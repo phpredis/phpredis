@@ -22,9 +22,25 @@ typedef struct {
     char *val;
 } zend_string;
 
+#define ZSTR_VAL(s) (s)->val
+#define ZSTR_LEN(s) (s)->len
+
+static zend_always_inline zend_string *
+zend_string_init(const char *str, size_t len, int persistent)
+{
+    zend_string *zstr = emalloc(sizeof(zend_string) + len + 1);
+
+    ZSTR_VAL(zstr) = (char *)zstr + sizeof(zend_string);
+    memcpy(ZSTR_VAL(zstr), str, len);
+    ZSTR_VAL(zstr)[len] = '\0';
+    zstr->len = len;
+    zstr->gc = 0x01;
+    return zstr;
+}
+
 #define zend_string_release(s) do { \
     if ((s) && (s)->gc) { \
-        if ((s)->gc & 0x10 && (s)->val) efree((s)->val); \
+        if ((s)->gc & 0x10 && ZSTR_VAL(s)) efree(ZSTR_VAL(s)); \
         if ((s)->gc & 0x01) efree((s)); \
     } \
 } while (0)
@@ -32,11 +48,12 @@ typedef struct {
 #define ZEND_HASH_FOREACH_KEY_VAL(ht, _h, _key, _val) do { \
     HashPosition _hpos; \
     for (zend_hash_internal_pointer_reset_ex(ht, &_hpos); \
-         (_val = zend_hash_get_current_data_ex(ht, &_hpos)) != NULL; \
+         zend_hash_has_more_elements_ex(ht, &_hpos) == SUCCESS; \
          zend_hash_move_forward_ex(ht, &_hpos) \
     ) { \
         zend_string _zstr = {0}; \
         char *_str_index; uint _str_length; ulong _num_index; \
+        _h = 0; _key = NULL; _val = zend_hash_get_current_data_ex(ht, &_hpos); \
         switch (zend_hash_get_current_key_ex(ht, &_str_index, &_str_length, &_num_index, 0, &_hpos)) { \
             case HASH_KEY_IS_STRING: \
                 _zstr.len = _str_length - 1; \
@@ -44,19 +61,27 @@ typedef struct {
                 _key = &_zstr; \
                 break; \
             case HASH_KEY_IS_LONG: \
-                _key = NULL; \
                 _h = _num_index; \
                 break; \
             default: \
-                continue; \
+                /* noop */ break; \
         }
 
 #define ZEND_HASH_FOREACH_VAL(ht, _val) do { \
     HashPosition _hpos; \
     for (zend_hash_internal_pointer_reset_ex(ht, &_hpos); \
-         (_val = zend_hash_get_current_data_ex(ht, &_hpos)) != NULL; \
+         zend_hash_has_more_elements_ex(ht, &_hpos) == SUCCESS; \
          zend_hash_move_forward_ex(ht, &_hpos) \
-    ) {
+    ) { \
+         _val = zend_hash_get_current_data_ex(ht, &_hpos); \
+
+#define ZEND_HASH_FOREACH_PTR(ht, _ptr) do { \
+    HashPosition _hpos; \
+    for (zend_hash_internal_pointer_reset_ex(ht, &_hpos); \
+         zend_hash_has_more_elements_ex(ht, &_hpos) == SUCCESS; \
+         zend_hash_move_forward_ex(ht, &_hpos) \
+    ) { \
+         _ptr = zend_hash_get_current_data_ptr_ex(ht, &_hpos); \
 
 #define ZEND_HASH_FOREACH_END() \
     } \
@@ -121,15 +146,16 @@ zend_hash_get_current_data(HashTable *ht)
 }
 
 static zend_always_inline void *
-zend_hash_get_current_data_ptr(HashTable *ht)
+zend_hash_get_current_data_ptr_ex(HashTable *ht, HashPosition *pos)
 {
     void **ptr;
 
-    if (zend_hash_get_current_data_ex(ht, (void **)&ptr, NULL) == SUCCESS) {
+    if (zend_hash_get_current_data_ex(ht, (void **)&ptr, pos) == SUCCESS) {
         return *ptr;
     }
     return NULL;
 }
+#define zend_hash_get_current_data_ptr(ht) zend_hash_get_current_data_ptr_ex(ht, NULL)
 
 static int (*_zend_hash_index_find)(const HashTable *, ulong, void **) = &zend_hash_index_find;
 #define zend_hash_index_find(ht, h) inline_zend_hash_index_find(ht, h)
@@ -210,21 +236,22 @@ extern int (*_add_next_index_stringl)(zval *, const char *, uint, int);
 
 #undef ZVAL_STRING
 #define ZVAL_STRING(z, s) do { \
-    const char *_s=(s); \
+    const char *_s = (s); \
     ZVAL_STRINGL(z, _s, strlen(_s)); \
 } while (0)
 #undef RETVAL_STRING
 #define RETVAL_STRING(s) ZVAL_STRING(return_value, s)
 #undef RETURN_STRING
 #define RETURN_STRING(s) { RETVAL_STRING(s); return; }
+
 #undef ZVAL_STRINGL
 #define ZVAL_STRINGL(z, s, l) do { \
-    const char *__s=(s); int __l=l; \
+    const char *__s = (s); int __l = l; \
     zval *__z = (z); \
     Z_STRLEN_P(__z) = __l; \
     Z_STRVAL_P(__z) = estrndup(__s, __l); \
     Z_TYPE_P(__z) = IS_STRING; \
-} while(0)
+} while (0)
 #undef RETVAL_STRINGL
 #define RETVAL_STRINGL(s, l) ZVAL_STRINGL(return_value, s, l)
 #undef RETURN_STRINGL
@@ -242,13 +269,19 @@ inline_call_user_function(HashTable *function_table, zval *object, zval *functio
     if (!params) param_count = 0;
     if (param_count > 0) {
         _params = ecalloc(param_count, sizeof(zval *));
-        for (i = 0; i < param_count; i++) {
-            _params[i] = &params[i];
-            INIT_PZVAL(_params[i]);
+        for (i = 0; i < param_count; ++i) {
+            zval *zv = &params[i];
+            MAKE_STD_ZVAL(_params[i]);
+            ZVAL_ZVAL(_params[i], zv, 1, 0);
         }
     }
     ret = _call_user_function(function_table, &object, function_name, retval_ptr, param_count, _params TSRMLS_CC);
-    if (_params) efree(_params);
+    if (_params) {
+        for (i = 0; i < param_count; ++i) {
+            zval_ptr_dtor(&_params[i]);
+        }
+        efree(_params);
+    }
     return ret;
 }
 
@@ -328,27 +361,28 @@ zval_get_string(zval *op)
 {
     zend_string *zstr = ecalloc(1, sizeof(zend_string));
 
-    zstr->val = "";
-    zstr->len = 0;
+    zstr->gc = 0;
+    ZSTR_VAL(zstr) = "";
+    ZSTR_LEN(zstr) = 0;
     switch (Z_TYPE_P(op)) {
         case IS_STRING:
-            zstr->val = Z_STRVAL_P(op);
-            zstr->len = Z_STRLEN_P(op);
+            ZSTR_VAL(zstr) = Z_STRVAL_P(op);
+            ZSTR_LEN(zstr) = Z_STRLEN_P(op);
             break;
         case IS_BOOL:
             if (Z_LVAL_P(op)) {
-                zstr->val = "1";
-                zstr->len = 1;
+                ZSTR_VAL(zstr) = "1";
+                ZSTR_LEN(zstr) = 1;
             }
             break;
         case IS_LONG: {
             zstr->gc = 0x10;
-            zstr->len = spprintf(&zstr->val, 0, "%ld", Z_LVAL_P(op));
+            ZSTR_LEN(zstr) = spprintf(&ZSTR_VAL(zstr), 0, "%ld", Z_LVAL_P(op));
             break;
         }
         case IS_DOUBLE: {
             zstr->gc = 0x10;
-            zstr->len = spprintf(&zstr->val, 0, "%.16g", Z_DVAL_P(op));
+            ZSTR_LEN(zstr) = spprintf(&ZSTR_VAL(zstr), 0, "%.16g", Z_DVAL_P(op));
             break;
         }
         EMPTY_SWITCH_DEFAULT_CASE()
@@ -362,6 +396,8 @@ extern void (*_php_var_serialize)(smart_str *, zval **, php_serialize_data_t * T
 extern int (*_php_var_unserialize)(zval **, const unsigned char **, const unsigned char *, php_unserialize_data_t * TSRMLS_DC);
 #define php_var_unserialize(rval, p, max, var_hash) _php_var_unserialize(&rval, p, max, var_hash TSRMLS_CC)
 typedef int strlen_t;
+
+#define PHPREDIS_ZVAL_IS_STRICT_FALSE(z) (Z_TYPE_P(z) == IS_BOOL && !Z_BVAL_P(z))
 
 /* If ZEND_MOD_END isn't defined, use legacy version */
 #ifndef ZEND_MOD_END
@@ -380,6 +416,7 @@ typedef int strlen_t;
 #include <zend_smart_str.h>
 #include <ext/standard/php_smart_string.h>
 typedef size_t strlen_t;
+#define PHPREDIS_ZVAL_IS_STRICT_FALSE(z) (Z_TYPE_P(z) == IS_FALSE)
 #endif
 
 /* NULL check so Eclipse doesn't go crazy */
@@ -457,12 +494,17 @@ typedef enum _PUBSUB_TYPE {
 #define BITOP_MIN_OFFSET 0
 #define BITOP_MAX_OFFSET 4294967295U
 
+/* Transaction modes */
+#define ATOMIC   0
+#define MULTI    1
+#define PIPELINE 2
+
 #define IF_ATOMIC() if (redis_sock->mode == ATOMIC)
 #define IF_NOT_ATOMIC() if (redis_sock->mode != ATOMIC)
-#define IF_MULTI() if (redis_sock->mode == MULTI)
-#define IF_NOT_MULTI() if (redis_sock->mode != MULTI)
-#define IF_PIPELINE() if (redis_sock->mode == PIPELINE)
-#define IF_NOT_PIPELINE() if (redis_sock->mode != PIPELINE)
+#define IF_MULTI() if (redis_sock->mode & MULTI)
+#define IF_NOT_MULTI() if (!(redis_sock->mode & MULTI))
+#define IF_PIPELINE() if (redis_sock->mode & PIPELINE)
+#define IF_NOT_PIPELINE() if (!(redis_sock->mode & PIPELINE))
 
 #define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) do { \
     if (redis_sock->pipeline_cmd == NULL) { \
@@ -483,14 +525,14 @@ typedef enum _PUBSUB_TYPE {
 }
 
 #define REDIS_SAVE_CALLBACK(callback, closure_context) do { \
-    fold_item *f1 = malloc(sizeof(fold_item)); \
-    f1->fun = (void *)callback; \
-    f1->ctx = closure_context; \
-    f1->next = NULL; \
+    fold_item *fi = malloc(sizeof(fold_item)); \
+    fi->fun = (void *)callback; \
+    fi->ctx = closure_context; \
+    fi->next = NULL; \
     if (redis_sock->current) { \
-        redis_sock->current->next = f1; \
+        redis_sock->current->next = fi; \
     } \
-    redis_sock->current = f1; \
+    redis_sock->current = fi; \
     if (NULL == redis_sock->head) { \
         redis_sock->head = redis_sock->current; \
     } \
@@ -505,7 +547,7 @@ typedef enum _PUBSUB_TYPE {
     efree(cmd);
 
 #define REDIS_PROCESS_RESPONSE_CLOSURE(function, closure_context) \
-    IF_MULTI() { \
+    IF_NOT_PIPELINE() { \
         if (redis_response_enqueued(redis_sock TSRMLS_CC) != SUCCESS) { \
             RETURN_FALSE; \
         } \
@@ -581,7 +623,8 @@ typedef enum _PUBSUB_TYPE {
 #define IS_LEX_ARG(s,l) \
     (l>0 && (*s=='(' || *s=='[' || (l==1 && (*s=='+' || *s=='-'))))
 
-typedef enum {ATOMIC, MULTI, PIPELINE} redis_mode;
+#define REDIS_ENABLE_MODE(redis_sock, m) (redis_sock->mode |= m)
+#define REDIS_DISABLE_MODE(redis_sock, m) (redis_sock->mode &= ~m)
 
 typedef struct fold_item {
     zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, void *, ...);
@@ -592,9 +635,9 @@ typedef struct fold_item {
 /* {{{ struct RedisSock */
 typedef struct {
     php_stream     *stream;
-    char           *host;
+    zend_string    *host;
     short          port;
-    char           *auth;
+    zend_string    *auth;
     double         timeout;
     double         read_timeout;
     long           retry_interval;
@@ -602,23 +645,22 @@ typedef struct {
     int            status;
     int            persistent;
     int            watching;
-    char           *persistent_id;
+    zend_string    *persistent_id;
 
     int            serializer;
     long           dbNumber;
 
-    char           *prefix;
-    int            prefix_len;
+    zend_string    *prefix;
 
-    redis_mode     mode;
+    short          mode;
     fold_item      *head;
     fold_item      *current;
 
     char           *pipeline_cmd;
     size_t         pipeline_len;
 
-    char           *err;
-    int            err_len;
+    zend_string    *err;
+
     zend_bool      lazy_connect;
 
     int            scan;
@@ -638,5 +680,434 @@ typedef struct {
     zend_object std;
 } redis_object;
 #endif
+
+/** Argument info for any function expecting 0 args */
+ZEND_BEGIN_ARG_INFO_EX(arginfo_void, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_value, 0, 0, 1)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_value, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_expire_value, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, expire)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_newkey, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, newkey)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pairs, 0, 0, 1)
+    ZEND_ARG_ARRAY_INFO(0, pairs, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_nkeys, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, other_keys)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_dst_nkeys, 0, 0, 2)
+    ZEND_ARG_INFO(0, dst)
+    ZEND_ARG_INFO(0, key)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, other_keys)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_min_max, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, min)
+    ZEND_ARG_INFO(0, max)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_member, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, member)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_member_value, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, member)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_members, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, member)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, other_members)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_timestamp, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, timestamp)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_offset, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, offset)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_offset_value, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, offset)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_start_end, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, start)
+    ZEND_ARG_INFO(0, end)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_echo, 0, 0, 1)
+    ZEND_ARG_INFO(0, msg)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_expire, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, timeout)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_set, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, value)
+    ZEND_ARG_INFO(0, timeout)
+    ZEND_ARG_INFO(0, opt)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_lset, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, index)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_blrpop, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, timeout_or_key)
+// Can't have variadic keys before timeout.
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, extra_args)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_linsert, 0, 0, 4)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, position)
+    ZEND_ARG_INFO(0, pivot)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_lindex, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, index)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_brpoplpush, 0, 0, 3)
+    ZEND_ARG_INFO(0, src)
+    ZEND_ARG_INFO(0, dst)
+    ZEND_ARG_INFO(0, timeout)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_rpoplpush, 0, 0, 2)
+    ZEND_ARG_INFO(0, src)
+    ZEND_ARG_INFO(0, dst)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sadd_array, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_ARRAY_INFO(0, options, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_srand_member, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, count)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zadd, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, score)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zincrby, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, value)
+    ZEND_ARG_INFO(0, member)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_hmget, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_ARRAY_INFO(0, keys, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_hmset, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_ARRAY_INFO(0, pairs, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_bitop, 0, 0, 3)
+    ZEND_ARG_INFO(0, operation)
+    ZEND_ARG_INFO(0, ret_key)
+    ZEND_ARG_INFO(0, key)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, other_keys)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_bitpos, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, bit)
+    ZEND_ARG_INFO(0, start)
+    ZEND_ARG_INFO(0, end)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_ltrim, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, start)
+    ZEND_ARG_INFO(0, stop)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_publish, 0, 0, 2)
+    ZEND_ARG_INFO(0, channel)
+    ZEND_ARG_INFO(0, message)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pfadd, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_ARRAY_INFO(0, elements, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pfmerge, 0, 0, 2)
+    ZEND_ARG_INFO(0, dstkey)
+    ZEND_ARG_ARRAY_INFO(0, keys, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_restore, 0, 0, 3)
+    ZEND_ARG_INFO(0, ttl)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_smove, 0, 0, 3)
+    ZEND_ARG_INFO(0, src)
+    ZEND_ARG_INFO(0, dst)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zrange, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, start)
+    ZEND_ARG_INFO(0, end)
+    ZEND_ARG_INFO(0, scores)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zrangebyscore, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, start)
+    ZEND_ARG_INFO(0, end)
+    ZEND_ARG_ARRAY_INFO(0, options, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zrangebylex, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, min)
+    ZEND_ARG_INFO(0, max)
+    ZEND_ARG_INFO(0, offset)
+    ZEND_ARG_INFO(0, limit)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zstore, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_ARRAY_INFO(0, keys, 0)
+    ZEND_ARG_ARRAY_INFO(0, weights, 1)
+    ZEND_ARG_INFO(0, aggregate)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sort, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_ARRAY_INFO(0, options, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_object, 0, 0, 2)
+    ZEND_ARG_INFO(0, field)
+    ZEND_ARG_INFO(0, key)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_subscribe, 0, 0, 1)
+    ZEND_ARG_ARRAY_INFO(0, channels, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_psubscribe, 0, 0, 1)
+    ZEND_ARG_ARRAY_INFO(0, patterns, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_unsubscribe, 0, 0, 1)
+    ZEND_ARG_INFO(0, channel)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, other_channels)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_punsubscribe, 0, 0, 1)
+    ZEND_ARG_INFO(0, pattern)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, other_patterns)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_eval, 0, 0, 1)
+    ZEND_ARG_INFO(0, script)
+    ZEND_ARG_INFO(0, args)
+    ZEND_ARG_INFO(0, num_keys)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_evalsha, 0, 0, 1)
+    ZEND_ARG_INFO(0, script_sha)
+    ZEND_ARG_INFO(0, args)
+    ZEND_ARG_INFO(0, num_keys)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_getoption, 0, 0, 1)
+    ZEND_ARG_INFO(0, option)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_setoption, 0, 0, 2)
+    ZEND_ARG_INFO(0, option)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_watch, 0, 0, 1)
+    ZEND_ARG_INFO(0, key)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, other_keys)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_info, 0, 0, 0)
+    ZEND_ARG_INFO(0, option)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_command, 0, 0, 0)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, args)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_rawcommand, 0, 0, 1)
+    ZEND_ARG_INFO(0, cmd)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, args)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_client, 0, 0, 1)
+    ZEND_ARG_INFO(0, cmd)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, args)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_config, 0, 0, 2)
+    ZEND_ARG_INFO(0, cmd)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pubsub, 0, 0, 1)
+    ZEND_ARG_INFO(0, cmd)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, args)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_script, 0, 0, 1)
+    ZEND_ARG_INFO(0, cmd)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, args)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_slowlog, 0, 0, 1)
+    ZEND_ARG_INFO(0, arg)
+    ZEND_ARG_INFO(0, option)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_geoadd, 0, 0, 4)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, lng)
+    ZEND_ARG_INFO(0, lat)
+    ZEND_ARG_INFO(0, member)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, other_triples)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_geodist, 0, 0, 3)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, src)
+    ZEND_ARG_INFO(0, dst)
+    ZEND_ARG_INFO(0, unit)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_georadius, 0, 0, 5)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, lng)
+    ZEND_ARG_INFO(0, lan)
+    ZEND_ARG_INFO(0, radius)
+    ZEND_ARG_INFO(0, unit)
+    ZEND_ARG_ARRAY_INFO(0, opts, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_georadiusbymember, 0, 0, 4)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, member)
+    ZEND_ARG_INFO(0, radius)
+    ZEND_ARG_INFO(0, unit)
+    ZEND_ARG_ARRAY_INFO(0, opts, 0)
+ZEND_END_ARG_INFO()
 
 #endif

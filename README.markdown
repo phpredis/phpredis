@@ -1,6 +1,7 @@
 # PhpRedis
 
 [![Build Status](https://travis-ci.org/phpredis/phpredis.svg?branch=develop)](https://travis-ci.org/phpredis/phpredis)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/13205/badge.svg)](https://scan.coverity.com/projects/phpredis-phpredis)
 
 The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 This code has been developed and maintained by Owlient from November 2009 to March 2011.
@@ -223,7 +224,7 @@ $redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay 
 _**Description**_: Connects to a Redis instance or reuse a connection already established with `pconnect`/`popen`.
 
 The connection will not be closed on `close` or end of request until the php process ends.
-So be patient on to many open FD's (specially on redis server side) when using persistent
+So be patient on too many open FD's (specially on redis server side) when using persistent
 connections on many servers connecting to one redis server.
 
 Also more than one persistent connection can be made identified by either host + port + timeout
