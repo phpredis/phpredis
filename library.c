@@ -1517,16 +1517,17 @@ PHP_REDIS_API int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
 
     redis_sock->dbNumber = 0;
     if (redis_sock->stream != NULL) {
-			redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
-            redis_sock->watching = 0;
+        redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
+        redis_sock->watching = 0;
 
-            /* Stil valid? */
-            if (!redis_sock->persistent) {
-                php_stream_close(redis_sock->stream);
-            }
-            redis_sock->stream = NULL;
+        /* Stil valid? */
+        if (!redis_sock->persistent) {
+            php_stream_close(redis_sock->stream);
+        }
 
-            return 1;
+        redis_sock->stream = NULL;
+
+        return 1;
     }
 
     return 0;
@@ -1967,12 +1968,12 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size,
         return -1;
     }
 
-	/* We don't need \r\n */
-	*line_size-=2;
-	buf[*line_size]='\0';
+    /* We don't need \r\n */
+    *line_size-=2;
+    buf[*line_size]='\0';
 
-	/* Success! */
-	return 0;
+    /* Success! */
+    return 0;
 }
 
 PHP_REDIS_API int
@@ -2001,17 +2002,17 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
         // Buffer to hold size information
         char inbuf[255];
 
-		/* Read up to our newline */
-		if(php_stream_gets(redis_sock->stream, inbuf, sizeof(inbuf)) == NULL) {
-			return -1;
-		}
+        /* Read up to our newline */
+        if (php_stream_gets(redis_sock->stream, inbuf, sizeof(inbuf)) == NULL) {
+            return -1;
+        }
 
-		/* Set our size response */
-		*reply_info = atol(inbuf);
-	}
+        /* Set our size response */
+        *reply_info = atol(inbuf);
+    }
 
-	/* Success! */
-	return 0;
+    /* Success! */
+    return 0;
 }
 
 /*
@@ -2025,26 +2026,26 @@ redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type,
     char inbuf[4096];
     size_t line_size;
 
-	/* Attempt to read our single line reply */
-	if(redis_sock_gets(redis_sock, inbuf, sizeof(inbuf), &line_size TSRMLS_CC) < 0) {
-		return -1;
-	}
+    /* Attempt to read our single line reply */
+    if(redis_sock_gets(redis_sock, inbuf, sizeof(inbuf), &line_size TSRMLS_CC) < 0) {
+        return -1;
+    }
 
     // If this is an error response, check if it is a SYNC error, and throw in
     // that case
     if(reply_type == TYPE_ERR) {
-		/* Set our last error */
-		redis_sock_set_err(redis_sock, inbuf, line_size);
+        /* Set our last error */
+        redis_sock_set_err(redis_sock, inbuf, line_size);
 
         /* Handle throwable errors */
         redis_error_throw(redis_sock TSRMLS_CC);
 
-		/* Set our response to FALSE */
-		ZVAL_FALSE(z_ret);
-	} else {
-		/* Set our response to TRUE */
-		ZVAL_TRUE(z_ret);
-	}
+        /* Set our response to FALSE */
+        ZVAL_FALSE(z_ret);
+    } else {
+        /* Set our response to TRUE */
+        ZVAL_TRUE(z_ret);
+    }
 
     return 0;
 }
@@ -2056,11 +2057,11 @@ redis_read_variant_bulk(RedisSock *redis_sock, int size, zval *z_ret
     // Attempt to read the bulk reply
     char *bulk_resp = redis_sock_read_bulk_reply(redis_sock, size TSRMLS_CC);
 
-	/* Set our reply to FALSE on failure, and the string on success */
-	if(bulk_resp == NULL) {
-		ZVAL_FALSE(z_ret);
-		return -1;
-	}
+    /* Set our reply to FALSE on failure, and the string on success */
+    if(bulk_resp == NULL) {
+        ZVAL_FALSE(z_ret);
+        return -1;
+    }
     ZVAL_STRINGL(z_ret, bulk_resp, size);
     efree(bulk_resp);
     return 0;
@@ -2126,9 +2127,9 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval *z_ret
                 break;
         }
 
-		/* Decrement our element counter */
-		elements--;
-	}
+        /* Decrement our element counter */
+        elements--;
+    }
 
     return 0;
 }
@@ -2152,21 +2153,21 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 #if (PHP_MAJOR_VERSION < 7)
     MAKE_STD_ZVAL(z_ret);
 #endif
-	/* Switch based on our top level reply type */
-	switch(reply_type) {
-		case TYPE_ERR:
-		case TYPE_LINE:
-			redis_read_variant_line(redis_sock, reply_type, z_ret TSRMLS_CC);
-			break;
-		case TYPE_INT:
-			ZVAL_LONG(z_ret, reply_info);
-			break;
-		case TYPE_BULK:
-			redis_read_variant_bulk(redis_sock, reply_info, z_ret TSRMLS_CC);
-			break;
-		case TYPE_MULTIBULK:
-			/* Initialize an array for our multi-bulk response */
-			array_init(z_ret);
+    /* Switch based on our top level reply type */
+    switch(reply_type) {
+        case TYPE_ERR:
+        case TYPE_LINE:
+            redis_read_variant_line(redis_sock, reply_type, z_ret TSRMLS_CC);
+            break;
+        case TYPE_INT:
+            ZVAL_LONG(z_ret, reply_info);
+            break;
+        case TYPE_BULK:
+            redis_read_variant_bulk(redis_sock, reply_info, z_ret TSRMLS_CC);
+            break;
+        case TYPE_MULTIBULK:
+            /* Initialize an array for our multi-bulk response */
+            array_init(z_ret);
 
             // If we've got more than zero elements, parse our multi bulk
             // response recursively
@@ -2185,15 +2186,15 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             return FAILURE;
     }
 
-	IF_NOT_ATOMIC() {
-		add_next_index_zval(z_tab, z_ret);
-	} else {
-		/* Set our return value */
+    IF_NOT_ATOMIC() {
+        add_next_index_zval(z_tab, z_ret);
+    } else {
+        /* Set our return value */
         RETVAL_ZVAL(z_ret, 0, 1);
-	}
+    }
 
-	/* Success */
-	return 0;
+    /* Success */
+    return 0;
 }
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

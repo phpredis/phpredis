@@ -332,14 +332,14 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
 
     return retval;
 #else
-	object_properties_init(&cluster->std, class_type);
-	memcpy(&RedisCluster_handlers, zend_get_std_object_handlers(), sizeof(RedisCluster_handlers));
-	RedisCluster_handlers.offset = XtOffsetOf(redisCluster, std);
+    object_properties_init(&cluster->std, class_type);
+    memcpy(&RedisCluster_handlers, zend_get_std_object_handlers(), sizeof(RedisCluster_handlers));
+    RedisCluster_handlers.offset = XtOffsetOf(redisCluster, std);
     RedisCluster_handlers.free_obj = free_cluster_context;
 
-	cluster->std.handlers = &RedisCluster_handlers;
+    cluster->std.handlers = &RedisCluster_handlers;
 
-	return &cluster->std;
+    return &cluster->std;
 #endif
 }
 
@@ -606,21 +606,21 @@ static int get_key_val_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
                           clusterKeyValHT *kv TSRMLS_DC)
 {
     zval *z_val;
-	zend_ulong idx;
+    zend_ulong idx;
 
     // Grab the key, convert it to a string using provided kbuf buffer if it's
     // a LONG style key
 #if (PHP_MAJOR_VERSION < 7)
-	uint key_len;
-	switch(zend_hash_get_current_key_ex(ht, &(kv->key), &key_len, &idx, 0, ptr)) {
-		case HASH_KEY_IS_STRING:
-			kv->key_len = (int)(key_len-1);
+    uint key_len;
+    switch(zend_hash_get_current_key_ex(ht, &(kv->key), &key_len, &idx, 0, ptr)) {
+        case HASH_KEY_IS_STRING:
+            kv->key_len = (int)(key_len-1);
 #else
-	zend_string *zkey;
-	switch (zend_hash_get_current_key_ex(ht, &zkey, &idx, ptr)) {
-		case HASH_KEY_IS_STRING:
-			kv->key_len = ZSTR_LEN(zkey);
-			kv->key = ZSTR_VAL(zkey);
+    zend_string *zkey;
+    switch (zend_hash_get_current_key_ex(ht, &zkey, &idx, ptr)) {
+        case HASH_KEY_IS_STRING:
+            kv->key_len = ZSTR_LEN(zkey);
+            kv->key = ZSTR_VAL(zkey);
 #endif
             break;
         case HASH_KEY_IS_LONG:
@@ -743,7 +743,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     // it's the first iteration every time, needlessly
     zend_hash_internal_pointer_reset_ex(ht_arr, &ptr);
     if(get_key_ht(c, ht_arr, &ptr, &kv TSRMLS_CC)<0) {
-		efree(z_args);
+        efree(z_args);
         return -1;
     }
 
@@ -765,7 +765,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
                 zend_hash_destroy(ht_arr);
                 efree(ht_arr);
             }
-			efree(z_args);
+            efree(z_args);
             return -1;
         }
     
@@ -780,7 +780,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
                     zend_hash_destroy(ht_arr);
                     efree(ht_arr);
                 }
-				efree(z_args);
+                efree(z_args);
                 return -1;
             }
         }
@@ -797,7 +797,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
 
         zend_hash_move_forward_ex(ht_arr, &ptr);
     }
-	efree(z_args);
+    efree(z_args);
 
     // If we've got straggler(s) process them
     if(mc.argc > 0) {
@@ -2246,10 +2246,10 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
         zend_string_release(zstr);
         if(key_free) efree(key);
     } else if (Z_TYPE_P(z_arg) == IS_ARRAY && 
-		(z_host = zend_hash_index_find(Z_ARRVAL_P(z_arg), 0)) != NULL &&
-		(z_port = zend_hash_index_find(Z_ARRVAL_P(z_arg), 1)) != NULL &&
-		Z_TYPE_P(z_host) == IS_STRING && Z_TYPE_P(z_port) == IS_LONG
-	) {
+        (z_host = zend_hash_index_find(Z_ARRVAL_P(z_arg), 0)) != NULL &&
+        (z_port = zend_hash_index_find(Z_ARRVAL_P(z_arg), 1)) != NULL &&
+        Z_TYPE_P(z_host) == IS_STRING && Z_TYPE_P(z_port) == IS_LONG
+    ) {
         /* Attempt to find this specific node by host:port */
         slot = cluster_find_slot(c,(const char *)Z_STRVAL_P(z_host),
             (unsigned short)Z_LVAL_P(z_port));
