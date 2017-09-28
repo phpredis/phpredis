@@ -215,7 +215,6 @@ free_redis_array_object(zend_object *object)
         redis_array_free(obj->ra);
     }
     zend_object_std_dtor(&obj->std TSRMLS_CC);
-    zend_object_release(object);
 }
 
 zend_object *
