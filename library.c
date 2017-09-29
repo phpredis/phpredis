@@ -1705,6 +1705,7 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
     array_init(z_multi_result); /* pre-allocate array for multi's results. */
 
     for(i = 0; i < numElems; ++i) {
+        zend_string *zstr = zval_get_string(&z_keys[i]);
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
         if(response != NULL) {
             zval zv0, *z = &zv0;
@@ -1713,14 +1714,15 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
                 MAKE_STD_ZVAL(z);
                 *z = zv0;
 #endif
-                add_assoc_zval_ex(z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), z);
+                add_assoc_zval_ex(z_multi_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), z);
             } else {
-                add_assoc_stringl_ex(z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), response, response_len);
+                add_assoc_stringl_ex(z_multi_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), response, response_len);
             }
             efree(response);
         } else {
-            add_assoc_bool_ex(z_multi_result, Z_STRVAL(z_keys[i]), Z_STRLEN(z_keys[i]), 0);
+            add_assoc_bool_ex(z_multi_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), 0);
         }
+        zend_string_release(zstr);
         zval_dtor(&z_keys[i]);
     }
     efree(z_keys);
@@ -1728,7 +1730,7 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
     IF_NOT_ATOMIC() {
         add_next_index_zval(z_tab, z_multi_result);
     } else {
-        RETVAL_ZVAL(z_multi_result, 0, 1);
+        RETVAL_ZVAL(z_multi_result, 1, 0);
     }
     return 0;
 }
