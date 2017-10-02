@@ -502,7 +502,7 @@ PHP_METHOD(RedisCluster, __construct) {
 
     // Parse arguments
     if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
-                                    "Os|addb", &object, redis_cluster_ce, &name,
+                                    "Os!|addb", &object, redis_cluster_ce, &name,
                                     &name_len, &z_seeds, &timeout,
                                     &read_timeout, &persistent)==FAILURE)
     {
