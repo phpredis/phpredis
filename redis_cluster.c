@@ -552,7 +552,7 @@ PHP_METHOD(RedisCluster, reconnect) {
      node->sock->persistent_id = NULL;
      php_stream_close(node->sock->stream);
      node->sock->stream = NULL;
-     redis_sock_connect(node->sock);
+     redis_sock_connect(node->sock TSRMLS_CC);
    } ZEND_HASH_FOREACH_END();
    RETURN_TRUE;
 }
