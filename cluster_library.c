@@ -2435,6 +2435,7 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
 
     // Loop while we've got replies
     while(count--) {
+        zend_string *zstr = zval_get_string(&z_keys[i]);
         line = redis_sock_read(redis_sock, &line_len TSRMLS_CC);
 
         if(line != NULL) {
@@ -2444,19 +2445,17 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
                 MAKE_STD_ZVAL(z);
                 *z = zv;
 #endif
-                add_assoc_zval_ex(z_result,Z_STRVAL(z_keys[i]),
-                    Z_STRLEN(z_keys[i]), z);
+                add_assoc_zval_ex(z_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), z);
             } else {
-                add_assoc_stringl_ex(z_result, Z_STRVAL(z_keys[i]),
-                    Z_STRLEN(z_keys[i]), line, line_len);
+                add_assoc_stringl_ex(z_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), line, line_len);
             }
             efree(line);
         } else {
-            add_assoc_bool_ex(z_result, Z_STRVAL(z_keys[i]),
-                Z_STRLEN(z_keys[i]), 0);
+            add_assoc_bool_ex(z_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), 0);
         }
 
         // Clean up key context
+        zend_string_release(zstr);
         zval_dtor(&z_keys[i]);
 
         // Move to the next key

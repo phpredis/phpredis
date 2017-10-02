@@ -1389,7 +1389,6 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ) {
             // Copy into our member array
             ZVAL_ZVAL(&z_mems[valid], z_mem, 1, 0);
-            convert_to_string(&z_mems[valid]);
 
             // Increment the member count to actually send
             valid++;
@@ -1416,8 +1415,9 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Iterate over members, appending as arguments
     for(i=0;i<valid;i++) {
-        redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_mems[i]),
-            Z_STRLEN(z_mems[i]));
+        zend_string *zstr = zval_get_string(&z_mems[i]);
+        redis_cmd_append_sstr(&cmdstr, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
+        zend_string_release(zstr);
     }
 
     // Set our slot
