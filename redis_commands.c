@@ -89,6 +89,51 @@ int redis_build_raw_cmd(zval *z_args, int argc, char **cmd, int *cmd_len TSRMLS_
     return SUCCESS;
 }
 
+smart_string *
+redis_build_script_cmd(smart_string *cmd, int argc, zval *z_args)
+{
+    int i;
+    zend_string *zstr;
+
+    if (Z_TYPE(z_args[0]) != IS_STRING) {
+        return NULL;
+    }
+    // Branch based on the directive
+    if (!strcasecmp(Z_STRVAL(z_args[0]), "flush") || !strcasecmp(Z_STRVAL(z_args[0]), "kill")) {
+        // Simple SCRIPT FLUSH, or SCRIPT_KILL command
+        REDIS_CMD_INIT_SSTR_STATIC(cmd, argc, "SCRIPT");
+        redis_cmd_append_sstr(cmd, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
+    } else if (!strcasecmp(Z_STRVAL(z_args[0]), "load")) {
+        // Make sure we have a second argument, and it's not empty.  If it is
+        // empty, we can just return an empty array (which is what Redis does)
+        if (argc < 2 || Z_TYPE(z_args[1]) != IS_STRING || Z_STRLEN(z_args[1]) < 1) {
+            return NULL;
+        }
+        // Format our SCRIPT LOAD command
+        REDIS_CMD_INIT_SSTR_STATIC(cmd, argc, "SCRIPT");
+        redis_cmd_append_sstr(cmd, "LOAD", sizeof("LOAD") - 1);
+        redis_cmd_append_sstr(cmd, Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1]));
+    } else if (!strcasecmp(Z_STRVAL(z_args[0]), "exists")) {
+        // Make sure we have a second argument
+        if (argc < 2) {
+            return NULL;
+        }
+        /* Construct our SCRIPT EXISTS command */
+        REDIS_CMD_INIT_SSTR_STATIC(cmd, argc, "SCRIPT");
+        redis_cmd_append_sstr(cmd, "EXISTS", sizeof("EXISTS") - 1);
+
+        for (i = 1; i < argc; ++i) {
+            zstr = zval_get_string(&z_args[i]);
+            redis_cmd_append_sstr(cmd, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
+            zend_string_release(zstr);
+        }
+    } else {
+        /* Unknown directive */
+        return NULL;
+    }
+    return cmd;
+}
+
 /* Generic command where we just take a string and do nothing to it*/
 int redis_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
                   char **cmd, int *cmd_len, short *slot, void **ctx)
