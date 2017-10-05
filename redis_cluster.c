@@ -74,6 +74,16 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_cluster, 0, 0, 1)
 #endif
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_script, 0, 0, 2)
+    ZEND_ARG_INFO(0, key_or_address)
+    ZEND_ARG_INFO(0, cmd)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, args)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
 /* Argument info for HSCAN, SSCAN, HSCAN */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan_cl, 0, 0, 2)
     ZEND_ARG_INFO(0, str_key)
@@ -2345,6 +2355,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
 
     /* First argument needs to be the "where" */
     if((slot = cluster_cmd_get_slot(c, &z_args[0] TSRMLS_CC))<0) {
+        efree(z_args);
         RETURN_FALSE;
     }
 
@@ -2778,8 +2789,52 @@ PHP_METHOD(RedisCluster, pubsub) {
 /* {{{ proto mixed RedisCluster::script(string key, ...) 
  *     proto mixed RedisCluster::script(array host_port, ...) */
 PHP_METHOD(RedisCluster, script) {
-    cluster_raw_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SCRIPT",
-        sizeof("SCRIPT")-1);
+    redisCluster *c = GET_CONTEXT();
+    smart_string cmd = {0};
+    zval *z_args;
+    short slot;
+    int i, argc = ZEND_NUM_ARGS();
+
+    /* Commands using this pass-thru don't need to be enabled in MULTI mode */
+    if (!CLUSTER_IS_ATOMIC(c)) {
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "Command can't be issued in MULTI mode");
+        RETURN_FALSE;
+    }
+
+    /* We at least need the key or [host,port] argument */
+    if (argc < 2) {
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "Command requires at least an argument to direct to a node");
+        RETURN_FALSE;
+    }
+
+    /* Allocate an array to process arguments */
+    z_args = ecalloc(argc, sizeof(zval));
+
+    /* Grab args */
+    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
+        (slot = cluster_cmd_get_slot(c, &z_args[0] TSRMLS_CC)) < 0 ||
+        redis_build_script_cmd(&cmd, argc - 1, &z_args[1]) == NULL
+    ) {
+        efree(z_args);
+        RETURN_FALSE;
+    }
+
+    /* Send it off */
+    if (cluster_send_slot(c, slot, cmd.c, cmd.len, TYPE_EOF TSRMLS_CC) < 0) {
+        zend_throw_exception(redis_cluster_exception_ce,
+            "Couldn't send command to node", 0 TSRMLS_CC);
+        efree(cmd.c);
+        efree(z_args);
+        RETURN_FALSE;
+    }
+
+    /* Read the response variant */
+    cluster_variant_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+
+    efree(cmd.c);
+    efree(z_args);
 }
 /* }}} */
 

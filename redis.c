@@ -165,6 +165,15 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_wait, 0, 0, 2)
     ZEND_ARG_INFO(0, timeout)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_script, 0, 0, 1)
+    ZEND_ARG_INFO(0, cmd)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, args)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
 /**
  * Argument info for the SCAN proper
  */
@@ -2893,27 +2902,6 @@ PHP_METHOD(Redis, evalsha) {
     REDIS_PROCESS_KW_CMD("EVALSHA", redis_eval_cmd, redis_read_variant_reply);
 }
 
-PHP_REDIS_API int
-redis_build_script_exists_cmd(char **ret, zval *argv, int argc) {
-    smart_string cmd = {0};
-    zend_string *zstr;
-    int i;
-
-    // Start building our command
-    REDIS_CMD_INIT_SSTR_STATIC(&cmd, 1 + argc, "SCRIPT");
-    redis_cmd_append_sstr(&cmd, "EXISTS", 6);
-
-    for (i = 0; i < argc; i++) {
-        zstr = zval_get_string(&argv[i]);
-        redis_cmd_append_sstr(&cmd, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
-        zend_string_release(zstr);
-    }
-
-    /* Success */
-    *ret = cmd.c;
-    return cmd.len;
-}
-
 /* {{{ proto status Redis::script('flush')
  * {{{ proto status Redis::script('kill')
  * {{{ proto string Redis::script('load', lua_script)
@@ -2922,53 +2910,21 @@ redis_build_script_exists_cmd(char **ret, zval *argv, int argc) {
 PHP_METHOD(Redis, script) {
     zval *z_args;
     RedisSock *redis_sock;
-    int cmd_len, argc;
-    char *cmd;
+    smart_string cmd = {0};
+    int argc = ZEND_NUM_ARGS();
 
     /* Attempt to grab our socket */
-    if ((redis_sock = redis_sock_get(getThis() TSRMLS_CC, 0)) == NULL) {
+    if (argc < 1 || (redis_sock = redis_sock_get(getThis() TSRMLS_CC, 0)) == NULL) {
         RETURN_FALSE;
     }
 
-    /* Grab the number of arguments */
-    argc = ZEND_NUM_ARGS();
-
     /* Allocate an array big enough to store our arguments */
-    z_args = emalloc(argc * sizeof(zval));
+    z_args = ecalloc(argc, sizeof(zval));
 
     /* Make sure we can grab our arguments, we have a string directive */
     if (zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
-       (argc < 1 || Z_TYPE(z_args[0]) != IS_STRING))
-    {
-        efree(z_args);
-        RETURN_FALSE;
-    }
-
-    // Branch based on the directive
-    if(!strcasecmp(Z_STRVAL(z_args[0]), "flush") ||
-       !strcasecmp(Z_STRVAL(z_args[0]), "kill"))
-    {
-        // Simple SCRIPT FLUSH, or SCRIPT_KILL command
-        cmd_len = REDIS_SPPRINTF(&cmd, "SCRIPT", "s", Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
-    } else if(!strcasecmp(Z_STRVAL(z_args[0]), "load")) {
-        // Make sure we have a second argument, and it's not empty.  If it is
-        // empty, we can just return an empty array (which is what Redis does)
-        if(argc < 2 || Z_TYPE(z_args[1]) != IS_STRING ||
-           Z_STRLEN(z_args[1]) < 1)
-        {
-            // Free our args
-            efree(z_args);
-            RETURN_FALSE;
-        }
-
-        // Format our SCRIPT LOAD command
-        cmd_len = REDIS_SPPRINTF(&cmd, "SCRIPT", "ss", "LOAD", 4, Z_STRVAL(z_args[1]),
-                                 Z_STRLEN(z_args[1]));
-    } else if(!strcasecmp(Z_STRVAL(z_args[0]), "exists")) {
-        /* Construct our SCRIPT EXISTS command */
-        cmd_len = redis_build_script_exists_cmd(&cmd, &(z_args[1]), argc-1);
-    } else {
-        /* Unknown directive */
+        redis_build_script_cmd(&cmd, argc, z_args) == NULL
+    ) {
         efree(z_args);
         RETURN_FALSE;
     }
@@ -2977,7 +2933,7 @@ PHP_METHOD(Redis, script) {
     efree(z_args);
 
     // Kick off our request
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
     IF_ATOMIC() {
         if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                     redis_sock, NULL, NULL) < 0)
