@@ -564,11 +564,7 @@ redis_sock_get_instance(zval *id TSRMLS_DC, int no_throw)
     redis_object *redis;
 
     if (Z_TYPE_P(id) == IS_OBJECT) {
-#if (PHP_MAJOR_VERSION < 7)
-        redis = (redis_object *)zend_objects_get_address(id TSRMLS_CC);
-#else
-        redis = (redis_object *)((char *)Z_OBJ_P(id) - XtOffsetOf(redis_object, std));
-#endif
+        redis = PHPREDIS_GET_OBJECT(redis_object, id);
         if (redis->sock) {
             return redis->sock;
         }
@@ -890,11 +886,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
         port = 6379;
     }
 
-#if (PHP_MAJOR_VERSION < 7)
-    redis = (redis_object *)zend_objects_get_address(object TSRMLS_CC);
-#else
-    redis = (redis_object *)((char *)Z_OBJ_P(object) - XtOffsetOf(redis_object, std));
-#endif
+    redis = PHPREDIS_GET_OBJECT(redis_object, object);
     /* if there is a redis sock already we have to remove it */
     if (redis->sock) {
         redis_sock_disconnect(redis->sock TSRMLS_CC);

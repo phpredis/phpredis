@@ -245,11 +245,7 @@ redis_array_get(zval *id TSRMLS_DC)
     redis_array_object *obj;
 
     if (Z_TYPE_P(id) == IS_OBJECT) {
-#if (PHP_MAJOR_VERSION < 7)
-        obj = (redis_array_object *)zend_objects_get_address(id TSRMLS_CC);
-#else
-        obj = (redis_array_object *)((char *)Z_OBJ_P(id) - XtOffsetOf(redis_array_object, std));
-#endif
+        obj = PHPREDIS_GET_OBJECT(redis_array_object, id);
         return obj->ra;
     }
     return NULL;
@@ -368,11 +364,7 @@ PHP_METHOD(RedisArray, __construct)
         ra->auto_rehash = b_autorehash;
         ra->connect_timeout = d_connect_timeout;
         if(ra->prev) ra->prev->auto_rehash = b_autorehash;
-#if (PHP_MAJOR_VERSION < 7)
-        obj = (redis_array_object *)zend_objects_get_address(getThis() TSRMLS_CC);
-#else
-        obj = (redis_array_object *)((char *)Z_OBJ_P(getThis()) - XtOffsetOf(redis_array_object, std));
-#endif
+        obj = PHPREDIS_GET_OBJECT(redis_array_object, getThis());
         obj->ra = ra;
     }
 }

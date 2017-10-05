@@ -69,11 +69,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
         call_user_function(&redis_ce->function_table, &ra->redis[i], &z_cons, &z_ret, 0, NULL);
         zval_dtor(&z_ret);
 
-#if (PHP_MAJOR_VERSION < 7)
-        redis = (redis_object *)zend_objects_get_address(&ra->redis[i] TSRMLS_CC);
-#else
-        redis = (redis_object *)((char *)Z_OBJ_P(&ra->redis[i]) - XtOffsetOf(redis_object, std));
-#endif
+        redis = PHPREDIS_GET_OBJECT(redis_object, &ra->redis[i]);
 
         /* create socket */
         redis->sock = redis_sock_create(host, host_len, port, ra->connect_timeout, ra->read_timeout, ra->pconnect, NULL, retry_interval, b_lazy_connect);
