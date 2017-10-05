@@ -412,11 +412,14 @@ typedef int strlen_t;
 /* References don't need any actions */
 #define ZVAL_DEREF(v) PHPREDIS_NOTUSED(v)
 
+#define PHPREDIS_GET_OBJECT(class_entry, z) (class_entry *)zend_objects_get_address(z TSRMLS_CC)
+
 #else
 #include <zend_smart_str.h>
 #include <ext/standard/php_smart_string.h>
 typedef size_t strlen_t;
 #define PHPREDIS_ZVAL_IS_STRICT_FALSE(z) (Z_TYPE_P(z) == IS_FALSE)
+#define PHPREDIS_GET_OBJECT(class_entry, z) (class_entry *)((char *)Z_OBJ_P(z) - XtOffsetOf(class_entry, std))
 #endif
 
 /* NULL check so Eclipse doesn't go crazy */
