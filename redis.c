@@ -83,6 +83,39 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_connect, 0, 0, 2)
     ZEND_ARG_INFO(0, retry_interval)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_info, 0, 0, 0)
+    ZEND_ARG_INFO(0, option)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_client, 0, 0, 1)
+    ZEND_ARG_INFO(0, cmd)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, args)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_config, 0, 0, 2)
+    ZEND_ARG_INFO(0, cmd)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pubsub, 0, 0, 1)
+    ZEND_ARG_INFO(0, cmd)
+#if PHP_VERSION_ID >= 50600
+    ZEND_ARG_VARIADIC_INFO(0, args)
+#else
+    ZEND_ARG_INFO(0, ...)
+#endif
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_slowlog, 0, 0, 1)
+    ZEND_ARG_INFO(0, arg)
+    ZEND_ARG_INFO(0, option)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pconnect, 0, 0, 2)
     ZEND_ARG_INFO(0, host)
     ZEND_ARG_INFO(0, port)
@@ -230,7 +263,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, eval, arginfo_eval, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, evalsha, arginfo_evalsha, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, exec, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, exists, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, exists, arginfo_exists, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, expireAt, arginfo_key_timestamp, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, flushAll, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, flushDB, arginfo_void, ZEND_ACC_PUBLIC)
