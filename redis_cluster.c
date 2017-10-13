@@ -46,7 +46,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_ctor, 0, 0, 1)
     ZEND_ARG_INFO(0, timeout)
     ZEND_ARG_INFO(0, read_timeout)
     ZEND_ARG_INFO(0, persistent)
-ZEND_END_ARG_INFO();
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_del, 0, 0, 1)
     ZEND_ARG_INFO(0, key)
@@ -65,7 +65,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_keys, 0, 0, 1)
     ZEND_ARG_INFO(0, pattern)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_cluster, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_or_address, 0, 0, 1)
+    ZEND_ARG_INFO(0, key_or_address)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_key_or_address_variadic, 0, 0, 1)
+    ZEND_ARG_INFO(0, key_or_address)
     ZEND_ARG_INFO(0, arg)
 #if PHP_VERSION_ID >= 50600
     ZEND_ARG_VARIADIC_INFO(0, other_args)
@@ -74,14 +79,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_cluster, 0, 0, 1)
 #endif
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_script, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_info, 0, 0, 1)
     ZEND_ARG_INFO(0, key_or_address)
-    ZEND_ARG_INFO(0, cmd)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, args)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
+    ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
 
 /* Argument info for HSCAN, SSCAN, HSCAN */
@@ -90,7 +90,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan_cl, 0, 0, 2)
     ZEND_ARG_INFO(1, i_iterator)
     ZEND_ARG_INFO(0, str_pattern)
     ZEND_ARG_INFO(0, i_count)
-ZEND_END_ARG_INFO();
+ZEND_END_ARG_INFO()
 
 /* Argument infor for SCAN */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_scan_cl, 0, 0, 2)
@@ -98,7 +98,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_scan_cl, 0, 0, 2)
     ZEND_ARG_INFO(0, str_node)
     ZEND_ARG_INFO(0, str_pattern)
     ZEND_ARG_INFO(0, i_count)
-ZEND_END_ARG_INFO();
+ZEND_END_ARG_INFO()
 
 /* Function table */
 zend_function_entry redis_cluster_functions[] = {
@@ -109,8 +109,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, _serialize, arginfo_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _unserialize, arginfo_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, append, arginfo_key_value, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, bgrewriteaof, arginfo_void, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, bgsave, arginfo_void, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, bgrewriteaof, arginfo_key_or_address, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, bgsave, arginfo_key_or_address, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, bitcount, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, bitop, arginfo_bitop, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, bitpos, arginfo_bitpos, ZEND_ACC_PUBLIC)
@@ -118,12 +118,12 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, brpop, arginfo_blrpop, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, brpoplpush, arginfo_brpoplpush, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, clearlasterror, arginfo_void, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, client, arginfo_client, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, client, arginfo_key_or_address_variadic, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, close, arginfo_void, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, cluster, arginfo_cluster, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, cluster, arginfo_key_or_address_variadic, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, command, arginfo_command, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, config, arginfo_config, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, dbsize, arginfo_void, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, config, arginfo_key_or_address_variadic, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, dbsize, arginfo_key_or_address, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, decr, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, decrby, arginfo_key_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, del, arginfo_del, ZEND_ACC_PUBLIC)
@@ -136,8 +136,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, exists, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, expire, arginfo_expire, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, expireat, arginfo_key_timestamp, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, flushall, arginfo_void, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, flushdb, arginfo_void, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, flushall, arginfo_key_or_address, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, flushdb, arginfo_key_or_address, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, geoadd, arginfo_geoadd, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, geodist, arginfo_geodist, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, geohash, arginfo_key_members, ZEND_ACC_PUBLIC)
@@ -171,7 +171,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, incrbyfloat, arginfo_key_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, info, arginfo_info, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, keys, arginfo_keys, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, lastsave, arginfo_void, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, lastsave, arginfo_key_or_address, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, lget, arginfo_lindex, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, lindex, arginfo_lindex, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, linsert, arginfo_linsert, ZEND_ACC_PUBLIC)
@@ -194,14 +194,14 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, pfadd, arginfo_pfadd, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, pfcount, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, pfmerge, arginfo_pfmerge, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, ping, arginfo_void, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, ping, arginfo_key_or_address, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, psetex, arginfo_key_expire_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, psubscribe, arginfo_psubscribe, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, pttl, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, publish, arginfo_publish, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, pubsub, arginfo_pubsub, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, pubsub, arginfo_key_or_address_variadic, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, punsubscribe, arginfo_punsubscribe, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, randomkey, arginfo_void, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, randomkey, arginfo_key_or_address, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, rawcommand, arginfo_rawcommand, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, rename, arginfo_key_newkey, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, renamenx, arginfo_key_newkey, ZEND_ACC_PUBLIC)
@@ -213,10 +213,10 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, rpushx, arginfo_key_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sadd, arginfo_key_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, saddarray, arginfo_sadd_array, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, save, arginfo_void, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, save, arginfo_key_or_address, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, scan, arginfo_scan_cl, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, scard, arginfo_key, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, script, arginfo_script, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, script, arginfo_key_or_address_variadic, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sdiff, arginfo_nkeys, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sdiffstore, arginfo_dst_nkeys, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, set, arginfo_set, ZEND_ACC_PUBLIC)
@@ -228,7 +228,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, sinter, arginfo_nkeys, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sinterstore, arginfo_dst_nkeys, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sismember, arginfo_key_value, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, slowlog, arginfo_slowlog, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, slowlog, arginfo_key_or_address_variadic, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, smembers, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, smove, arginfo_smove, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sort, arginfo_sort, ZEND_ACC_PUBLIC)
@@ -2793,7 +2793,7 @@ PHP_METHOD(RedisCluster, script) {
     smart_string cmd = {0};
     zval *z_args;
     short slot;
-    int i, argc = ZEND_NUM_ARGS();
+    int argc = ZEND_NUM_ARGS();
 
     /* Commands using this pass-thru don't need to be enabled in MULTI mode */
     if (!CLUSTER_IS_ATOMIC(c)) {
