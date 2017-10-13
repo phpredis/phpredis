@@ -1377,7 +1377,7 @@ redis_sock_create(char *host, int host_len, unsigned short port,
     redis_sock->lazy_connect = lazy_connect;
     redis_sock->persistent_id = NULL;
 
-    if (persistent_id) {
+    if (persistent && persistent_id != NULL) {
         redis_sock->persistent_id = zend_string_init(persistent_id, strlen(persistent_id), 0);
     }
 
