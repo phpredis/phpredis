@@ -82,13 +82,13 @@ dnl Check for igbinary
       fi
       PHP_CHECK_LIBRARY(lzf, lzf_compress,
       [
-        PHP_ADD_LIBRARY_WITH_PATH(lzf, $LIBLZF_DIR/lib, LZF_SHARED_LIBADD)
+        PHP_ADD_LIBRARY_WITH_PATH(lzf, $LIBLZF_DIR/$PHP_LIBDIR, REDIS_SHARED_LIBADD)
       ], [
         AC_MSG_ERROR([could not find usable liblzf])
       ], [
-        -L$LIBLZF_DIR/lib
+        -L$LIBLZF_DIR/$PHP_LIBDIR
       ])
-      PHP_SUBST(LZF_SHARED_LIBADD)
+      PHP_SUBST(REDIS_SHARED_LIBADD)
     else
       PHP_ADD_INCLUDE(liblzf)
       PHP_ADD_INCLUDE($ext_srcdir/liblzf)
