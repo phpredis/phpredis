@@ -12,7 +12,7 @@
 #include "igbinary/igbinary.h"
 #endif
 #ifdef HAVE_REDIS_LZF
-#include "lzf.h"
+#include <lzf.h>
 #endif
 #include <zend_exceptions.h>
 #include "php_redis.h"
@@ -1822,9 +1822,12 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret TS
         case REDIS_COMPRESSION_LZF:
 #ifdef HAVE_REDIS_LZF
             errno = E2BIG;
-            for (i = 1; errno == E2BIG; ++i) {
+            /* start from two-times bigger buffer and
+             * increase it exponentially  if needed */
+            for (i = 2; errno == E2BIG; i *= 2) {
                 data = emalloc(i * val_len);
                 if ((res = lzf_decompress(val, val_len, data, i * val_len)) == 0) {
+                    /* errno != E2BIG will brake for loop */
                     efree(data);
                     continue;
                 } else if (redis_unserialize(redis_sock, data, res, z_ret TSRMLS_CC) == 0) {

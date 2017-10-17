@@ -67,34 +67,38 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </notes>
  <contents>
   <dir name="/">
+   <file role='doc' name='COPYING'/>
+   <file role='doc' name='CREDITS'/>
    <file role='doc' name='README.markdown'/>
    <file role='doc' name='arrays.markdown'/>
    <file role='doc' name='cluster.markdown'/>
-   <file role='doc' name='CREDITS'/>
-   <file role='doc' name='COPYING'/>
+   <file role='src' name='cluster_library.c'/>
+   <file role='src' name='cluster_library.h'/>
+   <file role='src' name='common.h'/>
    <file role='src' name='config.m4'/>
    <file role='src' name='config.w32'/>
-   <file role='src' name='common.h'/>
+   <file role='src' name='crc16.h'/>
    <file role='src' name='library.c'/>
    <file role='src' name='library.h'/>
    <file role='src' name='php_redis.h'/>
+   <file role='src' name='redis.c'/>
    <file role='src' name='redis_array.c'/>
    <file role='src' name='redis_array.h'/>
    <file role='src' name='redis_array_impl.c'/>
    <file role='src' name='redis_array_impl.h'/>
    <file role='src' name='redis_cluster.c'/>
    <file role='src' name='redis_cluster.h'/>
-   <file role='src' name='cluster_library.c'/>
-   <file role='src' name='cluster_library.h'/>
    <file role='src' name='redis_commands.c'/>
    <file role='src' name='redis_commands.h'/>
-   <file role='src' name='redis.c'/>
-   <file role='src' name='crc16.h'/>
    <file role='src' name='redis_session.c'/>
    <file role='src' name='redis_session.h'/>
-   <file role='src' name='liblzf/lzf.h'/>
-   <file role='src' name='liblzf/lzf_c.c'/>
-   <file role='src' name='liblzf/lzf_d.c'/>
+   <dir name='liblzf'>
+     <file role='doc' name='LICENSE'/>
+     <file role='doc' name='README'/>
+     <file role='src' name='lzf.h'/>
+     <file role='src' name='lzf_c.c'/>
+     <file role='src' name='lzf_d.c'/>
+   </dir> <!-- liblzf -->
    <dir name='tests'>
      <file role='test' name='RedisArrayTest.php'/>
      <file role='test' name='RedisClusterTest.php'/>

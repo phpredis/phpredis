@@ -14,6 +14,9 @@ PHP_ARG_ENABLE(redis-igbinary, whether to enable igbinary serializer support,
 PHP_ARG_ENABLE(redis-lzf, whether to enable lzf compression,
 [  --enable-redis-lzf      Enable lzf compression support], no, no)
 
+PHP_ARG_WITH(liblzf, use system liblzf,
+[  --with-liblzf[=DIR]       Use system liblzf], no, no)
+
 if test "$PHP_REDIS" != "no"; then
 
   if test "$PHP_REDIS_SESSION" != "no"; then
@@ -63,10 +66,35 @@ dnl Check for igbinary
   fi
 
   if test "$PHP_REDIS_LZF" != "no"; then
-    PHP_ADD_INCLUDE(liblzf)
-    PHP_ADD_BUILD_DIR(liblzf)
-    lzf_sources="liblzf/lzf_c.c liblzf/lzf_d.c"
     AC_DEFINE(HAVE_REDIS_LZF, 1, [ ])
+    if test "$PHP_LIBLZF" != "no"; then
+      AC_MSG_CHECKING(for liblzf files in default path)
+      for i in $PHP_LIBLZF /usr/local /usr; do
+        if test -r $i/include/lzf.h; then
+          AC_MSG_RESULT(found in $i)
+          LIBLZF_DIR=$i
+          break
+        fi
+      done
+      if test -z "$LIBLZF_DIR"; then
+        AC_MSG_RESULT([not found])
+        AC_MSG_ERROR([Please reinstall the liblzf distribution])
+      fi
+      PHP_CHECK_LIBRARY(lzf, lzf_compress,
+      [
+        PHP_ADD_LIBRARY_WITH_PATH(lzf, $LIBLZF_DIR/lib, LZF_SHARED_LIBADD)
+      ], [
+        AC_MSG_ERROR([could not find usable liblzf])
+      ], [
+        -L$LIBLZF_DIR/lib
+      ])
+      PHP_SUBST(LZF_SHARED_LIBADD)
+    else
+      PHP_ADD_INCLUDE(liblzf)
+      PHP_ADD_INCLUDE($ext_srcdir/liblzf)
+      PHP_ADD_BUILD_DIR(liblzf)
+      lzf_sources="liblzf/lzf_c.c liblzf/lzf_d.c"
+    fi
   fi
 
   dnl # --with-redis -> check with-path
