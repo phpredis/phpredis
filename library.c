@@ -1730,7 +1730,7 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
     IF_NOT_ATOMIC() {
         add_next_index_zval(z_tab, z_multi_result);
     } else {
-        RETVAL_ZVAL(z_multi_result, 1, 0);
+        RETVAL_ZVAL(z_multi_result, 0, 1);
     }
     return 0;
 }
