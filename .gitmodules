@@ -1,3 +1,4 @@
 [submodule "liblzf"]
-	path = liblzf
-	url = https://github.com/nemequ/liblzf.git
+    path = liblzf
+    url = https://github.com/nemequ/liblzf.git
+    ignore = dirty
