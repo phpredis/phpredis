@@ -655,8 +655,7 @@ static int get_key_val_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
     }
 
     // Serialize our value if required
-    kv->val_free = redis_serialize(c->flags,z_val,&(kv->val),&(kv->val_len)
-        TSRMLS_CC);
+    kv->val_free = redis_pack(c->flags,z_val,&(kv->val),&(kv->val_len) TSRMLS_CC);
 
     // Success
     return 0;

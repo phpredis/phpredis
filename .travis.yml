@@ -30,11 +30,11 @@ addons:
 before_install:
   - phpize
   - pecl install igbinary
-  - ./configure --enable-redis-igbinary CFLAGS=-Wall
+  - ./configure --enable-redis-igbinary --enable-redis-lzf CFLAGS=-Wall
 install: make install
 before_script:
   - gem install redis
-  - mkdir -p tests/nodes/ && echo >> tests/nodes/nodemap
+  - mkdir -p tests/nodes/ && echo > tests/nodes/nodemap
   - for PORT in $(seq 6379 6382); do redis-server --port $PORT --daemonize yes; done
   - for PORT in $(seq 7000 7011); do redis-server --port $PORT --cluster-enabled yes --cluster-config-file $PORT.conf --daemonize yes; echo 127.0.0.1:$PORT >> tests/nodes/nodemap; done
   - wget https://raw.githubusercontent.com/antirez/redis/unstable/src/redis-trib.rb

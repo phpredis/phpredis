@@ -478,6 +478,7 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_READ_TIMEOUT       3
 #define REDIS_OPT_SCAN               4
 #define REDIS_OPT_FAILOVER           5
+#define REDIS_OPT_COMPRESSION        6
 
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
@@ -488,6 +489,9 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_SERIALIZER_NONE        0
 #define REDIS_SERIALIZER_PHP         1
 #define REDIS_SERIALIZER_IGBINARY    2
+/* compression */
+#define REDIS_COMPRESSION_NONE 0
+#define REDIS_COMPRESSION_LZF  1
 
 /* SCAN options */
 #define REDIS_SCAN_NORETRY 0
@@ -651,6 +655,7 @@ typedef struct {
     zend_string    *persistent_id;
 
     int            serializer;
+    int            compression;
     long           dbNumber;
 
     zend_string    *prefix;

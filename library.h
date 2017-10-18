@@ -76,6 +76,9 @@ redis_key_prefix(RedisSock *redis_sock, char **key, strlen_t *key_len);
 PHP_REDIS_API int
 redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret TSRMLS_DC);
 
+PHP_REDIS_API int redis_pack(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len TSRMLS_DC);
+PHP_REDIS_API int redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret TSRMLS_DC);
+
 /*
 * Variant Read methods, mostly to implement eval
 */
