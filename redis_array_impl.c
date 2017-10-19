@@ -401,7 +401,7 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
 
     if (Z_TYPE(z_ret) == IS_STRING) {
         *out_len = Z_STRLEN(z_ret);
-        out = estrndup(Z_STRVAL(z_ret), *out_len);
+        out = Z_STRVAL(z_ret);
     }
 
     zval_dtor(&z_argv);
@@ -418,11 +418,11 @@ ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS
     if (Z_TYPE(ra->z_fun) != IS_NULL) {
         return ra_call_extractor(ra, key, key_len, out_len TSRMLS_CC);
     } else if ((start = strchr(key, '{')) == NULL || (end = strchr(start + 1, '}')) == NULL) {
-        return estrndup(key, key_len);
+        return (char *)key;
     }
     /* found substring */
     *out_len = end - start - 1;
-    return estrndup(start + 1, *out_len);
+    return start + 1;
 }
 
 /* call userland key distributor function */
@@ -461,13 +461,13 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
     int pos, out_len;
 
     /* extract relevant part of the key */
-    out = ra_extract_key(ra, key, key_len, &out_len TSRMLS_CC);
-    if(!out) return NULL;
+    if ((out = ra_extract_key(ra, key, key_len, &out_len TSRMLS_CC)) == NULL) {
+        return NULL;
+    }
 
     if (Z_TYPE(ra->z_dist) != IS_NULL) {
         pos = ra_call_distributor(ra, key, key_len TSRMLS_CC);
         if (pos < 0 || pos >= ra->count) {
-            efree(out);
             return NULL;
         }
     } else {
@@ -483,7 +483,6 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
         /* get position on ring */
         pos = (int)(hash * ra->count / 0xffffffff);
     }
-    efree(out);
 
     if(out_pos) *out_pos = pos;
 
