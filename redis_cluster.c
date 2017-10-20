@@ -332,6 +332,8 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
 
     zend_hash_copy(cluster->std.properties, &class_type->default_properties,
         (copy_ctor_func_t)zval_add_ref, (void*)&tmp, sizeof(zval*));
+#else
+    object_properties_init(&cluster->std, class_type);
 #endif
 
     retval.handle = zend_objects_store_put(cluster,

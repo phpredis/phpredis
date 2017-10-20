@@ -187,6 +187,8 @@ create_redis_array_object(zend_class_entry *ce TSRMLS_DC)
     zval *tmp;
     zend_hash_copy(obj->std.properties, &ce->default_properties,
         (copy_ctor_func_t)zval_add_ref, (void *)&tmp, sizeof(zval *));
+#else
+    object_properties_init(&obj->std, ce);
 #endif
 
     retval.handle = zend_objects_store_put(obj,
