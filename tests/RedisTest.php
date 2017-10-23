@@ -4993,7 +4993,7 @@ class Redis_Test extends TestSuite
 
             /* Test a bad COUNT argument */
             foreach (Array(-1, 0, 'notanumber') as $count) {
-                $this->assertFalse(@$this->redis->georadiusbymember('gk', $city, 10, 'mi', Array('count' => -1)));
+                $this->assertFalse(@$this->redis->georadiusbymember('gk', $city, 10, 'mi', Array('count' => $count)));
             }
         }
 
