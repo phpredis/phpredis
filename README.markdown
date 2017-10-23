@@ -3126,15 +3126,15 @@ _**Description**_:  Return members of a set with geospacial information that are
 ##### *Options Array*
 The georadius command can be called with various options that control how Redis returns results.  The following table describes the options phpredis supports.  All options are case insensitive.  
 
-Key | Value | Description
---- | --- | ---- |
-COUNT | `integer $count` | Limit how many results are returned 
- | WITHCOORD | Return longitude and latitude of matching members
- | WITHDIST | Return the distance from the center
- | WITHHASH | Return the raw geohash-encoded score
- | ASC | Sort results in ascending order
- | DESC | Sort results in descending order
- 
+| Key   | Value | Description
+| :---  | :---        | :---- |
+| COUNT | integer > 0 | Limit how many results are returned
+|       | WITHCOORD   | Return longitude and latitude of matching members
+|       | WITHDIST    | Return the distance from the center
+|       | WITHHASH    | Return the raw geohash-encoded score
+|       | ASC         | Sort results in ascending order
+|       | DESC        | Sort results in descending order
+
  *Note*:  It doesn't make sense to pass both `ASC` and `DESC` options but if both are passed the last one passed will win!  
  *Note*:  PhpRedis does not currently support the `STORE` or `STOREDIST` options but will be added to future versions.
 
@@ -3217,10 +3217,10 @@ array(1) {
 
 ##### *Prototype*
 ~~~
-$redis->geoRadiusByMember($key, $member, $radius, $units [, array $options]);
+$redis->geoRadiusByMember($key, $member, $radius, $units [, Array $options]);
 ~~~
 
-_**Description**_: This method is identical to `geoRadius` except that instead of passing a longitude and latitude as the "source" you pass an existing member in the geospacial set.
+_**Description**_: This method is identical to [geoRadius](#georadius) except that instead of passing a longitude and latitude as the "source" you pass an existing member in the geospacial set.
 
 ##### *Options Array*
 See [geoRadius](#georadius) command for options array.
@@ -3232,18 +3232,27 @@ See [geoRadius](#georadius) command for options array.
 ~~~
 $redis->geoAdd("hawaii", -157.858, 21.306, "Honolulu", -156.331, 20.798, "Maui");
 
-echo "Within 300,000 miles of Honolulu:\n";
+echo "Within 300 miles of Honolulu:\n";
 var_dump($redis->geoRadiusByMember("hawaii", "Honolulu", 300, 'mi'));
+
+echo "\nFirst match within 300 miles of Honolulu:\n";
+var_dump($redis->geoRadiusByMember("hawaii", "Honolulu", 300, 'mi', Array('count' => 1)));
 ~~~
 
 ##### *Output*
 ~~~
-Within 300,000 meters of Honolulu:
+Within 300 miles of Honolulu:
 array(2) {
   [0]=>
   string(8) "Honolulu"
   [1]=>
   string(4) "Maui"
+}
+
+First match within 300 miles of Honolulu:
+array(1) {
+  [0]=>
+  string(8) "Honolulu"
 }
 ~~~
 
