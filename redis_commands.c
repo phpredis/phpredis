@@ -2567,8 +2567,9 @@ int redis_geodist_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 /* Helper function to extract optional arguments for GEORADIUS and GEORADIUSBYMEMBER */
-static void get_georadius_opts(HashTable *ht, int *withcoord, int *withdist,
-                               int *withhash, long *count, geoSortType *sort)
+static int get_georadius_opts(HashTable *ht, int *withcoord, int *withdist,
+                              int *withhash, long *count, geoSortType *sort
+                              TSRMLS_DC)
 {
     ulong idx;
     char *optstr;
@@ -2582,7 +2583,13 @@ static void get_georadius_opts(HashTable *ht, int *withcoord, int *withdist,
         ZVAL_DEREF(optval);
         /* If the key is numeric it's a non value option */
         if (zkey) {
-            if (ZSTR_LEN(zkey) == 5 && !strcasecmp(ZSTR_VAL(zkey), "count") && Z_TYPE_P(optval) == IS_LONG) {
+            if (ZSTR_LEN(zkey) == 5 && !strcasecmp(ZSTR_VAL(zkey), "count")) {
+                if (Z_TYPE_P(optval) != IS_LONG || Z_LVAL_P(optval) <= 0) {
+                    php_error_docref(NULL TSRMLS_CC, E_WARNING, "COUNT must be an integer > 0!");
+                    return FAILURE;
+                }
+
+                /* Set our count */
                 *count = Z_LVAL_P(optval);
             }
         } else {
@@ -2604,6 +2611,9 @@ static void get_georadius_opts(HashTable *ht, int *withcoord, int *withdist,
             }
         }
     } ZEND_HASH_FOREACH_END();
+
+    /* Success */
+    return SUCCESS;
 }
 
 /* Helper to append options to a GEORADIUS or GEORADIUSBYMEMBER command */
@@ -2630,7 +2640,7 @@ void append_georadius_opts(smart_string *str, int withcoord, int withdist,
     }
 
     /* Append our count if we've got one */
-    if (count > 0) {
+    if (count) {
         REDIS_CMD_APPEND_SSTR_STATIC(str, "COUNT");
         redis_cmd_append_sstr_long(str, count);
     }
@@ -2659,14 +2669,18 @@ int redis_georadius_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Parse any GEORADIUS options we have */
     if (opts != NULL) {
-        get_georadius_opts(Z_ARRVAL_P(opts), &withcoord, &withdist, &withhash,
-            &count, &sort);
+        /* Attempt to parse our options array */
+        if (get_georadius_opts(Z_ARRVAL_P(opts), &withcoord, &withdist,
+                               &withhash, &count, &sort TSRMLS_CC) != SUCCESS)
+        {
+            return FAILURE;
+        }
     }
 
     /* Calculate the number of arguments we're going to send, five required plus
      * options. */
     argc = 5 + withcoord + withdist + withhash + (sort != SORT_NONE);
-    if (count != 0) argc += 2;
+    if (count) argc += 2;
 
     /* Begin construction of our command */
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "GEORADIUS");
@@ -2715,12 +2729,17 @@ int redis_georadiusbymember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
     }
 
     if (opts != NULL) {
-        get_georadius_opts(Z_ARRVAL_P(opts), &withcoord, &withdist, &withhash, &count, &sort);
+        /* Attempt to parse our options array */
+        if (get_georadius_opts(Z_ARRVAL_P(opts), &withcoord, &withdist,
+                               &withhash, &count, &sort TSRMLS_CC) != SUCCESS)
+        {
+            return FAILURE;
+        }
     }
 
     /* Calculate argc */
     argc = 4 + withcoord + withdist + withhash + (sort != SORT_NONE);
-    if (count != 0) argc += 2;
+    if (count) argc += 2;
 
     /* Begin command construction*/
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "GEORADIUSBYMEMBER");

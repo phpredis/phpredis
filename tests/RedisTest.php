@@ -4978,6 +4978,11 @@ class Redis_Test extends TestSuite
             $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 50000, 'm'), Array('Gridley','Chico'));
             $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 150000, 'ft'), Array('Gridley', 'Chico'));
             $args = Array('georadius', 'gk', $lng, $lat, 500, 'mi');
+
+            /* Test a bad COUNT argument */
+            foreach (Array(-1, 0, 'notanumber') as $count) {
+                $this->assertFalse(@$this->redis->georadius('gk', $lng, $lat, 10, 'mi', Array('count' => $count)));
+            }
         } else {
             $this->assertEquals($this->redis->georadiusbymember('gk', $city, 10, 'mi'), Array('Chico'));
             $this->assertEquals($this->redis->georadiusbymember('gk', $city, 30, 'mi'), Array('Gridley','Chico'));
@@ -4985,6 +4990,11 @@ class Redis_Test extends TestSuite
             $this->assertEquals($this->redis->georadiusbymember('gk', $city, 50000, 'm'), Array('Gridley','Chico'));
             $this->assertEquals($this->redis->georadiusbymember('gk', $city, 150000, 'ft'), Array('Gridley', 'Chico'));
             $args = Array('georadiusbymember', 'gk', $city, 500, 'mi');
+
+            /* Test a bad COUNT argument */
+            foreach (Array(-1, 0, 'notanumber') as $count) {
+                $this->assertFalse(@$this->redis->georadiusbymember('gk', $city, 10, 'mi', Array('count' => $count)));
+            }
         }
 
         /* Options */

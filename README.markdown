@@ -2965,6 +2965,298 @@ while($arr_matches = $redis->zScan('zset', $it, '*pattern*')) {
 }
 ~~~
 
+## Geocoding
+
+### geoAdd
+-----
+
+##### *Prototype*  
+~~~
+$redis->geoAdd($key, $longitude, $latitude, $member [, $longitude, $lattitude, $member, ...]);
+~~~
+
+_**Description**_:  Add one or more geospacial items to the specified key.  This function must be called with at least one _longitude, latitude, member_ triplet.   
+
+##### *Return value*  
+*Integer*:  The number of elements added to the geospacial key.
+
+##### *Example*  
+~~~
+$redis->del("myplaces");
+
+/* Since the key will be new, $result will be 2 */
+$result = $redis->geoAdd(
+    "myplaces",
+    37.773, -122.431, "San Francisco",
+    -157.858, 21.315, "Honolulu"
+);
+~~~  
+
+### geoHash
+-----
+
+##### *Prototype*  
+~~~
+$redis->geoHash($key, $member [, $member, $member, ...]);
+~~~
+
+_**Description**_:  Retreive Geohash strings for one or more elements of a geospacial index.  
+
+##### *Return value*  
+*Array*:  One or more Redis Geohash encoded strings.  
+
+##### *Example*  
+~~~
+$redis->geoAdd("hawaii", -157.858, 21.306, "Honolulu", -156.331, 20.798, "Maui");
+$hashes = $redis->geoHash("hawaii", "Honolulu", "Maui");
+var_dump($hashes);
+~~~
+
+##### *Output*  
+~~~
+array(2) {
+  [0]=>
+  string(11) "87z9pyek3y0"
+  [1]=>
+  string(11) "8e8y6d5jps0"
+}
+~~~
+
+### geoPos
+-----
+
+##### *Prototype*  
+~~~
+$redis->geoPos($key, $member [, $member, $member, ...]);
+~~~
+
+_**Description**_:  Return longitude, lattitude positions for each requested member.
+
+##### *Return value*  
+*Array*:  One or more longitude/latitude positions
+
+##### *Example*  
+~~~
+$redis->geoAdd("hawaii", -157.858, 21.306, "Honolulu", -156.331, 20.798, "Maui");
+$positions = $redis->geoPos("hawaii", "Honolulu", "Maui");
+var_dump($positions);
+~~~
+
+##### *Output*  
+~~~
+array(2) {
+  [0]=>
+  array(2) {
+    [0]=>
+    string(22) "-157.85800248384475708"
+    [1]=>
+    string(19) "21.3060004581273077"
+  }
+  [1]=>
+  array(2) {
+    [0]=>
+    string(22) "-156.33099943399429321"
+    [1]=>
+    string(20) "20.79799924753607598"
+  }
+}
+~~~
+
+### GeoDist  
+-----
+
+##### *Prototype*  
+~~~
+$redis->geoDist($key, $member1, $member2 [, $unit]);
+~~~
+
+
+_**Description**_:  Return the distance between two members in a geospacial set.  If units are passed it must be one of the following values:
+
+* 'm' => Meters
+* 'km' => Kilometers
+* 'mi' => Miles
+* 'ft' => Feet
+
+##### *Return value*
+*Double*:  The distance between the two passed members in the units requested (meters by default).  
+
+##### *Example*
+~~~
+$redis->geoAdd("hawaii", -157.858, 21.306, "Honolulu", -156.331, 20.798, "Maui");
+
+$meters = $redis->geoDist("hawaii", "Honolulu", "Maui");
+$kilometers = $redis->geoDist("hawaii", "Honolulu", "Maui", 'km');
+$miles = $redis->geoDist("hawaii", "Honolulu", "Maui", 'mi');
+$feet = $redis->geoDist("hawaii", "Honolulu", "Maui", 'ft');
+
+echo "Distance between Honolulu and Maui:\n";
+echo "  meters    : $meters\n";
+echo "  kilometers: $kilometers\n";
+echo "  miles     : $miles\n";
+echo "  feet      : $feet\n";
+
+/* Bad unit */
+$inches = $redis->geoDist("hawaii", "Honolulu", "Maui", 'in');
+echo "Invalid unit returned:\n";
+var_dump($inches);
+~~~  
+
+##### *Output*  
+~~~
+Distance between Honolulu and Maui:
+  meters    : 168275.204
+  kilometers: 168.2752
+  miles     : 104.5616
+  feet      : 552084.0028
+Invalid unit returned:
+bool(false)
+~~~
+
+### geoRadius
+-----
+
+##### *Prototype*
+~~~
+$redis->geoRadius($key, $longitude, $latitude, $radius, $unit [, Array $options]);
+~~~
+
+_**Description**_:  Return members of a set with geospacial information that are within the radius specified by the caller. 
+
+##### *Options Array*
+The georadius command can be called with various options that control how Redis returns results.  The following table describes the options phpredis supports.  All options are case insensitive.  
+
+| Key   | Value | Description
+| :---  | :---        | :---- |
+| COUNT | integer > 0 | Limit how many results are returned
+|       | WITHCOORD   | Return longitude and latitude of matching members
+|       | WITHDIST    | Return the distance from the center
+|       | WITHHASH    | Return the raw geohash-encoded score
+|       | ASC         | Sort results in ascending order
+|       | DESC        | Sort results in descending order
+
+ *Note*:  It doesn't make sense to pass both `ASC` and `DESC` options but if both are passed the last one passed will win!  
+ *Note*:  PhpRedis does not currently support the `STORE` or `STOREDIST` options but will be added to future versions.
+
+##### *Return value*
+*Array*:  Zero or more entries that are within the provided radius.
+ 
+##### *Example*
+~~~
+/* Add some cities */
+$redis->geoAdd("hawaii", -157.858, 21.306, "Honolulu", -156.331, 20.798, "Maui");
+
+echo "Within 300 miles of Honolulu:\n";
+var_dump($redis->geoRadius("hawaii", -157.858, 21.306, 300, 'mi'));
+
+echo "\nWithin 300 miles of Honolulu with distances:\n";
+$options = ['WITHDIST'];
+var_dump($redis->geoRadius("hawaii", -157.858, 21.306, 300, 'mi', $options));
+
+echo "\nFirst result within 300 miles of Honolulu with distances:\n";
+$options['count'] = 1;
+var_dump($redis->geoRadius("hawaii", -157.858, 21.306, 300, 'mi', $options));
+
+echo "\nFirst result within 300 miles of Honolulu with distances in descending sort order:\n";
+$options[] = 'DESC';
+var_dump($redis->geoRadius("hawaii", -157.858, 21.306, 300, 'mi', $options));
+~~~
+
+##### *Output*
+~~~
+Within 300 miles of Honolulu:
+array(2) {
+  [0]=>
+  string(8) "Honolulu"
+  [1]=>
+  string(4) "Maui"
+}
+
+Within 300 miles of Honolulu with distances:
+array(2) {
+  [0]=>
+  array(2) {
+    [0]=>
+    string(8) "Honolulu"
+    [1]=>
+    string(6) "0.0002"
+  }
+  [1]=>
+  array(2) {
+    [0]=>
+    string(4) "Maui"
+    [1]=>
+    string(8) "104.5615"
+  }
+}
+
+First result within 300 miles of Honolulu with distances:
+array(1) {
+  [0]=>
+  array(2) {
+    [0]=>
+    string(8) "Honolulu"
+    [1]=>
+    string(6) "0.0002"
+  }
+}
+
+First result within 300 miles of Honolulu with distances in descending sort order:
+array(1) {
+  [0]=>
+  array(2) {
+    [0]=>
+    string(4) "Maui"
+    [1]=>
+    string(8) "104.5615"
+  }
+}
+~~~
+
+### geoRadiusByMember
+
+##### *Prototype*
+~~~
+$redis->geoRadiusByMember($key, $member, $radius, $units [, Array $options]);
+~~~
+
+_**Description**_: This method is identical to [geoRadius](#georadius) except that instead of passing a longitude and latitude as the "source" you pass an existing member in the geospacial set.
+
+##### *Options Array*
+See [geoRadius](#georadius) command for options array.
+
+##### *Return value*
+*Array*:  The zero or more entries that are close enough to the member given the distance and radius specified.  
+
+##### *Example*
+~~~
+$redis->geoAdd("hawaii", -157.858, 21.306, "Honolulu", -156.331, 20.798, "Maui");
+
+echo "Within 300 miles of Honolulu:\n";
+var_dump($redis->geoRadiusByMember("hawaii", "Honolulu", 300, 'mi'));
+
+echo "\nFirst match within 300 miles of Honolulu:\n";
+var_dump($redis->geoRadiusByMember("hawaii", "Honolulu", 300, 'mi', Array('count' => 1)));
+~~~
+
+##### *Output*
+~~~
+Within 300 miles of Honolulu:
+array(2) {
+  [0]=>
+  string(8) "Honolulu"
+  [1]=>
+  string(4) "Maui"
+}
+
+First match within 300 miles of Honolulu:
+array(1) {
+  [0]=>
+  string(8) "Honolulu"
+}
+~~~
+
+
 ## Pub/sub
 
 * [pSubscribe](#psubscribe) - Subscribe to channels by pattern
@@ -2977,9 +3269,9 @@ while($arr_matches = $redis->zScan('zset', $it, '*pattern*')) {
 _**Description**_: Subscribe to channels by pattern
 
 ##### *Parameters*
-*patterns*: An array of patterns to match
-*callback*: Either a string or an array with an object and method.  The callback will get four arguments ($redis, $pattern, $channel, $message)
-*return value*: Mixed.  Any non-null return value in the callback will be returned to the caller.
+*patterns*: An array of patterns to match  
+*callback*: Either a string or an array with an object and method.  The callback will get four arguments ($redis, $pattern, $channel, $message)  
+*return value*: Mixed.  Any non-null return value in the callback will be returned to the caller.  
 ##### *Example*
 ~~~
 function pSubscribe($redis, $pattern, $chan, $msg) {
@@ -3070,13 +3362,13 @@ The return value can be various types depending on what the server itself return
 ##### *Example*
 ```php
 /* Returns: true */
-$redis->rawCommand("set", "foo", "bar"); 
+$redis->rawCommand("set", "foo", "bar");
 
 /* Returns: "bar" */
-$redis->rawCommand("get", "foo"); 
+$redis->rawCommand("get", "foo");
 
 /* Returns: 3 */
-$redis->rawCommand("rpush", "mylist", "one", 2, 3.5)); 
+$redis->rawCommand("rpush", "mylist", "one", 2, 3.5));
 
 /* Returns: ["one", "2", "3.5000000000000000"] */
 $redis->rawCommand("lrange", "mylist", 0, -1);
