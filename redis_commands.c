@@ -23,6 +23,10 @@
 #endif
 
 #include "redis_commands.h"
+
+#include "php_network.h"
+#include <netinet/tcp.h>  /* TCP_KEEPALIVE */
+
 #include <zend_exceptions.h>
 
 /* Local passthrough macro for command construction.  Given that these methods
@@ -3019,6 +3023,8 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             RETURN_NULL();
         case REDIS_OPT_READ_TIMEOUT:
             RETURN_DOUBLE(redis_sock->read_timeout);
+        case REDIS_OPT_TCP_KEEPALIVE:
+            RETURN_LONG(redis_sock->tcp_keepalive);
         case REDIS_OPT_SCAN:
             RETURN_LONG(redis_sock->scan);
         case REDIS_OPT_FAILOVER:
@@ -3036,6 +3042,8 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
     char *val_str;
     struct timeval read_tv;
     strlen_t val_len;
+    int tcp_keepalive = 0;
+    php_netstream_data_t *sock;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &option,
                               &val_str, &val_len) == FAILURE)
@@ -3084,6 +3092,26 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                 php_stream_set_option(redis_sock->stream,
                                       PHP_STREAM_OPTION_READ_TIMEOUT, 0,
                                       &read_tv);
+            }
+            RETURN_TRUE;
+        case REDIS_OPT_TCP_KEEPALIVE:
+
+            /* Don't set TCP_KEEPALIVE if we're using a unix socket. */
+            if (ZSTR_VAL(redis_sock->host)[0] == '/' && redis_sock->port < 1) {
+                RETURN_FALSE;
+            }
+            tcp_keepalive = atol(val_str) > 0 ? 1 : 0;
+            if (redis_sock->tcp_keepalive == tcp_keepalive) {
+                RETURN_TRUE;
+            }
+            if(redis_sock->stream) {
+                /* set TCP_KEEPALIVE */
+                sock = (php_netstream_data_t*)redis_sock->stream->abstract;
+                if (setsockopt(sock->socket, SOL_SOCKET, SO_KEEPALIVE, (const void*) &tcp_keepalive,
+                            sizeof(int)) == -1) {
+                    RETURN_FALSE;
+                }
+                redis_sock->tcp_keepalive = tcp_keepalive;
             }
             RETURN_TRUE;
         case REDIS_OPT_SCAN:
