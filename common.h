@@ -478,7 +478,8 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_READ_TIMEOUT       3
 #define REDIS_OPT_SCAN               4
 #define REDIS_OPT_FAILOVER           5
-#define REDIS_OPT_COMPRESSION        6
+#define REDIS_OPT_TCP_KEEPALIVE      6
+#define REDIS_OPT_COMPRESSION        7
 
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
@@ -674,6 +675,7 @@ typedef struct {
     int            scan;
 
     int            readonly;
+    int            tcp_keepalive;
 } RedisSock;
 /* }}} */
 

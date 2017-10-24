@@ -1402,6 +1402,7 @@ redis_sock_create(char *host, int host_len, unsigned short port,
     redis_sock->scan = REDIS_SCAN_NORETRY;
 
     redis_sock->readonly = 0;
+    redis_sock->tcp_keepalive = 0;
 
     return redis_sock;
 }
@@ -1470,10 +1471,12 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
         return -1;
     }
 
-    /* Attempt to set TCP_NODELAY if we're not using a unix socket. */
+    /* Attempt to set TCP_NODELAY/TCP_KEEPALIVE if we're not using a unix socket. */
     sock = (php_netstream_data_t*)redis_sock->stream->abstract;
     if (!usocket) {
         err = setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char *) &tcp_flag, sizeof(int));
+        PHPREDIS_NOTUSED(err);
+        err = setsockopt(sock->socket, SOL_SOCKET, SO_KEEPALIVE, (const void *) &redis_sock->tcp_keepalive, sizeof(int));
         PHPREDIS_NOTUSED(err);
     }
 
