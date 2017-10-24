@@ -3126,8 +3126,8 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             if(redis_sock->stream) {
                 /* set TCP_KEEPALIVE */
                 sock = (php_netstream_data_t*)redis_sock->stream->abstract;
-                if (setsockopt(sock->socket, SOL_SOCKET, SO_KEEPALIVE, (const void*) &tcp_keepalive,
-                            sizeof(int)) == -1) {
+                if (setsockopt(sock->socket, SOL_SOCKET, SO_KEEPALIVE, (char*)&tcp_keepalive,
+                            sizeof(tcp_keepalive)) == -1) {
                     RETURN_FALSE;
                 }
                 redis_sock->tcp_keepalive = tcp_keepalive;
