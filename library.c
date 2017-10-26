@@ -1818,7 +1818,7 @@ PHP_REDIS_API int
 redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret TSRMLS_DC)
 {
     char *data;
-    int i, ret;
+    int i;
     uint32_t res;
 
     switch (redis_sock->compression) {
