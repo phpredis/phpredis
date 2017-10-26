@@ -1,19 +1,19 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
 #include "common.h"
 #include "php_network.h"
 #include <sys/types.h>
-#ifndef _MSC_VER
-#include <netinet/tcp.h>  /* TCP_NODELAY */
-#include <sys/socket.h>
-#endif
+
 #ifdef HAVE_REDIS_IGBINARY
 #include "igbinary/igbinary.h"
 #endif
+
 #ifdef HAVE_REDIS_LZF
 #include <lzf.h>
 #endif
+
 #include <zend_exceptions.h>
 #include "php_redis.h"
 #include "library.h"
@@ -29,7 +29,12 @@
 #define SCORE_DECODE_INT  1
 #define SCORE_DECODE_DOUBLE 2
 
-#ifdef PHP_WIN32
+#ifndef PHP_WIN32
+    #include <netinet/tcp.h> /* TCP_NODELAY */
+    #include <sys/socket.h>  /* SO_KEEPALIVE */
+#else
+    #include <winsock.h>
+
     # if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION <= 4
         /* This proto is available from 5.5 on only */
         PHP_REDIS_API int usleep(unsigned int useconds);

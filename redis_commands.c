@@ -25,7 +25,12 @@
 #include "redis_commands.h"
 
 #include "php_network.h"
-#include <netinet/tcp.h>  /* TCP_KEEPALIVE */
+
+#ifndef PHP_WIN32
+#include <netinet/tcp.h> /* TCP_KEEPALIVE */
+#else
+#include <winsock.h>
+#endif
 
 #include <zend_exceptions.h>
 
