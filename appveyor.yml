@@ -109,7 +109,7 @@ after_build:
                 if ('x64' -eq $env:ARCH) { $dir = $dir + 'x64\' }
                 $dir = $dir + 'Release'
                 if ('1' -eq $env:TS) { $dir = $dir + '_TS' }
-                & 7z a c:\$zip_bname $dir\php_redis.dll $dir\php_redis.pdb c:\projects\redis\LICENSE
+                & 7z a c:\$zip_bname $dir\php_redis.dll $dir\php_redis.pdb
                 Push-AppveyorArtifact c:\$zip_bname
 
 test_script:
