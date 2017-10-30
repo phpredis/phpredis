@@ -260,9 +260,17 @@ PHP_REDIS_API int redis_sock_read_multibulk_multi_reply_loop(
     INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, 
     int numElems);
 
-#ifndef _MSC_VER
 ZEND_BEGIN_MODULE_GLOBALS(redis)
+    int lock_release_lua_script_uploaded;
+    char lock_release_lua_script_hash[41];
 ZEND_END_MODULE_GLOBALS(redis)
+
+ZEND_EXTERN_MODULE_GLOBALS(redis);
+
+#ifdef ZTS
+#define REDIS_G(v) TSRMG(redis_globals_id, zend_redis_globals *, v)
+#else
+#define REDIS_G(v) (redis_globals.v)
 #endif
 
 extern zend_module_entry redis_module_entry;

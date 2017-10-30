@@ -15,6 +15,7 @@ typedef smart_str smart_string;
 #define smart_string_appendc(dest, c) smart_str_appendc(dest, c)
 #define smart_string_append_long(dest, val) smart_str_append_long(dest, val)
 #define smart_string_appendl(dest, src, len) smart_str_appendl(dest, src, len)
+#define smart_string_free(str) smart_str_free(str)
 
 typedef struct {
     short gc;
