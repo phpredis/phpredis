@@ -27,47 +27,47 @@ cache:
         c:\build-cache -> .appveyor.yml
 
 environment:
-        BIN_SDK_VER: 2.0.10
+        BIN_SDK_VER: 2.0.12
         matrix:
                 - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
                   ARCH: x64
                   VC: vc14
-                  PHP_VER: 7.0.23
+                  PHP_VER: 7.0.24
                   TS: 0
                 - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
                   ARCH: x64
                   VC: vc14
-                  PHP_VER: 7.0.23
+                  PHP_VER: 7.0.24
                   TS: 1
                 - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
                   ARCH: x86
                   VC: vc14
-                  PHP_VER: 7.0.23
+                  PHP_VER: 7.0.24
                   TS: 0
                 - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
                   ARCH: x86
                   VC: vc14
-                  PHP_VER: 7.0.23
+                  PHP_VER: 7.0.24
                   TS: 1
                 - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
                   ARCH: x64
                   VC: vc14
-                  PHP_VER: 7.1.9
+                  PHP_VER: 7.1.10
                   TS: 0
                 - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
                   ARCH: x64
                   VC: vc14
-                  PHP_VER: 7.1.9
+                  PHP_VER: 7.1.10
                   TS: 1
                 - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
                   ARCH: x86
                   VC: vc14
-                  PHP_VER: 7.1.9
+                  PHP_VER: 7.1.10
                   TS: 0
                 - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
                   ARCH: x86
                   VC: vc14
-                  PHP_VER: 7.1.9
+                  PHP_VER: 7.1.10
                   TS: 1
 
 build_script:
@@ -85,7 +85,7 @@ build_script:
                 $dname1 = 'php-' + $env:PHP_VER + $ts_part + '-devel-' + $env:VC.toUpper() + '-' + $env:ARCH
                 if (-not (Test-Path c:\build-cache\$dname1)) {
                         7z x c:\build-cache\$bname -oc:\build-cache
-                        move c:\build-cache\$dname0 c:\build-cache\$dname1
+                        if ($dname0 -ne $dname1) { move c:\build-cache\$dname0 c:\build-cache\$dname1 }
                 }
                 cd c:\projects\redis
                 $env:PATH = 'c:\build-cache\' + $dname1 + ';' + $env:PATH
