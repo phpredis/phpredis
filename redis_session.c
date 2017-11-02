@@ -546,7 +546,10 @@ PS_READ_FUNC(redis)
     cmd_len = REDIS_SPPRINTF(&cmd, "GET", "s", resp, resp_len);
     efree(resp);
 
-    lock_acquire(redis_sock, pool->lock_status TSRMLS_CC);
+    if (!lock_acquire(redis_sock, pool->lock_status TSRMLS_CC)) {
+        php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Acquire of session lock was not successful");
+    }
+
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
         return FAILURE;
