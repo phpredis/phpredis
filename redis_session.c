@@ -349,8 +349,8 @@ int upload_lock_release_script(RedisSock *redis_sock TSRMLS_DC)
 
 void calculate_lock_secret(redis_session_lock_status *lock_status)
 {
-    char hostname[64] = {0};
-    gethostname(hostname, 64);
+    char hostname[HOST_NAME_MAX] = {0};
+    gethostname(hostname, HOST_NAME_MAX);
 
     // Concatenating the redis lock secret
     smart_string_appendl(&lock_status->lock_secret, hostname, strlen(hostname));
