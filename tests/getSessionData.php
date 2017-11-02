@@ -1,5 +1,5 @@
 <?php
-error_reporting(0);
+error_reporting(E_ERROR | E_WARNING);
 
 $redisHost = $argv[1];
 $sessionId = $argv[2];
