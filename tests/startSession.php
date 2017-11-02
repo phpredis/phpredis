@@ -1,4 +1,6 @@
 <?php
+error_reporting(0);
+
 $redisHost = $argv[1];
 $sessionId = $argv[2];
 $sleepTime = $argv[3];
