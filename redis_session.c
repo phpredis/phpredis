@@ -317,7 +317,7 @@ void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_status 
 
 int upload_lock_release_script(RedisSock *redis_sock TSRMLS_DC)
 {
-    if (REDIS_G(lock_release_lua_script_uploaded)) return;
+    if (REDIS_G(lock_release_lua_script_uploaded)) return 1;
 
     char *cmd, *response, *release_script;
     int response_len, cmd_len;
@@ -337,9 +337,7 @@ int upload_lock_release_script(RedisSock *redis_sock TSRMLS_DC)
     }
 
     if (response != NULL) {
-        memset(REDIS_G(lock_release_lua_script_hash), 0, 41);
-        strncpy(REDIS_G(lock_release_lua_script_hash), response, strlen(response));
-
+        REDIS_G(lock_release_lua_script_hash) = estrdup(response);
         REDIS_G(lock_release_lua_script_uploaded) = 1;
         upload_result = 1;
         efree(response);

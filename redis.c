@@ -462,7 +462,7 @@ static
 PHP_GINIT_FUNCTION(redis)
 {
     redis_globals->lock_release_lua_script_uploaded = 0;
-    memset(redis_globals->lock_release_lua_script_hash, 0, 41);
+    redis_globals->lock_release_lua_script_hash = NULL;
 }
 
 zend_module_entry redis_module_entry = {
@@ -816,6 +816,7 @@ PHP_MINIT_FUNCTION(redis)
  */
 PHP_MSHUTDOWN_FUNCTION(redis)
 {
+    efree(REDIS_G(lock_release_lua_script_hash));
     return SUCCESS;
 }
 

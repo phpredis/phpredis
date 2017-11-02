@@ -262,7 +262,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_multi_reply_loop(
 
 ZEND_BEGIN_MODULE_GLOBALS(redis)
     int lock_release_lua_script_uploaded;
-    char lock_release_lua_script_hash[41];
+    char *lock_release_lua_script_hash;
 ZEND_END_MODULE_GLOBALS(redis)
 
 ZEND_EXTERN_MODULE_GLOBALS(redis);
