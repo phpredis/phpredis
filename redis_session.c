@@ -254,7 +254,8 @@ void refresh_lock_status(RedisSock *redis_sock, redis_session_lock_status *lock_
     if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC)) {
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
     } else {
-        php_error_docref(0 TSRMLS_CC, E_WARNING, "Unable to refresh sessiong locking status (socket write failed)");
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "Unable to refresh sessiong locking status (socket write failed)");
     }
 
     if (response != NULL) {
@@ -286,7 +287,8 @@ void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_status 
         if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC)) {
             response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
         } else {
-            php_error_docref(0 TSRMLS_CC, E_WARNING, "Unable to release session lock (socket write failed)");
+            php_error_docref(0 TSRMLS_CC, E_WARNING,
+                "Unable to release session lock (socket write failed)");
         }
 
         // in case of redis script cache has been flushed
@@ -297,7 +299,8 @@ void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_status 
             if (upload_successful && redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC)) {
                 response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
             } else {
-                php_error_docref(0 TSRMLS_CC, E_WARNING, "Unable to release session lock (socket write failed)");
+                php_error_docref(0 TSRMLS_CC, E_WARNING,
+                    "Unable to release session lock (socket write failed)");
             }
             lock_status->is_locked = 0;
         }
@@ -327,10 +330,12 @@ int upload_lock_release_script(RedisSock *redis_sock TSRMLS_DC)
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
         
         if (response == NULL) {
-            php_error_docref(0 TSRMLS_CC, E_WARNING, "Unable to upload LUA script for releasing session lock (SCRIPT LOAD failed)");
+            php_error_docref(0 TSRMLS_CC, E_WARNING,
+                "Unable to upload LUA script for releasing session lock (SCRIPT LOAD failed)");
         }
     } else {
-        php_error_docref(0 TSRMLS_CC, E_WARNING, "Unable to upload LUA script for releasing session lock (socket write failed)");
+        php_error_docref(0 TSRMLS_CC, E_WARNING,
+            "Unable to upload LUA script for releasing session lock (socket write failed)");
     }
 
     if (response != NULL) {
@@ -547,7 +552,8 @@ PS_READ_FUNC(redis)
     efree(resp);
 
     if (!lock_acquire(redis_sock, pool->lock_status TSRMLS_CC)) {
-        php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Acquire of session lock was not successful");
+        php_error_docref(NULL TSRMLS_CC, E_NOTICE,
+            "Acquire of session lock was not successful");
     }
 
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
