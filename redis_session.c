@@ -254,8 +254,11 @@ void refresh_lock_status(RedisSock *redis_sock, redis_session_lock_status *lock_
 
     cmd_len = REDIS_SPPRINTF(&cmd, "GET", "s", lock_status->lock_key.c, lock_status->lock_key.len);
 
-    redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC);
-    response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC)) {
+        response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
+    } else {
+        php_error_docref(0 TSRMLS_CC, E_WARNING, "Unable to refresh sessiong locking status (socket write failed)");
+    }
 
     if (response != NULL) {
         lock_status->is_locked = (strcmp(response, lock_status->lock_secret.c) == 0);
