@@ -14,7 +14,7 @@ int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_status T
 void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_status TSRMLS_DC);
 void refresh_lock_status(RedisSock *redis_sock, redis_session_lock_status *lock_status TSRMLS_DC);
 int write_allowed(RedisSock *redis_sock, redis_session_lock_status *lock_status TSRMLS_DC);
-void upload_lock_release_script(RedisSock *redis_sock TSRMLS_DC);
+int upload_lock_release_script(RedisSock *redis_sock TSRMLS_DC);
 void calculate_lock_secret(redis_session_lock_status *lock_status);
 
 PS_OPEN_FUNC(redis);

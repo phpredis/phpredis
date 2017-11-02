@@ -286,15 +286,22 @@ void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_status 
         upload_lock_release_script(redis_sock TSRMLS_CC);
         cmd_len = REDIS_SPPRINTF(&cmd, "EVALSHA", "sdss", REDIS_G(lock_release_lua_script_hash), strlen(REDIS_G(lock_release_lua_script_hash)), 1, lock_status->lock_key.c, lock_status->lock_key.len, lock_status->lock_secret.c, lock_status->lock_secret.len);
 
-        redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC);
-        response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
+        if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC)) {
+            response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
+        } else {
+            php_error_docref(0 TSRMLS_CC, E_WARNING, "Unable to release session lock (socket write failed)");
+        }
 
         // in case of redis script cache has been flushed
         if (response == NULL) {
             REDIS_G(lock_release_lua_script_uploaded) = 0;
-            upload_lock_release_script(redis_sock TSRMLS_CC);
-            redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC);
-            response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
+            int upload_successful = upload_lock_release_script(redis_sock TSRMLS_CC);
+
+            if (upload_successful && redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC)) {
+                response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
+            } else {
+                php_error_docref(0 TSRMLS_CC, E_WARNING, "Unable to release session lock (socket write failed)");
+            }
             lock_status->is_locked = 0;
         }
 
@@ -308,28 +315,38 @@ void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_status 
     smart_string_free(&lock_status->lock_secret);
 }
 
-void upload_lock_release_script(RedisSock *redis_sock TSRMLS_DC)
+int upload_lock_release_script(RedisSock *redis_sock TSRMLS_DC)
 {
     if (REDIS_G(lock_release_lua_script_uploaded)) return;
 
     char *cmd, *response, *release_script;
     int response_len, cmd_len;
+    int upload_result = 0;
     release_script = "if redis.call(\"get\",KEYS[1]) == ARGV[1] then return redis.call(\"del\",KEYS[1]) else return 0 end";
 
     cmd_len = REDIS_SPPRINTF(&cmd, "SCRIPT", "ss", "LOAD", strlen("LOAD"), release_script, strlen(release_script));
 
-    redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC);
-    response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC)) {
+        response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
+        
+        if (response == NULL) {
+            php_error_docref(0 TSRMLS_CC, E_WARNING, "Unable to upload LUA script for releasing session lock (SCRIPT LOAD failed)");
+        }
+    } else {
+        php_error_docref(0 TSRMLS_CC, E_WARNING, "Unable to upload LUA script for releasing session lock (socket write failed)");
+    }
 
     if (response != NULL) {
         memset(REDIS_G(lock_release_lua_script_hash), 0, 41);
         strncpy(REDIS_G(lock_release_lua_script_hash), response, strlen(response));
 
         REDIS_G(lock_release_lua_script_uploaded) = 1;
+        upload_result = 1;
         efree(response);
     }
 
     efree(cmd);
+    return upload_result;
 }
 
 void calculate_lock_secret(redis_session_lock_status *lock_status)
