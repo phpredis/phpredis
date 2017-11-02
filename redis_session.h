@@ -6,8 +6,8 @@
 typedef struct {
     zend_bool is_locked;
     char *session_key;
-	smart_string lock_key;
-    smart_string lock_secret;
+    char *lock_key;
+    char *lock_secret;
 } redis_session_lock_status;
 
 int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_status TSRMLS_DC);

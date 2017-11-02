@@ -208,15 +208,12 @@ int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_status T
       lock_expire = INI_INT("max_execution_time");
     }
 
-    // Building the redis lock key
-    smart_string_appendl(&lock_status->lock_key, lock_status->session_key, strlen(lock_status->session_key));
-    smart_string_appendl(&lock_status->lock_key, "_LOCK", strlen("_LOCK"));
-    smart_string_0(&lock_status->lock_key);
+    spprintf(&lock_status->lock_key, 0, "%s%s", lock_status->session_key, "_LOCK");
 
     if (lock_expire > 0) {
-        cmd_len = REDIS_SPPRINTF(&cmd, "SET", "ssssd", lock_status->lock_key.c, lock_status->lock_key.len, lock_status->lock_secret.c, lock_status->lock_secret.len, "NX", 2, "PX", 2, lock_expire * 1000);
+        cmd_len = REDIS_SPPRINTF(&cmd, "SET", "ssssd", lock_status->lock_key, strlen(lock_status->lock_key), lock_status->lock_secret, strlen(lock_status->lock_secret), "NX", 2, "PX", 2, lock_expire * 1000);
     } else {
-        cmd_len = REDIS_SPPRINTF(&cmd, "SET", "sss", lock_status->lock_key.c, lock_status->lock_key.len, lock_status->lock_secret.c, lock_status->lock_secret.len, "NX", 2);
+        cmd_len = REDIS_SPPRINTF(&cmd, "SET", "sss", lock_status->lock_key, strlen(lock_status->lock_key), lock_status->lock_secret, strlen(lock_status->lock_secret), "NX", 2);
     }
 
     for (i_lock_retry = 0; !lock_status->is_locked && (max_lock_retries == -1 || i_lock_retry <= max_lock_retries); i_lock_retry++) {
@@ -252,7 +249,7 @@ void refresh_lock_status(RedisSock *redis_sock, redis_session_lock_status *lock_
     char *cmd, *response;
     int response_len, cmd_len;
 
-    cmd_len = REDIS_SPPRINTF(&cmd, "GET", "s", lock_status->lock_key.c, lock_status->lock_key.len);
+    cmd_len = REDIS_SPPRINTF(&cmd, "GET", "s", lock_status->lock_key, strlen(lock_status->lock_key));
 
     if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC)) {
         response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
@@ -261,7 +258,7 @@ void refresh_lock_status(RedisSock *redis_sock, redis_session_lock_status *lock_
     }
 
     if (response != NULL) {
-        lock_status->is_locked = (strcmp(response, lock_status->lock_secret.c) == 0);
+        lock_status->is_locked = (strcmp(response, lock_status->lock_secret) == 0);
         efree(response);
     } else {
         lock_status->is_locked = 0;
@@ -284,7 +281,7 @@ void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_status 
         int response_len, cmd_len;
 
         upload_lock_release_script(redis_sock TSRMLS_CC);
-        cmd_len = REDIS_SPPRINTF(&cmd, "EVALSHA", "sdss", REDIS_G(lock_release_lua_script_hash), strlen(REDIS_G(lock_release_lua_script_hash)), 1, lock_status->lock_key.c, lock_status->lock_key.len, lock_status->lock_secret.c, lock_status->lock_secret.len);
+        cmd_len = REDIS_SPPRINTF(&cmd, "EVALSHA", "sdss", REDIS_G(lock_release_lua_script_hash), strlen(REDIS_G(lock_release_lua_script_hash)), 1, lock_status->lock_key, strlen(lock_status->lock_key), lock_status->lock_secret, strlen(lock_status->lock_secret));
 
         if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC)) {
             response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
@@ -311,8 +308,8 @@ void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_status 
 
         efree(cmd);
     }
-    smart_string_free(&lock_status->lock_key);
-    smart_string_free(&lock_status->lock_secret);
+    efree(lock_status->lock_key);
+    efree(lock_status->lock_secret);
 }
 
 int upload_lock_release_script(RedisSock *redis_sock TSRMLS_DC)
@@ -352,11 +349,7 @@ void calculate_lock_secret(redis_session_lock_status *lock_status)
     char hostname[HOST_NAME_MAX] = {0};
     gethostname(hostname, HOST_NAME_MAX);
 
-    // Concatenating the redis lock secret
-    smart_string_appendl(&lock_status->lock_secret, hostname, strlen(hostname));
-    smart_string_appendc(&lock_status->lock_secret, '|');
-    smart_string_append_long(&lock_status->lock_secret, getpid());
-    smart_string_0(&lock_status->lock_secret);
+    spprintf(&lock_status->lock_secret, 0, "%s|%c", hostname, getpid());
 }
 
 /* {{{ PS_OPEN_FUNC
