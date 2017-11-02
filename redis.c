@@ -76,9 +76,9 @@ PHP_INI_BEGIN()
 
     /* redis session */
     PHP_INI_ENTRY("redis.session.locking_enabled", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.lock_expire", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.lock_retries", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.session.lock_wait_time", "", PHP_INI_ALL, NULL)
-     PHP_INI_ENTRY("redis.session.lock_retries", "", PHP_INI_ALL, NULL)
-     PHP_INI_ENTRY("redis.session.lock_expire", "", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
 /** {{{ Argument info for commands in redis 1.0 */
