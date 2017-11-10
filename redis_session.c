@@ -41,12 +41,39 @@
 #include "SAPI.h"
 #include "ext/standard/url.h"
 
+/* HOST_NAME_MAX doesn't exist everywhere */
+#ifndef HOST_NAME_MAX
+    #if defined(_POSIX_HOST_NAME_MAX)
+        #define HOST_NAME_MAX _POSIX_HOST_NAME_MAX
+    #elif defined(MAXHOSTNAMELEN)
+        #define HOST_NAME_MAX MAXHOSTNAMELEN
+    #else
+        #define HOST_NAME_MAX 255
+    #endif
+#endif
+
+/* Session lock LUA as well as its SHA1 hash */
+#define LOCK_RELEASE_LUA_STR "if redis.call(\"get\",KEYS[1]) == ARGV[1] then return redis.call(\"del\",KEYS[1]) else return 0 end"
+#define LOCK_RELEASE_LUA_LEN (sizeof(LOCK_RELEASE_LUA_STR) - 1)
+#define LOCK_RELEASE_SHA_STR "b70c2384248f88e6b75b9f89241a180f856ad852"
+#define LOCK_RELEASE_SHA_LEN (sizeof(LOCK_RELEASE_SHA_STR) - 1)
+
+/* Check if a response is the Redis +OK status response */
+#define IS_REDIS_OK(r, len) (r != NULL && len == 3 && !memcmp(r, "+OK", 3))
+
 ps_module ps_mod_redis = {
     PS_MOD(redis)
 };
 ps_module ps_mod_redis_cluster = {
     PS_MOD(rediscluster)
 };
+
+typedef struct {
+    zend_bool is_locked;
+    char *session_key;
+    char *lock_key;
+    char *lock_secret;
+} redis_session_lock_status;
 
 typedef struct redis_pool_member_ {
 
@@ -76,7 +103,12 @@ typedef struct {
 
 PHP_REDIS_API redis_pool*
 redis_pool_new(TSRMLS_D) {
-    return ecalloc(1, sizeof(redis_pool));
+    redis_pool *pool;
+
+    pool = ecalloc(1, sizeof(*pool));
+    pool->lock_status = ecalloc(1, sizeof(*pool->lock_status));
+
+    return pool;
 }
 
 PHP_REDIS_API void
@@ -114,8 +146,34 @@ redis_pool_free(redis_pool *pool TSRMLS_DC) {
         efree(rpm);
         rpm = next;
     }
+
+    /* Cleanup after our lock */
+    if (pool->lock_status->session_key)
+        efree(pool->lock_status->session_key);
+    if (pool->lock_status->lock_secret)
+        efree(pool->lock_status->lock_secret);
+    if (pool->lock_status->lock_key)
+        efree(pool->lock_status->lock_key);
+
+    /* Cleanup lock status struct and pool itself */
     efree(pool->lock_status);
     efree(pool);
+}
+
+/* Send a command to Redis.  Returns reply on success and NULL on failure */
+static char *redis_simple_cmd(RedisSock *redis_sock, char *cmd, int cmdlen,
+                              int *replylen TSRMLS_DC)
+{
+    char *reply;
+
+    if (redis_sock_write(redis_sock, cmd, cmdlen TSRMLS_CC) >= 0) {
+        if ((reply = redis_sock_read(redis_sock, replylen TSRMLS_CC)) != NULL) {
+            return reply;
+        }
+    }
+
+    /* Failed to send or receive command */
+    return NULL;
 }
 
 static void
@@ -185,176 +243,177 @@ redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
     return NULL;
 }
 
-int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_status TSRMLS_DC)
+/* Helper to set our session lock key */
+static int set_session_lock_key(RedisSock *redis_sock, char *cmd, int cmd_len
+                                TSRMLS_DC)
 {
-    if (lock_status->is_locked || !INI_INT("redis.session.locking_enabled")) return SUCCESS;
+    char *reply;
+    int reply_len;
 
-    char *cmd, *response;
-    int response_len, cmd_len, lock_wait_time, max_lock_retries, i_lock_retry, lock_expire;
-    calculate_lock_secret(lock_status);
+    reply = redis_simple_cmd(redis_sock, cmd, cmd_len, &reply_len TSRMLS_CC);
+    if (reply) {
+        if (IS_REDIS_OK(reply, reply_len)) {
+            efree(reply);
+            return SUCCESS;
+        }
 
+        efree(reply);
+    }
+
+    return FAILURE;
+}
+
+static int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_status
+                        TSRMLS_DC)
+{
+    char *cmd, hostname[HOST_NAME_MAX] = {0};
+    int cmd_len, lock_wait_time, retries, i, expiry;
+
+    /* Short circuit if we are already locked or not using session locks */
+    if (lock_status->is_locked || !INI_INT("redis.session.locking_enabled"))
+        return SUCCESS;
+
+    /* How long to wait between attempts to acquire lock */
     lock_wait_time = INI_INT("redis.session.lock_wait_time");
     if (lock_wait_time == 0) {
-      lock_wait_time = 2000;
+        lock_wait_time = 2000;
     }
 
-    max_lock_retries = INI_INT("redis.session.lock_retries");
-    if (max_lock_retries == 0) {
-      max_lock_retries = 10;
+    /* Maximum number of times to retry (-1 means infinite) */
+    retries = INI_INT("redis.session.lock_retries");
+    if (retries == 0) {
+        retries = 10;
     }
 
-    lock_expire = INI_INT("redis.session.lock_expire");
-    if (lock_expire == 0) {
-      lock_expire = INI_INT("max_execution_time");
+    /* How long should the lock live (in seconds) */
+    expiry = INI_INT("redis.session.lock_expire");
+    if (expiry == 0) {
+        expiry = INI_INT("max_execution_time");
     }
 
+    /* Generate our qualified lock key */
     spprintf(&lock_status->lock_key, 0, "%s%s", lock_status->session_key, "_LOCK");
 
-    if (lock_expire > 0) {
-        cmd_len = REDIS_SPPRINTF(&cmd, "SET", "ssssd", lock_status->lock_key, strlen(lock_status->lock_key), lock_status->lock_secret, strlen(lock_status->lock_secret), "NX", 2, "PX", 2, lock_expire * 1000);
+    /* Calculate lock secret */
+    gethostname(hostname, HOST_NAME_MAX);
+    spprintf(&lock_status->lock_secret, 0, "%s|%ld", hostname, (long)getpid());
+
+    if (expiry > 0) {
+        cmd_len = REDIS_SPPRINTF(&cmd, "SET", "ssssd", lock_status->lock_key,
+                                 strlen(lock_status->lock_key), lock_status->lock_secret,
+                                 strlen(lock_status->lock_secret), "NX", 2,
+                                 "PX", 2, expiry * 1000);
     } else {
-        cmd_len = REDIS_SPPRINTF(&cmd, "SET", "sss", lock_status->lock_key, strlen(lock_status->lock_key), lock_status->lock_secret, strlen(lock_status->lock_secret), "NX", 2);
+        cmd_len = REDIS_SPPRINTF(&cmd, "SET", "sss", lock_status->lock_key,
+                                 strlen(lock_status->lock_key), lock_status->lock_secret,
+                                 strlen(lock_status->lock_secret), "NX", 2);
     }
 
-    for (i_lock_retry = 0; !lock_status->is_locked && (max_lock_retries == -1 || i_lock_retry <= max_lock_retries); i_lock_retry++) {
-      if(!(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0)
-          && ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC)) != NULL)
-          && response_len == 3
-          && strncmp(response, "+OK", 3) == 0) {
+    /* Attempt to get our lock */
+    for (i = 0; retries == -1 || i <= retries; i++) {
+        if (set_session_lock_key(redis_sock, cmd, cmd_len TSRMLS_CC) == SUCCESS) {
             lock_status->is_locked = 1;
-      } else if (max_lock_retries == -1 || i_lock_retry < max_lock_retries) {
-          usleep(lock_wait_time);
-      }
+            break;
+        }
+
+        /* Sleep unless we're done making attempts */
+        if (retries == -1 || i < retries) {
+            usleep(lock_wait_time);
+        }
     }
 
-    if (response != NULL) {
-        efree(response);
-    }
+    /* Cleanup SET command */
     efree(cmd);
 
-    if (lock_status->is_locked) {
-        return SUCCESS;
-    } else {
-        return FAILURE;
-    }
+    /* Success if we're locked */
+    return lock_status->is_locked ? SUCCESS : FAILURE;
 }
 
-void refresh_lock_status(RedisSock *redis_sock, redis_session_lock_status *lock_status TSRMLS_DC)
+#define IS_LOCK_SECRET(reply, len, secret) (len == strlen(secret) && !strncmp(reply, secret, len))
+static void refresh_lock_status(RedisSock *redis_sock, redis_session_lock_status *lock_status TSRMLS_DC)
 {
-    if (!lock_status->is_locked) return;
-    // If redis.session.lock_expire is not set => TTL=max_execution_time
-    // Therefore it is guaranteed that the current process is still holding the lock
-    if (lock_status->is_locked && INI_INT("redis.session.lock_expire") == 0) return;
+    char *cmd, *reply = NULL;
+    int replylen, cmdlen;
 
-    char *cmd, *response;
-    int response_len, cmd_len;
+    /* Return early if we're not locked */
+    if (!lock_status->is_locked)
+        return;
 
-    cmd_len = REDIS_SPPRINTF(&cmd, "GET", "s", lock_status->lock_key, strlen(lock_status->lock_key));
+    /* If redis.session.lock_expire is not set => TTL=max_execution_time
+       Therefore it is guaranteed that the current process is still holding
+       the lock */
+    if (lock_status->is_locked && INI_INT("redis.session.lock_expire") == 0)
+        return;
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC)) {
-        response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
-    } else {
-        php_error_docref(0 TSRMLS_CC, E_WARNING,
-            "Unable to refresh sessiong locking status (socket write failed)");
+    cmdlen = REDIS_SPPRINTF(&cmd, "GET", "s", lock_status->lock_key,
+                            strlen(lock_status->lock_key));
+
+    /* Attempt to refresh the lock */
+    reply = redis_simple_cmd(redis_sock, cmd, cmdlen, &replylen TSRMLS_CC);
+    if (reply != NULL) {
+        lock_status->is_locked = IS_LOCK_SECRET(reply, replylen, lock_status->lock_secret);
+        efree(reply);
     }
 
-    if (response != NULL) {
-        lock_status->is_locked = (strcmp(response, lock_status->lock_secret) == 0);
-        efree(response);
-    } else {
-        lock_status->is_locked = 0;
+    /* Issue a warning if we're not locked.  We don't attempt to refresh the lock
+     * if we aren't flagged as locked, so if we're not flagged here something
+     * failed */
+    if (!lock_status->is_locked) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to refresh session lock");
     }
+
+    /* Cleanup */
     efree(cmd);
 }
 
-int write_allowed(RedisSock *redis_sock, redis_session_lock_status *lock_status TSRMLS_DC)
+static int write_allowed(RedisSock *redis_sock, redis_session_lock_status *lock_status TSRMLS_DC)
 {
-    if (!INI_INT("redis.session.locking_enabled")) return 1;
+    if (!INI_INT("redis.session.locking_enabled"))
+        return 1;
 
     refresh_lock_status(redis_sock, lock_status TSRMLS_CC);
+
     return lock_status->is_locked;
 }
 
-void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_status TSRMLS_DC)
+/* Release any session lock we hold and cleanup allocated lock data.  This function
+ * first attempts to use EVALSHA and then falls back to EVAL if EVALSHA fails.  This
+ * will cause Redis to cache the script, so subsequent calls should then succeed
+ * using EVALSHA. */
+static void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_status TSRMLS_DC)
 {
-    if (lock_status->is_locked) {
-        char *cmd, *response;
-        int response_len, cmd_len;
+    char *cmd, *reply;
+    int i, cmdlen, replylen;
 
-        upload_lock_release_script(redis_sock TSRMLS_CC);
-        cmd_len = REDIS_SPPRINTF(&cmd, "EVALSHA", "sdss", REDIS_G(lock_release_lua_script_hash), strlen(REDIS_G(lock_release_lua_script_hash)), 1, lock_status->lock_key, strlen(lock_status->lock_key), lock_status->lock_secret, strlen(lock_status->lock_secret));
+    /* Keywords, command, and length fallbacks */
+    const char *kwd[] = {"EVALSHA", "EVAL"};
+    const char *lua[] = {LOCK_RELEASE_SHA_STR, LOCK_RELEASE_LUA_STR};
+    int len[] = {LOCK_RELEASE_SHA_LEN, LOCK_RELEASE_LUA_LEN};
 
-        if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC)) {
-            response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
-        } else {
-            php_error_docref(0 TSRMLS_CC, E_WARNING,
-                "Unable to release session lock (socket write failed)");
-        }
+    /* We first want to try EVALSHA and then fall back to EVAL */
+    for (i = 0; lock_status->is_locked && i < sizeof(kwd)/sizeof(*kwd); i++) {
+        /* Construct our command */
+        cmdlen = REDIS_SPPRINTF(&cmd, (char*)kwd[i], "sdss", lua[i], len[i], 1,
+            lock_status->lock_key, strlen(lock_status->lock_key),
+            lock_status->lock_secret, strlen(lock_status->lock_secret));
 
-        // in case of redis script cache has been flushed
-        if (response == NULL) {
-            REDIS_G(lock_release_lua_script_uploaded) = 0;
-            int upload_successful = upload_lock_release_script(redis_sock TSRMLS_CC);
+        /* Send it off */
+        reply = redis_simple_cmd(redis_sock, cmd, cmdlen, &replylen TSRMLS_CC);
 
-            if (upload_successful && redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC)) {
-                response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
-            } else {
-                php_error_docref(0 TSRMLS_CC, E_WARNING,
-                    "Unable to release session lock (socket write failed)");
-            }
+        /* Release lock and cleanup reply if we got one */
+        if (reply != NULL) {
             lock_status->is_locked = 0;
+            efree(reply);
         }
 
-        if (response != NULL) {
-            efree(response);
-        }
-
+        /* Cleanup command */
         efree(cmd);
     }
-    efree(lock_status->lock_key);
-    efree(lock_status->lock_secret);
-}
 
-int upload_lock_release_script(RedisSock *redis_sock TSRMLS_DC)
-{
-    if (REDIS_G(lock_release_lua_script_uploaded)) return 1;
-
-    char *cmd, *response, *release_script;
-    int response_len, cmd_len;
-    int upload_result = 0;
-    release_script = "if redis.call(\"get\",KEYS[1]) == ARGV[1] then return redis.call(\"del\",KEYS[1]) else return 0 end";
-
-    cmd_len = REDIS_SPPRINTF(&cmd, "SCRIPT", "ss", "LOAD", strlen("LOAD"), release_script, strlen(release_script));
-
-    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC)) {
-        response = redis_sock_read(redis_sock, &response_len TSRMLS_CC);
-        
-        if (response == NULL) {
-            php_error_docref(0 TSRMLS_CC, E_WARNING,
-                "Unable to upload LUA script for releasing session lock (SCRIPT LOAD failed)");
-        }
-    } else {
-        php_error_docref(0 TSRMLS_CC, E_WARNING,
-            "Unable to upload LUA script for releasing session lock (socket write failed)");
+    /* Something has failed if we are still locked */
+    if (lock_status->is_locked) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to release session lock");
     }
-
-    if (response != NULL) {
-        REDIS_G(lock_release_lua_script_hash) = estrdup(response);
-        REDIS_G(lock_release_lua_script_uploaded) = 1;
-        upload_result = 1;
-        efree(response);
-    }
-
-    efree(cmd);
-    return upload_result;
-}
-
-void calculate_lock_secret(redis_session_lock_status *lock_status)
-{
-    char hostname[HOST_NAME_MAX] = {0};
-    gethostname(hostname, HOST_NAME_MAX);
-
-    spprintf(&lock_status->lock_secret, 0, "%s|%c", hostname, getpid());
 }
 
 /* {{{ PS_OPEN_FUNC
@@ -366,9 +425,6 @@ PS_OPEN_FUNC(redis)
     int i, j, path_len;
 
     redis_pool *pool = redis_pool_new(TSRMLS_C);
-    redis_session_lock_status *lock_status = ecalloc(1, sizeof(redis_session_lock_status));
-    lock_status->is_locked = 0;
-    pool->lock_status = lock_status;
 
     for (i=0,j=0,path_len=strlen(save_path); i<path_len; i=j+1) {
         /* find beginning of url */
@@ -378,7 +434,7 @@ PS_OPEN_FUNC(redis)
         /* find end of url */
         j = i;
         while (j<path_len && !isspace(save_path[j]) && save_path[j] != ',')
-             j++;
+            j++;
 
         if (i < j) {
             int weight = 1;
@@ -487,7 +543,7 @@ PS_CLOSE_FUNC(redis)
     if(pool){
         redis_pool_member *rpm = redis_pool_get_sock(pool, pool->lock_status->session_key TSRMLS_CC);
 
-        RedisSock *redis_sock = rpm?rpm->redis_sock:NULL;
+        RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
         if (redis_sock) {
             lock_release(redis_sock, pool->lock_status TSRMLS_CC);
         }
@@ -551,7 +607,7 @@ PS_READ_FUNC(redis)
     cmd_len = REDIS_SPPRINTF(&cmd, "GET", "s", resp, resp_len);
     efree(resp);
 
-    if (!lock_acquire(redis_sock, pool->lock_status TSRMLS_CC)) {
+    if (lock_acquire(redis_sock, pool->lock_status TSRMLS_CC) != SUCCESS) {
         php_error_docref(NULL TSRMLS_CC, E_NOTICE,
             "Acquire of session lock was not successful");
     }
@@ -631,7 +687,7 @@ PS_WRITE_FUNC(redis)
         return FAILURE;
     }
 
-    if(response_len == 3 && strncmp(response, "+OK", 3) == 0) {
+    if(IS_REDIS_OK(response, response_len)) {
         efree(response);
         return SUCCESS;
     } else {

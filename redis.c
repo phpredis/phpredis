@@ -232,8 +232,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan, 0, 0, 2)
     ZEND_ARG_INFO(0, i_count)
 ZEND_END_ARG_INFO()
 
-ZEND_DECLARE_MODULE_GLOBALS(redis)
-
 static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, __construct, arginfo_void, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
      PHP_ME(Redis, __destruct, arginfo_void, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
@@ -458,13 +456,6 @@ static const zend_module_dep redis_deps[] = {
      ZEND_MOD_END
 };
 
-static
-PHP_GINIT_FUNCTION(redis)
-{
-    redis_globals->lock_release_lua_script_uploaded = 0;
-    redis_globals->lock_release_lua_script_hash = NULL;
-}
-
 zend_module_entry redis_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
      STANDARD_MODULE_HEADER_EX,
@@ -481,11 +472,7 @@ zend_module_entry redis_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
      PHP_REDIS_VERSION,
 #endif
-     PHP_MODULE_GLOBALS(redis),
-     PHP_GINIT(redis),
-     NULL,
-     NULL,
-     STANDARD_MODULE_PROPERTIES_EX,
+     STANDARD_MODULE_PROPERTIES
 };
 
 #ifdef COMPILE_DL_REDIS
@@ -816,7 +803,6 @@ PHP_MINIT_FUNCTION(redis)
  */
 PHP_MSHUTDOWN_FUNCTION(redis)
 {
-    efree(REDIS_G(lock_release_lua_script_hash));
     return SUCCESS;
 }
 
