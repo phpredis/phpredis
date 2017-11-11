@@ -345,6 +345,7 @@ static void refresh_lock_status(RedisSock *redis_sock, redis_session_lock_status
     if (lock_status->is_locked && INI_INT("redis.session.lock_expire") == 0)
         return;
 
+    /* Command to get our lock key value and compare secrets */
     cmdlen = REDIS_SPPRINTF(&cmd, "GET", "s", lock_status->lock_key,
                             strlen(lock_status->lock_key));
 
@@ -353,6 +354,8 @@ static void refresh_lock_status(RedisSock *redis_sock, redis_session_lock_status
     if (reply != NULL) {
         lock_status->is_locked = IS_LOCK_SECRET(reply, replylen, lock_status->lock_secret);
         efree(reply);
+    } else {
+        lock_status->is_locked = 0;
     }
 
     /* Issue a warning if we're not locked.  We don't attempt to refresh the lock
