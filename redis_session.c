@@ -521,7 +521,7 @@ static void session_conf_timeout(HashTable *ht_conf, const char *key, int key_le
 }
 
 /* Simple helper to retreive a boolean (0 or 1) value from a string stored in our
- * session.save_path variable.  This is so the user can use 0, 1, or 'true', 
+ * session.save_path variable.  This is so the user can use 0, 1, or 'true',
  * 'false' */
 static void session_conf_bool(HashTable *ht_conf, char *key, int keylen,
                               int *retval) {
@@ -529,7 +529,7 @@ static void session_conf_bool(HashTable *ht_conf, char *key, int keylen,
     char *str;
     int strlen;
 
-    /* See if we have the option, and it's a string */   
+    /* See if we have the option, and it's a string */
     if ((z_val = zend_hash_str_find(ht_conf, key, keylen - 1)) != NULL &&
         Z_TYPE_P(z_val) == IS_STRING
     ) {
@@ -544,7 +544,7 @@ static void session_conf_bool(HashTable *ht_conf, char *key, int keylen,
 }
 
 /* Prefix a session key */
-static char *cluster_session_key(redisCluster *c, const char *key, int keylen, 
+static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
                                  int *skeylen, short *slot) {
     char *skey;
 
@@ -552,7 +552,7 @@ static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
     skey = emalloc(*skeylen);
     memcpy(skey, ZSTR_VAL(c->flags->prefix), ZSTR_LEN(c->flags->prefix));
     memcpy(skey + ZSTR_LEN(c->flags->prefix), key, keylen);
-    
+
     *slot = cluster_hash_key(skey, *skeylen);
 
     return skey;
@@ -590,7 +590,7 @@ PS_OPEN_FUNC(rediscluster) {
 
     /* Grab persistent option */
     session_conf_bool(ht_conf, "persistent", sizeof("persistent"), &persistent);
-    
+
     /* Sanity check on our timeouts */
     if (timeout < 0 || read_timeout < 0) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
@@ -635,7 +635,7 @@ PS_OPEN_FUNC(rediscluster) {
 
     /* Cleanup */
     zval_dtor(&z_conf);
-    
+
     return retval;
 }
 
@@ -775,7 +775,7 @@ PS_DESTROY_FUNC(rediscluster) {
     reply = cluster_read_resp(c TSRMLS_CC);
     if (!reply || c->err) {
         if (reply) cluster_free_reply(reply, 1);
-        return FAILURE; 
+        return FAILURE;
     }
 
     /* Clean up our reply */

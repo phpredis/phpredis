@@ -1284,7 +1284,7 @@ redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     {
         if (IS_ATOMIC(redis_sock)) {
             RETURN_FALSE;
-        }   
+        }
         add_next_index_bool(z_tab, 0);
         return;
     }

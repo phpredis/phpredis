@@ -37,7 +37,7 @@ static void cluster_log(char *fmt, ...)
     fprintf(stderr, "%s\n", buffer);
 }
 
-// Debug function to dump a clusterReply structure recursively 
+// Debug function to dump a clusterReply structure recursively
 static void dump_reply(clusterReply *reply, int indent) {
     smart_string buf = {0};
     int i;
