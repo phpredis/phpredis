@@ -507,12 +507,9 @@ typedef enum _PUBSUB_TYPE {
 #define MULTI    1
 #define PIPELINE 2
 
-#define IF_ATOMIC() if (redis_sock->mode == ATOMIC)
-#define IF_NOT_ATOMIC() if (redis_sock->mode != ATOMIC)
-#define IF_MULTI() if (redis_sock->mode & MULTI)
-#define IF_NOT_MULTI() if (!(redis_sock->mode & MULTI))
-#define IF_PIPELINE() if (redis_sock->mode & PIPELINE)
-#define IF_NOT_PIPELINE() if (!(redis_sock->mode & PIPELINE))
+#define IS_ATOMIC(redis_sock) (redis_sock->mode == ATOMIC)
+#define IS_MULTI(redis_sock) (redis_sock->mode & MULTI)
+#define IS_PIPELINE(redis_sock) (redis_sock->mode & PIPELINE)
 
 #define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) do { \
     if (redis_sock->pipeline_cmd == NULL) { \
@@ -547,7 +544,7 @@ typedef enum _PUBSUB_TYPE {
 } while (0)
 
 #define REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len) \
-    IF_PIPELINE() { \
+    if (IS_PIPELINE(redis_sock)) { \
         PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len); \
     } else { \
         SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len); \
@@ -555,7 +552,7 @@ typedef enum _PUBSUB_TYPE {
     efree(cmd);
 
 #define REDIS_PROCESS_RESPONSE_CLOSURE(function, closure_context) \
-    IF_NOT_PIPELINE() { \
+    if (!IS_PIPELINE(redis_sock)) { \
         if (redis_response_enqueued(redis_sock TSRMLS_CC) != SUCCESS) { \
             RETURN_FALSE; \
         } \
@@ -583,7 +580,7 @@ typedef enum _PUBSUB_TYPE {
             RETURN_FALSE; \
     } \
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
-    IF_ATOMIC() { \
+    if (IS_ATOMIC(redis_sock)) { \
         resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx); \
     } else { \
         REDIS_PROCESS_RESPONSE_CLOSURE(resp_func, ctx) \
@@ -599,7 +596,7 @@ typedef enum _PUBSUB_TYPE {
             RETURN_FALSE; \
     } \
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
-    IF_ATOMIC() { \
+    if (IS_ATOMIC(redis_sock)) { \
         resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx); \
     } else { \
         REDIS_PROCESS_RESPONSE_CLOSURE(resp_func, ctx) \

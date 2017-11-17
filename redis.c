@@ -843,13 +843,13 @@ PHP_METHOD(Redis,__destruct) {
 
     // Grab our socket
     RedisSock *redis_sock;
-    if ((redis_sock = redis_sock_get(getThis() TSRMLS_CC, 1)) == NULL) {
+    if ((redis_sock = redis_sock_get_instance(getThis() TSRMLS_CC, 1)) == NULL) {
         RETURN_FALSE;
     }
 
     // If we think we're in MULTI mode, send a discard
-    IF_MULTI() {
-        IF_NOT_PIPELINE() {
+    if (IS_MULTI(redis_sock)) {
+        if (!IS_PIPELINE(redis_sock) && redis_sock->stream) {
             // Discard any multi commands, and free any callbacks that have been
             // queued
             redis_send_discard(redis_sock TSRMLS_CC);
@@ -1151,7 +1151,7 @@ PHP_METHOD(Redis, getMultiple)
 
     /* Kick off our command */
     REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
-    IF_ATOMIC() {
+    if (IS_ATOMIC(redis_sock)) {
         if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                            redis_sock, NULL, NULL) < 0) {
             RETURN_FALSE;
@@ -1443,7 +1443,7 @@ PHP_METHOD(Redis, sRandMember)
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     if(have_count) {
-        IF_ATOMIC() {
+        if (IS_ATOMIC(redis_sock)) {
             if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                                redis_sock, NULL, NULL)<0)
             {
@@ -1452,7 +1452,7 @@ PHP_METHOD(Redis, sRandMember)
         }
         REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
     } else {
-        IF_ATOMIC() {
+        if (IS_ATOMIC(redis_sock)) {
             redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
                 NULL, NULL);
         }
@@ -1527,7 +1527,7 @@ PHP_METHOD(Redis, sort) {
     }
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
+    if (IS_ATOMIC(redis_sock)) {
         if (redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                      redis_sock, NULL, NULL) < 0)
         {
@@ -1624,7 +1624,7 @@ generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, int desc, int alpha)
     }
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
-    IF_ATOMIC() {
+    if (IS_ATOMIC(redis_sock)) {
         if (redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                      redis_sock, NULL, NULL) < 0)
         {
@@ -1792,7 +1792,7 @@ PHP_METHOD(Redis, info) {
     }
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
+    if (IS_ATOMIC(redis_sock)) {
         redis_info_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL,
             NULL);
     }
@@ -1824,7 +1824,7 @@ PHP_METHOD(Redis, select) {
     cmd_len = REDIS_SPPRINTF(&cmd, "SELECT", "d", dbNumber);
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
+    if (IS_ATOMIC(redis_sock)) {
         redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
             NULL, NULL);
     }
@@ -1882,7 +1882,7 @@ void generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun)
     } ZEND_HASH_FOREACH_END();
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
-    IF_ATOMIC() {
+    if (IS_ATOMIC(redis_sock)) {
         fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
     REDIS_PROCESS_RESPONSE(fun);
@@ -1941,12 +1941,12 @@ static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
     if(withscores) {
-        IF_ATOMIC() {
+        if (IS_ATOMIC(redis_sock)) {
             redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
         }
         REDIS_PROCESS_RESPONSE(redis_mbulk_reply_zipped_keys_dbl);
     } else {
-        IF_ATOMIC() {
+        if (IS_ATOMIC(redis_sock)) {
             if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                                redis_sock, NULL, NULL)<0)
             {
@@ -2209,21 +2209,21 @@ PHP_METHOD(Redis, multi)
 
     if (multi_value == PIPELINE) {
         /* Cannot enter pipeline mode in a MULTI block */
-        IF_MULTI() {
+        if (IS_MULTI(redis_sock)) {
             php_error_docref(NULL TSRMLS_CC, E_ERROR, "Can't activate pipeline in multi mode!");
             RETURN_FALSE;
         }
 
         /* Enable PIPELINE if we're not already in one */
-        IF_ATOMIC() {
+        if (IS_ATOMIC(redis_sock)) {
             free_reply_callbacks(redis_sock);
             REDIS_ENABLE_MODE(redis_sock, PIPELINE);
         }
     } else if (multi_value == MULTI) {
         /* Don't want to do anything if we're alredy in MULTI mode */
-        IF_NOT_MULTI() {
+        if (!IS_MULTI(redis_sock)) {
             cmd_len = REDIS_SPPRINTF(&cmd, "MULTI", "");
-            IF_PIPELINE() {
+            if (IS_PIPELINE(redis_sock)) {
                 PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len);
                 efree(cmd);
                 REDIS_SAVE_CALLBACK(NULL, NULL);
@@ -2313,9 +2313,9 @@ PHP_METHOD(Redis, exec)
         RETURN_FALSE;
     }
 
-    IF_MULTI() {
+    if (IS_MULTI(redis_sock)) {
         cmd_len = REDIS_SPPRINTF(&cmd, "EXEC", "");
-        IF_PIPELINE() {
+        if (IS_PIPELINE(redis_sock)) {
             PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len);
             efree(cmd);
             REDIS_SAVE_CALLBACK(NULL, NULL);
@@ -2336,7 +2336,7 @@ PHP_METHOD(Redis, exec)
         }
     }
 
-    IF_PIPELINE() {
+    if (IS_PIPELINE(redis_sock)) {
         if (redis_sock->pipeline_cmd == NULL) {
             /* Empty array when no command was run. */
             array_init(return_value);
@@ -2430,14 +2430,14 @@ PHP_METHOD(Redis, pipeline)
     }
 
     /* User cannot enter MULTI mode if already in a pipeline */
-    IF_MULTI() {
+    if (IS_MULTI(redis_sock)) {
         php_error_docref(NULL TSRMLS_CC, E_ERROR, "Can't activate pipeline in multi mode!");
         RETURN_FALSE;
     }
 
     /* Enable pipeline mode unless we're already in that mode in which case this
      * is just a NO OP */
-    IF_ATOMIC() {
+    if (IS_ATOMIC(redis_sock)) {
         /* NB : we keep the function fold, to detect the last function.
          * We need the response format of the n - 1 command. So, we can delete
          * when n > 2, the { 1 .. n - 2} commands */
@@ -2594,7 +2594,7 @@ PHP_METHOD(Redis, slaveof)
     }
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
+    if (IS_ATOMIC(redis_sock)) {
       redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
           NULL, NULL);
     }
@@ -2622,13 +2622,13 @@ PHP_METHOD(Redis, object)
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
     if(rtype == TYPE_INT) {
-        IF_ATOMIC() {
+        if (IS_ATOMIC(redis_sock)) {
             redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
                 NULL, NULL);
         }
         REDIS_PROCESS_RESPONSE(redis_long_response);
     } else {
-        IF_ATOMIC() {
+        if (IS_ATOMIC(redis_sock)) {
             redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
                 NULL, NULL);
         }
@@ -2697,7 +2697,7 @@ PHP_METHOD(Redis, config)
         cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "ss", op, op_len, key, key_len);
 
         REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len)
-        IF_ATOMIC() {
+        if (IS_ATOMIC(redis_sock)) {
             redis_mbulk_reply_zipped_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
         }
         REDIS_PROCESS_RESPONSE(redis_mbulk_reply_zipped_raw);
@@ -2706,7 +2706,7 @@ PHP_METHOD(Redis, config)
         cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "sss", op, op_len, key, key_len, val, val_len);
 
         REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len)
-        IF_ATOMIC() {
+        if (IS_ATOMIC(redis_sock)) {
             redis_boolean_response(
                 INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
         }
@@ -2763,7 +2763,7 @@ PHP_METHOD(Redis, slowlog) {
 
     /* Kick off our command */
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
+    if (IS_ATOMIC(redis_sock)) {
         if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                     redis_sock, NULL, NULL) < 0)
         {
@@ -2804,7 +2804,7 @@ PHP_METHOD(Redis, wait) {
 
     /* Kick it off */
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
+    if (IS_ATOMIC(redis_sock)) {
         redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL,
             NULL);
     }
@@ -2909,7 +2909,7 @@ PHP_METHOD(Redis, pubsub) {
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
 
     if(type == PUBSUB_NUMSUB) {
-        IF_ATOMIC() {
+        if (IS_ATOMIC(redis_sock)) {
             if(redis_mbulk_reply_zipped_keys_int(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                                  redis_sock, NULL, NULL)<0)
             {
@@ -2918,7 +2918,7 @@ PHP_METHOD(Redis, pubsub) {
         }
         REDIS_PROCESS_RESPONSE(redis_mbulk_reply_zipped_keys_int);
     } else {
-        IF_ATOMIC() {
+        if (IS_ATOMIC(redis_sock)) {
             if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                         redis_sock, NULL, NULL)<0)
             {
@@ -2972,7 +2972,7 @@ PHP_METHOD(Redis, script) {
 
     // Kick off our request
     REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
-    IF_ATOMIC() {
+    if (IS_ATOMIC(redis_sock)) {
         if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                     redis_sock, NULL, NULL) < 0)
         {
@@ -3109,9 +3109,9 @@ PHP_METHOD(Redis, getMode) {
         RETURN_FALSE;
     }
 
-    IF_PIPELINE() {
+    if (IS_PIPELINE(redis_sock)) {
         RETVAL_LONG(PIPELINE);
-    } else IF_MULTI() {
+    } else if (IS_MULTI(redis_sock)) {
         RETVAL_LONG(MULTI);
     } else {
         RETVAL_LONG(ATOMIC);
@@ -3262,13 +3262,13 @@ PHP_METHOD(Redis, client) {
 
     /* We handle CLIENT LIST with a custom response function */
     if(!strncasecmp(opt, "list", 4)) {
-        IF_ATOMIC() {
+        if (IS_ATOMIC(redis_sock)) {
             redis_client_list_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock,
                 NULL);
         }
         REDIS_PROCESS_RESPONSE(redis_client_list_reply);
     } else {
-        IF_ATOMIC() {
+        if (IS_ATOMIC(redis_sock)) {
             redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                 redis_sock,NULL,NULL);
         }
@@ -3308,7 +3308,7 @@ PHP_METHOD(Redis, rawcommand) {
 
     /* Execute our command */
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    IF_ATOMIC() {
+    if (IS_ATOMIC(redis_sock)) {
         redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock,NULL,NULL);
     }
     REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
@@ -3413,7 +3413,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     }
 
     /* Calling this in a pipeline makes no sense */
-    IF_NOT_ATOMIC() {
+    if (!IS_ATOMIC(redis_sock)) {
         php_error_docref(NULL TSRMLS_CC, E_ERROR,
             "Can't call SCAN commands in multi or pipeline mode!");
         RETURN_FALSE;
