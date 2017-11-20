@@ -912,7 +912,7 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
             cluster->read_timeout, cluster->persistent, NULL, 0, 0);
 
         // Index this seed by host/port
-        key_len = snprintf(key, sizeof(key), "%s:%u", redis_sock->host,
+        key_len = snprintf(key, sizeof(key), "%s:%u", ZSTR_VAL(redis_sock->host),
             redis_sock->port);
 
         // Add to our seed HashTable
