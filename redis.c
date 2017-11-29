@@ -3011,7 +3011,7 @@ PHP_METHOD(Redis, migrate) {
 PHP_METHOD(Redis, _prefix) {
     RedisSock *redis_sock;
 
-    if ((redis_sock = redis_sock_get(getThis() TSRMLS_CC, 0)) == NULL) {
+    if ((redis_sock = redis_sock_get_instance(getThis() TSRMLS_CC, 0)) == NULL) {
         RETURN_FALSE;
     }
 
@@ -3023,7 +3023,7 @@ PHP_METHOD(Redis, _serialize) {
     RedisSock *redis_sock;
 
     // Grab socket
-    if ((redis_sock = redis_sock_get(getThis() TSRMLS_CC, 0)) == NULL) {
+    if ((redis_sock = redis_sock_get_instance(getThis() TSRMLS_CC, 0)) == NULL) {
         RETURN_FALSE;
     }
 
@@ -3035,7 +3035,7 @@ PHP_METHOD(Redis, _unserialize) {
     RedisSock *redis_sock;
 
     // Grab socket
-    if ((redis_sock = redis_sock_get(getThis() TSRMLS_CC, 0)) == NULL) {
+    if ((redis_sock = redis_sock_get_instance(getThis() TSRMLS_CC, 0)) == NULL) {
         RETURN_FALSE;
     }
 
@@ -3056,7 +3056,7 @@ PHP_METHOD(Redis, getLastError) {
     }
 
     // Grab socket
-    if ((redis_sock = redis_sock_get(object TSRMLS_CC, 0)) == NULL) {
+    if ((redis_sock = redis_sock_get_instance(object TSRMLS_CC, 0)) == NULL) {
         RETURN_FALSE;
     }
 
@@ -3079,7 +3079,7 @@ PHP_METHOD(Redis, clearLastError) {
         RETURN_FALSE;
     }
     // Grab socket
-    if ((redis_sock = redis_sock_get(object TSRMLS_CC, 0)) == NULL) {
+    if ((redis_sock = redis_sock_get_instance(object TSRMLS_CC, 0)) == NULL) {
         RETURN_FALSE;
     }
 
@@ -3105,7 +3105,7 @@ PHP_METHOD(Redis, getMode) {
     }
 
     /* Grab socket */
-    if ((redis_sock = redis_sock_get(object TSRMLS_CC, 0)) == NULL) {
+    if ((redis_sock = redis_sock_get_instance(object TSRMLS_CC, 0)) == NULL) {
         RETURN_FALSE;
     }
 
