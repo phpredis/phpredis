@@ -892,11 +892,10 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
 
     // Iterate our seeds array
     for (i = 0; i < count; i++) {
-        z_seed = z_seeds[i];
+        if ((z_seed = z_seeds[i]) == NULL) continue;
 
         /* Has to be a string */
-        if (z_seed == NULL || Z_TYPE_P(z_seed) != IS_STRING)
-            continue;
+        if (Z_TYPE_P(z_seed) != IS_STRING) continue;
 
         // Grab a copy of the string
         str = Z_STRVAL_P(z_seed);
