@@ -894,6 +894,7 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
     for (i = 0; i < count; i++) {
         if ((z_seed = z_seeds[i]) == NULL) continue;
 
+        ZVAL_DEREF(z_seed);
         /* Has to be a string */
         if (Z_TYPE_P(z_seed) != IS_STRING) continue;
 
