@@ -337,24 +337,25 @@ PS_READ_FUNC(redis)
 {
     char *resp, *cmd;
     int resp_len, cmd_len;
+#if (PHP_MAJOR_VERSION < 7)
+    const char *skey = key;
+    size_t skeylen = strlen(key);
+#else
+    const char *skey = ZSTR_VAL(key);
+    size_t skeylen = ZSTR_LEN(key);
+#endif
+
+    if (!skeylen) return FAILURE;
 
     redis_pool *pool = PS_GET_MOD_DATA();
-#if (PHP_MAJOR_VERSION < 7)
-    redis_pool_member *rpm = redis_pool_get_sock(pool, key TSRMLS_CC);
-#else
-    redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(key) TSRMLS_CC);
-#endif
+    redis_pool_member *rpm = redis_pool_get_sock(pool, skey TSRMLS_CC);
     RedisSock *redis_sock = rpm?rpm->redis_sock:NULL;
     if(!rpm || !redis_sock){
         return FAILURE;
     }
 
     /* send GET command */
-#if (PHP_MAJOR_VERSION < 7)
-    resp = redis_session_key(rpm, key, strlen(key), &resp_len);
-#else
-    resp = redis_session_key(rpm, ZSTR_VAL(key), ZSTR_LEN(key), &resp_len);
-#endif
+    resp = redis_session_key(rpm, skey, skeylen, &resp_len);
     cmd_len = REDIS_SPPRINTF(&cmd, "GET", "s", resp, resp_len);
 
     efree(resp);
@@ -397,29 +398,27 @@ PS_WRITE_FUNC(redis)
 {
     char *cmd, *response, *session;
     int cmd_len, response_len, session_len;
+#if (PHP_MAJOR_VERSION < 7)
+    const char *skey = key, *sval = val;
+    size_t skeylen = strlen(key), svallen = vallen;
+#else
+    const char *skey = ZSTR_VAL(key), *sval = ZSTR_VAL(val);
+    size_t skeylen = ZSTR_LEN(key), svallen = ZSTR_LEN(val);
+#endif
+
+    if (!skeylen) return FAILURE;
 
     redis_pool *pool = PS_GET_MOD_DATA();
-#if (PHP_MAJOR_VERSION < 7)
-    redis_pool_member *rpm = redis_pool_get_sock(pool, key TSRMLS_CC);
-#else
-    redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(key) TSRMLS_CC);
-#endif
+    redis_pool_member *rpm = redis_pool_get_sock(pool, skey TSRMLS_CC);
     RedisSock *redis_sock = rpm?rpm->redis_sock:NULL;
     if(!rpm || !redis_sock){
         return FAILURE;
     }
 
     /* send SET command */
-#if (PHP_MAJOR_VERSION < 7)
-    session = redis_session_key(rpm, key, strlen(key), &session_len);
+    session = redis_session_key(rpm, skey, skeylen, &session_len);
     cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "sds", session, session_len,
-                             INI_INT("session.gc_maxlifetime"), val, vallen);
-#else
-    session = redis_session_key(rpm, ZSTR_VAL(key), ZSTR_LEN(key), &session_len);
-    cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "sds", session, session_len,
-                             INI_INT("session.gc_maxlifetime"),
-                             ZSTR_VAL(val), ZSTR_LEN(val));
-#endif
+                             INI_INT("session.gc_maxlifetime"), sval, svallen);
     efree(session);
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
@@ -448,24 +447,23 @@ PS_DESTROY_FUNC(redis)
 {
     char *cmd, *response, *session;
     int cmd_len, response_len, session_len;
+#if (PHP_MAJOR_VERSION < 7)
+    const char *skey = key;
+    size_t skeylen = strlen(key);
+#else
+    const char *skey = ZSTR_VAL(key);
+    size_t skeylen = ZSTR_LEN(key);
+#endif
 
     redis_pool *pool = PS_GET_MOD_DATA();
-#if (PHP_MAJOR_VERSION < 7)
-    redis_pool_member *rpm = redis_pool_get_sock(pool, key TSRMLS_CC);
-#else
-    redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(key) TSRMLS_CC);
-#endif
+    redis_pool_member *rpm = redis_pool_get_sock(pool, skey TSRMLS_CC);
     RedisSock *redis_sock = rpm?rpm->redis_sock:NULL;
     if(!rpm || !redis_sock){
         return FAILURE;
     }
 
     /* send DEL command */
-#if (PHP_MAJOR_VERSION < 7)
-    session = redis_session_key(rpm, key, strlen(key), &session_len);
-#else
-    session = redis_session_key(rpm, ZSTR_VAL(key), ZSTR_LEN(key), &session_len);
-#endif
+    session = redis_session_key(rpm, skey, skeylen, &session_len);
     cmd_len = REDIS_SPPRINTF(&cmd, "DEL", "s", session, session_len);
     efree(session);
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
