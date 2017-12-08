@@ -53,13 +53,8 @@ typedef struct redis_pool_member_ {
     RedisSock *redis_sock;
     int weight;
     int database;
-
-    char *prefix;
-    size_t prefix_len;
-
-    char *auth;
-    size_t auth_len;
-
+    zend_string *prefix;
+    zend_string *auth;
     struct redis_pool_member_ *next;
 
 } redis_pool_member;
@@ -80,7 +75,7 @@ redis_pool_new(TSRMLS_D) {
 
 PHP_REDIS_API void
 redis_pool_add(redis_pool *pool, RedisSock *redis_sock, int weight,
-                int database, char *prefix, char *auth TSRMLS_DC) {
+                int database, zend_string *prefix, zend_string *auth TSRMLS_DC) {
 
     redis_pool_member *rpm = ecalloc(1, sizeof(redis_pool_member));
     rpm->redis_sock = redis_sock;
@@ -88,10 +83,8 @@ redis_pool_add(redis_pool *pool, RedisSock *redis_sock, int weight,
     rpm->database = database;
 
     rpm->prefix = prefix;
-    rpm->prefix_len = (prefix?strlen(prefix):0);
 
     rpm->auth = auth;
-    rpm->auth_len = (auth?strlen(auth):0);
 
     rpm->next = pool->head;
     pool->head = rpm;
@@ -108,8 +101,8 @@ redis_pool_free(redis_pool *pool TSRMLS_DC) {
         next = rpm->next;
         redis_sock_disconnect(rpm->redis_sock TSRMLS_CC);
         redis_free_socket(rpm->redis_sock);
-        if(rpm->prefix) efree(rpm->prefix);
-        if(rpm->auth) efree(rpm->auth);
+        if(rpm->prefix) zend_string_release(rpm->prefix);
+        if(rpm->auth) zend_string_release(rpm->auth);
         efree(rpm);
         rpm = next;
     }
@@ -123,11 +116,11 @@ redis_pool_member_auth(redis_pool_member *rpm TSRMLS_DC) {
     int response_len, cmd_len;
 
     /* Short circuit if we don't have a password */
-    if(!rpm->auth || !rpm->auth_len) {
+    if (!rpm->auth) {
         return;
     }
 
-    cmd_len = REDIS_SPPRINTF(&cmd, "AUTH", "s", rpm->auth, rpm->auth_len);
+    cmd_len = REDIS_SPPRINTF(&cmd, "AUTH", "S", rpm->auth);
     if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) >= 0) {
         if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC))) {
             efree(response);
@@ -163,7 +156,7 @@ redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
     for(i = 0; i < pool->totalWeight;) {
         if(pos >= i && pos < i + rpm->weight) {
             int needs_auth = 0;
-            if(rpm->auth && rpm->auth_len && rpm->redis_sock->status != REDIS_SOCK_STATUS_CONNECTED) {
+            if (rpm->auth && rpm->redis_sock->status != REDIS_SOCK_STATUS_CONNECTED) {
                     needs_auth = 1;
             }
             redis_sock_server_open(rpm->redis_sock TSRMLS_CC);
@@ -208,7 +201,8 @@ PS_OPEN_FUNC(redis)
             double timeout = 86400.0, read_timeout = 0.0;
             int persistent = 0;
             int database = -1;
-            char *prefix = NULL, *auth = NULL, *persistent_id = NULL;
+            char *persistent_id = NULL;
+            zend_string *prefix = NULL, *auth = NULL;
             long retry_interval = 0;
 
             /* translate unix: into file: */
@@ -255,10 +249,10 @@ PS_OPEN_FUNC(redis)
                     persistent_id = estrndup(Z_STRVAL_P(param), Z_STRLEN_P(param));
                 }
                 if ((param = zend_hash_str_find(Z_ARRVAL(params), "prefix", sizeof("prefix") - 1)) != NULL) {
-                    prefix = estrndup(Z_STRVAL_P(param), Z_STRLEN_P(param));
+                    prefix = zend_string_init(Z_STRVAL_P(param), Z_STRLEN_P(param), 0);
                 }
                 if ((param = zend_hash_str_find(Z_ARRVAL(params), "auth", sizeof("auth") - 1)) != NULL) {
-                    auth = estrndup(Z_STRVAL_P(param), Z_STRLEN_P(param));
+                    auth = zend_string_init(Z_STRVAL_P(param), Z_STRLEN_P(param), 0);
                 }
                 if ((param = zend_hash_str_find(Z_ARRVAL(params), "database", sizeof("database") - 1)) != NULL) {
                     database = zval_get_long(param);
@@ -273,8 +267,8 @@ PS_OPEN_FUNC(redis)
             if ((url->path == NULL && url->host == NULL) || weight <= 0 || timeout <= 0) {
                 php_url_free(url);
                 if (persistent_id) efree(persistent_id);
-                if (prefix) efree(prefix);
-                if (auth) efree(auth);
+                if (prefix) zend_string_release(prefix);
+                if (auth) zend_string_release(auth);
                 redis_pool_free(pool TSRMLS_CC);
                 PS_SET_MOD_DATA(NULL);
                 return FAILURE;
@@ -324,8 +318,8 @@ redis_session_key(redis_pool_member *rpm, const char *key, int key_len, int *ses
     size_t prefix_len = sizeof(default_prefix)-1;
 
     if(rpm->prefix) {
-        prefix = rpm->prefix;
-        prefix_len = rpm->prefix_len;
+        prefix = ZSTR_VAL(rpm->prefix);
+        prefix_len = ZSTR_LEN(rpm->prefix);
     }
 
     /* build session key */
