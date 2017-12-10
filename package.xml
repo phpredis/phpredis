@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2017-12-01</date>
+ <date>2017-12-10</date>
  <version>
-  <release>3.1.5RC1</release>
-  <api>3.1.5RC1</api>
+  <release>3.1.5RC2</release>
+  <api>3.1.5RC2</api>
  </version>
  <stability>
   <release>beta</release>
@@ -38,7 +38,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 3.1.5RC1
+    phpredis 3.1.5RC2
 
     This is interim release which contains only bug fixes.
 
@@ -46,6 +46,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix RedisCluster constructor with PHP 7 strict scalar type [5c21d7] (Pavlo Yatsukhnenko)
     * Allow to use empty string as persistant_id [344de5] (Pavlo Yatsukhnenko)
     * Fix cluster_init_seeds. [db1347] (@adlagares)
+    * Fix z_seeds may be a reference [42581a] (@janic716)
  </notes>
  <contents>
   <dir name="/">
@@ -103,10 +104,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <changelog>
    <release>
    <stability><release>beta</release><api>beta</api></stability>
-   <version><release>3.1.5RC1</release><api>3.1.5RC1</api></version>
-   <date>2017-12-01</date>
+   <version><release>3.1.5RC2</release><api>3.1.5RC2</api></version>
+   <date>2017-12-10</date>
    <notes>
-    phpredis 3.1.5RC1
+    phpredis 3.1.5RC2
 
     This is interim release which contains only bug fixes.
 
@@ -114,6 +115,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix RedisCluster constructor with PHP 7 strict scalar type [5c21d7] (Pavlo Yatsukhnenko)
     * Allow to use empty string as persistant_id [344de5] (Pavlo Yatsukhnenko)
     * Fix cluster_init_seeds. [db1347] (@adlagares)
+    * Fix z_seeds may be a reference [42581a] (@janic716)
    </notes>
    </release>
 
