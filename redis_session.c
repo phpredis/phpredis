@@ -231,7 +231,7 @@ PS_OPEN_FUNC(redis)
             if (url->query != NULL) {
                 array_init(&params);
 
-                sapi_module.treat_data(PARSE_STRING, estrdup(url->query), &params TSRMLS_CC);
+                sapi_module.treat_data(PARSE_STRING, estrdup(ZSTR_VAL(url->query)), &params TSRMLS_CC);
 
                 if ((param = zend_hash_str_find(Z_ARRVAL(params), "weight", sizeof("weight") - 1)) != NULL) {
                     weight = zval_get_long(param);
@@ -276,9 +276,9 @@ PS_OPEN_FUNC(redis)
 
             RedisSock *redis_sock;
             if(url->host) {
-                redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
+                redis_sock = redis_sock_create(ZSTR_VAL(url->host), ZSTR_LEN(url->host), url->port, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
             } else { /* unix */
-                redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
+                redis_sock = redis_sock_create(ZSTR_VAL(url->path), ZSTR_LEN(url->path), 0, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
             }
             redis_pool_add(pool, redis_sock, weight, database, prefix, auth TSRMLS_CC);
 
