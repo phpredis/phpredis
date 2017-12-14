@@ -4,8 +4,7 @@
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
   | Copyright (c) 1997-2009 The PHP Group                                |
-  +-------------------------
----------------------------------------------+
+  +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
   | available through the world-wide-web at the following url:           |
@@ -41,15 +40,6 @@
 #include "php_variables.h"
 #include "SAPI.h"
 #include "ext/standard/url.h"
-
-/* These macros are defined in PHP 7.3 */
-#ifndef ZSTR_VAL
-#define ZSTR_VAL(zstr) zstr
-#endif
-
-#ifndef ZSTR_LEN
-#define ZSTR_LEN(zstr) zstr
-#endif
 
 ps_module ps_mod_redis = {
     PS_MOD(redis)
