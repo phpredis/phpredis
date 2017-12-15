@@ -2288,6 +2288,20 @@ class Redis_Test extends TestSuite
         $this->assertTrue(0 === $this->redis->zRevRank('z', 'five'));
     }
 
+    public function testZRangeByLex() {
+        $this->redis->del('key');
+        foreach(range('a', 'g') as $c) {
+            $this->redis->zAdd('key', 0, $c);
+        }
+
+        $this->assertEquals($this->redis->zRangeByLex('key', '-', '[c'), Array('a', 'b', 'c'));
+        $this->assertEquals($this->redis->zRangeByLex('key', '(e', '+'), Array('f', 'g'));
+
+	// with limit offset
+        $this->assertEquals($this->redis->zRangeByLex('key', '-', '[c', 1, 2), Array('b', 'c') );
+        $this->assertEquals($this->redis->zRangeByLex('key', '-', '(c', 1, 2), Array('b'));
+    }
+
     public function testHashes() {
         $this->redis->del('h', 'key');
         $this->assertTrue(0 === $this->redis->hLen('h'));
