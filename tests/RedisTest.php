@@ -2289,6 +2289,12 @@ class Redis_Test extends TestSuite
     }
 
     public function testZRangeByLex() {
+        /* ZRANGEBYLEX available on versions >= 2.8.9 */
+        if(version_compare($this->version, "2.8.9", "lt")) {
+            $this->MarkTestSkipped();
+            return;
+        }
+
         $this->redis->del('key');
         foreach(range('a', 'g') as $c) {
             $this->redis->zAdd('key', 0, $c);
