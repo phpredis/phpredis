@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2017-09-27</date>
+ <date>2017-12-20</date>
  <version>
-  <release>3.1.4</release>
-  <api>3.1.4</api>
+  <release>3.1.5</release>
+  <api>3.1.5</api>
  </version>
  <stability>
   <release>stable</release>
@@ -38,32 +38,16 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 3.1.4
+    phpredis 3.1.5
 
-    The primary new feature phpredis 3.1.4 is the ability to send MULTI .. EXEC blocks in pipeline mode.  There are
-    also many bugfixes and minor improvements to the api, listed below:
+    This is interim release which contains only bug fixes.
 
-    * Allow mixing MULTI and PIPELINE modes (experimental)!  [5874b0] (Pavlo Yatsukhnenko)
-
-    * Added integration for coverty static analysis and fixed several warnings 
-      [faac8b0, eff7398, 4766c25, 0438ab4, 1e0b065, 733732a, 26eeda5, 735025, 42f1c9, af71d4] (Pavlo Yatsukhnenko)
-    * Fixed link to redis cluster documentation [3b0b06] (Pavlo Yatsukhnenko)
-    * Remove unused PHP_RINIT and PHP_RSHUTDOWN functions [c760bf] (Pavlo Yatsukhnenko)
-    * Removed duplicate HGET in redis array hash table, formatting [d0b9c5] (Pavlo Yatsukhnenko)
-    * Treat NULL bulk as success for session read [659450] (Pavlo Yatsukhnenko)
-    * Refactor redis_send_discard [ea15ce] (Pavlo Yatsukhnenko)
-    * Updated runtime exception handling [8dcaa4, 7c1407] (Pavlo Yatsukhnenko)
-    * Added a github issue template [61aba9] (Pavlo Yatsukhnenko)
-    * Initialize gc member of zend_string [37f569) (Pavlo Yatsukhnenko)
-    * Fix valgrind warnings [471ce07, 1ab89e1, b624a8b] (Pavlo Yatsukhnenko)
-    * Fix php5/php7 compatibility layer [1ab89e, 4e3225] (Pavlo Yatsukhnenko)
-    * Fix typo in README.markdown [e47e44] (Mark Shehata)
-    * Improve redis array rehash [577a91] (Pavlo Yatsukhnenko)
-    * Change redis array pure_cmds from zval to hashtable [a56ed7] (Pavlo Yatsukhnenko)
-    * Don't try to set TCP_NODELAY on a unix socket and don't warn on multiple
-      calls to pipeline [d11798, 77aeba] (Michael Grunder)
-    * Use zend_string rather than char* for various context fields (err, prefix, etc) [2bf7b2] (Pavlo Yatsukhnenko)
-    * Various other library fixes [142b51, 4452f6, e672f4, 658ee3, c9df77, 4a0a46] (Pavlo Yatsukhnenko)
+    * Fix segfault when extending Redis class in PHP 5 [d23eff] (Pavlo Yatsukhnenko)
+    * Fix RedisCluster constructor with PHP 7 strict scalar type [5c21d7] (Pavlo Yatsukhnenko)
+    * Allow to use empty string as persistant_id [344de5] (Pavlo Yatsukhnenko)
+    * Fix cluster_init_seeds. [db1347] (@adlagares)
+    * Fix z_seeds may be a reference [42581a] (@janic716)
+    * PHP >=7.3 uses zend_string for php_url elements [b566fb] (@fmk)
  </notes>
  <contents>
   <dir name="/">
@@ -119,6 +103,24 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
  </extsrcrelease>
  <changelog>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>3.1.5</release><api>3.1.5</api></version>
+   <date>2017-12-20</date>
+   <notes>
+    phpredis 3.1.5
+
+    This is interim release which contains only bug fixes.
+
+    * Fix segfault when extending Redis class in PHP 5 [d23eff] (Pavlo Yatsukhnenko)
+    * Fix RedisCluster constructor with PHP 7 strict scalar type [5c21d7] (Pavlo Yatsukhnenko)
+    * Allow to use empty string as persistant_id [344de5] (Pavlo Yatsukhnenko)
+    * Fix cluster_init_seeds. [db1347] (@adlagares)
+    * Fix z_seeds may be a reference [42581a] (@janic716)
+    * PHP >=7.3 uses zend_string for php_url elements [b566fb] (@fmk)
+   </notes>
+   </release>
+
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>3.1.4</release><api>3.1.4</api></version>

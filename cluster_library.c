@@ -892,11 +892,11 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
 
     // Iterate our seeds array
     for (i = 0; i < count; i++) {
-        z_seed = z_seeds[i];
+        if ((z_seed = z_seeds[i]) == NULL) continue;
 
+        ZVAL_DEREF(z_seed);
         /* Has to be a string */
-        if (z_seed == NULL || Z_TYPE_P(z_seed) != IS_STRING)
-            continue;
+        if (Z_TYPE_P(z_seed) != IS_STRING) continue;
 
         // Grab a copy of the string
         str = Z_STRVAL_P(z_seed);
@@ -912,7 +912,7 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
             cluster->read_timeout, cluster->persistent, NULL, 0, 0);
 
         // Index this seed by host/port
-        key_len = snprintf(key, sizeof(key), "%s:%u", redis_sock->host,
+        key_len = snprintf(key, sizeof(key), "%s:%u", ZSTR_VAL(redis_sock->host),
             redis_sock->port);
 
         // Add to our seed HashTable

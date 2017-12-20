@@ -522,6 +522,8 @@ create_redis_object(zend_class_entry *ce TSRMLS_DC)
     zval *tmp;
     zend_hash_copy(redis->std.properties, &ce->default_properties,
         (copy_ctor_func_t)zval_add_ref, (void *)&tmp, sizeof(zval *));
+#else
+    object_properties_init(&redis->std, ce);
 #endif
 
     retval.handle = zend_objects_store_put(redis,
@@ -852,7 +854,7 @@ PHP_REDIS_API int
 redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 {
     zval *object;
-    char *host = NULL, *persistent_id = NULL;
+    char *host = NULL, *persistent_id = "";
     zend_long port = -1, retry_interval = 0;
     strlen_t host_len, persistent_id_len;
     double timeout = 0.0, read_timeout = 0.0;
