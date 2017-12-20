@@ -27,18 +27,18 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2017-12-10</date>
+ <date>2017-12-20</date>
  <version>
-  <release>3.1.5RC2</release>
-  <api>3.1.5RC2</api>
+  <release>3.1.5</release>
+  <api>3.1.5</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 3.1.5RC2
+    phpredis 3.1.5
 
     This is interim release which contains only bug fixes.
 
@@ -47,6 +47,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Allow to use empty string as persistant_id [344de5] (Pavlo Yatsukhnenko)
     * Fix cluster_init_seeds. [db1347] (@adlagares)
     * Fix z_seeds may be a reference [42581a] (@janic716)
+    * PHP >=7.3 uses zend_string for php_url elements [b566fb] (@fmk)
  </notes>
  <contents>
   <dir name="/">
@@ -103,11 +104,11 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
    <release>
-   <stability><release>beta</release><api>beta</api></stability>
-   <version><release>3.1.5RC2</release><api>3.1.5RC2</api></version>
-   <date>2017-12-10</date>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>3.1.5</release><api>3.1.5</api></version>
+   <date>2017-12-20</date>
    <notes>
-    phpredis 3.1.5RC2
+    phpredis 3.1.5
 
     This is interim release which contains only bug fixes.
 
@@ -116,6 +117,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Allow to use empty string as persistant_id [344de5] (Pavlo Yatsukhnenko)
     * Fix cluster_init_seeds. [db1347] (@adlagares)
     * Fix z_seeds may be a reference [42581a] (@janic716)
+    * PHP >=7.3 uses zend_string for php_url elements [b566fb] (@fmk)
    </notes>
    </release>
 
