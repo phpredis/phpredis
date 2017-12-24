@@ -5288,6 +5288,46 @@ class Redis_Test extends TestSuite
         }
     }
 
+    public  function testSession_regenerateSessionId_noLock_noDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $writeSuccessful = $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId);
+	
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_noLock_withDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $writeSuccessful = $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, false, true);
+	
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_noDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $writeSuccessful = $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true);
+	
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_withDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $writeSuccessful = $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true, true);
+
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
     private function setSessionHandler()
     {
         $host = $this->getHost() ?: 'localhost';
@@ -5354,6 +5394,24 @@ class Redis_Test extends TestSuite
     private function getSessionData($sessionId)
     {
         $command = 'php ' . __DIR__ . '/getSessionData.php ' . escapeshellarg($this->getHost()) . ' ' . escapeshellarg($sessionId);
+        exec($command, $output);
+
+        return $output[0];
+    }
+
+    /**
+     * @param string $sessionId
+     *
+     * @return string
+     */
+    private function regenerateSessionId($sessionId, $locking = false, $destroyPrevious = false)
+    {
+	$args = array_map('escapeshellarg', array($sessionId, $locking, $destroyPrevious));
+
+        $command = 'php --no-php-ini --define extension=igbinary.so --define extension=' . __DIR__ . '/../modules/redis.so ' . __DIR__ . '/regenerateSessionId.php ' . escapeshellarg($this->getHost()) . ' ' . implode(' ', $args);
+
+        $command .= ' 2>&1';
+
         exec($command, $output);
 
         return $output[0];
