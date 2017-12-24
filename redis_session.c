@@ -586,15 +586,20 @@ redis_session_key(redis_pool_member *rpm, const char *key, int key_len, int *ses
 PS_CREATE_SID_FUNC(redis)
 {
     int retries = 3;
+#if (PHP_MAJOR_VERSION < 7)
+    char *sid;
+#else
+    zend_string *sid;
+#endif
 
     redis_pool *pool = PS_GET_MOD_DATA();
 
     while (retries-- > 0) {
 #if (PHP_MAJOR_VERSION < 7)
-        char *sid = php_session_create_id((void **) &pool, newlen TSRMLS_CC);
+        sid = php_session_create_id((void **) &pool, newlen TSRMLS_CC);
         redis_pool_member *rpm = redis_pool_get_sock(pool, sid TSRMLS_CC);
 #else
-        zend_string *sid = php_session_create_id((void **) &pool TSRMLS_CC);
+        sid = php_session_create_id((void **) &pool TSRMLS_CC);
         redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(sid) TSRMLS_CC);
 #endif
         RedisSock *redis_sock = rpm?rpm->redis_sock:NULL;
