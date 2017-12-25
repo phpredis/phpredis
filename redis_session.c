@@ -601,7 +601,7 @@ PS_CREATE_SID_FUNC(redis)
         char* sid = php_session_create_id((void **) &pool, newlen TSRMLS_CC);
         redis_pool_member *rpm = redis_pool_get_sock(pool, sid TSRMLS_CC);
 #else
-        zend_string sid = php_session_create_id((void **) &pool TSRMLS_CC);
+        zend_string* sid = php_session_create_id((void **) &pool TSRMLS_CC);
         redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(sid) TSRMLS_CC);
 #endif
         RedisSock *redis_sock = rpm?rpm->redis_sock:NULL;
