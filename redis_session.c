@@ -636,10 +636,8 @@ PS_CREATE_SID_FUNC(redis)
         sid = NULL;
     }
 
-    if (sid == NULL) {
-        php_error_docref(NULL TSRMLS_CC, E_NOTICE,
-            "Acquiring session lock failed while creating session_id");
-    }
+    php_error_docref(NULL TSRMLS_CC, E_NOTICE,
+        "Acquiring session lock failed while creating session_id");
 
     return NULL;
 }
