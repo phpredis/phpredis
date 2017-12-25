@@ -586,20 +586,22 @@ redis_session_key(redis_pool_member *rpm, const char *key, int key_len, int *ses
 PS_CREATE_SID_FUNC(redis)
 {
     int retries = 3;
-#if (PHP_MAJOR_VERSION < 7)
-    char *sid;
-#else
-    zend_string *sid;
-#endif
-
     redis_pool *pool = PS_GET_MOD_DATA();
+
+    if (!pool) {
+#if (PHP_MAJOR_VERSION < 7)
+        return php_session_create_id(NULL, newlen TSRMLS_CC);
+#else
+        return php_session_create_id(NULL TSRMLS_CC);
+#endif
+    }
 
     while (retries-- > 0) {
 #if (PHP_MAJOR_VERSION < 7)
-        sid = php_session_create_id((void **) &pool, newlen TSRMLS_CC);
+        char* sid = php_session_create_id((void **) &pool, newlen TSRMLS_CC);
         redis_pool_member *rpm = redis_pool_get_sock(pool, sid TSRMLS_CC);
 #else
-        sid = php_session_create_id((void **) &pool TSRMLS_CC);
+        zend_string sid = php_session_create_id((void **) &pool TSRMLS_CC);
         redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(sid) TSRMLS_CC);
 #endif
         RedisSock *redis_sock = rpm?rpm->redis_sock:NULL;
@@ -608,20 +610,29 @@ PS_CREATE_SID_FUNC(redis)
             php_error_docref(NULL TSRMLS_CC, E_NOTICE,
                 "Redis not available while creating session_id");
 
-            efree(sid);
 #if (PHP_MAJOR_VERSION < 7)
+            efree(sid);
             return php_session_create_id(NULL, newlen TSRMLS_CC);
 #else
+            zend_string_release(sid);
             return php_session_create_id(NULL TSRMLS_CC);
 #endif
         }
 
+#if (PHP_MAJOR_VERSION < 7)
         pool->lock_status->session_key = sid;
+#else
+        pool->lock_status->session_key = estrdup($TR_VAL(sid));
+#endif
         if (lock_acquire(redis_sock, pool->lock_status TSRMLS_CC) == SUCCESS) {
-            break;
+            return sid;
         }
 
+#if (PHP_MAJOR_VERSION < 7)
         efree(sid);
+#else
+        zend_string_release(sid);
+#endif
         sid = NULL;
     }
 
@@ -630,7 +641,7 @@ PS_CREATE_SID_FUNC(redis)
             "Acquiring session lock failed while creating session_id");
     }
 
-    return sid;
+    return NULL;
 }
 /* }}} */
 
