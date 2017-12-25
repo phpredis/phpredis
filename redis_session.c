@@ -622,7 +622,7 @@ PS_CREATE_SID_FUNC(redis)
 #if (PHP_MAJOR_VERSION < 7)
         pool->lock_status->session_key = sid;
 #else
-        pool->lock_status->session_key = estrdup($TR_VAL(sid));
+        pool->lock_status->session_key = estrdup(ZSTR_VAL(sid));
 #endif
         if (lock_acquire(redis_sock, pool->lock_status TSRMLS_CC) == SUCCESS) {
             return sid;
