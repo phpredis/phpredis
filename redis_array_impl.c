@@ -475,6 +475,7 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
             return NULL;
         }
     } else {
+        uint64_t h64;
         unsigned long ret = 0xffffffff;
         size_t i;
 
@@ -485,7 +486,10 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
         hash = (ret ^ 0xffffffff);
         
         /* get position on ring */
-        pos = (int)(hash * ra->count / 0xffffffff);
+        h64 = hash;
+        h64 *= ra->count;
+        h64 /= 0xffffffff;
+        pos = (int)h64;
     }
     efree(out);
 
