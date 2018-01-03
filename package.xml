@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2017-12-20</date>
+ <date>2018-01-03</date>
  <version>
-  <release>3.1.5</release>
-  <api>3.1.5</api>
+  <release>3.1.6</release>
+  <api>3.1.6</api>
  </version>
  <stability>
   <release>stable</release>
@@ -38,16 +38,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 3.1.5
+    phpredis 3.1.6
 
-    This is interim release which contains only bug fixes.
-
-    * Fix segfault when extending Redis class in PHP 5 [d23eff] (Pavlo Yatsukhnenko)
-    * Fix RedisCluster constructor with PHP 7 strict scalar type [5c21d7] (Pavlo Yatsukhnenko)
-    * Allow to use empty string as persistant_id [344de5] (Pavlo Yatsukhnenko)
-    * Fix cluster_init_seeds. [db1347] (@adlagares)
-    * Fix z_seeds may be a reference [42581a] (@janic716)
-    * PHP >=7.3 uses zend_string for php_url elements [b566fb] (@fmk)
+    This release conains only fix of RedisArray distributor hashing function
+    which was broken in 3.1.4. Huge thanks to @rexchen123
  </notes>
  <contents>
   <dir name="/">
@@ -103,6 +97,18 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
  </extsrcrelease>
  <changelog>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>3.1.6</release><api>3.1.6</api></version>
+   <date>2018-01-03</date>
+   <notes>
+    phpredis 3.1.6
+
+    This release conains only fix of RedisArray distributor hashing function
+    which was broken in 3.1.4. Huge thanks to @rexchen123
+   </notes>
+   </release>
+
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>3.1.5</release><api>3.1.5</api></version>
