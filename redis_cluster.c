@@ -94,6 +94,7 @@ ZEND_END_ARG_INFO();
 zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, __construct, NULL, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, close, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, reconnect, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, get, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, set, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, mget, NULL, ZEND_ACC_PUBLIC)
@@ -540,6 +541,22 @@ PHP_METHOD(RedisCluster, __construct) {
 PHP_METHOD(RedisCluster, close) {
     cluster_disconnect(GET_CONTEXT() TSRMLS_CC);
     RETURN_TRUE;
+}
+/* {{{ proto bool RedisCLuster::reconnect() */
+PHP_METHOD(RedisCluster, reconnect) {
+   redisCluster *context = GET_CONTEXT();
+   redisClusterNode *node;
+
+   // cluster disconnect
+   ZEND_HASH_FOREACH_PTR(context->nodes, node) {
+     if (node == NULL) continue;
+     redis_sock_disconnect(node->sock TSRMLS_CC);
+     node->sock->persistent_id = NULL;
+     php_stream_close(node->sock->stream);
+     node->sock->stream = NULL;
+     redis_sock_connect(node->sock TSRMLS_CC);
+   } ZEND_HASH_FOREACH_END();
+   RETURN_TRUE;
 }
 
 /* {{{ proto string RedisCluster::get(string key) */
