@@ -943,6 +943,9 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
         persistent_id, retry_interval, 0);
 
     if (redis_sock_server_open(redis->sock TSRMLS_CC) < 0) {
+        if (redis->sock->err) {
+            zend_throw_exception(redis_exception_ce, ZSTR_VAL(redis->sock->err), 0 TSRMLS_CC);
+        }
         redis_free_socket(redis->sock);
         redis->sock = NULL;
         return FAILURE;

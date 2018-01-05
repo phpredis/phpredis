@@ -1420,6 +1420,11 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     int host_len, usocket = 0, err = 0;
     php_netstream_data_t *sock;
     int tcp_flag = 1;
+#if (PHP_MAJOR_VERSION < 7)
+    char *estr = NULL;
+#else
+    zend_string *estr = NULL;
+#endif
 
     if (redis_sock->stream != NULL) {
         redis_sock_disconnect(redis_sock TSRMLS_CC);
@@ -1463,13 +1468,22 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     redis_sock->stream = php_stream_xport_create(host, host_len,
         0, STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT,
-        persistent_id, tv_ptr, NULL, NULL, &err);
+        persistent_id, tv_ptr, NULL, &estr, &err);
 
     if (persistent_id) {
         efree(persistent_id);
     }
 
     if (!redis_sock->stream) {
+        if (estr) {
+#if (PHP_MAJOR_VERSION < 7)
+            redis_sock_set_err(redis_sock, estr, strlen(estr));
+            efree(estr);
+#else
+            redis_sock_set_err(redis_sock, ZSTR_VAL(estr), ZSTR_LEN(estr));
+            zend_string_release(estr);
+#endif
+        }
         return -1;
     }
 
