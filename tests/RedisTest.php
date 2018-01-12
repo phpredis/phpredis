@@ -5143,38 +5143,13 @@ class Redis_Test extends TestSuite
         }
     }
 
-    /* If we're running tests against localhost attempt to find a high port (16379 - 16383) with
-     * nothing listening and then trying to connect.  We should get an exception and 
-     * 'connection refused' message. */
     public function testConnectException() {
-        /* Skip this test if we're not running against localhost */
-        if ($this->redis->GetHost() != 'localhost' && $this->redis->GetHost() != '127.0.0.1') {
-            $this->MarkTestSkipped();
-            return;
+        $redis = new Redis();
+        try {
+            $redis->connect('github.com', 6379, 0.01);
+        }  catch (Exception $e) {
+            $this->assertTrue(strpos($e, "timed out") !== false);
         }
-
-        $port = $this->redis->GetPort();
-        for ($p = $port + 10000; $p < $port + 10005; $p++) {
-            $con = @fsockopen($this->redis->GetHost(), $p);
-            if ( ! is_resource($con)) {
-                $obj_r = new Redis();
-
-                try {
-                    if ( ! $obj_r->connect($this->redis->getHost(), $p)) {
-                        /* Trigger an error as we shouldn't be here */
-                        $this->assertFalse(true);
-                    }
-                } catch (Exception $ex) {
-                    $msg = strtolower($ex->getMessage());
-                    $this->assertTrue(strpos($msg, "refused") !== false);
-                }
-
-                return;
-            }
-        }
-
-        /* If we got here we didn't find a vacant port, so just mark skipped */
-        $this->MarkTestSkipped();
     }
 }
 ?>
