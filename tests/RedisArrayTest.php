@@ -497,7 +497,6 @@ class Redis_Multi_Exec_Test extends TestSuite {
 
     public function testMutliExecUnlink() {
         if (version_compare($this->min_version, "4.0.0", "lt")) {
-            var_dump($this->min_version);
             $this->markTestSkipped();
         }
 
