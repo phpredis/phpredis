@@ -390,6 +390,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, time, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, ttl, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, type, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, unlink, arginfo_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, unsubscribe, arginfo_unsubscribe, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, unwatch, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, wait, arginfo_wait, ZEND_ACC_PUBLIC)
@@ -1176,6 +1177,13 @@ PHP_METHOD(Redis, delete)
 }
 /* }}} */
 
+/* {{{ proto long Redis::unlink(string $key1, string $key2 [, string $key3...]) }}}
+ * {{{ proto long Redis::unlink(array $keys) */
+PHP_METHOD(Redis, unlink)
+
+    REDIS_PROCESS_CMD(unlink, redis_long_response);
+}
+
 PHP_REDIS_API void redis_set_watch(RedisSock *redis_sock)
 {
     redis_sock->watching = 1;
@@ -1511,6 +1519,7 @@ PHP_METHOD(Redis, sDiffStore) {
     REDIS_PROCESS_CMD(sdiffstore, redis_long_response);
 }
 /* }}} */
+
 
 /* {{{ proto array Redis::sort(string key, array options) */
 PHP_METHOD(Redis, sort) {

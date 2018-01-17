@@ -244,6 +244,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, ttl, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, type, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, unsubscribe, arginfo_unsubscribe, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, unlink, arginfo_del, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, unwatch, arginfo_void, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, watch, arginfo_watch, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zadd, arginfo_zadd, ZEND_ACC_PUBLIC)
@@ -708,7 +709,8 @@ static HashTable *method_args_to_ht(zval *z_args, int argc) {
     return ht_ret;
 }
 
-/* Handler for both MGET and DEL */
+/* Convienience handler for commands that take multiple keys such as
+ * MGET, DEL, and UNLINK */
 static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
                             zval *z_ret, cluster_cb cb)
 {
@@ -935,8 +937,10 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     return 0;
 }
 
-/* {{{ proto array RedisCluster::del(string key1, string key2, ... keyN) */
-PHP_METHOD(RedisCluster, del) {
+/* Generic passthru for DEL and UNLINK which act identically */
+static void cluster_generic_delete(INTERNAL_FUNCTION_PARAMETERS,
+                                   char *kw, int kw_len)
+{
     zval *z_ret;
 
 #if (PHP_MAJOR_VERSION < 7)
@@ -949,12 +953,22 @@ PHP_METHOD(RedisCluster, del) {
     ZVAL_LONG(z_ret, 0);
 
     // Parse args, process
-    if(cluster_mkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DEL",
-                        sizeof("DEL")-1, z_ret, cluster_del_resp)<0)
+    if(cluster_mkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, kw, kw_len, z_ret,
+                        cluster_del_resp) < 0)
     {
         efree(z_ret);
         RETURN_FALSE;
     }
+}
+
+/* {{{ proto array RedisCluster::del(string key1, string key2, ... keyN) */
+PHP_METHOD(RedisCluster, del) {
+    cluster_generic_delete(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DEL", sizeof("DEL") - 1);
+}
+
+/* {{{ proto array RedisCluster::unlink(string key1, string key2, ... keyN) */
+PHP_METHOD(RedisCluster, unlink) {
+    cluster_generic_delete(INTERNAL_FUNCTION_PARAM_PASSTHRU, "UNLINK", sizeof("UNLINK") - 1);
 }
 
 /* {{{ proto array RedisCluster::mget(array keys) */

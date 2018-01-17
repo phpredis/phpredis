@@ -46,6 +46,7 @@ PHP_METHOD(Redis, renameNx);
 PHP_METHOD(Redis, getMultiple);
 PHP_METHOD(Redis, exists);
 PHP_METHOD(Redis, delete);
+PHP_METHOD(Redis, unlink);
 PHP_METHOD(Redis, incr);
 PHP_METHOD(Redis, incrBy);
 PHP_METHOD(Redis, incrByFloat);

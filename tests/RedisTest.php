@@ -456,7 +456,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->ttl('key') ===7);
         $this->assertTrue($this->redis->get('key') === 'val');
     }
-    
+
     public function testPSetEx() {
         $this->redis->del('key');
         $this->assertTrue($this->redis->psetex('key', 7 * 1000, 'val') === TRUE);
@@ -626,38 +626,49 @@ class Redis_Test extends TestSuite
         $this->assertEquals(array(), $this->redis->keys(rand().rand().rand().'*'));
     }
 
-    public function testDelete()
-    {
+    protected function genericDelUnlink($cmd) {
         $key = 'key' . rand();
         $this->redis->set($key, 'val');
         $this->assertEquals('val', $this->redis->get($key));
-    $this->assertEquals(1, $this->redis->del($key));
+        $this->assertEquals(1, $this->redis->$cmd($key));
         $this->assertEquals(false, $this->redis->get($key));
 
-    // multiple, all existing
-    $this->redis->set('x', 0);
-    $this->redis->set('y', 1);
-    $this->redis->set('z', 2);
-    $this->assertEquals(3, $this->redis->del('x', 'y', 'z'));
-    $this->assertEquals(false, $this->redis->get('x'));
-    $this->assertEquals(false, $this->redis->get('y'));
-    $this->assertEquals(false, $this->redis->get('z'));
+        // multiple, all existing
+        $this->redis->set('x', 0);
+        $this->redis->set('y', 1);
+        $this->redis->set('z', 2);
+        $this->assertEquals(3, $this->redis->$cmd('x', 'y', 'z'));
+        $this->assertEquals(false, $this->redis->get('x'));
+        $this->assertEquals(false, $this->redis->get('y'));
+        $this->assertEquals(false, $this->redis->get('z'));
 
-    // multiple, none existing
-    $this->assertEquals(0, $this->redis->del('x', 'y', 'z'));
-    $this->assertEquals(false, $this->redis->get('x'));
-    $this->assertEquals(false, $this->redis->get('y'));
-    $this->assertEquals(false, $this->redis->get('z'));
+        // multiple, none existing
+        $this->assertEquals(0, $this->redis->$cmd('x', 'y', 'z'));
+        $this->assertEquals(false, $this->redis->get('x'));
+        $this->assertEquals(false, $this->redis->get('y'));
+        $this->assertEquals(false, $this->redis->get('z'));
 
-    // multiple, some existing
-    $this->redis->set('y', 1);
-    $this->assertEquals(1, $this->redis->del('x', 'y', 'z'));
-    $this->assertEquals(false, $this->redis->get('y'));
+        // multiple, some existing
+        $this->redis->set('y', 1);
+        $this->assertEquals(1, $this->redis->$cmd('x', 'y', 'z'));
+        $this->assertEquals(false, $this->redis->get('y'));
 
-    $this->redis->set('x', 0);
-    $this->redis->set('y', 1);
-    $this->assertEquals(2, $this->redis->del(array('x', 'y')));
+        $this->redis->set('x', 0);
+        $this->redis->set('y', 1);
+        $this->assertEquals(2, $this->redis->$cmd(array('x', 'y')));
+    }
 
+    public function testDelete() {
+        $this->genericDelUnlink("DEL");
+    }
+
+    public function testUnlink() {
+        if (version_compare($this->version, "4.0.0", "lt")) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->genericDelUnlink("UNLINK");
     }
 
     public function testType()

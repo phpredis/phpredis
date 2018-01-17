@@ -122,6 +122,7 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, save, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, select, arginfo_select, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, setOption,arginfo_setopt, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, unlink, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, unwatch, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_MALIAS(RedisArray, delete, del, arginfo_del, ZEND_ACC_PUBLIC)
      PHP_MALIAS(RedisArray, getMultiple, mget, arginfo_mget, ZEND_ACC_PUBLIC)
@@ -849,7 +850,7 @@ PHP_METHOD(RedisArray, select)
     zval_dtor(&z_fun);
 }
 #if (PHP_MAJOR_VERSION < 7)
-#define HANDLE_MULTI_EXEC(ra, cmd) do { \
+#define HANDLE_MULTI_EXEC(ra, cmd, cmdlen) do { \
     if (ra && ra->z_multi_exec) { \
         int i, num_varargs;\
         zval ***varargs = NULL, *z_arg_array; \
@@ -867,7 +868,7 @@ PHP_METHOD(RedisArray, select)
             add_next_index_zval(z_arg_array, z_tmp); \
         }\
         /* call */\
-        ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, sizeof(cmd) - 1, z_arg_array, NULL); \
+        ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, cmdlen, z_arg_array, NULL); \
         zval_ptr_dtor(&z_arg_array); \
         if(varargs) {\
             efree(varargs);\
@@ -892,7 +893,7 @@ PHP_METHOD(RedisArray, select)
             add_next_index_zval(&z_arg_array, &z_tmp); \
         } \
         /* call */\
-        ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, sizeof(cmd) - 1, &z_arg_array, NULL); \
+        ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, cmdlen, &z_arg_array, NULL); \
         zval_dtor(&z_arg_array); \
         return; \
     } \
@@ -914,7 +915,7 @@ PHP_METHOD(RedisArray, mget)
     }
 
     /* Multi/exec support */
-    HANDLE_MULTI_EXEC(ra, "MGET");
+    HANDLE_MULTI_EXEC(ra, "MGET", sizeof("MGET") - 1);
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
                 &object, redis_array_ce, &z_keys) == FAILURE) {
@@ -1068,7 +1069,7 @@ PHP_METHOD(RedisArray, mset)
     }
 
     /* Multi/exec support */
-    HANDLE_MULTI_EXEC(ra, "MSET");
+    HANDLE_MULTI_EXEC(ra, "MSET", sizeof("MSET") - 1);
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
                                      &object, redis_array_ce, &z_keys) == FAILURE)
@@ -1179,9 +1180,8 @@ PHP_METHOD(RedisArray, mset)
     RETURN_TRUE;
 }
 
-/* DEL will distribute the call to several nodes and regroup the values. */
-PHP_METHOD(RedisArray, del)
-{
+/* Generic handler for DEL or UNLINK which behave identically to phpredis */
+static void ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) {
     zval *object, z_keys, z_fun, *data, z_ret, *z_tmp, *z_args;
     int i, n;
     RedisArray *ra;
@@ -1194,8 +1194,9 @@ PHP_METHOD(RedisArray, del)
     if ((ra = redis_array_get(getThis() TSRMLS_CC)) == NULL) {
         RETURN_FALSE;
     }
+
     /* Multi/exec support */
-    HANDLE_MULTI_EXEC(ra, "DEL");
+    HANDLE_MULTI_EXEC(ra, kw, kw_len);
 
     /* get all args in z_args */
     z_args = emalloc(argc * sizeof(zval));
@@ -1259,7 +1260,7 @@ PHP_METHOD(RedisArray, del)
     } ZEND_HASH_FOREACH_END();
 
     /* prepare call */
-    ZVAL_STRINGL(&z_fun, "DEL", 3);
+    ZVAL_STRINGL(&z_fun, kw, kw_len);
 
     /* calls */
     for(n = 0; n < ra->count; ++n) { /* for each node */
@@ -1285,7 +1286,7 @@ PHP_METHOD(RedisArray, del)
             found++;
         }
 
-        if(!found) {    /* don't run empty DELs */
+        if(!found) {    /* don't run empty DEL or UNLINK commands */
             zval_dtor(&z_argarray);
             continue;
         }
@@ -1320,6 +1321,16 @@ PHP_METHOD(RedisArray, del)
 
     efree(z_args);
     RETURN_LONG(total);
+}
+
+/* DEL will distribute the call to several nodes and regroup the values. */
+PHP_METHOD(RedisArray, del)
+{
+    ra_generic_del(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DEL", sizeof("DEL")-1);
+}
+
+PHP_METHOD(RedisArray, unlink) {
+    ra_generic_del(INTERNAL_FUNCTION_PARAM_PASSTHRU, "UNLINK", sizeof("UNLINK") - 1);
 }
 
 PHP_METHOD(RedisArray, multi)
