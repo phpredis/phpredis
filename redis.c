@@ -1180,7 +1180,7 @@ PHP_METHOD(Redis, delete)
 /* {{{ proto long Redis::unlink(string $key1, string $key2 [, string $key3...]) }}}
  * {{{ proto long Redis::unlink(array $keys) */
 PHP_METHOD(Redis, unlink)
-
+{
     REDIS_PROCESS_CMD(unlink, redis_long_response);
 }
 

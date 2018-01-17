@@ -877,7 +877,7 @@ PHP_METHOD(RedisArray, select)
     }\
 }while(0)
 #else
-#define HANDLE_MULTI_EXEC(ra, cmd) do { \
+#define HANDLE_MULTI_EXEC(ra, cmd, cmdlen) do { \
     if (ra && ra->z_multi_exec) { \
         int i, num_varargs; \
         zval *varargs = NULL, z_arg_array; \
