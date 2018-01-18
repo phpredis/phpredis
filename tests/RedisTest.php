@@ -1903,6 +1903,11 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->select(0));
     }
 
+    public function testSwapDB() {
+        $this->assertTrue($this->redis->swapdb(0, 1));
+        $this->assertTrue($this->redis->swapdb(0, 1));
+    }
+
     public function testMset() {
     $this->redis->del('x', 'y', 'z');    // remove x y z
     $this->assertTrue($this->redis->mset(array('x' => 'a', 'y' => 'b', 'z' => 'c')));   // set x y z

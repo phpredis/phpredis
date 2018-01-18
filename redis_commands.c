@@ -333,6 +333,24 @@ int redis_key_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* long, long */
+int redis_long_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                        char *kw, char **cmd, int *cmd_len, short *slot,
+                        void **ctx)
+{
+    zend_long v1, v2;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll", &v1, &v2)
+                              == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ll", v1, v2);
+
+    return SUCCESS;
+}
+
 /* key, long, long */
 int redis_key_long_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                             char *kw, char **cmd, int *cmd_len, short *slot,

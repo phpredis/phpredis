@@ -782,6 +782,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_key_offset_value, 0, 0, 3)
     ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_swapdb, 0, 0, 2)
+    ZEND_ARG_INFO(0, srcdb)
+    ZEND_ARG_INFO(0, dstdb)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_key_start_end, 0, 0, 3)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, start)

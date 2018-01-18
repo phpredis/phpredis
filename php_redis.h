@@ -108,6 +108,7 @@ PHP_METHOD(Redis, pttl);
 PHP_METHOD(Redis, persist);
 PHP_METHOD(Redis, info);
 PHP_METHOD(Redis, select);
+PHP_METHOD(Redis, swapdb);
 PHP_METHOD(Redis, move);
 PHP_METHOD(Redis, zAdd);
 PHP_METHOD(Redis, zDelete);

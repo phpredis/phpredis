@@ -387,6 +387,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sscan, arginfo_kscan, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, strlen, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, subscribe, arginfo_subscribe, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, swapdb, arginfo_swapdb, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, time, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, ttl, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, type, arginfo_key, ZEND_ACC_PUBLIC)
@@ -1831,6 +1832,11 @@ PHP_METHOD(Redis, select) {
     REDIS_PROCESS_RESPONSE(redis_boolean_response);
 }
 /* }}} */
+
+/* {{{ proto bool Redis::swapdb(long srcdb, long dstdb) */
+PHP_METHOD(Redis, swapdb) {
+    REDIS_PROCESS_KW_CMD("SWAPDB", redis_long_long_cmd, redis_boolean_response);
+}
 
 /* {{{ proto bool Redis::move(string key, long dbindex) */
 PHP_METHOD(Redis, move) {
