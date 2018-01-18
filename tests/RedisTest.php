@@ -1904,6 +1904,10 @@ class Redis_Test extends TestSuite
     }
 
     public function testSwapDB() {
+        if (version_compare($this->version, "4.0.0", "lt")) {
+            $this->markTestSkipped();
+        }
+
         $this->assertTrue($this->redis->swapdb(0, 1));
         $this->assertTrue($this->redis->swapdb(0, 1));
     }
