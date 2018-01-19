@@ -186,6 +186,7 @@ Redis::REDIS_NOT_FOUND - Not found / other
 1. [pconnect, popen](#pconnect-popen) - Connect to a server (persistent)
 1. [auth](#auth) - Authenticate to the server
 1. [select](#select) - Change the selected database for the current connection
+1. [swapdb](#swapdb) - Swaps two Redis databases
 1. [close](#close) - Close the connection
 1. [setOption](#setoption) - Set client option
 1. [getOption](#getoption) - Get client option
@@ -283,6 +284,24 @@ _**Description**_: Change the selected database for the current connection.
 `TRUE` in case of success, `FALSE` in case of failure.
 ##### *Example*
 See method for example: [move](#move)
+
+### swapdb
+-----
+_**Description**_:  Swap one Redis database with another atomically  
+
+##### *Parameters*  
+*INTEGER*: db1  
+*INTEGER*: db2  
+
+##### *Return value*  
+`TRUE` on success and `FALSE` on failure.
+
+*note*: Requires Redis >= 4.0.0
+
+##### *Example*  
+~~~
+$redis->swapdb(0, 1); /* Swaps DB 0 with DB 1 atomically */
+~~~
 
 ### close
 -----
@@ -648,7 +667,7 @@ $redis->slowLog('len');
 ### Keys
 -----
 
-* [del, delete](#del-delete) - Delete a key
+* [del, delete, unlink](#del-delete-unlink) - Delete a key
 * [dump](#dump) - Return a serialized version of the value stored at the specified key.
 * [exists](#exists) - Determine if a key exists
 * [expire, setTimeout, pexpire](#expire-settimeout-pexpire) - Set a key's time to live in seconds
@@ -749,12 +768,14 @@ $redis->setNx('key', 'value'); /* return TRUE */
 $redis->setNx('key', 'value'); /* return FALSE */
 ~~~
 
-### del, delete
+### del, delete, unlink
 -----
 _**Description**_: Remove specified keys.
 
 ##### *Parameters*
 An array of keys, or an undefined number of parameters, each a key: *key1* *key2* *key3* ... *keyN*
+
+*Note*: If you are connecting to Redis server >= 4.0.0 you can remove a key with the `unlink` method in the exact same way you would use `del`.  The Redis [unlink](https://redis.io/commands/unlink) command is non-blocking and will perform the actual deletion asynchronously.
 
 ##### *Return value*
 *Long* Number of keys deleted.
@@ -768,6 +789,10 @@ $redis->set('key4', 'val4');
 
 $redis->delete('key1', 'key2'); /* return 2 */
 $redis->delete(array('key3', 'key4')); /* return 2 */
+
+/* If using Redis >= 4.0.0 you can call unlink */
+$redis->unlink('key1', 'key2');
+$redis->unlink(Array('key1', 'key2'));
 ~~~
 
 
