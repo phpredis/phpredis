@@ -5162,5 +5162,14 @@ class Redis_Test extends TestSuite
             $this->assertEquals($this->redis->ping(), "+PONG");
         }
     }
+
+    public function testConnectException() {
+        $redis = new Redis();
+        try {
+            $redis->connect('github.com', 6379, 0.01);
+        }  catch (Exception $e) {
+            $this->assertTrue(strpos($e, "timed out") !== false);
+        }
+    }
 }
 ?>
