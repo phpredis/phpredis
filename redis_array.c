@@ -1059,9 +1059,9 @@ PHP_METHOD(RedisArray, mset)
     RedisArray *ra;
     int *pos, argc, *argc_each;
     HashTable *h_keys;
-    char *key, **keys, kbuf[40];
-    int key_len, *key_lens;
-    zend_string *zkey;
+    char *key, kbuf[40];
+    int key_len;
+    zend_string **keys, *zkey;
     ulong idx;
 
     if ((ra = redis_array_get(getThis() TSRMLS_CC)) == NULL) {
@@ -1084,8 +1084,7 @@ PHP_METHOD(RedisArray, mset)
     }
     argv = emalloc(argc * sizeof(zval*));
     pos = emalloc(argc * sizeof(int));
-    keys = emalloc(argc * sizeof(char*));
-    key_lens = emalloc(argc * sizeof(int));
+    keys = ecalloc(argc, sizeof(zend_string *));
 
     argc_each = emalloc(ra->count * sizeof(int));
     memset(argc_each, 0, ra->count * sizeof(int));
@@ -1106,8 +1105,7 @@ PHP_METHOD(RedisArray, mset)
         }
 
         argc_each[pos[i]]++;    /* count number of keys per node */
-        keys[i] = estrndup(key, key_len);
-        key_lens[i] = (int)key_len;
+        keys[i] = zend_string_init(key, key_len, 0);
         argv[i] = data;
         i++;
     } ZEND_HASH_FOREACH_END();
@@ -1134,7 +1132,7 @@ PHP_METHOD(RedisArray, mset)
             } else {
                 ZVAL_ZVAL(z_tmp, argv[i], 1, 0);
             }
-            add_assoc_zval_ex(&z_argarray, keys[i], key_lens[i], z_tmp);
+            add_assoc_zval_ex(&z_argarray, ZSTR_VAL(keys[i]), ZSTR_LEN(keys[i]), z_tmp);
             found++;
         }
 
@@ -1167,12 +1165,11 @@ PHP_METHOD(RedisArray, mset)
 
     /* Free any keys that we needed to allocate memory for, because they weren't strings */
     for(i = 0; i < argc; i++) {
-        efree(keys[i]);
+        zend_string_release(keys[i]);
     }
 
     /* cleanup */
     efree(keys);
-    efree(key_lens);
     efree(argv);
     efree(pos);
     efree(argc_each);

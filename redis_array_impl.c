@@ -378,10 +378,10 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 
 
 /* call userland key extraction function */
-char *
-ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS_DC)
+zend_string *
+ra_call_extractor(RedisArray *ra, const char *key, int key_len TSRMLS_DC)
 {
-    char *out = NULL;
+    zend_string *out = NULL;
     zval z_ret, z_argv;
 
     /* check that we can call the extractor function */
@@ -400,8 +400,11 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
     call_user_function(EG(function_table), NULL, &ra->z_fun, &z_ret, 1, &z_argv);
 
     if (Z_TYPE(z_ret) == IS_STRING) {
-        *out_len = Z_STRLEN(z_ret);
-        out = estrndup(Z_STRVAL(z_ret), *out_len);
+#if (PHP_MAJOR_VERSION < 7)
+        out = zend_string_init(Z_STRVAL(z_ret), Z_STRLEN(z_ret), 0);
+#else
+        out = zval_get_string(&z_ret);
+#endif
     }
 
     zval_dtor(&z_argv);
@@ -409,20 +412,18 @@ ra_call_extractor(RedisArray *ra, const char *key, int key_len, int *out_len TSR
     return out;
 }
 
-static char *
-ra_extract_key(RedisArray *ra, const char *key, int key_len, int *out_len TSRMLS_DC) {
-
+static zend_string *
+ra_extract_key(RedisArray *ra, const char *key, int key_len TSRMLS_DC)
+{
     char *start, *end;
-    *out_len = key_len;
 
     if (Z_TYPE(ra->z_fun) != IS_NULL) {
-        return ra_call_extractor(ra, key, key_len, out_len TSRMLS_CC);
+        return ra_call_extractor(ra, key, key_len TSRMLS_CC);
     } else if ((start = strchr(key, '{')) == NULL || (end = strchr(start + 1, '}')) == NULL) {
-        return estrndup(key, key_len);
+        return zend_string_init(key, key_len, 0);
     }
     /* found substring */
-    *out_len = end - start - 1;
-    return estrndup(start + 1, *out_len);
+    return zend_string_init(start + 1, end - start - 1, 0);
 }
 
 /* call userland key distributor function */
@@ -455,39 +456,35 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len TSRMLS_DC)
 }
 
 zval *
-ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_DC) {
-    uint32_t hash;
-    char *out;
-    int pos, out_len;
+ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_DC)
+{
+    int pos;
+    zend_string *out;
 
     /* extract relevant part of the key */
-    out = ra_extract_key(ra, key, key_len, &out_len TSRMLS_CC);
-    if(!out) return NULL;
+    if ((out = ra_extract_key(ra, key, key_len TSRMLS_CC)) == NULL) {
+        return NULL;
+    }
 
-    if (Z_TYPE(ra->z_dist) != IS_NULL) {
-        pos = ra_call_distributor(ra, key, key_len TSRMLS_CC);
-        if (pos < 0 || pos >= ra->count) {
-            efree(out);
-            return NULL;
-        }
-    } else {
-        uint64_t h64;
+    if (Z_TYPE(ra->z_dist) == IS_NULL) {
+        int i;
         unsigned long ret = 0xffffffff;
-        size_t i;
 
         /* hash */
-        for (i = 0; i < out_len; ++i) {
-            CRC32(ret, (unsigned char)out[i]);
+        for (i = 0; i < ZSTR_LEN(out); ++i) {
+            CRC32(ret, ZSTR_VAL(out)[i]);
         }
-        hash = (ret ^ 0xffffffff);
 
         /* get position on ring */
-        h64 = hash;
-        h64 *= ra->count;
-        h64 /= 0xffffffff;
-        pos = (int)h64;
+        pos = (int)((ret ^ 0xffffffff) * ra->count / 0xffffffff);
+    } else {
+        pos = ra_call_distributor(ra, key, key_len TSRMLS_CC);
+        if (pos < 0 || pos >= ra->count) {
+            zend_string_release(out);
+            return NULL;
+        }
     }
-    efree(out);
+    zend_string_release(out);
 
     if(out_pos) *out_pos = pos;
 
