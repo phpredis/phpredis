@@ -2970,6 +2970,8 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             RETURN_LONG(redis_sock->scan);
         case REDIS_OPT_FAILOVER:
             RETURN_LONG(c->failover);
+        case REDIS_OPT_REPLY_LITERAL:
+            RETURN_LONG(redis_sock->reply_literal);
         default:
             RETURN_FALSE;
     }
@@ -3040,6 +3042,9 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                 RETURN_TRUE;
             }
             break;
+        case REDIS_OPT_REPLY_LITERAL:
+            redis_sock->reply_literal = atol(val_str);
+            RETURN_TRUE;
         EMPTY_SWITCH_DEFAULT_CASE()
     }
     RETURN_FALSE;

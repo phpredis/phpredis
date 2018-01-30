@@ -5079,5 +5079,11 @@ class Redis_Test extends TestSuite
             $this->assertEquals($this->redis->ping(), "+PONG");
         }
     }
+    public function testReplyLiterString() {
+        $this->redis->setOption(Redis::OPT_REPLY_LITERAL, 1);
+        $this->assertEquals($this->redis->rawCommand("ping"), "PONG");
+        $this->redis->setOption(Redis::OPT_REPLY_LITERAL, 0);
+        $this->assertTrue($this->redis->rawCommand("ping"));
+    }
 }
 ?>

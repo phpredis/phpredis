@@ -475,6 +475,7 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_READ_TIMEOUT       3
 #define REDIS_OPT_SCAN               4
 #define REDIS_OPT_FAILOVER           5
+#define REDIS_OPT_REPLY_LITERAL      6
 
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
@@ -666,6 +667,7 @@ typedef struct {
     int            scan;
 
     int            readonly;
+    int            reply_literal;
 } RedisSock;
 /* }}} */
 
