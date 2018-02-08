@@ -5164,9 +5164,13 @@ class Redis_Test extends TestSuite
     }
 
     public function testConnectException() {
+        $host = 'github.com';
+        if (gethostbyname($host) === $host) {
+            return $this->markTestSkipped('online test');
+        }
         $redis = new Redis();
         try {
-            $redis->connect('github.com', 6379, 0.01);
+            $redis->connect($host, 6379, 0.01);
         }  catch (Exception $e) {
             $this->assertTrue(strpos($e, "timed out") !== false);
         }
