@@ -1816,7 +1816,7 @@ $redis->lGet('key1', 0); /* 'A' */
 $redis->lGet('key1', -1); /* 'C' */
 $redis->lGet('key1', 10); /* `FALSE` */
 ~~~
-/
+
 ### lInsert
 -----
 _**Description**_: Insert value in the list before or after the pivot value.
