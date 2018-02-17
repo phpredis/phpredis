@@ -135,7 +135,7 @@ redis_array_free(RedisArray *ra)
     int i;
 
     /* Redis objects */
-    for(i=0;i<ra->count;i++) {
+    for(i = 0; i< ra->count; i++) {
         zval_dtor(&ra->redis[i]);
         efree(ra->hosts[i]);
     }
@@ -718,7 +718,7 @@ PHP_METHOD(RedisArray, keys)
     array_init(return_value);
 
     /* Iterate our RedisArray nodes */
-    for(i=0; i<ra->count; ++i) {
+    for(i = 0; i < ra->count; ++i) {
         zval zv, *z_tmp = &zv;
 #if (PHP_MAJOR_VERSION < 7)
         /* Return for this node */
