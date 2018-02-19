@@ -225,7 +225,7 @@ $redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay 
 _**Description**_: Connects to a Redis instance or reuse a connection already established with `pconnect`/`popen`.
 
 The connection will not be closed on `close` or end of request until the php process ends.
-So be patient on too many open FD's (specially on redis server side) when using persistent
+So be prepared for too many open FD's errors (specially on redis server side) when using persistent
 connections on many servers connecting to one redis server.
 
 Also more than one persistent connection can be made identified by either host + port + timeout
@@ -832,7 +832,11 @@ $redis->incr('key1'); /* key1 didn't exists, set to 0 before the increment */
 $redis->incr('key1'); /* 2 */
 $redis->incr('key1'); /* 3 */
 $redis->incr('key1'); /* 4 */
-$redis->incrBy('key1', 10); /* 14 */
+
+// Will redirect, and actually make an INCRBY call
+$redis->incr('key1', 10);   /* 14 */
+
+$redis->incrBy('key1', 10); /* 24 */
 ~~~
 
 ### incrByFloat
@@ -874,7 +878,11 @@ $redis->decr('key1'); /* key1 didn't exists, set to 0 before the increment */
 
 $redis->decr('key1'); /* -2 */
 $redis->decr('key1'); /* -3 */
-$redis->decrBy('key1', 10); /* -13 */
+
+// Will redirect, and actually make an DECRBY call
+$redis->decr('key1', 10);   /* -13 */
+
+$redis->decrBy('key1', 10); /* -23 */
 ~~~
 
 ### mGet, getMultiple
@@ -1808,7 +1816,7 @@ $redis->lGet('key1', 0); /* 'A' */
 $redis->lGet('key1', -1); /* 'C' */
 $redis->lGet('key1', 10); /* `FALSE` */
 ~~~
-/
+
 ### lInsert
 -----
 _**Description**_: Insert value in the list before or after the pivot value.

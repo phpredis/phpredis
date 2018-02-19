@@ -65,6 +65,11 @@ $obj_cluster->setOption(RedisCluster::OPT_SLAVE_FAILOVER, RedisCluster::FAILOVER
 $obj_cluster->setOption(
     RedisCluster::OPT_SLAVE_FAILOVER, RedisCluster::FAILOVER_DISTRIBUTE
 );
+
+// Always distribute readonly commands to the slaves, at random
+$obj_cluster->setOption(
+    RedisCluster::OPT_SLAVE_FAILOVER, RedisCluster::FAILOVER_DISTRIBUTE_SLAVES
+);
 </pre>
 
 ## Main command loop
@@ -163,7 +168,7 @@ session.save_path = "seed[]=host1:port1&seed[]=host2:port2&seed[]=hostN:portN&ti
 Set this variable to "rediscluster" to inform phpredis that this is a cluster instance.
 
 ### session.save_path
-The save path for cluster based session storage takes the form of a PHP GET request, and requires that you specify at least on `seed` node.  Other options you can specify are as follows:
+The save path for cluster based session storage takes the form of a PHP GET request, and requires that you specify at least one `seed` node.  Other options you can specify are as follows:
 
 * _timeout (double)_:  The amount of time phpredis will wait when connecting or writing to the cluster.
 * _read_timeout (double)_: The amount of time phpredis will wait for a result from the cluster.
