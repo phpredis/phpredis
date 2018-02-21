@@ -27,18 +27,18 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2018-02-07</date>
+ <date>2018-02-21</date>
  <version>
-  <release>4.0.0RC1</release>
-  <api>4.0.0RC1</api>
+  <release>4.0.0RC2</release>
+  <api>4.0.0RC2</api>
  </version>
  <stability>
-  <release>alpha</release>
-  <api>alpha</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 4.0.0RC1
+    phpredis 4.0.0RC2
 
     *** WARNING! THIS RELEASE CONTAINS BRAKING API CHANGES! ***
 
@@ -124,11 +124,11 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
    <release>
-   <stability><release>alpha</release><api>alpha</api></stability>
-   <version><release>4.0.0RC1</release><api>4.0.0RC1</api></version>
-   <date>2018-02-07</date>
+   <stability><release>beta</release><api>beta</api></stability>
+   <version><release>4.0.0RC2</release><api>4.0.0RC2</api></version>
+   <date>2018-02-21</date>
    <notes>
-    phpredis 4.0.0RC1
+    phpredis 4.0.0RC2
 
     *** WARNING! THIS RELEASE CONTAINS BRAKING API CHANGES! ***
 
@@ -139,12 +139,15 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Return real connection error as exception [5b9c0c60] (Pavlo Yatsukhnenko, Michael Grunder)
     * Disallow using empty string as session name. [485db46f] (Pavlo Yatsukhnenko)
     * Use zend_string for storing auth and prefix members [4b8336f7] (Pavlo Yatsukhnenko)
+    * The element of z_seeds may be a reference on php7 [367bc6aa, 1e63717a] (@janic716)
     * Avoid connection in helper methods [91e9cfe1] (Pavlo Yatsukhnenko)
     * Add tcp_keepalive option to redis sock [68c58513, 5101172a, 010336d5, 51e48729] (@git-hulk, Michael Grunder)
     * More robust GEORADIUS COUNT validation [f7edee5d] (Michael Grunder)
     * Add LZF compression (experimental) [e2c51251, 8cb2d5bd, 8657557] (Pavlo Yatsukhnenko)
     * Allow to use empty string as persistant_id [ec4fd1bd] (Pavlo Yatsukhnenko)
     * Don't use convert_to_string in redis_hmget_cmd [99335d6] (Pavlo Yatsukhnenko)
+    * Allow mixing MULTI and PIPELINE modes (experimental) [5874b0] (Pavlo Yatsukhnenko)
+    * PHP >=7.3.0 uses zend_string to store `php_url` elements [b566fb44] (@fmk)
     * Documentation improvements (Michael Grunder, @TomA-R)
    </notes>
    </release>
