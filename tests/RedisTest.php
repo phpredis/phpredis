@@ -5462,8 +5462,6 @@ class Redis_Test extends TestSuite
 
         $command = 'php --no-php-ini --define extension=igbinary.so --define extension=' . __DIR__ . '/../modules/redis.so ' . __DIR__ . '/regenerateSessionId.php ' . escapeshellarg($this->getHost()) . ' ' . implode(' ', $args);
 
-        $command .= ' 2>&1';
-
         exec($command, $output);
 
         return $output[0];
