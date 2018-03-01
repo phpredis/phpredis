@@ -625,7 +625,9 @@ PS_CREATE_SID_FUNC(redis)
 #else
         char *full_session_key = redis_session_key(rpm, ZSTR_VAL(sid), ZSTR_LEN(sid), &resp_len);
 #endif
-        pool->lock_status->session_key = full_session_key;
+        char *full_session_key_nt = estrndup(full_session_key, resp_len);
+        efree(full_session_key);
+        pool->lock_status->session_key = full_session_key_nt;
 
         if (lock_acquire(redis_sock, pool->lock_status TSRMLS_CC) == SUCCESS) {
             return sid;
@@ -731,9 +733,25 @@ PS_WRITE_FUNC(redis)
         return FAILURE;
     }
 
+    /* We need to check for PHP5 if the session key changes (a bug with session_regenerate_id() is causing a missing PS_CREATE_SID call)*/
+    #if (PHP_MAJOR_VERSION < 7)
+        session = redis_session_key(rpm, key, strlen(key), &session_len);
+        char *session_key_nt = estrndup(session, session_len);
+
+        int session_key_changed = strcmp(pool->lock_status->session_key, session_key_nt) != 0;
+        if (session_key_changed) {
+            efree(pool->lock_status->session_key);
+            pool->lock_status->session_key = session_key_nt;
+        }
+
+        if (session_key_changed && lock_acquire(redis_sock, pool->lock_status TSRMLS_CC) != SUCCESS) {
+            efree(session);
+            return FAILURE;
+        }
+    #endif
+
     /* send SET command */
 #if (PHP_MAJOR_VERSION < 7)
-    session = redis_session_key(rpm, key, strlen(key), &session_len);
     cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "sds", session, session_len,
                              INI_INT("session.gc_maxlifetime"), val, vallen);
 #else
