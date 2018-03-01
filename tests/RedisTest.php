@@ -5333,6 +5333,50 @@ class Redis_Test extends TestSuite
         $this->assertEquals('bar', $this->getSessionData($newSessionId));
     }
 
+    public  function testSession_regenerateSessionId_noLock_noDestroy_withProxy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, false, false, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_noLock_withDestroy_withProxy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, false, true, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_noDestroy_withProxy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true, false, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_withDestroy_withProxy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true, true, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
     private function setSessionHandler()
     {
         $host = $this->getHost() ?: 'localhost';
@@ -5406,12 +5450,15 @@ class Redis_Test extends TestSuite
 
     /**
      * @param string $sessionId
+     * @param bool   $locking
+     * @param bool   $destroyPrevious
+     * @param bool   $sessionProxy
      *
      * @return string
      */
-    private function regenerateSessionId($sessionId, $locking = false, $destroyPrevious = false)
+    private function regenerateSessionId($sessionId, $locking = false, $destroyPrevious = false, $sessionProxy = false)
     {
-	$args = array_map('escapeshellarg', array($sessionId, $locking, $destroyPrevious));
+	$args = array_map('escapeshellarg', array($sessionId, $locking, $destroyPrevious, $sessionProxy));
 
         $command = 'php --no-php-ini --define extension=igbinary.so --define extension=' . __DIR__ . '/../modules/redis.so ' . __DIR__ . '/regenerateSessionId.php ' . escapeshellarg($this->getHost()) . ' ' . implode(' ', $args);
 
