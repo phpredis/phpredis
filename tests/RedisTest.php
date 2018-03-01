@@ -5292,40 +5292,44 @@ class Redis_Test extends TestSuite
     public  function testSession_regenerateSessionId_noLock_noDestroy() {
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
-        $writeSuccessful = $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
 
         $newSessionId = $this->regenerateSessionId($sessionId);
-	
+
+        $this->assertTrue($newSessionId !== $sessionId);
         $this->assertEquals('bar', $this->getSessionData($newSessionId));
     }
 
     public  function testSession_regenerateSessionId_noLock_withDestroy() {
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
-        $writeSuccessful = $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
 
         $newSessionId = $this->regenerateSessionId($sessionId, false, true);
-	
+
+        $this->assertTrue($newSessionId !== $sessionId);
         $this->assertEquals('bar', $this->getSessionData($newSessionId));
     }
 
     public  function testSession_regenerateSessionId_withLock_noDestroy() {
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
-        $writeSuccessful = $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
 
         $newSessionId = $this->regenerateSessionId($sessionId, true);
-	
+
+        $this->assertTrue($newSessionId !== $sessionId);
         $this->assertEquals('bar', $this->getSessionData($newSessionId));
     }
 
     public  function testSession_regenerateSessionId_withLock_withDestroy() {
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
-        $writeSuccessful = $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
 
         $newSessionId = $this->regenerateSessionId($sessionId, true, true);
 
+        $this->assertTrue($newSessionId !== $sessionId);
         $this->assertEquals('bar', $this->getSessionData($newSessionId));
     }
 
