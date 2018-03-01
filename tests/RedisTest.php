@@ -5334,6 +5334,10 @@ class Redis_Test extends TestSuite
     }
 
     public  function testSession_regenerateSessionId_noLock_noDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
         $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
@@ -5345,6 +5349,10 @@ class Redis_Test extends TestSuite
     }
 
     public  function testSession_regenerateSessionId_noLock_withDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
         $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
@@ -5356,6 +5364,10 @@ class Redis_Test extends TestSuite
     }
 
     public  function testSession_regenerateSessionId_withLock_noDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
         $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
@@ -5367,6 +5379,10 @@ class Redis_Test extends TestSuite
     }
 
     public  function testSession_regenerateSessionId_withLock_withDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
         $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');

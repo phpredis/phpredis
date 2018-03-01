@@ -18,46 +18,48 @@ if ($locking) {
     ini_set('redis.session.locking_enabled', true);
 }
 
-class TestHandler implements SessionHandlerInterface
-{
-    /**
-     * @var SessionHandler
-     */
-    private $handler;
-
-    public function __construct()
+if (interface_exists('SessionHandlerInterface')) {
+    class TestHandler implements SessionHandlerInterface
     {
-        $this->handler = new SessionHandler();
-    }
+        /**
+         * @var SessionHandler
+         */
+        private $handler;
 
-    public function close()
-    {
-        return $this->handler->close();
-    }
+        public function __construct()
+        {
+            $this->handler = new SessionHandler();
+        }
 
-    public function destroy($session_id)
-    {
-        return $this->handler->destroy($session_id);
-    }
+        public function close()
+        {
+            return $this->handler->close();
+        }
 
-    public function gc($maxlifetime)
-    {
-        return $this->handler->gc($maxlifetime);
-    }
+        public function destroy($session_id)
+        {
+            return $this->handler->destroy($session_id);
+        }
 
-    public function open($save_path, $name)
-    {
-        return $this->handler->open($save_path, $name);
-    }
+        public function gc($maxlifetime)
+        {
+            return $this->handler->gc($maxlifetime);
+        }
 
-    public function read($session_id)
-    {
-        return $this->handler->read($session_id);
-    }
+        public function open($save_path, $name)
+        {
+            return $this->handler->open($save_path, $name);
+        }
 
-    public function write($session_id, $session_data)
-    {
-        return $this->handler->write($session_id, $session_data);
+        public function read($session_id)
+        {
+            return $this->handler->read($session_id);
+        }
+
+        public function write($session_id, $session_data)
+        {
+            return $this->handler->write($session_id, $session_data);
+        }
     }
 }
 
