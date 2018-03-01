@@ -619,11 +619,14 @@ PS_CREATE_SID_FUNC(redis)
 #endif
         }
 
+        int resp_len;
 #if (PHP_MAJOR_VERSION < 7)
-        pool->lock_status->session_key = sid;
+        char *full_session_key = redis_session_key(rpm, sid, strlen(sid), &resp_len);
 #else
-        pool->lock_status->session_key = estrdup(ZSTR_VAL(sid));
+        char *full_session_key = redis_session_key(rpm, ZSTR_VAL(sid), ZSTR_LEN(sid), &resp_len);
 #endif
+        pool->lock_status->session_key = full_session_key;
+
         if (lock_acquire(redis_sock, pool->lock_status TSRMLS_CC) == SUCCESS) {
             return sid;
         }
