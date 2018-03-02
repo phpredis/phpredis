@@ -65,6 +65,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='doc' name='COPYING'/>
    <file role='doc' name='CREDITS'/>
    <file role='doc' name='README.markdown'/>
+   <file role='src' name='INSTALL.markdown'/>
    <file role='doc' name='arrays.markdown'/>
    <file role='doc' name='cluster.markdown'/>
    <file role='src' name='cluster_library.c'/>
