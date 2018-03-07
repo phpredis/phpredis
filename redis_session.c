@@ -68,11 +68,6 @@ typedef struct {
 
 } redis_pool;
 
-PHP_REDIS_API redis_pool*
-redis_pool_new(TSRMLS_D) {
-    return ecalloc(1, sizeof(redis_pool));
-}
-
 PHP_REDIS_API void
 redis_pool_add(redis_pool *pool, RedisSock *redis_sock, int weight,
                 int database, zend_string *prefix, zend_string *auth TSRMLS_DC) {
@@ -184,7 +179,7 @@ PS_OPEN_FUNC(redis)
     zval params, *param;
     int i, j, path_len;
 
-    redis_pool *pool = redis_pool_new(TSRMLS_C);
+    redis_pool *pool = ecalloc(1, sizeof(*pool));
 
     for (i = 0, j = 0, path_len = strlen(save_path); i < path_len; i = j + 1) {
         /* find beginning of url */
