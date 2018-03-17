@@ -130,6 +130,7 @@ PHP_METHOD(RedisCluster, mset);
 PHP_METHOD(RedisCluster, msetnx);
 PHP_METHOD(RedisCluster, mset);
 PHP_METHOD(RedisCluster, del);
+PHP_METHOD(RedisCluster, unlink);
 PHP_METHOD(RedisCluster, dump);
 PHP_METHOD(RedisCluster, setex);
 PHP_METHOD(RedisCluster, psetex);

@@ -456,7 +456,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->ttl('key') ===7);
         $this->assertTrue($this->redis->get('key') === 'val');
     }
-    
+
     public function testPSetEx() {
         $this->redis->del('key');
         $this->assertTrue($this->redis->psetex('key', 7 * 1000, 'val') === TRUE);
@@ -611,38 +611,49 @@ class Redis_Test extends TestSuite
         $this->assertEquals(array(), $this->redis->keys(rand().rand().rand().'*'));
     }
 
-    public function testDelete()
-    {
+    protected function genericDelUnlink($cmd) {
         $key = 'key' . rand();
         $this->redis->set($key, 'val');
         $this->assertEquals('val', $this->redis->get($key));
-    $this->assertEquals(1, $this->redis->del($key));
+        $this->assertEquals(1, $this->redis->$cmd($key));
         $this->assertEquals(false, $this->redis->get($key));
 
-    // multiple, all existing
-    $this->redis->set('x', 0);
-    $this->redis->set('y', 1);
-    $this->redis->set('z', 2);
-    $this->assertEquals(3, $this->redis->del('x', 'y', 'z'));
-    $this->assertEquals(false, $this->redis->get('x'));
-    $this->assertEquals(false, $this->redis->get('y'));
-    $this->assertEquals(false, $this->redis->get('z'));
+        // multiple, all existing
+        $this->redis->set('x', 0);
+        $this->redis->set('y', 1);
+        $this->redis->set('z', 2);
+        $this->assertEquals(3, $this->redis->$cmd('x', 'y', 'z'));
+        $this->assertEquals(false, $this->redis->get('x'));
+        $this->assertEquals(false, $this->redis->get('y'));
+        $this->assertEquals(false, $this->redis->get('z'));
 
-    // multiple, none existing
-    $this->assertEquals(0, $this->redis->del('x', 'y', 'z'));
-    $this->assertEquals(false, $this->redis->get('x'));
-    $this->assertEquals(false, $this->redis->get('y'));
-    $this->assertEquals(false, $this->redis->get('z'));
+        // multiple, none existing
+        $this->assertEquals(0, $this->redis->$cmd('x', 'y', 'z'));
+        $this->assertEquals(false, $this->redis->get('x'));
+        $this->assertEquals(false, $this->redis->get('y'));
+        $this->assertEquals(false, $this->redis->get('z'));
 
-    // multiple, some existing
-    $this->redis->set('y', 1);
-    $this->assertEquals(1, $this->redis->del('x', 'y', 'z'));
-    $this->assertEquals(false, $this->redis->get('y'));
+        // multiple, some existing
+        $this->redis->set('y', 1);
+        $this->assertEquals(1, $this->redis->$cmd('x', 'y', 'z'));
+        $this->assertEquals(false, $this->redis->get('y'));
 
-    $this->redis->set('x', 0);
-    $this->redis->set('y', 1);
-    $this->assertEquals(2, $this->redis->del(array('x', 'y')));
+        $this->redis->set('x', 0);
+        $this->redis->set('y', 1);
+        $this->assertEquals(2, $this->redis->$cmd(array('x', 'y')));
+    }
 
+    public function testDelete() {
+        $this->genericDelUnlink("DEL");
+    }
+
+    public function testUnlink() {
+        if (version_compare($this->version, "4.0.0", "lt")) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->genericDelUnlink("UNLINK");
     }
 
     public function testType()
@@ -1888,6 +1899,15 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->select(0));
     }
 
+    public function testSwapDB() {
+        if (version_compare($this->version, "4.0.0", "lt")) {
+            $this->markTestSkipped();
+        }
+
+        $this->assertTrue($this->redis->swapdb(0, 1));
+        $this->assertTrue($this->redis->swapdb(0, 1));
+    }
+
     public function testMset() {
     $this->redis->del('x', 'y', 'z');    // remove x y z
     $this->assertTrue($this->redis->mset(array('x' => 'a', 'y' => 'b', 'z' => 'c')));   // set x y z
@@ -2271,6 +2291,26 @@ class Redis_Test extends TestSuite
         $this->assertTrue(2 === $this->redis->zRevRank('z', 'one'));
         $this->assertTrue(1 === $this->redis->zRevRank('z', 'two'));
         $this->assertTrue(0 === $this->redis->zRevRank('z', 'five'));
+    }
+
+    public function testZRangeByLex() {
+        /* ZRANGEBYLEX available on versions >= 2.8.9 */
+        if(version_compare($this->version, "2.8.9", "lt")) {
+            $this->MarkTestSkipped();
+            return;
+        }
+
+        $this->redis->del('key');
+        foreach(range('a', 'g') as $c) {
+            $this->redis->zAdd('key', 0, $c);
+        }
+
+        $this->assertEquals($this->redis->zRangeByLex('key', '-', '[c'), Array('a', 'b', 'c'));
+        $this->assertEquals($this->redis->zRangeByLex('key', '(e', '+'), Array('f', 'g'));
+
+	// with limit offset
+        $this->assertEquals($this->redis->zRangeByLex('key', '-', '[c', 1, 2), Array('b', 'c') );
+        $this->assertEquals($this->redis->zRangeByLex('key', '-', '(c', 1, 2), Array('b'));
     }
 
     public function testHashes() {
@@ -4241,6 +4281,24 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE);       // get ok
     }
 
+    public function testCompressionLZF()
+    {
+        if (!defined('Redis::COMPRESSION_LZF')) {
+            $this->markTestSkipped();
+        }
+        $this->checkCompression(Redis::COMPRESSION_LZF);
+    }
+
+    private function checkCompression($mode)
+    {
+        $this->assertTrue($this->redis->setOption(Redis::OPT_COMPRESSION, $mode) === TRUE);  // set ok
+        $this->assertTrue($this->redis->getOption(Redis::OPT_COMPRESSION) === $mode);    // get ok
+
+        $val = 'xxxxxxxxxx';
+        $this->redis->set('key', $val);
+        $this->assertEquals($val, $this->redis->get('key'));
+    }
+
     public function testDumpRestore() {
 
         if (version_compare($this->version, "2.5.0", "lt")) {
@@ -4945,6 +5003,11 @@ class Redis_Test extends TestSuite
             $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 50000, 'm'), Array('Gridley','Chico'));
             $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 150000, 'ft'), Array('Gridley', 'Chico'));
             $args = Array('georadius', 'gk', $lng, $lat, 500, 'mi');
+
+            /* Test a bad COUNT argument */
+            foreach (Array(-1, 0, 'notanumber') as $count) {
+                $this->assertFalse(@$this->redis->georadius('gk', $lng, $lat, 10, 'mi', Array('count' => $count)));
+            }
         } else {
             $this->assertEquals($this->redis->georadiusbymember('gk', $city, 10, 'mi'), Array('Chico'));
             $this->assertEquals($this->redis->georadiusbymember('gk', $city, 30, 'mi'), Array('Gridley','Chico'));
@@ -4952,6 +5015,11 @@ class Redis_Test extends TestSuite
             $this->assertEquals($this->redis->georadiusbymember('gk', $city, 50000, 'm'), Array('Gridley','Chico'));
             $this->assertEquals($this->redis->georadiusbymember('gk', $city, 150000, 'ft'), Array('Gridley', 'Chico'));
             $args = Array('georadiusbymember', 'gk', $city, 500, 'mi');
+
+            /* Test a bad COUNT argument */
+            foreach (Array(-1, 0, 'notanumber') as $count) {
+                $this->assertFalse(@$this->redis->georadiusbymember('gk', $city, 10, 'mi', Array('count' => $count)));
+            }
         }
 
         /* Options */
@@ -5077,6 +5145,19 @@ class Redis_Test extends TestSuite
         for($i = 0; $i < 5; $i++) {
             $this->redis->connect($host, $port);
             $this->assertEquals($this->redis->ping(), "+PONG");
+        }
+    }
+
+    public function testConnectException() {
+        $host = 'github.com';
+        if (gethostbyname($host) === $host) {
+            return $this->markTestSkipped('online test');
+        }
+        $redis = new Redis();
+        try {
+            $redis->connect($host, 6379, 0.01);
+        }  catch (Exception $e) {
+            $this->assertTrue(strpos($e, "timed out") !== false);
         }
     }
 }

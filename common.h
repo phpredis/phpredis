@@ -412,11 +412,14 @@ typedef int strlen_t;
 /* References don't need any actions */
 #define ZVAL_DEREF(v) PHPREDIS_NOTUSED(v)
 
+#define PHPREDIS_GET_OBJECT(class_entry, z) (class_entry *)zend_objects_get_address(z TSRMLS_CC)
+
 #else
 #include <zend_smart_str.h>
 #include <ext/standard/php_smart_string.h>
 typedef size_t strlen_t;
 #define PHPREDIS_ZVAL_IS_STRICT_FALSE(z) (Z_TYPE_P(z) == IS_FALSE)
+#define PHPREDIS_GET_OBJECT(class_entry, z) (class_entry *)((char *)Z_OBJ_P(z) - XtOffsetOf(class_entry, std))
 #endif
 
 /* NULL check so Eclipse doesn't go crazy */
@@ -475,6 +478,8 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_READ_TIMEOUT       3
 #define REDIS_OPT_SCAN               4
 #define REDIS_OPT_FAILOVER           5
+#define REDIS_OPT_TCP_KEEPALIVE      6
+#define REDIS_OPT_COMPRESSION        7
 
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
@@ -485,6 +490,9 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_SERIALIZER_NONE        0
 #define REDIS_SERIALIZER_PHP         1
 #define REDIS_SERIALIZER_IGBINARY    2
+/* compression */
+#define REDIS_COMPRESSION_NONE 0
+#define REDIS_COMPRESSION_LZF  1
 
 /* SCAN options */
 #define REDIS_SCAN_NORETRY 0
@@ -499,12 +507,9 @@ typedef enum _PUBSUB_TYPE {
 #define MULTI    1
 #define PIPELINE 2
 
-#define IF_ATOMIC() if (redis_sock->mode == ATOMIC)
-#define IF_NOT_ATOMIC() if (redis_sock->mode != ATOMIC)
-#define IF_MULTI() if (redis_sock->mode & MULTI)
-#define IF_NOT_MULTI() if (!(redis_sock->mode & MULTI))
-#define IF_PIPELINE() if (redis_sock->mode & PIPELINE)
-#define IF_NOT_PIPELINE() if (!(redis_sock->mode & PIPELINE))
+#define IS_ATOMIC(redis_sock) (redis_sock->mode == ATOMIC)
+#define IS_MULTI(redis_sock) (redis_sock->mode & MULTI)
+#define IS_PIPELINE(redis_sock) (redis_sock->mode & PIPELINE)
 
 #define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) do { \
     if (redis_sock->pipeline_cmd == NULL) { \
@@ -539,7 +544,7 @@ typedef enum _PUBSUB_TYPE {
 } while (0)
 
 #define REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len) \
-    IF_PIPELINE() { \
+    if (IS_PIPELINE(redis_sock)) { \
         PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len); \
     } else { \
         SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len); \
@@ -547,7 +552,7 @@ typedef enum _PUBSUB_TYPE {
     efree(cmd);
 
 #define REDIS_PROCESS_RESPONSE_CLOSURE(function, closure_context) \
-    IF_NOT_PIPELINE() { \
+    if (!IS_PIPELINE(redis_sock)) { \
         if (redis_response_enqueued(redis_sock TSRMLS_CC) != SUCCESS) { \
             RETURN_FALSE; \
         } \
@@ -575,7 +580,7 @@ typedef enum _PUBSUB_TYPE {
             RETURN_FALSE; \
     } \
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
-    IF_ATOMIC() { \
+    if (IS_ATOMIC(redis_sock)) { \
         resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx); \
     } else { \
         REDIS_PROCESS_RESPONSE_CLOSURE(resp_func, ctx) \
@@ -591,7 +596,7 @@ typedef enum _PUBSUB_TYPE {
             RETURN_FALSE; \
     } \
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len); \
-    IF_ATOMIC() { \
+    if (IS_ATOMIC(redis_sock)) { \
         resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, ctx); \
     } else { \
         REDIS_PROCESS_RESPONSE_CLOSURE(resp_func, ctx) \
@@ -648,6 +653,7 @@ typedef struct {
     zend_string    *persistent_id;
 
     int            serializer;
+    int            compression;
     long           dbNumber;
 
     zend_string    *prefix;
@@ -666,6 +672,7 @@ typedef struct {
     int            scan;
 
     int            readonly;
+    int            tcp_keepalive;
 } RedisSock;
 /* }}} */
 
@@ -773,6 +780,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_key_offset_value, 0, 0, 3)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, offset)
     ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_swapdb, 0, 0, 2)
+    ZEND_ARG_INFO(0, srcdb)
+    ZEND_ARG_INFO(0, dstdb)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_key_start_end, 0, 0, 3)
@@ -1015,10 +1027,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_watch, 0, 0, 1)
 #endif
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_info, 0, 0, 0)
-    ZEND_ARG_INFO(0, option)
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_command, 0, 0, 0)
 #if PHP_VERSION_ID >= 50600
     ZEND_ARG_VARIADIC_INFO(0, args)
@@ -1034,44 +1042,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_rawcommand, 0, 0, 1)
 #else
     ZEND_ARG_INFO(0, ...)
 #endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_client, 0, 0, 1)
-    ZEND_ARG_INFO(0, cmd)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, args)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_config, 0, 0, 2)
-    ZEND_ARG_INFO(0, cmd)
-    ZEND_ARG_INFO(0, key)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_pubsub, 0, 0, 1)
-    ZEND_ARG_INFO(0, cmd)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, args)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_script, 0, 0, 1)
-    ZEND_ARG_INFO(0, cmd)
-#if PHP_VERSION_ID >= 50600
-    ZEND_ARG_VARIADIC_INFO(0, args)
-#else
-    ZEND_ARG_INFO(0, ...)
-#endif
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_slowlog, 0, 0, 1)
-    ZEND_ARG_INFO(0, arg)
-    ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_geoadd, 0, 0, 4)

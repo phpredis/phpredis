@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2018-01-03</date>
+ <date>2018-03-17</date>
  <version>
-  <release>3.1.6</release>
-  <api>3.1.6</api>
+  <release>4.0.0</release>
+  <api>4.0.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -38,38 +38,63 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 3.1.6
+    phpredis 4.0.0
 
-    This release conains only fix of RedisArray distributor hashing function
-    which was broken in 3.1.4. Huge thanks to @rexchen123
+    *** WARNING! THIS RELEASE CONTAINS BRAKING API CHANGES! ***
+
+    * Add proper ARGINFO for all methods. (Pavlo Yatsukhnenko, Michael Grunder)
+    * Let EXISTS take multiple keys [cccc39] (Michael Grunder)
+    * Use zend_string as returning value for ra_extract_key and ra_call_extractor [9cd05911] (Pavlo Yatsukhnenko)
+    * Implement SWAPDB and UNLINK commands [84f1f28b, 9e65c429] (Michael Grunder)
+    * Return real connection error as exception [5b9c0c60] (Pavlo Yatsukhnenko, Michael Grunder)
+    * Disallow using empty string as session name. [485db46f] (Pavlo Yatsukhnenko)
+    * Use zend_string for storing auth and prefix members [4b8336f7] (Pavlo Yatsukhnenko)
+    * The element of z_seeds may be a reference on php7 [367bc6aa, 1e63717a] (@janic716)
+    * Avoid connection in helper methods [91e9cfe1] (Pavlo Yatsukhnenko)
+    * Add tcp_keepalive option to redis sock [68c58513, 5101172a, 010336d5, 51e48729] (@git-hulk, Michael Grunder)
+    * More robust GEORADIUS COUNT validation [f7edee5d] (Michael Grunder)
+    * Add LZF compression (experimental) [e2c51251, 8cb2d5bd, 8657557] (Pavlo Yatsukhnenko)
+    * Allow to use empty string as persistant_id [ec4fd1bd] (Pavlo Yatsukhnenko)
+    * Don't use convert_to_string in redis_hmget_cmd [99335d6] (Pavlo Yatsukhnenko)
+    * Allow mixing MULTI and PIPELINE modes (experimental) [5874b0] (Pavlo Yatsukhnenko)
+    * PHP >=7.3.0 uses zend_string to store `php_url` elements [b566fb44] (@fmk)
+    * Documentation improvements (Michael Grunder, @TomA-R)
  </notes>
  <contents>
   <dir name="/">
+   <file role='doc' name='COPYING'/>
+   <file role='doc' name='CREDITS'/>
    <file role='doc' name='README.markdown'/>
    <file role='doc' name='arrays.markdown'/>
    <file role='doc' name='cluster.markdown'/>
-   <file role='doc' name='CREDITS'/>
-   <file role='doc' name='COPYING'/>
+   <file role='src' name='cluster_library.c'/>
+   <file role='src' name='cluster_library.h'/>
+   <file role='src' name='common.h'/>
    <file role='src' name='config.m4'/>
    <file role='src' name='config.w32'/>
-   <file role='src' name='common.h'/>
+   <file role='src' name='crc16.h'/>
    <file role='src' name='library.c'/>
    <file role='src' name='library.h'/>
    <file role='src' name='php_redis.h'/>
+   <file role='src' name='redis.c'/>
    <file role='src' name='redis_array.c'/>
    <file role='src' name='redis_array.h'/>
    <file role='src' name='redis_array_impl.c'/>
    <file role='src' name='redis_array_impl.h'/>
    <file role='src' name='redis_cluster.c'/>
    <file role='src' name='redis_cluster.h'/>
-   <file role='src' name='cluster_library.c'/>
-   <file role='src' name='cluster_library.h'/>
    <file role='src' name='redis_commands.c'/>
    <file role='src' name='redis_commands.h'/>
-   <file role='src' name='redis.c'/>
-   <file role='src' name='crc16.h'/>
    <file role='src' name='redis_session.c'/>
    <file role='src' name='redis_session.h'/>
+   <dir name='liblzf'>
+     <file role='doc' name='LICENSE'/>
+     <file role='doc' name='README'/>
+     <file role='src' name='lzf.h'/>
+     <file role='src' name='lzfP.h'/>
+     <file role='src' name='lzf_c.c'/>
+     <file role='src' name='lzf_d.c'/>
+   </dir> <!-- liblzf -->
    <dir name='tests'>
      <file role='test' name='RedisArrayTest.php'/>
      <file role='test' name='RedisClusterTest.php'/>
@@ -95,8 +120,38 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <providesextension>redis</providesextension>
  <extsrcrelease>
   <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
+  <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>4.0.0</release><api>4.0.0</api></version>
+   <date>2018-03-17</date>
+   <notes>
+    phpredis 4.0.0
+
+    *** WARNING! THIS RELEASE CONTAINS BRAKING API CHANGES! ***
+
+    * Add proper ARGINFO for all methods. (Pavlo Yatsukhnenko, Michael Grunder)
+    * Let EXISTS take multiple keys [cccc39] (Michael Grunder)
+    * Use zend_string as returning value for ra_extract_key and ra_call_extractor [9cd05911] (Pavlo Yatsukhnenko)
+    * Implement SWAPDB and UNLINK commands [84f1f28b, 9e65c429] (Michael Grunder)
+    * Return real connection error as exception [5b9c0c60] (Pavlo Yatsukhnenko, Michael Grunder)
+    * Disallow using empty string as session name. [485db46f] (Pavlo Yatsukhnenko)
+    * Use zend_string for storing auth and prefix members [4b8336f7] (Pavlo Yatsukhnenko)
+    * The element of z_seeds may be a reference on php7 [367bc6aa, 1e63717a] (@janic716)
+    * Avoid connection in helper methods [91e9cfe1] (Pavlo Yatsukhnenko)
+    * Add tcp_keepalive option to redis sock [68c58513, 5101172a, 010336d5, 51e48729] (@git-hulk, Michael Grunder)
+    * More robust GEORADIUS COUNT validation [f7edee5d] (Michael Grunder)
+    * Add LZF compression (experimental) [e2c51251, 8cb2d5bd, 8657557] (Pavlo Yatsukhnenko)
+    * Allow to use empty string as persistant_id [ec4fd1bd] (Pavlo Yatsukhnenko)
+    * Don't use convert_to_string in redis_hmget_cmd [99335d6] (Pavlo Yatsukhnenko)
+    * Allow mixing MULTI and PIPELINE modes (experimental) [5874b0] (Pavlo Yatsukhnenko)
+    * PHP >=7.3.0 uses zend_string to store `php_url` elements [b566fb44] (@fmk)
+    * Documentation improvements (Michael Grunder, @TomA-R)
+   </notes>
+   </release>
+
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>3.1.6</release><api>3.1.6</api></version>

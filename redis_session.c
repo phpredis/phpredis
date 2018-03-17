@@ -53,13 +53,8 @@ typedef struct redis_pool_member_ {
     RedisSock *redis_sock;
     int weight;
     int database;
-
-    char *prefix;
-    size_t prefix_len;
-
-    char *auth;
-    size_t auth_len;
-
+    zend_string *prefix;
+    zend_string *auth;
     struct redis_pool_member_ *next;
 
 } redis_pool_member;
@@ -80,7 +75,7 @@ redis_pool_new(TSRMLS_D) {
 
 PHP_REDIS_API void
 redis_pool_add(redis_pool *pool, RedisSock *redis_sock, int weight,
-                int database, char *prefix, char *auth TSRMLS_DC) {
+                int database, zend_string *prefix, zend_string *auth TSRMLS_DC) {
 
     redis_pool_member *rpm = ecalloc(1, sizeof(redis_pool_member));
     rpm->redis_sock = redis_sock;
@@ -88,10 +83,8 @@ redis_pool_add(redis_pool *pool, RedisSock *redis_sock, int weight,
     rpm->database = database;
 
     rpm->prefix = prefix;
-    rpm->prefix_len = (prefix?strlen(prefix):0);
 
     rpm->auth = auth;
-    rpm->auth_len = (auth?strlen(auth):0);
 
     rpm->next = pool->head;
     pool->head = rpm;
@@ -104,12 +97,12 @@ redis_pool_free(redis_pool *pool TSRMLS_DC) {
 
     redis_pool_member *rpm, *next;
     rpm = pool->head;
-    while(rpm) {
+    while (rpm) {
         next = rpm->next;
         redis_sock_disconnect(rpm->redis_sock TSRMLS_CC);
         redis_free_socket(rpm->redis_sock);
-        if(rpm->prefix) efree(rpm->prefix);
-        if(rpm->auth) efree(rpm->auth);
+        if (rpm->prefix) zend_string_release(rpm->prefix);
+        if (rpm->auth) zend_string_release(rpm->auth);
         efree(rpm);
         rpm = next;
     }
@@ -123,12 +116,12 @@ redis_pool_member_auth(redis_pool_member *rpm TSRMLS_DC) {
     int response_len, cmd_len;
 
     /* Short circuit if we don't have a password */
-    if(!rpm->auth || !rpm->auth_len) {
+    if (!rpm->auth) {
         return;
     }
 
-    cmd_len = REDIS_SPPRINTF(&cmd, "AUTH", "s", rpm->auth, rpm->auth_len);
-    if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) >= 0) {
+    cmd_len = REDIS_SPPRINTF(&cmd, "AUTH", "S", rpm->auth);
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) >= 0) {
         if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC))) {
             efree(response);
         }
@@ -143,7 +136,7 @@ redis_pool_member_select(redis_pool_member *rpm TSRMLS_DC) {
     int response_len, cmd_len;
 
     cmd_len = REDIS_SPPRINTF(&cmd, "SELECT", "d", rpm->database);
-    if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) >= 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) >= 0) {
         if ((response = redis_sock_read(redis_sock, &response_len TSRMLS_CC))) {
             efree(response);
         }
@@ -161,16 +154,16 @@ redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
     redis_pool_member *rpm = pool->head;
 
     for(i = 0; i < pool->totalWeight;) {
-        if(pos >= i && pos < i + rpm->weight) {
+        if (pos >= i && pos < i + rpm->weight) {
             int needs_auth = 0;
-            if(rpm->auth && rpm->auth_len && rpm->redis_sock->status != REDIS_SOCK_STATUS_CONNECTED) {
+            if (rpm->auth && rpm->redis_sock->status != REDIS_SOCK_STATUS_CONNECTED) {
                     needs_auth = 1;
             }
             redis_sock_server_open(rpm->redis_sock TSRMLS_CC);
-            if(needs_auth) {
+            if (needs_auth) {
                 redis_pool_member_auth(rpm TSRMLS_CC);
             }
-            if(rpm->database >= 0) { /* default is -1 which leaves the choice to redis. */
+            if (rpm->database >= 0) { /* default is -1 which leaves the choice to redis. */
                 redis_pool_member_select(rpm TSRMLS_CC);
             }
 
@@ -193,9 +186,9 @@ PS_OPEN_FUNC(redis)
 
     redis_pool *pool = redis_pool_new(TSRMLS_C);
 
-    for (i=0,j=0,path_len=strlen(save_path); i<path_len; i=j+1) {
+    for (i = 0, j = 0, path_len = strlen(save_path); i < path_len; i = j + 1) {
         /* find beginning of url */
-        while (i<path_len && (isspace(save_path[i]) || save_path[i] == ','))
+        while ( i< path_len && (isspace(save_path[i]) || save_path[i] == ','))
             i++;
 
         /* find end of url */
@@ -208,7 +201,8 @@ PS_OPEN_FUNC(redis)
             double timeout = 86400.0, read_timeout = 0.0;
             int persistent = 0;
             int database = -1;
-            char *prefix = NULL, *auth = NULL, *persistent_id = NULL;
+            char *persistent_id = NULL;
+            zend_string *prefix = NULL, *auth = NULL;
             long retry_interval = 0;
 
             /* translate unix: into file: */
@@ -259,10 +253,10 @@ PS_OPEN_FUNC(redis)
                     persistent_id = estrndup(Z_STRVAL_P(param), Z_STRLEN_P(param));
                 }
                 if ((param = zend_hash_str_find(Z_ARRVAL(params), "prefix", sizeof("prefix") - 1)) != NULL) {
-                    prefix = estrndup(Z_STRVAL_P(param), Z_STRLEN_P(param));
+                    prefix = zend_string_init(Z_STRVAL_P(param), Z_STRLEN_P(param), 0);
                 }
                 if ((param = zend_hash_str_find(Z_ARRVAL(params), "auth", sizeof("auth") - 1)) != NULL) {
-                    auth = estrndup(Z_STRVAL_P(param), Z_STRLEN_P(param));
+                    auth = zend_string_init(Z_STRVAL_P(param), Z_STRLEN_P(param), 0);
                 }
                 if ((param = zend_hash_str_find(Z_ARRVAL(params), "database", sizeof("database") - 1)) != NULL) {
                     database = zval_get_long(param);
@@ -277,15 +271,15 @@ PS_OPEN_FUNC(redis)
             if ((url->path == NULL && url->host == NULL) || weight <= 0 || timeout <= 0) {
                 php_url_free(url);
                 if (persistent_id) efree(persistent_id);
-                if (prefix) efree(prefix);
-                if (auth) efree(auth);
+                if (prefix) zend_string_release(prefix);
+                if (auth) zend_string_release(auth);
                 redis_pool_free(pool TSRMLS_CC);
                 PS_SET_MOD_DATA(NULL);
                 return FAILURE;
             }
 
             RedisSock *redis_sock;
-            if(url->host) {
+            if (url->host) {
 #if (PHP_VERSION_ID < 70300)
                 redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
 #else
@@ -319,7 +313,7 @@ PS_CLOSE_FUNC(redis)
 {
     redis_pool *pool = PS_GET_MOD_DATA();
 
-    if(pool){
+    if (pool){
         redis_pool_free(pool TSRMLS_CC);
         PS_SET_MOD_DATA(NULL);
     }
@@ -335,9 +329,9 @@ redis_session_key(redis_pool_member *rpm, const char *key, int key_len, int *ses
     char *prefix = default_prefix;
     size_t prefix_len = sizeof(default_prefix)-1;
 
-    if(rpm->prefix) {
-        prefix = rpm->prefix;
-        prefix_len = rpm->prefix_len;
+    if (rpm->prefix) {
+        prefix = ZSTR_VAL(rpm->prefix);
+        prefix_len = ZSTR_LEN(rpm->prefix);
     }
 
     /* build session key */
@@ -355,28 +349,29 @@ PS_READ_FUNC(redis)
 {
     char *resp, *cmd;
     int resp_len, cmd_len;
+#if (PHP_MAJOR_VERSION < 7)
+    const char *skey = key;
+    size_t skeylen = strlen(key);
+#else
+    const char *skey = ZSTR_VAL(key);
+    size_t skeylen = ZSTR_LEN(key);
+#endif
+
+    if (!skeylen) return FAILURE;
 
     redis_pool *pool = PS_GET_MOD_DATA();
-#if (PHP_MAJOR_VERSION < 7)
-    redis_pool_member *rpm = redis_pool_get_sock(pool, key TSRMLS_CC);
-#else
-    redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(key) TSRMLS_CC);
-#endif
+    redis_pool_member *rpm = redis_pool_get_sock(pool, skey TSRMLS_CC);
     RedisSock *redis_sock = rpm?rpm->redis_sock:NULL;
-    if(!rpm || !redis_sock){
+    if (!rpm || !redis_sock){
         return FAILURE;
     }
 
     /* send GET command */
-#if (PHP_MAJOR_VERSION < 7)
-    resp = redis_session_key(rpm, key, strlen(key), &resp_len);
-#else
-    resp = redis_session_key(rpm, ZSTR_VAL(key), ZSTR_LEN(key), &resp_len);
-#endif
+    resp = redis_session_key(rpm, skey, skeylen, &resp_len);
     cmd_len = REDIS_SPPRINTF(&cmd, "GET", "s", resp, resp_len);
 
     efree(resp);
-    if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
         return FAILURE;
     }
@@ -415,31 +410,29 @@ PS_WRITE_FUNC(redis)
 {
     char *cmd, *response, *session;
     int cmd_len, response_len, session_len;
+#if (PHP_MAJOR_VERSION < 7)
+    const char *skey = key, *sval = val;
+    size_t skeylen = strlen(key), svallen = vallen;
+#else
+    const char *skey = ZSTR_VAL(key), *sval = ZSTR_VAL(val);
+    size_t skeylen = ZSTR_LEN(key), svallen = ZSTR_LEN(val);
+#endif
+
+    if (!skeylen) return FAILURE;
 
     redis_pool *pool = PS_GET_MOD_DATA();
-#if (PHP_MAJOR_VERSION < 7)
-    redis_pool_member *rpm = redis_pool_get_sock(pool, key TSRMLS_CC);
-#else
-    redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(key) TSRMLS_CC);
-#endif
+    redis_pool_member *rpm = redis_pool_get_sock(pool, skey TSRMLS_CC);
     RedisSock *redis_sock = rpm?rpm->redis_sock:NULL;
-    if(!rpm || !redis_sock){
+    if (!rpm || !redis_sock){
         return FAILURE;
     }
 
     /* send SET command */
-#if (PHP_MAJOR_VERSION < 7)
-    session = redis_session_key(rpm, key, strlen(key), &session_len);
+    session = redis_session_key(rpm, skey, skeylen, &session_len);
     cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "sds", session, session_len,
-                             INI_INT("session.gc_maxlifetime"), val, vallen);
-#else
-    session = redis_session_key(rpm, ZSTR_VAL(key), ZSTR_LEN(key), &session_len);
-    cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "sds", session, session_len,
-                             INI_INT("session.gc_maxlifetime"),
-                             ZSTR_VAL(val), ZSTR_LEN(val));
-#endif
+                             INI_INT("session.gc_maxlifetime"), sval, svallen);
     efree(session);
-    if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
         return FAILURE;
     }
@@ -450,7 +443,7 @@ PS_WRITE_FUNC(redis)
         return FAILURE;
     }
 
-    if(response_len == 3 && strncmp(response, "+OK", 3) == 0) {
+    if (response_len == 3 && strncmp(response, "+OK", 3) == 0) {
         efree(response);
         return SUCCESS;
     } else {
@@ -466,27 +459,26 @@ PS_DESTROY_FUNC(redis)
 {
     char *cmd, *response, *session;
     int cmd_len, response_len, session_len;
+#if (PHP_MAJOR_VERSION < 7)
+    const char *skey = key;
+    size_t skeylen = strlen(key);
+#else
+    const char *skey = ZSTR_VAL(key);
+    size_t skeylen = ZSTR_LEN(key);
+#endif
 
     redis_pool *pool = PS_GET_MOD_DATA();
-#if (PHP_MAJOR_VERSION < 7)
-    redis_pool_member *rpm = redis_pool_get_sock(pool, key TSRMLS_CC);
-#else
-    redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(key) TSRMLS_CC);
-#endif
+    redis_pool_member *rpm = redis_pool_get_sock(pool, skey TSRMLS_CC);
     RedisSock *redis_sock = rpm?rpm->redis_sock:NULL;
-    if(!rpm || !redis_sock){
+    if (!rpm || !redis_sock){
         return FAILURE;
     }
 
     /* send DEL command */
-#if (PHP_MAJOR_VERSION < 7)
-    session = redis_session_key(rpm, key, strlen(key), &session_len);
-#else
-    session = redis_session_key(rpm, ZSTR_VAL(key), ZSTR_LEN(key), &session_len);
-#endif
+    session = redis_session_key(rpm, skey, skeylen, &session_len);
     cmd_len = REDIS_SPPRINTF(&cmd, "DEL", "s", session, session_len);
     efree(session);
-    if(redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
         return FAILURE;
     }
@@ -497,7 +489,7 @@ PS_DESTROY_FUNC(redis)
         return FAILURE;
     }
 
-    if(response_len == 2 && response[0] == ':' && (response[1] == '0' || response[1] == '1')) {
+    if (response_len == 2 && response[0] == ':' && (response[1] == '0' || response[1] == '1')) {
         efree(response);
         return SUCCESS;
     } else {
@@ -533,7 +525,7 @@ static void session_conf_timeout(HashTable *ht_conf, const char *key, int key_le
 }
 
 /* Simple helper to retreive a boolean (0 or 1) value from a string stored in our
- * session.save_path variable.  This is so the user can use 0, 1, or 'true', 
+ * session.save_path variable.  This is so the user can use 0, 1, or 'true',
  * 'false' */
 static void session_conf_bool(HashTable *ht_conf, char *key, int keylen,
                               int *retval) {
@@ -541,7 +533,7 @@ static void session_conf_bool(HashTable *ht_conf, char *key, int keylen,
     char *str;
     int strlen;
 
-    /* See if we have the option, and it's a string */   
+    /* See if we have the option, and it's a string */
     if ((z_val = zend_hash_str_find(ht_conf, key, keylen - 1)) != NULL &&
         Z_TYPE_P(z_val) == IS_STRING
     ) {
@@ -556,7 +548,7 @@ static void session_conf_bool(HashTable *ht_conf, char *key, int keylen,
 }
 
 /* Prefix a session key */
-static char *cluster_session_key(redisCluster *c, const char *key, int keylen, 
+static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
                                  int *skeylen, short *slot) {
     char *skey;
 
@@ -564,7 +556,7 @@ static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
     skey = emalloc(*skeylen);
     memcpy(skey, ZSTR_VAL(c->flags->prefix), ZSTR_LEN(c->flags->prefix));
     memcpy(skey + ZSTR_LEN(c->flags->prefix), key, keylen);
-    
+
     *slot = cluster_hash_key(skey, *skeylen);
 
     return skey;
@@ -602,7 +594,7 @@ PS_OPEN_FUNC(rediscluster) {
 
     /* Grab persistent option */
     session_conf_bool(ht_conf, "persistent", sizeof("persistent"), &persistent);
-    
+
     /* Sanity check on our timeouts */
     if (timeout < 0 || read_timeout < 0) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
@@ -647,7 +639,7 @@ PS_OPEN_FUNC(rediscluster) {
 
     /* Cleanup */
     zval_dtor(&z_conf);
-    
+
     return retval;
 }
 
@@ -671,7 +663,7 @@ PS_READ_FUNC(rediscluster) {
 
     /* Attempt to kick off our command */
     c->readonly = 1;
-    if (cluster_send_command(c,slot,cmd,cmdlen TSRMLS_CC)<0 || c->err) {
+    if (cluster_send_command(c,slot,cmd,cmdlen TSRMLS_CC) < 0 || c->err) {
         efree(cmd);
         return FAILURE;
     }
@@ -735,7 +727,7 @@ PS_WRITE_FUNC(rediscluster) {
 
     /* Attempt to send command */
     c->readonly = 0;
-    if (cluster_send_command(c,slot,cmd,cmdlen TSRMLS_CC)<0 || c->err) {
+    if (cluster_send_command(c,slot,cmd,cmdlen TSRMLS_CC) < 0 || c->err) {
         efree(cmd);
         return FAILURE;
     }
@@ -775,7 +767,7 @@ PS_DESTROY_FUNC(rediscluster) {
     efree(skey);
 
     /* Attempt to send command */
-    if (cluster_send_command(c,slot,cmd,cmdlen TSRMLS_CC)<0 || c->err) {
+    if (cluster_send_command(c,slot,cmd,cmdlen TSRMLS_CC) < 0 || c->err) {
         efree(cmd);
         return FAILURE;
     }
@@ -787,7 +779,7 @@ PS_DESTROY_FUNC(rediscluster) {
     reply = cluster_read_resp(c TSRMLS_CC);
     if (!reply || c->err) {
         if (reply) cluster_free_reply(reply, 1);
-        return FAILURE; 
+        return FAILURE;
     }
 
     /* Clean up our reply */

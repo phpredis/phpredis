@@ -25,7 +25,7 @@
 #define PHP_REDIS_H
 
 /* phpredis version */
-#define PHP_REDIS_VERSION "3.1.6"
+#define PHP_REDIS_VERSION "4.0.0"
 
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, __destruct);
@@ -46,6 +46,7 @@ PHP_METHOD(Redis, renameNx);
 PHP_METHOD(Redis, getMultiple);
 PHP_METHOD(Redis, exists);
 PHP_METHOD(Redis, delete);
+PHP_METHOD(Redis, unlink);
 PHP_METHOD(Redis, incr);
 PHP_METHOD(Redis, incrBy);
 PHP_METHOD(Redis, incrByFloat);
@@ -108,6 +109,7 @@ PHP_METHOD(Redis, pttl);
 PHP_METHOD(Redis, persist);
 PHP_METHOD(Redis, info);
 PHP_METHOD(Redis, select);
+PHP_METHOD(Redis, swapdb);
 PHP_METHOD(Redis, move);
 PHP_METHOD(Redis, zAdd);
 PHP_METHOD(Redis, zDelete);

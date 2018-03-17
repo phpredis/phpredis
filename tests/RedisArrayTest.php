@@ -18,8 +18,30 @@ function parseHostPort($str, &$host, &$port) {
     $port = substr($str, $pos+1);
 }
 
+function getRedisVersion($obj_r) {
+    $arr_info = $obj_r->info();
+    if (!$arr_info || !isset($arr_info['redis_version'])) {
+        return "0.0.0";
+    }
+    return $arr_info['redis_version'];
+}
+
+/* Determine the lowest redis version attached to this RedisArray object */
+function getMinVersion($obj_ra) {
+    $min_version = "0.0.0";
+    foreach ($obj_ra->_hosts() as $host) {
+        $version = getRedisVersion($obj_ra->_instance($host));
+        if (version_compare($version, $min_version) > 0) {
+            $min_version = $version;
+        }
+    }
+
+    return $min_version;
+}
+
 class Redis_Array_Test extends TestSuite
 {
+    private $min_version;
     private $strings;
     public $ra = NULL;
     private $data = NULL;
@@ -34,6 +56,7 @@ class Redis_Array_Test extends TestSuite
 
         global $newRing, $oldRing, $useIndex;
         $this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex));
+        $this->min_version = getMinVersion($this->ra);
     }
 
     public function testMSet() {
@@ -141,6 +164,8 @@ class Redis_Rehashing_Test extends TestSuite
     public $ra = NULL;
     private $useIndex;
 
+    private $min_version;
+
     // data
     private $strings;
     private $sets;
@@ -185,6 +210,7 @@ class Redis_Rehashing_Test extends TestSuite
 
         // create array
         $this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex));
+        $this->min_version = getMinVersion($this->ra);
     }
 
     public function testFlush() {
@@ -206,12 +232,12 @@ class Redis_Rehashing_Test extends TestSuite
         foreach($this->strings as $k => $v) {
             $this->ra->set($k, $v);
         }
-        
+
         // sets
         foreach($this->sets as $k => $v) {
             call_user_func_array(array($this->ra, 'sadd'), array_merge(array($k), $v));
         }
-        
+
         // lists
         foreach($this->lists as $k => $v) {
             call_user_func_array(array($this->ra, 'rpush'), array_merge(array($k), $v));
@@ -221,7 +247,7 @@ class Redis_Rehashing_Test extends TestSuite
         foreach($this->hashes as $k => $v) {
             $this->ra->hmset($k, $v);
         }
-        
+
         // sorted sets
         foreach($this->zsets as $k => $v) {
             call_user_func_array(array($this->ra, 'zadd'), array_merge(array($k), $v));
@@ -314,6 +340,7 @@ class Redis_Rehashing_Test extends TestSuite
 class Redis_Auto_Rehashing_Test extends TestSuite {
 
     public $ra = NULL;
+    private $min_version;
 
     // data
     private $strings;
@@ -330,6 +357,7 @@ class Redis_Auto_Rehashing_Test extends TestSuite {
 
         // create array
         $this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex, 'autorehash' => TRUE));
+        $this->min_version = getMinVersion($this->ra);
     }
 
     public function testDistribute() {
@@ -378,11 +406,14 @@ class Redis_Auto_Rehashing_Test extends TestSuite {
 // Test node-specific multi/exec
 class Redis_Multi_Exec_Test extends TestSuite {
     public $ra = NULL;
+    private $min_version;
 
     public function setUp() {
         global $newRing, $oldRing, $useIndex;
+
         // create array
         $this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex));
+        $this->min_version = getMinVersion($this->ra);
     }
 
     public function testInit() {
@@ -464,6 +495,21 @@ class Redis_Multi_Exec_Test extends TestSuite {
         $this->assertTrue($this->ra->exists('1_{employee:joe}_salary') === FALSE);
     }
 
+    public function testMutliExecUnlink() {
+        if (version_compare($this->min_version, "4.0.0", "lt")) {
+            $this->markTestSkipped();
+        }
+
+        $this->ra->set('{unlink}:key1', 'bar');
+        $this->ra->set('{unlink}:key2', 'bar');
+
+        $out = $this->ra->multi($this->ra->_target('{unlink}'))
+            ->del('{unlink}:key1', '{unlink}:key2')
+            ->exec();
+
+        $this->assertTrue($out[0] === 2);
+    }
+
     public function testDiscard() {
         /* phpredis issue #87 */
         $key = 'test_err';
@@ -502,11 +548,13 @@ class Redis_Multi_Exec_Test extends TestSuite {
 class Redis_Distributor_Test extends TestSuite {
 
     public $ra = NULL;
+    private $min_version;
 
     public function setUp() {
         global $newRing, $oldRing, $useIndex;
         // create array
         $this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex, 'distributor' => array($this, 'distribute')));
+        $this->min_version = getMinVersion($this->ra);
     }
 
     public function testInit() {
