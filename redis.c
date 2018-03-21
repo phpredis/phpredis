@@ -450,6 +450,10 @@ static zend_function_entry redis_functions[] = {
 };
 
 static const zend_module_dep redis_deps[] = {
+#ifdef PHP_SESSION
+    ZEND_MOD_REQUIRED("session")
+#endif
+    ZEND_MOD_REQUIRED("standard")
 #ifdef HAVE_REDIS_IGBINARY
      ZEND_MOD_REQUIRED("igbinary")
 #endif
