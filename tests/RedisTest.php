@@ -21,6 +21,11 @@ class Redis_Test extends TestSuite
      */
     public $redis;
 
+    /**
+     * @var string
+     */
+    protected $sessionPrefix = 'PHPREDIS_SESSION:';
+
     public function setUp() {
         $this->redis = $this->newInstance();
         $info = $this->redis->info();
@@ -5142,15 +5147,176 @@ class Redis_Test extends TestSuite
         $this->assertEquals($this->redis->lrange('mylist', 0, -1), Array('A','B','C','D'));
     }
 
-    public function testSession()
+    public function testSession_savedToRedis()
     {
-        ini_set('session.save_handler', 'redis');
-        ini_set('session.save_path', 'tcp://localhost:6379');
-        if (!@session_start()) {
-            return $this->markTestSkipped();
-        }
-        session_write_close();
-        $this->assertTrue($this->redis->exists('PHPREDIS_SESSION:' . session_id()));
+        $this->setSessionHandler();
+
+        $sessionId = $this->generateSessionId();
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false);
+
+        $this->assertTrue($this->redis->exists($this->sessionPrefix . $sessionId));
+        $this->assertTrue($sessionSuccessful);
+    }
+
+    public function testSession_lockKeyCorrect()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 5, true);
+        usleep(100000);
+
+        $this->assertTrue($this->redis->exists($this->sessionPrefix . $sessionId . '_LOCK'));
+    }
+
+    public function testSession_lockingDisabledByDefault()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 5, true, 300, false);
+        usleep(100000);
+
+        $start = microtime(true);
+        $sessionSuccessful = $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false, 300, false);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
+
+        $this->assertFalse($this->redis->exists($this->sessionPrefix . $sessionId . '_LOCK'));
+        $this->assertTrue($elapsedTime < 1);
+        $this->assertTrue($sessionSuccessful);
+    }
+
+    public function testSession_lockReleasedOnClose()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 1, true);
+        usleep(1100000);
+
+        $this->assertFalse($this->redis->exists($this->sessionPrefix . $sessionId . '_LOCK'));
+    }
+
+    public function testSession_ttlMaxExecutionTime()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 10, true, 2);
+        usleep(100000);
+
+        $start = microtime(true);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
+
+        $this->assertTrue($elapsedTime < 3);
+        $this->assertTrue($sessionSuccessful);
+    }
+
+    public function testSession_ttlLockExpire()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 10, true, 300, true, null, -1, 2);
+        usleep(100000);
+
+        $start = microtime(true);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
+
+        $this->assertTrue($elapsedTime < 3);
+        $this->assertTrue($sessionSuccessful);
+    }
+
+    public function testSession_lockHoldCheckBeforeWrite_otherProcessHasLock()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 2, true, 300, true, null, -1, 1, 'firstProcess');
+        usleep(1500000); // 1.5 sec
+        $writeSuccessful = $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 10, 'secondProcess');
+        sleep(1);
+
+        $this->assertTrue($writeSuccessful);
+        $this->assertEquals('secondProcess', $this->getSessionData($sessionId));
+    }
+
+    public function testSession_lockHoldCheckBeforeWrite_nobodyHasLock()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $writeSuccessful = $this->startSessionProcess($sessionId, 2, false, 300, true, null, -1, 1, 'firstProcess');
+
+        $this->assertFalse($writeSuccessful);
+        $this->assertTrue('firstProcess' !== $this->getSessionData($sessionId));
+    }
+
+    public function testSession_correctLockRetryCount()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 10, true);
+        usleep(100000);
+
+        $start = microtime(true);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false, 10, true, 1000000, 3);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
+
+        $this->assertTrue($elapsedTime > 3 && $elapsedTime < 4);
+        $this->assertFalse($sessionSuccessful);
+    }
+
+    public function testSession_defaultLockRetryCount()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 10, true);
+        usleep(100000);
+
+        $start = microtime(true);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false, 10, true, 200000, 0);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
+
+        $this->assertTrue($elapsedTime > 2 && $elapsedTime < 3);
+        $this->assertFalse($sessionSuccessful);
+    }
+
+    public function testSession_noUnlockOfOtherProcess()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 3, true, 1); // Process 1
+        usleep(100000);
+        $this->startSessionProcess($sessionId, 5, true);    // Process 2
+
+        $start = microtime(true);
+        // Waiting until TTL of process 1 ended and process 2 locked the session,
+        // because is not guaranteed which waiting process gets the next lock
+        sleep(1);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
+
+        $this->assertTrue($elapsedTime > 5);
+        $this->assertTrue($sessionSuccessful);
+    }
+
+    public function testSession_lockWaitTime()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 1, true, 300);
+        usleep(100000);
+
+        $start = microtime(true);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false, 300, true, 3000000);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
+
+        $this->assertTrue($elapsedTime > 2.5);
+        $this->assertTrue($elapsedTime < 3.5);
+        $this->assertTrue($sessionSuccessful);
     }
 
     public function testMultipleConnect() {
@@ -5174,6 +5340,200 @@ class Redis_Test extends TestSuite
         }  catch (Exception $e) {
             $this->assertTrue(strpos($e, "timed out") !== false);
         }
+    }
+
+    public  function testSession_regenerateSessionId_noLock_noDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_noLock_withDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, false, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_noDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_withDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_noLock_noDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, false, false, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_noLock_withDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, false, true, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_noDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true, false, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_withDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true, true, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    private function setSessionHandler()
+    {
+        $host = $this->getHost() ?: 'localhost';
+
+        ini_set('session.save_handler', 'redis');
+        ini_set('session.save_path', 'tcp://' . $host . ':6379');
+    }
+
+    /**
+     * @return string
+     */
+    private function generateSessionId()
+    {
+        if (function_exists('session_create_id')) {
+            return session_create_id();
+        } else {
+            $encoded = bin2hex(openssl_random_pseudo_bytes(8));
+            return $encoded;
+        }
+    }
+
+    /**
+     * @param string $sessionId
+     * @param int    $sleepTime
+     * @param bool   $background
+     * @param int    $maxExecutionTime
+     * @param bool   $locking_enabled
+     * @param int    $lock_wait_time
+     * @param int    $lock_retries
+     * @param int    $lock_expires
+     * @param string $sessionData
+     *
+     * @return bool
+     */
+    private function startSessionProcess($sessionId, $sleepTime, $background, $maxExecutionTime = 300, $locking_enabled = true, $lock_wait_time = null, $lock_retries = -1, $lock_expires = 0, $sessionData = '')
+    {
+        if (substr(php_uname(), 0, 7) == "Windows"){
+            $this->markTestSkipped();
+            return true;
+        } else {
+            $commandParameters = array($this->getHost(), $sessionId, $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires, $sessionData);
+            if ($locking_enabled) {
+                $commandParameters[] = '1';
+
+                if ($lock_wait_time != null) {
+                    $commandParameters[] = $lock_wait_time;
+                }
+            }
+            $commandParameters = array_map('escapeshellarg', $commandParameters);
+
+            $command = 'php ' . __DIR__ . '/startSession.php ' . implode(' ', $commandParameters);
+            $command .= $background ? ' 2>/dev/null > /dev/null &' : ' 2>&1';
+
+            exec($command, $output);
+            return ($background || (count($output) == 1 && $output[0] == 'SUCCESS')) ? true : false;
+        }
+    }
+
+    /**
+     * @param string $sessionId
+     *
+     * @return string
+     */
+    private function getSessionData($sessionId)
+    {
+        $command = 'php ' . __DIR__ . '/getSessionData.php ' . escapeshellarg($this->getHost()) . ' ' . escapeshellarg($sessionId);
+        exec($command, $output);
+
+        return $output[0];
+    }
+
+    /**
+     * @param string $sessionId
+     * @param bool   $locking
+     * @param bool   $destroyPrevious
+     * @param bool   $sessionProxy
+     *
+     * @return string
+     */
+    private function regenerateSessionId($sessionId, $locking = false, $destroyPrevious = false, $sessionProxy = false)
+    {
+	$args = array_map('escapeshellarg', array($sessionId, $locking, $destroyPrevious, $sessionProxy));
+
+        $command = 'php --no-php-ini --define extension=igbinary.so --define extension=' . __DIR__ . '/../modules/redis.so ' . __DIR__ . '/regenerateSessionId.php ' . escapeshellarg($this->getHost()) . ' ' . implode(' ', $args);
+
+        exec($command, $output);
+
+        return $output[0];
     }
 }
 ?>

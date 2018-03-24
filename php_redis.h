@@ -262,11 +262,6 @@ PHP_REDIS_API int redis_sock_read_multibulk_multi_reply_loop(
     INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, 
     int numElems);
 
-#ifndef _MSC_VER
-ZEND_BEGIN_MODULE_GLOBALS(redis)
-ZEND_END_MODULE_GLOBALS(redis)
-#endif
-
 extern zend_module_entry redis_module_entry;
 
 #define redis_module_ptr &redis_module_entry

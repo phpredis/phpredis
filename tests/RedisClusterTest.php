@@ -23,6 +23,11 @@ class Redis_Cluster_Test extends Redis_Test {
         RedisCluster::FAILOVER_DISTRIBUTE
     );
 
+    /**
+     * @var string
+     */
+    protected $sessionPrefix = 'PHPREDIS_CLUSTER_SESSION:';
+
     /* Tests we'll skip all together in the context of RedisCluster.  The 
      * RedisCluster class doesn't implement specialized (non-redis) commands
      * such as sortAsc, or sortDesc and other commands such as SELECT are
@@ -36,6 +41,21 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testDoublePipeNoOp() { return $this->markTestSkipped(); }
     public function testSwapDB() { return $this->markTestSkipped(); }
     public function testConnectException() { return $this->markTestSkipped(); }
+
+    /* Session locking feature is currently not supported in in context of Redis Cluster.
+       The biggest issue for this is the distribution nature of Redis cluster */
+    public function testSession_savedToRedis() { return $this->markTestSkipped(); }
+    public function testSession_lockKeyCorrect() { return $this->markTestSkipped(); }
+    public function testSession_lockingDisabledByDefault() { return $this->markTestSkipped(); }
+    public function testSession_lockReleasedOnClose() { return $this->markTestSkipped(); }
+    public function testSession_ttlMaxExecutionTime() { return $this->markTestSkipped(); }
+    public function testSession_ttlLockExpire() { return $this->markTestSkipped(); }
+    public function testSession_lockHoldCheckBeforeWrite_otherProcessHasLock() { return $this->markTestSkipped(); }
+    public function testSession_lockHoldCheckBeforeWrite_nobodyHasLock() { return $this->markTestSkipped(); }
+    public function testSession_correctLockRetryCount() { return $this->markTestSkipped(); }
+    public function testSession_defaultLockRetryCount() { return $this->markTestSkipped(); }
+    public function testSession_noUnlockOfOtherProcess() { return $this->markTestSkipped(); }
+    public function testSession_lockWaitTime() { return $this->markTestSkipped(); }
 
     /* Load our seeds on construction */
     public function __construct() {
