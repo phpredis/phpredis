@@ -612,9 +612,9 @@ PS_CREATE_SID_FUNC(redis)
 #endif
         char *full_session_key_nt = estrndup(full_session_key, resp_len);
         efree(full_session_key);
-        pool->lock_status->session_key = full_session_key_nt;
+        pool->lock_status.session_key = full_session_key_nt;
 
-        if (lock_acquire(redis_sock, pool->lock_status TSRMLS_CC) == SUCCESS) {
+        if (lock_acquire(redis_sock, &pool->lock_status TSRMLS_CC) == SUCCESS) {
             return sid;
         }
 
