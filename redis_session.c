@@ -713,8 +713,8 @@ PS_WRITE_FUNC(redis)
 #else
     redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(key) TSRMLS_CC);
 #endif
-    RedisSock *redis_sock = rpm?rpm->redis_sock:NULL;
-    if(!rpm || !redis_sock){
+    RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
+    if (!redis_sock) {
         return FAILURE;
     }
 
@@ -723,13 +723,13 @@ PS_WRITE_FUNC(redis)
     session = redis_session_key(rpm, key, strlen(key), &session_len);
 
     /* We need to check for PHP5 if the session key changes (a bug with session_regenerate_id() is causing a missing PS_CREATE_SID call)*/
-    int session_key_changed = strlen(pool->lock_status->session_key) != session_len || strncmp(pool->lock_status->session_key, session, session_len) != 0;
+    int session_key_changed = strlen(pool->lock_status.session_key) != session_len || strncmp(pool->lock_status.session_key, session, session_len) != 0;
     if (session_key_changed) {
-        efree(pool->lock_status->session_key);
-        pool->lock_status->session_key = estrndup(session, session_len);
+        efree(pool->lock_status.session_key);
+        pool->lock_status.session_key = estrndup(session, session_len);
     }
 
-    if (session_key_changed && lock_acquire(redis_sock, pool->lock_status TSRMLS_CC) != SUCCESS) {
+    if (session_key_changed && lock_acquire(redis_sock, &pool->lock_status TSRMLS_CC) != SUCCESS) {
         efree(session);
         return FAILURE;
     }
