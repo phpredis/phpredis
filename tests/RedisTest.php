@@ -5274,7 +5274,8 @@ class Redis_Test extends TestSuite
         $end = microtime(true);
         $elapsedTime = $end - $start;
 
-        $this->assertTrue($elapsedTime > 2.5 && $elapsedTime < 3.5);
+        $this->assertTrue($elapsedTime > 2.5);
+        $this->assertTrue($elapsedTime < 3.5);
         $this->assertTrue($sessionSuccessful);
     }
 
@@ -5286,6 +5287,110 @@ class Redis_Test extends TestSuite
             $this->redis->connect($host, $port);
             $this->assertEquals($this->redis->ping(), "+PONG");
         }
+    }
+
+    public  function testSession_regenerateSessionId_noLock_noDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_noLock_withDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, false, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_noDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_withDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_noLock_noDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, false, false, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_noLock_withDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, false, true, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_noDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true, false, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_withDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true, true, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
     }
 
     private function setSessionHandler()
@@ -5354,6 +5459,25 @@ class Redis_Test extends TestSuite
     private function getSessionData($sessionId)
     {
         $command = 'php ' . __DIR__ . '/getSessionData.php ' . escapeshellarg($this->getHost()) . ' ' . escapeshellarg($sessionId);
+        exec($command, $output);
+
+        return $output[0];
+    }
+
+    /**
+     * @param string $sessionId
+     * @param bool   $locking
+     * @param bool   $destroyPrevious
+     * @param bool   $sessionProxy
+     *
+     * @return string
+     */
+    private function regenerateSessionId($sessionId, $locking = false, $destroyPrevious = false, $sessionProxy = false)
+    {
+	$args = array_map('escapeshellarg', array($sessionId, $locking, $destroyPrevious, $sessionProxy));
+
+        $command = 'php --no-php-ini --define extension=igbinary.so --define extension=' . __DIR__ . '/../modules/redis.so ' . __DIR__ . '/regenerateSessionId.php ' . escapeshellarg($this->getHost()) . ' ' . implode(' ', $args);
+
         exec($command, $output);
 
         return $output[0];

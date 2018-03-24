@@ -62,7 +62,7 @@
 #define IS_REDIS_OK(r, len) (r != NULL && len == 3 && !memcmp(r, "+OK", 3))
 
 ps_module ps_mod_redis = {
-    PS_MOD(redis)
+    PS_MOD_SID(redis)
 };
 ps_module ps_mod_redis_cluster = {
     PS_MOD(rediscluster)
@@ -566,6 +566,73 @@ redis_session_key(redis_pool_member *rpm, const char *key, int key_len, int *ses
     return session;
 }
 
+/* {{{ PS_CREATE_SID_FUNC
+ */
+PS_CREATE_SID_FUNC(redis)
+{
+    int retries = 3;
+    redis_pool *pool = PS_GET_MOD_DATA();
+
+    if (!pool) {
+#if (PHP_MAJOR_VERSION < 7)
+        return php_session_create_id(NULL, newlen TSRMLS_CC);
+#else
+        return php_session_create_id(NULL TSRMLS_CC);
+#endif
+    }
+
+    while (retries-- > 0) {
+#if (PHP_MAJOR_VERSION < 7)
+        char* sid = php_session_create_id((void **) &pool, newlen TSRMLS_CC);
+        redis_pool_member *rpm = redis_pool_get_sock(pool, sid TSRMLS_CC);
+#else
+        zend_string* sid = php_session_create_id((void **) &pool TSRMLS_CC);
+        redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(sid) TSRMLS_CC);
+#endif
+        RedisSock *redis_sock = rpm?rpm->redis_sock:NULL;
+
+        if (!rpm || !redis_sock) {
+            php_error_docref(NULL TSRMLS_CC, E_NOTICE,
+                "Redis not available while creating session_id");
+
+#if (PHP_MAJOR_VERSION < 7)
+            efree(sid);
+            return php_session_create_id(NULL, newlen TSRMLS_CC);
+#else
+            zend_string_release(sid);
+            return php_session_create_id(NULL TSRMLS_CC);
+#endif
+        }
+
+        int resp_len;
+#if (PHP_MAJOR_VERSION < 7)
+        char *full_session_key = redis_session_key(rpm, sid, strlen(sid), &resp_len);
+#else
+        char *full_session_key = redis_session_key(rpm, ZSTR_VAL(sid), ZSTR_LEN(sid), &resp_len);
+#endif
+        char *full_session_key_nt = estrndup(full_session_key, resp_len);
+        efree(full_session_key);
+        pool->lock_status->session_key = full_session_key_nt;
+
+        if (lock_acquire(redis_sock, pool->lock_status TSRMLS_CC) == SUCCESS) {
+            return sid;
+        }
+
+#if (PHP_MAJOR_VERSION < 7)
+        efree(sid);
+#else
+        zend_string_release(sid);
+#endif
+        sid = NULL;
+    }
+
+    php_error_docref(NULL TSRMLS_CC, E_NOTICE,
+        "Acquiring session lock failed while creating session_id");
+
+    return NULL;
+}
+/* }}} */
+
 /* {{{ PS_READ_FUNC
  */
 PS_READ_FUNC(redis)
@@ -654,6 +721,19 @@ PS_WRITE_FUNC(redis)
     /* send SET command */
 #if (PHP_MAJOR_VERSION < 7)
     session = redis_session_key(rpm, key, strlen(key), &session_len);
+
+    /* We need to check for PHP5 if the session key changes (a bug with session_regenerate_id() is causing a missing PS_CREATE_SID call)*/
+    int session_key_changed = strlen(pool->lock_status->session_key) != session_len || strncmp(pool->lock_status->session_key, session, session_len) != 0;
+    if (session_key_changed) {
+        efree(pool->lock_status->session_key);
+        pool->lock_status->session_key = estrndup(session, session_len);
+    }
+
+    if (session_key_changed && lock_acquire(redis_sock, pool->lock_status TSRMLS_CC) != SUCCESS) {
+        efree(session);
+        return FAILURE;
+    }
+
     cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "sds", session, session_len,
                              INI_INT("session.gc_maxlifetime"), val, vallen);
 #else

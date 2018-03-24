@@ -9,6 +9,7 @@ PS_READ_FUNC(redis);
 PS_WRITE_FUNC(redis);
 PS_DESTROY_FUNC(redis);
 PS_GC_FUNC(redis);
+PS_CREATE_SID_FUNC(redis);
 
 PS_OPEN_FUNC(rediscluster);
 PS_CLOSE_FUNC(rediscluster);
