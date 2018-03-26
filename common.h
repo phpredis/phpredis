@@ -26,15 +26,23 @@ typedef struct {
 #define ZSTR_LEN(s) (s)->len
 
 static zend_always_inline zend_string *
-zend_string_init(const char *str, size_t len, int persistent)
+zend_string_alloc(size_t len, int persistent)
 {
-    zend_string *zstr = emalloc(sizeof(zend_string) + len + 1);
+    zend_string *zstr = emalloc(sizeof(*zstr) + len + 1);
 
-    ZSTR_VAL(zstr) = (char *)zstr + sizeof(zend_string);
-    memcpy(ZSTR_VAL(zstr), str, len);
-    ZSTR_VAL(zstr)[len] = '\0';
+    ZSTR_VAL(zstr) = (char *)zstr + sizeof(*zstr);
     zstr->len = len;
     zstr->gc = 0x01;
+    return zstr;
+}
+
+static zend_always_inline zend_string *
+zend_string_init(const char *str, size_t len, int persistent)
+{
+    zend_string *zstr = zend_string_alloc(len, persistent);
+
+    memcpy(ZSTR_VAL(zstr), str, len);
+    ZSTR_VAL(zstr)[len] = '\0';
     return zstr;
 }
 
