@@ -46,6 +46,10 @@ zend_string_init(const char *str, size_t len, int persistent)
     return zstr;
 }
 
+#define zend_string_equal_val(s1, s2) !memcmp(ZSTR_VAL(s1), ZSTR_VAL(s2), ZSTR_LEN(s1))
+#define zend_string_equal_content(s1, s2) (ZSTR_LEN(s1) == ZSTR_LEN(s2) && zend_string_equal_val(s1, s2))
+#define zend_string_equals(s1, s2) (s1 == s2 || zend_string_equal_content(s1, s2))
+
 #define zend_string_release(s) do { \
     if ((s) && (s)->gc) { \
         if ((s)->gc & 0x10 && ZSTR_VAL(s)) efree(ZSTR_VAL(s)); \
