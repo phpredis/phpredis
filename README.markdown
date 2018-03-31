@@ -804,14 +804,20 @@ _**Description**_: Verify if the specified key exists.
 *key*
 
 ##### *Return value*
-*BOOL*: If the key exists, return `TRUE`, otherwise return `FALSE`.
+*long*: The number of keys tested that do exist.
 
 ##### *Examples*
 ~~~
 $redis->set('key', 'value');
-$redis->exists('key'); /*  TRUE */
-$redis->exists('NonExistingKey'); /* FALSE */
+$redis->exists('key'); /* 1 */
+$redis->exists('NonExistingKey'); /* 0 */
+
+$redis->mset(['foo' => 'foo', 'bar' => 'bar', 'baz' => 'baz']);
+$redis->exists(['foo', 'bar', 'baz]); /* 3 */
+$redis->exists('foo', 'bar', 'baz'); /* 3 */
 ~~~
+
+**Note**: This function took a single argument and returned TRUE or FALSE in phpredis versions < 4.0.0.
 
 ### incr, incrBy
 -----
