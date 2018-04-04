@@ -91,7 +91,7 @@ dnl Check for igbinary
       PHP_SUBST(REDIS_SHARED_LIBADD)
     else
       PHP_ADD_INCLUDE(liblzf)
-      PHP_ADD_INCLUDE($ext_srcdir/liblzf)
+      PHP_ADD_INCLUDE($srcdir/liblzf)
       PHP_ADD_BUILD_DIR(liblzf)
       lzf_sources="liblzf/lzf_c.c liblzf/lzf_d.c"
     fi
