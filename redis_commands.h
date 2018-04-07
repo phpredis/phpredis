@@ -21,13 +21,6 @@ typedef struct subscribeContext {
     zend_fcall_info_cache cb_cache;
 } subscribeContext;
 
-/* Georadius sort type */
-typedef enum geoSortType {
-    SORT_NONE,
-    SORT_ASC,
-    SORT_DESC
-} geoSortType;
-
 /* Construct a raw command */
 int redis_build_raw_cmd(zval *z_args, int argc, char **cmd, int *cmd_len TSRMLS_DC);
 /* Construct a script command */

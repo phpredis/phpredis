@@ -5013,38 +5013,39 @@ class Redis_Test extends TestSuite
         $lng = -121.837478;
         $lat = 39.728494;
 
-        $this->addCities('gk');
+        $this->addCities('{gk}');
 
         /* Pre tested with redis-cli.  We're just verifying proper delivery of distance and unit */
         if ($cmd == 'georadius') {
-            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 10, 'mi'), Array('Chico'));
-            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 30, 'mi'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 50, 'km'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 50000, 'm'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 150000, 'ft'), Array('Gridley', 'Chico'));
-            $args = Array('georadius', 'gk', $lng, $lat, 500, 'mi');
+            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 10, 'mi'), Array('Chico'));
+            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 30, 'mi'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 50, 'km'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 50000, 'm'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 150000, 'ft'), Array('Gridley', 'Chico'));
+            $args = Array('georadius', '{gk}', $lng, $lat, 500, 'mi');
 
             /* Test a bad COUNT argument */
             foreach (Array(-1, 0, 'notanumber') as $count) {
-                $this->assertFalse(@$this->redis->georadius('gk', $lng, $lat, 10, 'mi', Array('count' => $count)));
+                $this->assertFalse(@$this->redis->georadius('{gk}', $lng, $lat, 10, 'mi', Array('count' => $count)));
             }
         } else {
-            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 10, 'mi'), Array('Chico'));
-            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 30, 'mi'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 50, 'km'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 50000, 'm'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 150000, 'ft'), Array('Gridley', 'Chico'));
-            $args = Array('georadiusbymember', 'gk', $city, 500, 'mi');
+            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 10, 'mi'), Array('Chico'));
+            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 30, 'mi'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 50, 'km'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 50000, 'm'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 150000, 'ft'), Array('Gridley', 'Chico'));
+            $args = Array('georadiusbymember', '{gk}', $city, 500, 'mi');
 
             /* Test a bad COUNT argument */
             foreach (Array(-1, 0, 'notanumber') as $count) {
-                $this->assertFalse(@$this->redis->georadiusbymember('gk', $city, 10, 'mi', Array('count' => $count)));
+                $this->assertFalse(@$this->redis->georadiusbymember('{gk}', $city, 10, 'mi', Array('count' => $count)));
             }
         }
 
         /* Options */
         $opts = Array('WITHCOORD', 'WITHDIST', 'WITHHASH');
         $sortopts = Array('', 'ASC', 'DESC');
+        $storeopts = Array('', 'STORE', 'STOREDIST');
 
         for ($i = 0; $i < count($opts); $i++) {
             $subopts = array_slice($opts, 0, $i);
@@ -5055,30 +5056,56 @@ class Redis_Test extends TestSuite
                 $subargs[] = $opt;
             }
 
-            for ($c = 0; $c < 3; $c++) {
-                /* Add a count if we're past first iteration */
-                if ($c > 0) {
-                    $subopts['count'] = $c;
-                    $subargs[] = 'count';
-                    $subargs[] = $c;
-                }
+            /* Cannot mix STORE[DIST] with the WITH* arguments */
+            $realstoreopts = count($subopts) == 0 ? $storeopts : Array();
 
-                /* Adding optional sort */
-                foreach ($sortopts as $sortopt) {
-                    $realargs = $subargs;
-                    $realopts = $subopts;
-                    if ($sortopt) {
-                        $realargs[] = $sortopt;
-                        $realopts[] = $sortopt;
+            $base_subargs = $subargs;
+            $base_subopts = $subopts;
+
+            foreach ($realstoreopts as $store_type) {
+
+                for ($c = 0; $c < 3; $c++) {
+                    $subargs = $base_subargs;
+                    $subopts = $base_subopts;
+
+                    /* Add a count if we're past first iteration */
+                    if ($c > 0) {
+                        $subopts['count'] = $c;
+                        $subargs[] = 'count';
+                        $subargs[] = $c;
                     }
 
-                    $ret1 = $this->rawCommandArray('gk', $realargs);
-                    if ($cmd == 'georadius') {
-                        $ret2 = $this->redis->$cmd('gk', $lng, $lat, 500, 'mi', $realopts);
-                    } else {
-                        $ret2 = $this->redis->$cmd('gk', $city, 500, 'mi', $realopts);
+                    /* Adding optional sort */
+                    foreach ($sortopts as $sortopt) {
+                        $realargs = $subargs;
+                        $realopts = $subopts;
+
+                        if ($sortopt) {
+                            $realargs[] = $sortopt;
+                            $realopts[] = $sortopt;
+                        }
+
+                        if ($store_type) {
+                            $realopts[$store_type] = "{gk}-$store_type";
+                            $realargs[] = $store_type;
+                            $realargs[] = "{gk}-$store_type";
+                        }
+
+                        $ret1 = $this->rawCommandArray('{gk}', $realargs);
+                        if ($cmd == 'georadius') {
+                            $ret2 = $this->redis->$cmd('{gk}', $lng, $lat, 500, 'mi', $realopts);
+                            if ($ret2 == false) {
+                                echo "BAD: " . implode(' ', ['{gk}', $lng, $lat, 500, 'mi']) . "\n";
+                                print_r($realopts);
+                                die();
+                            }
+                        } else {
+                            $ret2 = $this->redis->$cmd('{gk}', $city, 500, 'mi', $realopts);
+                        }
+
+                        if ($ret1 != $ret2) die();
+                        $this->assertEquals($ret1, $ret2);
                     }
-                    $this->assertEquals($ret1, $ret2);
                 }
             }
         }
