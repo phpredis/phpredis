@@ -3173,12 +3173,14 @@ The georadius command can be called with various options that control how Redis 
 |       | WITHHASH    | Return the raw geohash-encoded score
 |       | ASC         | Sort results in ascending order
 |       | DESC        | Sort results in descending order
+| STORE | _key_       | Store results in _key_
+| STOREDIST | _key_  | Store the results as distances in _key_
 
  *Note*:  It doesn't make sense to pass both `ASC` and `DESC` options but if both are passed the last one passed will be used.  
- *Note*:  PhpRedis does not currently support the `STORE` or `STOREDIST` options but will be added to future versions.
+ *Note*:  When using `STORE[DIST]` in Redis Cluster, the store key must has to the same slot as the query key or you will get a `CROSSLOT` error.
 
 ##### *Return value*
-*Array*:  Zero or more entries that are within the provided radius.
+*Mixed*:  When no `STORE` option is passed, this function returns an array of results.  If it is passed this function returns the number of stored entries.
  
 ##### *Example*
 ~~~
