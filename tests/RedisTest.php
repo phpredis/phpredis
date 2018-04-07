@@ -5094,11 +5094,6 @@ class Redis_Test extends TestSuite
                         $ret1 = $this->rawCommandArray('{gk}', $realargs);
                         if ($cmd == 'georadius') {
                             $ret2 = $this->redis->$cmd('{gk}', $lng, $lat, 500, 'mi', $realopts);
-                            if ($ret2 == false) {
-                                echo "BAD: " . implode(' ', ['{gk}', $lng, $lat, 500, 'mi']) . "\n";
-                                print_r($realopts);
-                                die();
-                            }
                         } else {
                             $ret2 = $this->redis->$cmd('{gk}', $city, 500, 'mi', $realopts);
                         }
