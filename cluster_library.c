@@ -1859,7 +1859,7 @@ PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisClust
                 for (i = 0; i < r->elements; i++) {
                     cluster_mbulk_variant_resp(r->element[i], z_arr);
                 }
-                RETVAL_ZVAL(z_arr, 1, 0);
+                RETVAL_ZVAL(z_arr, 0, 0);
                 break;
             default:
                 RETVAL_FALSE;
