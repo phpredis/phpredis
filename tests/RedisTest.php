@@ -5461,8 +5461,17 @@ class Redis_Test extends TestSuite
     {
         if (function_exists('session_create_id')) {
             return session_create_id();
+        } else if (function_exists('random_bytes')) {
+            return bin2hex(random_bytes(8));
+        } else if (function_exists('openssl_random_pseudo_bytes')) {
+            return bin2hex(openssl_random_pseudo_bytes(8));
         } else {
-            $encoded = bin2hex(openssl_random_pseudo_bytes(8));
+            /* Not cryptographically secure, but it doesn't need to be
+             * for the test.  We just want an ID */
+            $encoded = '';
+            for ($c = 0; $c < 8; $c++) {
+                $encoded .= chr(rand(65, 90));
+            }
             return $encoded;
         }
     }
