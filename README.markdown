@@ -3165,16 +3165,16 @@ _**Description**_:  Return members of a set with geospatial information that are
 ##### *Options Array*
 The georadius command can be called with various options that control how Redis returns results.  The following table describes the options phpredis supports.  All options are case insensitive.  
 
-| Key   | Value | Description
-| :---  | :---        | :---- |
-| COUNT | integer > 0 | Limit how many results are returned
-|       | WITHCOORD   | Return longitude and latitude of matching members
-|       | WITHDIST    | Return the distance from the center
-|       | WITHHASH    | Return the raw geohash-encoded score
-|       | ASC         | Sort results in ascending order
-|       | DESC        | Sort results in descending order
-| STORE | _key_       | Store results in _key_
-| STOREDIST | _key_  | Store the results as distances in _key_
+| Key       | Value       | Description
+| :---      | :---        | :---- |
+| COUNT     | integer > 0 | Limit how many results are returned
+|           | WITHCOORD   | Return longitude and latitude of matching members
+|           | WITHDIST    | Return the distance from the center
+|           | WITHHASH    | Return the raw geohash-encoded score
+|           | ASC         | Sort results in ascending order
+|           | DESC        | Sort results in descending order
+| STORE     | _key_       | Store results in _key_
+| STOREDIST | _key_       | Store the results as distances in _key_
 
  *Note*:  It doesn't make sense to pass both `ASC` and `DESC` options but if both are passed the last one passed will be used.  
  *Note*:  When using `STORE[DIST]` in Redis Cluster, the store key must has to the same slot as the query key or you will get a `CROSSLOT` error.
