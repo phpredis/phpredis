@@ -624,6 +624,28 @@ PHP_METHOD(RedisArray, _rehash)
     }
 }
 
+static void
+multihost_distribute_call(RedisArray *ra, zval *return_value, zval *z_fun, int argc, zval *argv TSRMLS_DC)
+{
+    int i;
+
+    /* Init our array return */
+    array_init(return_value);
+
+    /* Iterate our RedisArray nodes */
+    for (i = 0; i < ra->count; ++i) {
+        zval zv, *z_tmp = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+        MAKE_STD_ZVAL(z_tmp);
+#endif
+        /* Call each node in turn */
+        call_user_function(&redis_array_ce->function_table, &ra->redis[i], z_fun, z_tmp, argc, argv);
+
+        /* Add the result for this host */
+        add_assoc_zval(return_value, ra->hosts[i], z_tmp);
+    }
+}
+
 static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
 {
     zval *object, z_fun;
@@ -642,18 +664,8 @@ static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *metho
     /* prepare call */
     ZVAL_STRING(&z_fun, method_name);
 
-    array_init(return_value);
-    for(i = 0; i < ra->count; ++i) {
-        zval zv, *z_tmp = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-        MAKE_STD_ZVAL(z_tmp);
-#endif
+    multihost_distribute_call(ra, return_value, &z_fun, 0, NULL TSRMLS_CC);
 
-        /* Call each node in turn */
-        call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 0, NULL);
-
-        add_assoc_zval(return_value, ra->hosts[i], z_tmp);
-    }
     zval_dtor(&z_fun);
 }
 
@@ -714,23 +726,8 @@ PHP_METHOD(RedisArray, keys)
     /* We will be passing with one string argument (the pattern) */
     ZVAL_STRINGL(z_args, pattern, pattern_len);
 
-    /* Init our array return */
-    array_init(return_value);
+    multihost_distribute_call(ra, return_value, &z_fun, 1, z_args TSRMLS_CC);
 
-    /* Iterate our RedisArray nodes */
-    for(i = 0; i < ra->count; ++i) {
-        zval zv, *z_tmp = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-        /* Return for this node */
-        MAKE_STD_ZVAL(z_tmp);
-#endif
-
-        /* Call KEYS on each node */
-        call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 1, z_args);
-
-        /* Add the result for this host */
-        add_assoc_zval(return_value, ra->hosts[i], z_tmp);
-    }
     zval_dtor(&z_args[0]);
     zval_dtor(&z_fun);
 }
@@ -757,18 +754,8 @@ PHP_METHOD(RedisArray, getOption)
     /* copy arg */
     ZVAL_LONG(&z_args[0], opt);
 
-    array_init(return_value);
-    for(i = 0; i < ra->count; ++i) {
-        zval zv, *z_tmp = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-        MAKE_STD_ZVAL(z_tmp);
-#endif
+    multihost_distribute_call(ra, return_value, &z_fun, 1, z_args TSRMLS_CC);
 
-        /* Call each node in turn */
-        call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 1, z_args);
-
-        add_assoc_zval(return_value, ra->hosts[i], z_tmp);
-    }
     zval_dtor(&z_fun);
 }
 
@@ -797,18 +784,8 @@ PHP_METHOD(RedisArray, setOption)
     ZVAL_LONG(&z_args[0], opt);
     ZVAL_STRINGL(&z_args[1], val_str, val_len);
 
-    array_init(return_value);
-    for(i = 0; i < ra->count; ++i) {
-        zval zv, *z_tmp = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-        MAKE_STD_ZVAL(z_tmp);
-#endif
+    multihost_distribute_call(ra, return_value, &z_fun, 2, z_args TSRMLS_CC);
 
-        /* Call each node in turn */
-        call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 2, z_args);
-
-        add_assoc_zval(return_value, ra->hosts[i], z_tmp);
-    }
     zval_dtor(&z_args[1]);
     zval_dtor(&z_fun);
 }
@@ -835,20 +812,11 @@ PHP_METHOD(RedisArray, select)
     /* copy args */
     ZVAL_LONG(&z_args[0], opt);
 
-    array_init(return_value);
-    for(i = 0; i < ra->count; ++i) {
-        zval zv, *z_tmp = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-        MAKE_STD_ZVAL(z_tmp);
-#endif
+    multihost_distribute_call(ra, return_value, &z_fun, 1, z_args TSRMLS_CC);
 
-        /* Call each node in turn */
-        call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 1, z_args);
-
-        add_assoc_zval(return_value, ra->hosts[i], z_tmp);
-    }
     zval_dtor(&z_fun);
 }
+
 #if (PHP_MAJOR_VERSION < 7)
 #define HANDLE_MULTI_EXEC(ra, cmd, cmdlen) do { \
     if (ra && ra->z_multi_exec) { \
