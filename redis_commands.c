@@ -2629,7 +2629,7 @@ geoStoreType get_georadius_store_type(zend_string *key) {
 }
 
 /* Helper function to extract optional arguments for GEORADIUS and GEORADIUSBYMEMBER */
-static int get_georadius_opts(HashTable *ht, geoOptions *o TSRMLS_DC) {
+static int get_georadius_opts(HashTable *ht, geoOptions *opts TSRMLS_DC) {
     ulong idx;
     char *optstr;
     zend_string *zkey;
@@ -2647,16 +2647,16 @@ static int get_georadius_opts(HashTable *ht, geoOptions *o TSRMLS_DC) {
                 if (Z_TYPE_P(optval) != IS_LONG || Z_LVAL_P(optval) <= 0) {
                     php_error_docref(NULL TSRMLS_CC, E_WARNING,
                             "COUNT must be an integer > 0!");
-                    if (o->key) zend_string_release(o->key);
+                    if (opts->key) zend_string_release(opts->key);
                     return FAILURE;
                 }
 
                 /* Set our count */
-                o->count = Z_LVAL_P(optval);
-            } else if (o->store == STORE_NONE) {
-                o->store = get_georadius_store_type(zkey);
-                if (o->store != STORE_NONE) {
-                    o->key = zval_get_string(optval);
+                opts->count = Z_LVAL_P(optval);
+            } else if (opts->store == STORE_NONE) {
+                opts->store = get_georadius_store_type(zkey);
+                if (opts->store != STORE_NONE) {
+                    opts->key = zval_get_string(optval);
                 }
             }
         } else {
@@ -2666,25 +2666,25 @@ static int get_georadius_opts(HashTable *ht, geoOptions *o TSRMLS_DC) {
             optstr = Z_STRVAL_P(optval);
 
             if (!strcasecmp(optstr, "withcoord")) {
-                o->withcoord = 1;
+                opts->withcoord = 1;
             } else if (!strcasecmp(optstr, "withdist")) {
-                o->withdist = 1;
+                opts->withdist = 1;
             } else if (!strcasecmp(optstr, "withhash")) {
-                o->withhash = 1;
+                opts->withhash = 1;
             } else if (!strcasecmp(optstr, "asc")) {
-                o->sort = SORT_ASC;
+                opts->sort = SORT_ASC;
             } else if (!strcasecmp(optstr, "desc")) {
-                o->sort = SORT_DESC;
+                opts->sort = SORT_DESC;
             }
         }
     } ZEND_HASH_FOREACH_END();
 
     /* STORE and STOREDIST are not compatible with the WITH* options */
-    if (o->key != NULL && (o->withcoord || o->withdist || o->withhash)) {
+    if (opts->key != NULL && (opts->withcoord || opts->withdist || opts->withhash)) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "STORE[DIST] is not compatible with WITHCOORD, WITHDIST or WITHHASH");
 
-        if (o->key) zend_string_release(o->key);
+        if (opts->key) zend_string_release(opts->key);
         return FAILURE;
     }
 
