@@ -110,8 +110,8 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, del, arginfo_del, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, discard, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, exec, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, flushall, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, flushdb, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, flushall, arginfo_flush, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, flushdb, arginfo_flush, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, getOption, arginfo_getopt, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, info, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, keys, arginfo_keys, ZEND_ACC_PUBLIC)
@@ -646,10 +646,10 @@ multihost_distribute_call(RedisArray *ra, zval *return_value, zval *z_fun, int a
     }
 }
 
-static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
+static void
+multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
 {
     zval *object, z_fun;
-    int i;
     RedisArray *ra;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
@@ -669,6 +669,31 @@ static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *metho
     zval_dtor(&z_fun);
 }
 
+static void
+multihost_distribute_flush(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
+{
+    zval *object, z_fun, z_args[1];
+    zend_bool async = 0;
+    RedisArray *ra;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|b",
+                                     &object, redis_array_ce, &async) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    /* prepare call */
+    ZVAL_STRING(&z_fun, method_name);
+    ZVAL_BOOL(&z_args[0], async);
+
+    multihost_distribute_call(ra, return_value, &z_fun, 1, z_args TSRMLS_CC);
+
+    zval_dtor(&z_fun);
+}
+
 PHP_METHOD(RedisArray, info)
 {
     multihost_distribute(INTERNAL_FUNCTION_PARAM_PASSTHRU, "INFO");
@@ -681,12 +706,12 @@ PHP_METHOD(RedisArray, ping)
 
 PHP_METHOD(RedisArray, flushdb)
 {
-    multihost_distribute(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHDB");
+    multihost_distribute_flush(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHDB");
 }
 
 PHP_METHOD(RedisArray, flushall)
 {
-    multihost_distribute(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHALL");
+    multihost_distribute_flush(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHALL");
 }
 
 PHP_METHOD(RedisArray, save)
@@ -702,7 +727,7 @@ PHP_METHOD(RedisArray, bgsave)
 
 PHP_METHOD(RedisArray, keys)
 {
-    zval *object, z_args[1], z_fun;
+    zval *object, z_fun, z_args[1];
     RedisArray *ra;
     char *pattern;
     strlen_t pattern_len;
