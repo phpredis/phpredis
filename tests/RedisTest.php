@@ -5466,13 +5466,7 @@ class Redis_Test extends TestSuite
         } else if (function_exists('openssl_random_pseudo_bytes')) {
             return bin2hex(openssl_random_pseudo_bytes(8));
         } else {
-            /* Not cryptographically secure, but it doesn't need to be
-             * for the test.  We just want an ID */
-            $encoded = '';
-            for ($c = 0; $c < 8; $c++) {
-                $encoded .= chr(rand(65, 90));
-            }
-            return $encoded;
+            return uniqid();
         }
     }
 
