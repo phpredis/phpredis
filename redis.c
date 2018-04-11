@@ -82,7 +82,7 @@ PHP_INI_BEGIN()
 PHP_INI_END()
 
 /** {{{ Argument info for commands in redis 1.0 */
-ZEND_BEGIN_ARG_INFO_EX(arginfo_connect, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_connect, 0, 0, 1)
     ZEND_ARG_INFO(0, host)
     ZEND_ARG_INFO(0, port)
     ZEND_ARG_INFO(0, timeout)
@@ -122,7 +122,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_slowlog, 0, 0, 1)
     ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_pconnect, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_pconnect, 0, 0, 1)
     ZEND_ARG_INFO(0, host)
     ZEND_ARG_INFO(0, port)
     ZEND_ARG_INFO(0, timeout)
