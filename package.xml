@@ -40,7 +40,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <notes>
     phpredis 4.0.0RC1
 
-    *** WARNING! THIS RELEASE CONTAINS BRAKING API CHANGES! ***
+    *** WARNING! THIS RELEASE CONTAINS BREAKING API CHANGES! ***
 
     * Add proper ARGINFO for all methods. (Pavlo Yatsukhnenko, Michael Grunder)
     * Let EXISTS take multiple keys [cccc39] (Michael Grunder)
@@ -130,7 +130,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <notes>
     phpredis 4.0.0RC1
 
-    *** WARNING! THIS RELEASE CONTAINS BRAKING API CHANGES! ***
+    *** WARNING! THIS RELEASE CONTAINS BREAKING API CHANGES! ***
 
     * Add proper ARGINFO for all methods. (Pavlo Yatsukhnenko, Michael Grunder)
     * Let EXISTS take multiple keys [cccc39] (Michael Grunder)
