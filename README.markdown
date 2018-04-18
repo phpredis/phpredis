@@ -34,49 +34,13 @@ You can send comments, patches, questions [here on github](https://github.com/ph
 
 -----
 
-# Installing/Configuring
+# Installation
 -----
 
-Everything you should need to install PhpRedis on your system.
+For everything you should need to install PhpRedis on your system,
+see the [INSTALL.markdown](./INSTALL.markdown) page.
 
-## Installation
-
-~~~
-phpize
-./configure [--enable-redis-igbinary]
-make && make install
-~~~
-
-If you would like phpredis to serialize your data using the igbinary library, run configure with `--enable-redis-igbinary`.
-`make install` copies `redis.so` to an appropriate location, but you still need to enable the module in the PHP config file. To do so, either edit your php.ini or add a redis.ini file in `/etc/php5/conf.d` with the following contents: `extension=redis.so`.
-
-You can generate a debian package for PHP5, accessible from Apache 2 by running `./mkdeb-apache2.sh` or with `dpkg-buildpackage` or `svn-buildpackage`.
-
-This extension exports a single class, [Redis](#class-redis) (and [RedisException](#class-redisexception) used in case of errors). Check out https://github.com/ukko/phpredis-phpdoc for a PHP stub that you can use in your IDE for code completion.
-
-
-## Installation on OSX
-
-If the install fails on OSX, type the following commands in your shell before trying again:
-~~~
-MACOSX_DEPLOYMENT_TARGET=10.6
-CFLAGS="-arch i386 -arch x86_64 -g -Os -pipe -no-cpp-precomp"
-CCFLAGS="-arch i386 -arch x86_64 -g -Os -pipe"
-CXXFLAGS="-arch i386 -arch x86_64 -g -Os -pipe"
-LDFLAGS="-arch i386 -arch x86_64 -bind_at_load"
-export CFLAGS CXXFLAGS LDFLAGS CCFLAGS MACOSX_DEPLOYMENT_TARGET
-~~~
-
-If that still fails and you are running Zend Server CE, try this right before "make": `./configure CFLAGS="-arch i386"`.
-
-Taken from [Compiling phpredis on Zend Server CE/OSX ](http://www.tumblr.com/tagged/phpredis).
-
-See also: [Install Redis & PHP Extension PHPRedis with Macports](http://www.lecloud.net/post/3378834922/install-redis-php-extension-phpredis-with-macports).
-
-You can install it using Homebrew:
-
-- [Get homebrew-php](https://github.com/Homebrew/homebrew-php)
-- `brew install php55-redis` (or php53-redis, php54-redis)
+# Configuration
 
 ## PHP Session handler
 
@@ -100,18 +64,13 @@ The session handler requires a version of Redis with the `SETEX` command (at lea
 phpredis can also connect to a unix domain socket: `session.save_path = "unix:///var/run/redis/redis.sock?persistent=1&weight=1&database=0`.
 
 
-## Building on Windows
-
-See [instructions from @char101](https://github.com/phpredis/phpredis/issues/213#issuecomment-11361242) on how to build phpredis on Windows.
-
-
 ## Distributed Redis Array
 
-See [dedicated page](https://github.com/phpredis/phpredis/blob/master/arrays.markdown#readme).
+See [dedicated page](./arrays.markdown#readme).
 
 ## Redis Cluster support
 
-See [dedicated page](https://github.com/phpredis/phpredis/blob/develop/cluster.markdown#readme).
+See [dedicated page](./cluster.markdown#readme).
 
 ## Running the unit tests
 
