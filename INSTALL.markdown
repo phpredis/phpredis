@@ -12,11 +12,12 @@ To build this extension for the sources tree:
 
 ~~~
 phpize
-./configure [--enable-redis-igbinary]
+./configure [--enable-redis-igbinary] [--enable-redis-lzf [--with-liblzf[=DIR]]]
 make && make install
 ~~~
 
 If you would like phpredis to serialize your data using the igbinary library, run configure with `--enable-redis-igbinary`.
+The extension also may compress data before sending it to Redis server, if you run configure with `--enable-redis-lzf`. If you want to use lzf library pre-installed into your system use `--with-liblzf` configuration option to specify the path where to search files.
 `make install` copies `redis.so` to an appropriate location, but you still need to enable the module in the PHP config file. To do so, either edit your php.ini or add a redis.ini file in `/etc/php5/conf.d` with the following contents: `extension=redis.so`.
 
 You can generate a debian package for PHP5, accessible from Apache 2 by running `./mkdeb-apache2.sh` or with `dpkg-buildpackage` or `svn-buildpackage`.
