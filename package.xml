@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2018-03-17</date>
+ <date>2018-04-18</date>
  <version>
-  <release>4.0.0</release>
-  <api>4.0.0</api>
+  <release>4.0.1</release>
+  <api>4.0.1</api>
  </version>
  <stability>
   <release>stable</release>
@@ -38,27 +38,13 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 4.0.0
+    phpredis 4.0.1
 
-    *** WARNING! THIS RELEASE CONTAINS BREAKING API CHANGES! ***
-
-    * Add proper ARGINFO for all methods. (Pavlo Yatsukhnenko, Michael Grunder)
-    * Let EXISTS take multiple keys [cccc39] (Michael Grunder)
-    * Use zend_string as returning value for ra_extract_key and ra_call_extractor [9cd05911] (Pavlo Yatsukhnenko)
-    * Implement SWAPDB and UNLINK commands [84f1f28b, 9e65c429] (Michael Grunder)
-    * Return real connection error as exception [5b9c0c60] (Pavlo Yatsukhnenko, Michael Grunder)
-    * Disallow using empty string as session name. [485db46f] (Pavlo Yatsukhnenko)
-    * Use zend_string for storing auth and prefix members [4b8336f7] (Pavlo Yatsukhnenko)
-    * The element of z_seeds may be a reference on php7 [367bc6aa, 1e63717a] (@janic716)
-    * Avoid connection in helper methods [91e9cfe1] (Pavlo Yatsukhnenko)
-    * Add tcp_keepalive option to redis sock [68c58513, 5101172a, 010336d5, 51e48729] (@git-hulk, Michael Grunder)
-    * More robust GEORADIUS COUNT validation [f7edee5d] (Michael Grunder)
-    * Add LZF compression (experimental) [e2c51251, 8cb2d5bd, 8657557] (Pavlo Yatsukhnenko)
-    * Allow to use empty string as persistant_id [ec4fd1bd] (Pavlo Yatsukhnenko)
-    * Don't use convert_to_string in redis_hmget_cmd [99335d6] (Pavlo Yatsukhnenko)
-    * Allow mixing MULTI and PIPELINE modes (experimental) [5874b0] (Pavlo Yatsukhnenko)
-    * PHP >=7.3.0 uses zend_string to store `php_url` elements [b566fb44] (@fmk)
-    * Documentation improvements (Michael Grunder, @TomA-R)
+    * Fix arginfo for connect/pconnect issue #1337 [c3b228] (@mathroc)
+    * Don't leak a ZVAL [278232] (Michael Grunder)
+    * Fix config.m4 for lzf issue #1325 [20e173] (Pavlo Yatsukhnenko)
+    * Updates EXISTS documentation and notes change in 4.0.0 [bed186] (Michael Grunder)
+    * Fix typo in notes [0bed36] (@szepeviktor)
  </notes>
  <contents>
   <dir name="/">
@@ -123,6 +109,21 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>4.0.1</release><api>4.0.1</api></version>
+   <date>2018-04-18</date>
+   <notes>
+      phpredis 4.0.1
+
+      * Fix arginfo for connect/pconnect issue #1337 [c3b228] (@mathroc)
+      * Don't leak a ZVAL [278232] (Michael Grunder)
+      * Fix config.m4 for lzf issue #1325 [20e173] (Pavlo Yatsukhnenko)
+      * Updates EXISTS documentation and notes change in 4.0.0 [bed186] (Michael Grunder)
+      * Fix typo in notes [0bed36] (@szepeviktor)
+   </notes>
+   </release>
+
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>4.0.0</release><api>4.0.0</api></version>
