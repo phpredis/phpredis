@@ -108,6 +108,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_config, 0, 0, 2)
     ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_flush, 0, 0, 0)
+    ZEND_ARG_INFO(0, async)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pubsub, 0, 0, 1)
     ZEND_ARG_INFO(0, cmd)
 #if PHP_VERSION_ID >= 50600

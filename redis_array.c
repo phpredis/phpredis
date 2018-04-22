@@ -97,6 +97,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_multi, 0, 0, 1)
     ZEND_ARG_INFO(0, mode)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_flush, 0, 0, 0)
+    ZEND_ARG_INFO(0, async)
+ZEND_END_ARG_INFO()
+
 zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, __call, arginfo_call, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, __construct, arginfo_ctor, ZEND_ACC_PUBLIC)
