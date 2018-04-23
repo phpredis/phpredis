@@ -108,6 +108,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_config, 0, 0, 2)
     ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_flush, 0, 0, 0)
+    ZEND_ARG_INFO(0, async)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pubsub, 0, 0, 1)
     ZEND_ARG_INFO(0, cmd)
 #if PHP_VERSION_ID >= 50600
@@ -267,8 +271,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, exec, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, exists, arginfo_exists, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, expireAt, arginfo_key_timestamp, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, flushAll, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, flushDB, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, flushAll, arginfo_flush, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, flushDB, arginfo_flush, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, geoadd, arginfo_geoadd, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, geodist, arginfo_geodist, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, geohash, arginfo_key_members, ZEND_ACC_PUBLIC)
@@ -1736,17 +1740,17 @@ PHP_METHOD(Redis, lastSave)
 }
 /* }}} */
 
-/* {{{ proto bool Redis::flushDB() */
+/* {{{ proto bool Redis::flushDB([bool async]) */
 PHP_METHOD(Redis, flushDB)
 {
-    REDIS_PROCESS_KW_CMD("FLUSHDB", redis_empty_cmd, redis_boolean_response);
+    REDIS_PROCESS_KW_CMD("FLUSHDB", redis_flush_cmd, redis_boolean_response);
 }
 /* }}} */
 
-/* {{{ proto bool Redis::flushAll() */
+/* {{{ proto bool Redis::flushAll([bool async]) */
 PHP_METHOD(Redis, flushAll)
 {
-    REDIS_PROCESS_KW_CMD("FLUSHALL", redis_empty_cmd, redis_boolean_response);
+    REDIS_PROCESS_KW_CMD("FLUSHALL", redis_flush_cmd, redis_boolean_response);
 }
 /* }}} */
 

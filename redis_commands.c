@@ -415,6 +415,24 @@ int redis_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int redis_flush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+               char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    zend_bool async = 0;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|b", &async) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (async) {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "s", "ASYNC", sizeof("ASYNC") - 1);
+    } else {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "");
+    }
+
+    return SUCCESS;
+}
+
 /* Generic command where we take a key and a double */
 int redis_key_dbl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char *kw, char **cmd, int *cmd_len, short *slot,

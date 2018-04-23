@@ -84,6 +84,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_info, 0, 0, 1)
     ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_flush, 0, 0, 1)
+    ZEND_ARG_INFO(0, key_or_address)
+    ZEND_ARG_INFO(0, async)
+ZEND_END_ARG_INFO()
+
 /* Argument info for HSCAN, SSCAN, HSCAN */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan_cl, 0, 0, 2)
     ZEND_ARG_INFO(0, str_key)
@@ -136,8 +141,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, exists, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, expire, arginfo_expire, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, expireat, arginfo_key_timestamp, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, flushall, arginfo_key_or_address, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, flushdb, arginfo_key_or_address, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, flushall, arginfo_flush, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, flushdb, arginfo_flush, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, geoadd, arginfo_geoadd, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, geodist, arginfo_geodist, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, geohash, arginfo_key_members, ZEND_ACC_PUBLIC)
@@ -2334,6 +2339,50 @@ cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
     efree(cmd);
 }
 
+static void
+cluster_flush_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, REDIS_REPLY_TYPE reply_type, cluster_cb cb)
+{
+    redisCluster *c = GET_CONTEXT();
+    char *cmd;
+    int cmd_len;
+    zval *z_arg;
+    zend_bool async = 0;
+    short slot;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|b", &z_arg, &async) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    // One argument means find the node (treated like a key), and two means
+    // send the command to a specific host and port
+    slot = cluster_cmd_get_slot(c, z_arg TSRMLS_CC);
+    if (slot < 0) {
+        RETURN_FALSE;
+    }
+
+    // Construct our command
+    if (async) {
+        cmd_len = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, kw, "s", "ASYNC", sizeof("ASYNC") - 1);
+    } else {
+        cmd_len = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, kw, "");
+    }
+
+
+    // Kick off our command
+    if (cluster_send_slot(c, slot, cmd, cmd_len, reply_type TSRMLS_CC) < 0) {
+        zend_throw_exception(redis_cluster_exception_ce,
+            "Unable to send command at a specific node", 0 TSRMLS_CC);
+        efree(cmd);
+        RETURN_FALSE;
+    }
+
+    // Our response callback
+    cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+
+    // Free our command
+    efree(cmd);
+}
+
 /* Generic routine for handling various commands which need to be directed at
  * a node, but have complex syntax.  We simply parse out the arguments and send
  * the command as constructed by the caller */
@@ -2611,18 +2660,18 @@ PHP_METHOD(RedisCluster, bgsave) {
 }
 /* }}} */
 
-/* {{{ proto RedisCluster::flushdb(string key)
- *     proto RedisCluster::flushdb(string host, long port) */
+/* {{{ proto RedisCluster::flushdb(string key, [bool async])
+ *     proto RedisCluster::flushdb(array host_port, [bool async]) */
 PHP_METHOD(RedisCluster, flushdb) {
-    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHDB",
+    cluster_flush_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHDB",
         TYPE_LINE, cluster_bool_resp);
 }
 /* }}} */
 
-/* {{{ proto RedisCluster::flushall(string key)
- *     proto RedisCluster::flushall(string host, long port) */
+/* {{{ proto RedisCluster::flushall(string key, [bool async])
+ *     proto RedisCluster::flushall(array host_port, [bool async]) */
 PHP_METHOD(RedisCluster, flushall) {
-    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHALL",
+    cluster_flush_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHALL",
         TYPE_LINE, cluster_bool_resp);
 }
 /* }}} */
