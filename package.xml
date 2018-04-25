@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2018-04-18</date>
+ <date>2018-04-25</date>
  <version>
-  <release>4.0.1</release>
-  <api>4.0.1</api>
+  <release>4.0.2</release>
+  <api>4.0.2</api>
  </version>
  <stability>
   <release>stable</release>
@@ -38,13 +38,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 4.0.1
+    phpredis 4.0.2
 
-    * Fix arginfo for connect/pconnect issue #1337 [c3b228] (@mathroc)
-    * Don't leak a ZVAL [278232] (Michael Grunder)
-    * Fix config.m4 for lzf issue #1325 [20e173] (Pavlo Yatsukhnenko)
-    * Updates EXISTS documentation and notes change in 4.0.0 [bed186] (Michael Grunder)
-    * Fix typo in notes [0bed36] (@szepeviktor)
+    This release contains only fix of exists method to take multiple keys
+    and return integer value (was broken in 4.0.1) Thanks @RanjanRohit!
  </notes>
  <contents>
   <dir name="/">
@@ -109,6 +106,18 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>4.0.2</release><api>4.0.2</api></version>
+   <date>2018-04-25</date>
+   <notes>
+      phpredis 4.0.2
+
+      This release contains only fix of exists method to take multiple keys
+      and return integer value (was broken in 4.0.1) Thanks @RanjanRohit!
+   </notes>
+   </release>
+
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>4.0.1</release><api>4.0.1</api></version>
