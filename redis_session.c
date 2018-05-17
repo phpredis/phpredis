@@ -61,9 +61,16 @@
 /* Check if a response is the Redis +OK status response */
 #define IS_REDIS_OK(r, len) (r != NULL && len == 3 && !memcmp(r, "+OK", 3))
 
+#if (PHP_MAJOR_VERSION < 7)
+ps_module ps_mod_redis = {
+    PS_MOD_SID(redis)
+};
+#else
 ps_module ps_mod_redis = {
     PS_MOD_UPDATE_TIMESTAMP(redis)
 };
+#endif
+
 ps_module ps_mod_redis_cluster = {
     PS_MOD(rediscluster)
 };
