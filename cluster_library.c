@@ -146,7 +146,7 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
                 r->integer = len;
                 break;
             case TYPE_BULK:
-                if (r->len > 0) {
+                if (r->len >= 0) {
                     r->str = redis_sock_read_bulk_reply(sock,r->len TSRMLS_CC);
                     if (!r->str) {
                         *err = 1;
