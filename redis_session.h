@@ -10,6 +10,8 @@ PS_WRITE_FUNC(redis);
 PS_DESTROY_FUNC(redis);
 PS_GC_FUNC(redis);
 PS_CREATE_SID_FUNC(redis);
+PS_VALIDATE_SID_FUNC(redis);
+PS_UPDATE_TIMESTAMP_FUNC(redis);
 
 PS_OPEN_FUNC(rediscluster);
 PS_CLOSE_FUNC(rediscluster);
