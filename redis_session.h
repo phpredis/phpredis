@@ -11,6 +11,11 @@ PS_DESTROY_FUNC(redis);
 PS_GC_FUNC(redis);
 PS_CREATE_SID_FUNC(redis);
 
+#if (PHP_MAJOR_VERSION >= 7)
+PS_VALIDATE_SID_FUNC(redis);
+PS_UPDATE_TIMESTAMP_FUNC(redis);
+#endif
+
 PS_OPEN_FUNC(rediscluster);
 PS_CLOSE_FUNC(rediscluster);
 PS_READ_FUNC(rediscluster);
