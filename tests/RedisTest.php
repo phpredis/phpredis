@@ -5217,7 +5217,7 @@ class Redis_Test extends TestSuite
         $this->assertFalse($this->redis->exists($this->sessionPrefix . $sessionId . '_LOCK'));
     }
 
-    public function testSession_ttlMaxExecutionTime()
+    public function testSession_lock_ttlMaxExecutionTime()
     {
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
@@ -5233,7 +5233,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue($sessionSuccessful);
     }
 
-    public function testSession_ttlLockExpire()
+    public function testSession_lock_ttlLockExpire()
     {
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
@@ -5468,6 +5468,37 @@ class Redis_Test extends TestSuite
         $this->assertEquals('bar', $this->getSessionData($newSessionId));
     }
 
+    public function testSession_ttl_equalsToSessionLifetime()
+    {
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 0, 'test', 600);
+        $ttl = $this->redis->ttl($this->sessionPrefix . $sessionId);
+
+        $this->assertEquals(600, $ttl);
+    }
+
+    public function testSession_ttl_resetOnWrite()
+    {
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 0, 'test', 600);
+        $this->redis->expire($this->sessionPrefix . $sessionId, 9999);
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 0, 'test', 600);
+        $ttl = $this->redis->ttl($this->sessionPrefix . $sessionId);
+
+        $this->assertEquals(600, $ttl);
+    }
+
+    public function testSession_ttl_resetOnRead()
+    {
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 0, 'test', 600);
+        $this->redis->expire($this->sessionPrefix . $sessionId, 9999);
+        $this->getSessionData($sessionId);
+        $ttl = $this->redis->ttl($this->sessionPrefix . $sessionId);
+
+        $this->assertEquals(600, $ttl);
+    }
+
     private function setSessionHandler()
     {
         $host = $this->getHost() ?: 'localhost';
@@ -5503,15 +5534,18 @@ class Redis_Test extends TestSuite
      * @param int    $lock_expires
      * @param string $sessionData
      *
+     * @param int    $sessionLifetime
+     *
      * @return bool
+     * @throws Exception
      */
-    private function startSessionProcess($sessionId, $sleepTime, $background, $maxExecutionTime = 300, $locking_enabled = true, $lock_wait_time = null, $lock_retries = -1, $lock_expires = 0, $sessionData = '')
+    private function startSessionProcess($sessionId, $sleepTime, $background, $maxExecutionTime = 300, $locking_enabled = true, $lock_wait_time = null, $lock_retries = -1, $lock_expires = 0, $sessionData = '', $sessionLifetime = 1440)
     {
         if (substr(php_uname(), 0, 7) == "Windows"){
             $this->markTestSkipped();
             return true;
         } else {
-            $commandParameters = array($this->getHost(), $sessionId, $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires, $sessionData);
+            $commandParameters = array($this->getHost(), $sessionId, $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires, $sessionData, $sessionLifetime);
             if ($locking_enabled) {
                 $commandParameters[] = '1';
 
