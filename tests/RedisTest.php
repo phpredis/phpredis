@@ -5493,7 +5493,7 @@ class Redis_Test extends TestSuite
         $sessionId = $this->generateSessionId();
         $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 0, 'test', 600);
         $this->redis->expire($this->sessionPrefix . $sessionId, 9999);
-        $this->getSessionData($sessionId);
+        $this->getSessionData($sessionId, 600);
         $ttl = $this->redis->ttl($this->sessionPrefix . $sessionId);
 
         $this->assertEquals(600, $ttl);
@@ -5565,12 +5565,13 @@ class Redis_Test extends TestSuite
 
     /**
      * @param string $sessionId
+     * @param int    $sessionLifetime
      *
      * @return string
      */
-    private function getSessionData($sessionId)
+    private function getSessionData($sessionId, $sessionLifetime = 1440)
     {
-        $command = 'php ' . __DIR__ . '/getSessionData.php ' . escapeshellarg($this->getHost()) . ' ' . escapeshellarg($sessionId);
+        $command = 'php ' . __DIR__ . '/getSessionData.php ' . escapeshellarg($this->getHost()) . ' ' . escapeshellarg($sessionId) . ' ' . escapeshellarg($sessionLifetime);
         exec($command, $output);
 
         return $output[0];
