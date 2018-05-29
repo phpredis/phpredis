@@ -61,15 +61,13 @@
 /* Check if a response is the Redis +OK status response */
 #define IS_REDIS_OK(r, len) (r != NULL && len == 3 && !memcmp(r, "+OK", 3))
 
+ps_module ps_mod_redis = {
 #if (PHP_MAJOR_VERSION < 7)
-ps_module ps_mod_redis = {
     PS_MOD_SID(redis)
-};
 #else
-ps_module ps_mod_redis = {
     PS_MOD_UPDATE_TIMESTAMP(redis)
-};
 #endif
+};
 
 ps_module ps_mod_redis_cluster = {
     PS_MOD(rediscluster)
@@ -650,13 +648,9 @@ PS_VALIDATE_SID_FUNC(redis)
 {
     char *cmd, *response;
     int cmd_len, response_len;
-#if (PHP_MAJOR_VERSION < 7)
-    const char *skey = key;
-    size_t skeylen = strlen(key);
-#else
+
     const char *skey = ZSTR_VAL(key);
     size_t skeylen = ZSTR_LEN(key);
-#endif
 
     if (!skeylen) return FAILURE;
 
@@ -691,27 +685,25 @@ PS_VALIDATE_SID_FUNC(redis)
     }
 }
 /* }}} */
+#endif
 
+#if (PHP_MAJOR_VERSION >= 7)
 /* {{{ PS_UPDATE_TIMESTAMP_FUNC
  */
 PS_UPDATE_TIMESTAMP_FUNC(redis)
 {
     char *cmd, *response;
     int cmd_len, response_len;
-#if (PHP_MAJOR_VERSION < 7)
-    const char *skey = key, *sval = val;
-    size_t skeylen = strlen(key), svallen = vallen;
-#else
+
     const char *skey = ZSTR_VAL(key), *sval = ZSTR_VAL(val);
     size_t skeylen = ZSTR_LEN(key), svallen = ZSTR_LEN(val);
-#endif
 
     if (!skeylen) return FAILURE;
 
     redis_pool *pool = PS_GET_MOD_DATA();
     redis_pool_member *rpm = redis_pool_get_sock(pool, skey TSRMLS_CC);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
-    if (!redis_sock) {
+    if (!redis_sock || !write_allowed(redis_sock, &pool->lock_status TSRMLS_CC)) {
         return FAILURE;
     }
 
@@ -720,7 +712,7 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
     cmd_len = REDIS_SPPRINTF(&cmd, "EXPIRE", "Sd", session, INI_INT("session.gc_maxlifetime"));
     zend_string_release(session);
 
-    if (!write_allowed(redis_sock, &pool->lock_status TSRMLS_CC) || redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len TSRMLS_CC) < 0) {
         efree(cmd);
         return FAILURE;
     }
