@@ -368,7 +368,7 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
 
 PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     int failover, int persistent);
-PHP_REDIS_API void cluster_free(redisCluster *c);
+PHP_REDIS_API void cluster_free(redisCluster *c, int free_ctx TSRMLS_DC);
 PHP_REDIS_API int cluster_init_seeds(redisCluster *c, HashTable *ht_seeds);
 PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC);
 PHP_REDIS_API void cluster_free_node(redisClusterNode *node);

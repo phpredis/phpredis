@@ -362,34 +362,26 @@ create_cluster_context(zend_class_entry *class_type TSRMLS_DC) {
 }
 
 /* Free redisCluster context */
+#if (PHP_MAJOR_VERSION < 7)
 void
-#if (PHP_MAJOR_VERSION < 7)
-free_cluster_context(void *object TSRMLS_DC) {
+free_cluster_context(void *object TSRMLS_DC)
+{
     redisCluster *cluster = (redisCluster*)object;
-#else
-free_cluster_context(zend_object *object) {
-    redisCluster *cluster = (redisCluster*)((char*)(object) - XtOffsetOf(redisCluster, std));
-#endif
-    // Free any allocated prefix, as well as the struct
-    if (cluster->flags->prefix) efree(cluster->flags->prefix);
-    efree(cluster->flags);
 
-    // Free seeds HashTable itself
-    zend_hash_destroy(cluster->seeds);
-    efree(cluster->seeds);
-
-    // Destroy all Redis objects and free our nodes HashTable
-    zend_hash_destroy(cluster->nodes);
-    efree(cluster->nodes);
-
-    if (cluster->err) zend_string_release(cluster->err);
-
+    cluster_free(cluster, 0 TSRMLS_CC);
     zend_object_std_dtor(&cluster->std TSRMLS_CC);
-
-#if (PHP_MAJOR_VERSION < 7)
     efree(cluster);
-#endif
 }
+#else
+void
+free_cluster_context(zend_object *object)
+{
+    redisCluster *cluster = (redisCluster*)((char*)(object) - XtOffsetOf(redisCluster, std));
+
+    cluster_free(cluster, 0 TSRMLS_CC);
+    zend_object_std_dtor(&cluster->std TSRMLS_CC);
+}
+#endif
 
 /* Attempt to connect to a Redis cluster provided seeds and timeout options */
 void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,

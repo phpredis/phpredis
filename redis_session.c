@@ -947,7 +947,7 @@ PS_OPEN_FUNC(rediscluster) {
         PS_SET_MOD_DATA(c);
         retval = SUCCESS;
     } else {
-        cluster_free(c);
+        cluster_free(c, 1 TSRMLS_CC);
         retval = FAILURE;
     }
 
@@ -1108,7 +1108,7 @@ PS_CLOSE_FUNC(rediscluster)
 {
     redisCluster *c = PS_GET_MOD_DATA();
     if (c) {
-        cluster_free(c);
+        cluster_free(c, 1 TSRMLS_CC);
         PS_SET_MOD_DATA(NULL);
     }
     return SUCCESS;

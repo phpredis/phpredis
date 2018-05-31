@@ -831,9 +831,14 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     return c;
 }
 
-PHP_REDIS_API void cluster_free(redisCluster *c) {
+PHP_REDIS_API void
+cluster_free(redisCluster *c, int free_ctx TSRMLS_DC)
+{
+    /* Disconnect from each node we're connected to */
+    cluster_disconnect(c TSRMLS_CC);
+
     /* Free any allocated prefix */
-    if (c->flags->prefix) efree(c->flags->prefix);
+    if (c->flags->prefix) zend_string_release(c->flags->prefix);
     efree(c->flags);
 
     /* Call hash table destructors */
@@ -848,7 +853,7 @@ PHP_REDIS_API void cluster_free(redisCluster *c) {
     if (c->err) zend_string_release(c->err);
 
     /* Free structure itself */
-    efree(c);
+    if (free_ctx) efree(c);
 }
 
 /* Takes our input hash table and returns a straigt C array with elements,
@@ -1069,7 +1074,7 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c TSRMLS_DC) {
     redisClusterNode *node;
 
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
-        if (node == NULL) break;
+        if (node == NULL) continue;
         redis_sock_disconnect(node->sock TSRMLS_CC);
         node->sock->lazy_connect = 1;
     } ZEND_HASH_FOREACH_END();
