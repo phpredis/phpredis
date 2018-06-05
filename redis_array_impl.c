@@ -72,7 +72,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
         redis = PHPREDIS_GET_OBJECT(redis_object, &ra->redis[i]);
 
         /* create socket */
-        redis->sock = redis_sock_create(host, host_len, port, ra->connect_timeout, ra->read_timeout, ra->pconnect, NULL, retry_interval, b_lazy_connect);
+        redis->sock = redis_sock_create(host, host_len, port, NULL, 0, ra->connect_timeout, ra->read_timeout, ra->pconnect, NULL, retry_interval, b_lazy_connect);
 
         if (!b_lazy_connect)
         {
