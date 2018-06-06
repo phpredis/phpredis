@@ -28,6 +28,11 @@ class Redis_Cluster_Test extends Redis_Test {
      */
     protected $sessionPrefix = 'PHPREDIS_CLUSTER_SESSION:';
 
+    /**
+     * @var string
+     */
+    protected $sessionSaveHandler = 'rediscluster';
+
     /* Tests we'll skip all together in the context of RedisCluster.  The 
      * RedisCluster class doesn't implement specialized (non-redis) commands
      * such as sortAsc, or sortDesc and other commands such as SELECT are
@@ -44,7 +49,6 @@ class Redis_Cluster_Test extends Redis_Test {
 
     /* Session locking feature is currently not supported in in context of Redis Cluster.
        The biggest issue for this is the distribution nature of Redis cluster */
-    public function testSession_savedToRedis() { return $this->markTestSkipped(); }
     public function testSession_lockKeyCorrect() { return $this->markTestSkipped(); }
     public function testSession_lockingDisabledByDefault() { return $this->markTestSkipped(); }
     public function testSession_lockReleasedOnClose() { return $this->markTestSkipped(); }
@@ -596,8 +600,8 @@ class Redis_Cluster_Test extends Redis_Test {
 
     public function testSession()
     {
-        ini_set('session.save_handler', 'rediscluster');
-        ini_set('session.save_path', implode('&', array_map(function ($seed) {
+        @ini_set('session.save_handler', 'rediscluster');
+        @ini_set('session.save_path', implode('&', array_map(function ($seed) {
             return 'seed[]=' . $seed;
         }, self::$_arr_node_map)) . '&failover=error');
         if (!@session_start()) {
@@ -605,6 +609,18 @@ class Redis_Cluster_Test extends Redis_Test {
         }
         session_write_close();
         $this->assertTrue($this->redis->exists('PHPREDIS_CLUSTER_SESSION:' . session_id()));
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function getFullHostPath()
+    {
+        $hosts = array_map(function ($host) {
+            return 'seed[]=' . $host . '';
+        }, self::$_arr_node_map);
+
+        return implode('&', $hosts);
     }
 }
 ?>
