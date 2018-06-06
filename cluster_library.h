@@ -52,11 +52,26 @@
     memcmp(ZSTR_VAL(SLOT_SOCK(c,c->redir_slot)->host),c->redir_host,c->redir_host_len))
 
 /* Lazy connect logic */
+#if 0
 #define CLUSTER_LAZY_CONNECT(s) \
     if(s->lazy_connect) { \
         s->lazy_connect = 0; \
         redis_sock_server_open(s TSRMLS_CC); \
     }
+#endif
+#define CLUSTER_LAZY_CONNECT(s) \
+    int needs_auth = 0;   \
+    if(s->lazy_connect) { \
+        s->lazy_connect = 0; \
+        if(s->auth && s->status != REDIS_SOCK_STATUS_CONNECTED) {\
+            needs_auth = 1;\
+        }\
+        redis_sock_server_open(s TSRMLS_CC); \
+        if(needs_auth) {\
+            resend_auth(s TSRMLS_CC);\
+        }\
+    }
+
 
 /* Clear out our "last error" */
 #define CLUSTER_CLEAR_ERROR(c) do { \
@@ -176,6 +191,10 @@ typedef struct redisCluster {
 #if (PHP_MAJOR_VERSION < 7)
     zend_object std;
 #endif
+
+    /*RedisCluster auth*/
+    char *auth;
+    int auth_len;
 
     /* Timeout and read timeout (for normal operations) */
     double timeout;
@@ -367,7 +386,7 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
     int cmd_len, REDIS_REPLY_TYPE rtype TSRMLS_DC);
 
 PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
-    int failover, int persistent);
+    int failover, int persistent, char *auth, int auth_len);
 PHP_REDIS_API void cluster_free(redisCluster *c, int free_ctx TSRMLS_DC);
 PHP_REDIS_API int cluster_init_seeds(redisCluster *c, HashTable *ht_seeds);
 PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC);
