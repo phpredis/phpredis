@@ -2,15 +2,16 @@
 error_reporting(E_ERROR | E_WARNING);
 
 $redisHost = $argv[1];
-$sessionId = $argv[2];
-$sessionLifetime = $argv[3];
+$saveHandler = $argv[2];
+$sessionId = $argv[3];
+$sessionLifetime = $argv[4];
 
 if (empty($redisHost)) {
-    $redisHost = 'localhost';
+    $redisHost = 'tcp://localhost:6379';
 }
 
-ini_set('session.save_handler', 'redis');
-ini_set('session.save_path', 'tcp://' . $redisHost . ':6379');
+ini_set('session.save_handler', $saveHandler);
+ini_set('session.save_path', $redisHost);
 ini_set('session.gc_maxlifetime', $sessionLifetime);
 
 session_id($sessionId);

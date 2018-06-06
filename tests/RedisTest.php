@@ -26,6 +26,11 @@ class Redis_Test extends TestSuite
      */
     protected $sessionPrefix = 'PHPREDIS_SESSION:';
 
+    /**
+     * @var string
+     */
+    protected $sessionSaveHandler = 'redis';
+
     public function setUp() {
         $this->redis = $this->newInstance();
         $info = $this->redis->info();
@@ -5503,8 +5508,8 @@ class Redis_Test extends TestSuite
     {
         $host = $this->getHost() ?: 'localhost';
 
-        ini_set('session.save_handler', 'redis');
-        ini_set('session.save_path', 'tcp://' . $host . ':6379');
+        @ini_set('session.save_handler', 'redis');
+        @ini_set('session.save_path', 'tcp://' . $host . ':6379');
     }
 
     /**
@@ -5545,7 +5550,7 @@ class Redis_Test extends TestSuite
             $this->markTestSkipped();
             return true;
         } else {
-            $commandParameters = array($this->getHost(), $sessionId, $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires, $sessionData, $sessionLifetime);
+            $commandParameters = array($this->getFullHostPath(), $this->sessionSaveHandler, $sessionId, $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires, $sessionData, $sessionLifetime);
             if ($locking_enabled) {
                 $commandParameters[] = '1';
 
@@ -5571,7 +5576,7 @@ class Redis_Test extends TestSuite
      */
     private function getSessionData($sessionId, $sessionLifetime = 1440)
     {
-        $command = 'php ' . __DIR__ . '/getSessionData.php ' . escapeshellarg($this->getHost()) . ' ' . escapeshellarg($sessionId) . ' ' . escapeshellarg($sessionLifetime);
+        $command = 'php ' . __DIR__ . '/getSessionData.php ' . escapeshellarg($this->getFullHostPath()) . ' ' . $this->sessionSaveHandler . ' ' . escapeshellarg($sessionId) . ' ' . escapeshellarg($sessionLifetime);
         exec($command, $output);
 
         return $output[0];
@@ -5589,7 +5594,7 @@ class Redis_Test extends TestSuite
     {
 	$args = array_map('escapeshellarg', array($sessionId, $locking, $destroyPrevious, $sessionProxy));
 
-        $command = 'php --no-php-ini --define extension=igbinary.so --define extension=' . __DIR__ . '/../modules/redis.so ' . __DIR__ . '/regenerateSessionId.php ' . escapeshellarg($this->getHost()) . ' ' . implode(' ', $args);
+        $command = 'php --no-php-ini --define extension=igbinary.so --define extension=' . __DIR__ . '/../modules/redis.so ' . __DIR__ . '/regenerateSessionId.php ' . escapeshellarg($this->getFullHostPath()) . ' ' . $this->sessionSaveHandler . ' ' . implode(' ', $args);
 
         exec($command, $output);
 
