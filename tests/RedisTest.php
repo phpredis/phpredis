@@ -5560,9 +5560,8 @@ class Redis_Test extends TestSuite
             }
             $commandParameters = array_map('escapeshellarg', $commandParameters);
 
-            $command = 'php ' . __DIR__ . '/startSession.php ' . implode(' ', $commandParameters);
+            $command = self::getPhpCommand('startSession.php') . implode(' ', $commandParameters);
             $command .= $background ? ' 2>/dev/null > /dev/null &' : ' 2>&1';
-
             exec($command, $output);
             return ($background || (count($output) == 1 && $output[0] == 'SUCCESS')) ? true : false;
         }
@@ -5576,7 +5575,7 @@ class Redis_Test extends TestSuite
      */
     private function getSessionData($sessionId, $sessionLifetime = 1440)
     {
-        $command = 'php ' . __DIR__ . '/getSessionData.php ' . escapeshellarg($this->getFullHostPath()) . ' ' . $this->sessionSaveHandler . ' ' . escapeshellarg($sessionId) . ' ' . escapeshellarg($sessionLifetime);
+        $command = self::getPhpCommand('getSessionData.php') . escapeshellarg($this->getFullHostPath()) . ' ' . $this->sessionSaveHandler . ' ' . escapeshellarg($sessionId) . ' ' . escapeshellarg($sessionLifetime);
         exec($command, $output);
 
         return $output[0];
@@ -5594,11 +5593,31 @@ class Redis_Test extends TestSuite
     {
 	$args = array_map('escapeshellarg', array($sessionId, $locking, $destroyPrevious, $sessionProxy));
 
-        $command = 'php --no-php-ini --define extension=igbinary.so --define extension=' . __DIR__ . '/../modules/redis.so ' . __DIR__ . '/regenerateSessionId.php ' . escapeshellarg($this->getFullHostPath()) . ' ' . $this->sessionSaveHandler . ' ' . implode(' ', $args);
+        $command = self::getPhpCommand('regenerateSessionId.php') . escapeshellarg($this->getFullHostPath()) . ' ' . $this->sessionSaveHandler . ' ' . implode(' ', $args);
 
         exec($command, $output);
 
         return $output[0];
+    }
+
+    /**
+     * Return command to launch PHP with built extension enabled
+     * taking care of environment (TEST_PHP_EXECUTABLE and TEST_PHP_ARGS)
+     *
+     * @param string $script
+     *
+     * @return string
+     */
+    private function getPhpCommand($script)
+    {
+        static $cmd = NULL;
+
+        if (!$cmd) {
+            $cmd  = (getenv('TEST_PHP_EXECUTABLE') ?: (defined('PHP_BINARY') ? PHP_BINARY : 'php')); // PHP_BINARY is 5.4+
+            $cmd .= ' ';
+            $cmd .= (getenv('TEST_PHP_ARGS') ?: '--no-php-ini --define extension=igbinary.so --define extension=' . dirname(__DIR__) . '/modules/redis.so');
+        }
+        return $cmd . ' ' . __DIR__ . '/' . $script . ' ';
     }
 }
 ?>
