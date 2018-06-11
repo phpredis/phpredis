@@ -402,6 +402,19 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, unwatch, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, wait, arginfo_wait, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, watch, arginfo_watch, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xack, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xadd, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xclaim, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xdel, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xgroup, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xinfo, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xlen, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xpending, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xrange, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xread, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xreadgroup, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xrevrange, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xtrim, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zAdd, arginfo_zadd, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCard, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCount, arginfo_key_min_max, ZEND_ACC_PUBLIC)
@@ -1408,7 +1421,7 @@ PHP_METHOD(Redis, sAdd)
 
 /* {{{ proto boolean Redis::sAddArray(string key, array $values) */
 PHP_METHOD(Redis, sAddArray) {
-    REDIS_PROCESS_KW_CMD("SADD", redis_key_arr_cmd, redis_long_response);
+    REDIS_PROCESS_KW_CMD("SADD", redis_key_val_arr_cmd, redis_long_response);
 } /* }}} */
 
 /* {{{ proto int Redis::sSize(string key) */
@@ -3566,6 +3579,63 @@ PHP_METHOD(Redis, georadius) {
 
 PHP_METHOD(Redis, georadiusbymember) {
     REDIS_PROCESS_CMD(georadiusbymember, redis_read_variant_reply);
+}
+
+/*
+ * Streams
+ */
+
+PHP_METHOD(Redis, xack) {
+    REDIS_PROCESS_CMD(xack, redis_long_response);
+}
+
+PHP_METHOD(Redis, xadd) {
+    REDIS_PROCESS_CMD(xadd, redis_single_line_reply);
+}
+
+PHP_METHOD(Redis, xclaim) {
+    REDIS_PROCESS_CMD(xclaim, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, xdel) {
+    REDIS_PROCESS_KW_CMD("XDEL", redis_key_str_arr_cmd, redis_long_response);
+}
+
+PHP_METHOD(Redis, xgroup) {
+    REDIS_PROCESS_CMD(xgroup, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, xinfo) {
+    REDIS_PROCESS_CMD(xinfo, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, xlen) {
+    REDIS_PROCESS_KW_CMD("XLEN", redis_key_cmd, redis_long_response);
+}
+
+PHP_METHOD(Redis, xpending) {
+    REDIS_PROCESS_CMD(xpending, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, xrange) {
+    //REDIS_PROCESS_KW_CMD("XRANGE", redis_xrange_cmd, redis_read_variant_reply);
+    REDIS_PROCESS_KW_CMD("XRANGE", redis_xrange_cmd, redis_xrange_reply);
+}
+
+PHP_METHOD(Redis, xread) {
+    REDIS_PROCESS_CMD(xread, redis_xread_reply);
+}
+
+PHP_METHOD(Redis, xreadgroup) {
+    REDIS_PROCESS_CMD(xreadgroup, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, xrevrange) {
+    REDIS_PROCESS_KW_CMD("XREVRANGE", redis_xrange_cmd, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, xtrim) {
+    REDIS_PROCESS_CMD(xtrim, redis_long_response);
 }
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

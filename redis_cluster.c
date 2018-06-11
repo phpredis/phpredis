@@ -252,6 +252,19 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, unlink, arginfo_del, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, unwatch, arginfo_void, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, watch, arginfo_watch, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, xack, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, xadd, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, xclaim, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, xdel, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, xgroup, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, xinfo, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, xlen, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, xpending, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, xrange, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, xread, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, xreadgroup, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, xrevrange, NULL, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, xtrim, NULL, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zadd, arginfo_zadd, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zcard, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zcount, arginfo_key_min_max, ZEND_ACC_PUBLIC)
@@ -1305,7 +1318,7 @@ PHP_METHOD(RedisCluster, sadd) {
 
 /* {{{ proto long RedisCluster::saddarray(string key, array values) */
 PHP_METHOD(RedisCluster, saddarray) {
-    CLUSTER_PROCESS_KW_CMD("SADD", redis_key_arr_cmd, cluster_long_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("SADD", redis_key_val_arr_cmd, cluster_long_resp, 0);
 }
 /* }}} */
 
@@ -2962,6 +2975,65 @@ PHP_METHOD(RedisCluster, ping) {
         TYPE_LINE, cluster_ping_resp);
 }
 /* }}} */
+
+/* {{{ proto long RedisCluster::xack(string key, string group, array ids) }}} */
+PHP_METHOD(RedisCluster, xack) {
+    CLUSTER_PROCESS_CMD(xack, cluster_long_resp, 0);
+}
+
+/* {{{ proto string RedisCluster::xadd(string key, string id, array field_values) }}} */
+PHP_METHOD(RedisCluster, xadd) {
+    CLUSTER_PROCESS_CMD(xadd, cluster_single_line_resp, 0);
+}
+
+/* {{{ proto array RedisCluster::xclaim(string key, string group, string consumer,
+ *                                      long min_idle_time, array ids, array options) */
+PHP_METHOD(RedisCluster, xclaim) {
+    CLUSTER_PROCESS_CMD(xclaim, cluster_variant_resp, 0);
+}
+
+PHP_METHOD(RedisCluster, xdel) {
+    CLUSTER_PROCESS_KW_CMD("XDEL", redis_key_str_arr_cmd, cluster_long_resp, 0);
+}
+
+/* {{{ proto variant RedisCluster::xgroup(string op, [string key, string arg1, string arg2]) }}} */
+PHP_METHOD(RedisCluster, xgroup) {
+    CLUSTER_PROCESS_CMD(xgroup, cluster_variant_resp, 0);
+}
+
+/* {{{ proto variant RedisCluster::xinfo(string op, [string arg1, string arg2]); */
+PHP_METHOD(RedisCluster, xinfo) {
+    CLUSTER_PROCESS_CMD(xinfo, cluster_variant_resp, 0);
+}
+
+/* {{{ proto string RedisCluster::xlen(string key) }}} */
+PHP_METHOD(RedisCluster, xlen) {
+    CLUSTER_PROCESS_KW_CMD("XLEN", redis_key_cmd, cluster_long_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, xpending) {
+    CLUSTER_PROCESS_CMD(xpending, cluster_variant_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, xrange) {
+    CLUSTER_PROCESS_KW_CMD("XRANGE", redis_xrange_cmd, cluster_xrange_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, xrevrange) {
+    CLUSTER_PROCESS_KW_CMD("XREVRANGE", redis_xrange_cmd, cluster_xrange_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, xread) {
+    CLUSTER_PROCESS_CMD(xread, cluster_xread_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, xreadgroup) {
+    CLUSTER_PROCESS_CMD(xreadgroup, cluster_variant_resp, 0);
+}
+
+PHP_METHOD(RedisCluster, xtrim) {
+    CLUSTER_PROCESS_CMD(xtrim, cluster_long_resp, 0);
+}
 
 /* {{{ proto string RedisCluster::echo(string key, string msg)
  *     proto string RedisCluster::echo(array host_port, string msg) */

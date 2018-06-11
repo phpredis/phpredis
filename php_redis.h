@@ -222,6 +222,21 @@ PHP_METHOD(Redis, pfadd);
 PHP_METHOD(Redis, pfcount);
 PHP_METHOD(Redis, pfmerge);
 
+/* STREAMS */
+PHP_METHOD(Redis, xack);
+PHP_METHOD(Redis, xadd);
+PHP_METHOD(Redis, xclaim);
+PHP_METHOD(Redis, xdel);
+PHP_METHOD(Redis, xgroup);
+PHP_METHOD(Redis, xinfo);
+PHP_METHOD(Redis, xlen);
+PHP_METHOD(Redis, xpending);
+PHP_METHOD(Redis, xrange);
+PHP_METHOD(Redis, xread);
+PHP_METHOD(Redis, xreadgroup);
+PHP_METHOD(Redis, xrevrange);
+PHP_METHOD(Redis, xtrim);
+
 /* Reflection */
 PHP_METHOD(Redis, getHost);
 PHP_METHOD(Redis, getPort);

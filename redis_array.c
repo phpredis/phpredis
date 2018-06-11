@@ -735,7 +735,6 @@ PHP_METHOD(RedisArray, keys)
     RedisArray *ra;
     char *pattern;
     strlen_t pattern_len;
-    int i;
 
     /* Make sure the prototype is correct */
     if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
@@ -764,7 +763,6 @@ PHP_METHOD(RedisArray, keys)
 PHP_METHOD(RedisArray, getOption)
 {
     zval *object, z_fun, z_args[1];
-    int i;
     RedisArray *ra;
     zend_long opt;
 
@@ -791,7 +789,6 @@ PHP_METHOD(RedisArray, getOption)
 PHP_METHOD(RedisArray, setOption)
 {
     zval *object, z_fun, z_args[2];
-    int i;
     RedisArray *ra;
     zend_long opt;
     char *val_str;
@@ -822,7 +819,6 @@ PHP_METHOD(RedisArray, setOption)
 PHP_METHOD(RedisArray, select)
 {
     zval *object, z_fun, z_args[1];
-    int i;
     RedisArray *ra;
     zend_long opt;
 

@@ -16,6 +16,11 @@ class Redis_Test extends TestSuite
         'Cupertino'     => Array(-122.032182, 37.322998)
     );
 
+    protected $serializers = Array(
+        Redis::SERIALIZER_NONE,
+        Redis::SERIALIZER_PHP,
+    );
+
     /**
      * @var Redis
      */
@@ -30,6 +35,10 @@ class Redis_Test extends TestSuite
         $this->redis = $this->newInstance();
         $info = $this->redis->info();
         $this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
+
+        if (defined('Redis::SERIALIZER_IGBINARY')) {
+            $this->serializers[] = Redis::SERIALIZER_IGBINARY;
+        } 
     }
 
     protected function minVersionCheck($version) {
@@ -5167,6 +5176,77 @@ class Redis_Test extends TestSuite
         $this->redis->del('mylist');
         $this->redis->rpush('mylist', 'A', 'B', 'C', 'D');
         $this->assertEquals($this->redis->lrange('mylist', 0, -1), Array('A','B','C','D'));
+    }
+
+    /* STREAMS */
+
+    protected function addStreamEntries($key, $count) {
+        for ($i = 0; $i < $count; $i++) {
+            $obj_r->redis->xAdd($key, Array('field' => "value:$i"));
+        }
+    }
+
+    public function testXAdd() {
+        if (!$this->minVersionCheck("5.0"))
+            return $this->markTestSkipped();
+
+        $this->redis->del('stream');
+        for ($i = 0; $i < 5; $i++) {
+            $id = $this->redis->xAdd("stream", '*', Array('k1' => 'v1', 'k2' => 'v2'));
+            $this->assertEquals($this->redis->xLen('stream'), $i+1);
+
+            /* Redis should return <timestamp>-<sequence> */
+            $bits = explode('-', $id);
+            $this->assertEquals(count($bits), 2);
+            $this->assertTrue(is_numeric($bits[0]));
+            $this->assertTrue(is_numeric($bits[1]));
+        }
+
+        $this->redis->xAdd('stream', '*', Array());
+    }
+
+    protected function doXRangeTest() {
+        $this->redis->del('{stream}');
+        for ($i = 0; $i < 3; $i++) {
+            $this->redis->xAdd('{stream}', '*', Array('field' => "value:$i"));
+        } 
+
+        $messages = $this->redis->xRange('{stream}', 0, '+');
+        $this->assertEquals(count($messages), 3);
+
+        $i = 0;
+        foreach ($messages as $seq => $v) {
+            $this->assertEquals(count(explode('-', $seq)), 2);
+            $this->assertEquals($v, Array('field' => "value:$i"));
+            $i++;
+        } 
+
+        /* Test COUNT option */
+        for ($count = 1; $count <= 3; $count++) {
+            $messages = $this->redis->xRange('stream', 0, '+', $count);
+            $this->assertEquals(count($messages), $count);
+        }
+    }
+
+    public function testXRange() {
+        if (!$this->minVersionCheck("5.0"))
+            return $this->markTestSkipped();
+
+        foreach ($this->serializers as $serializer) {
+            foreach (Array(NULL, 'prefix:') as $prefix) {
+                $this->redis->setOption(Redis::OPT_PREFIX, $prefix);
+                $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+                $this->doXRangeTest();
+            }
+        }
+    }
+
+    protected function testXLen() {
+        $this->redis->del('{stream}');
+        for ($i = 0; $i < 5; $i++) {
+            $this->redis->xadd('{stream}', '*', Array('foo' => 'bar'));
+            $this->assertEquals($this->redis->xLen('{stream}'), $i+1);
+        }
     }
 
     public function testSession_savedToRedis()

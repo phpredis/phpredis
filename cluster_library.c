@@ -1486,6 +1486,24 @@ PHP_REDIS_API void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS,
     efree(resp);
 }
 
+PHP_REDIS_API void
+cluster_single_line_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
+{
+    char *p;
+
+    /* Cluster already has the reply so abort if this isn't a LINE response *or* if for
+     * some freaky reason we don't detect a null terminator */
+    if (c->reply_type != TYPE_LINE || !(p = memchr(c->line_reply,'\0',sizeof(c->line_reply)))) {
+        CLUSTER_RETURN_FALSE(c);
+    }
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        CLUSTER_RETURN_STRING(c, c->line_reply, p - c->line_reply);
+    } else {
+        add_next_index_stringl(&c->multi_resp, c->line_reply, p - c->line_reply);
+    }
+}
+
 /* BULK response handler */
 PHP_REDIS_API void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                               void *ctx)
@@ -2049,6 +2067,48 @@ PHP_REDIS_API void cluster_client_list_resp(INTERNAL_FUNCTION_PARAMETERS, redisC
         RETVAL_ZVAL(z_result, 0, 1);
     } else {
         add_next_index_zval(&c->multi_resp, z_result);
+    }
+}
+
+/* XRANGE */
+PHP_REDIS_API void
+cluster_xrange_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
+    zval zv, *z_messages = &zv;
+
+    REDIS_MAKE_STD_ZVAL(z_messages);
+    array_init(z_messages);
+
+    if (redis_read_stream_messages(c->cmd_sock, c->reply_len, z_messages TSRMLS_CC) < 0) {
+        zval_dtor(z_messages);
+        REDIS_FREE_ZVAL(z_messages);
+        CLUSTER_RETURN_FALSE(c);
+    }
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        RETVAL_ZVAL(z_messages, 0, 1);
+    } else {
+        add_next_index_zval(&c->multi_resp, z_messages);
+    }
+}
+
+/* XREAD */
+PHP_REDIS_API void
+cluster_xread_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
+    zval zv, *z_streams = &zv;
+
+    REDIS_MAKE_STD_ZVAL(z_streams);
+    array_init(z_streams);
+
+    if (redis_read_stream_messages_multi(c->cmd_sock, c->reply_len, z_streams TSRMLS_CC) < 0) {
+        zval_dtor(z_streams);
+        REDIS_FREE_ZVAL(z_streams);
+        CLUSTER_RETURN_FALSE(c);
+    }
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        RETVAL_ZVAL(z_streams, 0, 1);
+    } else {
+        add_next_index_zval(&c->multi_resp, z_streams);
     }
 }
 

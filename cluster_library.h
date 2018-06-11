@@ -390,6 +390,8 @@ PHP_REDIS_API void cluster_bool_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     void *ctx);
 PHP_REDIS_API void cluster_ping_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     void *ctx);
+PHP_REDIS_API void cluster_single_line_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
+    void *ctx);
 PHP_REDIS_API void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, 
     void *ctx);
 PHP_REDIS_API void cluster_bulk_raw_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,    
@@ -449,6 +451,12 @@ PHP_REDIS_API void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS,
 
 /* CLIENT LIST response handler */
 PHP_REDIS_API void cluster_client_list_resp(INTERNAL_FUNCTION_PARAMETERS, 
+    redisCluster *c, void *ctx);
+
+/* Custom STREAM handlers */
+PHP_REDIS_API void cluster_xread_resp(INTERNAL_FUNCTION_PARAMETERS,
+    redisCluster *c, void *ctx);
+PHP_REDIS_API void cluster_xrange_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 
 /* MULTI BULK processing callbacks */
