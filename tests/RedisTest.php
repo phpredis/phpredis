@@ -5504,6 +5504,19 @@ class Redis_Test extends TestSuite
         $this->assertFalse($this->redis->xDel('s', Array()));
     }
 
+    public function testXTrim() {
+        for ($maxlen = 0; $maxlen <= 50; $maxlen += 10) {
+            $this->addStreamEntries('stream', 100);
+            $trimmed = $this->redis->xTrim('stream', $maxlen);
+            $this->assertEquals($trimmed, 100 - $maxlen);
+        }
+
+        /* APPROX trimming isn't easily deterministic, so just make sure we
+           can call it with the flag */
+        $this->addStreamEntries('stream', 100);
+        $this->assertFalse($this->redis->xTrim('stream', 1, true) === false);
+    }
+
     public function testSession_savedToRedis()
     {
         $this->setSessionHandler();
