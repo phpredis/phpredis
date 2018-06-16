@@ -3618,7 +3618,6 @@ PHP_METHOD(Redis, xpending) {
 }
 
 PHP_METHOD(Redis, xrange) {
-    //REDIS_PROCESS_KW_CMD("XRANGE", redis_xrange_cmd, redis_read_variant_reply);
     REDIS_PROCESS_KW_CMD("XRANGE", redis_xrange_cmd, redis_xrange_reply);
 }
 
@@ -3627,11 +3626,11 @@ PHP_METHOD(Redis, xread) {
 }
 
 PHP_METHOD(Redis, xreadgroup) {
-    REDIS_PROCESS_CMD(xreadgroup, redis_read_variant_reply);
+    REDIS_PROCESS_CMD(xreadgroup, redis_xread_reply);
 }
 
 PHP_METHOD(Redis, xrevrange) {
-    REDIS_PROCESS_KW_CMD("XREVRANGE", redis_xrange_cmd, redis_read_variant_reply);
+    REDIS_PROCESS_KW_CMD("XREVRANGE", redis_xrange_cmd, redis_xrange_reply);
 }
 
 PHP_METHOD(Redis, xtrim) {

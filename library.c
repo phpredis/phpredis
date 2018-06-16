@@ -114,6 +114,13 @@ static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
     return 0;
 }
 
+/* Helper function and macro to test a RedisSock error prefix. */
+#define REDIS_SOCK_ERRCMP_STATIC(rs, s) redis_sock_errcmp(rs, s, sizeof(s)-1)
+static int redis_sock_errcmp(RedisSock *redis_sock, const char *err, size_t errlen) {
+    return ZSTR_LEN(redis_sock->err) >= errlen &&
+           memcmp(ZSTR_VAL(redis_sock->err), err, errlen) == 0;
+}
+
 /* Helper function that will throw an exception for a small number of ERR codes
  * returned by Redis.  Typically we just return FALSE to the caller in the event
  * of an ERROR reply, but for the following error types:
@@ -124,11 +131,19 @@ static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
 static void
 redis_error_throw(RedisSock *redis_sock TSRMLS_DC)
 {
-    if (redis_sock != NULL && redis_sock->err != NULL &&
-        memcmp(ZSTR_VAL(redis_sock->err), "ERR", sizeof("ERR") - 1) != 0 &&
-        memcmp(ZSTR_VAL(redis_sock->err), "NOSCRIPT", sizeof("NOSCRIPT") - 1) != 0 &&
-        memcmp(ZSTR_VAL(redis_sock->err), "WRONGTYPE", sizeof("WRONGTYPE") - 1) != 0
-    ) {
+    /* Short circuit if we have no redis_sock or any error */
+    if (redis_sock == NULL || redis_sock->err == NULL)
+        return;
+
+    /* We may want to flip this logic and check for MASTERDOWN, AUTH,
+     * and LOADING but that may have side effects (esp for things like
+     * Disque) */
+    if (!REDIS_SOCK_ERRCMP_STATIC(redis_sock, "ERR") &&
+        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOSCRIPT") &&
+        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "WRONGTYPE") &&
+        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "BUSYGROUP") &&
+        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOGROUP"))
+    {
         zend_throw_exception(redis_exception_ce, ZSTR_VAL(redis_sock->err), 0 TSRMLS_CC);
     }
 }

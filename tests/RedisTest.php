@@ -38,11 +38,15 @@ class Redis_Test extends TestSuite
 
         if (defined('Redis::SERIALIZER_IGBINARY')) {
             $this->serializers[] = Redis::SERIALIZER_IGBINARY;
-        } 
+        }
     }
 
     protected function minVersionCheck($version) {
         return version_compare($this->version, $version, "ge");
+    }
+
+    protected function mstime() {
+        return round(microtime(true)*1000);
     }
 
     protected function newInstance() {
@@ -5181,9 +5185,28 @@ class Redis_Test extends TestSuite
     /* STREAMS */
 
     protected function addStreamEntries($key, $count) {
+        $ids = Array();
+
+        $this->redis->del($key);
+
         for ($i = 0; $i < $count; $i++) {
-            $obj_r->redis->xAdd($key, Array('field' => "value:$i"));
+            $ids[] = $this->redis->xAdd($key, '*', Array('field' => "value:$i"));
         }
+
+        return $ids;
+    }
+
+    protected function addStreamsAndGroups($arr_streams, $count, $arr_groups) {
+        $ids = Array();
+
+        foreach ($arr_streams as $str_stream) {
+            $ids[$str_stream] = $this->addStreamEntries($str_stream, $count);
+            foreach ($arr_groups as $str_group => $str_id) {
+                $this->redis->xGroup('CREATE', $str_stream, $str_group, $str_id);
+            }
+        }
+
+        return $ids;
     }
 
     public function testXAdd() {
@@ -5202,28 +5225,51 @@ class Redis_Test extends TestSuite
             $this->assertTrue(is_numeric($bits[1]));
         }
 
+        /* Test an absolute maximum length */
+        for ($i = 0; $i < 100; $i++) {
+            $this->redis->xAdd('stream', '*', Array('k' => 'v'), 10);
+        }
+        $this->assertEquals($this->redis->xLen('stream'), 10);
+
+        /* Not the greatest test but I'm unsure if approximate trimming is
+         * totally deterministic, so just make sure we are able to add with
+         * an approximate maxlen argument structure */
+        $id = $this->redis->xAdd('stream', '*', Array('k' => 'v'), 10, true);
+        $this->assertEquals(count(explode('-', $id)), 2);
+
+        /* Empty message should fail */
         $this->redis->xAdd('stream', '*', Array());
     }
 
-    protected function doXRangeTest() {
-        $this->redis->del('{stream}');
-        for ($i = 0; $i < 3; $i++) {
-            $this->redis->xAdd('{stream}', '*', Array('field' => "value:$i"));
-        } 
+    protected function doXRangeTest($reverse) {
+        $key = '{stream}';
 
-        $messages = $this->redis->xRange('{stream}', 0, '+');
+        if ($reverse) {
+            list($cmd,$a1,$a2) = Array('xRevRange', '+', 0);
+        } else {
+            list($cmd,$a1,$a2) = Array('xRange', 0, '+');
+        }
+
+        $this->redis->del($key);
+        for ($i = 0; $i < 3; $i++) {
+            $msg = Array('field' => "value:$i");
+            $id = $this->redis->xAdd($key, '*', $msg);
+            $rows[$id] = $msg;
+        }
+
+        $messages = $this->redis->$cmd($key, $a1, $a2);
         $this->assertEquals(count($messages), 3);
 
-        $i = 0;
+        $i = $reverse ? 2 : 0;
         foreach ($messages as $seq => $v) {
             $this->assertEquals(count(explode('-', $seq)), 2);
             $this->assertEquals($v, Array('field' => "value:$i"));
-            $i++;
-        } 
+            $i += $reverse ? -1 : 1;
+        }
 
         /* Test COUNT option */
         for ($count = 1; $count <= 3; $count++) {
-            $messages = $this->redis->xRange('stream', 0, '+', $count);
+            $messages = $this->redis->$cmd($key, $a1, $a2, $count);
             $this->assertEquals(count($messages), $count);
         }
     }
@@ -5232,21 +5278,230 @@ class Redis_Test extends TestSuite
         if (!$this->minVersionCheck("5.0"))
             return $this->markTestSkipped();
 
-        foreach ($this->serializers as $serializer) {
-            foreach (Array(NULL, 'prefix:') as $prefix) {
-                $this->redis->setOption(Redis::OPT_PREFIX, $prefix);
-                $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
-                $this->doXRangeTest();
+        foreach (Array(false, true) as $reverse) {
+            foreach ($this->serializers as $serializer) {
+                foreach (Array(NULL, 'prefix:') as $prefix) {
+                    $this->redis->setOption(Redis::OPT_PREFIX, $prefix);
+                    $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+                    $this->doXRangeTest($reverse);
+                }
             }
         }
     }
 
     protected function testXLen() {
+        if (!$this->minVersionCheck("5.0"))
+            $this->markTestSkipped();
+
         $this->redis->del('{stream}');
         for ($i = 0; $i < 5; $i++) {
             $this->redis->xadd('{stream}', '*', Array('foo' => 'bar'));
             $this->assertEquals($this->redis->xLen('{stream}'), $i+1);
         }
+    }
+
+    public function testXGroup() {
+        if (!$this->minVersionCheck("5.0"))
+            return $this->markTestSkipped();
+
+        $this->addStreamEntries('s', 2);
+
+        /* CREATE */
+        $this->assertTrue($this->redis->xGroup('CREATE', 's', 'mygroup', '$'));
+        $this->assertFalse($this->redis->xGroup('CREATE', 's', 'mygroup', 'BAD_ID'));
+
+        /* BUSYGROUP */
+        $this->redis->xGroup('CREATE', 's', 'mygroup', '$');
+        $this->assertTrue(strpos($this->redis->getLastError(), 'BUSYGROUP') === 0);
+
+        /* SETID */
+        $this->assertTrue($this->redis->xGroup('SETID', 's', 'mygroup', '$'));
+        $this->assertFalse($this->redis->xGroup('SETID', 's', 'mygroup', 'BAD_ID'));
+
+        $this->assertEquals($this->redis->xGroup('DELCONSUMER', 's', 'mygroup', 'myconsumer'),0);
+
+        /* DELGROUP not yet implemented in Redis */
+    }
+
+    public function testXAck() {
+        if (!$this->minVersionCheck("5.0"))
+            return $this->markTestSkipped();
+
+        for ($n = 1; $n <= 3; $n++) {
+            $this->addStreamsAndGroups(Array('{s}'), 3, Array('g1' => 0));
+            $msg = $this->redis->xReadGroup('g1', 'c1', Array('{s}' => 0));
+
+            /* Extract IDs */
+            $smsg = array_shift($msg);
+            $ids = array_keys($smsg);
+
+            /* Now ACK $n messages */
+            $ids = array_slice($ids, 0, $n);
+            $this->assertEquals($this->redis->xAck('{s}', 'g1', $ids), $n);
+        }
+
+        /* Verify sending no IDs is a failure */
+        $this->assertFalse($this->redis->xAck('{s}', 'g1', Array()));
+    }
+
+    protected function doXReadTest() {
+        if (!$this->minVersionCheck("5.0"))
+            return $this->markTestSkipped();
+
+        $row = Array('f1' => 'v1', 'f2' => 'v2');
+        $msgdata = Array(
+            '{stream}-1' => $row,
+            '{stream}-2' => $row,
+        );
+
+        /* Append a bit of data and populate STREAM queries */
+        $this->redis->del(array_keys($msgdata));
+        foreach ($msgdata as $key => $message) {
+            for ($r = 0; $r < 2; $r++) {
+                $id = $this->redis->xAdd($key, '*', $message);
+                $qresult[$key][$id] = $message;
+            }
+            $qzero[$key] = 0;
+            $qnew[$key] = '$';
+            $keys[] = $key;
+        }
+
+        /* Everything from both streams */
+        $rmsg = $this->redis->xRead($qzero);
+        $this->assertEquals($rmsg, $qresult);
+
+        /* Test COUNT option */
+        for ($count = 1; $count <= 2; $count++) {
+            $rmsg = $this->redis->xRead($qzero, $count);
+            foreach ($keys as $key) {
+                $this->assertEquals(count($rmsg[$key]), $count);
+            }
+        }
+
+        /* Should be empty (no new entries) */
+        $this->assertEquals(count($this->redis->xRead($qnew)),0);
+
+        /* Test against a specific ID */
+        $id = $this->redis->xAdd('{stream}-1', '*', $row);
+        $new_id = $this->redis->xAdd('{stream}-1', '*', Array('final' => 'row'));
+        $rmsg = $this->redis->xRead(Array('{stream}-1' => $id));
+        $this->assertEquals(
+            $this->redis->xRead(Array('{stream}-1' => $id)),
+            Array('{stream}-1' => Array($new_id => Array('final' => 'row')))
+        );
+
+        /* Empty query, etc */
+        $this->assertFalse($this->redis->xRead(Array()));
+        $this->assertFalse($this->redis->xRead($keys));
+    }
+
+    public function testXRead() {
+        if (!$this->minVersionCheck("5.0"))
+            return $this->markTestSkipped();
+
+        foreach ($this->serializers as $serializer) {
+            $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+            $this->doXReadTest();
+        }
+
+        /* Don't need to test BLOCK multiple times */
+        $m1 = round(microtime(true)*1000);
+        $this->redis->xRead(Array('somestream' => '$'), -1, 100);
+        $m2 = round(microtime(true)*1000);
+        $this->assertTrue($m2 - $m1 >= 100);
+    }
+
+    protected function compareStreamIds($redis, $control) {
+        foreach ($control as $stream => $ids) {
+            $rcount = count($redis[$stream]);
+            $lcount = count($control[$stream]);
+
+            /* We should have the same number of messages */
+            $this->assertEquals($rcount, $lcount);
+
+            /* We should have the exact same IDs */
+            foreach ($ids as $k => $id) {
+                $this->assertTrue(isset($redis[$stream][$id]));
+            }
+        }
+    }
+
+    public function testXReadGroup() {
+        if (!$this->minVersionCheck("5.0"))
+            return $this->markTestSkipped();
+
+        /* Create some streams and groups */
+        $streams = Array('{s}-1', '{s}-2');
+        $qstreams = Array('{s}-1' => 0, '{s}-2' => 0);
+        $groups = Array('g1' => 0, 'g2' => 0);
+
+        $ids = $this->addStreamsAndGroups($streams, 3, $groups);
+
+        /* Test that we get get the IDs we should */
+        foreach (Array('g1', 'g2') as $group) {
+            foreach ($ids as $stream => $messages) {
+                while ($ids[$stream]) {
+                    /* Read more messages */
+                    $resp = $this->redis->xReadGroup($group, 'consumer', $qstreams);
+
+                    /* They should match with our local control array */
+                    $this->compareStreamIds($resp, $ids);
+
+                    /* Remove a message from our control *and* XACK it in Redis */
+                    $id = array_shift($ids[$stream]);
+                    $this->redis->xAck($stream, $group, Array($id));
+                }
+            }
+        }
+
+        /* Test COUNT option */
+        for ($c = 1; $c <= 3; $c++) {
+            $this->addStreamsAndGroups($streams, 3, $groups);
+            $resp = $this->redis->xReadGroup('g1', 'consumer', $qstreams, $c);
+
+            foreach ($resp as $stream => $smsg) {
+                $this->assertEquals(count($smsg), $c);
+            }
+        }
+
+        /* Finally test BLOCK with a sloppy timing test */
+        $t1 = $this->mstime();
+        $qnew = Array('{s}-1' => '>', '{s}-2' => '>');
+        $this->redis->xReadGroup('g1', 'c1', $qnew, -1, 100);
+        $t2 = $this->mstime();
+        $this->assertTrue($t2 - $t1 >= 100);
+    }
+
+    public function testXPending() {
+        if (!$this->minVersionCheck("5.0")) {
+            return $this->markTestSkipped();
+        }
+
+        $rows = 5;
+        $this->addStreamsAndGroups(Array('s'), $rows, Array('group' => 0));
+
+        $msg = $this->redis->xReadGroup('group', 'consumer', Array('s' => 0));
+        $ids = array_keys($msg['s']);
+
+        for ($n = count($ids); $n >= 0; $n--) {
+            $xp = $this->redis->xPending('s', 'group');
+            $this->assertEquals($xp[0], count($ids));
+            if ($ids) {
+                $id = array_shift($ids);
+                $this->redis->xAck('s', 'group', Array($id));
+            }
+        }
+    }
+
+    public function testXDel() {
+        for ($n = 5; $n > 0; $n--) {
+            $ids = $this->addStreamEntries('s', 5);
+            $todel = array_slice($ids, 0, $n);
+            $this->assertEquals($this->redis->xDel('s', $todel), count($todel));
+        }
+
+        /* Empty array should fail */
+        $this->assertFalse($this->redis->xDel('s', Array()));
     }
 
     public function testSession_savedToRedis()

@@ -3176,14 +3176,16 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     smart_string cmdstr = {0};
     zend_string *arrkey;
     zval *z_fields, *value;
+    zend_long maxlen = 0;
+    zend_bool approx = 0;
     ulong idx;
     HashTable *ht_fields;
-    int fcount;
+    int fcount, argc;
     char *key, *id;
     strlen_t keylen, idlen;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssa", &key, &keylen,
-                              &id, &idlen, &z_fields) == FAILURE)
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssa|lb", &key, &keylen,
+                              &id, &idlen, &z_fields, &maxlen, &approx) == FAILURE)
     {
         return FAILURE;
     }
@@ -3194,12 +3196,30 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    /* XADD key ID field string [field string ...] */
-    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2 + (fcount*2), "XADD");
-    redis_cmd_append_sstr_key(&cmdstr, key, keylen, redis_sock, slot);
-    redis_cmd_append_sstr(&cmdstr, id, idlen);
+    if (maxlen < 0 || (maxlen == 0 && approx != 0)) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "Warning:  Invalid MAXLEN argument or approximate flag");
+    }
 
-    /* Append fields */
+
+    /* Calculate argc for XADD.  It's a bit complex because we've got
+     * an optional MAXLEN argument which can either take the form MAXLEN N
+     * or MAXLEN ~ N */
+    argc = 2 + (fcount*2) + (maxlen > 0 ? (approx ? 3 : 2) : 0);
+
+    /* XADD key ID field string [field string ...] */
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "XADD");
+    redis_cmd_append_sstr_key(&cmdstr, key, keylen, redis_sock, slot);
+
+    /* Now append our MAXLEN bits if we've got them */
+    if (maxlen > 0) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "MAXLEN");
+        REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, approx, "~");
+        redis_cmd_append_sstr_long(&cmdstr, maxlen);
+    }
+
+    /* Now append ID and field(s) */
+    redis_cmd_append_sstr(&cmdstr, id, idlen);
     ZEND_HASH_FOREACH_KEY_VAL(ht_fields, idx, arrkey, value) {
         redis_cmd_append_sstr_arrkey(&cmdstr, arrkey, idx);
         redis_cmd_append_sstr_zval(&cmdstr, value, redis_sock TSRMLS_CC);
@@ -3291,8 +3311,8 @@ int redis_xrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* Helper function to take an associative array and append the Redis
  * STREAMS stream [stream...] id [id ...] arguments to a command string. */
-static int 
-append_stream_args(smart_string *cmdstr, HashTable *ht, RedisSock *redis_sock, 
+static int
+append_stream_args(smart_string *cmdstr, HashTable *ht, RedisSock *redis_sock,
                    short *slot TSRMLS_DC)
 {
     char *kptr, kbuf[40];
@@ -3466,7 +3486,7 @@ int redis_xack_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     strlen_t keylen, grouplen;
     zend_string *idstr;
     zval *z_ids, *z_id;
-    HashTable *kt;
+    HashTable *ht_ids;
     int idcount;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssa", &key, &keylen,
@@ -3475,8 +3495,8 @@ int redis_xack_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    kt = Z_ARRVAL_P(z_ids);
-    if ((idcount = zend_hash_num_elements(kt)) < 1) {
+    ht_ids = Z_ARRVAL_P(z_ids);
+    if ((idcount = zend_hash_num_elements(ht_ids)) < 1) {
         return FAILURE;
     }
 
@@ -3486,12 +3506,14 @@ int redis_xack_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     redis_cmd_append_sstr(&cmdstr, group, grouplen);
 
     /* Append IDs */
-    ZEND_HASH_FOREACH_VAL(kt, z_id) {
+    ZEND_HASH_FOREACH_VAL(ht_ids, z_id) {
         idstr = zval_get_string(z_id);
         redis_cmd_append_sstr(&cmdstr, ZSTR_VAL(idstr), ZSTR_LEN(idstr));
         zend_string_release(idstr);
     } ZEND_HASH_FOREACH_END();
 
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
     return SUCCESS;
 }
 
@@ -3658,7 +3680,7 @@ int redis_xclaim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 /* XGROUP HELP
- * XGROUP SETID key id
+ * XGROUP SETID key group id
  * XGROUP DELGROUP key groupname
  * XGROUP CREATE key groupname id
  * XGROUP DELCONSUMER key groupname consumername */
@@ -3679,14 +3701,14 @@ int redis_xgroup_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (argc == 1 && oplen == 4 && !strncasecmp(op, "HELP", 4)) {
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XGROUP", "s", "HELP", 4);
         return SUCCESS;
-    } else if (argc == 4 && ((oplen ==  6 && !strncasecmp(op, "CREATE", 6)) ||
+    } else if (argc == 4 && ((oplen == 5 && !strncasecmp(op, "SETID", 5)) ||
+                             (oplen ==  6 && !strncasecmp(op, "CREATE", 6)) ||
                              (oplen == 11 && !strncasecmp(op, "DELCONSUMER", 11))))
     {
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XGROUP", "skss", op, oplen, key, keylen,
                                       arg1, arg1len, arg2, arg2len);
         return SUCCESS;
-    } else if (argc == 3 && ((oplen == 7 && !strncasecmp(op, "DELGROUP", 7)) ||
-                             (oplen == 5 && !strncasecmp(op, "SETID", 5)))) {
+    } else if (argc == 3 && ((oplen == 7 && !strncasecmp(op, "DELGROUP", 7)))) {
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XGROUP", "sks", op, oplen, key,
                                       keylen, arg1, arg1len);
         return SUCCESS;
