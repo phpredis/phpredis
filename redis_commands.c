@@ -3729,7 +3729,7 @@ int redis_xinfo_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *op, *key, *arg;
     strlen_t oplen, keylen, arglen;
-    char *fmt = "sks";
+    char fmt[4];
     int argc = ZEND_NUM_ARGS();
 
     if (argc > 3 || zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|ss",
@@ -3740,6 +3740,7 @@ int redis_xinfo_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Our format is simply "s", "sk" or "sks" depending on argc */
+    memcpy(fmt, "sks", sizeof("sks")-1);
     fmt[argc] = '\0';
 
     *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XINFO", fmt, op, oplen, key, keylen,
