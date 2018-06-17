@@ -2989,7 +2989,7 @@ PHP_METHOD(RedisCluster, xadd) {
 /* {{{ proto array RedisCluster::xclaim(string key, string group, string consumer,
  *                                      long min_idle_time, array ids, array options) */
 PHP_METHOD(RedisCluster, xclaim) {
-    CLUSTER_PROCESS_CMD(xclaim, cluster_variant_resp, 0);
+    CLUSTER_PROCESS_CMD(xclaim, cluster_xclaim_resp, 0);
 }
 
 PHP_METHOD(RedisCluster, xdel) {
@@ -3028,7 +3028,7 @@ PHP_METHOD(RedisCluster, xread) {
 }
 
 PHP_METHOD(RedisCluster, xreadgroup) {
-    CLUSTER_PROCESS_CMD(xreadgroup, cluster_variant_resp, 0);
+    CLUSTER_PROCESS_CMD(xreadgroup, cluster_xread_resp, 0);
 }
 
 PHP_METHOD(RedisCluster, xtrim) {

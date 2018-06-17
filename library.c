@@ -1398,16 +1398,50 @@ failure:
     return -1;
 }
 
+/* This helper function does that actual XCLAIM response handling, which can be used by both
+ * Redis and RedisCluster.  Note that XCLAIM is somewhat unique in that its reply type depends
+ * on whether or not it was called with the JUSTID option */
+PHP_REDIS_API int
+redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv TSRMLS_CC) {
+    zval zv, *z_msg = &zv;
+    REDIS_REPLY_TYPE type;
+    char id[1024];
+    int i, fields;
+    long li;
+    size_t idlen;
+
+    for (i = 0; i < count; i++) {
+        /* Consume inner reply type */
+        if (redis_read_reply_type(redis_sock, &type, &li TSRMLS_DC) < 0 ||
+            (type != TYPE_LINE && type != TYPE_MULTIBULK)) return -1;
+
+        if (type == TYPE_LINE) {
+            /* JUSTID variant */
+            if (redis_sock_gets(redis_sock, id, sizeof(id), &idlen TSRMLS_CC) < 0)
+                return -1;
+            add_next_index_stringl(rv, id, idlen);
+        } else {
+            if (li != 2 || redis_sock_read_single_line(redis_sock, id, sizeof(id), &idlen TSRMLS_CC) < 0 ||
+                (read_mbulk_header(redis_sock, &fields TSRMLS_CC) < 0 || fields % 2 != 0)) return -1;
+
+            REDIS_MAKE_STD_ZVAL(z_msg);
+            array_init(z_msg);
+
+            redis_mbulk_reply_loop(redis_sock, z_msg, fields, UNSERIALIZE_VALS TSRMLS_CC);
+            array_zip_values_and_scores(redis_sock, z_msg, SCORE_DECODE_NONE TSRMLS_CC);
+            add_assoc_zval_ex(rv, id, idlen, z_msg);
+        }
+    }
+
+    return 0;
+}
+
 PHP_REDIS_API int
 redis_xclaim_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    zval *z_tab, void *ctx)
 {
-    zval zv, zv2, *z_ret = &zv, *z_msg = &zv2;
-    REDIS_REPLY_TYPE type;
-    char id[1024];
-    int i, messages, fields;
-    long li;
-    size_t idlen;
+    zval zv, *z_ret = &zv;
+    int messages;
 
     /* All XCLAIM responses start multibulk */
     if (read_mbulk_header(redis_sock, &messages TSRMLS_CC) < 0)
@@ -1416,27 +1450,10 @@ redis_xclaim_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     REDIS_MAKE_STD_ZVAL(z_ret);
     array_init(z_ret);
 
-    for (i = 0; i < messages; i++) {
-        /* Consume inner reply type */
-        if (redis_read_reply_type(redis_sock, &type, &li TSRMLS_DC) < 0 ||
-            (type != TYPE_LINE && type != TYPE_MULTIBULK)) goto cleanup;
-
-        if (type == TYPE_LINE) {
-            /* JUSTID variant */
-            if (redis_sock_gets(redis_sock, id, sizeof(id), &idlen TSRMLS_CC) < 0)
-                goto cleanup;
-            add_next_index_stringl(z_ret, id, idlen);
-        } else {
-            if (li != 2 || redis_sock_read_single_line(redis_sock, id, sizeof(id), &idlen TSRMLS_CC) < 0 ||
-                (read_mbulk_header(redis_sock, &fields TSRMLS_CC) < 0 || fields % 2 != 0)) goto cleanup;
-
-            REDIS_MAKE_STD_ZVAL(z_msg);
-            array_init(z_msg);
-
-            redis_mbulk_reply_loop(redis_sock, z_msg, fields, UNSERIALIZE_VALS TSRMLS_CC);
-            array_zip_values_and_scores(redis_sock, z_msg, SCORE_DECODE_NONE TSRMLS_CC);
-            add_assoc_zval_ex(z_ret, id, idlen, z_msg);
-        }
+    if (redis_read_xclaim_response(redis_sock, messages, z_ret TSRMLS_CC) < 0) {
+        zval_dtor(z_ret);
+        REDIS_FREE_ZVAL(z_ret);
+        goto failure;
     }
 
     if (IS_ATOMIC(redis_sock)) {
@@ -1446,9 +1463,6 @@ redis_xclaim_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
     return 0;
 
-cleanup:
-    zval_dtor(z_ret);
-    REDIS_FREE_ZVAL(z_ret);
 failure:
     if (IS_ATOMIC(redis_sock)) {
         RETVAL_FALSE;

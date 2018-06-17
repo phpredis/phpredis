@@ -63,6 +63,7 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
 
 PHP_REDIS_API int redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, REDIS_SCAN_TYPE type, zend_long *iter);
 
+
 PHP_REDIS_API int redis_xrange_reply(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API int redis_xread_reply(INTERNAL_FUNCTION_PARAMETERS,
@@ -97,6 +98,8 @@ PHP_REDIS_API int
 redis_read_stream_messages(RedisSock *redis_sock, int count, zval *z_ret TSRMLS_DC);
 PHP_REDIS_API int
 redis_read_stream_messages_multi(RedisSock *redis_sock, int count, zval *z_ret TSRMLS_DC);
+PHP_REDIS_API int
+redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv TSRMLS_CC);
 
 /*
 * Variant Read methods, mostly to implement eval

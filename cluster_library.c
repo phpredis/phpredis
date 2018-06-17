@@ -2112,6 +2112,28 @@ cluster_xread_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
     }
 }
 
+/* XCLAIM */
+PHP_REDIS_API void
+cluster_xclaim_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
+    zval zv, *z_msg = &zv;
+
+    REDIS_MAKE_STD_ZVAL(z_msg);
+    array_init(z_msg);
+
+    if (redis_read_xclaim_response(c->cmd_sock, c->reply_len, z_msg TSRMLS_CC) < 0) {
+        zval_dtor(z_msg);
+        REDIS_FREE_ZVAL(z_msg);
+        CLUSTER_RETURN_FALSE(c);
+    }
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        RETVAL_ZVAL(z_msg, 0, 1);
+    } else {
+        add_next_index_zval(&c->multi_resp, z_msg);
+    }
+
+}
+
 /* MULTI BULK response loop where we might pull the next one */
 PHP_REDIS_API zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
                                      redisCluster *c, int pull, mbulk_cb cb, zval *z_ret)
