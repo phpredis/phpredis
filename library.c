@@ -1398,6 +1398,66 @@ failure:
     return -1;
 }
 
+PHP_REDIS_API int
+redis_xclaim_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   zval *z_tab, void *ctx)
+{
+    zval zv, zv2, *z_ret = &zv, *z_msg = &zv2;
+    REDIS_REPLY_TYPE type;
+    char id[1024];
+    int i, messages, fields;
+    long li;
+    size_t idlen;
+
+    /* All XCLAIM responses start multibulk */
+    if (read_mbulk_header(redis_sock, &messages TSRMLS_CC) < 0)
+        goto failure;
+
+    REDIS_MAKE_STD_ZVAL(z_ret);
+    array_init(z_ret);
+
+    for (i = 0; i < messages; i++) {
+        /* Consume inner reply type */
+        if (redis_read_reply_type(redis_sock, &type, &li TSRMLS_DC) < 0 ||
+            (type != TYPE_LINE && type != TYPE_MULTIBULK)) goto cleanup;
+
+        if (type == TYPE_LINE) {
+            /* JUSTID variant */
+            if (redis_sock_gets(redis_sock, id, sizeof(id), &idlen TSRMLS_CC) < 0)
+                goto cleanup;
+            add_next_index_stringl(z_ret, id, idlen);
+        } else {
+            if (li != 2 || redis_sock_read_single_line(redis_sock, id, sizeof(id), &idlen TSRMLS_CC) < 0 ||
+                (read_mbulk_header(redis_sock, &fields TSRMLS_CC) < 0 || fields % 2 != 0)) goto cleanup;
+
+            REDIS_MAKE_STD_ZVAL(z_msg);
+            array_init(z_msg);
+
+            redis_mbulk_reply_loop(redis_sock, z_msg, fields, UNSERIALIZE_VALS TSRMLS_CC);
+            array_zip_values_and_scores(redis_sock, z_msg, SCORE_DECODE_NONE TSRMLS_CC);
+            add_assoc_zval_ex(z_ret, id, idlen, z_msg);
+        }
+    }
+
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_ZVAL(z_ret, 0, 1);
+    } else {
+        add_next_index_zval(z_tab, z_ret);
+    }
+    return 0;
+
+cleanup:
+    zval_dtor(z_ret);
+    REDIS_FREE_ZVAL(z_ret);
+failure:
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_FALSE;
+    } else {
+        add_next_index_bool(z_tab, 0);
+    }
+    return -1;
+}
+
 //PHP_REDIS_API int
 //redis_xread_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 //                  zval *z_tab, void *ctx)
