@@ -5517,6 +5517,86 @@ class Redis_Test extends TestSuite
         $this->assertFalse($this->redis->xTrim('stream', 1, true) === false);
     }
 
+    /* XCLAIM is one of the most complicated commands, with a great deal of different options
+     * The following test attempts to verify every combination of every possible option. */
+    public function testXClaim() {
+        foreach (Array(0, 100) as $min_idle_time) {
+            foreach (Array(false, true) as $justid) {
+                foreach (Array(0, 10) as $retrycount) {
+                    /* We need to test not passing TIME/IDLE as well as passing either */
+                    if ($min_idle_time == 0) {
+                        $topts = Array(Array(), Array('IDLE', 1000000), Array('TIME', time() * 1000));
+                    } else {
+                        $topts = Array(NULL);
+                    }
+
+                    foreach ($topts as $tinfo) {
+                        if ($tinfo) {
+                            list($ttype, $tvalue) = $tinfo;
+                        } else {
+                            $ttype = NULL; $tvalue = NULL;
+                        }
+
+                        /* Add some messages and create a group */
+                        $this->addStreamsAndGroups(Array('s'), 10, Array('group1' => 0));
+
+                        /* Create a second stream we can FORCE ownership on */
+                        $fids = $this->addStreamsAndGroups(Array('f'), 10, Array('group1' => 0));
+                        $fids = $fids['f'];
+
+                        /* Have consumer 'Mike' read the messages */
+                        $oids = $this->redis->xReadGroup('group1', 'Mike', Array('s' => 0));
+                        $oids = array_keys($oids['s']); /* We're only dealing with stream 's' */
+
+                        /* Construct our options array */
+                        $opts = Array();
+                        if ($justid) $opts[] = 'JUSTID';
+                        if ($retrycount) $opts['RETRYCOUNT'] = $retrycount;
+                        if ($tvalue !== NULL) $opts[$ttype] = $tvalue;
+
+                        /* Now have pavlo XCLAIM them */
+                        $cids = $this->redis->xClaim('s', 'group1', 'Pavlo', $min_idle_time, $oids, $opts);
+                        if (!$justid) $cids = array_keys($cids);
+
+                        if ($min_idle_time == 0) {
+                            $this->assertEquals($cids, $oids);
+
+                            /* Append the FORCE option to our second stream where we have not already
+                             * assigned to a PEL group */
+                            $opts[] = 'FORCE';
+                            $freturn = $this->redis->xClaim('f', 'group1', 'Test', 0, $fids, $opts);
+                            if (!$justid) $freturn = array_keys($freturn);
+                            $this->assertEquals($freturn, $fids);
+
+                            if ($retrycount || $tvalue !== NULL) {
+                                $pending = $this->redis->xPending('s', 'group1', 0, '+', 1, 'Pavlo');
+
+                                if ($retrycount) {
+                                    $this->assertEquals($pending[0][3], $retrycount);
+                                }
+                                if ($tvalue !== NULL) {
+                                    if ($ttype == 'IDLE') {
+                                        /* If testing IDLE the value must be >= what we set */
+                                        $this->assertTrue($pending[0][2] >= $tvalue);
+                                    } else {
+                                        /* Timing tests are notoriously irritating but I don't see
+                                         * how we'll get >= 20,000 ms between XCLAIM and XPENDING no
+                                         * matter how slow the machine/VM running the tests is */
+                                        $this->assertTrue($pending[0][2] <= 20000);
+                                    }
+                                }
+                            }
+                        } else {
+                            /* We're verifying that we get no messages when we've set 100 seconds
+                             * as our idle time, which should match nothing */
+                            $this->assertEquals($cids, Array());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public function testSession_savedToRedis()
     {
         $this->setSessionHandler();
