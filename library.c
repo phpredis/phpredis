@@ -1402,7 +1402,7 @@ failure:
  * Redis and RedisCluster.  Note that XCLAIM is somewhat unique in that its reply type depends
  * on whether or not it was called with the JUSTID option */
 PHP_REDIS_API int
-redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv TSRMLS_CC) {
+redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv TSRMLS_DC) {
     zval zv, *z_msg = &zv;
     REDIS_REPLY_TYPE type;
     char id[1024];
@@ -1412,7 +1412,7 @@ redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv TSRMLS_CC)
 
     for (i = 0; i < count; i++) {
         /* Consume inner reply type */
-        if (redis_read_reply_type(redis_sock, &type, &li TSRMLS_DC) < 0 ||
+        if (redis_read_reply_type(redis_sock, &type, &li TSRMLS_CC) < 0 ||
             (type != TYPE_LINE && type != TYPE_MULTIBULK)) return -1;
 
         if (type == TYPE_LINE) {
