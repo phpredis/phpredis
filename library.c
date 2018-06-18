@@ -1472,69 +1472,6 @@ failure:
     return -1;
 }
 
-//PHP_REDIS_API int
-//redis_xread_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-//                  zval *z_tab, void *ctx)
-//{
-//    zval zv1, zv2, *z_streams = &zv1, *z_messages = &zv2;
-//    int i, streams, shdr, messages;
-//    char *id;
-//    int idlen;
-//
-//    /* Determine how many streams we're receiving messages for */
-//    if (read_mbulk_header(redis_sock, &streams TSRMLS_CC) < 0)
-//        goto failure;
-//
-//    REDIS_MAKE_STD_ZVAL(z_streams);
-//    array_init(z_streams);
-//
-//    for (i = 0; i < streams; i++) {
-//        /* Consume multibulk header (always 2) and then stream ID and finally
-//           the header for message count */
-//        if ((read_mbulk_header(redis_sock, &shdr TSRMLS_CC) < 0 || shdr != 2) ||
-//            (id = redis_sock_read(redis_sock, &idlen TSRMLS_CC)) == NULL ||
-//            read_mbulk_header(redis_sock, &messages TSRMLS_CC) < 0)
-//        {
-//            if (id) efree(id);
-//            goto cleanup2;
-//        }
-//
-//        REDIS_MAKE_STD_ZVAL(z_messages);
-//        array_init(z_messages);
-//
-//        /* Now consume our stream messages */
-//        if (redis_read_stream_messages(redis_sock, messages, z_messages TSRMLS_CC) < 0)
-//            goto cleanup1;
-//
-//        add_assoc_zval_ex(z_streams, id, idlen, z_messages);
-//        efree(id);
-//    }
-//
-//    /* Success */
-//    if (IS_ATOMIC(redis_sock)) {
-//        RETVAL_ZVAL(z_streams, 0, 1);
-//    } else {
-//        add_next_index_zval(z_tab, z_streams);
-//    }
-//
-//    return 0;
-//
-//cleanup1:
-//    zval_dtor(z_messages);
-//    REDIS_FREE_ZVAL(z_messages);
-//    efree(id);
-//cleanup2:
-//    zval_dtor(z_streams);
-//    REDIS_FREE_ZVAL(z_streams);
-//failure:
-//    if (IS_ATOMIC(redis_sock)) {
-//        RETVAL_FALSE;
-//    } else {
-//        add_next_index_bool(z_tab, 0);
-//    }
-//    return -1;
-//}
-
 /* Zipped key => value reply but we don't touch anything (e.g. CONFIG GET) */
 PHP_REDIS_API int redis_mbulk_reply_zipped_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
