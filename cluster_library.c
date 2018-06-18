@@ -103,7 +103,7 @@ void cluster_free_reply(clusterReply *reply, int free_data) {
             for (i = 0; i < reply->elements && reply->element[i]; i++) {
                 cluster_free_reply(reply->element[i], free_data);
             }
-            efree(reply->element);
+            if (reply->element) efree(reply->element);
             break;
         default:
             break;
