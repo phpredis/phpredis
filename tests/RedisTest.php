@@ -5493,6 +5493,9 @@ class Redis_Test extends TestSuite
     }
 
     public function testXDel() {
+        if (!$this->minVersionCheck("5.0"))
+            return $this->markTestSkipped();
+
         for ($n = 5; $n > 0; $n--) {
             $ids = $this->addStreamEntries('s', 5);
             $todel = array_slice($ids, 0, $n);
@@ -5504,6 +5507,9 @@ class Redis_Test extends TestSuite
     }
 
     public function testXTrim() {
+        if (!$this->minVersionCheck("5.0"))
+            return $this->markTestSkipped();
+
         for ($maxlen = 0; $maxlen <= 50; $maxlen += 10) {
             $this->addStreamEntries('stream', 100);
             $trimmed = $this->redis->xTrim('stream', $maxlen);
@@ -5519,6 +5525,9 @@ class Redis_Test extends TestSuite
     /* XCLAIM is one of the most complicated commands, with a great deal of different options
      * The following test attempts to verify every combination of every possible option. */
     public function testXClaim() {
+        if (!$this->minVersionCheck("5.0"))
+            return $this->markTestSkipped();
+
         foreach (Array(0, 100) as $min_idle_time) {
             foreach (Array(false, true) as $justid) {
                 foreach (Array(0, 10) as $retrycount) {
