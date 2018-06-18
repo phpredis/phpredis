@@ -5390,9 +5390,8 @@ class Redis_Test extends TestSuite
             Array('{stream}-1' => Array($new_id => Array('final' => 'row')))
         );
 
-        /* Empty query, etc */
+        /* Emtpy query should fail */
         $this->assertFalse($this->redis->xRead(Array()));
-        $this->assertFalse($this->redis->xRead($keys));
     }
 
     public function testXRead() {

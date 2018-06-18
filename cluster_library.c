@@ -155,11 +155,13 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
                 }
                 break;
             case TYPE_MULTIBULK:
-                r->element = ecalloc(r->len,sizeof(clusterReply*));
-                r->elements = r->len;
-                cluster_multibulk_resp_recursive(sock, r->elements, r->element,
-                    err TSRMLS_CC);
-                if (*err) return;
+                if (r->len >= 0) {
+                    r->element = ecalloc(r->len,sizeof(clusterReply*));
+                    r->elements = r->len;
+                    cluster_multibulk_resp_recursive(sock, r->elements, r->element,
+                        err TSRMLS_CC);
+                    if (*err) return;
+                }
                 break;
             default:
                 *err = 1;
@@ -2078,6 +2080,8 @@ cluster_xrange_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
     REDIS_MAKE_STD_ZVAL(z_messages);
     array_init(z_messages);
 
+    c->cmd_sock->serializer = c->flags->serializer;
+
     if (redis_read_stream_messages(c->cmd_sock, c->reply_len, z_messages TSRMLS_CC) < 0) {
         zval_dtor(z_messages);
         REDIS_FREE_ZVAL(z_messages);
@@ -2098,6 +2102,8 @@ cluster_xread_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
 
     REDIS_MAKE_STD_ZVAL(z_streams);
     array_init(z_streams);
+
+    c->cmd_sock->serializer = c->flags->serializer;
 
     if (redis_read_stream_messages_multi(c->cmd_sock, c->reply_len, z_streams TSRMLS_CC) < 0) {
         zval_dtor(z_streams);
