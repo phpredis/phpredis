@@ -3594,7 +3594,6 @@ PHP_METHOD(Redis, xadd) {
 }
 
 PHP_METHOD(Redis, xclaim) {
-    // REDIS_PROCESS_CMD(xclaim, redis_read_variant_reply);
     REDIS_PROCESS_CMD(xclaim, redis_xclaim_reply);
 }
 

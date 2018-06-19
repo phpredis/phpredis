@@ -1189,7 +1189,7 @@ read_mbulk_header(RedisSock *redis_sock, int *nelem TSRMLS_DC)
     if (line[0] != '*') {
         if (IS_ATOMIC(redis_sock)) {
             if (line[0] == '-') {
-                redis_sock_set_err(redis_sock, line, len);
+                redis_sock_set_err(redis_sock, line+1, len-1);
             }
         }
         return -1;
@@ -1245,13 +1245,13 @@ redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 /* Consume message ID */
 PHP_REDIS_API int
 redis_sock_read_single_line(RedisSock *redis_sock, char *buffer, size_t buflen,
-                            size_t *linelen TSRMLS_DC)
+                            size_t *linelen, int set_err TSRMLS_DC)
 {
     REDIS_REPLY_TYPE type;
     long info;
 
     if (redis_read_reply_type(redis_sock, &type, &info TSRMLS_CC) < 0 ||
-        type != TYPE_LINE)
+        (type != TYPE_LINE && type != TYPE_ERR))
     {
         return -1;
     }
@@ -1260,7 +1260,13 @@ redis_sock_read_single_line(RedisSock *redis_sock, char *buffer, size_t buflen,
         return -1;
     }
 
-    return 0;
+    if (set_err && type == TYPE_ERR) {
+        if (IS_ATOMIC(redis_sock)) {
+            redis_sock_set_err(redis_sock, buffer, *linelen);
+        }
+    }
+
+    return type == TYPE_LINE ? 0 : -1;
 }
 
 /* Helper function to consume Redis stream message data.  This is useful for
@@ -1279,7 +1285,7 @@ redis_read_stream_messages(RedisSock *redis_sock, int count, zval *z_ret
         /* Consume inner multi-bulk header, message ID itself and finaly
          * the multi-bulk header for field and values */
         if ((read_mbulk_header(redis_sock, &mhdr TSRMLS_CC) < 0 || mhdr != 2) ||
-            redis_sock_read_single_line(redis_sock, id, sizeof(id), &idlen TSRMLS_CC) < 0 ||
+            redis_sock_read_single_line(redis_sock, id, sizeof(id), &idlen, 0 TSRMLS_CC) < 0 ||
             (read_mbulk_header(redis_sock, &fields TSRMLS_CC) < 0 || fields % 2 != 0))
         {
             return -1;
@@ -1309,6 +1315,7 @@ redis_xrange_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (read_mbulk_header(redis_sock, &messages TSRMLS_CC) < 0 ||
         redis_read_stream_messages(redis_sock, messages, z_messages TSRMLS_CC) < 0)
     {
+        zval_dtor(z_messages);
         REDIS_FREE_ZVAL(z_messages);
         if (IS_ATOMIC(redis_sock)) {
             RETVAL_FALSE;
@@ -1421,7 +1428,7 @@ redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv TSRMLS_DC)
                 return -1;
             add_next_index_stringl(rv, id, idlen);
         } else {
-            if (li != 2 || redis_sock_read_single_line(redis_sock, id, sizeof(id), &idlen TSRMLS_CC) < 0 ||
+            if (li != 2 || redis_sock_read_single_line(redis_sock, id, sizeof(id), &idlen, 0 TSRMLS_CC) < 0 ||
                 (read_mbulk_header(redis_sock, &fields TSRMLS_CC) < 0 || fields % 2 != 0)) return -1;
 
             REDIS_MAKE_STD_ZVAL(z_msg);
@@ -1562,7 +1569,7 @@ void redis_single_line_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock
     char buffer[4096];
     size_t len;
 
-    if (redis_sock_read_single_line(redis_sock, buffer, sizeof(buffer), &len TSRMLS_CC) < 0) {
+    if (redis_sock_read_single_line(redis_sock, buffer, sizeof(buffer), &len, 1 TSRMLS_CC) < 0) {
         if (IS_ATOMIC(redis_sock)) {
             RETURN_FALSE;
         } else {
