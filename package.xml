@@ -29,8 +29,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </lead>
  <date>2018-06-22</date>
  <version>
-  <release>4.1.0RC2</release>
-  <api>4.1.0RC2</api>
+  <release>4.1.0RC3</release>
+  <api>4.1.0RC3</api>
  </version>
  <stability>
   <release>beta</release>
@@ -38,7 +38,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 4.1.0RC2
+    phpredis 4.1.0RC3
 
     The primary new feature of this release is session locking functionality. Thanks to @SkydiveMarius!
 
@@ -120,10 +120,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <changelog>
    <release>
    <stability><release>beta</release><api>beta</api></stability>
-   <version><release>4.1.0RC2</release><api>4.1.0RC2</api></version>
+   <version><release>4.1.0RC3</release><api>4.1.0RC3</api></version>
    <date>2018-06-22</date>
    <notes>
-      phpredis 4.1.0RC2
+      phpredis 4.1.0RC3
 
       The primary new feature of this release is session locking functionality. Thanks to @SkydiveMarius!
 
