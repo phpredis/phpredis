@@ -1,4 +1,3 @@
-dnl $Id$
 dnl config.m4 for extension redis
 
 PHP_ARG_ENABLE(redis, whether to enable redis support,
