@@ -27,18 +27,18 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2018-06-22</date>
+ <date>2018-07-10</date>
  <version>
-  <release>4.1.0RC3</release>
-  <api>4.1.0RC3</api>
+  <release>4.1.0</release>
+  <api>4.1.0</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 4.1.0RC3
+    phpredis 4.1.0
 
     The primary new feature of this release is session locking functionality. Thanks to @SkydiveMarius!
 
@@ -49,6 +49,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Split INSTALL and add more instructions [43613d9e,80d2a917] (@remicollet, Pavlo Yatsukhnenko)
     * Only the first arg of connect and pconnect is required [063b5c1a] (@mathroc)
     * Add session locking functionality [300c7251] (@SkydiveMarius, Michael Grunder, Pavlo Yatsukhnenko)
+    * Fix compression in RedisCluster [1aed74b4] (Pavlo Yatsukhnenko)
     * Refactor geo* commands + documentation improvements (Michael Grunder)
  </notes>
  <contents>
@@ -119,11 +120,11 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
    <release>
-   <stability><release>beta</release><api>beta</api></stability>
-   <version><release>4.1.0RC3</release><api>4.1.0RC3</api></version>
-   <date>2018-06-22</date>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>4.1.0</release><api>4.1.0</api></version>
+   <date>2018-01-10</date>
    <notes>
-      phpredis 4.1.0RC3
+      phpredis 4.1.0
 
       The primary new feature of this release is session locking functionality. Thanks to @SkydiveMarius!
 
@@ -134,6 +135,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
       * Split INSTALL and add more instructions [43613d9e,80d2a917] (@remicollet, Pavlo Yatsukhnenko)
       * Only the first arg of connect and pconnect is required [063b5c1a] (@mathroc)
       * Add session locking functionality [300c7251] (@SkydiveMarius, Michael Grunder, Pavlo Yatsukhnenko)
+      * Fix compression in RedisCluster [1aed74b4] (Pavlo Yatsukhnenko)
       * Refactor geo* commands + documentation improvements (Michael Grunder)
    </notes>
    </release>
