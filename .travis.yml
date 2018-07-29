@@ -1,8 +1,6 @@
-dist: precise
 sudo: required
 language: php
 php:
-  - 5.3
   - 5.4
   - 5.5
   - 5.6
@@ -15,6 +13,9 @@ matrix:
   allow_failures:
     - php: nightly
   include:
+    # php 5.3 is only available on precise
+    - php: 5.3
+      dist: precise
     - php: 5.4
       env: CC=clang
     - php: 5.5
@@ -40,7 +41,9 @@ before_script:
   - mkdir -p tests/nodes/ && echo > tests/nodes/nodemap
   - for PORT in $(seq 6379 6382); do redis-server --port $PORT --daemonize yes; done
   - for PORT in $(seq 7000 7011); do redis-server --port $PORT --cluster-enabled yes --cluster-config-file $PORT.conf --daemonize yes; echo 127.0.0.1:$PORT >> tests/nodes/nodemap; done
-  - wget https://raw.githubusercontent.com/antirez/redis/unstable/src/redis-trib.rb
+  - wget https://raw.githubusercontent.com/antirez/redis/1673a3f32ce22498bcb60d73ee254e61e323dda5/src/redis-trib.rb
+  # Upstream suggests: redis-cli --cluster create $(seq -f 127.0.0.1:%g 7000 7011) --cluster-replicas 3
+  # but --cluster is an unknown option for travis trusty
   - echo yes | ruby redis-trib.rb create --replicas 3 $(seq -f 127.0.0.1:%g 7000 7011)
   - echo 'extension = redis.so' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 script:
