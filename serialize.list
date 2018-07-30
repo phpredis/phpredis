@@ -27,6 +27,7 @@ strlen
 	sRemove
 	sMove
 	sContains
+	smembers
 
 	zAdd
 	zDelete
