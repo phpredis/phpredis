@@ -146,7 +146,7 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
                 r->integer = len;
                 break;
             case TYPE_BULK:
-                if (r->len > 0) {
+                if (r->len >= 0) {
                     r->str = redis_sock_read_bulk_reply(sock,r->len TSRMLS_CC);
                     if (!r->str) {
                         *err = 1;
@@ -831,9 +831,14 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     return c;
 }
 
-PHP_REDIS_API void cluster_free(redisCluster *c) {
+PHP_REDIS_API void
+cluster_free(redisCluster *c, int free_ctx TSRMLS_DC)
+{
+    /* Disconnect from each node we're connected to */
+    cluster_disconnect(c TSRMLS_CC);
+
     /* Free any allocated prefix */
-    if (c->flags->prefix) efree(c->flags->prefix);
+    if (c->flags->prefix) zend_string_release(c->flags->prefix);
     efree(c->flags);
 
     /* Call hash table destructors */
@@ -848,7 +853,7 @@ PHP_REDIS_API void cluster_free(redisCluster *c) {
     if (c->err) zend_string_release(c->err);
 
     /* Free structure itself */
-    efree(c);
+    if (free_ctx) efree(c);
 }
 
 /* Takes our input hash table and returns a straigt C array with elements,
@@ -1069,7 +1074,7 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c TSRMLS_DC) {
     redisClusterNode *node;
 
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
-        if (node == NULL) break;
+        if (node == NULL) continue;
         redis_sock_disconnect(node->sock TSRMLS_CC);
         node->sock->lazy_connect = 1;
     } ZEND_HASH_FOREACH_END();
@@ -2120,6 +2125,7 @@ PHP_REDIS_API void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS,
     /* Protect against an invalid response type, -1 response length, and failure
      * to consume the responses. */
     c->cmd_sock->serializer = c->flags->serializer;
+    c->cmd_sock->compression = c->flags->compression;
     short fail = c->reply_type != TYPE_MULTIBULK || c->reply_len == -1 ||
         mbulk_resp_loop(c->cmd_sock, mctx->z_multi, c->reply_len, NULL TSRMLS_CC) == FAILURE;
 

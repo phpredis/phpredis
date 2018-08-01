@@ -21,13 +21,6 @@ typedef struct subscribeContext {
     zend_fcall_info_cache cb_cache;
 } subscribeContext;
 
-/* Georadius sort type */
-typedef enum geoSortType {
-    SORT_NONE,
-    SORT_ASC,
-    SORT_DESC
-} geoSortType;
-
 /* Construct a raw command */
 int redis_build_raw_cmd(zval *z_args, int argc, char **cmd, int *cmd_len TSRMLS_DC);
 /* Construct a script command */
@@ -114,6 +107,9 @@ int redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
+
+int redis_flush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 /* Commands which need a unique construction mechanism.  This is either because

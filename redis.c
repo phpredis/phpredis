@@ -73,6 +73,12 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("redis.clusters.read_timeout", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.seeds", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.timeout", "", PHP_INI_ALL, NULL)
+
+    /* redis session */
+    PHP_INI_ENTRY("redis.session.locking_enabled", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.lock_expire", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.lock_retries", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.lock_wait_time", "", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
 /** {{{ Argument info for commands in redis 1.0 */
@@ -100,6 +106,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_config, 0, 0, 2)
     ZEND_ARG_INFO(0, cmd)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_flush, 0, 0, 0)
+    ZEND_ARG_INFO(0, async)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_pubsub, 0, 0, 1)
@@ -226,10 +236,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan, 0, 0, 2)
     ZEND_ARG_INFO(0, i_count)
 ZEND_END_ARG_INFO()
 
-#ifdef ZTS
-ZEND_DECLARE_MODULE_GLOBALS(redis)
-#endif
-
 static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, __construct, arginfo_void, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
      PHP_ME(Redis, __destruct, arginfo_void, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
@@ -265,8 +271,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, exec, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, exists, arginfo_exists, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, expireAt, arginfo_key_timestamp, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, flushAll, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, flushDB, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, flushAll, arginfo_flush, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, flushDB, arginfo_flush, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, geoadd, arginfo_geoadd, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, geodist, arginfo_geodist, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, geohash, arginfo_key_members, ZEND_ACC_PUBLIC)
@@ -814,6 +820,9 @@ PHP_MINFO_FUNCTION(redis)
     php_info_print_table_start();
     php_info_print_table_header(2, "Redis Support", "enabled");
     php_info_print_table_row(2, "Redis Version", PHP_REDIS_VERSION);
+#ifdef GIT_REVISION
+    php_info_print_table_row(2, "Git revision", "$Id: " GIT_REVISION " $");
+#endif
 #ifdef HAVE_REDIS_IGBINARY
     php_info_print_table_row(2, "Available serializers", "php, igbinary");
 #else
@@ -1731,17 +1740,17 @@ PHP_METHOD(Redis, lastSave)
 }
 /* }}} */
 
-/* {{{ proto bool Redis::flushDB() */
+/* {{{ proto bool Redis::flushDB([bool async]) */
 PHP_METHOD(Redis, flushDB)
 {
-    REDIS_PROCESS_KW_CMD("FLUSHDB", redis_empty_cmd, redis_boolean_response);
+    REDIS_PROCESS_KW_CMD("FLUSHDB", redis_flush_cmd, redis_boolean_response);
 }
 /* }}} */
 
-/* {{{ proto bool Redis::flushAll() */
+/* {{{ proto bool Redis::flushAll([bool async]) */
 PHP_METHOD(Redis, flushAll)
 {
-    REDIS_PROCESS_KW_CMD("FLUSHALL", redis_empty_cmd, redis_boolean_response);
+    REDIS_PROCESS_KW_CMD("FLUSHALL", redis_flush_cmd, redis_boolean_response);
 }
 /* }}} */
 

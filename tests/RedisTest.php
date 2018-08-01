@@ -21,6 +21,16 @@ class Redis_Test extends TestSuite
      */
     public $redis;
 
+    /**
+     * @var string
+     */
+    protected $sessionPrefix = 'PHPREDIS_SESSION:';
+
+    /**
+     * @var string
+     */
+    protected $sessionSaveHandler = 'redis';
+
     public function setUp() {
         $this->redis = $this->newInstance();
         $info = $this->redis->info();
@@ -442,7 +452,7 @@ class Redis_Test extends TestSuite
     public function testExpireAt() {
         $this->redis->del('key');
         $this->redis->set('key', 'value');
-        $now = time(NULL);
+        $now = time();
         $this->redis->expireAt('key', $now + 1);
         $this->assertEquals('value', $this->redis->get('key'));
         sleep(2);
@@ -5008,38 +5018,39 @@ class Redis_Test extends TestSuite
         $lng = -121.837478;
         $lat = 39.728494;
 
-        $this->addCities('gk');
+        $this->addCities('{gk}');
 
         /* Pre tested with redis-cli.  We're just verifying proper delivery of distance and unit */
         if ($cmd == 'georadius') {
-            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 10, 'mi'), Array('Chico'));
-            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 30, 'mi'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 50, 'km'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 50000, 'm'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadius('gk', $lng, $lat, 150000, 'ft'), Array('Gridley', 'Chico'));
-            $args = Array('georadius', 'gk', $lng, $lat, 500, 'mi');
+            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 10, 'mi'), Array('Chico'));
+            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 30, 'mi'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 50, 'km'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 50000, 'm'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 150000, 'ft'), Array('Gridley', 'Chico'));
+            $args = Array('georadius', '{gk}', $lng, $lat, 500, 'mi');
 
             /* Test a bad COUNT argument */
             foreach (Array(-1, 0, 'notanumber') as $count) {
-                $this->assertFalse(@$this->redis->georadius('gk', $lng, $lat, 10, 'mi', Array('count' => $count)));
+                $this->assertFalse(@$this->redis->georadius('{gk}', $lng, $lat, 10, 'mi', Array('count' => $count)));
             }
         } else {
-            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 10, 'mi'), Array('Chico'));
-            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 30, 'mi'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 50, 'km'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 50000, 'm'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadiusbymember('gk', $city, 150000, 'ft'), Array('Gridley', 'Chico'));
-            $args = Array('georadiusbymember', 'gk', $city, 500, 'mi');
+            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 10, 'mi'), Array('Chico'));
+            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 30, 'mi'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 50, 'km'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 50000, 'm'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 150000, 'ft'), Array('Gridley', 'Chico'));
+            $args = Array('georadiusbymember', '{gk}', $city, 500, 'mi');
 
             /* Test a bad COUNT argument */
             foreach (Array(-1, 0, 'notanumber') as $count) {
-                $this->assertFalse(@$this->redis->georadiusbymember('gk', $city, 10, 'mi', Array('count' => $count)));
+                $this->assertFalse(@$this->redis->georadiusbymember('{gk}', $city, 10, 'mi', Array('count' => $count)));
             }
         }
 
         /* Options */
         $opts = Array('WITHCOORD', 'WITHDIST', 'WITHHASH');
         $sortopts = Array('', 'ASC', 'DESC');
+        $storeopts = Array('', 'STORE', 'STOREDIST');
 
         for ($i = 0; $i < count($opts); $i++) {
             $subopts = array_slice($opts, 0, $i);
@@ -5050,30 +5061,51 @@ class Redis_Test extends TestSuite
                 $subargs[] = $opt;
             }
 
-            for ($c = 0; $c < 3; $c++) {
-                /* Add a count if we're past first iteration */
-                if ($c > 0) {
-                    $subopts['count'] = $c;
-                    $subargs[] = 'count';
-                    $subargs[] = $c;
-                }
+            /* Cannot mix STORE[DIST] with the WITH* arguments */
+            $realstoreopts = count($subopts) == 0 ? $storeopts : Array();
 
-                /* Adding optional sort */
-                foreach ($sortopts as $sortopt) {
-                    $realargs = $subargs;
-                    $realopts = $subopts;
-                    if ($sortopt) {
-                        $realargs[] = $sortopt;
-                        $realopts[] = $sortopt;
+            $base_subargs = $subargs;
+            $base_subopts = $subopts;
+
+            foreach ($realstoreopts as $store_type) {
+
+                for ($c = 0; $c < 3; $c++) {
+                    $subargs = $base_subargs;
+                    $subopts = $base_subopts;
+
+                    /* Add a count if we're past first iteration */
+                    if ($c > 0) {
+                        $subopts['count'] = $c;
+                        $subargs[] = 'count';
+                        $subargs[] = $c;
                     }
 
-                    $ret1 = $this->rawCommandArray('gk', $realargs);
-                    if ($cmd == 'georadius') {
-                        $ret2 = $this->redis->$cmd('gk', $lng, $lat, 500, 'mi', $realopts);
-                    } else {
-                        $ret2 = $this->redis->$cmd('gk', $city, 500, 'mi', $realopts);
+                    /* Adding optional sort */
+                    foreach ($sortopts as $sortopt) {
+                        $realargs = $subargs;
+                        $realopts = $subopts;
+
+                        if ($sortopt) {
+                            $realargs[] = $sortopt;
+                            $realopts[] = $sortopt;
+                        }
+
+                        if ($store_type) {
+                            $realopts[$store_type] = "{gk}-$store_type";
+                            $realargs[] = $store_type;
+                            $realargs[] = "{gk}-$store_type";
+                        }
+
+                        $ret1 = $this->rawCommandArray('{gk}', $realargs);
+                        if ($cmd == 'georadius') {
+                            $ret2 = $this->redis->$cmd('{gk}', $lng, $lat, 500, 'mi', $realopts);
+                        } else {
+                            $ret2 = $this->redis->$cmd('{gk}', $city, 500, 'mi', $realopts);
+                        }
+
+                        if ($ret1 != $ret2) die();
+                        $this->assertEquals($ret1, $ret2);
                     }
-                    $this->assertEquals($ret1, $ret2);
                 }
             }
         }
@@ -5142,15 +5174,176 @@ class Redis_Test extends TestSuite
         $this->assertEquals($this->redis->lrange('mylist', 0, -1), Array('A','B','C','D'));
     }
 
-    public function testSession()
+    public function testSession_savedToRedis()
     {
-        ini_set('session.save_handler', 'redis');
-        ini_set('session.save_path', 'tcp://localhost:6379');
-        if (!@session_start()) {
-            return $this->markTestSkipped();
-        }
-        session_write_close();
-        $this->assertTrue($this->redis->exists('PHPREDIS_SESSION:' . session_id()));
+        $this->setSessionHandler();
+
+        $sessionId = $this->generateSessionId();
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false);
+
+        $this->assertTrue($this->redis->exists($this->sessionPrefix . $sessionId));
+        $this->assertTrue($sessionSuccessful);
+    }
+
+    public function testSession_lockKeyCorrect()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 5, true);
+        usleep(100000);
+
+        $this->assertTrue($this->redis->exists($this->sessionPrefix . $sessionId . '_LOCK'));
+    }
+
+    public function testSession_lockingDisabledByDefault()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 5, true, 300, false);
+        usleep(100000);
+
+        $start = microtime(true);
+        $sessionSuccessful = $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false, 300, false);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
+
+        $this->assertFalse($this->redis->exists($this->sessionPrefix . $sessionId . '_LOCK'));
+        $this->assertTrue($elapsedTime < 1);
+        $this->assertTrue($sessionSuccessful);
+    }
+
+    public function testSession_lockReleasedOnClose()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 1, true);
+        usleep(1100000);
+
+        $this->assertFalse($this->redis->exists($this->sessionPrefix . $sessionId . '_LOCK'));
+    }
+
+    public function testSession_lock_ttlMaxExecutionTime()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 10, true, 2);
+        usleep(100000);
+
+        $start = microtime(true);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
+
+        $this->assertTrue($elapsedTime < 3);
+        $this->assertTrue($sessionSuccessful);
+    }
+
+    public function testSession_lock_ttlLockExpire()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 10, true, 300, true, null, -1, 2);
+        usleep(100000);
+
+        $start = microtime(true);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
+
+        $this->assertTrue($elapsedTime < 3);
+        $this->assertTrue($sessionSuccessful);
+    }
+
+    public function testSession_lockHoldCheckBeforeWrite_otherProcessHasLock()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 2, true, 300, true, null, -1, 1, 'firstProcess');
+        usleep(1500000); // 1.5 sec
+        $writeSuccessful = $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 10, 'secondProcess');
+        sleep(1);
+
+        $this->assertTrue($writeSuccessful);
+        $this->assertEquals('secondProcess', $this->getSessionData($sessionId));
+    }
+
+    public function testSession_lockHoldCheckBeforeWrite_nobodyHasLock()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $writeSuccessful = $this->startSessionProcess($sessionId, 2, false, 300, true, null, -1, 1, 'firstProcess');
+
+        $this->assertFalse($writeSuccessful);
+        $this->assertTrue('firstProcess' !== $this->getSessionData($sessionId));
+    }
+
+    public function testSession_correctLockRetryCount()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 10, true);
+        usleep(100000);
+
+        $start = microtime(true);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false, 10, true, 1000000, 3);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
+
+        $this->assertTrue($elapsedTime > 3 && $elapsedTime < 4);
+        $this->assertFalse($sessionSuccessful);
+    }
+
+    public function testSession_defaultLockRetryCount()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 10, true);
+        usleep(100000);
+
+        $start = microtime(true);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false, 10, true, 200000, 0);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
+
+        $this->assertTrue($elapsedTime > 2 && $elapsedTime < 3);
+        $this->assertFalse($sessionSuccessful);
+    }
+
+    public function testSession_noUnlockOfOtherProcess()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 3, true, 1); // Process 1
+        usleep(100000);
+        $this->startSessionProcess($sessionId, 5, true);    // Process 2
+
+        $start = microtime(true);
+        // Waiting until TTL of process 1 ended and process 2 locked the session,
+        // because is not guaranteed which waiting process gets the next lock
+        sleep(1);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
+
+        $this->assertTrue($elapsedTime > 5);
+        $this->assertTrue($sessionSuccessful);
+    }
+
+    public function testSession_lockWaitTime()
+    {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 1, true, 300);
+        usleep(100000);
+
+        $start = microtime(true);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false, 300, true, 3000000);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
+
+        $this->assertTrue($elapsedTime > 2.5);
+        $this->assertTrue($elapsedTime < 3.5);
+        $this->assertTrue($sessionSuccessful);
     }
 
     public function testMultipleConnect() {
@@ -5174,6 +5367,257 @@ class Redis_Test extends TestSuite
         }  catch (Exception $e) {
             $this->assertTrue(strpos($e, "timed out") !== false);
         }
+    }
+
+    public  function testSession_regenerateSessionId_noLock_noDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_noLock_withDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, false, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_noDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_withDestroy() {
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_noLock_noDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, false, false, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_noLock_withDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, false, true, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_noDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true, false, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public  function testSession_regenerateSessionId_withLock_withDestroy_withProxy() {
+        if (!interface_exists('SessionHandlerInterface')) {
+            $this->markTestSkipped('session handler interface not available in PHP < 5.4');
+        }
+
+        $this->setSessionHandler();
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 1, 'bar');
+
+        $newSessionId = $this->regenerateSessionId($sessionId, true, true, true);
+
+        $this->assertTrue($newSessionId !== $sessionId);
+        $this->assertEquals('bar', $this->getSessionData($newSessionId));
+    }
+
+    public function testSession_ttl_equalsToSessionLifetime()
+    {
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 0, 'test', 600);
+        $ttl = $this->redis->ttl($this->sessionPrefix . $sessionId);
+
+        $this->assertEquals(600, $ttl);
+    }
+
+    public function testSession_ttl_resetOnWrite()
+    {
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 0, 'test', 600);
+        $this->redis->expire($this->sessionPrefix . $sessionId, 9999);
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 0, 'test', 600);
+        $ttl = $this->redis->ttl($this->sessionPrefix . $sessionId);
+
+        $this->assertEquals(600, $ttl);
+    }
+
+    public function testSession_ttl_resetOnRead()
+    {
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 0, 'test', 600);
+        $this->redis->expire($this->sessionPrefix . $sessionId, 9999);
+        $this->getSessionData($sessionId, 600);
+        $ttl = $this->redis->ttl($this->sessionPrefix . $sessionId);
+
+        $this->assertEquals(600, $ttl);
+    }
+
+    private function setSessionHandler()
+    {
+        $host = $this->getHost() ?: 'localhost';
+
+        @ini_set('session.save_handler', 'redis');
+        @ini_set('session.save_path', 'tcp://' . $host . ':6379');
+    }
+
+    /**
+     * @return string
+     */
+    private function generateSessionId()
+    {
+        if (function_exists('session_create_id')) {
+            return session_create_id();
+        } else if (function_exists('random_bytes')) {
+            return bin2hex(random_bytes(8));
+        } else if (function_exists('openssl_random_pseudo_bytes')) {
+            return bin2hex(openssl_random_pseudo_bytes(8));
+        } else {
+            return uniqid();
+        }
+    }
+
+    /**
+     * @param string $sessionId
+     * @param int    $sleepTime
+     * @param bool   $background
+     * @param int    $maxExecutionTime
+     * @param bool   $locking_enabled
+     * @param int    $lock_wait_time
+     * @param int    $lock_retries
+     * @param int    $lock_expires
+     * @param string $sessionData
+     *
+     * @param int    $sessionLifetime
+     *
+     * @return bool
+     * @throws Exception
+     */
+    private function startSessionProcess($sessionId, $sleepTime, $background, $maxExecutionTime = 300, $locking_enabled = true, $lock_wait_time = null, $lock_retries = -1, $lock_expires = 0, $sessionData = '', $sessionLifetime = 1440)
+    {
+        if (substr(php_uname(), 0, 7) == "Windows"){
+            $this->markTestSkipped();
+            return true;
+        } else {
+            $commandParameters = array($this->getFullHostPath(), $this->sessionSaveHandler, $sessionId, $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires, $sessionData, $sessionLifetime);
+            if ($locking_enabled) {
+                $commandParameters[] = '1';
+
+                if ($lock_wait_time != null) {
+                    $commandParameters[] = $lock_wait_time;
+                }
+            }
+            $commandParameters = array_map('escapeshellarg', $commandParameters);
+
+            $command = self::getPhpCommand('startSession.php') . implode(' ', $commandParameters);
+            $command .= $background ? ' 2>/dev/null > /dev/null &' : ' 2>&1';
+            exec($command, $output);
+            return ($background || (count($output) == 1 && $output[0] == 'SUCCESS')) ? true : false;
+        }
+    }
+
+    /**
+     * @param string $sessionId
+     * @param int    $sessionLifetime
+     *
+     * @return string
+     */
+    private function getSessionData($sessionId, $sessionLifetime = 1440)
+    {
+        $command = self::getPhpCommand('getSessionData.php') . escapeshellarg($this->getFullHostPath()) . ' ' . $this->sessionSaveHandler . ' ' . escapeshellarg($sessionId) . ' ' . escapeshellarg($sessionLifetime);
+        exec($command, $output);
+
+        return $output[0];
+    }
+
+    /**
+     * @param string $sessionId
+     * @param bool   $locking
+     * @param bool   $destroyPrevious
+     * @param bool   $sessionProxy
+     *
+     * @return string
+     */
+    private function regenerateSessionId($sessionId, $locking = false, $destroyPrevious = false, $sessionProxy = false)
+    {
+	$args = array_map('escapeshellarg', array($sessionId, $locking, $destroyPrevious, $sessionProxy));
+
+        $command = self::getPhpCommand('regenerateSessionId.php') . escapeshellarg($this->getFullHostPath()) . ' ' . $this->sessionSaveHandler . ' ' . implode(' ', $args);
+
+        exec($command, $output);
+
+        return $output[0];
+    }
+
+    /**
+     * Return command to launch PHP with built extension enabled
+     * taking care of environment (TEST_PHP_EXECUTABLE and TEST_PHP_ARGS)
+     *
+     * @param string $script
+     *
+     * @return string
+     */
+    private function getPhpCommand($script)
+    {
+        static $cmd = NULL;
+
+        if (!$cmd) {
+            $cmd  = (getenv('TEST_PHP_EXECUTABLE') ?: (defined('PHP_BINARY') ? PHP_BINARY : 'php')); // PHP_BINARY is 5.4+
+            $cmd .= ' ';
+            $cmd .= (getenv('TEST_PHP_ARGS') ?: '--no-php-ini --define extension=igbinary.so --define extension=' . dirname(__DIR__) . '/modules/redis.so');
+        }
+        return $cmd . ' ' . __DIR__ . '/' . $script . ' ';
     }
 }
 ?>

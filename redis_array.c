@@ -97,6 +97,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_multi, 0, 0, 1)
     ZEND_ARG_INFO(0, mode)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_flush, 0, 0, 0)
+    ZEND_ARG_INFO(0, async)
+ZEND_END_ARG_INFO()
+
 zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, __call, arginfo_call, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, __construct, arginfo_ctor, ZEND_ACC_PUBLIC)
@@ -110,8 +114,8 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, del, arginfo_del, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, discard, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, exec, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, flushall, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, flushdb, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, flushall, arginfo_flush, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, flushdb, arginfo_flush, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, getOption, arginfo_getopt, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, info, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, keys, arginfo_keys, ZEND_ACC_PUBLIC)
@@ -624,10 +628,32 @@ PHP_METHOD(RedisArray, _rehash)
     }
 }
 
-static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
+static void
+multihost_distribute_call(RedisArray *ra, zval *return_value, zval *z_fun, int argc, zval *argv TSRMLS_DC)
+{
+    int i;
+
+    /* Init our array return */
+    array_init(return_value);
+
+    /* Iterate our RedisArray nodes */
+    for (i = 0; i < ra->count; ++i) {
+        zval zv, *z_tmp = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+        MAKE_STD_ZVAL(z_tmp);
+#endif
+        /* Call each node in turn */
+        call_user_function(&redis_array_ce->function_table, &ra->redis[i], z_fun, z_tmp, argc, argv);
+
+        /* Add the result for this host */
+        add_assoc_zval(return_value, ra->hosts[i], z_tmp);
+    }
+}
+
+static void
+multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
 {
     zval *object, z_fun;
-    int i;
     RedisArray *ra;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
@@ -642,18 +668,33 @@ static void multihost_distribute(INTERNAL_FUNCTION_PARAMETERS, const char *metho
     /* prepare call */
     ZVAL_STRING(&z_fun, method_name);
 
-    array_init(return_value);
-    for(i = 0; i < ra->count; ++i) {
-        zval zv, *z_tmp = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-        MAKE_STD_ZVAL(z_tmp);
-#endif
+    multihost_distribute_call(ra, return_value, &z_fun, 0, NULL TSRMLS_CC);
 
-        /* Call each node in turn */
-        call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 0, NULL);
+    zval_dtor(&z_fun);
+}
 
-        add_assoc_zval(return_value, ra->hosts[i], z_tmp);
+static void
+multihost_distribute_flush(INTERNAL_FUNCTION_PARAMETERS, const char *method_name)
+{
+    zval *object, z_fun, z_args[1];
+    zend_bool async = 0;
+    RedisArray *ra;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O|b",
+                                     &object, redis_array_ce, &async) == FAILURE) {
+        RETURN_FALSE;
     }
+
+    if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    /* prepare call */
+    ZVAL_STRING(&z_fun, method_name);
+    ZVAL_BOOL(&z_args[0], async);
+
+    multihost_distribute_call(ra, return_value, &z_fun, 1, z_args TSRMLS_CC);
+
     zval_dtor(&z_fun);
 }
 
@@ -669,12 +710,12 @@ PHP_METHOD(RedisArray, ping)
 
 PHP_METHOD(RedisArray, flushdb)
 {
-    multihost_distribute(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHDB");
+    multihost_distribute_flush(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHDB");
 }
 
 PHP_METHOD(RedisArray, flushall)
 {
-    multihost_distribute(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHALL");
+    multihost_distribute_flush(INTERNAL_FUNCTION_PARAM_PASSTHRU, "FLUSHALL");
 }
 
 PHP_METHOD(RedisArray, save)
@@ -690,7 +731,7 @@ PHP_METHOD(RedisArray, bgsave)
 
 PHP_METHOD(RedisArray, keys)
 {
-    zval *object, z_args[1], z_fun;
+    zval *object, z_fun, z_args[1];
     RedisArray *ra;
     char *pattern;
     strlen_t pattern_len;
@@ -714,23 +755,8 @@ PHP_METHOD(RedisArray, keys)
     /* We will be passing with one string argument (the pattern) */
     ZVAL_STRINGL(z_args, pattern, pattern_len);
 
-    /* Init our array return */
-    array_init(return_value);
+    multihost_distribute_call(ra, return_value, &z_fun, 1, z_args TSRMLS_CC);
 
-    /* Iterate our RedisArray nodes */
-    for(i = 0; i < ra->count; ++i) {
-        zval zv, *z_tmp = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-        /* Return for this node */
-        MAKE_STD_ZVAL(z_tmp);
-#endif
-
-        /* Call KEYS on each node */
-        call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 1, z_args);
-
-        /* Add the result for this host */
-        add_assoc_zval(return_value, ra->hosts[i], z_tmp);
-    }
     zval_dtor(&z_args[0]);
     zval_dtor(&z_fun);
 }
@@ -757,18 +783,8 @@ PHP_METHOD(RedisArray, getOption)
     /* copy arg */
     ZVAL_LONG(&z_args[0], opt);
 
-    array_init(return_value);
-    for(i = 0; i < ra->count; ++i) {
-        zval zv, *z_tmp = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-        MAKE_STD_ZVAL(z_tmp);
-#endif
+    multihost_distribute_call(ra, return_value, &z_fun, 1, z_args TSRMLS_CC);
 
-        /* Call each node in turn */
-        call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 1, z_args);
-
-        add_assoc_zval(return_value, ra->hosts[i], z_tmp);
-    }
     zval_dtor(&z_fun);
 }
 
@@ -797,18 +813,8 @@ PHP_METHOD(RedisArray, setOption)
     ZVAL_LONG(&z_args[0], opt);
     ZVAL_STRINGL(&z_args[1], val_str, val_len);
 
-    array_init(return_value);
-    for(i = 0; i < ra->count; ++i) {
-        zval zv, *z_tmp = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-        MAKE_STD_ZVAL(z_tmp);
-#endif
+    multihost_distribute_call(ra, return_value, &z_fun, 2, z_args TSRMLS_CC);
 
-        /* Call each node in turn */
-        call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 2, z_args);
-
-        add_assoc_zval(return_value, ra->hosts[i], z_tmp);
-    }
     zval_dtor(&z_args[1]);
     zval_dtor(&z_fun);
 }
@@ -835,20 +841,11 @@ PHP_METHOD(RedisArray, select)
     /* copy args */
     ZVAL_LONG(&z_args[0], opt);
 
-    array_init(return_value);
-    for(i = 0; i < ra->count; ++i) {
-        zval zv, *z_tmp = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-        MAKE_STD_ZVAL(z_tmp);
-#endif
+    multihost_distribute_call(ra, return_value, &z_fun, 1, z_args TSRMLS_CC);
 
-        /* Call each node in turn */
-        call_user_function(&redis_ce->function_table, &ra->redis[i], &z_fun, z_tmp, 1, z_args);
-
-        add_assoc_zval(return_value, ra->hosts[i], z_tmp);
-    }
     zval_dtor(&z_fun);
 }
+
 #if (PHP_MAJOR_VERSION < 7)
 #define HANDLE_MULTI_EXEC(ra, cmd, cmdlen) do { \
     if (ra && ra->z_multi_exec) { \

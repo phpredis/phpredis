@@ -25,7 +25,7 @@
 #define PHP_REDIS_H
 
 /* phpredis version */
-#define PHP_REDIS_VERSION "4.0.2"
+#define PHP_REDIS_VERSION "4.1.0"
 
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, __destruct);
@@ -261,11 +261,6 @@ PHP_REDIS_API void set_flag(zval *object, int new_flag TSRMLS_DC);
 PHP_REDIS_API int redis_sock_read_multibulk_multi_reply_loop(
     INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, 
     int numElems);
-
-#ifndef _MSC_VER
-ZEND_BEGIN_MODULE_GLOBALS(redis)
-ZEND_END_MODULE_GLOBALS(redis)
-#endif
 
 extern zend_module_entry redis_module_entry;
 

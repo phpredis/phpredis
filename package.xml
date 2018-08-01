@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2018-04-25</date>
+ <date>2018-07-10</date>
  <version>
-  <release>4.0.2</release>
-  <api>4.0.2</api>
+  <release>4.1.0</release>
+  <api>4.1.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -38,16 +38,26 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 4.0.2
+    phpredis 4.1.0
 
-    This release contains only fix of exists method to take multiple keys
-    and return integer value (was broken in 4.0.1) Thanks @RanjanRohit!
+    The primary new feature of this release is session locking functionality. Thanks to @SkydiveMarius!
+
+    * Add callbacks validate_sid and update_timestamp to session handler [aaaf0f23] (@hongboliu)
+    * Call cluster_disconnect before destroying cluster object. [28ec4322] (Pavlo Yatsukhnenko)
+    * Bulk strings can be zero length. (Michael Grunder)
+    * Handle async parameter for flushDb and flushAll [beb6e8f3,acd10409,742cdd05] (Pavlo Yatsukhnenko)
+    * Split INSTALL and add more instructions [43613d9e,80d2a917] (@remicollet, Pavlo Yatsukhnenko)
+    * Only the first arg of connect and pconnect is required [063b5c1a] (@mathroc)
+    * Add session locking functionality [300c7251] (@SkydiveMarius, Michael Grunder, Pavlo Yatsukhnenko)
+    * Fix compression in RedisCluster [1aed74b4] (Pavlo Yatsukhnenko)
+    * Refactor geo* commands + documentation improvements (Michael Grunder)
  </notes>
  <contents>
   <dir name="/">
    <file role='doc' name='COPYING'/>
    <file role='doc' name='CREDITS'/>
    <file role='doc' name='README.markdown'/>
+   <file role='src' name='INSTALL.markdown'/>
    <file role='doc' name='arrays.markdown'/>
    <file role='doc' name='cluster.markdown'/>
    <file role='src' name='cluster_library.c'/>
@@ -84,6 +94,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
      <file role='test' name='RedisTest.php'/>
      <file role='test' name='TestRedis.php'/>
      <file role='test' name='TestSuite.php'/>
+     <file role='test' name='getSessionData.php'/>
+     <file role='test' name='regenerateSessionId.php'/>
+     <file role='test' name='startSession.php'/>
      <file role='test' name='make-cluster.sh'/>
      <file role='test' name='mkring.sh'/>
    </dir> <!-- tests -->
@@ -106,6 +119,27 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>4.1.0</release><api>4.1.0</api></version>
+   <date>2018-01-10</date>
+   <notes>
+      phpredis 4.1.0
+
+      The primary new feature of this release is session locking functionality. Thanks to @SkydiveMarius!
+
+      * Add callbacks validate_sid and update_timestamp to session handler [aaaf0f23] (@hongboliu)
+      * Call cluster_disconnect before destroying cluster object. [28ec4322] (Pavlo Yatsukhnenko)
+      * Bulk strings can be zero length. (Michael Grunder)
+      * Handle async parameter for flushDb and flushAll [beb6e8f3,acd10409,742cdd05] (Pavlo Yatsukhnenko)
+      * Split INSTALL and add more instructions [43613d9e,80d2a917] (@remicollet, Pavlo Yatsukhnenko)
+      * Only the first arg of connect and pconnect is required [063b5c1a] (@mathroc)
+      * Add session locking functionality [300c7251] (@SkydiveMarius, Michael Grunder, Pavlo Yatsukhnenko)
+      * Fix compression in RedisCluster [1aed74b4] (Pavlo Yatsukhnenko)
+      * Refactor geo* commands + documentation improvements (Michael Grunder)
+   </notes>
+   </release>
+
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>4.0.2</release><api>4.0.2</api></version>

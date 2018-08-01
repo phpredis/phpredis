@@ -97,6 +97,11 @@ dnl Check for igbinary
     fi
   fi
 
+  AC_CHECK_PROG([GIT], [git], [yes], [no])
+  if test "$GIT" == "yes" && test -d "$srcdir/.git"; then
+    AC_DEFINE_UNQUOTED(GIT_REVISION, ["$(git log -1 --format=%H)"], [ ])
+  fi
+
   dnl # --with-redis -> check with-path
   dnl SEARCH_PATH="/usr/local /usr"     # you might want to change this
   dnl SEARCH_FOR="/include/redis.h"  # you most likely want to change this
