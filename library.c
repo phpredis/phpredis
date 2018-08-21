@@ -133,20 +133,16 @@ redis_error_throw(RedisSock *redis_sock TSRMLS_DC)
     }
 }
 
-PHP_REDIS_API void redis_stream_close(RedisSock *redis_sock TSRMLS_DC) {
-    if (!redis_sock->persistent) {
-        php_stream_close(redis_sock->stream);
-    } else {
-        php_stream_pclose(redis_sock->stream);
-    }
-}
-
 PHP_REDIS_API int
 redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
 {
     int count;
+    char *errmsg;
 
-    if (!redis_sock->stream) {
+    if (!redis_sock || !redis_sock->stream || redis_sock->status == REDIS_SOCK_STATUS_FAILED) {
+        if (!no_throw) {
+            zend_throw_exception(redis_exception_ce, "Connection closed", 0 TSRMLS_CC);
+        }
         return -1;
     }
 
@@ -169,51 +165,47 @@ redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
         /* Success */
         return 0;
     } else if (redis_sock->mode == MULTI || redis_sock->watching) {
-        REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
-        if (!no_throw) {
-            zend_throw_exception(redis_exception_ce,
-                "Connection lost and socket is in MULTI/watching mode",
-                0 TSRMLS_CC);
-        }
-        return -1;
-    }
-    /* TODO: configurable max retry count */
-    for (count = 0; count < 10; ++count) {
-        /* close existing stream before reconnecting */
-        if (redis_sock->stream) {
-            redis_stream_close(redis_sock TSRMLS_CC);
-            redis_sock->stream = NULL;
-        }
-        // Wait for a while before trying to reconnect
-        if (redis_sock->retry_interval) {
-            // Random factor to avoid having several (or many) concurrent connections trying to reconnect at the same time
-            long retry_interval = (count ? redis_sock->retry_interval : (php_rand(TSRMLS_C) % redis_sock->retry_interval));
-            usleep(retry_interval);
-        }
-        /* reconnect */
-        if (redis_sock_connect(redis_sock TSRMLS_CC) == 0) {
-            /* check for EOF again. */
-            errno = 0;
-            if (php_stream_eof(redis_sock->stream) == 0) {
-                /* If we're using a password, attempt a reauthorization */
-                if (redis_sock->auth && resend_auth(redis_sock TSRMLS_CC) != 0) {
-                    break;
+        errmsg = "Connection lost and socket is in MULTI/watching mode";
+    } else {
+        errmsg = "Connection lost";
+        /* TODO: configurable max retry count */
+        for (count = 0; count < 10; ++count) {
+            /* close existing stream before reconnecting */
+            if (redis_sock->stream) {
+                redis_sock_disconnect(redis_sock, 1 TSRMLS_CC);
+            }
+            // Wait for a while before trying to reconnect
+            if (redis_sock->retry_interval) {
+                // Random factor to avoid having several (or many) concurrent connections trying to reconnect at the same time
+                long retry_interval = (count ? redis_sock->retry_interval : (php_rand(TSRMLS_C) % redis_sock->retry_interval));
+                usleep(retry_interval);
+            }
+            /* reconnect */
+            if (redis_sock_connect(redis_sock TSRMLS_CC) == 0) {
+                /* check for EOF again. */
+                errno = 0;
+                if (php_stream_eof(redis_sock->stream) == 0) {
+                    /* If we're using a password, attempt a reauthorization */
+                    if (redis_sock->auth && resend_auth(redis_sock TSRMLS_CC) != 0) {
+                        errmsg = "AUTH failed while reconnecting";
+                        break;
+                    }
+                    /* If we're using a non-zero db, reselect it */
+                    if (redis_sock->dbNumber && reselect_db(redis_sock TSRMLS_CC) != 0) {
+                        errmsg = "SELECT failed while reconnecting";
+                        break;
+                    }
+                    /* Success */
+                    return 0;
                 }
-                /* If we're using a non-zero db, reselect it */
-                if (redis_sock->dbNumber && reselect_db(redis_sock TSRMLS_CC) != 0) {
-                    break;
-                }
-                /* Success */
-                return 0;
             }
         }
     }
-    /* close stream if still here */
-    if (redis_sock->stream) {
-        REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
-    }
+    /* close stream and mark socket as failed */
+    redis_sock_disconnect(redis_sock, 1 TSRMLS_CC);
+    redis_sock->status = REDIS_SOCK_STATUS_FAILED;
     if (!no_throw) {
-        zend_throw_exception(redis_exception_ce, "Connection lost", 0 TSRMLS_CC);
+        zend_throw_exception(redis_exception_ce, errmsg, 0 TSRMLS_CC);
     }
     return -1;
 }
@@ -1427,7 +1419,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 #endif
 
     if (redis_sock->stream != NULL) {
-        redis_sock_disconnect(redis_sock TSRMLS_CC);
+        redis_sock_disconnect(redis_sock, 0 TSRMLS_CC);
     }
 
     tv.tv_sec  = (time_t)redis_sock->timeout;
@@ -1532,28 +1524,26 @@ redis_sock_server_open(RedisSock *redis_sock TSRMLS_DC)
 /**
  * redis_sock_disconnect
  */
-PHP_REDIS_API int redis_sock_disconnect(RedisSock *redis_sock TSRMLS_DC)
+PHP_REDIS_API int
+redis_sock_disconnect(RedisSock *redis_sock, int force TSRMLS_DC)
 {
     if (redis_sock == NULL) {
-        return 1;
-    }
-
-    redis_sock->dbNumber = 0;
-    if (redis_sock->stream != NULL) {
-        redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
-        redis_sock->watching = 0;
-
-        /* Stil valid? */
-        if (!redis_sock->persistent) {
+        return FAILURE;
+    } else if (redis_sock->stream) {
+        if (redis_sock->persistent) {
+            if (force) {
+                php_stream_pclose(redis_sock->stream);
+            }
+        } else {
             php_stream_close(redis_sock->stream);
         }
-
         redis_sock->stream = NULL;
-
-        return 1;
     }
+    redis_sock->mode = ATOMIC;
+    redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
+    redis_sock->watching = 0;
 
-    return 0;
+    return SUCCESS;
 }
 
 /**
@@ -1764,11 +1754,8 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
 PHP_REDIS_API int
 redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz TSRMLS_DC)
 {
-    if (!redis_sock || redis_sock->status == REDIS_SOCK_STATUS_DISCONNECTED) {
-        zend_throw_exception(redis_exception_ce, "Connection closed",
-            0 TSRMLS_CC);
-    } else if (redis_check_eof(redis_sock, 0 TSRMLS_CC) == 0 &&
-               php_stream_write(redis_sock->stream, cmd, sz) == sz
+    if (redis_check_eof(redis_sock, 0 TSRMLS_CC) == 0 &&
+        php_stream_write(redis_sock->stream, cmd, sz) == sz
     ) {
         return sz;
     }
@@ -2044,8 +2031,8 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size,
     if(php_stream_get_line(redis_sock->stream, buf, buf_size, line_size)
                            == NULL)
     {
-        // Close, put our socket state into error
-        REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
+        // Close our socket
+        redis_sock_disconnect(redis_sock, 1 TSRMLS_CC);
 
         // Throw a read error exception
         zend_throw_exception(redis_exception_ce, "read error on connection",
