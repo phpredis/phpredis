@@ -609,6 +609,10 @@ clusterReply* cluster_get_slots(RedisSock *redis_sock TSRMLS_DC)
     REDIS_REPLY_TYPE type;
     long len;
 
+    if (redis_sock->auth && resend_auth(redis_sock TSRMLS_CC) != 0) {
+        return NULL;
+    }
+
     // Send the command to the socket and consume reply type
     if (redis_sock_write(redis_sock, RESP_CLUSTER_SLOTS_CMD,
                         sizeof(RESP_CLUSTER_SLOTS_CMD)-1 TSRMLS_CC) < 0 ||
@@ -642,8 +646,8 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
     node->slaves = NULL;
 
     // Attach socket
-    node->sock = redis_sock_create(host, host_len, port, c->timeout,
-        c->read_timeout, c->persistent, NULL, 0, 1);
+    node->sock = redis_sock_create(host, host_len, port, c->auth, c->auth_len,
+        c->timeout, c->read_timeout,c->persistent, NULL, 0, 1);
 
     return node;
 }
@@ -800,7 +804,7 @@ static void ht_free_node(zval *data)
 
 /* Construct a redisCluster object */
 PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
-                                           int failover, int persistent)
+                                           int failover, int persistent, char *auth, int auth_len)
 {
     redisCluster *c;
 
@@ -815,6 +819,8 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     c->read_timeout = read_timeout;
     c->failover = failover;
     c->persistent = persistent;
+    c->auth = auth;
+    c->auth_len = auth_len;
     c->err = NULL;
 
     /* Set up our waitms based on timeout */
@@ -913,8 +919,8 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
 
         // Allocate a structure for this seed
         redis_sock = redis_sock_create(str, psep-str,
-            (unsigned short)atoi(psep+1), cluster->timeout,
-            cluster->read_timeout, cluster->persistent, NULL, 0, 0);
+            (unsigned short)atoi(psep+1), cluster->auth, cluster->auth_len,
+            cluster->timeout, cluster->read_timeout, cluster->persistent, NULL, 0, 0);
 
         // Index this seed by host/port
         key_len = snprintf(key, sizeof(key), "%s:%u", ZSTR_VAL(redis_sock->host),

@@ -509,15 +509,15 @@ PS_OPEN_FUNC(redis)
             RedisSock *redis_sock;
             if (url->host) {
 #if (PHP_VERSION_ID < 70300)
-                redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
+                redis_sock = redis_sock_create(url->host, strlen(url->host), url->port, NULL, 0, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
 #else
-                redis_sock = redis_sock_create(ZSTR_VAL(url->host), ZSTR_LEN(url->host), url->port, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
+                redis_sock = redis_sock_create(ZSTR_VAL(url->host), ZSTR_LEN(url->host), url->port, NULL, 0, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
 #endif
             } else { /* unix */
 #if (PHP_VERSION_ID < 70300)
-                redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
+                redis_sock = redis_sock_create(url->path, strlen(url->path), 0, NULL, 0, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
 #else
-                redis_sock = redis_sock_create(ZSTR_VAL(url->path), ZSTR_LEN(url->path), 0, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
+                redis_sock = redis_sock_create(ZSTR_VAL(url->path), ZSTR_LEN(url->path), 0, NULL, 0, timeout, read_timeout, persistent, persistent_id, retry_interval, 0);
 #endif
             }
             redis_pool_add(pool, redis_sock, weight, database, prefix, auth TSRMLS_CC);
@@ -982,6 +982,8 @@ PS_OPEN_FUNC(rediscluster) {
     int persistent = 0;
     int retval, prefix_len, failover = REDIS_FAILOVER_NONE;
     char *prefix;
+    char *auth; 
+    int auth_len; 
 
     /* Parse configuration for session handler */
     array_init(&z_conf);
@@ -1037,7 +1039,18 @@ PS_OPEN_FUNC(rediscluster) {
         }
     }
 
-    c = cluster_create(timeout, read_timeout, failover, persistent);
+    /* Look for a specific prefix */
+    if ((z_val = zend_hash_str_find(ht_conf, "auth", sizeof("auth") - 1)) != NULL &&
+        Z_TYPE_P(z_val) == IS_STRING && Z_STRLEN_P(z_val) > 0
+    ) {
+        auth = Z_STRVAL_P(z_val);
+        auth_len = Z_STRLEN_P(z_val);
+    } else {
+        auth = NULL;
+        auth_len = 0;
+    }
+
+    c = cluster_create(timeout, read_timeout, failover, persistent, auth, auth_len);
     if (!cluster_init_seeds(c, ht_seeds) && !cluster_map_keyspace(c TSRMLS_CC)) {
         /* Set up our prefix */
         c->flags->prefix = zend_string_init(prefix, prefix_len, 0);

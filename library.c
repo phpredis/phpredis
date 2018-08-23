@@ -86,7 +86,7 @@ static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
 }
 
 /* Helper to resend AUTH <password> in the case of a reconnect */
-static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
+int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
     char *cmd, *response;
     int cmd_len, response_len;
 
@@ -1356,8 +1356,8 @@ PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
  * redis_sock_create
  */
 PHP_REDIS_API RedisSock*
-redis_sock_create(char *host, int host_len, unsigned short port,
-                  double timeout, double read_timeout,
+redis_sock_create(char *host, int host_len, unsigned short port, char *auth, 
+                  int auth_len, double timeout, double read_timeout,
                   int persistent, char *persistent_id,
                   long retry_interval, zend_bool lazy_connect)
 {
@@ -1381,6 +1381,10 @@ redis_sock_create(char *host, int host_len, unsigned short port,
     redis_sock->port    = port;
     redis_sock->timeout = timeout;
     redis_sock->read_timeout = read_timeout;
+
+    if (auth && auth_len){
+        redis_sock->auth = zend_string_init(auth, auth_len, 0);
+    }
 
     redis_sock->serializer = REDIS_SERIALIZER_NONE;
     redis_sock->compression = REDIS_COMPRESSION_NONE;
