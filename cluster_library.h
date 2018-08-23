@@ -354,7 +354,7 @@ long long mstime(void);
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
     int cmd_len TSRMLS_DC);
 
-PHP_REDIS_API void cluster_disconnect(redisCluster *c TSRMLS_DC);
+PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force TSRMLS_DC);
 
 PHP_REDIS_API int cluster_send_exec(redisCluster *c, short slot TSRMLS_DC);
 PHP_REDIS_API int cluster_send_discard(redisCluster *c, short slot TSRMLS_DC);

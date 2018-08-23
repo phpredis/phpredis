@@ -126,7 +126,7 @@ redis_pool_free(redis_pool *pool TSRMLS_DC) {
     rpm = pool->head;
     while (rpm) {
         next = rpm->next;
-        redis_sock_disconnect(rpm->redis_sock TSRMLS_CC);
+        redis_sock_disconnect(rpm->redis_sock, 0 TSRMLS_CC);
         redis_free_socket(rpm->redis_sock);
         if (rpm->prefix) zend_string_release(rpm->prefix);
         if (rpm->auth) zend_string_release(rpm->auth);

@@ -837,7 +837,7 @@ PHP_REDIS_API void
 cluster_free(redisCluster *c, int free_ctx TSRMLS_DC)
 {
     /* Disconnect from each node we're connected to */
-    cluster_disconnect(c TSRMLS_CC);
+    cluster_disconnect(c, 0 TSRMLS_CC);
 
     /* Free any allocated prefix */
     if (c->flags->prefix) zend_string_release(c->flags->prefix);
@@ -954,7 +954,7 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
                 memset(c->master, 0, sizeof(redisClusterNode*)*REDIS_CLUSTER_SLOTS);
             }
         }
-        redis_sock_disconnect(seed TSRMLS_CC);
+        redis_sock_disconnect(seed, 0 TSRMLS_CC);
         if (mapped) break;
     } ZEND_HASH_FOREACH_END();
 
@@ -1072,12 +1072,12 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
 }
 
 /* Disconnect from each node we're connected to */
-PHP_REDIS_API void cluster_disconnect(redisCluster *c TSRMLS_DC) {
+PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force TSRMLS_DC) {
     redisClusterNode *node;
 
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
         if (node == NULL) continue;
-        redis_sock_disconnect(node->sock TSRMLS_CC);
+        redis_sock_disconnect(node->sock, force TSRMLS_CC);
         node->sock->lazy_connect = 1;
     } ZEND_HASH_FOREACH_END();
 }
@@ -1304,7 +1304,7 @@ PHP_REDIS_API int cluster_abort_exec(redisCluster *c TSRMLS_DC) {
     while (fi) {
         if (SLOT_SOCK(c,fi->slot)->mode == MULTI) {
             if (cluster_send_discard(c, fi->slot TSRMLS_CC) < 0) {
-                cluster_disconnect(c TSRMLS_CC);
+                cluster_disconnect(c, 0 TSRMLS_CC);
                 return -1;
             }
             SLOT_SOCK(c,fi->slot)->mode = ATOMIC;

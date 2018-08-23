@@ -549,7 +549,7 @@ free_redis_object(void *object TSRMLS_DC)
 
     zend_object_std_dtor(&redis->std TSRMLS_CC);
     if (redis->sock) {
-        redis_sock_disconnect(redis->sock TSRMLS_CC);
+        redis_sock_disconnect(redis->sock, 0 TSRMLS_CC);
         redis_free_socket(redis->sock);
     }
     efree(redis);
@@ -590,7 +590,7 @@ free_redis_object(zend_object *object)
 
     zend_object_std_dtor(&redis->std TSRMLS_CC);
     if (redis->sock) {
-        redis_sock_disconnect(redis->sock TSRMLS_CC);
+        redis_sock_disconnect(redis->sock, 0 TSRMLS_CC);
         redis_free_socket(redis->sock);
     }
 }
@@ -959,7 +959,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     redis = PHPREDIS_GET_OBJECT(redis_object, object);
     /* if there is a redis sock already we have to remove it */
     if (redis->sock) {
-        redis_sock_disconnect(redis->sock TSRMLS_CC);
+        redis_sock_disconnect(redis->sock, 0 TSRMLS_CC);
         redis_free_socket(redis->sock);
     }
 
@@ -1006,7 +1006,7 @@ PHP_METHOD(Redis, close)
 {
     RedisSock *redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
-    if (redis_sock && redis_sock_disconnect(redis_sock TSRMLS_CC)) {
+    if (redis_sock && redis_sock_disconnect(redis_sock, 1 TSRMLS_CC)) {
         RETURN_TRUE;
     }
     RETURN_FALSE;

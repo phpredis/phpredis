@@ -555,7 +555,7 @@ PHP_METHOD(RedisCluster, __construct) {
 
 /* {{{ proto bool RedisCluster::close() */
 PHP_METHOD(RedisCluster, close) {
-    cluster_disconnect(GET_CONTEXT() TSRMLS_CC);
+    cluster_disconnect(GET_CONTEXT(), 1 TSRMLS_CC);
     RETURN_TRUE;
 }
 
