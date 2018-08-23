@@ -2213,6 +2213,7 @@ PHP_REDIS_API void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS,
     /* Protect against an invalid response type, -1 response length, and failure
      * to consume the responses. */
     c->cmd_sock->serializer = c->flags->serializer;
+    c->cmd_sock->compression = c->flags->compression;
     short fail = c->reply_type != TYPE_MULTIBULK || c->reply_len == -1 ||
         mbulk_resp_loop(c->cmd_sock, mctx->z_multi, c->reply_len, NULL TSRMLS_CC) == FAILURE;
 

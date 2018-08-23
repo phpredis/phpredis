@@ -469,10 +469,10 @@ PS_OPEN_FUNC(redis)
                     weight = zval_get_long(param);
                 }
                 if ((param = zend_hash_str_find(Z_ARRVAL(params), "timeout", sizeof("timeout") - 1)) != NULL) {
-                    timeout = atof(Z_STRVAL_P(param));
+                    timeout = zval_get_double(param);
                 }
                 if ((param = zend_hash_str_find(Z_ARRVAL(params), "read_timeout", sizeof("read_timeout") - 1)) != NULL) {
-                    read_timeout = atof(Z_STRVAL_P(param));
+                    read_timeout = zval_get_double(param);
                 }
                 if ((param = zend_hash_str_find(Z_ARRVAL(params), "persistent", sizeof("persistent") - 1)) != NULL) {
                     persistent = (atol(Z_STRVAL_P(param)) == 1 ? 1 : 0);

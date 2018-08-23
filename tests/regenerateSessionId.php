@@ -2,17 +2,18 @@
 error_reporting(E_ERROR | E_WARNING);
 
 $redisHost = $argv[1];
-$sessionId = $argv[2];
-$locking = !!$argv[3];
-$destroyPrevious = !!$argv[4];
-$sessionProxy = !!$argv[5];
+$saveHandler = $argv[2];
+$sessionId = $argv[3];
+$locking = !!$argv[4];
+$destroyPrevious = !!$argv[5];
+$sessionProxy = !!$argv[6];
 
 if (empty($redisHost)) {
-    $redisHost = 'localhost';
+    $redisHost = 'tcp://localhost:6379';
 }
 
-ini_set('session.save_handler', 'redis');
-ini_set('session.save_path', 'tcp://' . $redisHost . ':6379');
+ini_set('session.save_handler', $saveHandler);
+ini_set('session.save_path', $redisHost);
 
 if ($locking) {
     ini_set('redis.session.locking_enabled', true);

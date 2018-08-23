@@ -27,6 +27,19 @@ class TestSuite {
 
     public function getHost() { return $this->str_host; }
 
+    /**
+     * Returns the fully qualified host path,
+     * which may be used directly for php.ini parameters like session.save_path
+     *
+     * @return null|string
+     */
+    protected function getFullHostPath()
+    {
+        return $this->str_host
+            ? 'tcp://' . $this->str_host . ':6379'
+            : null;
+    }
+
     public static function make_bold($str_msg) {
         return self::$_boo_colorize
             ? self::$BOLD_ON . $str_msg . self::$BOLD_OFF

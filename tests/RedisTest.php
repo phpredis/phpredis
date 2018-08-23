@@ -31,6 +31,11 @@ class Redis_Test extends TestSuite
      */
     protected $sessionPrefix = 'PHPREDIS_SESSION:';
 
+    /**
+     * @var string
+     */
+    protected $sessionSaveHandler = 'redis';
+
     public function setUp() {
         $this->redis = $this->newInstance();
         $info = $this->redis->info();
@@ -460,7 +465,7 @@ class Redis_Test extends TestSuite
     public function testExpireAt() {
         $this->redis->del('key');
         $this->redis->set('key', 'value');
-        $now = time(NULL);
+        $now = time();
         $this->redis->expireAt('key', $now + 1);
         $this->assertEquals('value', $this->redis->get('key'));
         sleep(2);
@@ -5653,7 +5658,7 @@ class Redis_Test extends TestSuite
         $this->assertFalse($this->redis->exists($this->sessionPrefix . $sessionId . '_LOCK'));
     }
 
-    public function testSession_ttlMaxExecutionTime()
+    public function testSession_lock_ttlMaxExecutionTime()
     {
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
@@ -5669,7 +5674,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue($sessionSuccessful);
     }
 
-    public function testSession_ttlLockExpire()
+    public function testSession_lock_ttlLockExpire()
     {
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
@@ -5904,12 +5909,43 @@ class Redis_Test extends TestSuite
         $this->assertEquals('bar', $this->getSessionData($newSessionId));
     }
 
+    public function testSession_ttl_equalsToSessionLifetime()
+    {
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 0, 'test', 600);
+        $ttl = $this->redis->ttl($this->sessionPrefix . $sessionId);
+
+        $this->assertEquals(600, $ttl);
+    }
+
+    public function testSession_ttl_resetOnWrite()
+    {
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 0, 'test', 600);
+        $this->redis->expire($this->sessionPrefix . $sessionId, 9999);
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 0, 'test', 600);
+        $ttl = $this->redis->ttl($this->sessionPrefix . $sessionId);
+
+        $this->assertEquals(600, $ttl);
+    }
+
+    public function testSession_ttl_resetOnRead()
+    {
+        $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 0, false, 300, true, null, -1, 0, 'test', 600);
+        $this->redis->expire($this->sessionPrefix . $sessionId, 9999);
+        $this->getSessionData($sessionId, 600);
+        $ttl = $this->redis->ttl($this->sessionPrefix . $sessionId);
+
+        $this->assertEquals(600, $ttl);
+    }
+
     private function setSessionHandler()
     {
         $host = $this->getHost() ?: 'localhost';
 
-        ini_set('session.save_handler', 'redis');
-        ini_set('session.save_path', 'tcp://' . $host . ':6379');
+        @ini_set('session.save_handler', 'redis');
+        @ini_set('session.save_path', 'tcp://' . $host . ':6379');
     }
 
     /**
@@ -5939,15 +5975,18 @@ class Redis_Test extends TestSuite
      * @param int    $lock_expires
      * @param string $sessionData
      *
+     * @param int    $sessionLifetime
+     *
      * @return bool
+     * @throws Exception
      */
-    private function startSessionProcess($sessionId, $sleepTime, $background, $maxExecutionTime = 300, $locking_enabled = true, $lock_wait_time = null, $lock_retries = -1, $lock_expires = 0, $sessionData = '')
+    private function startSessionProcess($sessionId, $sleepTime, $background, $maxExecutionTime = 300, $locking_enabled = true, $lock_wait_time = null, $lock_retries = -1, $lock_expires = 0, $sessionData = '', $sessionLifetime = 1440)
     {
         if (substr(php_uname(), 0, 7) == "Windows"){
             $this->markTestSkipped();
             return true;
         } else {
-            $commandParameters = array($this->getHost(), $sessionId, $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires, $sessionData);
+            $commandParameters = array($this->getFullHostPath(), $this->sessionSaveHandler, $sessionId, $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires, $sessionData, $sessionLifetime);
             if ($locking_enabled) {
                 $commandParameters[] = '1';
 
@@ -5957,9 +5996,8 @@ class Redis_Test extends TestSuite
             }
             $commandParameters = array_map('escapeshellarg', $commandParameters);
 
-            $command = 'php ' . __DIR__ . '/startSession.php ' . implode(' ', $commandParameters);
+            $command = self::getPhpCommand('startSession.php') . implode(' ', $commandParameters);
             $command .= $background ? ' 2>/dev/null > /dev/null &' : ' 2>&1';
-
             exec($command, $output);
             return ($background || (count($output) == 1 && $output[0] == 'SUCCESS')) ? true : false;
         }
@@ -5967,12 +6005,13 @@ class Redis_Test extends TestSuite
 
     /**
      * @param string $sessionId
+     * @param int    $sessionLifetime
      *
      * @return string
      */
-    private function getSessionData($sessionId)
+    private function getSessionData($sessionId, $sessionLifetime = 1440)
     {
-        $command = 'php ' . __DIR__ . '/getSessionData.php ' . escapeshellarg($this->getHost()) . ' ' . escapeshellarg($sessionId);
+        $command = self::getPhpCommand('getSessionData.php') . escapeshellarg($this->getFullHostPath()) . ' ' . $this->sessionSaveHandler . ' ' . escapeshellarg($sessionId) . ' ' . escapeshellarg($sessionLifetime);
         exec($command, $output);
 
         return $output[0];
@@ -5990,11 +6029,31 @@ class Redis_Test extends TestSuite
     {
 	$args = array_map('escapeshellarg', array($sessionId, $locking, $destroyPrevious, $sessionProxy));
 
-        $command = 'php --no-php-ini --define extension=igbinary.so --define extension=' . __DIR__ . '/../modules/redis.so ' . __DIR__ . '/regenerateSessionId.php ' . escapeshellarg($this->getHost()) . ' ' . implode(' ', $args);
+        $command = self::getPhpCommand('regenerateSessionId.php') . escapeshellarg($this->getFullHostPath()) . ' ' . $this->sessionSaveHandler . ' ' . implode(' ', $args);
 
         exec($command, $output);
 
         return $output[0];
+    }
+
+    /**
+     * Return command to launch PHP with built extension enabled
+     * taking care of environment (TEST_PHP_EXECUTABLE and TEST_PHP_ARGS)
+     *
+     * @param string $script
+     *
+     * @return string
+     */
+    private function getPhpCommand($script)
+    {
+        static $cmd = NULL;
+
+        if (!$cmd) {
+            $cmd  = (getenv('TEST_PHP_EXECUTABLE') ?: (defined('PHP_BINARY') ? PHP_BINARY : 'php')); // PHP_BINARY is 5.4+
+            $cmd .= ' ';
+            $cmd .= (getenv('TEST_PHP_ARGS') ?: '--no-php-ini --define extension=igbinary.so --define extension=' . dirname(__DIR__) . '/modules/redis.so');
+        }
+        return $cmd . ' ' . __DIR__ . '/' . $script . ' ';
     }
 }
 ?>
