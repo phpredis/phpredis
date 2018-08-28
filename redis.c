@@ -2449,7 +2449,7 @@ redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
         add_next_index_zval(z_tab, z_ret);
 
         int num = atol(inbuf + 1);
-        if (num > 0 && redis_read_multibulk_recursive(redis_sock, num, z_ret TSRMLS_CC) < 0) {
+        if (num > 0 && redis_read_multibulk_recursive(redis_sock, num, 0, z_ret TSRMLS_CC) < 0) {
         }
         if (fi) fi = fi->next;
     }
@@ -3614,7 +3614,7 @@ PHP_METHOD(Redis, xlen) {
 }
 
 PHP_METHOD(Redis, xpending) {
-    REDIS_PROCESS_CMD(xpending, redis_read_variant_reply);
+    REDIS_PROCESS_CMD(xpending, redis_read_variant_reply_strings);
 }
 
 PHP_METHOD(Redis, xrange) {

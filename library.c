@@ -2406,7 +2406,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
  */
 static int
 redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type,
-                        zval *z_ret TSRMLS_DC)
+                        int as_string, zval *z_ret TSRMLS_DC)
 {
     // Buffer to read our single line reply
     char inbuf[4096];
@@ -2422,6 +2422,8 @@ redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type,
         redis_sock_set_err(redis_sock, inbuf, len);
         redis_error_throw(redis_sock TSRMLS_CC);
         ZVAL_FALSE(z_ret);
+    } else if (as_string) {
+        ZVAL_STRINGL(z_ret, inbuf, len);
     } else {
         ZVAL_TRUE(z_ret);
     }
@@ -2447,8 +2449,8 @@ redis_read_variant_bulk(RedisSock *redis_sock, int size, zval *z_ret
 }
 
 PHP_REDIS_API int
-redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval *z_ret
-                               TSRMLS_DC)
+redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, int status_strings,
+                               zval *z_ret TSRMLS_DC)
 {
     long reply_info;
     REDIS_REPLY_TYPE reply_type;
@@ -2473,8 +2475,8 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval *z_ret
 #if (PHP_MAJOR_VERSION < 7)
                 ALLOC_INIT_ZVAL(z_subelem);
 #endif
-                redis_read_variant_line(redis_sock, reply_type, z_subelem
-                    TSRMLS_CC);
+                redis_read_variant_line(redis_sock, reply_type, status_strings,
+                    z_subelem TSRMLS_CC);
                 add_next_index_zval(z_ret, z_subelem);
                 break;
             case TYPE_INT:
@@ -2499,7 +2501,7 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval *z_ret
                 array_init(z_subelem);
                 add_next_index_zval(z_ret, z_subelem);
                 redis_read_multibulk_recursive(redis_sock, reply_info,
-                    z_subelem TSRMLS_CC);
+                    status_strings, z_subelem TSRMLS_CC);
                 break;
             default:
                 // Stop the compiler from whinging
@@ -2513,9 +2515,9 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval *z_ret
     return 0;
 }
 
-PHP_REDIS_API int
-redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                         zval *z_tab, void *ctx)
+static int
+variant_reply_generic(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      int status_strings, zval *z_tab, void *ctx)
 {
     // Reply type, and reply size vars
     REDIS_REPLY_TYPE reply_type;
@@ -2536,7 +2538,7 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     switch(reply_type) {
         case TYPE_ERR:
         case TYPE_LINE:
-            redis_read_variant_line(redis_sock, reply_type, z_ret TSRMLS_CC);
+            redis_read_variant_line(redis_sock, reply_type, status_strings, z_ret TSRMLS_CC);
             break;
         case TYPE_INT:
             ZVAL_LONG(z_ret, reply_info);
@@ -2550,9 +2552,8 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
             // If we've got more than zero elements, parse our multi bulk
             // response recursively
-            if(reply_info > -1) {
-                redis_read_multibulk_recursive(redis_sock, reply_info, z_ret
-                    TSRMLS_CC);
+            if (reply_info > -1) {
+                redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, z_ret TSRMLS_CC);
             }
             break;
         default:
@@ -2574,6 +2575,20 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Success */
     return 0;
+}
+
+PHP_REDIS_API int
+redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                         zval *z_tab, void *ctx)
+{
+    return variant_reply_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 0, z_tab, ctx);
+}
+
+PHP_REDIS_API int
+redis_read_variant_reply_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                                 zval *z_tab, void *ctx)
+{
+    return variant_reply_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 1, z_tab, ctx);
 }
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */
