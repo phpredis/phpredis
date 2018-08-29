@@ -85,6 +85,11 @@ You can install it using Homebrew:
 - [Get homebrew-php](https://github.com/Homebrew/homebrew-php)
 - `brew install php55-redis` (or php53-redis, php54-redis)
 
+You can install it using MacPorts:
+
+- [Get macports-php](https://www.macports.org/)
+- `sudo port install php56-redis` (or php53-redis, php54-redis, php55-redis, php70-redis, php71-redis, php72-redis)
+
 # Building on Windows
 
 See [instructions from @char101](https://github.com/phpredis/phpredis/issues/213#issuecomment-11361242) on how to build phpredis on Windows.
