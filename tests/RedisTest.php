@@ -5490,6 +5490,14 @@ class Redis_Test extends TestSuite
         for ($n = count($ids); $n >= 0; $n--) {
             $xp = $this->redis->xPending('s', 'group');
             $this->assertEquals($xp[0], count($ids));
+
+            /* Verify we're seeing the IDs themselves */
+            for ($idx = 1; $idx <= 2; $idx++) {
+                if ($xp[$idx]) {
+                    $this->assertPatternMatch($xp[$idx], "/^[0-9].*-[0-9].*/");
+                }
+            }
+
             if ($ids) {
                 $id = array_shift($ids);
                 $this->redis->xAck('s', 'group', Array($id));

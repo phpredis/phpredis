@@ -1084,7 +1084,7 @@ PS_READ_FUNC(rediscluster) {
     efree(cmd);
 
     /* Attempt to read reply */
-    reply = cluster_read_resp(c TSRMLS_CC);
+    reply = cluster_read_resp(c, 0 TSRMLS_CC);
     if (!reply || c->err) {
         if (reply) cluster_free_reply(reply, 1);
         return FAILURE;
@@ -1108,7 +1108,7 @@ PS_READ_FUNC(rediscluster) {
 #endif
 
     /* Clean up */
-    cluster_free_reply(reply, 0);
+    cluster_free_reply(reply, 1);
 
     /* Success! */
     return SUCCESS;
@@ -1148,7 +1148,7 @@ PS_WRITE_FUNC(rediscluster) {
     efree(cmd);
 
     /* Attempt to read reply */
-    reply = cluster_read_resp(c TSRMLS_CC);
+    reply = cluster_read_resp(c, 0 TSRMLS_CC);
     if (!reply || c->err) {
         if (reply) cluster_free_reply(reply, 1);
         return FAILURE;
@@ -1188,7 +1188,7 @@ PS_DESTROY_FUNC(rediscluster) {
     efree(cmd);
 
     /* Attempt to read reply */
-    reply = cluster_read_resp(c TSRMLS_CC);
+    reply = cluster_read_resp(c, 0 TSRMLS_CC);
     if (!reply || c->err) {
         if (reply) cluster_free_reply(reply, 1);
         return FAILURE;

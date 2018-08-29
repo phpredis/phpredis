@@ -3012,7 +3012,7 @@ PHP_METHOD(RedisCluster, xlen) {
 }
 
 PHP_METHOD(RedisCluster, xpending) {
-    CLUSTER_PROCESS_CMD(xpending, cluster_variant_resp, 1);
+    CLUSTER_PROCESS_CMD(xpending, cluster_variant_resp_strings, 1);
 }
 
 PHP_METHOD(RedisCluster, xrange) {

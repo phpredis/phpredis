@@ -325,9 +325,9 @@ typedef struct clusterReply {
 } clusterReply;
 
 /* Direct variant response handler */
-clusterReply *cluster_read_resp(redisCluster *c TSRMLS_DC);
+clusterReply *cluster_read_resp(redisCluster *c, int status_strings TSRMLS_DC);
 clusterReply *cluster_read_sock_resp(RedisSock *redis_sock,
-    REDIS_REPLY_TYPE type, size_t reply_len TSRMLS_DC);
+    REDIS_REPLY_TYPE type, char *line_reply, size_t reply_len TSRMLS_DC);
 void cluster_free_reply(clusterReply *reply, int free_data);
 
 /* Cluster distribution helpers for WATCH */
@@ -411,6 +411,9 @@ PHP_REDIS_API void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster
 
 /* Generic/Variant handler for stuff like EVAL */
 PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS,
+    redisCluster *c, void *ctx);
+
+PHP_REDIS_API void cluster_variant_resp_strings(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 
 /* MULTI BULK response functions */

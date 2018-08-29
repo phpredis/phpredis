@@ -106,6 +106,15 @@ class TestSuite {
             $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
     }
 
+    protected function assertPatternMatch($str_test, $str_regex) {
+        if (preg_match($str_regex, $str_test))
+            return;
+
+        $bt = debug_backtrace(false);
+        self::$errors []= sprintf("Assertion failed ('%s' doesnt match '%s'): %s:%d (%s)\n",
+            $str_test, $str_regex, $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+    }
+
     protected function markTestSkipped($msg='') {
         $bt = debug_backtrace(false);
         self::$warnings []= sprintf("Skipped test: %s:%d (%s) %s\n",
