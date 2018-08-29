@@ -1114,7 +1114,7 @@ PHP_METHOD(RedisCluster, keys) {
         }
 
         /* Ensure we can get a response */
-        resp = cluster_read_resp(c TSRMLS_CC);
+        resp = cluster_read_resp(c, 0 TSRMLS_CC);
         if (!resp) {
             php_error_docref(0 TSRMLS_CC, E_WARNING,
                 "Can't read response from %s:%d", ZSTR_VAL(node->sock->host),
