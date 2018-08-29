@@ -1061,7 +1061,7 @@ PS_READ_FUNC(rediscluster) {
     redisCluster *c = PS_GET_MOD_DATA();
     clusterReply *reply;
     char *cmd, *skey;
-    int cmdlen, skeylen;
+    int cmdlen, skeylen, free_flag;
     short slot;
 
     /* Set up our command and slot information */
@@ -1099,16 +1099,20 @@ PS_READ_FUNC(rediscluster) {
         *val = reply->str;
         *vallen = reply->len;
     }
+
+    free_flag = 0;
 #else
     if (reply->str == NULL) {
         *val = ZSTR_EMPTY_ALLOC();
     } else {
         *val = zend_string_init(reply->str, reply->len, 0);
     }
+
+    free_flag = 1;
 #endif
 
     /* Clean up */
-    cluster_free_reply(reply, 1);
+    cluster_free_reply(reply, free_flag);
 
     /* Success! */
     return SUCCESS;
