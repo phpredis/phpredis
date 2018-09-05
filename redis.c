@@ -832,6 +832,8 @@ PHP_MINFO_FUNCTION(redis)
     php_info_print_table_row(2, "Available compression", "lzf");
 #endif
     php_info_print_table_end();
+
+    DISPLAY_INI_ENTRIES();
 }
 
 /* {{{ proto Redis Redis::__construct()
