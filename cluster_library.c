@@ -703,7 +703,7 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
         port = (unsigned short)r3->element[1]->integer;
 
         // If the node is new, create and add to nodes.  Otherwise use it.
-        klen = snprintf(key,sizeof(key),"%s:%ld",host,port);
+        klen = snprintf(key, sizeof(key), "%s:%d", host, port);
         if ((pnode = zend_hash_str_find_ptr(c->nodes, key, klen)) == NULL) {
             master = cluster_node_create(c, host, hlen, port, low, 0);
             zend_hash_str_update_ptr(c->nodes, key, klen, master);
@@ -1266,7 +1266,7 @@ static void cluster_update_slot(redisCluster *c TSRMLS_DC) {
                 c->redir_port, c->redir_slot, 0);
 
             /* Our node is new, so keep track of it for cleanup */
-            klen = snprintf(key,sizeof(key),"%s:%ld",c->redir_host,c->redir_port);
+            klen = snprintf(key, sizeof(key), "%s:%d", c->redir_host, c->redir_port);
             zend_hash_str_update_ptr(c->nodes, key, klen, node);
 
             /* Now point our slot at the node */
