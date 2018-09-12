@@ -66,14 +66,14 @@ phpredis can also connect to a unix domain socket: `session.save_path = "unix://
 ### Session locking
 Following INI variables can be used to configure session locking:
 ~~~
-# Should the locking be enabled? Defaults to: 0.
-redis.session.locking_enabled: 1
-# How long should the lock live (in seconds)? Defaults to: value of max_execution_time.
-redis.session.lock_expire: 60
-# How long to wait between attempts to acquire lock, in microseconds (µs)?. Defaults to: 2000
-redis.session.lock_wait_time: 50000
-# Maximum number of times to retry (-1 means infinite). Defaults to: 10
-redis.session.lock_retries: 10
+; Should the locking be enabled? Defaults to: 0.
+redis.session.locking_enabled = 1
+; How long should the lock live (in seconds)? Defaults to: value of max_execution_time.
+redis.session.lock_expire = 60
+; How long to wait between attempts to acquire lock, in microseconds (µs)?. Defaults to: 2000
+redis.session.lock_wait_time = 50000
+; Maximum number of times to retry (-1 means infinite). Defaults to: 10
+redis.session.lock_retries = 10
 ~~~
 
 ## Distributed Redis Array
