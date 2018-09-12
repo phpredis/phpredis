@@ -13,10 +13,10 @@ You can send comments, patches, questions [here on github](https://github.com/ph
 -----
 1. [Installing/Configuring](#installingconfiguring)
    * [Installation](#installation)
-   * [Installation on OSX](#installation-on-osx)
-   * [Building on Windows](#building-on-windows)
    * [PHP Session handler](#php-session-handler)
    * [Distributed Redis Array](#distributed-redis-array)
+   * [Redis Cluster support](#redis-cluster-support)
+   * [Running the unit tests](#running-the-unit-tests)
 1. [Classes and methods](#classes-and-methods)
    * [Usage](#usage)
    * [Connection](#connection)
@@ -34,13 +34,13 @@ You can send comments, patches, questions [here on github](https://github.com/ph
 
 -----
 
-# Installation
+# Installing/Configuring
 -----
+
+## Installation
 
 For everything you should need to install PhpRedis on your system,
 see the [INSTALL.markdown](./INSTALL.markdown) page.
-
-# Configuration
 
 ## PHP Session handler
 
