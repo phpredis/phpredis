@@ -2333,9 +2333,58 @@ class Redis_Test extends TestSuite
         $this->assertEquals($this->redis->zRangeByLex('key', '-', '[c'), Array('a', 'b', 'c'));
         $this->assertEquals($this->redis->zRangeByLex('key', '(e', '+'), Array('f', 'g'));
 
-	// with limit offset
+        // with limit offset
         $this->assertEquals($this->redis->zRangeByLex('key', '-', '[c', 1, 2), Array('b', 'c') );
         $this->assertEquals($this->redis->zRangeByLex('key', '-', '(c', 1, 2), Array('b'));
+    }
+
+    public function testZLexCount() {
+        if (version_compare($this->version, "2.8.9", "lt")) {
+            $this->MarkTestSkipped();
+            return;
+        }
+
+        $this->redis->del('key');
+        foreach (range('a', 'g') as $c) {
+            $entries[] = $c;
+            $this->redis->zAdd('key', 0, $c);
+        }
+
+        /* Special -/+ values */
+        $this->assertEquals($this->redis->zLexCount('key', '-', '-'), 0);
+        $this->assertEquals($this->redis->zLexCount('key', '-', '+'), count($entries));
+
+        /* Verify invalid arguments return FALSE */
+        $this->assertFalse(@$this->redis->zLexCount('key', '[a', 'bad'));
+        $this->assertFalse(@$this->redis->zLexCount('key', 'bad', '[a'));
+
+        /* Now iterate through */
+        $start = $entries[0];
+        for ($i = 1; $i < count($entries); $i++) {
+            $end = $entries[$i];
+            $this->assertEquals($this->redis->zLexCount('key', "[$start", "[$end"), $i + 1);
+            $this->assertEquals($this->redis->zLexCount('key', "[$start", "($end"), $i);
+            $this->assertEquals($this->redis->zLexCount('key', "($start", "($end"), $i - 1);
+        }
+    }
+
+    public function testZRemRangeByLex() {
+        if (version_compare($this->version, "2.8.9", "lt")) {
+            $this->MarkTestSkipped();
+            return;
+        }
+
+        $this->redis->del('key');
+        $this->redis->zAdd('key', 0, 'a', 0, 'b', 0, 'c');
+        $this->assertEquals($this->redis->zRemRangeByLex('key', '-', '+'), 3);
+
+        $this->redis->zAdd('key', 0, 'a', 0, 'b', 0, 'c');
+        $this->assertEquals($this->redis->zRemRangeByLex('key', '[a', '[c'), 3);
+
+        $this->redis->zAdd('key', 0, 'a', 0, 'b', 0, 'c');
+        $this->assertEquals($this->redis->zRemRangeByLex('key', '[a', '(a'), 0);
+        $this->assertEquals($this->redis->zRemRangeByLex('key', '(a', '(c'), 1);
+        $this->assertEquals($this->redis->zRemRangeByLex('key', '[a', '[c'), 2);
     }
 
     public function testHashes() {

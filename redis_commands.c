@@ -901,6 +901,12 @@ int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* Validate ZLEX* min/max argument strings */
+static int validate_zlex_arg(const char *arg, strlen_t len) {
+    return (len  > 1 && (*arg == '[' || *arg == '(')) ||
+           (len == 1 && (*arg == '+' || *arg == '-'));
+}
+
 /* ZLEXCOUNT/ZREMRANGEBYLEX */
 int redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                        char *kw, char **cmd, int *cmd_len, short *slot,
@@ -917,11 +923,9 @@ int redis_gen_zlex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Quick sanity check on min/max */
-    if (min_len<1 || max_len<1 || (min[0]!='(' && min[0]!='[') ||
-       (max[0]!='(' && max[0]!='['))
-    {
+    if (!validate_zlex_arg(min, min_len) || !validate_zlex_arg(max, max_len)) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
-            "Min and Max arguments must begin with '(' or '['");
+            "Min/Max args can be '-' or '+', or start with '[' or '('");
         return FAILURE;
     }
 
