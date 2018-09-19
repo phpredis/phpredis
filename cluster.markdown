@@ -75,7 +75,7 @@ $obj_cluster->setOption(
 ## Main command loop
 With the exception of commands that are directed to a specific node, each command executed via RedisCluster is processed through a command loop, where we make the request, handle any MOVED or ASK redirection, and repeat if necessary.  This continues until one of the following conditions is met:
 
-1.  We fail to communicate with *any* node that we are aware of, in which case a ```RedisClusterExecption``` is raised.
+1.  We fail to communicate with *any* node that we are aware of, in which case a ```RedisClusterException``` is raised.
 2.  We have been bounced around longer than the timeout which was set on construction.
 3.  Redis cluster returns us a ```CLUSTERDOWN``` error, in which case a ```RedisClusterException``` is raised.
 4.  We receive a valid response, in which case the data is returned to the caller.
