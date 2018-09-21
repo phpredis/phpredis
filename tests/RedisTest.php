@@ -5663,9 +5663,27 @@ class Redis_Test extends TestSuite
 
         if (!$cmd) {
             $cmd  = (getenv('TEST_PHP_EXECUTABLE') ?: (defined('PHP_BINARY') ? PHP_BINARY : 'php')); // PHP_BINARY is 5.4+
-            $cmd .= ' ';
-            $cmd .= (getenv('TEST_PHP_ARGS') ?: '--no-php-ini --define extension=igbinary.so --define extension=' . dirname(__DIR__) . '/modules/redis.so');
+
+            if ($test_args = getenv('TEST_PHP_ARGS')) {
+                $cmd .= $test_args;
+            } else {
+                /* Only append specific extension directives if PHP hasn't been compiled with what we need statically */
+                $result   = shell_exec("$cmd --no-php-ini -m");
+                $redis    = strpos($result, 'redis') !== false;
+                $igbinary = strpos($result, 'igbinary') !== false;
+
+                if (!$redis || !$igbinary) {
+                    $cmd .= ' --no-php-ini';
+                    if (!$igbinary) {
+                        $cmd .= ' --define extension=igbinary.so';
+                    }
+                    if (!$redis) {
+                        $cmd .= ' --define extension=' . dirname(__DIR__) . '/modules/redis.so';
+                    }
+                }
+            }
         }
+
         return $cmd . ' ' . __DIR__ . '/' . $script . ' ';
     }
 }
