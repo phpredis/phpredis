@@ -22,6 +22,9 @@ typedef struct {
     char *val;
 } zend_string;
 
+#define REDIS_MAKE_STD_ZVAL(zv) MAKE_STD_ZVAL(zv)
+#define REDIS_FREE_ZVAL(zv) (efree(zv))
+
 #define ZSTR_VAL(s) (s)->val
 #define ZSTR_LEN(s) (s)->len
 
@@ -432,6 +435,9 @@ typedef int strlen_t;
 typedef size_t strlen_t;
 #define PHPREDIS_ZVAL_IS_STRICT_FALSE(z) (Z_TYPE_P(z) == IS_FALSE)
 #define PHPREDIS_GET_OBJECT(class_entry, z) (class_entry *)((char *)Z_OBJ_P(z) - XtOffsetOf(class_entry, std))
+
+#define REDIS_MAKE_STD_ZVAL(zv) do {} while(0)
+#define REDIS_FREE_ZVAL(zv) do {} while(0)
 #endif
 
 /* NULL check so Eclipse doesn't go crazy */
@@ -1082,6 +1088,84 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_georadiusbymember, 0, 0, 4)
     ZEND_ARG_INFO(0, radius)
     ZEND_ARG_INFO(0, unit)
     ZEND_ARG_ARRAY_INFO(0, opts, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xadd, 0, 0, 3)
+    ZEND_ARG_INFO(0, str_key)
+    ZEND_ARG_INFO(0, str_id)
+    ZEND_ARG_ARRAY_INFO(0, arr_fields, 0)
+    ZEND_ARG_INFO(0, i_maxlen)
+    ZEND_ARG_INFO(0, boo_approximate)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xpending, 0, 0, 2)
+    ZEND_ARG_INFO(0, str_key)
+    ZEND_ARG_INFO(0, str_group)
+    ZEND_ARG_INFO(0, str_start)
+    ZEND_ARG_INFO(0, str_end)
+    ZEND_ARG_INFO(0, i_count)
+    ZEND_ARG_INFO(0, str_consumer)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xrange, 0, 0, 3)
+    ZEND_ARG_INFO(0, str_key)
+    ZEND_ARG_INFO(0, str_start)
+    ZEND_ARG_INFO(0, str_end)
+    ZEND_ARG_INFO(0, i_count)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xread, 0, 0, 1)
+    ZEND_ARG_ARRAY_INFO(0, arr_streams, 0)
+    ZEND_ARG_INFO(0, i_count)
+    ZEND_ARG_INFO(0, i_block)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xreadgroup, 0, 0, 3)
+    ZEND_ARG_INFO(0, str_group)
+    ZEND_ARG_INFO(0, str_consumer)
+    ZEND_ARG_ARRAY_INFO(0, arr_streams, 0)
+    ZEND_ARG_INFO(0, i_count)
+    ZEND_ARG_INFO(0, i_block)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xack, 0, 0, 3)
+    ZEND_ARG_INFO(0, str_key)
+    ZEND_ARG_INFO(0, str_group)
+    ZEND_ARG_ARRAY_INFO(0, arr_ids, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xclaim, 0, 0, 5)
+    ZEND_ARG_INFO(0, str_key)
+    ZEND_ARG_INFO(0, str_group)
+    ZEND_ARG_INFO(0, str_consumer)
+    ZEND_ARG_INFO(0, i_min_idle)
+    ZEND_ARG_ARRAY_INFO(0, arr_ids, 0)
+    ZEND_ARG_ARRAY_INFO(0, arr_opts, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xgroup, 0, 0, 1)
+    ZEND_ARG_INFO(0, str_operation)
+    ZEND_ARG_INFO(0, str_key)
+    ZEND_ARG_INFO(0, str_arg1)
+    ZEND_ARG_INFO(0, str_arg2)
+    ZEND_ARG_INFO(0, str_arg3)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xinfo, 0, 0, 1)
+    ZEND_ARG_INFO(0, str_cmd)
+    ZEND_ARG_INFO(0, str_key)
+    ZEND_ARG_INFO(0, str_group)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xtrim, 0, 0, 2)
+    ZEND_ARG_INFO(0, str_key)
+    ZEND_ARG_INFO(0, i_maxlen)
+    ZEND_ARG_INFO(0, boo_approximate)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_xdel, 0, 0, 2)
+    ZEND_ARG_INFO(0, str_key)
+    ZEND_ARG_ARRAY_INFO(0, arr_ids, 0)
 ZEND_END_ARG_INFO()
 
 #endif

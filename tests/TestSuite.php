@@ -65,7 +65,14 @@ class TestSuite {
     }
 
     protected function assertFalse($bool) {
-        return $this->assertTrue(!$bool);
+        if(!$bool)
+            return true;
+
+        $bt = debug_backtrace(false);
+        self::$errors []= sprintf("Assertion failed: %s:%d (%s)\n",
+            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+
+        return false;
     }
 
     protected function assertTrue($bool) {
@@ -97,6 +104,15 @@ class TestSuite {
         self::$errors []= sprintf("Assertion failed (%s !== %s): %s:%d (%s)\n",
             print_r($a, true), print_r($b, true),
             $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+    }
+
+    protected function assertPatternMatch($str_test, $str_regex) {
+        if (preg_match($str_regex, $str_test))
+            return;
+
+        $bt = debug_backtrace(false);
+        self::$errors []= sprintf("Assertion failed ('%s' doesnt match '%s'): %s:%d (%s)\n",
+            $str_test, $str_regex, $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
     }
 
     protected function markTestSkipped($msg='') {

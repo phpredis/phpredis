@@ -263,6 +263,21 @@ PHP_METHOD(RedisCluster, zscan);
 PHP_METHOD(RedisCluster, hscan);
 PHP_METHOD(RedisCluster, sscan);
 
+/* STREAMS */
+PHP_METHOD(RedisCluster, xack);
+PHP_METHOD(RedisCluster, xadd);
+PHP_METHOD(RedisCluster, xclaim);
+PHP_METHOD(RedisCluster, xdel);
+PHP_METHOD(RedisCluster, xgroup);
+PHP_METHOD(RedisCluster, xinfo);
+PHP_METHOD(RedisCluster, xlen);
+PHP_METHOD(RedisCluster, xpending);
+PHP_METHOD(RedisCluster, xrange);
+PHP_METHOD(RedisCluster, xread);
+PHP_METHOD(RedisCluster, xreadgroup);
+PHP_METHOD(RedisCluster, xrevrange);
+PHP_METHOD(RedisCluster, xtrim);
+
 /* Transactions */
 PHP_METHOD(RedisCluster, multi);
 PHP_METHOD(RedisCluster, exec);

@@ -114,6 +114,13 @@ static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
     return 0;
 }
 
+/* Helper function and macro to test a RedisSock error prefix. */
+#define REDIS_SOCK_ERRCMP_STATIC(rs, s) redis_sock_errcmp(rs, s, sizeof(s)-1)
+static int redis_sock_errcmp(RedisSock *redis_sock, const char *err, size_t errlen) {
+    return ZSTR_LEN(redis_sock->err) >= errlen &&
+           memcmp(ZSTR_VAL(redis_sock->err), err, errlen) == 0;
+}
+
 /* Helper function that will throw an exception for a small number of ERR codes
  * returned by Redis.  Typically we just return FALSE to the caller in the event
  * of an ERROR reply, but for the following error types:
@@ -124,11 +131,19 @@ static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
 static void
 redis_error_throw(RedisSock *redis_sock TSRMLS_DC)
 {
-    if (redis_sock != NULL && redis_sock->err != NULL &&
-        memcmp(ZSTR_VAL(redis_sock->err), "ERR", sizeof("ERR") - 1) != 0 &&
-        memcmp(ZSTR_VAL(redis_sock->err), "NOSCRIPT", sizeof("NOSCRIPT") - 1) != 0 &&
-        memcmp(ZSTR_VAL(redis_sock->err), "WRONGTYPE", sizeof("WRONGTYPE") - 1) != 0
-    ) {
+    /* Short circuit if we have no redis_sock or any error */
+    if (redis_sock == NULL || redis_sock->err == NULL)
+        return;
+
+    /* We may want to flip this logic and check for MASTERDOWN, AUTH,
+     * and LOADING but that may have side effects (esp for things like
+     * Disque) */
+    if (!REDIS_SOCK_ERRCMP_STATIC(redis_sock, "ERR") &&
+        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOSCRIPT") &&
+        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "WRONGTYPE") &&
+        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "BUSYGROUP") &&
+        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOGROUP"))
+    {
         zend_throw_exception(redis_exception_ce, ZSTR_VAL(redis_sock->err), 0 TSRMLS_CC);
     }
 }
@@ -442,8 +457,7 @@ redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
 
     array_init(z_tab);
 
-    redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab,
-        numElems, UNSERIALIZE_ALL);
+    redis_mbulk_reply_loop(redis_sock, z_tab, numElems, UNSERIALIZE_ALL TSRMLS_CC);
 
     return z_tab;
 }
@@ -728,6 +742,24 @@ int redis_cmd_append_sstr_key(smart_string *str, char *key, strlen_t len, RedisS
     if (valfree) efree(key);
 
     return retval;
+}
+
+/* Append an array key to a redis smart string command.  This function
+ * handles the boilerplate conditionals around string or integer keys */
+int redis_cmd_append_sstr_arrkey(smart_string *cmd, zend_string *kstr, ulong idx)
+{
+    char *arg, kbuf[128];
+    int len;
+
+    if (kstr) {
+        len = ZSTR_LEN(kstr);
+        arg = ZSTR_VAL(kstr);
+    } else {
+        len = snprintf(kbuf, sizeof(kbuf), "%ld", (long)idx);
+        arg = (char*)kbuf;
+    }
+
+    return redis_cmd_append_sstr(cmd, arg, len);
 }
 
 PHP_REDIS_API void redis_bulk_double_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
@@ -1137,6 +1169,30 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
 }
 
 static int
+read_mbulk_header(RedisSock *redis_sock, int *nelem TSRMLS_DC)
+{
+    char line[4096];
+    size_t len;
+
+    /* Throws exception on failure */
+    if (redis_sock_gets(redis_sock, line, sizeof(line)-1, &len TSRMLS_CC) < 0)
+        return -1;
+
+    if (line[0] != '*') {
+        if (IS_ATOMIC(redis_sock)) {
+            if (line[0] == '-') {
+                redis_sock_set_err(redis_sock, line+1, len-1);
+            }
+        }
+        return -1;
+    }
+
+    *nelem = atoi(line+1);
+
+    return 0;
+}
+
+static int
 redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                          zval *z_tab, int unserialize, int decode)
 {
@@ -1164,8 +1220,7 @@ redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     array_init(z_multi_result); /* pre-allocate array for multi's results. */
 
     /* Grab our key, value, key, value array */
-    redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-        z_multi_result, numElems, unserialize);
+    redis_mbulk_reply_loop(redis_sock, z_multi_result, numElems, unserialize TSRMLS_CC);
 
     /* Zip keys and values */
     array_zip_values_and_scores(redis_sock, z_multi_result, decode TSRMLS_CC);
@@ -1177,6 +1232,243 @@ redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     return 0;
+}
+
+/* Consume message ID */
+PHP_REDIS_API int
+redis_sock_read_single_line(RedisSock *redis_sock, char *buffer, size_t buflen,
+                            size_t *linelen, int set_err TSRMLS_DC)
+{
+    REDIS_REPLY_TYPE type;
+    long info;
+
+    if (redis_read_reply_type(redis_sock, &type, &info TSRMLS_CC) < 0 ||
+        (type != TYPE_LINE && type != TYPE_ERR))
+    {
+        return -1;
+    }
+
+    if (redis_sock_gets(redis_sock, buffer, buflen, linelen TSRMLS_CC) < 0) {
+        return -1;
+    }
+
+    if (set_err && type == TYPE_ERR) {
+        if (IS_ATOMIC(redis_sock)) {
+            redis_sock_set_err(redis_sock, buffer, *linelen);
+        }
+    }
+
+    return type == TYPE_LINE ? 0 : -1;
+}
+
+/* Helper function to consume Redis stream message data.  This is useful for
+ * multiple stream callers (e.g. XREAD[GROUP], and X[REV]RANGE handlers). */
+PHP_REDIS_API int
+redis_read_stream_messages(RedisSock *redis_sock, int count, zval *z_ret
+                           TSRMLS_DC)
+{
+    zval zv, *z_message = &zv;
+    int i, mhdr, fields;
+    char id[1024];
+    size_t idlen;
+
+    /* Iterate over each message */
+    for (i = 0; i < count; i++) {
+        /* Consume inner multi-bulk header, message ID itself and finaly
+         * the multi-bulk header for field and values */
+        if ((read_mbulk_header(redis_sock, &mhdr TSRMLS_CC) < 0 || mhdr != 2) ||
+            redis_sock_read_single_line(redis_sock, id, sizeof(id), &idlen, 0 TSRMLS_CC) < 0 ||
+            (read_mbulk_header(redis_sock, &fields TSRMLS_CC) < 0 || fields % 2 != 0))
+        {
+            return -1;
+        }
+
+        REDIS_MAKE_STD_ZVAL(z_message);
+        array_init(z_message);
+
+        redis_mbulk_reply_loop(redis_sock, z_message, fields, UNSERIALIZE_VALS TSRMLS_CC);
+        array_zip_values_and_scores(redis_sock, z_message, SCORE_DECODE_NONE TSRMLS_CC);
+        add_assoc_zval_ex(z_ret, id, idlen, z_message);
+    }
+
+    return 0;
+}
+
+PHP_REDIS_API int
+redis_xrange_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   zval *z_tab, void *ctx)
+{
+    int messages;
+    zval zv, *z_messages = &zv;
+
+    REDIS_MAKE_STD_ZVAL(z_messages);
+    array_init(z_messages);
+
+    if (read_mbulk_header(redis_sock, &messages TSRMLS_CC) < 0 ||
+        redis_read_stream_messages(redis_sock, messages, z_messages TSRMLS_CC) < 0)
+    {
+        zval_dtor(z_messages);
+        REDIS_FREE_ZVAL(z_messages);
+        if (IS_ATOMIC(redis_sock)) {
+            RETVAL_FALSE;
+        } else {
+            add_next_index_bool(z_tab, 0);
+        }
+        return -1;
+    }
+
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_ZVAL(z_messages, 0, 1);
+    } else {
+        add_next_index_zval(z_tab, z_messages);
+    }
+
+    return 0;
+}
+
+PHP_REDIS_API int
+redis_read_stream_messages_multi(RedisSock *redis_sock, int count, zval *z_streams
+                                 TSRMLS_DC)
+{
+    zval zv, *z_messages = &zv;
+    int i, shdr, messages;
+    char *id;
+    int idlen;
+
+    for (i = 0; i < count; i++) {
+        if ((read_mbulk_header(redis_sock, &shdr TSRMLS_CC) < 0 || shdr != 2) ||
+            (id = redis_sock_read(redis_sock, &idlen TSRMLS_CC)) == NULL ||
+            read_mbulk_header(redis_sock, &messages TSRMLS_CC) < 0)
+        {
+            if (id) efree(id);
+            return -1;
+        }
+
+        REDIS_MAKE_STD_ZVAL(z_messages);
+        array_init(z_messages);
+
+        if (redis_read_stream_messages(redis_sock, messages, z_messages TSRMLS_CC) < 0)
+            goto failure;
+
+        add_assoc_zval_ex(z_streams, id, idlen, z_messages);
+        efree(id);
+    }
+
+    return 0;
+failure:
+    efree(id);
+    zval_dtor(z_messages);
+    REDIS_FREE_ZVAL(z_messages);
+    return -1;
+}
+
+PHP_REDIS_API int
+redis_xread_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                  zval *z_tab, void *ctx)
+{
+    zval zv, *z_rv = &zv;
+    int streams;
+
+    if (read_mbulk_header(redis_sock, &streams TSRMLS_CC) < 0)
+        goto failure;
+
+    REDIS_MAKE_STD_ZVAL(z_rv);
+    array_init(z_rv);
+
+    if (redis_read_stream_messages_multi(redis_sock, streams, z_rv TSRMLS_CC) < 0)
+        goto cleanup;
+
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_ZVAL(z_rv, 0, 1);
+    } else {
+        add_next_index_zval(z_tab, z_rv);
+    }
+    return 0;
+
+cleanup:
+    zval_dtor(z_rv);
+    REDIS_FREE_ZVAL(z_rv);
+failure:
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_FALSE;
+    } else {
+        add_next_index_bool(z_tab, 0);
+    }
+    return -1;
+}
+
+/* This helper function does that actual XCLAIM response handling, which can be used by both
+ * Redis and RedisCluster.  Note that XCLAIM is somewhat unique in that its reply type depends
+ * on whether or not it was called with the JUSTID option */
+PHP_REDIS_API int
+redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv TSRMLS_DC) {
+    zval zv, *z_msg = &zv;
+    REDIS_REPLY_TYPE type;
+    char id[1024];
+    int i, fields;
+    long li;
+    size_t idlen;
+
+    for (i = 0; i < count; i++) {
+        /* Consume inner reply type */
+        if (redis_read_reply_type(redis_sock, &type, &li TSRMLS_CC) < 0 ||
+            (type != TYPE_LINE && type != TYPE_MULTIBULK)) return -1;
+
+        if (type == TYPE_LINE) {
+            /* JUSTID variant */
+            if (redis_sock_gets(redis_sock, id, sizeof(id), &idlen TSRMLS_CC) < 0)
+                return -1;
+            add_next_index_stringl(rv, id, idlen);
+        } else {
+            if (li != 2 || redis_sock_read_single_line(redis_sock, id, sizeof(id), &idlen, 0 TSRMLS_CC) < 0 ||
+                (read_mbulk_header(redis_sock, &fields TSRMLS_CC) < 0 || fields % 2 != 0)) return -1;
+
+            REDIS_MAKE_STD_ZVAL(z_msg);
+            array_init(z_msg);
+
+            redis_mbulk_reply_loop(redis_sock, z_msg, fields, UNSERIALIZE_VALS TSRMLS_CC);
+            array_zip_values_and_scores(redis_sock, z_msg, SCORE_DECODE_NONE TSRMLS_CC);
+            add_assoc_zval_ex(rv, id, idlen, z_msg);
+        }
+    }
+
+    return 0;
+}
+
+PHP_REDIS_API int
+redis_xclaim_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   zval *z_tab, void *ctx)
+{
+    zval zv, *z_ret = &zv;
+    int messages;
+
+    /* All XCLAIM responses start multibulk */
+    if (read_mbulk_header(redis_sock, &messages TSRMLS_CC) < 0)
+        goto failure;
+
+    REDIS_MAKE_STD_ZVAL(z_ret);
+    array_init(z_ret);
+
+    if (redis_read_xclaim_response(redis_sock, messages, z_ret TSRMLS_CC) < 0) {
+        zval_dtor(z_ret);
+        REDIS_FREE_ZVAL(z_ret);
+        goto failure;
+    }
+
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_ZVAL(z_ret, 0, 1);
+    } else {
+        add_next_index_zval(z_tab, z_ret);
+    }
+    return 0;
+
+failure:
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_FALSE;
+    } else {
+        add_next_index_bool(z_tab, 0);
+    }
+    return -1;
 }
 
 /* Zipped key => value reply but we don't touch anything (e.g. CONFIG GET) */
@@ -1260,6 +1552,30 @@ PHP_REDIS_API void redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock
         }
     }
     efree(response);
+}
+
+PHP_REDIS_API
+void redis_single_line_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                             zval *z_tab, void *ctx)
+{
+    char buffer[4096];
+    size_t len;
+
+    if (redis_sock_read_single_line(redis_sock, buffer, sizeof(buffer), &len, 1 TSRMLS_CC) < 0) {
+        if (IS_ATOMIC(redis_sock)) {
+            RETURN_FALSE;
+        } else {
+            add_next_index_bool(z_tab, 0);
+        }
+        return;
+    }
+
+    //str = estrndup(buffer, len);
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_STRINGL(buffer, len);
+    } else {
+        add_next_index_stringl(z_tab, buffer, len);
+    }
 }
 
 /* like string response, but never unserialized. */
@@ -1597,8 +1913,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
 #endif
     array_init(z_multi_result); /* pre-allocate array for multi's results. */
 
-    redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-        z_multi_result, numElems, UNSERIALIZE_ALL);
+    redis_mbulk_reply_loop(redis_sock, z_multi_result, numElems, UNSERIALIZE_ALL TSRMLS_CC);
 
     if (IS_ATOMIC(redis_sock)) {
         RETVAL_ZVAL(z_multi_result, 0, 1);
@@ -1640,8 +1955,7 @@ redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval 
 #endif
     array_init(z_multi_result); /* pre-allocate array for multi's results. */
 
-    redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-        z_multi_result, numElems, UNSERIALIZE_NONE);
+    redis_mbulk_reply_loop(redis_sock, z_multi_result, numElems, UNSERIALIZE_NONE TSRMLS_CC);
 
     if (IS_ATOMIC(redis_sock)) {
         RETVAL_ZVAL(z_multi_result, 0, 1);
@@ -1653,8 +1967,8 @@ redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval 
 }
 
 PHP_REDIS_API void
-redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                       zval *z_tab, int count, int unserialize)
+redis_mbulk_reply_loop(RedisSock *redis_sock, zval *z_tab, int count,
+                       int unserialize TSRMLS_DC)
 {
     char *line;
     int i, len;
@@ -2090,32 +2404,27 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
 /*
  * Read a single line response, having already consumed the reply-type byte
  */
-PHP_REDIS_API int
+static int
 redis_read_variant_line(RedisSock *redis_sock, REDIS_REPLY_TYPE reply_type,
-                        zval *z_ret TSRMLS_DC)
+                        int as_string, zval *z_ret TSRMLS_DC)
 {
     // Buffer to read our single line reply
     char inbuf[4096];
-    size_t line_size;
+    size_t len;
 
     /* Attempt to read our single line reply */
-    if(redis_sock_gets(redis_sock, inbuf, sizeof(inbuf), &line_size TSRMLS_CC) < 0) {
+    if(redis_sock_gets(redis_sock, inbuf, sizeof(inbuf), &len TSRMLS_CC) < 0) {
         return -1;
     }
 
-    // If this is an error response, check if it is a SYNC error, and throw in
-    // that case
+    /* Throw exception on SYNC error otherwise just set error string */
     if(reply_type == TYPE_ERR) {
-        /* Set our last error */
-        redis_sock_set_err(redis_sock, inbuf, line_size);
-
-        /* Handle throwable errors */
+        redis_sock_set_err(redis_sock, inbuf, len);
         redis_error_throw(redis_sock TSRMLS_CC);
-
-        /* Set our response to FALSE */
         ZVAL_FALSE(z_ret);
+    } else if (as_string) {
+        ZVAL_STRINGL(z_ret, inbuf, len);
     } else {
-        /* Set our response to TRUE */
         ZVAL_TRUE(z_ret);
     }
 
@@ -2140,8 +2449,8 @@ redis_read_variant_bulk(RedisSock *redis_sock, int size, zval *z_ret
 }
 
 PHP_REDIS_API int
-redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval *z_ret
-                               TSRMLS_DC)
+redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, int status_strings,
+                               zval *z_ret TSRMLS_DC)
 {
     long reply_info;
     REDIS_REPLY_TYPE reply_type;
@@ -2166,8 +2475,8 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval *z_ret
 #if (PHP_MAJOR_VERSION < 7)
                 ALLOC_INIT_ZVAL(z_subelem);
 #endif
-                redis_read_variant_line(redis_sock, reply_type, z_subelem
-                    TSRMLS_CC);
+                redis_read_variant_line(redis_sock, reply_type, status_strings,
+                    z_subelem TSRMLS_CC);
                 add_next_index_zval(z_ret, z_subelem);
                 break;
             case TYPE_INT:
@@ -2192,7 +2501,7 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval *z_ret
                 array_init(z_subelem);
                 add_next_index_zval(z_ret, z_subelem);
                 redis_read_multibulk_recursive(redis_sock, reply_info,
-                    z_subelem TSRMLS_CC);
+                    status_strings, z_subelem TSRMLS_CC);
                 break;
             default:
                 // Stop the compiler from whinging
@@ -2206,9 +2515,9 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, zval *z_ret
     return 0;
 }
 
-PHP_REDIS_API int
-redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                         zval *z_tab, void *ctx)
+static int
+variant_reply_generic(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      int status_strings, zval *z_tab, void *ctx)
 {
     // Reply type, and reply size vars
     REDIS_REPLY_TYPE reply_type;
@@ -2229,7 +2538,7 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     switch(reply_type) {
         case TYPE_ERR:
         case TYPE_LINE:
-            redis_read_variant_line(redis_sock, reply_type, z_ret TSRMLS_CC);
+            redis_read_variant_line(redis_sock, reply_type, status_strings, z_ret TSRMLS_CC);
             break;
         case TYPE_INT:
             ZVAL_LONG(z_ret, reply_info);
@@ -2243,9 +2552,8 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
             // If we've got more than zero elements, parse our multi bulk
             // response recursively
-            if(reply_info > -1) {
-                redis_read_multibulk_recursive(redis_sock, reply_info, z_ret
-                    TSRMLS_CC);
+            if (reply_info > -1) {
+                redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, z_ret TSRMLS_CC);
             }
             break;
         default:
@@ -2267,6 +2575,20 @@ redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Success */
     return 0;
+}
+
+PHP_REDIS_API int
+redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                         zval *z_tab, void *ctx)
+{
+    return variant_reply_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 0, z_tab, ctx);
+}
+
+PHP_REDIS_API int
+redis_read_variant_reply_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                                 zval *z_tab, void *ctx)
+{
+    return variant_reply_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 1, z_tab, ctx);
 }
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */
