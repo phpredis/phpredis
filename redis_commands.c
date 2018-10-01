@@ -2793,7 +2793,7 @@ int redis_georadius_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                         char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *key, *unit;
-    short store_slot;
+    short store_slot = 0;
     strlen_t keylen, unitlen;
     int argc = 5, keyfree;
     double lng, lat, radius;
@@ -2864,7 +2864,7 @@ int redis_georadiusbymember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
 {
     char *key, *mem, *unit;
     strlen_t keylen, memlen, unitlen;
-    short store_slot;
+    short store_slot = 0;
     int keyfree, argc = 4;
     double radius;
     geoOptions gopts = {0};

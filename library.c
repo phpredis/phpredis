@@ -1332,7 +1332,7 @@ redis_read_stream_messages_multi(RedisSock *redis_sock, int count, zval *z_strea
 {
     zval zv, *z_messages = &zv;
     int i, shdr, messages;
-    char *id;
+    char *id = NULL;
     int idlen;
 
     for (i = 0; i < count; i++) {

@@ -695,8 +695,8 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
     char *cmd, *response;
     int cmd_len, response_len;
 
-    const char *skey = ZSTR_VAL(key), *sval = ZSTR_VAL(val);
-    size_t skeylen = ZSTR_LEN(key), svallen = ZSTR_LEN(val);
+    const char *skey = ZSTR_VAL(key);
+    size_t skeylen = ZSTR_LEN(key);
 
     if (!skeylen) return FAILURE;
 
