@@ -54,8 +54,9 @@
 /* Lazy connect logic */
 #define CLUSTER_LAZY_CONNECT(s) \
     if(s->lazy_connect) { \
-        s->lazy_connect = 0; \
-        redis_sock_server_open(s TSRMLS_CC); \
+        if(!redis_sock_server_open(s TSRMLS_CC)) { \
+            s->lazy_connect = 0; \
+        } \
     }
 
 /* Clear out our "last error" */

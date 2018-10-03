@@ -1858,6 +1858,7 @@ redis_sock_disconnect(RedisSock *redis_sock, int force TSRMLS_DC)
     redis_sock->mode = ATOMIC;
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->watching = 0;
+    redis_sock->lazy_connect = 1; // Make sure we can reconnect this socket
 
     return SUCCESS;
 }
