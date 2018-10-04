@@ -436,8 +436,8 @@ typedef size_t strlen_t;
 #define PHPREDIS_ZVAL_IS_STRICT_FALSE(z) (Z_TYPE_P(z) == IS_FALSE)
 #define PHPREDIS_GET_OBJECT(class_entry, z) (class_entry *)((char *)Z_OBJ_P(z) - XtOffsetOf(class_entry, std))
 
-#define REDIS_MAKE_STD_ZVAL(zv) PHPREDIS_NOTUSED
-#define REDIS_FREE_ZVAL(zv) PHPREDIS_NOTUSED
+#define REDIS_MAKE_STD_ZVAL(zv) do {} while(0)
+#define REDIS_FREE_ZVAL(zv) do {} while(0)
 #endif
 
 /* NULL check so Eclipse doesn't go crazy */
