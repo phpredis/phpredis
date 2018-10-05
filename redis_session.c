@@ -60,6 +60,7 @@
 
 /* Check if a response is the Redis +OK status response */
 #define IS_REDIS_OK(r, len) (r != NULL && len == 3 && !memcmp(r, "+OK", 3))
+#define NEGATIVE_LOCK_RESPONSE 1
 
 ps_module ps_mod_redis = {
 #if (PHP_MAJOR_VERSION < 7)
@@ -242,7 +243,7 @@ static int set_session_lock_key(RedisSock *redis_sock, char *cmd, int cmd_len
     }
 
     /* Return FAILURE in case of network problems */
-    return sent_len >= 0 ? 1 : FAILURE;
+    return sent_len >= 0 ? NEGATIVE_LOCK_RESPONSE : FAILURE;
 }
 
 static int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_status
