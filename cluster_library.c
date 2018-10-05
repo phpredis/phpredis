@@ -1456,9 +1456,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         return -1;
     } else if (timedout) {
         // Make sure the socket is reconnected, it such that it is in a clean state
-        if (c->cmd_sock->stream) {
-            redis_sock_disconnect(c->cmd_sock, 1 TSRMLS_CC);
-        }
+        redis_sock_disconnect(c->cmd_sock, 1 TSRMLS_CC);
 
         zend_throw_exception(redis_cluster_exception_ce,
             "Timed out attempting to find data in the correct node!", 0 TSRMLS_CC);
