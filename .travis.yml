@@ -54,6 +54,6 @@ before_script:
   - echo yes | ruby redis-trib.rb create --replicas 3 $(seq -f 127.0.0.1:%g 7000 7011)
   - echo 'extension = redis.so' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 script:
-  - sudo php tests/TestRedis.php --class Redis
+  - sudo /usr/bin/php tests/TestRedis.php --class Redis
   - php tests/TestRedis.php --class RedisArray
   - php tests/TestRedis.php --class RedisCluster
