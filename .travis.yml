@@ -35,7 +35,9 @@ matrix:
       env: CC=clang
 addons:
   apt:
-    packages: clang
+    packages:
+      - clang
+      - dsniff
 before_install:
   - phpize
   - pecl install igbinary
