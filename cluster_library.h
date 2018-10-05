@@ -51,14 +51,6 @@
     ZSTR_LEN(SLOT_SOCK(c,c->redir_slot)->host) != c->redir_host_len || \
     memcmp(ZSTR_VAL(SLOT_SOCK(c,c->redir_slot)->host),c->redir_host,c->redir_host_len))
 
-/* Lazy connect logic */
-#define CLUSTER_LAZY_CONNECT(s) \
-    if(s->lazy_connect) { \
-        if(!redis_sock_server_open(s TSRMLS_CC)) { \
-            s->lazy_connect = 0; \
-        } \
-    }
-
 /* Clear out our "last error" */
 #define CLUSTER_CLEAR_ERROR(c) do { \
     if (c->err) { \

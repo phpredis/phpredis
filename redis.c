@@ -647,11 +647,8 @@ redis_sock_get(zval *id TSRMLS_DC, int no_throw)
         return NULL;
     }
 
-    if (redis_sock->lazy_connect) {
-        redis_sock->lazy_connect = 0;
-        if (redis_sock_server_open(redis_sock TSRMLS_CC) < 0) {
-            return NULL;
-        }
+    if (redis_sock_server_open(redis_sock TSRMLS_CC) < 0) {
+        return NULL;
     }
 
     return redis_sock;

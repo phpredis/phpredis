@@ -1687,7 +1687,6 @@ redis_sock_create(char *host, int host_len, unsigned short port,
     redis_sock->dbNumber = 0;
     redis_sock->retry_interval = retry_interval * 1000;
     redis_sock->persistent = persistent;
-    redis_sock->lazy_connect = lazy_connect;
     redis_sock->persistent_id = NULL;
 
     if (persistent && persistent_id != NULL) {
@@ -1858,7 +1857,6 @@ redis_sock_disconnect(RedisSock *redis_sock, int force TSRMLS_DC)
     redis_sock->mode = ATOMIC;
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->watching = 0;
-    redis_sock->lazy_connect = 1; // Make sure we can reconnect this socket
 
     return SUCCESS;
 }

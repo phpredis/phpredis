@@ -271,7 +271,7 @@ static int cluster_send_direct(RedisSock *redis_sock, char *cmd, int cmd_len,
     char buf[1024];
 
     /* Connect to the socket if we aren't yet */
-    CLUSTER_LAZY_CONNECT(redis_sock);
+    redis_sock_server_open(redis_sock TSRMLS_CC);
 
     /* Send our command, validate the reply type, and consume the first line */
     if (!CLUSTER_SEND_PAYLOAD(redis_sock,cmd,cmd_len) ||
@@ -1088,7 +1088,6 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force TSRMLS_DC) {
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
         if (node == NULL) continue;
         redis_sock_disconnect(node->sock, force TSRMLS_CC);
-        node->sock->lazy_connect = 1;
     } ZEND_HASH_FOREACH_END();
 }
 
@@ -1124,7 +1123,7 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
         if (!redis_sock) continue;
 
         /* Connect to this node if we haven't already */
-        CLUSTER_LAZY_CONNECT(redis_sock);
+        redis_sock_server_open(redis_sock TSRMLS_CC);
 
         /* If we're not on the master, attempt to send the READONLY command to
          * this slave, and skip it if that fails */
@@ -1200,11 +1199,11 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
      * at random. */
     if (failover == REDIS_FAILOVER_NONE) {
         /* Success if we can send our payload to the master */
-        CLUSTER_LAZY_CONNECT(redis_sock);
+        redis_sock_server_open(redis_sock TSRMLS_CC);
         if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz)) return 0;
     } else if (failover == REDIS_FAILOVER_ERROR) {
         /* Try the master, then fall back to any slaves we may have */
-        CLUSTER_LAZY_CONNECT(redis_sock);
+        redis_sock_server_open(redis_sock);
         if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz) ||
            !cluster_dist_write(c, cmd, sz, 1 TSRMLS_CC)) return 0;
     } else {
@@ -1226,7 +1225,7 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
         if (seed_node == NULL || seed_node->sock == redis_sock || seed_node->slave) continue;
 
         /* Connect to this node if we haven't already */
-        CLUSTER_LAZY_CONNECT(seed_node->sock);
+        redis_sock_server_open(seed_node->sock);
 
         /* Attempt to write our request to this node */
         if (CLUSTER_SEND_PAYLOAD(seed_node->sock, cmd, sz)) {
