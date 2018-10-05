@@ -1203,7 +1203,7 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
         if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz)) return 0;
     } else if (failover == REDIS_FAILOVER_ERROR) {
         /* Try the master, then fall back to any slaves we may have */
-        redis_sock_server_open(redis_sock);
+        redis_sock_server_open(redis_sock TSRMLS_CC);
         if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz) ||
            !cluster_dist_write(c, cmd, sz, 1 TSRMLS_CC)) return 0;
     } else {
@@ -1225,7 +1225,7 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
         if (seed_node == NULL || seed_node->sock == redis_sock || seed_node->slave) continue;
 
         /* Connect to this node if we haven't already */
-        redis_sock_server_open(seed_node->sock);
+        redis_sock_server_open(seed_node->sock TSRMLS_CC);
 
         /* Attempt to write our request to this node */
         if (CLUSTER_SEND_PAYLOAD(seed_node->sock, cmd, sz)) {
