@@ -57,4 +57,4 @@ script:
   - php tests/TestRedis.php --class Redis
   - php tests/TestRedis.php --class RedisArray
   - php tests/TestRedis.php --class RedisCluster
-  - sudo php tests/TestRedis.php --class Redis --test testSession_lock_networkProblems
+  - sudo ~/.phpenv/versions/$(phpenv version-name)/bin/php tests/TestRedis.php --class Redis --test testSession_lock_networkProblems
