@@ -148,6 +148,7 @@ redis_pool_free(redis_pool *pool TSRMLS_DC) {
 static int redis_simple_cmd(RedisSock *redis_sock, char *cmd, int cmdlen,
                               char **reply, int *replylen TSRMLS_DC)
 {
+    *reply = NULL;
     int len_written = redis_sock_write(redis_sock, cmd, cmdlen TSRMLS_CC);
  
     if (len_written >= 0) {
