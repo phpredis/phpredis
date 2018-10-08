@@ -44,6 +44,8 @@ On construction, the RedisCluster class will iterate over the provided seed node
 ## Timeouts
 Because Redis cluster is intended to provide high availability, timeouts do not work in the same way they do in normal socket communication.  It's fully possible to have a timeout or even exception on a given socket (say in the case that a master node has failed), and continue to serve the request if and when a slave can be promoted as the new master.
 
+> Warning: There currently is an issue with connection timeouts causing bad data bieng read. See https://github.com/phpredis/phpredis/issues/1418
+
 The way RedisCluster handles user specified timeout values is that every time a command is sent to the cluster, we record the the time at the start of the request and then again every time we have to re-issue the command to a different node (either because Redis cluster responded with MOVED/ASK or because we failed to communicate with a given node).  Once we detect having been in the command loop for longer than our specified timeout, an error is raised.
 
 ## Keyspace map
