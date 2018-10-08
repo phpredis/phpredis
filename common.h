@@ -678,8 +678,6 @@ typedef struct {
 
     zend_string    *err;
 
-    zend_bool      lazy_connect;
-
     int            scan;
 
     int            readonly;

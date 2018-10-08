@@ -1687,7 +1687,6 @@ redis_sock_create(char *host, int host_len, unsigned short port,
     redis_sock->dbNumber = 0;
     redis_sock->retry_interval = retry_interval * 1000;
     redis_sock->persistent = persistent;
-    redis_sock->lazy_connect = lazy_connect;
     redis_sock->persistent_id = NULL;
 
     if (persistent && persistent_id != NULL) {

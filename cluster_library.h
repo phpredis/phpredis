@@ -51,13 +51,6 @@
     ZSTR_LEN(SLOT_SOCK(c,c->redir_slot)->host) != c->redir_host_len || \
     memcmp(ZSTR_VAL(SLOT_SOCK(c,c->redir_slot)->host),c->redir_host,c->redir_host_len))
 
-/* Lazy connect logic */
-#define CLUSTER_LAZY_CONNECT(s) \
-    if(s->lazy_connect) { \
-        s->lazy_connect = 0; \
-        redis_sock_server_open(s TSRMLS_CC); \
-    }
-
 /* Clear out our "last error" */
 #define CLUSTER_CLEAR_ERROR(c) do { \
     if (c->err) { \
@@ -69,7 +62,7 @@
 
 /* Protected sending of data down the wire to a RedisSock->stream */
 #define CLUSTER_SEND_PAYLOAD(sock, buf, len) \
-    (sock && sock->stream && !redis_check_eof(sock, 1 TSRMLS_CC) && \
+    (sock && !redis_sock_server_open(sock TSRMLS_CC) && sock->stream && !redis_check_eof(sock, 1 TSRMLS_CC) && \
      php_stream_write(sock->stream, buf, len)==len)
 
 /* Macro to read our reply type character */

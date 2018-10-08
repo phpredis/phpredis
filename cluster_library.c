@@ -270,10 +270,7 @@ static int cluster_send_direct(RedisSock *redis_sock, char *cmd, int cmd_len,
 {
     char buf[1024];
 
-    /* Connect to the socket if we aren't yet */
-    CLUSTER_LAZY_CONNECT(redis_sock);
-
-    /* Send our command, validate the reply type, and consume the first line */
+    /* Connect to the socket if we aren't yet and send our command, validate the reply type, and consume the first line */
     if (!CLUSTER_SEND_PAYLOAD(redis_sock,cmd,cmd_len) ||
         !CLUSTER_VALIDATE_REPLY_TYPE(redis_sock, type) ||
         !php_stream_gets(redis_sock->stream, buf, sizeof(buf))) return -1;
@@ -1088,7 +1085,6 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force TSRMLS_DC) {
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
         if (node == NULL) continue;
         redis_sock_disconnect(node->sock, force TSRMLS_CC);
-        node->sock->lazy_connect = 1;
     } ZEND_HASH_FOREACH_END();
 }
 
@@ -1124,7 +1120,9 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
         if (!redis_sock) continue;
 
         /* Connect to this node if we haven't already */
-        CLUSTER_LAZY_CONNECT(redis_sock);
+        if(redis_sock_server_open(redis_sock TSRMLS_CC)) {
+            continue;
+        }
 
         /* If we're not on the master, attempt to send the READONLY command to
          * this slave, and skip it if that fails */
@@ -1200,11 +1198,9 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
      * at random. */
     if (failover == REDIS_FAILOVER_NONE) {
         /* Success if we can send our payload to the master */
-        CLUSTER_LAZY_CONNECT(redis_sock);
         if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz)) return 0;
     } else if (failover == REDIS_FAILOVER_ERROR) {
         /* Try the master, then fall back to any slaves we may have */
-        CLUSTER_LAZY_CONNECT(redis_sock);
         if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz) ||
            !cluster_dist_write(c, cmd, sz, 1 TSRMLS_CC)) return 0;
     } else {
@@ -1225,10 +1221,7 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
         /* Skip this node if it's the one that failed, or if it's a slave */
         if (seed_node == NULL || seed_node->sock == redis_sock || seed_node->slave) continue;
 
-        /* Connect to this node if we haven't already */
-        CLUSTER_LAZY_CONNECT(seed_node->sock);
-
-        /* Attempt to write our request to this node */
+        /* Connect to this node if we haven't already and attempt to write our request to this node */
         if (CLUSTER_SEND_PAYLOAD(seed_node->sock, cmd, sz)) {
             c->cmd_slot = seed_node->slot;
             c->cmd_sock = seed_node->sock;
@@ -1456,6 +1449,9 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
             "The Redis Cluster is down (CLUSTERDOWN)", 0 TSRMLS_CC);
         return -1;
     } else if (timedout) {
+        // Make sure the socket is reconnected, it such that it is in a clean state
+        redis_sock_disconnect(c->cmd_sock, 1 TSRMLS_CC);
+
         zend_throw_exception(redis_cluster_exception_ce,
             "Timed out attempting to find data in the correct node!", 0 TSRMLS_CC);
     }
