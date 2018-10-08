@@ -6135,7 +6135,7 @@ class Redis_Test extends TestSuite
             return;
         }
 
-        $command = self::getPhpCommand('killConnction.php') . escapeshellarg($this->getFullHostPath()) . ' ' . escapeshellarg($sleepTime);
+        $command = self::getPhpCommand('killConnection.php') . escapeshellarg($this->getFullHostPath()) . ' ' . escapeshellarg($sleepTime);
         exec("$command 2>/dev/null > /dev/null &");
     }
 
