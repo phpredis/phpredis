@@ -4508,10 +4508,10 @@ class Redis_Test extends TestSuite
         $this->redis->rpush('{eval-key}-list', 'c');
 
         // Make a set
-        $this->redis->del('{eval-key}-set');
-        $this->redis->sadd('{eval-key}-set', 'd');
-        $this->redis->sadd('{eval-key}-set', 'e');
-        $this->redis->sadd('{eval-key}-set', 'f');
+        $this->redis->del('{eval-key}-zset');
+        $this->redis->zadd('{eval-key}-zset', 0, 'd');
+        $this->redis->zadd('{eval-key}-zset', 1, 'e');
+        $this->redis->zadd('{eval-key}-zset', 2, 'f');
 
         // Basic keys
         $this->redis->set('{eval-key}-str1', 'hello, world');
@@ -4521,9 +4521,9 @@ class Redis_Test extends TestSuite
         $list = $this->redis->eval("return redis.call('lrange', KEYS[1], 0, -1)", Array('{eval-key}-list'), 1);
         $this->assertTrue($list === Array('a','b','c'));
 
-        // Use a script to return our set
-        $set = $this->redis->eval("return redis.call('smembers', KEYS[1])", Array('{eval-key}-set'), 1);
-        $this->assertTrue($set == Array('d','e','f'));
+        // Use a script to return our zset
+        $zset = $this->redis->eval("return redis.call('zrange', KEYS[1], 0, -1)", Array('{eval-key}-zset'), 1);
+        $this->assertTrue($zset == Array('d','e','f'));
 
         // Test an empty MULTI BULK response
         $this->redis->del('{eval-key}-nolist');
@@ -4539,7 +4539,7 @@ class Redis_Test extends TestSuite
                     redis.call('get', '{eval-key}-str2'),
                     redis.call('lrange', 'not-any-kind-of-list', 0, -1),
                     {
-                        redis.call('smembers','{eval-key}-set'),
+                        redis.call('zrange','{eval-key}-zset', 0, -1),
                         redis.call('lrange', '{eval-key}-list', 0, -1)
                     }
                 }
@@ -4559,7 +4559,7 @@ class Redis_Test extends TestSuite
         );
 
         // Now run our script, and check our values against each other
-        $eval_result = $this->redis->eval($nested_script, Array('{eval-key}-str1', '{eval-key}-str2', '{eval-key}-set', '{eval-key}-list'), 4);
+        $eval_result = $this->redis->eval($nested_script, Array('{eval-key}-str1', '{eval-key}-str2', '{eval-key}-zset', '{eval-key}-list'), 4);
         $this->assertTrue(is_array($eval_result) && count($this->array_diff_recursive($eval_result, $expected)) == 0);
 
         /*
