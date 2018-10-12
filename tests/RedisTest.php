@@ -6109,6 +6109,7 @@ class Redis_Test extends TestSuite
             $cmd  = (getenv('TEST_PHP_EXECUTABLE') ?: (defined('PHP_BINARY') ? PHP_BINARY : 'php')); // PHP_BINARY is 5.4+
 
             if ($test_args = getenv('TEST_PHP_ARGS')) {
+                $cmd .= ' ';
                 $cmd .= $test_args;
             } else {
                 /* Only append specific extension directives if PHP hasn't been compiled with what we need statically */
