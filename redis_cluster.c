@@ -107,7 +107,7 @@ ZEND_END_ARG_INFO()
 
 /* Function table */
 zend_function_entry redis_cluster_functions[] = {
-    PHP_ME(RedisCluster, __construct, arginfo_ctor, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, __construct, arginfo_ctor, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _masters, arginfo_void, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _prefix, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _redir, arginfo_void, ZEND_ACC_PUBLIC)
