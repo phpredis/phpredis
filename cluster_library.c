@@ -1439,8 +1439,9 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
            }
         }
 
-        /* Figure out if we've timed out trying to read or write the data */
-        timedout = resp && c->waitms ? mstime() - msstart >= c->waitms : 0;
+        /* We're timed out if cluster_check_response returned -1, or if the
+         * response was non-zero and we've been in the loop too long */
+        timedout = resp == -1 || (resp && c->waitms ? mstime() - msstart >= c->waitms : 0);
     } while (resp != 0 && !c->clusterdown && !timedout);
 
     // If we've detected the cluster is down, throw an exception
