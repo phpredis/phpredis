@@ -64,6 +64,10 @@ The session handler requires a version of Redis with the `SETEX` command (at lea
 phpredis can also connect to a unix domain socket: `session.save_path = "unix:///var/run/redis/redis.sock?persistent=1&weight=1&database=0`.
 
 ### Session locking
+
+**Support**: Locking feature is currently only supported for Redis setup with single master instance (e.g. classic master/slave Sentinel environment).
+So locking may not work properly in RedisArray or RedisCluster environments.
+
 Following INI variables can be used to configure session locking:
 ~~~
 ; Should the locking be enabled? Defaults to: 0.
