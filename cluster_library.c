@@ -1419,8 +1419,11 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
             return -1;
         }
 
-        /* Now check the response from the node we queried. */
+        /* Check response and short-circuit on success or communication error */
         resp = cluster_check_response(c, &c->reply_type TSRMLS_CC);
+        if (resp == 0 || resp == -1) {
+            break;
+        }
 
         /* Handle MOVED or ASKING redirection */
         if (resp == 1) {
@@ -1439,22 +1442,28 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
            }
         }
 
-        /* We're timed out if cluster_check_response returned -1, or if the
-         * response was non-zero and we've been in the loop too long */
-        timedout = resp == -1 || (resp && c->waitms ? mstime() - msstart >= c->waitms : 0);
-    } while (resp != 0 && !c->clusterdown && !timedout);
+        /* See if we've timed out in the command loop */
+        timedout = c->waitms ? mstime() - msstart >= c->waitms : 0;
+    } while (!c->clusterdown && !timedout);
 
     // If we've detected the cluster is down, throw an exception
     if (c->clusterdown) {
         zend_throw_exception(redis_cluster_exception_ce,
             "The Redis Cluster is down (CLUSTERDOWN)", 0 TSRMLS_CC);
         return -1;
-    } else if (timedout) {
+    } else if (timedout || resp == -1) {
         // Make sure the socket is reconnected, it such that it is in a clean state
         redis_sock_disconnect(c->cmd_sock, 1 TSRMLS_CC);
 
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Timed out attempting to find data in the correct node!", 0 TSRMLS_CC);
+        if (timedout) {
+            zend_throw_exception(redis_cluster_exception_ce,
+                "Timed out attempting to find data in the correct node!", 0 TSRMLS_CC);
+        } else {
+            zend_throw_exception(redis_cluster_exception_ce,
+                "Error processing response from Redis node!", 0 TSRMLS_CC);
+        }
+
+        return -1;
     }
 
     /* Clear redirection flag */
