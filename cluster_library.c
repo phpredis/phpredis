@@ -1421,7 +1421,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
 
         /* Check response and short-circuit on success or communication error */
         resp = cluster_check_response(c, &c->reply_type TSRMLS_CC);
-        if (resp == 0 || resp == -1) {
+        if (resp <= 0) {
             break;
         }
 
