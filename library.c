@@ -1269,17 +1269,18 @@ redis_read_stream_messages(RedisSock *redis_sock, int count, zval *z_ret
 {
     zval zv, *z_message = &zv;
     int i, mhdr, fields;
-    char id[1024];
-    size_t idlen;
+    char *id = NULL;
+    int idlen;
 
     /* Iterate over each message */
     for (i = 0; i < count; i++) {
         /* Consume inner multi-bulk header, message ID itself and finaly
          * the multi-bulk header for field and values */
         if ((read_mbulk_header(redis_sock, &mhdr TSRMLS_CC) < 0 || mhdr != 2) ||
-            redis_sock_read_single_line(redis_sock, id, sizeof(id), &idlen, 0 TSRMLS_CC) < 0 ||
+            ((id = redis_sock_read(redis_sock, &idlen TSRMLS_CC)) == NULL) ||
             (read_mbulk_header(redis_sock, &fields TSRMLS_CC) < 0 || fields % 2 != 0))
         {
+            if (id) efree(id);
             return -1;
         }
 
@@ -1289,6 +1290,7 @@ redis_read_stream_messages(RedisSock *redis_sock, int count, zval *z_ret
         redis_mbulk_reply_loop(redis_sock, z_message, fields, UNSERIALIZE_VALS TSRMLS_CC);
         array_zip_values_and_scores(redis_sock, z_message, SCORE_DECODE_NONE TSRMLS_CC);
         add_assoc_zval_ex(z_ret, id, idlen, z_message);
+        efree(id);
     }
 
     return 0;
@@ -1404,24 +1406,30 @@ PHP_REDIS_API int
 redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv TSRMLS_DC) {
     zval zv, *z_msg = &zv;
     REDIS_REPLY_TYPE type;
-    char id[1024];
-    int i, fields;
+    char *id;
+    int i, fields, idlen;
     long li;
-    size_t idlen;
 
     for (i = 0; i < count; i++) {
         /* Consume inner reply type */
         if (redis_read_reply_type(redis_sock, &type, &li TSRMLS_CC) < 0 ||
-            (type != TYPE_LINE && type != TYPE_MULTIBULK)) return -1;
+            (type != TYPE_BULK && type != TYPE_MULTIBULK) ||
+            (type == TYPE_BULK && li <= 0)) return -1;
 
-        if (type == TYPE_LINE) {
-            /* JUSTID variant */
-            if (redis_sock_gets(redis_sock, id, sizeof(id), &idlen TSRMLS_CC) < 0)
+        /* TYPE_BULK is the JUSTID variant, otherwise it's standard xclaim response */
+        if (type == TYPE_BULK) {
+            if ((id = redis_sock_read_bulk_reply(redis_sock, (size_t)li TSRMLS_CC)) == NULL)
                 return -1;
-            add_next_index_stringl(rv, id, idlen);
+
+            add_next_index_stringl(rv, id, li);
+            efree(id);
         } else {
-            if (li != 2 || redis_sock_read_single_line(redis_sock, id, sizeof(id), &idlen, 0 TSRMLS_CC) < 0 ||
-                (read_mbulk_header(redis_sock, &fields TSRMLS_CC) < 0 || fields % 2 != 0)) return -1;
+            if ((li != 2 || (id = redis_sock_read(redis_sock, &idlen TSRMLS_CC)) == NULL) ||
+                (read_mbulk_header(redis_sock, &fields TSRMLS_CC) < 0 || fields % 2 != 0))
+            {
+                if (id) efree(id);
+                return -1;
+            }
 
             REDIS_MAKE_STD_ZVAL(z_msg);
             array_init(z_msg);
@@ -1429,6 +1437,7 @@ redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv TSRMLS_DC)
             redis_mbulk_reply_loop(redis_sock, z_msg, fields, UNSERIALIZE_VALS TSRMLS_CC);
             array_zip_values_and_scores(redis_sock, z_msg, SCORE_DECODE_NONE TSRMLS_CC);
             add_assoc_zval_ex(rv, id, idlen, z_msg);
+            efree(id);
         }
     }
 

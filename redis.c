@@ -3592,7 +3592,7 @@ PHP_METHOD(Redis, xack) {
 }
 
 PHP_METHOD(Redis, xadd) {
-    REDIS_PROCESS_CMD(xadd, redis_single_line_reply);
+    REDIS_PROCESS_CMD(xadd, redis_read_variant_reply);
 }
 
 PHP_METHOD(Redis, xclaim) {

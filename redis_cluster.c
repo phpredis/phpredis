@@ -2983,7 +2983,7 @@ PHP_METHOD(RedisCluster, xack) {
 
 /* {{{ proto string RedisCluster::xadd(string key, string id, array field_values) }}} */
 PHP_METHOD(RedisCluster, xadd) {
-    CLUSTER_PROCESS_CMD(xadd, cluster_single_line_resp, 0);
+    CLUSTER_PROCESS_CMD(xadd, cluster_bulk_raw_resp, 0);
 }
 
 /* {{{ proto array RedisCluster::xclaim(string key, string group, string consumer,
