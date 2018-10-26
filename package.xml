@@ -27,22 +27,27 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2018-10-11</date>
+ <date>2018-10-26</date>
  <version>
-  <release>4.2.0RC1</release>
-  <api>4.2.0RC1</api>
+  <release>4.2.0RC2</release>
+  <api>4.2.0RC2</api>
  </version>
  <stability>
-  <release>alpha</release>
-  <api>alpha</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 4.2.0RC1
+    phpredis 4.2.0RC2
 
     The main feature of this release is new Streams API implemented by Michael Grunder.
 
     * Streams API [2c9e0572] (Michael Grunder)
+    * Fix incorrect arginfo for `Redis::sRem` and `Redis::multi` [25b043ce] (Pavlo Yatsukhnenko)
+    * Update STREAM API to handle STATUS -> BULK reply change [0b97ec37] (Michael Grunder)
+    * Treat a -1 response from cluster_check_response as a timeout. [27df9220, 07ef7f4e, d1172426] (Michael Grunder)
+    * Use a ZSET insted of SET for EVAL tests [2e412373] (Michael Grunder)
+    * Missing space between command and args [0af2a7fe] (@remicollet)
     * Reset the socket after a timeout to make sure no wrong data is received [cd6ebc6d] (@marcdejonge)
     * Modify session testing logic [bfd27471] (Michael Grunder)
     * Allow '-' and '+' arguments and add tests for zLexCount and zRemRangeByLex [d4a08697] (Michael Grunder)
@@ -121,15 +126,20 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
    <release>
-   <stability><release>alpha</release><api>alpha</api></stability>
-   <version><release>4.2.0RC1</release><api>4.2.0RC1</api></version>
-   <date>2018-10-11</date>
+   <stability><release>beta</release><api>beta</api></stability>
+   <version><release>4.2.0RC2</release><api>4.2.0RC2</api></version>
+   <date>2018-10-26</date>
    <notes>
-      phpredis 4.2.0RC1
+      phpredis 4.2.0RC2
 
       The main feature of this release is new Streams API implemented by Michael Grunder.
 
       * Streams API [2c9e0572] (Michael Grunder)
+      * Fix incorrect arginfo for `Redis::sRem` and `Redis::multi` [25b043ce] (Pavlo Yatsukhnenko)
+      * Update STREAM API to handle STATUS -> BULK reply change [0b97ec37] (Michael Grunder)
+      * Treat a -1 response from cluster_check_response as a timeout. [27df9220, 07ef7f4e, d1172426] (Michael Grunder)
+      * Use a ZSET insted of SET for EVAL tests [2e412373] (Michael Grunder)
+      * Missing space between command and args [0af2a7fe] (@remicollet)
       * Reset the socket after a timeout to make sure no wrong data is received [cd6ebc6d] (@marcdejonge)
       * Modify session testing logic [bfd27471] (Michael Grunder)
       * Allow '-' and '+' arguments and add tests for zLexCount and zRemRangeByLex [d4a08697] (Michael Grunder)
