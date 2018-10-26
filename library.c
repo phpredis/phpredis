@@ -2113,10 +2113,13 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
 PHP_REDIS_API int
 redis_pack(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len TSRMLS_DC)
 {
-    char *buf, *data;
+    char *buf;
     int valfree;
     strlen_t len;
+#ifdef HAVE_REDIS_LZF
+    char *data;
     uint32_t res;
+#endif
 
     valfree = redis_serialize(redis_sock, z, &buf, &len TSRMLS_CC);
     switch (redis_sock->compression) {
@@ -2142,9 +2145,11 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len TSRMLS_
 PHP_REDIS_API int
 redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret TSRMLS_DC)
 {
+#ifdef HAVE_REDIS_LZF
     char *data;
     int i;
     uint32_t res;
+#endif
 
     switch (redis_sock->compression) {
         case REDIS_COMPRESSION_LZF:
