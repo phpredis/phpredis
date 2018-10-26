@@ -2476,9 +2476,8 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, int status_s
                                  TSRMLS_CC) < 0)
         {
             zend_throw_exception_ex(redis_exception_ce, 0 TSRMLS_CC,
-                "protocol error, couldn't parse MULTI-BULK response\n",
-                reply_type);
-            return -1;
+                "protocol error, couldn't parse MULTI-BULK response\n");
+            return FAILURE;
         }
 
         // Switch on our reply-type byte
