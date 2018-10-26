@@ -1406,7 +1406,7 @@ PHP_REDIS_API int
 redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv TSRMLS_DC) {
     zval zv, *z_msg = &zv;
     REDIS_REPLY_TYPE type;
-    char *id;
+    char *id = NULL;
     int i, fields, idlen;
     long li;
 
