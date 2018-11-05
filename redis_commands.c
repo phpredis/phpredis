@@ -3532,44 +3532,44 @@ typedef struct xclaimOptions {
     int justid;
 } xclaimOptions;
 
-/* Attempt to get an int64_t from a string.  If we can't extract a number
-   we do not set the retval argument. */
-static int string_to_i64(const char *str, strlen_t len, int64_t *retval) {
-    zend_long lval;
-    double dval;
+/* Attempt to extract an int64_t from the provided zval */
+static int zval_get_i64(zval *zv, int64_t *retval) {
+    if (Z_TYPE_P(zv) == IS_LONG) {
+        *retval = (int64_t)Z_LVAL_P(zv);
+        return SUCCESS;
+    } else if (Z_TYPE_P(zv) == IS_DOUBLE) {
+        *retval = (int64_t)Z_DVAL_P(zv);
+        return SUCCESS;
+    } else if (Z_TYPE_P(zv) == IS_STRING) {
+        zend_long lval;
+        double dval;
 
-    switch (is_numeric_string(str, len, &lval, &dval, 1)) {
-        case IS_LONG:
-            *retval = (int64_t)lval;
-            return SUCCESS;
-        case IS_DOUBLE:
-            *retval = (int64_t)dval;
-            return SUCCESS;
-        default:
-            return FAILURE;
+        switch (is_numeric_string(Z_STRVAL_P(zv), Z_STRLEN_P(zv), &lval, &dval, 1)) {
+            case IS_LONG:
+                *retval = (int64_t)lval;
+                return SUCCESS;
+            case IS_DOUBLE:
+                *retval = (int64_t)dval;
+                return SUCCESS;
+        }
     }
+
+    /* If we make it here we have failed */
+    return FAILURE;
 }
 
-/* Helper function to attempt to retreive an i64 value used to construct our XCLAIM
-   command that can work with various input types.  The XCLAIM 'TIME' option will
-   overflow a 32-bit PHP long, so we allow the user to pass us a float, long, or
-   string. */
+/* Helper function to get an integer XCLAIM argument.  This can overflow a
+ * 32-bit PHP long so we have to extract it as an int64_t.  If the value is
+ * not a valid number or negative, we'll inform the user of the problem and
+ * that the argument is being ignored. */
 static int64_t get_xclaim_i64_arg(const char *key, zval *zv TSRMLS_DC) {
-    int64_t retval = -1;
+    int64_t retval;
 
-    if (Z_TYPE_P(zv) == IS_LONG) {
-        retval = Z_LVAL_P(zv);
-    } else if (Z_TYPE_P(zv) == IS_DOUBLE) {
-        retval = (int64_t)Z_DVAL_P(zv);
-    } else if (Z_TYPE_P(zv) == IS_STRING) {
-        string_to_i64(Z_STRVAL_P(zv), Z_STRLEN_P(zv), &retval);
-    }
-
-    /* Negative values are not valid for XCLAIM options */
-    if (retval < 0) {
-        /* Inform the user that they have passed incorrect data */
+    /* Try to extract an i64 from the zval */
+    if (zval_get_i64(zv, &retval) == FAILURE || retval < 0) {
+        /* Inform the user that they have passed an invalid value */
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
-            "Invalid value passed to XCLAIM option '%s' will be ignored", key);
+            "Invalid XCLAIM option '%s' will be ignored", key);
 
         /* We treat a value of -1 as unset */
         return -1;
