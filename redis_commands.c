@@ -3532,6 +3532,22 @@ typedef struct xclaimOptions {
     int justid;
 } xclaimOptions;
 
+/* Simple helper to verify if a string is only numeric digits.  PHP wraps
+ * the standard conversion functions atoll meaning we can't rely on errno
+ * being set to ERANGE when presented with invalid input. */
+#define IS_DIGIT(c) ((c) >= '0' && (c) <= '9')
+static int string_all_digits(const char *str, strlen_t len) {
+    strlen_t i;
+
+    for (i = 0; i < len; i++) {
+        if (!IS_DIGIT(str[i])) {
+            return FAILURE;
+        }
+    }
+
+    return SUCCESS;
+}
+
 /* Helper function to attempt to retreive an i64 value used to construct our XCLAIM
    command that can work with various input types.  The XCLAIM 'TIME' option will
    overflow a 32-bit PHP long, so we allow the user to pass us a float, long, or
@@ -3543,12 +3559,16 @@ static int64_t get_xclaim_i64_arg(const char *key, zval *zv TSRMLS_DC) {
         retval = Z_LVAL_P(zv);
     } else if (Z_TYPE_P(zv) == IS_DOUBLE) {
         retval = (int64_t)Z_DVAL_P(zv);
-    } else if (Z_TYPE_P(zv) == IS_STRING) {
+    } else if (Z_TYPE_P(zv) == IS_STRING &&
+               string_all_digits(Z_STRVAL_P(zv), Z_STRLEN_P(zv) == SUCCESS))
+    {
         retval = phpredis_atoi64(Z_STRVAL_P(zv));
     }
 
-    /* No negative values are allowed for XCLAIM */
-    if (retval < 0) {
+    /* No negative values are allowed for XCLAIM and LONG_MAX should indicate a
+     * positive overflow.  Note that if the user actually passed us LONG_MAX
+     * (as a string or otherwise) it is an invalid value here anyway. */
+    if (retval < 0 || (retval == LONG_MAX)) {
         /* Inform the user that they have passed incorrect data */
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "Invalid value passed to XCLAIM option '%s' will be ignored", key);
