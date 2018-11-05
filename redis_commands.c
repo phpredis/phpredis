@@ -3560,15 +3560,15 @@ static int64_t get_xclaim_i64_arg(const char *key, zval *zv TSRMLS_DC) {
     } else if (Z_TYPE_P(zv) == IS_DOUBLE) {
         retval = (int64_t)Z_DVAL_P(zv);
     } else if (Z_TYPE_P(zv) == IS_STRING &&
-               string_all_digits(Z_STRVAL_P(zv), Z_STRLEN_P(zv) == SUCCESS))
+               string_all_digits(Z_STRVAL_P(zv), Z_STRLEN_P(zv)) == SUCCESS)
     {
         retval = phpredis_atoi64(Z_STRVAL_P(zv));
     }
 
-    /* No negative values are allowed for XCLAIM and LONG_MAX should indicate a
-     * positive overflow.  Note that if the user actually passed us LONG_MAX
+    /* No negative values are allowed for XCLAIM and INT64_MAX should indicate a
+     * positive overflow.  Note that if the user actually passed us INT64_MAX
      * (as a string or otherwise) it is an invalid value here anyway. */
-    if (retval < 0 || (retval == LONG_MAX)) {
+    if (retval < 0 || (retval == INT64_MAX)) {
         /* Inform the user that they have passed incorrect data */
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "Invalid value passed to XCLAIM option '%s' will be ignored", key);
