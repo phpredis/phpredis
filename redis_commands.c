@@ -3532,20 +3532,22 @@ typedef struct xclaimOptions {
     int justid;
 } xclaimOptions;
 
-/* Simple helper to verify if a string is only numeric digits.  PHP wraps
- * the standard conversion functions atoll meaning we can't rely on errno
- * being set to ERANGE when presented with invalid input. */
-#define IS_DIGIT(c) ((c) >= '0' && (c) <= '9')
-static int string_all_digits(const char *str, strlen_t len) {
-    strlen_t i;
+/* Attempt to get an int64_t from a string.  If we can't extract a number
+   we do not set the retval argument. */
+static int string_to_i64(const char *str, strlen_t len, int64_t *retval) {
+    zend_long lval;
+    double dval;
 
-    for (i = 0; i < len; i++) {
-        if (!IS_DIGIT(str[i])) {
+    switch (is_numeric_string(str, len, &lval, &dval, 1)) {
+        case IS_LONG:
+            *retval = (int64_t)lval;
+            return SUCCESS;
+        case IS_DOUBLE:
+            *retval = (int64_t)dval;
+            return SUCCESS;
+        default:
             return FAILURE;
-        }
     }
-
-    return SUCCESS;
 }
 
 /* Helper function to attempt to retreive an i64 value used to construct our XCLAIM
@@ -3559,16 +3561,12 @@ static int64_t get_xclaim_i64_arg(const char *key, zval *zv TSRMLS_DC) {
         retval = Z_LVAL_P(zv);
     } else if (Z_TYPE_P(zv) == IS_DOUBLE) {
         retval = (int64_t)Z_DVAL_P(zv);
-    } else if (Z_TYPE_P(zv) == IS_STRING &&
-               string_all_digits(Z_STRVAL_P(zv), Z_STRLEN_P(zv)) == SUCCESS)
-    {
-        retval = phpredis_atoi64(Z_STRVAL_P(zv));
+    } else if (Z_TYPE_P(zv) == IS_STRING) {
+        string_to_i64(Z_STRVAL_P(zv), Z_STRLEN_P(zv), &retval);
     }
 
-    /* No negative values are allowed for XCLAIM and INT64_MAX should indicate a
-     * positive overflow.  Note that if the user actually passed us INT64_MAX
-     * (as a string or otherwise) it is an invalid value here anyway. */
-    if (retval < 0 || retval == INT64_MAX) {
+    /* Negative values are not valid for XCLAIM options */
+    if (retval < 0) {
         /* Inform the user that they have passed incorrect data */
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "Invalid value passed to XCLAIM option '%s' will be ignored", key);
