@@ -616,6 +616,7 @@ PS_CREATE_SID_FUNC(redis)
 #endif
         }
 
+        if (pool->lock_status.session_key) zend_string_release(pool->lock_status.session_key);
 #if (PHP_MAJOR_VERSION < 7)
         pool->lock_status.session_key = redis_session_key(rpm, sid, strlen(sid));
 #else
@@ -758,6 +759,7 @@ PS_READ_FUNC(redis)
     }
 
     /* send GET command */
+    if (pool->lock_status.session_key) zend_string_release(pool->lock_status.session_key);
     pool->lock_status.session_key = redis_session_key(rpm, skey, skeylen);
     cmd_len = REDIS_SPPRINTF(&cmd, "GET", "S", pool->lock_status.session_key);
 
