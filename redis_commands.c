@@ -3571,7 +3571,6 @@ static int64_t get_xclaim_i64_arg(const char *key, zval *zv TSRMLS_DC) {
             "Invalid XCLAIM option '%s' will be ignored", key);
     }
 
-    /* Success */
     return retval;
 }
 
