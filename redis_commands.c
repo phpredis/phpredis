@@ -3563,16 +3563,12 @@ static int zval_get_i64(zval *zv, int64_t *retval) {
  * not a valid number or negative, we'll inform the user of the problem and
  * that the argument is being ignored. */
 static int64_t get_xclaim_i64_arg(const char *key, zval *zv TSRMLS_DC) {
-    int64_t retval;
+    int64_t retval = -1;
 
-    /* Try to extract an i64 from the zval */
+    /* Extract an i64, and if we can't let the user know there is an issue. */
     if (zval_get_i64(zv, &retval) == FAILURE || retval < 0) {
-        /* Inform the user that they have passed an invalid value */
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "Invalid XCLAIM option '%s' will be ignored", key);
-
-        /* We treat a value of -1 as unset */
-        return -1;
     }
 
     /* Success */
