@@ -699,6 +699,15 @@ int redis_cmd_append_sstr_long(smart_string *str, long append) {
 }
 
 /*
+ * Append a 64-bit integer to our command
+ */
+int redis_cmd_append_sstr_i64(smart_string *str, int64_t append) {
+    char nbuf[64];
+    int len = snprintf(nbuf, sizeof(nbuf), "%lld", append);
+    return redis_cmd_append_sstr(str, nbuf, len);
+}
+
+/*
  * Append a double to a smart string command
  */
 int
@@ -1080,11 +1089,8 @@ PHP_REDIS_API void redis_long_response(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     if(response[0] == ':') {
-#ifdef PHP_WIN32
-        __int64 ret = _atoi64(response + 1);
-#else
-        long long ret = atoll(response + 1);
-#endif
+        int64_t ret = phpredis_atoi64(response + 1);
+
         if (IS_ATOMIC(redis_sock)) {
             if(ret > LONG_MAX) { /* overflow */
                 RETVAL_STRINGL(response + 1, response_len - 1);

@@ -3525,12 +3525,55 @@ int redis_xack_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 typedef struct xclaimOptions {
     struct {
         char *type;
-        zend_long time;
+        int64_t time;
     } idle;
     zend_long retrycount;
     int force;
     int justid;
 } xclaimOptions;
+
+/* Attempt to extract an int64_t from the provided zval */
+static int zval_get_i64(zval *zv, int64_t *retval) {
+    if (Z_TYPE_P(zv) == IS_LONG) {
+        *retval = (int64_t)Z_LVAL_P(zv);
+        return SUCCESS;
+    } else if (Z_TYPE_P(zv) == IS_DOUBLE) {
+        *retval = (int64_t)Z_DVAL_P(zv);
+        return SUCCESS;
+    } else if (Z_TYPE_P(zv) == IS_STRING) {
+        zend_long lval;
+        double dval;
+
+        switch (is_numeric_string(Z_STRVAL_P(zv), Z_STRLEN_P(zv), &lval, &dval, 1)) {
+            case IS_LONG:
+                *retval = (int64_t)lval;
+                return SUCCESS;
+            case IS_DOUBLE:
+                *retval = (int64_t)dval;
+                return SUCCESS;
+        }
+    }
+
+    /* If we make it here we have failed */
+    return FAILURE;
+}
+
+/* Helper function to get an integer XCLAIM argument.  This can overflow a
+ * 32-bit PHP long so we have to extract it as an int64_t.  If the value is
+ * not a valid number or negative, we'll inform the user of the problem and
+ * that the argument is being ignored. */
+static int64_t get_xclaim_i64_arg(const char *key, zval *zv TSRMLS_DC) {
+    int64_t retval = -1;
+
+    /* Extract an i64, and if we can't let the user know there is an issue. */
+    if (zval_get_i64(zv, &retval) == FAILURE || retval < 0) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING,
+            "Invalid XCLAIM option '%s' will be ignored", key);
+    }
+
+    /* Success */
+    return retval;
+}
 
 /* Helper to extract XCLAIM options */
 static void get_xclaim_options(zval *z_arr, xclaimOptions *opt TSRMLS_DC) {
@@ -3556,23 +3599,19 @@ static void get_xclaim_options(zval *z_arr, xclaimOptions *opt TSRMLS_DC) {
     ht = Z_ARRVAL_P(z_arr);
     ZEND_HASH_FOREACH_KEY_VAL(ht, idx, zkey, zv) {
         if (zkey) {
-            /* Every key => value xclaim option requires a long and Redis
-             * treats -1 as not being passed so skip negative values too. */
-            if (Z_TYPE_P(zv) != IS_LONG || Z_LVAL_P(zv) < 0)
-                continue;
-
             kval = ZSTR_VAL(zkey);
             klen = ZSTR_LEN(zkey);
+
             if (klen == 4) {
                 if (!strncasecmp(kval, "TIME", 4)) {
                     opt->idle.type = "TIME";
-                    opt->idle.time = Z_LVAL_P(zv);
+                    opt->idle.time = get_xclaim_i64_arg("TIME", zv TSRMLS_CC);
                 } else if (!strncasecmp(kval, "IDLE", 4)) {
                     opt->idle.type = "IDLE";
-                    opt->idle.time = Z_LVAL_P(zv);
+                    opt->idle.time = get_xclaim_i64_arg("IDLE", zv TSRMLS_CC);
                 }
             } else if (klen == 10 && !strncasecmp(kval, "RETRYCOUNT", 10)) {
-                opt->retrycount = Z_LVAL_P(zv);
+                opt->retrycount = zval_get_long(zv);
             }
         } else {
             if (Z_TYPE_P(zv) == IS_STRING) {
@@ -3609,7 +3648,7 @@ static void append_xclaim_options(smart_string *cmd, xclaimOptions *opt) {
     /* IDLE/TIME long */
     if (opt->idle.type != NULL && opt->idle.time != -1) {
         redis_cmd_append_sstr(cmd, opt->idle.type, strlen(opt->idle.type));
-        redis_cmd_append_sstr_long(cmd, opt->idle.time);
+        redis_cmd_append_sstr_i64(cmd, opt->idle.time);
     }
 
     /* RETRYCOUNT */

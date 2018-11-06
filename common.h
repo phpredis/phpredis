@@ -461,8 +461,10 @@ typedef size_t strlen_t;
 
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
+#define phpredis_atoi64(p) _atoi64((p))
 #else
 #define PHP_REDIS_API
+#define phpredis_atoi64(p) atoll((p))
 #endif
 
 /* reply types */
