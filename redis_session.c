@@ -209,17 +209,16 @@ redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
             if (rpm->auth && rpm->redis_sock->status != REDIS_SOCK_STATUS_CONNECTED) {
                     needs_auth = 1;
             }
-            if (redis_sock_server_open(rpm->redis_sock TSRMLS_CC) < 0) {
-                continue;
-            }
-            if (needs_auth) {
-                redis_pool_member_auth(rpm TSRMLS_CC);
-            }
-            if (rpm->database >= 0) { /* default is -1 which leaves the choice to redis. */
-                redis_pool_member_select(rpm TSRMLS_CC);
-            }
+            if (redis_sock_server_open(rpm->redis_sock TSRMLS_CC) == 0) {
+                if (needs_auth) {
+                    redis_pool_member_auth(rpm TSRMLS_CC);
+                }
+                if (rpm->database >= 0) { /* default is -1 which leaves the choice to redis. */
+                    redis_pool_member_select(rpm TSRMLS_CC);
+                }
 
-            return rpm;
+                return rpm;
+            }
         }
         i += rpm->weight;
         rpm = rpm->next;
@@ -546,11 +545,13 @@ PS_CLOSE_FUNC(redis)
     redis_pool *pool = PS_GET_MOD_DATA();
 
     if (pool) {
-        redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(pool->lock_status.session_key) TSRMLS_CC);
+        if (pool->lock_status.session_key) {
+            redis_pool_member *rpm = redis_pool_get_sock(pool, ZSTR_VAL(pool->lock_status.session_key) TSRMLS_CC);
 
-        RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
-        if (redis_sock) {
-            lock_release(redis_sock, &pool->lock_status TSRMLS_CC);
+            RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
+            if (redis_sock) {
+                lock_release(redis_sock, &pool->lock_status TSRMLS_CC);
+            }
         }
 
         redis_pool_free(pool TSRMLS_CC);
