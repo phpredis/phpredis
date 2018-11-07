@@ -275,6 +275,7 @@ static int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_s
     }
 
     /* Generate our qualified lock key */
+    if (lock_status->lock_key) zend_string_release(lock_status->lock_key);
     lock_status->lock_key = zend_string_alloc(ZSTR_LEN(lock_status->session_key) + sizeof(suffix) - 1, 0);
     memcpy(ZSTR_VAL(lock_status->lock_key), ZSTR_VAL(lock_status->session_key), ZSTR_LEN(lock_status->session_key));
     memcpy(ZSTR_VAL(lock_status->lock_key) + ZSTR_LEN(lock_status->session_key), suffix, sizeof(suffix) - 1);
@@ -283,6 +284,7 @@ static int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_s
     gethostname(hostname, HOST_NAME_MAX);
     size_t hostname_len = strlen(hostname);
     size_t pid_len = snprintf(pid, sizeof(pid), "|%ld", (long)getpid());
+    if (lock_status->lock_secret) zend_string_release(lock_status->lock_secret);
     lock_status->lock_secret = zend_string_alloc(hostname_len + pid_len, 0);
     memcpy(ZSTR_VAL(lock_status->lock_secret), hostname, hostname_len);
     memcpy(ZSTR_VAL(lock_status->lock_secret) + hostname_len, pid, pid_len);
