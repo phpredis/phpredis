@@ -77,7 +77,11 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
         if (!b_lazy_connect)
         {
             /* connect */
-            redis_sock_server_open(redis->sock TSRMLS_CC);
+            if (redis_sock_server_open(redis->sock TSRMLS_CC) < 0) {
+                zval_dtor(&z_cons);
+                ra->count = ++i;
+                return NULL;
+            }
         }
 
         ra->count = ++i;
