@@ -1012,7 +1012,7 @@ PHP_METHOD(Redis, close)
 {
     RedisSock *redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
-    if (redis_sock && redis_sock_disconnect(redis_sock, 1 TSRMLS_CC)) {
+    if (redis_sock && redis_sock_disconnect(redis_sock, 1 TSRMLS_CC) == SUCCESS) {
         RETURN_TRUE;
     }
     RETURN_FALSE;
