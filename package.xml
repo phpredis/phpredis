@@ -27,30 +27,36 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2018-07-10</date>
+ <date>2018-10-26</date>
  <version>
-  <release>4.1.0</release>
-  <api>4.1.0</api>
+  <release>4.2.0RC2</release>
+  <api>4.2.0RC2</api>
  </version>
  <stability>
-  <release>stable</release>
-  <api>stable</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 4.1.0
+    phpredis 4.2.0RC2
 
-    The primary new feature of this release is session locking functionality. Thanks to @SkydiveMarius!
+    The main feature of this release is new Streams API implemented by Michael Grunder.
 
-    * Add callbacks validate_sid and update_timestamp to session handler [aaaf0f23] (@hongboliu)
-    * Call cluster_disconnect before destroying cluster object. [28ec4322] (Pavlo Yatsukhnenko)
-    * Bulk strings can be zero length. (Michael Grunder)
-    * Handle async parameter for flushDb and flushAll [beb6e8f3,acd10409,742cdd05] (Pavlo Yatsukhnenko)
-    * Split INSTALL and add more instructions [43613d9e,80d2a917] (@remicollet, Pavlo Yatsukhnenko)
-    * Only the first arg of connect and pconnect is required [063b5c1a] (@mathroc)
-    * Add session locking functionality [300c7251] (@SkydiveMarius, Michael Grunder, Pavlo Yatsukhnenko)
-    * Fix compression in RedisCluster [1aed74b4] (Pavlo Yatsukhnenko)
-    * Refactor geo* commands + documentation improvements (Michael Grunder)
+    * Streams API [2c9e0572] (Michael Grunder)
+    * Fix incorrect arginfo for `Redis::sRem` and `Redis::multi` [25b043ce] (Pavlo Yatsukhnenko)
+    * Update STREAM API to handle STATUS -> BULK reply change [0b97ec37] (Michael Grunder)
+    * Treat a -1 response from cluster_check_response as a timeout. [27df9220, 07ef7f4e, d1172426] (Michael Grunder)
+    * Use a ZSET insted of SET for EVAL tests [2e412373] (Michael Grunder)
+    * Missing space between command and args [0af2a7fe] (@remicollet)
+    * Reset the socket after a timeout to make sure no wrong data is received [cd6ebc6d] (@marcdejonge)
+    * Modify session testing logic [bfd27471] (Michael Grunder)
+    * Allow '-' and '+' arguments and add tests for zLexCount and zRemRangeByLex [d4a08697] (Michael Grunder)
+    * Fix printf format warnings [dcde9331] (Pavlo Yatsukhnenko)
+    * Session module is required [58bd8cc8] (@remicollet)
+    * Set default values for ini entries [e206ce9c] (Pavlo Yatsukhnenko)
+    * Display ini entries in output of phpinfo [908ac4b3] (Pavlo Yatsukhnenko)
+    * Persistant connections can be closed via close method + change reconnection logic [1d997873] (Pavlo Yatsukhnenko)
+    * Documentation improvements (@mg, @elcheco, @lucascourot, @nolimitdev, Michael Grunder)
  </notes>
  <contents>
   <dir name="/">
@@ -119,6 +125,49 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
+   <release>
+   <stability><release>beta</release><api>beta</api></stability>
+   <version><release>4.2.0RC2</release><api>4.2.0RC2</api></version>
+   <date>2018-10-26</date>
+   <notes>
+      phpredis 4.2.0RC2
+
+      The main feature of this release is new Streams API implemented by Michael Grunder.
+
+      * Streams API [2c9e0572] (Michael Grunder)
+      * Fix incorrect arginfo for `Redis::sRem` and `Redis::multi` [25b043ce] (Pavlo Yatsukhnenko)
+      * Update STREAM API to handle STATUS -> BULK reply change [0b97ec37] (Michael Grunder)
+      * Treat a -1 response from cluster_check_response as a timeout. [27df9220, 07ef7f4e, d1172426] (Michael Grunder)
+      * Use a ZSET insted of SET for EVAL tests [2e412373] (Michael Grunder)
+      * Missing space between command and args [0af2a7fe] (@remicollet)
+      * Reset the socket after a timeout to make sure no wrong data is received [cd6ebc6d] (@marcdejonge)
+      * Modify session testing logic [bfd27471] (Michael Grunder)
+      * Allow '-' and '+' arguments and add tests for zLexCount and zRemRangeByLex [d4a08697] (Michael Grunder)
+      * Fix printf format warnings [dcde9331] (Pavlo Yatsukhnenko)
+      * Session module is required [58bd8cc8] (@remicollet)
+      * Set default values for ini entries [e206ce9c] (Pavlo Yatsukhnenko)
+      * Display ini entries in output of phpinfo [908ac4b3] (Pavlo Yatsukhnenko)
+      * Persistant connections can be closed via close method + change reconnection logic [1d997873] (Pavlo Yatsukhnenko)
+      * Documentation improvements (@mg, @elcheco, @lucascourot, @nolimitdev, Michael Grunder)
+   </notes>
+   </release>
+
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>4.1.1</release><api>4.1.1</api></version>
+   <date>2018-08-01</date>
+   <notes>
+      phpredis 4.1.1
+
+      This release contains only bugfixes and documentation improvements
+
+      * Fix arginfo for Redis::set method [0c5e7f4d] (Pavlo Yatsukhnenko)
+      * Fix compression in RedisCluster [a53e1a34] (Pavlo Yatsukhnenko)
+      * Fix TravisCI builds [9bf32d30] (@jrchamp)
+      * Highlight php codes in documentation [c3b023b0] (@ackintosh)
+   </notes>
+   </release>
+
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>4.1.0</release><api>4.1.0</api></version>
