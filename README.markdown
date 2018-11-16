@@ -282,7 +282,7 @@ $redis->swapdb(0, 1); /* Swaps DB 0 with DB 1 atomically */
 -----
 _**Description**_: Disconnects from the Redis instance, include when `pconnect` is used.
 
-*Note*: Requires Redis >= 4.2.0, phpredis can closed the persistent connection.
+*Note*: Requires Redis >= 4.2.0, phpredis can close the persistent connection.
 
 ##### *Parameters*
 None.
