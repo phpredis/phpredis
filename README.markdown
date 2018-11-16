@@ -271,7 +271,7 @@ _**Description**_:  Swap one Redis database with another atomically
 ##### *Return value*  
 `TRUE` on success and `FALSE` on failure.
 
-*note*: Requires Redis >= 4.0.0
+*Note*: Requires Redis >= 4.0.0
 
 ##### *Example*  
 ~~~php
@@ -280,7 +280,15 @@ $redis->swapdb(0, 1); /* Swaps DB 0 with DB 1 atomically */
 
 ### close
 -----
-_**Description**_: Disconnects from the Redis instance, except when `pconnect` is used.
+_**Description**_: Disconnects from the Redis instance, include when `pconnect` is used.
+
+*Note*: Requires Redis >= 4.2.0, phpredis can closed the persistent connection.
+
+##### *Parameters*
+None.
+
+##### *Return value*
+*BOOL*: `TRUE` on success, `FALSE` on failure.
 
 ### setOption
 -----
