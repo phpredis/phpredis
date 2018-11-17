@@ -27,20 +27,22 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2018-11-08</date>
+ <date>2018-11-17</date>
  <version>
-  <release>4.2.0RC3</release>
-  <api>4.2.0RC3</api>
+  <release>4.2.0</release>
+  <api>4.2.0</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 4.2.0RC3
+    phpredis 4.2.0
 
     The main feature of this release is new Streams API implemented by Michael Grunder.
+
+    Note:  There are no changes between 4.2.0RC3 and 4.2.0.
 
     4.2.0RC3:
 
