@@ -27,6 +27,7 @@ You can send comments, patches, questions [here on github](https://github.com/ph
    * [Sets](#sets)
    * [Sorted sets](#sorted-sets)
    * [Geocoding](#geocoding)
+   * [Streams](#streams)
    * [Pub/sub](#pubsub)
    * [Transactions](#transactions)
    * [Scripting](#scripting)
