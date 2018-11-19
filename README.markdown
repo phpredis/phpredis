@@ -27,6 +27,7 @@ You can send comments, patches, questions [here on github](https://github.com/ph
    * [Sets](#sets)
    * [Sorted sets](#sorted-sets)
    * [Geocoding](#geocoding)
+   * [Streams](#streams)
    * [Pub/sub](#pubsub)
    * [Transactions](#transactions)
    * [Scripting](#scripting)
@@ -3329,7 +3330,7 @@ _**Description**_:  Add a message to a stream
 
 ##### *Example*
 ~~~php
-$obj_redis->xAdd('mystream', "\*", ['field' => 'value']);
+$obj_redis->xAdd('mystream', "*", ['field' => 'value']);
 ~~~
 
 ### xClaim
