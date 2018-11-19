@@ -3364,12 +3364,12 @@ $ids = ['1530113681011-0', '1530113681011-1', '1530113681011-2'];
 
 /* Without any options */
 $obj_redis->xClaim(
-    'mystream', 'group1', 'myconsumer1', $ids
+    'mystream', 'group1', 'myconsumer1', 0, $ids
 );
 
 /* With options */
 $obj_redis->xClaim(
-    'mystream', 'group1', 'myconsumer2', $ids,
+    'mystream', 'group1', 'myconsumer2', 0, $ids,
     [
         'IDLE' => time() * 1000,
         'RETRYCOUNT' => 5,
