@@ -3338,7 +3338,7 @@ $obj_redis->xAdd('mystream', "\*", ['field' => 'value']);
 
 ##### *Prototype*
 ~~~php
-$obj_redis->($str_key, $str_group, $str_consumer, $min_idle_time, [$arr_options]);
+$obj_redis->($str_key, $str_group, $str_consumer, $arr_ids, [$arr_options]);
 ~~~
 
 _**Description**_:  Claim ownership of one or more pending messages.
