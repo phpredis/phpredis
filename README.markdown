@@ -3330,7 +3330,7 @@ _**Description**_:  Add a message to a stream
 
 ##### *Example*
 ~~~php
-$obj_redis->xAdd('mystream', "\*", ['field' => 'value']);
+$obj_redis->xAdd('mystream', "*", ['field' => 'value']);
 ~~~
 
 ### xClaim
