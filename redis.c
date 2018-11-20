@@ -55,30 +55,30 @@ extern zend_function_entry redis_cluster_functions[];
 
 PHP_INI_BEGIN()
     /* redis arrays */
-    PHP_INI_ENTRY("redis.arrays.autorehash", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.arrays.connecttimeout", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.autorehash", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.connecttimeout", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.distributor", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.functions", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.hosts", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.arrays.index", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.arrays.lazyconnect", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.index", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.lazyconnect", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.names", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.arrays.pconnect", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.pconnect", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.previous", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.arrays.readtimeout", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.arrays.retryinterval", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.readtimeout", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.retryinterval", "0", PHP_INI_ALL, NULL)
 
     /* redis cluster */
-    PHP_INI_ENTRY("redis.clusters.persistent", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.clusters.read_timeout", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.clusters.persistent", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.clusters.read_timeout", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.seeds", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.clusters.timeout", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.clusters.timeout", "0", PHP_INI_ALL, NULL)
 
     /* redis session */
-    PHP_INI_ENTRY("redis.session.locking_enabled", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.session.lock_expire", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.session.lock_retries", "", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.session.lock_wait_time", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.locking_enabled", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.lock_expire", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.lock_retries", "10", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.lock_wait_time", "2000", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
 /** {{{ Argument info for commands in redis 1.0 */
@@ -91,6 +91,10 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_info, 0, 0, 0)
     ZEND_ARG_INFO(0, option)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_multi, 0, 0, 0)
+    ZEND_ARG_INFO(0, mode)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_client, 0, 0, 1)
@@ -330,7 +334,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, move, arginfo_move, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, mset, arginfo_pairs, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, msetnx, arginfo_pairs, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, multi, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, multi, arginfo_multi, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, object, arginfo_object, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, pconnect, arginfo_pconnect, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, persist, arginfo_key, ZEND_ACC_PUBLIC)
@@ -368,7 +372,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sMove, arginfo_smove, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sPop, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sRandMember, arginfo_srand_member, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sRemove, arginfo_key_value, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sRemove, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sSize, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sUnion, arginfo_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sUnionStore, arginfo_dst_nkeys, ZEND_ACC_PUBLIC)
@@ -402,6 +406,19 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, unwatch, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, wait, arginfo_wait, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, watch, arginfo_watch, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xack, arginfo_xack, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xadd, arginfo_xadd, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xclaim, arginfo_xclaim, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xdel, arginfo_xdel, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xgroup, arginfo_xgroup, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xinfo, arginfo_xinfo, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xlen, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xpending, arginfo_xpending, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xrange, arginfo_xrange, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xread, arginfo_xread, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xreadgroup, arginfo_xreadgroup, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xrevrange, arginfo_xrange, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, xtrim, arginfo_xtrim, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zAdd, arginfo_zadd, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCard, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCount, arginfo_key_min_max, ZEND_ACC_PUBLIC)
@@ -441,7 +458,7 @@ static zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, scard, sSize, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, sendEcho, echo, arginfo_echo, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, sismember, sContains, arginfo_key_value, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, srem, sRemove, arginfo_key_value, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, srem, sRemove, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, substr, getRange, arginfo_key_start_end, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zRem, zDelete, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zRemRangeByRank, zDeleteRangeByRank, arginfo_key_min_max, ZEND_ACC_PUBLIC)
@@ -458,6 +475,9 @@ static zend_function_entry redis_functions[] = {
 static const zend_module_dep redis_deps[] = {
 #ifdef HAVE_REDIS_IGBINARY
      ZEND_MOD_REQUIRED("igbinary")
+#endif
+#ifdef PHP_SESSION
+     ZEND_MOD_REQUIRED("session")
 #endif
      ZEND_MOD_END
 };
@@ -536,7 +556,7 @@ free_redis_object(void *object TSRMLS_DC)
 
     zend_object_std_dtor(&redis->std TSRMLS_CC);
     if (redis->sock) {
-        redis_sock_disconnect(redis->sock TSRMLS_CC);
+        redis_sock_disconnect(redis->sock, 0 TSRMLS_CC);
         redis_free_socket(redis->sock);
     }
     efree(redis);
@@ -577,7 +597,7 @@ free_redis_object(zend_object *object)
 
     zend_object_std_dtor(&redis->std TSRMLS_CC);
     if (redis->sock) {
-        redis_sock_disconnect(redis->sock TSRMLS_CC);
+        redis_sock_disconnect(redis->sock, 0 TSRMLS_CC);
         redis_free_socket(redis->sock);
     }
 }
@@ -631,11 +651,8 @@ redis_sock_get(zval *id TSRMLS_DC, int no_throw)
         return NULL;
     }
 
-    if (redis_sock->lazy_connect) {
-        redis_sock->lazy_connect = 0;
-        if (redis_sock_server_open(redis_sock TSRMLS_CC) < 0) {
-            return NULL;
-        }
+    if (redis_sock_server_open(redis_sock TSRMLS_CC) < 0) {
+        return NULL;
     }
 
     return redis_sock;
@@ -832,6 +849,8 @@ PHP_MINFO_FUNCTION(redis)
     php_info_print_table_row(2, "Available compression", "lzf");
 #endif
     php_info_print_table_end();
+
+    DISPLAY_INI_ENTRIES();
 }
 
 /* {{{ proto Redis Redis::__construct()
@@ -946,7 +965,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     redis = PHPREDIS_GET_OBJECT(redis_object, object);
     /* if there is a redis sock already we have to remove it */
     if (redis->sock) {
-        redis_sock_disconnect(redis->sock TSRMLS_CC);
+        redis_sock_disconnect(redis->sock, 0 TSRMLS_CC);
         redis_free_socket(redis->sock);
     }
 
@@ -993,7 +1012,7 @@ PHP_METHOD(Redis, close)
 {
     RedisSock *redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
-    if (redis_sock && redis_sock_disconnect(redis_sock TSRMLS_CC)) {
+    if (redis_sock_disconnect(redis_sock, 1 TSRMLS_CC) == SUCCESS) {
         RETURN_TRUE;
     }
     RETURN_FALSE;
@@ -1408,7 +1427,7 @@ PHP_METHOD(Redis, sAdd)
 
 /* {{{ proto boolean Redis::sAddArray(string key, array $values) */
 PHP_METHOD(Redis, sAddArray) {
-    REDIS_PROCESS_KW_CMD("SADD", redis_key_arr_cmd, redis_long_response);
+    REDIS_PROCESS_KW_CMD("SADD", redis_key_val_arr_cmd, redis_long_response);
 } /* }}} */
 
 /* {{{ proto int Redis::sSize(string key) */
@@ -2436,7 +2455,7 @@ redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
         add_next_index_zval(z_tab, z_ret);
 
         int num = atol(inbuf + 1);
-        if (num > 0 && redis_read_multibulk_recursive(redis_sock, num, z_ret TSRMLS_CC) < 0) {
+        if (num > 0 && redis_read_multibulk_recursive(redis_sock, num, 0, z_ret TSRMLS_CC) < 0) {
         }
         if (fi) fi = fi->next;
     }
@@ -3566,6 +3585,62 @@ PHP_METHOD(Redis, georadius) {
 
 PHP_METHOD(Redis, georadiusbymember) {
     REDIS_PROCESS_CMD(georadiusbymember, redis_read_variant_reply);
+}
+
+/*
+ * Streams
+ */
+
+PHP_METHOD(Redis, xack) {
+    REDIS_PROCESS_CMD(xack, redis_long_response);
+}
+
+PHP_METHOD(Redis, xadd) {
+    REDIS_PROCESS_CMD(xadd, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, xclaim) {
+    REDIS_PROCESS_CMD(xclaim, redis_xclaim_reply);
+}
+
+PHP_METHOD(Redis, xdel) {
+    REDIS_PROCESS_KW_CMD("XDEL", redis_key_str_arr_cmd, redis_long_response);
+}
+
+PHP_METHOD(Redis, xgroup) {
+    REDIS_PROCESS_CMD(xgroup, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, xinfo) {
+    REDIS_PROCESS_CMD(xinfo, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, xlen) {
+    REDIS_PROCESS_KW_CMD("XLEN", redis_key_cmd, redis_long_response);
+}
+
+PHP_METHOD(Redis, xpending) {
+    REDIS_PROCESS_CMD(xpending, redis_read_variant_reply_strings);
+}
+
+PHP_METHOD(Redis, xrange) {
+    REDIS_PROCESS_KW_CMD("XRANGE", redis_xrange_cmd, redis_xrange_reply);
+}
+
+PHP_METHOD(Redis, xread) {
+    REDIS_PROCESS_CMD(xread, redis_xread_reply);
+}
+
+PHP_METHOD(Redis, xreadgroup) {
+    REDIS_PROCESS_CMD(xreadgroup, redis_xread_reply);
+}
+
+PHP_METHOD(Redis, xrevrange) {
+    REDIS_PROCESS_KW_CMD("XREVRANGE", redis_xrange_cmd, redis_xrange_reply);
+}
+
+PHP_METHOD(Redis, xtrim) {
+    REDIS_PROCESS_CMD(xtrim, redis_long_response);
 }
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */
