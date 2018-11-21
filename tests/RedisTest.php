@@ -1882,36 +1882,45 @@ class Redis_Test extends TestSuite
     }
 
     public function testInfo() {
-        $info = $this->redis->info();
+        foreach (Array(false, true) as $boo_multi) {
+            if ($boo_multi) {
+                $this->redis->multi();
+                $this->redis->info();
+                $info = $this->redis->exec();
+                $info = $info[0];
+            } else {
+                $info = $this->redis->info();
+            }
 
-        $keys = array(
-            "redis_version",
-            "arch_bits",
-            "uptime_in_seconds",
-            "uptime_in_days",
-            "connected_clients",
-            "connected_slaves",
-            "used_memory",
-            "total_connections_received",
-            "total_commands_processed",
-            "role"
-        );
-        if (version_compare($this->version, "2.5.0", "lt")) {
-            array_push($keys,
-                "changes_since_last_save",
-                "bgsave_in_progress",
-                "last_save_time"
+            $keys = array(
+                "redis_version",
+                "arch_bits",
+                "uptime_in_seconds",
+                "uptime_in_days",
+                "connected_clients",
+                "connected_slaves",
+                "used_memory",
+                "total_connections_received",
+                "total_commands_processed",
+                "role"
             );
-        } else {
-            array_push($keys,
-                "rdb_changes_since_last_save",
-                "rdb_bgsave_in_progress",
-                "rdb_last_save_time"
-            );
-        }
+            if (version_compare($this->version, "2.5.0", "lt")) {
+                array_push($keys,
+                    "changes_since_last_save",
+                    "bgsave_in_progress",
+                    "last_save_time"
+                );
+            } else {
+                array_push($keys,
+                    "rdb_changes_since_last_save",
+                    "rdb_bgsave_in_progress",
+                    "rdb_last_save_time"
+                );
+            }
 
-        foreach($keys as $k) {
-            $this->assertTrue(in_array($k, array_keys($info)));
+            foreach($keys as $k) {
+                $this->assertTrue(in_array($k, array_keys($info)));
+            }
         }
     }
 
