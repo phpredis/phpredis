@@ -970,7 +970,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     }
 
     redis->sock = redis_sock_create(host, host_len, port, timeout, read_timeout, persistent,
-        persistent_id, retry_interval, 0);
+        persistent_id, retry_interval);
 
     if (redis_sock_server_open(redis->sock TSRMLS_CC) < 0) {
         if (redis->sock->err) {

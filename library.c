@@ -1690,7 +1690,7 @@ PHP_REDIS_API RedisSock*
 redis_sock_create(char *host, int host_len, unsigned short port,
                   double timeout, double read_timeout,
                   int persistent, char *persistent_id,
-                  long retry_interval, zend_bool lazy_connect)
+                  long retry_interval)
 {
     RedisSock *redis_sock;
 
