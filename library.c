@@ -468,26 +468,27 @@ redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
 PHP_REDIS_API char *
 redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_DC)
 {
-    int offset = 0;
-    char *reply, c[2];
+    int offset = 0, nbytes;
+    char *reply;
     size_t got;
 
     if (-1 == bytes || -1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return NULL;
     }
 
+    nbytes = bytes + 2;
     /* Allocate memory for string */
-    reply = emalloc(bytes+1);
+    reply = emalloc(nbytes);
 
     /* Consume bulk string */
-    while(offset < bytes) {
-        got = php_stream_read(redis_sock->stream, reply + offset, bytes-offset);
-        if (got == 0) break;
+    while (offset < nbytes) {
+        got = php_stream_read(redis_sock->stream, reply + offset, nbytes - offset);
+        if (got == 0 && php_stream_eof(redis_sock->stream)) break;
         offset += got;
     }
 
     /* Protect against reading too few bytes */
-    if (offset < bytes) {
+    if (offset < nbytes) {
         /* Error or EOF */
         zend_throw_exception(redis_exception_ce,
             "socket error on read socket", 0 TSRMLS_CC);
@@ -495,8 +496,7 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_DC)
         return NULL;
     }
 
-    /* Consume \r\n and null terminate reply string */
-    php_stream_read(redis_sock->stream, c, 2);
+    /* Null terminate reply string */
     reply[bytes] = '\0';
 
     return reply;
