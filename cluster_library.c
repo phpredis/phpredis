@@ -1384,6 +1384,11 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
     int resp, timedout = 0;
     long msstart;
 
+    if (!SLOT(c, slot)) {
+        zend_throw_exception_ex(redis_cluster_exception_ce, 0,
+            "The slot %d is not covered by any node in this cluster", slot);
+        return -1;
+    }
     /* Set the slot we're operating against as well as it's socket.  These can
      * change during our request loop if we have a master failure and are
      * configured to fall back to slave nodes, or if we have to fall back to
