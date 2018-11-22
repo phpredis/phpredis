@@ -840,6 +840,7 @@ PHP_REDIS_API void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
     }
 
     /* Parse it into a zval array */
+    REDIS_MAKE_STD_ZVAL(z_ret);
     redis_parse_info_response(response, z_ret);
 
     /* Free source response */
