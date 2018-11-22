@@ -2026,9 +2026,8 @@ PHP_METHOD(RedisCluster, _unserialize) {
 PHP_METHOD(RedisCluster, _masters) {
     redisCluster *c = GET_CONTEXT();
     redisClusterNode *node;
-    zval zv, *z_ret = &zv;
 
-    array_init(z_ret);
+    array_init(return_value);
 
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
         if (node == NULL) break;
@@ -2040,10 +2039,8 @@ PHP_METHOD(RedisCluster, _masters) {
 
         add_next_index_stringl(z_sub, ZSTR_VAL(node->sock->host), ZSTR_LEN(node->sock->host));
         add_next_index_long(z_sub, node->sock->port);
-        add_next_index_zval(z_ret, z_sub);
+        add_next_index_zval(return_value, z_sub);
     } ZEND_HASH_FOREACH_END();
-
-    RETVAL_ZVAL(z_ret, 0, 0);
 }
 
 PHP_METHOD(RedisCluster, _redir) {
