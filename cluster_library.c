@@ -1385,7 +1385,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
     long msstart;
 
     if (!SLOT(c, slot)) {
-        zend_throw_exception_ex(redis_cluster_exception_ce, 0,
+        zend_throw_exception_ex(redis_cluster_exception_ce, 0 TSRMLS_CC,
             "The slot %d is not covered by any node in this cluster", slot);
         return -1;
     }
