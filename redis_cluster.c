@@ -1084,7 +1084,6 @@ PHP_METHOD(RedisCluster, keys) {
     strlen_t pat_len;
     char *pat, *cmd;
     clusterReply *resp;
-    zval zv, *z_ret = &zv;
     int i, cmd_len;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &pat, &pat_len)
@@ -1096,19 +1095,20 @@ PHP_METHOD(RedisCluster, keys) {
     /* Prefix and then build our command */
     cmd_len = redis_spprintf(c->flags, NULL TSRMLS_CC, &cmd, "KEYS", "k", pat, pat_len);
 
-    array_init(z_ret);
+    array_init(return_value);
 
     /* Treat as readonly */
     c->readonly = CLUSTER_IS_ATOMIC(c);
 
     /* Iterate over our known nodes */
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
-        if (node == NULL) break;
+        if (node == NULL) continue;
         if (cluster_send_slot(c, node->slot, cmd, cmd_len, TYPE_MULTIBULK
                              TSRMLS_CC) < 0)
         {
             php_error_docref(0 TSRMLS_CC, E_ERROR, "Can't send KEYS to %s:%d",
                 ZSTR_VAL(node->sock->host), node->sock->port);
+            zval_dtor(return_value);
             efree(cmd);
             RETURN_FALSE;
         }
@@ -1129,7 +1129,7 @@ PHP_METHOD(RedisCluster, keys) {
                 continue;
             }
 
-            add_next_index_stringl(z_ret, resp->element[i]->str,
+            add_next_index_stringl(return_value, resp->element[i]->str,
                 resp->element[i]->len);
         }
 
@@ -1138,9 +1138,6 @@ PHP_METHOD(RedisCluster, keys) {
     } ZEND_HASH_FOREACH_END();
 
     efree(cmd);
-
-    /* Return our keys */
-    RETURN_ZVAL(z_ret, 1, 0);
 }
 /* }}} */
 
