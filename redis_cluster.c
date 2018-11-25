@@ -1134,7 +1134,7 @@ PHP_METHOD(RedisCluster, keys) {
         }
 
         /* Free response, don't free data */
-        cluster_free_reply(resp, 0);
+        cluster_free_reply(resp, 1);
     } ZEND_HASH_FOREACH_END();
 
     efree(cmd);
