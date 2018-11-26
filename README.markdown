@@ -3541,7 +3541,7 @@ Array
 )
 */
 
-// Receive only new message ($ = last id) and wait for one new message unlimited
+// Receive only new message ($ = last id) and wait for one new message unlimited time
 $obj_redis->xRead(['stream1' => '$'], 1, 0);
 ~~~
 
