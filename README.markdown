@@ -3540,6 +3540,9 @@ Array
 
 )
 */
+
+// Receive only new message ($ = last id) and wait for one new message unlimited
+$obj_redis->xRead(['stream1' => '$'], 1, 0);
 ~~~
 
 ### xReadGroup
@@ -3560,7 +3563,10 @@ _**Description**_:  This method is similar to xRead except that it supports read
 /* Consume messages for 'mygroup', 'consumer1' */
 $obj_redis->xReadGroup('mygroup', 'consumer1', ['s1' => 0, 's2' => 0]);
 
-/* Read a single message as 'consumer2' for up to a second until a message arrives. */
+/* Consume messages for 'mygroup', 'consumer1' which where not consumed yet */
+$obj_redis->xReadGroup('mygroup', 'consumer1', ['s1' => '>', 's2' => '>']);
+
+/* Read a single message as 'consumer2' wait for up to a second until a message arrives. */
 $obj_redis->xReadGroup('mygroup', 'consumer2', ['s1' => 0, 's2' => 0], 1, 1000);
 ~~~
 
