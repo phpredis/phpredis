@@ -3563,7 +3563,7 @@ _**Description**_:  This method is similar to xRead except that it supports read
 /* Consume messages for 'mygroup', 'consumer1' */
 $obj_redis->xReadGroup('mygroup', 'consumer1', ['s1' => 0, 's2' => 0]);
 
-/* Consume messages for 'mygroup', 'consumer1' which where not consumed yet */
+/* Consume messages for 'mygroup', 'consumer1' which where not consumed yet by the group */
 $obj_redis->xReadGroup('mygroup', 'consumer1', ['s1' => '>', 's2' => '>']);
 
 /* Read a single message as 'consumer2' wait for up to a second until a message arrives. */
