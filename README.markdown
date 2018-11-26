@@ -3464,7 +3464,7 @@ $obj_redis->xLen('mystream');
 
 ##### *Prototype*
 ~~~php
-$obj_redis->xPending($str_stream, $str_group [, $i_start, $i_end, $i_count, $str_consumer]);
+$obj_redis->xPending($str_stream, $str_group [, $str_start, $str_end, $i_count, $str_consumer]);
 ~~~
 
 _**Description**_:  Get information about pending messages in a given stream.
@@ -3475,7 +3475,7 @@ _**Description**_:  Get information about pending messages in a given stream.
 ##### *Examples*
 ~~~php
 $obj_redis->xPending('mystream', 'mygroup');
-$obj_redis->xPending('mystream', 'mygroup', 0, '+', 1, 'consumer-1');
+$obj_redis->xPending('mystream', 'mygroup', '-', '+', 1, 'consumer-1');
 ~~~
 
 ### xRange
@@ -3483,7 +3483,7 @@ $obj_redis->xPending('mystream', 'mygroup', 0, '+', 1, 'consumer-1');
 
 ##### *Prototype*
 ~~~php
-$obj_redis->xRange($str_stream, $i_start, $i_end [, $i_count]);
+$obj_redis->xRange($str_stream, $str_start, $str_end [, $i_count]);
 ~~~
 
 _**Description**_:  Get a range of messages from a given stream.
@@ -3569,7 +3569,7 @@ $obj_redis->xReadGroup('mygroup', 'consumer2', ['s1' => 0, 's2' => 0], 1, 1000);
 
 ##### *Prototype*
 ~~~php
-$obj_redis->xRevRange($str_stream, $i_end, $i_start [, $i_count]);
+$obj_redis->xRevRange($str_stream, $str_end, $str_start [, $i_count]);
 ~~~
 
 _**Description**_:  This is identical to xRange except the results come back in reverse order.  Also note that Redis reverses the order of "start" and "end".
