@@ -2126,21 +2126,27 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len TSRMLS_
 #ifdef HAVE_REDIS_LZF
     char *data;
     uint32_t res;
+    double size;
 #endif
 
     valfree = redis_serialize(redis_sock, z, &buf, &len TSRMLS_CC);
     switch (redis_sock->compression) {
         case REDIS_COMPRESSION_LZF:
 #ifdef HAVE_REDIS_LZF
-            data = emalloc(len);
-            res = lzf_compress(buf, len, data, len - 1);
-            if (res > 0 && res < len) {
-                if (valfree) efree(buf);
-                *val = data;
-                *val_len = res;
-                 return 1;
+            /**
+             * output buffer might be considerably more than in_len
+             * (but less than 104% of the original size)
+             */
+            if ((size = ceil(len * 1.04)) < UINT_MAX) {
+                data = emalloc(size);
+                if ((res = lzf_compress(buf, len, data, size)) > 0) {
+                    if (valfree) efree(buf);
+                    *val = data;
+                    *val_len = res;
+                    return 1;
+                }
+                efree(data);
             }
-            efree(data);
 #endif
             break;
     }
