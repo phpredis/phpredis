@@ -12,6 +12,10 @@
 
 #ifdef HAVE_REDIS_LZF
 #include <lzf.h>
+
+    #ifndef LZF_MARGIN
+        #define LZF_MARGIN 128
+    #endif
 #endif
 
 #include <zend_exceptions.h>
@@ -2133,20 +2137,16 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len TSRMLS_
     switch (redis_sock->compression) {
         case REDIS_COMPRESSION_LZF:
 #ifdef HAVE_REDIS_LZF
-            /**
-             * output buffer might be considerably more than in_len
-             * (but less than 104% of the original size)
-             */
-            if ((size = ceil(len * 1.04)) < UINT_MAX) {
-                data = emalloc(size);
-                if ((res = lzf_compress(buf, len, data, size)) > 0) {
-                    if (valfree) efree(buf);
-                    *val = data;
-                    *val_len = res;
-                    return 1;
-                }
-                efree(data);
+            /* preserve compatibility with PECL lzf_compress margin (greater of 4% and LZF_MARGIN) */
+            size = len + MIN(UINT_MAX - len, MAX(LZF_MARGIN, len / 25));
+            data = emalloc(size);
+            if ((res = lzf_compress(buf, len, data, size)) > 0) {
+                if (valfree) efree(buf);
+                *val = data;
+                *val_len = res;
+                return 1;
             }
+            efree(data);
 #endif
             break;
     }
