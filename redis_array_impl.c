@@ -51,7 +51,7 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, long retry_interval, zend_bool b
         /* default values */
         host = Z_STRVAL_P(zpData);
         host_len = Z_STRLEN_P(zpData);
-        ra->hosts[i] = estrndup(host, host_len);
+        ra->hosts[i] = zend_string_init(host, host_len, 0);
         port = 6379;
 
         if((p = strrchr(host, ':'))) { /* found port */
@@ -348,7 +348,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 
     /* create object */
     ra = emalloc(sizeof(RedisArray));
-    ra->hosts = ecalloc(count, sizeof(char *));
+    ra->hosts = ecalloc(count, sizeof(*ra->hosts));
     ra->redis = ecalloc(count, sizeof(zval));
     ra->count = 0;
     ra->z_multi_exec = NULL;
@@ -361,7 +361,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
     if (ra_load_hosts(ra, hosts, retry_interval, b_lazy_connect TSRMLS_CC) == NULL || !ra->count) {
         for (i = 0; i < ra->count; ++i) {
             zval_dtor(&ra->redis[i]);
-            efree(ra->hosts[i]);
+            zend_string_release(ra->hosts[i]);
         }
         efree(ra->redis);
         efree(ra->hosts);
@@ -500,7 +500,7 @@ ra_find_node_by_name(RedisArray *ra, const char *host, int host_len TSRMLS_DC) {
 
     int i;
     for(i = 0; i < ra->count; ++i) {
-        if(strncmp(ra->hosts[i], host, host_len) == 0) {
+        if (ZSTR_LEN(ra->hosts[i]) == host_len && strcmp(ZSTR_VAL(ra->hosts[i]), host) == 0) {
             return &ra->redis[i];
         }
     }
@@ -1079,7 +1079,7 @@ ra_move_key(const char *key, int key_len, zval *z_from, zval *z_to TSRMLS_DC) {
 /* callback with the current progress, with hostname and count */
 static void
 zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache,
-    const char *hostname, long count TSRMLS_DC) {
+    zend_string *hostname, long count TSRMLS_DC) {
 
     zval zv, *z_ret = &zv;
 
@@ -1088,7 +1088,7 @@ zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache,
     zval *z_host, *z_count, **z_args_pp[2];
 
     MAKE_STD_ZVAL(z_host);
-    ZVAL_STRING(z_host, hostname);
+    ZVAL_STRINGL(z_host, ZSTR_VAL(hostname), ZSTR_LEN(hostname));
     z_args_pp[0] = &z_host;
 
     MAKE_STD_ZVAL(z_count);
@@ -1100,7 +1100,7 @@ zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache,
 #else
     zval z_args[2];
 
-    ZVAL_STRING(&z_args[0], hostname);
+    ZVAL_STRINGL(&z_args[0], ZSTR_VAL(hostname), ZSTR_LEN(hostname));
     ZVAL_LONG(&z_args[1], count);
 
     z_cb->params = z_args;
@@ -1123,7 +1123,7 @@ zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache,
 }
 
 static void
-ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool b_index,
+ra_rehash_server(RedisArray *ra, zval *z_redis, zend_string *hostname, zend_bool b_index,
         zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache TSRMLS_DC) {
 
     HashTable *h_keys;
@@ -1164,7 +1164,7 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, const char *hostname, zend_bool 
         /* check that we're not moving to the same node. */
         zval *z_target = ra_find_node(ra, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), &pos TSRMLS_CC);
 
-        if (z_target && strcmp(hostname, ra->hosts[pos])) { /* different host */
+        if (z_target && zend_string_equals(hostname, ra->hosts[pos])) { /* different host */
             ra_move_key(Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), z_redis, z_target TSRMLS_CC);
         }
 

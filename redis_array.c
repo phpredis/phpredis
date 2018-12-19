@@ -141,7 +141,7 @@ redis_array_free(RedisArray *ra)
     /* Redis objects */
     for(i = 0; i< ra->count; i++) {
         zval_dtor(&ra->redis[i]);
-        efree(ra->hosts[i]);
+        zend_string_release(ra->hosts[i]);
     }
     efree(ra->redis);
     efree(ra->hosts);
@@ -514,7 +514,7 @@ PHP_METHOD(RedisArray, _hosts)
 
     array_init(return_value);
     for(i = 0; i < ra->count; ++i) {
-        add_next_index_string(return_value, ra->hosts[i]);
+        add_next_index_stringl(return_value, ZSTR_VAL(ra->hosts[i]), ZSTR_LEN(ra->hosts[i]));
     }
 }
 
@@ -538,7 +538,7 @@ PHP_METHOD(RedisArray, _target)
 
     redis_inst = ra_find_node(ra, key, key_len, &i TSRMLS_CC);
     if(redis_inst) {
-        RETURN_STRING(ra->hosts[i]);
+        RETURN_STRINGL(ZSTR_VAL(ra->hosts[i]), ZSTR_LEN(ra->hosts[i]));
     } else {
         RETURN_NULL();
     }
@@ -646,7 +646,7 @@ multihost_distribute_call(RedisArray *ra, zval *return_value, zval *z_fun, int a
         call_user_function(&redis_array_ce->function_table, &ra->redis[i], z_fun, z_tmp, argc, argv);
 
         /* Add the result for this host */
-        add_assoc_zval(return_value, ra->hosts[i], z_tmp);
+        add_assoc_zval_ex(return_value, ZSTR_VAL(ra->hosts[i]), ZSTR_LEN(ra->hosts[i]), z_tmp);
     }
 }
 
