@@ -67,6 +67,7 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("redis.arrays.previous", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.readtimeout", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.retryinterval", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.consistent", "0", PHP_INI_ALL, NULL)
 
     /* redis cluster */
     PHP_INI_ENTRY("redis.clusters.persistent", "0", PHP_INI_ALL, NULL)

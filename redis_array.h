@@ -37,6 +37,15 @@ PHP_METHOD(RedisArray, exec);
 PHP_METHOD(RedisArray, discard);
 PHP_METHOD(RedisArray, unwatch);
 
+typedef struct {
+    uint32_t value;
+    int index;
+} ContinuumPoint;
+
+typedef struct {
+    size_t nb_points;
+    ContinuumPoint *points;
+} Continuum;
 
 typedef struct RedisArray_ {
 
@@ -52,7 +61,7 @@ typedef struct RedisArray_ {
     HashTable *pure_cmds;   /* hash table */
     double connect_timeout; /* socket connect timeout */
     double read_timeout;    /* socket read timeout */
-
+    Continuum *continuum;
     struct RedisArray_ *prev;
 } RedisArray;
 

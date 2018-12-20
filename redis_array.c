@@ -138,6 +138,12 @@ redis_array_free(RedisArray *ra)
 {
     int i;
 
+    /* continuum */
+    if (ra->continuum) {
+        efree(ra->continuum->points);
+        efree(ra->continuum);
+    }
+
     /* Redis objects */
     for(i = 0; i< ra->count; i++) {
         zval_dtor(&ra->redis[i]);
@@ -264,7 +270,7 @@ PHP_METHOD(RedisArray, __construct)
 {
     zval *z0, z_fun, z_dist, *zpData, *z_opts = NULL;
     RedisArray *ra = NULL;
-    zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0;
+    zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0, consistent = 0;
     HashTable *hPrev = NULL, *hOpts = NULL;
     long l_retry_interval = 0;
       zend_bool b_lazy_connect = 0;
@@ -349,6 +355,11 @@ PHP_METHOD(RedisArray, __construct)
                 read_timeout = atof(Z_STRVAL_P(zpData));
             }
         }
+
+        /* consistent */
+        if ((zpData = zend_hash_str_find(hOpts, "consistent", sizeof("consistent") - 1)) != NULL) {
+            consistent = zval_is_true(zpData);
+        }
     }
 
     /* extract either name of list of hosts from z0 */
@@ -358,7 +369,7 @@ PHP_METHOD(RedisArray, __construct)
             break;
 
         case IS_ARRAY:
-            ra = ra_make_array(Z_ARRVAL_P(z0), &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout, read_timeout TSRMLS_CC);
+            ra = ra_make_array(Z_ARRVAL_P(z0), &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout, read_timeout, consistent TSRMLS_CC);
             break;
 
         default:
