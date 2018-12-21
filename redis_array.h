@@ -16,6 +16,7 @@ PHP_METHOD(RedisArray, _instance);
 PHP_METHOD(RedisArray, _function);
 PHP_METHOD(RedisArray, _distributor);
 PHP_METHOD(RedisArray, _rehash);
+PHP_METHOD(RedisArray, _continuum);
 
 PHP_METHOD(RedisArray, select);
 PHP_METHOD(RedisArray, info);

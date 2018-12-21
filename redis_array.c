@@ -104,6 +104,7 @@ ZEND_END_ARG_INFO()
 zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, __call, arginfo_call, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, __construct, arginfo_ctor, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, _continuum, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _distributor, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _function, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, _hosts, arginfo_void, ZEND_ACC_PUBLIC)
@@ -638,6 +639,38 @@ PHP_METHOD(RedisArray, _rehash)
         ra_rehash(ra, &z_cb, &z_cb_cache TSRMLS_CC);
     }
 }
+
+PHP_METHOD(RedisArray, _continuum)
+{
+    int i;
+    zval *object;
+    RedisArray *ra;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
+                &object, redis_array_ce) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if ((ra = redis_array_get(object TSRMLS_CC)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    array_init(return_value);
+    if (ra->continuum) {
+        for (i = 0; i < ra->continuum->nb_points; ++i) {
+            zval zv, *z_tmp = &zv;
+#if (PHP_MAJOR_VERSION < 7)
+            MAKE_STD_ZVAL(z_tmp);
+#endif
+
+            array_init(z_tmp);
+            add_assoc_long(z_tmp, "index", ra->continuum->points[i].index);
+            add_assoc_long(z_tmp, "value", ra->continuum->points[i].value);
+            add_next_index_zval(return_value, z_tmp);
+        }
+    }
+}
+
 
 static void
 multihost_distribute_call(RedisArray *ra, zval *return_value, zval *z_fun, int argc, zval *argv TSRMLS_DC)
