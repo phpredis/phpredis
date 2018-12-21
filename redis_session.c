@@ -227,26 +227,6 @@ redis_pool_get_sock(redis_pool *pool, const char *key TSRMLS_DC) {
     return NULL;
 }
 
-/* Helper to set our session lock key */
-static int set_session_lock_key(RedisSock *redis_sock, char *cmd, int cmd_len
-                                TSRMLS_DC)
-{
-    char *reply;
-    int reply_len;
-
-    reply = redis_simple_cmd(redis_sock, cmd, cmd_len, &reply_len TSRMLS_CC);
-    if (reply) {
-        if (IS_REDIS_OK(reply, reply_len)) {
-            efree(reply);
-            return SUCCESS;
-        }
-
-        efree(reply);
-    }
-
-    return FAILURE;
-}
-
 static int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_status
                         TSRMLS_DC)
 {
@@ -301,9 +281,17 @@ static int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_s
 
     /* Attempt to get our lock */
     for (i = 0; retries == -1 || i <= retries; i++) {
-        if (set_session_lock_key(redis_sock, cmd, cmd_len TSRMLS_CC) == SUCCESS) {
-            lock_status->is_locked = 1;
+        char *reply;
+        int reply_len;
+        if ((reply = redis_simple_cmd(redis_sock, cmd, cmd_len, &reply_len TSRMLS_CC)) == NULL) {
+            lock_status->is_locked = 0;
             break;
+        } else if (IS_REDIS_OK(reply, reply_len)) {
+            lock_status->is_locked = 1;
+            efree(reply);
+            break;
+        } else {
+            efree(reply);
         }
 
         /* Sleep unless we're done making attempts */
