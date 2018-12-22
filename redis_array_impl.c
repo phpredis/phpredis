@@ -1164,7 +1164,7 @@ ra_rehash_server(RedisArray *ra, zval *z_redis, zend_string *hostname, zend_bool
         /* check that we're not moving to the same node. */
         zval *z_target = ra_find_node(ra, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), &pos TSRMLS_CC);
 
-        if (z_target && zend_string_equals(hostname, ra->hosts[pos])) { /* different host */
+        if (z_target && !zend_string_equals(hostname, ra->hosts[pos])) { /* different host */
             ra_move_key(Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), z_redis, z_target TSRMLS_CC);
         }
 
