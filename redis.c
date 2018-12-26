@@ -241,8 +241,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 static zend_function_entry redis_functions[] = {
-     PHP_ME(Redis, __construct, arginfo_void, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, __destruct, arginfo_void, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, __construct, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, __destruct, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _prefix, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _serialize, arginfo_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _unserialize, arginfo_value, ZEND_ACC_PUBLIC)
