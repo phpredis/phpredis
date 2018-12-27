@@ -60,6 +60,7 @@
 
 /* Check if a response is the Redis +OK status response */
 #define IS_REDIS_OK(r, len) (r != NULL && len == 3 && !memcmp(r, "+OK", 3))
+#define NEGATIVE_LOCK_RESPONSE 1
 
 ps_module ps_mod_redis = {
 #if (PHP_MAJOR_VERSION < 7)
@@ -143,20 +144,18 @@ redis_pool_free(redis_pool *pool TSRMLS_DC) {
     efree(pool);
 }
 
-/* Send a command to Redis.  Returns reply on success and NULL on failure */
-static char *redis_simple_cmd(RedisSock *redis_sock, char *cmd, int cmdlen,
-                              int *replylen TSRMLS_DC)
+/* Send a command to Redis.  Returns byte count written to socket (-1 on failure) */
+static int redis_simple_cmd(RedisSock *redis_sock, char *cmd, int cmdlen,
+                              char **reply, int *replylen TSRMLS_DC)
 {
-    char *reply;
+    *reply = NULL;
+    int len_written = redis_sock_write(redis_sock, cmd, cmdlen TSRMLS_CC);
 
-    if (redis_sock_write(redis_sock, cmd, cmdlen TSRMLS_CC) >= 0) {
-        if ((reply = redis_sock_read(redis_sock, replylen TSRMLS_CC)) != NULL) {
-            return reply;
-        }
+    if (len_written >= 0) {
+        *reply = redis_sock_read(redis_sock, replylen TSRMLS_CC);
     }
 
-    /* Failed to send or receive command */
-    return NULL;
+    return len_written;
 }
 
 static void
@@ -232,9 +231,9 @@ static int set_session_lock_key(RedisSock *redis_sock, char *cmd, int cmd_len
                                 TSRMLS_DC)
 {
     char *reply;
-    int reply_len;
+    int sent_len, reply_len;
 
-    reply = redis_simple_cmd(redis_sock, cmd, cmd_len, &reply_len TSRMLS_CC);
+    sent_len = redis_simple_cmd(redis_sock, cmd, cmd_len, &reply, &reply_len TSRMLS_CC);
     if (reply) {
         if (IS_REDIS_OK(reply, reply_len)) {
             efree(reply);
@@ -244,14 +243,15 @@ static int set_session_lock_key(RedisSock *redis_sock, char *cmd, int cmd_len
         efree(reply);
     }
 
-    return FAILURE;
+    /* Return FAILURE in case of network problems */
+    return sent_len >= 0 ? NEGATIVE_LOCK_RESPONSE : FAILURE;
 }
 
 static int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_status
                         TSRMLS_DC)
 {
     char *cmd, hostname[HOST_NAME_MAX] = {0}, suffix[] = "_LOCK", pid[32];
-    int cmd_len, lock_wait_time, retries, i, expiry;
+    int cmd_len, lock_wait_time, retries, i, set_lock_key_result, expiry;
 
     /* Short circuit if we are already locked or not using session locks */
     if (lock_status->is_locked || !INI_INT("redis.session.locking_enabled"))
@@ -301,8 +301,14 @@ static int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_s
 
     /* Attempt to get our lock */
     for (i = 0; retries == -1 || i <= retries; i++) {
-        if (set_session_lock_key(redis_sock, cmd, cmd_len TSRMLS_CC) == SUCCESS) {
+        set_lock_key_result = set_session_lock_key(redis_sock, cmd, cmd_len TSRMLS_CC);
+
+        if (set_lock_key_result == SUCCESS) {
             lock_status->is_locked = 1;
+            break;
+        } else if (set_lock_key_result == FAILURE) {
+            /* In case of network problems, break the loop and report to userland */
+            lock_status->is_locked = 0;
             break;
         }
 
@@ -339,7 +345,7 @@ static void refresh_lock_status(RedisSock *redis_sock, redis_session_lock_status
     cmdlen = REDIS_SPPRINTF(&cmd, "GET", "S", lock_status->lock_key);
 
     /* Attempt to refresh the lock */
-    reply = redis_simple_cmd(redis_sock, cmd, cmdlen, &replylen TSRMLS_CC);
+    redis_simple_cmd(redis_sock, cmd, cmdlen, &reply, &replylen TSRMLS_CC);
     if (reply != NULL) {
         lock_status->is_locked = IS_LOCK_SECRET(reply, replylen, lock_status->lock_secret);
         efree(reply);
@@ -389,7 +395,7 @@ static void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_
             lock_status->lock_key, lock_status->lock_secret);
 
         /* Send it off */
-        reply = redis_simple_cmd(redis_sock, cmd, cmdlen, &replylen TSRMLS_CC);
+        redis_simple_cmd(redis_sock, cmd, cmdlen, &reply, &replylen TSRMLS_CC);
 
         /* Release lock and cleanup reply if we got one */
         if (reply != NULL) {
