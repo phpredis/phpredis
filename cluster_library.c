@@ -952,6 +952,14 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
             continue;
         }
 
+        // Attempt to read data from the socket to ensure the current seed is available
+        if (redis_sock_write(redis_sock, RESP_CLUSTER_SLOTS_CMD,
+                        sizeof(RESP_CLUSTER_SLOTS_CMD)-1 TSRMLS_CC) < 0 ||
+                        php_stream_getc(redis_sock->stream) == EOF)
+        {
+            continue;
+        }
+
         // Parse out cluster nodes.  Flag mapped if we are valid
         slots = cluster_get_slots(seed TSRMLS_CC);
         if (slots) {
