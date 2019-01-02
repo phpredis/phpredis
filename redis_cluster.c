@@ -539,6 +539,8 @@ PHP_METHOD(RedisCluster, __construct) {
             0 TSRMLS_CC);
     }
 
+    context->experimental_failover_enabled = 1;
+
     /* If we've been passed only one argument, the user is attempting to connect
      * to a named cluster, stored in php.ini, otherwise we'll need manual seeds */
     if (ZEND_NUM_ARGS() > 1) {

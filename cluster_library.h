@@ -237,6 +237,7 @@ typedef struct redisCluster {
     int                redir_host_len;
     unsigned short     redir_slot;
     unsigned short     redir_port;
+    zend_bool          experimental_failover_enabled;
 
 #if (PHP_MAJOR_VERSION >= 7)
     /* Zend object handler */

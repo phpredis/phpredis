@@ -126,7 +126,7 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
         r = element[i] = ecalloc(1, sizeof(clusterReply));
 
         // Bomb out, flag error condition on a communication failure
-        if (redis_read_reply_type(sock, &r->type, &len TSRMLS_CC) < 0) {
+        if (redis_read_reply_type(sock, &r->type, &len TSRMLS_CC, 0) < 0) {
             *err = 1;
             return;
         }
@@ -612,7 +612,7 @@ static void fyshuffle(int *array, size_t len) {
 
 /* Execute a CLUSTER SLOTS command against the seed socket, and return the
  * reply or NULL on failure. */
-clusterReply* cluster_get_slots(RedisSock *redis_sock TSRMLS_DC)
+clusterReply* cluster_get_slots(RedisSock *redis_sock TSRMLS_DC, zend_bool experimental_failover_enabled)
 {
     clusterReply *r;
     REDIS_REPLY_TYPE type;
@@ -621,7 +621,7 @@ clusterReply* cluster_get_slots(RedisSock *redis_sock TSRMLS_DC)
     // Send the command to the socket and consume reply type
     if (redis_sock_write(redis_sock, RESP_CLUSTER_SLOTS_CMD,
                         sizeof(RESP_CLUSTER_SLOTS_CMD)-1 TSRMLS_CC) < 0 ||
-                        redis_read_reply_type(redis_sock, &type, &len TSRMLS_CC) < 0)
+                        redis_read_reply_type(redis_sock, &type, &len TSRMLS_CC, experimental_failover_enabled) < 0)
     {
         return NULL;
     }
@@ -952,16 +952,8 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
             continue;
         }
 
-        // Attempt to read data from the socket to ensure the current seed is available
-        if (redis_sock_write(redis_sock, RESP_CLUSTER_SLOTS_CMD,
-                        sizeof(RESP_CLUSTER_SLOTS_CMD)-1 TSRMLS_CC) < 0 ||
-                        php_stream_getc(redis_sock->stream) == EOF)
-        {
-            continue;
-        }
-
         // Parse out cluster nodes.  Flag mapped if we are valid
-        slots = cluster_get_slots(seed TSRMLS_CC);
+        slots = cluster_get_slots(seed TSRMLS_CC, c->experimental_failover_enabled);
         if (slots) {
             mapped = !cluster_map_slots(c, slots);
             // Bin anything mapped, if we failed somewhere

@@ -239,14 +239,14 @@ redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *p_iter;
 
     /* Our response should have two multibulk replies */
-    if(redis_read_reply_type(redis_sock, &reply_type, &reply_info TSRMLS_CC)<0
+    if(redis_read_reply_type(redis_sock, &reply_type, &reply_info TSRMLS_CC, 0)<0
        || reply_type != TYPE_MULTIBULK || reply_info != 2)
     {
         return -1;
     }
 
     /* The BULK response iterator */
-    if(redis_read_reply_type(redis_sock, &reply_type, &reply_info TSRMLS_CC)<0
+    if(redis_read_reply_type(redis_sock, &reply_type, &reply_info TSRMLS_CC, 0)<0
        || reply_type != TYPE_BULK)
     {
         return -1;
@@ -1253,7 +1253,7 @@ redis_sock_read_single_line(RedisSock *redis_sock, char *buffer, size_t buflen,
     REDIS_REPLY_TYPE type;
     long info;
 
-    if (redis_read_reply_type(redis_sock, &type, &info TSRMLS_CC) < 0 ||
+    if (redis_read_reply_type(redis_sock, &type, &info TSRMLS_CC, 0) < 0 ||
         (type != TYPE_LINE && type != TYPE_ERR))
     {
         return -1;
@@ -1423,7 +1423,7 @@ redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv TSRMLS_DC)
 
     for (i = 0; i < count; i++) {
         /* Consume inner reply type */
-        if (redis_read_reply_type(redis_sock, &type, &li TSRMLS_CC) < 0 ||
+        if (redis_read_reply_type(redis_sock, &type, &li TSRMLS_CC, 0) < 0 ||
             (type != TYPE_BULK && type != TYPE_MULTIBULK) ||
             (type == TYPE_BULK && li <= 0)) return -1;
 
@@ -2390,7 +2390,7 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size,
 
 PHP_REDIS_API int
 redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
-                      long *reply_info TSRMLS_DC)
+                      long *reply_info TSRMLS_DC, zend_bool experimental_failover_enabled)
 {
     // Make sure we haven't lost the connection, even trying to reconnect
     if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
@@ -2401,8 +2401,10 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
 
     // Attempt to read the reply-type byte
     if((*reply_type = php_stream_getc(redis_sock->stream)) == EOF) {
-        zend_throw_exception(redis_exception_ce, "socket error on read socket",
-            0 TSRMLS_CC);
+        if (experimental_failover_enabled == 0) {
+            zend_throw_exception(redis_exception_ce, "socket error on read socket",
+                0 TSRMLS_CC);
+        }
         return -1;
     }
 
@@ -2486,7 +2488,7 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, int status_s
     while(elements > 0) {
         // Attempt to read our reply type
         if(redis_read_reply_type(redis_sock, &reply_type, &reply_info
-                                 TSRMLS_CC) < 0)
+                                 TSRMLS_CC, 0) < 0)
         {
             zend_throw_exception_ex(redis_exception_ce, 0 TSRMLS_CC,
                 "protocol error, couldn't parse MULTI-BULK response\n");
@@ -2550,7 +2552,7 @@ variant_reply_generic(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     //char *bulk_resp;
 
     // Attempt to read our header
-    if(redis_read_reply_type(redis_sock,&reply_type,&reply_info TSRMLS_CC) < 0)
+    if(redis_read_reply_type(redis_sock,&reply_type,&reply_info TSRMLS_CC, 0) < 0)
     {
         return -1;
     }
