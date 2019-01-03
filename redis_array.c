@@ -159,6 +159,9 @@ redis_array_free(RedisArray *ra)
     /* Distributor */
     zval_dtor(&ra->z_dist);
 
+    /* Hashing algorithm */
+    zval_dtor(&ra->z_algo);
+
     /* Delete pur commands */
     zend_hash_destroy(ra->pure_cmds);
     FREE_HASHTABLE(ra->pure_cmds);
@@ -269,7 +272,7 @@ redis_array_get(zval *id TSRMLS_DC)
     Public constructor */
 PHP_METHOD(RedisArray, __construct)
 {
-    zval *z0, z_fun, z_dist, *zpData, *z_opts = NULL;
+    zval *z0, z_fun, z_dist, z_algo, *zpData, *z_opts = NULL;
     RedisArray *ra = NULL;
     zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0, consistent = 0;
     HashTable *hPrev = NULL, *hOpts = NULL;
@@ -284,6 +287,7 @@ PHP_METHOD(RedisArray, __construct)
 
     ZVAL_NULL(&z_fun);
     ZVAL_NULL(&z_dist);
+    ZVAL_NULL(&z_algo);
     /* extract options */
     if(z_opts) {
         hOpts = Z_ARRVAL_P(z_opts);
@@ -304,6 +308,11 @@ PHP_METHOD(RedisArray, __construct)
         /* extract function name. */
         if ((zpData = zend_hash_str_find(hOpts, "distributor", sizeof("distributor") - 1)) != NULL) {
             ZVAL_ZVAL(&z_dist, zpData, 1, 0);
+        }
+
+        /* extract function name. */
+        if ((zpData = zend_hash_str_find(hOpts, "algorithm", sizeof("algorithm") - 1)) != NULL && Z_TYPE_P(zpData) == IS_STRING) {
+            ZVAL_ZVAL(&z_algo, zpData, 1, 0);
         }
 
         /* extract index option. */
@@ -370,12 +379,13 @@ PHP_METHOD(RedisArray, __construct)
             break;
 
         case IS_ARRAY:
-            ra = ra_make_array(Z_ARRVAL_P(z0), &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout, read_timeout, consistent TSRMLS_CC);
+            ra = ra_make_array(Z_ARRVAL_P(z0), &z_fun, &z_dist, &z_algo, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout, read_timeout, consistent TSRMLS_CC);
             break;
 
         default:
             WRONG_PARAM_COUNT;
     }
+    zval_dtor(&z_algo);
     zval_dtor(&z_dist);
     zval_dtor(&z_fun);
 

@@ -26,6 +26,8 @@
 #include "ext/standard/crc32.h"
 #include "ext/standard/md5.h"
 
+#include "ext/hash/php_hash.h"
+
 #define PHPREDIS_INDEX_NAME "__phpredis_array_index__"
 
 extern zend_class_entry *redis_ce;
@@ -162,11 +164,12 @@ ra_find_name(const char *name) {
 /* laod array from INI settings */
 RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 
-    zval *z_data, z_fun, z_dist;
+    zval *z_data, z_fun, z_dist, z_algo;
     zval z_params_hosts;
     zval z_params_prev;
     zval z_params_funs;
     zval z_params_dist;
+    zval z_params_algo;
     zval z_params_index;
     zval z_params_autorehash;
     zval z_params_retry_interval;
@@ -225,6 +228,16 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     ZVAL_NULL(&z_dist);
     if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_dist), name, name_len)) != NULL) {
         ZVAL_ZVAL(&z_dist, z_data, 1, 0);
+    }
+
+    /* find hash algorithm */
+    array_init(&z_params_algo);
+    if ((iptr = INI_STR("redis.arrays.algorithm")) != NULL) {
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_algo TSRMLS_CC);
+    }
+    ZVAL_NULL(&z_algo);
+    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_algo), name, name_len)) != NULL) {
+        ZVAL_ZVAL(&z_algo, z_data, 1, 0);
     }
 
     /* find index option */
@@ -327,7 +340,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
 
 
     /* create RedisArray object */
-    ra = ra_make_array(hHosts, &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout, read_timeout, consistent TSRMLS_CC);
+    ra = ra_make_array(hHosts, &z_fun, &z_dist, &z_algo, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout, read_timeout, consistent TSRMLS_CC);
     if (ra) {
         ra->auto_rehash = b_autorehash;
         if(ra->prev) ra->prev->auto_rehash = b_autorehash;
@@ -338,6 +351,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     zval_dtor(&z_params_prev);
     zval_dtor(&z_params_funs);
     zval_dtor(&z_params_dist);
+    zval_dtor(&z_params_algo);
     zval_dtor(&z_params_index);
     zval_dtor(&z_params_autorehash);
     zval_dtor(&z_params_retry_interval);
@@ -346,6 +360,7 @@ RedisArray *ra_load_array(const char *name TSRMLS_DC) {
     zval_dtor(&z_params_read_timeout);
     zval_dtor(&z_params_lazy_connect);
     zval_dtor(&z_params_consistent);
+    zval_dtor(&z_algo);
     zval_dtor(&z_dist);
     zval_dtor(&z_fun);
 
@@ -393,7 +408,7 @@ ra_make_continuum(zend_string **hosts, int nb_hosts)
 }
 
 RedisArray *
-ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, zend_bool b_pconnect, long retry_interval, zend_bool b_lazy_connect, double connect_timeout, double read_timeout, zend_bool consistent TSRMLS_DC) {
+ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, zval *z_algo, HashTable *hosts_prev, zend_bool b_index, zend_bool b_pconnect, long retry_interval, zend_bool b_lazy_connect, double connect_timeout, double read_timeout, zend_bool consistent TSRMLS_DC) {
 
     int i, count;
     RedisArray *ra;
@@ -423,7 +438,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
         efree(ra);
         return NULL;
     }
-    ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect, connect_timeout, read_timeout, consistent TSRMLS_CC) : NULL;
+    ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, z_algo, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect, connect_timeout, read_timeout, consistent TSRMLS_CC) : NULL;
 
     /* init array data structures */
     ra_init_function_table(ra);
@@ -431,6 +446,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
     /* Set hash function and distribtor if provided */
     ZVAL_ZVAL(&ra->z_fun, z_fun, 1, 0);
     ZVAL_ZVAL(&ra->z_dist, z_dist, 1, 0);
+    ZVAL_ZVAL(&ra->z_algo, z_algo, 1, 0);
 
     /* init continuum */
     if (consistent) {
@@ -533,10 +549,26 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
     if (Z_TYPE(ra->z_dist) == IS_NULL) {
         int i;
         unsigned long ret = 0xffffffff;
+        const php_hash_ops *ops;
 
         /* hash */
-        for (i = 0; i < ZSTR_LEN(out); ++i) {
-            CRC32(ret, ZSTR_VAL(out)[i]);
+        if (Z_TYPE(ra->z_algo) == IS_STRING && (ops = php_hash_fetch_ops(Z_STRVAL(ra->z_algo), Z_STRLEN(ra->z_algo))) != NULL) {
+            void *ctx = emalloc(ops->context_size);
+            unsigned char *digest = emalloc(ops->digest_size);
+
+            ops->hash_init(ctx);
+            ops->hash_update(ctx, ZSTR_VAL(out), ZSTR_LEN(out));
+            ops->hash_final(digest, ctx);
+
+            memcpy(&ret, digest, MIN(sizeof(ret), ops->digest_size));
+            ret %= 0xffffffff;
+
+            efree(digest);
+            efree(ctx);
+        } else {
+            for (i = 0; i < ZSTR_LEN(out); ++i) {
+                CRC32(ret, ZSTR_VAL(out)[i]);
+            }
         }
 
         /* get position on ring */
