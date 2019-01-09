@@ -34,7 +34,7 @@ zend_string_alloc(size_t len, int persistent)
     zend_string *zstr = emalloc(sizeof(*zstr) + len + 1);
 
     ZSTR_VAL(zstr) = (char *)zstr + sizeof(*zstr);
-    zstr->len = len;
+    ZSTR_LEN(zstr) = len;
     zstr->gc = 0x01;
     return zstr;
 }
@@ -46,6 +46,25 @@ zend_string_init(const char *str, size_t len, int persistent)
 
     memcpy(ZSTR_VAL(zstr), str, len);
     ZSTR_VAL(zstr)[len] = '\0';
+    return zstr;
+}
+
+static zend_always_inline zend_string *
+zend_string_realloc(zend_string *s, size_t len, int persistent)
+{
+    zend_string *zstr;
+
+    if (!s->gc) {
+        zstr = zend_string_init(ZSTR_VAL(s), len, 0);
+    } else if (s->gc & 0x10) {
+        ZSTR_VAL(s) = erealloc(ZSTR_VAL(s), len + 1);
+        ZSTR_LEN(s) = len;
+        zstr = s;
+    } else {
+        zstr = erealloc(s, sizeof(*zstr) + len + 1);
+        ZSTR_VAL(zstr) = (char *)zstr + sizeof(*zstr);
+        ZSTR_LEN(zstr) = len;
+    }
     return zstr;
 }
 
@@ -533,14 +552,12 @@ typedef enum _PUBSUB_TYPE {
 
 #define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) do { \
     if (redis_sock->pipeline_cmd == NULL) { \
-        redis_sock->pipeline_cmd = estrndup(cmd, cmd_len); \
+        redis_sock->pipeline_cmd = zend_string_init(cmd, cmd_len, 0); \
     } else { \
-        redis_sock->pipeline_cmd = erealloc(redis_sock->pipeline_cmd, \
-            redis_sock->pipeline_len + cmd_len); \
-        memcpy(&redis_sock->pipeline_cmd[redis_sock->pipeline_len], \
-            cmd, cmd_len); \
+        size_t pipeline_len = ZSTR_LEN(redis_sock->pipeline_cmd); \
+        redis_sock->pipeline_cmd = zend_string_realloc(redis_sock->pipeline_cmd, pipeline_len + cmd_len, 0); \
+        memcpy(&ZSTR_VAL(redis_sock->pipeline_cmd)[pipeline_len], cmd, cmd_len); \
     } \
-    redis_sock->pipeline_len += cmd_len; \
 } while (0)
 
 #define SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len) \
@@ -675,8 +692,7 @@ typedef struct {
     fold_item      *head;
     fold_item      *current;
 
-    char           *pipeline_cmd;
-    size_t         pipeline_len;
+    zend_string    *pipeline_cmd;
 
     zend_string    *err;
 

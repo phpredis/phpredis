@@ -2387,17 +2387,16 @@ PHP_METHOD(Redis, exec)
             /* Empty array when no command was run. */
             array_init(return_value);
         } else {
-            if (redis_sock_write(redis_sock, redis_sock->pipeline_cmd,
-                    redis_sock->pipeline_len TSRMLS_CC) < 0) {
+            if (redis_sock_write(redis_sock, ZSTR_VAL(redis_sock->pipeline_cmd),
+                    ZSTR_LEN(redis_sock->pipeline_cmd) TSRMLS_CC) < 0) {
                 ZVAL_FALSE(return_value);
             } else {
                 array_init(return_value);
                 redis_sock_read_multibulk_multi_reply_loop(
                     INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, return_value, 0);
             }
-            efree(redis_sock->pipeline_cmd);
+            zend_string_release(redis_sock->pipeline_cmd);
             redis_sock->pipeline_cmd = NULL;
-            redis_sock->pipeline_len = 0;
         }
         free_reply_callbacks(redis_sock);
         REDIS_DISABLE_MODE(redis_sock, PIPELINE);

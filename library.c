@@ -1724,7 +1724,6 @@ redis_sock_create(char *host, int host_len, unsigned short port,
     redis_sock->current = NULL;
 
     redis_sock->pipeline_cmd = NULL;
-    redis_sock->pipeline_len = 0;
 
     redis_sock->err = NULL;
 
@@ -2104,7 +2103,7 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
         zend_string_release(redis_sock->prefix);
     }
     if (redis_sock->pipeline_cmd) {
-        efree(redis_sock->pipeline_cmd);
+        zend_string_release(redis_sock->pipeline_cmd);
     }
     if (redis_sock->err) {
         zend_string_release(redis_sock->err);
