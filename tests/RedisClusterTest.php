@@ -319,6 +319,17 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertTrue($ret === array('44'));
     }
 
+    public function testDiscard()
+    {
+        /* start transaction */
+        $this->redis->multi();
+
+        /* Set and get in our transaction */
+        $this->redis->set('pipecount','over9000')->get('pipecount');
+
+        $this->assertTrue($this->redis->discard());
+    }
+
     /* RedisCluster::script() is a 'raw' command, which requires a key such that
      * we can direct it to a given node */
     public function testScript() {

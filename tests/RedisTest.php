@@ -2715,6 +2715,23 @@ class Redis_Test extends TestSuite
         $this->assertEquals(Array(true, 'over9000'), $data);
     }
 
+    public function testDiscard()
+    {
+        foreach (Array(Redis::PIPELINE, Redis::MULTI) as $mode) {
+            /* start transaction */
+            $this->redis->multi($mode);
+
+            /* Set and get in our transaction */
+            $this->redis->set('pipecount','over9000')->get('pipecount');
+
+            /* first call closes transaction and clears commands queue */
+            $this->assertTrue($this->redis->discard());
+
+            /* next call fails because mode is ATOMIC */
+            $this->assertFalse($this->redis->discard());
+        }
+    }
+
     protected function sequence($mode) {
         $ret = $this->redis->multi($mode)
             ->set('x', 42)
