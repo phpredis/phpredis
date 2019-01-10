@@ -2298,6 +2298,7 @@ PHP_METHOD(Redis, multi)
 /* discard */
 PHP_METHOD(Redis, discard)
 {
+    int ret = FAILURE;
     RedisSock *redis_sock;
     zval *object;
 
@@ -2310,9 +2311,21 @@ PHP_METHOD(Redis, discard)
         RETURN_FALSE;
     }
 
-    redis_sock->mode = ATOMIC;
-    free_reply_callbacks(redis_sock);
-    RETURN_BOOL(redis_send_discard(redis_sock TSRMLS_CC) == SUCCESS);
+    if (IS_PIPELINE(redis_sock)) {
+        ret = SUCCESS;
+        if (redis_sock->pipeline_cmd) {
+            zend_string_release(redis_sock->pipeline_cmd);
+            redis_sock->pipeline_cmd = NULL;
+        }
+    } else if (IS_MULTI(redis_sock)) {
+        ret = redis_send_discard(redis_sock TSRMLS_CC);
+    }
+    if (ret == SUCCESS) {
+        free_reply_callbacks(redis_sock);
+        redis_sock->mode = ATOMIC;
+        RETURN_TRUE;
+    }
+    RETURN_FALSE;
 }
 
 /* redis_sock_read_multibulk_multi_reply */
