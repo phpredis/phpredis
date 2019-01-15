@@ -45,6 +45,7 @@ PHP_REDIS_API void redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
 PHP_REDIS_API RedisSock* redis_sock_create(char *host, int host_len, unsigned short port, double timeout, double read_timeout, int persistent, char *persistent_id, long retry_interval);
 PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC);
 PHP_REDIS_API int redis_sock_server_open(RedisSock *redis_sock TSRMLS_DC);
+PHP_REDIS_API int redis_sock_auth(RedisSock *redis_sock TSRMLS_DC);
 PHP_REDIS_API int redis_sock_disconnect(RedisSock *redis_sock, int force TSRMLS_DC);
 PHP_REDIS_API zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
 PHP_REDIS_API int redis_sock_read_single_line(RedisSock *redis_sock, char *buffer,
