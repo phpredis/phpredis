@@ -2771,9 +2771,9 @@ $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
 $redis->zRangeByScore('key', 0, 3); /* array('val0', 'val2') */
-$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE); /* array('val0' => 0, 'val2' => 2) */
-$redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1)); /* array('val2') */
-$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(1, 1)); /* array('val2' => 2) */
+$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE)); /* array('val0' => 0, 'val2' => 2) */
+$redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1))); /* array('val2') */
+$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(1, 1))); /* array('val2' => 2) */
 ~~~
 
 ### zRangeByLex
