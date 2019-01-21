@@ -62,7 +62,7 @@
 
 /* Protected sending of data down the wire to a RedisSock->stream */
 #define CLUSTER_SEND_PAYLOAD(sock, buf, len) \
-    (sock && !redis_sock_server_open(sock TSRMLS_CC) && sock->stream && !redis_check_eof(sock, 1 TSRMLS_CC) && \
+    (sock && !cluster_sock_open(sock TSRMLS_CC) && sock->stream && !redis_check_eof(sock, 1 TSRMLS_CC) && \
      php_stream_write(sock->stream, buf, len)==len)
 
 /* Macro to read our reply type character */
@@ -169,6 +169,8 @@ typedef struct redisCluster {
 #if (PHP_MAJOR_VERSION < 7)
     zend_object std;
 #endif
+
+    zend_string *auth;
 
     /* Timeout and read timeout (for normal operations) */
     double timeout;

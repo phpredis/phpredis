@@ -981,9 +981,9 @@ PS_OPEN_FUNC(rediscluster) {
     zval z_conf, *z_val;
     HashTable *ht_conf, *ht_seeds;
     double timeout = 0, read_timeout = 0;
-    int persistent = 0;
-    int retval, prefix_len, failover = REDIS_FAILOVER_NONE;
-    char *prefix;
+    int retval, persistent = 0, failover = REDIS_FAILOVER_NONE;
+    strlen_t prefix_len, auth_len = 0;
+    char *prefix, *auth = NULL;
 
     /* Parse configuration for session handler */
     array_init(&z_conf);
@@ -1030,7 +1030,7 @@ PS_OPEN_FUNC(rediscluster) {
 
     /* Look for a specific failover setting */
     if ((z_val = zend_hash_str_find(ht_conf, "failover", sizeof("failover") - 1)) != NULL &&
-        Z_TYPE_P(z_val) == IS_STRING
+        Z_TYPE_P(z_val) == IS_STRING && Z_STRLEN_P(z_val) > 0
     ) {
         if (!strcasecmp(Z_STRVAL_P(z_val), "error")) {
             failover = REDIS_FAILOVER_ERROR;
@@ -1039,7 +1039,18 @@ PS_OPEN_FUNC(rediscluster) {
         }
     }
 
+    /* Look for a specific auth setting */
+    if ((z_val = zend_hash_str_find(ht_conf, "auth", sizeof("auth") - 1)) != NULL &&
+        Z_TYPE_P(z_val) == IS_STRING && Z_STRLEN_P(z_val) > 0
+    ) {
+        auth = Z_STRVAL_P(z_val);
+        auth_len = Z_STRLEN_P(z_val);
+    }
+
     c = cluster_create(timeout, read_timeout, failover, persistent);
+    if (auth && auth_len > 0) {
+        c->auth = zend_string_init(auth, auth_len, 0);
+    }
     if (!cluster_init_seeds(c, ht_seeds) && !cluster_map_keyspace(c TSRMLS_CC)) {
         /* Set up our prefix */
         c->flags->prefix = zend_string_init(prefix, prefix_len, 0);

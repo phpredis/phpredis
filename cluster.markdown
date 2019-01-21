@@ -19,6 +19,9 @@ $obj_cluster = new RedisCluster(NULL, Array("host:7000", "host:7001"), 1.5, 1.5)
 // persistent connections to each node.
 $obj_cluster = new RedisCluster(NULL, Array("host:7000", "host:7001"), 1.5, 1.5, true);
 
+// Connect with cluster using password.
+$obj_cluster = new RedisCluster(NULL, Array("host:7000", "host:7001"), 1.5, 1.5, true, "password");
+
 </pre>
 
 #### Loading a cluster configuration by name
@@ -29,6 +32,7 @@ In order to load a named array, one must first define the seed nodes in redis.in
 redis.clusters.seeds = "mycluster[]=localhost:7000&test[]=localhost:7001"
 redis.clusters.timeout = "mycluster=5"
 redis.clusters.read_timeout = "mycluster=10"
+redis.clusters.auth = "mycluster=password"
 </pre>
 
 Then, this cluster can be loaded by doing the following
@@ -161,7 +165,7 @@ To do this, you must configure your `session.save_handler` and `session.save_pat
 
 ~~~
 session.save_handler = rediscluster
-session.save_path = "seed[]=host1:port1&seed[]=host2:port2&seed[]=hostN:portN&timeout=2&read_timeout=2&failover=error&persistent=1"
+session.save_path = "seed[]=host1:port1&seed[]=host2:port2&seed[]=hostN:portN&timeout=2&read_timeout=2&failover=error&persistent=1&auth=password"
 ~~~
 
 ### session.session_handler
@@ -175,5 +179,6 @@ The save path for cluster based session storage takes the form of a PHP GET requ
 * _persistent_: Tells phpredis whether persistent connections should be used.
 * _distribute_: phpredis will randomly distribute session reads between masters and any attached slaves (load balancing).
 * _failover (string)_:  How phpredis should distribute session reads between master and slave nodes.
+* _auth (string, empty by default)_:  The password used to authenticate with the server prior to sending commands.
 * * _none_ : phpredis will only communicate with master nodes
 * * _error_: phpredis will communicate with master nodes unless one failes, in which case an attempt will be made to read session information from a slave. 

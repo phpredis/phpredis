@@ -90,7 +90,9 @@ static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
 }
 
 /* Helper to resend AUTH <password> in the case of a reconnect */
-static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
+PHP_REDIS_API int
+redis_sock_auth(RedisSock *redis_sock TSRMLS_DC)
+{
     char *cmd, *response;
     int cmd_len, response_len;
 
@@ -205,7 +207,7 @@ redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
                 errno = 0;
                 if (php_stream_eof(redis_sock->stream) == 0) {
                     /* If we're using a password, attempt a reauthorization */
-                    if (redis_sock->auth && resend_auth(redis_sock TSRMLS_CC) != 0) {
+                    if (redis_sock->auth && redis_sock_auth(redis_sock TSRMLS_CC) != 0) {
                         errmsg = "AUTH failed while reconnecting";
                         break;
                     }
