@@ -557,7 +557,7 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos TSRMLS_D
             unsigned char *digest = emalloc(ops->digest_size);
 
             ops->hash_init(ctx);
-            ops->hash_update(ctx, ZSTR_VAL(out), ZSTR_LEN(out));
+            ops->hash_update(ctx, (const unsigned char *)ZSTR_VAL(out), ZSTR_LEN(out));
             ops->hash_final(digest, ctx);
 
             memcpy(&ret, digest, MIN(sizeof(ret), ops->digest_size));
