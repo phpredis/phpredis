@@ -41,17 +41,6 @@
 #include "SAPI.h"
 #include "ext/standard/url.h"
 
-/* HOST_NAME_MAX doesn't exist everywhere */
-#ifndef HOST_NAME_MAX
-    #if defined(_POSIX_HOST_NAME_MAX)
-        #define HOST_NAME_MAX _POSIX_HOST_NAME_MAX
-    #elif defined(MAXHOSTNAMELEN)
-        #define HOST_NAME_MAX MAXHOSTNAMELEN
-    #else
-        #define HOST_NAME_MAX 255
-    #endif
-#endif
-
 /* Session lock LUA as well as its SHA1 hash */
 #define LOCK_RELEASE_LUA_STR "if redis.call(\"get\",KEYS[1]) == ARGV[1] then return redis.call(\"del\",KEYS[1]) else return 0 end"
 #define LOCK_RELEASE_LUA_LEN (sizeof(LOCK_RELEASE_LUA_STR) - 1)

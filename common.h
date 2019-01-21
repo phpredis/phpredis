@@ -661,6 +661,17 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_ENABLE_MODE(redis_sock, m) (redis_sock->mode |= m)
 #define REDIS_DISABLE_MODE(redis_sock, m) (redis_sock->mode &= ~m)
 
+/* HOST_NAME_MAX doesn't exist everywhere */
+#ifndef HOST_NAME_MAX
+    #if defined(_POSIX_HOST_NAME_MAX)
+        #define HOST_NAME_MAX _POSIX_HOST_NAME_MAX
+    #elif defined(MAXHOSTNAMELEN)
+        #define HOST_NAME_MAX MAXHOSTNAMELEN
+    #else
+        #define HOST_NAME_MAX 255
+    #endif
+#endif
+
 typedef struct fold_item {
     zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, void *, ...);
     void *ctx;

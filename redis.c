@@ -55,6 +55,7 @@ extern zend_function_entry redis_cluster_functions[];
 
 PHP_INI_BEGIN()
     /* redis arrays */
+    PHP_INI_ENTRY("redis.arrays.algorithm", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.autorehash", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.connecttimeout", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.distributor", "", PHP_INI_ALL, NULL)
@@ -67,6 +68,7 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("redis.arrays.previous", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.readtimeout", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.retryinterval", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.consistent", "0", PHP_INI_ALL, NULL)
 
     /* redis cluster */
     PHP_INI_ENTRY("redis.clusters.persistent", "0", PHP_INI_ALL, NULL)
