@@ -55,6 +55,7 @@ extern zend_function_entry redis_cluster_functions[];
 
 PHP_INI_BEGIN()
     /* redis arrays */
+    PHP_INI_ENTRY("redis.arrays.algorithm", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.autorehash", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.connecttimeout", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.distributor", "", PHP_INI_ALL, NULL)
@@ -67,8 +68,10 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("redis.arrays.previous", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.readtimeout", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.retryinterval", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.consistent", "0", PHP_INI_ALL, NULL)
 
     /* redis cluster */
+    PHP_INI_ENTRY("redis.clusters.auth", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.persistent", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.read_timeout", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.seeds", "", PHP_INI_ALL, NULL)
@@ -241,8 +244,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 static zend_function_entry redis_functions[] = {
-     PHP_ME(Redis, __construct, arginfo_void, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, __destruct, arginfo_void, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, __construct, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, __destruct, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _prefix, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _serialize, arginfo_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _unserialize, arginfo_value, ZEND_ACC_PUBLIC)
@@ -970,7 +973,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     }
 
     redis->sock = redis_sock_create(host, host_len, port, timeout, read_timeout, persistent,
-        persistent_id, retry_interval, 0);
+        persistent_id, retry_interval);
 
     if (redis_sock_server_open(redis->sock TSRMLS_CC) < 0) {
         if (redis->sock->err) {
@@ -2298,6 +2301,7 @@ PHP_METHOD(Redis, multi)
 /* discard */
 PHP_METHOD(Redis, discard)
 {
+    int ret = FAILURE;
     RedisSock *redis_sock;
     zval *object;
 
@@ -2310,9 +2314,21 @@ PHP_METHOD(Redis, discard)
         RETURN_FALSE;
     }
 
-    redis_sock->mode = ATOMIC;
-    free_reply_callbacks(redis_sock);
-    RETURN_BOOL(redis_send_discard(redis_sock TSRMLS_CC) == SUCCESS);
+    if (IS_PIPELINE(redis_sock)) {
+        ret = SUCCESS;
+        if (redis_sock->pipeline_cmd) {
+            zend_string_release(redis_sock->pipeline_cmd);
+            redis_sock->pipeline_cmd = NULL;
+        }
+    } else if (IS_MULTI(redis_sock)) {
+        ret = redis_send_discard(redis_sock TSRMLS_CC);
+    }
+    if (ret == SUCCESS) {
+        free_reply_callbacks(redis_sock);
+        redis_sock->mode = ATOMIC;
+        RETURN_TRUE;
+    }
+    RETURN_FALSE;
 }
 
 /* redis_sock_read_multibulk_multi_reply */
@@ -2387,17 +2403,16 @@ PHP_METHOD(Redis, exec)
             /* Empty array when no command was run. */
             array_init(return_value);
         } else {
-            if (redis_sock_write(redis_sock, redis_sock->pipeline_cmd,
-                    redis_sock->pipeline_len TSRMLS_CC) < 0) {
+            if (redis_sock_write(redis_sock, ZSTR_VAL(redis_sock->pipeline_cmd),
+                    ZSTR_LEN(redis_sock->pipeline_cmd) TSRMLS_CC) < 0) {
                 ZVAL_FALSE(return_value);
             } else {
                 array_init(return_value);
                 redis_sock_read_multibulk_multi_reply_loop(
                     INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, return_value, 0);
             }
-            efree(redis_sock->pipeline_cmd);
+            zend_string_release(redis_sock->pipeline_cmd);
             redis_sock->pipeline_cmd = NULL;
-            redis_sock->pipeline_len = 0;
         }
         free_reply_callbacks(redis_sock);
         REDIS_DISABLE_MODE(redis_sock, PIPELINE);

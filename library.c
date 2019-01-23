@@ -12,6 +12,10 @@
 
 #ifdef HAVE_REDIS_LZF
 #include <lzf.h>
+
+    #ifndef LZF_MARGIN
+        #define LZF_MARGIN 128
+    #endif
 #endif
 
 #include <zend_exceptions.h>
@@ -86,7 +90,9 @@ static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
 }
 
 /* Helper to resend AUTH <password> in the case of a reconnect */
-static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
+PHP_REDIS_API int
+redis_sock_auth(RedisSock *redis_sock TSRMLS_DC)
+{
     char *cmd, *response;
     int cmd_len, response_len;
 
@@ -201,7 +207,7 @@ redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
                 errno = 0;
                 if (php_stream_eof(redis_sock->stream) == 0) {
                     /* If we're using a password, attempt a reauthorization */
-                    if (redis_sock->auth && resend_auth(redis_sock TSRMLS_CC) != 0) {
+                    if (redis_sock->auth && redis_sock_auth(redis_sock TSRMLS_CC) != 0) {
                         errmsg = "AUTH failed while reconnecting";
                         break;
                     }
@@ -468,26 +474,27 @@ redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
 PHP_REDIS_API char *
 redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_DC)
 {
-    int offset = 0;
-    char *reply, c[2];
+    int offset = 0, nbytes;
+    char *reply;
     size_t got;
 
     if (-1 == bytes || -1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return NULL;
     }
 
+    nbytes = bytes + 2;
     /* Allocate memory for string */
-    reply = emalloc(bytes+1);
+    reply = emalloc(nbytes);
 
     /* Consume bulk string */
-    while(offset < bytes) {
-        got = php_stream_read(redis_sock->stream, reply + offset, bytes-offset);
-        if (got == 0) break;
+    while (offset < nbytes) {
+        got = php_stream_read(redis_sock->stream, reply + offset, nbytes - offset);
+        if (got == 0 && php_stream_eof(redis_sock->stream)) break;
         offset += got;
     }
 
     /* Protect against reading too few bytes */
-    if (offset < bytes) {
+    if (offset < nbytes) {
         /* Error or EOF */
         zend_throw_exception(redis_exception_ce,
             "socket error on read socket", 0 TSRMLS_CC);
@@ -495,8 +502,7 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_DC)
         return NULL;
     }
 
-    /* Consume \r\n and null terminate reply string */
-    php_stream_read(redis_sock->stream, c, 2);
+    /* Null terminate reply string */
     reply[bytes] = '\0';
 
     return reply;
@@ -840,6 +846,7 @@ PHP_REDIS_API void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
     }
 
     /* Parse it into a zval array */
+    REDIS_MAKE_STD_ZVAL(z_ret);
     redis_parse_info_response(response, z_ret);
 
     /* Free source response */
@@ -1690,7 +1697,7 @@ PHP_REDIS_API RedisSock*
 redis_sock_create(char *host, int host_len, unsigned short port,
                   double timeout, double read_timeout,
                   int persistent, char *persistent_id,
-                  long retry_interval, zend_bool lazy_connect)
+                  long retry_interval)
 {
     RedisSock *redis_sock;
 
@@ -1719,7 +1726,6 @@ redis_sock_create(char *host, int host_len, unsigned short port,
     redis_sock->current = NULL;
 
     redis_sock->pipeline_cmd = NULL;
-    redis_sock->pipeline_len = 0;
 
     redis_sock->err = NULL;
 
@@ -2099,7 +2105,7 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
         zend_string_release(redis_sock->prefix);
     }
     if (redis_sock->pipeline_cmd) {
-        efree(redis_sock->pipeline_cmd);
+        zend_string_release(redis_sock->pipeline_cmd);
     }
     if (redis_sock->err) {
         zend_string_release(redis_sock->err);
@@ -2125,19 +2131,21 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len TSRMLS_
 #ifdef HAVE_REDIS_LZF
     char *data;
     uint32_t res;
+    double size;
 #endif
 
     valfree = redis_serialize(redis_sock, z, &buf, &len TSRMLS_CC);
     switch (redis_sock->compression) {
         case REDIS_COMPRESSION_LZF:
 #ifdef HAVE_REDIS_LZF
-            data = emalloc(len);
-            res = lzf_compress(buf, len, data, len - 1);
-            if (res > 0 && res < len) {
+            /* preserve compatibility with PECL lzf_compress margin (greater of 4% and LZF_MARGIN) */
+            size = len + MIN(UINT_MAX - len, MAX(LZF_MARGIN, len / 25));
+            data = emalloc(size);
+            if ((res = lzf_compress(buf, len, data, size)) > 0) {
                 if (valfree) efree(buf);
                 *val = data;
                 *val_len = res;
-                 return 1;
+                return 1;
             }
             efree(data);
 #endif

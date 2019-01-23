@@ -27,6 +27,7 @@ You can send comments, patches, questions [here on github](https://github.com/ph
    * [Sets](#sets)
    * [Sorted sets](#sorted-sets)
    * [Geocoding](#geocoding)
+   * [Streams](#streams)
    * [Pub/sub](#pubsub)
    * [Transactions](#transactions)
    * [Scripting](#scripting)
@@ -2770,9 +2771,9 @@ $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
 $redis->zRangeByScore('key', 0, 3); /* array('val0', 'val2') */
-$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE); /* array('val0' => 0, 'val2' => 2) */
-$redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1)); /* array('val2') */
-$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(1, 1)); /* array('val2' => 2) */
+$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE)); /* array('val0' => 0, 'val2' => 2) */
+$redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1))); /* array('val2') */
+$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(1, 1))); /* array('val2' => 2) */
 ~~~
 
 ### zRangeByLex
@@ -3329,7 +3330,7 @@ _**Description**_:  Add a message to a stream
 
 ##### *Example*
 ~~~php
-$obj_redis->xAdd('mystream', "\*", ['field' => 'value']);
+$obj_redis->xAdd('mystream', "*", ['field' => 'value']);
 ~~~
 
 ### xClaim
@@ -3337,7 +3338,7 @@ $obj_redis->xAdd('mystream', "\*", ['field' => 'value']);
 
 ##### *Prototype*
 ~~~php
-$obj_redis->($str_key, $str_group, $str_consumer, $min_idle_time, [$arr_options]);
+$obj_redis->xClaim($str_key, $str_group, $str_consumer, $min_idle_time, $arr_ids, [$arr_options]);
 ~~~
 
 _**Description**_:  Claim ownership of one or more pending messages.
@@ -3363,12 +3364,12 @@ $ids = ['1530113681011-0', '1530113681011-1', '1530113681011-2'];
 
 /* Without any options */
 $obj_redis->xClaim(
-    'mystream', 'group1', 'myconsumer1', $ids
+    'mystream', 'group1', 'myconsumer1', 0, $ids
 );
 
 /* With options */
 $obj_redis->xClaim(
-    'mystream', 'group1', 'myconsumer2', $ids,
+    'mystream', 'group1', 'myconsumer2', 0, $ids,
     [
         'IDLE' => time() * 1000,
         'RETRYCOUNT' => 5,
@@ -3463,7 +3464,7 @@ $obj_redis->xLen('mystream');
 
 ##### *Prototype*
 ~~~php
-$obj_redis->xPending($str_stream, $str_group [, $i_start, $i_end, $i_count, $str_consumer]);
+$obj_redis->xPending($str_stream, $str_group [, $str_start, $str_end, $i_count, $str_consumer]);
 ~~~
 
 _**Description**_:  Get information about pending messages in a given stream.
@@ -3474,7 +3475,7 @@ _**Description**_:  Get information about pending messages in a given stream.
 ##### *Examples*
 ~~~php
 $obj_redis->xPending('mystream', 'mygroup');
-$obj_redis->xPending('mystream', 'mygroup', 0, '+', 1, 'consumer-1');
+$obj_redis->xPending('mystream', 'mygroup', '-', '+', 1, 'consumer-1');
 ~~~
 
 ### xRange
@@ -3482,7 +3483,7 @@ $obj_redis->xPending('mystream', 'mygroup', 0, '+', 1, 'consumer-1');
 
 ##### *Prototype*
 ~~~php
-$obj_redis->xRange($str_stream, $i_start, $i_end [, $i_count]);
+$obj_redis->xRange($str_stream, $str_start, $str_end [, $i_count]);
 ~~~
 
 _**Description**_:  Get a range of messages from a given stream.
@@ -3539,6 +3540,9 @@ Array
 
 )
 */
+
+// Receive only new message ($ = last id) and wait for one new message unlimited time
+$obj_redis->xRead(['stream1' => '$'], 1, 0);
 ~~~
 
 ### xReadGroup
@@ -3559,7 +3563,10 @@ _**Description**_:  This method is similar to xRead except that it supports read
 /* Consume messages for 'mygroup', 'consumer1' */
 $obj_redis->xReadGroup('mygroup', 'consumer1', ['s1' => 0, 's2' => 0]);
 
-/* Read a single message as 'consumer2' for up to a second until a message arrives. */
+/* Consume messages for 'mygroup', 'consumer1' which were not consumed yet by the group */
+$obj_redis->xReadGroup('mygroup', 'consumer1', ['s1' => '>', 's2' => '>']);
+
+/* Read a single message as 'consumer2' wait for up to a second until a message arrives. */
 $obj_redis->xReadGroup('mygroup', 'consumer2', ['s1' => 0, 's2' => 0], 1, 1000);
 ~~~
 
@@ -3568,7 +3575,7 @@ $obj_redis->xReadGroup('mygroup', 'consumer2', ['s1' => 0, 's2' => 0], 1, 1000);
 
 ##### *Prototype*
 ~~~php
-$obj_redis->xRevRange($str_stream, $i_end, $i_start [, $i_count]);
+$obj_redis->xRevRange($str_stream, $str_end, $str_start [, $i_count]);
 ~~~
 
 _**Description**_:  This is identical to xRange except the results come back in reverse order.  Also note that Redis reverses the order of "start" and "end".

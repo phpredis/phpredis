@@ -1882,36 +1882,45 @@ class Redis_Test extends TestSuite
     }
 
     public function testInfo() {
-        $info = $this->redis->info();
+        foreach (Array(false, true) as $boo_multi) {
+            if ($boo_multi) {
+                $this->redis->multi();
+                $this->redis->info();
+                $info = $this->redis->exec();
+                $info = $info[0];
+            } else {
+                $info = $this->redis->info();
+            }
 
-        $keys = array(
-            "redis_version",
-            "arch_bits",
-            "uptime_in_seconds",
-            "uptime_in_days",
-            "connected_clients",
-            "connected_slaves",
-            "used_memory",
-            "total_connections_received",
-            "total_commands_processed",
-            "role"
-        );
-        if (version_compare($this->version, "2.5.0", "lt")) {
-            array_push($keys,
-                "changes_since_last_save",
-                "bgsave_in_progress",
-                "last_save_time"
+            $keys = array(
+                "redis_version",
+                "arch_bits",
+                "uptime_in_seconds",
+                "uptime_in_days",
+                "connected_clients",
+                "connected_slaves",
+                "used_memory",
+                "total_connections_received",
+                "total_commands_processed",
+                "role"
             );
-        } else {
-            array_push($keys,
-                "rdb_changes_since_last_save",
-                "rdb_bgsave_in_progress",
-                "rdb_last_save_time"
-            );
-        }
+            if (version_compare($this->version, "2.5.0", "lt")) {
+                array_push($keys,
+                    "changes_since_last_save",
+                    "bgsave_in_progress",
+                    "last_save_time"
+                );
+            } else {
+                array_push($keys,
+                    "rdb_changes_since_last_save",
+                    "rdb_bgsave_in_progress",
+                    "rdb_last_save_time"
+                );
+            }
 
-        foreach($keys as $k) {
-            $this->assertTrue(in_array($k, array_keys($info)));
+            foreach($keys as $k) {
+                $this->assertTrue(in_array($k, array_keys($info)));
+            }
         }
     }
 
@@ -2704,6 +2713,23 @@ class Redis_Test extends TestSuite
 
         $data = $this->redis->exec();
         $this->assertEquals(Array(true, 'over9000'), $data);
+    }
+
+    public function testDiscard()
+    {
+        foreach (Array(Redis::PIPELINE, Redis::MULTI) as $mode) {
+            /* start transaction */
+            $this->redis->multi($mode);
+
+            /* Set and get in our transaction */
+            $this->redis->set('pipecount','over9000')->get('pipecount');
+
+            /* first call closes transaction and clears commands queue */
+            $this->assertTrue($this->redis->discard());
+
+            /* next call fails because mode is ATOMIC */
+            $this->assertFalse($this->redis->discard());
+        }
     }
 
     protected function sequence($mode) {
@@ -5390,7 +5416,7 @@ class Redis_Test extends TestSuite
 
         for ($n = 1; $n <= 3; $n++) {
             $this->addStreamsAndGroups(Array('{s}'), 3, Array('g1' => 0));
-            $msg = $this->redis->xReadGroup('g1', 'c1', Array('{s}' => 0));
+            $msg = $this->redis->xReadGroup('g1', 'c1', Array('{s}' => '>'));
 
             /* Extract IDs */
             $smsg = array_shift($msg);
@@ -5492,17 +5518,25 @@ class Redis_Test extends TestSuite
 
         /* Create some streams and groups */
         $streams = Array('{s}-1', '{s}-2');
-        $qstreams = Array('{s}-1' => 0, '{s}-2' => 0);
         $groups = Array('g1' => 0, 'g2' => 0);
 
-        $ids = $this->addStreamsAndGroups($streams, 3, $groups);
+        /* I'm not totally sure why Redis behaves this way, but we have to
+         * send '>' first and then send ID '0' for subsequent xReadGroup calls
+         * or Redis will not return any messages.  This behavior changed from
+         * redis 5.0.1 and 5.0.2 but doing it this way works for both versions. */
+        $qcount = 0;
+        $query1 = Array('{s}-1' => '>', '{s}-2' => '>');
+        $query2 = Array('{s}-1' => '0', '{s}-2' => '0');
+
+        $ids = $this->addStreamsAndGroups($streams, 1, $groups);
 
         /* Test that we get get the IDs we should */
         foreach (Array('g1', 'g2') as $group) {
             foreach ($ids as $stream => $messages) {
                 while ($ids[$stream]) {
                     /* Read more messages */
-                    $resp = $this->redis->xReadGroup($group, 'consumer', $qstreams);
+                    $query = !$qcount++ ? $query1 : $query2;
+                    $resp = $this->redis->xReadGroup($group, 'consumer', $query);
 
                     /* They should match with our local control array */
                     $this->compareStreamIds($resp, $ids);
@@ -5517,7 +5551,7 @@ class Redis_Test extends TestSuite
         /* Test COUNT option */
         for ($c = 1; $c <= 3; $c++) {
             $this->addStreamsAndGroups($streams, 3, $groups);
-            $resp = $this->redis->xReadGroup('g1', 'consumer', $qstreams, $c);
+            $resp = $this->redis->xReadGroup('g1', 'consumer', $query1, $c);
 
             foreach ($resp as $stream => $smsg) {
                 $this->assertEquals(count($smsg), $c);
@@ -5622,7 +5656,7 @@ class Redis_Test extends TestSuite
                         $fids = $fids['f'];
 
                         /* Have consumer 'Mike' read the messages */
-                        $oids = $this->redis->xReadGroup('group1', 'Mike', Array('s' => 0));
+                        $oids = $this->redis->xReadGroup('group1', 'Mike', Array('s' => '>'));
                         $oids = array_keys($oids['s']); /* We're only dealing with stream 's' */
 
                         /* Construct our options array */

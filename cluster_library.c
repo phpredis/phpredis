@@ -259,6 +259,17 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
     return r;
 }
 
+/* Helper to open connection and send AUTH if necessary */
+static zend_always_inline int
+cluster_sock_open(RedisSock *redis_sock TSRMLS_DC)
+{
+    zend_bool need_auth = (redis_sock->auth && redis_sock->status != REDIS_SOCK_STATUS_CONNECTED);
+    if (!redis_sock_server_open(redis_sock TSRMLS_CC) && (!need_auth || !redis_sock_auth(redis_sock TSRMLS_CC))) {
+        return SUCCESS;
+    }
+    return FAILURE;
+}
+
 /*
  * Helpers to send various 'control type commands to a specific node, e.g.
  * MULTI, ASKING, READONLY, READWRITE, etc
@@ -652,7 +663,11 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
 
     // Attach socket
     node->sock = redis_sock_create(host, host_len, port, c->timeout,
-        c->read_timeout, c->persistent, NULL, 0, 1);
+        c->read_timeout, c->persistent, NULL, 0);
+
+    if (c->auth) {
+        node->sock->auth = zend_string_copy(c->auth);
+    }
 
     return node;
 }
@@ -824,6 +839,7 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     c->read_timeout = read_timeout;
     c->failover = failover;
     c->persistent = persistent;
+    c->auth = NULL;
     c->err = NULL;
 
     /* Set up our waitms based on timeout */
@@ -857,6 +873,9 @@ cluster_free(redisCluster *c, int free_ctx TSRMLS_DC)
     /* Free hash tables themselves */
     efree(c->seeds);
     efree(c->nodes);
+
+    /* Free auth info we've got */
+    if (c->auth) zend_string_release(c->auth);
 
     /* Free any error we've got */
     if (c->err) zend_string_release(c->err);
@@ -923,7 +942,12 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
         // Allocate a structure for this seed
         redis_sock = redis_sock_create(str, psep-str,
             (unsigned short)atoi(psep+1), cluster->timeout,
-            cluster->read_timeout, cluster->persistent, NULL, 0, 0);
+            cluster->read_timeout, cluster->persistent, NULL, 0);
+
+        // Set auth information if specified
+        if (cluster->auth) {
+            redis_sock->auth = zend_string_copy(cluster->auth);
+        }
 
         // Index this seed by host/port
         key_len = snprintf(key, sizeof(key), "%s:%u", ZSTR_VAL(redis_sock->host),
@@ -948,7 +972,7 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
     // Iterate over seeds until we can get slots
     ZEND_HASH_FOREACH_PTR(c->seeds, seed) {
         // Attempt to connect to this seed node
-        if (seed == NULL || redis_sock_connect(seed TSRMLS_CC) != 0) {
+        if (seed == NULL || cluster_sock_open(seed TSRMLS_CC) != 0) {
             continue;
         }
 
@@ -1118,11 +1142,6 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
         /* Get the slave for this index */
         redis_sock = cluster_slot_sock(c, c->cmd_slot, nodes[i]);
         if (!redis_sock) continue;
-
-        /* Connect to this node if we haven't already */
-        if(redis_sock_server_open(redis_sock TSRMLS_CC)) {
-            continue;
-        }
 
         /* If we're not on the master, attempt to send the READONLY command to
          * this slave, and skip it if that fails */
@@ -1384,6 +1403,11 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
     int resp, timedout = 0;
     long msstart;
 
+    if (!SLOT(c, slot)) {
+        zend_throw_exception_ex(redis_cluster_exception_ce, 0 TSRMLS_CC,
+            "The slot %d is not covered by any node in this cluster", slot);
+        return -1;
+    }
     /* Set the slot we're operating against as well as it's socket.  These can
      * change during our request loop if we have a master failure and are
      * configured to fall back to slave nodes, or if we have to fall back to
@@ -2072,12 +2096,13 @@ PHP_REDIS_API void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     }
 
     /* Parse response, free memory */
+    REDIS_MAKE_STD_ZVAL(z_result);
     redis_parse_info_response(info, z_result);
     efree(info);
 
     // Return our array
     if (CLUSTER_IS_ATOMIC(c)) {
-        RETVAL_ZVAL(z_result, 1, 0);
+        RETVAL_ZVAL(z_result, 0, 1);
     } else {
         add_next_index_zval(&c->multi_resp, z_result);
     }
