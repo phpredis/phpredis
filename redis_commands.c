@@ -3722,20 +3722,21 @@ int redis_xclaim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 /* XGROUP HELP
+ * XGROUP CREATE key groupname id [MKSTREAM]
  * XGROUP SETID key group id
- * XGROUP DELGROUP key groupname
- * XGROUP CREATE key groupname id
+ * XGROUP DESTROY key groupname
  * XGROUP DELCONSUMER key groupname consumername */
 int redis_xgroup_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *op, *key = NULL, *arg1 = NULL, *arg2 = NULL;
     strlen_t oplen, keylen, arg1len, arg2len;
+    zend_bool mkstream = 0;
     int argc = ZEND_NUM_ARGS();
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|ssss", &op, &oplen,
-                              &key, &keylen, &arg1, &arg1len, &arg2, &arg2len)
-                              == FAILURE)
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|sssb", &op, &oplen,
+                              &key, &keylen, &arg1, &arg1len, &arg2, &arg2len,
+                              &mkstream) == FAILURE)
     {
         return FAILURE;
     }
@@ -3743,14 +3744,23 @@ int redis_xgroup_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (argc == 1 && oplen == 4 && !strncasecmp(op, "HELP", 4)) {
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XGROUP", "s", "HELP", 4);
         return SUCCESS;
+    } else if (argc >= 4 && (oplen == 6 && !strncasecmp(op, "CREATE", 6))) {
+        if (mkstream) {
+            *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XGROUP", "sksss", op, oplen, key, keylen,
+                                          arg1, arg1len, arg2, arg2len, "MKSTREAM",
+                                          sizeof("MKSTREAM") - 1);
+        } else {
+            *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XGROUP", "skss", op, oplen, key, keylen,
+                                          arg1, arg1len, arg2, arg2len);
+        }
+        return SUCCESS;
     } else if (argc == 4 && ((oplen == 5 && !strncasecmp(op, "SETID", 5)) ||
-                             (oplen ==  6 && !strncasecmp(op, "CREATE", 6)) ||
                              (oplen == 11 && !strncasecmp(op, "DELCONSUMER", 11))))
     {
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XGROUP", "skss", op, oplen, key, keylen,
                                       arg1, arg1len, arg2, arg2len);
         return SUCCESS;
-    } else if (argc == 3 && ((oplen == 7 && !strncasecmp(op, "DELGROUP", 7)))) {
+    } else if (argc == 3 && ((oplen == 7 && !strncasecmp(op, "DESTROY", 7)))) {
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XGROUP", "sks", op, oplen, key,
                                       keylen, arg1, arg1len);
         return SUCCESS;

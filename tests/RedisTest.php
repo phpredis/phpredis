@@ -5384,6 +5384,15 @@ class Redis_Test extends TestSuite
         if (!$this->minVersionCheck("5.0"))
             return $this->markTestSkipped();
 
+        /* CREATE MKSTREAM */
+        $str_key = 's:' . uniqid();
+        $this->assertFalse($this->redis->xGroup('CREATE', $str_key, 'g0', 0));
+        $this->assertTrue($this->redis->xGroup('CREATE', $str_key, 'g1', 0, true));
+
+        /* XGROUP DESTROY */
+        $this->assertEquals($this->redis->xGroup('DESTROY', $str_key, 'g1'), 1);
+
+        /* Populate some entries in stream 's' */
         $this->addStreamEntries('s', 2);
 
         /* CREATE */
@@ -5399,8 +5408,6 @@ class Redis_Test extends TestSuite
         $this->assertFalse($this->redis->xGroup('SETID', 's', 'mygroup', 'BAD_ID'));
 
         $this->assertEquals($this->redis->xGroup('DELCONSUMER', 's', 'mygroup', 'myconsumer'),0);
-
-        /* DELGROUP not yet implemented in Redis */
     }
 
     public function testXAck() {
