@@ -3403,9 +3403,9 @@ $obj_redis->xDel('mystream', ['1530115304877-0', '1530115305731-0']);
 ##### *Prototype*
 ~~~php
 $obj_redis->xGroup('HELP');
+$obj_redis->xGroup('CREATE', $str_key, $str_group, $str_msg_id, [$boo_mkstream]);
 $obj_redis->xGroup('SETID', $str_key, $str_group, $str_msg_id);
-$obj_redis->xGroup('DELGROUP', $str_key, $str_group);
-$obj_redis->xGroup('CREATE', $str_key, $str_group, $str_msg_id);
+$obj_redis->xGroup('DESTROY', $str_key, $str_group);
 $obj_redis->xGroup('DELCONSUMER', $str_key, $str_group, $str_consumer_name);
 ~~~
 
@@ -3417,7 +3417,8 @@ _**Description**_:  This command is used in order to create, destroy, or manage 
 ##### *Example*
 ~~~php
 $obj_redis->xGroup('CREATE', 'mystream', 'mygroup');
-$obj_redis->xGroup('DELGROUP', 'mystream', 'mygroup');
+$obj_redis->xGroup('CREATE', 'mystream', 'mygroup2', true); /* Create stream if non-existent. */
+$obj_redis->xGroup('DESTROY', 'mystream', 'mygroup');
 ~~~
 
 ### xInfo
