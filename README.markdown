@@ -8,6 +8,12 @@ This code has been developed and maintained by Owlient from November 2009 to Mar
 
 You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to n.favrefelix@gmail.com ([@yowgi](https://twitter.com/yowgi)), to michael.grunder@gmail.com ([@grumi78](https://twitter.com/grumi78)) or to p.yatsukhnenko@gmail.com ([@yatsukhnenko](https://twitter.com/yatsukhnenko)).
 
+## Donating to the project
+If you've found phpredis useful and would like to buy the maintainers a coffee (or a Tesla, we're not picky), feel free to do so.
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/michaelgrunder/5)
+[![Donate with Bitcoin](https://en.cryptobadges.io/badge/micro/1FXkYHBo5uoaztxFbajiPfbnkgKCbF3ykG)](https://en.cryptobadges.io/donate/1FXkYHBo5uoaztxFbajiPfbnkgKCbF3ykG)
+[![Donate with Ethereum](https://en.cryptobadges.io/badge/micro/0x4345D9f767f877646587B24004652cb106f8F9ED)](https://en.cryptobadges.io/donate/0x4345D9f767f877646587B24004652cb106f8F9ED)
 
 # Table of contents
 -----
