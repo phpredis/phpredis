@@ -21,7 +21,7 @@ int redis_cmd_append_sstr_long(smart_string *str, long append);
 int redis_cmd_append_sstr_i64(smart_string *str, int64_t append);
 int redis_cmd_append_sstr_dbl(smart_string *str, double value);
 int redis_cmd_append_sstr_zval(smart_string *str, zval *z, RedisSock *redis_sock TSRMLS_DC);
-int redis_cmd_append_sstr_key(smart_string *str, char *key, strlen_t len, RedisSock *redis_sock, short *slot);
+int redis_cmd_append_sstr_key(smart_string *str, char *key, size_t len, RedisSock *redis_sock, short *slot);
 int redis_cmd_append_sstr_arrkey(smart_string *cmd, zend_string *kstr, ulong idx);
 
 PHP_REDIS_API int redis_spprintf(RedisSock *redis_sock, short *slot TSRMLS_DC, char **ret, char *kw, char *fmt, ...);
@@ -85,14 +85,14 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock);
 PHP_REDIS_API void redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len);
 
 PHP_REDIS_API int
-redis_serialize(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len TSRMLS_DC);
+redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len TSRMLS_DC);
 PHP_REDIS_API int
-redis_key_prefix(RedisSock *redis_sock, char **key, strlen_t *key_len);
+redis_key_prefix(RedisSock *redis_sock, char **key, size_t *key_len);
 
 PHP_REDIS_API int
 redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret TSRMLS_DC);
 
-PHP_REDIS_API int redis_pack(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len TSRMLS_DC);
+PHP_REDIS_API int redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len TSRMLS_DC);
 PHP_REDIS_API int redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret TSRMLS_DC);
 
 PHP_REDIS_API int

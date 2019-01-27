@@ -127,7 +127,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <dependencies>
   <required>
    <php>
-    <min>5.3.0</min>
+    <min>7.0.0</min>
     <max>7.9.99</max>
    </php>
    <pearinstaller>

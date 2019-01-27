@@ -166,10 +166,6 @@ typedef struct clusterFoldItem clusterFoldItem;
 
 /* RedisCluster implementation structure */
 typedef struct redisCluster {
-#if (PHP_MAJOR_VERSION < 7)
-    zend_object std;
-#endif
-
     zend_string *auth;
 
     /* Timeout and read timeout (for normal operations) */
@@ -240,10 +236,8 @@ typedef struct redisCluster {
     unsigned short     redir_slot;
     unsigned short     redir_port;
 
-#if (PHP_MAJOR_VERSION >= 7)
     /* Zend object handler */
     zend_object std;
-#endif
 } redisCluster;
 
 /* RedisCluster response processing callback */
@@ -329,7 +323,7 @@ void cluster_free_reply(clusterReply *reply, int free_data);
 HashTable *cluster_dist_create();
 void cluster_dist_free(HashTable *ht);
 int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
-    strlen_t key_len, clusterKeyVal **kv);
+    size_t key_len, clusterKeyVal **kv);
 void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *val
     TSRMLS_DC);
 

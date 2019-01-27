@@ -1,9 +1,6 @@
 sudo: required
 language: php
 php:
-  - 5.4
-  - 5.5
-  - 5.6
   - 7.0
   - 7.1
   - 7.2
@@ -16,15 +13,6 @@ matrix:
       env: CC=clang
     - php: nightly
   include:
-    # php 5.3 is only available on precise
-    - php: 5.3
-      dist: precise
-    - php: 5.4
-      env: CC=clang
-    - php: 5.5
-      env: CC=clang
-    - php: 5.6
-      env: CC=clang
     - php: 7.0
       env: CC=clang
     - php: 7.1

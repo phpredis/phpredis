@@ -486,11 +486,9 @@ static const zend_module_dep redis_deps[] = {
 };
 
 zend_module_entry redis_module_entry = {
-#if ZEND_MODULE_API_NO >= 20010901
      STANDARD_MODULE_HEADER_EX,
      NULL,
      redis_deps,
-#endif
      "redis",
      NULL,
      PHP_MINIT(redis),
@@ -498,15 +496,15 @@ zend_module_entry redis_module_entry = {
      NULL,
      NULL,
      PHP_MINFO(redis),
-#if ZEND_MODULE_API_NO >= 20010901
      PHP_REDIS_VERSION,
-#endif
      STANDARD_MODULE_PROPERTIES
 };
 
 #ifdef COMPILE_DL_REDIS
 ZEND_GET_MODULE(redis)
 #endif
+
+zend_object_handlers redis_object_handlers;
 
 /* Send a static DISCARD in case we're in MULTI mode. */
 static int
@@ -551,48 +549,6 @@ free_reply_callbacks(RedisSock *redis_sock)
     redis_sock->current = NULL;
 }
 
-#if (PHP_MAJOR_VERSION < 7)
-void
-free_redis_object(void *object TSRMLS_DC)
-{
-    redis_object *redis = (redis_object *)object;
-
-    zend_object_std_dtor(&redis->std TSRMLS_CC);
-    if (redis->sock) {
-        redis_sock_disconnect(redis->sock, 0 TSRMLS_CC);
-        redis_free_socket(redis->sock);
-    }
-    efree(redis);
-}
-
-zend_object_value
-create_redis_object(zend_class_entry *ce TSRMLS_DC)
-{
-    zend_object_value retval;
-    redis_object *redis = ecalloc(1, sizeof(redis_object));
-
-    memset(redis, 0, sizeof(redis_object));
-    zend_object_std_init(&redis->std, ce TSRMLS_CC);
-
-#if PHP_VERSION_ID < 50399
-    zval *tmp;
-    zend_hash_copy(redis->std.properties, &ce->default_properties,
-        (copy_ctor_func_t)zval_add_ref, (void *)&tmp, sizeof(zval *));
-#else
-    object_properties_init(&redis->std, ce);
-#endif
-
-    retval.handle = zend_objects_store_put(redis,
-        (zend_objects_store_dtor_t)zend_objects_destroy_object,
-        (zend_objects_free_object_storage_t)free_redis_object,
-        NULL TSRMLS_CC);
-    retval.handlers = zend_get_std_object_handlers();
-
-    return retval;
-}
-#else
-zend_object_handlers redis_object_handlers;
-
 void
 free_redis_object(zend_object *object)
 {
@@ -622,7 +578,6 @@ create_redis_object(zend_class_entry *ce TSRMLS_DC)
 
     return &redis->std;
 }
-#endif
 
 static zend_always_inline RedisSock *
 redis_sock_get_instance(zval *id TSRMLS_DC, int no_throw)
@@ -782,35 +737,20 @@ PHP_MINIT_FUNCTION(redis)
     exception_ce = zend_hash_str_find_ptr(CG(class_table), "RuntimeException", sizeof("RuntimeException") - 1);
 #endif
     if (exception_ce == NULL) {
-#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
-        exception_ce = zend_exception_get_default();
-#else
         exception_ce = zend_exception_get_default(TSRMLS_C);
-#endif
     }
 
     /* RedisException class */
     INIT_CLASS_ENTRY(redis_exception_class_entry, "RedisException", NULL);
     redis_exception_ce = zend_register_internal_class_ex(
         &redis_exception_class_entry,
-#if (PHP_MAJOR_VERSION < 7)
-        exception_ce, NULL TSRMLS_CC
-#else
-        exception_ce
-#endif
-    );
+        exception_ce);
 
     /* RedisClusterException class */
     INIT_CLASS_ENTRY(redis_cluster_exception_class_entry,
         "RedisClusterException", NULL);
     redis_cluster_exception_ce = zend_register_internal_class_ex(
-        &redis_cluster_exception_class_entry,
-#if (PHP_MAJOR_VERSION < 7)
-        exception_ce, NULL TSRMLS_CC
-#else
-        exception_ce
-#endif
-    );
+        &redis_cluster_exception_class_entry, exception_ce);
 
     /* Add shared class constants to Redis and RedisCluster objects */
     add_class_constants(redis_ce, 0 TSRMLS_CC);
@@ -921,7 +861,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     zval *object;
     char *host = NULL, *persistent_id = "";
     zend_long port = -1, retry_interval = 0;
-    strlen_t host_len, persistent_id_len;
+    size_t host_len, persistent_id_len;
     double timeout = 0.0, read_timeout = 0.0;
     redis_object *redis;
 
@@ -1588,7 +1528,7 @@ generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, int desc, int alpha)
     RedisSock *redis_sock;
     zend_string *zpattern;
     char *key = NULL, *pattern = NULL, *store = NULL;
-    strlen_t keylen, patternlen, storelen;
+    size_t keylen, patternlen, storelen;
     zend_long offset = -1, count = -1;
     int argc = 1; /* SORT key is the simplest SORT command */
     smart_string cmd = {0};
@@ -1814,7 +1754,7 @@ PHP_METHOD(Redis, info) {
     zval *object;
     RedisSock *redis_sock;
     char *cmd, *opt = NULL;
-    strlen_t opt_len;
+    size_t opt_len;
     int cmd_len;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
@@ -1898,7 +1838,7 @@ void generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun)
     zval *zmem;
     char buf[64];
     size_t keylen;
-    ulong idx;
+    zend_ulong idx;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Oa",
                                      &object, redis_ce, &z_array) == FAILURE)
@@ -1923,7 +1863,7 @@ void generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun)
             redis_cmd_append_sstr_key(&cmd, ZSTR_VAL(zkey), ZSTR_LEN(zkey), redis_sock, NULL);
         } else {
             keylen = snprintf(buf, sizeof(buf), "%ld", (long)idx);
-            redis_cmd_append_sstr_key(&cmd, buf, (strlen_t)keylen, redis_sock, NULL);
+            redis_cmd_append_sstr_key(&cmd, buf, keylen, redis_sock, NULL);
         }
 
         /* Append our value */
@@ -2434,6 +2374,8 @@ redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC)
     return ret;
 }
 
+/* TODO:  Investigate/fix the odd logic going on in here.  Looks like previous abort
+ *        condidtions that are now simply empty if { } { } blocks. */
 PHP_REDIS_API int
 redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
                                            RedisSock *redis_sock, zval *z_tab,
@@ -2450,28 +2392,29 @@ redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
         }
         size_t len;
         char inbuf[255];
+
         if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len TSRMLS_CC) < 0) {
         } else if (strncmp(inbuf, "+OK", 3) != 0) {
         }
+
         while ((fi = fi->next) && fi->fun) {
             if (redis_response_enqueued(redis_sock TSRMLS_CC) == SUCCESS) {
             } else {
             }
         }
+
         if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len TSRMLS_CC) < 0) {
         }
-#if (PHP_MAJOR_VERSION < 7)
-        zval *z_ret;
-        MAKE_STD_ZVAL(z_ret);
-#else
-        zval zv, *z_ret = &zv;
-#endif
-        array_init(z_ret);
-        add_next_index_zval(z_tab, z_ret);
+
+        zval z_ret;
+        array_init(&z_ret);
+        add_next_index_zval(z_tab, &z_ret);
 
         int num = atol(inbuf + 1);
-        if (num > 0 && redis_read_multibulk_recursive(redis_sock, num, 0, z_ret TSRMLS_CC) < 0) {
+
+        if (num > 0 && redis_read_multibulk_recursive(redis_sock, num, 0, &z_ret TSRMLS_CC) < 0) {
         }
+
         if (fi) fi = fi->next;
     }
     redis_sock->current = fi;
@@ -2634,7 +2577,7 @@ PHP_METHOD(Redis, slaveof)
     zval *object;
     RedisSock *redis_sock;
     char *cmd = "", *host = NULL;
-    strlen_t host_len;
+    size_t host_len;
     zend_long port = 6379;
     int cmd_len;
 
@@ -2730,7 +2673,7 @@ PHP_METHOD(Redis, config)
     zval *object;
     RedisSock *redis_sock;
     char *key = NULL, *val = NULL, *cmd, *op = NULL;
-    strlen_t key_len, val_len, op_len;
+    size_t key_len, val_len, op_len;
     enum {CFG_GET, CFG_SET} mode;
     int cmd_len;
 
@@ -2785,7 +2728,7 @@ PHP_METHOD(Redis, slowlog) {
     RedisSock *redis_sock;
     char *arg, *cmd;
     int cmd_len;
-    strlen_t arg_len;
+    size_t arg_len;
     zend_long option = 0;
     enum {SLOWLOG_GET, SLOWLOG_LEN, SLOWLOG_RESET} mode;
 
@@ -2925,7 +2868,7 @@ PHP_METHOD(Redis, pubsub) {
     RedisSock *redis_sock;
     char *keyword, *cmd;
     int cmd_len;
-    strlen_t kw_len;
+    size_t kw_len;
     PUBSUB_TYPE type;
     zval *arg = NULL;
 
@@ -3295,7 +3238,7 @@ PHP_METHOD(Redis, client) {
     zval *object;
     RedisSock *redis_sock;
     char *cmd, *opt = NULL, *arg = NULL;
-    strlen_t opt_len, arg_len;
+    size_t opt_len, arg_len;
     int cmd_len;
 
     // Parse our method parameters
@@ -3444,7 +3387,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     HashTable *hash;
     char *pattern = NULL, *cmd, *key = NULL;
     int cmd_len, num_elements, key_free = 0;
-    strlen_t key_len = 0, pattern_len = 0;
+    size_t key_len = 0, pattern_len = 0;
     zend_long count = 0, iter;
 
     /* Different prototype depending on if this is a key based scan */
