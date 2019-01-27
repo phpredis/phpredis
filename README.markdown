@@ -13,7 +13,8 @@ If you've found phpredis useful and would like to buy the maintainers a coffee (
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/michaelgrunder/5)
 [![Donate with Bitcoin](https://en.cryptobadges.io/badge/micro/1FXkYHBo5uoaztxFbajiPfbnkgKCbF3ykG)](https://en.cryptobadges.io/donate/1FXkYHBo5uoaztxFbajiPfbnkgKCbF3ykG)
-[![Donate with Ethereum](https://en.cryptobadges.io/badge/micro/0x4345D9f767f877646587B24004652cb106f8F9ED)](https://en.cryptobadges.io/donate/0x4345D9f767f877646587B24004652cb106f8F9ED)
+[![Donate with Ethereum](https://en.cryptobadges.io/badge/micro/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)](https://en.cryptobadges.io/donate/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)
+
 
 # Table of contents
 -----
