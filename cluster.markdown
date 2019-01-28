@@ -130,15 +130,16 @@ This operation can also be done in MULTI mode transparently.
 ## Directed node commands
 There are a variety of commands which have to be directed at a specific node.  In the case of these commands, the caller can either pass a key (which will be hashed and used to direct our command), or an array with host:port.
 
-<pre>
+~~~php
 // This will be directed at the slot/node which would store "mykey"
 $obj_cluster->echo("mykey","Hello World!");
 
 // Here we're iterating all of our known masters, and delivering the command there
 foreach ($obj_cluster->_masters() as $arr_master) {
-    $obj_cluster->echo($arr_master, "Hello: " . implode(':', $arr_master));
+	$obj_cluster->echo($arr_master, "Hello: " . implode(':', $arr_master));
 }
-</pre>
+
+~~~
 
 In the case of all commands which need to be directed at a node, the calling convention is identical to the Redis call, except that they require an additional (first) argument in order to deliver the command.  Following is a list of each of these commands:
 
@@ -157,6 +158,7 @@ In the case of all commands which need to be directed at a node, the calling con
 13.  SLOWLOG
 14.  RANDOMKEY
 15.  PING
+16.  SCAN
 
 ## Session Handler
 You can use the cluster functionality of phpredis to store PHP session information in a Redis cluster as you can with a non cluster-enabled Redis instance.

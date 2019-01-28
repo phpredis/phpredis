@@ -1043,6 +1043,8 @@ _**Description**_:  Scan the keyspace for keys
 ##### *Return value*
 *Array, boolean*:  This function will return an array of keys or FALSE if Redis returned zero keys
 
+*Note*: SCAN is a "directed node" command in [RedisCluster](cluster.markdown#directed_node_commands). 
+
 ##### *Example*
 ~~~php
 
