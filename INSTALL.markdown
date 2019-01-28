@@ -80,11 +80,6 @@ Taken from [Compiling phpredis on Zend Server CE/OSX ](http://www.tumblr.com/tag
 
 See also: [Install Redis & PHP Extension PHPRedis with Macports](http://www.lecloud.net/post/3378834922/install-redis-php-extension-phpredis-with-macports).
 
-You can install it using Homebrew:
-
-- [Get homebrew-php](https://github.com/Homebrew/homebrew-php)
-- `brew install php55-redis` (or php53-redis, php54-redis)
-
 You can install it using MacPorts:
 
 - [Get macports-php](https://www.macports.org/)
