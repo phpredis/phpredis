@@ -704,7 +704,7 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
     redis_pool *pool = PS_GET_MOD_DATA();
     redis_pool_member *rpm = redis_pool_get_sock(pool, skey TSRMLS_CC);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
-    if (!redis_sock || !write_allowed(redis_sock, &pool->lock_status TSRMLS_CC)) {
+    if (!redis_sock) {
         return FAILURE;
     }
 
