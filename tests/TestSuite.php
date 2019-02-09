@@ -18,8 +18,8 @@ class TestSuite {
     private static $YELLOW = "\033[0;33m";
     private static $RED = "\033[0;31m";
 
-    public static $errors = array();
-    public static $warnings = array();
+    public static $errors = [];
+    public static $warnings = [];
 
     public function __construct($str_host) {
         $this->str_host = $str_host;
