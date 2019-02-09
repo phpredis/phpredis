@@ -387,7 +387,7 @@ ra_make_continuum(zend_string **hosts, int nb_hosts)
 
     for (i = 0; i < nb_hosts; ++i) {
         for (j = 0; j < 40; ++j) {
-            len = snprintf(host, sizeof(host), "%.*s-%u", ZSTR_LEN(hosts[i]), ZSTR_VAL(hosts[i]), j);
+            len = snprintf(host, sizeof(host), "%.*s-%u", (int)ZSTR_LEN(hosts[i]), ZSTR_VAL(hosts[i]), j);
             PHP_MD5Init(&ctx);
             PHP_MD5Update(&ctx, host, len);
             PHP_MD5Final(digest, &ctx);

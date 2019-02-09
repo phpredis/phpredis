@@ -351,20 +351,17 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
 {
     // Validate timeout
     if (timeout < 0L || timeout > INT_MAX) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Invalid timeout", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Invalid timeout", 0);
     }
 
     // Validate our read timeout
     if (read_timeout < 0L || read_timeout > INT_MAX) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Invalid read timeout", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Invalid read timeout", 0);
     }
 
     /* Make sure there are some seeds */
     if (zend_hash_num_elements(ht_seeds) == 0) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Must pass seeds", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Must pass seeds", 0);
     }
 
     if (auth && auth_len > 0) {
@@ -408,7 +405,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
         ht_seeds = Z_ARRVAL_P(z_value);
     } else {
         zval_dtor(&z_seeds);
-        zend_throw_exception(redis_cluster_exception_ce, "Couldn't find seeds for cluster", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Couldn't find seeds for cluster", 0);
         return;
     }
 
@@ -502,9 +499,7 @@ PHP_METHOD(RedisCluster, __construct) {
 
     // Require a name
     if (name_len == 0 && ZEND_NUM_ARGS() < 2) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "You must specify a name or pass seeds!",
-            0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("You must specify a name or pass seeds!", 0);
     }
 
     /* If we've been passed only one argument, the user is attempting to connect
@@ -612,8 +607,7 @@ static int get_key_val_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
             kv->key     = kv->kbuf;
             break;
         default:
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Internal Zend HashTable error", 0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION("Internal Zend HashTable error", 0);
             return -1;
     }
 
@@ -623,8 +617,7 @@ static int get_key_val_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
 
     // Now grab our value
     if ((z_val = zend_hash_get_current_data_ex(ht, ptr)) == NULL) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Internal Zend HashTable error", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Internal Zend HashTable error", 0);
         return -1;
     }
 
@@ -643,8 +636,7 @@ static int get_key_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
 
     if ((z_key = zend_hash_get_current_data_ex(ht, ptr)) == NULL) {
         // Shouldn't happen, but check anyway
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Internal Zend HashTable error", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Internal Zend HashTable error", 0);
         return -1;
     }
 
@@ -1849,8 +1841,7 @@ static void generic_unsub_cmd(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     if (cluster_send_slot(c, c->subscribed_slot, cmd, cmd_len, TYPE_MULTIBULK
                          TSRMLS_CC) == FAILURE)
     {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Failed to UNSUBSCRIBE within our subscribe loop!", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Failed to UNSUBSCRIBE within our subscribe loop!", 0);
         RETURN_FALSE;
     }
 
@@ -2049,9 +2040,7 @@ PHP_METHOD(RedisCluster, watch) {
 
         // Add this key to our distribution handler
         if (cluster_dist_add_key(c, ht_dist, ZSTR_VAL(zstr), ZSTR_LEN(zstr), NULL) == FAILURE) {
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Can't issue WATCH command as the keyspace isn't fully mapped",
-                0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION("Can't issue WATCH command as the keyspace isn't fully mapped", 0);
             zend_string_release(zstr);
             RETURN_FALSE;
         }
@@ -2062,8 +2051,7 @@ PHP_METHOD(RedisCluster, watch) {
     ZEND_HASH_FOREACH_PTR(ht_dist, dl) {
         // Grab the clusterDistList pointer itself
         if (dl == NULL) {
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Internal error in a PHP HashTable", 0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION("Internal error in a PHP HashTable", 0);
             cluster_dist_free(ht_dist);
             efree(z_args);
             efree(cmd.c);
@@ -2139,10 +2127,7 @@ PHP_METHOD(RedisCluster, exec) {
         if (SLOT_SOCK(c, fi->slot)->mode == MULTI) {
             if ( cluster_send_exec(c, fi->slot TSRMLS_CC) < 0) {
                 cluster_abort_exec(c TSRMLS_CC);
-
-                zend_throw_exception(redis_cluster_exception_ce,
-                    "Error processing EXEC across the cluster",
-                    0 TSRMLS_CC);
+                CLUSTER_THROW_EXCEPTION("Error processing EXEC across the cluster", 0);
 
                 // Free our queue, reset MULTI state
                 CLUSTER_FREE_QUEUE(c);
@@ -2260,8 +2245,7 @@ cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
 
     // Kick off our command
     if (cluster_send_slot(c, slot, cmd, cmd_len, reply_type TSRMLS_CC) < 0) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Unable to send command at a specific node", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Unable to send command at a specific node", 0);
         efree(cmd);
         RETURN_FALSE;
     }
@@ -2304,8 +2288,7 @@ cluster_flush_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, REDIS_REPLY_TYPE reply
 
     // Kick off our command
     if (cluster_send_slot(c, slot, cmd, cmd_len, reply_type TSRMLS_CC) < 0) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Unable to send command at a specific node", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Unable to send command at a specific node", 0);
         efree(cmd);
         RETURN_FALSE;
     }
@@ -2369,8 +2352,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
 
     /* Send it off */
     if (cluster_send_slot(c, slot, cmd.c, cmd.len, TYPE_EOF TSRMLS_CC) < 0) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Couldn't send command to node", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Couldn't send command to node", 0);
         efree(cmd.c);
         efree(z_args);
         RETURN_FALSE;
@@ -2399,8 +2381,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
     // Can't be in MULTI mode
     if (!CLUSTER_IS_ATOMIC(c)) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "SCAN type commands can't be called in MULTI mode!", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("SCAN type commands can't be called in MULTI mode!", 0);
         RETURN_FALSE;
     }
 
@@ -2445,8 +2426,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
         // Send it off
         if (cluster_send_command(c, slot, cmd, cmd_len TSRMLS_CC) == FAILURE)
         {
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Couldn't send SCAN command", 0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION("Couldn't send SCAN command", 0);
             if (key_free) efree(key);
             efree(cmd);
             RETURN_FALSE;
@@ -2456,8 +2436,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
         if (cluster_scan_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, type,
                               &it) == FAILURE)
         {
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Couldn't read SCAN response", 0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION("Couldn't read SCAN response", 0);
             if (key_free) efree(key);
             efree(cmd);
             RETURN_FALSE;
@@ -2494,8 +2473,7 @@ PHP_METHOD(RedisCluster, scan) {
 
     /* Can't be in MULTI mode */
     if (!CLUSTER_IS_ATOMIC(c)) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "SCAN type commands can't be called in MULTI mode", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("SCAN type commands can't be called in MULTI mode", 0);
         RETURN_FALSE;
     }
 
@@ -2536,8 +2514,7 @@ PHP_METHOD(RedisCluster, scan) {
         // Send it to the node in question
         if (cluster_send_command(c, slot, cmd, cmd_len TSRMLS_CC) < 0)
         {
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Couldn't send SCAN to node", 0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION("Couldn't send SCAN to node", 0);
             efree(cmd);
             RETURN_FALSE;
         }
@@ -2545,8 +2522,7 @@ PHP_METHOD(RedisCluster, scan) {
         if (cluster_scan_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, TYPE_SCAN,
                            &it) == FAILURE || Z_TYPE_P(return_value)!=IS_ARRAY)
         {
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Couldn't process SCAN response from node", 0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION("Couldn't process SCAN response from node", 0);
             efree(cmd);
             RETURN_FALSE;
         }
@@ -2669,8 +2645,7 @@ PHP_METHOD(RedisCluster, info) {
 
     rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
     if (cluster_send_slot(c, slot, cmd, cmd_len, rtype TSRMLS_CC) < 0) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Unable to send INFO command to specific node", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Unable to send INFO command to specific node", 0);
         efree(cmd);
         RETURN_FALSE;
     }
@@ -2743,8 +2718,7 @@ PHP_METHOD(RedisCluster, client) {
 
     /* Attempt to write our command */
     if (cluster_send_slot(c, slot, cmd, cmd_len, rtype TSRMLS_CC) < 0) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Unable to send CLIENT command to specific node", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Unable to send CLIENT command to specific node", 0);
         efree(cmd);
         RETURN_FALSE;
     }
@@ -2822,8 +2796,7 @@ PHP_METHOD(RedisCluster, script) {
 
     /* Send it off */
     if (cluster_send_slot(c, slot, cmd.c, cmd.len, TYPE_EOF TSRMLS_CC) < 0) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Couldn't send command to node", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Couldn't send command to node", 0);
         efree(cmd.c);
         efree(z_args);
         RETURN_FALSE;
@@ -2997,8 +2970,7 @@ PHP_METHOD(RedisCluster, echo) {
     /* Send it off */
     rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
     if (cluster_send_slot(c,slot,cmd,cmd_len,rtype TSRMLS_CC) < 0) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Unable to send commnad at the specificed node", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Unable to send commnad at the specificed node", 0);
         efree(cmd);
         RETURN_FALSE;
     }
@@ -3051,8 +3023,7 @@ PHP_METHOD(RedisCluster, rawcommand) {
     /* Direct the command */
     rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_EOF : TYPE_LINE;
     if (cluster_send_slot(c,slot,cmd,cmd_len,rtype TSRMLS_CC) < 0) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Unable to send command to the specified node", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Unable to send command to the specified node", 0);
         efree(cmd);
         RETURN_FALSE;
     }

@@ -974,9 +974,7 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
 
     // Throw an exception if we couldn't map
     if (!mapped) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Couldn't map cluster keyspace using any provided seed", 0
-            TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Couldn't map cluster keyspace using any provided seed", 0);
         return -1;
     }
 
@@ -1355,9 +1353,7 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
      * send it to this node yet */
     if (c->flags->mode == MULTI && c->cmd_sock->mode != MULTI) {
         if (cluster_send_multi(c, slot TSRMLS_CC) == -1) {
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Unable to enter MULTI mode on requested slot",
-                0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION("Unable to enter MULTI mode on requested slot", 0);
             return -1;
         }
     }
@@ -1384,7 +1380,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
     long msstart;
 
     if (!SLOT(c, slot)) {
-        zend_throw_exception_ex(redis_cluster_exception_ce, 0 TSRMLS_CC,
+        zend_throw_exception_ex(redis_cluster_exception_ce, 0,
             "The slot %d is not covered by any node in this cluster", slot);
         return -1;
     }
@@ -1406,9 +1402,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         if (c->flags->mode == MULTI && CMD_SOCK(c)->mode != MULTI) {
             /* We have to fail if we can't send MULTI to the node */
             if (cluster_send_multi(c, slot TSRMLS_CC) == -1) {
-                zend_throw_exception(redis_cluster_exception_ce,
-                    "Unable to enter MULTI mode on requested slot",
-                    0 TSRMLS_CC);
+                CLUSTER_THROW_EXCEPTION("Unable to enter MULTI mode on requested slot", 0);
                 return -1;
             }
         }
@@ -1417,9 +1411,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
          * node until we find one that is available. */
         if (cluster_sock_write(c, cmd, cmd_len, 0 TSRMLS_CC) == -1) {
             /* We have to abort, as no nodes are reachable */
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Can't communicate with any node in the cluster",
-                0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION("Can't communicate with any node in the cluster", 0);
             return -1;
         }
 
@@ -1433,9 +1425,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         if (resp == 1) {
            /* Abort if we're in a transaction as it will be invalid */
            if (c->flags->mode == MULTI) {
-               zend_throw_exception(redis_cluster_exception_ce,
-                   "Can't process MULTI sequence when cluster is resharding",
-                   0 TSRMLS_CC);
+               CLUSTER_THROW_EXCEPTION("Can't process MULTI sequence when cluster is resharding", 0);
                return -1;
            }
 
@@ -1452,19 +1442,18 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
 
     // If we've detected the cluster is down, throw an exception
     if (c->clusterdown) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "The Redis Cluster is down (CLUSTERDOWN)", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("The Redis Cluster is down (CLUSTERDOWN)", 0);
         return -1;
     } else if (timedout || resp == -1) {
         // Make sure the socket is reconnected, it such that it is in a clean state
         redis_sock_disconnect(c->cmd_sock, 1 TSRMLS_CC);
 
         if (timedout) {
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Timed out attempting to find data in the correct node!", 0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION(
+                "Timed out attempting to find data in the correct node!", 0);
         } else {
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Error processing response from Redis node!", 0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION(
+                "Error processing response from Redis node!", 0);
         }
 
         return -1;

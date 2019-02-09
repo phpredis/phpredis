@@ -1125,7 +1125,7 @@ PHP_METHOD(RedisArray, mset)
 
 /* Generic handler for DEL or UNLINK which behave identically to phpredis */
 static void ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) {
-    zval *object, z_keys, z_fun, *data, z_ret, *z_tmp, *z_args;
+    zval *object, z_keys, z_fun, *data, z_ret, *z_args;
     int i, n;
     RedisArray *ra;
     int *pos, argc = ZEND_NUM_ARGS(), *argc_each;
