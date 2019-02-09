@@ -651,6 +651,9 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
     node->slave  = slave;
     node->slaves = NULL;
 
+    /* Initialize our list of slot ranges */
+    zend_llist_init(&node->slots, sizeof(redisSlotRange), NULL, 0);
+
     // Attach socket
     node->sock = redis_sock_create(host, host_len, port, c->timeout,
         c->read_timeout, c->persistent, NULL, 0);
@@ -690,10 +693,11 @@ cluster_node_add_slave(redisClusterNode *master, redisClusterNode *slave)
 
 /* Use the output of CLUSTER SLOTS to map our nodes */
 static int cluster_map_slots(redisCluster *c, clusterReply *r) {
+    redisClusterNode *pnode, *master, *slave;
+    redisSlotRange range;
     int i,j, hlen, klen;
     short low, high;
     clusterReply *r2, *r3;
-    redisClusterNode *pnode, *master, *slave;
     unsigned short port;
     char *host, key[1024];
 
@@ -746,6 +750,10 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
         for (j = low; j<= high; j++) {
             c->master[j] = master;
         }
+
+        /* Append to our list of slot ranges */
+        range.low = low; range.high = high;
+        zend_llist_add_element(&master->slots, &range);
     }
 
     // Success
@@ -758,7 +766,10 @@ PHP_REDIS_API void cluster_free_node(redisClusterNode *node) {
         zend_hash_destroy(node->slaves);
         efree(node->slaves);
     }
+
+    zend_llist_destroy(&node->slots);
     redis_free_socket(node->sock);
+
     efree(node);
 }
 
@@ -800,6 +811,23 @@ static void ht_free_seed(zval *data) {
 static void ht_free_node(zval *data) {
     redisClusterNode *node = *(redisClusterNode**)data;
     cluster_free_node(node);
+}
+
+/* zend_llist of slot ranges -> persistent array */
+static redisSlotRange *slot_range_list_clone(zend_llist *src, size_t *count) {
+    redisSlotRange *dst, *range;
+    size_t i = 0;
+
+    *count = zend_llist_count(src);
+    dst = pemalloc(*count * sizeof(*dst), 1);
+
+    range = zend_llist_get_first(src);
+    while (range) {
+        memcpy(&dst[i++], range, sizeof(*range));
+        range = zend_llist_get_next(src);
+     }
+
+    return dst;
 }
 
 /* Construct a redisCluster object */
@@ -860,8 +888,47 @@ cluster_free(redisCluster *c, int free_ctx TSRMLS_DC)
     /* Free any error we've got */
     if (c->err) zend_string_release(c->err);
 
+    /* Invalidate our cache if we were redirected during operation */
+    if (c->cache_key) {
+        if (c->redirections) {
+            zend_hash_del(&EG(persistent_list), c->cache_key);
+        }
+        zend_string_release(c->cache_key);
+    }
+
     /* Free structure itself */
     if (free_ctx) efree(c);
+}
+
+/* Create a cluster slot cache structure */
+PHP_REDIS_API
+redisCachedCluster *cluster_cache_create(zend_string *hash, HashTable *nodes) {
+    redisCachedCluster *cc;
+    redisCachedMaster *cm;
+    redisClusterNode *node;
+
+    cc = pecalloc(1, sizeof(*cc), 1);
+    cc->hash = zend_string_dup(hash, 1);
+
+    /* Copy nodes */
+    cc->master = pecalloc(zend_hash_num_elements(nodes), sizeof(*cc->master), 1);
+    ZEND_HASH_FOREACH_PTR(nodes, node) {
+        /* Skip slaves */
+        if (node->slave) continue;
+
+        cm = &cc->master[cc->count];
+
+        /* Duplicate host/port and clone slot ranges */
+        cm->host.addr = zend_string_dup(node->sock->host, 1);
+        cm->host.port = node->sock->port;
+
+        /* Copy over slot ranges */
+        cm->slot = slot_range_list_clone(&node->slots, &cm->slots);
+
+        cc->count++;
+    } ZEND_HASH_FOREACH_END();
+
+    return cc;
 }
 
 /* Takes our input hash table and returns a straigt C array with elements,
@@ -892,6 +959,107 @@ static zval **cluster_shuffle_seeds(HashTable *seeds, int *len) {
     return z_seeds;
 }
 
+static void cluster_free_cached_master(redisCachedMaster *cm) {
+    size_t i;
+
+    /* Free each slave entry */
+    for (i = 0; i < cm->slaves; i++) {
+        zend_string_release(cm->slave[i].addr);
+    }
+
+    /* Free other elements */
+    zend_string_release(cm->host.addr);
+    pefree(cm->slave, 1);
+    pefree(cm->slot, 1);
+}
+
+static redisClusterNode*
+cached_master_clone(redisCluster *c, redisCachedMaster *cm) {
+    redisClusterNode *node;
+    size_t i;
+
+    node = cluster_node_create(c, ZSTR_VAL(cm->host.addr), ZSTR_LEN(cm->host.addr),
+                               cm->host.port, cm->slot[0].low, 0);
+
+    /* Now copy in our slot ranges */
+    for (i = 0; i < cm->slots; i++) {
+        zend_llist_add_element(&node->slots, &cm->slot[i]);
+    }
+
+    return node;
+}
+
+/* Destroy a persistent cached cluster */
+PHP_REDIS_API void cluster_cache_free(redisCachedCluster *rcc) {
+    size_t i;
+
+    /* Free masters */
+    for (i = 0; i < rcc->count; i++) {
+        cluster_free_cached_master(&rcc->master[i]);
+    }
+
+    /* Free hash key */
+    zend_string_release(rcc->hash);
+    pefree(rcc->master, 1);
+    pefree(rcc, 1);
+}
+
+/* Initialize cluster from cached slots */
+PHP_REDIS_API
+void cluster_init_cache(redisCluster *c, redisCachedCluster *cc) {
+    RedisSock *sock;
+    redisClusterNode *mnode, *slave;
+    redisCachedMaster *cm;
+    char key[HOST_NAME_MAX];
+    size_t keylen, i, j, s;
+    int *map;
+
+    /* Randomize seeds */
+    map = emalloc(sizeof(*map) * cc->count);
+    for (i = 0; i < cc->count; i++) map[i] = i;
+    fyshuffle(map, cc->count);
+
+    /* Iterate over masters */
+    for (i = 0; i < cc->count; i++) {
+        /* Grab the next master */
+        cm = &cc->master[map[i]];
+
+        /* Hash our host and port */
+        keylen = snprintf(key, sizeof(key), "%s:%u", ZSTR_VAL(cm->host.addr),
+                          cm->host.port);
+
+        /* Create socket */
+        sock = redis_sock_create(ZSTR_VAL(cm->host.addr), ZSTR_LEN(cm->host.addr), cm->host.port,
+                                 c->timeout, c->read_timeout, c->persistent,
+                                 NULL, 0);
+
+        /* Add to seed nodes */
+        zend_hash_str_update_ptr(c->seeds, key, keylen, sock);
+
+        /* Create master node */
+        mnode = cached_master_clone(c, cm);
+
+        /* Add our master */
+        zend_hash_str_update_ptr(c->nodes, key, keylen, mnode);
+
+        /* Attach any slaves */
+        for (s = 0; s < cm->slaves; s++) {
+            zend_string *host = cm->slave[s].addr;
+            slave = cluster_node_create(c, ZSTR_VAL(host), ZSTR_LEN(host), cm->slave[s].port, 0, 1);
+            cluster_node_add_slave(mnode, slave);
+        }
+
+        /* Hook up direct slot access */
+        for (j = 0; j < cm->slots; j++) {
+            for (s = cm->slot[j].low; s <= cm->slot[j].high; s++) {
+                c->master[s] = mnode;
+            }
+        }
+    }
+
+    efree(map);
+}
+
 /* Initialize seeds */
 PHP_REDIS_API int
 cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
@@ -908,6 +1076,7 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
         if ((z_seed = z_seeds[i]) == NULL) continue;
 
         ZVAL_DEREF(z_seed);
+
         /* Has to be a string */
         if (Z_TYPE_P(z_seed) != IS_STRING) continue;
 
@@ -940,7 +1109,7 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
     efree(z_seeds);
 
     // Success if at least one seed seems valid
-    return zend_hash_num_elements(cluster->seeds) > 0 ? 0 : -1;
+    return zend_hash_num_elements(cluster->seeds) > 0 ? SUCCESS : FAILURE;
 }
 
 /* Initial mapping of our cluster keyspace */
@@ -977,10 +1146,10 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
         zend_throw_exception(redis_cluster_exception_ce,
             "Couldn't map cluster keyspace using any provided seed", 0
             TSRMLS_CC);
-        return -1;
+        return FAILURE;
     }
 
-    return 0;
+    return SUCCESS;
 }
 
 /* Parse the MOVED OR ASK redirection payload when we get such a response

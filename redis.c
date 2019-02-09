@@ -50,6 +50,8 @@ extern zend_class_entry *redis_cluster_exception_ce;
 zend_class_entry *redis_ce;
 zend_class_entry *redis_exception_ce;
 
+extern int le_cluster_slot_cache;
+
 extern zend_function_entry redis_array_functions[];
 extern zend_function_entry redis_cluster_functions[];
 
@@ -71,6 +73,7 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("redis.arrays.consistent", "0", PHP_INI_ALL, NULL)
 
     /* redis cluster */
+    PHP_INI_ENTRY("redis.clusters.cache_slots", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.auth", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.persistent", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.read_timeout", "0", PHP_INI_ALL, NULL)
@@ -549,6 +552,12 @@ free_reply_callbacks(RedisSock *redis_sock)
     redis_sock->current = NULL;
 }
 
+/* Passthru for destroying cluster cache */
+static void cluster_cache_dtor(zend_resource *rsrc) {
+    redisCachedCluster *rcc = (redisCachedCluster*)rsrc->ptr;
+    cluster_cache_free(rcc);
+}
+
 void
 free_redis_object(zend_object *object)
 {
@@ -731,6 +740,10 @@ PHP_MINIT_FUNCTION(redis)
     redis_cluster_ce = zend_register_internal_class(&redis_cluster_class_entry TSRMLS_CC);
     redis_cluster_ce->create_object = create_cluster_context;
 
+    /* Register our cluster cache list item */
+    le_cluster_slot_cache = zend_register_list_destructors_ex(NULL, cluster_cache_dtor,
+                                                              "Redis cluster slot cache",
+                                                              module_number);
 
     /* Base Exception class */
 #if HAVE_SPL

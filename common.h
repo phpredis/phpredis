@@ -6,6 +6,7 @@
 
 #define PHPREDIS_NOTUSED(v) ((void)v)
 
+#include "zend_llist.h"
 #include <ext/standard/php_var.h>
 #include <ext/standard/php_math.h>
 #include <zend_smart_str.h>

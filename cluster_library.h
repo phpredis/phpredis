@@ -143,22 +143,43 @@ typedef enum CLUSTER_REDIR_TYPE {
 /* MULTI BULK response callback typedef */
 typedef int  (*mbulk_cb)(RedisSock*,zval*,long long, void* TSRMLS_DC);
 
-/* Specific destructor to free a cluster object */
-// void redis_destructor_redis_cluster(zend_resource *rsrc TSRMLS_DC);
+/* A list of covered slot ranges */
+typedef struct redisSlotRange {
+    unsigned short low;
+    unsigned short high;
+} redisSlotRange;
+
+/* Simple host/port information for our cache */
+typedef struct redisCachedHost {
+    zend_string *addr;
+    unsigned short port;
+} redisCachedHost;
+
+/* Storage for a cached master node */
+typedef struct redisCachedMaster {
+    redisCachedHost host;
+
+    redisSlotRange *slot;   /* Slots and count */
+    size_t slots;
+
+    redisCachedHost *slave; /* Slaves and their count */
+    size_t slaves;
+} redisCachedMaster;
+
+typedef struct redisCachedCluster {
+    // int rsrc_id;               /* Zend resource ID */
+    zend_string *hash;         /* What we're cached by */
+    redisCachedMaster *master; /* Array of masters */
+    size_t count;              /* Number of masters */
+} redisCachedCluster;
 
 /* A Redis Cluster master node */
 typedef struct redisClusterNode {
-    /* Our Redis socket in question */
-    RedisSock *sock;
-
-    /* A slot where one of these lives */
-    short slot;
-
-    /* Is this a slave node */
-    unsigned short slave;
-
-    /* A HashTable containing any slaves */
-    HashTable *slaves;
+    RedisSock *sock;      /* Our Redis socket in question */
+    short slot;           /* One slot we believe this node serves */
+    zend_llist slots;     /* List of all slots we believe this node serves */
+    unsigned short slave; /* Are we a slave */
+    HashTable *slaves;    /* Hash table of slaves */
 } redisClusterNode;
 
 /* Forward declarations */
@@ -207,6 +228,11 @@ typedef struct redisCluster {
 
     /* Flag for when we get a CLUSTERDOWN error */
     short clusterdown;
+
+    /* Key to our persistent list cache and number of redirections we've
+     * received since construction */
+    zend_string *cache_key;
+    uint64_t redirections;
 
     /* The last ERROR we encountered */
     zend_string *err;
@@ -361,6 +387,13 @@ PHP_REDIS_API void cluster_free(redisCluster *c, int free_ctx TSRMLS_DC);
 PHP_REDIS_API int cluster_init_seeds(redisCluster *c, HashTable *ht_seeds);
 PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC);
 PHP_REDIS_API void cluster_free_node(redisClusterNode *node);
+
+/* Functions for interacting with cached slots maps */
+PHP_REDIS_API redisCachedCluster *cluster_cache_create(zend_string *hash, HashTable *nodes);
+PHP_REDIS_API void cluster_cache_free(redisCachedCluster *rcc);
+PHP_REDIS_API void cluster_init_cache(redisCluster *c, redisCachedCluster *rcc);
+
+/* Functions to facilitate cluster slot caching */
 
 PHP_REDIS_API char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock,
     int *len TSRMLS_DC);
