@@ -671,7 +671,7 @@ int redis_cmd_append_sstr_long(smart_string *str, long append) {
  */
 int redis_cmd_append_sstr_i64(smart_string *str, int64_t append) {
     char nbuf[64];
-    int len = snprintf(nbuf, sizeof(nbuf), PRId64, append);
+    int len = snprintf(nbuf, sizeof(nbuf), "%" PRId64, append);
     return redis_cmd_append_sstr(str, nbuf, len);
 }
 

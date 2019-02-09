@@ -709,10 +709,10 @@ $redis->set('key', 'value');
 $redis->set('key','value', 10);
 
 // Will set the key, if it doesn't exist, with a ttl of 10 seconds
-$redis->set('key', 'value', Array('nx', 'ex'=>10));
+$redis->set('key', 'value', ['nx', 'ex'=>10]);
 
 // Will set a key, if it does exist, with a ttl of 1000 miliseconds
-$redis->set('key', 'value', Array('xx', 'px'=>1000));
+$redis->set('key', 'value', ['xx', 'px'=>1000]);
 
 ~~~
 
@@ -772,11 +772,11 @@ $redis->set('key3', 'val3');
 $redis->set('key4', 'val4');
 
 $redis->delete('key1', 'key2'); /* return 2 */
-$redis->delete(array('key3', 'key4')); /* return 2 */
+$redis->delete(['key3', 'key4']); /* return 2 */
 
 /* If using Redis >= 4.0.0 you can call unlink */
 $redis->unlink('key1', 'key2');
-$redis->unlink(Array('key1', 'key2'));
+$redis->unlink(['key1', 'key2']);
 ~~~
 
 
@@ -890,8 +890,8 @@ _**Description**_: Get the values of all the specified keys. If one or more keys
 $redis->set('key1', 'value1');
 $redis->set('key2', 'value2');
 $redis->set('key3', 'value3');
-$redis->mGet(array('key1', 'key2', 'key3')); /* array('value1', 'value2', 'value3');
-$redis->mGet(array('key0', 'key1', 'key5')); /* array(`FALSE`, 'value1', `FALSE`);
+$redis->mGet(['key1', 'key2', 'key3']); /* ['value1', 'value2', 'value3'];
+$redis->mGet(['key0', 'key1', 'key5']); /* [`FALSE`, 'value1', `FALSE`];
 ~~~
 
 ### getSet
@@ -1252,10 +1252,10 @@ _**Description**_: Sort the elements in a list, set or sorted set.
 
 ##### *Parameters*
 *Key*: key
-*Options*: array(key => value, ...) - optional, with the following keys and values:
+*Options*: [key => value, ...] - optional, with the following keys and values:
 ~~~
     'by' => 'some_pattern_*',
-    'limit' => array(0, 1),
+    'limit' => [0, 1],
     'get' => 'some_other_pattern_*' or an array of patterns,
     'sort' => 'asc' or 'desc',
     'alpha' => TRUE,
@@ -1274,8 +1274,8 @@ $redis->sAdd('s', 1);
 $redis->sAdd('s', 3);
 
 var_dump($redis->sort('s')); // 1,2,3,4,5
-var_dump($redis->sort('s', array('sort' => 'desc'))); // 5,4,3,2,1
-var_dump($redis->sort('s', array('sort' => 'desc', 'store' => 'out'))); // (int)5
+var_dump($redis->sort('s', ['sort' => 'desc'])); // 5,4,3,2,1
+var_dump($redis->sort('s', ['sort' => 'desc', 'store' => 'out'])); // (int)5
 ~~~
 
 
@@ -1316,7 +1316,7 @@ $redis->persist('key');
 _**Description**_: Sets multiple key-value pairs in one atomic command. MSETNX only returns TRUE if all the keys were set (see SETNX).
 
 ##### *Parameters*
-*Pairs*: array(key => value, ...)
+*Pairs*: [key => value, ...]
 
 ##### *Return value*
 *Bool* `TRUE` in case of success, `FALSE` in case of failure.
@@ -1324,7 +1324,7 @@ _**Description**_: Sets multiple key-value pairs in one atomic command. MSETNX o
 ##### *Example*
 ~~~php
 
-$redis->mSet(array('key0' => 'value0', 'key1' => 'value1'));
+$redis->mSet(['key0' => 'value0', 'key1' => 'value1']);
 var_dump($redis->get('key0'));
 var_dump($redis->get('key1'));
 
@@ -1650,7 +1650,7 @@ _**Description**_: Fills in a whole hash. Non-string values are converted to str
 ##### *Examples*
 ~~~php
 $redis->delete('user:1');
-$redis->hMSet('user:1', array('name' => 'Joe', 'salary' => 2000));
+$redis->hMSet('user:1', ['name' => 'Joe', 'salary' => 2000]);
 $redis->hIncrBy('user:1', 'salary', 100); // Joe earns 100 more now.
 ~~~
 
@@ -1667,7 +1667,7 @@ _**Description**_: Retrieve the values associated to the specified fields in the
 $redis->delete('h');
 $redis->hSet('h', 'field1', 'value1');
 $redis->hSet('h', 'field2', 'value2');
-$redis->hMGet('h', array('field1', 'field2')); /* returns array('field1' => 'value1', 'field2' => 'value2') */
+$redis->hMGet('h', ['field1', 'field2']); /* returns ['field1' => 'value1', 'field2' => 'value2'] */
 ~~~
 
 ### hScan
@@ -1738,7 +1738,7 @@ Or
 *INTEGER* Timeout
 
 ##### *Return value*
-*ARRAY* array('listName', 'element')
+*ARRAY* ['listName', 'element']
 
 ##### *Example*
 ~~~php
@@ -1746,13 +1746,13 @@ Or
 $redis->lPush('key1', 'A');
 $redis->delete('key2');
 
-$redis->blPop('key1', 'key2', 10); /* array('key1', 'A') */
+$redis->blPop('key1', 'key2', 10); /* ['key1', 'A'] */
 /* OR */
-$redis->blPop(array('key1', 'key2'), 10); /* array('key1', 'A') */
+$redis->blPop(['key1', 'key2'], 10); /* ['key1', 'A'] */
 
-$redis->brPop('key1', 'key2', 10); /* array('key1', 'A') */
+$redis->brPop('key1', 'key2', 10); /* ['key1', 'A'] */
 /* OR */
-$redis->brPop(array('key1', 'key2'), 10); /* array('key1', 'A') */
+$redis->brPop(['key1', 'key2'], 10); /* ['key1', 'A'] */
 
 /* Blocking feature */
 
@@ -1765,7 +1765,7 @@ $redis->blPop('key1', 10);
 $redis->lPush('key1', 'A');
 
 /* process 1 */
-/* array('key1', 'A') is returned*/
+/* ['key1', 'A'] is returned*/
 ~~~
 
 ### bRPopLPush
@@ -1833,10 +1833,10 @@ $redis->lPush('key1', 'B');
 $redis->lPush('key1', 'C');
 
 $redis->lInsert('key1', Redis::BEFORE, 'C', 'X'); /* 4 */
-$redis->lRange('key1', 0, -1); /* array('A', 'B', 'X', 'C') */
+$redis->lRange('key1', 0, -1); /* ['A', 'B', 'X', 'C'] */
 
 $redis->lInsert('key1', Redis::AFTER, 'C', 'Y'); /* 5 */
-$redis->lRange('key1', 0, -1); /* array('A', 'B', 'X', 'C', 'Y') */
+$redis->lRange('key1', 0, -1); /* ['A', 'B', 'X', 'C', 'Y'] */
 
 $redis->lInsert('key1', Redis::AFTER, 'W', 'value'); /* -1 */
 ~~~
@@ -1920,7 +1920,7 @@ _**Description**_: Returns the specified elements of the list stored at the spec
 $redis->rPush('key1', 'A');
 $redis->rPush('key1', 'B');
 $redis->rPush('key1', 'C');
-$redis->lRange('key1', 0, -1); /* array('A', 'B', 'C') */
+$redis->lRange('key1', 0, -1); /* ['A', 'B', 'C'] */
 ~~~
 
 ### lRem, lRemove
@@ -1946,9 +1946,9 @@ $redis->lPush('key1', 'C');
 $redis->lPush('key1', 'A');
 $redis->lPush('key1', 'A');
 
-$redis->lRange('key1', 0, -1); /* array('A', 'A', 'C', 'B', 'A') */
+$redis->lRange('key1', 0, -1); /* ['A', 'A', 'C', 'B', 'A'] */
 $redis->lRem('key1', 'A', 2); /* 2 */
-$redis->lRange('key1', 0, -1); /* array('C', 'B', 'A') */
+$redis->lRange('key1', 0, -1); /* ['C', 'B', 'A'] */
 ~~~
 
 ### lSet
@@ -1991,9 +1991,9 @@ _**Description**_: Trims an existing list so that it will contain only a specifi
 $redis->rPush('key1', 'A');
 $redis->rPush('key1', 'B');
 $redis->rPush('key1', 'C');
-$redis->lRange('key1', 0, -1); /* array('A', 'B', 'C') */
+$redis->lRange('key1', 0, -1); /* ['A', 'B', 'C'] */
 $redis->lTrim('key1', 0, 1);
-$redis->lRange('key1', 0, -1); /* array('A', 'B') */
+$redis->lRange('key1', 0, -1); /* ['A', 'B'] */
 ~~~
 
 ### rPop
@@ -2619,7 +2619,7 @@ _**Description**_: Add one or more members to a sorted set or update its score i
 $redis->zAdd('key', 1, 'val1');
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 5, 'val5');
-$redis->zRange('key', 0, -1); // array(val0, val1, val5)
+$redis->zRange('key', 0, -1); // [val0, val1, val5]
 ~~~
 
 ### zCard, zSize
@@ -2657,7 +2657,7 @@ _**Description**_: Returns the *number* of elements of the sorted set stored at 
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
-$redis->zCount('key', 0, 3); /* 2, corresponding to array('val0', 'val2') */
+$redis->zCount('key', 0, 3); /* 2, corresponding to ['val0', 'val2'] */
 ~~~
 
 ### zIncrBy
@@ -2714,12 +2714,12 @@ $redis->zAdd('k1', 3, 'val3');
 $redis->zAdd('k2', 2, 'val1');
 $redis->zAdd('k2', 3, 'val3');
 
-$redis->zInter('ko1', array('k1', 'k2')); 				/* 2, 'ko1' => array('val1', 'val3') */
-$redis->zInter('ko2', array('k1', 'k2'), array(1, 1)); 	/* 2, 'ko2' => array('val1', 'val3') */
+$redis->zInter('ko1', ['k1', 'k2']); 				/* 2, 'ko1' => ['val1', 'val3'] */
+$redis->zInter('ko2', ['k1', 'k2'], [1, 1]); 	/* 2, 'ko2' => ['val1', 'val3'] */
 
 /* Weighted zInter */
-$redis->zInter('ko3', array('k1', 'k2'), array(1, 5), 'min'); /* 2, 'ko3' => array('val1', 'val3') */
-$redis->zInter('ko4', array('k1', 'k2'), array(1, 5), 'max'); /* 2, 'ko4' => array('val3', 'val1') */
+$redis->zInter('ko3', ['k1', 'k2'], [1, 5], 'min'); /* 2, 'ko3' => ['val1', 'val3'] */
+$redis->zInter('ko4', ['k1', 'k2'], [1, 5], 'max'); /* 2, 'ko4' => ['val3', 'val1'] */
 ~~~
 
 ### zRange
@@ -2744,10 +2744,10 @@ Start and stop are interpreted as zero-based indices:
 $redis->zAdd('key1', 0, 'val0');
 $redis->zAdd('key1', 2, 'val2');
 $redis->zAdd('key1', 10, 'val10');
-$redis->zRange('key1', 0, -1); /* array('val0', 'val2', 'val10') */
+$redis->zRange('key1', 0, -1); /* ['val0', 'val2', 'val10'] */
 
 // with scores
-$redis->zRange('key1', 0, -1, true); /* array('val0' => 0, 'val2' => 2, 'val10' => 10) */
+$redis->zRange('key1', 0, -1, true); /* ['val0' => 0, 'val2' => 2, 'val10' => 10] */
 ~~~
 
 ### zRangeByScore, zRevRangeByScore
@@ -2760,7 +2760,7 @@ _**Description**_: Returns the elements of the sorted set stored at the specifie
 *end*: string  
 *options*: array
 
-Two options are available: `withscores => TRUE`, and `limit => array($offset, $count)`
+Two options are available: `withscores => TRUE`, and `limit => [$offset, $count]`
 
 ##### *Return value*
 *Array* containing the values in specified range.
@@ -2770,10 +2770,10 @@ Two options are available: `withscores => TRUE`, and `limit => array($offset, $c
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
-$redis->zRangeByScore('key', 0, 3); /* array('val0', 'val2') */
-$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE)); /* array('val0' => 0, 'val2' => 2) */
-$redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1))); /* array('val2') */
-$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(1, 1))); /* array('val2' => 2) */
+$redis->zRangeByScore('key', 0, 3); /* ['val0', 'val2'] */
+$redis->zRangeByScore('key', 0, 3, ['withscores' => TRUE]); /* ['val0' => 0, 'val2' => 2] */
+$redis->zRangeByScore('key', 0, 3, ['limit' => [1, 1]]); /* ['val2'] */
+$redis->zRangeByScore('key', 0, 3, ['withscores' => TRUE, 'limit' => [1, 1]]); /* ['val2' => 2] */
 ~~~
 
 ### zRangeByLex
@@ -2792,12 +2792,12 @@ _**Description**_:  Returns a lexicographical range of members in a sorted set, 
 
 ##### *Example*
 ~~~php
-foreach(Array('a','b','c','d','e','f','g') as $c)
+foreach(['a','b','c','d','e','f','g'] as $c)
     $redis->zAdd('key',0,$c);
 
-$redis->zRangeByLex('key','-','[c') /* Array('a','b','c'); */
-$redis->zRangeByLex('key','-','(c') /* Array('a','b') */
-$redis->zRangeByLex('key','-','[c',1,2) /* Array('b','c') */
+$redis->zRangeByLex('key','-','[c') /* ['a','b','c']; */
+$redis->zRangeByLex('key','-','(c') /* ['a','b'] */
+$redis->zRangeByLex('key','-','[c',1,2) /* ['b','c'] */
 ~~~
 
 ### zRank, zRevRank
@@ -2839,7 +2839,7 @@ $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
 $redis->zDelete('key', 'val2');
-$redis->zRange('key', 0, -1); /* array('val0', 'val10') */
+$redis->zRange('key', 0, -1); /* ['val0', 'val10'] */
 ~~~
 
 ### zRemRangeByRank, zDeleteRangeByRank
@@ -2860,7 +2860,7 @@ $redis->zAdd('key', 1, 'one');
 $redis->zAdd('key', 2, 'two');
 $redis->zAdd('key', 3, 'three');
 $redis->zRemRangeByRank('key', 0, 1); /* 2 */
-$redis->zRange('key', 0, -1, array('withscores' => TRUE)); /* array('three' => 3) */
+$redis->zRange('key', 0, -1, ['withscores' => TRUE]); /* ['three' => 3] */
 ~~~
 
 ### zRemRangeByScore, zDeleteRangeByScore
@@ -2903,10 +2903,10 @@ _**Description**_: Returns the elements of the sorted set stored at the specifie
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
-$redis->zRevRange('key', 0, -1); /* array('val10', 'val2', 'val0') */
+$redis->zRevRange('key', 0, -1); /* ['val10', 'val2', 'val0'] */
 
 // with scores
-$redis->zRevRange('key', 0, -1, true); /* array('val10' => 10, 'val2' => 2, 'val0' => 0) */
+$redis->zRevRange('key', 0, -1, true); /* ['val10' => 10, 'val2' => 2, 'val0' => 0] */
 ~~~
 
 ### zScore
@@ -2957,11 +2957,11 @@ $redis->zAdd('k1', 1, 'val1');
 $redis->zAdd('k2', 2, 'val2');
 $redis->zAdd('k2', 3, 'val3');
 
-$redis->zUnion('ko1', array('k1', 'k2')); /* 4, 'ko1' => array('val0', 'val1', 'val2', 'val3') */
+$redis->zUnion('ko1', ['k1', 'k2']); /* 4, 'ko1' => ['val0', 'val1', 'val2', 'val3'] */
 
 /* Weighted zUnion */
-$redis->zUnion('ko2', array('k1', 'k2'), array(1, 1)); /* 4, 'ko2' => array('val0', 'val1', 'val2', 'val3') */
-$redis->zUnion('ko3', array('k1', 'k2'), array(5, 1)); /* 4, 'ko3' => array('val0', 'val2', 'val3', 'val1') */
+$redis->zUnion('ko2', ['k1', 'k2'], [1, 1]); /* 4, 'ko2' => ['val0', 'val1', 'val2', 'val3'] */
+$redis->zUnion('ko3', ['k1', 'k2'], [5, 1]); /* 4, 'ko3' => ['val0', 'val2', 'val3', 'val1'] */
 ~~~
 
 ### zScan
@@ -3261,7 +3261,7 @@ echo "Within 300 miles of Honolulu:\n";
 var_dump($redis->geoRadiusByMember("hawaii", "Honolulu", 300, 'mi'));
 
 echo "\nFirst match within 300 miles of Honolulu:\n";
-var_dump($redis->geoRadiusByMember("hawaii", "Honolulu", 300, 'mi', Array('count' => 1)));
+var_dump($redis->geoRadiusByMember("hawaii", "Honolulu", 300, 'mi', ['count' => 1]));
 ~~~
 
 ##### *Output*
@@ -3654,7 +3654,7 @@ _**Description**_: Subscribe to channels. Warning: this function will probably c
 
 ##### *Parameters*
 *channels*: an array of channels to subscribe to  
-*callback*: either a string or an array($instance, 'method_name'). The callback function receives 3 parameters: the redis instance, the channel name, and the message.  
+*callback*: either a string or an Array($instance, 'method_name'). The callback function receives 3 parameters: the redis instance, the channel name, and the message.
 *return value*:  Mixed.  Any non-null return value in the callback will be returned to the caller.
 ##### *Example*
 ~~~php
@@ -3674,7 +3674,7 @@ function f($redis, $chan, $msg) {
 	}
 }
 
-$redis->subscribe(array('chan-1', 'chan-2', 'chan-3'), 'f'); // subscribe to 3 chans
+$redis->subscribe(['chan-1', 'chan-2', 'chan-3'], 'f'); // subscribe to 3 chans
 ~~~
 
 ### pubSub
@@ -3694,7 +3694,7 @@ _**Description**_: A command allowing you to get information on the Redis pub/su
 ~~~php
 $redis->pubSub("channels"); /*All channels */
 $redis->pubSub("channels", "*pattern*"); /* Just channels matching your pattern */
-$redis->pubSub("numsub", Array("chan1", "chan2")); /*Get subscriber counts for 'chan1' and 'chan2'*/
+$redis->pubSub("numsub", ["chan1", "chan2"]); /*Get subscriber counts for 'chan1' and 'chan2'*/
 $redis->pubSub("numpat"); /* Get the number of pattern subscribers */
 
 
@@ -3753,11 +3753,7 @@ $ret = $redis->multi()
     ->exec();
 
 /*
-$ret == array(
-    0 => TRUE,
-    1 => 'val1',
-    2 => TRUE,
-    3 => 'val2');
+$ret == Array(0 => TRUE, 1 => 'val1', 2 => TRUE, 3 => 'val2');
 */
 ~~~
 
@@ -3772,7 +3768,7 @@ If the key is modified between `WATCH` and `EXEC`, the MULTI/EXEC transaction wi
 
 ##### *Example*
 ~~~php
-$redis->watch('x'); // or for a list of keys: $redis->watch(array('x','another key'));
+$redis->watch('x'); // or for a list of keys: $redis->watch(['x','another key']);
 /* long code here during the execution of which other clients could well modify `x` */
 $ret = $redis->multi()
     ->incr('x')
@@ -3812,12 +3808,12 @@ executing the LUA script, the getLastError() function can tell you the message t
 ##### *Examples*
 ~~~php
 $redis->eval("return 1"); // Returns an integer: 1
-$redis->eval("return {1,2,3}"); // Returns Array(1,2,3)
+$redis->eval("return {1,2,3}"); // Returns [1,2,3]
 $redis->del('mylist');
 $redis->rpush('mylist','a');
 $redis->rpush('mylist','b');
 $redis->rpush('mylist','c');
-// Nested response:  Array(1,2,3,Array('a','b','c'));
+// Nested response:  [1,2,3,['a','b','c']];
 $redis->eval("return {1,2,3,redis.call('lrange','mylist',0,-1)}");
 ~~~
 
@@ -3959,7 +3955,7 @@ will change Array values to 'Array', and Objects to 'Object'.
 ~~~php
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
 $redis->_serialize("foo"); // returns "foo"
-$redis->_serialize(Array()); // Returns "Array"
+$redis->_serialize([]); // Returns "Array"
 $redis->_serialize(new stdClass()); // Returns "Object"
 
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
@@ -3980,7 +3976,7 @@ serializing values, and you return something from redis in a LUA script that is 
 ##### *Examples*
 ~~~php
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
-$redis->_unserialize('a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}'); // Will return Array(1,2,3)
+$redis->_unserialize('a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}'); // Will return [1,2,3]
 ~~~
 
 
