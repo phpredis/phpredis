@@ -4027,7 +4027,7 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     zval zv, *z_ret = &zv;
     if (!redis_unserialize(redis_sock, value, value_len, z_ret TSRMLS_CC)) {
         // Badly formed input, throw an execption
-        zend_throw_exception(ex, "Invalid serialized data, or unserialization error", 0 TSRMLS_CC);
+        zend_throw_exception(ex, "Invalid serialized data, or unserialization error", 0);
         RETURN_FALSE;
     }
     RETURN_ZVAL(z_ret, 1, 0);

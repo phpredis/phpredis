@@ -601,7 +601,7 @@ redis_sock_get_instance(zval *id TSRMLS_DC, int no_throw)
     }
     // Throw an exception unless we've been requested not to
     if (!no_throw) {
-        zend_throw_exception(redis_exception_ce, "Redis server went away", 0 TSRMLS_CC);
+        REDIS_THROW_EXCEPTION("Redis server went away", 0);
     }
     return NULL;
 }
@@ -896,20 +896,17 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     }
 
     if (timeout < 0L || timeout > INT_MAX) {
-        zend_throw_exception(redis_exception_ce,
-            "Invalid connect timeout", 0 TSRMLS_CC);
+        REDIS_THROW_EXCEPTION("Invalid connect timeout", 0);
         return FAILURE;
     }
 
     if (read_timeout < 0L || read_timeout > INT_MAX) {
-        zend_throw_exception(redis_exception_ce,
-            "Invalid read timeout", 0 TSRMLS_CC);
+        REDIS_THROW_EXCEPTION("Invalid read timeout", 0);
         return FAILURE;
     }
 
     if (retry_interval < 0L || retry_interval > INT_MAX) {
-        zend_throw_exception(redis_exception_ce, "Invalid retry interval",
-            0 TSRMLS_CC);
+        REDIS_THROW_EXCEPTION("Invalid retry interval", 0);
         return FAILURE;
     }
 
@@ -930,7 +927,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 
     if (redis_sock_server_open(redis->sock TSRMLS_CC) < 0) {
         if (redis->sock->err) {
-            zend_throw_exception(redis_exception_ce, ZSTR_VAL(redis->sock->err), 0 TSRMLS_CC);
+            REDIS_THROW_EXCEPTION(ZSTR_VAL(redis->sock->err), 0);
         }
         redis_free_socket(redis->sock);
         redis->sock = NULL;

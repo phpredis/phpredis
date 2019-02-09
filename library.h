@@ -14,6 +14,12 @@
 #define REDIS_CMD_INIT_SSTR_STATIC(sstr, argc, keyword) \
     redis_cmd_init_sstr(sstr, argc, keyword, sizeof(keyword)-1);
 
+#define REDIS_THROW_EXCEPTION(msg, code) \
+    zend_throw_exception(redis_exception_ce, (msg), code)
+
+#define CLUSTER_THROW_EXCEPTION(msg, code) \
+    zend_throw_exception(redis_cluster_exception_ce, (msg), code)
+
 int redis_cmd_init_sstr(smart_string *str, int num_args, char *keyword, int keyword_len);
 int redis_cmd_append_sstr(smart_string *str, char *append, int append_len);
 int redis_cmd_append_sstr_int(smart_string *str, int append);

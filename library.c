@@ -132,7 +132,7 @@ redis_error_throw(RedisSock *redis_sock TSRMLS_DC)
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "BUSYGROUP") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOGROUP"))
     {
-        zend_throw_exception(redis_exception_ce, ZSTR_VAL(redis_sock->err), 0 TSRMLS_CC);
+        REDIS_THROW_EXCEPTION( ZSTR_VAL(redis_sock->err), 0);
     }
 }
 
@@ -144,7 +144,7 @@ redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
 
     if (!redis_sock || !redis_sock->stream || redis_sock->status == REDIS_SOCK_STATUS_FAILED) {
         if (!no_throw) {
-            zend_throw_exception(redis_exception_ce, "Connection closed", 0 TSRMLS_CC);
+            REDIS_THROW_EXCEPTION( "Connection closed", 0);
         }
         return -1;
     }
@@ -208,7 +208,7 @@ redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
     redis_sock_disconnect(redis_sock, 1 TSRMLS_CC);
     redis_sock->status = REDIS_SOCK_STATUS_FAILED;
     if (!no_throw) {
-        zend_throw_exception(redis_exception_ce, errmsg, 0 TSRMLS_CC);
+        REDIS_THROW_EXCEPTION( errmsg, 0);
     }
     return -1;
 }
@@ -461,8 +461,7 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_DC)
     /* Protect against reading too few bytes */
     if (offset < nbytes) {
         /* Error or EOF */
-        zend_throw_exception(redis_exception_ce,
-            "socket error on read socket", 0 TSRMLS_CC);
+        REDIS_THROW_EXCEPTION("socket error on read socket", 0);
         efree(reply);
         return NULL;
     }
@@ -515,9 +514,7 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len TSRMLS_DC)
                 return estrndup(inbuf, *buf_len);
             }
         default:
-            zend_throw_exception_ex(
-                redis_exception_ce,
-                0 TSRMLS_CC,
+            zend_throw_exception_ex(redis_exception_ce, 0,
                 "protocol error, got '%c' as reply type byte\n",
                 inbuf[0]
             );
@@ -674,7 +671,7 @@ int redis_cmd_append_sstr_long(smart_string *str, long append) {
  */
 int redis_cmd_append_sstr_i64(smart_string *str, int64_t append) {
     char nbuf[64];
-    int len = snprintf(nbuf, sizeof(nbuf), "%lld", append);
+    int len = snprintf(nbuf, sizeof(nbuf), PRId64, append);
     return redis_cmd_append_sstr(str, nbuf, len);
 }
 
@@ -2257,8 +2254,7 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size,
         redis_sock_disconnect(redis_sock, 1 TSRMLS_CC);
 
         // Throw a read error exception
-        zend_throw_exception(redis_exception_ce, "read error on connection",
-            0 TSRMLS_CC);
+        REDIS_THROW_EXCEPTION( "read error on connection", 0);
         return -1;
     }
 
@@ -2283,8 +2279,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
 
     // Attempt to read the reply-type byte
     if((*reply_type = php_stream_getc(redis_sock->stream)) == EOF) {
-        zend_throw_exception(redis_exception_ce, "socket error on read socket",
-            0 TSRMLS_CC);
+        REDIS_THROW_EXCEPTION( "socket error on read socket", 0);
         return -1;
     }
 
@@ -2370,7 +2365,7 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, int status_s
         if(redis_read_reply_type(redis_sock, &reply_type, &reply_info
                                  TSRMLS_CC) < 0)
         {
-            zend_throw_exception_ex(redis_exception_ce, 0 TSRMLS_CC,
+            zend_throw_exception_ex(redis_exception_ce, 0,
                 "protocol error, couldn't parse MULTI-BULK response\n");
             return FAILURE;
         }
@@ -2449,7 +2444,7 @@ variant_reply_generic(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             }
             break;
         default:
-            zend_throw_exception_ex(redis_exception_ce, 0 TSRMLS_CC,
+            zend_throw_exception_ex(redis_exception_ce, 0,
                 "protocol error, got '%c' as reply-type byte\n", reply_type);
             return FAILURE;
     }
