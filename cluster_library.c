@@ -1021,6 +1021,9 @@ void cluster_init_cache(redisCluster *c, redisCachedCluster *cc) {
 
     /* Iterate over masters */
     for (i = 0; i < cc->count; i++) {
+        /* Attach cache key */
+        c->cache_key = cc->hash;
+
         /* Grab the next master */
         cm = &cc->master[map[i]];
 
@@ -1215,8 +1218,10 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
         }
 
         // Check for MOVED or ASK redirection
-        if ((moved = IS_MOVED(inbuf)) || IS_ASK(inbuf)) {
-            // Set our redirection information
+        if ((moved = IS_MOVED(inbuf)) || IS_ASK(inbuf)) { // Set our redirection information
+            /* We'll want to invalidate slot cache if we're using one */
+            c->redirections++;
+
             if (cluster_set_redirection(c,inbuf,moved) < 0) {
                 return -1;
             }
@@ -1543,7 +1548,7 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
 /* Send a command to given slot in our cluster.  If we get a MOVED or ASK error
  * we attempt to send the command to the node as directed. */
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
-                                  int cmd_len TSRMLS_DC)
+                                         int cmd_len TSRMLS_DC)
 {
     int resp, timedout = 0;
     long msstart;

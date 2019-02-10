@@ -451,7 +451,6 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
 {
     redisCachedCluster *cc;
 
-    /* TODO:  Safe short circuit here */
     cluster_validate_args(timeout, read_timeout, ht_seeds);
 
     if (auth && auth_len > 0) {
