@@ -455,7 +455,7 @@ echo "Redis has $count keys\n";
 _**Description**_: Remove all keys from all databases.
 
 ##### *Parameters*
-None.
+*async* (bool) requires server version 4.0.0 or greater
 
 ##### *Return value*
 *BOOL*: Always `TRUE`.
@@ -470,7 +470,7 @@ $redis->flushAll();
 _**Description**_: Remove all keys from the current database.
 
 ##### *Parameters*
-None.
+*async* (bool) requires server version 4.0.0 or greater
 
 ##### *Return value*
 *BOOL*: Always `TRUE`.
