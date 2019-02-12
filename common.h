@@ -536,12 +536,14 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_object, 0, 0, 2)
     ZEND_ARG_INFO(0, key)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_subscribe, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_subscribe, 0, 0, 2)
     ZEND_ARG_ARRAY_INFO(0, channels, 0)
+    ZEND_ARG_INFO(0, callback)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_psubscribe, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_psubscribe, 0, 0, 2)
     ZEND_ARG_ARRAY_INFO(0, patterns, 0)
+    ZEND_ARG_INFO(0, callback)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_unsubscribe, 0, 0, 1)

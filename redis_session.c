@@ -678,7 +678,7 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
     redis_pool *pool = PS_GET_MOD_DATA();
     redis_pool_member *rpm = redis_pool_get_sock(pool, skey TSRMLS_CC);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
-    if (!redis_sock || !write_allowed(redis_sock, &pool->lock_status TSRMLS_CC)) {
+    if (!redis_sock) {
         return FAILURE;
     }
 
@@ -698,7 +698,7 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
         return FAILURE;
     }
 
-    if (response_len == 2 && response[0] == ':' && response[1] == '1') {
+    if (response_len == 2 && response[0] == ':') {
         efree(response);
         return SUCCESS;
     } else {
