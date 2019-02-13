@@ -255,7 +255,9 @@ PHP_METHOD(RedisCluster, geohash);
 PHP_METHOD(RedisCluster, geopos);
 PHP_METHOD(RedisCluster, geodist);
 PHP_METHOD(RedisCluster, georadius);
+PHP_METHOD(RedisCluster, georadius_ro);
 PHP_METHOD(RedisCluster, georadiusbymember);
+PHP_METHOD(RedisCluster, georadiusbymember_ro);
 
 /* SCAN and friends */
 PHP_METHOD(RedisCluster, scan);

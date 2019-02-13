@@ -2788,9 +2788,10 @@ void append_georadius_opts(RedisSock *redis_sock, smart_string *str, short *slot
     }
 }
 
-/* GEORADIUS */
+/* GEORADIUS / GEORADIUS_RO */
 int redis_georadius_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                        char **cmd, int *cmd_len, short *slot, void **ctx)
+                        char *kw, char **cmd, int *cmd_len, short *slot,
+                        void **ctx)
 {
     char *key, *unit;
     short store_slot = 0;
@@ -2823,7 +2824,7 @@ int redis_georadius_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             (gopts.store != STORE_NONE ? 2 : 0);
 
     /* Begin construction of our command */
-    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "GEORADIUS");
+    redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
 
     /* Prefix and set slot */
     keyfree = redis_key_prefix(redis_sock, &key, &keylen);
@@ -2858,9 +2859,11 @@ int redis_georadius_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
-/* GEORADIUSBYMEMBER key member radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count] */
+/* GEORADIUSBYMEMBER/GEORADIUSBYMEMBER_RO
+ *    key member radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count] */
 int redis_georadiusbymember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                                char **cmd, int *cmd_len, short *slot, void **ctx)
+                                char *kw, char **cmd, int *cmd_len, short *slot,
+                                void **ctx)
 {
     char *key, *mem, *unit;
     strlen_t keylen, memlen, unitlen;
@@ -2890,7 +2893,7 @@ int redis_georadiusbymember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
             (gopts.store != STORE_NONE ? 2 : 0);
 
     /* Begin command construction*/
-    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "GEORADIUSBYMEMBER");
+    redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
 
     /* Prefix our key if we're prefixing and set the slot */
     keyfree = redis_key_prefix(redis_sock, &key, &keylen);
