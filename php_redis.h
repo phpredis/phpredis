@@ -205,7 +205,9 @@ PHP_METHOD(Redis, geohash);
 PHP_METHOD(Redis, geopos);
 PHP_METHOD(Redis, geodist);
 PHP_METHOD(Redis, georadius);
+PHP_METHOD(Redis, georadius_ro);
 PHP_METHOD(Redis, georadiusbymember);
+PHP_METHOD(Redis, georadiusbymember_ro);
 
 PHP_METHOD(Redis, client);
 PHP_METHOD(Redis, command);
