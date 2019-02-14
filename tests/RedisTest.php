@@ -5109,29 +5109,29 @@ class Redis_Test extends TestSuite
         $this->addCities('{gk}');
 
         /* Pre tested with redis-cli.  We're just verifying proper delivery of distance and unit */
-        if ($cmd == 'georadius') {
-            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 10, 'mi'), ['Chico']);
-            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 30, 'mi'), ['Gridley','Chico']);
-            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 50, 'km'), ['Gridley','Chico']);
-            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 50000, 'm'), ['Gridley','Chico']);
-            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 150000, 'ft'), ['Gridley', 'Chico']);
-            $args = ['georadius', '{gk}', $lng, $lat, 500, 'mi'];
+        if ($cmd == 'georadius' || $cmd == 'georadius_ro') {
+            $this->assertEquals($this->redis->$cmd('{gk}', $lng, $lat, 10, 'mi'), Array('Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $lng, $lat, 30, 'mi'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $lng, $lat, 50, 'km'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $lng, $lat, 50000, 'm'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $lng, $lat, 150000, 'ft'), Array('Gridley', 'Chico'));
+            $args = Array($cmd, '{gk}', $lng, $lat, 500, 'mi');
 
             /* Test a bad COUNT argument */
-            foreach ([-1, 0, 'notanumber'] as $count) {
-                $this->assertFalse(@$this->redis->georadius('{gk}', $lng, $lat, 10, 'mi', ['count' => $count]));
+            foreach (Array(-1, 0, 'notanumber') as $count) {
+                $this->assertFalse(@$this->redis->$cmd('{gk}', $lng, $lat, 10, 'mi', Array('count' => $count)));
             }
         } else {
-            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 10, 'mi'), ['Chico']);
-            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 30, 'mi'), ['Gridley','Chico']);
-            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 50, 'km'), ['Gridley','Chico']);
-            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 50000, 'm'), ['Gridley','Chico']);
-            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 150000, 'ft'), ['Gridley', 'Chico']);
-            $args = ['georadiusbymember', '{gk}', $city, 500, 'mi'];
+            $this->assertEquals($this->redis->$cmd('{gk}', $city, 10, 'mi'), Array('Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $city, 30, 'mi'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $city, 50, 'km'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $city, 50000, 'm'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $city, 150000, 'ft'), Array('Gridley', 'Chico'));
+            $args = Array($cmd, '{gk}', $city, 500, 'mi');
 
             /* Test a bad COUNT argument */
-            foreach ([-1, 0, 'notanumber'] as $count) {
-                $this->assertFalse(@$this->redis->georadiusbymember('{gk}', $city, 10, 'mi', ['count' => $count]));
+            foreach (Array(-1, 0, 'notanumber') as $count) {
+                $this->assertFalse(@$this->redis->$cmd('{gk}', $city, 10, 'mi', Array('count' => $count)));
             }
         }
 
@@ -5185,7 +5185,7 @@ class Redis_Test extends TestSuite
                         }
 
                         $ret1 = $this->rawCommandArray('{gk}', $realargs);
-                        if ($cmd == 'georadius') {
+                        if ($cmd == 'georadius' || $cmd == 'georadius_ro') {
                             $ret2 = $this->redis->$cmd('{gk}', $lng, $lat, 500, 'mi', $realopts);
                         } else {
                             $ret2 = $this->redis->$cmd('{gk}', $city, 500, 'mi', $realopts);
@@ -5205,6 +5205,7 @@ class Redis_Test extends TestSuite
         }
 
         $this->genericGeoRadiusTest('georadius');
+        $this->genericGeoRadiusTest('georadius_ro');
     }
 
     public function testGeoRadiusByMember() {
@@ -5213,6 +5214,7 @@ class Redis_Test extends TestSuite
         }
 
         $this->genericGeoRadiusTest('georadiusbymember');
+        $this->genericGeoRadiusTest('georadiusbymember_ro');
     }
 
     public function testGeoPos() {

@@ -288,7 +288,9 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, geohash, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, geopos, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, georadius, arginfo_georadius, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, georadius_ro, arginfo_georadius, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, georadiusbymember, arginfo_georadiusbymember, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, georadiusbymember_ro, arginfo_georadiusbymember, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, get, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getAuth, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getBit, arginfo_key_offset, ZEND_ACC_PUBLIC)
@@ -3548,11 +3550,19 @@ PHP_METHOD(Redis, geodist) {
 }
 
 PHP_METHOD(Redis, georadius) {
-    REDIS_PROCESS_CMD(georadius, redis_read_variant_reply);
+    REDIS_PROCESS_KW_CMD("GEORADIUS", redis_georadius_cmd, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, georadius_ro) {
+    REDIS_PROCESS_KW_CMD("GEORADIUS_RO", redis_georadius_cmd, redis_read_variant_reply);
 }
 
 PHP_METHOD(Redis, georadiusbymember) {
-    REDIS_PROCESS_CMD(georadiusbymember, redis_read_variant_reply);
+    REDIS_PROCESS_KW_CMD("GEORADIUSBYMEMBER", redis_georadiusbymember_cmd, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, georadiusbymember_ro) {
+    REDIS_PROCESS_KW_CMD("GEORADIUSBYMEMBER_RO", redis_georadiusbymember_cmd, redis_read_variant_reply);
 }
 
 /*

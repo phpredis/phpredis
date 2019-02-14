@@ -150,7 +150,9 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, geohash, arginfo_key_members, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, geopos, arginfo_key_members, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, georadius, arginfo_georadius, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, georadius_ro, arginfo_georadius, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, georadiusbymember, arginfo_georadiusbymember, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, georadiusbymember_ro, arginfo_georadiusbymember, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, get, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, getbit, arginfo_key_offset, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, getlasterror, arginfo_void, ZEND_ACC_PUBLIC)
@@ -2929,12 +2931,22 @@ PHP_METHOD(RedisCluster, geodist) {
 
 /* {{{ proto array RedisCluster::georadius() }}} */
 PHP_METHOD(RedisCluster, georadius) {
-    CLUSTER_PROCESS_CMD(georadius, cluster_variant_resp, 1);
+    CLUSTER_PROCESS_KW_CMD("GEORADIUS", redis_georadius_cmd, cluster_variant_resp, 1);
+}
+
+/* {{{ proto array RedisCluster::georadius() }}} */
+PHP_METHOD(RedisCluster, georadius_ro) {
+    CLUSTER_PROCESS_KW_CMD("GEORADIUS_RO", redis_georadius_cmd, cluster_variant_resp, 1);
 }
 
 /* {{{ proto array RedisCluster::georadiusbymember() }}} */
 PHP_METHOD(RedisCluster, georadiusbymember) {
-    CLUSTER_PROCESS_CMD(georadiusbymember, cluster_variant_resp, 1)
+    CLUSTER_PROCESS_KW_CMD("GEORADIUSBYMEMBER", redis_georadiusbymember_cmd, cluster_variant_resp, 1);
+}
+
+/* {{{ proto array RedisCluster::georadiusbymember() }}} */
+PHP_METHOD(RedisCluster, georadiusbymember_ro) {
+    CLUSTER_PROCESS_KW_CMD("GEORADIUSBYMEMBER_RO", redis_georadiusbymember_cmd, cluster_variant_resp, 1);
 }
 
 /* {{{ proto array RedisCluster::role(string key)
