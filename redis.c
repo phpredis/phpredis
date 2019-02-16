@@ -53,6 +53,8 @@ zend_class_entry *redis_exception_ce;
 extern zend_function_entry redis_array_functions[];
 extern zend_function_entry redis_cluster_functions[];
 
+int le_redis_pconnect;
+
 PHP_INI_BEGIN()
     /* redis arrays */
     PHP_INI_ENTRY("redis.arrays.algorithm", "", PHP_INI_ALL, NULL)
@@ -76,6 +78,9 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("redis.clusters.read_timeout", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.seeds", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.timeout", "0", PHP_INI_ALL, NULL)
+
+    /* redis pconnect */
+    PHP_INI_ENTRY("redis.pconnect.pooling_enabled", "0", PHP_INI_ALL, NULL)
 
     /* redis session */
     PHP_INI_ENTRY("redis.session.locking_enabled", "0", PHP_INI_ALL, NULL)
@@ -742,6 +747,25 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
     zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
 }
 
+static void
+redis_pconnect_dtor(void *ptr TSRMLS_DC)
+{
+    php_stream_pclose(*(php_stream **)ptr);
+}
+
+static ZEND_RSRC_DTOR_FUNC(redis_connections_pool_dtor)
+{
+#if (PHP_MAJOR_VERSION < 7)
+    zend_resource *res = rsrc;
+#endif
+
+    if (res->ptr) {
+        zend_llist_apply(res->ptr, redis_pconnect_dtor TSRMLS_CC);
+        zend_llist_destroy(res->ptr);
+        pefree(res->ptr, 1);
+    }
+}
+
 /**
  * PHP_MINIT_FUNCTION
  */
@@ -822,6 +846,10 @@ PHP_MINIT_FUNCTION(redis)
     php_session_register_module(&ps_mod_redis);
     php_session_register_module(&ps_mod_redis_cluster);
 #endif
+
+    /* Register resource destructors */
+    le_redis_pconnect = zend_register_list_destructors_ex(NULL, redis_connections_pool_dtor,
+        "phpredis persistent connections pool", module_number);
 
     return SUCCESS;
 }
