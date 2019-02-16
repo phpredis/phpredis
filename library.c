@@ -1822,8 +1822,22 @@ redis_sock_disconnect(RedisSock *redis_sock, int force TSRMLS_DC)
             if (force) {
                 php_stream_pclose(redis_sock->stream);
             } else if (INI_INT("redis.pconnect.pooling_enabled")) {
-                zend_llist *list = redis_sock_get_connection_pool(redis_sock TSRMLS_CC);
-                zend_llist_prepend_element(list, &redis_sock->stream);
+                zend_string *persistent_id = strpprintf(0, "phpredis_%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
+                zend_resource *le = zend_hash_find_ptr(&EG(persistent_list), persistent_id);
+                if (!le) {
+#if (PHP_MAJOR_VERSION < 7)
+                    le = ecalloc(1, sizeof(*le));
+#else
+                    zend_resource res;
+                    le = &res;
+#endif
+                    le->type = le_redis_pconnect;
+                    le->ptr = pecalloc(1, sizeof(zend_llist), 1);
+                    zend_llist_init(le->ptr, sizeof(void *), NULL, 1);
+                    zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(persistent_id), ZSTR_LEN(persistent_id), le, sizeof(*le));
+                }
+                zend_llist_prepend_element(le->ptr, &redis_sock->stream);
+                zend_string_release(persistent_id);
             }
         } else {
             php_stream_close(redis_sock->stream);
