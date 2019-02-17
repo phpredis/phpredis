@@ -274,6 +274,8 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, zincrby, arginfo_zincrby, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zinterstore, arginfo_zstore, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zlexcount, arginfo_key_min_max, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zpopmax, arginfo_key, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, zpopmin, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrange, arginfo_zrange, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrangebylex, arginfo_zrangebylex, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, zrangebyscore, arginfo_zrangebyscore, ZEND_ACC_PUBLIC)
@@ -1841,6 +1843,30 @@ PHP_METHOD(RedisCluster, zlexcount) {
 PHP_METHOD(RedisCluster, zremrangebylex) {
     CLUSTER_PROCESS_KW_CMD("ZREMRANGEBYLEX", redis_gen_zlex_cmd,
         cluster_long_resp, 0);
+}
+/* }}} */
+
+/* {{{ proto array RedisCluster::zpopmax(string key) */
+PHP_METHOD(RedisCluster, zpopmax) {
+    if (ZEND_NUM_ARGS() == 1) {
+        CLUSTER_PROCESS_KW_CMD("ZPOPMAX", redis_key_cmd, cluster_mbulk_resp, 0);
+    } else if (ZEND_NUM_ARGS() == 2) {
+        CLUSTER_PROCESS_KW_CMD("ZPOPMAX", redis_key_long_cmd, cluster_mbulk_resp, 0);
+    } else {
+        ZEND_WRONG_PARAM_COUNT();
+    }
+}
+/* }}} */
+
+/* {{{ proto array RedisCluster::zpopmin(string key) */
+PHP_METHOD(RedisCluster, zpopmin) {
+    if (ZEND_NUM_ARGS() == 1) {
+        CLUSTER_PROCESS_KW_CMD("ZPOPMIN", redis_key_cmd, cluster_mbulk_resp, 0);
+    } else if (ZEND_NUM_ARGS() == 2) {
+        CLUSTER_PROCESS_KW_CMD("ZPOPMIN", redis_key_long_cmd, cluster_mbulk_resp, 0);
+    } else {
+        ZEND_WRONG_PARAM_COUNT();
+    }
 }
 /* }}} */
 

@@ -445,6 +445,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zScore, arginfo_key_member, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zUnion, arginfo_zstore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zPopMax, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zPopMin, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, del, delete, arginfo_del, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, evaluate, eval, arginfo_eval, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, evaluateSha, evalsha, arginfo_evalsha, ZEND_ACC_PUBLIC)
@@ -2137,6 +2139,32 @@ PHP_METHOD(Redis, zInter) {
 PHP_METHOD(Redis, zUnion) {
     REDIS_PROCESS_KW_CMD("ZUNIONSTORE", redis_zinter_cmd, redis_long_response);
 }
+
+/* {{{ proto array Redis::zPopMax(string key) */
+PHP_METHOD(Redis, zPopMax)
+{
+    if (ZEND_NUM_ARGS() == 1) {
+        REDIS_PROCESS_KW_CMD("ZPOPMAX", redis_key_cmd, redis_sock_read_multibulk_reply);
+    } else if (ZEND_NUM_ARGS() == 2) {
+        REDIS_PROCESS_KW_CMD("ZPOPMAX", redis_key_long_cmd, redis_sock_read_multibulk_reply);
+    } else {
+        ZEND_WRONG_PARAM_COUNT();
+    }
+}
+/* }}} */
+
+/* {{{ proto array Redis::zPopMin(string key) */
+PHP_METHOD(Redis, zPopMin)
+{
+    if (ZEND_NUM_ARGS() == 1) {
+        REDIS_PROCESS_KW_CMD("ZPOPMIN", redis_key_cmd, redis_sock_read_multibulk_reply);
+    } else if (ZEND_NUM_ARGS() == 2) {
+        REDIS_PROCESS_KW_CMD("ZPOPMIN", redis_key_long_cmd, redis_sock_read_multibulk_reply);
+    } else {
+        ZEND_WRONG_PARAM_COUNT();
+    }
+}
+/* }}} */
 
 /* hashes */
 

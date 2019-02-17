@@ -131,6 +131,8 @@ PHP_METHOD(Redis, zRevRank);
 PHP_METHOD(Redis, zIncrBy);
 PHP_METHOD(Redis, zInter);
 PHP_METHOD(Redis, zUnion);
+PHP_METHOD(Redis, zPopMax);
+PHP_METHOD(Redis, zPopMin);
 PHP_METHOD(Redis, expireAt);
 PHP_METHOD(Redis, pexpireAt);
 PHP_METHOD(Redis, bgrewriteaof);

@@ -2409,6 +2409,29 @@ class Redis_Test extends TestSuite
         $this->assertEquals($this->redis->zRemRangeByLex('key', '[a', '[c'), 2);
     }
 
+    public function testZPop() {
+        if (version_compare($this->version, "5.0.0", "lt")) {
+            $this->MarkTestSkipped();
+            return;
+        }
+
+        // zPopMax and zPopMin without a COUNT argument
+        $this->redis->del('key');
+        $this->redis->zAdd('key', 0, 'a', 1, 'b', 2, 'c', 3, 'd', 4, 'e');
+        $this->assertTrue(array('e', '4') === $this->redis->zPopMax('key'));
+        $this->assertTrue(array('a', '0') === $this->redis->zPopMin('key'));
+
+        // zPopMax with a COUNT argument
+        $this->redis->del('key');
+        $this->redis->zAdd('key', 0, 'a', 1, 'b', 2, 'c', 3, 'd', 4, 'e');
+        $this->assertTrue(array('e', '4', 'd', '3', 'c', '2') === $this->redis->zPopMax('key', 3));
+        
+        // zPopMin with a COUNT argument
+        $this->redis->del('key');
+        $this->redis->zAdd('key', 0, 'a', 1, 'b', 2, 'c', 3, 'd', 4, 'e');
+        $this->assertTrue(array('a', '0', 'b', '1', 'c', '2') === $this->redis->zPopMin('key', 3));
+    }
+
     public function testHashes() {
         $this->redis->del('h', 'key');
         $this->assertTrue(0 === $this->redis->hLen('h'));

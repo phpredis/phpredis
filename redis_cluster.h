@@ -224,6 +224,8 @@ PHP_METHOD(RedisCluster, restore);
 PHP_METHOD(RedisCluster, setrange);
 PHP_METHOD(RedisCluster, smove);
 PHP_METHOD(RedisCluster, srandmember);
+PHP_METHOD(RedisCluster, zpopmin);
+PHP_METHOD(RedisCluster, zpopmax);
 PHP_METHOD(RedisCluster, zrange);
 PHP_METHOD(RedisCluster, zrevrange);
 PHP_METHOD(RedisCluster, zrangebyscore);
