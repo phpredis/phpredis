@@ -1259,13 +1259,13 @@ PHP_METHOD(RedisCluster, rpush) {
 
 /* {{{ proto array RedisCluster::blpop(string key1, ... keyN, long timeout) */
 PHP_METHOD(RedisCluster, blpop) {
-    CLUSTER_PROCESS_KW_CMD("BLPOP", redis_varkey_timeout_cmd, cluster_mbulk_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("BLPOP", redis_blocking_pop_cmd, cluster_mbulk_resp, 0);
 }
 /* }}} */
 
 /* {{{ proto array RedisCluster::brpop(string key1, ... keyN, long timeout */
 PHP_METHOD(RedisCluster, brpop) {
-    CLUSTER_PROCESS_KW_CMD("BRPOP", redis_varkey_timeout_cmd, cluster_mbulk_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("BRPOP", redis_blocking_pop_cmd, cluster_mbulk_resp, 0);
 }
 /* }}} */
 
@@ -1874,12 +1874,12 @@ PHP_METHOD(RedisCluster, zpopmin) {
 
 /* {{{ proto array RedisCluster::bzPopMin(Array keys [, timeout]) }}} */
 PHP_METHOD(RedisCluster, bzpopmax) {
-    CLUSTER_PROCESS_KW_CMD("BZPOPMAX", redis_varkey_timeout_cmd, cluster_mbulk_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("BZPOPMAX", redis_blocking_pop_cmd, cluster_mbulk_resp, 0);
 }
 
 /* {{{ proto array RedisCluster::bzPopMax(Array keys [, timeout]) }}} */
 PHP_METHOD(RedisCluster, bzpopmin) {
-    CLUSTER_PROCESS_KW_CMD("BZPOPMIN", redis_varkey_timeout_cmd, cluster_mbulk_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("BZPOPMIN", redis_blocking_pop_cmd, cluster_mbulk_resp, 0);
 }
 
 /* {{{ proto RedisCluster::sort(string key, array options) */

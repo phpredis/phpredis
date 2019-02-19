@@ -1378,14 +1378,14 @@ PHP_METHOD(Redis, rPop)
 /* {{{ proto string Redis::blPop(string key1, string key2, ..., int timeout) */
 PHP_METHOD(Redis, blPop)
 {
-    REDIS_PROCESS_KW_CMD("BLPOP", redis_varkey_timeout_cmd, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_KW_CMD("BLPOP", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
 /* {{{ proto string Redis::brPop(string key1, string key2, ..., int timeout) */
 PHP_METHOD(Redis, brPop)
 {
-    REDIS_PROCESS_KW_CMD("BRPOP", redis_varkey_timeout_cmd, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_KW_CMD("BRPOP", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
@@ -2170,13 +2170,13 @@ PHP_METHOD(Redis, zPopMin)
 
 /* {{{ proto Redis::bzPopMax(Array(keys) [, timeout]): Array */
 PHP_METHOD(Redis, bzPopMax) {
-    REDIS_PROCESS_KW_CMD("BZPOPMAX", redis_varkey_timeout_cmd, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_KW_CMD("BZPOPMAX", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
 /* {{{ proto Redis::bzPopMin(Array(keys) [, timeout]): Array */
 PHP_METHOD(Redis, bzPopMin) {
-    REDIS_PROCESS_KW_CMD("BZPOPMIN", redis_varkey_timeout_cmd, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_KW_CMD("BZPOPMIN", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
