@@ -38,8 +38,7 @@ addons:
     packages: clang
 before_install:
   - phpize
-  - pecl install igbinary
-  - ./configure --enable-redis-igbinary --enable-redis-lzf CFLAGS=-Wall
+  - pecl install igbinary && ./configure --enable-redis-igbinary --enable-redis-lzf || ./configure --enable-redis-lzf
 install: make install
 before_script:
   - gem install redis
