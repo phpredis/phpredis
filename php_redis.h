@@ -133,6 +133,8 @@ PHP_METHOD(Redis, zInter);
 PHP_METHOD(Redis, zUnion);
 PHP_METHOD(Redis, zPopMax);
 PHP_METHOD(Redis, zPopMin);
+PHP_METHOD(Redis, bzPopMax);
+PHP_METHOD(Redis, bzPopMin);
 PHP_METHOD(Redis, expireAt);
 PHP_METHOD(Redis, pexpireAt);
 PHP_METHOD(Redis, bgrewriteaof);
