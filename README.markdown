@@ -207,12 +207,14 @@ $redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay 
 -----
 _**Description**_: Connects to a Redis instance or reuse a connection already established with `pconnect`/`popen`.
 
-The connection will not be closed on `close` or end of request until the php process ends.
+The connection will not be closed on end of request until the php process ends.
 So be prepared for too many open FD's errors (specially on redis server side) when using persistent
 connections on many servers connecting to one redis server.
 
 Also more than one persistent connection can be made identified by either host + port + timeout
 or host + persistent_id or unix socket + timeout.
+
+Starting from version 4.2.1, it became possible to use connection pooling by setting INI variable `redis.pconnect.pooling_enabled` to 1.
 
 This feature is not available in threaded versions. `pconnect` and `popen` then working like their non
 persistent equivalents.
