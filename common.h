@@ -68,6 +68,22 @@ zend_string_realloc(zend_string *s, size_t len, int persistent)
     return zstr;
 }
 
+#define strpprintf zend_strpprintf
+
+static zend_string *
+zend_strpprintf(size_t max_len, const char *format, ...)
+{
+    va_list ap;
+    zend_string *zstr;
+
+    va_start(ap, format);
+    zstr = ecalloc(1, sizeof(*zstr));
+    ZSTR_LEN(zstr) = vspprintf(&ZSTR_VAL(zstr), max_len, format, ap);
+    zstr->gc = 0x11;
+    va_end(ap);
+    return zstr;
+}
+
 #define zend_string_copy(s) zend_string_init(ZSTR_VAL(s), ZSTR_LEN(s), 0)
 
 #define zend_string_equal_val(s1, s2) !memcmp(ZSTR_VAL(s1), ZSTR_VAL(s2), ZSTR_LEN(s1))
@@ -140,6 +156,8 @@ zend_hash_str_find(const HashTable *ht, const char *key, size_t len)
     return NULL;
 }
 
+#define zend_hash_find_ptr(ht, s) zend_hash_str_find_ptr(ht, ZSTR_VAL(s), ZSTR_LEN(s))
+
 static zend_always_inline void *
 zend_hash_str_find_ptr(const HashTable *ht, const char *str, size_t len)
 {
@@ -151,10 +169,12 @@ zend_hash_str_find_ptr(const HashTable *ht, const char *str, size_t len)
     return NULL;
 }
 
+#define zend_hash_str_update_ptr(ht, str, len, pData) zend_hash_str_update_mem(ht, str, len, pData, sizeof(void *))
+
 static zend_always_inline void *
-zend_hash_str_update_ptr(HashTable *ht, const char *str, size_t len, void *pData)
+zend_hash_str_update_mem(HashTable *ht, const char *str, size_t len, void *pData, size_t size)
 {
-    if (zend_hash_update(ht, str, len + 1, (void *)&pData, sizeof(void *), NULL) == SUCCESS) {
+    if (zend_hash_update(ht, str, len + 1, (void *)&pData, size, NULL) == SUCCESS) {
         return pData;
     }
     return NULL;
