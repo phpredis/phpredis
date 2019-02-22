@@ -736,6 +736,11 @@ typedef struct {
 } RedisSock;
 /* }}} */
 
+typedef struct {
+    zend_llist list;
+    int nb_active;
+} ConnectionPool;
+
 #if (PHP_MAJOR_VERSION < 7)
 typedef struct {
     zend_object std;
