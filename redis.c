@@ -716,12 +716,6 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
     zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
 }
 
-static void
-redis_pconnect_dtor(void *ptr TSRMLS_DC)
-{
-    php_stream_pclose(*(php_stream **)ptr);
-}
-
 static ZEND_RSRC_DTOR_FUNC(redis_connections_pool_dtor)
 {
 #if (PHP_MAJOR_VERSION < 7)
@@ -729,7 +723,6 @@ static ZEND_RSRC_DTOR_FUNC(redis_connections_pool_dtor)
 #endif
 
     if (res->ptr) {
-        zend_llist_apply(res->ptr, redis_pconnect_dtor TSRMLS_CC);
         zend_llist_destroy(res->ptr);
         pefree(res->ptr, 1);
     }
