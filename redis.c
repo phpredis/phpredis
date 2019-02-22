@@ -85,6 +85,7 @@ PHP_INI_BEGIN()
 
     /* redis pconnect */
     PHP_INI_ENTRY("redis.pconnect.pooling_enabled", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.pconnect.connection_limit", "0", PHP_INI_ALL, NULL)
 
     /* redis session */
     PHP_INI_ENTRY("redis.session.locking_enabled", "0", PHP_INI_ALL, NULL)
@@ -719,7 +720,8 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
 static ZEND_RSRC_DTOR_FUNC(redis_connections_pool_dtor)
 {
     if (res->ptr) {
-        zend_llist_destroy(res->ptr);
+        ConnectionPool *p = res->ptr;
+        zend_llist_destroy(&p->list);
         pefree(res->ptr, 1);
     }
 }

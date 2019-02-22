@@ -734,9 +734,21 @@ typedef struct {
 /* }}} */
 
 typedef struct {
+    zend_llist list;
+    int nb_active;
+} ConnectionPool;
+
+#if (PHP_MAJOR_VERSION < 7)
+typedef struct {
+    zend_object std;
+    RedisSock *sock;
+} redis_object;
+#else
+typedef struct {
     RedisSock *sock;
     zend_object std;
 } redis_object;
+#endif
 
 /** Argument info for any function expecting 0 args */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_void, 0, 0, 0)
