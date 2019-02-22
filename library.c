@@ -1812,8 +1812,8 @@ redis_sock_disconnect(RedisSock *redis_sock, int force TSRMLS_DC)
                 zend_resource *le = zend_hash_find_ptr(&EG(persistent_list), persistent_id);
                 if (!le) {
                     zend_llist *l = pecalloc(1, sizeof(*l) + sizeof(*le), 1);
-                    zend_llist_init(l, sizeof(void *), NULL, 1);
-                    le = (void *)l + sizeof(*l);
+                    zend_llist_init(l, sizeof(php_stream *), NULL, 1);
+                    le = (zend_resource *)((char *)l + sizeof(*l));
                     le->type = le_redis_pconnect;
                     le->ptr = l;
                     zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(persistent_id), ZSTR_LEN(persistent_id), le, sizeof(*le));
