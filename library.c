@@ -63,6 +63,23 @@ extern zend_class_entry *redis_exception_ce;
 
 extern int le_redis_pconnect;
 
+static zend_llist *
+redis_sock_get_connection_pool(RedisSock *redis_sock)
+{
+    zend_string *persistent_id = strpprintf(0, "phpredis_%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
+    zend_resource *le = zend_hash_find_ptr(&EG(persistent_list), persistent_id);
+    if (!le) {
+        zend_llist *list = pecalloc(1, sizeof(*list) + sizeof(*le), 1);
+        zend_llist_init(list, sizeof(php_stream *), NULL, 1);
+        le = (zend_resource *)((char *)list + sizeof(*list));
+        le->type = le_redis_pconnect;
+        le->ptr = list;
+        zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(persistent_id), ZSTR_LEN(persistent_id), le, sizeof(*le));
+    }
+    zend_string_release(persistent_id);
+    return le->ptr;
+}
+
 /* Helper to reselect the proper DB number when we reconnect */
 static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
     char *cmd, *response;
@@ -1779,20 +1796,17 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     if (redis_sock->persistent) {
         if (INI_INT("redis.pconnect.pooling_enabled")) {
-            persistent_id = strpprintf(0, "phpredis_%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
-            zend_resource *le = zend_hash_find_ptr(&EG(persistent_list), persistent_id);
-            if (le && zend_llist_count(le->ptr) > 0) {
-                redis_sock->stream = *(php_stream **)zend_llist_get_last(le->ptr);
-                zend_llist_remove_tail(le->ptr);
+            zend_llist *list = redis_sock_get_connection_pool(redis_sock);
+            if (zend_llist_count(list) > 0) {
+                redis_sock->stream = *(php_stream **)zend_llist_get_last(list);
+                zend_llist_remove_tail(list);
                 /* Check socket liveness using 0 second timeout */
                 if (php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_CHECK_LIVENESS, 0, NULL) == PHP_STREAM_OPTION_RETURN_OK) {
                     redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
-                    zend_string_release(persistent_id);
                     return SUCCESS;
                 }
                 php_stream_pclose(redis_sock->stream);
             }
-            zend_string_release(persistent_id);
 
             gettimeofday(&tv, NULL);
             persistent_id = strpprintf(0, "phpredis_%d%d", tv.tv_sec, tv.tv_usec);
@@ -1891,18 +1905,8 @@ redis_sock_disconnect(RedisSock *redis_sock, int force TSRMLS_DC)
             if (force) {
                 php_stream_pclose(redis_sock->stream);
             } else if (INI_INT("redis.pconnect.pooling_enabled")) {
-                zend_string *persistent_id = strpprintf(0, "phpredis_%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
-                zend_resource *le = zend_hash_find_ptr(&EG(persistent_list), persistent_id);
-                if (!le) {
-                    zend_llist *l = pecalloc(1, sizeof(*l) + sizeof(*le), 1);
-                    zend_llist_init(l, sizeof(php_stream *), NULL, 1);
-                    le = (zend_resource *)((char *)l + sizeof(*l));
-                    le->type = le_redis_pconnect;
-                    le->ptr = l;
-                    zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(persistent_id), ZSTR_LEN(persistent_id), le, sizeof(*le));
-                }
-                zend_llist_prepend_element(le->ptr, &redis_sock->stream);
-                zend_string_release(persistent_id);
+                zend_llist *list = redis_sock_get_connection_pool(redis_sock);
+                zend_llist_prepend_element(list, &redis_sock->stream);
             }
         } else {
             php_stream_close(redis_sock->stream);
