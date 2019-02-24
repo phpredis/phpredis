@@ -57,7 +57,6 @@ redis_sock_get_connection_pool(RedisSock *redis_sock TSRMLS_DC)
         le->type = le_redis_pconnect;
         le->ptr = p;
         zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(persistent_id), ZSTR_LEN(persistent_id), le, sizeof(*le));
-        p->nb_active = 0;
     }
     zend_string_release(persistent_id);
     return le->ptr;
