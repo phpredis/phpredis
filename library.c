@@ -56,6 +56,23 @@
     int (*_add_assoc_zval_ex)(zval *, const char *, uint, zval *) = &add_assoc_zval_ex;
     void (*_php_var_serialize)(smart_str *, zval **, php_serialize_data_t * TSRMLS_DC) = &php_var_serialize;
     int (*_php_var_unserialize)(zval **, const unsigned char **, const unsigned char *, php_unserialize_data_t * TSRMLS_DC) = &php_var_unserialize;
+
+#define strpprintf zend_strpprintf
+
+static zend_string *
+zend_strpprintf(size_t max_len, const char *format, ...)
+{
+    va_list ap;
+    zend_string *zstr;
+
+    va_start(ap, format);
+    zstr = ecalloc(1, sizeof(*zstr));
+    ZSTR_LEN(zstr) = vspprintf(&ZSTR_VAL(zstr), max_len, format, ap);
+    zstr->gc = 0x11;
+    va_end(ap);
+    return zstr;
+}
+
 #endif
 
 extern zend_class_entry *redis_ce;
@@ -75,7 +92,6 @@ redis_sock_get_connection_pool(RedisSock *redis_sock TSRMLS_DC)
         le->type = le_redis_pconnect;
         le->ptr = p;
         zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(persistent_id), ZSTR_LEN(persistent_id), le, sizeof(*le));
-        p->nb_active = 0;
     }
     zend_string_release(persistent_id);
     return le->ptr;
