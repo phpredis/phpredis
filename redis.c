@@ -58,6 +58,7 @@ int le_redis_pconnect;
 PHP_INI_BEGIN()
     /* redis arrays */
     PHP_INI_ENTRY("redis.arrays.algorithm", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.auth", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.autorehash", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.connecttimeout", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.distributor", "", PHP_INI_ALL, NULL)
