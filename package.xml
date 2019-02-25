@@ -29,8 +29,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </lead>
  <date>2019-02-25</date>
  <version>
-  <release>4.2.1RC1</release>
-  <api>4.2.1RC1</api>
+  <release>4.3.0RC1</release>
+  <api>4.3.0RC1</api>
  </version>
  <stability>
   <release>alpha</release>
@@ -38,7 +38,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 4.2.1RC1
+    phpredis 4.3.0RC1
 
     This is probably the latest release with PHP 5 suport!!!
 
@@ -136,10 +136,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <changelog>
    <release>
    <stability><release>alpha</release><api>alpha</api></stability>
-   <version><release>4.2.1RC1</release><api>4.2.1RC1</api></version>
+   <version><release>4.3.0RC1</release><api>4.3.0RC1</api></version>
    <date>2019-02-25</date>
    <notes>
-      phpredis 4.2.1RC1
+      phpredis 4.3.0RC1
 
       This is probably the latest release with PHP 5 suport!!!
 
