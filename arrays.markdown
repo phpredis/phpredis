@@ -75,6 +75,12 @@ This option applies to main and previous ring if specified.
 $ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("consistent" => true));
 </pre>
 
+#### Specifying the "auth" parameter
+The value is string and used to specify the password for authenticate with the server prior to sending commands
+<pre>
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("auth" => "mysecretpassword"));
+</pre>
+
 #### Defining arrays in Redis.ini
 
 Because php.ini parameters must be pre-defined, Redis Arrays must all share the same .ini settings.
@@ -91,6 +97,9 @@ ini_set('redis.arrays.functions', 'users=user_hash');
 
 // use index only for users
 ini_set('redis.arrays.index', 'users=1,friends=0');
+
+// use password for authentication
+ini_set('redis.arrays.auth', 'users=mysecretpassword')
 </pre>
 
 ## Usage
