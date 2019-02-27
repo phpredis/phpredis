@@ -75,5 +75,6 @@ zend_object *create_redis_array_object(zend_class_entry *ce TSRMLS_DC);
 void free_redis_array_object(zend_object *object);
 #endif
 
+PHP_REDIS_API int ra_call_user_function(HashTable *function_table, zval *object, zval *function_name, zval *retval_ptr, uint param_count, zval params[] TSRMLS_DC);
 
 #endif
