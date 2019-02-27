@@ -268,6 +268,19 @@ redis_array_get(zval *id TSRMLS_DC)
     return NULL;
 }
 
+PHP_REDIS_API int
+ra_call_user_function(HashTable *function_table, zval *object, zval *function_name, zval *retval_ptr, uint param_count, zval params[] TSRMLS_DC)
+{
+    if (object) {
+        redis_object *redis = PHPREDIS_GET_OBJECT(redis_object, object);
+        if (redis->sock->auth && redis->sock->status != REDIS_SOCK_STATUS_CONNECTED) {
+            redis_sock_server_open(redis->sock TSRMLS_CC);
+            redis_sock_auth(redis->sock TSRMLS_CC);
+        }
+    }
+    return call_user_function(function_table, object, function_name, retval_ptr, param_count, params);
+}
+
 /* {{{ proto RedisArray RedisArray::__construct()
     Public constructor */
 PHP_METHOD(RedisArray, __construct)
@@ -450,7 +463,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
     /* multi/exec */
     if(ra->z_multi_exec) {
-        call_user_function(&redis_ce->function_table, ra->z_multi_exec, &z_fun, return_value, argc, z_callargs);
+        ra_call_user_function(&redis_ce->function_table, ra->z_multi_exec, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
         zval_dtor(return_value);
         zval_dtor(&z_fun);
         for (i = 0; i < argc; ++i) {
@@ -468,7 +481,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
         /* add MULTI + SADD */
         ra_index_multi(redis_inst, MULTI TSRMLS_CC);
         /* call using discarded temp value and extract exec results after. */
-        call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, argc, z_callargs);
+        ra_call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
         zval_dtor(return_value);
 
         /* add keys to index. */
@@ -477,7 +490,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
         /* call EXEC */
         ra_index_exec(redis_inst, return_value, 0 TSRMLS_CC);
     } else { /* call directly through. */
-        call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, argc, z_callargs);
+        ra_call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, argc, z_callargs TSRMLS_CC);
 
         if (!b_write_cmd) {
             /* check if we have an error. */
@@ -703,7 +716,7 @@ multihost_distribute_call(RedisArray *ra, zval *return_value, zval *z_fun, int a
         MAKE_STD_ZVAL(z_tmp);
 #endif
         /* Call each node in turn */
-        call_user_function(&redis_array_ce->function_table, &ra->redis[i], z_fun, z_tmp, argc, argv);
+        ra_call_user_function(&redis_array_ce->function_table, &ra->redis[i], z_fun, z_tmp, argc, argv TSRMLS_CC);
 
         /* Add the result for this host */
         add_assoc_zval_ex(return_value, ZSTR_VAL(ra->hosts[i]), ZSTR_LEN(ra->hosts[i]), z_tmp);
@@ -1047,7 +1060,7 @@ PHP_METHOD(RedisArray, mget)
         /* prepare call */
         ZVAL_STRINGL(&z_fun, "MGET", 4);
         /* call MGET on the node */
-        call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
+        ra_call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray TSRMLS_CC);
         zval_dtor(&z_fun);
 
         /* cleanup args array */
@@ -1204,7 +1217,7 @@ PHP_METHOD(RedisArray, mset)
         ZVAL_STRINGL(&z_fun, "MSET", 4);
 
         /* call */
-        call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
+        ra_call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray TSRMLS_CC);
         zval_dtor(&z_fun);
         zval_dtor(&z_ret);
 
@@ -1346,7 +1359,7 @@ static void ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) {
         }
 
         /* call */
-        call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
+        ra_call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray TSRMLS_CC);
 
         if(ra->index) {
             zval_dtor(&z_ret);
