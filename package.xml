@@ -27,18 +27,18 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2019-03-06</date>
+ <date>2019-03-13</date>
  <version>
-  <release>4.3.0RC2</release>
-  <api>4.3.0RC2</api>
+  <release>4.3.0</release>
+  <api>4.3.0</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 4.3.0RC2
+    phpredis 4.3.0
 
     This is probably the latest release with PHP 5 suport!!!
 
@@ -135,11 +135,11 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
    <release>
-   <stability><release>beta</release><api>beta</api></stability>
-   <version><release>4.3.0RC2</release><api>4.3.0RC2</api></version>
-   <date>2019-03-06</date>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>4.3.0</release><api>4.3.0</api></version>
+   <date>2019-03-13</date>
    <notes>
-      phpredis 4.3.0RC2
+      phpredis 4.3.0
 
       This is probably the latest release with PHP 5 suport!!!
 
