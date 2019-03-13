@@ -7,10 +7,13 @@ php:
   - 7.0
   - 7.1
   - 7.2
+  - 7.3
   - nightly
 env: CC=gcc
 matrix:
   allow_failures:
+    - php: 7.3
+      env: CC=clang
     - php: nightly
   include:
     # php 5.3 is only available on precise
@@ -28,13 +31,14 @@ matrix:
       env: CC=clang
     - php: 7.2
       env: CC=clang
+    - php: 7.3
+      env: CC=clang
 addons:
   apt:
     packages: clang
 before_install:
   - phpize
-  - pecl install igbinary
-  - ./configure --enable-redis-igbinary --enable-redis-lzf CFLAGS=-Wall
+  - pecl install igbinary-2.0.8 && ./configure --enable-redis-igbinary --enable-redis-lzf || ./configure --enable-redis-lzf
 install: make install
 before_script:
   - gem install redis
@@ -46,6 +50,7 @@ before_script:
   # but --cluster is an unknown option for travis trusty
   - echo yes | ruby redis-trib.rb create --replicas 3 $(seq -f 127.0.0.1:%g 7000 7011)
   - echo 'extension = redis.so' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+  - echo 'redis.pconnect.pooling_enabled = 1' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 script:
   - php tests/TestRedis.php --class Redis
   - php tests/TestRedis.php --class RedisArray

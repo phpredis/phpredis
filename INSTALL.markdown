@@ -22,7 +22,7 @@ The extension also may compress data before sending it to Redis server, if you r
 
 You can generate a debian package for PHP5, accessible from Apache 2 by running `./mkdeb-apache2.sh` or with `dpkg-buildpackage` or `svn-buildpackage`.
 
-This extension exports a single class, [Redis](#class-redis) (and [RedisException](#class-redisexception) used in case of errors). Check out https://github.com/ukko/phpredis-phpdoc for a PHP stub that you can use in your IDE for code completion.
+This extension exports a single class, [Redis](./README.markdown#class-redis) (and [RedisException](./README.markdown#class-redisexception) used in case of errors). Check out https://github.com/ukko/phpredis-phpdoc for a PHP stub that you can use in your IDE for code completion.
 
 
 # Binary packages
@@ -79,11 +79,6 @@ If that still fails and you are running Zend Server CE, try this right before "m
 Taken from [Compiling phpredis on Zend Server CE/OSX ](http://www.tumblr.com/tagged/phpredis).
 
 See also: [Install Redis & PHP Extension PHPRedis with Macports](http://www.lecloud.net/post/3378834922/install-redis-php-extension-phpredis-with-macports).
-
-You can install it using Homebrew:
-
-- [Get homebrew-php](https://github.com/Homebrew/homebrew-php)
-- `brew install php55-redis` (or php53-redis, php54-redis)
 
 You can install it using MacPorts:
 

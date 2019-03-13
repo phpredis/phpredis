@@ -78,6 +78,9 @@ int redis_key_val_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_key_str_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
+int redis_blocking_pop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
+
 /* Construct SCAN and similar commands, as well as check iterator  */
 int redis_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     REDIS_SCAN_TYPE type, char **cmd, int *cmd_len);
@@ -116,6 +119,12 @@ int redis_flush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_xrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
+
+int redis_georadius_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
+
+int redis_georadiusbymember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 /* Commands which need a unique construction mechanism.  This is either because
@@ -220,12 +229,6 @@ int redis_unlink_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_watch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
-int redis_blpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char **cmd, int *cmd_len, short *slot, void **ctx);
-
-int redis_brpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char **cmd, int *cmd_len, short *slot, void **ctx);
-
 int redis_sinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
@@ -251,12 +254,6 @@ int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     long it, char *pat, int pat_len, long count);
 
 int redis_geodist_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char **cmd, int *cmd_len, short *slot, void **ctx);
-
-int redis_georadius_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char **cmd, int *cmd_len, short *slot, void **ctx);
-
-int redis_georadiusbymember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_migrate_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,

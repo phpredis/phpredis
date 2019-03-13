@@ -1882,36 +1882,45 @@ class Redis_Test extends TestSuite
     }
 
     public function testInfo() {
-        $info = $this->redis->info();
+        foreach (Array(false, true) as $boo_multi) {
+            if ($boo_multi) {
+                $this->redis->multi();
+                $this->redis->info();
+                $info = $this->redis->exec();
+                $info = $info[0];
+            } else {
+                $info = $this->redis->info();
+            }
 
-        $keys = array(
-            "redis_version",
-            "arch_bits",
-            "uptime_in_seconds",
-            "uptime_in_days",
-            "connected_clients",
-            "connected_slaves",
-            "used_memory",
-            "total_connections_received",
-            "total_commands_processed",
-            "role"
-        );
-        if (version_compare($this->version, "2.5.0", "lt")) {
-            array_push($keys,
-                "changes_since_last_save",
-                "bgsave_in_progress",
-                "last_save_time"
+            $keys = array(
+                "redis_version",
+                "arch_bits",
+                "uptime_in_seconds",
+                "uptime_in_days",
+                "connected_clients",
+                "connected_slaves",
+                "used_memory",
+                "total_connections_received",
+                "total_commands_processed",
+                "role"
             );
-        } else {
-            array_push($keys,
-                "rdb_changes_since_last_save",
-                "rdb_bgsave_in_progress",
-                "rdb_last_save_time"
-            );
-        }
+            if (version_compare($this->version, "2.5.0", "lt")) {
+                array_push($keys,
+                    "changes_since_last_save",
+                    "bgsave_in_progress",
+                    "last_save_time"
+                );
+            } else {
+                array_push($keys,
+                    "rdb_changes_since_last_save",
+                    "rdb_bgsave_in_progress",
+                    "rdb_last_save_time"
+                );
+            }
 
-        foreach($keys as $k) {
-            $this->assertTrue(in_array($k, array_keys($info)));
+            foreach($keys as $k) {
+                $this->assertTrue(in_array($k, array_keys($info)));
+            }
         }
     }
 
@@ -2400,6 +2409,51 @@ class Redis_Test extends TestSuite
         $this->assertEquals($this->redis->zRemRangeByLex('key', '[a', '[c'), 2);
     }
 
+    public function testBZPop() {
+        if (version_compare($this->version, "5.0.0", "lt")) {
+            $this->MarkTestSkipped();
+            return;
+        }
+
+        $this->redis->del('{zs}1', '{zs}2');
+        $this->redis->zAdd('{zs}1', 0, 'a', 1, 'b', 2, 'c');
+        $this->redis->zAdd('{zs}2', 3, 'A', 4, 'B', 5, 'D');
+
+        $this->assertEquals(Array('{zs}1', 'a', '0'), $this->redis->bzPopMin('{zs}1', '{zs}2', 0));
+        $this->assertEquals(Array('{zs}1', 'c', '2'), $this->redis->bzPopMax(Array('{zs}1', '{zs}2'), 0));
+        $this->assertEquals(Array('{zs}2', 'A', '3'), $this->redis->bzPopMin('{zs}2', '{zs}1', 0));
+
+        /* Verify timeout is being sent */
+        $this->redis->del('{zs}1', '{zs}2');
+        $st = microtime(true) * 1000;
+        $this->redis->bzPopMin('{zs}1', '{zs}2', 1);
+        $et = microtime(true) * 1000;
+        $this->assertTrue($et - $st > 100);
+    }
+
+    public function testZPop() {
+        if (version_compare($this->version, "5.0.0", "lt")) {
+            $this->MarkTestSkipped();
+            return;
+        }
+
+        // zPopMax and zPopMin without a COUNT argument
+        $this->redis->del('key');
+        $this->redis->zAdd('key', 0, 'a', 1, 'b', 2, 'c', 3, 'd', 4, 'e');
+        $this->assertTrue(array('e' => 4.0) === $this->redis->zPopMax('key'));
+        $this->assertTrue(array('a' => 0.0) === $this->redis->zPopMin('key'));
+
+        // zPopMax with a COUNT argument
+        $this->redis->del('key');
+        $this->redis->zAdd('key', 0, 'a', 1, 'b', 2, 'c', 3, 'd', 4, 'e');
+        $this->assertTrue(array('e' => 4.0, 'd' => 3.0, 'c' => 2.0) === $this->redis->zPopMax('key', 3));
+        
+        // zPopMin with a COUNT argument
+        $this->redis->del('key');
+        $this->redis->zAdd('key', 0, 'a', 1, 'b', 2, 'c', 3, 'd', 4, 'e');
+        $this->assertTrue(array('a' => 0.0, 'b' => 1.0, 'c' => 2.0) === $this->redis->zPopMin('key', 3));
+    }
+
     public function testHashes() {
         $this->redis->del('h', 'key');
         $this->assertTrue(0 === $this->redis->hLen('h'));
@@ -2704,6 +2758,23 @@ class Redis_Test extends TestSuite
 
         $data = $this->redis->exec();
         $this->assertEquals(Array(true, 'over9000'), $data);
+    }
+
+    public function testDiscard()
+    {
+        foreach (Array(Redis::PIPELINE, Redis::MULTI) as $mode) {
+            /* start transaction */
+            $this->redis->multi($mode);
+
+            /* Set and get in our transaction */
+            $this->redis->set('pipecount','over9000')->get('pipecount');
+
+            /* first call closes transaction and clears commands queue */
+            $this->assertTrue($this->redis->discard());
+
+            /* next call fails because mode is ATOMIC */
+            $this->assertFalse($this->redis->discard());
+        }
     }
 
     protected function sequence($mode) {
@@ -5083,29 +5154,29 @@ class Redis_Test extends TestSuite
         $this->addCities('{gk}');
 
         /* Pre tested with redis-cli.  We're just verifying proper delivery of distance and unit */
-        if ($cmd == 'georadius') {
-            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 10, 'mi'), Array('Chico'));
-            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 30, 'mi'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 50, 'km'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 50000, 'm'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadius('{gk}', $lng, $lat, 150000, 'ft'), Array('Gridley', 'Chico'));
-            $args = Array('georadius', '{gk}', $lng, $lat, 500, 'mi');
+        if ($cmd == 'georadius' || $cmd == 'georadius_ro') {
+            $this->assertEquals($this->redis->$cmd('{gk}', $lng, $lat, 10, 'mi'), Array('Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $lng, $lat, 30, 'mi'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $lng, $lat, 50, 'km'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $lng, $lat, 50000, 'm'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $lng, $lat, 150000, 'ft'), Array('Gridley', 'Chico'));
+            $args = Array($cmd, '{gk}', $lng, $lat, 500, 'mi');
 
             /* Test a bad COUNT argument */
             foreach (Array(-1, 0, 'notanumber') as $count) {
-                $this->assertFalse(@$this->redis->georadius('{gk}', $lng, $lat, 10, 'mi', Array('count' => $count)));
+                $this->assertFalse(@$this->redis->$cmd('{gk}', $lng, $lat, 10, 'mi', Array('count' => $count)));
             }
         } else {
-            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 10, 'mi'), Array('Chico'));
-            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 30, 'mi'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 50, 'km'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 50000, 'm'), Array('Gridley','Chico'));
-            $this->assertEquals($this->redis->georadiusbymember('{gk}', $city, 150000, 'ft'), Array('Gridley', 'Chico'));
-            $args = Array('georadiusbymember', '{gk}', $city, 500, 'mi');
+            $this->assertEquals($this->redis->$cmd('{gk}', $city, 10, 'mi'), Array('Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $city, 30, 'mi'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $city, 50, 'km'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $city, 50000, 'm'), Array('Gridley','Chico'));
+            $this->assertEquals($this->redis->$cmd('{gk}', $city, 150000, 'ft'), Array('Gridley', 'Chico'));
+            $args = Array($cmd, '{gk}', $city, 500, 'mi');
 
             /* Test a bad COUNT argument */
             foreach (Array(-1, 0, 'notanumber') as $count) {
-                $this->assertFalse(@$this->redis->georadiusbymember('{gk}', $city, 10, 'mi', Array('count' => $count)));
+                $this->assertFalse(@$this->redis->$cmd('{gk}', $city, 10, 'mi', Array('count' => $count)));
             }
         }
 
@@ -5159,7 +5230,7 @@ class Redis_Test extends TestSuite
                         }
 
                         $ret1 = $this->rawCommandArray('{gk}', $realargs);
-                        if ($cmd == 'georadius') {
+                        if ($cmd == 'georadius' || $cmd == 'georadius_ro') {
                             $ret2 = $this->redis->$cmd('{gk}', $lng, $lat, 500, 'mi', $realopts);
                         } else {
                             $ret2 = $this->redis->$cmd('{gk}', $city, 500, 'mi', $realopts);
@@ -5179,6 +5250,7 @@ class Redis_Test extends TestSuite
         }
 
         $this->genericGeoRadiusTest('georadius');
+        $this->genericGeoRadiusTest('georadius_ro');
     }
 
     public function testGeoRadiusByMember() {
@@ -5187,6 +5259,7 @@ class Redis_Test extends TestSuite
         }
 
         $this->genericGeoRadiusTest('georadiusbymember');
+        $this->genericGeoRadiusTest('georadiusbymember_ro');
     }
 
     public function testGeoPos() {
@@ -5358,6 +5431,15 @@ class Redis_Test extends TestSuite
         if (!$this->minVersionCheck("5.0"))
             return $this->markTestSkipped();
 
+        /* CREATE MKSTREAM */
+        $str_key = 's:' . uniqid();
+        $this->assertFalse($this->redis->xGroup('CREATE', $str_key, 'g0', 0));
+        $this->assertTrue($this->redis->xGroup('CREATE', $str_key, 'g1', 0, true));
+
+        /* XGROUP DESTROY */
+        $this->assertEquals($this->redis->xGroup('DESTROY', $str_key, 'g1'), 1);
+
+        /* Populate some entries in stream 's' */
         $this->addStreamEntries('s', 2);
 
         /* CREATE */
@@ -5373,8 +5455,6 @@ class Redis_Test extends TestSuite
         $this->assertFalse($this->redis->xGroup('SETID', 's', 'mygroup', 'BAD_ID'));
 
         $this->assertEquals($this->redis->xGroup('DELCONSUMER', 's', 'mygroup', 'myconsumer'),0);
-
-        /* DELGROUP not yet implemented in Redis */
     }
 
     public function testXAck() {
@@ -5383,7 +5463,7 @@ class Redis_Test extends TestSuite
 
         for ($n = 1; $n <= 3; $n++) {
             $this->addStreamsAndGroups(Array('{s}'), 3, Array('g1' => 0));
-            $msg = $this->redis->xReadGroup('g1', 'c1', Array('{s}' => 0));
+            $msg = $this->redis->xReadGroup('g1', 'c1', Array('{s}' => '>'));
 
             /* Extract IDs */
             $smsg = array_shift($msg);
@@ -5485,17 +5565,25 @@ class Redis_Test extends TestSuite
 
         /* Create some streams and groups */
         $streams = Array('{s}-1', '{s}-2');
-        $qstreams = Array('{s}-1' => 0, '{s}-2' => 0);
         $groups = Array('g1' => 0, 'g2' => 0);
 
-        $ids = $this->addStreamsAndGroups($streams, 3, $groups);
+        /* I'm not totally sure why Redis behaves this way, but we have to
+         * send '>' first and then send ID '0' for subsequent xReadGroup calls
+         * or Redis will not return any messages.  This behavior changed from
+         * redis 5.0.1 and 5.0.2 but doing it this way works for both versions. */
+        $qcount = 0;
+        $query1 = Array('{s}-1' => '>', '{s}-2' => '>');
+        $query2 = Array('{s}-1' => '0', '{s}-2' => '0');
+
+        $ids = $this->addStreamsAndGroups($streams, 1, $groups);
 
         /* Test that we get get the IDs we should */
         foreach (Array('g1', 'g2') as $group) {
             foreach ($ids as $stream => $messages) {
                 while ($ids[$stream]) {
                     /* Read more messages */
-                    $resp = $this->redis->xReadGroup($group, 'consumer', $qstreams);
+                    $query = !$qcount++ ? $query1 : $query2;
+                    $resp = $this->redis->xReadGroup($group, 'consumer', $query);
 
                     /* They should match with our local control array */
                     $this->compareStreamIds($resp, $ids);
@@ -5510,7 +5598,7 @@ class Redis_Test extends TestSuite
         /* Test COUNT option */
         for ($c = 1; $c <= 3; $c++) {
             $this->addStreamsAndGroups($streams, 3, $groups);
-            $resp = $this->redis->xReadGroup('g1', 'consumer', $qstreams, $c);
+            $resp = $this->redis->xReadGroup('g1', 'consumer', $query1, $c);
 
             foreach ($resp as $stream => $smsg) {
                 $this->assertEquals(count($smsg), $c);
@@ -5615,7 +5703,7 @@ class Redis_Test extends TestSuite
                         $fids = $fids['f'];
 
                         /* Have consumer 'Mike' read the messages */
-                        $oids = $this->redis->xReadGroup('group1', 'Mike', Array('s' => 0));
+                        $oids = $this->redis->xReadGroup('group1', 'Mike', Array('s' => '>'));
                         $oids = array_keys($oids['s']); /* We're only dealing with stream 's' */
 
                         /* Construct our options array */

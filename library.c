@@ -12,6 +12,10 @@
 
 #ifdef HAVE_REDIS_LZF
 #include <lzf.h>
+
+    #ifndef LZF_MARGIN
+        #define LZF_MARGIN 128
+    #endif
 #endif
 
 #include <zend_exceptions.h>
@@ -52,10 +56,46 @@
     int (*_add_assoc_zval_ex)(zval *, const char *, uint, zval *) = &add_assoc_zval_ex;
     void (*_php_var_serialize)(smart_str *, zval **, php_serialize_data_t * TSRMLS_DC) = &php_var_serialize;
     int (*_php_var_unserialize)(zval **, const unsigned char **, const unsigned char *, php_unserialize_data_t * TSRMLS_DC) = &php_var_unserialize;
+
+#define strpprintf zend_strpprintf
+
+static zend_string *
+zend_strpprintf(size_t max_len, const char *format, ...)
+{
+    va_list ap;
+    zend_string *zstr;
+
+    va_start(ap, format);
+    zstr = ecalloc(1, sizeof(*zstr));
+    ZSTR_LEN(zstr) = vspprintf(&ZSTR_VAL(zstr), max_len, format, ap);
+    zstr->gc = 0x11;
+    va_end(ap);
+    return zstr;
+}
+
 #endif
 
 extern zend_class_entry *redis_ce;
 extern zend_class_entry *redis_exception_ce;
+
+extern int le_redis_pconnect;
+
+static ConnectionPool *
+redis_sock_get_connection_pool(RedisSock *redis_sock TSRMLS_DC)
+{
+    zend_string *persistent_id = strpprintf(0, "phpredis_%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
+    zend_resource *le = zend_hash_find_ptr(&EG(persistent_list), persistent_id);
+    if (!le) {
+        ConnectionPool *p = pecalloc(1, sizeof(*p) + sizeof(*le), 1);
+        zend_llist_init(&p->list, sizeof(php_stream *), NULL, 1);
+        le = (zend_resource *)((char *)p + sizeof(*p));
+        le->type = le_redis_pconnect;
+        le->ptr = p;
+        zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(persistent_id), ZSTR_LEN(persistent_id), le, sizeof(*le));
+    }
+    zend_string_release(persistent_id);
+    return le->ptr;
+}
 
 /* Helper to reselect the proper DB number when we reconnect */
 static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
@@ -86,7 +126,9 @@ static int reselect_db(RedisSock *redis_sock TSRMLS_DC) {
 }
 
 /* Helper to resend AUTH <password> in the case of a reconnect */
-static int resend_auth(RedisSock *redis_sock TSRMLS_DC) {
+PHP_REDIS_API int
+redis_sock_auth(RedisSock *redis_sock TSRMLS_DC)
+{
     char *cmd, *response;
     int cmd_len, response_len;
 
@@ -201,7 +243,7 @@ redis_check_eof(RedisSock *redis_sock, int no_throw TSRMLS_DC)
                 errno = 0;
                 if (php_stream_eof(redis_sock->stream) == 0) {
                     /* If we're using a password, attempt a reauthorization */
-                    if (redis_sock->auth && resend_auth(redis_sock TSRMLS_CC) != 0) {
+                    if (redis_sock->auth && redis_sock_auth(redis_sock TSRMLS_CC) != 0) {
                         errmsg = "AUTH failed while reconnecting";
                         break;
                     }
@@ -468,26 +510,27 @@ redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
 PHP_REDIS_API char *
 redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_DC)
 {
-    int offset = 0;
-    char *reply, c[2];
+    int offset = 0, nbytes;
+    char *reply;
     size_t got;
 
     if (-1 == bytes || -1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
         return NULL;
     }
 
+    nbytes = bytes + 2;
     /* Allocate memory for string */
-    reply = emalloc(bytes+1);
+    reply = emalloc(nbytes);
 
     /* Consume bulk string */
-    while(offset < bytes) {
-        got = php_stream_read(redis_sock->stream, reply + offset, bytes-offset);
-        if (got == 0) break;
+    while (offset < nbytes) {
+        got = php_stream_read(redis_sock->stream, reply + offset, nbytes - offset);
+        if (got == 0 && php_stream_eof(redis_sock->stream)) break;
         offset += got;
     }
 
     /* Protect against reading too few bytes */
-    if (offset < bytes) {
+    if (offset < nbytes) {
         /* Error or EOF */
         zend_throw_exception(redis_exception_ce,
             "socket error on read socket", 0 TSRMLS_CC);
@@ -495,8 +538,7 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes TSRMLS_DC)
         return NULL;
     }
 
-    /* Consume \r\n and null terminate reply string */
-    php_stream_read(redis_sock->stream, c, 2);
+    /* Null terminate reply string */
     reply[bytes] = '\0';
 
     return reply;
@@ -840,6 +882,7 @@ PHP_REDIS_API void redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
     }
 
     /* Parse it into a zval array */
+    REDIS_MAKE_STD_ZVAL(z_ret);
     redis_parse_info_response(response, z_ret);
 
     /* Free source response */
@@ -1690,7 +1733,7 @@ PHP_REDIS_API RedisSock*
 redis_sock_create(char *host, int host_len, unsigned short port,
                   double timeout, double read_timeout,
                   int persistent, char *persistent_id,
-                  long retry_interval, zend_bool lazy_connect)
+                  long retry_interval)
 {
     RedisSock *redis_sock;
 
@@ -1719,7 +1762,6 @@ redis_sock_create(char *host, int host_len, unsigned short port,
     redis_sock->current = NULL;
 
     redis_sock->pipeline_cmd = NULL;
-    redis_sock->pipeline_len = 0;
 
     redis_sock->err = NULL;
 
@@ -1737,11 +1779,11 @@ redis_sock_create(char *host, int host_len, unsigned short port,
 PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 {
     struct timeval tv, read_tv, *tv_ptr = NULL;
-    char host[1024], *persistent_id = NULL;
+    zend_string *persistent_id = NULL;
+    char host[1024];
     const char *fmtstr = "%s:%d";
-    int host_len, usocket = 0, err = 0;
-    php_netstream_data_t *sock;
-    int tcp_flag = 1;
+    int host_len, usocket = 0, err = 0, tcp_flag = 1;
+    ConnectionPool *p = NULL;
 #if (PHP_MAJOR_VERSION < 7)
     char *estr = NULL;
 #else
@@ -1751,15 +1793,6 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     if (redis_sock->stream != NULL) {
         redis_sock_disconnect(redis_sock, 0 TSRMLS_CC);
     }
-
-    tv.tv_sec  = (time_t)redis_sock->timeout;
-    tv.tv_usec = (int)((redis_sock->timeout - tv.tv_sec) * 1000000);
-    if(tv.tv_sec != 0 || tv.tv_usec != 0) {
-        tv_ptr = &tv;
-    }
-
-    read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
-    read_tv.tv_usec = (int)((redis_sock->read_timeout-read_tv.tv_sec)*1000000);
 
     if (ZSTR_VAL(redis_sock->host)[0] == '/' && redis_sock->port < 1) {
         host_len = snprintf(host, sizeof(host), "unix://%s", ZSTR_VAL(redis_sock->host));
@@ -1779,21 +1812,50 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     }
 
     if (redis_sock->persistent) {
-        if (redis_sock->persistent_id) {
-            spprintf(&persistent_id, 0, "phpredis:%s:%s", host,
-                ZSTR_VAL(redis_sock->persistent_id));
+        if (INI_INT("redis.pconnect.pooling_enabled")) {
+            p = redis_sock_get_connection_pool(redis_sock TSRMLS_CC);
+            if (zend_llist_count(&p->list) > 0) {
+                redis_sock->stream = *(php_stream **)zend_llist_get_last(&p->list);
+                zend_llist_remove_tail(&p->list);
+                /* Check socket liveness using 0 second timeout */
+                if (php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_CHECK_LIVENESS, 0, NULL) == PHP_STREAM_OPTION_RETURN_OK) {
+                    redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
+                    return SUCCESS;
+                }
+                php_stream_pclose(redis_sock->stream);
+                p->nb_active--;
+            }
+
+            int limit = INI_INT("redis.pconnect.connection_limit");
+            if (limit > 0 && p->nb_active >= limit) {
+                redis_sock_set_err(redis_sock, "Connection limit reached", sizeof("Connection limit reached") - 1);
+                return FAILURE;
+            }
+
+            gettimeofday(&tv, NULL);
+            persistent_id = strpprintf(0, "phpredis_%d%d", tv.tv_sec, tv.tv_usec);
         } else {
-            spprintf(&persistent_id, 0, "phpredis:%s:%f", host,
-                redis_sock->timeout);
+            if (redis_sock->persistent_id) {
+                persistent_id = strpprintf(0, "phpredis:%s:%s", host, ZSTR_VAL(redis_sock->persistent_id));
+            } else {
+                persistent_id = strpprintf(0, "phpredis:%s:%f", host, redis_sock->timeout);
+            }
         }
+    }
+
+    tv.tv_sec  = (time_t)redis_sock->timeout;
+    tv.tv_usec = (int)((redis_sock->timeout - tv.tv_sec) * 1000000);
+    if (tv.tv_sec != 0 || tv.tv_usec != 0) {
+        tv_ptr = &tv;
     }
 
     redis_sock->stream = php_stream_xport_create(host, host_len,
         0, STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT,
-        persistent_id, tv_ptr, NULL, &estr, &err);
+        persistent_id ? ZSTR_VAL(persistent_id) : NULL,
+        tv_ptr, NULL, &estr, &err);
 
     if (persistent_id) {
-        efree(persistent_id);
+        zend_string_release(persistent_id);
     }
 
     if (!redis_sock->stream) {
@@ -1806,12 +1868,14 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
             zend_string_release(estr);
 #endif
         }
-        return -1;
+        return FAILURE;
     }
 
+    if (p) p->nb_active++;
+
     /* Attempt to set TCP_NODELAY/TCP_KEEPALIVE if we're not using a unix socket. */
-    sock = (php_netstream_data_t*)redis_sock->stream->abstract;
     if (!usocket) {
+        php_netstream_data_t *sock = (php_netstream_data_t*)redis_sock->stream->abstract;
         err = setsockopt(sock->socket, IPPROTO_TCP, TCP_NODELAY, (char*) &tcp_flag, sizeof(tcp_flag));
         PHPREDIS_NOTUSED(err);
         err = setsockopt(sock->socket, SOL_SOCKET, SO_KEEPALIVE, (char*) &redis_sock->tcp_keepalive, sizeof(redis_sock->tcp_keepalive));
@@ -1819,6 +1883,9 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     }
 
     php_stream_auto_cleanup(redis_sock->stream);
+
+    read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
+    read_tv.tv_usec = (int)((redis_sock->read_timeout - read_tv.tv_sec) * 1000000);
 
     if (read_tv.tv_sec != 0 || read_tv.tv_usec != 0) {
         php_stream_set_option(redis_sock->stream,PHP_STREAM_OPTION_READ_TIMEOUT,
@@ -1829,7 +1896,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 
     redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
 
-    return 0;
+    return SUCCESS;
 }
 
 /**
@@ -1861,8 +1928,15 @@ redis_sock_disconnect(RedisSock *redis_sock, int force TSRMLS_DC)
         return FAILURE;
     } else if (redis_sock->stream) {
         if (redis_sock->persistent) {
+            ConnectionPool *p = NULL;
+            if (INI_INT("redis.pconnect.pooling_enabled")) {
+                p = redis_sock_get_connection_pool(redis_sock TSRMLS_CC);
+            }
             if (force) {
                 php_stream_pclose(redis_sock->stream);
+                if (p) p->nb_active--;
+            } else if (p) {
+                zend_llist_prepend_element(&p->list, &redis_sock->stream);
             }
         } else {
             php_stream_close(redis_sock->stream);
@@ -2099,7 +2173,7 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
         zend_string_release(redis_sock->prefix);
     }
     if (redis_sock->pipeline_cmd) {
-        efree(redis_sock->pipeline_cmd);
+        zend_string_release(redis_sock->pipeline_cmd);
     }
     if (redis_sock->err) {
         zend_string_release(redis_sock->err);
@@ -2125,19 +2199,21 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len TSRMLS_
 #ifdef HAVE_REDIS_LZF
     char *data;
     uint32_t res;
+    double size;
 #endif
 
     valfree = redis_serialize(redis_sock, z, &buf, &len TSRMLS_CC);
     switch (redis_sock->compression) {
         case REDIS_COMPRESSION_LZF:
 #ifdef HAVE_REDIS_LZF
-            data = emalloc(len);
-            res = lzf_compress(buf, len, data, len - 1);
-            if (res > 0 && res < len) {
+            /* preserve compatibility with PECL lzf_compress margin (greater of 4% and LZF_MARGIN) */
+            size = len + MIN(UINT_MAX - len, MAX(LZF_MARGIN, len / 25));
+            data = emalloc(size);
+            if ((res = lzf_compress(buf, len, data, size)) > 0) {
                 if (valfree) efree(buf);
                 *val = data;
                 *val_len = res;
-                 return 1;
+                return 1;
             }
             efree(data);
 #endif

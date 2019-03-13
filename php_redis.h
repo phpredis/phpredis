@@ -25,7 +25,7 @@
 #define PHP_REDIS_H
 
 /* phpredis version */
-#define PHP_REDIS_VERSION "4.2.0"
+#define PHP_REDIS_VERSION "4.3.0"
 
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, __destruct);
@@ -131,6 +131,10 @@ PHP_METHOD(Redis, zRevRank);
 PHP_METHOD(Redis, zIncrBy);
 PHP_METHOD(Redis, zInter);
 PHP_METHOD(Redis, zUnion);
+PHP_METHOD(Redis, zPopMax);
+PHP_METHOD(Redis, zPopMin);
+PHP_METHOD(Redis, bzPopMax);
+PHP_METHOD(Redis, bzPopMin);
 PHP_METHOD(Redis, expireAt);
 PHP_METHOD(Redis, pexpireAt);
 PHP_METHOD(Redis, bgrewriteaof);
@@ -205,7 +209,9 @@ PHP_METHOD(Redis, geohash);
 PHP_METHOD(Redis, geopos);
 PHP_METHOD(Redis, geodist);
 PHP_METHOD(Redis, georadius);
+PHP_METHOD(Redis, georadius_ro);
 PHP_METHOD(Redis, georadiusbymember);
+PHP_METHOD(Redis, georadiusbymember_ro);
 
 PHP_METHOD(Redis, client);
 PHP_METHOD(Redis, command);

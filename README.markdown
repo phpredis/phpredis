@@ -8,6 +8,13 @@ This code has been developed and maintained by Owlient from November 2009 to Mar
 
 You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to n.favrefelix@gmail.com ([@yowgi](https://twitter.com/yowgi)), to michael.grunder@gmail.com ([@grumi78](https://twitter.com/grumi78)) or to p.yatsukhnenko@gmail.com ([@yatsukhnenko](https://twitter.com/yatsukhnenko)).
 
+## Donating to the project
+If you've found phpredis useful and would like to buy the maintainers a coffee (or a Tesla, we're not picky), feel free to do so.
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/michaelgrunder/5)
+[![Donate with Bitcoin](https://en.cryptobadges.io/badge/micro/1FXkYHBo5uoaztxFbajiPfbnkgKCbF3ykG)](https://en.cryptobadges.io/donate/1FXkYHBo5uoaztxFbajiPfbnkgKCbF3ykG)
+[![Donate with Ethereum](https://en.cryptobadges.io/badge/micro/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)](https://en.cryptobadges.io/donate/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)
+
 
 # Table of contents
 -----
@@ -27,6 +34,7 @@ You can send comments, patches, questions [here on github](https://github.com/ph
    * [Sets](#sets)
    * [Sorted sets](#sorted-sets)
    * [Geocoding](#geocoding)
+   * [Streams](#streams)
    * [Pub/sub](#pubsub)
    * [Transactions](#transactions)
    * [Scripting](#scripting)
@@ -60,7 +68,7 @@ session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeou
 * database (integer): selects a different database.
 
 Sessions have a lifetime expressed in seconds and stored in the INI variable "session.gc_maxlifetime". You can change it with [`ini_set()`](http://php.net/ini_set).
-The session handler requires a version of Redis with the `SETEX` command (at least 2.0).
+The session handler requires a version of Redis supporting `EX` and `NX` options of `SET` command (at least 2.6.12).
 phpredis can also connect to a unix domain socket: `session.save_path = "unix:///var/run/redis/redis.sock?persistent=1&weight=1&database=0`.
 
 ### Session locking
@@ -199,12 +207,14 @@ $redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay 
 -----
 _**Description**_: Connects to a Redis instance or reuse a connection already established with `pconnect`/`popen`.
 
-The connection will not be closed on `close` or end of request until the php process ends.
+The connection will not be closed on end of request until the php process ends.
 So be prepared for too many open FD's errors (specially on redis server side) when using persistent
 connections on many servers connecting to one redis server.
 
 Also more than one persistent connection can be made identified by either host + port + timeout
 or host + persistent_id or unix socket + timeout.
+
+Starting from version 4.2.1, it became possible to use connection pooling by setting INI variable `redis.pconnect.pooling_enabled` to 1.
 
 This feature is not available in threaded versions. `pconnect` and `popen` then working like their non
 persistent equivalents.
@@ -271,7 +281,7 @@ _**Description**_:  Swap one Redis database with another atomically
 ##### *Return value*  
 `TRUE` on success and `FALSE` on failure.
 
-*note*: Requires Redis >= 4.0.0
+*Note*: Requires Redis >= 4.0.0
 
 ##### *Example*  
 ~~~php
@@ -280,7 +290,15 @@ $redis->swapdb(0, 1); /* Swaps DB 0 with DB 1 atomically */
 
 ### close
 -----
-_**Description**_: Disconnects from the Redis instance, except when `pconnect` is used.
+_**Description**_: Disconnects from the Redis instance.
+
+*Note*: Closing a persistent connection requires PhpRedis >= 4.2.0.
+
+##### *Parameters*
+None.
+
+##### *Return value*
+*BOOL*: `TRUE` on success, `FALSE` on failure.
 
 ### setOption
 -----
@@ -439,7 +457,7 @@ echo "Redis has $count keys\n";
 _**Description**_: Remove all keys from all databases.
 
 ##### *Parameters*
-None.
+*async* (bool) requires server version 4.0.0 or greater
 
 ##### *Return value*
 *BOOL*: Always `TRUE`.
@@ -454,7 +472,7 @@ $redis->flushAll();
 _**Description**_: Remove all keys from the current database.
 
 ##### *Parameters*
-None.
+*async* (bool) requires server version 4.0.0 or greater
 
 ##### *Return value*
 *BOOL*: Always `TRUE`.
@@ -1026,6 +1044,8 @@ _**Description**_:  Scan the keyspace for keys
 
 ##### *Return value*
 *Array, boolean*:  This function will return an array of keys or FALSE if Redis returned zero keys
+
+*Note*: SCAN is a "directed node" command in [RedisCluster](cluster.markdown#directed-node-commands)
 
 ##### *Example*
 ~~~php
@@ -2762,9 +2782,9 @@ $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
 $redis->zRangeByScore('key', 0, 3); /* array('val0', 'val2') */
-$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE); /* array('val0' => 0, 'val2' => 2) */
-$redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1)); /* array('val2') */
-$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(1, 1)); /* array('val2' => 2) */
+$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE)); /* array('val0' => 0, 'val2' => 2) */
+$redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1))); /* array('val2') */
+$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(1, 1))); /* array('val2' => 2) */
 ~~~
 
 ### zRangeByLex
@@ -3321,7 +3341,7 @@ _**Description**_:  Add a message to a stream
 
 ##### *Example*
 ~~~php
-$obj_redis->xAdd('mystream', "\*", ['field' => 'value']);
+$obj_redis->xAdd('mystream', "*", ['field' => 'value']);
 ~~~
 
 ### xClaim
@@ -3329,7 +3349,7 @@ $obj_redis->xAdd('mystream', "\*", ['field' => 'value']);
 
 ##### *Prototype*
 ~~~php
-$obj_redis->($str_key, $str_group, $str_consumer, $min_idle_time, [$arr_options]);
+$obj_redis->xClaim($str_key, $str_group, $str_consumer, $min_idle_time, $arr_ids, [$arr_options]);
 ~~~
 
 _**Description**_:  Claim ownership of one or more pending messages.
@@ -3355,12 +3375,12 @@ $ids = ['1530113681011-0', '1530113681011-1', '1530113681011-2'];
 
 /* Without any options */
 $obj_redis->xClaim(
-    'mystream', 'group1', 'myconsumer1', $ids
+    'mystream', 'group1', 'myconsumer1', 0, $ids
 );
 
 /* With options */
 $obj_redis->xClaim(
-    'mystream', 'group1', 'myconsumer2', $ids,
+    'mystream', 'group1', 'myconsumer2', 0, $ids,
     [
         'IDLE' => time() * 1000,
         'RETRYCOUNT' => 5,
@@ -3394,9 +3414,9 @@ $obj_redis->xDel('mystream', ['1530115304877-0', '1530115305731-0']);
 ##### *Prototype*
 ~~~php
 $obj_redis->xGroup('HELP');
+$obj_redis->xGroup('CREATE', $str_key, $str_group, $str_msg_id, [$boo_mkstream]);
 $obj_redis->xGroup('SETID', $str_key, $str_group, $str_msg_id);
-$obj_redis->xGroup('DELGROUP', $str_key, $str_group);
-$obj_redis->xGroup('CREATE', $str_key, $str_group, $str_msg_id);
+$obj_redis->xGroup('DESTROY', $str_key, $str_group);
 $obj_redis->xGroup('DELCONSUMER', $str_key, $str_group, $str_consumer_name);
 ~~~
 
@@ -3408,7 +3428,8 @@ _**Description**_:  This command is used in order to create, destroy, or manage 
 ##### *Example*
 ~~~php
 $obj_redis->xGroup('CREATE', 'mystream', 'mygroup');
-$obj_redis->xGroup('DELGROUP', 'mystream', 'mygroup');
+$obj_redis->xGroup('CREATE', 'mystream', 'mygroup2', true); /* Create stream if non-existent. */
+$obj_redis->xGroup('DESTROY', 'mystream', 'mygroup');
 ~~~
 
 ### xInfo
@@ -3455,7 +3476,7 @@ $obj_redis->xLen('mystream');
 
 ##### *Prototype*
 ~~~php
-$obj_redis->xPending($str_stream, $str_group [, $i_start, $i_end, $i_count, $str_consumer]);
+$obj_redis->xPending($str_stream, $str_group [, $str_start, $str_end, $i_count, $str_consumer]);
 ~~~
 
 _**Description**_:  Get information about pending messages in a given stream.
@@ -3466,7 +3487,7 @@ _**Description**_:  Get information about pending messages in a given stream.
 ##### *Examples*
 ~~~php
 $obj_redis->xPending('mystream', 'mygroup');
-$obj_redis->xPending('mystream', 'mygroup', 0, '+', 1, 'consumer-1');
+$obj_redis->xPending('mystream', 'mygroup', '-', '+', 1, 'consumer-1');
 ~~~
 
 ### xRange
@@ -3474,7 +3495,7 @@ $obj_redis->xPending('mystream', 'mygroup', 0, '+', 1, 'consumer-1');
 
 ##### *Prototype*
 ~~~php
-$obj_redis->xRange($str_stream, $i_start, $i_end [, $i_count]);
+$obj_redis->xRange($str_stream, $str_start, $str_end [, $i_count]);
 ~~~
 
 _**Description**_:  Get a range of messages from a given stream.
@@ -3531,6 +3552,9 @@ Array
 
 )
 */
+
+// Receive only new message ($ = last id) and wait for one new message unlimited time
+$obj_redis->xRead(['stream1' => '$'], 1, 0);
 ~~~
 
 ### xReadGroup
@@ -3551,7 +3575,10 @@ _**Description**_:  This method is similar to xRead except that it supports read
 /* Consume messages for 'mygroup', 'consumer1' */
 $obj_redis->xReadGroup('mygroup', 'consumer1', ['s1' => 0, 's2' => 0]);
 
-/* Read a single message as 'consumer2' for up to a second until a message arrives. */
+/* Consume messages for 'mygroup', 'consumer1' which were not consumed yet by the group */
+$obj_redis->xReadGroup('mygroup', 'consumer1', ['s1' => '>', 's2' => '>']);
+
+/* Read a single message as 'consumer2' wait for up to a second until a message arrives. */
 $obj_redis->xReadGroup('mygroup', 'consumer2', ['s1' => 0, 's2' => 0], 1, 1000);
 ~~~
 
@@ -3560,7 +3587,7 @@ $obj_redis->xReadGroup('mygroup', 'consumer2', ['s1' => 0, 's2' => 0], 1, 1000);
 
 ##### *Prototype*
 ~~~php
-$obj_redis->xRevRange($str_stream, $i_end, $i_start [, $i_count]);
+$obj_redis->xRevRange($str_stream, $str_end, $str_start [, $i_count]);
 ~~~
 
 _**Description**_:  This is identical to xRange except the results come back in reverse order.  Also note that Redis reverses the order of "start" and "end".

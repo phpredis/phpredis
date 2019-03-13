@@ -224,6 +224,10 @@ PHP_METHOD(RedisCluster, restore);
 PHP_METHOD(RedisCluster, setrange);
 PHP_METHOD(RedisCluster, smove);
 PHP_METHOD(RedisCluster, srandmember);
+PHP_METHOD(RedisCluster, zpopmin);
+PHP_METHOD(RedisCluster, zpopmax);
+PHP_METHOD(RedisCluster, bzpopmax);
+PHP_METHOD(RedisCluster, bzpopmin);
 PHP_METHOD(RedisCluster, zrange);
 PHP_METHOD(RedisCluster, zrevrange);
 PHP_METHOD(RedisCluster, zrangebyscore);
@@ -255,7 +259,9 @@ PHP_METHOD(RedisCluster, geohash);
 PHP_METHOD(RedisCluster, geopos);
 PHP_METHOD(RedisCluster, geodist);
 PHP_METHOD(RedisCluster, georadius);
+PHP_METHOD(RedisCluster, georadius_ro);
 PHP_METHOD(RedisCluster, georadiusbymember);
+PHP_METHOD(RedisCluster, georadiusbymember_ro);
 
 /* SCAN and friends */
 PHP_METHOD(RedisCluster, scan);

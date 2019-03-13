@@ -53,8 +53,12 @@ zend_class_entry *redis_exception_ce;
 extern zend_function_entry redis_array_functions[];
 extern zend_function_entry redis_cluster_functions[];
 
+int le_redis_pconnect;
+
 PHP_INI_BEGIN()
     /* redis arrays */
+    PHP_INI_ENTRY("redis.arrays.algorithm", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.auth", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.autorehash", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.connecttimeout", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.distributor", "", PHP_INI_ALL, NULL)
@@ -67,12 +71,18 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("redis.arrays.previous", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.readtimeout", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.arrays.retryinterval", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.arrays.consistent", "0", PHP_INI_ALL, NULL)
 
     /* redis cluster */
+    PHP_INI_ENTRY("redis.clusters.auth", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.persistent", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.read_timeout", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.seeds", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.timeout", "0", PHP_INI_ALL, NULL)
+
+    /* redis pconnect */
+    PHP_INI_ENTRY("redis.pconnect.pooling_enabled", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.pconnect.connection_limit", "0", PHP_INI_ALL, NULL)
 
     /* redis session */
     PHP_INI_ENTRY("redis.session.locking_enabled", "0", PHP_INI_ALL, NULL)
@@ -241,8 +251,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 static zend_function_entry redis_functions[] = {
-     PHP_ME(Redis, __construct, arginfo_void, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, __destruct, arginfo_void, ZEND_ACC_DTOR | ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, __construct, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, __destruct, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _prefix, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _serialize, arginfo_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _unserialize, arginfo_value, ZEND_ACC_PUBLIC)
@@ -256,6 +266,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, blPop, arginfo_blrpop, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, brPop, arginfo_blrpop, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, brpoplpush, arginfo_brpoplpush, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, bzPopMax, arginfo_blrpop, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, bzPopMin, arginfo_blrpop, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, clearLastError, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, client, arginfo_client, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, close, arginfo_void, ZEND_ACC_PUBLIC)
@@ -282,7 +294,9 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, geohash, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, geopos, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, georadius, arginfo_georadius, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, georadius_ro, arginfo_georadius, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, georadiusbymember, arginfo_georadiusbymember, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, georadiusbymember_ro, arginfo_georadiusbymember, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, get, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getAuth, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getBit, arginfo_key_offset, ZEND_ACC_PUBLIC)
@@ -440,6 +454,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zScore, arginfo_key_member, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zUnion, arginfo_zstore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zPopMax, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zPopMin, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, del, delete, arginfo_del, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, evaluate, eval, arginfo_eval, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, evaluateSha, evalsha, arginfo_evalsha, ZEND_ACC_PUBLIC)
@@ -737,6 +753,19 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
     zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
 }
 
+static ZEND_RSRC_DTOR_FUNC(redis_connections_pool_dtor)
+{
+#if (PHP_MAJOR_VERSION < 7)
+    zend_resource *res = rsrc;
+#endif
+
+    if (res->ptr) {
+        ConnectionPool *p = res->ptr;
+        zend_llist_destroy(&p->list);
+        pefree(res->ptr, 1);
+    }
+}
+
 /**
  * PHP_MINIT_FUNCTION
  */
@@ -817,6 +846,10 @@ PHP_MINIT_FUNCTION(redis)
     php_session_register_module(&ps_mod_redis);
     php_session_register_module(&ps_mod_redis_cluster);
 #endif
+
+    /* Register resource destructors */
+    le_redis_pconnect = zend_register_list_destructors_ex(NULL, redis_connections_pool_dtor,
+        "phpredis persistent connections pool", module_number);
 
     return SUCCESS;
 }
@@ -970,7 +1003,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     }
 
     redis->sock = redis_sock_create(host, host_len, port, timeout, read_timeout, persistent,
-        persistent_id, retry_interval, 0);
+        persistent_id, retry_interval);
 
     if (redis_sock_server_open(redis->sock TSRMLS_CC) < 0) {
         if (redis->sock->err) {
@@ -1369,14 +1402,14 @@ PHP_METHOD(Redis, rPop)
 /* {{{ proto string Redis::blPop(string key1, string key2, ..., int timeout) */
 PHP_METHOD(Redis, blPop)
 {
-    REDIS_PROCESS_CMD(blpop, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_KW_CMD("BLPOP", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
 /* {{{ proto string Redis::brPop(string key1, string key2, ..., int timeout) */
 PHP_METHOD(Redis, brPop)
 {
-    REDIS_PROCESS_CMD(brpop, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_KW_CMD("BRPOP", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
@@ -2133,6 +2166,44 @@ PHP_METHOD(Redis, zUnion) {
     REDIS_PROCESS_KW_CMD("ZUNIONSTORE", redis_zinter_cmd, redis_long_response);
 }
 
+/* {{{ proto array Redis::zPopMax(string key) */
+PHP_METHOD(Redis, zPopMax)
+{
+    if (ZEND_NUM_ARGS() == 1) {
+        REDIS_PROCESS_KW_CMD("ZPOPMAX", redis_key_cmd, redis_mbulk_reply_zipped_keys_dbl);
+    } else if (ZEND_NUM_ARGS() == 2) {
+        REDIS_PROCESS_KW_CMD("ZPOPMAX", redis_key_long_cmd, redis_mbulk_reply_zipped_keys_dbl);
+    } else {
+        ZEND_WRONG_PARAM_COUNT();
+    }
+}
+/* }}} */
+
+/* {{{ proto array Redis::zPopMin(string key) */
+PHP_METHOD(Redis, zPopMin)
+{
+    if (ZEND_NUM_ARGS() == 1) {
+        REDIS_PROCESS_KW_CMD("ZPOPMIN", redis_key_cmd, redis_mbulk_reply_zipped_keys_dbl);
+    } else if (ZEND_NUM_ARGS() == 2) {
+        REDIS_PROCESS_KW_CMD("ZPOPMIN", redis_key_long_cmd, redis_mbulk_reply_zipped_keys_dbl);
+    } else {
+        ZEND_WRONG_PARAM_COUNT();
+    }
+}
+/* }}} */
+
+/* {{{ proto Redis::bzPopMax(Array(keys) [, timeout]): Array */
+PHP_METHOD(Redis, bzPopMax) {
+    REDIS_PROCESS_KW_CMD("BZPOPMAX", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
+}
+/* }}} */
+
+/* {{{ proto Redis::bzPopMin(Array(keys) [, timeout]): Array */
+PHP_METHOD(Redis, bzPopMin) {
+    REDIS_PROCESS_KW_CMD("BZPOPMIN", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
+}
+/* }}} */
+
 /* hashes */
 
 /* {{{ proto long Redis::hset(string key, string mem, string val) */
@@ -2298,6 +2369,7 @@ PHP_METHOD(Redis, multi)
 /* discard */
 PHP_METHOD(Redis, discard)
 {
+    int ret = FAILURE;
     RedisSock *redis_sock;
     zval *object;
 
@@ -2310,9 +2382,21 @@ PHP_METHOD(Redis, discard)
         RETURN_FALSE;
     }
 
-    redis_sock->mode = ATOMIC;
-    free_reply_callbacks(redis_sock);
-    RETURN_BOOL(redis_send_discard(redis_sock TSRMLS_CC) == SUCCESS);
+    if (IS_PIPELINE(redis_sock)) {
+        ret = SUCCESS;
+        if (redis_sock->pipeline_cmd) {
+            zend_string_release(redis_sock->pipeline_cmd);
+            redis_sock->pipeline_cmd = NULL;
+        }
+    } else if (IS_MULTI(redis_sock)) {
+        ret = redis_send_discard(redis_sock TSRMLS_CC);
+    }
+    if (ret == SUCCESS) {
+        free_reply_callbacks(redis_sock);
+        redis_sock->mode = ATOMIC;
+        RETURN_TRUE;
+    }
+    RETURN_FALSE;
 }
 
 /* redis_sock_read_multibulk_multi_reply */
@@ -2387,17 +2471,16 @@ PHP_METHOD(Redis, exec)
             /* Empty array when no command was run. */
             array_init(return_value);
         } else {
-            if (redis_sock_write(redis_sock, redis_sock->pipeline_cmd,
-                    redis_sock->pipeline_len TSRMLS_CC) < 0) {
+            if (redis_sock_write(redis_sock, ZSTR_VAL(redis_sock->pipeline_cmd),
+                    ZSTR_LEN(redis_sock->pipeline_cmd) TSRMLS_CC) < 0) {
                 ZVAL_FALSE(return_value);
             } else {
                 array_init(return_value);
                 redis_sock_read_multibulk_multi_reply_loop(
                     INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, return_value, 0);
             }
-            efree(redis_sock->pipeline_cmd);
+            zend_string_release(redis_sock->pipeline_cmd);
             redis_sock->pipeline_cmd = NULL;
-            redis_sock->pipeline_len = 0;
         }
         free_reply_callbacks(redis_sock);
         REDIS_DISABLE_MODE(redis_sock, PIPELINE);
@@ -3580,11 +3663,19 @@ PHP_METHOD(Redis, geodist) {
 }
 
 PHP_METHOD(Redis, georadius) {
-    REDIS_PROCESS_CMD(georadius, redis_read_variant_reply);
+    REDIS_PROCESS_KW_CMD("GEORADIUS", redis_georadius_cmd, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, georadius_ro) {
+    REDIS_PROCESS_KW_CMD("GEORADIUS_RO", redis_georadius_cmd, redis_read_variant_reply);
 }
 
 PHP_METHOD(Redis, georadiusbymember) {
-    REDIS_PROCESS_CMD(georadiusbymember, redis_read_variant_reply);
+    REDIS_PROCESS_KW_CMD("GEORADIUSBYMEMBER", redis_georadiusbymember_cmd, redis_read_variant_reply);
+}
+
+PHP_METHOD(Redis, georadiusbymember_ro) {
+    REDIS_PROCESS_KW_CMD("GEORADIUSBYMEMBER_RO", redis_georadiusbymember_cmd, redis_read_variant_reply);
 }
 
 /*

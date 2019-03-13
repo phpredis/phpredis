@@ -34,7 +34,7 @@ zend_string_alloc(size_t len, int persistent)
     zend_string *zstr = emalloc(sizeof(*zstr) + len + 1);
 
     ZSTR_VAL(zstr) = (char *)zstr + sizeof(*zstr);
-    zstr->len = len;
+    ZSTR_LEN(zstr) = len;
     zstr->gc = 0x01;
     return zstr;
 }
@@ -48,6 +48,27 @@ zend_string_init(const char *str, size_t len, int persistent)
     ZSTR_VAL(zstr)[len] = '\0';
     return zstr;
 }
+
+static zend_always_inline zend_string *
+zend_string_realloc(zend_string *s, size_t len, int persistent)
+{
+    zend_string *zstr;
+
+    if (!s->gc) {
+        zstr = zend_string_init(ZSTR_VAL(s), len, 0);
+    } else if (s->gc & 0x10) {
+        ZSTR_VAL(s) = erealloc(ZSTR_VAL(s), len + 1);
+        ZSTR_LEN(s) = len;
+        zstr = s;
+    } else {
+        zstr = erealloc(s, sizeof(*zstr) + len + 1);
+        ZSTR_VAL(zstr) = (char *)zstr + sizeof(*zstr);
+        ZSTR_LEN(zstr) = len;
+    }
+    return zstr;
+}
+
+#define zend_string_copy(s) zend_string_init(ZSTR_VAL(s), ZSTR_LEN(s), 0)
 
 #define zend_string_equal_val(s1, s2) !memcmp(ZSTR_VAL(s1), ZSTR_VAL(s2), ZSTR_LEN(s1))
 #define zend_string_equal_content(s1, s2) (ZSTR_LEN(s1) == ZSTR_LEN(s2) && zend_string_equal_val(s1, s2))
@@ -119,6 +140,8 @@ zend_hash_str_find(const HashTable *ht, const char *key, size_t len)
     return NULL;
 }
 
+#define zend_hash_find_ptr(ht, s) zend_hash_str_find_ptr(ht, ZSTR_VAL(s), ZSTR_LEN(s))
+
 static zend_always_inline void *
 zend_hash_str_find_ptr(const HashTable *ht, const char *str, size_t len)
 {
@@ -130,10 +153,12 @@ zend_hash_str_find_ptr(const HashTable *ht, const char *str, size_t len)
     return NULL;
 }
 
+#define zend_hash_str_update_ptr(ht, str, len, pData) zend_hash_str_update_mem(ht, str, len, pData, sizeof(void *))
+
 static zend_always_inline void *
-zend_hash_str_update_ptr(HashTable *ht, const char *str, size_t len, void *pData)
+zend_hash_str_update_mem(HashTable *ht, const char *str, size_t len, void *pData, size_t size)
 {
-    if (zend_hash_update(ht, str, len + 1, (void *)&pData, sizeof(void *), NULL) == SUCCESS) {
+    if (zend_hash_update(ht, str, len + 1, (void *)&pData, size, NULL) == SUCCESS) {
         return pData;
     }
     return NULL;
@@ -533,14 +558,12 @@ typedef enum _PUBSUB_TYPE {
 
 #define PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len) do { \
     if (redis_sock->pipeline_cmd == NULL) { \
-        redis_sock->pipeline_cmd = estrndup(cmd, cmd_len); \
+        redis_sock->pipeline_cmd = zend_string_init(cmd, cmd_len, 0); \
     } else { \
-        redis_sock->pipeline_cmd = erealloc(redis_sock->pipeline_cmd, \
-            redis_sock->pipeline_len + cmd_len); \
-        memcpy(&redis_sock->pipeline_cmd[redis_sock->pipeline_len], \
-            cmd, cmd_len); \
+        size_t pipeline_len = ZSTR_LEN(redis_sock->pipeline_cmd); \
+        redis_sock->pipeline_cmd = zend_string_realloc(redis_sock->pipeline_cmd, pipeline_len + cmd_len, 0); \
+        memcpy(&ZSTR_VAL(redis_sock->pipeline_cmd)[pipeline_len], cmd, cmd_len); \
     } \
-    redis_sock->pipeline_len += cmd_len; \
 } while (0)
 
 #define SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len) \
@@ -644,6 +667,17 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_ENABLE_MODE(redis_sock, m) (redis_sock->mode |= m)
 #define REDIS_DISABLE_MODE(redis_sock, m) (redis_sock->mode &= ~m)
 
+/* HOST_NAME_MAX doesn't exist everywhere */
+#ifndef HOST_NAME_MAX
+    #if defined(_POSIX_HOST_NAME_MAX)
+        #define HOST_NAME_MAX _POSIX_HOST_NAME_MAX
+    #elif defined(MAXHOSTNAMELEN)
+        #define HOST_NAME_MAX MAXHOSTNAMELEN
+    #else
+        #define HOST_NAME_MAX 255
+    #endif
+#endif
+
 typedef struct fold_item {
     zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, void *, ...);
     void *ctx;
@@ -675,8 +709,7 @@ typedef struct {
     fold_item      *head;
     fold_item      *current;
 
-    char           *pipeline_cmd;
-    size_t         pipeline_len;
+    zend_string    *pipeline_cmd;
 
     zend_string    *err;
 
@@ -686,6 +719,11 @@ typedef struct {
     int            tcp_keepalive;
 } RedisSock;
 /* }}} */
+
+typedef struct {
+    zend_llist list;
+    int nb_active;
+} ConnectionPool;
 
 #if (PHP_MAJOR_VERSION < 7)
 typedef struct {
@@ -981,12 +1019,14 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_object, 0, 0, 2)
     ZEND_ARG_INFO(0, key)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_subscribe, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_subscribe, 0, 0, 2)
     ZEND_ARG_ARRAY_INFO(0, channels, 0)
+    ZEND_ARG_INFO(0, callback)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_psubscribe, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_psubscribe, 0, 0, 2)
     ZEND_ARG_ARRAY_INFO(0, patterns, 0)
+    ZEND_ARG_INFO(0, callback)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_unsubscribe, 0, 0, 1)

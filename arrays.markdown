@@ -61,6 +61,25 @@ The read_timeout value is a double and is used to specify a timeout in number of
 $ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("read_timeout" => 0.5));
 </pre>
 
+#### Specifying the "algorithm" parameter
+The algorithm value is a string and is used to specify the name of key hashing algorithm. The list of possible values may be found using PHP function `hash_algos`.
+If algorithm is not supported by PHP `hash` function default algorithm will be used (CRC32 with 0xffffffff initial value).
+<pre>
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("algorithm" => "md5"));
+</pre>
+
+#### Specifying the "consistent" parameter
+The value is boolean. When enabled RedisArray uses "ketama" distribution algorithm (currently without ability to set weight to each server).
+This option applies to main and previous ring if specified.
+<pre>
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("consistent" => true));
+</pre>
+
+#### Specifying the "auth" parameter
+The value is string and used to specify the password for authenticate with the server prior to sending commands
+<pre>
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("auth" => "mysecretpassword"));
+</pre>
 
 #### Defining arrays in Redis.ini
 
@@ -78,6 +97,9 @@ ini_set('redis.arrays.functions', 'users=user_hash');
 
 // use index only for users
 ini_set('redis.arrays.index', 'users=1,friends=0');
+
+// use password for authentication
+ini_set('redis.arrays.auth', 'users=mysecretpassword')
 </pre>
 
 ## Usage
@@ -152,6 +174,7 @@ RedisArray objects provide several methods to help understand the state of the c
 * `$ra->_function()` → returns the name of the function used to extract key parts during consistent hashing.
 * `$ra->_target($key)` → returns the host to be used for a certain key.
 * `$ra->_instance($host)` → returns a redis instance connected to a specific node; use with `_target` to get a single Redis object.
+* `$ra->_continuum()` → returns a list of points on continuum; may be useful with custom distributor function.
 
 ## Running the unit tests
 <pre>
