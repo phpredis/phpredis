@@ -2224,12 +2224,6 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
                                       (const unsigned char *)val + val_len,
                                        &var_hash);
 
-            //if (php_var_unserialize(z_ret, (const unsigned char**)&val,
-            //        (const unsigned char*)val + val_len, &var_hash)
-            //) {
-            //    ret = 1;
-            //}
-
             PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
             break;
 
