@@ -160,7 +160,7 @@ redis_array_free(RedisArray *ra)
     zval_dtor(&ra->z_dist);
 
     /* Hashing algorithm */
-    zval_dtor(&ra->z_algo);
+    if (ra->algorithm) zend_string_release(ra->algorithm);
 
     /* Delete pur commands */
     zend_hash_destroy(ra->pure_cmds);
@@ -239,13 +239,14 @@ ra_call_user_function(HashTable *function_table, zval *object, zval *function_na
     Public constructor */
 PHP_METHOD(RedisArray, __construct)
 {
-    zval *z0, z_fun, z_dist, z_algo, *zpData, *z_opts = NULL;
+    zval *z0, z_fun, z_dist, *zpData, *z_opts = NULL;
     RedisArray *ra = NULL;
     zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0, consistent = 0;
     HashTable *hPrev = NULL, *hOpts = NULL;
     long l_retry_interval = 0;
       zend_bool b_lazy_connect = 0;
     double d_connect_timeout = 0, read_timeout = 0.0;
+    zend_string *algorithm = NULL, *auth = NULL;
     redis_array_object *obj;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|a", &z0, &z_opts) == FAILURE) {
@@ -254,7 +255,6 @@ PHP_METHOD(RedisArray, __construct)
 
     ZVAL_NULL(&z_fun);
     ZVAL_NULL(&z_dist);
-    ZVAL_NULL(&z_algo);
     /* extract options */
     if(z_opts) {
         hOpts = Z_ARRVAL_P(z_opts);
@@ -279,7 +279,7 @@ PHP_METHOD(RedisArray, __construct)
 
         /* extract function name. */
         if ((zpData = zend_hash_str_find(hOpts, "algorithm", sizeof("algorithm") - 1)) != NULL && Z_TYPE_P(zpData) == IS_STRING) {
-            ZVAL_ZVAL(&z_algo, zpData, 1, 0);
+            algorithm = zval_get_string(zpData);
         }
 
         /* extract index option. */
@@ -337,6 +337,11 @@ PHP_METHOD(RedisArray, __construct)
         if ((zpData = zend_hash_str_find(hOpts, "consistent", sizeof("consistent") - 1)) != NULL) {
             consistent = zval_is_true(zpData);
         }
+
+        /* auth */
+        if ((zpData = zend_hash_str_find(hOpts, "auth", sizeof("auth") - 1)) != NULL) {
+            auth = zval_get_string(zpData);
+        }
     }
 
     /* extract either name of list of hosts from z0 */
@@ -346,13 +351,14 @@ PHP_METHOD(RedisArray, __construct)
             break;
 
         case IS_ARRAY:
-            ra = ra_make_array(Z_ARRVAL_P(z0), &z_fun, &z_dist, &z_algo, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout, read_timeout, consistent TSRMLS_CC);
+            ra = ra_make_array(Z_ARRVAL_P(z0), &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout, read_timeout, consistent, algorithm, auth TSRMLS_CC);
             break;
 
         default:
             WRONG_PARAM_COUNT;
     }
-    zval_dtor(&z_algo);
+    if (algorithm) zend_string_release(algorithm);
+    if (auth) zend_string_release(auth);
     zval_dtor(&z_dist);
     zval_dtor(&z_fun);
 
