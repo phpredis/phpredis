@@ -556,7 +556,7 @@ union resparg {
 /* A printf like method to construct a Redis RESP command.  It has been extended
  * to take a few different format specifiers that are convienient to phpredis.
  *
- * s - C string followed by length as a 
+ * s - C string followed by length as a
  * S - Pointer to a zend_string
  * k - Same as 's' but the value will be prefixed if phpredis is set up do do
  *     that and the working slot will be set if it has been passed.
@@ -1693,9 +1693,6 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
     const char *fmtstr = "%s:%d";
     int host_len, usocket = 0, err = 0, tcp_flag = 1;
     ConnectionPool *p = NULL;
-#if (PHP_MAJOR_VERSION < 7)
-    char *estr = NULL;
-#else
     zend_string *estr = NULL;
 
     if (redis_sock->stream != NULL) {
@@ -2224,7 +2221,7 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
             PHP_VAR_UNSERIALIZE_INIT(var_hash);
 
             ret = php_var_unserialize(z_ret, (const unsigned char **)&val,
-                                      (const unsigned char *)val + val_len, 
+                                      (const unsigned char *)val + val_len,
                                        &var_hash);
 
             //if (php_var_unserialize(z_ret, (const unsigned char**)&val,
@@ -2445,7 +2442,7 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, int status_s
                 // Construct an array for our sub element, and add it, and recurse
                 array_init(&z_subelem);
                 add_next_index_zval(z_ret, &z_subelem);
-                redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, 
+                redis_read_multibulk_recursive(redis_sock, reply_info, status_strings,
                                                &z_subelem TSRMLS_CC);
                 break;
             default:
