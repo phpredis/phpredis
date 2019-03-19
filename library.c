@@ -38,6 +38,41 @@
     #include <sys/socket.h>  /* SO_KEEPALIVE */
 #else
     #include <winsock.h>
+
+    # if PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION <= 4
+        /* This proto is available from 5.5 on only */
+        PHP_REDIS_API int usleep(unsigned int useconds);
+    # endif
+#endif
+
+#if (PHP_MAJOR_VERSION < 7)
+    int (*_add_next_index_string)(zval *, const char *, int) = &add_next_index_string;
+    int (*_add_next_index_stringl)(zval *, const char *, uint, int) = &add_next_index_stringl;
+    int (*_add_assoc_bool_ex)(zval *, const char *, uint, int) = &add_assoc_bool_ex;
+    int (*_add_assoc_long_ex)(zval *, const char *, uint, long) = &add_assoc_long_ex;
+    int (*_add_assoc_double_ex)(zval *, const char *, uint, double) = &add_assoc_double_ex;
+    int (*_add_assoc_string_ex)(zval *, const char *, uint, char *, int) = &add_assoc_string_ex;
+    int (*_add_assoc_stringl_ex)(zval *, const char *, uint, char *, uint, int) = &add_assoc_stringl_ex;
+    int (*_add_assoc_zval_ex)(zval *, const char *, uint, zval *) = &add_assoc_zval_ex;
+    void (*_php_var_serialize)(smart_str *, zval **, php_serialize_data_t * TSRMLS_DC) = &php_var_serialize;
+    int (*_php_var_unserialize)(zval **, const unsigned char **, const unsigned char *, php_unserialize_data_t * TSRMLS_DC) = &php_var_unserialize;
+
+#define strpprintf zend_strpprintf
+
+static zend_string *
+zend_strpprintf(size_t max_len, const char *format, ...)
+{
+    va_list ap;
+    zend_string *zstr;
+
+    va_start(ap, format);
+    zstr = ecalloc(1, sizeof(*zstr));
+    ZSTR_LEN(zstr) = vspprintf(&ZSTR_VAL(zstr), max_len, format, ap);
+    zstr->gc = 0x11;
+    va_end(ap);
+    return zstr;
+}
+
 #endif
 
 extern zend_class_entry *redis_ce;
@@ -1738,7 +1773,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
             }
 
             gettimeofday(&tv, NULL);
-            persistent_id = strpprintf(0, "phpredis_%ld%ld", (long)tv.tv_sec, (long)tv.tv_usec);
+            persistent_id = strpprintf(0, "phpredis_%d%d", tv.tv_sec, tv.tv_usec);
         } else {
             if (redis_sock->persistent_id) {
                 persistent_id = strpprintf(0, "phpredis:%s:%s", host, ZSTR_VAL(redis_sock->persistent_id));
