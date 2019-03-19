@@ -259,6 +259,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, blPop, arginfo_blrpop, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, brPop, arginfo_blrpop, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, brpoplpush, arginfo_brpoplpush, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, bzPopMax, arginfo_blrpop, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, bzPopMin, arginfo_blrpop, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, clearLastError, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, client, arginfo_client, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, close, arginfo_void, ZEND_ACC_PUBLIC)
@@ -445,6 +447,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zScore, arginfo_key_member, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zUnion, arginfo_zstore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zPopMax, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zPopMin, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, del, delete, arginfo_del, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, evaluate, eval, arginfo_eval, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, evaluateSha, evalsha, arginfo_evalsha, ZEND_ACC_PUBLIC)
@@ -1311,14 +1315,14 @@ PHP_METHOD(Redis, rPop)
 /* {{{ proto string Redis::blPop(string key1, string key2, ..., int timeout) */
 PHP_METHOD(Redis, blPop)
 {
-    REDIS_PROCESS_CMD(blpop, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_KW_CMD("BLPOP", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
 /* {{{ proto string Redis::brPop(string key1, string key2, ..., int timeout) */
 PHP_METHOD(Redis, brPop)
 {
-    REDIS_PROCESS_CMD(brpop, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_KW_CMD("BRPOP", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
@@ -2074,6 +2078,44 @@ PHP_METHOD(Redis, zInter) {
 PHP_METHOD(Redis, zUnion) {
     REDIS_PROCESS_KW_CMD("ZUNIONSTORE", redis_zinter_cmd, redis_long_response);
 }
+
+/* {{{ proto array Redis::zPopMax(string key) */
+PHP_METHOD(Redis, zPopMax)
+{
+    if (ZEND_NUM_ARGS() == 1) {
+        REDIS_PROCESS_KW_CMD("ZPOPMAX", redis_key_cmd, redis_mbulk_reply_zipped_keys_dbl);
+    } else if (ZEND_NUM_ARGS() == 2) {
+        REDIS_PROCESS_KW_CMD("ZPOPMAX", redis_key_long_cmd, redis_mbulk_reply_zipped_keys_dbl);
+    } else {
+        ZEND_WRONG_PARAM_COUNT();
+    }
+}
+/* }}} */
+
+/* {{{ proto array Redis::zPopMin(string key) */
+PHP_METHOD(Redis, zPopMin)
+{
+    if (ZEND_NUM_ARGS() == 1) {
+        REDIS_PROCESS_KW_CMD("ZPOPMIN", redis_key_cmd, redis_mbulk_reply_zipped_keys_dbl);
+    } else if (ZEND_NUM_ARGS() == 2) {
+        REDIS_PROCESS_KW_CMD("ZPOPMIN", redis_key_long_cmd, redis_mbulk_reply_zipped_keys_dbl);
+    } else {
+        ZEND_WRONG_PARAM_COUNT();
+    }
+}
+/* }}} */
+
+/* {{{ proto Redis::bzPopMax(Array(keys) [, timeout]): Array */
+PHP_METHOD(Redis, bzPopMax) {
+    REDIS_PROCESS_KW_CMD("BZPOPMAX", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
+}
+/* }}} */
+
+/* {{{ proto Redis::bzPopMin(Array(keys) [, timeout]): Array */
+PHP_METHOD(Redis, bzPopMin) {
+    REDIS_PROCESS_KW_CMD("BZPOPMIN", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
+}
+/* }}} */
 
 /* hashes */
 

@@ -1251,6 +1251,15 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* Generic handling of every blocking pop command (BLPOP, BZPOP[MIN/MAX], etc */
+int redis_blocking_pop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                           char *kw, char **cmd, int *cmd_len, short *slot,
+                           void **ctx)
+{
+    return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw,
+        strlen(kw), 2, 2, cmd, cmd_len, slot);
+}
+
 /*
  * Commands with specific signatures or that need unique functions because they
  * have specific processing (argument validation, etc) that make them unique
@@ -3042,22 +3051,6 @@ int redis_watch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         "WATCH", sizeof("WATCH")-1, 1, 0, cmd, cmd_len, slot);
-}
-
-/* BLPOP */
-int redis_blpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    char **cmd, int *cmd_len, short *slot, void **ctx)
-{
-    return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-        "BLPOP", sizeof("BLPOP")-1, 2, 1, cmd, cmd_len, slot);
-}
-
-/* BRPOP */
-int redis_brpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    char **cmd, int *cmd_len, short *slot, void **ctx)
-{
-    return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-        "BRPOP", sizeof("BRPOP")-1, 1, 1, cmd, cmd_len, slot);
 }
 
 /* SINTER */
