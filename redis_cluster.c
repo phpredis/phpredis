@@ -372,14 +372,14 @@ static zend_string *cluster_hash_seeds(HashTable *ht) {
     return hash.s;
 }
 
-#define CACHING_ENABLED() (INI_INT("redis.clusters.cache_slots") == 1)
+#define SLOT_CACHING_ENABLED() (INI_INT("redis.clusters.cache_slots") == 1)
 static redisCachedCluster *cluster_cache_load(HashTable *ht_seeds TSRMLS_DC) {
     zend_resource *le;
     zend_string *h;
 
     /* Short circuit if we're not caching slots or if our seeds don't have any
      * elements, since it doesn't make sense to cache an empty string */
-    if (!CACHING_ENABLED() || zend_hash_num_elements(ht_seeds) == 0)
+    if (!SLOT_CACHING_ENABLED() || zend_hash_num_elements(ht_seeds) == 0)
         return NULL;
 
     /* Look for cached slot information */
@@ -408,8 +408,8 @@ static int cluster_cache_store(HashTable *ht_seeds, HashTable *nodes TSRMLS_DC) 
     zend_string *hash;
 
     /* Short circuit if caching is disabled or there aren't any seeds */
-    if (!CACHING_ENABLED() || zend_hash_num_elements(ht_seeds) == 0)
-        return !CACHING_ENABLED() ? SUCCESS : FAILURE;
+    if (!SLOT_CACHING_ENABLED() || zend_hash_num_elements(ht_seeds) == 0)
+        return !SLOT_CACHING_ENABLED() ? SUCCESS : FAILURE;
 
     /* Construct our cache */
     hash = cluster_hash_seeds(ht_seeds);
