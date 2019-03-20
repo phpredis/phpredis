@@ -2835,23 +2835,23 @@ $redis->zRevRank('key', 'two'); /* 0 */
 
 ### zRem, zDelete
 -----
-_**Description**_: Deletes a specified member from the ordered set.
+_**Description**_: Delete one or more members from a sorted set.
 
-##### *Parameters*
-*key*  
-*member*
+##### *Prototype*
+~~~php
+$redis->zRem($key, $member [, $member ...]);
+~~~
 
 ##### *Return value*
-*LONG* 1 on success, 0 on failure.
+*LONG:* The number of members deleted.
 
 ##### *Example*
 ~~~php
-$redis->zAdd('key', 0, 'val0');
-$redis->zAdd('key', 2, 'val2');
-$redis->zAdd('key', 10, 'val10');
-$redis->zDelete('key', 'val2');
-$redis->zRange('key', 0, -1); /* ['val0', 'val10'] */
+$redis->zAdd('key', 0, 'val0', 1, 'val1', 2, 'val2');
+$redis->zRem('key', 'val0', 'val1', 'val2'); // Returns: 3
 ~~~
+
+**Note:** `zDelete` is an alias for `zRem` and may be removed in future versions of phpredis.
 
 ### zRemRangeByRank, zDeleteRangeByRank
 -----
