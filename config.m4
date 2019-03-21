@@ -11,15 +11,14 @@ PHP_ARG_ENABLE(redis-session, whether to disable sessions,
 PHP_ARG_ENABLE(redis-igbinary, whether to enable igbinary serializer support,
 [  --enable-redis-igbinary Enable igbinary serializer support], no, no)
 
+PHP_ARG_ENABLE(redis-msgpack, whether to enable msgpack serializer support,
+[  --enable-redis-msgpack       Enable msgpack serializer support], no, no)
+
 PHP_ARG_ENABLE(redis-lzf, whether to enable lzf compression,
 [  --enable-redis-lzf      Enable lzf compression support], no, no)
 
 PHP_ARG_WITH(liblzf, use system liblzf,
 [  --with-liblzf[=DIR]       Use system liblzf], no, no)
-[  --enable-redis-igbinary      Enable igbinary serializer support], no, no)
-
-PHP_ARG_ENABLE(redis-msgpack, whether to enable msgpack serializer support,
-[  --enable-redis-msgpack       Enable msgpack serializer support], no, no)
 
 if test "$PHP_REDIS" != "no"; then
 

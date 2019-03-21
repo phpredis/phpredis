@@ -1914,67 +1914,6 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
     return 0;
 }
 
-/**
- * redis_sock_read_multibulk_reply_vals
- *
- * This is identical to redis_sock_read_multibulk_reply except that it unserializes vals only, rather than rely on
- * the chosen unserializer to silently return 0 after a failed attempt (which msgpack does not do).
- *
- * Perhaps not the optimal solution, but the easiest way to resolve the problem of failed attempts to
- * unserialize a key that hadn't been serialized to begin with in blpop, brpop.
- *
- */
-PHP_REDIS_API int redis_sock_read_multibulk_reply_vals(INTERNAL_FUNCTION_PARAMETERS,
-                                                  RedisSock *redis_sock, zval *z_tab,
-                                                  void *ctx)
-{
-    char inbuf[1024];
-    int numElems, err_len;
-
-    if(-1 == redis_check_eof(redis_sock, 0 TSRMLS_CC)) {
-        return -1;
-    }
-
-    if(php_stream_gets(redis_sock->stream, inbuf, 1024) == NULL) {
-        REDIS_STREAM_CLOSE_MARK_FAILED(redis_sock);
-        zend_throw_exception(redis_exception_ce, "read error on connection", 0
-        TSRMLS_CC);
-        return -1;
-    }
-
-    if(inbuf[0] != '*') {
-        IF_MULTI_OR_PIPELINE() {
-            add_next_index_bool(z_tab, 0);
-        } else {
-            if (inbuf[0] == '-') {
-                err_len = strlen(inbuf+1) - 2;
-                redis_sock_set_err(redis_sock, inbuf+1, err_len);
-            }
-            RETVAL_FALSE;
-        }
-        return -1;
-    }
-
-    numElems = atoi(inbuf+1);
-    zval zv, *z_multi_result = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-    MAKE_STD_ZVAL(z_multi_result);
-#endif
-    array_init(z_multi_result); /* pre-allocate array for multi's results. */
-
-    redis_mbulk_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-                           z_multi_result, numElems, UNSERIALIZE_VALS);
-
-    IF_MULTI_OR_PIPELINE() {
-        add_next_index_zval(z_tab, z_multi_result);
-    } else {
-        RETVAL_ZVAL(z_multi_result, 0, 1);
-    }
-    /*zval_copy_ctor(return_value); */
-    return 0;
-}
-
-
 /* Like multibulk reply, but don't touch the values, they won't be unserialized
  * (this is used by HKEYS). */
 PHP_REDIS_API int
