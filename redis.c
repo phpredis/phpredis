@@ -795,6 +795,22 @@ PHP_MSHUTDOWN_FUNCTION(redis)
     return SUCCESS;
 }
 
+static const char *get_available_serializers(void) {
+#ifdef HAVE_REDIS_IGBINARY
+    #ifdef HAVE_REDIS_MSGPACK
+        return "php, igbinary, msgpack";
+    #else
+        return "php, igbinary";
+    #endif
+#else
+    #ifdef HAVE_REDIS_MSGPACK
+        return "php, msgpack";
+    #else
+        return "php";
+    #endif
+#endif
+}
+
 /**
  * PHP_MINFO_FUNCTION
  */
@@ -806,11 +822,7 @@ PHP_MINFO_FUNCTION(redis)
 #ifdef GIT_REVISION
     php_info_print_table_row(2, "Git revision", "$Id: " GIT_REVISION " $");
 #endif
-#ifdef HAVE_REDIS_IGBINARY
-    php_info_print_table_row(2, "Available serializers", "php, igbinary");
-#else
-    php_info_print_table_row(2, "Available serializers", "php");
-#endif
+    php_info_print_table_row(2, "Available serializers", get_available_serializers());
 #ifdef HAVE_REDIS_LZF
     php_info_print_table_row(2, "Available compression", "lzf");
 #endif
