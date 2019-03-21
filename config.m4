@@ -38,7 +38,7 @@ dnl Check for igbinary
     elif test -f "$phpincludedir/ext/igbinary/igbinary.h"; then
       igbinary_inc_path="$phpincludedir"
     else
-      for i in php php4 php5 php6 php7; do
+      for i in php php7; do
         if test -f "$prefix/include/$i/ext/igbinary/igbinary.h"; then
           igbinary_inc_path="$prefix/include/$i"
         fi
@@ -117,7 +117,7 @@ dnl Check for msgpack
     elif test -f "$phpincludedir/ext/msgpack/php_msgpack.h"; then
       msgpack_inc_path="$phpincludedir"
     else
-      for i in php php4 php5 php6 php7; do
+      for i in php php7; do
         if test -f "$prefix/include/$i/ext/msgpack/php_msgpack.h"; then
           msgpack_inc_path="$prefix/include/$i"
         fi
