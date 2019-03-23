@@ -133,15 +133,20 @@ dnl Check for msgpack
 
   AC_MSG_CHECKING([for redis msgpack support])
   if test "$PHP_REDIS_MSGPACK" != "no"; then
-    AC_MSG_RESULT([enabled])
-    AC_DEFINE(HAVE_REDIS_MSGPACK,1,[Whether redis msgpack serializer is enabled])
-    MSGPACK_INCLUDES="-I$msgpack_inc_path"
-    MSGPACK_EXT_DIR="$msgpack_inc_path/ext"
-    ifdef([PHP_ADD_EXTENSION_DEP],
-    [
-      PHP_ADD_EXTENSION_DEP(redis, msgpack)
-    ])
-    PHP_ADD_INCLUDE($MSGPACK_EXT_DIR)
+    msgpack_version=`grep -o 'PHP_MSGPACK_VERSION "[0-9\.]\+"' $msgpack_inc_path/ext/msgpack/php_msgpack.h | awk '{print $2}' | tr -d '"'`
+    if expr $msgpack_version "<" "2.0.3" > /dev/null; then
+      AC_MSG_ERROR([msgpack 2.0.3 or greater required])
+    else
+      AC_MSG_RESULT([enabled])
+      AC_DEFINE(HAVE_REDIS_MSGPACK,1,[Whether redis msgpack serializer is enabled])
+      MSGPACK_INCLUDES="-I$msgpack_inc_path"
+      MSGPACK_EXT_DIR="$msgpack_inc_path/ext"
+      ifdef([PHP_ADD_EXTENSION_DEP],
+      [
+        PHP_ADD_EXTENSION_DEP(redis, msgpack)
+      ])
+      PHP_ADD_INCLUDE($MSGPACK_EXT_DIR)
+    fi
   else
     MSGPACK_INCLUDES=""
     AC_MSG_RESULT([disabled])

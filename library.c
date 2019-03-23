@@ -2245,14 +2245,7 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 
         case REDIS_SERIALIZER_MSGPACK:
 #ifdef HAVE_REDIS_MSGPACK
-            /*
-             * Would like to be able to check to see if a string is msgpack'd (like with igbinary, below),
-             * but I don't believe there's an easy way to do that as there's no consistent header or
-             * other simple indication of packed-ness in msgpacked binary sequences, as far as I know.
-             */
-
-            php_msgpack_unserialize(z_ret, (char *)val, (size_t)val_len TSRMLS_CC);
-            ret = 1;
+            ret = !php_msgpack_unserialize(z_ret, (char *)val, (size_t)val_len TSRMLS_CC);
 #endif
             break;
 
