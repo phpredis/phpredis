@@ -4223,6 +4223,17 @@ class Redis_Test extends TestSuite
         }
     }
 
+    public function testSerializerMsgPack() {
+        if(defined('Redis::SERIALIZER_MSGPACK')) {
+            $this->checkSerializer(Redis::SERIALIZER_MSGPACK);
+
+            // with prefix
+            $this->redis->setOption(Redis::OPT_PREFIX, "test:");
+            $this->checkSerializer(Redis::SERIALIZER_MSGPACK);
+            $this->redis->setOption(Redis::OPT_PREFIX, "");
+        }
+    }
+
     private function checkSerializer($mode) {
 
         $this->redis->del('key');
@@ -4716,6 +4727,10 @@ class Redis_Test extends TestSuite
             $arr_serializers[] = Redis::SERIALIZER_IGBINARY;
         }
 
+        if(defined('Redis::SERIALIZER_MSGPACK')) {
+            $arr_serializers[] = Redis::SERIALIZER_MSGPACK;
+        }
+
         foreach($arr_serializers as $mode) {
             $arr_enc = [];
             $arr_dec = [];
@@ -4735,9 +4750,14 @@ class Redis_Test extends TestSuite
             1,1.5,'one',['this','is','an','array']
         ];
 
-        $serializers = [Redis::SERIALIZER_PHP];
+        $serializers = Array(Redis::SERIALIZER_PHP);
+
         if(defined('Redis::SERIALIZER_IGBINARY')) {
             $serializers[] = Redis::SERIALIZER_IGBINARY;
+        }
+
+        if(defined('Redis::SERIALIZER_MSGPACK')) {
+            $serializers[] = Redis::SERIALIZER_MSGPACK;
         }
 
         foreach($serializers as $mode) {

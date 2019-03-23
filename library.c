@@ -9,6 +9,9 @@
 #ifdef HAVE_REDIS_IGBINARY
 #include "igbinary/igbinary.h"
 #endif
+#ifdef HAVE_REDIS_MSGPACK
+#include "msgpack/php_msgpack.h"
+#endif
 
 #ifdef HAVE_REDIS_LZF
 #include <lzf.h>
@@ -1894,6 +1897,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
         }
         return -1;
     }
+
     numElems = atoi(inbuf+1);
     zval z_multi_result;
     array_init(&z_multi_result); /* pre-allocate array for multi's results. */
@@ -2195,6 +2199,17 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
             PHP_VAR_SERIALIZE_DESTROY(ht);
 
             return 1;
+
+        case REDIS_SERIALIZER_MSGPACK:
+#ifdef HAVE_REDIS_MSGPACK
+            php_msgpack_serialize(&sstr, z TSRMLS_CC);
+            *val = estrndup(sstr.s->val, sstr.s->len);
+            *val_len = sstr.s->len;
+            smart_str_free(&sstr);
+
+            return 1;
+#endif
+            break;
         case REDIS_SERIALIZER_IGBINARY:
 #ifdef HAVE_REDIS_IGBINARY
             if(igbinary_serialize(&val8, (size_t *)&sz, z TSRMLS_CC) == 0) {
@@ -2205,6 +2220,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
 #endif
             break;
     }
+
     return 0;
 }
 
@@ -2225,6 +2241,12 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
                                        &var_hash);
 
             PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
+            break;
+
+        case REDIS_SERIALIZER_MSGPACK:
+#ifdef HAVE_REDIS_MSGPACK
+            ret = !php_msgpack_unserialize(z_ret, (char *)val, (size_t)val_len TSRMLS_CC);
+#endif
             break;
 
         case REDIS_SERIALIZER_IGBINARY:
@@ -2257,6 +2279,7 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 #endif
             break;
     }
+
     return ret;
 }
 

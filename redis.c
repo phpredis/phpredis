@@ -693,6 +693,10 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE_SLAVES"), REDIS_FAILOVER_DISTRIBUTE_SLAVES TSRMLS_CC);
     }
 
+#ifdef HAVE_REDIS_MSGPACK
+    zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_MSGPACK"), REDIS_SERIALIZER_MSGPACK TSRMLS_CC);
+#endif
+
     zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5 TSRMLS_CC);
     zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6 TSRMLS_CC);
 }
@@ -791,6 +795,22 @@ PHP_MSHUTDOWN_FUNCTION(redis)
     return SUCCESS;
 }
 
+static const char *get_available_serializers(void) {
+#ifdef HAVE_REDIS_IGBINARY
+    #ifdef HAVE_REDIS_MSGPACK
+        return "php, igbinary, msgpack";
+    #else
+        return "php, igbinary";
+    #endif
+#else
+    #ifdef HAVE_REDIS_MSGPACK
+        return "php, msgpack";
+    #else
+        return "php";
+    #endif
+#endif
+}
+
 /**
  * PHP_MINFO_FUNCTION
  */
@@ -802,11 +822,7 @@ PHP_MINFO_FUNCTION(redis)
 #ifdef GIT_REVISION
     php_info_print_table_row(2, "Git revision", "$Id: " GIT_REVISION " $");
 #endif
-#ifdef HAVE_REDIS_IGBINARY
-    php_info_print_table_row(2, "Available serializers", "php, igbinary");
-#else
-    php_info_print_table_row(2, "Available serializers", "php");
-#endif
+    php_info_print_table_row(2, "Available serializers", get_available_serializers());
 #ifdef HAVE_REDIS_LZF
     php_info_print_table_row(2, "Available compression", "lzf");
 #endif
