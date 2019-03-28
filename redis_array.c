@@ -924,6 +924,9 @@ PHP_METHOD(RedisArray, mget)
         unsigned int key_len;
         char kbuf[40], *key_lookup;
 
+        /* Handle the possibility that we're a reference */
+        ZVAL_DEREF(data);
+
         /* phpredis proper can only use string or long keys, so restrict to that here */
         if (Z_TYPE_P(data) != IS_STRING && Z_TYPE_P(data) != IS_LONG) {
             php_error_docref(NULL TSRMLS_CC, E_ERROR, "MGET: all keys must be strings or longs");
