@@ -51,12 +51,12 @@ Each time the a `RedisCluster` class is constructed from scratch, phpredis needs
 ## Timeouts
 Because Redis cluster is intended to provide high availability, timeouts do not work in the same way they do in normal socket communication.  It's fully possible to have a timeout or even exception on a given socket (say in the case that a master node has failed), and continue to serve the request if and when a slave can be promoted as the new master.
 
-The way RedisCluster handles user specified timeout values is that every time a command is sent to the cluster, we record the the time at the start of the request and then again every time we have to re-issue the command to a different node (either because Redis cluster responded with MOVED/ASK or because we failed to communicate with a given node).  Once we detect having been in the command loop for longer than our specified timeout, an error is raised.
+The way RedisCluster handles user specified timeout values is that every time a command is sent to the cluster, we record the time at the start of the request and then again every time we have to re-issue the command to a different node (either because Redis cluster responded with MOVED/ASK or because we failed to communicate with a given node).  Once we detect having been in the command loop for longer than our specified timeout, an error is raised.
 
 ## Keyspace map
 As previously described, RedisCluster makes an initial mapping of every master (and any slaves) on construction, which it uses to determine which nodes to direct a given command.  However, one of the core functionalities of Redis cluster is that this keyspace can change while the cluster is running.
 
-Because of this, the RedisCluster class will update it's keyspace mapping whenever it receives a MOVED error when requesting data.  In the case that we receive ASK redirection, it follows the Redis specification and requests the key from the ASK node, prefixed with an ASKING command.
+Because of this, the RedisCluster class will update its keyspace mapping whenever it receives a MOVED error when requesting data.  In the case that we receive ASK redirection, it follows the Redis specification and requests the key from the ASK node, prefixed with an ASKING command.
 
 ## Automatic slave failover / distribution
 By default, RedisCluster will only ever send commands to master nodes, but can be configured differently for readonly commands if requested.
@@ -84,7 +84,7 @@ With the exception of commands that are directed to a specific node, each comman
 
 1.  We fail to communicate with *any* node that we are aware of, in which case a ```RedisClusterException``` is raised.
 2.  We have been bounced around longer than the timeout which was set on construction.
-3.  Redis cluster returns us a ```CLUSTERDOWN``` error, in which case a ```RedisClusterException``` is raised.
+3.  Redis cluster returns to us a ```CLUSTERDOWN``` error, in which case a ```RedisClusterException``` is raised.
 4.  We receive a valid response, in which case the data is returned to the caller.
 
 ## Transactions
