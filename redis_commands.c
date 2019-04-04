@@ -3868,21 +3868,21 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
 {
     long val_long;
     zend_long option;
-    char *val_str;
+    zval *val;
+    zend_string *val_str;
     struct timeval read_tv;
-    size_t val_len;
     int tcp_keepalive = 0;
     php_netstream_data_t *sock;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &option,
-                              &val_str, &val_len) == FAILURE)
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lz", &option,
+                              &val) == FAILURE)
     {
         RETURN_FALSE;
     }
 
     switch(option) {
         case REDIS_OPT_SERIALIZER:
-            val_long = atol(val_str);
+            val_long = zval_get_long(val);
             if (val_long == REDIS_SERIALIZER_NONE || val_long == REDIS_SERIALIZER_PHP
 #ifdef HAVE_REDIS_IGBINARY
                 || val_long == REDIS_SERIALIZER_IGBINARY
@@ -3896,7 +3896,7 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             }
             break;
         case REDIS_OPT_COMPRESSION:
-            val_long = atol(val_str);
+            val_long = zval_get_long(val);
             if (val_long == REDIS_COMPRESSION_NONE
 #ifdef HAVE_REDIS_LZF
                 || val_long == REDIS_COMPRESSION_LZF
@@ -3911,12 +3911,15 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                 zend_string_release(redis_sock->prefix);
                 redis_sock->prefix = NULL;
             }
-            if (val_str && val_len > 0) {
-                redis_sock->prefix = zend_string_init(val_str, val_len, 0);
+            val_str = zval_get_string(val);
+            if (ZSTR_LEN(val_str) > 0) {
+                redis_sock->prefix = val_str;
+            } else {
+                zend_string_release(val_str);
             }
             RETURN_TRUE;
         case REDIS_OPT_READ_TIMEOUT:
-            redis_sock->read_timeout = atof(val_str);
+            redis_sock->read_timeout = zval_get_double(val);
             if (redis_sock->stream) {
                 read_tv.tv_sec  = (time_t)redis_sock->read_timeout;
                 read_tv.tv_usec = (int)((redis_sock->read_timeout -
@@ -3932,7 +3935,7 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             if (ZSTR_VAL(redis_sock->host)[0] == '/' && redis_sock->port < 1) {
                 RETURN_FALSE;
             }
-            tcp_keepalive = atol(val_str) > 0 ? 1 : 0;
+            tcp_keepalive = zval_get_long(val) > 0 ? 1 : 0;
             if (redis_sock->tcp_keepalive == tcp_keepalive) {
                 RETURN_TRUE;
             }
@@ -3947,14 +3950,14 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             }
             RETURN_TRUE;
         case REDIS_OPT_SCAN:
-            val_long = atol(val_str);
+            val_long = zval_get_long(val);
             if (val_long==REDIS_SCAN_NORETRY || val_long==REDIS_SCAN_RETRY) {
                 redis_sock->scan = val_long;
                 RETURN_TRUE;
             }
             break;
         case REDIS_OPT_FAILOVER:
-            val_long = atol(val_str);
+            val_long = zval_get_long(val);
             if (val_long == REDIS_FAILOVER_NONE ||
                 val_long == REDIS_FAILOVER_ERROR ||
                 val_long == REDIS_FAILOVER_DISTRIBUTE ||
