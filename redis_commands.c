@@ -3866,8 +3866,7 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
 void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                              RedisSock *redis_sock, redisCluster *c)
 {
-    long val_long;
-    zend_long option;
+    zend_long val_long, option;
     zval *val;
     zend_string *val_str;
     struct timeval read_tv;
