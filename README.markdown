@@ -3430,8 +3430,8 @@ _**Description**_:  This command is used in order to create, destroy, or manage 
 
 ##### *Example*
 ~~~php
-$obj_redis->xGroup('CREATE', 'mystream', 'mygroup');
-$obj_redis->xGroup('CREATE', 'mystream', 'mygroup2', true); /* Create stream if non-existent. */
+$obj_redis->xGroup('CREATE', 'mystream', 'mygroup', 0);
+$obj_redis->xGroup('CREATE', 'mystream', 'mygroup2', 0, true); /* Create stream if non-existent. */
 $obj_redis->xGroup('DESTROY', 'mystream', 'mygroup');
 ~~~
 
