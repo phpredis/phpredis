@@ -696,47 +696,57 @@ class Redis_Test extends TestSuite
 
     public function testType()
     {
-    // 0 => none, (key didn't exist)
-    // 1=> string,
-    // 2 => set,
-    // 3 => list,
-    // 4 => zset,
-    // 5 => hash
+        // 0 => none, (key didn't exist)
+        // 1=> string,
+        // 2 => set,
+        // 3 => list,
+        // 4 => zset,
+        // 5 => hash
+        // 6 => stream
 
-    // string
-    $this->redis->set('key', 'val');
-    $this->assertEquals(Redis::REDIS_STRING, $this->redis->type('key'));
+        // string
+        $this->redis->set('key', 'val');
+        $this->assertEquals(Redis::REDIS_STRING, $this->redis->type('key'));
 
-    // list
-    $this->redis->lPush('keyList', 'val0');
-    $this->redis->lPush('keyList', 'val1');
-    $this->assertEquals(Redis::REDIS_LIST, $this->redis->type('keyList'));
+        // list
+        $this->redis->lPush('keyList', 'val0');
+        $this->redis->lPush('keyList', 'val1');
+        $this->assertEquals(Redis::REDIS_LIST, $this->redis->type('keyList'));
 
-    // set
-    $this->redis->del('keySet');
-    $this->redis->sAdd('keySet', 'val0');
-    $this->redis->sAdd('keySet', 'val1');
-    $this->assertEquals(Redis::REDIS_SET, $this->redis->type('keySet'));
+        // set
+        $this->redis->del('keySet');
+        $this->redis->sAdd('keySet', 'val0');
+        $this->redis->sAdd('keySet', 'val1');
+        $this->assertEquals(Redis::REDIS_SET, $this->redis->type('keySet'));
 
-    // sadd with numeric key
-    $this->redis->del(123);
-    $this->assertTrue(1 === $this->redis->sAdd(123, 'val0'));
-    $this->assertTrue(['val0'] === $this->redis->sMembers(123));
+        // sadd with numeric key
+        $this->redis->del(123);
+        $this->assertTrue(1 === $this->redis->sAdd(123, 'val0'));
+        $this->assertTrue(['val0'] === $this->redis->sMembers(123));
 
-    // zset
-    $this->redis->del('keyZSet');
-    $this->redis->zAdd('keyZSet', 0, 'val0');
-    $this->redis->zAdd('keyZSet', 1, 'val1');
-    $this->assertEquals(Redis::REDIS_ZSET, $this->redis->type('keyZSet'));
+        // zset
+        $this->redis->del('keyZSet');
+        $this->redis->zAdd('keyZSet', 0, 'val0');
+        $this->redis->zAdd('keyZSet', 1, 'val1');
+        $this->assertEquals(Redis::REDIS_ZSET, $this->redis->type('keyZSet'));
 
-    // hash
-    $this->redis->del('keyHash');
-    $this->redis->hSet('keyHash', 'key0', 'val0');
-    $this->redis->hSet('keyHash', 'key1', 'val1');
-    $this->assertEquals(Redis::REDIS_HASH, $this->redis->type('keyHash'));
+        // hash
+        $this->redis->del('keyHash');
+        $this->redis->hSet('keyHash', 'key0', 'val0');
+        $this->redis->hSet('keyHash', 'key1', 'val1');
+        $this->assertEquals(Redis::REDIS_HASH, $this->redis->type('keyHash'));
 
-    //None
-    $this->assertEquals(Redis::REDIS_NOT_FOUND, $this->redis->type('keyNotExists'));
+        // stream
+        if ($this->minVersionCheck("5.0")) {
+            $this->redis->del('stream');
+            $this->redis->xAdd('stream', '*', ['foo' => 'bar']);
+            $this->assertEquals(Redis::REDIS_STREAM, $this->redis->type('stream'));
+        }
+
+        // None
+        $this->redis->del('keyNotExists');
+        $this->assertEquals(Redis::REDIS_NOT_FOUND, $this->redis->type('keyNotExists'));
+
     }
 
     public function testStr() {
@@ -2447,7 +2457,7 @@ class Redis_Test extends TestSuite
         $this->redis->del('key');
         $this->redis->zAdd('key', 0, 'a', 1, 'b', 2, 'c', 3, 'd', 4, 'e');
         $this->assertTrue(array('e' => 4.0, 'd' => 3.0, 'c' => 2.0) === $this->redis->zPopMax('key', 3));
-        
+
         // zPopMin with a COUNT argument
         $this->redis->del('key');
         $this->redis->zAdd('key', 0, 'a', 1, 'b', 2, 'c', 3, 'd', 4, 'e');
