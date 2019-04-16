@@ -649,6 +649,7 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
     zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_LIST"), REDIS_LIST TSRMLS_CC);
     zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_ZSET"), REDIS_ZSET TSRMLS_CC);
     zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_HASH"), REDIS_HASH TSRMLS_CC);
+    zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_STREAM"), REDIS_STREAM TSRMLS_CC);
 
     /* Cluster doesn't support pipelining at this time */
     if(!is_cluster) {

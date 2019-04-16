@@ -33,6 +33,7 @@
 #define REDIS_LIST      3
 #define REDIS_ZSET      4
 #define REDIS_HASH      5
+#define REDIS_STREAM    6
 
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)

@@ -807,6 +807,8 @@ PHP_REDIS_API void redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *
         l = REDIS_ZSET;
     } else if (strncmp(response, "+hash", 5) == 0){
         l = REDIS_HASH;
+    } else if (strncmp(response, "+stream", 7) == 0) {
+        l = REDIS_STREAM;
     } else {
         l = REDIS_NOT_FOUND;
     }
