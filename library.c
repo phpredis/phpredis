@@ -1810,17 +1810,17 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 PHP_REDIS_API int
 redis_sock_server_open(RedisSock *redis_sock TSRMLS_DC)
 {
-    int res = -1;
-
-    switch (redis_sock->status) {
+    if (redis_sock) {
+        switch (redis_sock->status) {
+        case REDIS_SOCK_STATUS_FAILED:
+            return FAILURE;
         case REDIS_SOCK_STATUS_DISCONNECTED:
             return redis_sock_connect(redis_sock TSRMLS_CC);
-        case REDIS_SOCK_STATUS_CONNECTED:
-            res = 0;
-        break;
+        default:
+            return SUCCESS;
+        }
     }
-
-    return res;
+    return FAILURE;
 }
 
 /**

@@ -20,9 +20,11 @@
 #define NULL   ((void *) 0)
 #endif
 
-#define REDIS_SOCK_STATUS_FAILED       0
-#define REDIS_SOCK_STATUS_DISCONNECTED 1
-#define REDIS_SOCK_STATUS_CONNECTED    2
+typedef enum {
+    REDIS_SOCK_STATUS_FAILED = -1,
+    REDIS_SOCK_STATUS_DISCONNECTED,
+    REDIS_SOCK_STATUS_CONNECTED
+} redis_sock_status;
 
 #define _NL "\r\n"
 
@@ -238,37 +240,36 @@ typedef struct fold_item {
 
 /* {{{ struct RedisSock */
 typedef struct {
-    php_stream     *stream;
-    zend_string    *host;
-    short          port;
-    zend_string    *auth;
-    double         timeout;
-    double         read_timeout;
-    long           retry_interval;
-    int            failed;
-    int            status;
-    int            persistent;
-    int            watching;
-    zend_string    *persistent_id;
+    php_stream        *stream;
+    zend_string       *host;
+    short             port;
+    zend_string       *auth;
+    double            timeout;
+    double            read_timeout;
+    long              retry_interval;
+    redis_sock_status status;
+    int               persistent;
+    int               watching;
+    zend_string       *persistent_id;
 
-    int            serializer;
-    int            compression;
-    long           dbNumber;
+    int               serializer;
+    int               compression;
+    long              dbNumber;
 
-    zend_string    *prefix;
+    zend_string       *prefix;
 
-    short          mode;
-    fold_item      *head;
-    fold_item      *current;
+    short             mode;
+    fold_item         *head;
+    fold_item         *current;
 
-    zend_string    *pipeline_cmd;
+    zend_string       *pipeline_cmd;
 
-    zend_string    *err;
+    zend_string       *err;
 
-    int            scan;
+    int               scan;
 
-    int            readonly;
-    int            tcp_keepalive;
+    int               readonly;
+    int               tcp_keepalive;
 } RedisSock;
 /* }}} */
 
