@@ -1808,7 +1808,7 @@ PHP_REDIS_API void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
         CLUSTER_RETURN_LONG(c, REDIS_HASH);
     } else if (strncmp(c->line_reply, "zset", 4) == 0) {
         CLUSTER_RETURN_LONG(c, REDIS_ZSET);
-    } else if (strncmp(c->line_reply, "+stream", 7) == 0) {
+    } else if (strncmp(c->line_reply, "stream", 6) == 0) {
         CLUSTER_RETURN_LONG(c, REDIS_STREAM);
     } else {
         CLUSTER_RETURN_LONG(c, REDIS_NOT_FOUND);
