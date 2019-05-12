@@ -2340,11 +2340,19 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size,
     if(php_stream_get_line(redis_sock->stream, buf, buf_size, line_size)
                            == NULL)
     {
+        char *errmsg = NULL;
+
+        if (redis_sock->port < 0) {
+            spprintf(&errmsg, 0, "read error on connection to %S", redis_sock->host);
+        } else {
+            spprintf(&errmsg, 0, "read error on connection to %S:%d", redis_sock->host, redis_sock->port);
+        }
         // Close our socket
         redis_sock_disconnect(redis_sock, 1 TSRMLS_CC);
 
         // Throw a read error exception
-        REDIS_THROW_EXCEPTION( "read error on connection", 0);
+        REDIS_THROW_EXCEPTION(errmsg, 0);
+        efree(errmsg);
         return -1;
     }
 
