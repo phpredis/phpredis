@@ -4244,6 +4244,16 @@ class Redis_Test extends TestSuite
         }
     }
 
+    public function testSerializerJSON()
+    {
+        $this->checkSerializer(Redis::SERIALIZER_JSON);
+
+        // with prefix
+        $this->redis->setOption(Redis::OPT_PREFIX, "test:");
+        $this->checkSerializer(Redis::SERIALIZER_JSON);
+        $this->redis->setOption(Redis::OPT_PREFIX, "");
+    }
+
     private function checkSerializer($mode) {
 
         $this->redis->del('key');
@@ -4452,8 +4462,13 @@ class Redis_Test extends TestSuite
         $this->redis->set('x', [new stdClass, new stdClass]);
         $x = $this->redis->get('x');
         $this->assertTrue(is_array($x));
-        $this->assertTrue(is_object($x[0]) && get_class($x[0]) === 'stdClass');
-        $this->assertTrue(is_object($x[1]) && get_class($x[1]) === 'stdClass');
+        if ($mode === Redis::SERIALIZER_JSON) {
+            $this->assertTrue(is_array($x[0]));
+            $this->assertTrue(is_array($x[1]));
+        } else {
+            $this->assertTrue(is_object($x[0]) && get_class($x[0]) === 'stdClass');
+            $this->assertTrue(is_object($x[1]) && get_class($x[1]) === 'stdClass');
+        }
 
         // revert
         $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE) === TRUE);     // set ok

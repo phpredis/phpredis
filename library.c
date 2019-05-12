@@ -25,6 +25,7 @@
 #include "php_redis.h"
 #include "library.h"
 #include "redis_commands.h"
+#include <ext/json/php_json.h>
 #include <ext/standard/php_rand.h>
 
 #define UNSERIALIZE_NONE 0
@@ -2165,7 +2166,6 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
     switch(redis_sock->serializer) {
         case REDIS_SERIALIZER_NONE:
             switch(Z_TYPE_P(z)) {
-
                 case IS_STRING:
                     *val = Z_STRVAL_P(z);
                     *val_len = Z_STRLEN_P(z);
@@ -2205,8 +2205,8 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
         case REDIS_SERIALIZER_MSGPACK:
 #ifdef HAVE_REDIS_MSGPACK
             php_msgpack_serialize(&sstr, z TSRMLS_CC);
-            *val = estrndup(sstr.s->val, sstr.s->len);
-            *val_len = sstr.s->len;
+            *val = estrndup(ZSTR_VAL(sstr.s), ZSTR_LEN(sstr.s));
+            *val_len = ZSTR_LEN(sstr.s);
             smart_str_free(&sstr);
 
             return 1;
@@ -2221,6 +2221,13 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
             }
 #endif
             break;
+        case REDIS_SERIALIZER_JSON:
+            php_json_encode(&sstr, z, PHP_JSON_OBJECT_AS_ARRAY);
+            *val = estrndup(ZSTR_VAL(sstr.s), ZSTR_LEN(sstr.s));
+            *val_len = ZSTR_LEN(sstr.s);
+            smart_str_free(&sstr);
+            return 1;
+        EMPTY_SWITCH_DEFAULT_CASE()
     }
 
     return 0;
@@ -2235,6 +2242,9 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
     int ret = 0;
 
     switch(redis_sock->serializer) {
+        case REDIS_SERIALIZER_NONE:
+            /* Nothing to do */
+            break;
         case REDIS_SERIALIZER_PHP:
             PHP_VAR_UNSERIALIZE_INIT(var_hash);
 
@@ -2280,6 +2290,16 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
             ret = !igbinary_unserialize((const uint8_t *)val, (size_t)val_len, z_ret TSRMLS_CC);
 #endif
             break;
+        case REDIS_SERIALIZER_JSON:
+#if PHP_MAJOR_VERSION == 7 && PHP_MINOR_VERSION < 1
+            JSON_G(error_code) = PHP_JSON_ERROR_NONE;
+            php_json_decode(z_ret, (char*)val, val_len, 1, PHP_JSON_PARSER_DEFAULT_DEPTH);
+            ret = JSON_G(error_code) == PHP_JSON_ERROR_NONE;
+#else
+            ret = !php_json_decode(z_ret, (char *)val, val_len, 1, PHP_JSON_PARSER_DEFAULT_DEPTH);
+#endif
+            break;
+        EMPTY_SWITCH_DEFAULT_CASE()
     }
 
     return ret;
