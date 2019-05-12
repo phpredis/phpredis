@@ -3882,7 +3882,9 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
     switch(option) {
         case REDIS_OPT_SERIALIZER:
             val_long = zval_get_long(val);
-            if (val_long == REDIS_SERIALIZER_NONE || val_long == REDIS_SERIALIZER_PHP
+            if (val_long == REDIS_SERIALIZER_NONE
+                || val_long == REDIS_SERIALIZER_PHP
+                || val_long == REDIS_SERIALIZER_JSON
 #ifdef HAVE_REDIS_IGBINARY
                 || val_long == REDIS_SERIALIZER_IGBINARY
 #endif

@@ -85,10 +85,13 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_FAILOVER_DISTRIBUTE        2
 #define REDIS_FAILOVER_DISTRIBUTE_SLAVES 3
 /* serializers */
-#define REDIS_SERIALIZER_NONE        0
-#define REDIS_SERIALIZER_PHP         1
-#define REDIS_SERIALIZER_IGBINARY    2
-#define REDIS_SERIALIZER_MSGPACK     3
+typedef enum {
+    REDIS_SERIALIZER_NONE,
+    REDIS_SERIALIZER_PHP,
+    REDIS_SERIALIZER_IGBINARY,
+    REDIS_SERIALIZER_MSGPACK,
+    REDIS_SERIALIZER_JSON
+} redis_serializer;
 /* compression */
 #define REDIS_COMPRESSION_NONE 0
 #define REDIS_COMPRESSION_LZF  1
@@ -252,7 +255,7 @@ typedef struct {
     int               watching;
     zend_string       *persistent_id;
 
-    int               serializer;
+    redis_serializer  serializer;
     int               compression;
     long              dbNumber;
 
