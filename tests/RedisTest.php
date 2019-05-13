@@ -4825,6 +4825,26 @@ class Redis_Test extends TestSuite
 
     }
 
+    public function testReplyLiteral() {
+        $this->redis->setOption(Redis::OPT_REPLY_LITERAL, false);
+        $this->assertTrue($this->redis->rawCommand('set', 'foo', 'bar'));
+        $this->assertTrue($this->redis->eval("return redis.call('set', 'foo', 'bar')", [], 0));
+
+        $rv = $this->redis->eval("return {redis.call('set', KEYS[1], 'bar'), redis.call('ping')}", ['foo'], 1);
+        $this->assertEquals([true, true], $rv);
+
+        $this->redis->setOption(Redis::OPT_REPLY_LITERAL, true);
+        $this->assertEquals('OK', $this->redis->rawCommand('set', 'foo', 'bar'));
+        $this->assertEquals('OK', $this->redis->eval("return redis.call('set', 'foo', 'bar')", [], 0));
+
+        // Nested
+        $rv = $this->redis->eval("return {redis.call('set', KEYS[1], 'bar'), redis.call('ping')}", ['foo'], 1);
+        $this->assertEquals(['OK', 'PONG'], $rv);
+
+        // Reset
+        $this->redis->setOption(Redis::OPT_REPLY_LITERAL, false);
+    }
+
     public function testReconnectSelect() {
         $key = 'reconnect-select';
         $value = 'Has been set!';
