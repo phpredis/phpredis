@@ -2098,6 +2098,12 @@ PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisClust
     cluster_variant_resp_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, 0, ctx);
 }
 
+PHP_REDIS_API void cluster_variant_raw_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                                            void *ctx)
+{
+    cluster_variant_resp_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, c->flags->reply_literal, ctx);
+}
+
 PHP_REDIS_API void cluster_variant_resp_strings(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                                         void *ctx)
 {

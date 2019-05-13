@@ -1684,6 +1684,7 @@ redis_sock_create(char *host, int host_len, unsigned short port,
 
     redis_sock->readonly = 0;
     redis_sock->tcp_keepalive = 0;
+    redis_sock->reply_literal = 0;
 
     return redis_sock;
 }
@@ -2556,6 +2557,14 @@ variant_reply_generic(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Success */
     return 0;
+}
+
+PHP_REDIS_API int
+redis_read_raw_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                             zval *z_tab, void *ctx)
+{
+    return variant_reply_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                                 redis_sock->reply_literal, z_tab, ctx);
 }
 
 PHP_REDIS_API int

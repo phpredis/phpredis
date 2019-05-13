@@ -1989,13 +1989,13 @@ PHP_METHOD(RedisCluster, punsubscribe) {
 
 /* {{{ proto mixed RedisCluster::eval(string script, [array args, int numkeys) */
 PHP_METHOD(RedisCluster, eval) {
-    CLUSTER_PROCESS_KW_CMD("EVAL", redis_eval_cmd, cluster_variant_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("EVAL", redis_eval_cmd, cluster_variant_raw_resp, 0);
 }
 /* }}} */
 
 /* {{{ proto mixed RedisCluster::evalsha(string sha, [array args, int numkeys]) */
 PHP_METHOD(RedisCluster, evalsha) {
-    CLUSTER_PROCESS_KW_CMD("EVALSHA", redis_eval_cmd, cluster_variant_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("EVALSHA", redis_eval_cmd, cluster_variant_raw_resp, 0);
 }
 /* }}} */
 
@@ -3161,10 +3161,10 @@ PHP_METHOD(RedisCluster, rawcommand) {
 
     /* Process variant response */
     if (CLUSTER_IS_ATOMIC(c)) {
-        cluster_variant_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+        cluster_variant_raw_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
     } else {
         void *ctx = NULL;
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_resp, ctx);
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_raw_resp, ctx);
     }
 
     efree(cmd);

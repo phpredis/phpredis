@@ -609,6 +609,26 @@ class Redis_Cluster_Test extends Redis_Test {
         return call_user_func_array([$this->redis, 'rawCommand'], $args);
     }
 
+    /* Test that rawCommand and EVAL can be configured to return simple string values */
+    public function testReplyLiteral() {
+        $this->redis->setOption(Redis::OPT_REPLY_LITERAL, false);
+        $this->assertTrue($this->redis->rawCommand('foo', 'set', 'foo', 'bar'));
+        $this->assertTrue($this->redis->eval("return redis.call('set', KEYS[1], 'bar')", ['foo'], 1));
+
+        $rv = $this->redis->eval("return {redis.call('set', KEYS[1], 'bar'), redis.call('ping')}", ['foo'], 1);
+        $this->assertEquals([true, true], $rv);
+
+        $this->redis->setOption(Redis::OPT_REPLY_LITERAL, true);
+        $this->assertEquals('OK', $this->redis->rawCommand('foo', 'set', 'foo', 'bar'));
+        $this->assertEquals('OK', $this->redis->eval("return redis.call('set', KEYS[1], 'bar')", ['foo'], 1));
+
+        $rv = $this->redis->eval("return {redis.call('set', KEYS[1], 'bar'), redis.call('ping')}", ['foo'], 1);
+        $this->assertEquals(['OK', 'PONG'], $rv);
+
+        // Reset
+        $this->redis->setOption(Redis::OPT_REPLY_LITERAL, false);
+    }
+
     public function testSession()
     {
         @ini_set('session.save_handler', 'rediscluster');

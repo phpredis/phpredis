@@ -3856,6 +3856,8 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             RETURN_LONG(redis_sock->tcp_keepalive);
         case REDIS_OPT_SCAN:
             RETURN_LONG(redis_sock->scan);
+        case REDIS_OPT_REPLY_LITERAL:
+            RETURN_LONG(redis_sock->reply_literal);
         case REDIS_OPT_FAILOVER:
             RETURN_LONG(c->failover);
         default:
@@ -3896,6 +3898,10 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                 RETURN_TRUE;
             }
             break;
+        case REDIS_OPT_REPLY_LITERAL:
+            val_long = zval_get_long(val);
+            redis_sock->reply_literal = val_long != 0;
+            RETURN_TRUE;
         case REDIS_OPT_COMPRESSION:
             val_long = zval_get_long(val);
             if (val_long == REDIS_COMPRESSION_NONE
