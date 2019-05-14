@@ -2344,9 +2344,9 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size,
         char *errmsg = NULL;
 
         if (redis_sock->port < 0) {
-            spprintf(&errmsg, 0, "read error on connection to %S", redis_sock->host);
+            spprintf(&errmsg, 0, "read error on connection to %s", ZSTR_VAL(redis_sock->host));
         } else {
-            spprintf(&errmsg, 0, "read error on connection to %S:%d", redis_sock->host, redis_sock->port);
+            spprintf(&errmsg, 0, "read error on connection to %s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
         }
         // Close our socket
         redis_sock_disconnect(redis_sock, 1 TSRMLS_CC);

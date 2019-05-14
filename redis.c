@@ -612,6 +612,16 @@ redis_sock_get(zval *id TSRMLS_DC, int no_throw)
     }
 
     if (redis_sock_server_open(redis_sock TSRMLS_CC) < 0) {
+        if (!no_throw) {
+            char *errmsg = NULL;
+            if (redis_sock->port < 0) {
+                spprintf(&errmsg, 0, "Redis server %s went away", ZSTR_VAL(redis_sock->host));
+            } else {
+                spprintf(&errmsg, 0, "Redis server %s:%d went away", ZSTR_VAL(redis_sock->host), redis_sock->port);
+            }
+            REDIS_THROW_EXCEPTION(errmsg, 0);
+            efree(errmsg);
+        }
         return NULL;
     }
 
