@@ -906,7 +906,7 @@ PHP_REDIS_API int
 redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 {
     zval *object;
-    char *host = NULL, *persistent_id = "";
+    char *host = NULL, *persistent_id = NULL;
     zend_long port = -1, retry_interval = 0;
     size_t host_len, persistent_id_len;
     double timeout = 0.0, read_timeout = 0.0;
@@ -919,13 +919,16 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 #endif
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(),
-                                     "Os|ldsld", &object, redis_ce, &host,
+                                     "Os|lds!ld", &object, redis_ce, &host,
                                      &host_len, &port, &timeout, &persistent_id,
                                      &persistent_id_len, &retry_interval,
                                      &read_timeout) == FAILURE)
     {
         return FAILURE;
-    } else if (!persistent) {
+    }
+
+    /* Disregard persistent_id if we're not opening a persistent connection */
+    if (!persistent) {
         persistent_id = NULL;
     }
 
