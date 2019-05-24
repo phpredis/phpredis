@@ -1695,19 +1695,23 @@ redis_sock_create(char *host, int host_len, unsigned short port,
 PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 {
     struct timeval tv, read_tv, *tv_ptr = NULL;
-    zend_string *persistent_id = NULL;
-    char host[1024];
-    const char *fmtstr = "%s:%d";
+    zend_string *persistent_id = NULL, *estr = NULL;
+    char host[1024], *pos, *address, *schema = NULL;
+    const char *fmtstr = "%s://%s:%d";
     int host_len, usocket = 0, err = 0, tcp_flag = 1;
     ConnectionPool *p = NULL;
-    zend_string *estr = NULL;
 
     if (redis_sock->stream != NULL) {
         redis_sock_disconnect(redis_sock, 0 TSRMLS_CC);
     }
 
-    if (ZSTR_VAL(redis_sock->host)[0] == '/' && redis_sock->port < 1) {
-        host_len = snprintf(host, sizeof(host), "unix://%s", ZSTR_VAL(redis_sock->host));
+    address = ZSTR_VAL(redis_sock->host);
+    if ((pos = strstr(address, "://")) != NULL) {
+        schema = estrndup(address, pos - address);
+        address = pos + sizeof("://") - 1;
+    }
+    if (redis_sock->port < 1) {
+        host_len = snprintf(host, sizeof(host), "unix://%s", address);
         usocket = 1;
     } else {
         if(redis_sock->port == 0)
@@ -1716,11 +1720,12 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock TSRMLS_DC)
 #ifdef HAVE_IPV6
         /* If we've got IPv6 and find a colon in our address, convert to proper
          * IPv6 [host]:port format */
-        if (strchr(ZSTR_VAL(redis_sock->host), ':') != NULL) {
-            fmtstr = "[%s]:%d";
+        if (strchr(address, ':') != NULL) {
+            fmtstr = "%s://[%s]:%d";
         }
 #endif
-        host_len = snprintf(host, sizeof(host), fmtstr, ZSTR_VAL(redis_sock->host), redis_sock->port);
+        host_len = snprintf(host, sizeof(host), fmtstr, schema ? schema : "tcp", address, redis_sock->port);
+        if (schema) efree(schema);
     }
 
     if (redis_sock->persistent) {

@@ -182,7 +182,7 @@ _**Description**_: Connects to a Redis instance.
 
 ##### *Parameters*
 
-*host*: string. can be a host, or the path to a unix domain socket  
+*host*: string. can be a host, or the path to a unix domain socket. Starting from version 5.0.0 it is possible to specify schema 
 *port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
 *reserved*: should be NULL if retry_interval is specified  
@@ -198,9 +198,12 @@ _**Description**_: Connects to a Redis instance.
 ~~~php
 $redis->connect('127.0.0.1', 6379);
 $redis->connect('127.0.0.1'); // port 6379 by default
+$redis->connect('tls://127.0.0.1', 6379); // enable transport level security.
+$redis->connect('tls://127.0.0.1'); // enable transport level security, port 6379 by default.
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
 $redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
+$redis->connect('unix://redis.sock'); // relative path to unix domain socket requires version 5.0.0 or higher.
 ~~~
 
 ### pconnect, popen
@@ -221,7 +224,7 @@ persistent equivalents.
 
 ##### *Parameters*
 
-*host*: string. can be a host, or the path to a unix domain socket  
+*host*: string. can be a host, or the path to a unix domain socket. Starting from version 5.0.0 it is possible to specify schema 
 *port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
 *persistent_id*: string. identity for the requested persistent connection  
@@ -237,9 +240,12 @@ persistent equivalents.
 ~~~php
 $redis->pconnect('127.0.0.1', 6379);
 $redis->pconnect('127.0.0.1'); // port 6379 by default - same connection like before.
+$redis->pconnect('tls://127.0.0.1', 6379); // enable transport level security.
+$redis->pconnect('tls://127.0.0.1'); // enable transport level security, port 6379 by default.
 $redis->pconnect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout and would be another connection than the two before.
 $redis->pconnect('127.0.0.1', 6379, 2.5, 'x'); // x is sent as persistent_id and would be another connection than the three before.
 $redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another connection than the four before.
+$redis->pconnect('unix://redis.sock'); // relative path to unix domain socket requires version 5.0.0 or higher.
 ~~~
 
 ### auth
