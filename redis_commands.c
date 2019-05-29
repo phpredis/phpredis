@@ -168,26 +168,6 @@ redis_build_script_cmd(smart_string *cmd, int argc, zval *z_args)
     return cmd;
 }
 
-/* Command that takes one optional string */
-int redis_opt_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
-                      char **cmd, int *cmd_len, short *slot, void **ctx)
-{
-    char *arg = NULL;
-    size_t arglen;
-
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!", &arg, &arglen) == FAILURE) {
-        return FAILURE;
-    }
-
-    if (arg != NULL) {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "s", arg, arglen);
-    } else {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "");
-    }
-
-    return SUCCESS;
-}
-
 /* Generic command where we just take a string and do nothing to it*/
 int redis_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
                   char **cmd, int *cmd_len, short *slot, void **ctx)

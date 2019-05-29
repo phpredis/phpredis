@@ -89,18 +89,14 @@ class Redis_Test extends TestSuite
         $this->assertTrue(version_compare($this->version, "2.4.0", "ge"));
     }
 
-    public function testPing() {
-        /* Reply literal off */
-        $this->assertTrue($this->redis->ping());
-        $this->assertTrue($this->redis->ping(NULL));
-        $this->assertEquals('BEEP', $this->redis->ping('BEEP'));
+    public function testPing()
+    {
+        $this->assertEquals('+PONG', $this->redis->ping());
 
-        /* Make sure we're good in MULTI mode */
-        $this->redis->multi();
-
-        $this->redis->ping();
-        $this->redis->ping('BEEP');
-        $this->assertEquals([true, 'BEEP'], $this->redis->exec());
+        $count = 1000;
+        while($count --) {
+            $this->assertEquals('+PONG', $this->redis->ping());
+        }
     }
 
     public function testPipelinePublish() {
@@ -6015,8 +6011,7 @@ class Redis_Test extends TestSuite
 
         for($i = 0; $i < 5; $i++) {
             $this->redis->connect($host, $port);
-            $this->assertEquals(true, $this->redis->ping());
-            $this->assertEquals('BEEP', $this->redis->ping('BEEP'));
+            $this->assertEquals($this->redis->ping(), "+PONG");
         }
     }
 

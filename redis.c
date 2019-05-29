@@ -1086,11 +1086,11 @@ PHP_METHOD(Redis, get)
 /* }}} */
 
 
-/* {{{ proto string Redis::ping(| string $arg)
+/* {{{ proto string Redis::ping()
  */
 PHP_METHOD(Redis, ping)
 {
-    REDIS_PROCESS_KW_CMD("PING", redis_opt_str_cmd, redis_read_variant_reply);
+    REDIS_PROCESS_KW_CMD("PING", redis_empty_cmd, redis_ping_response);
 }
 /* }}} */
 

@@ -3002,69 +3002,11 @@ PHP_METHOD(RedisCluster, randomkey) {
 }
 /* }}} */
 
-/* {{{ proto bool RedisCluster::ping(string key| string msg)
- *     proto bool RedisCluster::ping(array host_port| string msg) */
+/* {{{ proto bool RedisCluster::ping(string key)
+ *     proto bool RedisCluster::ping(array host_port) */
 PHP_METHOD(RedisCluster, ping) {
-    redisCluster *c = GET_CONTEXT();
-    REDIS_REPLY_TYPE rtype;
-    void *ctx = NULL;
-    zval *z_node;
-    char *cmd, *arg = NULL;
-    int cmdlen;
-    size_t arglen;
-    short slot;
-
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|s!", &z_node, &arg,
-                              &arglen) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-    /* Treat this as a readonly command */
-    c->readonly = CLUSTER_IS_ATOMIC(c);
-
-    /* Grab slot either by key or host/port */
-    slot = cluster_cmd_get_slot(c, z_node TSRMLS_CC);
-    if (slot < 0) {
-        RETURN_FALSE;
-    }
-
-    /* Construct our command */
-    if (arg != NULL) {
-        cmdlen = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "PING", "s", arg, arglen);
-    } else {
-        cmdlen = redis_spprintf(NULL, NULL TSRMLS_CC, &cmd, "PING", "");
-    }
-
-    /* Send it off */
-    rtype = CLUSTER_IS_ATOMIC(c) && arg != NULL ? TYPE_BULK : TYPE_LINE;
-    if (cluster_send_slot(c, slot, cmd, cmdlen, rtype TSRMLS_CC) < 0) {
-        CLUSTER_THROW_EXCEPTION("Unable to send commnad at the specificed node", 0);
-        efree(cmd);
-        RETURN_FALSE;
-    }
-
-    /* We're done with our command */
-    efree(cmd);
-
-    /* Process response */
-    if (CLUSTER_IS_ATOMIC(c)) {
-        if (arg != NULL) {
-            cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
-        } else {
-            /* If we're atomic and didn't send an argument then we have already
-             * processed the reply (which must have been successful. */
-            RETURN_TRUE;
-        }
-    } else {
-        if (arg != NULL) {
-            CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_bulk_resp, ctx);
-        } else {
-            CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_resp, ctx);
-        }
-
-        RETURN_ZVAL(getThis(), 1, 0);
-    }
+    cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "PING",
+        TYPE_LINE, cluster_ping_resp);
 }
 /* }}} */
 
