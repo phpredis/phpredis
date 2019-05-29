@@ -89,14 +89,18 @@ class Redis_Test extends TestSuite
         $this->assertTrue(version_compare($this->version, "2.4.0", "ge"));
     }
 
-    public function testPing()
-    {
-        $this->assertEquals('+PONG', $this->redis->ping());
+    public function testPing() {
+        /* Reply literal off */
+        $this->assertTrue($this->redis->ping());
+        $this->assertTrue($this->redis->ping(NULL));
+        $this->assertEquals('BEEP', $this->redis->ping('BEEP'));
 
-        $count = 1000;
-        while($count --) {
-            $this->assertEquals('+PONG', $this->redis->ping());
-        }
+        /* Make sure we're good in MULTI mode */
+        $this->redis->multi();
+
+        $this->redis->ping();
+        $this->redis->ping('BEEP');
+        $this->assertEquals([true, 'BEEP'], $this->redis->exec());
     }
 
     public function testPipelinePublish() {
@@ -2348,6 +2352,19 @@ class Redis_Test extends TestSuite
         $this->assertTrue(2 === $this->redis->zRevRank('z', 'one'));
         $this->assertTrue(1 === $this->redis->zRevRank('z', 'two'));
         $this->assertTrue(0 === $this->redis->zRevRank('z', 'five'));
+    }
+
+    public function testZRangeScoreArg() {
+        $this->redis->del('{z}');
+
+        $arr_mems = ['one' => 1.0, 'two' => 2.0, 'three' => 3.0];
+        foreach ($arr_mems as $str_mem => $score) {
+            $this->redis->zAdd('{z}', $score, $str_mem);
+        }
+
+        /* Verify we can pass true and ['withscores' => true] */
+        $this->assertEquals($arr_mems, $this->redis->zRange('{z}', 0, -1, true));
+        $this->assertEquals($arr_mems, $this->redis->zRange('{z}', 0, -1, ['withscores' => true]));
     }
 
     public function testZRangeByLex() {
@@ -5998,7 +6015,8 @@ class Redis_Test extends TestSuite
 
         for($i = 0; $i < 5; $i++) {
             $this->redis->connect($host, $port);
-            $this->assertEquals($this->redis->ping(), "+PONG");
+            $this->assertEquals(true, $this->redis->ping());
+            $this->assertEquals('BEEP', $this->redis->ping('BEEP'));
         }
     }
 

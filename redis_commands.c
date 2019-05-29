@@ -168,6 +168,26 @@ redis_build_script_cmd(smart_string *cmd, int argc, zval *z_args)
     return cmd;
 }
 
+/* Command that takes one optional string */
+int redis_opt_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
+                      char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *arg = NULL;
+    size_t arglen;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!", &arg, &arglen) == FAILURE) {
+        return FAILURE;
+    }
+
+    if (arg != NULL) {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "s", arg, arglen);
+    } else {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "");
+    }
+
+    return SUCCESS;
+}
+
 /* Generic command where we just take a string and do nothing to it*/
 int redis_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
                   char **cmd, int *cmd_len, short *slot, void **ctx)
@@ -491,6 +511,12 @@ int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     return cmdstr.len;
 }
 
+/* ZRANGEBYSCORE/ZREVRANGEBYSCORE */
+#define IS_WITHSCORES_ARG(s, l) \
+    (l == sizeof("withscores") - 1 && !strncasecmp(s, "withscores", l))
+#define IS_LIMIT_ARG(s, l) \
+    (l == sizeof("limit") - 1 && !strncasecmp(s,"limit", l))
+
 /* ZRANGE/ZREVRANGE */
 int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char *kw, char **cmd, int *cmd_len, int *withscores,
@@ -499,32 +525,42 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key;
     size_t key_len;
     zend_long start, end;
-    zend_bool ws = 0;
+    zend_string *zkey;
+    zval *z_ws = NULL, *z_ele;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sll|b", &key, &key_len,
-                             &start, &end, &ws) == FAILURE)
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sll|z", &key, &key_len,
+                             &start, &end, &z_ws) == FAILURE)
     {
         return FAILURE;
     }
 
-    if (ws) {
+    // Clear withscores arg
+    *withscores = 0;
+
+    /* Accept ['withscores' => true], or the legacy `true` value */
+    if (z_ws) {
+        if (Z_TYPE_P(z_ws) == IS_ARRAY) {
+            ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_ws), zkey, z_ele) {
+                ZVAL_DEREF(z_ele);
+                if (IS_WITHSCORES_ARG(ZSTR_VAL(zkey), ZSTR_LEN(zkey))) {
+                    *withscores = zval_is_true(z_ele);
+                    break;
+                }
+            } ZEND_HASH_FOREACH_END();
+        } else if (Z_TYPE_P(z_ws) == IS_TRUE) {
+            *withscores = Z_TYPE_P(z_ws) == IS_TRUE;
+        }
+    }
+
+    if (*withscores) {
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kdds", key, key_len, start, end,
             "WITHSCORES", sizeof("WITHSCORES") - 1);
     } else {
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kdd", key, key_len, start, end);
     }
 
-    // Push out WITHSCORES option
-    *withscores = ws;
-
     return SUCCESS;
 }
-
-/* ZRANGEBYSCORE/ZREVRANGEBYSCORE */
-#define IS_WITHSCORES_ARG(s, l) \
-    (l == sizeof("withscores") - 1 && !strncasecmp(s, "withscores", l))
-#define IS_LIMIT_ARG(s, l) \
-    (l == sizeof("limit") - 1 && !strncasecmp(s,"limit", l))
 
 int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                             char *kw, char **cmd, int *cmd_len, int *withscores,
