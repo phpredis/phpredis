@@ -95,9 +95,16 @@ class Redis_Cluster_Test extends Redis_Test {
      * at a specific node */
 
     public function testPing() {
-        for ($i = 0; $i < 100; $i++) {
+        for ($i = 0; $i < 20; $i++) {
             $this->assertTrue($this->redis->ping("key:$i"));
+            $this->assertEquals('BEEP', $this->redis->ping("key:$i", 'BEEP'));
         }
+
+        /* Make sure both variations work in MULTI mode */
+        $this->redis->multi();
+        $this->redis->ping('{ping-test}');
+        $this->redis->ping('{ping-test}','BEEP');
+        $this->assertEquals([true, 'BEEP'], $this->redis->exec());
     }
 
     public function testRandomKey() {
