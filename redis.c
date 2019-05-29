@@ -1093,7 +1093,7 @@ PHP_METHOD(Redis, get)
  */
 PHP_METHOD(Redis, ping)
 {
-    REDIS_PROCESS_KW_CMD("PING", redis_empty_cmd, redis_ping_response);
+    REDIS_PROCESS_KW_CMD("PING", redis_opt_str_cmd, redis_read_variant_reply);
 }
 /* }}} */
 
