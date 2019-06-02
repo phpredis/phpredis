@@ -2499,6 +2499,8 @@ _**Description**_: Performs the union between N sets and returns it.
 ##### *Return value*
 *Array of strings*: The union of all these sets.
 
+**Note:** `sUnion` can also take a single array with keys (see example below).
+
 ##### *Example*
 ~~~php
 $redis->delete('s0', 's1', 's2');
@@ -2510,7 +2512,12 @@ $redis->sAdd('s1', '1');
 $redis->sAdd('s2', '3');
 $redis->sAdd('s2', '4');
 
+/* Get the union with variadic arguments */
 var_dump($redis->sUnion('s0', 's1', 's2'));
+
+/* Pass a single array */
+var_dump($redis->sUnion(['s0', 's1', 's2']);
+
 ~~~
 Return value: all elements that are either in s0 or in s1 or in s2.
 ~~~
