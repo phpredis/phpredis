@@ -3037,7 +3037,7 @@ $redis->del("myplaces");
 /* Since the key will be new, $result will be 2 */
 $result = $redis->geoAdd(
     "myplaces",
-    37.773, -122.431, "San Francisco",
+    -122.431, 37.773, "San Francisco",
     -157.858, 21.315, "Honolulu"
 );
 ~~~  
