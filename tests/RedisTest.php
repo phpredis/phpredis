@@ -5687,12 +5687,29 @@ class Redis_Test extends TestSuite
             }
         }
 
+        /* Test COUNT option with NULL (should be ignored) */
+        $this->addStreamsAndGroups($streams, 3, $groups, NULL);
+        $resp = $this->redis->xReadGroup('g1', 'consumer', $query1, NULL);
+        foreach ($resp as $stream => $smsg) {
+            $this->assertEquals(count($smsg), 3);
+        }
+
         /* Finally test BLOCK with a sloppy timing test */
         $t1 = $this->mstime();
         $qnew = ['{s}-1' => '>', '{s}-2' => '>'];
-        $this->redis->xReadGroup('g1', 'c1', $qnew, -1, 100);
+        $this->redis->xReadGroup('g1', 'c1', $qnew, NULL, 100);
         $t2 = $this->mstime();
         $this->assertTrue($t2 - $t1 >= 100);
+
+        /* Make sure passing NULL to block doesn't block */
+        $t1 = $this->mstime();
+        $this->redis->xReadGroup('g1', 'c1', $qnew, NULL, NULL);
+        $t2 = $this->mstime();
+        $this->assertTrue($t2 - $t1 < 100);
+
+        /* Make sure passing bad values to BLOCK or COUNT immediately fails */
+        $this->assertFalse(@$this->redis->xReadGroup('g1', 'c1', $qnew, -1));
+        $this->assertFalse(@$this->redis->xReadGroup('g1', 'c1', $qnew, NULL, -1));
     }
 
     public function testXPending() {

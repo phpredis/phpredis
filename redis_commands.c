@@ -3466,12 +3466,19 @@ int redis_xreadgroup_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *group, *consumer;
     size_t grouplen, consumerlen;
     int scount, argc;
-    zend_long count = -1, block = -1;
+    zend_long count, block;
+    zend_bool no_count = 1, no_block = 1;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssa|ll", &group,
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssa|l!l!", &group,
                               &grouplen, &consumer, &consumerlen, &z_streams,
-                              &count, &block) == FAILURE)
+                              &count, &no_count, &block, &no_block) == FAILURE)
     {
+        return FAILURE;
+    }
+
+    /* Negative COUNT or BLOCK is illegal so abort immediately */
+    if ((!no_count && count < 0) || (!no_block && block < 0)) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Negative values for COUNT or BLOCK are illegal.");
         return FAILURE;
     }
 
@@ -3482,7 +3489,7 @@ int redis_xreadgroup_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Calculate argc and start constructing commands */
-    argc = 4 + (2 * scount) + (2 * (count > -1)) + (2 * (block > -1));
+    argc = 4 + (2 * scount) + (2 * !no_count) + (2 * !no_block);
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "XREADGROUP");
 
     /* Group and consumer */
@@ -3491,13 +3498,13 @@ int redis_xreadgroup_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     redis_cmd_append_sstr(&cmdstr, consumer, consumerlen);
 
     /* Append COUNT if we have it */
-    if (count > -1) {
+    if (!no_count) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "COUNT");
         redis_cmd_append_sstr_long(&cmdstr, count);
     }
 
     /* Append BLOCK argument if we have it */
-    if (block > -1) {
+    if (!no_block) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "BLOCK");
         redis_cmd_append_sstr_long(&cmdstr, block);
     }
