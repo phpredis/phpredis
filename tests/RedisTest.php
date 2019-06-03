@@ -2350,6 +2350,19 @@ class Redis_Test extends TestSuite
         $this->assertTrue(0 === $this->redis->zRevRank('z', 'five'));
     }
 
+    public function testZRangeScoreArg() {
+        $this->redis->del('{z}');
+
+        $arr_mems = ['one' => 1.0, 'two' => 2.0, 'three' => 3.0];
+        foreach ($arr_mems as $str_mem => $score) {
+            $this->redis->zAdd('{z}', $score, $str_mem);
+        }
+
+        /* Verify we can pass true and ['withscores' => true] */
+        $this->assertEquals($arr_mems, $this->redis->zRange('{z}', 0, -1, true));
+        $this->assertEquals($arr_mems, $this->redis->zRange('{z}', 0, -1, ['withscores' => true]));
+    }
+
     public function testZRangeByLex() {
         /* ZRANGEBYLEX available on versions >= 2.8.9 */
         if(version_compare($this->version, "2.8.9", "lt")) {

@@ -2440,7 +2440,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     }
 
     /* We at least need the key or [host,port] argument */
-    if (argc<1) {
+    if (argc < 1) {
         php_error_docref(0 TSRMLS_CC, E_WARNING,
             "Command requires at least an argument to direct to a node");
         RETURN_FALSE;
@@ -3068,6 +3068,8 @@ PHP_METHOD(RedisCluster, xreadgroup) {
 PHP_METHOD(RedisCluster, xtrim) {
     CLUSTER_PROCESS_CMD(xtrim, cluster_long_resp, 0);
 }
+
+
 
 /* {{{ proto string RedisCluster::echo(string key, string msg)
  *     proto string RedisCluster::echo(array host_port, string msg) */
