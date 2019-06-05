@@ -1256,11 +1256,19 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
 
 /* Disconnect from each node we're connected to */
 PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force TSRMLS_DC) {
-    redisClusterNode *node;
+    redisClusterNode *node, *slave;
 
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
         if (node == NULL) continue;
+
+        /* Disconnect from the master */
         redis_sock_disconnect(node->sock, force TSRMLS_CC);
+
+        /* We also want to disconnect any slave connections so they will be pooled
+         * in the event we are using persistent connections and connection pooling. */
+        ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
+            redis_sock_disconnect(slave->sock, force TSRMLS_CC);
+        } ZEND_HASH_FOREACH_END();
     } ZEND_HASH_FOREACH_END();
 }
 
