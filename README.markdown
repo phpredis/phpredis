@@ -3347,7 +3347,7 @@ $obj_redis->xAck('stream', 'group1', ['1530063064286-0', '1530063064286-1']);
 
 ##### *Prototype*
 ~~~php
-$obj_redis->xAdd($str_key, $str_id, $arr_message);
+$obj_redis->xAdd($str_key, $str_id, $arr_message[, $i_maxlen, $boo_approximate]);
 ~~~
 
 _**Description**_:  Add a message to a stream
@@ -3358,6 +3358,8 @@ _**Description**_:  Add a message to a stream
 ##### *Example*
 ~~~php
 $obj_redis->xAdd('mystream', "*", ['field' => 'value']);
+$obj_redis->xAdd('mystream', "*", ['field' => 'value'], 1000); // set max length of stream to 1000
+$obj_redis->xAdd('mystream', "*", ['field' => 'value'], 1000, true); // set max length of stream to ~1000
 ~~~
 
 ### xClaim
