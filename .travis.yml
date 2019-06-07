@@ -5,11 +5,14 @@ php:
   - 7.1
   - 7.2
   - 7.3
+  - 7.4snapshot
   - nightly
 env: CC=gcc
 matrix:
   allow_failures:
     - php: 7.3
+      env: CC=clang
+    - php: 7.4snapshot
       env: CC=clang
     - php: nightly
   include:
@@ -20,6 +23,8 @@ matrix:
     - php: 7.2
       env: CC=clang
     - php: 7.3
+      env: CC=clang
+    - php: 7.4snapshot
       env: CC=clang
 addons:
   apt:
