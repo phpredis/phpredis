@@ -261,7 +261,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, debug, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, decr, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, decrBy, arginfo_key_value, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, delete, arginfo_del, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, del, arginfo_del, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, discard, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dump, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, echo, arginfo_echo, ZEND_ACC_PUBLIC)
@@ -269,6 +269,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, evalsha, arginfo_evalsha, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, exec, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, exists, arginfo_exists, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, expire, arginfo_expire, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, expireAt, arginfo_key_timestamp, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, flushAll, arginfo_flush, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, flushDB, arginfo_flush, ZEND_ACC_PUBLIC)
@@ -285,10 +286,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, getBit, arginfo_key_offset, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getDBNum, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getHost, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, getKeys, arginfo_keys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getLastError, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getMode, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, getMultiple, arginfo_mget, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getOption, arginfo_getoption, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getPersistentID, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getPort, arginfo_void, ZEND_ACC_PUBLIC)
@@ -316,17 +315,19 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, incrByFloat, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, info, arginfo_info, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, isConnected, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lGet, arginfo_lindex, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lGetRange, arginfo_key_start_end, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, keys, arginfo_keys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lInsert, arginfo_linsert, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lLen, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPop, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPush, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPushx, arginfo_key_value, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lRemove, arginfo_lrem, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lSet, arginfo_lset, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, lSize, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lastSave, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, listTrim, arginfo_ltrim, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lindex, arginfo_lindex, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lrange, arginfo_key_start_end, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lrem, arginfo_lrem, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, ltrim, arginfo_ltrim, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, mget, arginfo_mget, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, migrate, arginfo_migrate, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, move, arginfo_move, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, mset, arginfo_pairs, ZEND_ACC_PUBLIC)
@@ -353,14 +354,13 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, rPushx, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, randomKey, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, rawcommand, arginfo_rawcommand, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, renameKey, arginfo_key_newkey, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, rename, arginfo_key_newkey, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, renameNx, arginfo_key_newkey, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, restore, arginfo_restore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, role, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, rpoplpush, arginfo_rpoplpush, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sAdd, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sAddArray, arginfo_sadd_array, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sContains, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sDiff, arginfo_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sDiffStore, arginfo_dst_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sInter, arginfo_nkeys, ZEND_ACC_PUBLIC)
@@ -369,21 +369,20 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sMove, arginfo_smove, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sPop, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sRandMember, arginfo_srand_member, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sRemove, arginfo_key_members, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, sSize, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sUnion, arginfo_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sUnionStore, arginfo_dst_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, save, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, scan, arginfo_scan, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, scard, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, script, arginfo_script, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, select, arginfo_select, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, set, arginfo_set, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setBit, arginfo_key_offset_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setOption, arginfo_setoption, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setRange, arginfo_key_offset_value, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, setTimeout, arginfo_expire, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setex, arginfo_key_expire_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, setnx, arginfo_key_value, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sismember, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, slaveof, arginfo_slaveof, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, slowlog, arginfo_slowlog, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sort, arginfo_sort, ZEND_ACC_PUBLIC)
@@ -391,6 +390,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sortAscAlpha, arginfo_generic_sort, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sortDesc, arginfo_generic_sort, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sortDescAlpha, arginfo_generic_sort, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, srem, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sscan, arginfo_kscan, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, strlen, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, subscribe, arginfo_subscribe, ZEND_ACC_PUBLIC)
@@ -419,55 +419,55 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zAdd, arginfo_zadd, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCard, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zCount, arginfo_key_min_max, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zDelete, arginfo_key_members, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zDeleteRangeByRank, arginfo_key_start_end, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zDeleteRangeByScore, arginfo_key_min_max, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zIncrBy, arginfo_zincrby, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zInter, arginfo_zstore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zLexCount, arginfo_key_min_max, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zPopMax, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zPopMin, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRange, arginfo_zrange, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRangeByLex, arginfo_zrangebylex, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRangeByScore, arginfo_zrangebyscore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRank, arginfo_key_member, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRem, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRemRangeByLex, arginfo_key_min_max, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRemRangeByRank, arginfo_key_start_end, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zRemRangeByScore, arginfo_key_min_max, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRevRange, arginfo_zrange, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRevRangeByLex, arginfo_zrangebylex, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRevRangeByScore, arginfo_zrangebyscore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRevRank, arginfo_key_member, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zScore, arginfo_key_member, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zUnion, arginfo_zstore, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zinterstore, arginfo_zstore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zPopMax, arginfo_key, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, zPopMin, arginfo_key, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, del, delete, arginfo_del, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zunionstore, arginfo_zstore, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, delete, del, arginfo_del, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, evaluate, eval, arginfo_eval, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, evaluateSha, evalsha, arginfo_evalsha, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, expire, setTimeout, arginfo_expire, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, keys, getKeys, arginfo_keys, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, lLen, lSize, arginfo_key, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, lindex, lGet, arginfo_lindex, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, lrange, lGetRange, arginfo_key_start_end, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, lrem, lRemove, arginfo_lrem, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, ltrim, listTrim, arginfo_ltrim, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, mget, getMultiple, arginfo_mget, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, getKeys, keys, arginfo_keys, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, getMultiple, mget, arginfo_mget, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, lGet, lindex, arginfo_lindex, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, lGetRange, lrange, arginfo_key_start_end, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, lRemove, lrem, arginfo_lrem, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, lSize, lLen, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, listTrim, ltrim, arginfo_ltrim, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, open, connect, arginfo_connect, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, popen, pconnect, arginfo_pconnect, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, rename, renameKey, arginfo_key_newkey, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, renameKey, rename, arginfo_key_newkey, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, sContains, sismember, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, sGetMembers, sMembers, arginfo_key, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, scard, sSize, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, sRemove, srem, arginfo_key_members, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, sSize, scard, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, sendEcho, echo, arginfo_echo, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, sismember, sContains, arginfo_key_value, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, srem, sRemove, arginfo_key_members, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, setTimeout, expire, arginfo_expire, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, substr, getRange, arginfo_key_start_end, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zRem, zDelete, arginfo_key_members, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zRemRangeByRank, zDeleteRangeByRank, arginfo_key_min_max, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zRemRangeByScore, zDeleteRangeByScore, arginfo_key_min_max, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zRemove, zDelete, arginfo_key_members, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zRemoveRangeByScore, zDeleteRangeByScore, arginfo_key_min_max, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zDelete, zRem, arginfo_key_members, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zDeleteRangeByRank, zRemRangeByRank, arginfo_key_min_max, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zDeleteRangeByScore, zRemRangeByScore, arginfo_key_min_max, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zInter, zinterstore, arginfo_zstore, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zRemove, zRem, arginfo_key_members, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zRemoveRangeByScore, zRemRangeByScore, arginfo_key_min_max, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zReverseRange, zRevRange, arginfo_zrange, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zSize, zCard, arginfo_key, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zinterstore, zInter, arginfo_zstore, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(Redis, zunionstore, zUnion, arginfo_zstore, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, zUnion, zunionstore, arginfo_zstore, ZEND_ACC_PUBLIC)
      PHP_FE_END
 };
 
@@ -1062,9 +1062,9 @@ PHP_METHOD(Redis, echo)
 }
 /* }}} */
 
-/* {{{ proto string Redis::renameKey(string key_src, string key_dst)
+/* {{{ proto string Redis::rename(string key_src, string key_dst)
  */
-PHP_METHOD(Redis, renameKey)
+PHP_METHOD(Redis, rename)
 {
     REDIS_PROCESS_KW_CMD("RENAME", redis_key_key_cmd, redis_boolean_response);
 }
@@ -1133,9 +1133,9 @@ PHP_METHOD(Redis, decrBy){
 }
 /* }}} */
 
-/* {{{ proto array Redis::getMultiple(array keys)
+/* {{{ proto array Redis::mget(array keys)
  */
-PHP_METHOD(Redis, getMultiple)
+PHP_METHOD(Redis, mget)
 {
     zval *object, *z_args, *z_ele;
     HashTable *hash;
@@ -1191,9 +1191,9 @@ PHP_METHOD(Redis, exists)
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::delete(string key)
+/* {{{ proto boolean Redis::del(string key)
  */
-PHP_METHOD(Redis, delete)
+PHP_METHOD(Redis, del)
 {
     REDIS_PROCESS_CMD(del, redis_long_response);
 }
@@ -1247,9 +1247,9 @@ PHP_METHOD(Redis, unwatch)
 }
 /* }}} */
 
-/* {{{ proto array Redis::getKeys(string pattern)
+/* {{{ proto array Redis::keys(string pattern)
  */
-PHP_METHOD(Redis, getKeys)
+PHP_METHOD(Redis, keys)
 {
     REDIS_PROCESS_KW_CMD("KEYS", redis_key_cmd, redis_mbulk_reply_raw);
 }
@@ -1371,37 +1371,37 @@ PHP_METHOD(Redis, brPop)
 /* }}} */
 
 
-/* {{{ proto int Redis::lSize(string key) */
-PHP_METHOD(Redis, lSize)
+/* {{{ proto int Redis::lLen(string key) */
+PHP_METHOD(Redis, lLen)
 {
     REDIS_PROCESS_KW_CMD("LLEN", redis_key_cmd, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::lRemove(string list, string value, int count = 0) */
-PHP_METHOD(Redis, lRemove)
+/* {{{ proto boolean Redis::lrem(string list, string value, int count = 0) */
+PHP_METHOD(Redis, lrem)
 {
     REDIS_PROCESS_CMD(lrem, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::listTrim(string key , int start , int end) */
-PHP_METHOD(Redis, listTrim)
+/* {{{ proto boolean Redis::ltrim(string key , int start , int end) */
+PHP_METHOD(Redis, ltrim)
 {
     REDIS_PROCESS_KW_CMD("LTRIM", redis_key_long_long_cmd,
         redis_boolean_response);
 }
 /* }}} */
 
-/* {{{ proto string Redis::lGet(string key , int index) */
-PHP_METHOD(Redis, lGet)
+/* {{{ proto string Redis::lindex(string key , int index) */
+PHP_METHOD(Redis, lindex)
 {
     REDIS_PROCESS_KW_CMD("LINDEX", redis_key_long_cmd, redis_string_response);
 }
 /* }}} */
 
-/* {{{ proto array Redis::lGetRange(string key, int start , int end) */
-PHP_METHOD(Redis, lGetRange)
+/* {{{ proto array Redis::lrange(string key, int start , int end) */
+PHP_METHOD(Redis, lrange)
 {
     REDIS_PROCESS_KW_CMD("LRANGE", redis_key_long_long_cmd,
         redis_sock_read_multibulk_reply);
@@ -1420,15 +1420,15 @@ PHP_METHOD(Redis, sAddArray) {
     REDIS_PROCESS_KW_CMD("SADD", redis_key_val_arr_cmd, redis_long_response);
 } /* }}} */
 
-/* {{{ proto int Redis::sSize(string key) */
-PHP_METHOD(Redis, sSize)
+/* {{{ proto int Redis::scard(string key) */
+PHP_METHOD(Redis, scard)
 {
     REDIS_PROCESS_KW_CMD("SCARD", redis_key_cmd, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::sRemove(string set, string value) */
-PHP_METHOD(Redis, sRemove)
+/* {{{ proto boolean Redis::srem(string set, string value) */
+PHP_METHOD(Redis, srem)
 {
     REDIS_PROCESS_KW_CMD("SREM", redis_key_varval_cmd, redis_long_response);
 }
@@ -1491,8 +1491,8 @@ PHP_METHOD(Redis, sRandMember)
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::sContains(string set, string value) */
-PHP_METHOD(Redis, sContains)
+/* {{{ proto boolean Redis::sismember(string set, string value) */
+PHP_METHOD(Redis, sismember)
 {
     REDIS_PROCESS_KW_CMD("SISMEMBER", redis_kv_cmd, redis_1_response);
 }
@@ -1697,8 +1697,8 @@ PHP_METHOD(Redis, sortDescAlpha)
 }
 /* }}} */
 
-/* {{{ proto array Redis::setTimeout(string key, int timeout) */
-PHP_METHOD(Redis, setTimeout) {
+/* {{{ proto array Redis::expire(string key, int timeout) */
+PHP_METHOD(Redis, expire) {
     REDIS_PROCESS_KW_CMD("EXPIRE", redis_key_long_cmd, redis_1_response);
 }
 /* }}} */
@@ -2049,23 +2049,23 @@ PHP_METHOD(Redis, zRemRangeByLex) {
 }
 /* }}} */
 
-/* {{{ proto long Redis::zDelete(string key, string member) */
-PHP_METHOD(Redis, zDelete)
+/* {{{ proto long Redis::zRem(string key, string member) */
+PHP_METHOD(Redis, zRem)
 {
     REDIS_PROCESS_KW_CMD("ZREM", redis_key_varval_cmd, redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto long Redis::zDeleteRangeByScore(string k, string s, string e) */
-PHP_METHOD(Redis, zDeleteRangeByScore)
+/* {{{ proto long Redis::zRemRangeByScore(string k, string s, string e) */
+PHP_METHOD(Redis, zRemRangeByScore)
 {
     REDIS_PROCESS_KW_CMD("ZREMRANGEBYSCORE", redis_key_str_str_cmd,
         redis_long_response);
 }
 /* }}} */
 
-/* {{{ proto long Redis::zDeleteRangeByRank(string key, long start, long end) */
-PHP_METHOD(Redis, zDeleteRangeByRank)
+/* {{{ proto long Redis::zRemRangeByRank(string key, long start, long end) */
+PHP_METHOD(Redis, zRemRangeByRank)
 {
     REDIS_PROCESS_KW_CMD("ZREMRANGEBYRANK", redis_key_long_long_cmd,
         redis_long_response);
@@ -2113,13 +2113,13 @@ PHP_METHOD(Redis, zIncrBy)
 }
 /* }}} */
 
-/* zInter */
-PHP_METHOD(Redis, zInter) {
+/* zinterstore */
+PHP_METHOD(Redis, zinterstore) {
     REDIS_PROCESS_KW_CMD("ZINTERSTORE", redis_zinter_cmd, redis_long_response);
 }
 
-/* zUnion */
-PHP_METHOD(Redis, zUnion) {
+/* zunionstore */
+PHP_METHOD(Redis, zunionstore) {
     REDIS_PROCESS_KW_CMD("ZUNIONSTORE", redis_zinter_cmd, redis_long_response);
 }
 
