@@ -109,6 +109,8 @@ PHP_REDIS_API int
 redis_read_stream_messages_multi(RedisSock *redis_sock, int count, zval *z_ret TSRMLS_DC);
 PHP_REDIS_API int
 redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv TSRMLS_DC);
+PHP_REDIS_API int
+redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements TSRMLS_DC);
 
 /*
 * Variant Read methods, mostly to implement eval

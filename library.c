@@ -1451,7 +1451,7 @@ failure:
     return -1;
 }
 
-static int
+PHP_REDIS_API int
 redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements)
 {
     zval zv;

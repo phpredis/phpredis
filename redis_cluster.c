@@ -3095,7 +3095,7 @@ PHP_METHOD(RedisCluster, xgroup) {
 
 /* {{{ proto variant RedisCluster::xinfo(string op, [string arg1, string arg2]); */
 PHP_METHOD(RedisCluster, xinfo) {
-    CLUSTER_PROCESS_CMD(xinfo, cluster_variant_resp, 0);
+    CLUSTER_PROCESS_CMD(xinfo, cluster_xinfo_resp, 0);
 }
 
 /* {{{ proto string RedisCluster::xlen(string key) }}} */
