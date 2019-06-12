@@ -1517,7 +1517,7 @@ PHP_REDIS_API int
 redis_xinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
     zval z_ret;
-    int i, elements;
+    int elements;
 
     if (read_mbulk_header(redis_sock, &elements TSRMLS_CC) == SUCCESS) {
         array_init(&z_ret);
