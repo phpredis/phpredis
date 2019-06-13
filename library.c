@@ -1451,6 +1451,94 @@ failure:
     return -1;
 }
 
+PHP_REDIS_API int
+redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements)
+{
+    zval zv;
+    int i, len;
+    char *key = NULL, *data;
+    REDIS_REPLY_TYPE type;
+    long li;
+
+    for (i = 0; i < elements; ++i) {
+        if (redis_read_reply_type(redis_sock, &type, &li TSRMLS_CC) < 0) {
+            goto failure;
+        }
+        switch (type) {
+        case TYPE_BULK:
+            if ((data = redis_sock_read_bulk_reply(redis_sock, li TSRMLS_CC)) == NULL) {
+                goto failure;
+            } else if (key) {
+                add_assoc_stringl_ex(z_ret, key, len, data, li);
+                efree(data);
+                efree(key);
+                key = NULL;
+            } else {
+                key = data;
+                len = li;
+            }
+            break;
+        case TYPE_INT:
+            if (key) {
+                add_assoc_long_ex(z_ret, key, len, li);
+                efree(key);
+                key = NULL;
+            } else {
+                len = spprintf(&key, 0, "%ld", li);
+            }
+            break;
+        case TYPE_MULTIBULK:
+            array_init(&zv);
+            if (redis_read_xinfo_response(redis_sock, &zv, li) != SUCCESS) {
+                zval_dtor(&zv);
+                goto failure;
+            }
+            if (key) {
+                add_assoc_zval_ex(z_ret, key, len, &zv);
+                efree(key);
+                key = NULL;
+            } else {
+                add_next_index_zval(z_ret, &zv);
+            }
+            break;
+        default:
+            goto failure;
+        }
+    }
+
+    return SUCCESS;
+
+failure:
+    if (key) efree(key);
+    return FAILURE;
+}
+
+PHP_REDIS_API int
+redis_xinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    zval z_ret;
+    int elements;
+
+    if (read_mbulk_header(redis_sock, &elements TSRMLS_CC) == SUCCESS) {
+        array_init(&z_ret);
+        if (redis_read_xinfo_response(redis_sock, &z_ret, elements TSRMLS_CC) == SUCCESS) {
+            if (IS_ATOMIC(redis_sock)) {
+                RETVAL_ZVAL(&z_ret, 0, 1);
+            } else {
+                add_next_index_zval(z_tab, &z_ret);
+            }
+            return SUCCESS;
+        }
+        zval_dtor(&z_ret);
+    }
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_FALSE;
+    } else {
+        add_next_index_bool(z_tab, 0);
+    }
+    return FAILURE;
+}
+
 /* Zipped key => value reply but we don't touch anything (e.g. CONFIG GET) */
 PHP_REDIS_API int redis_mbulk_reply_zipped_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {

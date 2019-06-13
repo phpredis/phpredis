@@ -5854,6 +5854,34 @@ class Redis_Test extends TestSuite
         }
     }
 
+    public function testXInfo()
+    {
+        if (!$this->minVersionCheck("5.0")) {
+            return $this->markTestSkipped();
+        }
+        /* Create some streams and groups */
+        $stream = 's';
+        $groups = ['g1' => 0, 'g2' => 0];
+        $this->addStreamsAndGroups([$stream], 1, $groups);
+
+        $info = $this->redis->xInfo('GROUPS', $stream);
+        $this->assertTrue(is_array($info));
+        $this->assertEquals(count($info), count($groups));
+        foreach ($info as $group) {
+            $this->assertTrue(array_key_exists('name', $group));
+            $this->assertTrue(array_key_exists($group['name'], $groups));
+        }
+
+        $info = $this->redis->xInfo('STREAM', $stream);
+        $this->assertTrue(is_array($info));
+        $this->assertTrue(array_key_exists('groups', $info));
+        $this->assertEquals($info['groups'], count($groups));
+        foreach (['first-entry', 'last-entry'] as $key) {
+            $this->assertTrue(array_key_exists($key, $info));
+            $this->assertTrue(is_array($info[$key]));
+        }
+    }
+
     public function testSession_savedToRedis()
     {
         $this->setSessionHandler();

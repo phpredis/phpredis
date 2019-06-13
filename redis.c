@@ -3663,7 +3663,7 @@ PHP_METHOD(Redis, xgroup) {
 }
 
 PHP_METHOD(Redis, xinfo) {
-    REDIS_PROCESS_CMD(xinfo, redis_read_variant_reply);
+    REDIS_PROCESS_CMD(xinfo, redis_xinfo_reply);
 }
 
 PHP_METHOD(Redis, xlen) {
