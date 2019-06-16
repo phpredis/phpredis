@@ -472,9 +472,8 @@ class Redis_Test extends TestSuite
 
         for ($i = 0; !$success && $i < 3; $i++) {
             $this->redis->del('key');
-            $time = $this->redis->time();
             $this->redis->set('key', 'value');
-            $this->redis->expireAt('key', $time[0] + 1);
+            $this->redis->expireAt('key', time() + 1);
             usleep(1500000);
             $success = FALSE === $this->redis->get('key');
         }
