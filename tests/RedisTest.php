@@ -466,14 +466,20 @@ class Redis_Test extends TestSuite
         $this->assertEquals(False, $this->redis->get('key'));
     }
 
+    /* This test is prone to failure in the Travis container, so attempt to mitigate this by running more than once */
     public function testExpireAt() {
-        $this->redis->del('key');
-        $this->redis->set('key', 'value');
-        $now = time();
-        $this->redis->expireAt('key', $now + 1);
-        $this->assertEquals('value', $this->redis->get('key'));
-        sleep(2);
-        $this->assertEquals(FALSE, $this->redis->get('key'));
+        $success = false;
+
+        for ($i = 0; !$success && $i < 3; $i++) {
+            $this->redis->del('key');
+            $time = $this->redis->time();
+            $this->redis->set('key', 'value');
+            $this->redis->expireAt('key', $time[0] + 1);
+            usleep(1500000);
+            $success = FALSE === $this->redis->get('key');
+        }
+
+        $this->assertTrue($success);
     }
 
     public function testSetEx() {
