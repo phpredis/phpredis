@@ -84,7 +84,7 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("redis.clusters.timeout", "0", PHP_INI_ALL, NULL)
 
     /* redis pconnect */
-    PHP_INI_ENTRY("redis.pconnect.pooling_enabled", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.pconnect.pooling_enabled", "1", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.pconnect.connection_limit", "0", PHP_INI_ALL, NULL)
 
     /* redis session */
