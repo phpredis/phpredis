@@ -477,6 +477,12 @@ static const zend_module_dep redis_deps[] = {
 #ifdef HAVE_REDIS_IGBINARY
      ZEND_MOD_REQUIRED("igbinary")
 #endif
+#ifdef HAVE_REDIS_MSGPACK
+     ZEND_MOD_REQUIRED("msgpack")
+#endif
+#ifdef HAVE_REDIS_JSON
+     ZEND_MOD_REQUIRED("json")
+#endif
 #ifdef PHP_SESSION
      ZEND_MOD_REQUIRED("session")
 #endif
@@ -809,18 +815,36 @@ PHP_MSHUTDOWN_FUNCTION(redis)
     return SUCCESS;
 }
 
-static const char *get_available_serializers(void) {
-#ifdef HAVE_REDIS_IGBINARY
-    #ifdef HAVE_REDIS_MSGPACK
-        return "php, igbinary, msgpack";
+static const char *
+get_available_serializers(void)
+{
+#ifdef HAVE_REDIS_JSON
+    #ifdef HAVE_REDIS_IGBINARY
+        #ifdef HAVE_REDIS_MSGPACK
+            return "php, json, igbinary, msgpack";
+        #else
+            return "php, json, igbinary";
+        #endif
     #else
-        return "php, igbinary";
+        #ifdef HAVE_REDIS_MSGPACK
+            return "php, json, msgpack";
+        #else
+            return "php, json";
+        #endif
     #endif
 #else
-    #ifdef HAVE_REDIS_MSGPACK
-        return "php, msgpack";
+    #ifdef HAVE_REDIS_IGBINARY
+        #ifdef HAVE_REDIS_MSGPACK
+            return "php, igbinary, msgpack";
+        #else
+            return "php, igbinary";
+        #endif
     #else
-        return "php";
+        #ifdef HAVE_REDIS_MSGPACK
+            return "php, msgpack";
+        #else
+            return "php";
+        #endif
     #endif
 #endif
 }

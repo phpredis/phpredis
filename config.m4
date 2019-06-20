@@ -8,6 +8,9 @@ dnl Make sure that the comment is aligned:
 PHP_ARG_ENABLE(redis-session, whether to disable sessions,
 [  --disable-redis-session      Disable session support], yes, no)
 
+PHP_ARG_ENABLE(redis-json, whether to disable json serializer support,
+[  --disable-redis-json         Disable json serializer support], yes, no)
+
 PHP_ARG_ENABLE(redis-igbinary, whether to enable igbinary serializer support,
 [  --enable-redis-igbinary Enable igbinary serializer support], no, no)
 
@@ -26,7 +29,46 @@ if test "$PHP_REDIS" != "no"; then
     AC_DEFINE(PHP_SESSION,1,[redis sessions])
   fi
 
-dnl Check for igbinary
+  if test "PHP_REDIS_JSON" != "no"; then
+    AC_MSG_CHECKING([for json includes])
+    json_inc_path=""
+    if test -f "$abs_srcdir/include/php/ext/json/php_json.h"; then
+      json_inc_path="$abs_srcdir/include/php"
+    elif test -f "$abs_srcdir/ext/json/php_json.h"; then
+      json_inc_path="$abs_srcdir"
+    elif test -f "$phpincludedir/ext/json/php_json.h"; then
+      json_inc_path="$phpincludedir"
+    else
+      for i in php php7; do
+        if test -f "$prefix/include/$i/ext/json/php_json.h"; then
+          json_inc_path="$prefix/include/$i"
+        fi
+      done
+    fi
+
+    if test "$json_inc_path" = ""; then
+      AC_MSG_ERROR([Cannot find php_json.h])
+    else
+      AC_MSG_RESULT([$json_inc_path])
+    fi
+  fi
+
+  AC_MSG_CHECKING([for redis json support])
+  if test "$PHP_REDIS_JSON" != "no"; then
+    AC_MSG_RESULT([enabled])
+    AC_DEFINE(HAVE_REDIS_JSON,1,[Whether redis json serializer is enabled])
+    JSON_INCLUDES="-I$json_inc_path"
+    JSON_EXT_DIR="$json_inc_path/ext"
+    ifdef([PHP_ADD_EXTENSION_DEP],
+    [
+      PHP_ADD_EXTENSION_DEP(redis, json)
+    ])
+    PHP_ADD_INCLUDE($JSON_EXT_DIR)
+  else
+    JSON_INCLUDES=""
+    AC_MSG_RESULT([disabled])
+  fi
+
   if test "$PHP_REDIS_IGBINARY" != "no"; then
     AC_MSG_CHECKING([for igbinary includes])
     igbinary_inc_path=""
@@ -68,6 +110,47 @@ dnl Check for igbinary
     AC_MSG_RESULT([disabled])
   fi
 
+  if test "$PHP_REDIS_MSGPACK" != "no"; then
+    AC_MSG_CHECKING([for msgpack includes])
+    msgpack_inc_path=""
+
+    if test -f "$abs_srcdir/include/php/ext/msgpack/php_msgpack.h"; then
+      msgpack_inc_path="$abs_srcdir/include/php"
+    elif test -f "$abs_srcdir/ext/msgpack/php_msgpack.h"; then
+      msgpack_inc_path="$abs_srcdir"
+    elif test -f "$phpincludedir/ext/msgpack/php_msgpack.h"; then
+      msgpack_inc_path="$phpincludedir"
+    else
+      for i in php php7; do
+        if test -f "$prefix/include/$i/ext/msgpack/php_msgpack.h"; then
+          msgpack_inc_path="$prefix/include/$i"
+        fi
+      done
+    fi
+
+    if test "$msgpack_inc_path" = ""; then
+      AC_MSG_ERROR([Cannot find php_msgpack.h])
+    else
+      AC_MSG_RESULT([$msgpack_inc_path])
+    fi
+  fi
+
+  AC_MSG_CHECKING([for redis msgpack support])
+  if test "$PHP_REDIS_MSGPACK" != "no"; then
+    AC_MSG_RESULT([enabled])
+    AC_DEFINE(HAVE_REDIS_MSGPACK,1,[Whether redis msgpack serializer is enabled])
+    MSGPACK_INCLUDES="-I$msgpack_inc_path"
+    MSGPACK_EXT_DIR="$msgpack_inc_path/ext"
+    ifdef([PHP_ADD_EXTENSION_DEP],
+    [
+      PHP_ADD_EXTENSION_DEP(redis, msgpack)
+    ])
+    PHP_ADD_INCLUDE($MSGPACK_EXT_DIR)
+  else
+    MSGPACK_INCLUDES=""
+    AC_MSG_RESULT([disabled])
+  fi
+
   if test "$PHP_REDIS_LZF" != "no"; then
     AC_DEFINE(HAVE_REDIS_LZF, 1, [ ])
     if test "$PHP_LIBLZF" != "no"; then
@@ -103,53 +186,6 @@ dnl Check for igbinary
   AC_CHECK_PROG([GIT], [git], [yes], [no])
   if test "$GIT" == "yes" && test -d "$srcdir/.git"; then
     AC_DEFINE_UNQUOTED(GIT_REVISION, ["$(git log -1 --format=%H)"], [ ])
-  fi
-
-dnl Check for msgpack
-  if test "$PHP_REDIS_MSGPACK" != "no"; then
-    AC_MSG_CHECKING([for msgpack includes])
-    msgpack_inc_path=""
-
-    if test -f "$abs_srcdir/include/php/ext/msgpack/php_msgpack.h"; then
-      msgpack_inc_path="$abs_srcdir/include/php"
-    elif test -f "$abs_srcdir/ext/msgpack/php_msgpack.h"; then
-      msgpack_inc_path="$abs_srcdir"
-    elif test -f "$phpincludedir/ext/msgpack/php_msgpack.h"; then
-      msgpack_inc_path="$phpincludedir"
-    else
-      for i in php php7; do
-        if test -f "$prefix/include/$i/ext/msgpack/php_msgpack.h"; then
-          msgpack_inc_path="$prefix/include/$i"
-        fi
-      done
-    fi
-
-    if test "$msgpack_inc_path" = ""; then
-      AC_MSG_ERROR([Cannot find php_msgpack.h])
-    else
-      AC_MSG_RESULT([$msgpack_inc_path])
-    fi
-  fi
-
-  AC_MSG_CHECKING([for redis msgpack support])
-  if test "$PHP_REDIS_MSGPACK" != "no"; then
-    msgpack_version=`grep -o 'PHP_MSGPACK_VERSION "[0-9\.]\+"' $msgpack_inc_path/ext/msgpack/php_msgpack.h | awk '{print $2}' | tr -d '"'`
-    if expr $msgpack_version "<" "2.0.3" > /dev/null; then
-      AC_MSG_ERROR([msgpack 2.0.3 or greater required])
-    else
-      AC_MSG_RESULT([enabled])
-      AC_DEFINE(HAVE_REDIS_MSGPACK,1,[Whether redis msgpack serializer is enabled])
-      MSGPACK_INCLUDES="-I$msgpack_inc_path"
-      MSGPACK_EXT_DIR="$msgpack_inc_path/ext"
-      ifdef([PHP_ADD_EXTENSION_DEP],
-      [
-        PHP_ADD_EXTENSION_DEP(redis, msgpack)
-      ])
-      PHP_ADD_INCLUDE($MSGPACK_EXT_DIR)
-    fi
-  else
-    MSGPACK_INCLUDES=""
-    AC_MSG_RESULT([disabled])
   fi
 
   dnl # --with-redis -> check with-path

@@ -25,7 +25,11 @@
 #include "php_redis.h"
 #include "library.h"
 #include "redis_commands.h"
+
+#ifdef HAVE_REDIS_JSON
 #include <ext/json/php_json.h>
+#endif
+
 #include <ext/standard/php_rand.h>
 
 #define UNSERIALIZE_NONE 0
@@ -2316,11 +2320,14 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
 #endif
             break;
         case REDIS_SERIALIZER_JSON:
+#ifdef HAVE_REDIS_JSON
             php_json_encode(&sstr, z, PHP_JSON_OBJECT_AS_ARRAY);
             *val = estrndup(ZSTR_VAL(sstr.s), ZSTR_LEN(sstr.s));
             *val_len = ZSTR_LEN(sstr.s);
             smart_str_free(&sstr);
             return 1;
+#endif
+            break;
         EMPTY_SWITCH_DEFAULT_CASE()
     }
 
@@ -2385,12 +2392,14 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
 #endif
             break;
         case REDIS_SERIALIZER_JSON:
-#if PHP_MAJOR_VERSION == 7 && PHP_MINOR_VERSION < 1
+#ifdef HAVE_REDIS_JSON
+    #if (PHP_MAJOR_VERSION == 7 && PHP_MINOR_VERSION < 1)
             JSON_G(error_code) = PHP_JSON_ERROR_NONE;
             php_json_decode(z_ret, (char*)val, val_len, 1, PHP_JSON_PARSER_DEFAULT_DEPTH);
             ret = JSON_G(error_code) == PHP_JSON_ERROR_NONE;
-#else
+    #else
             ret = !php_json_decode(z_ret, (char *)val, val_len, 1, PHP_JSON_PARSER_DEFAULT_DEPTH);
+    #endif
 #endif
             break;
         EMPTY_SWITCH_DEFAULT_CASE()
