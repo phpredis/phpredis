@@ -981,8 +981,8 @@ class Redis_Test extends TestSuite
         $this->redis->sadd('some-item', 2);
         $this->redis->sadd('some-item', 3);
 
-        $this->assertEquals(['1','2','3'], $this->redis->sortAsc('some-item'));
-        $this->assertEquals(['3','2','1'], $this->redis->sortDesc('some-item'));
+        $this->assertEquals(['1','2','3'], $this->redis->sort('some-item', ['sort' => 'asc']));
+        $this->assertEquals(['3','2','1'], $this->redis->sort('some-item', ['sort' => 'desc']));
         $this->assertEquals(['1','2','3'], $this->redis->sort('some-item'));
 
         // Kill our set/prefix
@@ -992,36 +992,31 @@ class Redis_Test extends TestSuite
 
     public function testSortAsc() {
         $this->setupSort();
-        $this->assertTrue(FALSE === $this->redis->sortAsc(NULL));
-
         // sort by age and get IDs
         $byAgeAsc = ['3','1','2','4'];
-        $this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*'));
+        $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', ['by' => 'person:age_*']));
         $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', ['by' => 'person:age_*', 'sort' => 'asc']));
-        $this->assertEquals(['1', '2', '3', '4'], $this->redis->sortAsc('person:id', NULL));   // check that NULL works.
-        $this->assertEquals(['1', '2', '3', '4'], $this->redis->sortAsc('person:id', NULL, NULL)); // for all fields.
+        $this->assertEquals(['1', '2', '3', '4'], $this->redis->sort('person:id', ['by' => NULL]));   // check that NULL works.
+        $this->assertEquals(['1', '2', '3', '4'], $this->redis->sort('person:id', ['by' => NULL, 'get' => NULL])); // for all fields.
         $this->assertEquals(['1', '2', '3', '4'], $this->redis->sort('person:id', ['sort' => 'asc']));
 
         // sort by age and get names
         $byAgeAsc = ['Carol','Alice','Bob','Dave'];
-        $this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*'));
+        $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*']));
         $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'sort' => 'asc']));
 
-        $this->assertEquals(array_slice($byAgeAsc, 0, 2), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 0, 2));
+        $this->assertEquals(array_slice($byAgeAsc, 0, 2), $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => [0, 2]]));
         $this->assertEquals(array_slice($byAgeAsc, 0, 2), $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => [0, 2], 'sort' => 'asc']));
 
-        $this->assertEquals(array_slice($byAgeAsc, 1, 2), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 1, 2));
+        $this->assertEquals(array_slice($byAgeAsc, 1, 2), $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => [1, 2]]));
         $this->assertEquals(array_slice($byAgeAsc, 1, 2), $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => [1, 2], 'sort' => 'asc']));
-        $this->assertEquals(array_slice($byAgeAsc, 0, 3), $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', NULL, 3)); // NULL is transformed to 0 if there is something after it.
-        $this->assertEquals($byAgeAsc, $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', 0, 4));
         $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => [0, 4]]));
         $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => [0, "4"]])); // with strings
         $this->assertEquals($byAgeAsc, $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => ["0", 4]]));
-        $this->assertEquals([], $this->redis->sortAsc('person:id', 'person:age_*', 'person:name_*', NULL, NULL)); // NULL, NULL is the same as (0,0). That returns no element.
 
         // sort by salary and get ages
         $agesBySalaryAsc = ['34', '27', '25', '41'];
-        $this->assertEquals($agesBySalaryAsc, $this->redis->sortAsc('person:id', 'person:salary_*', 'person:age_*'));
+        $this->assertEquals($agesBySalaryAsc, $this->redis->sort('person:id', ['by' => 'person:salary_*', 'get' => 'person:age_*']));
         $this->assertEquals($agesBySalaryAsc, $this->redis->sort('person:id', ['by' => 'person:salary_*', 'get' => 'person:age_*', 'sort' => 'asc']));
 
         $agesAndSalaries = $this->redis->sort('person:id', ['by' => 'person:salary_*', 'get' => ['person:age_*', 'person:salary_*'], 'sort' => 'asc']);
@@ -1037,7 +1032,7 @@ class Redis_Test extends TestSuite
 
         // SORT list → [ghi, def, abc]
         if (version_compare($this->version, "2.5.0", "lt")) {
-            $this->assertEquals(array_reverse($list), $this->redis->sortAsc('list'));
+            $this->assertEquals(array_reverse($list), $this->redis->sort('list'));
             $this->assertEquals(array_reverse($list), $this->redis->sort('list', ['sort' => 'asc']));
         } else {
             // TODO rewrite, from 2.6.0 release notes:
@@ -1046,7 +1041,7 @@ class Redis_Test extends TestSuite
         }
 
         // SORT list ALPHA → [abc, def, ghi]
-        $this->assertEquals($list, $this->redis->sortAscAlpha('list'));
+        $this->assertEquals($list, $this->redis->sort('list', ['alpha' => TRUE]));
         $this->assertEquals($list, $this->redis->sort('list', ['sort' => 'asc', 'alpha' => TRUE]));
     }
 
@@ -1056,18 +1051,18 @@ class Redis_Test extends TestSuite
 
     // sort by age and get IDs
     $byAgeDesc = ['4','2','1','3'];
-    $this->assertEquals($byAgeDesc, $this->redis->sortDesc('person:id', 'person:age_*'));
+    $this->assertEquals($byAgeDesc, $this->redis->sort('person:id', ['by' => 'person:age_*', 'sort' => 'desc']));
 
     // sort by age and get names
     $byAgeDesc = ['Dave', 'Bob', 'Alice', 'Carol'];
-    $this->assertEquals($byAgeDesc, $this->redis->sortDesc('person:id', 'person:age_*', 'person:name_*'));
+    $this->assertEquals($byAgeDesc, $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'sort' => 'desc']));
 
-    $this->assertEquals(array_slice($byAgeDesc, 0, 2), $this->redis->sortDesc('person:id', 'person:age_*', 'person:name_*', 0, 2));
-    $this->assertEquals(array_slice($byAgeDesc, 1, 2), $this->redis->sortDesc('person:id', 'person:age_*', 'person:name_*', 1, 2));
+    $this->assertEquals(array_slice($byAgeDesc, 0, 2), $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => [0, 2], 'sort' => 'desc']));
+    $this->assertEquals(array_slice($byAgeDesc, 1, 2), $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => [1, 2], 'sort' => 'desc']));
 
     // sort by salary and get ages
     $agesBySalaryDesc = ['41', '25', '27', '34'];
-    $this->assertEquals($agesBySalaryDesc, $this->redis->sortDesc('person:id', 'person:salary_*', 'person:age_*'));
+    $this->assertEquals($agesBySalaryDesc, $this->redis->sort('person:id', ['by' => 'person:salary_*', 'get' => 'person:age_*', 'sort' => 'desc']));
 
     // sort non-alpha doesn't change all-string lists
     $list = ['def', 'abc', 'ghi'];
@@ -1078,7 +1073,7 @@ class Redis_Test extends TestSuite
 
     // SORT list → [ghi, abc, def]
     if (version_compare($this->version, "2.5.0", "lt")) {
-        $this->assertEquals(array_reverse($list), $this->redis->sortDesc('list'));
+        $this->assertEquals(array_reverse($list), $this->redis->sort('list', ['sort' => 'desc']));
     } else {
         // TODO rewrite, from 2.6.0 release notes:
         // SORT now will refuse to sort in numerical mode elements that can't be parsed
@@ -1086,7 +1081,7 @@ class Redis_Test extends TestSuite
     }
 
     // SORT list ALPHA → [abc, def, ghi]
-    $this->assertEquals(['ghi', 'def', 'abc'], $this->redis->sortDescAlpha('list'));
+    $this->assertEquals(['ghi', 'def', 'abc'], $this->redis->sort('list', ['sort' => 'desc', 'alpha' => TRUE]));
     }
 
     // LINDEX
@@ -6314,7 +6309,7 @@ class Redis_Test extends TestSuite
         static $cmd = NULL;
 
         if (!$cmd) {
-            $cmd  = (getenv('TEST_PHP_EXECUTABLE') ?: (defined('PHP_BINARY') ? PHP_BINARY : 'php')); // PHP_BINARY is 5.4+
+            $cmd  = (getenv('TEST_PHP_EXECUTABLE') ?: PHP_BINARY);
 
             if ($test_args = getenv('TEST_PHP_ARGS')) {
                 $cmd .= ' ';
@@ -6324,9 +6319,13 @@ class Redis_Test extends TestSuite
                 $result   = shell_exec("$cmd --no-php-ini -m");
                 $redis    = strpos($result, 'redis') !== false;
                 $igbinary = strpos($result, 'igbinary') !== false;
+                $msgpack  = strpos($result, 'msgpack') !== false;
 
-                if (!$redis || !$igbinary) {
+                if (!$redis || !$igbinary || !$msgpack) {
                     $cmd .= ' --no-php-ini';
+                    if (!$msgpack) {
+                        $cmd .= ' --define extension=msgpack.so';
+                    }
                     if (!$igbinary) {
                         $cmd .= ' --define extension=igbinary.so';
                     }
