@@ -477,6 +477,10 @@ static const zend_module_dep redis_deps[] = {
 #ifdef HAVE_REDIS_IGBINARY
      ZEND_MOD_REQUIRED("igbinary")
 #endif
+#ifdef HAVE_REDIS_MSGPACK
+     ZEND_MOD_REQUIRED("msgpack")
+#endif
+     ZEND_MOD_REQUIRED("json")
 #ifdef PHP_SESSION
      ZEND_MOD_REQUIRED("session")
 #endif
@@ -812,15 +816,15 @@ PHP_MSHUTDOWN_FUNCTION(redis)
 static const char *get_available_serializers(void) {
 #ifdef HAVE_REDIS_IGBINARY
     #ifdef HAVE_REDIS_MSGPACK
-        return "php, igbinary, msgpack";
+        return "php, json, igbinary, msgpack";
     #else
-        return "php, igbinary";
+        return "php, json, igbinary";
     #endif
 #else
     #ifdef HAVE_REDIS_MSGPACK
-        return "php, msgpack";
+        return "php, json, msgpack";
     #else
-        return "php";
+        return "php, json";
     #endif
 #endif
 }
