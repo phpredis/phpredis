@@ -137,6 +137,13 @@ if test "$PHP_REDIS" != "no"; then
 
   AC_MSG_CHECKING([for redis msgpack support])
   if test "$PHP_REDIS_MSGPACK" != "no"; then
+    AC_MSG_CHECKING([for php_msgpack version >= 2.0.3])
+    MSGPACK_VERSION=`$EGREP "define PHP_MSGPACK_VERSION" $msgpack_inc_path/ext/msgpack/php_msgpack.h | $SED -e 's/[[^0-9\.]]//g'`
+    AC_MSG_RESULT([$MSGPACK_VERSION])
+    if test `echo $MSGPACK_VERSION | $SED -e 's/[[^0-9]]/ /g' | $AWK '{print $1*1000 + $2*100 + $3*10 + $4}'` -lt 2030; then
+      AC_MSG_ERROR([php msgpack version >= 2.0.3 required])
+    fi
+
     AC_MSG_RESULT([enabled])
     AC_DEFINE(HAVE_REDIS_MSGPACK,1,[Whether redis msgpack serializer is enabled])
     MSGPACK_INCLUDES="-I$msgpack_inc_path"
