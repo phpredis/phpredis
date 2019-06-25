@@ -27,22 +27,28 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2019-06-20</date>
+ <date>2019-06-25</date>
  <version>
-  <release>5.0.0RC1</release>
+  <release>5.0.0RC2</release>
   <api>5.0.0</api>
  </version>
  <stability>
-  <release>alpha</release>
-  <api>alpha</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 5.0.0RC1
-
     This release contains important improvements and breaking changes.
     The most interesting are: drop PHP5 support, RedisCluster slots caching,
     JSON and msgpack serializers, soft deprecation of non-Redis commands.
+
+    phpredis 5.0.0RC2
+
+    * Allow compilation without JSON serialization enabled and fixes for deprecated
+      helper methods.  [235a27] (Pavlo Yatsukhnenko)
+    * Fix php msgpack >= 2.0.3 version requirement. [6973478..a537df8] (Michael Grunder)
+
+    phpredis 5.0.0RC1
 
     * Enable connection pooling by default [8206b147] (Pavlo Yatsukhnenko)
     * Soft deprecate methods that aren't actually Redis commands [a81b4f2d, 95c8aab9] (Pavlo Yatsukhnenko, Michael Grunder)
@@ -132,15 +138,21 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
   <release>
-   <stability><release>alpha</release><api>alpha</api></stability>
-   <version><release>5.0.0RC1</release><api>5.0.0</api></version>
-   <date>2019-06-20</date>
+   <stability><release>beta</release><api>beta</api></stability>
+   <version><release>5.0.0RC2</release><api>5.0.0</api></version>
+   <date>2019-06-25</date>
    <notes>
-    phpredis 5.0.0RC1
-
     This release contains important improvements and breaking changes.
     The most interesting are: drop PHP5 support, RedisCluster slots caching,
     JSON and msgpack serializers, soft deprecation of non-Redis commands.
+
+    phpredis 5.0.0RC2
+
+    * Allow compilation without JSON serialization enabled and fixes for deprecated
+      helper methods.  [235a27] (Pavlo Yatsukhnenko)
+    * Fix php msgpack >= 2.0.3 version requirement. [6973478..a537df8] (Michael Grunder)
+
+    phpredis 5.0.0RC1
 
     * Enable connection pooling by default [8206b147] (Pavlo Yatsukhnenko)
     * Soft deprecate methods that aren't actually Redis commands [a81b4f2d, 95c8aab9] (Pavlo Yatsukhnenko, Michael Grunder)
