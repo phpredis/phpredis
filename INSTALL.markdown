@@ -3,7 +3,17 @@
 To pull latest stable released version, from [pecl](https://pecl.php.net/package/redis):
 
 ~~~
-pecl install redis
+pecl install redis [--enable-redis-igbinary] [--enable-redis-lzf]
+~~~
+
+or in a docker container with igbinary & lzf enabled
+
+~~~
+pecl install --onlyreqdeps --nobuild redis-${REDIS_VERSION}; \
+cd "$(pecl config-get temp_dir)/redis"; \
+phpize; \
+./configure --enable-redis-igbinary --enable-redis-lzf; \
+make && make install; \
 ~~~
 
 # Installation from sources
