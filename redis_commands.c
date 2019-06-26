@@ -3888,6 +3888,8 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             RETURN_LONG(redis_sock->serializer);
         case REDIS_OPT_COMPRESSION:
             RETURN_LONG(redis_sock->compression);
+        case REDIS_OPT_COMPRESSION_LEVEL:
+            RETURN_LONG(redis_sock->compression_level);
         case REDIS_OPT_PREFIX:
             if (redis_sock->prefix) {
                 RETURN_STRINGL(ZSTR_VAL(redis_sock->prefix), ZSTR_LEN(redis_sock->prefix));
@@ -3951,11 +3953,18 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
 #ifdef HAVE_REDIS_LZF
                 || val_long == REDIS_COMPRESSION_LZF
 #endif
+#ifdef HAVE_REDIS_ZSTD
+                || val_long == REDIS_COMPRESSION_ZSTD
+#endif
             ) {
                 redis_sock->compression = val_long;
                 RETURN_TRUE;
             }
             break;
+        case REDIS_OPT_COMPRESSION_LEVEL:
+            val_long = zval_get_long(val);
+            redis_sock->compression_level = val_long;
+            RETURN_TRUE;
         case REDIS_OPT_PREFIX:
             if (redis_sock->prefix) {
                 zend_string_release(redis_sock->prefix);

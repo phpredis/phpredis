@@ -28,10 +28,12 @@ matrix:
       env: CC=clang
 addons:
   apt:
-    packages: clang
+    packages:
+    - clang
+    - libzstd1-dev
 before_install:
   - phpize
-  - CFGARGS="--enable-redis-lzf"
+  - CFGARGS="--enable-redis-lzf --enable-redis-zstd"
   - pecl install igbinary && CFGARGS="$CFGARGS --enable-redis-igbinary"
   - pecl install msgpack && CFGARGS="$CFGARGS --enable-redis-msgpack"
   - ./configure $CFGARGS

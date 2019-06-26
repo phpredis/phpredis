@@ -4485,13 +4485,25 @@ class Redis_Test extends TestSuite
         if (!defined('Redis::COMPRESSION_LZF')) {
             $this->markTestSkipped();
         }
-        $this->checkCompression(Redis::COMPRESSION_LZF);
+        $this->checkCompression(Redis::COMPRESSION_LZF, 0);
     }
 
-    private function checkCompression($mode)
+    public function testCompressionZSTD()
+    {
+        if (!defined('Redis::COMPRESSION_ZSTD')) {
+            $this->markTestSkipped();
+        }
+        $this->checkCompression(Redis::COMPRESSION_ZSTD, 0);
+        $this->checkCompression(Redis::COMPRESSION_ZSTD, 9);
+    }
+
+    private function checkCompression($mode, $level)
     {
         $this->assertTrue($this->redis->setOption(Redis::OPT_COMPRESSION, $mode) === TRUE);  // set ok
         $this->assertTrue($this->redis->getOption(Redis::OPT_COMPRESSION) === $mode);    // get ok
+
+        $this->assertTrue($this->redis->setOption(Redis::OPT_COMPRESSION_LEVEL, $level) === TRUE);
+        $this->assertTrue($this->redis->getOption(Redis::OPT_COMPRESSION_LEVEL) === $level);
 
         $val = 'xxxxxxxxxx';
         $this->redis->set('key', $val);
