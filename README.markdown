@@ -797,7 +797,7 @@ $redis->unlink('key1', 'key2');
 $redis->unlink(['key1', 'key2']);
 ~~~
 
-**Note:** `delete` is an alias for `del` and will be removed in future versions of phpredis.
+**Note:** `delete` is an alias for `del` and is deprecated starting from version 5.0.0. It will be removed in future versions of phpredis.
 
 ### exists
 -----
