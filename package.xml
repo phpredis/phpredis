@@ -25,12 +25,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <name>Nicolas Favre-Felix</name>
   <user>nff</user>
   <email>n.favrefelix@gmail.com</email>
-  <active>yes</active>
+  <active>no</active>
  </lead>
- <date>2018-11-18</date>
+ <date>2019-07-02</date>
  <version>
-  <release>4.2.0</release>
-  <api>4.2.0</api>
+  <release>5.0.0</release>
+  <api>5.0.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -38,41 +38,42 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 4.2.0
+    This release contains important improvements and breaking changes.
+    The most interesting are: drop PHP5 support, RedisCluster slots caching,
+    JSON and msgpack serializers, soft deprecation of non-Redis commands.
 
-    The main feature of this release is new Streams API implemented by Michael Grunder.
+    phpredis 5.0.0
 
-    Note:  There are no changes between 4.2.0RC3 and 4.2.0.
+    * Remove HAVE_SPL [55c5586c] (@petk)
+    * Update Fedora installation instructions [90aa067c] (@remicollet)
 
-    4.2.0RC3:
+    phpredis 5.0.0RC2
 
-    * Optimize close method [2a1ef961] (fanjiapeng)
-    * Prevent potential infinite loop for sessions [4e2de158] (Pavlo Yatsukhnenko)
-    * Fix coverty warnings [6f7ddd27] (Pavlo Yatsukhnenko)
-    * Fix session memory leaks [071a1d54, 92f14b14] (Pavlo Yatsukhnenko, Michael Grunder)
-    * Fix XCLAIM on 32-bit installs [18dc2aac] (Michael Grunder)
-    * Build warning fixes [b5093910, 51027044, 8b0f28cd] (Pavlo Yatsukhnenko, Remi Collet, twosee)
+    * Allow compilation without JSON serialization enabled and fixes for deprecated
+      helper methods.  [235a27] (Pavlo Yatsukhnenko)
+    * Fix php msgpack >= 2.0.3 version requirement. [6973478..a537df8] (Michael Grunder)
 
-    4.2.0RC2:
+    phpredis 5.0.0RC1
 
-    * Fix incorrect arginfo for `Redis::sRem` and `Redis::multi` [25b043ce] (Pavlo Yatsukhnenko)
-    * Update STREAM API to handle STATUS -> BULK reply change [0b97ec37] (Michael Grunder)
-    * Treat a -1 response from cluster_check_response as a timeout. [27df9220, 07ef7f4e, d1172426] (Michael Grunder)
-    * Use a ZSET insted of SET for EVAL tests [2e412373] (Michael Grunder)
-    * Missing space between command and args [0af2a7fe] (@remicollet)
-
-    4.2.0RC1:
-
-    * Streams API [2c9e0572] (Michael Grunder)
-    * Reset the socket after a timeout to make sure no wrong data is received [cd6ebc6d] (@marcdejonge)
-    * Modify session testing logic [bfd27471] (Michael Grunder)
-    * Allow '-' and '+' arguments and add tests for zLexCount and zRemRangeByLex [d4a08697] (Michael Grunder)
-    * Fix printf format warnings [dcde9331] (Pavlo Yatsukhnenko)
-    * Session module is required [58bd8cc8] (@remicollet)
-    * Set default values for ini entries [e206ce9c] (Pavlo Yatsukhnenko)
-    * Display ini entries in output of phpinfo [908ac4b3] (Pavlo Yatsukhnenko)
-    * Persistant connections can be closed via close method + change reconnection logic [1d997873] (Pavlo Yatsukhnenko)
-    * Documentation improvements (@mg, @elcheco, @lucascourot, @nolimitdev, Michael Grunder)
+    * Enable connection pooling by default [8206b147] (Pavlo Yatsukhnenko)
+    * Soft deprecate methods that aren't actually Redis commands [a81b4f2d, 95c8aab9] (Pavlo Yatsukhnenko, Michael Grunder)
+    * Enable pooling for cluster slave nodes [17600dd1] (Michael Grunder)
+    * xInfo response format [4852a510, ac9dca0a] (Pavlo Yatsukhnenko)
+    * Make the XREADGROUP optional COUNT and BLOCK arguments nullable [0c17bd27] (Michael Grunder)
+    * Allow PING to take an optional argument [6e494170] (Michael Grunder)
+    * Allow ZRANGE to be called either with `true` or `['withscores' => true]` [19f3efcf] (Michael Grunder)
+    * Allow to specify server address as schema://host [418428fa] (Pavlo Yatsukhnenko)
+    * Allow persistent_id to be passed as NULL with strict_types enabled [60223762] (Michael Grunder)
+    * Add server address to exception message [e8fb49be, 34d6403d] (Pavlo Yatsukhnenko)
+    * Adds OPT_REPLY_LITERAL for rawCommand and EVAL [5cb30fb2] (Michael Grunder)
+    * JSON serializer [98bd2886, 96c57139] (Pavlo Yatsukhnenko, Michael Grunder)
+    * Add support for STREAM to the type command [d7450b2f, 068ce978, 8a45d18c] (Michael Grunder, Pavlo Yatsukhnenko)
+    * Fix TypeError when using built-in constants in `setOption` [4c7643ee] (@JoyceBabu)
+    * Handle references in MGET [60d8b679] (Michael Grunder)
+    * msgpack serializer [d5b8f833, 545250f3, 52bae8ab] (@bgort, Pavlo Yatsukhnenko, Michael Grunder)
+    * Add Cluster slots caching [9f0d7bc0, ea081e05] (Michael Grunder)
+    * Drop PHP5 support [f9928642, 46a50c12, 4601887d, 6ebb36ce, fdbe9d29] (Michael Grunder)
+    * Documentation improvements (@alexander-schranz, @cookieguru, Pavlo Yatsukhnenko, Michael Grunder)
  </notes>
  <contents>
   <dir name="/">
@@ -141,6 +142,86 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.0.0</release><api>5.0.0</api></version>
+   <date>2019-07-02</date>
+   <notes>
+    This release contains important improvements and breaking changes.
+    The most interesting are: drop PHP5 support, RedisCluster slots caching,
+    JSON and msgpack serializers, soft deprecation of non-Redis commands.
+
+    phpredis 5.0.0
+
+    * Remove HAVE_SPL [55c5586c] (@petk)
+    * Update Fedora installation instructions [90aa067c] (@remicollet)
+
+    phpredis 5.0.0RC2
+
+    * Allow compilation without JSON serialization enabled and fixes for deprecated
+      helper methods.  [235a27] (Pavlo Yatsukhnenko)
+    * Fix php msgpack >= 2.0.3 version requirement. [6973478..a537df8] (Michael Grunder)
+
+    phpredis 5.0.0RC1
+
+    * Enable connection pooling by default [8206b147] (Pavlo Yatsukhnenko)
+    * Soft deprecate methods that aren't actually Redis commands [a81b4f2d, 95c8aab9] (Pavlo Yatsukhnenko, Michael Grunder)
+    * Enable pooling for cluster slave nodes [17600dd1] (Michael Grunder)
+    * xInfo response format [4852a510, ac9dca0a] (Pavlo Yatsukhnenko)
+    * Make the XREADGROUP optional COUNT and BLOCK arguments nullable [0c17bd27] (Michael Grunder)
+    * Allow PING to take an optional argument [6e494170] (Michael Grunder)
+    * Allow ZRANGE to be called either with `true` or `['withscores' => true]` [19f3efcf] (Michael Grunder)
+    * Allow to specify server address as schema://host [418428fa] (Pavlo Yatsukhnenko)
+    * Allow persistent_id to be passed as NULL with strict_types enabled [60223762] (Michael Grunder)
+    * Add server address to exception message [e8fb49be, 34d6403d] (Pavlo Yatsukhnenko)
+    * Adds OPT_REPLY_LITERAL for rawCommand and EVAL [5cb30fb2] (Michael Grunder)
+    * JSON serializer [98bd2886, 96c57139] (Pavlo Yatsukhnenko, Michael Grunder)
+    * Add support for STREAM to the type command [d7450b2f, 068ce978, 8a45d18c] (Michael Grunder, Pavlo Yatsukhnenko)
+    * Fix TypeError when using built-in constants in `setOption` [4c7643ee] (@JoyceBabu)
+    * Handle references in MGET [60d8b679] (Michael Grunder)
+    * msgpack serializer [d5b8f833, 545250f3, 52bae8ab] (@bgort, Pavlo Yatsukhnenko, Michael Grunder)
+    * Add RedisCluster slots caching [9f0d7bc0, ea081e05] (Michael Grunder)
+    * Drop PHP5 support [f9928642, 46a50c12, 4601887d, 6ebb36ce, fdbe9d29] (Michael Grunder)
+    * Documentation improvements (@alexander-schranz, @cookieguru, Pavlo Yatsukhnenko, Michael Grunder)
+   </notes>
+   </release>
+
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>4.3.0</release><api>4.3.0</api></version>
+   <date>2019-03-13</date>
+   <notes>
+      phpredis 4.3.0
+
+      This is probably the latest release with PHP 5 suport!!!
+
+      * Proper persistent connections pooling implementation [a3703820, c76e00fb, 0433dc03, c75b3b93] (Pavlo Yatsukhnenko)
+      * RedisArray auth [b5549cff, 339cfa2b, 6b411aa8] (Pavlo Yatsukhnenko)
+      * Use zend_string for storing key hashing algorithm [8cd165df, 64e6a57f] (Pavlo Yatsukhnenko)
+      * Add ZPOPMAX and ZPOPMIN support [46f03561, f89e941a, 2ec7d91a] (@mbezhanov, Michael Grunder)
+      * Implement GEORADIUS_RO and GEORADIUSBYMEMBER_RO [22d81a94] (Michael Grunder)
+      * Add callback parameter to subscribe/psubscribe arginfo [0653ff31] (Pavlo Yatsukhnenko)
+      * Don't check the number affected keys in PS_UPDATE_TIMESTAMP_FUNC [b00060ce] (Pavlo Yatsukhnenko)
+      * Xgroup updates [15995c06] (Michael Grunder)
+      * RedisCluster auth [c5994f2a] (Pavlo Yatsukhnenko)
+      * Cancel pipeline mode without executing commands [789256d7] (Pavlo Yatsukhnenko)
+      * Use zend_string for pipeline_cmd [e98f5116] (Pavlo Yatsukhnenko)
+      * Different key hashing algorithms from hash extension [850027ff] (Pavlo Yatsukhnenko)
+      * Breaking the lock acquire loop in case of network problems [61889cd7] (@SkydiveMarius)
+      * Implement consistent hashing algorithm for RedisArray [bb32e6f3, 71922bf1] (Pavlo Yatsukhnenko)
+      * Use zend_string for storing RedisArray hosts [602740d3, 3e7e1c83] (Pavlo Yatsukhnenko)
+      * Update lzf_compress to be compatible with PECL lzf extension [b27fd430] (@jrchamp)
+      * Fix RedisCluster keys memory leak [3b56b7db] (Michael Grunder)
+      * Directly use return_value in RedisCluster::keys method [ad10a49e] (Pavlo Yatsukhnenko)
+      * Fix segfault in Redis Cluster with inconsistent configuration [72749916, 6e455e2e] (Pavlo Yatsukhnenko)
+      * Masters info leakfix [91bd7426] (Michael Grunder)
+      * Refactor redis_sock_read_bulk_reply [bc4dbc4b] (Pavlo Yatsukhnenko)
+      * Remove unused parameter lazy_connect from redis_sock_create [c0793e8b] (Pavlo Yatsukhnenko)
+      * Remove useless ZEND_ACC_[C|D]TOR. [bc9b5597] (@twosee)
+      * Documentation improvements (@fanjiapeng, @alexander-schranz, @hmc, Pavlo Yatsukhnenko, Michael Grunder)
+   </notes>
+   </release>
+
    <release>
    <stability><release>beta</release><api>beta</api></stability>
    <version><release>4.2.0RC3</release><api>4.2.0RC3</api></version>
