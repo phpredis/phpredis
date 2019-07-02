@@ -27,20 +27,25 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2019-06-25</date>
+ <date>2019-07-02</date>
  <version>
-  <release>5.0.0RC2</release>
+  <release>5.0.0</release>
   <api>5.0.0</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
     This release contains important improvements and breaking changes.
     The most interesting are: drop PHP5 support, RedisCluster slots caching,
     JSON and msgpack serializers, soft deprecation of non-Redis commands.
+
+    phpredis 5.0.0
+
+    * Remove HAVE_SPL [55c5586c] (@petk)
+    * Update Fedora installation instructions [90aa067c] (@remicollet)
 
     phpredis 5.0.0RC2
 
@@ -138,13 +143,18 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
   <release>
-   <stability><release>beta</release><api>beta</api></stability>
-   <version><release>5.0.0RC2</release><api>5.0.0</api></version>
-   <date>2019-06-25</date>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.0.0</release><api>5.0.0</api></version>
+   <date>2019-07-02</date>
    <notes>
     This release contains important improvements and breaking changes.
     The most interesting are: drop PHP5 support, RedisCluster slots caching,
     JSON and msgpack serializers, soft deprecation of non-Redis commands.
+
+    phpredis 5.0.0
+
+    * Remove HAVE_SPL [55c5586c] (@petk)
+    * Update Fedora installation instructions [90aa067c] (@remicollet)
 
     phpredis 5.0.0RC2
 
