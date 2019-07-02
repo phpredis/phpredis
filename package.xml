@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2019-03-13</date>
+ <date>2019-07-02</date>
  <version>
-  <release>4.3.0</release>
-  <api>4.3.0</api>
+  <release>5.0.0</release>
+  <api>5.0.0</api>
  </version>
  <stability>
   <release>stable</release>
@@ -38,34 +38,42 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 4.3.0
+    This release contains important improvements and breaking changes.
+    The most interesting are: drop PHP5 support, RedisCluster slots caching,
+    JSON and msgpack serializers, soft deprecation of non-Redis commands.
 
-    This is probably the latest release with PHP 5 suport!!!
+    phpredis 5.0.0
 
-    * Proper persistent connections pooling implementation [a3703820, c76e00fb, 0433dc03, c75b3b93] (Pavlo Yatsukhnenko)
-    * RedisArray auth [b5549cff, 339cfa2b, 6b411aa8] (Pavlo Yatsukhnenko)
-    * Use zend_string for storing key hashing algorithm [8cd165df, 64e6a57f] (Pavlo Yatsukhnenko)
-    * Add ZPOPMAX and ZPOPMIN support [46f03561, f89e941a, 2ec7d91a] (@mbezhanov, Michael Grunder)
-    * Implement GEORADIUS_RO and GEORADIUSBYMEMBER_RO [22d81a94] (Michael Grunder)
-    * Add callback parameter to subscribe/psubscribe arginfo [0653ff31] (Pavlo Yatsukhnenko)
-    * Don't check the number affected keys in PS_UPDATE_TIMESTAMP_FUNC [b00060ce] (Pavlo Yatsukhnenko)
-    * Xgroup updates [15995c06] (Michael Grunder)
-    * RedisCluster auth [c5994f2a] (Pavlo Yatsukhnenko)
-    * Cancel pipeline mode without executing commands [789256d7] (Pavlo Yatsukhnenko)
-    * Use zend_string for pipeline_cmd [e98f5116] (Pavlo Yatsukhnenko)
-    * Different key hashing algorithms from hash extension [850027ff] (Pavlo Yatsukhnenko)
-    * Breaking the lock acquire loop in case of network problems [61889cd7] (@SkydiveMarius)
-    * Implement consistent hashing algorithm for RedisArray [bb32e6f3, 71922bf1] (Pavlo Yatsukhnenko)
-    * Use zend_string for storing RedisArray hosts [602740d3, 3e7e1c83] (Pavlo Yatsukhnenko)
-    * Update lzf_compress to be compatible with PECL lzf extension [b27fd430] (@jrchamp)
-    * Fix RedisCluster keys memory leak [3b56b7db] (Michael Grunder)
-    * Directly use return_value in RedisCluster::keys method [ad10a49e] (Pavlo Yatsukhnenko)
-    * Fix segfault in Redis Cluster with inconsistent configuration [72749916, 6e455e2e] (Pavlo Yatsukhnenko)
-    * Masters info leakfix [91bd7426] (Michael Grunder)
-    * Refactor redis_sock_read_bulk_reply [bc4dbc4b] (Pavlo Yatsukhnenko)
-    * Remove unused parameter lazy_connect from redis_sock_create [c0793e8b] (Pavlo Yatsukhnenko)
-    * Remove useless ZEND_ACC_[C|D]TOR. [bc9b5597] (@twosee)
-    * Documentation improvements (@fanjiapeng, @alexander-schranz, @hmc, Pavlo Yatsukhnenko, Michael Grunder)
+    * Remove HAVE_SPL [55c5586c] (@petk)
+    * Update Fedora installation instructions [90aa067c] (@remicollet)
+
+    phpredis 5.0.0RC2
+
+    * Allow compilation without JSON serialization enabled and fixes for deprecated
+      helper methods.  [235a27] (Pavlo Yatsukhnenko)
+    * Fix php msgpack >= 2.0.3 version requirement. [6973478..a537df8] (Michael Grunder)
+
+    phpredis 5.0.0RC1
+
+    * Enable connection pooling by default [8206b147] (Pavlo Yatsukhnenko)
+    * Soft deprecate methods that aren't actually Redis commands [a81b4f2d, 95c8aab9] (Pavlo Yatsukhnenko, Michael Grunder)
+    * Enable pooling for cluster slave nodes [17600dd1] (Michael Grunder)
+    * xInfo response format [4852a510, ac9dca0a] (Pavlo Yatsukhnenko)
+    * Make the XREADGROUP optional COUNT and BLOCK arguments nullable [0c17bd27] (Michael Grunder)
+    * Allow PING to take an optional argument [6e494170] (Michael Grunder)
+    * Allow ZRANGE to be called either with `true` or `['withscores' => true]` [19f3efcf] (Michael Grunder)
+    * Allow to specify server address as schema://host [418428fa] (Pavlo Yatsukhnenko)
+    * Allow persistent_id to be passed as NULL with strict_types enabled [60223762] (Michael Grunder)
+    * Add server address to exception message [e8fb49be, 34d6403d] (Pavlo Yatsukhnenko)
+    * Adds OPT_REPLY_LITERAL for rawCommand and EVAL [5cb30fb2] (Michael Grunder)
+    * JSON serializer [98bd2886, 96c57139] (Pavlo Yatsukhnenko, Michael Grunder)
+    * Add support for STREAM to the type command [d7450b2f, 068ce978, 8a45d18c] (Michael Grunder, Pavlo Yatsukhnenko)
+    * Fix TypeError when using built-in constants in `setOption` [4c7643ee] (@JoyceBabu)
+    * Handle references in MGET [60d8b679] (Michael Grunder)
+    * msgpack serializer [d5b8f833, 545250f3, 52bae8ab] (@bgort, Pavlo Yatsukhnenko, Michael Grunder)
+    * Add Cluster slots caching [9f0d7bc0, ea081e05] (Michael Grunder)
+    * Drop PHP5 support [f9928642, 46a50c12, 4601887d, 6ebb36ce, fdbe9d29] (Michael Grunder)
+    * Documentation improvements (@alexander-schranz, @cookieguru, Pavlo Yatsukhnenko, Michael Grunder)
  </notes>
  <contents>
   <dir name="/">
@@ -120,7 +128,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <dependencies>
   <required>
    <php>
-    <min>5.3.0</min>
+    <min>7.0.0</min>
     <max>7.9.99</max>
    </php>
    <pearinstaller>
@@ -134,6 +142,86 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.0.0</release><api>5.0.0</api></version>
+   <date>2019-07-02</date>
+   <notes>
+    This release contains important improvements and breaking changes.
+    The most interesting are: drop PHP5 support, RedisCluster slots caching,
+    JSON and msgpack serializers, soft deprecation of non-Redis commands.
+
+    phpredis 5.0.0
+
+    * Remove HAVE_SPL [55c5586c] (@petk)
+    * Update Fedora installation instructions [90aa067c] (@remicollet)
+
+    phpredis 5.0.0RC2
+
+    * Allow compilation without JSON serialization enabled and fixes for deprecated
+      helper methods.  [235a27] (Pavlo Yatsukhnenko)
+    * Fix php msgpack >= 2.0.3 version requirement. [6973478..a537df8] (Michael Grunder)
+
+    phpredis 5.0.0RC1
+
+    * Enable connection pooling by default [8206b147] (Pavlo Yatsukhnenko)
+    * Soft deprecate methods that aren't actually Redis commands [a81b4f2d, 95c8aab9] (Pavlo Yatsukhnenko, Michael Grunder)
+    * Enable pooling for cluster slave nodes [17600dd1] (Michael Grunder)
+    * xInfo response format [4852a510, ac9dca0a] (Pavlo Yatsukhnenko)
+    * Make the XREADGROUP optional COUNT and BLOCK arguments nullable [0c17bd27] (Michael Grunder)
+    * Allow PING to take an optional argument [6e494170] (Michael Grunder)
+    * Allow ZRANGE to be called either with `true` or `['withscores' => true]` [19f3efcf] (Michael Grunder)
+    * Allow to specify server address as schema://host [418428fa] (Pavlo Yatsukhnenko)
+    * Allow persistent_id to be passed as NULL with strict_types enabled [60223762] (Michael Grunder)
+    * Add server address to exception message [e8fb49be, 34d6403d] (Pavlo Yatsukhnenko)
+    * Adds OPT_REPLY_LITERAL for rawCommand and EVAL [5cb30fb2] (Michael Grunder)
+    * JSON serializer [98bd2886, 96c57139] (Pavlo Yatsukhnenko, Michael Grunder)
+    * Add support for STREAM to the type command [d7450b2f, 068ce978, 8a45d18c] (Michael Grunder, Pavlo Yatsukhnenko)
+    * Fix TypeError when using built-in constants in `setOption` [4c7643ee] (@JoyceBabu)
+    * Handle references in MGET [60d8b679] (Michael Grunder)
+    * msgpack serializer [d5b8f833, 545250f3, 52bae8ab] (@bgort, Pavlo Yatsukhnenko, Michael Grunder)
+    * Add RedisCluster slots caching [9f0d7bc0, ea081e05] (Michael Grunder)
+    * Drop PHP5 support [f9928642, 46a50c12, 4601887d, 6ebb36ce, fdbe9d29] (Michael Grunder)
+    * Documentation improvements (@alexander-schranz, @cookieguru, Pavlo Yatsukhnenko, Michael Grunder)
+   </notes>
+   </release>
+
+   <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>4.3.0</release><api>4.3.0</api></version>
+   <date>2019-03-13</date>
+   <notes>
+      phpredis 4.3.0
+
+      This is probably the latest release with PHP 5 suport!!!
+
+      * Proper persistent connections pooling implementation [a3703820, c76e00fb, 0433dc03, c75b3b93] (Pavlo Yatsukhnenko)
+      * RedisArray auth [b5549cff, 339cfa2b, 6b411aa8] (Pavlo Yatsukhnenko)
+      * Use zend_string for storing key hashing algorithm [8cd165df, 64e6a57f] (Pavlo Yatsukhnenko)
+      * Add ZPOPMAX and ZPOPMIN support [46f03561, f89e941a, 2ec7d91a] (@mbezhanov, Michael Grunder)
+      * Implement GEORADIUS_RO and GEORADIUSBYMEMBER_RO [22d81a94] (Michael Grunder)
+      * Add callback parameter to subscribe/psubscribe arginfo [0653ff31] (Pavlo Yatsukhnenko)
+      * Don't check the number affected keys in PS_UPDATE_TIMESTAMP_FUNC [b00060ce] (Pavlo Yatsukhnenko)
+      * Xgroup updates [15995c06] (Michael Grunder)
+      * RedisCluster auth [c5994f2a] (Pavlo Yatsukhnenko)
+      * Cancel pipeline mode without executing commands [789256d7] (Pavlo Yatsukhnenko)
+      * Use zend_string for pipeline_cmd [e98f5116] (Pavlo Yatsukhnenko)
+      * Different key hashing algorithms from hash extension [850027ff] (Pavlo Yatsukhnenko)
+      * Breaking the lock acquire loop in case of network problems [61889cd7] (@SkydiveMarius)
+      * Implement consistent hashing algorithm for RedisArray [bb32e6f3, 71922bf1] (Pavlo Yatsukhnenko)
+      * Use zend_string for storing RedisArray hosts [602740d3, 3e7e1c83] (Pavlo Yatsukhnenko)
+      * Update lzf_compress to be compatible with PECL lzf extension [b27fd430] (@jrchamp)
+      * Fix RedisCluster keys memory leak [3b56b7db] (Michael Grunder)
+      * Directly use return_value in RedisCluster::keys method [ad10a49e] (Pavlo Yatsukhnenko)
+      * Fix segfault in Redis Cluster with inconsistent configuration [72749916, 6e455e2e] (Pavlo Yatsukhnenko)
+      * Masters info leakfix [91bd7426] (Michael Grunder)
+      * Refactor redis_sock_read_bulk_reply [bc4dbc4b] (Pavlo Yatsukhnenko)
+      * Remove unused parameter lazy_connect from redis_sock_create [c0793e8b] (Pavlo Yatsukhnenko)
+      * Remove useless ZEND_ACC_[C|D]TOR. [bc9b5597] (@twosee)
+      * Documentation improvements (@fanjiapeng, @alexander-schranz, @hmc, Pavlo Yatsukhnenko, Michael Grunder)
+   </notes>
+   </release>
+
    <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>4.3.0</release><api>4.3.0</api></version>

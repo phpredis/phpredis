@@ -170,51 +170,6 @@ redis_array_free(RedisArray *ra)
     efree(ra);
 }
 
-#if (PHP_MAJOR_VERSION < 7)
-typedef struct {
-    zend_object std;
-    RedisArray *ra;
-} redis_array_object;
-
-void
-free_redis_array_object(void *object TSRMLS_DC)
-{
-    redis_array_object *obj = (redis_array_object *)object;
-
-    zend_object_std_dtor(&obj->std TSRMLS_CC);
-    if (obj->ra) {
-        if (obj->ra->prev) redis_array_free(obj->ra->prev);
-        redis_array_free(obj->ra);
-    }
-    efree(obj);
-}
-
-zend_object_value
-create_redis_array_object(zend_class_entry *ce TSRMLS_DC)
-{
-    zend_object_value retval;
-    redis_array_object *obj = ecalloc(1, sizeof(redis_array_object));
-    memset(obj, 0, sizeof(redis_array_object));
-
-    zend_object_std_init(&obj->std, ce TSRMLS_CC);
-
-#if PHP_VERSION_ID < 50399
-    zval *tmp;
-    zend_hash_copy(obj->std.properties, &ce->default_properties,
-        (copy_ctor_func_t)zval_add_ref, (void *)&tmp, sizeof(zval *));
-#else
-    object_properties_init(&obj->std, ce);
-#endif
-
-    retval.handle = zend_objects_store_put(obj,
-        (zend_objects_store_dtor_t)zend_objects_destroy_object,
-        (zend_objects_free_object_storage_t)free_redis_array_object,
-        NULL TSRMLS_CC);
-    retval.handlers = zend_get_std_object_handlers();
-
-    return retval;
-}
-#else
 typedef struct {
     RedisArray *ra;
     zend_object std;
@@ -251,7 +206,6 @@ create_redis_array_object(zend_class_entry *ce TSRMLS_DC)
 
     return &obj->std;
 }
-#endif
 
 /**
  * redis_array_get
@@ -524,7 +478,7 @@ PHP_METHOD(RedisArray, __call)
     zval *z_args;
 
     char *cmd;
-    strlen_t cmd_len;
+    size_t cmd_len;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osa",
                 &object, redis_array_ce, &cmd, &cmd_len, &z_args) == FAILURE) {
@@ -564,7 +518,7 @@ PHP_METHOD(RedisArray, _target)
     zval *object;
     RedisArray *ra;
     char *key;
-    strlen_t key_len;
+    size_t key_len;
     zval *redis_inst;
     int i;
 
@@ -590,7 +544,7 @@ PHP_METHOD(RedisArray, _instance)
     zval *object;
     RedisArray *ra;
     char *target;
-    strlen_t target_len;
+    size_t target_len;
     zval *z_redis;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
@@ -672,7 +626,7 @@ PHP_METHOD(RedisArray, _rehash)
 PHP_METHOD(RedisArray, _continuum)
 {
     int i;
-    zval *object;
+    zval *object, z_ret;
     RedisArray *ra;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O",
@@ -687,15 +641,10 @@ PHP_METHOD(RedisArray, _continuum)
     array_init(return_value);
     if (ra->continuum) {
         for (i = 0; i < ra->continuum->nb_points; ++i) {
-            zval zv, *z_tmp = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-            MAKE_STD_ZVAL(z_tmp);
-#endif
-
-            array_init(z_tmp);
-            add_assoc_long(z_tmp, "index", ra->continuum->points[i].index);
-            add_assoc_long(z_tmp, "value", ra->continuum->points[i].value);
-            add_next_index_zval(return_value, z_tmp);
+            array_init(&z_ret);
+            add_assoc_long(&z_ret, "index", ra->continuum->points[i].index);
+            add_assoc_long(&z_ret, "value", ra->continuum->points[i].value);
+            add_next_index_zval(return_value, &z_ret);
         }
     }
 }
@@ -704,6 +653,7 @@ PHP_METHOD(RedisArray, _continuum)
 static void
 multihost_distribute_call(RedisArray *ra, zval *return_value, zval *z_fun, int argc, zval *argv TSRMLS_DC)
 {
+    zval z_arg, z_tmp;
     int i;
 
     /* Init our array return */
@@ -711,15 +661,11 @@ multihost_distribute_call(RedisArray *ra, zval *return_value, zval *z_fun, int a
 
     /* Iterate our RedisArray nodes */
     for (i = 0; i < ra->count; ++i) {
-        zval zv, *z_tmp = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-        MAKE_STD_ZVAL(z_tmp);
-#endif
         /* Call each node in turn */
-        ra_call_user_function(&redis_array_ce->function_table, &ra->redis[i], z_fun, z_tmp, argc, argv TSRMLS_CC);
+        ra_call_user_function(&redis_array_ce->function_table, &ra->redis[i], z_fun, &z_tmp, argc, argv TSRMLS_CC);
 
         /* Add the result for this host */
-        add_assoc_zval_ex(return_value, ZSTR_VAL(ra->hosts[i]), ZSTR_LEN(ra->hosts[i]), z_tmp);
+        add_assoc_zval_ex(return_value, ZSTR_VAL(ra->hosts[i]), ZSTR_LEN(ra->hosts[i]), &z_arg);
     }
 }
 
@@ -807,7 +753,7 @@ PHP_METHOD(RedisArray, keys)
     zval *object, z_fun, z_args[1];
     RedisArray *ra;
     char *pattern;
-    strlen_t pattern_len;
+    size_t pattern_len;
 
     /* Make sure the prototype is correct */
     if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
@@ -865,7 +811,7 @@ PHP_METHOD(RedisArray, setOption)
     RedisArray *ra;
     zend_long opt;
     char *val_str;
-    strlen_t val_len;
+    size_t val_len;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Ols",
                 &object, redis_array_ce, &opt, &val_str, &val_len) == FAILURE) {
@@ -915,34 +861,6 @@ PHP_METHOD(RedisArray, select)
     zval_dtor(&z_fun);
 }
 
-#if (PHP_MAJOR_VERSION < 7)
-#define HANDLE_MULTI_EXEC(ra, cmd, cmdlen) do { \
-    if (ra && ra->z_multi_exec) { \
-        int i, num_varargs;\
-        zval ***varargs = NULL, *z_arg_array; \
-        if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "O*",\
-                                &object, redis_array_ce, &varargs, &num_varargs) == FAILURE) {\
-                RETURN_FALSE;\
-        }\
-        /* copy all args into a zval hash table */\
-        MAKE_STD_ZVAL(z_arg_array); \
-        array_init(z_arg_array);\
-        for(i = 0; i < num_varargs; ++i) {\
-            zval *z_tmp;\
-            MAKE_STD_ZVAL(z_tmp); \
-            ZVAL_ZVAL(z_tmp, *varargs[i], 1, 0); \
-            add_next_index_zval(z_arg_array, z_tmp); \
-        }\
-        /* call */\
-        ra_forward_call(INTERNAL_FUNCTION_PARAM_PASSTHRU, ra, cmd, cmdlen, z_arg_array, NULL); \
-        zval_ptr_dtor(&z_arg_array); \
-        if(varargs) {\
-            efree(varargs);\
-        }\
-        return;\
-    }\
-}while(0)
-#else
 #define HANDLE_MULTI_EXEC(ra, cmd, cmdlen) do { \
     if (ra && ra->z_multi_exec) { \
         int i, num_varargs; \
@@ -964,12 +882,11 @@ PHP_METHOD(RedisArray, select)
         return; \
     } \
 } while(0)
-#endif
 
 /* MGET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mget)
 {
-    zval *object, *z_keys, z_argarray, *data, z_ret, *z_cur, z_tmp_array, *z_tmp;
+    zval *object, *z_keys, z_argarray, *data, z_ret, *z_cur, z_tmp_array;
     int i, j, n;
     RedisArray *ra;
     int *pos, argc, *argc_each;
@@ -1006,6 +923,9 @@ PHP_METHOD(RedisArray, mget)
         /* If we need to represent a long key as a string */
         unsigned int key_len;
         char kbuf[40], *key_lookup;
+
+        /* Handle the possibility that we're a reference */
+        ZVAL_DEREF(data);
 
         /* phpredis proper can only use string or long keys, so restrict to that here */
         if (Z_TYPE_P(data) != IS_STRING && Z_TYPE_P(data) != IS_LONG) {
@@ -1046,14 +966,9 @@ PHP_METHOD(RedisArray, mget)
         for(i = 0; i < argc; ++i) {
             if(pos[i] != n) continue;
 
-#if (PHP_MAJOR_VERSION < 7)
-            MAKE_STD_ZVAL(z_tmp);
-#else
-            zval zv;
-            z_tmp = &zv;
-#endif
-            ZVAL_ZVAL(z_tmp, argv[i], 1, 0);
-            add_next_index_zval(&z_argarray, z_tmp);
+            zval z_ret;
+            ZVAL_ZVAL(&z_ret, argv[i], 1, 0);
+            add_next_index_zval(&z_argarray, &z_ret);
         }
 
         zval z_fun;
@@ -1082,14 +997,9 @@ PHP_METHOD(RedisArray, mget)
         for(i = 0, j = 0; i < argc; ++i) {
             if (pos[i] != n || (z_cur = zend_hash_index_find(Z_ARRVAL(z_ret), j++)) == NULL) continue;
 
-#if (PHP_MAJOR_VERSION < 7)
-            MAKE_STD_ZVAL(z_tmp);
-#else
-            zval zv;
-            z_tmp = &zv;
-#endif
-            ZVAL_ZVAL(z_tmp, z_cur, 1, 0);
-            add_index_zval(&z_tmp_array, i, z_tmp);
+            zval z_ret;
+            ZVAL_ZVAL(&z_ret, z_cur, 1, 0);
+            add_index_zval(&z_tmp_array, i, &z_ret);
         }
         zval_dtor(&z_ret);
     }
@@ -1099,14 +1009,9 @@ PHP_METHOD(RedisArray, mget)
     for(i = 0; i < argc; ++i) {
         if ((z_cur = zend_hash_index_find(Z_ARRVAL(z_tmp_array), i)) == NULL) continue;
 
-#if (PHP_MAJOR_VERSION < 7)
-        MAKE_STD_ZVAL(z_tmp);
-#else
-        zval zv;
-        z_tmp = &zv;
-#endif
-        ZVAL_ZVAL(z_tmp, z_cur, 1, 0);
-        add_next_index_zval(return_value, z_tmp);
+        zval z_ret;
+        ZVAL_ZVAL(&z_ret, z_cur, 1, 0);
+        add_next_index_zval(return_value, &z_ret);
     }
 
     /* cleanup */
@@ -1189,16 +1094,13 @@ PHP_METHOD(RedisArray, mset)
         for(i = 0; i < argc; ++i) {
             if(pos[i] != n) continue;
 
-            zval zv, *z_tmp = &zv;
-#if (PHP_MAJOR_VERSION < 7)
-            MAKE_STD_ZVAL(z_tmp);
-#endif
+            zval z_ret;
             if (argv[i] == NULL) {
-                ZVAL_NULL(z_tmp);
+                ZVAL_NULL(&z_ret);
             } else {
-                ZVAL_ZVAL(z_tmp, argv[i], 1, 0);
+                ZVAL_ZVAL(&z_ret, argv[i], 1, 0);
             }
-            add_assoc_zval_ex(&z_argarray, ZSTR_VAL(keys[i]), ZSTR_LEN(keys[i]), z_tmp);
+            add_assoc_zval_ex(&z_argarray, ZSTR_VAL(keys[i]), ZSTR_LEN(keys[i]), &z_ret);
             found++;
         }
 
@@ -1245,7 +1147,7 @@ PHP_METHOD(RedisArray, mset)
 
 /* Generic handler for DEL or UNLINK which behave identically to phpredis */
 static void ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) {
-    zval *object, z_keys, z_fun, *data, z_ret, *z_tmp, *z_args;
+    zval *object, z_keys, z_fun, *data, z_ret, *z_args;
     int i, n;
     RedisArray *ra;
     int *pos, argc = ZEND_NUM_ARGS(), *argc_each;
@@ -1276,15 +1178,10 @@ static void ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) {
         array_init(&z_keys);
         for (i = 0; i < argc; ++i) {
             zval *z_arg = &z_args[i];
-#if (PHP_MAJOR_VERSION < 7)
-            MAKE_STD_ZVAL(z_tmp);
-#else
-            zval zv;
-            z_tmp = &zv;
-#endif
-            ZVAL_ZVAL(z_tmp, z_arg, 1, 0);
+            zval z_ret;
+            ZVAL_ZVAL(&z_ret, z_arg, 1, 0);
             /* add copy to z_keys */
-            add_next_index_zval(&z_keys, z_tmp);
+            add_next_index_zval(&z_keys, &z_ret);
         }
         free_zkeys = 1;
     }
@@ -1338,14 +1235,9 @@ static void ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) {
         for(i = 0; i < argc; ++i) {
             if(pos[i] != n) continue;
 
-#if (PHP_MAJOR_VERSION < 7)
-            MAKE_STD_ZVAL(z_tmp);
-#else
-            zval zv;
-            z_tmp = &zv;
-#endif
-            ZVAL_ZVAL(z_tmp, argv[i], 1, 0);
-            add_next_index_zval(&z_argarray, z_tmp);
+            zval z_ret;
+            ZVAL_ZVAL(&z_ret, argv[i], 1, 0);
+            add_next_index_zval(&z_argarray, &z_ret);
             found++;
         }
 
@@ -1402,7 +1294,7 @@ PHP_METHOD(RedisArray, multi)
     RedisArray *ra;
     zval *z_redis;
     char *host;
-    strlen_t host_len;
+    size_t host_len;
     zend_long multi_value = MULTI;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|l",

@@ -14,6 +14,12 @@
 #define REDIS_CMD_INIT_SSTR_STATIC(sstr, argc, keyword) \
     redis_cmd_init_sstr(sstr, argc, keyword, sizeof(keyword)-1);
 
+#define REDIS_THROW_EXCEPTION(msg, code) \
+    zend_throw_exception(redis_exception_ce, (msg), code)
+
+#define CLUSTER_THROW_EXCEPTION(msg, code) \
+    zend_throw_exception(redis_cluster_exception_ce, (msg), code)
+
 int redis_cmd_init_sstr(smart_string *str, int num_args, char *keyword, int keyword_len);
 int redis_cmd_append_sstr(smart_string *str, char *append, int append_len);
 int redis_cmd_append_sstr_int(smart_string *str, int append);
@@ -21,7 +27,7 @@ int redis_cmd_append_sstr_long(smart_string *str, long append);
 int redis_cmd_append_sstr_i64(smart_string *str, int64_t append);
 int redis_cmd_append_sstr_dbl(smart_string *str, double value);
 int redis_cmd_append_sstr_zval(smart_string *str, zval *z, RedisSock *redis_sock TSRMLS_DC);
-int redis_cmd_append_sstr_key(smart_string *str, char *key, strlen_t len, RedisSock *redis_sock, short *slot);
+int redis_cmd_append_sstr_key(smart_string *str, char *key, size_t len, RedisSock *redis_sock, short *slot);
 int redis_cmd_append_sstr_arrkey(smart_string *cmd, zend_string *kstr, ulong idx);
 
 PHP_REDIS_API int redis_spprintf(RedisSock *redis_sock, short *slot TSRMLS_DC, char **ret, char *kw, char *fmt, ...);
@@ -72,6 +78,8 @@ PHP_REDIS_API int redis_xread_reply(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API int redis_xclaim_reply(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
+PHP_REDIS_API int redis_xinfo_reply(INTERNAL_FUNCTION_PARAMETERS,
+    RedisSock *redis_sock, zval *z_tab, void *ctx);
 
 PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
@@ -85,14 +93,14 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock);
 PHP_REDIS_API void redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len);
 
 PHP_REDIS_API int
-redis_serialize(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len TSRMLS_DC);
+redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len TSRMLS_DC);
 PHP_REDIS_API int
-redis_key_prefix(RedisSock *redis_sock, char **key, strlen_t *key_len);
+redis_key_prefix(RedisSock *redis_sock, char **key, size_t *key_len);
 
 PHP_REDIS_API int
 redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret TSRMLS_DC);
 
-PHP_REDIS_API int redis_pack(RedisSock *redis_sock, zval *z, char **val, strlen_t *val_len TSRMLS_DC);
+PHP_REDIS_API int redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len TSRMLS_DC);
 PHP_REDIS_API int redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret TSRMLS_DC);
 
 PHP_REDIS_API int
@@ -101,6 +109,8 @@ PHP_REDIS_API int
 redis_read_stream_messages_multi(RedisSock *redis_sock, int count, zval *z_ret TSRMLS_DC);
 PHP_REDIS_API int
 redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv TSRMLS_DC);
+PHP_REDIS_API int
+redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements TSRMLS_DC);
 
 /*
 * Variant Read methods, mostly to implement eval
@@ -110,6 +120,7 @@ PHP_REDIS_API int redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE 
 PHP_REDIS_API int redis_read_variant_bulk(RedisSock *redis_sock, int size, zval *z_ret TSRMLS_DC);
 PHP_REDIS_API int redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, int status_strings, zval *z_ret TSRMLS_DC);
 PHP_REDIS_API int redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
+PHP_REDIS_API int redis_read_raw_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API int redis_read_variant_reply_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
 

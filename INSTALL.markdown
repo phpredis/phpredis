@@ -12,11 +12,12 @@ To build this extension for the sources tree:
 
 ~~~
 phpize
-./configure [--enable-redis-igbinary] [--enable-redis-lzf [--with-liblzf[=DIR]]]
+./configure [--enable-redis-igbinary] [--enable-redis-msgpack] [--enable-redis-lzf [--with-liblzf[=DIR]]]
 make && make install
 ~~~
 
 If you would like phpredis to serialize your data using the igbinary library, run configure with `--enable-redis-igbinary`.
+If you would like to use the msgpack serializer, run configure with `--enable-redis-msgpack` (note:  Requires php-msgpack >= 2.0.3)
 The extension also may compress data before sending it to Redis server, if you run configure with `--enable-redis-lzf`. If you want to use lzf library pre-installed into your system use `--with-liblzf` configuration option to specify the path where to search files.
 `make install` copies `redis.so` to an appropriate location, but you still need to enable the module in the PHP config file. To do so, either edit your php.ini or add a redis.ini file in `/etc/php5/conf.d` with the following contents: `extension=redis.so`.
 
@@ -35,22 +36,22 @@ Follow the DLL link on the [https://pecl.php.net/package/redis](https://pecl.php
 
 ## Fedora
 
-Fedora users can install the package from the official repositor.
+Fedora users can install the package from the official repository.
 
-**Fedora ≤ 28, Version 3 **
-
-Installation of the [php-pecl-redis](https://apps.fedoraproject.org/packages/php-pecl-redis) package:
-
-~~~
-dnf install php-pecl-redis
-~~~
-
-**Fedora ≥ 27, Version 4 **
+### Fedora ≤ 30, Version 4
 
 Installation of the [php-pecl-redis4](https://apps.fedoraproject.org/packages/php-pecl-redis4) package:
 
 ~~~
 dnf install php-pecl-redis4
+~~~
+
+### Fedora ≥ 29, Version 5
+
+Installation of the [php-pecl-redis5](https://apps.fedoraproject.org/packages/php-pecl-redis5) package:
+
+~~~
+dnf install php-pecl-redis5
 ~~~
 
 ## RHEL / CentOS

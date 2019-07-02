@@ -361,12 +361,7 @@ PHP_REDIS_API int cluster_send_discard(redisCluster *c, short slot TSRMLS_DC) {
  * */
 
 /* Free cluster distribution list inside a HashTable */
-#if (PHP_MAJOR_VERSION < 7)
-static void cluster_dist_free_ht(void *p)
-#else
-static void cluster_dist_free_ht(zval *p)
-#endif
-{
+static void cluster_dist_free_ht(zval *p) {
     clusterDistList *dl = *(clusterDistList**)p;
     int i;
 
@@ -435,7 +430,7 @@ static clusterKeyVal *cluster_dl_add_key(clusterDistList *dl, char *key,
 /* Add a key, returning a pointer to the entry where passed for easy adding
  * of values to match this key */
 int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
-                          strlen_t key_len, clusterKeyVal **kv)
+                          size_t key_len, clusterKeyVal **kv)
 {
     int key_free;
     short slot;
@@ -472,7 +467,7 @@ void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *z_val
                          TSRMLS_DC)
 {
     char *val;
-    strlen_t val_len;
+    size_t val_len;
     int val_free;
 
     // Serialize our value
@@ -523,12 +518,7 @@ cluster_set_err(redisCluster *c, char *err, int err_len)
 }
 
 /* Destructor for slaves */
-#if (PHP_MAJOR_VERSION < 7)
-static void ht_free_slave(void *data)
-#else
-static void ht_free_slave(zval *data)
-#endif
-{
+static void ht_free_slave(zval *data) {
     if (*(redisClusterNode**)data) {
         cluster_free_node(*(redisClusterNode**)data);
     }
@@ -661,6 +651,9 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
     node->slave  = slave;
     node->slaves = NULL;
 
+    /* Initialize our list of slot ranges */
+    zend_llist_init(&node->slots, sizeof(redisSlotRange), NULL, 0);
+
     // Attach socket
     node->sock = redis_sock_create(host, host_len, port, c->timeout,
         c->read_timeout, c->persistent, NULL, 0);
@@ -700,10 +693,11 @@ cluster_node_add_slave(redisClusterNode *master, redisClusterNode *slave)
 
 /* Use the output of CLUSTER SLOTS to map our nodes */
 static int cluster_map_slots(redisCluster *c, clusterReply *r) {
+    redisClusterNode *pnode, *master, *slave;
+    redisSlotRange range;
     int i,j, hlen, klen;
     short low, high;
     clusterReply *r2, *r3;
-    redisClusterNode *pnode, *master, *slave;
     unsigned short port;
     char *host, key[1024];
 
@@ -756,6 +750,10 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
         for (j = low; j<= high; j++) {
             c->master[j] = master;
         }
+
+        /* Append to our list of slot ranges */
+        range.low = low; range.high = high;
+        zend_llist_add_element(&master->slots, &range);
     }
 
     // Success
@@ -768,7 +766,10 @@ PHP_REDIS_API void cluster_free_node(redisClusterNode *node) {
         zend_hash_destroy(node->slaves);
         efree(node->slaves);
     }
+
+    zend_llist_destroy(&node->slots);
     redis_free_socket(node->sock);
+
     efree(node);
 }
 
@@ -801,25 +802,32 @@ static RedisSock *cluster_get_asking_sock(redisCluster *c TSRMLS_DC) {
 }
 
 /* Our context seeds will be a hash table with RedisSock* pointers */
-#if (PHP_MAJOR_VERSION < 7)
-static void ht_free_seed(void *data)
-#else
-static void ht_free_seed(zval *data)
-#endif
-{
+static void ht_free_seed(zval *data) {
     RedisSock *redis_sock = *(RedisSock**)data;
     if (redis_sock) redis_free_socket(redis_sock);
 }
 
 /* Free redisClusterNode objects we've stored */
-#if (PHP_MAJOR_VERSION < 7)
-static void ht_free_node(void *data)
-#else
-static void ht_free_node(zval *data)
-#endif
-{
+static void ht_free_node(zval *data) {
     redisClusterNode *node = *(redisClusterNode**)data;
     cluster_free_node(node);
+}
+
+/* zend_llist of slot ranges -> persistent array */
+static redisSlotRange *slot_range_list_clone(zend_llist *src, size_t *count) {
+    redisSlotRange *dst, *range;
+    size_t i = 0;
+
+    *count = zend_llist_count(src);
+    dst = pemalloc(*count * sizeof(*dst), 1);
+
+    range = zend_llist_get_first(src);
+    while (range) {
+        memcpy(&dst[i++], range, sizeof(*range));
+        range = zend_llist_get_next(src);
+     }
+
+    return dst;
 }
 
 /* Construct a redisCluster object */
@@ -880,8 +888,47 @@ cluster_free(redisCluster *c, int free_ctx TSRMLS_DC)
     /* Free any error we've got */
     if (c->err) zend_string_release(c->err);
 
+    /* Invalidate our cache if we were redirected during operation */
+    if (c->cache_key) {
+        if (c->redirections) {
+            zend_hash_del(&EG(persistent_list), c->cache_key);
+        }
+        zend_string_release(c->cache_key);
+    }
+
     /* Free structure itself */
     if (free_ctx) efree(c);
+}
+
+/* Create a cluster slot cache structure */
+PHP_REDIS_API
+redisCachedCluster *cluster_cache_create(zend_string *hash, HashTable *nodes) {
+    redisCachedCluster *cc;
+    redisCachedMaster *cm;
+    redisClusterNode *node;
+
+    cc = pecalloc(1, sizeof(*cc), 1);
+    cc->hash = zend_string_dup(hash, 1);
+
+    /* Copy nodes */
+    cc->master = pecalloc(zend_hash_num_elements(nodes), sizeof(*cc->master), 1);
+    ZEND_HASH_FOREACH_PTR(nodes, node) {
+        /* Skip slaves */
+        if (node->slave) continue;
+
+        cm = &cc->master[cc->count];
+
+        /* Duplicate host/port and clone slot ranges */
+        cm->host.addr = zend_string_dup(node->sock->host, 1);
+        cm->host.port = node->sock->port;
+
+        /* Copy over slot ranges */
+        cm->slot = slot_range_list_clone(&node->slots, &cm->slots);
+
+        cc->count++;
+    } ZEND_HASH_FOREACH_END();
+
+    return cc;
 }
 
 /* Takes our input hash table and returns a straigt C array with elements,
@@ -912,6 +959,110 @@ static zval **cluster_shuffle_seeds(HashTable *seeds, int *len) {
     return z_seeds;
 }
 
+static void cluster_free_cached_master(redisCachedMaster *cm) {
+    size_t i;
+
+    /* Free each slave entry */
+    for (i = 0; i < cm->slaves; i++) {
+        zend_string_release(cm->slave[i].addr);
+    }
+
+    /* Free other elements */
+    zend_string_release(cm->host.addr);
+    pefree(cm->slave, 1);
+    pefree(cm->slot, 1);
+}
+
+static redisClusterNode*
+cached_master_clone(redisCluster *c, redisCachedMaster *cm) {
+    redisClusterNode *node;
+    size_t i;
+
+    node = cluster_node_create(c, ZSTR_VAL(cm->host.addr), ZSTR_LEN(cm->host.addr),
+                               cm->host.port, cm->slot[0].low, 0);
+
+    /* Now copy in our slot ranges */
+    for (i = 0; i < cm->slots; i++) {
+        zend_llist_add_element(&node->slots, &cm->slot[i]);
+    }
+
+    return node;
+}
+
+/* Destroy a persistent cached cluster */
+PHP_REDIS_API void cluster_cache_free(redisCachedCluster *rcc) {
+    size_t i;
+
+    /* Free masters */
+    for (i = 0; i < rcc->count; i++) {
+        cluster_free_cached_master(&rcc->master[i]);
+    }
+
+    /* Free hash key */
+    zend_string_release(rcc->hash);
+    pefree(rcc->master, 1);
+    pefree(rcc, 1);
+}
+
+/* Initialize cluster from cached slots */
+PHP_REDIS_API
+void cluster_init_cache(redisCluster *c, redisCachedCluster *cc) {
+    RedisSock *sock;
+    redisClusterNode *mnode, *slave;
+    redisCachedMaster *cm;
+    char key[HOST_NAME_MAX];
+    size_t keylen, i, j, s;
+    int *map;
+
+    /* Randomize seeds */
+    map = emalloc(sizeof(*map) * cc->count);
+    for (i = 0; i < cc->count; i++) map[i] = i;
+    fyshuffle(map, cc->count);
+
+    /* Iterate over masters */
+    for (i = 0; i < cc->count; i++) {
+        /* Attach cache key */
+        c->cache_key = cc->hash;
+
+        /* Grab the next master */
+        cm = &cc->master[map[i]];
+
+        /* Hash our host and port */
+        keylen = snprintf(key, sizeof(key), "%s:%u", ZSTR_VAL(cm->host.addr),
+                          cm->host.port);
+
+        /* Create socket */
+        sock = redis_sock_create(ZSTR_VAL(cm->host.addr), ZSTR_LEN(cm->host.addr), cm->host.port,
+                                 c->timeout, c->read_timeout, c->persistent,
+                                 NULL, 0);
+
+        /* Add to seed nodes */
+        zend_hash_str_update_ptr(c->seeds, key, keylen, sock);
+
+        /* Create master node */
+        mnode = cached_master_clone(c, cm);
+
+        /* Add our master */
+        zend_hash_str_update_ptr(c->nodes, key, keylen, mnode);
+
+        /* Attach any slaves */
+        for (s = 0; s < cm->slaves; s++) {
+            zend_string *host = cm->slave[s].addr;
+            slave = cluster_node_create(c, ZSTR_VAL(host), ZSTR_LEN(host), cm->slave[s].port, 0, 1);
+            cluster_node_add_slave(mnode, slave);
+        }
+
+        /* Hook up direct slot access */
+        for (j = 0; j < cm->slots; j++) {
+            for (s = cm->slot[j].low; s <= cm->slot[j].high; s++) {
+                c->master[s] = mnode;
+            }
+        }
+    }
+
+    efree(map);
+}
+
 /* Initialize seeds */
 PHP_REDIS_API int
 cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
@@ -928,6 +1079,7 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
         if ((z_seed = z_seeds[i]) == NULL) continue;
 
         ZVAL_DEREF(z_seed);
+
         /* Has to be a string */
         if (Z_TYPE_P(z_seed) != IS_STRING) continue;
 
@@ -960,7 +1112,7 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
     efree(z_seeds);
 
     // Success if at least one seed seems valid
-    return zend_hash_num_elements(cluster->seeds) > 0 ? 0 : -1;
+    return zend_hash_num_elements(cluster->seeds) > 0 ? SUCCESS : FAILURE;
 }
 
 /* Initial mapping of our cluster keyspace */
@@ -994,13 +1146,11 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c TSRMLS_DC) {
 
     // Throw an exception if we couldn't map
     if (!mapped) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "Couldn't map cluster keyspace using any provided seed", 0
-            TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("Couldn't map cluster keyspace using any provided seed", 0);
         return -1;
     }
 
-    return 0;
+    return SUCCESS;
 }
 
 /* Parse the MOVED OR ASK redirection payload when we get such a response
@@ -1068,8 +1218,10 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
         }
 
         // Check for MOVED or ASK redirection
-        if ((moved = IS_MOVED(inbuf)) || IS_ASK(inbuf)) {
-            // Set our redirection information
+        if ((moved = IS_MOVED(inbuf)) || IS_ASK(inbuf)) { // Set our redirection information
+            /* We'll want to invalidate slot cache if we're using one */
+            c->redirections++;
+
             if (cluster_set_redirection(c,inbuf,moved) < 0) {
                 return -1;
             }
@@ -1104,11 +1256,19 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
 
 /* Disconnect from each node we're connected to */
 PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force TSRMLS_DC) {
-    redisClusterNode *node;
+    redisClusterNode *node, *slave;
 
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
         if (node == NULL) continue;
+
+        /* Disconnect from the master */
         redis_sock_disconnect(node->sock, force TSRMLS_CC);
+
+        /* We also want to disconnect any slave connections so they will be pooled
+         * in the event we are using persistent connections and connection pooling. */
+        ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
+            redis_sock_disconnect(slave->sock, force TSRMLS_CC);
+        } ZEND_HASH_FOREACH_END();
     } ZEND_HASH_FOREACH_END();
 }
 
@@ -1375,9 +1535,7 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
      * send it to this node yet */
     if (c->flags->mode == MULTI && c->cmd_sock->mode != MULTI) {
         if (cluster_send_multi(c, slot TSRMLS_CC) == -1) {
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Unable to enter MULTI mode on requested slot",
-                0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION("Unable to enter MULTI mode on requested slot", 0);
             return -1;
         }
     }
@@ -1398,13 +1556,13 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
 /* Send a command to given slot in our cluster.  If we get a MOVED or ASK error
  * we attempt to send the command to the node as directed. */
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
-                                  int cmd_len TSRMLS_DC)
+                                         int cmd_len TSRMLS_DC)
 {
     int resp, timedout = 0;
     long msstart;
 
     if (!SLOT(c, slot)) {
-        zend_throw_exception_ex(redis_cluster_exception_ce, 0 TSRMLS_CC,
+        zend_throw_exception_ex(redis_cluster_exception_ce, 0,
             "The slot %d is not covered by any node in this cluster", slot);
         return -1;
     }
@@ -1426,9 +1584,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         if (c->flags->mode == MULTI && CMD_SOCK(c)->mode != MULTI) {
             /* We have to fail if we can't send MULTI to the node */
             if (cluster_send_multi(c, slot TSRMLS_CC) == -1) {
-                zend_throw_exception(redis_cluster_exception_ce,
-                    "Unable to enter MULTI mode on requested slot",
-                    0 TSRMLS_CC);
+                CLUSTER_THROW_EXCEPTION("Unable to enter MULTI mode on requested slot", 0);
                 return -1;
             }
         }
@@ -1437,9 +1593,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
          * node until we find one that is available. */
         if (cluster_sock_write(c, cmd, cmd_len, 0 TSRMLS_CC) == -1) {
             /* We have to abort, as no nodes are reachable */
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Can't communicate with any node in the cluster",
-                0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION("Can't communicate with any node in the cluster", 0);
             return -1;
         }
 
@@ -1453,9 +1607,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         if (resp == 1) {
            /* Abort if we're in a transaction as it will be invalid */
            if (c->flags->mode == MULTI) {
-               zend_throw_exception(redis_cluster_exception_ce,
-                   "Can't process MULTI sequence when cluster is resharding",
-                   0 TSRMLS_CC);
+               CLUSTER_THROW_EXCEPTION("Can't process MULTI sequence when cluster is resharding", 0);
                return -1;
            }
 
@@ -1472,19 +1624,18 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
 
     // If we've detected the cluster is down, throw an exception
     if (c->clusterdown) {
-        zend_throw_exception(redis_cluster_exception_ce,
-            "The Redis Cluster is down (CLUSTERDOWN)", 0 TSRMLS_CC);
+        CLUSTER_THROW_EXCEPTION("The Redis Cluster is down (CLUSTERDOWN)", 0);
         return -1;
     } else if (timedout || resp == -1) {
         // Make sure the socket is reconnected, it such that it is in a clean state
         redis_sock_disconnect(c->cmd_sock, 1 TSRMLS_CC);
 
         if (timedout) {
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Timed out attempting to find data in the correct node!", 0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION(
+                "Timed out attempting to find data in the correct node!", 0);
         } else {
-            zend_throw_exception(redis_cluster_exception_ce,
-                "Error processing response from Redis node!", 0 TSRMLS_CC);
+            CLUSTER_THROW_EXCEPTION(
+                "Error processing response from Redis node!", 0);
         }
 
         return -1;
@@ -1564,13 +1715,9 @@ PHP_REDIS_API void cluster_bulk_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
             CLUSTER_RETURN_STRING(c, resp, c->reply_len);
         }
     } else {
-        zval zv, *z = &zv;
-        if (redis_unpack(c->flags, resp, c->reply_len, z TSRMLS_CC)) {
-#if (PHP_MAJOR_VERSION < 7)
-            MAKE_STD_ZVAL(z);
-            *z = zv;
-#endif
-            add_next_index_zval(&c->multi_resp, z);
+        zval z_unpacked;
+        if (redis_unpack(c->flags, resp, c->reply_len, &z_unpacked TSRMLS_CC)) {
+            add_next_index_zval(&c->multi_resp, &z_unpacked);
         } else {
             add_next_index_stringl(&c->multi_resp, resp, c->reply_len);
         }
@@ -1669,6 +1816,8 @@ PHP_REDIS_API void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
         CLUSTER_RETURN_LONG(c, REDIS_HASH);
     } else if (strncmp(c->line_reply, "zset", 4) == 0) {
         CLUSTER_RETURN_LONG(c, REDIS_ZSET);
+    } else if (strncmp(c->line_reply, "stream", 6) == 0) {
+        CLUSTER_RETURN_LONG(c, REDIS_STREAM);
     } else {
         CLUSTER_RETURN_LONG(c, REDIS_NOT_FOUND);
     }
@@ -1705,13 +1854,8 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
     }
 
     // Set up our callback pointers
-#if (PHP_MAJOR_VERSION < 7)
-    zval *z_ret, **z_args[4];
-    sctx->cb.retval_ptr_ptr = &z_ret;
-#else
     zval z_ret, z_args[4];
     sctx->cb.retval = &z_ret;
-#endif
     sctx->cb.params = z_args;
     sctx->cb.no_separation = 0;
 
@@ -1753,19 +1897,6 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
         }
 
         // Always pass our object through
-#if (PHP_MAJOR_VERSION < 7)
-        z_args[0] = &getThis();
-
-        // Set up calbacks depending on type
-        if (is_pmsg) {
-            z_args[1] = &z_pat;
-            z_args[2] = &z_chan;
-            z_args[3] = &z_data;
-        } else {
-            z_args[1] = &z_chan;
-            z_args[2] = &z_data;
-        }
-#else
         z_args[0] = *getThis();
 
         // Set up calbacks depending on type
@@ -1777,7 +1908,6 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
             z_args[1] = *z_chan;
             z_args[2] = *z_data;
         }
-#endif
 
         // Set arg count
         sctx->cb.param_count = tab_idx;
@@ -1851,7 +1981,7 @@ PHP_REDIS_API void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
 /* Recursive MULTI BULK -> PHP style response handling */
 static void cluster_mbulk_variant_resp(clusterReply *r, zval *z_ret)
 {
-    zval zv, *z_sub_ele = &zv;
+    zval z_sub_ele;
     int i;
 
     switch(r->type) {
@@ -1873,14 +2003,11 @@ static void cluster_mbulk_variant_resp(clusterReply *r, zval *z_ret)
             }
             break;
         case TYPE_MULTIBULK:
-#if (PHP_MAJOR_VERSION < 7)
-            MAKE_STD_ZVAL(z_sub_ele);
-#endif
-            array_init(z_sub_ele);
+            array_init(&z_sub_ele);
             for (i = 0; i < r->elements; i++) {
-                cluster_mbulk_variant_resp(r->element[i], z_sub_ele);
+                cluster_mbulk_variant_resp(r->element[i], &z_sub_ele);
             }
-            add_next_index_zval(z_ret, z_sub_ele);
+            add_next_index_zval(z_ret, &z_sub_ele);
             break;
         default:
             add_next_index_bool(z_ret, 0);
@@ -1979,6 +2106,12 @@ PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisClust
     cluster_variant_resp_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, 0, ctx);
 }
 
+PHP_REDIS_API void cluster_variant_raw_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                                            void *ctx)
+{
+    cluster_variant_resp_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, c->flags->reply_literal, ctx);
+}
+
 PHP_REDIS_API void cluster_variant_resp_strings(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                                         void *ctx)
 {
@@ -1989,7 +2122,7 @@ PHP_REDIS_API void cluster_variant_resp_strings(INTERNAL_FUNCTION_PARAMETERS, re
 PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
                                    redisCluster *c, mbulk_cb cb, void *ctx)
 {
-    zval zv, *z_result = &zv;
+    zval z_result;
 
     /* Return FALSE if we didn't get a multi-bulk response */
     if (c->reply_type != TYPE_MULTIBULK) {
@@ -1997,10 +2130,7 @@ PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     /* Allocate our array */
-#if (PHP_MAJOR_VERSION < 7)
-    MAKE_STD_ZVAL(z_result);
-#endif
-    array_init(z_result);
+    array_init(&z_result);
 
     /* Consume replies as long as there are more than zero */
     if (c->reply_len > 0) {
@@ -2008,20 +2138,17 @@ PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
         c->cmd_sock->serializer = c->flags->serializer;
 
         /* Call our specified callback */
-        if (cb(c->cmd_sock, z_result, c->reply_len, ctx TSRMLS_CC) == FAILURE) {
-            zval_dtor(z_result);
-#if (PHP_MAJOR_VERSION < 7)
-            efree(z_result);
-#endif
+        if (cb(c->cmd_sock, &z_result, c->reply_len, ctx TSRMLS_CC) == FAILURE) {
+            zval_dtor(&z_result);
             CLUSTER_RETURN_FALSE(c);
         }
     }
 
     // Success, make this array our return value
     if (CLUSTER_IS_ATOMIC(c)) {
-        RETVAL_ZVAL(z_result, 0, 1);
+        RETVAL_ZVAL(&z_result, 0, 1);
     } else {
-        add_next_index_zval(&c->multi_resp, z_result);
+        add_next_index_zval(&c->multi_resp, &z_result);
     }
 }
 
@@ -2086,7 +2213,7 @@ PHP_REDIS_API int cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
 PHP_REDIS_API void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                               void *ctx)
 {
-    zval zv, *z_result = &zv;
+    zval z_result;
     char *info;
 
     // Read our bulk response
@@ -2096,15 +2223,14 @@ PHP_REDIS_API void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     }
 
     /* Parse response, free memory */
-    REDIS_MAKE_STD_ZVAL(z_result);
-    redis_parse_info_response(info, z_result);
+    redis_parse_info_response(info, &z_result);
     efree(info);
 
     // Return our array
     if (CLUSTER_IS_ATOMIC(c)) {
-        RETVAL_ZVAL(z_result, 0, 1);
+        RETVAL_ZVAL(&z_result, 0, 1);
     } else {
-        add_next_index_zval(&c->multi_resp, z_result);
+        add_next_index_zval(&c->multi_resp, &z_result);
     }
 }
 
@@ -2113,7 +2239,7 @@ PHP_REDIS_API void cluster_client_list_resp(INTERNAL_FUNCTION_PARAMETERS, redisC
                                      void *ctx)
 {
     char *info;
-    zval zv, *z_result = &zv;
+    zval z_result;
 
     /* Read the bulk response */
     info = redis_sock_read_bulk_reply(c->cmd_sock, c->reply_len TSRMLS_CC);
@@ -2121,89 +2247,97 @@ PHP_REDIS_API void cluster_client_list_resp(INTERNAL_FUNCTION_PARAMETERS, redisC
         CLUSTER_RETURN_FALSE(c);
     }
 
-#if (PHP_MAJOR_VERSION < 7)
-    MAKE_STD_ZVAL(z_result);
-#endif
-
     /* Parse it and free the bulk string */
-    redis_parse_client_list_response(info, z_result);
+    redis_parse_client_list_response(info, &z_result);
     efree(info);
 
     if (CLUSTER_IS_ATOMIC(c)) {
-        RETVAL_ZVAL(z_result, 0, 1);
+        RETVAL_ZVAL(&z_result, 0, 1);
     } else {
-        add_next_index_zval(&c->multi_resp, z_result);
+        add_next_index_zval(&c->multi_resp, &z_result);
     }
 }
 
 /* XRANGE */
 PHP_REDIS_API void
 cluster_xrange_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
-    zval zv, *z_messages = &zv;
+    zval z_messages;
 
-    REDIS_MAKE_STD_ZVAL(z_messages);
-    array_init(z_messages);
+    array_init(&z_messages);
 
     c->cmd_sock->serializer = c->flags->serializer;
     c->cmd_sock->compression = c->flags->compression;
 
-    if (redis_read_stream_messages(c->cmd_sock, c->reply_len, z_messages TSRMLS_CC) < 0) {
-        zval_dtor(z_messages);
-        REDIS_FREE_ZVAL(z_messages);
+    if (redis_read_stream_messages(c->cmd_sock, c->reply_len, &z_messages TSRMLS_CC) < 0) {
+        zval_dtor(&z_messages);
         CLUSTER_RETURN_FALSE(c);
     }
 
     if (CLUSTER_IS_ATOMIC(c)) {
-        RETVAL_ZVAL(z_messages, 0, 1);
+        RETVAL_ZVAL(&z_messages, 0, 1);
     } else {
-        add_next_index_zval(&c->multi_resp, z_messages);
+        add_next_index_zval(&c->multi_resp, &z_messages);
     }
 }
 
 /* XREAD */
 PHP_REDIS_API void
 cluster_xread_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
-    zval zv, *z_streams = &zv;
+    zval z_streams;
 
-    REDIS_MAKE_STD_ZVAL(z_streams);
-    array_init(z_streams);
+    array_init(&z_streams);
 
     c->cmd_sock->serializer = c->flags->serializer;
     c->cmd_sock->compression = c->flags->compression;
 
-    if (redis_read_stream_messages_multi(c->cmd_sock, c->reply_len, z_streams TSRMLS_CC) < 0) {
-        zval_dtor(z_streams);
-        REDIS_FREE_ZVAL(z_streams);
+    if (redis_read_stream_messages_multi(c->cmd_sock, c->reply_len, &z_streams TSRMLS_CC) < 0) {
+        zval_dtor(&z_streams);
         CLUSTER_RETURN_FALSE(c);
     }
 
     if (CLUSTER_IS_ATOMIC(c)) {
-        RETVAL_ZVAL(z_streams, 0, 1);
+        RETVAL_ZVAL(&z_streams, 0, 1);
     } else {
-        add_next_index_zval(&c->multi_resp, z_streams);
+        add_next_index_zval(&c->multi_resp, &z_streams);
     }
 }
 
 /* XCLAIM */
 PHP_REDIS_API void
 cluster_xclaim_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
-    zval zv, *z_msg = &zv;
+    zval z_msg;
 
-    REDIS_MAKE_STD_ZVAL(z_msg);
-    array_init(z_msg);
+    array_init(&z_msg);
 
-    if (redis_read_xclaim_response(c->cmd_sock, c->reply_len, z_msg TSRMLS_CC) < 0) {
-        zval_dtor(z_msg);
-        REDIS_FREE_ZVAL(z_msg);
+    if (redis_read_xclaim_response(c->cmd_sock, c->reply_len, &z_msg TSRMLS_CC) < 0) {
+        zval_dtor(&z_msg);
         CLUSTER_RETURN_FALSE(c);
     }
 
     if (CLUSTER_IS_ATOMIC(c)) {
-        RETVAL_ZVAL(z_msg, 0, 1);
+        RETVAL_ZVAL(&z_msg, 0, 1);
     } else {
-        add_next_index_zval(&c->multi_resp, z_msg);
+        add_next_index_zval(&c->multi_resp, &z_msg);
     }
 
+}
+
+/* XINFO */
+PHP_REDIS_API void
+cluster_xinfo_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
+{
+    zval z_ret;
+
+    array_init(&z_ret);
+    if (redis_read_xinfo_response(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS) {
+        zval_dtor(&z_ret);
+        CLUSTER_RETURN_FALSE(c);
+    }
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        RETURN_ZVAL(&z_ret, 0, 1);
+    }
+    add_next_index_zval(&c->multi_resp, &z_ret);
 }
 
 /* MULTI BULK response loop where we might pull the next one */
@@ -2481,13 +2615,9 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
         line = redis_sock_read(redis_sock, &line_len TSRMLS_CC);
 
         if (line != NULL) {
-            zval zv, *z = &zv;
-            if (redis_unpack(redis_sock, line, line_len, z TSRMLS_CC)) {
-#if (PHP_MAJOR_VERSION < 7)
-                MAKE_STD_ZVAL(z);
-                *z = zv;
-#endif
-                add_next_index_zval(z_result, z);
+            zval z_unpacked;
+            if (redis_unpack(redis_sock, line, line_len, &z_unpacked TSRMLS_CC)) {
+                add_next_index_zval(z_result, &z_unpacked);
             } else {
                 add_next_index_stringl(z_result, line, line_len);
             }
@@ -2525,17 +2655,14 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
             key = line;
             key_len = line_len;
         } else {
-            /* Attempt serialization */
-            zval zv, *z = &zv;
-            if (redis_unpack(redis_sock, line, line_len, z TSRMLS_CC)) {
-#if (PHP_MAJOR_VERSION < 7)
-                MAKE_STD_ZVAL(z);
-                *z = zv;
-#endif
-                add_assoc_zval(z_result, key, z);
+            /* Attempt unpacking */
+            zval z_unpacked;
+            if (redis_unpack(redis_sock, line, line_len, &z_unpacked TSRMLS_CC)) {
+                add_assoc_zval(z_result, key, &z_unpacked);
             } else {
                 add_assoc_stringl_ex(z_result, key, key_len, line, line_len);
             }
+
             efree(line);
             efree(key);
         }
@@ -2599,13 +2726,9 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
         line = redis_sock_read(redis_sock, &line_len TSRMLS_CC);
 
         if (line != NULL) {
-            zval zv, *z = &zv;
-            if (redis_unpack(redis_sock, line, line_len, z TSRMLS_CC)) {
-#if (PHP_MAJOR_VERSION < 7)
-                MAKE_STD_ZVAL(z);
-                *z = zv;
-#endif
-                add_assoc_zval_ex(z_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), z);
+            zval z_unpacked;
+            if (redis_unpack(redis_sock, line, line_len, &z_unpacked TSRMLS_CC)) {
+                add_assoc_zval_ex(z_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), &z_unpacked);
             } else {
                 add_assoc_stringl_ex(z_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), line, line_len);
             }

@@ -591,9 +591,9 @@ function run_tests($className, $str_filter, $str_host) {
         // reset rings
         global $newRing, $oldRing, $serverList;
 
-        $newRing = Array("$str_host:6379", "$str_host:6380", "$str_host:6381");
-        $oldRing = Array();
-        $serverList = Array("$str_host:6379", "$str_host:6380", "$str_host:6381", "$str_host:6382");
+        $newRing = ["$str_host:6379", "$str_host:6380", "$str_host:6381"];
+        $oldRing = [];
+        $serverList = ["$str_host:6379", "$str_host:6380", "$str_host:6381", "$str_host:6382"];
 
         // run
         return TestSuite::run($className, $str_filter);

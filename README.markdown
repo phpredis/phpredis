@@ -182,7 +182,7 @@ _**Description**_: Connects to a Redis instance.
 
 ##### *Parameters*
 
-*host*: string. can be a host, or the path to a unix domain socket  
+*host*: string. can be a host, or the path to a unix domain socket. Starting from version 5.0.0 it is possible to specify schema 
 *port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
 *reserved*: should be NULL if retry_interval is specified  
@@ -198,9 +198,12 @@ _**Description**_: Connects to a Redis instance.
 ~~~php
 $redis->connect('127.0.0.1', 6379);
 $redis->connect('127.0.0.1'); // port 6379 by default
+$redis->connect('tls://127.0.0.1', 6379); // enable transport level security.
+$redis->connect('tls://127.0.0.1'); // enable transport level security, port 6379 by default.
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
 $redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
+$redis->connect('unix://redis.sock'); // relative path to unix domain socket requires version 5.0.0 or higher.
 ~~~
 
 ### pconnect, popen
@@ -221,7 +224,7 @@ persistent equivalents.
 
 ##### *Parameters*
 
-*host*: string. can be a host, or the path to a unix domain socket  
+*host*: string. can be a host, or the path to a unix domain socket. Starting from version 5.0.0 it is possible to specify schema 
 *port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
 *persistent_id*: string. identity for the requested persistent connection  
@@ -237,9 +240,12 @@ persistent equivalents.
 ~~~php
 $redis->pconnect('127.0.0.1', 6379);
 $redis->pconnect('127.0.0.1'); // port 6379 by default - same connection like before.
+$redis->pconnect('tls://127.0.0.1', 6379); // enable transport level security.
+$redis->pconnect('tls://127.0.0.1'); // enable transport level security, port 6379 by default.
 $redis->pconnect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout and would be another connection than the two before.
 $redis->pconnect('127.0.0.1', 6379, 2.5, 'x'); // x is sent as persistent_id and would be another connection than the three before.
 $redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another connection than the four before.
+$redis->pconnect('unix://redis.sock'); // relative path to unix domain socket requires version 5.0.0 or higher.
 ~~~
 
 ### auth
@@ -313,9 +319,10 @@ _**Description**_: Set client option.
 
 ##### *Example*
 ~~~php
-$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);	// don't serialize data
-$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);	// use built-in serialize/unserialize
-$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_IGBINARY);	// use igBinary serialize/unserialize
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);	  // Don't serialize data
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);	  // Use built-in serialize/unserialize
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_IGBINARY); // Use igBinary serialize/unserialize
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_MSGPACK);  // Use msgpack serialize/unserialize
 
 $redis->setOption(Redis::OPT_PREFIX, 'myAppName:');	// use custom prefix on all keys
 
@@ -342,7 +349,9 @@ Parameter value.
 
 ##### *Example*
 ~~~php
-$redis->getOption(Redis::OPT_SERIALIZER);	// return Redis::SERIALIZER_NONE, Redis::SERIALIZER_PHP, or Redis::SERIALIZER_IGBINARY.
+// return Redis::SERIALIZER_NONE, Redis::SERIALIZER_PHP, 
+//        Redis::SERIALIZER_IGBINARY, or Redis::SERIALIZER_MSGPACK
+$redis->getOption(Redis::OPT_SERIALIZER);
 ~~~
 
 ### ping
@@ -718,10 +727,10 @@ $redis->set('key', 'value');
 $redis->set('key','value', 10);
 
 // Will set the key, if it doesn't exist, with a ttl of 10 seconds
-$redis->set('key', 'value', Array('nx', 'ex'=>10));
+$redis->set('key', 'value', ['nx', 'ex'=>10]);
 
 // Will set a key, if it does exist, with a ttl of 1000 miliseconds
-$redis->set('key', 'value', Array('xx', 'px'=>1000));
+$redis->set('key', 'value', ['xx', 'px'=>1000]);
 
 ~~~
 
@@ -780,14 +789,15 @@ $redis->set('key2', 'val2');
 $redis->set('key3', 'val3');
 $redis->set('key4', 'val4');
 
-$redis->delete('key1', 'key2'); /* return 2 */
-$redis->delete(array('key3', 'key4')); /* return 2 */
+$redis->del('key1', 'key2'); /* return 2 */
+$redis->del(['key3', 'key4']); /* return 2 */
 
 /* If using Redis >= 4.0.0 you can call unlink */
 $redis->unlink('key1', 'key2');
-$redis->unlink(Array('key1', 'key2'));
+$redis->unlink(['key1', 'key2']);
 ~~~
 
+**Note:** `delete` is an alias for `del` and will be removed in future versions of phpredis.
 
 ### exists
 -----
@@ -899,9 +909,11 @@ _**Description**_: Get the values of all the specified keys. If one or more keys
 $redis->set('key1', 'value1');
 $redis->set('key2', 'value2');
 $redis->set('key3', 'value3');
-$redis->mGet(array('key1', 'key2', 'key3')); /* array('value1', 'value2', 'value3');
-$redis->mGet(array('key0', 'key1', 'key5')); /* array(`FALSE`, 'value1', `FALSE`);
+$redis->mGet(['key1', 'key2', 'key3']); /* ['value1', 'value2', 'value3'];
+$redis->mGet(['key0', 'key1', 'key5']); /* [`FALSE`, 'value1', `FALSE`];
 ~~~
+
+**Note:** `getMultiple` is an alias for `mGet` and will be removed in future versions of phpredis.
 
 ### getSet
 -----
@@ -974,6 +986,8 @@ $redis->get('y'); 	// → 42
 $redis->get('x'); 	// → `FALSE`
 ~~~
 
+**Note:** `renameKey` is an alias for `rename` and will be removed in future versions of phpredis.
+
 ### renameNx
 -----
 _**Description**_: Same as rename, but will not replace a key if the destination already exists. This is the same behaviour as setNx.
@@ -992,10 +1006,12 @@ _**Description**_: Sets an expiration date (a timeout) on an item. pexpire requi
 ##### *Example*
 ~~~php
 $redis->set('x', '42');
-$redis->setTimeout('x', 3);	// x will disappear in 3 seconds.
+$redis->expire('x', 3);	// x will disappear in 3 seconds.
 sleep(5);				// wait 5 seconds
 $redis->get('x'); 		// will return `FALSE`, as 'x' has expired.
 ~~~
+
+**Note:** `setTimeout` is an alias for `expire` and will be removed in future versions of phpredis.
 
 ### expireAt, pexpireAt
 -----
@@ -1032,6 +1048,8 @@ _**Description**_: Returns the keys that match a certain pattern.
 $allKeys = $redis->keys('*');	// all keys will match this.
 $keyWithUserPrefix = $redis->keys('user*');
 ~~~
+
+**Note:** `getKeys` is an alias for `keys` and will be removed in future versions of phpredis.
 
 ### scan
 -----
@@ -1263,10 +1281,10 @@ _**Description**_: Sort the elements in a list, set or sorted set.
 
 ##### *Parameters*
 *Key*: key
-*Options*: array(key => value, ...) - optional, with the following keys and values:
+*Options*: [key => value, ...] - optional, with the following keys and values:
 ~~~
     'by' => 'some_pattern_*',
-    'limit' => array(0, 1),
+    'limit' => [0, 1],
     'get' => 'some_other_pattern_*' or an array of patterns,
     'sort' => 'asc' or 'desc',
     'alpha' => TRUE,
@@ -1277,7 +1295,7 @@ An array of values, or a number corresponding to the number of elements stored i
 
 ##### *Example*
 ~~~php
-$redis->delete('s');
+$redis->del('s');
 $redis->sAdd('s', 5);
 $redis->sAdd('s', 4);
 $redis->sAdd('s', 2);
@@ -1285,8 +1303,8 @@ $redis->sAdd('s', 1);
 $redis->sAdd('s', 3);
 
 var_dump($redis->sort('s')); // 1,2,3,4,5
-var_dump($redis->sort('s', array('sort' => 'desc'))); // 5,4,3,2,1
-var_dump($redis->sort('s', array('sort' => 'desc', 'store' => 'out'))); // (int)5
+var_dump($redis->sort('s', ['sort' => 'desc'])); // 5,4,3,2,1
+var_dump($redis->sort('s', ['sort' => 'desc', 'store' => 'out'])); // (int)5
 ~~~
 
 
@@ -1327,7 +1345,7 @@ $redis->persist('key');
 _**Description**_: Sets multiple key-value pairs in one atomic command. MSETNX only returns TRUE if all the keys were set (see SETNX).
 
 ##### *Parameters*
-*Pairs*: array(key => value, ...)
+*Pairs*: [key => value, ...]
 
 ##### *Return value*
 *Bool* `TRUE` in case of success, `FALSE` in case of failure.
@@ -1335,7 +1353,7 @@ _**Description**_: Sets multiple key-value pairs in one atomic command. MSETNX o
 ##### *Example*
 ~~~php
 
-$redis->mSet(array('key0' => 'value0', 'key1' => 'value1'));
+$redis->mSet(['key0' => 'value0', 'key1' => 'value1']);
 var_dump($redis->get('key0'));
 var_dump($redis->get('key1'));
 
@@ -1433,7 +1451,7 @@ _**Description**_: Adds a value to the hash stored at key.
 *LONG* `1` if value didn't exist and was added successfully, `0` if the value was already present and was replaced, `FALSE` if there was an error.
 ##### *Example*
 ~~~php
-$redis->delete('h')
+$redis->del('h')
 $redis->hSet('h', 'key1', 'hello'); /* 1, 'key1' => 'hello' in the hash at "h" */
 $redis->hGet('h', 'key1'); /* returns "hello" */
 
@@ -1450,7 +1468,7 @@ _**Description**_: Adds a value to the hash stored at key only if this field isn
 
 ##### *Example*
 ~~~php
-$redis->delete('h')
+$redis->del('h')
 $redis->hSetNx('h', 'key1', 'hello'); /* TRUE, 'key1' => 'hello' in the hash at "h" */
 $redis->hSetNx('h', 'key1', 'world'); /* FALSE, 'key1' => 'hello' in the hash at "h". No change since the field wasn't replaced. */
 ~~~
@@ -1478,7 +1496,7 @@ _**Description**_: Returns the length of a hash, in number of items
 *LONG* the number of items in a hash, `FALSE` if the key doesn't exist or isn't a hash.
 ##### *Example*
 ~~~php
-$redis->delete('h')
+$redis->del('h')
 $redis->hSet('h', 'key1', 'hello');
 $redis->hSet('h', 'key2', 'plop');
 $redis->hLen('h'); /* returns 2 */
@@ -1509,7 +1527,7 @@ An array of elements, the keys of the hash. This works like PHP's array_keys().
 
 ##### *Example*
 ~~~php
-$redis->delete('h');
+$redis->del('h');
 $redis->hSet('h', 'a', 'x');
 $redis->hSet('h', 'b', 'y');
 $redis->hSet('h', 'c', 'z');
@@ -1544,7 +1562,7 @@ An array of elements, the values of the hash. This works like PHP's array_values
 
 ##### *Example*
 ~~~php
-$redis->delete('h');
+$redis->del('h');
 $redis->hSet('h', 'a', 'x');
 $redis->hSet('h', 'b', 'y');
 $redis->hSet('h', 'c', 'z');
@@ -1579,7 +1597,7 @@ An array of elements, the contents of the hash.
 
 ##### *Example*
 ~~~php
-$redis->delete('h');
+$redis->del('h');
 $redis->hSet('h', 'a', 'x');
 $redis->hSet('h', 'b', 'y');
 $redis->hSet('h', 'c', 'z');
@@ -1628,7 +1646,7 @@ _**Description**_: Increments the value of a member from a hash by a given amoun
 *LONG* the new value
 ##### *Examples*
 ~~~php
-$redis->delete('h');
+$redis->del('h');
 $redis->hIncrBy('h', 'x', 2); /* returns 2: h[x] = 2 now. */
 $redis->hIncrBy('h', 'x', 1); /* h[x] ← 2 + 1. Returns 3 */
 ~~~
@@ -1644,7 +1662,7 @@ _**Description**_: Increments the value of a hash member by the provided float v
 *FLOAT* the new value
 ##### *Examples*
 ~~~php
-$redis->delete('h');
+$redis->del('h');
 $redis->hIncrByFloat('h','x', 1.5); /* returns 1.5: h[x] = 1.5 now */
 $redis->hIncrByFloat('h', 'x', 1.5); /* returns 3.0: h[x] = 3.0 now */
 $redis->hIncrByFloat('h', 'x', -3.0); /* returns 0.0: h[x] = 0.0 now */
@@ -1660,8 +1678,8 @@ _**Description**_: Fills in a whole hash. Non-string values are converted to str
 *BOOL*
 ##### *Examples*
 ~~~php
-$redis->delete('user:1');
-$redis->hMSet('user:1', array('name' => 'Joe', 'salary' => 2000));
+$redis->del('user:1');
+$redis->hMSet('user:1', ['name' => 'Joe', 'salary' => 2000]);
 $redis->hIncrBy('user:1', 'salary', 100); // Joe earns 100 more now.
 ~~~
 
@@ -1675,10 +1693,10 @@ _**Description**_: Retrieve the values associated to the specified fields in the
 *Array* An array of elements, the values of the specified fields in the hash, with the hash keys as array keys.
 ##### *Examples*
 ~~~php
-$redis->delete('h');
+$redis->del('h');
 $redis->hSet('h', 'field1', 'value1');
 $redis->hSet('h', 'field2', 'value2');
-$redis->hMGet('h', array('field1', 'field2')); /* returns array('field1' => 'value1', 'field2' => 'value2') */
+$redis->hMGet('h', ['field1', 'field2']); /* returns ['field1' => 'value1', 'field2' => 'value2'] */
 ~~~
 
 ### hScan
@@ -1749,26 +1767,26 @@ Or
 *INTEGER* Timeout
 
 ##### *Return value*
-*ARRAY* array('listName', 'element')
+*ARRAY* ['listName', 'element']
 
 ##### *Example*
 ~~~php
 /* Non blocking feature */
 $redis->lPush('key1', 'A');
-$redis->delete('key2');
+$redis->del('key2');
 
-$redis->blPop('key1', 'key2', 10); /* array('key1', 'A') */
+$redis->blPop('key1', 'key2', 10); /* ['key1', 'A'] */
 /* OR */
-$redis->blPop(array('key1', 'key2'), 10); /* array('key1', 'A') */
+$redis->blPop(['key1', 'key2'], 10); /* ['key1', 'A'] */
 
-$redis->brPop('key1', 'key2', 10); /* array('key1', 'A') */
+$redis->brPop('key1', 'key2', 10); /* ['key1', 'A'] */
 /* OR */
-$redis->brPop(array('key1', 'key2'), 10); /* array('key1', 'A') */
+$redis->brPop(['key1', 'key2'], 10); /* ['key1', 'A'] */
 
 /* Blocking feature */
 
 /* process 1 */
-$redis->delete('key1');
+$redis->del('key1');
 $redis->blPop('key1', 10);
 /* blocking for 10 seconds */
 
@@ -1776,7 +1794,7 @@ $redis->blPop('key1', 10);
 $redis->lPush('key1', 'A');
 
 /* process 1 */
-/* array('key1', 'A') is returned*/
+/* ['key1', 'A'] is returned*/
 ~~~
 
 ### bRPopLPush
@@ -1813,10 +1831,12 @@ Return `FALSE` in case of a bad index or a key that doesn't point to a list.
 $redis->rPush('key1', 'A');
 $redis->rPush('key1', 'B');
 $redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
-$redis->lGet('key1', 0); /* 'A' */
-$redis->lGet('key1', -1); /* 'C' */
-$redis->lGet('key1', 10); /* `FALSE` */
+$redis->lindex('key1', 0); /* 'A' */
+$redis->lindex('key1', -1); /* 'C' */
+$redis->lindex('key1', 10); /* `FALSE` */
 ~~~
+
+**Note:** `lGet` is an alias for `lIndex` and will be removed in future versions of phpredis.
 
 ### lInsert
 -----
@@ -1836,7 +1856,7 @@ The number of the elements in the list, -1 if the pivot didn't exists.
 
 ##### *Example*
 ~~~php
-$redis->delete('key1');
+$redis->del('key1');
 $redis->lInsert('key1', Redis::AFTER, 'A', 'X'); /* 0 */
 
 $redis->lPush('key1', 'A');
@@ -1844,10 +1864,10 @@ $redis->lPush('key1', 'B');
 $redis->lPush('key1', 'C');
 
 $redis->lInsert('key1', Redis::BEFORE, 'C', 'X'); /* 4 */
-$redis->lRange('key1', 0, -1); /* array('A', 'B', 'X', 'C') */
+$redis->lRange('key1', 0, -1); /* ['A', 'B', 'X', 'C'] */
 
 $redis->lInsert('key1', Redis::AFTER, 'C', 'Y'); /* 5 */
-$redis->lRange('key1', 0, -1); /* array('A', 'B', 'X', 'C', 'Y') */
+$redis->lRange('key1', 0, -1); /* ['A', 'B', 'X', 'C', 'Y'] */
 
 $redis->lInsert('key1', Redis::AFTER, 'W', 'value'); /* -1 */
 ~~~
@@ -1884,7 +1904,7 @@ _**Description**_: Adds the string value to the head (left) of the list. Creates
 
 ##### *Examples*
 ~~~php
-$redis->delete('key1');
+$redis->del('key1');
 $redis->lPush('key1', 'C'); // returns 1
 $redis->lPush('key1', 'B'); // returns 2
 $redis->lPush('key1', 'A'); // returns 3
@@ -1904,7 +1924,7 @@ _**Description**_: Adds the string value to the head (left) of the list if the l
 
 ##### *Examples*
 ~~~php
-$redis->delete('key1');
+$redis->del('key1');
 $redis->lPushx('key1', 'A'); // returns 0
 $redis->lPush('key1', 'A'); // returns 1
 $redis->lPushx('key1', 'B'); // returns 2
@@ -1931,8 +1951,10 @@ _**Description**_: Returns the specified elements of the list stored at the spec
 $redis->rPush('key1', 'A');
 $redis->rPush('key1', 'B');
 $redis->rPush('key1', 'C');
-$redis->lRange('key1', 0, -1); /* array('A', 'B', 'C') */
+$redis->lRange('key1', 0, -1); /* ['A', 'B', 'C'] */
 ~~~
+
+**Note:** `lGetRange` is an alias for `lRange` and will be removed in future versions of phpredis.
 
 ### lRem, lRemove
 -----
@@ -1957,10 +1979,12 @@ $redis->lPush('key1', 'C');
 $redis->lPush('key1', 'A');
 $redis->lPush('key1', 'A');
 
-$redis->lRange('key1', 0, -1); /* array('A', 'A', 'C', 'B', 'A') */
+$redis->lRange('key1', 0, -1); /* ['A', 'A', 'C', 'B', 'A'] */
 $redis->lRem('key1', 'A', 2); /* 2 */
-$redis->lRange('key1', 0, -1); /* array('C', 'B', 'A') */
+$redis->lRange('key1', 0, -1); /* ['C', 'B', 'A'] */
 ~~~
+
+**Note:** `lRemove` is an alias for `lRem` and will be removed in future versions of phpredis.
 
 ### lSet
 -----
@@ -1979,9 +2003,9 @@ _**Description**_: Set the list at index with the new value.
 $redis->rPush('key1', 'A');
 $redis->rPush('key1', 'B');
 $redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
-$redis->lGet('key1', 0); /* 'A' */
+$redis->lindex('key1', 0); /* 'A' */
 $redis->lSet('key1', 0, 'X');
-$redis->lGet('key1', 0); /* 'X' */
+$redis->lindex('key1', 0); /* 'X' */
 ~~~
 
 ### lTrim, listTrim
@@ -2002,10 +2026,12 @@ _**Description**_: Trims an existing list so that it will contain only a specifi
 $redis->rPush('key1', 'A');
 $redis->rPush('key1', 'B');
 $redis->rPush('key1', 'C');
-$redis->lRange('key1', 0, -1); /* array('A', 'B', 'C') */
+$redis->lRange('key1', 0, -1); /* ['A', 'B', 'C'] */
 $redis->lTrim('key1', 0, 1);
-$redis->lRange('key1', 0, -1); /* array('A', 'B') */
+$redis->lRange('key1', 0, -1); /* ['A', 'B'] */
 ~~~
+
+**Note:** `listTrim` is an alias for `lTrim` and will be removed in future versions of phpredis.
 
 ### rPop
 -----
@@ -2039,7 +2065,7 @@ _**Description**_: Pops a value from the tail of a list, and pushes it to the fr
 
 ##### *Example*
 ~~~php
-$redis->delete('x', 'y');
+$redis->del('x', 'y');
 
 $redis->lPush('x', 'abc');
 $redis->lPush('x', 'def');
@@ -2082,7 +2108,7 @@ _**Description**_: Adds the string value to the tail (right) of the list. Create
 
 ##### *Examples*
 ~~~php
-$redis->delete('key1');
+$redis->del('key1');
 $redis->rPush('key1', 'A'); // returns 1
 $redis->rPush('key1', 'B'); // returns 2
 $redis->rPush('key1', 'C'); // returns 3
@@ -2102,7 +2128,7 @@ _**Description**_: Adds the string value to the tail (right) of the list if the 
 
 ##### *Examples*
 ~~~php
-$redis->delete('key1');
+$redis->del('key1');
 $redis->rPushX('key1', 'A'); // returns 0
 $redis->rPush('key1', 'A'); // returns 1
 $redis->rPushX('key1', 'B'); // returns 2
@@ -2128,10 +2154,12 @@ If the list didn't exist or is empty, the command returns 0. If the data type id
 $redis->rPush('key1', 'A');
 $redis->rPush('key1', 'B');
 $redis->rPush('key1', 'C'); /* key1 => [ 'A', 'B', 'C' ] */
-$redis->lSize('key1');/* 3 */
+$redis->lLen('key1');/* 3 */
 $redis->rPop('key1');
-$redis->lSize('key1');/* 2 */
+$redis->lLen('key1');/* 2 */
 ~~~
+
+**Note:** `lSize` is an alias for `lLen` and will be removed in future versions of phpredis.
 
 
 ## Sets
@@ -2184,6 +2212,8 @@ $redis->sCard('key1'); /* 3 */
 $redis->sCard('keyX'); /* 0 */
 ~~~
 
+**Note:** `sSize` is an alias for `sCard` and will be removed in future versions of phpredis.
+
 ### sDiff
 -----
 _**Description**_: Performs the difference between N sets and returns it.
@@ -2196,7 +2226,7 @@ _**Description**_: Performs the difference between N sets and returns it.
 
 ##### *Example*
 ~~~php
-$redis->delete('s0', 's1', 's2');
+$redis->del('s0', 's1', 's2');
 
 $redis->sAdd('s0', '1');
 $redis->sAdd('s0', '2');
@@ -2230,7 +2260,7 @@ _**Description**_: Performs the same action as sDiff, but stores the result in t
 
 ##### *Example*
 ~~~php
-$redis->delete('s0', 's1', 's2');
+$redis->del('s0', 's1', 's2');
 
 $redis->sAdd('s0', '1');
 $redis->sAdd('s0', '2');
@@ -2356,6 +2386,8 @@ $redis->sIsMember('key1', 'member1'); /* TRUE */
 $redis->sIsMember('key1', 'memberX'); /* FALSE */
 ~~~
 
+**Note:** `sContains` is an alias for `sIsMember` and will be removed in future versions of phpredis.
+
 ### sMembers, sGetMembers
 -----
 _**Description**_: Returns the contents of a set.
@@ -2368,7 +2400,7 @@ An array of elements, the contents of the set.
 
 ##### *Example*
 ~~~php
-$redis->delete('s');
+$redis->del('s');
 $redis->sAdd('s', 'a');
 $redis->sAdd('s', 'b');
 $redis->sAdd('s', 'a');
@@ -2480,6 +2512,8 @@ $redis->sAdd('key1' , 'member3'); /* 'key1' => {'member1', 'member2', 'member3'}
 $redis->sRem('key1', 'member2', 'member3'); /*return 2. 'key1' => {'member1'} */
 ~~~
 
+**Note:** `sRemove` is an alias for `sRem` and will be removed in future versions of phpredis.
+
 ### sUnion
 -----
 _**Description**_: Performs the union between N sets and returns it.
@@ -2490,9 +2524,11 @@ _**Description**_: Performs the union between N sets and returns it.
 ##### *Return value*
 *Array of strings*: The union of all these sets.
 
+**Note:** `sUnion` can also take a single array with keys (see example below).
+
 ##### *Example*
 ~~~php
-$redis->delete('s0', 's1', 's2');
+$redis->del('s0', 's1', 's2');
 
 $redis->sAdd('s0', '1');
 $redis->sAdd('s0', '2');
@@ -2501,7 +2537,12 @@ $redis->sAdd('s1', '1');
 $redis->sAdd('s2', '3');
 $redis->sAdd('s2', '4');
 
+/* Get the union with variadic arguments */
 var_dump($redis->sUnion('s0', 's1', 's2'));
+
+/* Pass a single array */
+var_dump($redis->sUnion(['s0', 's1', 's2']);
+
 ~~~
 Return value: all elements that are either in s0 or in s1 or in s2.
 ~~~
@@ -2531,7 +2572,7 @@ _**Description**_: Performs the same action as sUnion, but stores the result in 
 
 ##### *Example*
 ~~~php
-$redis->delete('s0', 's1', 's2');
+$redis->del('s0', 's1', 's2');
 
 $redis->sAdd('s0', '1');
 $redis->sAdd('s0', '2');
@@ -2600,17 +2641,17 @@ while(($arr_mems = $redis->sScan('set', $it, "*pattern*"))!==FALSE) {
 * [zCard, zSize](#zcard-zsize) - Get the number of members in a sorted set
 * [zCount](#zcount) - Count the members in a sorted set with scores within the given values
 * [zIncrBy](#zincrby) - Increment the score of a member in a sorted set
-* [zInter](#zinter) - Intersect multiple sorted sets and store the resulting sorted set in a new key
+* [zinterstore, zInter](#zinterstore-zinter) - Intersect multiple sorted sets and store the resulting sorted set in a new key
 * [zRange](#zrange) - Return a range of members in a sorted set, by index
 * [zRangeByScore, zRevRangeByScore](#zrangebyscore-zrevrangebyscore) - Return a range of members in a sorted set, by score
 * [zRangeByLex](#zrangebylex) - Return a lexicographical range from members that share the same score
 * [zRank, zRevRank](#zrank-zrevrank) - Determine the index of a member in a sorted set
-* [zRem, zDelete](#zrem-zdelete) - Remove one or more members from a sorted set
+* [zRem, zDelete, zRemove](#zrem-zdelete-zremove) - Remove one or more members from a sorted set
 * [zRemRangeByRank, zDeleteRangeByRank](#zremrangebyrank-zdeleterangebyrank) - Remove all members in a sorted set within the given indexes
-* [zRemRangeByScore, zDeleteRangeByScore](#zremrangebyscore-zdeleterangebyscore) - Remove all members in a sorted set within the given scores
+* [zRemRangeByScore, zDeleteRangeByScore, zRemoveRangeByScore](#zremrangebyscore-zdeleterangebyscore-zremoverangebyscore) - Remove all members in a sorted set within the given scores
 * [zRevRange](#zrevrange) - Return a range of members in a sorted set, by index, with scores ordered from high to low
 * [zScore](#zscore) - Get the score associated with the given member in a sorted set
-* [zUnion](#zunion) - Add multiple sorted sets and store the resulting sorted set in a new key
+* [zunionstore, zUnion](#zunionstore-zunion) - Add multiple sorted sets and store the resulting sorted set in a new key
 * [zScan](#zscan) - Scan a sorted set for members
 
 ### zAdd
@@ -2630,7 +2671,7 @@ _**Description**_: Add one or more members to a sorted set or update its score i
 $redis->zAdd('key', 1, 'val1');
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 5, 'val5');
-$redis->zRange('key', 0, -1); // array(val0, val1, val5)
+$redis->zRange('key', 0, -1); // [val0, val1, val5]
 ~~~
 
 ### zCard, zSize
@@ -2668,7 +2709,7 @@ _**Description**_: Returns the *number* of elements of the sorted set stored at 
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
-$redis->zCount('key', 0, 3); /* 2, corresponding to array('val0', 'val2') */
+$redis->zCount('key', 0, 3); /* 2, corresponding to ['val0', 'val2'] */
 ~~~
 
 ### zIncrBy
@@ -2685,13 +2726,13 @@ _**Description**_: Increments the score of a member from a sorted set by a given
 
 ##### *Examples*
 ~~~php
-$redis->delete('key');
+$redis->del('key');
 $redis->zIncrBy('key', 2.5, 'member1'); /* key or member1 didn't exist, so member1's score is to 0 before the increment */
 					  /* and now has the value 2.5  */
 $redis->zIncrBy('key', 1, 'member1'); /* 3.5 */
 ~~~
 
-### zInter
+### zinterstore, zInter
 -----
 _**Description**_: Creates an intersection of sorted sets given in second argument. The result of the union will be stored in the sorted set defined by the first argument.
 
@@ -2702,21 +2743,21 @@ The forth argument defines the `AGGREGATE` option which specify how the results 
 *keyOutput*  
 *arrayZSetKeys*  
 *arrayWeights*  
-*aggregateFunction* Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zInter.
+*aggregateFunction* Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zinterstore.
 
 ##### *Return value*
 *LONG* The number of values in the new sorted set.
 
 ##### *Example*
 ~~~php
-$redis->delete('k1');
-$redis->delete('k2');
-$redis->delete('k3');
+$redis->del('k1');
+$redis->del('k2');
+$redis->del('k3');
 
-$redis->delete('ko1');
-$redis->delete('ko2');
-$redis->delete('ko3');
-$redis->delete('ko4');
+$redis->del('ko1');
+$redis->del('ko2');
+$redis->del('ko3');
+$redis->del('ko4');
 
 $redis->zAdd('k1', 0, 'val0');
 $redis->zAdd('k1', 1, 'val1');
@@ -2725,13 +2766,15 @@ $redis->zAdd('k1', 3, 'val3');
 $redis->zAdd('k2', 2, 'val1');
 $redis->zAdd('k2', 3, 'val3');
 
-$redis->zInter('ko1', array('k1', 'k2')); 				/* 2, 'ko1' => array('val1', 'val3') */
-$redis->zInter('ko2', array('k1', 'k2'), array(1, 1)); 	/* 2, 'ko2' => array('val1', 'val3') */
+$redis->zinterstore('ko1', ['k1', 'k2']); 				/* 2, 'ko1' => ['val1', 'val3'] */
+$redis->zinterstore('ko2', ['k1', 'k2'], [1, 1]); 	/* 2, 'ko2' => ['val1', 'val3'] */
 
-/* Weighted zInter */
-$redis->zInter('ko3', array('k1', 'k2'), array(1, 5), 'min'); /* 2, 'ko3' => array('val1', 'val3') */
-$redis->zInter('ko4', array('k1', 'k2'), array(1, 5), 'max'); /* 2, 'ko4' => array('val3', 'val1') */
+/* Weighted zinterstore */
+$redis->zinterstore('ko3', ['k1', 'k2'], [1, 5], 'min'); /* 2, 'ko3' => ['val1', 'val3'] */
+$redis->zinterstore('ko4', ['k1', 'k2'], [1, 5], 'max'); /* 2, 'ko4' => ['val3', 'val1'] */
 ~~~
+
+**Note:** `zInter` is an alias for `zinterstore` and will be removed in future versions of phpredis.
 
 ### zRange
 -----
@@ -2755,10 +2798,10 @@ Start and stop are interpreted as zero-based indices:
 $redis->zAdd('key1', 0, 'val0');
 $redis->zAdd('key1', 2, 'val2');
 $redis->zAdd('key1', 10, 'val10');
-$redis->zRange('key1', 0, -1); /* array('val0', 'val2', 'val10') */
+$redis->zRange('key1', 0, -1); /* ['val0', 'val2', 'val10'] */
 
 // with scores
-$redis->zRange('key1', 0, -1, true); /* array('val0' => 0, 'val2' => 2, 'val10' => 10) */
+$redis->zRange('key1', 0, -1, true); /* ['val0' => 0, 'val2' => 2, 'val10' => 10] */
 ~~~
 
 ### zRangeByScore, zRevRangeByScore
@@ -2771,7 +2814,7 @@ _**Description**_: Returns the elements of the sorted set stored at the specifie
 *end*: string  
 *options*: array
 
-Two options are available: `withscores => TRUE`, and `limit => array($offset, $count)`
+Two options are available: `withscores => TRUE`, and `limit => [$offset, $count]`
 
 ##### *Return value*
 *Array* containing the values in specified range.
@@ -2781,10 +2824,10 @@ Two options are available: `withscores => TRUE`, and `limit => array($offset, $c
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
-$redis->zRangeByScore('key', 0, 3); /* array('val0', 'val2') */
-$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE)); /* array('val0' => 0, 'val2' => 2) */
-$redis->zRangeByScore('key', 0, 3, array('limit' => array(1, 1))); /* array('val2') */
-$redis->zRangeByScore('key', 0, 3, array('withscores' => TRUE, 'limit' => array(1, 1))); /* array('val2' => 2) */
+$redis->zRangeByScore('key', 0, 3); /* ['val0', 'val2'] */
+$redis->zRangeByScore('key', 0, 3, ['withscores' => TRUE]); /* ['val0' => 0, 'val2' => 2] */
+$redis->zRangeByScore('key', 0, 3, ['limit' => [1, 1]]); /* ['val2'] */
+$redis->zRangeByScore('key', 0, 3, ['withscores' => TRUE, 'limit' => [1, 1]]); /* ['val2' => 2] */
 ~~~
 
 ### zRangeByLex
@@ -2803,12 +2846,12 @@ _**Description**_:  Returns a lexicographical range of members in a sorted set, 
 
 ##### *Example*
 ~~~php
-foreach(Array('a','b','c','d','e','f','g') as $c)
+foreach(['a','b','c','d','e','f','g'] as $c)
     $redis->zAdd('key',0,$c);
 
-$redis->zRangeByLex('key','-','[c') /* Array('a','b','c'); */
-$redis->zRangeByLex('key','-','(c') /* Array('a','b') */
-$redis->zRangeByLex('key','-','[c',1,2) /* Array('b','c') */
+$redis->zRangeByLex('key','-','[c') /* ['a','b','c']; */
+$redis->zRangeByLex('key','-','(c') /* ['a','b'] */
+$redis->zRangeByLex('key','-','[c',1,2) /* ['b','c'] */
 ~~~
 
 ### zRank, zRevRank
@@ -2824,7 +2867,7 @@ _**Description**_: Returns the rank of a given member in the specified sorted se
 
 ##### *Example*
 ~~~php
-$redis->delete('z');
+$redis->del('z');
 $redis->zAdd('key', 1, 'one');
 $redis->zAdd('key', 2, 'two');
 $redis->zRank('key', 'one'); /* 0 */
@@ -2833,25 +2876,25 @@ $redis->zRevRank('key', 'one'); /* 1 */
 $redis->zRevRank('key', 'two'); /* 0 */
 ~~~
 
-### zRem, zDelete
+### zRem, zDelete, zRemove
 -----
-_**Description**_: Deletes a specified member from the ordered set.
+_**Description**_: Delete one or more members from a sorted set.
 
-##### *Parameters*
-*key*  
-*member*
+##### *Prototype*
+~~~php
+$redis->zRem($key, $member [, $member ...]);
+~~~
 
 ##### *Return value*
-*LONG* 1 on success, 0 on failure.
+*LONG:* The number of members deleted.
 
 ##### *Example*
 ~~~php
-$redis->zAdd('key', 0, 'val0');
-$redis->zAdd('key', 2, 'val2');
-$redis->zAdd('key', 10, 'val10');
-$redis->zDelete('key', 'val2');
-$redis->zRange('key', 0, -1); /* array('val0', 'val10') */
+$redis->zAdd('key', 0, 'val0', 1, 'val1', 2, 'val2');
+$redis->zRem('key', 'val0', 'val1', 'val2'); // Returns: 3
 ~~~
+
+**Note:** `zDelete` and `zRemove` are an alias for `zRem` and will be removed in future versions of phpredis.
 
 ### zRemRangeByRank, zDeleteRangeByRank
 -----
@@ -2871,10 +2914,12 @@ $redis->zAdd('key', 1, 'one');
 $redis->zAdd('key', 2, 'two');
 $redis->zAdd('key', 3, 'three');
 $redis->zRemRangeByRank('key', 0, 1); /* 2 */
-$redis->zRange('key', 0, -1, array('withscores' => TRUE)); /* array('three' => 3) */
+$redis->zRange('key', 0, -1, ['withscores' => TRUE]); /* ['three' => 3] */
 ~~~
 
-### zRemRangeByScore, zDeleteRangeByScore
+**Note:** `zDeleteRangeByRank` is an alias for `zRemRangeByRank` and will be removed in future versions of phpredis.
+
+### zRemRangeByScore, zDeleteRangeByScore, zRemoveRangeByScore
 -----
 _**Description**_: Deletes the elements of the sorted set stored at the specified key which have scores in the range [start,end].
 
@@ -2893,6 +2938,8 @@ $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
 $redis->zRemRangeByScore('key', 0, 3); /* 2 */
 ~~~
+
+**Note:** `zDeleteRangeByScore` and `zRemoveRangeByScore` are an alias for `zRemRangeByScore` and will be removed in future versions of phpredis.
 
 ### zRevRange
 -----
@@ -2914,10 +2961,10 @@ _**Description**_: Returns the elements of the sorted set stored at the specifie
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
-$redis->zRevRange('key', 0, -1); /* array('val10', 'val2', 'val0') */
+$redis->zRevRange('key', 0, -1); /* ['val10', 'val2', 'val0'] */
 
 // with scores
-$redis->zRevRange('key', 0, -1, true); /* array('val10' => 10, 'val2' => 2, 'val0' => 0) */
+$redis->zRevRange('key', 0, -1, true); /* ['val10' => 10, 'val2' => 2, 'val0' => 0] */
 ~~~
 
 ### zScore
@@ -2937,7 +2984,7 @@ $redis->zAdd('key', 2.5, 'val2');
 $redis->zScore('key', 'val2'); /* 2.5 */
 ~~~
 
-### zUnion
+### zunionstore, zUnion
 -----
 _**Description**_: Creates an union of sorted sets given in second argument. The result of the union will be stored in the sorted set defined by the first argument.
 
@@ -2948,19 +2995,19 @@ The forth argument defines the `AGGREGATE` option which specify how the results 
 *keyOutput*  
 *arrayZSetKeys*  
 *arrayWeights*  
-*aggregateFunction* Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zUnion.
+*aggregateFunction* Either "SUM", "MIN", or "MAX": defines the behaviour to use on duplicate entries during the zunionstore.
 
 ##### *Return value*
 *LONG* The number of values in the new sorted set.
 
 ##### *Example*
 ~~~php
-$redis->delete('k1');
-$redis->delete('k2');
-$redis->delete('k3');
-$redis->delete('ko1');
-$redis->delete('ko2');
-$redis->delete('ko3');
+$redis->del('k1');
+$redis->del('k2');
+$redis->del('k3');
+$redis->del('ko1');
+$redis->del('ko2');
+$redis->del('ko3');
 
 $redis->zAdd('k1', 0, 'val0');
 $redis->zAdd('k1', 1, 'val1');
@@ -2968,12 +3015,14 @@ $redis->zAdd('k1', 1, 'val1');
 $redis->zAdd('k2', 2, 'val2');
 $redis->zAdd('k2', 3, 'val3');
 
-$redis->zUnion('ko1', array('k1', 'k2')); /* 4, 'ko1' => array('val0', 'val1', 'val2', 'val3') */
+$redis->zunionstore('ko1', ['k1', 'k2']); /* 4, 'ko1' => ['val0', 'val1', 'val2', 'val3'] */
 
-/* Weighted zUnion */
-$redis->zUnion('ko2', array('k1', 'k2'), array(1, 1)); /* 4, 'ko2' => array('val0', 'val1', 'val2', 'val3') */
-$redis->zUnion('ko3', array('k1', 'k2'), array(5, 1)); /* 4, 'ko3' => array('val0', 'val2', 'val3', 'val1') */
+/* Weighted zunionstore */
+$redis->zunionstore('ko2', ['k1', 'k2'], [1, 1]); /* 4, 'ko2' => ['val0', 'val1', 'val2', 'val3'] */
+$redis->zunionstore('ko3', ['k1', 'k2'], [5, 1]); /* 4, 'ko3' => ['val0', 'val2', 'val3', 'val1'] */
 ~~~
+
+**Note:** `zUnion` is an alias for `zunionstore` and will be removed in future versions of phpredis.
 
 ### zScan
 -----
@@ -3021,7 +3070,7 @@ $redis->del("myplaces");
 /* Since the key will be new, $result will be 2 */
 $result = $redis->geoAdd(
     "myplaces",
-    37.773, -122.431, "San Francisco",
+    -122.431, 37.773, "San Francisco",
     -157.858, 21.315, "Honolulu"
 );
 ~~~  
@@ -3272,7 +3321,7 @@ echo "Within 300 miles of Honolulu:\n";
 var_dump($redis->geoRadiusByMember("hawaii", "Honolulu", 300, 'mi'));
 
 echo "\nFirst match within 300 miles of Honolulu:\n";
-var_dump($redis->geoRadiusByMember("hawaii", "Honolulu", 300, 'mi', Array('count' => 1)));
+var_dump($redis->geoRadiusByMember("hawaii", "Honolulu", 300, 'mi', ['count' => 1]));
 ~~~
 
 ##### *Output*
@@ -3331,7 +3380,7 @@ $obj_redis->xAck('stream', 'group1', ['1530063064286-0', '1530063064286-1']);
 
 ##### *Prototype*
 ~~~php
-$obj_redis->xAdd($str_key, $str_id, $arr_message);
+$obj_redis->xAdd($str_key, $str_id, $arr_message[, $i_maxlen, $boo_approximate]);
 ~~~
 
 _**Description**_:  Add a message to a stream
@@ -3342,6 +3391,8 @@ _**Description**_:  Add a message to a stream
 ##### *Example*
 ~~~php
 $obj_redis->xAdd('mystream', "*", ['field' => 'value']);
+$obj_redis->xAdd('mystream', "*", ['field' => 'value'], 1000); // set max length of stream to 1000
+$obj_redis->xAdd('mystream', "*", ['field' => 'value'], 1000, true); // set max length of stream to ~1000
 ~~~
 
 ### xClaim
@@ -3427,8 +3478,8 @@ _**Description**_:  This command is used in order to create, destroy, or manage 
 
 ##### *Example*
 ~~~php
-$obj_redis->xGroup('CREATE', 'mystream', 'mygroup');
-$obj_redis->xGroup('CREATE', 'mystream', 'mygroup2', true); /* Create stream if non-existent. */
+$obj_redis->xGroup('CREATE', 'mystream', 'mygroup', 0);
+$obj_redis->xGroup('CREATE', 'mystream', 'mygroup2', 0, true); /* Create stream if non-existent. */
 $obj_redis->xGroup('DESTROY', 'mystream', 'mygroup');
 ~~~
 
@@ -3665,7 +3716,7 @@ _**Description**_: Subscribe to channels. Warning: this function will probably c
 
 ##### *Parameters*
 *channels*: an array of channels to subscribe to  
-*callback*: either a string or an array($instance, 'method_name'). The callback function receives 3 parameters: the redis instance, the channel name, and the message.  
+*callback*: either a string or an Array($instance, 'method_name'). The callback function receives 3 parameters: the redis instance, the channel name, and the message.
 *return value*:  Mixed.  Any non-null return value in the callback will be returned to the caller.
 ##### *Example*
 ~~~php
@@ -3685,7 +3736,7 @@ function f($redis, $chan, $msg) {
 	}
 }
 
-$redis->subscribe(array('chan-1', 'chan-2', 'chan-3'), 'f'); // subscribe to 3 chans
+$redis->subscribe(['chan-1', 'chan-2', 'chan-3'], 'f'); // subscribe to 3 chans
 ~~~
 
 ### pubSub
@@ -3705,7 +3756,7 @@ _**Description**_: A command allowing you to get information on the Redis pub/su
 ~~~php
 $redis->pubSub("channels"); /*All channels */
 $redis->pubSub("channels", "*pattern*"); /* Just channels matching your pattern */
-$redis->pubSub("numsub", Array("chan1", "chan2")); /*Get subscriber counts for 'chan1' and 'chan2'*/
+$redis->pubSub("numsub", ["chan1", "chan2"]); /*Get subscriber counts for 'chan1' and 'chan2'*/
 $redis->pubSub("numpat"); /* Get the number of pattern subscribers */
 
 
@@ -3764,11 +3815,7 @@ $ret = $redis->multi()
     ->exec();
 
 /*
-$ret == array(
-    0 => TRUE,
-    1 => 'val1',
-    2 => TRUE,
-    3 => 'val2');
+$ret == Array(0 => TRUE, 1 => 'val1', 2 => TRUE, 3 => 'val2');
 */
 ~~~
 
@@ -3783,7 +3830,7 @@ If the key is modified between `WATCH` and `EXEC`, the MULTI/EXEC transaction wi
 
 ##### *Example*
 ~~~php
-$redis->watch('x'); // or for a list of keys: $redis->watch(array('x','another key'));
+$redis->watch('x'); // or for a list of keys: $redis->watch(['x','another key']);
 /* long code here during the execution of which other clients could well modify `x` */
 $ret = $redis->multi()
     ->incr('x')
@@ -3823,12 +3870,12 @@ executing the LUA script, the getLastError() function can tell you the message t
 ##### *Examples*
 ~~~php
 $redis->eval("return 1"); // Returns an integer: 1
-$redis->eval("return {1,2,3}"); // Returns Array(1,2,3)
+$redis->eval("return {1,2,3}"); // Returns [1,2,3]
 $redis->del('mylist');
 $redis->rpush('mylist','a');
 $redis->rpush('mylist','b');
 $redis->rpush('mylist','c');
-// Nested response:  Array(1,2,3,Array('a','b','c'));
+// Nested response:  [1,2,3,['a','b','c']];
 $redis->eval("return {1,2,3,redis.call('lrange','mylist',0,-1)}");
 ~~~
 
@@ -3970,7 +4017,7 @@ will change Array values to 'Array', and Objects to 'Object'.
 ~~~php
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
 $redis->_serialize("foo"); // returns "foo"
-$redis->_serialize(Array()); // Returns "Array"
+$redis->_serialize([]); // Returns "Array"
 $redis->_serialize(new stdClass()); // Returns "Object"
 
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
@@ -3991,7 +4038,7 @@ serializing values, and you return something from redis in a LUA script that is 
 ##### *Examples*
 ~~~php
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
-$redis->_unserialize('a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}'); // Will return Array(1,2,3)
+$redis->_unserialize('a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}'); // Will return [1,2,3]
 ~~~
 
 
