@@ -772,9 +772,7 @@ PHP_MINIT_FUNCTION(redis)
                                                               module_number);
 
     /* Base Exception class */
-#if HAVE_SPL
     exception_ce = zend_hash_str_find_ptr(CG(class_table), "RuntimeException", sizeof("RuntimeException") - 1);
-#endif
     if (exception_ce == NULL) {
         exception_ce = zend_exception_get_default(TSRMLS_C);
     }
