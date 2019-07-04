@@ -198,7 +198,7 @@ The main feature of this release is new Streams API implemented by
 - PHP >=7.3.0 uses zend_string to store `php_url` elements [b566fb44](https://www.github.com/phpredis/phpredis/commit/b566fb44) ([@fmk](https://github.com/fmk))
 
 ---
-,
+
 ## [3.1.5] - 2017-09-27 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/3.1.5), [PECL](https://pecl.php.net/package/redis/3.1.5))
 
 This is interim release which contains only bug fixes.
