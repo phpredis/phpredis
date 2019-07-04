@@ -322,7 +322,7 @@ Also many small improvements and bug fixes were made.
 - Re allow single array for sInterStore [6ef0c2](https://www.github.com/phpredis/phpredis/commit/6ef0c2), [d01966](https://www.github.com/phpredis/phpredis/commit/d01966) ([Michael Grunder](https://github.com/michael-grunder))
 - Better TravisCI integration [4fd2f6](https://www.github.com/phpredis/phpredis/commit/4fd2f6) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
-### Fixes
+### Fixed
 
 - RedisArray segfault fix [564ce3](https://www.github.com/phpredis/phpredis/commit/564ce3) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Small memory leak fix [645888b](https://www.github.com/phpredis/phpredis/commit/645888b) (Mike Grunder)
@@ -368,7 +368,7 @@ Also many bug fixes and some improvements has been made.
 - Process NX|XX, CH and INCR options in zAdd command [71c9f7c8](https://www.github.com/phpredis/phpredis/commit/71c9f7c8)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
-### Fixes
+### Fixed
 
 - Fix incrby/decrby for large integers ([Michael Grunder](https://github.com/michael-grunder)) [3a12758a](https://www.github.com/phpredis/phpredis/commit/3a12758a)
 - Use static declarations for spl_ce_RuntimeException decl [a9857d69](https://www.github.com/phpredis/phpredis/commit/a9857d69)
@@ -381,6 +381,51 @@ Also many bug fixes and some improvements has been made.
 - Move zend_object handler to the end ([Michael Grunder](https://github.com/michael-grunder)) [34107966](https://www.github.com/phpredis/phpredis/commit/34107966)
 - Using setOption on redis array causes immediate connection [f1a85b38](https://www.github.com/phpredis/phpredis/commit/f1a85b38)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+---
+
+## [3.0.0] - 2016-06-10 ([GitHub](https://github.com/phpredis/phpredis/releases/3.0.0), [PECL](https://pecl.php.net/package/redis/3.0.0))
+
+This version of phpredis supports cluster and is intended for php versions
+7.0.0 and higher. To compile cluster-enabled phpredis for older versions
+of php, please use the 2.2.8 pecl package.
+
+A huge thanks goes out to Sean DuBois for doing all the work required to get
+phpredis working in php 7.0!
+
+### Added
+
+- PHP 7 Support [3159bd2](https://www.github.com/phpredis//phpredis/commit/3159bd2),
+  [567dc2f](https://www.github.com/phpredis//phpredis/commit/567dc2f), [daa4d9f](https://www.github.com/phpredis//phpredis/commit/daa4d9f),
+  [f2711e3](https://www.github.com/phpredis//phpredis/commit/f2711e3), [9cb9d07](https://www.github.com/phpredis//phpredis/commit/9cb9d07),
+  [d51c89](https://www.github.com/phpredis//phpredis/commit/d51c89), [9ff8f49](https://www.github.com/phpredis//phpredis/commit/9ff8f49),
+  [33bb629](https://www.github.com/phpredis//phpredis/commit/33bb629), [cbdf65a](https://www.github.com/phpredis//phpredis/commit/cbdf65a),
+  [f30b7fd](https://www.github.com/phpredis//phpredis/commit/f30b7fd), [c687a51](https://www.github.com/phpredis//phpredis/commit/c687a51),
+  [6b3e773](https://www.github.com/phpredis//phpredis/commit/6b3e773), [2bf8241](https://www.github.com/phpredis//phpredis/commit/2bf8241),
+  [71bd3d](https://www.github.com/phpredis//phpredis/commit/71bd3d), [9221ca4](https://www.github.com/phpredis//phpredis/commit/9221ca4),
+  [4e00df6](https://www.github.com/phpredis//phpredis/commit/4e00df6), [e2407ca](https://www.github.com/phpredis//phpredis/commit/e2407ca),
+  [97fcfe6](https://www.github.com/phpredis//phpredis/commit/97fcfe6), [77e6200](https://www.github.com/phpredis//phpredis/commit/77e6200)
+  [Sean DuBois](https://github.com/Sean-Der)
+- Redis Cluster support
+- IPv6 support
+
+### Changed
+
+- Allow SINTERSTORE to take a single array argument again
+- Exception handling improvement [Jan-E](https://github.com/Jan-E) [314a2c3c](https://www.github.com/phpredis//phpredis/commit/314a2c3c)
+- Allow '-' and '+' in ZRANGEBYLEX [Patrick Pokatilo](https://github.com/SHyx0rmZ) [8bfa2188](https://www.github.com/phpredis//phpredis/commit/8bfa2188)
+
+### Fixed
+
+- config.w32 fix [Jan-E](https://github.com/Jan-E) [495d308](https://www.github.com/phpredis//phpredis/commit/495d308), [c9e0b682](https://www.github.com/phpredis//phpredis/commit/c9e0b682)
+- Unit test fix for max int value [Jan-E](https://github.com/Jan-E) [659ea2aa](https://www.github.com/phpredis//phpredis/commit/659ea2aa)
+- unsigned long -> zend_ulong fix [Jan-E](https://github.com/Jan-E) [4d66e3d4](https://www.github.com/phpredis//phpredis/commit/4d66e3d4)
+- Visual Stuio 14 fixes [Jan-E](https://github.com/Jan-E) [ea98401c](https://www.github.com/phpredis//phpredis/commit/ea98401c)
+- Segfault fix when looking up our socket [ephemeralsnow](https://github.com/ephemeralsnow) [0126481a](https://www.github.com/phpredis//phpredis/commit/0126481a)
+- Documentation fixes [Ares](https://github.com/ares333) [54b9a0ec](https://www.github.com/phpredis//phpredis/commit/54b9a0ec)
+- php7 related memory leak fix [Stuart Carnie](https://github.com/stuartcarnie) [b75bf3b4](https://www.github.com/phpredis//phpredis/commit/b75bf3b4)
+- Potential segfault fix in cluster session [Sergei Lomakov](https://github.com/sapfeer0k) [661fb5b1](https://www.github.com/phpredis//phpredis/commit/661fb5b1)
+- php7 related serialization leak fix (Adam Harvey) [c40fc1d8](https://www.github.com/phpredis//phpredis/commit/c40fc1d8)
 
 ---
 
@@ -429,7 +474,7 @@ than 7.
 - Implemented DEBUG OBJECT ([@michael-grunder](https://github.com/michael-grunder), [@isage](https://github.com/isage))
 - Added/abide by connect timeout for RedisArray
 
-### Fixes
+### Fixed
 
 - Select to the last selected DB when phpredis reconnects
 - Fix a possible invalid free in \_serialize()
@@ -455,7 +500,7 @@ than 7.
 - Support for SCAN, SSCAN, HSCAN, and ZSCAN
 - Support for the WAIT command
 
-### Fixes
+### Fixed
 
 - Handle the COPY and REPLACE arguments for the MIGRATE command
 - Fix syntax error in documentation for the SET command ([@mithunsatheesh](https://github.com/mithunsatheesh))
@@ -479,7 +524,7 @@ than 7.
 - Reworked MGET algorithm to run in linear time regardless of key count.
 - Reworked ZINTERSTORE/ZUNIONSTORE algorithm to run in linear time
 
-### Fixes
+### Fixed
 
 - C99 Compliance (or rather lack thereof) fix @mobli
 - Added ZEND_ACC_CTOR and ZEND_ACC_DTOR [@euskadi31](https://github.com/euskadi31)
