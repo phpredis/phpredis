@@ -87,7 +87,7 @@ This is probably the latest release with PHP 5 suport!!!
   [64e6a57f](https://www.github.com/phpredis/phpredis/commit/64e6a57f), [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
 
 - Add callback parameter to subscribe/psubscribe arginfo [0653ff31](https://www.github.com/phpredis/phpredis/commit/0653ff31),
-  [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Xgroup updates [15995c06](https://www.github.com/phpredis/phpredis/commit/15995c06) ([Michael Grunder](https://github.com/michael-grunder))
 - Use zend_string for pipeline_cmd [e98f5116](https://www.github.com/phpredis/phpredis/commit/e98f5116) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Implement consistent hashing algorithm for RedisArray [bb32e6f3](https://www.github.com/phpredis/phpredis/commit/bb32e6f3), [71922bf1](https://www.github.com/phpredis/phpredis/commit/71922bf1)
