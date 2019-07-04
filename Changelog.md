@@ -68,13 +68,15 @@ This is probably the latest release with PHP 5 suport!!!
 
 ### Added
 
-- RedisArray auth [b5549cff](https://www.github.com/phpredis/phpredis/commit/b5549cff), [339cfa2b](https://www.github.com/phpredis/phpredis/commit/339cfa2b), [6b411aa8](https://www.github.com/phpredis/phpredis/commit/6b411aa8) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Add ZPOPMAX and ZPOPMIN support [46f03561](https://www.github.com/phpredis/phpredis/commit/46f03561), [f89e941a](https://www.github.com/phpredis/phpredis/commit/f89e941a), [2ec7d91a](https://www.github.com/phpredis/phpredis/commit/2ec7d91a) (@mbezhanov,
-  [Michael Grunder](https://github.com/michael-grunder))
+- RedisArray auth [b5549cff](https://www.github.com/phpredis/phpredis/commit/b5549cff), [339cfa2b](https://www.github.com/phpredis/phpredis/commit/339cfa2b), 
+  [6b411aa8](https://www.github.com/phpredis/phpredis/commit/6b411aa8) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add ZPOPMAX and ZPOPMIN support [46f03561](https://www.github.com/phpredis/phpredis/commit/46f03561), 
+  [f89e941a](https://www.github.com/phpredis/phpredis/commit/f89e941a), 
+  [2ec7d91a](https://www.github.com/phpredis/phpredis/commit/2ec7d91a) (@mbezhanov, [Michael Grunder](https://github.com/michael-grunder))
 - Implement GEORADIUS_RO and GEORADIUSBYMEMBER_RO [22d81a94](https://www.github.com/phpredis/phpredis/commit/22d81a94) ([Michael Grunder](https://github.com/michael-grunder))
 - RedisCluster auth [c5994f2a](https://www.github.com/phpredis/phpredis/commit/c5994f2a) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Different key hashing algorithms from hash extension [850027ff](https://www.github.com/phpredis/phpredis/commit/850027ff)
-  [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 ### Changed
 
@@ -90,8 +92,8 @@ This is probably the latest release with PHP 5 suport!!!
 - Use zend_string for pipeline_cmd [e98f5116](https://www.github.com/phpredis/phpredis/commit/e98f5116) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Implement consistent hashing algorithm for RedisArray [bb32e6f3](https://www.github.com/phpredis/phpredis/commit/bb32e6f3), [71922bf1](https://www.github.com/phpredis/phpredis/commit/71922bf1)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Use zend_string for storing RedisArray hosts [602740d3](https://www.github.com/phpredis/phpredis/commit/602740d3), [3e7e1c83](https://www.github.com/phpredis/phpredis/commit/3e7e1c83)
-  [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
+- Use zend_string for storing RedisArray hosts [602740d3](https://www.github.com/phpredis/phpredis/commit/602740d3), 
+  [3e7e1c83](https://www.github.com/phpredis/phpredis/commit/3e7e1c83) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Refactor redis_sock_read_bulk_reply [bc4dbc4b](https://www.github.com/phpredis/phpredis/commit/bc4dbc4b) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 ### Fixed
@@ -99,19 +101,19 @@ This is probably the latest release with PHP 5 suport!!!
 - Don't check the number affected keys in PS_UPDATE_TIMESTAMP_FUNC [b00060ce](https://www.github.com/phpredis/phpredis/commit/b00060ce)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Cancel pipeline mode without executing commands [789256d7](https://www.github.com/phpredis/phpredis/commit/789256d7)
-  [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Breaking the lock acquire loop in case of network problems [61889cd7](https://www.github.com/phpredis/phpredis/commit/61889cd7)
   ([@SkydiveMarius](https://github.com/SkydiveMarius))
 - Update lzf_compress to be compatible with PECL lzf extension [b27fd430](https://www.github.com/phpredis/phpredis/commit/b27fd430)
   ([@jrchamp](https://github.com/jrchamp))
 - Fix RedisCluster keys memory leak [3b56b7db](https://www.github.com/phpredis/phpredis/commit/3b56b7db) ([Michael Grunder](https://github.com/michael-grunder))
 - Directly use return_value in RedisCluster::keys method [ad10a49e](https://www.github.com/phpredis/phpredis/commit/ad10a49e)
-  [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Fix segfault in Redis Cluster with inconsistent configuration [72749916](https://www.github.com/phpredis/phpredis/commit/72749916),
   [6e455e2e](https://www.github.com/phpredis/phpredis/commit/6e455e2e) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Masters info leakfix [91bd7426](https://www.github.com/phpredis/phpredis/commit/91bd7426) ([Michael Grunder](https://github.com/michael-grunder))
 - Remove unused parameter lazy_connect from redis_sock_create [c0793e8b](https://www.github.com/phpredis/phpredis/commit/c0793e8b)
-  [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Remove useless `ZEND_ACC_[C|D]TOR`. [bc9b5597](https://www.github.com/phpredis/phpredis/commit/bc9b5597) (@[twosee](https://github.com/twose))
 - Documentation improvements ([yulonghu](https://github.com/yulonghu), [@alexander-schranz](https://github.com/alexander-schranz), [@hmc](https://github.com/hmczju),
   [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
@@ -451,7 +453,7 @@ than 7.
 - Fix potential segfault in Redis Cluster session storage [cc15aae](https://www.github.com/phpredis/phpredis/commit/cc15aae)
   ([Sergei Lomakov](https://github.com/sapfeer0k)).
 - Fixed memory leak in discard function [17b1f427](https://www.github.com/phpredis/phpredis/commit/17b1f427)
-- Sanity check for igbinary unserialization ([Maurus Cuelenaere](https://github.com/mcuelenaere))
+- Sanity check for igbinary unserialization
   [3266b222](https://www.github.com/phpredis/phpredis/commit/3266b222), [528297a](https://www.github.com/phpredis/phpredis/commit/528297a) ([Maurus Cuelenaere](https://github.com/mcuelenaere)).
 - Fix segfault occuring from unclosed socket connection for Redis Cluster
   [04196aee](https://www.github.com/phpredis/phpredis/commit/04196aee) ([CatKang](https://github.com/CatKang))
