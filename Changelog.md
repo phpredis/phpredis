@@ -5,7 +5,7 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adhears to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.0.0] - 2019-07-02 (__GITHUB__, __PECL__)
+## [5.0.0] - 2019-07-02 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.0.0), [PECL](https://pecl.php.net/package/redis/5.0.0))
 
 This release contains important improvements and breaking changes.  The most
 interesting are: drop PHP5 support, RedisCluster slots caching, JSON and msgpack
@@ -32,8 +32,8 @@ serializers, soft deprecation of non-Redis commands.
 - Allow PING to take an optional argument [6e494170](https://www.github.com/phpredis/phpredis/commit/6e494170) ([Michael Grunder](https://github.com/michael-grunder))
 - Allow ZRANGE to be called either with `true` or `['withscores' => true]`
   [19f3efcf](https://www.github.com/phpredis/phpredis/commit/19f3efcf) ([Michael Grunder](https://github.com/michael-grunder))
-- Documentation improvements ([@alexander-schranz](https://github.com/alexander-schranz), [@cookieguru](https://github.com/cookieguru), Pavlo
-  Yatsukhnenko, [Michael Grunder](https://github.com/michael-grunder))
+- Documentation improvements ([@alexander-schranz](https://github.com/alexander-schranz), [@cookieguru](https://github.com/cookieguru),
+  [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
 
 ### Deprecated
 
@@ -62,7 +62,7 @@ serializers, soft deprecation of non-Redis commands.
 
 ---
 
-## [4.3.0] - 2019-03-13 (__GITHUB__, __PECL__)
+## [4.3.0] - 2019-03-13 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/4.3.0), [PECL](https://pecl.php.net/package/redis/4.3.0))
 
 This is probably the latest release with PHP 5 suport!!!
 
@@ -73,50 +73,52 @@ This is probably the latest release with PHP 5 suport!!!
   [Michael Grunder](https://github.com/michael-grunder))
 - Implement GEORADIUS_RO and GEORADIUSBYMEMBER_RO [22d81a94](https://www.github.com/phpredis/phpredis/commit/22d81a94) ([Michael Grunder](https://github.com/michael-grunder))
 - RedisCluster auth [c5994f2a](https://www.github.com/phpredis/phpredis/commit/c5994f2a) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Different key hashing algorithms from hash extension [850027ff](https://www.github.com/phpredis/phpredis/commit/850027ff) (Pavlo
-  Yatsukhnenko)
+- Different key hashing algorithms from hash extension [850027ff](https://www.github.com/phpredis/phpredis/commit/850027ff)
+  [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
 
 ### Changed
 
-- Proper persistent connections pooling implementation [a3703820](https://www.github.com/phpredis/phpredis/commit/a3703820), [c76e00fb](https://www.github.com/phpredis/phpredis/commit/c76e00fb),
-  [0433dc03](https://www.github.com/phpredis/phpredis/commit/0433dc03), [c75b3b93](https://www.github.com/phpredis/phpredis/commit/c75b3b93) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Use zend_string for storing key hashing algorithm [8cd165df](https://www.github.com/phpredis/phpredis/commit/8cd165df), [64e6a57f](https://www.github.com/phpredis/phpredis/commit/64e6a57f) (Pavlo
-  Yatsukhnenko)
-- Add callback parameter to subscribe/psubscribe arginfo [0653ff31](https://www.github.com/phpredis/phpredis/commit/0653ff31) (Pavlo
-  Yatsukhnenko)
+- Proper persistent connections pooling implementation [a3703820](https://www.github.com/phpredis/phpredis/commit/a3703820),
+  [c76e00fb](https://www.github.com/phpredis/phpredis/commit/c76e00fb), [0433dc03](https://www.github.com/phpredis/phpredis/commit/0433dc03),
+  [c75b3b93](https://www.github.com/phpredis/phpredis/commit/c75b3b93) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Use zend_string for storing key hashing algorithm [8cd165df](https://www.github.com/phpredis/phpredis/commit/8cd165df),
+  [64e6a57f](https://www.github.com/phpredis/phpredis/commit/64e6a57f), [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
+
+- Add callback parameter to subscribe/psubscribe arginfo [0653ff31](https://www.github.com/phpredis/phpredis/commit/0653ff31),
+  [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
 - Xgroup updates [15995c06](https://www.github.com/phpredis/phpredis/commit/15995c06) ([Michael Grunder](https://github.com/michael-grunder))
 - Use zend_string for pipeline_cmd [e98f5116](https://www.github.com/phpredis/phpredis/commit/e98f5116) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Implement consistent hashing algorithm for RedisArray [bb32e6f3](https://www.github.com/phpredis/phpredis/commit/bb32e6f3), [71922bf1](https://www.github.com/phpredis/phpredis/commit/71922bf1)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Use zend_string for storing RedisArray hosts [602740d3](https://www.github.com/phpredis/phpredis/commit/602740d3), [3e7e1c83](https://www.github.com/phpredis/phpredis/commit/3e7e1c83) (Pavlo
-  Yatsukhnenko)
+- Use zend_string for storing RedisArray hosts [602740d3](https://www.github.com/phpredis/phpredis/commit/602740d3), [3e7e1c83](https://www.github.com/phpredis/phpredis/commit/3e7e1c83)
+  [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
 - Refactor redis_sock_read_bulk_reply [bc4dbc4b](https://www.github.com/phpredis/phpredis/commit/bc4dbc4b) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 ### Fixed
 
 - Don't check the number affected keys in PS_UPDATE_TIMESTAMP_FUNC [b00060ce](https://www.github.com/phpredis/phpredis/commit/b00060ce)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Cancel pipeline mode without executing commands [789256d7](https://www.github.com/phpredis/phpredis/commit/789256d7) (Pavlo
-  Yatsukhnenko)
+- Cancel pipeline mode without executing commands [789256d7](https://www.github.com/phpredis/phpredis/commit/789256d7)
+  [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
 - Breaking the lock acquire loop in case of network problems [61889cd7](https://www.github.com/phpredis/phpredis/commit/61889cd7)
   ([@SkydiveMarius](https://github.com/SkydiveMarius))
 - Update lzf_compress to be compatible with PECL lzf extension [b27fd430](https://www.github.com/phpredis/phpredis/commit/b27fd430)
   ([@jrchamp](https://github.com/jrchamp))
 - Fix RedisCluster keys memory leak [3b56b7db](https://www.github.com/phpredis/phpredis/commit/3b56b7db) ([Michael Grunder](https://github.com/michael-grunder))
-- Directly use return_value in RedisCluster::keys method [ad10a49e](https://www.github.com/phpredis/phpredis/commit/ad10a49e) (Pavlo
-  Yatsukhnenko)
+- Directly use return_value in RedisCluster::keys method [ad10a49e](https://www.github.com/phpredis/phpredis/commit/ad10a49e)
+  [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
 - Fix segfault in Redis Cluster with inconsistent configuration [72749916](https://www.github.com/phpredis/phpredis/commit/72749916),
   [6e455e2e](https://www.github.com/phpredis/phpredis/commit/6e455e2e) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Masters info leakfix [91bd7426](https://www.github.com/phpredis/phpredis/commit/91bd7426) ([Michael Grunder](https://github.com/michael-grunder))
-- Remove unused parameter lazy_connect from redis_sock_create [c0793e8b](https://www.github.com/phpredis/phpredis/commit/c0793e8b) (Pavlo
-  Yatsukhnenko)
+- Remove unused parameter lazy_connect from redis_sock_create [c0793e8b](https://www.github.com/phpredis/phpredis/commit/c0793e8b)
+  [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
 - Remove useless `ZEND_ACC_[C|D]TOR`. [bc9b5597](https://www.github.com/phpredis/phpredis/commit/bc9b5597) (@[twosee](https://github.com/twose))
 - Documentation improvements ([yulonghu](https://github.com/yulonghu), [@alexander-schranz](https://github.com/alexander-schranz), [@hmc](https://github.com/hmczju),
   [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
 
 ---
 
-## [4.2.0] - 2018-11-08 (__GITHUB__, __PECL__)
+## [4.2.0] - 2018-11-08 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/4.2.0), [PECL](https://pecl.php.net/package/redis/4.2.0))
 
 The main feature of this release is new Streams API implemented by
 [Michael Grunder](https://github.com/michael-grunder).
@@ -160,7 +162,7 @@ The main feature of this release is new Streams API implemented by
 
 ---
 
-## [4.0.0] - 2018-03-07 (__GITHUB__, __PECL__)
+## [4.0.0] - 2018-03-07 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/4.0.0), [PECL](https://pecl.php.net/package/redis/4.0.0))
 
 *WARNING:* THIS RELEASE CONTAINS BREAKING API CHANGES!
 
@@ -196,8 +198,8 @@ The main feature of this release is new Streams API implemented by
 - PHP >=7.3.0 uses zend_string to store `php_url` elements [b566fb44](https://www.github.com/phpredis/phpredis/commit/b566fb44) ([@fmk](https://github.com/fmk))
 
 ---
-
-## [3.1.5] - 2017-09-27 (__GITHUB__, __PECL__)
+,
+## [3.1.5] - 2017-09-27 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/3.1.5), [PECL](https://pecl.php.net/package/redis/3.1.5))
 
 This is interim release which contains only bug fixes.
 
@@ -213,7 +215,7 @@ This is interim release which contains only bug fixes.
 
 ---
 
-## [3.1.4] - 2017-09-27 (__GITHUB__, __PECL__)
+## [3.1.4] - 2017-09-27 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/3.1.4), [PECL](https://pecl.php.net/package/redis/3.1.4))
 
 The primary new feature phpredis 3.1.4 is the ability to send MULTI .. EXEC
 blocks in pipeline mode.  There are also many bugfixes and minor improvements
@@ -262,7 +264,7 @@ to the api, listed below.
 
 ---
 
-## [3.1.3] - 2017-07-15 (__GITHUB__, __PECL__)
+## [3.1.3] - 2017-07-15 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/3.1.3), [PECL](https://pecl.php.net/package/redis/3.1.3))
 
 This release contains two big improvements:
 
@@ -313,7 +315,7 @@ Also many small improvements and bug fixes were made.
 
 ---
 
-## [3.1.2] - 2017-03-16 (__GITHUB__, __PECL__)
+## [3.1.2] - 2017-03-16 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/3.1.2), [PECL](https://pecl.php.net/package/redis/3.1.2))
 
 ### Changes
 
@@ -329,7 +331,7 @@ Also many small improvements and bug fixes were made.
 
 ---
 
-## [3.1.1] - 2017-02-01 (__GITHUB__, __PECL__)
+## [3.1.1] - 2017-02-01 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/3.1.1), [PECL](https://pecl.php.net/package/redis/3.1.1))
 
 This release contains mostly fixes for issues introduced when merging
 the php 5 and 7 codebase into a single branch.
@@ -353,7 +355,7 @@ the php 5 and 7 codebase into a single branch.
 
 ---
 
-## [3.1.0] - 2016-12-14 (__GITHUB__, __PECL__)
+## [3.1.0] - 2016-12-14 ([GitHub](https://github.com/phpredis/phpredis/releases/3.1.0), [PECL](https://pecl.php.net/package/redis/3.1.0))
 
 In this version of phpredis codebase was unified to work with all versions of php \o/
 Also many bug fixes and some improvements has been made.
@@ -382,7 +384,7 @@ Also many bug fixes and some improvements has been made.
 
 ---
 
-## [2.2.8] - 2016-06-02 (__GITHUB__, __PECL__)
+## [2.2.8] - 2016-06-02 ([GitHub](https://github.com/phpredis/phpredis/releases/2.2.8), [PECL](https://pecl.php.net/package/redis/2.2.8))
 
 The main improvement in this version of phpredis is support for Redis
 Cluster.  This version of phpredis is intended for versions of php older
@@ -413,7 +415,7 @@ than 7.
 
 ---
 
-## [2.2.7] - 2015-03-03 (__GITHUB__, __PECL__)
+## [2.2.7] - 2015-03-03 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/2.2.7), [PECL](https://pecl.php.net/package/redis/2.2.7))
 
 ### Added
 
@@ -442,7 +444,7 @@ than 7.
 
 ---
 
-## [2.2.5] - 2014-03-15 (__GITHUB__, __PECL__)
+## [2.2.5] - 2014-03-15 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/2.2.5), [PECL](https://pecl.php.net/package/redis/2.2.5))
 
 ### Added
 
@@ -461,7 +463,7 @@ than 7.
 
 ---
 
-## [2.2.4] - 2013-09-01 (__GITHUB__, __PECL__)
+## [2.2.4] - 2013-09-01 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/2.2.4), [PECL](https://pecl.php.net/package/redis/2.2.4))
 
 ### Added
 
