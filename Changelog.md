@@ -5,7 +5,6 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adhears to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
 ## [5.0.0] - 2019-07-02 (__GITHUB__, __PECL__)
 
 This release contains important improvements and breaking changes.  The most
@@ -13,53 +12,53 @@ interesting are: drop PHP5 support, RedisCluster slots caching, JSON and msgpack
 serializers, soft deprecation of non-Redis commands.
 
 ### Added
-- Adds OPT_REPLY_LITERAL for rawCommand and EVAL 5cb30fb2 (Michael Grunder)
-- JSON serializer 98bd2886, 96c57139, 235a27 (Pavlo Yatsukhnenko, Michael
+- Adds OPT_REPLY_LITERAL for rawCommand and EVAL [5cb30fb2](https://www.github.com/phpredis/phpredis/commit/5cb30fb2) (Michael Grunder)
+- JSON serializer [98bd2886](https://www.github.com/phpredis/phpredis/commit/98bd2886), [96c57139](https://www.github.com/phpredis/phpredis/commit/96c57139), [235a27](https://www.github.com/phpredis/phpredis/commit/235a27) (Pavlo Yatsukhnenko, Michael
   Grunder)
-- msgpack serializer d5b8f833, 545250f3, 52bae8ab (@bgort, Pavlo Yatsukhnenko,
+- msgpack serializer [d5b8f833](https://www.github.com/phpredis/phpredis/commit/d5b8f833), [545250f3](https://www.github.com/phpredis/phpredis/commit/545250f3), [52bae8ab](https://www.github.com/phpredis/phpredis/commit/52bae8ab) (@bgort, Pavlo Yatsukhnenko,
   Michael Grunder)
-- Add support for STREAM to the type command d7450b2f, 068ce978, 8a45d18c
+- Add support for STREAM to the type command [d7450b2f](https://www.github.com/phpredis/phpredis/commit/d7450b2f), [068ce978](https://www.github.com/phpredis/phpredis/commit/068ce978), [8a45d18c](https://www.github.com/phpredis/phpredis/commit/8a45d18c)
   (Michael Grunder, Pavlo Yatsukhnenko)
-- Add Cluster slots caching 9f0d7bc0, ea081e05 (Michael Grunder)
+- Add Cluster slots caching [9f0d7bc0](https://www.github.com/phpredis/phpredis/commit/9f0d7bc0), [ea081e05](https://www.github.com/phpredis/phpredis/commit/ea081e05) (Michael Grunder)
 
 ### Changed
 
-- Add server address to exception message e8fb49be, 34d6403d
+- Add server address to exception message [e8fb49be](https://www.github.com/phpredis/phpredis/commit/e8fb49be), [34d6403d](https://www.github.com/phpredis/phpredis/commit/34d6403d)
   (Pavlo Yatsukhnenko)
-- Allow to specify server address as `schema://host` 418428fa
+- Allow to specify server address as `schema://host` [418428fa](https://www.github.com/phpredis/phpredis/commit/418428fa)
   (Pavlo Yatsukhnenko).
-- Update Fedora installation instructions 90aa067c (@remicollet)
-- Enable connection pooling by default 8206b147 (Pavlo Yatsukhnenko)
-- Allow PING to take an optional argument 6e494170 (Michael Grunder)
+- Update Fedora installation instructions [90aa067c](https://www.github.com/phpredis/phpredis/commit/90aa067c) (@remicollet)
+- Enable connection pooling by default [8206b147](https://www.github.com/phpredis/phpredis/commit/8206b147) (Pavlo Yatsukhnenko)
+- Allow PING to take an optional argument [6e494170](https://www.github.com/phpredis/phpredis/commit/6e494170) (Michael Grunder)
 - Allow ZRANGE to be called either with `true` or `['withscores' => true]`
-  19f3efcf (Michael Grunder)
+  [19f3efcf](https://www.github.com/phpredis/phpredis/commit/19f3efcf) (Michael Grunder)
 - Documentation improvements (@alexander-schranz, @cookieguru, Pavlo
   Yatsukhnenko, Michael Grunder)
 
 ### Deprecated
 
-- Soft deprecate methods that aren't actually Redis commands a81b4f2d,
-  95c8aab9, 235a27 (@michael-grunder, @yatsukhnenko)
-- Remove HAVE_SPL define [55c5586c] (@petk)
+- Soft deprecate methods that aren't actually Redis commands [a81b4f2d](https://www.github.com/phpredis/phpredis/commit/a81b4f2d),
+  [95c8aab9](https://www.github.com/phpredis/phpredis/commit/95c8aab9), [235a27](https://www.github.com/phpredis/phpredis/commit/235a27) (@michael-grunder, @yatsukhnenko)
+- Remove HAVE_SPL define [[55c5586c](https://www.github.com/phpredis/phpredis/commit/55c5586c)] (@petk)
 
 ### Removed
 
-- Drop PHP5 support [f9928642, 46a50c12, 4601887d, 6ebb36ce, fdbe9d29] (Michael
+- Drop PHP5 support [[f9928642](https://www.github.com/phpredis/phpredis/commit/f9928642), [46a50c12](https://www.github.com/phpredis/phpredis/commit/46a50c12), [4601887d](https://www.github.com/phpredis/phpredis/commit/4601887d), [6ebb36ce](https://www.github.com/phpredis/phpredis/commit/6ebb36ce), [fdbe9d29](https://www.github.com/phpredis/phpredis/commit/fdbe9d29)] (Michael
   Grunder)
 
 ### Fixed
 
-- Reworked PHP msgpack >= 2.0.3 version requirement. 6973478..a537df8
+- Reworked PHP msgpack >= 2.0.3 version requirement. [6973478](https://www.github.com/phpredis/phpredis/commit/6973478)..[a537df8](https://www.github.com/phpredis/phpredis/commit/a537df8)
   (@michael-grunder).
-- Enable pooling for cluster slave nodes 17600dd1 (Michael Grunder)
-- xInfo response format 4852a510, ac9dca0a (Pavlo Yatsukhnenko)
-- Make the XREADGROUP optional COUNT and BLOCK arguments nullable 0c17bd27
+- Enable pooling for cluster slave nodes [17600dd1](https://www.github.com/phpredis/phpredis/commit/17600dd1) (Michael Grunder)
+- xInfo response format [4852a510](https://www.github.com/phpredis/phpredis/commit/4852a510), [ac9dca0a](https://www.github.com/phpredis/phpredis/commit/ac9dca0a) (Pavlo Yatsukhnenko)
+- Make the XREADGROUP optional COUNT and BLOCK arguments nullable [0c17bd27](https://www.github.com/phpredis/phpredis/commit/0c17bd27)
   (Michael Grunder)
-- Allow persistent_id to be passed as NULL with strict_types enabled 60223762
+- Allow persistent_id to be passed as NULL with strict_types enabled [60223762](https://www.github.com/phpredis/phpredis/commit/60223762)
   (Michael Grunder)
-- Fix TypeError when using built-in constants in `setOption` 4c7643ee
+- Fix TypeError when using built-in constants in `setOption` [4c7643ee](https://www.github.com/phpredis/phpredis/commit/4c7643ee)
   (@JoyceBabu)
-- Handle references in MGET 60d8b679 (Michael Grunder)
+- Handle references in MGET [60d8b679](https://www.github.com/phpredis/phpredis/commit/60d8b679) (Michael Grunder)
 
 ---
 
@@ -69,49 +68,49 @@ This is probably the latest release with PHP 5 suport!!!
 
 ### Added
 
-- RedisArray auth b5549cff, 339cfa2b, 6b411aa8 (Pavlo Yatsukhnenko)
-- Add ZPOPMAX and ZPOPMIN support 46f03561, f89e941a, 2ec7d91a (@mbezhanov,
+- RedisArray auth [b5549cff](https://www.github.com/phpredis/phpredis/commit/b5549cff), [339cfa2b](https://www.github.com/phpredis/phpredis/commit/339cfa2b), [6b411aa8](https://www.github.com/phpredis/phpredis/commit/6b411aa8) (Pavlo Yatsukhnenko)
+- Add ZPOPMAX and ZPOPMIN support [46f03561](https://www.github.com/phpredis/phpredis/commit/46f03561), [f89e941a](https://www.github.com/phpredis/phpredis/commit/f89e941a), [2ec7d91a](https://www.github.com/phpredis/phpredis/commit/2ec7d91a) (@mbezhanov,
   Michael Grunder)
-- Implement GEORADIUS_RO and GEORADIUSBYMEMBER_RO 22d81a94 (Michael Grunder)
-- RedisCluster auth c5994f2a (Pavlo Yatsukhnenko)
-- Different key hashing algorithms from hash extension 850027ff (Pavlo
+- Implement GEORADIUS_RO and GEORADIUSBYMEMBER_RO [22d81a94](https://www.github.com/phpredis/phpredis/commit/22d81a94) (Michael Grunder)
+- RedisCluster auth [c5994f2a](https://www.github.com/phpredis/phpredis/commit/c5994f2a) (Pavlo Yatsukhnenko)
+- Different key hashing algorithms from hash extension [850027ff](https://www.github.com/phpredis/phpredis/commit/850027ff) (Pavlo
   Yatsukhnenko)
 
 ### Changed
 
-- Proper persistent connections pooling implementation a3703820, c76e00fb,
-  0433dc03, c75b3b93 (Pavlo Yatsukhnenko)
-- Use zend_string for storing key hashing algorithm 8cd165df, 64e6a57f (Pavlo
+- Proper persistent connections pooling implementation [a3703820](https://www.github.com/phpredis/phpredis/commit/a3703820), [c76e00fb](https://www.github.com/phpredis/phpredis/commit/c76e00fb),
+  [0433dc03](https://www.github.com/phpredis/phpredis/commit/0433dc03), [c75b3b93](https://www.github.com/phpredis/phpredis/commit/c75b3b93) (Pavlo Yatsukhnenko)
+- Use zend_string for storing key hashing algorithm [8cd165df](https://www.github.com/phpredis/phpredis/commit/8cd165df), [64e6a57f](https://www.github.com/phpredis/phpredis/commit/64e6a57f) (Pavlo
   Yatsukhnenko)
-- Add callback parameter to subscribe/psubscribe arginfo 0653ff31 (Pavlo
+- Add callback parameter to subscribe/psubscribe arginfo [0653ff31](https://www.github.com/phpredis/phpredis/commit/0653ff31) (Pavlo
   Yatsukhnenko)
-- Xgroup updates 15995c06 (Michael Grunder)
-- Use zend_string for pipeline_cmd e98f5116 (Pavlo Yatsukhnenko)
-- Implement consistent hashing algorithm for RedisArray bb32e6f3, 71922bf1
+- Xgroup updates [15995c06](https://www.github.com/phpredis/phpredis/commit/15995c06) (Michael Grunder)
+- Use zend_string for pipeline_cmd [e98f5116](https://www.github.com/phpredis/phpredis/commit/e98f5116) (Pavlo Yatsukhnenko)
+- Implement consistent hashing algorithm for RedisArray [bb32e6f3](https://www.github.com/phpredis/phpredis/commit/bb32e6f3), [71922bf1](https://www.github.com/phpredis/phpredis/commit/71922bf1)
   (Pavlo Yatsukhnenko)
-- Use zend_string for storing RedisArray hosts 602740d3, 3e7e1c83 (Pavlo
+- Use zend_string for storing RedisArray hosts [602740d3](https://www.github.com/phpredis/phpredis/commit/602740d3), [3e7e1c83](https://www.github.com/phpredis/phpredis/commit/3e7e1c83) (Pavlo
   Yatsukhnenko)
-- Refactor redis_sock_read_bulk_reply bc4dbc4b (Pavlo Yatsukhnenko)
+- Refactor redis_sock_read_bulk_reply [bc4dbc4b](https://www.github.com/phpredis/phpredis/commit/bc4dbc4b) (Pavlo Yatsukhnenko)
 
 ### Fixed
 
-- Don't check the number affected keys in PS_UPDATE_TIMESTAMP_FUNC b00060ce
+- Don't check the number affected keys in PS_UPDATE_TIMESTAMP_FUNC [b00060ce](https://www.github.com/phpredis/phpredis/commit/b00060ce)
   (Pavlo Yatsukhnenko)
-- Cancel pipeline mode without executing commands 789256d7 (Pavlo
+- Cancel pipeline mode without executing commands [789256d7](https://www.github.com/phpredis/phpredis/commit/789256d7) (Pavlo
   Yatsukhnenko)
-- Breaking the lock acquire loop in case of network problems 61889cd7
+- Breaking the lock acquire loop in case of network problems [61889cd7](https://www.github.com/phpredis/phpredis/commit/61889cd7)
   (@SkydiveMarius)
-- Update lzf_compress to be compatible with PECL lzf extension b27fd430
+- Update lzf_compress to be compatible with PECL lzf extension [b27fd430](https://www.github.com/phpredis/phpredis/commit/b27fd430)
   (@jrchamp)
-- Fix RedisCluster keys memory leak 3b56b7db (Michael Grunder)
-- Directly use return_value in RedisCluster::keys method ad10a49e (Pavlo
+- Fix RedisCluster keys memory leak [3b56b7db](https://www.github.com/phpredis/phpredis/commit/3b56b7db) (Michael Grunder)
+- Directly use return_value in RedisCluster::keys method [ad10a49e](https://www.github.com/phpredis/phpredis/commit/ad10a49e) (Pavlo
   Yatsukhnenko)
-- Fix segfault in Redis Cluster with inconsistent configuration 72749916,
-  6e455e2e (Pavlo Yatsukhnenko)
-- Masters info leakfix 91bd7426 (Michael Grunder)
-- Remove unused parameter lazy_connect from redis_sock_create c0793e8b (Pavlo
+- Fix segfault in Redis Cluster with inconsistent configuration [72749916](https://www.github.com/phpredis/phpredis/commit/72749916),
+  [6e455e2e](https://www.github.com/phpredis/phpredis/commit/6e455e2e) (Pavlo Yatsukhnenko)
+- Masters info leakfix [91bd7426](https://www.github.com/phpredis/phpredis/commit/91bd7426) (Michael Grunder)
+- Remove unused parameter lazy_connect from redis_sock_create [c0793e8b](https://www.github.com/phpredis/phpredis/commit/c0793e8b) (Pavlo
   Yatsukhnenko)
-- Remove useless `ZEND_ACC_[C|D]TOR`. bc9b5597 (@twosee)
+- Remove useless `ZEND_ACC_[C|D]TOR`. [bc9b5597](https://www.github.com/phpredis/phpredis/commit/bc9b5597) (@twosee)
 - Documentation improvements (@fanjiapeng, @alexander-schranz, @hmc,
   Pavlo Yatsukhnenko, Michael Grunder)
 
@@ -124,40 +123,40 @@ Michael Grunder.
 
 ### Added
 
-- Streams API 2c9e0572, 0b97ec37 (Michael Grunder)
-- Display ini entries in output of phpinfo 908ac4b3 (Pavlo Yatsukhnenko)
+- Streams API [2c9e0572](https://www.github.com/phpredis/phpredis/commit/2c9e0572), [0b97ec37](https://www.github.com/phpredis/phpredis/commit/0b97ec37) (Michael Grunder)
+- Display ini entries in output of phpinfo [908ac4b3](https://www.github.com/phpredis/phpredis/commit/908ac4b3) (Pavlo Yatsukhnenko)
 - Persistant connections can be closed via close method + change reconnection
-  logic 1d997873 (Pavlo Yatsukhnenko)
+  logic [1d997873](https://www.github.com/phpredis/phpredis/commit/1d997873) (Pavlo Yatsukhnenko)
 
 ### Changed
 
-- Optimize close method 2a1ef961 (fanjiapeng)
-- Use a ZSET insted of SET for EVAL tests 2e412373 (Michael Grunder)
-- Modify session testing logic bfd27471 (Michael Grunder)
+- Optimize close method [2a1ef961](https://www.github.com/phpredis/phpredis/commit/2a1ef961) (fanjiapeng)
+- Use a ZSET insted of SET for EVAL tests [2e412373](https://www.github.com/phpredis/phpredis/commit/2e412373) (Michael Grunder)
+- Modify session testing logic [bfd27471](https://www.github.com/phpredis/phpredis/commit/bfd27471) (Michael Grunder)
 - Documentation improvements (@mg, @elcheco, @lucascourot, @nolimitdev,
   Michael Grunder)
 
 ### Fixed
 
-- Prevent potential infinite loop for sessions 4e2de158 (Pavlo Yatsukhnenko)
-- Fix coverty warnings 6f7ddd27 (Pavlo Yatsukhnenko)
-- Fix session memory leaks 071a1d54, 92f14b14 (Pavlo Yatsukhnenko,
+- Prevent potential infinite loop for sessions [4e2de158](https://www.github.com/phpredis/phpredis/commit/4e2de158) (Pavlo Yatsukhnenko)
+- Fix coverty warnings [6f7ddd27](https://www.github.com/phpredis/phpredis/commit/6f7ddd27) (Pavlo Yatsukhnenko)
+- Fix session memory leaks [071a1d54](https://www.github.com/phpredis/phpredis/commit/071a1d54), [92f14b14](https://www.github.com/phpredis/phpredis/commit/92f14b14) (Pavlo Yatsukhnenko,
   Michael Grunder)
-- Fix XCLAIM on 32-bit installs 18dc2aac (Michael Grunder)
-- Build warning fixes b5093910, 51027044, 8b0f28cd (Pavlo Yatsukhnenko,
+- Fix XCLAIM on 32-bit installs [18dc2aac](https://www.github.com/phpredis/phpredis/commit/18dc2aac) (Michael Grunder)
+- Build warning fixes [b5093910](https://www.github.com/phpredis/phpredis/commit/b5093910), [51027044](https://www.github.com/phpredis/phpredis/commit/51027044), [8b0f28cd](https://www.github.com/phpredis/phpredis/commit/8b0f28cd) (Pavlo Yatsukhnenko,
   Remi Collet, twosee)
-- Fix incorrect arginfo for `Redis::sRem` and `Redis::multi` 25b043ce
+- Fix incorrect arginfo for `Redis::sRem` and `Redis::multi` [25b043ce](https://www.github.com/phpredis/phpredis/commit/25b043ce)
   (Pavlo Yatsukhnenko)
-- Treat a -1 response from cluster_check_response as a timeout. 27df9220,
-  07ef7f4e, d1172426 (Michael Grunder).
-- Missing space between command and args 0af2a7fe (@remicollet)
+- Treat a -1 response from cluster_check_response as a timeout. [27df9220](https://www.github.com/phpredis/phpredis/commit/27df9220),
+  [07ef7f4e](https://www.github.com/phpredis/phpredis/commit/07ef7f4e), [d1172426](https://www.github.com/phpredis/phpredis/commit/d1172426) (Michael Grunder).
+- Missing space between command and args [0af2a7fe](https://www.github.com/phpredis/phpredis/commit/0af2a7fe) (@remicollet)
 - Reset the socket after a timeout to make sure no wrong data is received
-  cd6ebc6d (@marcdejonge)
+  [cd6ebc6d](https://www.github.com/phpredis/phpredis/commit/cd6ebc6d) (@marcdejonge)
 - Allow '-' and '+' arguments and add tests for zLexCount and zRemRangeByLex
-  d4a08697 (Michael Grunder)
-- Fix printf format warnings dcde9331 (Pavlo Yatsukhnenko)
-- Session module is required 58bd8cc8 (@remicollet)
-- Set default values for ini entries e206ce9c (Pavlo Yatsukhnenko)
+  [d4a08697](https://www.github.com/phpredis/phpredis/commit/d4a08697) (Michael Grunder)
+- Fix printf format warnings [dcde9331](https://www.github.com/phpredis/phpredis/commit/dcde9331) (Pavlo Yatsukhnenko)
+- Session module is required [58bd8cc8](https://www.github.com/phpredis/phpredis/commit/58bd8cc8) (@remicollet)
+- Set default values for ini entries [e206ce9c](https://www.github.com/phpredis/phpredis/commit/e206ce9c) (Pavlo Yatsukhnenko)
 
 ---
 
@@ -168,33 +167,33 @@ Michael Grunder.
 ### Added
 
 - Add proper ARGINFO for all methods. (Pavlo Yatsukhnenko, Michael Grunder)
-- Let EXISTS take multiple keys cccc39 (Michael Grunder)
-- Implement SWAPDB and UNLINK commands 84f1f28b, 9e65c429 (Michael Grunder)
-- Add LZF compression (experimental) e2c51251, 8cb2d5bd, 8657557 (Pavlo Yatsukhnenko)
-- Allow mixing MULTI and PIPELINE modes (experimental) 5874b0 (Pavlo Yatsukhnenko)
+- Let EXISTS take multiple keys [cccc39](https://www.github.com/phpredis/phpredis/commit/cccc39) (Michael Grunder)
+- Implement SWAPDB and UNLINK commands [84f1f28b](https://www.github.com/phpredis/phpredis/commit/84f1f28b), [9e65c429](https://www.github.com/phpredis/phpredis/commit/9e65c429) (Michael Grunder)
+- Add LZF compression (experimental) [e2c51251](https://www.github.com/phpredis/phpredis/commit/e2c51251), [8cb2d5bd](https://www.github.com/phpredis/phpredis/commit/8cb2d5bd), [8657557](https://www.github.com/phpredis/phpredis/commit/8657557) (Pavlo Yatsukhnenko)
+- Allow mixing MULTI and PIPELINE modes (experimental) [5874b0](https://www.github.com/phpredis/phpredis/commit/5874b0) (Pavlo Yatsukhnenko)
 
 ### Changed
 
 - Use zend_string as returning value for ra_extract_key and ra_call_extractor
-  9cd05911 (Pavlo Yatsukhnenko)
-- Return real connection error as exception 5b9c0c60 (Pavlo Yatsukhnenko,
+  [9cd05911](https://www.github.com/phpredis/phpredis/commit/9cd05911) (Pavlo Yatsukhnenko)
+- Return real connection error as exception [5b9c0c60](https://www.github.com/phpredis/phpredis/commit/5b9c0c60) (Pavlo Yatsukhnenko,
   Michael Grunder)
-- Use zend_string for storing auth and prefix members 4b8336f7
+- Use zend_string for storing auth and prefix members [4b8336f7](https://www.github.com/phpredis/phpredis/commit/4b8336f7)
   (Pavlo Yatsukhnenko)
-- Add tcp_keepalive option to redis sock 68c58513, 5101172a, 010336d5,
-  51e48729 (@git-hulk, Michael Grunder)
-- More robust GEORADIUS COUNT validation f7edee5d (Michael Grunder)
-- Allow to use empty string as persistant_id ec4fd1bd (Pavlo Yatsukhnenko)
+- Add tcp_keepalive option to redis sock [68c58513](https://www.github.com/phpredis/phpredis/commit/68c58513), [5101172a](https://www.github.com/phpredis/phpredis/commit/5101172a), [010336d5](https://www.github.com/phpredis/phpredis/commit/010336d5),
+  [51e48729](https://www.github.com/phpredis/phpredis/commit/51e48729) (@git-hulk, Michael Grunder)
+- More robust GEORADIUS COUNT validation [f7edee5d](https://www.github.com/phpredis/phpredis/commit/f7edee5d) (Michael Grunder)
+- Allow to use empty string as persistant_id [ec4fd1bd](https://www.github.com/phpredis/phpredis/commit/ec4fd1bd) (Pavlo Yatsukhnenko)
 - Documentation improvements (Michael Grunder, @TomA-R)
 
 ### Fixed
 
-- Disallow using empty string as session name. 485db46f (Pavlo Yatsukhnenko)
-- The element of z_seeds may be a reference on php7 367bc6aa, 1e63717a
+- Disallow using empty string as session name. [485db46f](https://www.github.com/phpredis/phpredis/commit/485db46f) (Pavlo Yatsukhnenko)
+- The element of z_seeds may be a reference on php7 [367bc6aa](https://www.github.com/phpredis/phpredis/commit/367bc6aa), [1e63717a](https://www.github.com/phpredis/phpredis/commit/1e63717a)
   (@janic716)
-- Avoid connection in helper methods 91e9cfe1 (Pavlo Yatsukhnenko)
-- Don't use convert_to_string in redis_hmget_cmd 99335d6 (Pavlo Yatsukhnenko)
-- PHP >=7.3.0 uses zend_string to store `php_url` elements b566fb44 (@fmk)
+- Avoid connection in helper methods [91e9cfe1](https://www.github.com/phpredis/phpredis/commit/91e9cfe1) (Pavlo Yatsukhnenko)
+- Don't use convert_to_string in redis_hmget_cmd [99335d6](https://www.github.com/phpredis/phpredis/commit/99335d6) (Pavlo Yatsukhnenko)
+- PHP >=7.3.0 uses zend_string to store `php_url` elements [b566fb44](https://www.github.com/phpredis/phpredis/commit/b566fb44) (@fmk)
 
 ---
 
@@ -204,13 +203,13 @@ This is interim release which contains only bug fixes.
 
 ### Fixed
 
-- Fix segfault when extending Redis class in PHP 5 d23eff (Pavlo Yatsukhnenko)
-- Fix RedisCluster constructor with PHP 7 strict scalar type 5c21d7
+- Fix segfault when extending Redis class in PHP 5 [d23eff](https://www.github.com/phpredis/phpredis/commit/d23eff) (Pavlo Yatsukhnenko)
+- Fix RedisCluster constructor with PHP 7 strict scalar type [5c21d7](https://www.github.com/phpredis/phpredis/commit/5c21d7)
   (Pavlo Yatsukhnenko)
-- Allow to use empty string as persistant_id 344de5 (Pavlo Yatsukhnenko)
-- Fix cluster_init_seeds. db1347 (@adlagares)
-- Fix z_seeds may be a reference 42581a (@janic716)
-- PHP >=7.3 uses zend_string for php_url elements b566fb (@fmk)
+- Allow to use empty string as persistant_id [344de5](https://www.github.com/phpredis/phpredis/commit/344de5) (Pavlo Yatsukhnenko)
+- Fix cluster_init_seeds. [db1347](https://www.github.com/phpredis/phpredis/commit/db1347) (@adlagares)
+- Fix z_seeds may be a reference [42581a](https://www.github.com/phpredis/phpredis/commit/42581a) (@janic716)
+- PHP >=7.3 uses zend_string for php_url elements [b566fb](https://www.github.com/phpredis/phpredis/commit/b566fb) (@fmk)
 
 ---
 
@@ -222,44 +221,44 @@ to the api, listed below.
 
 ### Added
 
-- Allow mixing MULTI and PIPELINE modes (experimental)!  5874b0
+- Allow mixing MULTI and PIPELINE modes (experimental)!  [5874b0](https://www.github.com/phpredis/phpredis/commit/5874b0)
   (Pavlo Yatsukhnenko)
 - Added integration for coverty static analysis and fixed several warnings
-  faac8b0, eff7398, 4766c25, 0438ab4, 1e0b065, 733732a, 26eeda5, 735025,
-   42f1c9, af71d4 (Pavlo Yatsukhnenko).
-- Added arginfo introspection structures 81a0303, d5609fc, e5660be, 3c60e1f,
-  50dcb15, 6c2c6fa, 212e323, e23be2c, 682593d, f8de702, 4ef3acd, f116be9,
-  5c111dd, 9caa029, 0d69650, 6859828, 024e593, 3643ab6, f576fab, 122d41f,
-  a09d0e6 (Tyson Andre, Pavlo Yatsukhnenko).
-- Added a github issue template 61aba9 (Pavlo Yatsukhnenko)
+  [faac8b0](https://www.github.com/phpredis/phpredis/commit/faac8b0), [eff7398](https://www.github.com/phpredis/phpredis/commit/eff7398), [4766c25](https://www.github.com/phpredis/phpredis/commit/4766c25), [0438ab4](https://www.github.com/phpredis/phpredis/commit/0438ab4), [1e0b065](https://www.github.com/phpredis/phpredis/commit/1e0b065), [733732a](https://www.github.com/phpredis/phpredis/commit/733732a), [26eeda5](https://www.github.com/phpredis/phpredis/commit/26eeda5), [735025](https://www.github.com/phpredis/phpredis/commit/735025),
+   [42f1c9](https://www.github.com/phpredis/phpredis/commit/42f1c9), [af71d4](https://www.github.com/phpredis/phpredis/commit/af71d4) (Pavlo Yatsukhnenko).
+- Added arginfo introspection structures [81a0303](https://www.github.com/phpredis/phpredis/commit/81a0303), [d5609fc](https://www.github.com/phpredis/phpredis/commit/d5609fc), [e5660be](https://www.github.com/phpredis/phpredis/commit/e5660be), [3c60e1f](https://www.github.com/phpredis/phpredis/commit/3c60e1f),
+  [50dcb15](https://www.github.com/phpredis/phpredis/commit/50dcb15), [6c2c6fa](https://www.github.com/phpredis/phpredis/commit/6c2c6fa), [212e323](https://www.github.com/phpredis/phpredis/commit/212e323), [e23be2c](https://www.github.com/phpredis/phpredis/commit/e23be2c), [682593d](https://www.github.com/phpredis/phpredis/commit/682593d), [f8de702](https://www.github.com/phpredis/phpredis/commit/f8de702), [4ef3acd](https://www.github.com/phpredis/phpredis/commit/4ef3acd), [f116be9](https://www.github.com/phpredis/phpredis/commit/f116be9),
+  [5c111dd](https://www.github.com/phpredis/phpredis/commit/5c111dd), [9caa029](https://www.github.com/phpredis/phpredis/commit/9caa029), [0d69650](https://www.github.com/phpredis/phpredis/commit/0d69650), [6859828](https://www.github.com/phpredis/phpredis/commit/6859828), [024e593](https://www.github.com/phpredis/phpredis/commit/024e593), [3643ab6](https://www.github.com/phpredis/phpredis/commit/3643ab6), [f576fab](https://www.github.com/phpredis/phpredis/commit/f576fab), [122d41f](https://www.github.com/phpredis/phpredis/commit/122d41f),
+  [a09d0e6](https://www.github.com/phpredis/phpredis/commit/a09d0e6) (Tyson Andre, Pavlo Yatsukhnenko).
+- Added a github issue template [61aba9](https://www.github.com/phpredis/phpredis/commit/61aba9) (Pavlo Yatsukhnenko)
 
 ### Changed
 
-- Refactor redis_send_discard ea15ce (Pavlo Yatsukhnenko)
-- Improve redis array rehash 577a91 (Pavlo Yatsukhnenko)
-- Change redis array pure_cmds from zval to hashtable a56ed7 (Pavlo Yatsukhnenko)
+- Refactor redis_send_discard [ea15ce](https://www.github.com/phpredis/phpredis/commit/ea15ce) (Pavlo Yatsukhnenko)
+- Improve redis array rehash [577a91](https://www.github.com/phpredis/phpredis/commit/577a91) (Pavlo Yatsukhnenko)
+- Change redis array pure_cmds from zval to hashtable [a56ed7](https://www.github.com/phpredis/phpredis/commit/a56ed7) (Pavlo Yatsukhnenko)
 - Use zend_string rather than char for various context fields (err, prefix, etc)
-  2bf7b2 (Pavlo Yatsukhnenko)
-- Updated runtime exception handling 8dcaa4, 7c1407 (Pavlo Yatsukhnenko)
+  [2bf7b2](https://www.github.com/phpredis/phpredis/commit/2bf7b2) (Pavlo Yatsukhnenko)
+- Updated runtime exception handling [8dcaa4](https://www.github.com/phpredis/phpredis/commit/8dcaa4), [7c1407](https://www.github.com/phpredis/phpredis/commit/7c1407) (Pavlo Yatsukhnenko)
 
 ### Fixed
 
-- Fixed link to redis cluster documentation 3b0b06 (Pavlo Yatsukhnenko)
-- Removed duplicate HGET in redis array hash table, formatting d0b9c5
+- Fixed link to redis cluster documentation [3b0b06](https://www.github.com/phpredis/phpredis/commit/3b0b06) (Pavlo Yatsukhnenko)
+- Removed duplicate HGET in redis array hash table, formatting [d0b9c5](https://www.github.com/phpredis/phpredis/commit/d0b9c5)
   (Pavlo Yatsukhnenko).
-- Treat NULL bulk as success for session read 659450 (Pavlo Yatsukhnenko)
-- Fix valgrind warnings 471ce07, 1ab89e1, b624a8b (Pavlo Yatsukhnenko)
-- Fix php5/php7 compatibility layer 1ab89e, 4e3225 (Pavlo Yatsukhnenko)
-- Fix typo in README.markdown e47e44 (Mark Shehata)
-- Initialize gc member of zend_string 37f569 (Pavlo Yatsukhnenko).
+- Treat NULL bulk as success for session read [659450](https://www.github.com/phpredis/phpredis/commit/659450) (Pavlo Yatsukhnenko)
+- Fix valgrind warnings [471ce07](https://www.github.com/phpredis/phpredis/commit/471ce07), [1ab89e1](https://www.github.com/phpredis/phpredis/commit/1ab89e1), [b624a8b](https://www.github.com/phpredis/phpredis/commit/b624a8b) (Pavlo Yatsukhnenko)
+- Fix php5/php7 compatibility layer [1ab89e](https://www.github.com/phpredis/phpredis/commit/1ab89e), [4e3225](https://www.github.com/phpredis/phpredis/commit/4e3225) (Pavlo Yatsukhnenko)
+- Fix typo in README.markdown [e47e44](https://www.github.com/phpredis/phpredis/commit/e47e44) (Mark Shehata)
+- Initialize gc member of zend_string [37f569](https://www.github.com/phpredis/phpredis/commit/37f569) (Pavlo Yatsukhnenko).
 - Don't try to set TCP_NODELAY on a unix socket and don't warn on multiple
-  calls to pipeline d11798, 77aeba (Michael Grunder)
-- Various other library fixes 142b51, 4452f6, e672f4, 658ee3, c9df77, 4a0a46
+  calls to pipeline [d11798](https://www.github.com/phpredis/phpredis/commit/d11798), [77aeba](https://www.github.com/phpredis/phpredis/commit/77aeba) (Michael Grunder)
+- Various other library fixes [142b51](https://www.github.com/phpredis/phpredis/commit/142b51), [4452f6](https://www.github.com/phpredis/phpredis/commit/4452f6), [e672f4](https://www.github.com/phpredis/phpredis/commit/e672f4), [658ee3](https://www.github.com/phpredis/phpredis/commit/658ee3), [c9df77](https://www.github.com/phpredis/phpredis/commit/c9df77), [4a0a46](https://www.github.com/phpredis/phpredis/commit/4a0a46)
   (Pavlo Yatsukhnenko)
 
 ### Removed
 
-- Remove unused PHP_RINIT and PHP_RSHUTDOWN functions c760bf (Pavlo Yatsukhnenko)
+- Remove unused PHP_RINIT and PHP_RSHUTDOWN functions [c760bf](https://www.github.com/phpredis/phpredis/commit/c760bf) (Pavlo Yatsukhnenko)
 
 ---
 
@@ -276,39 +275,39 @@ Also many small improvements and bug fixes were made.
 
 ### Added
 
-- Add hStrLen command c52077, fb88e1 (Pavlo Yatsukhnenko)
-- A printf like method to construct a Redis RESP command a4a0ed, d75081,
-  bdd287, 0eaeae, b3d00d (Michael Grunder)
-- Use custom objects instead of zend_list for storing Redis/RedisArray a765f8,
-  8fa85a (Pavlo Yatsukhnenko)
-- Add configureoption tag to package.xml 750963 (Pavlo Yatsukhnenko)
+- Add hStrLen command [c52077](https://www.github.com/phpredis/phpredis/commit/c52077), [fb88e1](https://www.github.com/phpredis/phpredis/commit/fb88e1) (Pavlo Yatsukhnenko)
+- A printf like method to construct a Redis RESP command [a4a0ed](https://www.github.com/phpredis/phpredis/commit/a4a0ed), [d75081](https://www.github.com/phpredis/phpredis/commit/d75081),
+  [bdd287](https://www.github.com/phpredis/phpredis/commit/bdd287), [0eaeae](https://www.github.com/phpredis/phpredis/commit/0eaeae), [b3d00d](https://www.github.com/phpredis/phpredis/commit/b3d00d) (Michael Grunder)
+- Use custom objects instead of zend_list for storing Redis/RedisArray [a765f8](https://www.github.com/phpredis/phpredis/commit/a765f8),
+  [8fa85a](https://www.github.com/phpredis/phpredis/commit/8fa85a) (Pavlo Yatsukhnenko)
+- Add configureoption tag to package.xml [750963](https://www.github.com/phpredis/phpredis/commit/750963) (Pavlo Yatsukhnenko)
 
 ### Changed
 
-- Add optional COUNT argument to sPop d2e203 (Michael Grunder)
-- Allow sInterStore to take one arg 26aec4, 4cd06b (Michael Grunder)
-- Allow MIGRATE to accept multiple keys 9aa3db (Michael Grunder)
-- Use crc32 table from PHP distro f81694 (Pavlo Yatsukhnenko)
-- Throw exception for all non recoverable errors e37239 (Pavlo Yatsukhnenko)
-- Increase read buffers size 520e06 (Pavlo Yatsukhnenko)
-- Better documentation f0c25a, c5991f, 9ec9ae (Michael Grunder)
-- Better TravisCI integration e37c08 (Pavlo Yatsukhnenko)
+- Add optional COUNT argument to sPop [d2e203](https://www.github.com/phpredis/phpredis/commit/d2e203) (Michael Grunder)
+- Allow sInterStore to take one arg [26aec4](https://www.github.com/phpredis/phpredis/commit/26aec4), [4cd06b](https://www.github.com/phpredis/phpredis/commit/4cd06b) (Michael Grunder)
+- Allow MIGRATE to accept multiple keys [9aa3db](https://www.github.com/phpredis/phpredis/commit/9aa3db) (Michael Grunder)
+- Use crc32 table from PHP distro [f81694](https://www.github.com/phpredis/phpredis/commit/f81694) (Pavlo Yatsukhnenko)
+- Throw exception for all non recoverable errors [e37239](https://www.github.com/phpredis/phpredis/commit/e37239) (Pavlo Yatsukhnenko)
+- Increase read buffers size [520e06](https://www.github.com/phpredis/phpredis/commit/520e06) (Pavlo Yatsukhnenko)
+- Better documentation [f0c25a](https://www.github.com/phpredis/phpredis/commit/f0c25a), [c5991f](https://www.github.com/phpredis/phpredis/commit/c5991f), [9ec9ae](https://www.github.com/phpredis/phpredis/commit/9ec9ae) (Michael Grunder)
+- Better TravisCI integration [e37c08](https://www.github.com/phpredis/phpredis/commit/e37c08) (Pavlo Yatsukhnenko)
 
 ### Fixed
 
-- Make sure redisCluster members are all initialized on (re)creation 162d88
+- Make sure redisCluster members are all initialized on (re)creation [162d88](https://www.github.com/phpredis/phpredis/commit/162d88)
 - (Michael Grunder).
-- Fix Null Bulk String response parsing in cluster library 058753
+- Fix Null Bulk String response parsing in cluster library [058753](https://www.github.com/phpredis/phpredis/commit/058753)
 - (Alberto Fernández)
-- Allow using numeric string in zInter command ba0070 (Pavlo Yatsukhnenko)
-- Use ZVAL_DEREF macros for dereference input variables ad4596
+- Allow using numeric string in zInter command [ba0070](https://www.github.com/phpredis/phpredis/commit/ba0070) (Pavlo Yatsukhnenko)
+- Use ZVAL_DEREF macros for dereference input variables [ad4596](https://www.github.com/phpredis/phpredis/commit/ad4596)
 - (Pavlo Yatsukhnenko)
-- Fix read_timeout 18149e, b56dc4 (Pavlo Yatsukhnenko)
-- Fix zval_get_string impl for PHP5 4e56ba (Pavlo Yatsukhnenko)
-- Fix Redis/RedisArray segfaults be5c1f, 635c3a, 1f8dde, 43e1e0
+- Fix read_timeout [18149e](https://www.github.com/phpredis/phpredis/commit/18149e), [b56dc4](https://www.github.com/phpredis/phpredis/commit/b56dc4) (Pavlo Yatsukhnenko)
+- Fix zval_get_string impl for PHP5 [4e56ba](https://www.github.com/phpredis/phpredis/commit/4e56ba) (Pavlo Yatsukhnenko)
+- Fix Redis/RedisArray segfaults [be5c1f](https://www.github.com/phpredis/phpredis/commit/be5c1f), [635c3a](https://www.github.com/phpredis/phpredis/commit/635c3a), [1f8dde](https://www.github.com/phpredis/phpredis/commit/1f8dde), [43e1e0](https://www.github.com/phpredis/phpredis/commit/43e1e0)
 - (Pavlo Yatsukhnenko)
-- Fix memory leak and potential segfault aa6ff7, 88efaa (Michael Grunder)
-- Assume "NULL bulk" reply as success (empty session data) 4a81e1
+- Fix memory leak and potential segfault [aa6ff7](https://www.github.com/phpredis/phpredis/commit/aa6ff7), [88efaa](https://www.github.com/phpredis/phpredis/commit/88efaa) (Michael Grunder)
+- Assume "NULL bulk" reply as success (empty session data) [4a81e1](https://www.github.com/phpredis/phpredis/commit/4a81e1)
   (Pavlo Yatsukhnenko)
 - Refactoring (Pavlo Yatsukhnenko, Michael Grunder)
 
@@ -318,15 +317,15 @@ Also many small improvements and bug fixes were made.
 
 ### Changes
 
-- Re allow single array for sInterStore 6ef0c2, d01966 (Michael Grunder)
-- Better TravisCI integration 4fd2f6 (Pavlo Yatsukhnenko)
+- Re allow single array for sInterStore [6ef0c2](https://www.github.com/phpredis/phpredis/commit/6ef0c2), [d01966](https://www.github.com/phpredis/phpredis/commit/d01966) (Michael Grunder)
+- Better TravisCI integration [4fd2f6](https://www.github.com/phpredis/phpredis/commit/4fd2f6) (Pavlo Yatsukhnenko)
 
 ### Fixes
 
-- RedisArray segfault fix 564ce3 (Pavlo Yatsukhnenko)
-- Small memory leak fix 645888b (Mike Grunder)
-- Segfault fix when recreating RedisCluster objects abf7d4 (Michael Grunder)
-- Fix for RedisCluster bulk response parsing 4121c4 (Alberto Fernández)
+- RedisArray segfault fix [564ce3](https://www.github.com/phpredis/phpredis/commit/564ce3) (Pavlo Yatsukhnenko)
+- Small memory leak fix [645888b](https://www.github.com/phpredis/phpredis/commit/645888b) (Mike Grunder)
+- Segfault fix when recreating RedisCluster objects [abf7d4](https://www.github.com/phpredis/phpredis/commit/abf7d4) (Michael Grunder)
+- Fix for RedisCluster bulk response parsing [4121c4](https://www.github.com/phpredis/phpredis/commit/4121c4) (Alberto Fernández)
 
 ---
 
@@ -361,24 +360,24 @@ Also many bug fixes and some improvements has been made.
 
 ### Added
 
-- Support the client to Redis Cluster just having one master (andyli) 892e5646
+- Support the client to Redis Cluster just having one master (andyli) [892e5646](https://www.github.com/phpredis/phpredis/commit/892e5646)
 - Allow both long and strings that are longs for zrangebyscore offset/limit
-  (Michael Grunder) bdcdd2aa
-- Process NX|XX, CH and INCR options in zAdd command 71c9f7c8
+  (Michael Grunder) [bdcdd2aa](https://www.github.com/phpredis/phpredis/commit/bdcdd2aa)
+- Process NX|XX, CH and INCR options in zAdd command [71c9f7c8](https://www.github.com/phpredis/phpredis/commit/71c9f7c8)
   (Pavlo Yatsukhnenko)
 
 ### Fixes
 
-- Fix incrby/decrby for large integers (Michael Grunder) 3a12758a
-- Use static declarations for spl_ce_RuntimeException decl a9857d69
+- Fix incrby/decrby for large integers (Michael Grunder) [3a12758a](https://www.github.com/phpredis/phpredis/commit/3a12758a)
+- Use static declarations for spl_ce_RuntimeException decl [a9857d69](https://www.github.com/phpredis/phpredis/commit/a9857d69)
   (Jeremy Mikola)
 - Fixed method call problem causes session handler to display two times
-  24f86c49 (ZiHang Gao).
-- PSETEX method returns '+OK' on success, not true afcd8445 (sitri@ndxbn)
-- Fix integer overflow for long (>32bit) increments in hIncrBy 58e1d799
+  [24f86c49](https://www.github.com/phpredis/phpredis/commit/24f86c49) (ZiHang Gao).
+- PSETEX method returns '+OK' on success, not true [afcd8445](https://www.github.com/phpredis/phpredis/commit/afcd8445) (sitri@ndxbn)
+- Fix integer overflow for long (>32bit) increments in hIncrBy [58e1d799](https://www.github.com/phpredis/phpredis/commit/58e1d799)
   (@iyesin)
-- Move zend_object handler to the end (Michael Grunder) 34107966
-- Using setOption on redis array causes immediate connection f1a85b38
+- Move zend_object handler to the end (Michael Grunder) [34107966](https://www.github.com/phpredis/phpredis/commit/34107966)
+- Using setOption on redis array causes immediate connection [f1a85b38](https://www.github.com/phpredis/phpredis/commit/f1a85b38)
   (Pavlo Yatsukhnenko)
 
 ---
@@ -392,23 +391,23 @@ than 7.
 ### Added
 
 - Added randomization to our seed nodes to balance which instance is used
-  to map the keyspace 32eb1c5f (Vitaliy Stepanyuk)
+  to map the keyspace [32eb1c5f](https://www.github.com/phpredis/phpredis/commit/32eb1c5f) (Vitaliy Stepanyuk)
 - Added support for IPv6 addresses
 
 ### Fixed
 
-- PHP liveness checking workaround (Shafreeck Sea) c18d58b9
+- PHP liveness checking workaround (Shafreeck Sea) [c18d58b9](https://www.github.com/phpredis/phpredis/commit/c18d58b9)
 - Various documentation and code formatting and style fixes (ares333,
   anpili, Bryan Nelson, linfangrong, Romero Malaquias, Viktor Szépe)
 - Fix scan reply processing to use long instead of int to avoid overflow
   mixiaojiong).
-- Fix potential segfault in Redis Cluster session storage cc15aae
+- Fix potential segfault in Redis Cluster session storage [cc15aae](https://www.github.com/phpredis/phpredis/commit/cc15aae)
   (Sergei Lomakov).
-- Fixed memory leak in discard function 17b1f427
+- Fixed memory leak in discard function [17b1f427](https://www.github.com/phpredis/phpredis/commit/17b1f427)
 - Sanity check for igbinary unserialization (Maurus Cuelenaere)
-  3266b222, 528297a (Marus Cuelenaere).
+  [3266b222](https://www.github.com/phpredis/phpredis/commit/3266b222), [528297a](https://www.github.com/phpredis/phpredis/commit/528297a) (Marus Cuelenaere).
 - Fix segfault occuring from unclosed socket connection for Redis Cluster
-  04196aee (CatKang)
+  [04196aee](https://www.github.com/phpredis/phpredis/commit/04196aee) (CatKang)
 - Case insensitive zRangeByScore options
 - Fixed dreaded size_t vs long long compiler warning
 
