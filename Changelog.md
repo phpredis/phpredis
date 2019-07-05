@@ -5,6 +5,15 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adhears to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- RedisCluster segfaults after second connection with cache_slots enabled [f52cd237](https://github.com/phpredis/phpredis/pull/1592/commits/f52cd237)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+---
+
 ## [5.0.0] - 2019-07-02 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.0.0), [PECL](https://pecl.php.net/package/redis/5.0.0))
 
 This release contains important improvements and breaking changes.  The most
