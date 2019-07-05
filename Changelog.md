@@ -11,26 +11,45 @@ This release contains important improvements and breaking changes.  The most
 interesting are: drop PHP5 support, RedisCluster slots caching, JSON and msgpack
 serializers, soft deprecation of non-Redis commands.
 
+### Breaking Changes
+
+- [Nullable xReadGroup COUNT and BLOCK arguments](#brk500-xreadgroup)
+- [RedisArray exception now includes host information](#brk500-exception-host)
+- [zRange now conforms to zRangeByScore to get scores](#brk500-zrange-withscores)
+- [ping can now take an argument](#brk500-ping-argument)
+
 ### Added
-- Adds OPT_REPLY_LITERAL for rawCommand and EVAL [5cb30fb2](https://www.github.com/phpredis/phpredis/commit/5cb30fb2) ([Michael Grunder](https://github.com/michael-grunder))
-- JSON serializer [98bd2886](https://www.github.com/phpredis/phpredis/commit/98bd2886), [96c57139](https://www.github.com/phpredis/phpredis/commit/96c57139), [235a27](https://www.github.com/phpredis/phpredis/commit/235a27) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), Michael
-  Grunder)
-- msgpack serializer [d5b8f833](https://www.github.com/phpredis/phpredis/commit/d5b8f833), [545250f3](https://www.github.com/phpredis/phpredis/commit/545250f3), [52bae8ab](https://www.github.com/phpredis/phpredis/commit/52bae8ab) ([@bgort](https://github.com/bgort), [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko),
-  [Michael Grunder](https://github.com/michael-grunder))
-- Add support for STREAM to the type command [d7450b2f](https://www.github.com/phpredis/phpredis/commit/d7450b2f), [068ce978](https://www.github.com/phpredis/phpredis/commit/068ce978), [8a45d18c](https://www.github.com/phpredis/phpredis/commit/8a45d18c)
+- Adds OPT_REPLY_LITERAL for rawCommand and EVAL [5cb30fb2](https://www.github.com/phpredis/phpredis/commit/5cb30fb2) 
+  ([Michael Grunder](https://github.com/michael-grunder))
+- JSON serializer [98bd2886](https://www.github.com/phpredis/phpredis/commit/98bd2886), 
+  [96c57139](https://www.github.com/phpredis/phpredis/commit/96c57139), 
+  [235a27](https://www.github.com/phpredis/phpredis/commit/235a27) 
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
+- msgpack serializer [d5b8f833](https://www.github.com/phpredis/phpredis/commit/d5b8f833), 
+  [545250f3](https://www.github.com/phpredis/phpredis/commit/545250f3), 
+  [52bae8ab](https://www.github.com/phpredis/phpredis/commit/52bae8ab) 
+  ([@bgort](https://github.com/bgort), [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko),
+   [Michael Grunder](https://github.com/michael-grunder))
+- Add support for STREAM to the type command [d7450b2f](https://www.github.com/phpredis/phpredis/commit/d7450b2f), 
+  [068ce978](https://www.github.com/phpredis/phpredis/commit/068ce978), [8a45d18c](https://www.github.com/phpredis/phpredis/commit/8a45d18c)
   ([Michael Grunder](https://github.com/michael-grunder), [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Add Cluster slots caching [9f0d7bc0](https://www.github.com/phpredis/phpredis/commit/9f0d7bc0), [ea081e05](https://www.github.com/phpredis/phpredis/commit/ea081e05) ([Michael Grunder](https://github.com/michael-grunder))
+- Add Cluster slots caching [9f0d7bc0](https://www.github.com/phpredis/phpredis/commit/9f0d7bc0), 
+  [ea081e05](https://www.github.com/phpredis/phpredis/commit/ea081e05) ([Michael Grunder](https://github.com/michael-grunder))
 
 ### Changed
 
-- Add server address to exception message [e8fb49be](https://www.github.com/phpredis/phpredis/commit/e8fb49be), [34d6403d](https://www.github.com/phpredis/phpredis/commit/34d6403d)
+- <a id="brk500-exception-host">Add server address to exception message [e8fb49be](https://www.github.com/phpredis/phpredis/commit/e8fb49be), 
+  [34d6403d](https://www.github.com/phpredis/phpredis/commit/34d6403d)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Allow to specify server address as `schema://host` [418428fa](https://www.github.com/phpredis/phpredis/commit/418428fa)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)).
-- Update Fedora installation instructions [90aa067c](https://www.github.com/phpredis/phpredis/commit/90aa067c) ([@remicollet](https://github.com/remicollet))
-- Enable connection pooling by default [8206b147](https://www.github.com/phpredis/phpredis/commit/8206b147) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Allow PING to take an optional argument [6e494170](https://www.github.com/phpredis/phpredis/commit/6e494170) ([Michael Grunder](https://github.com/michael-grunder))
-- Allow ZRANGE to be called either with `true` or `['withscores' => true]`
+- Update Fedora installation instructions [90aa067c](https://www.github.com/phpredis/phpredis/commit/90aa067c) 
+  ([@remicollet](https://github.com/remicollet))
+- Enable connection pooling by default [8206b147](https://www.github.com/phpredis/phpredis/commit/8206b147) 
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- <a id="brk500-ping-argument">Allow PING to take an optional argument [6e494170](https://www.github.com/phpredis/phpredis/commit/6e494170) 
+  ([Michael Grunder](https://github.com/michael-grunder))
+- <a id="brk500-zrange-withscores">Allow ZRANGE to be called either with `true` or `['withscores' => true]`
   [19f3efcf](https://www.github.com/phpredis/phpredis/commit/19f3efcf) ([Michael Grunder](https://github.com/michael-grunder))
 - Documentation improvements ([@alexander-schranz](https://github.com/alexander-schranz), [@cookieguru](https://github.com/cookieguru),
   [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
@@ -52,7 +71,8 @@ serializers, soft deprecation of non-Redis commands.
   ([@michael-grunder](https://github.com/michael-grunder)).
 - Enable pooling for cluster slave nodes [17600dd1](https://www.github.com/phpredis/phpredis/commit/17600dd1) ([Michael Grunder](https://github.com/michael-grunder))
 - xInfo response format [4852a510](https://www.github.com/phpredis/phpredis/commit/4852a510), [ac9dca0a](https://www.github.com/phpredis/phpredis/commit/ac9dca0a) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Make the XREADGROUP optional COUNT and BLOCK arguments nullable [0c17bd27](https://www.github.com/phpredis/phpredis/commit/0c17bd27)
+- <a id="brk500-xreadgroup">Make the XREADGROUP optional COUNT and BLOCK arguments nullable 
+  [0c17bd27](https://www.github.com/phpredis/phpredis/commit/0c17bd27)
   ([Michael Grunder](https://github.com/michael-grunder))
 - Allow persistent_id to be passed as NULL with strict_types enabled [60223762](https://www.github.com/phpredis/phpredis/commit/60223762)
   ([Michael Grunder](https://github.com/michael-grunder))
