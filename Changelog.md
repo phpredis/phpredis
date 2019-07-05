@@ -19,35 +19,37 @@ serializers, soft deprecation of non-Redis commands.
 - [ping can now take an argument](#brk500-ping-argument)
 
 ### Added
-- Adds OPT_REPLY_LITERAL for rawCommand and EVAL [5cb30fb2](https://www.github.com/phpredis/phpredis/commit/5cb30fb2) 
+- Adds OPT_REPLY_LITERAL for rawCommand and EVAL [5cb30fb2](https://www.github.com/phpredis/phpredis/commit/5cb30fb2)
   ([Michael Grunder](https://github.com/michael-grunder))
-- JSON serializer [98bd2886](https://www.github.com/phpredis/phpredis/commit/98bd2886), 
-  [96c57139](https://www.github.com/phpredis/phpredis/commit/96c57139), 
-  [235a27](https://www.github.com/phpredis/phpredis/commit/235a27) 
+- JSON serializer [98bd2886](https://www.github.com/phpredis/phpredis/commit/98bd2886),
+  [96c57139](https://www.github.com/phpredis/phpredis/commit/96c57139),
+  [235a27](https://www.github.com/phpredis/phpredis/commit/235a27)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
-- msgpack serializer [d5b8f833](https://www.github.com/phpredis/phpredis/commit/d5b8f833), 
-  [545250f3](https://www.github.com/phpredis/phpredis/commit/545250f3), 
-  [52bae8ab](https://www.github.com/phpredis/phpredis/commit/52bae8ab) 
+- msgpack serializer [d5b8f833](https://www.github.com/phpredis/phpredis/commit/d5b8f833),
+  [545250f3](https://www.github.com/phpredis/phpredis/commit/545250f3),
+  [52bae8ab](https://www.github.com/phpredis/phpredis/commit/52bae8ab)
   ([@bgort](https://github.com/bgort), [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko),
    [Michael Grunder](https://github.com/michael-grunder))
-- Add support for STREAM to the type command [d7450b2f](https://www.github.com/phpredis/phpredis/commit/d7450b2f), 
+- Add support for STREAM to the type command [d7450b2f](https://www.github.com/phpredis/phpredis/commit/d7450b2f),
   [068ce978](https://www.github.com/phpredis/phpredis/commit/068ce978), [8a45d18c](https://www.github.com/phpredis/phpredis/commit/8a45d18c)
   ([Michael Grunder](https://github.com/michael-grunder), [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Add Cluster slots caching [9f0d7bc0](https://www.github.com/phpredis/phpredis/commit/9f0d7bc0), 
+- Add Cluster slots caching [9f0d7bc0](https://www.github.com/phpredis/phpredis/commit/9f0d7bc0),
   [ea081e05](https://www.github.com/phpredis/phpredis/commit/ea081e05) ([Michael Grunder](https://github.com/michael-grunder))
 
 ### Changed
 
-- <a id="brk500-exception-host">Add server address to exception message [e8fb49be](https://www.github.com/phpredis/phpredis/commit/e8fb49be), 
+- <a id="brk500-exception-host">Add server address to exception message.  This changes the exception message from `read error on connection` to
+  `read error on connection to <host>:<port>` or `read error on connection to </path/to/socket>` so code matching the exception string might break.
+  [e8fb49be](https://www.github.com/phpredis/phpredis/commit/e8fb49be),
   [34d6403d](https://www.github.com/phpredis/phpredis/commit/34d6403d)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Allow to specify server address as `schema://host` [418428fa](https://www.github.com/phpredis/phpredis/commit/418428fa)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)).
-- Update Fedora installation instructions [90aa067c](https://www.github.com/phpredis/phpredis/commit/90aa067c) 
+- Update Fedora installation instructions [90aa067c](https://www.github.com/phpredis/phpredis/commit/90aa067c)
   ([@remicollet](https://github.com/remicollet))
-- Enable connection pooling by default [8206b147](https://www.github.com/phpredis/phpredis/commit/8206b147) 
+- Enable connection pooling by default [8206b147](https://www.github.com/phpredis/phpredis/commit/8206b147)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- <a id="brk500-ping-argument">Allow PING to take an optional argument [6e494170](https://www.github.com/phpredis/phpredis/commit/6e494170) 
+- <a id="brk500-ping-argument">Allow PING to take an optional argument [6e494170](https://www.github.com/phpredis/phpredis/commit/6e494170)
   ([Michael Grunder](https://github.com/michael-grunder))
 - <a id="brk500-zrange-withscores">Allow ZRANGE to be called either with `true` or `['withscores' => true]`
   [19f3efcf](https://www.github.com/phpredis/phpredis/commit/19f3efcf) ([Michael Grunder](https://github.com/michael-grunder))
@@ -71,7 +73,7 @@ serializers, soft deprecation of non-Redis commands.
   ([@michael-grunder](https://github.com/michael-grunder)).
 - Enable pooling for cluster slave nodes [17600dd1](https://www.github.com/phpredis/phpredis/commit/17600dd1) ([Michael Grunder](https://github.com/michael-grunder))
 - xInfo response format [4852a510](https://www.github.com/phpredis/phpredis/commit/4852a510), [ac9dca0a](https://www.github.com/phpredis/phpredis/commit/ac9dca0a) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- <a id="brk500-xreadgroup">Make the XREADGROUP optional COUNT and BLOCK arguments nullable 
+- <a id="brk500-xreadgroup">Make the XREADGROUP optional COUNT and BLOCK arguments nullable
   [0c17bd27](https://www.github.com/phpredis/phpredis/commit/0c17bd27)
   ([Michael Grunder](https://github.com/michael-grunder))
 - Allow persistent_id to be passed as NULL with strict_types enabled [60223762](https://www.github.com/phpredis/phpredis/commit/60223762)
@@ -88,10 +90,10 @@ This is probably the latest release with PHP 5 suport!!!
 
 ### Added
 
-- RedisArray auth [b5549cff](https://www.github.com/phpredis/phpredis/commit/b5549cff), [339cfa2b](https://www.github.com/phpredis/phpredis/commit/339cfa2b), 
+- RedisArray auth [b5549cff](https://www.github.com/phpredis/phpredis/commit/b5549cff), [339cfa2b](https://www.github.com/phpredis/phpredis/commit/339cfa2b),
   [6b411aa8](https://www.github.com/phpredis/phpredis/commit/6b411aa8) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Add ZPOPMAX and ZPOPMIN support [46f03561](https://www.github.com/phpredis/phpredis/commit/46f03561), 
-  [f89e941a](https://www.github.com/phpredis/phpredis/commit/f89e941a), 
+- Add ZPOPMAX and ZPOPMIN support [46f03561](https://www.github.com/phpredis/phpredis/commit/46f03561),
+  [f89e941a](https://www.github.com/phpredis/phpredis/commit/f89e941a),
   [2ec7d91a](https://www.github.com/phpredis/phpredis/commit/2ec7d91a) (@mbezhanov, [Michael Grunder](https://github.com/michael-grunder))
 - Implement GEORADIUS_RO and GEORADIUSBYMEMBER_RO [22d81a94](https://www.github.com/phpredis/phpredis/commit/22d81a94) ([Michael Grunder](https://github.com/michael-grunder))
 - RedisCluster auth [c5994f2a](https://www.github.com/phpredis/phpredis/commit/c5994f2a) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
@@ -112,7 +114,7 @@ This is probably the latest release with PHP 5 suport!!!
 - Use zend_string for pipeline_cmd [e98f5116](https://www.github.com/phpredis/phpredis/commit/e98f5116) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Implement consistent hashing algorithm for RedisArray [bb32e6f3](https://www.github.com/phpredis/phpredis/commit/bb32e6f3), [71922bf1](https://www.github.com/phpredis/phpredis/commit/71922bf1)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Use zend_string for storing RedisArray hosts [602740d3](https://www.github.com/phpredis/phpredis/commit/602740d3), 
+- Use zend_string for storing RedisArray hosts [602740d3](https://www.github.com/phpredis/phpredis/commit/602740d3),
   [3e7e1c83](https://www.github.com/phpredis/phpredis/commit/3e7e1c83) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Refactor redis_sock_read_bulk_reply [bc4dbc4b](https://www.github.com/phpredis/phpredis/commit/bc4dbc4b) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
