@@ -16,7 +16,6 @@ serializers, soft deprecation of non-Redis commands.
 - [Nullable xReadGroup COUNT and BLOCK arguments](#brk500-xreadgroup)
 - [RedisArray exception now includes host information](#brk500-exception-host)
 - [zRange now conforms to zRangeByScore to get scores](#brk500-zrange-withscores)
-- [ping can now take an argument](#brk500-ping-argument)
 
 ### Added
 - Adds OPT_REPLY_LITERAL for rawCommand and EVAL [5cb30fb2](https://www.github.com/phpredis/phpredis/commit/5cb30fb2)
