@@ -7,6 +7,12 @@ and PhpRedis adhears to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- Add optional support for Zstd compression, using `--enable-redis-ztsd`.
+  This requires libzstd version >= 1.3.0 [PR #1382](https://github.com/phpredis/phpredis/pull/1582)
+  ([Remi Collet](https://github.com/remicollet))
+
 ### Fixed
 
 - RedisCluster segfaults after second connection with cache_slots enabled [f52cd237](https://github.com/phpredis/phpredis/pull/1592/commits/f52cd237)

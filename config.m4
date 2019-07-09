@@ -23,6 +23,12 @@ PHP_ARG_ENABLE(redis-lzf, whether to enable lzf compression,
 PHP_ARG_WITH(liblzf, use system liblzf,
 [  --with-liblzf[=DIR]       Use system liblzf], no, no)
 
+PHP_ARG_ENABLE(redis-zstd, whether to enable Zstd compression,
+[  --enable-redis-zstd     Enable Zstd compression support], no, no)
+
+PHP_ARG_WITH(libzstd, use system libsztd,
+[  --with-libzstd[=DIR]      Use system libzstd], yes, no)
+
 if test "$PHP_REDIS" != "no"; then
 
   if test "$PHP_REDIS_SESSION" != "no"; then
@@ -185,6 +191,35 @@ if test "$PHP_REDIS" != "no"; then
       PHP_ADD_INCLUDE($srcdir/liblzf)
       PHP_ADD_BUILD_DIR(liblzf)
       lzf_sources="liblzf/lzf_c.c liblzf/lzf_d.c"
+    fi
+  fi
+
+  if test "$PHP_REDIS_ZSTD" != "no"; then
+    AC_DEFINE(HAVE_REDIS_ZSTD, 1, [ ])
+    if test "$PHP_LIBZSTD" != "no"; then
+      AC_MSG_CHECKING(for libzstd files in default path)
+      for i in $PHP_LIBZSTD /usr/local /usr; do
+        if test -r $i/include/zstd.h; then
+          AC_MSG_RESULT(found in $i)
+          LIBZSTD_DIR=$i
+          break
+        fi
+      done
+      if test -z "$LIBZSTD_DIR"; then
+        AC_MSG_RESULT([not found])
+        AC_MSG_ERROR([Please reinstall the libzstd distribution])
+      fi
+      PHP_CHECK_LIBRARY(zstd, ZSTD_getFrameContentSize,
+      [
+        PHP_ADD_LIBRARY_WITH_PATH(zstd, $LIBZSTD_DIR/$PHP_LIBDIR, REDIS_SHARED_LIBADD)
+      ], [
+        AC_MSG_ERROR([could not find usable libzstd, version 1.3.0 required])
+      ], [
+        -L$LIBZSTD_DIR/$PHP_LIBDIR
+      ])
+      PHP_SUBST(REDIS_SHARED_LIBADD)
+    else
+      AC_MSG_ERROR([only system libzstd is supported])
     fi
   fi
 

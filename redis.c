@@ -38,6 +38,10 @@
 
 #include "library.h"
 
+#ifdef HAVE_REDIS_ZSTD
+#include <zstd.h>
+#endif
+
 #ifdef PHP_SESSION
 extern ps_module ps_mod_redis;
 extern ps_module ps_mod_redis_cluster;
@@ -685,6 +689,7 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_TCP_KEEPALIVE"), REDIS_OPT_TCP_KEEPALIVE TSRMLS_CC);
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION"), REDIS_OPT_COMPRESSION TSRMLS_CC);
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_REPLY_LITERAL"), REDIS_OPT_REPLY_LITERAL);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION_LEVEL"), REDIS_OPT_COMPRESSION_LEVEL);
 
     /* serializer */
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_NONE"), REDIS_SERIALIZER_NONE TSRMLS_CC);
@@ -701,6 +706,16 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster TSRMLS_DC) 
     zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_NONE"), REDIS_COMPRESSION_NONE TSRMLS_CC);
 #ifdef HAVE_REDIS_LZF
     zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_LZF"), REDIS_COMPRESSION_LZF TSRMLS_CC);
+#endif
+#ifdef HAVE_REDIS_ZSTD
+    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD"), REDIS_COMPRESSION_ZSTD);
+    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_MIN"), 1);
+#ifdef ZSTD_CLEVEL_DEFAULT
+    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_DEFAULT"), ZSTD_CLEVEL_DEFAULT);
+#else
+    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_DEFAULT"), 3);
+#endif
+    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_MAX"), ZSTD_maxCLevel());
 #endif
 
     /* scan options*/
@@ -852,6 +867,8 @@ get_available_serializers(void)
  */
 PHP_MINFO_FUNCTION(redis)
 {
+    smart_str names = {0,};
+
     php_info_print_table_start();
     php_info_print_table_header(2, "Redis Support", "enabled");
     php_info_print_table_row(2, "Redis Version", PHP_REDIS_VERSION);
@@ -860,8 +877,18 @@ PHP_MINFO_FUNCTION(redis)
 #endif
     php_info_print_table_row(2, "Available serializers", get_available_serializers());
 #ifdef HAVE_REDIS_LZF
-    php_info_print_table_row(2, "Available compression", "lzf");
+    smart_str_appends(&names, "lzf");
 #endif
+#ifdef HAVE_REDIS_ZSTD
+    if (names.s) {
+        smart_str_appends(&names, ", ");
+    }
+    smart_str_appends(&names, "zstd");
+#endif
+    if (names.s) {
+        php_info_print_table_row(2, "Available compression", names.s->val);
+    }
+    smart_str_free(&names);
     php_info_print_table_end();
 
     DISPLAY_INI_ENTRIES();
