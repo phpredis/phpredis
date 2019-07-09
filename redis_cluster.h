@@ -65,7 +65,7 @@
                              &cmd_len, &slot, &ctx)==FAILURE) { \
         RETURN_FALSE; \
     } \
-    if(cluster_send_command(c,slot,cmd,cmd_len TSRMLS_CC)<0 || c->err!=NULL) {\
+    if(cluster_send_command(c,slot,cmd,cmd_len)<0 || c->err!=NULL) {\
         efree(cmd); \
         RETURN_FALSE; \
     } \
@@ -85,7 +85,7 @@
                &slot,&ctx)==FAILURE) { \
         RETURN_FALSE; \
     } \
-    if(cluster_send_command(c,slot,cmd,cmd_len TSRMLS_CC)<0 || c->err!=NULL) { \
+    if(cluster_send_command(c,slot,cmd,cmd_len)<0 || c->err!=NULL) { \
         efree(cmd); \
         RETURN_FALSE; \
     } \
@@ -97,17 +97,17 @@
     resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx); 
 
 /* For the creation of RedisCluster specific exceptions */
-PHP_REDIS_API zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC);
+PHP_REDIS_API zend_class_entry *rediscluster_get_exception_base(int root);
 
 /* Create cluster context */
-zend_object *create_cluster_context(zend_class_entry *class_type TSRMLS_DC);
+zend_object *create_cluster_context(zend_class_entry *class_type);
 
 /* Free cluster context struct */
 void free_cluster_context(zend_object *object);
 
 
 /* Inittialize our class with PHP */
-void init_rediscluster(TSRMLS_D);
+void init_rediscluster(void);
 
 /* RedisCluster method implementation */
 PHP_METHOD(RedisCluster, __construct);
