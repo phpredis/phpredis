@@ -3,7 +3,7 @@
 All changes to phpredis will be documented in this file.
 
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and PhpRedis adhears to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
