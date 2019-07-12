@@ -27,9 +27,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2019-07-02</date>
+ <date>2019-07-12</date>
  <version>
-  <release>5.0.0</release>
+  <release>5.0.1</release>
   <api>5.0.0</api>
  </version>
  <stability>
@@ -38,42 +38,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    This release contains important improvements and breaking changes.
-    The most interesting are: drop PHP5 support, RedisCluster slots caching,
-    JSON and msgpack serializers, soft deprecation of non-Redis commands.
+    This release contains only bugfix for one critical issue
 
-    phpredis 5.0.0
-
-    * Remove HAVE_SPL [55c5586c] (@petk)
-    * Update Fedora installation instructions [90aa067c] (@remicollet)
-
-    phpredis 5.0.0RC2
-
-    * Allow compilation without JSON serialization enabled and fixes for deprecated
-      helper methods.  [235a27] (Pavlo Yatsukhnenko)
-    * Fix php msgpack >= 2.0.3 version requirement. [6973478..a537df8] (Michael Grunder)
-
-    phpredis 5.0.0RC1
-
-    * Enable connection pooling by default [8206b147] (Pavlo Yatsukhnenko)
-    * Soft deprecate methods that aren't actually Redis commands [a81b4f2d, 95c8aab9] (Pavlo Yatsukhnenko, Michael Grunder)
-    * Enable pooling for cluster slave nodes [17600dd1] (Michael Grunder)
-    * xInfo response format [4852a510, ac9dca0a] (Pavlo Yatsukhnenko)
-    * Make the XREADGROUP optional COUNT and BLOCK arguments nullable [0c17bd27] (Michael Grunder)
-    * Allow PING to take an optional argument [6e494170] (Michael Grunder)
-    * Allow ZRANGE to be called either with `true` or `['withscores' => true]` [19f3efcf] (Michael Grunder)
-    * Allow to specify server address as schema://host [418428fa] (Pavlo Yatsukhnenko)
-    * Allow persistent_id to be passed as NULL with strict_types enabled [60223762] (Michael Grunder)
-    * Add server address to exception message [e8fb49be, 34d6403d] (Pavlo Yatsukhnenko)
-    * Adds OPT_REPLY_LITERAL for rawCommand and EVAL [5cb30fb2] (Michael Grunder)
-    * JSON serializer [98bd2886, 96c57139] (Pavlo Yatsukhnenko, Michael Grunder)
-    * Add support for STREAM to the type command [d7450b2f, 068ce978, 8a45d18c] (Michael Grunder, Pavlo Yatsukhnenko)
-    * Fix TypeError when using built-in constants in `setOption` [4c7643ee] (@JoyceBabu)
-    * Handle references in MGET [60d8b679] (Michael Grunder)
-    * msgpack serializer [d5b8f833, 545250f3, 52bae8ab] (@bgort, Pavlo Yatsukhnenko, Michael Grunder)
-    * Add Cluster slots caching [9f0d7bc0, ea081e05] (Michael Grunder)
-    * Drop PHP5 support [f9928642, 46a50c12, 4601887d, 6ebb36ce, fdbe9d29] (Michael Grunder)
-    * Documentation improvements (@alexander-schranz, @cookieguru, Pavlo Yatsukhnenko, Michael Grunder)
+    * RedisCluster segfaults after second connection with cache_slots enabled [327cf0bd] (Pavlo Yatsukhnenko)
  </notes>
  <contents>
   <dir name="/">
@@ -142,6 +109,17 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.0.1</release><api>5.0.0</api></version>
+   <date>2019-07-12</date>
+   <notes>
+    This release contains only bugfix for one critical issue
+
+    * RedisCluster segfaults after second connection with cache_slots enabled [327cf0bd] (Pavlo Yatsukhnenko)
+   </notes>
+  </release>
+
   <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>5.0.0</release><api>5.0.0</api></version>
