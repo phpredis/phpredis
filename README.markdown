@@ -2637,6 +2637,7 @@ while(($arr_mems = $redis->sScan('set', $it, "*pattern*"))!==FALSE) {
 
 ## Sorted sets
 
+* [bzPop](#bzpop) - Block until Redis can pop the highest or lowest scoring member from one or more ZSETs.
 * [zAdd](#zadd) - Add one or more members to a sorted set or update its score if it already exists
 * [zCard, zSize](#zcard-zsize) - Get the number of members in a sorted set
 * [zCount](#zcount) - Count the members in a sorted set with scores within the given values
@@ -2653,6 +2654,35 @@ while(($arr_mems = $redis->sScan('set', $it, "*pattern*"))!==FALSE) {
 * [zScore](#zscore) - Get the score associated with the given member in a sorted set
 * [zunionstore, zUnion](#zunionstore-zunion) - Add multiple sorted sets and store the resulting sorted set in a new key
 * [zScan](#zscan) - Scan a sorted set for members
+
+### bzPop
+-----
+_**Description**_: Block until Redis can pop the highest or lowest scoring members from one or more ZSETs.  There are two commands (`BZPOPMIN` and `BZPOPMAX` for popping the lowest and highest scoring elements respectively.)
+
+##### *Prototype*
+~~~php
+$redis->bzPopMin(array $keys, int $timeout): array
+$redis->bzPopMax(array $keys, int $timeout): array
+
+$redis->bzPopMin(string $key1, string $key2, ... int $timeout): array
+$redis->bzPopMax(string $key1, string $key2, ... int $timeout): array
+~~~
+
+##### *Return value*
+*ARRAY:* Either an array with the key member and score of the higest or lowest element or an empty array if the timeout was reached without an element to pop.
+
+##### *Example*
+~~~php
+/* Wait up to 5 seconds to pop the *lowest* scoring member from sets `zs1` and `zs2`. */
+$redis->bzPopMin(['zs1', 'zs2'], 5);
+$redis->bzPopMin('zs1', 'zs2', 5);
+
+/* Wait up to 5 seconds to pop the *highest* scoring member from sets `zs1` and `zs2` */
+$redis->bzPopMax(['zs1', 'zs2'], 5);
+$redis->bzPopMax('zs1', 'zs2', 5);
+~~~
+
+**Note:** Calling these functions with an array of keys or with a variable nubmer of arguments is functionally identical.
 
 ### zAdd
 -----
