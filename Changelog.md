@@ -3,9 +3,15 @@
 All changes to phpredis will be documented in this file.
 
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and PhpRedis adhears to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+
+- Add optional support for Zstd compression, using `--enable-redis-ztsd`.
+  This requires libzstd version >= 1.3.0 [2abc61da](https://github.com/phpredis/phpredis/pull/1582/commits/2abc61da)
+  ([Remi Collet](https://github.com/remicollet))
 
 ### Fixed
 
