@@ -2117,7 +2117,7 @@ $redis->rPush('key1', 'C'); // returns 3
 
 ### rPushX
 -----
-_**Description**_: Adds the string value to the tail (right) of the list if the ist exists. `FALSE` in case of Failure.
+_**Description**_: Adds the string value to the tail (right) of the list if the list exists. `FALSE` in case of Failure.
 
 ##### *Parameters*
 *key*  
