@@ -892,8 +892,8 @@ cluster_free(redisCluster *c, int free_ctx)
     if (c->cache_key) {
         if (c->redirections) {
             zend_hash_del(&EG(persistent_list), c->cache_key);
+            c->cache_key = NULL;
         }
-        zend_string_release(c->cache_key);
     }
 
     /* Free structure itself */
