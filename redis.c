@@ -561,7 +561,7 @@ free_reply_callbacks(RedisSock *redis_sock)
 static void cluster_cache_dtor(zend_resource *rsrc) {
     if (rsrc->ptr) {
         redisCachedCluster *rcc = (redisCachedCluster*)rsrc->ptr;
-        cluster_cache_free(rcc->ptr);
+        cluster_cache_free(rcc);
     }
 }
 
