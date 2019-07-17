@@ -15,8 +15,11 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
-- RedisCluster segfaults after second connection with cache_slots enabled [f52cd237](https://github.com/phpredis/phpredis/pull/1592/commits/f52cd237)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix regression for conntecting to ports > 32767 [1f41da64](https://github.com/phpredis/phpredis/pull/1592/commits/1f41da64) 
+  ([Owen Smith](https://github.com/orls)
+- RedisCluster segfaults after second connection with cache_slots enabled [f52cd237](https://github.com/phpredis/phpredis/pull/1592/commits/f52cd237), 
+  [cb5d6b94](https://github.com/phpredis/phpredis/pull/1592/commits/f52cd237)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), ([Michael Grunder](https://github.com/michael-grunder))
 
 ---
 
