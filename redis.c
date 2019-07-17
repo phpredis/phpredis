@@ -1003,7 +1003,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
         port = 6379;
     }
 
-    if (port <= 0) {
+    if (port < 0) {
         port = 0;
     }
 
