@@ -560,8 +560,7 @@ free_reply_callbacks(RedisSock *redis_sock)
 /* Passthru for destroying cluster cache */
 static void cluster_cache_dtor(zend_resource *rsrc) {
     if (rsrc->ptr) {
-        redisCachedCluster *rcc = (redisCachedCluster*)rsrc->ptr;
-        cluster_cache_free(rcc);
+        cluster_cache_free(rsrc->ptr);
     }
 }
 
