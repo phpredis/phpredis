@@ -28,7 +28,7 @@ int redis_cmd_append_sstr_i64(smart_string *str, int64_t append);
 int redis_cmd_append_sstr_dbl(smart_string *str, double value);
 int redis_cmd_append_sstr_zval(smart_string *str, zval *z, RedisSock *redis_sock);
 int redis_cmd_append_sstr_key(smart_string *str, char *key, size_t len, RedisSock *redis_sock, short *slot);
-int redis_cmd_append_sstr_arrkey(smart_string *cmd, zend_string *kstr, ulong idx);
+int redis_cmd_append_sstr_arrkey(smart_string *cmd, zend_string *kstr, zend_ulong idx);
 
 PHP_REDIS_API int redis_spprintf(RedisSock *redis_sock, short *slot, char **ret, char *kw, char *fmt, ...);
 

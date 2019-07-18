@@ -1033,7 +1033,7 @@ PHP_METHOD(RedisArray, mset)
     char *key, kbuf[40];
     int key_len;
     zend_string **keys, *zkey;
-    ulong idx;
+    zend_ulong idx;
 
     if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;

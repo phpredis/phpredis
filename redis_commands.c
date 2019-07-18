@@ -572,7 +572,7 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     size_t key_len, start_len, end_len;
     zval *z_opt=NULL, *z_ele;
     zend_string *zkey;
-    ulong idx;
+    zend_ulong idx;
     HashTable *ht_opt;
 
     PHPREDIS_NOTUSED(idx);
@@ -1329,7 +1329,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
         HashTable *kt = Z_ARRVAL_P(z_opts);
         zend_string *zkey;
-        ulong idx;
+        zend_ulong idx;
         zval *v;
 
         PHPREDIS_NOTUSED(idx);
@@ -1632,7 +1632,7 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key;
     int key_free, count;
     size_t key_len;
-    ulong idx;
+    zend_ulong idx;
     zval *z_arr;
     HashTable *ht_vals;
     smart_string cmdstr = {0};
@@ -2723,7 +2723,7 @@ geoStoreType get_georadius_store_type(zend_string *key) {
 
 /* Helper function to extract optional arguments for GEORADIUS and GEORADIUSBYMEMBER */
 static int get_georadius_opts(HashTable *ht, geoOptions *opts) {
-    ulong idx;
+    zend_ulong idx;
     char *optstr;
     zend_string *zkey;
     zval *optval;
@@ -3214,7 +3214,7 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zval *z_fields, *value;
     zend_long maxlen = 0;
     zend_bool approx = 0;
-    ulong idx;
+    zend_ulong idx;
     HashTable *ht_fields;
     int fcount, argc;
     char *key, *id;
@@ -3356,7 +3356,7 @@ append_stream_args(smart_string *cmdstr, HashTable *ht, RedisSock *redis_sock,
     zend_string *key, *idstr;
     short oldslot;
     zval **id;
-    ulong idx;
+    zend_ulong idx;
 
     /* Append STREAM qualifier */
     REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "STREAMS");
@@ -3619,7 +3619,7 @@ static void get_xclaim_options(zval *z_arr, xclaimOptions *opt) {
     zend_string *zkey;
     char *kval;
     size_t klen;
-    ulong idx;
+    zend_ulong idx;
     zval *zv;
 
     PHPREDIS_NOTUSED(idx);
