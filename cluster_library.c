@@ -176,7 +176,7 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
 
 /* Return the socket for a slot and slave index */
 static RedisSock *cluster_slot_sock(redisCluster *c, unsigned short slot,
-                                    ulong slaveidx)
+                                    zend_ulong slaveidx)
 {
     redisClusterNode *node;
 
@@ -669,7 +669,7 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
 PHP_REDIS_API int
 cluster_node_add_slave(redisClusterNode *master, redisClusterNode *slave)
 {
-    ulong index;
+    zend_ulong index;
 
     // Allocate our slaves hash table if we haven't yet
     if (!master->slaves) {

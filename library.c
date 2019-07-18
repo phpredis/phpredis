@@ -750,7 +750,7 @@ int redis_cmd_append_sstr_key(smart_string *str, char *key, size_t len, RedisSoc
 
 /* Append an array key to a redis smart string command.  This function
  * handles the boilerplate conditionals around string or integer keys */
-int redis_cmd_append_sstr_arrkey(smart_string *cmd, zend_string *kstr, ulong idx)
+int redis_cmd_append_sstr_arrkey(smart_string *cmd, zend_string *kstr, zend_ulong idx)
 {
     char *arg, kbuf[128];
     int len;
