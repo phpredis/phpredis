@@ -31,6 +31,7 @@ addons:
     packages:
     - clang
     - libzstd1-dev
+    - valgrind
 before_install:
   - phpize
   - CFGARGS="--enable-redis-lzf --enable-redis-zstd"
@@ -52,3 +53,6 @@ script:
   - php tests/TestRedis.php --class Redis
   - php tests/TestRedis.php --class RedisArray
   - php tests/TestRedis.php --class RedisCluster
+  - USE_ZEND_ALLOC=0 valgrind --error-exitcode=1 php tests/TestRedis.php --class Redis
+  - USE_ZEND_ALLOC=0 valgrind --error-exitcode=1 php tests/TestRedis.php --class RedisArray
+  - USE_ZEND_ALLOC=0 valgrind --error-exitcode=1 php tests/TestRedis.php --class RedisCluster
