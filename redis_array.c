@@ -223,7 +223,7 @@ redis_array_get(zval *id)
 }
 
 PHP_REDIS_API int
-ra_call_user_function(HashTable *function_table, zval *object, zval *function_name, zval *retval_ptr, uint param_count, zval params[])
+ra_call_user_function(HashTable *function_table, zval *object, zval *function_name, zval *retval_ptr, uint32_t param_count, zval params[])
 {
     if (object) {
         redis_object *redis = PHPREDIS_GET_OBJECT(redis_object, object);
@@ -1033,7 +1033,7 @@ PHP_METHOD(RedisArray, mset)
     char *key, kbuf[40];
     int key_len;
     zend_string **keys, *zkey;
-    ulong idx;
+    zend_ulong idx;
 
     if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;

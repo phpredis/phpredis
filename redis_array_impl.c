@@ -907,7 +907,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl) {
     int i, count;
     HashTable *h_zset_vals;
     zend_string *zkey;
-    ulong idx;
+    zend_ulong idx;
 
     /* run ZRANGE key 0 -1 WITHSCORES on source */
     ZVAL_STRINGL(&z_fun_zrange, "ZRANGE", 6);
