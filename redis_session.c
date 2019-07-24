@@ -283,50 +283,39 @@ static int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_s
 }
 
 #define IS_LOCK_SECRET(reply, len, secret) (len == ZSTR_LEN(secret) && !strncmp(reply, ZSTR_VAL(secret), len))
-static void refresh_lock_status(RedisSock *redis_sock, redis_session_lock_status *lock_status)
-{
-    char *cmd, *reply = NULL;
-    int replylen, cmdlen;
-
-    /* Return early if we're not locked */
-    if (!lock_status->is_locked)
-        return;
-
-    /* If redis.session.lock_expire is not set => TTL=max_execution_time
-       Therefore it is guaranteed that the current process is still holding
-       the lock */
-    if (lock_status->is_locked && INI_INT("redis.session.lock_expire") == 0)
-        return;
-
-    /* Command to get our lock key value and compare secrets */
-    cmdlen = REDIS_SPPRINTF(&cmd, "GET", "S", lock_status->lock_key);
-
-    /* Attempt to refresh the lock */
-    redis_simple_cmd(redis_sock, cmd, cmdlen, &reply, &replylen);
-    if (reply != NULL) {
-        lock_status->is_locked = IS_LOCK_SECRET(reply, replylen, lock_status->lock_secret);
-        efree(reply);
-    } else {
-        lock_status->is_locked = 0;
-    }
-
-    /* Issue a warning if we're not locked.  We don't attempt to refresh the lock
-     * if we aren't flagged as locked, so if we're not flagged here something
-     * failed */
-    if (!lock_status->is_locked) {
-        php_error_docref(NULL, E_WARNING, "Failed to refresh session lock");
-    }
-
-    /* Cleanup */
-    efree(cmd);
-}
-
 static int write_allowed(RedisSock *redis_sock, redis_session_lock_status *lock_status)
 {
-    if (!INI_INT("redis.session.locking_enabled"))
+    if (!INI_INT("redis.session.locking_enabled")) {
         return 1;
+    }
+    /* If locked and redis.session.lock_expire is not set => TTL=max_execution_time
+       Therefore it is guaranteed that the current process is still holding the lock */
 
-    refresh_lock_status(redis_sock, lock_status);
+    if (lock_status->is_locked && INI_INT("redis.session.lock_expire") != 0) {
+        char *cmd, *reply = NULL;
+        int replylen, cmdlen;
+        /* Command to get our lock key value and compare secrets */
+        cmdlen = REDIS_SPPRINTF(&cmd, "GET", "S", lock_status->lock_key);
+
+        /* Attempt to refresh the lock */
+        redis_simple_cmd(redis_sock, cmd, cmdlen, &reply, &replylen);
+        /* Cleanup */
+        efree(cmd);
+
+        if (reply == NULL) {
+            lock_status->is_locked = 0;
+        } else {
+            lock_status->is_locked = IS_LOCK_SECRET(reply, replylen, lock_status->lock_secret);
+            efree(reply);
+        }
+
+        /* Issue a warning if we're not locked.  We don't attempt to refresh the lock
+         * if we aren't flagged as locked, so if we're not flagged here something
+         * failed */
+        if (!lock_status->is_locked) {
+            php_error_docref(NULL, E_WARNING, "Failed to refresh session lock");
+        }
+    }
 
     return lock_status->is_locked;
 }
