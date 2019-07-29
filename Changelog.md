@@ -14,6 +14,20 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [2abc61da](https://github.com/phpredis/phpredis/commit/2abc61da)
   ([Remi Collet](https://github.com/remicollet))
 
+---
+
+## [5.0.2] - 2019-07-29 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.0.2), [PECL](https://pecl.php.net/package/redis/5.0.2))
+
+### Fixed
+
+- Fix regression for conntecting to ports > 32767
+  [1f41da64](https://github.com/phpredis/phpredis/commit/1f41da64) 
+  ([Owen Smith](https://github.com/orls))
+- RedisCluster segfaults after second connection with cache_slots enabled
+  [f52cd237](https://github.com/phpredis/phpredis/commit/f52cd237), 
+  [cb5d6b94](https://github.com/phpredis/phpredis/commit/cb5d6b94)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
+
 ### Changed
 
 - Cleanup TSRMLS_* usage
@@ -25,16 +39,6 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Replace uint with uint32_t
   [d6fc5c73](https://github.com/phpredis/phpredis/commit/d6fc5c73)
   ([Remi Collet](https://github.com/remicollet))
-
-### Fixed
-
-- Fix regression for conntecting to ports > 32767
-  [1f41da64](https://github.com/phpredis/phpredis/commit/1f41da64) 
-  ([Owen Smith](https://github.com/orls))
-- RedisCluster segfaults after second connection with cache_slots enabled
-  [f52cd237](https://github.com/phpredis/phpredis/commit/f52cd237), 
-  [cb5d6b94](https://github.com/phpredis/phpredis/commit/cb5d6b94)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
 
 ---
 
