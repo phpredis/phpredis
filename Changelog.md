@@ -10,7 +10,8 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 - Add optional support for Zstd compression, using `--enable-redis-ztsd`.
-  This requires libzstd version >= 1.3.0 [2abc61da](https://github.com/phpredis/phpredis/pull/1582/commits/2abc61da)
+  This requires libzstd version >= 1.3.0
+  [2abc61da](https://github.com/phpredis/phpredis/commit/2abc61da)
   ([Remi Collet](https://github.com/remicollet))
 
 ### Changed
@@ -27,10 +28,12 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
-- Fix regression for conntecting to ports > 32767 [1f41da64](https://github.com/phpredis/phpredis/pull/1592/commits/1f41da64) 
+- Fix regression for conntecting to ports > 32767
+  [1f41da64](https://github.com/phpredis/phpredis/commit/1f41da64) 
   ([Owen Smith](https://github.com/orls))
-- RedisCluster segfaults after second connection with cache_slots enabled [f52cd237](https://github.com/phpredis/phpredis/pull/1592/commits/f52cd237), 
-  [cb5d6b94](https://github.com/phpredis/phpredis/pull/1592/commits/cb5d6b94)
+- RedisCluster segfaults after second connection with cache_slots enabled
+  [f52cd237](https://github.com/phpredis/phpredis/commit/f52cd237), 
+  [cb5d6b94](https://github.com/phpredis/phpredis/commit/cb5d6b94)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
 
 ---
