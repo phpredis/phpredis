@@ -27,9 +27,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2019-07-12</date>
+ <date>2019-07-29</date>
  <version>
-  <release>5.0.1</release>
+  <release>5.0.2</release>
   <api>5.0.0</api>
  </version>
  <stability>
@@ -38,9 +38,14 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    This release contains only bugfix for one critical issue
+    This release contains bugfixes and changes that necessary for PHP-7.4 compatibility
 
-    * RedisCluster segfaults after second connection with cache_slots enabled [327cf0bd] (Pavlo Yatsukhnenko)
+    * Cleanup TSRMLS_* usage [94380227] (Remi Collet)
+    * Replace ulong with zend_ulong [b4eb158a] (Remi Collet)
+    * Replace uint with uint32_t [d6fc5c73] (Remi Collet)
+    * Fix regression for conntecting to ports > 32767 [1f41da64] (Owen Smith)
+    * RedisCluster segfaults after second connection with cache_slots enabled [f52cd237, cb5d6b94] (Pavlo Yatsukhnenko, Michael Grunder)
+    * Documentation improvements (Michael Grunder)
  </notes>
  <contents>
   <dir name="/">
@@ -109,6 +114,22 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.0.2</release><api>5.0.0</api></version>
+   <date>2019-07-29</date>
+   <notes>
+    This release contains bugfixes and changes that necessary for PHP-7.4 compatibility
+
+    * Cleanup TSRMLS_* usage [94380227] (Remi Collet)
+    * Replace ulong with zend_ulong [b4eb158a] (Remi Collet)
+    * Replace uint with uint32_t [d6fc5c73] (Remi Collet)
+    * Fix regression for conntecting to ports > 32767 [1f41da64] (Owen Smith)
+    * RedisCluster segfaults after second connection with cache_slots enabled [f52cd237, cb5d6b94] (Pavlo Yatsukhnenko, Michael Grunder)
+    * Documentation improvements (Michael Grunder)
+   </notes>
+  </release>
+
   <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>5.0.1</release><api>5.0.0</api></version>
