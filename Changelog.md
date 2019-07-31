@@ -13,6 +13,8 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   This requires libzstd version >= 1.3.0
   [2abc61da](https://github.com/phpredis/phpredis/commit/2abc61da)
   ([Remi Collet](https://github.com/remicollet))
+- Fix overallocation in RedisCluster directed node commands [cf93649](https://github.com/phpredis/phpredis/commit/cf93649)
+  (([Michael Grunder](https://github.com/michael-grunder))
 
 ---
 
