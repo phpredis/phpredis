@@ -193,7 +193,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <notes>
       phpredis 4.3.0
 
-      This is probably the latest release with PHP 5 suport!!!
+      This is probably the last release with PHP 5 suport!!!
 
       * Proper persistent connections pooling implementation [a3703820, c76e00fb, 0433dc03, c75b3b93] (Pavlo Yatsukhnenko)
       * RedisArray auth [b5549cff, 339cfa2b, 6b411aa8] (Pavlo Yatsukhnenko)
