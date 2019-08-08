@@ -134,7 +134,7 @@ serializers, soft deprecation of non-Redis commands.
 
 ## [4.3.0] - 2019-03-13 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/4.3.0), [PECL](https://pecl.php.net/package/redis/4.3.0))
 
-This is probably the latest release with PHP 5 suport!!!
+This is probably the last release with PHP 5 suport!!!
 
 ### Added
 
