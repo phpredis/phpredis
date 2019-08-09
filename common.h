@@ -248,7 +248,7 @@ typedef struct fold_item {
 typedef struct {
     php_stream        *stream;
     zend_string       *host;
-    short             port;
+    int               port;
     zend_string       *auth;
     double            timeout;
     double            read_timeout;
