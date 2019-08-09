@@ -653,7 +653,7 @@ PHP_METHOD(RedisArray, _continuum)
 static void
 multihost_distribute_call(RedisArray *ra, zval *return_value, zval *z_fun, int argc, zval *argv)
 {
-    zval z_arg, z_tmp;
+    zval z_tmp;
     int i;
 
     /* Init our array return */
@@ -665,7 +665,7 @@ multihost_distribute_call(RedisArray *ra, zval *return_value, zval *z_fun, int a
         ra_call_user_function(&redis_array_ce->function_table, &ra->redis[i], z_fun, &z_tmp, argc, argv);
 
         /* Add the result for this host */
-        add_assoc_zval_ex(return_value, ZSTR_VAL(ra->hosts[i]), ZSTR_LEN(ra->hosts[i]), &z_arg);
+        add_assoc_zval_ex(return_value, ZSTR_VAL(ra->hosts[i]), ZSTR_LEN(ra->hosts[i]), &z_tmp);
     }
 }
 
