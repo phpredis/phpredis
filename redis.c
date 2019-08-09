@@ -1004,10 +1004,6 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
         port = 6379;
     }
 
-    if (port < 0) {
-        port = 0;
-    }
-
     redis = PHPREDIS_GET_OBJECT(redis_object, object);
     /* if there is a redis sock already we have to remove it */
     if (redis->sock) {
