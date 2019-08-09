@@ -16,20 +16,25 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Fix overallocation in RedisCluster directed node commands [cf93649](https://github.com/phpredis/phpredis/commit/cf93649)
   (([Michael Grunder](https://github.com/michael-grunder))
 
+### Fixed
+
+- Fix regression for multihost_distribute_call added in [112c77e3](https://github.com/phpredis/phpredis/commit/112c77e3)
+  [fbe0f804](https://github.com/phpredis/phpredis/commit/fbe0f804)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix regression for conntecting to unix sockets with relative path added in [1f41da64](https://github.com/phpredis/phpredis/commit/1f41da64)
+  [17b139d8](https://github.com/phpredis/phpredis/commit/17b139d8),
+  [7ef17ce1](https://github.com/phpredis/phpredis/commit/7ef17ce1)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
+
 ---
 
 ## [5.0.2] - 2019-07-29 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.0.2), [PECL](https://pecl.php.net/package/redis/5.0.2))
 
 ### Fixed
 
-- Fix regression for multihost_distribute_call added in [112c77e3](https://github.com/phpredis/phpredis/commit/112c77e3)
-  [fbe0f804](https://github.com/phpredis/phpredis/commit/fbe0f804)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Fix regression for conntecting to ports > 32767
   [1f41da64](https://github.com/phpredis/phpredis/commit/1f41da64),
-  [17b139d8](https://github.com/phpredis/phpredis/commit/17b139d8),
-  [7ef17ce1](https://github.com/phpredis/phpredis/commit/7ef17ce1)
-  ([Owen Smith](https://github.com/orls),[Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+  ([Owen Smith](https://github.com/orls))
 - RedisCluster segfaults after second connection with cache_slots enabled
   [f52cd237](https://github.com/phpredis/phpredis/commit/f52cd237), 
   [cb5d6b94](https://github.com/phpredis/phpredis/commit/cb5d6b94)
