@@ -364,8 +364,9 @@ _**Description**_: Check the current connection status
 
 ##### *Return value*
 
-*STRING*: `+PONG` on success. Throws a [RedisException](#class-redisexception) object on connectivity error, as described above.
+*BOOL*: `TRUE` in case of success. Throws a [RedisException](#class-redisexception) object on connectivity error, as described above.
 
+Staring from version 5.0.0, the command returns boolean `TRUE` instead of *STRING* `+PONG` as in previous versions.
 
 ### echo
 -----
