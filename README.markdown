@@ -356,17 +356,26 @@ $redis->getOption(Redis::OPT_SERIALIZER);
 
 ### ping
 -----
-_**Description**_: Check the current connection status
+_**Description**_: Check the current connection status.
 
-##### *Parameters*
-
-(none)
+##### *Prototype*
+~~~php
+$redis->ping([string $message]);
+~~~
 
 ##### *Return value*
+*Mixed*:  This method returns `TRUE` on success, or the passed string if called with an argument.
 
-*BOOL*: `TRUE` in case of success. Throws a [RedisException](#class-redisexception) object on connectivity error, as described above.
+##### *Example*
+~~~php
+/* When called without an argument, PING returns `TRUE` */
+$redis->ping();
 
-Staring from version 5.0.0, the command returns boolean `TRUE` instead of *STRING* `+PONG` as in previous versions.
+/* If passed an argument, that argument is returned.  Here 'hello' will be returned */
+$redis->ping('hello');
+~~~
+
+*Note*:  Prior to PhpRedis 5.0.0 this command simply returned the string `+PONG`.
 
 ### echo
 -----
