@@ -928,7 +928,7 @@ redisCachedCluster *cluster_cache_create(zend_string *hash, HashTable *nodes) {
         /* Attach any slave nodes we have. */
         if (node->slaves) {
             /* Allocate memory for slaves */
-            cm->slave = pemalloc(sizeof(*cm->slave) * zend_hash_num_elements(node->slaves), 1);
+            cm->slave = pecalloc(zend_hash_num_elements(node->slaves), sizeof(*cm->slave), 1);
 
             /* Copy host/port information for each slave */
             ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
