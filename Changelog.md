@@ -107,7 +107,7 @@ serializers, soft deprecation of non-Redis commands.
   ([@remicollet](https://github.com/remicollet))
 - Enable connection pooling by default [8206b147](https://www.github.com/phpredis/phpredis/commit/8206b147)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- <a id="brk500-ping-argument">Allow PING to take an optional argument [6e494170](https://www.github.com/phpredis/phpredis/commit/6e494170)
+- <a id="brk500-ping-argument">Allow PING to take an optional argument. PING now returns `true` instead of "+PONG" [6e494170](https://www.github.com/phpredis/phpredis/commit/6e494170)
   ([Michael Grunder](https://github.com/michael-grunder))
 - <a id="brk500-zrange-withscores">Allow ZRANGE to be called either with `true` or `['withscores' => true]`
   [19f3efcf](https://www.github.com/phpredis/phpredis/commit/19f3efcf) ([Michael Grunder](https://github.com/michael-grunder))
