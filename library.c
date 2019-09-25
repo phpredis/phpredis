@@ -1807,7 +1807,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
         schema = estrndup(address, pos - address);
         address = pos + sizeof("://") - 1;
     }
-    if (redis_sock->port < 0) {
+    if (redis_sock->port < 1) {
         host_len = snprintf(host, sizeof(host), "unix://%s", address);
         usocket = 1;
     } else {
