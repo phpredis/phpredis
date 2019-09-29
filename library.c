@@ -63,12 +63,17 @@ redis_sock_get_connection_pool(RedisSock *redis_sock)
     zend_string *persistent_id = strpprintf(0, "phpredis_%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
     zend_resource *le = zend_hash_find_ptr(&EG(persistent_list), persistent_id);
     if (!le) {
-        ConnectionPool *p = pecalloc(1, sizeof(*p) + sizeof(*le), 1);
+        ConnectionPool *p = pecalloc(1, sizeof(*p), 1);
         zend_llist_init(&p->list, sizeof(php_stream *), NULL, 1);
-        le = (zend_resource *)((char *)p + sizeof(*p));
-        le->type = le_redis_pconnect;
-        le->ptr = p;
-        zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(persistent_id), ZSTR_LEN(persistent_id), le, sizeof(*le));
+#if (PHP_VERSION_ID < 70300)
+        zend_resource res;
+        res.type = le_redis_pconnect;
+        res.ptr = p;
+        le = &res;
+        zend_hash_update_mem(&EG(persistent_list), persistent_id, le, sizeof(*le));
+#else
+        le = zend_register_persistent_resource_ex(persistent_id, p, le_redis_pconnect);
+#endif
     }
     zend_string_release(persistent_id);
     return le->ptr;
