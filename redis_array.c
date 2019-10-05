@@ -227,8 +227,10 @@ ra_call_user_function(HashTable *function_table, zval *object, zval *function_na
 {
     if (object) {
         redis_object *redis = PHPREDIS_GET_OBJECT(redis_object, object);
-        if (redis->sock->auth && redis->sock->status != REDIS_SOCK_STATUS_CONNECTED) {
-            redis_sock_server_open(redis->sock);
+        if (redis->sock->auth &&
+            redis->sock->status != REDIS_SOCK_STATUS_CONNECTED &&
+            redis_sock_server_open(redis->sock) == SUCCESS
+        ) {
             redis_sock_auth(redis->sock);
         }
     }

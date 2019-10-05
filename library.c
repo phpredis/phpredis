@@ -60,10 +60,14 @@ extern int le_redis_pconnect;
 static ConnectionPool *
 redis_sock_get_connection_pool(RedisSock *redis_sock)
 {
+    ConnectionPool *p;
     zend_string *persistent_id = strpprintf(0, "phpredis_%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
     zend_resource *le = zend_hash_find_ptr(&EG(persistent_list), persistent_id);
-    if (!le) {
-        ConnectionPool *p = pecalloc(1, sizeof(*p), 1);
+
+    if (le) {
+        p = le->ptr;
+    } else {
+        p = pecalloc(1, sizeof(*p), 1);
         zend_llist_init(&p->list, sizeof(php_stream *), NULL, 1);
 #if (PHP_VERSION_ID < 70300)
         zend_resource res;
@@ -76,7 +80,7 @@ redis_sock_get_connection_pool(RedisSock *redis_sock)
 #endif
     }
     zend_string_release(persistent_id);
-    return le->ptr;
+    return p;
 }
 
 /* Helper to reselect the proper DB number when we reconnect */
