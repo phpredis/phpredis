@@ -1211,6 +1211,9 @@ redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         } else {
             add_next_index_bool(z_tab, 0);
         }
+        if (*inbuf == TYPE_ERR) {
+            redis_sock_set_err(redis_sock, inbuf + 1, len - 1);
+        }
         return -1;
     }
     numElems = atoi(inbuf+1);
@@ -2122,7 +2125,7 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
             add_next_index_bool(z_tab, 0);
         }
         if (*inbuf == TYPE_ERR) {
-            redis_sock_set_err(redis_sock, inbuf + 1, len);
+            redis_sock_set_err(redis_sock, inbuf + 1, len - 1);
         }
         goto failure;
     }
