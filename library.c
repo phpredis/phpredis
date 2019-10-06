@@ -74,9 +74,9 @@ redis_sock_get_connection_pool(RedisSock *redis_sock)
         res.type = le_redis_pconnect;
         res.ptr = p;
         le = &res;
-        zend_hash_update_mem(&EG(persistent_list), persistent_id, le, sizeof(*le));
+        zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(persistent_id), ZSTR_LEN(persistent_id), le, sizeof(*le));
 #else
-        le = zend_register_persistent_resource_ex(persistent_id, p, le_redis_pconnect);
+        le = zend_register_persistent_resource(ZSTR_VAL(persistent_id), ZSTR_LEN(persistent_id), p, le_redis_pconnect);
 #endif
     }
     zend_string_release(persistent_id);
