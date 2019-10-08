@@ -408,13 +408,23 @@ PS_OPEN_FUNC(redis)
 
             /* parse parameters */
             if (url->query != NULL) {
+                char *query;
                 array_init(&params);
 
 #if (PHP_VERSION_ID < 70300)
-                sapi_module.treat_data(PARSE_STRING, estrdup(url->query), &params);
+                if (url->fragment != NULL) {
+                    spprintf(&query, 0, "%s#%s", url->query, url->fragment);
+                } else {
+                    query = estrdup(url->query);
+                }
 #else
-                sapi_module.treat_data(PARSE_STRING, estrndup(ZSTR_VAL(url->query), ZSTR_LEN(url->query)), &params);
+                if (url->fragment != NULL) {
+                    spprintf(&query, 0, "%s#%s", ZSTR_VAL(url->query), ZSTR_VAL(url->fragment));
+                } else {
+                    query = estrndup(ZSTR_VAL(url->query), ZSTR_LEN(url->query));
+                }
 #endif
+                sapi_module.treat_data(PARSE_STRING, query, &params);
 
                 if ((param = zend_hash_str_find(Z_ARRVAL(params), "weight", sizeof("weight") - 1)) != NULL) {
                     weight = zval_get_long(param);
