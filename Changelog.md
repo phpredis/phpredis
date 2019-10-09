@@ -13,17 +13,48 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   This requires libzstd version >= 1.3.0
   [2abc61da](https://github.com/phpredis/phpredis/commit/2abc61da)
   ([Remi Collet](https://github.com/remicollet))
-- Fix overallocation in RedisCluster directed node commands [cf93649](https://github.com/phpredis/phpredis/commit/cf93649)
-  (([Michael Grunder](https://github.com/michael-grunder))
+
+### Changed
+
+- Refactor redis_session
+  [91a8e734](https://github.com/phpredis/phpredis/commit/91a8e734),
+  [978c3074](https://github.com/phpredis/phpredis/commit/978c3074)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix overallocation in RedisCluster directed node commands
+  [cf93649](https://github.com/phpredis/phpredis/commit/cf93649)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Also attach slaves when caching cluster slots
+  [0d6d3fdd](https://github.com/phpredis/phpredis/commit/0d6d3fdd),
+  [b114fc26](https://github.com/phpredis/phpredis/commit/b114fc26)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Use zend_register_persistent_resource_ex for connection pooling
+  [fdada7ae](https://github.com/phpredis/phpredis/commit/fdada7ae),
+  [7c6c43a6](https://github.com/phpredis/phpredis/commit/7c6c43a6)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 ### Fixed
 
 - Fix regression for multihost_distribute_call added in [112c77e3](https://github.com/phpredis/phpredis/commit/112c77e3)
   [fbe0f804](https://github.com/phpredis/phpredis/commit/fbe0f804)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Revert "fix regression for conntecting to ports > 32767" added in [1f41da64](https://github.com/phpredis/phpredis/commit/1f41da64) and add another fix
+  [17b139d8](https://github.com/phpredis/phpredis/commit/17b139d8),
+  [7ef17ce1](https://github.com/phpredis/phpredis/commit/7ef17ce1)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
 - Fix regression for conntecting to unix sockets with relative path added in [1f41da64](https://github.com/phpredis/phpredis/commit/1f41da64)
   [17b139d8](https://github.com/phpredis/phpredis/commit/17b139d8),
   [7ef17ce1](https://github.com/phpredis/phpredis/commit/7ef17ce1)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
+- Fix unix-socket detection logic broken in [418428fa](https://github.com/phpredis/phpredis/commit/418428fa)
+  [a080b73f](https://github.com/phpredis/phpredis/commit/a080b73f)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
+- Fix memory leak and bug with getLastError for redis_mbulk_reply_assoc and redis_mbulk_reply_zipped.
+  [7f42d628](https://github.com/phpredis/phpredis/commit/7f42d628),
+  [3a622a07](https://github.com/phpredis/phpredis/commit/3a622a07)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko),
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Fix bug with password contain "#" for redis_session
+  [2bb08680](https://github.com/phpredis/phpredis/commit/2bb08680)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
 
 ---
