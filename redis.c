@@ -3468,7 +3468,8 @@ PHP_METHOD(Redis, command) {
 /* Helper to format any combination of SCAN arguments */
 PHP_REDIS_API int
 redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
-                     int iter, char *pattern, int pattern_len, int count)
+                     int iter, char *pattern, int pattern_len, int count,
+                     zend_string *match_type)
 {
     smart_string cmdstr = {0};
     char *keyword;
@@ -3476,7 +3477,7 @@ redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
 
     /* Count our arguments +1 for key if it's got one, and + 2 for pattern */
     /* or count given that they each carry keywords with them. */
-    argc = 1 + (key_len > 0) + (pattern_len > 0 ? 2 : 0) + (count > 0 ? 2 : 0);
+    argc = 1 + (key_len > 0) + (pattern_len > 0 ? 2 : 0) + (count > 0 ? 2 : 0) + (match_type ? 2 : 0);
 
     /* Turn our type into a keyword */
     switch(type) {
@@ -3512,12 +3513,17 @@ redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
         redis_cmd_append_sstr(&cmdstr, pattern, pattern_len);
     }
 
+    if (match_type) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "TYPE");
+        redis_cmd_append_sstr(&cmdstr, ZSTR_VAL(match_type), ZSTR_LEN(match_type));
+    }
+
     /* Return our command length */
     *cmd = cmdstr.c;
     return cmdstr.len;
 }
 
-/* {{{ proto redis::scan(&$iterator, [pattern, [count]]) */
+/* {{{ proto redis::scan(&$iterator, [pattern, [count, [type]]]) */
 PHP_REDIS_API void
 generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     zval *object, *z_iter;
@@ -3526,6 +3532,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     char *pattern = NULL, *cmd, *key = NULL;
     int cmd_len, num_elements, key_free = 0;
     size_t key_len = 0, pattern_len = 0;
+    zend_string *match_type = NULL;
     zend_long count = 0, iter;
 
     /* Different prototype depending on if this is a key based scan */
@@ -3541,8 +3548,8 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     } else {
         // Doesn't require a key
         if(zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                        "Oz/|s!l", &object, redis_ce, &z_iter,
-                                        &pattern, &pattern_len, &count)
+                                        "Oz/|s!lS", &object, redis_ce, &z_iter,
+                                        &pattern, &pattern_len, &count, &match_type)
                                         == FAILURE)
         {
             RETURN_FALSE;
@@ -3599,7 +3606,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
 
         // Format our SCAN command
         cmd_len = redis_build_scan_cmd(&cmd, type, key, key_len, (int)iter,
-                                   pattern, pattern_len, count);
+                                   pattern, pattern_len, count, match_type);
 
         /* Execute our command getting our new iterator value */
         REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
