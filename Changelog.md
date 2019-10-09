@@ -40,22 +40,22 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Revert "fix regression for conntecting to ports > 32767" added in [1f41da64](https://github.com/phpredis/phpredis/commit/1f41da64) and add another fix
   [17b139d8](https://github.com/phpredis/phpredis/commit/17b139d8),
   [7ef17ce1](https://github.com/phpredis/phpredis/commit/7ef17ce1)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Fix regression for conntecting to unix sockets with relative path added in [1f41da64](https://github.com/phpredis/phpredis/commit/1f41da64)
   [17b139d8](https://github.com/phpredis/phpredis/commit/17b139d8),
   [7ef17ce1](https://github.com/phpredis/phpredis/commit/7ef17ce1)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Fix unix-socket detection logic broken in [418428fa](https://github.com/phpredis/phpredis/commit/418428fa)
   [a080b73f](https://github.com/phpredis/phpredis/commit/a080b73f)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Fix memory leak and bug with getLastError for redis_mbulk_reply_assoc and redis_mbulk_reply_zipped.
   [7f42d628](https://github.com/phpredis/phpredis/commit/7f42d628),
   [3a622a07](https://github.com/phpredis/phpredis/commit/3a622a07)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko),
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)),
   ([Michael Grunder](https://github.com/michael-grunder))
 - Fix bug with password contain "#" for redis_session
   [2bb08680](https://github.com/phpredis/phpredis/commit/2bb08680)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 ---
 
