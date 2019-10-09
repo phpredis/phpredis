@@ -103,7 +103,8 @@ typedef enum {
 
 /* SCAN options */
 #define REDIS_SCAN_NORETRY 0
-#define REDIS_SCAN_RETRY 1
+#define REDIS_SCAN_RETRY   1
+#define REDIS_SCAN_PREFIX  2
 
 /* GETBIT/SETBIT offset range limits */
 #define BITOP_MIN_OFFSET 0
