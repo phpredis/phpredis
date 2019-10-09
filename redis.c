@@ -887,7 +887,8 @@ PHP_MINFO_FUNCTION(redis)
     smart_str_appends(&names, "zstd");
 #endif
     if (names.s) {
-        php_info_print_table_row(2, "Available compression", names.s->val);
+        smart_str_0(&names);
+        php_info_print_table_row(2, "Available compression", ZSTR_VAL(names.s));
     }
     smart_str_free(&names);
     php_info_print_table_end();
