@@ -27,53 +27,32 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2019-07-02</date>
+ <date>2019-10-09</date>
  <version>
-  <release>5.0.0</release>
-  <api>5.0.0</api>
+  <release>5.1.0RC1</release>
+  <api>5.1.0</api>
  </version>
  <stability>
-  <release>stable</release>
-  <api>stable</api>
+  <release>alpha</release>
+  <api>alpha</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    This release contains important improvements and breaking changes.
-    The most interesting are: drop PHP5 support, RedisCluster slots caching,
-    JSON and msgpack serializers, soft deprecation of non-Redis commands.
+    This release contains important bugfixes and improvements.
 
-    phpredis 5.0.0
+    phpredis 5.1.0RC1
 
-    * Remove HAVE_SPL [55c5586c] (@petk)
-    * Update Fedora installation instructions [90aa067c] (@remicollet)
-
-    phpredis 5.0.0RC2
-
-    * Allow compilation without JSON serialization enabled and fixes for deprecated
-      helper methods.  [235a27] (Pavlo Yatsukhnenko)
-    * Fix php msgpack >= 2.0.3 version requirement. [6973478..a537df8] (Michael Grunder)
-
-    phpredis 5.0.0RC1
-
-    * Enable connection pooling by default [8206b147] (Pavlo Yatsukhnenko)
-    * Soft deprecate methods that aren't actually Redis commands [a81b4f2d, 95c8aab9] (Pavlo Yatsukhnenko, Michael Grunder)
-    * Enable pooling for cluster slave nodes [17600dd1] (Michael Grunder)
-    * xInfo response format [4852a510, ac9dca0a] (Pavlo Yatsukhnenko)
-    * Make the XREADGROUP optional COUNT and BLOCK arguments nullable [0c17bd27] (Michael Grunder)
-    * Allow PING to take an optional argument [6e494170] (Michael Grunder)
-    * Allow ZRANGE to be called either with `true` or `['withscores' => true]` [19f3efcf] (Michael Grunder)
-    * Allow to specify server address as schema://host [418428fa] (Pavlo Yatsukhnenko)
-    * Allow persistent_id to be passed as NULL with strict_types enabled [60223762] (Michael Grunder)
-    * Add server address to exception message [e8fb49be, 34d6403d] (Pavlo Yatsukhnenko)
-    * Adds OPT_REPLY_LITERAL for rawCommand and EVAL [5cb30fb2] (Michael Grunder)
-    * JSON serializer [98bd2886, 96c57139] (Pavlo Yatsukhnenko, Michael Grunder)
-    * Add support for STREAM to the type command [d7450b2f, 068ce978, 8a45d18c] (Michael Grunder, Pavlo Yatsukhnenko)
-    * Fix TypeError when using built-in constants in `setOption` [4c7643ee] (@JoyceBabu)
-    * Handle references in MGET [60d8b679] (Michael Grunder)
-    * msgpack serializer [d5b8f833, 545250f3, 52bae8ab] (@bgort, Pavlo Yatsukhnenko, Michael Grunder)
-    * Add Cluster slots caching [9f0d7bc0, ea081e05] (Michael Grunder)
-    * Drop PHP5 support [f9928642, 46a50c12, 4601887d, 6ebb36ce, fdbe9d29] (Michael Grunder)
-    * Documentation improvements (@alexander-schranz, @cookieguru, Pavlo Yatsukhnenko, Michael Grunder)
+    * Fix regression for multihost_distribute_call added in 112c77e3 [fbe0f804] (Pavlo Yatsukhnenko)
+    * Fix regression for conntecting to unix sockets with relative path added in 1f41da64 [17b139d8, 7ef17ce1] (Pavlo Yatsukhnenko)
+    * Fix unix-socket detection logic broken in 418428fa [a080b73f] (Pavlo Yatsukhnenko)
+    * Fix memory leak and bug with getLastError for redis_mbulk_reply_assoc and redis_mbulk_reply_zipped. [7f42d628, 3a622a07] (Pavlo Yatsukhnenko), (Michael Grunder)
+    * Fix bug with password contain "#" for redis_session [2bb08680] (Pavlo Yatsukhnenko)
+    * Add optional support for Zstd compression, using --enable-redis-ztsd. This requires libzstd version >= 1.3.0 [2abc61da] (Remi Collet)
+    * Fix overallocation in RedisCluster directed node commands [cf93649] (Michael Grunder)
+    * Also attach slaves when caching cluster slots [0d6d3fdd, b114fc26] (Michael Grunder)
+    * Use zend_register_persistent_resource_ex for connection pooling [fdada7ae, 7c6c43a6] (Pavlo Yatsukhnenko)
+    * Refactor redis_session [91a8e734, 978c3074] (Pavlo Yatsukhnenko)
+    * Documentation improvements (@Steveb-p, @tangix, @ljack-adista, @jdreesen, Michael Grunder)
  </notes>
  <contents>
   <dir name="/">
@@ -140,8 +119,32 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <extsrcrelease>
   <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
   <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
+  <configureoption name="enable-redis-zstd" prompt="enable zstd compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
+  <release>
+   <stability><release>alpha</release><api>alpha</api></stability>
+   <version><release>5.1.0RC1</release><api>5.1.0</api></version>
+   <date>2019-10-09</date>
+   <notes>
+      This release contains important bugfixes and improvements.
+
+      phpredis 5.1.0RC1
+
+      * Fix regression for multihost_distribute_call added in 112c77e3 [fbe0f804] (Pavlo Yatsukhnenko)
+      * Fix regression for conntecting to unix sockets with relative path added in 1f41da64 [17b139d8, 7ef17ce1] (Pavlo Yatsukhnenko)
+      * Fix unix-socket detection logic broken in 418428fa [a080b73f] (Pavlo Yatsukhnenko)
+      * Fix memory leak and bug with getLastError for redis_mbulk_reply_assoc and redis_mbulk_reply_zipped. [7f42d628, 3a622a07] (Pavlo Yatsukhnenko), (Michael Grunder)
+      * Fix bug with password contain "#" for redis_session [2bb08680] (Pavlo Yatsukhnenko)
+      * Add optional support for Zstd compression, using --enable-redis-ztsd. This requires libzstd version >= 1.3.0 [2abc61da] (Remi Collet)
+      * Fix overallocation in RedisCluster directed node commands [cf93649] (Michael Grunder)
+      * Also attach slaves when caching cluster slots [0d6d3fdd, b114fc26] (Michael Grunder)
+      * Use zend_register_persistent_resource_ex for connection pooling [fdada7ae, 7c6c43a6] (Pavlo Yatsukhnenko)
+      * Refactor redis_session [91a8e734, 978c3074] (Pavlo Yatsukhnenko)
+      * Documentation improvements (@Steveb-p, @tangix, @ljack-adista, @jdreesen, Michael Grunder)
+   </notes>
+  </release>
+
   <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>5.0.0</release><api>5.0.0</api></version>
