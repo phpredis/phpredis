@@ -25,7 +25,7 @@
 #define PHP_REDIS_H
 
 /* phpredis version */
-#define PHP_REDIS_VERSION "5.0.1"
+#define PHP_REDIS_VERSION "5.0.2"
 
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, __destruct);
@@ -273,11 +273,11 @@ PHP_REDIS_API void generic_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, char *sub
 PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, 
     char *unsub_cmd);
 
-PHP_REDIS_API int redis_response_enqueued(RedisSock *redis_sock TSRMLS_DC);
+PHP_REDIS_API int redis_response_enqueued(RedisSock *redis_sock);
 
-PHP_REDIS_API int get_flag(zval *object TSRMLS_DC);
+PHP_REDIS_API int get_flag(zval *object);
 
-PHP_REDIS_API void set_flag(zval *object, int new_flag TSRMLS_DC);
+PHP_REDIS_API void set_flag(zval *object, int new_flag);
 
 PHP_REDIS_API int redis_sock_read_multibulk_multi_reply_loop(
     INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, 

@@ -66,9 +66,9 @@ typedef struct RedisArray_ {
     struct RedisArray_ *prev;
 } RedisArray;
 
-zend_object *create_redis_array_object(zend_class_entry *ce TSRMLS_DC);
+zend_object *create_redis_array_object(zend_class_entry *ce);
 void free_redis_array_object(zend_object *object);
 
-PHP_REDIS_API int ra_call_user_function(HashTable *function_table, zval *object, zval *function_name, zval *retval_ptr, uint param_count, zval params[] TSRMLS_DC);
+PHP_REDIS_API int ra_call_user_function(HashTable *function_table, zval *object, zval *function_name, zval *retval_ptr, uint32_t param_count, zval params[]);
 
 #endif
