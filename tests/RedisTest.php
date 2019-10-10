@@ -4968,7 +4968,7 @@ class Redis_Test extends TestSuite
         $this->assertEquals(0, $i);
 
         // SCAN with type is scheduled for release in Redis 6.
-        if (version_compare($this->version, "6.0.0", "gte") >= 0) {
+        if (version_compare($this->version, "6.0.0") >= 0) {
             // Use a unique ID so we can find our type keys
             $id = uniqid();
 
