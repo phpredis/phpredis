@@ -4924,10 +4924,14 @@ class Redis_Test extends TestSuite
 
     protected function get_keyspace_count($str_db) {
         $arr_info = $this->redis->info();
-        $arr_info = $arr_info[$str_db];
-        $arr_info = explode(',', $arr_info);
-        $arr_info = explode('=', $arr_info[0]);
-        return $arr_info[1];
+        if (isset($arr_info[$str_db])) {
+            $arr_info = $arr_info[$str_db];
+            $arr_info = explode(',', $arr_info);
+            $arr_info = explode('=', $arr_info[0]);
+            return $arr_info[1];
+        } else {
+            return 0;
+        }
     }
 
     public function testScan() {
@@ -4962,6 +4966,48 @@ class Redis_Test extends TestSuite
             $i -= count($arr_keys);
         }
         $this->assertEquals(0, $i);
+
+        // SCAN with type is scheduled for release in Redis 6.
+        if (version_compare($this->version, "6.0.0", "gte") >= 0) {
+            // Use a unique ID so we can find our type keys
+            $id = uniqid();
+
+            // Create some simple keys and lists
+            for ($i = 0; $i < 3; $i++) {
+                $str_simple = "simple:{$id}:$i";
+                $str_list = "list:{$id}:$i";
+
+                $this->redis->set($str_simple, $i);
+                $this->redis->del($str_list);
+                $this->redis->rpush($str_list, ['foo']);
+
+                $arr_keys["STRING"][] = $str_simple;
+                $arr_keys["LIST"][] = $str_list;
+            }
+
+            // Make sure we can scan for specific types
+            foreach ($arr_keys as $str_type => $arr_vals) {
+                foreach ([NULL, 10] as $i_count) {
+                    $arr_resp = [];
+
+                    $it = NULL;
+                    while ($arr_scan = $this->redis->scan($it, "*$id*", $i_count, $str_type)) {
+                        $arr_resp = array_merge($arr_resp, $arr_scan);
+                    }
+
+                    sort($arr_vals); sort($arr_resp);
+                    $this->assertEquals($arr_vals, $arr_resp);
+                }
+            }
+
+            // Make sure only lists come back even without a pattern or count
+            $it = NULL;
+            $arr_scan = $this->redis->scan($it, NULL, NULL, "LIST");
+            foreach ($arr_scan as $str_key) {
+                $this->assertEquals($this->redis->type($str_key), Redis::REDIS_LIST);
+            }
+        }
+
     }
 
     public function testHScan() {
