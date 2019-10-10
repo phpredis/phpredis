@@ -4999,13 +4999,6 @@ class Redis_Test extends TestSuite
                     $this->assertEquals($arr_vals, $arr_resp);
                 }
             }
-
-            // Make sure only lists come back even without a pattern or count
-            $it = NULL;
-            $arr_scan = $this->redis->scan($it, NULL, NULL, "LIST");
-            foreach ($arr_scan as $str_key) {
-                $this->assertEquals($this->redis->type($str_key), Redis::REDIS_LIST);
-            }
         }
 
     }
