@@ -2835,13 +2835,11 @@ $redis->zPopMax(string $key, int $count): array
 
 ##### *Example*
 ~~~php
-/* Wait up to 5 seconds to pop the *lowest* scoring member from sets `zs1` and `zs2`. */
-$redis->bzPopMin(['zs1', 'zs2'], 5);
-$redis->bzPopMin('zs1', 'zs2', 5);
+/* Pop the *lowest* scoring member from set `zs1`. */
+$redis->zPopMin('zs1', 5);
 
-/* Wait up to 5 seconds to pop the *highest* scoring member from sets `zs1` and `zs2` */
-$redis->bzPopMax(['zs1', 'zs2'], 5);
-$redis->bzPopMax('zs1', 'zs2', 5);
+/* Pop the *highest* scoring member from set `zs1`. */
+$redis->zPopMax('zs1', 5);
 ~~~
 
 ### zRange
