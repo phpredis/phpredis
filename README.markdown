@@ -2653,6 +2653,7 @@ while(($arr_mems = $redis->sScan('set', $it, "*pattern*"))!==FALSE) {
 * [zCount](#zcount) - Count the members in a sorted set with scores within the given values
 * [zIncrBy](#zincrby) - Increment the score of a member in a sorted set
 * [zinterstore, zInter](#zinterstore-zinter) - Intersect multiple sorted sets and store the resulting sorted set in a new key
+* [zPop](#zpop) - Redis can pop the highest or lowest scoring member from one a ZSET.
 * [zRange](#zrange) - Return a range of members in a sorted set, by index
 * [zRangeByScore, zRevRangeByScore](#zrangebyscore-zrevrangebyscore) - Return a range of members in a sorted set, by score
 * [zRangeByLex](#zrangebylex) - Return a lexicographical range from members that share the same score
@@ -2815,6 +2816,33 @@ $redis->zinterstore('ko4', ['k1', 'k2'], [1, 5], 'max'); /* 2, 'ko4' => ['val3',
 ~~~
 
 **Note:** `zInter` is an alias for `zinterstore` and will be removed in future versions of phpredis.
+
+### zPop
+-----
+_**Description**_: Can pop the highest or lowest scoring members from one ZSETs. There are two commands (`ZPOPMIN` and `ZPOPMAX` for popping the lowest and highest scoring elements respectively.)
+
+##### *Prototype*
+~~~php
+$redis->zPopMin(string $key, int $count): array
+$redis->zPopMax(string $key, int $count): array
+
+$redis->zPopMin(string $key, int $count): array
+$redis->zPopMax(string $key, int $count): array
+~~~
+
+##### *Return value*
+*ARRAY:* Either an array with the key member and score of the higest or lowest element or an empty array if there is no element available.
+
+##### *Example*
+~~~php
+/* Wait up to 5 seconds to pop the *lowest* scoring member from sets `zs1` and `zs2`. */
+$redis->bzPopMin(['zs1', 'zs2'], 5);
+$redis->bzPopMin('zs1', 'zs2', 5);
+
+/* Wait up to 5 seconds to pop the *highest* scoring member from sets `zs1` and `zs2` */
+$redis->bzPopMax(['zs1', 'zs2'], 5);
+$redis->bzPopMax('zs1', 'zs2', 5);
+~~~
 
 ### zRange
 -----
