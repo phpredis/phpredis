@@ -13,6 +13,10 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   This requires libzstd version >= 1.3.0
   [2abc61da](https://github.com/phpredis/phpredis/commit/2abc61da)
   ([Remi Collet](https://github.com/remicollet))
+- Add documentation for zpopmin and zpopmax
+  [99ec24b3](https://github.com/phpredis/phpredis/commit/99ec24b3),
+  [4ab1f940](https://github.com/phpredis/phpredis/commit/4ab1f940)
+  ([alexander-schranz](https://github.com/alexander-schranz))
 
 ### Changed
 
@@ -55,6 +59,15 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   ([Michael Grunder](https://github.com/michael-grunder))
 - Fix bug with password contain "#" for redis_session
   [2bb08680](https://github.com/phpredis/phpredis/commit/2bb08680)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Missing null byte in PHP_MINFO_FUNCTION
+  [8bc2240c](https://github.com/phpredis/phpredis/commit/8bc2240c)
+  ([Remi Collet](https://github.com/remicollet))
+
+### Removed
+
+- Dead code generic_unsubscribe_cmd
+  [8ee4abbc](https://github.com/phpredis/phpredis/commit/8ee4abbc)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 ---
