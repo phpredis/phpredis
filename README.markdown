@@ -3138,6 +3138,28 @@ $redis->pfAdd('hll', ['a', 'b', 'c']);
 ### pfCount
 -----
 
+##### *Prototype*  
+~~~php
+$redis->pfCount($key);
+$redis->pfCount(Array $keys);
+~~~
+
+_**Description**_:  Return the approximated cardinality of the set(s) observed by the HyperLogLog at key(s).
+
+##### *Return value*
+*Integer*:  The approximated number of unique elements observed via [pfAdd](#pfAdd).
+
+##### *Example*
+~~~php
+$redis->pfAdd('hll1', ['a', 'b', 'c']); // (int) 1
+$redis->pfCount('hll1'); // (int) 3
+
+$redis->pfAdd('hll2', ['d', 'e', 'a']); // (int) 1
+$redis->pfCount('hll2'); // (int) 3
+
+$redis->pfCount(['hll1', 'hll2']); // (int) 5
+~~~
+
 ### pfMerge
 -----
 
