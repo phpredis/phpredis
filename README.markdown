@@ -33,6 +33,7 @@ If you've found phpredis useful and would like to buy the maintainers a coffee (
    * [Lists](#lists)
    * [Sets](#sets)
    * [Sorted sets](#sorted-sets)
+   * [HyperLogLogs](#hyperloglogs)
    * [Geocoding](#geocoding)
    * [Streams](#streams)
    * [Pub/sub](#pubsub)
@@ -3113,6 +3114,32 @@ while($arr_matches = $redis->zScan('zset', $it, '*pattern*')) {
     }
 }
 ~~~
+
+## HyperLogLogs
+
+### pfAdd
+-----
+
+##### *Prototype*  
+~~~php
+$redis->pfAdd($key, Array $elements);
+~~~
+
+_**Description**_:  Adds the specified elements to the specified HyperLogLog.
+
+##### *Return value*
+*Integer*:  1 if at least 1 HyperLogLog internal register was altered. 0 otherwise.
+
+##### *Example*
+~~~php
+$redis->pfAdd('hll', ['a', 'b', 'c']);
+~~~
+
+### pfCount
+-----
+
+### pfMerge
+-----
 
 ## Geocoding
 
