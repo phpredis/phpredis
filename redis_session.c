@@ -384,18 +384,7 @@ PS_OPEN_FUNC(redis)
             long retry_interval = 0;
             zend_string *prefix = NULL, *auth = NULL;
 
-            /* translate unix: into file: */
-            if (!strncmp(save_path+i, "unix:", sizeof("unix:")-1)) {
-                int len = j-i;
-                char *path = estrndup(save_path+i, len);
-                memcpy(path, "file:", sizeof("file:")-1);
-                url = php_url_parse_ex(path, len);
-                efree(path);
-            } else {
-                url = php_url_parse_ex(save_path+i, j-i);
-            }
-
-            if (!url) {
+            if ((url = php_url_parse_ex(save_path + i, j - i)) == NULL) {
                 char *path = estrndup(save_path+i, j-i);
                 php_error_docref(NULL, E_WARNING,
                     "Failed to parse session.save_path (error at offset %d, url was '%s')", i, path);
