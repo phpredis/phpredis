@@ -17,6 +17,9 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [99ec24b3](https://github.com/phpredis/phpredis/commit/99ec24b3),
   [4ab1f940](https://github.com/phpredis/phpredis/commit/4ab1f940)
   ([alexander-schranz](https://github.com/alexander-schranz))
+- Allow to specify scheme for session handler.
+  [53a8bcc7](https://github.com/phpredis/phpredis/commit/53a8bcc7)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 ### Changed
 
