@@ -7,6 +7,10 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+---
+
+## [5.1.0] - 2019-10-31 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.1.0), [PECL](https://pecl.php.net/package/redis/5.1.0))
+
 ### Added
 
 - Add optional support for Zstd compression, using `--enable-redis-ztsd`.
