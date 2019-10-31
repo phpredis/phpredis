@@ -27,18 +27,22 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2019-10-21</date>
+ <date>2019-10-31</date>
  <version>
-  <release>5.1.0RC2</release>
+  <release>5.1.0</release>
   <api>5.1.0</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
     This release contains important bugfixes and improvements.
+
+    phpredis 5.1.0
+
+    * Allow to specify scheme for session handler [53a8bcc7] (Pavlo Yatsukhnenko)
 
     phpredis 5.1.0RC2
 
@@ -129,11 +133,16 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
   <release>
-   <stability><release>beta</release><api>beta</api></stability>
-   <version><release>5.1.0RC2</release><api>5.1.0</api></version>
-   <date>2019-10-21</date>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.1.0</release><api>5.1.0</api></version>
+   <date>2019-10-31</date>
    <notes>
       This release contains important bugfixes and improvements.
+
+      phpredis 5.1.0
+
+      * Allow to specify scheme for session handler [53a8bcc7] (Pavlo Yatsukhnenko)
+      * Add documentation for hyperloglog [75a6f3fa, 96a0f0c3, 9686757a] (@rlunar)
 
       phpredis 5.1.0RC2
 
