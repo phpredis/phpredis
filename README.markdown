@@ -204,7 +204,6 @@ $redis->connect('tls://127.0.0.1'); // enable transport level security, port 637
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
 $redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
-$redis->connect('unix://redis.sock'); // relative path to unix domain socket requires version 5.0.0 or higher.
 ~~~
 
 ### pconnect, popen
@@ -246,7 +245,6 @@ $redis->pconnect('tls://127.0.0.1'); // enable transport level security, port 63
 $redis->pconnect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout and would be another connection than the two before.
 $redis->pconnect('127.0.0.1', 6379, 2.5, 'x'); // x is sent as persistent_id and would be another connection than the three before.
 $redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another connection than the four before.
-$redis->pconnect('unix://redis.sock'); // relative path to unix domain socket requires version 5.0.0 or higher.
 ~~~
 
 ### auth
