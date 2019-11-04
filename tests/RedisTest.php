@@ -5882,6 +5882,62 @@ class Redis_Test extends TestSuite
         }
     }
 
+    /* If we detect a unix socket make sure we can connect to it in a variety of ways */
+    public function testUnixSocket() {
+        if ( ! file_exists("/tmp/redis.sock")) {
+            return $this->markTestSkipped();
+        }
+
+        $arr_sock_tests = [
+            ["/tmp/redis.sock"],
+            ["/tmp/redis.sock", null],
+            ["/tmp/redis.sock", 0],
+            ["/tmp/redis.sock", -1],
+        ];
+
+        try {
+            foreach ($arr_sock_tests as $arr_args) {
+                $obj_r = new Redis();
+
+                if (count($arr_args) == 2) {
+                    @$obj_r->connect($arr_args[0], $arr_args[1]);
+                } else {
+                    @$obj_r->connect($arr_args[0]);
+                }
+
+                $this->assertTrue($obj_r->ping());
+            }
+        } catch (Exception $ex) {
+            $this->assertTrue(false);
+        }
+    }
+
+    /* Test high ports if we detect Redis running there */
+    public function testHighPorts() {
+        $arr_ports = [32767, 32768, 32769];
+        $arr_test_ports = [];
+
+        foreach ($arr_ports as $port) {
+            if (is_resource(@fsockopen('localhost', $port))) {
+                $arr_test_ports[] = $port;
+            }
+        }
+
+        if ( ! $arr_test_ports) {
+            return $this->markTestSkipped();
+        }
+
+        foreach ($arr_test_ports as $port) {
+            $obj_r = new Redis();
+            try {
+                @$obj_r->connect('localhost', $port);
+                $this->assertTrue($obj_r->ping());
+            } catch(Exception $ex) {
+                $this->assertTrue(false);
+            }
+        }
+    }
+
     public function testSession_savedToRedis()
     {
         $this->setSessionHandler();

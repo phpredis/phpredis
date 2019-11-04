@@ -41,6 +41,8 @@ before_install:
 install: make install
 before_script:
   - mkdir -p tests/nodes/ && echo > tests/nodes/nodemap
+  - redis-server --port 0 --daemonize yes --unixsocket /tmp/redis.sock
+  - for PORT in $(seq 32767 32769); do redis-server --port $PORT --daemonize yes; done
   - for PORT in $(seq 6379 6382); do redis-server --port $PORT --daemonize yes; done
   - for PORT in $(seq 7000 7011); do redis-server --port $PORT --cluster-enabled yes --cluster-config-file $PORT.conf --daemonize yes; echo 127.0.0.1:$PORT >> tests/nodes/nodemap; done
   - echo yes | redis-cli --cluster create $(seq -f 127.0.0.1:%g 7000 7011) --cluster-replicas 3
