@@ -1753,7 +1753,7 @@ PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
  * redis_sock_create
  */
 PHP_REDIS_API RedisSock*
-redis_sock_create(char *host, int host_len, unsigned short port,
+redis_sock_create(char *host, int host_len, int port,
                   double timeout, double read_timeout,
                   int persistent, char *persistent_id,
                   long retry_interval)
