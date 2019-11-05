@@ -13,7 +13,7 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
-- Add optional support for Zstd compression, using `--enable-redis-ztsd`.
+- Add optional support for Zstd compression, using `--enable-redis-zstd`.
   This requires libzstd version >= 1.3.0
   [2abc61da](https://github.com/phpredis/phpredis/commit/2abc61da)
   ([Remi Collet](https://github.com/remicollet))
