@@ -21,6 +21,10 @@
     #endif
 #endif
 
+#ifdef HAVE_REDIS_ZSTD
+#include <zstd.h>
+#endif
+
 #include <zend_exceptions.h>
 #include "php_redis.h"
 #include "library.h"
@@ -56,18 +60,27 @@ extern int le_redis_pconnect;
 static ConnectionPool *
 redis_sock_get_connection_pool(RedisSock *redis_sock)
 {
+    ConnectionPool *p;
     zend_string *persistent_id = strpprintf(0, "phpredis_%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
     zend_resource *le = zend_hash_find_ptr(&EG(persistent_list), persistent_id);
-    if (!le) {
-        ConnectionPool *p = pecalloc(1, sizeof(*p) + sizeof(*le), 1);
+
+    if (le) {
+        p = le->ptr;
+    } else {
+        p = pecalloc(1, sizeof(*p), 1);
         zend_llist_init(&p->list, sizeof(php_stream *), NULL, 1);
-        le = (zend_resource *)((char *)p + sizeof(*p));
-        le->type = le_redis_pconnect;
-        le->ptr = p;
+#if (PHP_VERSION_ID < 70300)
+        zend_resource res;
+        res.type = le_redis_pconnect;
+        res.ptr = p;
+        le = &res;
         zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(persistent_id), ZSTR_LEN(persistent_id), le, sizeof(*le));
+#else
+        le = zend_register_persistent_resource(ZSTR_VAL(persistent_id), ZSTR_LEN(persistent_id), p, le_redis_pconnect);
+#endif
     }
     zend_string_release(persistent_id);
-    return le->ptr;
+    return p;
 }
 
 /* Helper to reselect the proper DB number when we reconnect */
@@ -1198,6 +1211,9 @@ redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         } else {
             add_next_index_bool(z_tab, 0);
         }
+        if (*inbuf == TYPE_ERR) {
+            redis_sock_set_err(redis_sock, inbuf + 1, len - 1);
+        }
         return -1;
     }
     numElems = atoi(inbuf+1);
@@ -1764,6 +1780,7 @@ redis_sock_create(char *host, int host_len, unsigned short port,
 
     redis_sock->serializer = REDIS_SERIALIZER_NONE;
     redis_sock->compression = REDIS_COMPRESSION_NONE;
+    redis_sock->compression_level = 0; /* default */
     redis_sock->mode = ATOMIC;
     redis_sock->head = NULL;
     redis_sock->current = NULL;
@@ -1802,7 +1819,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
         schema = estrndup(address, pos - address);
         address = pos + sizeof("://") - 1;
     }
-    if (redis_sock->port < 1) {
+    if (address[0] == '/' && redis_sock->port < 1) {
         host_len = snprintf(host, sizeof(host), "unix://%s", address);
         usocket = 1;
     } else {
@@ -2098,16 +2115,19 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
     zval *z_keys = ctx;
 
     if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
-        return -1;
+        goto failure;
     }
 
-    if(inbuf[0] != '*') {
+    if (*inbuf != TYPE_MULTIBULK) {
         if (IS_ATOMIC(redis_sock)) {
             RETVAL_FALSE;
         } else {
             add_next_index_bool(z_tab, 0);
         }
-        return -1;
+        if (*inbuf == TYPE_ERR) {
+            redis_sock_set_err(redis_sock, inbuf + 1, len - 1);
+        }
+        goto failure;
     }
     numElems = atoi(inbuf+1);
     zval z_multi_result;
@@ -2137,7 +2157,15 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
     } else {
         add_next_index_zval(z_tab, &z_multi_result);
     }
-    return 0;
+    return SUCCESS;
+failure:
+    if (z_keys != NULL) {
+        for (i = 0; Z_TYPE(z_keys[i]) != IS_NULL; ++i) {
+            zval_dtor(&z_keys[i]);
+        }
+        efree(z_keys);
+    }
+    return FAILURE;
 }
 
 /**
@@ -2186,26 +2214,60 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
     char *buf;
     int valfree;
     size_t len;
-#ifdef HAVE_REDIS_LZF
-    char *data;
-    uint32_t res;
-    double size;
-#endif
 
     valfree = redis_serialize(redis_sock, z, &buf, &len);
     switch (redis_sock->compression) {
         case REDIS_COMPRESSION_LZF:
 #ifdef HAVE_REDIS_LZF
-            /* preserve compatibility with PECL lzf_compress margin (greater of 4% and LZF_MARGIN) */
-            size = len + MIN(UINT_MAX - len, MAX(LZF_MARGIN, len / 25));
-            data = emalloc(size);
-            if ((res = lzf_compress(buf, len, data, size)) > 0) {
-                if (valfree) efree(buf);
-                *val = data;
-                *val_len = res;
-                return 1;
+            {
+                char *data;
+                uint32_t res;
+                double size;
+
+                /* preserve compatibility with PECL lzf_compress margin (greater of 4% and LZF_MARGIN) */
+                size = len + MIN(UINT_MAX - len, MAX(LZF_MARGIN, len / 25));
+                data = emalloc(size);
+                if ((res = lzf_compress(buf, len, data, size)) > 0) {
+                    if (valfree) efree(buf);
+                    *val = data;
+                    *val_len = res;
+                    return 1;
+                }
+                efree(data);
             }
-            efree(data);
+#endif
+            break;
+        case REDIS_COMPRESSION_ZSTD:
+#ifdef HAVE_REDIS_ZSTD
+            {
+                char *data;
+                size_t size;
+                int level;
+
+                if (redis_sock->compression_level < 1) {
+#ifdef ZSTD_CLEVEL_DEFAULT
+                    level = ZSTD_CLEVEL_DEFAULT;
+#else
+                    level = 3;
+#endif
+                } else if (redis_sock->compression_level > ZSTD_maxCLevel()) {
+                    level = ZSTD_maxCLevel();
+                } else {
+                    level = redis_sock->compression_level;
+                }
+
+                size = ZSTD_compressBound(len);
+                data = emalloc(size);
+                size = ZSTD_compress(data, size, buf, len, level);
+                if (!ZSTD_isError(size)) {
+                    if (valfree) efree(buf);
+                    data = erealloc(data, size);
+                    *val = data;
+                    *val_len = size;
+                    return 1;
+                }
+                efree(data);
+            }
 #endif
             break;
     }
@@ -2217,29 +2279,51 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
 PHP_REDIS_API int
 redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
 {
-#ifdef HAVE_REDIS_LZF
-    char *data;
-    int i;
-    uint32_t res;
-#endif
-
     switch (redis_sock->compression) {
         case REDIS_COMPRESSION_LZF:
 #ifdef HAVE_REDIS_LZF
-            errno = E2BIG;
-            /* start from two-times bigger buffer and
-             * increase it exponentially  if needed */
-            for (i = 2; errno == E2BIG; i *= 2) {
-                data = emalloc(i * val_len);
-                if ((res = lzf_decompress(val, val_len, data, i * val_len)) == 0) {
-                    /* errno != E2BIG will brake for loop */
+            {
+                char *data;
+                int i;
+                uint32_t res;
+
+                errno = E2BIG;
+                /* start from two-times bigger buffer and
+                 * increase it exponentially  if needed */
+                for (i = 2; errno == E2BIG; i *= 2) {
+                    data = emalloc(i * val_len);
+                    if ((res = lzf_decompress(val, val_len, data, i * val_len)) == 0) {
+                        /* errno != E2BIG will brake for loop */
+                        efree(data);
+                        continue;
+                    } else if (redis_unserialize(redis_sock, data, res, z_ret) == 0) {
+                        ZVAL_STRINGL(z_ret, data, res);
+                    }
                     efree(data);
-                    continue;
-                } else if (redis_unserialize(redis_sock, data, res, z_ret) == 0) {
-                    ZVAL_STRINGL(z_ret, data, res);
+                    return 1;
                 }
-                efree(data);
-                return 1;
+            }
+#endif
+            break;
+        case REDIS_COMPRESSION_ZSTD:
+#ifdef HAVE_REDIS_ZSTD
+            {
+                char *data;
+                size_t len;
+
+                len = ZSTD_getFrameContentSize(val, val_len);
+                if (len >= 0) {
+                    data = emalloc(len);
+                    len = ZSTD_decompress(data, len, val, val_len);
+                    if (ZSTD_isError(len)) {
+                        efree(data);
+                        break;
+                    } else if (redis_unserialize(redis_sock, data, len, z_ret) == 0) {
+                        ZVAL_STRINGL(z_ret, data, len);
+                    }
+                    efree(data);
+                    return 1;
+                }
             }
 #endif
             break;

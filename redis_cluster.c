@@ -306,7 +306,7 @@ zend_object * create_cluster_context(zend_class_entry *class_type) {
     redisCluster *cluster;
 
     // Allocate our actual struct
-    cluster = ecalloc(1, sizeof(redisCluster) + sizeof(zval) * (class_type->default_properties_count - 1));
+    cluster = ecalloc(1, sizeof(redisCluster) + zend_object_properties_size(class_type));
 
     // We're not currently subscribed anywhere
     cluster->subscribed_slot = -1;

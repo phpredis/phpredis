@@ -38,6 +38,10 @@
 
 #include "library.h"
 
+#ifdef HAVE_REDIS_ZSTD
+#include <zstd.h>
+#endif
+
 #ifdef PHP_SESSION
 extern ps_module ps_mod_redis;
 extern ps_module ps_mod_redis_cluster;
@@ -556,8 +560,7 @@ free_reply_callbacks(RedisSock *redis_sock)
 /* Passthru for destroying cluster cache */
 static void cluster_cache_dtor(zend_resource *rsrc) {
     if (rsrc->ptr) {
-        redisCachedCluster *rcc = (redisCachedCluster*)rsrc->ptr;
-        cluster_cache_free(rcc);
+        cluster_cache_free(rsrc->ptr);
     }
 }
 
@@ -687,6 +690,7 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_TCP_KEEPALIVE"), REDIS_OPT_TCP_KEEPALIVE);
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION"), REDIS_OPT_COMPRESSION);
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_REPLY_LITERAL"), REDIS_OPT_REPLY_LITERAL);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION_LEVEL"), REDIS_OPT_COMPRESSION_LEVEL);
 
     /* serializer */
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_NONE"), REDIS_SERIALIZER_NONE);
@@ -703,6 +707,16 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_NONE"), REDIS_COMPRESSION_NONE);
 #ifdef HAVE_REDIS_LZF
     zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_LZF"), REDIS_COMPRESSION_LZF);
+#endif
+#ifdef HAVE_REDIS_ZSTD
+    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD"), REDIS_COMPRESSION_ZSTD);
+    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_MIN"), 1);
+#ifdef ZSTD_CLEVEL_DEFAULT
+    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_DEFAULT"), ZSTD_CLEVEL_DEFAULT);
+#else
+    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_DEFAULT"), 3);
+#endif
+    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_MAX"), ZSTD_maxCLevel());
 #endif
 
     /* scan options*/
@@ -854,6 +868,8 @@ get_available_serializers(void)
  */
 PHP_MINFO_FUNCTION(redis)
 {
+    smart_str names = {0,};
+
     php_info_print_table_start();
     php_info_print_table_header(2, "Redis Support", "enabled");
     php_info_print_table_row(2, "Redis Version", PHP_REDIS_VERSION);
@@ -862,8 +878,19 @@ PHP_MINFO_FUNCTION(redis)
 #endif
     php_info_print_table_row(2, "Available serializers", get_available_serializers());
 #ifdef HAVE_REDIS_LZF
-    php_info_print_table_row(2, "Available compression", "lzf");
+    smart_str_appends(&names, "lzf");
 #endif
+#ifdef HAVE_REDIS_ZSTD
+    if (names.s) {
+        smart_str_appends(&names, ", ");
+    }
+    smart_str_appends(&names, "zstd");
+#endif
+    if (names.s) {
+        smart_str_0(&names);
+        php_info_print_table_row(2, "Available compression", ZSTR_VAL(names.s));
+    }
+    smart_str_free(&names);
     php_info_print_table_end();
 
     DISPLAY_INI_ENTRIES();
@@ -2598,73 +2625,6 @@ PHP_METHOD(Redis, subscribe) {
  *    channel_n => TRUE|FALSE
  * );
  **/
-
-PHP_REDIS_API void generic_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS,
-                                    char *unsub_cmd)
-{
-    zval *object, *array, *data;
-    HashTable *arr_hash;
-    RedisSock *redis_sock;
-    char *cmd = "", *old_cmd = NULL;
-    int cmd_len, array_count;
-
-    int i;
-    zval z_tab, *z_channel;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Oa",
-                                     &object, redis_ce, &array) == FAILURE) {
-        RETURN_FALSE;
-    }
-    if ((redis_sock = redis_sock_get(object, 0)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    arr_hash    = Z_ARRVAL_P(array);
-    array_count = zend_hash_num_elements(arr_hash);
-
-    if (array_count == 0) {
-        RETURN_FALSE;
-    }
-
-    ZEND_HASH_FOREACH_VAL(arr_hash, data) {
-        ZVAL_DEREF(data);
-        if (Z_TYPE_P(data) == IS_STRING) {
-            char *old_cmd = NULL;
-            if(*cmd) {
-                old_cmd = cmd;
-            }
-            spprintf(&cmd, 0, "%s %s", cmd, Z_STRVAL_P(data));
-            if(old_cmd) {
-                efree(old_cmd);
-            }
-        }
-    } ZEND_HASH_FOREACH_END();
-
-    old_cmd = cmd;
-    cmd_len = spprintf(&cmd, 0, "%s %s\r\n", unsub_cmd, cmd);
-    efree(old_cmd);
-
-    SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
-    efree(cmd);
-
-    array_init(return_value);
-    for (i = 1; i <= array_count; i++) {
-        redis_sock_read_multibulk_reply_zval(
-            INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_tab);
-
-        if (Z_TYPE(z_tab) == IS_ARRAY) {
-            if ((z_channel = zend_hash_index_find(Z_ARRVAL(z_tab), 1)) == NULL) {
-                RETURN_FALSE;
-            }
-            add_assoc_bool(return_value, Z_STRVAL_P(z_channel), 1);
-        } else {
-            //error
-            zval_dtor(&z_tab);
-            RETURN_FALSE;
-        }
-        zval_dtor(&z_tab);
-    }
-}
 
 PHP_METHOD(Redis, unsubscribe)
 {

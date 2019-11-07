@@ -33,6 +33,7 @@ If you've found phpredis useful and would like to buy the maintainers a coffee (
    * [Lists](#lists)
    * [Sets](#sets)
    * [Sorted sets](#sorted-sets)
+   * [HyperLogLogs](#hyperloglogs)
    * [Geocoding](#geocoding)
    * [Streams](#streams)
    * [Pub/sub](#pubsub)
@@ -356,16 +357,26 @@ $redis->getOption(Redis::OPT_SERIALIZER);
 
 ### ping
 -----
-_**Description**_: Check the current connection status
+_**Description**_: Check the current connection status.
 
-##### *Parameters*
-
-(none)
+##### *Prototype*
+~~~php
+$redis->ping([string $message]);
+~~~
 
 ##### *Return value*
+*Mixed*:  This method returns `TRUE` on success, or the passed string if called with an argument.
 
-*STRING*: `+PONG` on success. Throws a [RedisException](#class-redisexception) object on connectivity error, as described above.
+##### *Example*
+~~~php
+/* When called without an argument, PING returns `TRUE` */
+$redis->ping();
 
+/* If passed an argument, that argument is returned.  Here 'hello' will be returned */
+$redis->ping('hello');
+~~~
+
+*Note*:  Prior to PhpRedis 5.0.0 this command simply returned the string `+PONG`.
 
 ### echo
 -----
@@ -2117,7 +2128,7 @@ $redis->rPush('key1', 'C'); // returns 3
 
 ### rPushX
 -----
-_**Description**_: Adds the string value to the tail (right) of the list if the ist exists. `FALSE` in case of Failure.
+_**Description**_: Adds the string value to the tail (right) of the list if the list exists. `FALSE` in case of Failure.
 
 ##### *Parameters*
 *key*  
@@ -2643,6 +2654,7 @@ while(($arr_mems = $redis->sScan('set', $it, "*pattern*"))!==FALSE) {
 * [zCount](#zcount) - Count the members in a sorted set with scores within the given values
 * [zIncrBy](#zincrby) - Increment the score of a member in a sorted set
 * [zinterstore, zInter](#zinterstore-zinter) - Intersect multiple sorted sets and store the resulting sorted set in a new key
+* [zPop](#zpop) - Redis can pop the highest or lowest scoring member from one a ZSET.
 * [zRange](#zrange) - Return a range of members in a sorted set, by index
 * [zRangeByScore, zRevRangeByScore](#zrangebyscore-zrevrangebyscore) - Return a range of members in a sorted set, by score
 * [zRangeByLex](#zrangebylex) - Return a lexicographical range from members that share the same score
@@ -2805,6 +2817,31 @@ $redis->zinterstore('ko4', ['k1', 'k2'], [1, 5], 'max'); /* 2, 'ko4' => ['val3',
 ~~~
 
 **Note:** `zInter` is an alias for `zinterstore` and will be removed in future versions of phpredis.
+
+### zPop
+-----
+_**Description**_: Can pop the highest or lowest scoring members from one ZSETs. There are two commands (`ZPOPMIN` and `ZPOPMAX` for popping the lowest and highest scoring elements respectively.)
+
+##### *Prototype*
+~~~php
+$redis->zPopMin(string $key, int $count): array
+$redis->zPopMax(string $key, int $count): array
+
+$redis->zPopMin(string $key, int $count): array
+$redis->zPopMax(string $key, int $count): array
+~~~
+
+##### *Return value*
+*ARRAY:* Either an array with the key member and score of the higest or lowest element or an empty array if there is no element available.
+
+##### *Example*
+~~~php
+/* Pop the *lowest* scoring member from set `zs1`. */
+$redis->zPopMin('zs1', 5);
+
+/* Pop the *highest* scoring member from set `zs1`. */
+$redis->zPopMax('zs1', 5);
+~~~
 
 ### zRange
 -----
@@ -3076,6 +3113,86 @@ while($arr_matches = $redis->zScan('zset', $it, '*pattern*')) {
         echo "Key: $str_mem, Score: $f_score\n";
     }
 }
+~~~
+
+## HyperLogLogs
+
+### pfAdd
+-----
+
+_**Description**_:  Adds the specified elements to the specified HyperLogLog.
+
+##### *Prototype*  
+~~~php
+$redis->pfAdd($key, Array $elements);
+~~~
+
+##### *Parameters*
+_Key_  
+_Array of values_  
+
+##### *Return value*
+*Integer*:  1 if at least 1 HyperLogLog internal register was altered. 0 otherwise.
+
+##### *Example*
+~~~php
+$redis->pfAdd('hll', ['a', 'b', 'c']); // (int) 1
+$redis->pfAdd('hll', ['a', 'b']); // (int) 0
+~~~
+
+### pfCount
+-----
+
+_**Description**_:  Return the approximated cardinality of the set(s) observed by the HyperLogLog at key(s).
+
+##### *Prototype*  
+~~~php
+$redis->pfCount($key);
+$redis->pfCount(Array $keys);
+~~~
+
+##### *Parameters*
+_Key_ or _Array of keys_  
+
+##### *Return value*
+*Integer*:  The approximated number of unique elements observed via [pfAdd](#pfAdd).
+
+##### *Example*
+~~~php
+$redis->pfAdd('hll1', ['a', 'b', 'c']); // (int) 1
+$redis->pfCount('hll1'); // (int) 3
+
+$redis->pfAdd('hll2', ['d', 'e', 'a']); // (int) 1
+$redis->pfCount('hll2'); // (int) 3
+
+$redis->pfCount(['hll1', 'hll2']); // (int) 5
+~~~
+
+### pfMerge
+-----
+
+_**Description**_:  Merge N different HyperLogLogs into a single one.
+
+##### *Prototype*  
+~~~php
+$redis->pfMerge($destkey, Array $sourceKeys);
+~~~
+
+##### *Parameters*
+_Destination Key_  
+_Array of Source Keys_  
+
+##### *Return value*
+*BOOL*: `TRUE` on success, `FALSE` on error.
+
+##### *Example*
+~~~php
+$redis->pfAdd('hll1', ['a', 'b', 'c']); // (int) 1
+$redis->pfAdd('hll2', ['d', 'e', 'a']); // (int) 1
+
+$redis->pfMerge('hll3', ['hll1', 'hll2']); // true
+
+$redis->pfCount('hll3'); // (int) 5
 ~~~
 
 ## Geocoding

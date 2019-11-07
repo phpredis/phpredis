@@ -79,6 +79,7 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_TCP_KEEPALIVE      6
 #define REDIS_OPT_COMPRESSION        7
 #define REDIS_OPT_REPLY_LITERAL      8
+#define REDIS_OPT_COMPRESSION_LEVEL  9
 
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
@@ -96,6 +97,7 @@ typedef enum {
 /* compression */
 #define REDIS_COMPRESSION_NONE 0
 #define REDIS_COMPRESSION_LZF  1
+#define REDIS_COMPRESSION_ZSTD 2
 
 /* SCAN options */
 #define REDIS_SCAN_NORETRY 0
@@ -246,7 +248,7 @@ typedef struct fold_item {
 typedef struct {
     php_stream        *stream;
     zend_string       *host;
-    unsigned short    port;
+    int               port;
     zend_string       *auth;
     double            timeout;
     double            read_timeout;
@@ -258,6 +260,7 @@ typedef struct {
 
     redis_serializer  serializer;
     int               compression;
+    int               compression_level;
     long              dbNumber;
 
     zend_string       *prefix;

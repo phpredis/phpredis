@@ -12,7 +12,7 @@ class Redis_Cluster_Test extends Redis_Test {
     private $_arr_redis_types = [
         Redis::REDIS_STRING,
         Redis::REDIS_SET,
-        Redis::REDIS_LIST,  
+        Redis::REDIS_LIST,
         Redis::REDIS_ZSET,
         Redis::REDIS_HASH
     ];
@@ -33,7 +33,7 @@ class Redis_Cluster_Test extends Redis_Test {
      */
     protected $sessionSaveHandler = 'rediscluster';
 
-    /* Tests we'll skip all together in the context of RedisCluster.  The 
+    /* Tests we'll skip all together in the context of RedisCluster.  The
      * RedisCluster class doesn't implement specialized (non-redis) commands
      * such as sortAsc, or sortDesc and other commands such as SELECT are
      * simply invalid in Redis Cluster */
@@ -274,7 +274,7 @@ class Redis_Cluster_Test extends Redis_Test {
         $ret = $this->redis->msetnx(['x'=>'a','y'=>'b','z'=>'c']);
         $this->assertTrue(is_array($ret));
         $this->assertEquals(array_sum($ret),1);
-        
+
         $this->assertFalse($this->redis->msetnx(array())); // set ø → FALSE
     }
 
@@ -390,7 +390,7 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertTrue(1 === $this->redis->eval($scr,[$str_key], 1));
         $this->assertTrue(1 === $this->redis->evalsha($sha,[$str_key], 1));
     }
-    
+
     public function testEvalBulkResponse() {
         $str_key1 = uniqid() . '-' . rand(1,1000) . '{hash}';
         $str_key2 = uniqid() . '-' . rand(1,1000) . '{hash}';
@@ -458,7 +458,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testIntrospection() {
         $arr_masters = $this->redis->_masters();
         $this->assertTrue(is_array($arr_masters));
-        
+
         foreach ($arr_masters as $arr_info) {
             $this->assertTrue(is_array($arr_info));
             $this->assertTrue(is_string($arr_info[0]));
@@ -467,10 +467,10 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     protected function genKeyName($i_key_idx, $i_type) {
-        switch ($i_type) { 
-            case Redis::REDIS_STRING: 
+        switch ($i_type) {
+            case Redis::REDIS_STRING:
                 return "string-$i_key_idx";
-            case Redis::REDIS_SET: 
+            case Redis::REDIS_SET:
                 return "set-$i_key_idx";
             case Redis::REDIS_LIST:
                 return "list-$i_key_idx";
@@ -491,7 +491,7 @@ class Redis_Cluster_Test extends Redis_Test {
         switch ($i_type) {
             case Redis::REDIS_STRING:
                 $value = "$str_key-value";
-                $this->redis->set($str_key, $value); 
+                $this->redis->set($str_key, $value);
                 break;
             case Redis::REDIS_SET:
                 $value = [
@@ -509,7 +509,7 @@ class Redis_Cluster_Test extends Redis_Test {
                     $str_key . '-mem3' => $str_key . '-val3'
                 ];
                 $this->redis->hmset($str_key, $value);
-                break; 
+                break;
             case Redis::REDIS_LIST:
                 $value = [
                     $str_key . '-ele1', $str_key . '-ele2', $str_key . '-ele3',
@@ -528,7 +528,7 @@ class Redis_Cluster_Test extends Redis_Test {
                 foreach ($value as $str_mem => $i_score) {
                     $this->redis->zadd($str_key, $i_score, $str_mem);
                 }
-                break; 
+                break;
         }
 
         /* Update our reference array so we can verify values */
@@ -585,7 +585,7 @@ class Redis_Cluster_Test extends Redis_Test {
         for ($i = 0; $i < 200; $i++) {
             foreach ($this->_arr_redis_types as $i_type) {
                 $str_key = $this->setKeyVals($i, $i_type, $arr_value_ref);
-                $arr_type_ref[$str_key] = $i_type;                
+                $arr_type_ref[$str_key] = $i_type;
             }
         }
 
@@ -598,7 +598,7 @@ class Redis_Cluster_Test extends Redis_Test {
             }
 
             break;
-        }    
+        }
     }
 
     /* Test a 'raw' command */
@@ -647,6 +647,22 @@ class Redis_Cluster_Test extends Redis_Test {
         }
         session_write_close();
         $this->assertTrue($this->redis->exists('PHPREDIS_CLUSTER_SESSION:' . session_id()));
+    }
+
+
+    /* Test that we are able to use the slot cache without issues */
+    public function testSlotCache() {
+        ini_set('redis.clusters.cache_slots', 1);
+
+        $pong = 0;
+        for ($i = 0; $i < 10; $i++) {
+            $obj_rc = new RedisCluster(NULL, self::$_arr_node_map);
+            $pong += $obj_rc->ping("key:$i");
+        }
+
+        $this->assertEquals($pong, $i);
+
+        ini_set('redis.clusters.cache_slots', 0);
     }
 
     /**

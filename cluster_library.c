@@ -239,7 +239,7 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
         case TYPE_MULTIBULK:
             r->elements = len;
             if (len != (size_t)-1) {
-                r->element = ecalloc(len, sizeof(clusterReply*)*len);
+                r->element = ecalloc(len, sizeof(clusterReply*));
                 cluster_multibulk_resp_recursive(redis_sock, len, r->element,
                                                  line_reply != NULL, &err);
             }
@@ -905,7 +905,7 @@ PHP_REDIS_API
 redisCachedCluster *cluster_cache_create(zend_string *hash, HashTable *nodes) {
     redisCachedCluster *cc;
     redisCachedMaster *cm;
-    redisClusterNode *node;
+    redisClusterNode *node, *slave;
 
     cc = pecalloc(1, sizeof(*cc), 1);
     cc->hash = zend_string_dup(hash, 1);
@@ -924,6 +924,19 @@ redisCachedCluster *cluster_cache_create(zend_string *hash, HashTable *nodes) {
 
         /* Copy over slot ranges */
         cm->slot = slot_range_list_clone(&node->slots, &cm->slots);
+
+        /* Attach any slave nodes we have. */
+        if (node->slaves) {
+            /* Allocate memory for slaves */
+            cm->slave = pecalloc(zend_hash_num_elements(node->slaves), sizeof(*cm->slave), 1);
+
+            /* Copy host/port information for each slave */
+            ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
+                cm->slave[cm->slaves].addr = zend_string_dup(slave->sock->host, 1);
+                cm->slave[cm->slaves].port = slave->sock->port;
+                cm->slaves++;
+            } ZEND_HASH_FOREACH_END();
+        }
 
         cc->count++;
     } ZEND_HASH_FOREACH_END();

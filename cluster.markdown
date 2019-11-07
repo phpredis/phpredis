@@ -182,6 +182,6 @@ The save path for cluster based session storage takes the form of a PHP GET requ
 * _persistent_: Tells phpredis whether persistent connections should be used.
 * _distribute_: phpredis will randomly distribute session reads between masters and any attached slaves (load balancing).
 * _failover (string)_:  How phpredis should distribute session reads between master and slave nodes.
+  * _none_ : phpredis will only communicate with master nodes
+  * _error_: phpredis will communicate with master nodes unless one failes, in which case an attempt will be made to read session information from a slave. 
 * _auth (string, empty by default)_:  The password used to authenticate with the server prior to sending commands.
-* * _none_ : phpredis will only communicate with master nodes
-* * _error_: phpredis will communicate with master nodes unless one failes, in which case an attempt will be made to read session information from a slave. 

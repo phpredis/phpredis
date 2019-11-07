@@ -227,8 +227,10 @@ ra_call_user_function(HashTable *function_table, zval *object, zval *function_na
 {
     if (object) {
         redis_object *redis = PHPREDIS_GET_OBJECT(redis_object, object);
-        if (redis->sock->auth && redis->sock->status != REDIS_SOCK_STATUS_CONNECTED) {
-            redis_sock_server_open(redis->sock);
+        if (redis->sock->auth &&
+            redis->sock->status != REDIS_SOCK_STATUS_CONNECTED &&
+            redis_sock_server_open(redis->sock) == SUCCESS
+        ) {
             redis_sock_auth(redis->sock);
         }
     }
@@ -653,7 +655,7 @@ PHP_METHOD(RedisArray, _continuum)
 static void
 multihost_distribute_call(RedisArray *ra, zval *return_value, zval *z_fun, int argc, zval *argv)
 {
-    zval z_arg, z_tmp;
+    zval z_tmp;
     int i;
 
     /* Init our array return */
@@ -665,7 +667,7 @@ multihost_distribute_call(RedisArray *ra, zval *return_value, zval *z_fun, int a
         ra_call_user_function(&redis_array_ce->function_table, &ra->redis[i], z_fun, &z_tmp, argc, argv);
 
         /* Add the result for this host */
-        add_assoc_zval_ex(return_value, ZSTR_VAL(ra->hosts[i]), ZSTR_LEN(ra->hosts[i]), &z_arg);
+        add_assoc_zval_ex(return_value, ZSTR_VAL(ra->hosts[i]), ZSTR_LEN(ra->hosts[i]), &z_tmp);
     }
 }
 
