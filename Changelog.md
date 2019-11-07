@@ -7,6 +7,13 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix fail to connect to redis through unix socket
+  [2bae8010](https://github.com/phpredis/phpredis/commit/2bae8010),
+  [9f4ededa](https://github.com/phpredis/phpredis/commit/9f4ededa)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
+
 ---
 
 ## [5.1.0] - 2019-10-31 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.1.0), [PECL](https://pecl.php.net/package/redis/5.1.0))
