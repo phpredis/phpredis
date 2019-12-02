@@ -397,6 +397,8 @@ PHP_REDIS_API void cluster_init_cache(redisCluster *c, redisCachedCluster *rcc);
 
 PHP_REDIS_API char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock,
     int *len);
+PHP_REDIS_API int cluster_cache_store(HashTable *ht_seeds, HashTable *nodes);
+PHP_REDIS_API redisCachedCluster *cluster_cache_load(HashTable *ht_seeds);
 
 /*
  * Redis Cluster response handlers.  Our response handlers generally take the

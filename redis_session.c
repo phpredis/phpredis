@@ -959,10 +959,20 @@ PS_OPEN_FUNC(rediscluster) {
     if (auth && auth_len > 0) {
         c->auth = zend_string_init(auth, auth_len, 0);
     }
-    if (!cluster_init_seeds(c, ht_seeds) && !cluster_map_keyspace(c)) {
+
+    redisCachedCluster *cc;
+
+    /* Attempt to load from cache */
+    if ((cc = cluster_cache_load(ht_seeds))) {
+        cluster_init_cache(c, cc);
         /* Set up our prefix */
         c->flags->prefix = zend_string_init(prefix, prefix_len, 0);
-
+        PS_SET_MOD_DATA(c);
+        retval = SUCCESS;
+    } else if (!cluster_init_seeds(c, ht_seeds) && !cluster_map_keyspace(c)) {
+        /* Set up our prefix */
+        c->flags->prefix = zend_string_init(prefix, prefix_len, 0);
+        cluster_cache_store(ht_seeds, c->nodes);
         PS_SET_MOD_DATA(c);
         retval = SUCCESS;
     } else {
