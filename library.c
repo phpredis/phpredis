@@ -1800,8 +1800,8 @@ redis_sock_create(char *host, int host_len, int port,
 static int
 redis_sock_check_liveness(RedisSock *redis_sock)
 {
-    char inbuf[4096], uniqid[32], *response;
-    int uniqid_len, response_len;
+    char inbuf[4096], uniqid[64];
+    int uniqid_len;
     smart_string cmd = {0};
     struct timeval tv;
     size_t len;
@@ -1811,7 +1811,7 @@ redis_sock_check_liveness(RedisSock *redis_sock)
         redis_cmd_append_sstr(&cmd, ZSTR_VAL(redis_sock->auth), ZSTR_LEN(redis_sock->auth));
     }
     gettimeofday(&tv, NULL);
-    uniqid_len = sprintf(uniqid, "%08lx%05lx", tv.tv_sec, tv.tv_usec);
+    uniqid_len = snprintf(uniqid, sizeof(uniqid), "phpredis_pool:%08lx%05lx:%08" PRIx32, (long)tv.tv_sec, (long)tv.tv_usec, php_mt_rand());
     redis_cmd_init_sstr(&cmd, 1, "PING", sizeof("PING") - 1);
     redis_cmd_append_sstr(&cmd, uniqid, uniqid_len);
     smart_string_0(&cmd);
