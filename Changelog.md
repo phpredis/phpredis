@@ -7,6 +7,13 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Changed
+
+- Use PING to check liveness of connection
+  [99ebd0cc](https://github.com/phpredis/phpredis/commit/99ebd0cc),
+  [3243f426](https://github.com/phpredis/phpredis/commit/3243f426)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
+
 ---
 
 ## [5.1.1] - 2019-11-11 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.1.1), [PECL](https://pecl.php.net/package/redis/5.1.1))
