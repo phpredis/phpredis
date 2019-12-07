@@ -9,10 +9,14 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
-- Use PING to check liveness of connection
+- Use ECHO to check liveness of connection
   [99ebd0cc](https://github.com/phpredis/phpredis/commit/99ebd0cc),
-  [3243f426](https://github.com/phpredis/phpredis/commit/3243f426)
+  [3243f426](https://github.com/phpredis/phpredis/commit/3243f426),
+  [a5f95925](https://github.com/phpredis/phpredis/commit/a5f95925)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
+- Enable slot caching for session cluster
+  [23b1a9d8](https://github.com/phpredis/phpredis/commit/23b1a9d84)
+  ([Michael03](https://github.com/Michael03))
 
 ---
 
