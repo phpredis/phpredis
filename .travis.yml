@@ -5,14 +5,14 @@ php:
   - 7.1
   - 7.2
   - 7.3
-  - 7.4snapshot
+  - 7.4
   - nightly
 env: CC=gcc
 matrix:
   allow_failures:
     - php: 7.3
       env: CC=clang
-    - php: 7.4snapshot
+    - php: 7.4
       env: CC=clang
     - php: nightly
   include:
@@ -24,7 +24,7 @@ matrix:
       env: CC=clang
     - php: 7.3
       env: CC=clang
-    - php: 7.4snapshot
+    - php: 7.4
       env: CC=clang
 addons:
   apt:
@@ -42,8 +42,7 @@ install: make install
 before_script:
   - mkdir -p tests/nodes/ && echo > tests/nodes/nodemap
   - redis-server --port 0 --daemonize yes --unixsocket /tmp/redis.sock
-  - for PORT in $(seq 32767 32769); do redis-server --port $PORT --daemonize yes; done
-  - for PORT in $(seq 6379 6382); do redis-server --port $PORT --daemonize yes; done
+  - for PORT in $(seq 6379 6382) $(seq 32767 32769); do redis-server --port $PORT --daemonize yes; done
   - for PORT in $(seq 7000 7011); do redis-server --port $PORT --cluster-enabled yes --cluster-config-file $PORT.conf --daemonize yes; echo 127.0.0.1:$PORT >> tests/nodes/nodemap; done
   - echo yes | redis-cli --cluster create $(seq -f 127.0.0.1:%g 7000 7011) --cluster-replicas 3
   - echo 'extension = redis.so' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
