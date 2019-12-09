@@ -462,6 +462,10 @@ redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     if(inbuf[0] != '*') {
+        if (*inbuf == TYPE_ERR) {
+            redis_sock_set_err(redis_sock, inbuf + 1, len - 1);
+            redis_error_throw(redis_sock);
+        }
         return NULL;
     }
     numElems = atoi(inbuf+1);
@@ -1183,6 +1187,7 @@ read_mbulk_header(RedisSock *redis_sock, int *nelem)
         if (IS_ATOMIC(redis_sock)) {
             if (line[0] == '-') {
                 redis_sock_set_err(redis_sock, line+1, len-1);
+                redis_error_throw(redis_sock);
             }
         }
         return -1;
@@ -1213,6 +1218,7 @@ redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         }
         if (*inbuf == TYPE_ERR) {
             redis_sock_set_err(redis_sock, inbuf + 1, len - 1);
+            redis_error_throw(redis_sock);
         }
         return -1;
     }
@@ -1256,6 +1262,7 @@ redis_sock_read_single_line(RedisSock *redis_sock, char *buffer, size_t buflen,
     if (set_err && type == TYPE_ERR) {
         if (IS_ATOMIC(redis_sock)) {
             redis_sock_set_err(redis_sock, buffer, *linelen);
+            redis_error_throw(redis_sock);
         }
     }
 
@@ -2008,6 +2015,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
         if (IS_ATOMIC(redis_sock)) {
             if (inbuf[0] == '-') {
                 redis_sock_set_err(redis_sock, inbuf+1, len);
+                redis_error_throw(redis_sock);
             }
             RETVAL_FALSE;
         } else {
@@ -2049,6 +2057,7 @@ redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval 
         if (IS_ATOMIC(redis_sock)) {
             if (inbuf[0] == '-') {
                 redis_sock_set_err(redis_sock, inbuf+1, len);
+                redis_error_throw(redis_sock);
             }
             RETVAL_FALSE;
         } else {
@@ -2126,6 +2135,7 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
         }
         if (*inbuf == TYPE_ERR) {
             redis_sock_set_err(redis_sock, inbuf + 1, len - 1);
+            redis_error_throw(redis_sock);
         }
         goto failure;
     }
