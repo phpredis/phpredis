@@ -167,6 +167,8 @@ redis_error_throw(RedisSock *redis_sock)
      * Disque) */
     if (!REDIS_SOCK_ERRCMP_STATIC(redis_sock, "ERR") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOSCRIPT") &&
+        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOQUORUM") &&
+        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOGOODSLAVE") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "WRONGTYPE") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "BUSYGROUP") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOGROUP"))

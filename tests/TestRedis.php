@@ -4,6 +4,7 @@ require_once(dirname($_SERVER['PHP_SELF'])."/TestSuite.php");
 require_once(dirname($_SERVER['PHP_SELF'])."/RedisTest.php");
 require_once(dirname($_SERVER['PHP_SELF'])."/RedisArrayTest.php");
 require_once(dirname($_SERVER['PHP_SELF'])."/RedisClusterTest.php");
+require_once(dirname($_SERVER['PHP_SELF'])."/RedisSentinelTest.php");
 
 /* Make sure errors go to stdout and are shown */
 error_reporting(E_ALL);
@@ -13,7 +14,7 @@ ini_set( 'display_errors','1');
 $arr_args = getopt('', ['host:', 'class:', 'test:', 'nocolors']);
 
 /* Grab the test the user is trying to run */
-$arr_valid_classes = ['redis', 'redisarray', 'rediscluster'];
+$arr_valid_classes = ['redis', 'redisarray', 'rediscluster', 'redissentinel'];
 $str_class = isset($arr_args['class']) ? strtolower($arr_args['class']) : 'redis';
 $boo_colorize = !isset($arr_args['nocolors']);
 
@@ -25,7 +26,7 @@ $str_host = isset($arr_args['host']) ? $arr_args['host'] : '127.0.0.1';
 
 /* Validate the class is known */
 if (!in_array($str_class, $arr_valid_classes)) {
-    echo "Error:  Valid test classes are Redis, RedisArray, and RedisCluster!\n";
+    echo "Error:  Valid test classes are Redis, RedisArray, RedisCluster and RedisSentinel!\n";
     exit(1);
 }
 
@@ -56,8 +57,11 @@ if ($str_class == 'redis') {
             }
         }
     }
-} else {
+} else if ($str_class == 'rediscluster') {
     echo TestSuite::make_bold("RedisCluster") . "\n";
     exit(TestSuite::run("Redis_Cluster_Test", $str_filter, $str_host));
+} else {
+    echo TestSuite::make_bold("RedisSentinel") . "\n";
+    exit(TestSuite::run("Redis_Sentinel_Test", $str_filter, $str_host));
 }
 ?>

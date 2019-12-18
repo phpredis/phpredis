@@ -3863,6 +3863,30 @@ int redis_xtrim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int
+redis_sentinel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") == FAILURE) {
+        return FAILURE;
+    }
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SENTINEL", "s", kw, strlen(kw));
+    return SUCCESS;
+}
+
+int
+redis_sentinel_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    zend_string *name;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &name) == FAILURE) {
+        return FAILURE;
+    }
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SENTINEL", "sS", kw, strlen(kw), name);
+    return SUCCESS;
+}
+
 /*
  * Redis commands that don't deal with the server at all.  The RedisSock*
  * pointer is the only thing retrieved differently, so we just take that
