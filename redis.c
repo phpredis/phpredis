@@ -24,16 +24,16 @@
 #include "config.h"
 #endif
 
-#include "common.h"
-#include "ext/standard/info.h"
 #include "php_redis.h"
-#include "redis_commands.h"
 #include "redis_array.h"
 #include "redis_cluster.h"
+#include "redis_commands.h"
+#include "redis_sentinel.h"
 #include <zend_exceptions.h>
+#include <ext/standard/info.h>
 
 #ifdef PHP_SESSION
-#include "ext/session/php_session.h"
+#include <ext/session/php_session.h>
 #endif
 
 #include "library.h"
@@ -50,6 +50,7 @@ extern ps_module ps_mod_redis_cluster;
 extern zend_class_entry *redis_array_ce;
 extern zend_class_entry *redis_cluster_ce;
 extern zend_class_entry *redis_cluster_exception_ce;
+extern zend_class_entry *redis_sentinel_ce;
 
 zend_class_entry *redis_ce;
 zend_class_entry *redis_exception_ce;
@@ -58,6 +59,7 @@ extern int le_cluster_slot_cache;
 
 extern zend_function_entry redis_array_functions[];
 extern zend_function_entry redis_cluster_functions[];
+extern zend_function_entry redis_sentinel_functions[];
 
 int le_redis_pconnect;
 
@@ -756,6 +758,7 @@ PHP_MINIT_FUNCTION(redis)
     zend_class_entry redis_class_entry;
     zend_class_entry redis_array_class_entry;
     zend_class_entry redis_cluster_class_entry;
+    zend_class_entry redis_sentinel_class_entry;
     zend_class_entry redis_exception_class_entry;
     zend_class_entry redis_cluster_exception_class_entry;
 
@@ -781,6 +784,11 @@ PHP_MINIT_FUNCTION(redis)
     INIT_CLASS_ENTRY(redis_cluster_class_entry, "RedisCluster", redis_cluster_functions);
     redis_cluster_ce = zend_register_internal_class(&redis_cluster_class_entry);
     redis_cluster_ce->create_object = create_cluster_context;
+
+    /* RedisSentinel class */
+    INIT_CLASS_ENTRY(redis_sentinel_class_entry, "RedisSentinel", redis_sentinel_functions);
+    redis_sentinel_ce = zend_register_internal_class(&redis_sentinel_class_entry);
+    redis_sentinel_ce->create_object = create_sentinel_object;
 
     /* Register our cluster cache list item */
     le_cluster_slot_cache = zend_register_list_destructors_ex(NULL, cluster_cache_dtor,
