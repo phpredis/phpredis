@@ -1,12 +1,18 @@
 #include "php_redis.h"
 #include "redis_commands.h"
 #include "redis_sentinel.h"
+#include <zend_exceptions.h>
 
 zend_class_entry *redis_sentinel_ce;
+extern zend_class_entry *redis_exception_ce;
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_ctor, 0, 0, 1)
     ZEND_ARG_INFO(0, host)
     ZEND_ARG_INFO(0, port)
+    ZEND_ARG_INFO(0, timeout)
+    ZEND_ARG_INFO(0, persistent)
+    ZEND_ARG_INFO(0, retry_interval)
+    ZEND_ARG_INFO(0, read_timeout)
 ZEND_END_ARG_INFO()
 
 zend_function_entry redis_sentinel_functions[] = {
@@ -26,21 +32,53 @@ zend_function_entry redis_sentinel_functions[] = {
 
 PHP_METHOD(RedisSentinel, __construct)
 {
+    int persistent = 0;
+    char *persistent_id = NULL;
+    double timeout = 0.0, read_timeout = 0.0;
+    zend_long port = 26379, retry_interval = 0;
     redis_sentinel_object *obj;
-    zend_long port = -1;
     zend_string *host;
+    zval *zv = NULL;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|l", &host, &port) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|ldz!ld",
+                                &host, &port, &timeout, &zv,
+                                &retry_interval, &read_timeout) == FAILURE) {
         RETURN_FALSE;
     }
 
-    /* If it's not a unix socket, set to default */
-    if (port < 0 && ZSTR_LEN(host) > 0 && *ZSTR_VAL(host) != '/') {
-        port = 26379;
+    if (port < 0 || port > UINT16_MAX) {
+        REDIS_THROW_EXCEPTION("Invalid port", 0);
+        RETURN_FALSE;
+    }
+
+    if (timeout < 0L || timeout > INT_MAX) {
+        REDIS_THROW_EXCEPTION("Invalid connect timeout", 0);
+        RETURN_FALSE;
+    }
+
+    if (read_timeout < 0L || read_timeout > INT_MAX) {
+        REDIS_THROW_EXCEPTION("Invalid read timeout", 0);
+        RETURN_FALSE;
+    }
+
+    if (retry_interval < 0L || retry_interval > INT_MAX) {
+        REDIS_THROW_EXCEPTION("Invalid retry interval", 0);
+        RETURN_FALSE;
+    }
+
+    if (zv) {
+        ZVAL_DEREF(zv);
+        if (Z_TYPE_P(zv) == IS_STRING) {
+            persistent_id = Z_STRVAL_P(zv);
+            persistent = 1; /* even empty */
+        } else {
+            persistent = zval_is_true(zv);
+        }
     }
 
     obj = PHPREDIS_GET_OBJECT(redis_sentinel_object, getThis());
-    obj->sock = redis_sock_create(ZSTR_VAL(host), ZSTR_LEN(host), port, 0, 0, 0, NULL, 0);
+    obj->sock = redis_sock_create(ZSTR_VAL(host), ZSTR_LEN(host), port,
+        timeout, read_timeout, persistent, persistent_id, retry_interval);
 }
 
 PHP_METHOD(RedisSentinel, ckquorum)
