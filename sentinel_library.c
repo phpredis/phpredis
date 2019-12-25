@@ -54,7 +54,6 @@ sentinel_mbulk_reply_zipped_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis
     for (i = 0; i < nelem; ++i) {
         /* redis_mbulk_reply_zipped_raw calls redis_mbulk_reply_zipped
          * which puts result into return_value via RETVAL_ZVAL */
-        array_init(return_value);
         redis_mbulk_reply_zipped_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, ctx);
         add_next_index_zval(&z_ret, return_value);
     }
