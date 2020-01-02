@@ -206,6 +206,8 @@ $redis->connect('/tmp/redis.sock'); // unix domain socket.
 $redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
 ~~~
 
+**Note:** `open` is an alias for `connect` and will be removed in future versions of phpredis.
+
 ### pconnect, popen
 -----
 _**Description**_: Connects to a Redis instance or reuse a connection already established with `pconnect`/`popen`.
@@ -246,6 +248,8 @@ $redis->pconnect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout and would be anothe
 $redis->pconnect('127.0.0.1', 6379, 2.5, 'x'); // x is sent as persistent_id and would be another connection than the three before.
 $redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another connection than the four before.
 ~~~
+
+**Note:** `popen` is an alias for `pconnect` and will be removed in future versions of phpredis.
 
 ### auth
 -----
@@ -1171,8 +1175,6 @@ $redis->get('key'); /* 'value1value2' */
 -----
 _**Description**_: Return a substring of a larger string
 
-*Note*: substr also supported but deprecated in redis.
-
 ##### *Parameters*
 *key*  
 *start*  
@@ -1187,6 +1189,8 @@ $redis->set('key', 'string value');
 $redis->getRange('key', 0, 5); /* 'string' */
 $redis->getRange('key', -5, -1); /* 'value' */
 ~~~
+
+**Note**: `substr` is an alias for `getRange` and will be removed in future versions of phpredis.
 
 ### setRange
 -----
@@ -2430,6 +2434,8 @@ array(3) {
 ~~~
 The order is random and corresponds to redis' own internal representation of the set structure.
 
+**Note:** `sGetMembers` is an alias for `sMembers` and will be removed in future versions of phpredis.
+
 ### sMove
 -----
 _**Description**_: Moves the specified member from the set at srcKey to the set at dstKey.
@@ -2729,8 +2735,10 @@ _**Description**_: Returns the cardinality of an ordered set.
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
-$redis->zSize('key'); /* 3 */
+$redis->zCard('key'); /* 3 */
 ~~~
+
+**Note**: `zSize` is an alias for `zCard` and will be removed in future versions of phpredis.
 
 ### zCount
 -----
