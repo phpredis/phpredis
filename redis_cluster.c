@@ -2596,7 +2596,7 @@ PHP_METHOD(RedisCluster, hscan) {
 /* }}} */
 
 /* {{{ proto RedisCluster::save(string key)
- *     proto RedisCluster::save(string host, long port) */
+ *     proto RedisCluster::save(array host_port) */
 PHP_METHOD(RedisCluster, save) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SAVE", TYPE_LINE,
         cluster_bool_resp);
@@ -2604,7 +2604,7 @@ PHP_METHOD(RedisCluster, save) {
 /* }}} */
 
 /* {{{ proto RedisCluster::bgsave(string key)
- *     proto RedisCluster::bgsave(string host, long port) */
+ *     proto RedisCluster::bgsave(array host_port) */
 PHP_METHOD(RedisCluster, bgsave) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "BGSAVE",
         TYPE_LINE, cluster_bool_resp);
@@ -2628,7 +2628,7 @@ PHP_METHOD(RedisCluster, flushall) {
 /* }}} */
 
 /* {{{ proto RedisCluster::dbsize(string key)
- *     proto RedisCluster::dbsize(string host, long port) */
+ *     proto RedisCluster::dbsize(array host_port) */
 PHP_METHOD(RedisCluster, dbsize) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DBSIZE",
         TYPE_INT, cluster_long_resp);
@@ -2636,7 +2636,7 @@ PHP_METHOD(RedisCluster, dbsize) {
 /* }}} */
 
 /* {{{ proto RedisCluster::bgrewriteaof(string key)
- *     proto RedisCluster::bgrewriteaof(string host, long port) */
+ *     proto RedisCluster::bgrewriteaof(array host_port) */
 PHP_METHOD(RedisCluster, bgrewriteaof) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "BGREWRITEAOF",
         TYPE_LINE, cluster_bool_resp);
