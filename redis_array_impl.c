@@ -161,7 +161,7 @@ ra_find_name(const char *name) {
     return 0;
 }
 
-/* laod array from INI settings */
+/* load array from INI settings */
 RedisArray *ra_load_array(const char *name) {
 
     zval *z_data, z_fun, z_dist;

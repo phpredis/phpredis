@@ -846,7 +846,7 @@ static void session_conf_timeout(HashTable *ht_conf, const char *key, int key_le
     }
 }
 
-/* Simple helper to retreive a boolean (0 or 1) value from a string stored in our
+/* Simple helper to retrieve a boolean (0 or 1) value from a string stored in our
  * session.save_path variable.  This is so the user can use 0, 1, or 'true',
  * 'false' */
 static void session_conf_bool(HashTable *ht_conf, char *key, int keylen,

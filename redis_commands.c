@@ -2176,7 +2176,7 @@ int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (src_free) efree(src);
     if (dst_free) efree(dst);
 
-    // Succcess!
+    // Success!
     return SUCCESS;
 }
 
@@ -3867,8 +3867,8 @@ int redis_xtrim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /*
  * Redis commands that don't deal with the server at all.  The RedisSock*
- * pointer is the only thing retreived differently, so we just take that
- * in additon to the standard INTERNAL_FUNCTION_PARAMETERS for arg parsing,
+ * pointer is the only thing retrieved differently, so we just take that
+ * in addition to the standard INTERNAL_FUNCTION_PARAMETERS for arg parsing,
  * return value handling, and thread safety. */
 
 void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
@@ -4087,7 +4087,7 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     }
     zval zv, *z_ret = &zv;
     if (!redis_unserialize(redis_sock, value, value_len, z_ret)) {
-        // Badly formed input, throw an execption
+        // Badly formed input, throw an exception
         zend_throw_exception(ex, "Invalid serialized data, or unserialization error", 0);
         RETURN_FALSE;
     }

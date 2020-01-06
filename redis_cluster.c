@@ -90,7 +90,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan_cl, 0, 0, 2)
     ZEND_ARG_INFO(0, i_count)
 ZEND_END_ARG_INFO()
 
-/* Argument infor for SCAN */
+/* Argument info for SCAN */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_scan_cl, 0, 0, 2)
     ZEND_ARG_INFO(1, i_iterator)
     ZEND_ARG_INFO(0, str_node)
@@ -379,7 +379,7 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
     c->read_timeout = read_timeout;
     c->persistent = persistent;
 
-    /* Calculate the number of miliseconds we will wait when bouncing around,
+    /* Calculate the number of milliseconds we will wait when bouncing around,
      * (e.g. a node goes down), which is not the same as a standard timeout. */
     c->waitms = (long)(timeout * 1000);
 
@@ -679,7 +679,7 @@ static HashTable *method_args_to_ht(zval *z_args, int argc) {
     return ht_ret;
 }
 
-/* Convienience handler for commands that take multiple keys such as
+/* Convenience handler for commands that take multiple keys such as
  * MGET, DEL, and UNLINK */
 static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
                             zval *z_ret, cluster_cb cb)
@@ -2251,7 +2251,7 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg)
         }
     } else {
         php_error_docref(0, E_WARNING,
-            "Direted commands musty be passed a key or [host,port] array");
+            "Directed commands must be passed a key or [host,port] array");
         return -1;
     }
 
@@ -2959,7 +2959,7 @@ PHP_METHOD(RedisCluster, ping) {
     /* Send it off */
     rtype = CLUSTER_IS_ATOMIC(c) && arg != NULL ? TYPE_BULK : TYPE_LINE;
     if (cluster_send_slot(c, slot, cmd, cmdlen, rtype) < 0) {
-        CLUSTER_THROW_EXCEPTION("Unable to send commnad at the specificed node", 0);
+        CLUSTER_THROW_EXCEPTION("Unable to send command at the specified node", 0);
         efree(cmd);
         RETURN_FALSE;
     }
@@ -3081,7 +3081,7 @@ PHP_METHOD(RedisCluster, echo) {
     /* Send it off */
     rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
     if (cluster_send_slot(c,slot,cmd,cmd_len,rtype) < 0) {
-        CLUSTER_THROW_EXCEPTION("Unable to send commnad at the specificed node", 0);
+        CLUSTER_THROW_EXCEPTION("Unable to send command at the specified node", 0);
         efree(cmd);
         RETURN_FALSE;
     }

@@ -2347,7 +2347,7 @@ PHP_METHOD(Redis, multi)
             REDIS_ENABLE_MODE(redis_sock, PIPELINE);
         }
     } else if (multi_value == MULTI) {
-        /* Don't want to do anything if we're alredy in MULTI mode */
+        /* Don't want to do anything if we're already in MULTI mode */
         if (!IS_MULTI(redis_sock)) {
             cmd_len = REDIS_SPPRINTF(&cmd, "MULTI", "");
             if (IS_PIPELINE(redis_sock)) {
@@ -2513,7 +2513,7 @@ redis_response_enqueued(RedisSock *redis_sock)
 }
 
 /* TODO:  Investigate/fix the odd logic going on in here.  Looks like previous abort
- *        condidtions that are now simply empty if { } { } blocks. */
+ *        conditions that are now simply empty if { } { } blocks. */
 PHP_REDIS_API int
 redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
                                            RedisSock *redis_sock, zval *z_tab,
@@ -3042,7 +3042,7 @@ PHP_METHOD(Redis, script) {
         RETURN_FALSE;
     }
 
-    /* Free our alocated arguments */
+    /* Free our allocated arguments */
     efree(z_args);
 
     // Kick off our request
@@ -3496,7 +3496,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
 
     // The iterator should be passed in as NULL for the first iteration, but we
     // can treat any NON LONG value as NULL for these purposes as we've
-    // seperated the variable anyway.
+    // separated the variable anyway.
     if(Z_TYPE_P(z_iter) != IS_LONG || Z_LVAL_P(z_iter) < 0) {
         /* Convert to long */
         convert_to_long(z_iter);

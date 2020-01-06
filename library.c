@@ -574,7 +574,7 @@ union resparg {
 };
 
 /* A printf like method to construct a Redis RESP command.  It has been extended
- * to take a few different format specifiers that are convienient to phpredis.
+ * to take a few different format specifiers that are convenient to phpredis.
  *
  * s - C string followed by length as a
  * S - Pointer to a zend_string
@@ -1274,7 +1274,7 @@ redis_read_stream_messages(RedisSock *redis_sock, int count, zval *z_ret
 
     /* Iterate over each message */
     for (i = 0; i < count; i++) {
-        /* Consume inner multi-bulk header, message ID itself and finaly
+        /* Consume inner multi-bulk header, message ID itself and finally
          * the multi-bulk header for field and values */
         if ((read_mbulk_header(redis_sock, &mhdr) < 0 || mhdr != 2) ||
             ((id = redis_sock_read(redis_sock, &idlen)) == NULL) ||

@@ -738,7 +738,7 @@ $redis->set('key','value', 10);
 // Will set the key, if it doesn't exist, with a ttl of 10 seconds
 $redis->set('key', 'value', ['nx', 'ex'=>10]);
 
-// Will set a key, if it does exist, with a ttl of 1000 miliseconds
+// Will set a key, if it does exist, with a ttl of 1000 milliseconds
 $redis->set('key', 'value', ['xx', 'px'=>1000]);
 
 ~~~
@@ -2679,7 +2679,7 @@ $redis->bzPopMax(string $key1, string $key2, ... int $timeout): array
 ~~~
 
 ##### *Return value*
-*ARRAY:* Either an array with the key member and score of the higest or lowest element or an empty array if the timeout was reached without an element to pop.
+*ARRAY:* Either an array with the key member and score of the highest or lowest element or an empty array if the timeout was reached without an element to pop.
 
 ##### *Example*
 ~~~php
@@ -2692,7 +2692,7 @@ $redis->bzPopMax(['zs1', 'zs2'], 5);
 $redis->bzPopMax('zs1', 'zs2', 5);
 ~~~
 
-**Note:** Calling these functions with an array of keys or with a variable nubmer of arguments is functionally identical.
+**Note:** Calling these functions with an array of keys or with a variable number of arguments is functionally identical.
 
 ### zAdd
 -----
@@ -2830,7 +2830,7 @@ $redis->zPopMax(string $key, int $count): array
 ~~~
 
 ##### *Return value*
-*ARRAY:* Either an array with the key member and score of the higest or lowest element or an empty array if there is no element available.
+*ARRAY:* Either an array with the key member and score of the highest or lowest element or an empty array if there is no element available.
 
 ##### *Example*
 ~~~php
@@ -3807,7 +3807,7 @@ $obj_redis->xTrim($str_stream, $i_max_len [, $boo_approximate]);
 _**Description**_:  Trim the stream length to a given maximum.  If the "approximate" flag is pasesed, Redis will use your size as a hint but only trim trees in whole nodes (this is more efficient).
 
 ##### *Return value*
-*long*:  The number of messages trimed from the stream.
+*long*:  The number of messages trimmed from the stream.
 
 ##### *Example*
 ~~~php
