@@ -363,7 +363,7 @@ void cluster_multi_fini(clusterMultiCmd *mc);
 unsigned short cluster_hash_key_zval(zval *key);
 unsigned short cluster_hash_key(const char *key, int len);
 
-/* Get the current time in miliseconds */
+/* Get the current time in milliseconds */
 long long mstime(void);
 
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,

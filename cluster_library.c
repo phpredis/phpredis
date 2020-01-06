@@ -545,7 +545,7 @@ unsigned short cluster_hash_key(const char *key, int len) {
     // Hash the whole key if we don't find a tailing } or if {} is empty
     if (e == len || e == s+1) return crc16(key, len) & REDIS_CLUSTER_MOD;
 
-    // Hash just the bit betweeen { and }
+    // Hash just the bit between { and }
     return crc16((char*)key+s+1,e-s-1) & REDIS_CLUSTER_MOD;
 }
 
@@ -945,7 +945,7 @@ redisCachedCluster *cluster_cache_create(zend_string *hash, HashTable *nodes) {
     return cc;
 }
 
-/* Takes our input hash table and returns a straigt C array with elements,
+/* Takes our input hash table and returns a straight C array with elements,
  * which have been randomized.  The return value needs to be freed. */
 static zval **cluster_shuffle_seeds(HashTable *seeds, int *len) {
     zval **z_seeds, *z_ele;
@@ -1256,7 +1256,7 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
         return -1;
     }
 
-    // For replies that will give us a numberic length, convert it
+    // For replies that will give us a numeric length, convert it
     if (*reply_type != TYPE_LINE) {
         c->reply_len = strtol(c->line_reply, NULL, 10);
     } else {
@@ -1593,7 +1593,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
     msstart = mstime();
 
     /* Our main cluster request/reply loop.  This loop runs until we're able to
-     * get a valid reply from a node, hit our "request" timeout, or enounter a
+     * get a valid reply from a node, hit our "request" timeout, or encounter a
      * CLUSTERDOWN state from Redis Cluster. */
     do {
         /* Send MULTI to the socket if we're in MULTI mode but haven't yet */
@@ -2046,7 +2046,7 @@ cluster_variant_resp_generic(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         CLUSTER_RETURN_FALSE(c);
     }
 
-    // Handle ATOMIC vs. MULTI mode in a seperate switch
+    // Handle ATOMIC vs. MULTI mode in a separate switch
     if (CLUSTER_IS_ATOMIC(c)) {
         switch(r->type) {
             case TYPE_INT:
@@ -2434,7 +2434,7 @@ PHP_REDIS_API void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS,
         mbulk_resp_loop(c->cmd_sock, mctx->z_multi, c->reply_len, NULL) == FAILURE;
 
     // If we had a failure, pad results with FALSE to indicate failure.  Non
-    // existant keys (e.g. for MGET will come back as NULL)
+    // existent keys (e.g. for MGET will come back as NULL)
     if (fail) {
         while (mctx->count--) {
             add_next_index_bool(mctx->z_multi, 0);
@@ -2655,7 +2655,7 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
     int line_len, key_len = 0;
     long long idx = 0;
 
-    // Our count wil need to be divisible by 2
+    // Our count will need to be divisible by 2
     if (count % 2 != 0) {
         return -1;
     }
