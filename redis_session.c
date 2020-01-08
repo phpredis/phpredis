@@ -1,8 +1,6 @@
 /* -*- Mode: C; tab-width: 4 -*- */
 /*
   +----------------------------------------------------------------------+
-  | PHP Version 5                                                        |
-  +----------------------------------------------------------------------+
   | Copyright (c) 1997-2009 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
@@ -587,7 +585,7 @@ PS_CREATE_SID_FUNC(redis)
 
         if (pool->lock_status.session_key) zend_string_release(pool->lock_status.session_key);
         pool->lock_status.session_key = redis_session_key(redis_sock, ZSTR_VAL(sid), ZSTR_LEN(sid));
-        
+
         if (lock_acquire(redis_sock, &pool->lock_status) == SUCCESS) {
             return sid;
         }
