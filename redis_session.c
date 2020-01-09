@@ -121,6 +121,17 @@ redis_pool_free(redis_pool *pool) {
     efree(pool);
 }
 
+/* Retreive session.gc_maxlifetime from php.ini protecting against an integer overflow */
+static int session_gc_maxlifetime() {
+    zend_long value = INI_INT("session.gc_maxlifetime");
+    if (value > INT_MAX) {
+        php_error_docref(NULL, E_NOTICE, "session.gc_maxlifetime overflows INT_MAX, truncating.");
+        return INT_MAX;
+    }
+
+    return value;
+}
+
 /* Send a command to Redis.  Returns byte count written to socket (-1 on failure) */
 static int redis_simple_cmd(RedisSock *redis_sock, char *cmd, int cmdlen,
                               char **reply, int *replylen)
@@ -656,7 +667,7 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
 
     /* send EXPIRE command */
     zend_string *session = redis_session_key(redis_sock, skey, skeylen);
-    cmd_len = REDIS_SPPRINTF(&cmd, "EXPIRE", "Sd", session, INI_INT("session.gc_maxlifetime"));
+    cmd_len = REDIS_SPPRINTF(&cmd, "EXPIRE", "Sd", session, session_gc_maxlifetime());
     zend_string_release(session);
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
@@ -753,7 +764,7 @@ PS_WRITE_FUNC(redis)
     /* send SET command */
     zend_string *session = redis_session_key(redis_sock, skey, skeylen);
 
-    cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "Sds", session, INI_INT("session.gc_maxlifetime"), sval, svallen);
+    cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "Sds", session, session_gc_maxlifetime(), sval, svallen);
     zend_string_release(session);
 
     if (!write_allowed(redis_sock, &pool->lock_status) || redis_sock_write(redis_sock, cmd, cmd_len ) < 0) {
@@ -1046,7 +1057,7 @@ PS_WRITE_FUNC(rediscluster) {
     /* Set up command and slot info */
     skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
     cmdlen = redis_spprintf(NULL, NULL, &cmd, "SETEX", "sds", skey,
-                            skeylen, INI_INT("session.gc_maxlifetime"),
+                            skeylen, session_gc_maxlifetime(),
                             ZSTR_VAL(val), ZSTR_LEN(val));
     efree(skey);
 
