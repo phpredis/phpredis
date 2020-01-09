@@ -127,6 +127,9 @@ static int session_gc_maxlifetime() {
     if (value > INT_MAX) {
         php_error_docref(NULL, E_NOTICE, "session.gc_maxlifetime overflows INT_MAX, truncating.");
         return INT_MAX;
+    } else if (value <= 0) {
+        php_error_docref(NULL, E_NOTICE, "session.gc_maxlifetime is <= 0, defaulting to 1440 seconds");
+        return 1440;
     }
 
     return value;
