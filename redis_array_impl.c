@@ -1,7 +1,5 @@
 /*
   +----------------------------------------------------------------------+
-  | PHP Version 5                                                        |
-  +----------------------------------------------------------------------+
   | Copyright (c) 1997-2009 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
@@ -1196,7 +1194,7 @@ zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache,
 
     z_cb->params = z_args;
     z_cb->retval = z_ret;
-    
+
     z_cb->no_separation = 0;
     z_cb->param_count = 2;
 
