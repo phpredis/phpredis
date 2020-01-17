@@ -4083,13 +4083,14 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
         // Just return the value that was passed to us
         RETURN_STRINGL(value, value_len);
     }
-    zval zv, *z_ret = &zv;
-    if (!redis_unserialize(redis_sock, value, value_len, z_ret)) {
+
+    zval z_ret;
+    if (!redis_unserialize(redis_sock, value, value_len, &z_ret)) {
         // Badly formed input, throw an exception
         zend_throw_exception(ex, "Invalid serialized data, or unserialization error", 0);
         RETURN_FALSE;
     }
-    RETURN_ZVAL(z_ret, 1, 0);
+    RETURN_ZVAL(&z_ret, 0, 0);
 }
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

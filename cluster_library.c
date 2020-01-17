@@ -2448,6 +2448,8 @@ PHP_REDIS_API void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS,
         } else {
             add_next_index_zval(&c->multi_resp, mctx->z_multi);
         }
+
+        efree(mctx->z_multi);
     }
 
     // Clean up this context item
