@@ -1206,8 +1206,7 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
  *
  * This function will return -1 on a critical error (e.g. parse/communication
  * error, 0 if no redirection was encountered, and 1 if the data was moved. */
-static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
-                                 )
+static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
 {
     size_t sz;
 
@@ -1232,15 +1231,17 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
         }
 
         // Check for MOVED or ASK redirection
-        if ((moved = IS_MOVED(inbuf)) || IS_ASK(inbuf)) { // Set our redirection information
-            /* We'll want to invalidate slot cache if we're using one */
-            c->redirections++;
+        if ((moved = IS_MOVED(inbuf)) || IS_ASK(inbuf)) {
+            /* The Redis Cluster specification suggests clients do not update
+             * their slot mapping for an ASK redirection, only for MOVED */
+            if (moved) c->redirections++;
 
+            /* Make sure we can parse the redirection host and port */
             if (cluster_set_redirection(c,inbuf,moved) < 0) {
                 return -1;
             }
 
-            // Data moved
+            /* We've been redirected */
             return 1;
         } else {
             // Capture the error string Redis returned
@@ -1380,8 +1381,7 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
     /* If in ASK redirection, get/create the node for that host:port, otherwise
      * just use the command socket. */
     if (c->redir_type == REDIR_ASK) {
-        redis_sock = cluster_get_asking_sock(c);
-        if (cluster_send_asking(redis_sock) < 0) {
+        if (cluster_send_asking(c->cmd_sock) < 0) {
             return -1;
         }
     }
@@ -1627,10 +1627,13 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
                return -1;
            }
 
-           /* Update mapping if the data has MOVED */
            if (c->redir_type == REDIR_MOVED) {
+               /* For MOVED redirection we want to update our cached mapping */
                cluster_update_slot(c);
                c->cmd_sock = SLOT_SOCK(c, slot);
+           } else if (c->redir_type == REDIR_ASK) {
+               /* For ASK redirection we want to redirect but not update slot mapping */
+               c->cmd_sock = cluster_get_asking_sock(c);
            }
         }
 
