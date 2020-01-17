@@ -26,7 +26,7 @@
 /* MOVED/ASK comparison macros */
 #define IS_MOVED(p) (p[0]=='M' && p[1]=='O' && p[2]=='V' && p[3]=='E' && \
                      p[4]=='D' && p[5]==' ')
-#define IS_ASK(p)   (p[0]=='A' && p[1]=='S' && p[3]=='K' && p[4]==' ')
+#define IS_ASK(p)   (p[0]=='A' && p[1]=='S' && p[2]=='K' && p[3]==' ')
 
 /* MOVED/ASK lengths */
 #define MOVED_LEN (sizeof("MOVED ")-1)
