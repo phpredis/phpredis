@@ -2485,6 +2485,8 @@ PHP_REDIS_API void cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluste
         } else {
             add_next_index_zval(&c->multi_resp, mctx->z_multi);
         }
+
+        efree(mctx->z_multi);
     }
 
     // Free multi context
