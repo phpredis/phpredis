@@ -637,20 +637,48 @@ static int get_key_val_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
 static int get_key_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
                       clusterKeyValHT *kv)
 {
+    zend_string *ztmp = NULL;
     zval *z_key;
 
+    /* Sanity check that we can get the value */
     if ((z_key = zend_hash_get_current_data_ex(ht, ptr)) == NULL) {
-        // Shouldn't happen, but check anyway
         CLUSTER_THROW_EXCEPTION("Internal Zend HashTable error", 0);
         return -1;
     }
 
-    // Always want to work with strings
-    convert_to_string(z_key);
+    /* Get a string representation of the value */
+    switch (Z_TYPE_P(z_key)) {
+        case IS_STRING:
+            /* Already a string, no conversion */
+            kv->key = Z_STRVAL_P(z_key);
+            kv->key_len = Z_STRLEN_P(z_key);
+            break;
+        case IS_LONG:
+            /* We have a specialized buffer for zend_long values */
+            kv->key_len = snprintf(kv->kbuf, sizeof(kv->kbuf), "%ld", (long)Z_LVAL_P(z_key));
+            kv->key = kv->kbuf;
+            break;
+        default:
+            /* Convert from arbitrary type */
+            ztmp = zval_get_string(z_key);
+            kv->key = ZSTR_VAL(ztmp);
+            kv->key_len = ZSTR_LEN(ztmp);
+    }
 
-    kv->key = Z_STRVAL_P(z_key);
-    kv->key_len = Z_STRLEN_P(z_key);
+    /* Apply key prefixing */
     kv->key_free = redis_key_prefix(c->flags, &(kv->key), &(kv->key_len));
+
+    /* Handle duplication/flagging for cleanup depending on conversion */
+    if (ztmp) {
+        /* Value was converted from a non string and not prefixed, we must duplicate */
+        if (!kv->key_free) {
+            kv->key = estrndup(kv->key, kv->key_len);
+            kv->key_free = 1;
+        }
+
+        /* Release the converted string */
+        zend_string_release(ztmp);
+    }
 
     // Hash our key
     kv->slot = cluster_hash_key(kv->key, kv->key_len);
