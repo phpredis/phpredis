@@ -2876,7 +2876,7 @@ class Redis_Test extends TestSuite
         $ret = $this->redis->multi($mode)
             ->ttl('key')
             ->mget(['{key}1', '{key}2', '{key}3'])
-            ->mset(['{key}3' => 'value3', 'key4' => 'value4'])
+            ->mset(['{key}3' => 'value3', '{key}4' => 'value4'])
             ->set('key', 'value')
             ->expire('key', 5)
             ->ttl('key')

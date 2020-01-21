@@ -1,5 +1,8 @@
 <?php defined('PHPREDIS_TESTRUN') or die("Use TestRedis.php to run tests!\n");
 
+/* A specific exception for when we skip a test */
+class TestSkippedException extends Exception {}
+
 // phpunit is such a pain to install, we're going with pure-PHP here.
 class TestSuite {
     /* Host the tests will use */
@@ -120,7 +123,7 @@ class TestSuite {
         self::$warnings []= sprintf("Skipped test: %s:%d (%s) %s\n",
             $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], $msg);
 
-        throw new Exception($msg);
+        throw new TestSkippedException($msg);
     }
 
     private static function getMaxTestLen($arr_methods, $str_limit) {
@@ -185,11 +188,12 @@ class TestSuite {
                 }
                 //echo ($count === count($className::$errors)) ? "." : "F";
             } catch (Exception $e) {
-                if ($e instanceof RedisException) {
+                /* We may have simply skipped the test */
+                if ($e instanceof TestSkippedException) {
+                    $str_msg = self::make_warning('SKIPPED');
+                } else {
                     $className::$errors[] = "Uncaught exception '".$e->getMessage()."' ($name)\n";
                     $str_msg = self::make_fail('FAILED');
-                } else {
-                    $str_msg = self::make_warning('SKIPPED');
                 }
             }
 
