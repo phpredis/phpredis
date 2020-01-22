@@ -143,6 +143,9 @@ typedef enum CLUSTER_REDIR_TYPE {
 /* MULTI BULK response callback typedef */
 typedef int  (*mbulk_cb)(RedisSock*,zval*,long long, void*);
 
+/* RedisCluster context destructor function pointer */
+typedef PHP_REDIS_API void (*cluster_context_dtor)(void *);
+
 /* A list of covered slot ranges */
 typedef struct redisSlotRange {
     unsigned short low;
@@ -167,7 +170,6 @@ typedef struct redisCachedMaster {
 } redisCachedMaster;
 
 typedef struct redisCachedCluster {
-    // int rsrc_id;               /* Zend resource ID */
     zend_string *hash;         /* What we're cached by */
     redisCachedMaster *master; /* Array of masters */
     size_t count;              /* Number of masters */
@@ -350,8 +352,7 @@ HashTable *cluster_dist_create();
 void cluster_dist_free(HashTable *ht);
 int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
     size_t key_len, clusterKeyVal **kv);
-void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *val
-   );
+void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *val);
 
 /* Aggregation for multi commands like MGET, MSET, and MSETNX */
 void cluster_multi_init(clusterMultiCmd *mc, char *kw, int kw_len);
@@ -503,6 +504,9 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
     long long count, void *ctx);
 int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
     long long count, void *ctx);
+
+/* Context destructors */
+PHP_REDIS_API void cluster_mbulk_assoc_dtor(void *ctx);
 
 #endif
 

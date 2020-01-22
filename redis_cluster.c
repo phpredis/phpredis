@@ -1471,7 +1471,7 @@ PHP_METHOD(RedisCluster, hdel) {
 
 /* {{{ proto array RedisCluster::hmget(string key, array members) */
 PHP_METHOD(RedisCluster, hmget) {
-    CLUSTER_PROCESS_CMD(hmget, cluster_mbulk_assoc_resp, 1);
+    CLUSTER_PROCESS_CMD_EX(hmget, cluster_mbulk_assoc_resp, 1, cluster_mbulk_assoc_dtor);
 }
 /* }}} */
 

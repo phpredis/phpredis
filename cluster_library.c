@@ -2587,6 +2587,21 @@ cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         mbulk_resp_loop_zipdbl, NULL);
 }
 
+/* Destructor for HMGET like commands */
+PHP_REDIS_API void cluster_mbulk_assoc_dtor(void *ctx) {
+    /*The context here is an array of z_vals with a sentinel */
+    zval *z_keys = ctx;
+    int pos = 0;
+
+    while (Z_TYPE(z_keys[pos]) != IS_NULL) {
+        zval_dtor(&z_keys[pos]);
+        pos++;
+    }
+
+    /* Finally free the array itself */
+    efree(z_keys);
+}
+
 /* Associate multi bulk response (for HMGET really) */
 PHP_REDIS_API void
 cluster_mbulk_assoc_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,

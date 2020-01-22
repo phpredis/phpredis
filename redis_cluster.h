@@ -57,15 +57,17 @@
     c->flags->mode     = ATOMIC; \
 
 /* Simple 1-1 command -> response macro */
-#define CLUSTER_PROCESS_CMD(cmdname, resp_func, readcmd) \
+#define CLUSTER_PROCESS_CMD_EX(cmdname, resp_func, readcmd, ctx_dtor) \
     redisCluster *c = GET_CONTEXT(); \
     c->readonly = CLUSTER_IS_ATOMIC(c) && readcmd; \
+    cluster_context_dtor dtor_func = ctx_dtor; \
     char *cmd; int cmd_len; short slot; void *ctx=NULL; \
     if(redis_##cmdname##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,c->flags, &cmd, \
                              &cmd_len, &slot, &ctx)==FAILURE) { \
         RETURN_FALSE; \
     } \
     if(cluster_send_command(c,slot,cmd,cmd_len)<0 || c->err!=NULL) {\
+        if (ctx && dtor_func) dtor_func(ctx); \
         efree(cmd); \
         RETURN_FALSE; \
     } \
@@ -77,15 +79,17 @@
     resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx); 
         
 /* More generic processing, where only the keyword differs */
-#define CLUSTER_PROCESS_KW_CMD(kw, cmdfunc, resp_func, readcmd) \
+#define CLUSTER_PROCESS_KW_CMD_EX(kw, cmdfunc, resp_func, readcmd, ctx_dtor) \
     redisCluster *c = GET_CONTEXT(); \
     c->readonly = CLUSTER_IS_ATOMIC(c) && readcmd; \
+    cluster_context_dtor dtor_func = ctx_dtor; \
     char *cmd; int cmd_len; short slot; void *ctx=NULL; \
     if(cmdfunc(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len,\
                &slot,&ctx)==FAILURE) { \
         RETURN_FALSE; \
     } \
     if(cluster_send_command(c,slot,cmd,cmd_len)<0 || c->err!=NULL) { \
+        if (ctx && dtor_func) dtor_func(ctx); \
         efree(cmd); \
         RETURN_FALSE; \
     } \
@@ -95,6 +99,12 @@
         RETURN_ZVAL(getThis(), 1, 0); \
     } \
     resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx); 
+
+#define CLUSTER_PROCESS_CMD(cmdname, resp_func, readcmd) \
+    CLUSTER_PROCESS_CMD_EX(cmdname, resp_func, readcmd, NULL)
+
+#define CLUSTER_PROCESS_KW_CMD(kw, cmdfunc, resp_func, readcmd) \
+    CLUSTER_PROCESS_KW_CMD_EX(kw, cmdfunc, resp_func, readcmd, NULL)
 
 /* For the creation of RedisCluster specific exceptions */
 PHP_REDIS_API zend_class_entry *rediscluster_get_exception_base(int root);
