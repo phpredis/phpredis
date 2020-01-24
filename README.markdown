@@ -23,6 +23,7 @@ If you've found phpredis useful and would like to buy the maintainers a coffee (
    * [PHP Session handler](#php-session-handler)
    * [Distributed Redis Array](#distributed-redis-array)
    * [Redis Cluster support](#redis-cluster-support)
+   * [Redis Sentinel support](#redis-sentinel-support)
    * [Running the unit tests](#running-the-unit-tests)
 1. [Classes and methods](#classes-and-methods)
    * [Usage](#usage)
@@ -97,6 +98,10 @@ See [dedicated page](./arrays.markdown#readme).
 
 See [dedicated page](./cluster.markdown#readme).
 
+## Redis Sentinel support
+
+See [dedicated page](./sentinel.markdown#readme).
+
 ## Running the unit tests
 
 phpredis uses a small custom unit test suite for testing functionality of the various classes.  To run tests, simply do the following:
@@ -114,6 +119,9 @@ tests/mkring.sh stop
 tests/make-cluster.sh start
 php tests/TestRedis.php --class RedisCluster
 tests/make-cluster.sh stop
+
+# Run tests for RedisSentinel class
+php tests/TestRedis.php --class RedisSentinel
 ~~~
 
 Note that it is possible to run only tests which match a substring of the test itself by passing the additional argument '--test <str>' when invoking.
