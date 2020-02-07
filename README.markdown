@@ -9,9 +9,9 @@ This code has been developed and maintained by Owlient from November 2009 to Mar
 You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to n.favrefelix@gmail.com ([@yowgi](https://twitter.com/yowgi)), to michael.grunder@gmail.com ([@grumi78](https://twitter.com/grumi78)) or to p.yatsukhnenko@gmail.com ([@yatsukhnenko](https://twitter.com/yatsukhnenko)).
 
 ## Supporting the project
-PhpRedis will always be free and open source software, but if you or your company has found it useful please consider supporting the project.  Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support would be appriciated! :heart:
+PhpRedis will always be free and open source software, but if you or your company has found it useful please consider supporting the project.  Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support would be appreciated! :heart:
 
-The best way to support the project is through [GitHub sponsors](https://github.com/sponsors/michael-grunder).  Many of the reward tiers grant access to our [slack channel](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly online and available.  Additionally this will allow you to provide feedback on which fixes and new features to prioritize.
+The best way to support the project is through [GitHub sponsors](https://github.com/sponsors/michael-grunder).  Many of the reward tiers grant access to our [slack channel](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly available to answer questions.  Additionally this will allow you to provide feedback on which fixes and new features to prioritize.
 
 You can also make a one-time contribution with one of the links below.
 
