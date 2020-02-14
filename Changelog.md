@@ -5,7 +5,7 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.2.0RC1] - 2020-02-12 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.0)
+## [5.2.0RC1] - 2020-02-12 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.0RC1), [PECL](https://pecl.php.net/package/redis/5.2.0RC1))
 
 ### Sponsors :sparkling_heart:
 
@@ -13,38 +13,46 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Added
 
-- Added challenge/response mechanism to ensure persistent connections are not in a bad state 
-  [a5f95925](https://github.com/phpredis/phpredis/commit/a5f95925), 
-  [25cdaee6](https://github.com/phpredis/phpredis/commit/25cdaee6), 
-  [7b6072e0](https://github.com/phpredis/phpredis/commit/7b6072e0), 
-  [99ebd0cc](https://github.com/phpredis/phpredis/commit/99ebd0cc), 
-  [3243f426](https://github.com/phpredis/phpredis/commit/3243f426) 
+- Added challenge/response mechanism to ensure persistent connections are not in a bad state
+  [a5f95925](https://github.com/phpredis/phpredis/commit/a5f95925),
+  [25cdaee6](https://github.com/phpredis/phpredis/commit/25cdaee6),
+  [7b6072e0](https://github.com/phpredis/phpredis/commit/7b6072e0),
+  [99ebd0cc](https://github.com/phpredis/phpredis/commit/99ebd0cc),
+  [3243f426](https://github.com/phpredis/phpredis/commit/3243f426)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
 
-- Experimental support for RedisSentinel ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Experimental support for RedisSentinel
   [90cb69f3](https://github.com/phpredis/phpredis/commit/90cb69f3),
   [c94e28f1](https://github.com/phpredis/phpredis/commit/c94e28f1),
   [46da22b0](https://github.com/phpredis/phpredis/commit/46da22b0),
   [5a609fa4](https://github.com/phpredis/phpredis/commit/5a609fa4),
   [383779ed](https://github.com/phpredis/phpredis/commit/383779ed)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 ### Fixed
 
-- Fixed ASK redirection logic ([Michael Grunder](https://github.com/michael-grunder))
+- Fixed ASK redirection logic
   [ba73fbee](https://github.com/phpredis/phpredis/commit/ba73fbee)
-- Create specific 'test skipped' exception ([Michael Grunder](https://github.com/michael-grunder))
+  Fixed ASK redirection logic ([Michael Grunder](https://github.com/michael-grunder))
+
+- Create specific 'test skipped' exception
   [c3d83d44](https://github.com/phpredis/phpredis/commit/c3d83d44)
-- Fixed memory leaks in RedisCluster ([Michael Grunder](https://github.com/michael-grunder))
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+- Fixed memory leaks in RedisCluster
   [a107c9fc](https://github.com/phpredis/phpredis/commit/a107c9fc)
+  ([Michael Grunder](https://github.com/michael-grunder))
 
 - Fixes for session lifetime values that underflow or overflow
   [7a79ad9c](https://github.com/phpredis/phpredis/commit/7a79ad9c),
   [3c48a332](https://github.com/phpredis/phpredis/commit/3c48a332)
+  ([Michael Grunder](https://github.com/michael-grunder))
 
-- Enables slot caching for Redis Cluster ([Michael Booth](https://github.com/Michael03))
+- Enables slot caching for Redis Cluster
   [23b1a9d8](https://github.com/phpredis/phpredis/commit/23b1a9d8)
+  ([Michael Booth](https://github.com/Michael03))
 
-- Housekeeping (spelling, doc changes, etc) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Tyson Andre](https://github.com/TysonAndre), [Michael Grunder](https://github.com/michael-grunder), [Paul DelRe](https://github.com/pdelre), [Tyson Andre](https://github.com/TysonAndre))
+- Housekeeping (spelling, doc changes, etc)
   [23f9de30](https://github.com/phpredis/phpredis/commit/23f9de30),
   [d07a8df6](https://github.com/phpredis/phpredis/commit/d07a8df6),
   [2d39b48d](https://github.com/phpredis/phpredis/commit/2d39b48d),
@@ -54,14 +62,18 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [2ddc5f21](https://github.com/phpredis/phpredis/commit/2ddc5f21),
   [1ff7dfb7](https://github.com/phpredis/phpredis/commit/1ff7dfb7),
   [db446138](https://github.com/phpredis/phpredis/commit/db446138)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko),
+   [Tyson Andre](https://github.com/TysonAndre), [Michael Grunder](https://github.com/michael-grunder),
+   [Paul DelRe](https://github.com/pdelre), [Tyson Andre](https://github.com/TysonAndre))
 
 ### Changed
 
-- Support TYPE argument for SCAN ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Support TYPE argument for SCAN
   [8eb39a26](https://github.com/phpredis/phpredis/commit/8eb39a26)
   [b1724b84](https://github.com/phpredis/phpredis/commit/b1724b84)
   [53fb36c9](https://github.com/phpredis/phpredis/commit/53fb36c9)
   [544e641b](https://github.com/phpredis/phpredis/commit/544e641b)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 ---
 
@@ -154,7 +166,7 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [1f41da64](https://github.com/phpredis/phpredis/commit/1f41da64),
   ([Owen Smith](https://github.com/orls))
 - RedisCluster segfaults after second connection with cache_slots enabled
-  [f52cd237](https://github.com/phpredis/phpredis/commit/f52cd237), 
+  [f52cd237](https://github.com/phpredis/phpredis/commit/f52cd237),
   [cb5d6b94](https://github.com/phpredis/phpredis/commit/cb5d6b94)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
 
