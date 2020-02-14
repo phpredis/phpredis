@@ -33,7 +33,7 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Fixed ASK redirection logic
   [ba73fbee](https://github.com/phpredis/phpredis/commit/ba73fbee)
-  Fixed ASK redirection logic ([Michael Grunder](https://github.com/michael-grunder))
+  ([Michael Grunder](https://github.com/michael-grunder))
 
 - Create specific 'test skipped' exception
   [c3d83d44](https://github.com/phpredis/phpredis/commit/c3d83d44)
