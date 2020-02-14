@@ -5,18 +5,62 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [5.2.0RC1] - 2020-02-12 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.0)
+
+### Sponsors :sparkling_heart:
+
+- [Till Krüss](https://github.com/tillkruss
+
+### Added
+
+- Added challenge/response mechanism to ensure persistent connections are not in a bad state ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
+  [a5f95925](https://github.com/phpredis/phpredis/commit/a5f95925),
+  [25cdaee6](https://github.com/phpredis/phpredis/commit/25cdaee6),
+  [7b6072e0](https://github.com/phpredis/phpredis/commit/7b6072e0),
+  [99ebd0cc](https://github.com/phpredis/phpredis/commit/99ebd0cc),
+  [3243f426](https://github.com/phpredis/phpredis/commit/3243f426)
+
+- Experimental support for RedisSentinel ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+  [90cb69f3](https://github.com/phpredis/phpredis/commit/90cb69f3),
+  [c94e28f1](https://github.com/phpredis/phpredis/commit/c94e28f1),
+  [46da22b0](https://github.com/phpredis/phpredis/commit/46da22b0),
+  [5a609fa4](https://github.com/phpredis/phpredis/commit/5a609fa4),
+  [383779ed](https://github.com/phpredis/phpredis/commit/383779ed)
+
+### Fixed
+
+- Fixed ASK redirection logic ([Michael Grunder](https://github.com/michael-grunder))
+  [ba73fbee](https://github.com/phpredis/phpredis/commit/ba73fbee)
+- Create specific 'test skipped' exception ([Michael Grunder](https://github.com/michael-grunder))
+  [c3d83d44](https://github.com/phpredis/phpredis/commit/c3d83d44)
+- Fixed memory leaks in RedisCluster ([Michael Grunder](https://github.com/michael-grunder))
+  [a107c9fc](https://github.com/phpredis/phpredis/commit/a107c9fc)
+
+- Fixes for session lifetime values that underflow or overflow
+  [7a79ad9c](https://github.com/phpredis/phpredis/commit/7a79ad9c),
+  [3c48a332](https://github.com/phpredis/phpredis/commit/3c48a332)
+
+- Enables slot caching for Redis Cluster ([Michael Booth](https://github.com/Michael03))
+  [23b1a9d8](https://github.com/phpredis/phpredis/commit/23b1a9d8)
+
+- Housekeeping (spelling, doc changes, etc) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Tyson Andre](https://github.com/TysonAndre), [Michael Grunder](https://github.com/michael-grunder), [Paul DelRe](https://github.com/pdelre), [Tyson Andre](https://github.com/TysonAndre))
+  [23f9de30](https://github.com/phpredis/phpredis/commit/23f9de30),
+  [d07a8df6](https://github.com/phpredis/phpredis/commit/d07a8df6),
+  [2d39b48d](https://github.com/phpredis/phpredis/commit/2d39b48d),
+  [0ef488fc](https://github.com/phpredis/phpredis/commit/0ef488fc),
+  [2c35e435](https://github.com/phpredis/phpredis/commit/2c35e435),
+  [f52bd8a8](https://github.com/phpredis/phpredis/commit/f52bd8a8),
+  [2ddc5f21](https://github.com/phpredis/phpredis/commit/2ddc5f21),
+  [1ff7dfb7](https://github.com/phpredis/phpredis/commit/1ff7dfb7),
+  [db446138](https://github.com/phpredis/phpredis/commit/db446138)
 
 ### Changed
 
-- Use ECHO to check liveness of connection
-  [99ebd0cc](https://github.com/phpredis/phpredis/commit/99ebd0cc),
-  [3243f426](https://github.com/phpredis/phpredis/commit/3243f426),
-  [a5f95925](https://github.com/phpredis/phpredis/commit/a5f95925)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
-- Enable slot caching for session cluster
-  [23b1a9d8](https://github.com/phpredis/phpredis/commit/23b1a9d84)
-  ([Michael03](https://github.com/Michael03))
+- Support TYPE argument for SCAN ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+  [8eb39a26](https://github.com/phpredis/phpredis/commit/8eb39a26)
+  [b1724b84](https://github.com/phpredis/phpredis/commit/b1724b84)
+  [53fb36c9](https://github.com/phpredis/phpredis/commit/53fb36c9)
+  [544e641b](https://github.com/phpredis/phpredis/commit/544e641b)
 
 ---
 
