@@ -9,16 +9,17 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Sponsors :sparkling_heart:
 
-- [Till Krüss](https://github.com/tillkruss
+- [Till Krüss](https://github.com/tillkruss)
 
 ### Added
 
-- Added challenge/response mechanism to ensure persistent connections are not in a bad state ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
-  [a5f95925](https://github.com/phpredis/phpredis/commit/a5f95925),
-  [25cdaee6](https://github.com/phpredis/phpredis/commit/25cdaee6),
-  [7b6072e0](https://github.com/phpredis/phpredis/commit/7b6072e0),
-  [99ebd0cc](https://github.com/phpredis/phpredis/commit/99ebd0cc),
-  [3243f426](https://github.com/phpredis/phpredis/commit/3243f426)
+- Added challenge/response mechanism to ensure persistent connections are not in a bad state 
+  [a5f95925](https://github.com/phpredis/phpredis/commit/a5f95925), 
+  [25cdaee6](https://github.com/phpredis/phpredis/commit/25cdaee6), 
+  [7b6072e0](https://github.com/phpredis/phpredis/commit/7b6072e0), 
+  [99ebd0cc](https://github.com/phpredis/phpredis/commit/99ebd0cc), 
+  [3243f426](https://github.com/phpredis/phpredis/commit/3243f426) 
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
 
 - Experimental support for RedisSentinel ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
   [90cb69f3](https://github.com/phpredis/phpredis/commit/90cb69f3),
