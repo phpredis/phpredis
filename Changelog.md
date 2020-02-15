@@ -520,7 +520,7 @@ Also many small improvements and bug fixes were made.
 - Fix zval_get_string impl for PHP5 [4e56ba](https://www.github.com/phpredis/phpredis/commit/4e56ba) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Fix Redis/RedisArray segfaults [be5c1f](https://www.github.com/phpredis/phpredis/commit/be5c1f), [635c3a](https://www.github.com/phpredis/phpredis/commit/635c3a), [1f8dde](https://www.github.com/phpredis/phpredis/commit/1f8dde), [43e1e0](https://www.github.com/phpredis/phpredis/commit/43e1e0)
 - ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Fix memory leak and potential segfault [aa6ff7](https://www.github.com/phpredis/phpredis/commit/aa6ff7), [88efaa](https://www.github.com/phpredis/phpredis/commit/88efaa) ([Michael Grunder](https://github.com/michael-grunder))
+- Fix memory leak and potential segfault [aa6ff77a](https://www.github.com/phpredis/phpredis/commit/aa6ff77a), [88efaa](https://www.github.com/phpredis/phpredis/commit/88efaa) ([Michael Grunder](https://github.com/michael-grunder))
 - Assume "NULL bulk" reply as success (empty session data) [4a81e1](https://www.github.com/phpredis/phpredis/commit/4a81e1)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Refactoring ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
