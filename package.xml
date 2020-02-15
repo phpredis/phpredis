@@ -30,7 +30,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <date>2020-02-15</date>
  <version>
   <release>5.2.0RC1</release>
-  <api>5.1.0</api>
+  <api>5.2.0RC1</api>
  </version>
  <stability>
   <release>alpha</release>
@@ -48,10 +48,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
     IMPORTANT: Sentinel support is considered experimental and the API
                will likely change based on user feedback.
 
-    * --- SPONSORS \o/ ---
+    * SPONSORS \o/
       - Till Krüss - https://github.com/tillkruss
 
-    ~~~
+    ---
 
     * Initial support for RedisSentinel [90cb69f3, c94e28f1, 46da22b0, 5a609fa4,
       383779ed] (Pavlo Yatsukhnenko)
