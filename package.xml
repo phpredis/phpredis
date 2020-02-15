@@ -27,7 +27,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2020-02-14</date>
+ <date>2020-02-15</date>
  <version>
   <release>5.2.0RC1</release>
   <api>5.1.0</api>
