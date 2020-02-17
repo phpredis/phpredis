@@ -41,7 +41,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     phpredis 5.2.0RC2
 
     * Include RedisSentinelTest.php in package.xml! [eddbfc8f] (Remi Collet)
-    * Fix -Wmaybe-uninitialized warning ([Remi Collet]) [740b8c87]
+    * Fix -Wmaybe-uninitialized warning [740b8c87] (Remi Collet)
 
     phpredis 5.2.0RC1
 
