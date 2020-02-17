@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2020-02-15</date>
+ <date>2020-02-17</date>
  <version>
-  <release>5.2.0RC1</release>
-  <api>5.2.0RC1</api>
+  <release>5.2.0RC2</release>
+  <api>5.2.0RC2</api>
  </version>
  <stability>
   <release>alpha</release>
@@ -40,7 +40,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <notes>
     phpredis 5.2.0RC2
 
-    * Include RedisSentinelTest.php with the release!
+    * Include RedisSentinelTest.php in package.xml! [eddbfc8f] (Remi Collet)
+    * Fix -Wmaybe-uninitialized warning ([Remi Collet]) [740b8c87]
 
     phpredis 5.2.0RC1
 
@@ -153,9 +154,14 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <changelog>
   <release>
    <stability><release>alpha</release><api>alpha</api></stability>
-   <version><release>5.2.0RC1</release><api>5.2.0RC1</api></version>
-   <date>2020-02-15</date>
+   <version><release>5.2.0RC2</release><api>5.2.0RC2</api></version>
+   <date>2020-02-17</date>
    <notes>
+    phpredis 5.2.0RC2
+
+    * Include RedisSentinelTest.php in package.xml! [eddbfc8f] (Remi Collet)
+    * Fix -Wmaybe-uninitialized warning ([Remi Collet]) [740b8c87]
+
     phpredis 5.2.0RC1
 
     This release contains initial support for Redis Sentinel as well as many

@@ -5,6 +5,22 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.0RC2] - 2020-02-15 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.0RC2), [PECL](https://pecl.php.net/package/redis/5.2.0RC2))
+
+### Sponsors :sparkling_heart:
+
+- [Till Krüss](https://github.com/tillkruss)
+
+### Added
+
+- Include RedisSentinelTest.php in package.xml!
+  [eddbfc8f](https://github.com/phpredis/phpredis/commits/eddbfc8f)
+  ([Remi Collet](https://github.com/remicollet))
+
+- Fix -Wmaybe-uninitialized warning ([Remi Collet])
+  [740b8c87](https://github.com/phpredis/phpredis/commit/740b8c87)
+  ([Remi Collet](https://github.com/remicollet))
+
 ## [5.2.0RC1] - 2020-02-15 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.0RC1), [PECL](https://pecl.php.net/package/redis/5.2.0RC1))
 
 ### Sponsors :sparkling_heart:
