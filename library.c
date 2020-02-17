@@ -1476,7 +1476,7 @@ PHP_REDIS_API int
 redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements)
 {
     zval zv;
-    int i, len;
+    int i, len = 0;
     char *key = NULL, *data;
     REDIS_REPLY_TYPE type;
     long li;
