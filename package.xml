@@ -38,6 +38,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
+    phpredis 5.2.0RC2
+
+    * Include RedisSentinelTest.php with the release!
+
     phpredis 5.2.0RC1
 
     This release contains initial support for Redis Sentinel as well as many
@@ -117,6 +121,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <dir name='tests'>
      <file role='test' name='RedisArrayTest.php'/>
      <file role='test' name='RedisClusterTest.php'/>
+     <file role='test' name='RedisSentinelTest.php'/>
      <file role='test' name='RedisTest.php'/>
      <file role='test' name='TestRedis.php'/>
      <file role='test' name='TestSuite.php'/>
