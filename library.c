@@ -1811,7 +1811,12 @@ redis_sock_check_liveness(RedisSock *redis_sock)
         redis_cmd_init_sstr(&cmd, 1, "AUTH", sizeof("AUTH") - 1);
         redis_cmd_append_sstr(&cmd, ZSTR_VAL(redis_sock->auth), ZSTR_LEN(redis_sock->auth));
     }
+
     gettimeofday(&tv, NULL);
+    if (!BG(mt_rand_is_seeded)) {
+        php_mt_srand(GENERATE_SEED());
+    }
+
     uniqid_len = snprintf(uniqid, sizeof(uniqid), "phpredis_pool:%08lx%05lx:%08" PRIx32, (long)tv.tv_sec, (long)tv.tv_usec, php_mt_rand());
     redis_cmd_init_sstr(&cmd, 1, "ECHO", sizeof("ECHO") - 1);
     redis_cmd_append_sstr(&cmd, uniqid, uniqid_len);
