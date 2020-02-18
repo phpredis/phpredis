@@ -3,7 +3,7 @@
 
 #include "sentinel_library.h"
 
-#define PHP_REDIS_SENTINEL_VERSION "0.1RC1"
+#define PHP_REDIS_SENTINEL_VERSION "0.1RC2"
 
 PHP_METHOD(RedisSentinel, __construct);
 PHP_METHOD(RedisSentinel, ckquorum);
