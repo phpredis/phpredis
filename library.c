@@ -1166,8 +1166,7 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
 
     /* replace */
     zval_dtor(z_tab);
-    ZVAL_ZVAL(z_tab, &z_ret, 1, 0);
-    zval_dtor(&z_ret);
+    ZVAL_ZVAL(z_tab, &z_ret, 0, 0);
 }
 
 static int
