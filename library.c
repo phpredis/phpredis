@@ -1813,11 +1813,7 @@ redis_sock_check_liveness(RedisSock *redis_sock)
     }
 
     gettimeofday(&tv, NULL);
-    if (!BG(mt_rand_is_seeded)) {
-        php_mt_srand(GENERATE_SEED());
-    }
-
-    uniqid_len = snprintf(uniqid, sizeof(uniqid), "phpredis_pool:%08lx%05lx:%08" PRIx32, (long)tv.tv_sec, (long)tv.tv_usec, php_mt_rand());
+    uniqid_len = snprintf(uniqid, sizeof(uniqid), "phpredis_pool:%08lx%05lx:%08lx", (long)tv.tv_sec, (long)tv.tv_usec, (long)php_rand());
     redis_cmd_init_sstr(&cmd, 1, "ECHO", sizeof("ECHO") - 1);
     redis_cmd_append_sstr(&cmd, uniqid, uniqid_len);
     smart_string_0(&cmd);
