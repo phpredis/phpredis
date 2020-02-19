@@ -27,7 +27,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2020-02-17</date>
+ <date>2020-02-21</date>
  <version>
   <release>5.2.0RC2</release>
   <api>5.2.0RC2</api>
@@ -40,8 +40,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <notes>
     phpredis 5.2.0RC2
 
-    * Include RedisSentinelTest.php in package.xml! [eddbfc8f] (Remi Collet)
+    * Include RedisSentinelTest.php in package.xml! [eddbfc8f] (Michael Grunder)
     * Fix -Wmaybe-uninitialized warning [740b8c87] (Remi Collet)
+    * Fix improper destructor when zipping values and scores [371ae7ae]
+      (Michael Grunder)
+    * Use php_rand instead of php_mt_rand for liveness challenge string
+      [9ef2ed89] (Michael Grunder)
 
     phpredis 5.2.0RC1
 
@@ -54,6 +58,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
                will likely change based on user feedback.
 
     * Sponsors
+      ~ Audiomack.com - https://audiomack.com
       ~ Till Kruss - https://github.com/tillkruss
 
     ---
@@ -155,12 +160,16 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <release>
    <stability><release>alpha</release><api>alpha</api></stability>
    <version><release>5.2.0RC2</release><api>5.2.0RC2</api></version>
-   <date>2020-02-17</date>
+   <date>2020-02-21</date>
    <notes>
     phpredis 5.2.0RC2
 
-    * Include RedisSentinelTest.php in package.xml! [eddbfc8f] (Remi Collet)
-    * Fix -Wmaybe-uninitialized warning ([Remi Collet]) [740b8c87]
+    * Include RedisSentinelTest.php in package.xml! [eddbfc8f] (Michael Grunder)
+    * Fix -Wmaybe-uninitialized warning [740b8c87] (Remi Collet)
+    * Fix improper destructor when zipping values and scores [371ae7ae]
+      (Michael Grunder)
+    * Use php_rand instead of php_mt_rand for liveness challenge string
+      [9ef2ed89] (Michael Grunder)
 
     phpredis 5.2.0RC1
 
@@ -173,6 +182,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
                will likely change based on user feedback.
 
     * Sponsors
+      ~ Audiomack.com - https://audiomack.com
       ~ Till Kruss - https://github.com/tillkruss
 
     ---
