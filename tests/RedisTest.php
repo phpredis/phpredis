@@ -6364,7 +6364,6 @@ class Redis_Test extends TestSuite
             $commandParameters = array_map('escapeshellarg', $commandParameters);
 
             $command = self::getPhpCommand('startSession.php') . implode(' ', $commandParameters);
-
             $command .= $background ? ' 2>/dev/null > /dev/null &' : ' 2>&1';
             exec($command, $output);
             return ($background || (count($output) == 1 && $output[0] == 'SUCCESS')) ? true : false;
