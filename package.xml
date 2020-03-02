@@ -27,17 +27,21 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2020-02-21</date>
+ <date>2020-03-02</date>
  <version>
-  <release>5.2.0RC2</release>
-  <api>5.2.0RC2</api>
+  <release>5.2.0</release>
+  <api>5.2.0</api>
  </version>
  <stability>
-  <release>alpha</release>
-  <api>alpha</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
+    phpredis 5.2.0
+
+    - There were no changes between 5.2.0RC2 and 5.2.0.
+
     phpredis 5.2.0RC2
 
     * Include RedisSentinelTest.php in package.xml! [eddbfc8f] (Michael Grunder)
