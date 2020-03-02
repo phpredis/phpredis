@@ -6423,21 +6423,26 @@ class Redis_Test extends TestSuite
                 $cmd .= $test_args;
             } else {
                 /* Only append specific extension directives if PHP hasn't been compiled with what we need statically */
-                $result   = shell_exec("$cmd --no-php-ini -m");
-                $redis    = strpos($result, 'redis') !== false;
-                $igbinary = strpos($result, 'igbinary') !== false;
-                $msgpack  = strpos($result, 'msgpack') !== false;
+                $modules   = shell_exec("$cmd --no-php-ini -m");
 
-                if (!$redis || !$igbinary || !$msgpack) {
+                /* Determine if we need to specifically add extensions */
+                $arr_extensions = array_filter(
+                    ['redis', 'igbinary', 'msgpack', 'json'],
+                    function ($module) use ($modules) {
+                        return strpos($modules, $module) === false;
+                    }
+                );
+
+                /* If any are needed add them to the command */
+                if ($arr_extensions) {
                     $cmd .= ' --no-php-ini';
-                    if (!$msgpack) {
-                        $cmd .= ' --define extension=msgpack.so';
-                    }
-                    if (!$igbinary) {
-                        $cmd .= ' --define extension=igbinary.so';
-                    }
-                    if (!$redis) {
-                        $cmd .= ' --define extension=' . dirname(__DIR__) . '/modules/redis.so';
+                    foreach ($arr_extensions as $str_extension) {
+                        /* We want to use the locally built redis extension */
+                        if ($str_extension == 'redis') {
+                            $str_extension = dirname(__DIR__) . '/modules/redis';
+                        }
+
+                        $cmd .= " --define extension=$str_extension.so";
                     }
                 }
             }
