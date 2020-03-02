@@ -5,18 +5,103 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [5.2.0] - 2020-03-02 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.0), [PECL](https://pecl.php.net/package/redis/5.2.0))
+
+*There were no changes between 5.2.0RC2 and 5.2.0*
+
+## [5.2.0RC2] - 2020-02-21 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.0RC2), [PECL](https://pecl.php.net/package/redis/5.2.0RC2))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack.com](https://audiomack.com)
+- [Till Krüss](https://github.com/tillkruss)
+
+### Fixed
+
+- Include RedisSentinelTest.php in package.xml!
+  [eddbfc8f](https://github.com/phpredis/phpredis/commit/eddbfc8f)
+  ([Michel Grunder](https://github.com/michael-grunder))
+
+- Fix -Wmaybe-uninitialized warning
+  [740b8c87](https://github.com/phpredis/phpredis/commit/740b8c87)
+  ([Remi Collet](https://github.com/remicollet))
+
+- Fix improper destructor when zipping values and scores
+  [371ae7ae](https://github.com/phpredis/phpredis/commit/371ae7ae)
+
+- Use php_rand instead of php_mt_rand for liveness challenge string
+  [9ef2ed89](https://github.com/phpredis/phpredis/commit/9ef2ed89)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+## [5.2.0RC1] - 2020-02-15 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.0RC1), [PECL](https://pecl.php.net/package/redis/5.2.0RC1))
+
+### Sponsors :sparkling_heart:
+
+- [Till Krüss](https://github.com/tillkruss)
+
+### Added
+
+- Added challenge/response mechanism to ensure persistent connections are not in a bad state
+  [a5f95925](https://github.com/phpredis/phpredis/commit/a5f95925),
+  [25cdaee6](https://github.com/phpredis/phpredis/commit/25cdaee6),
+  [7b6072e0](https://github.com/phpredis/phpredis/commit/7b6072e0),
+  [99ebd0cc](https://github.com/phpredis/phpredis/commit/99ebd0cc),
+  [3243f426](https://github.com/phpredis/phpredis/commit/3243f426)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
+
+- Experimental support for RedisSentinel
+  [90cb69f3](https://github.com/phpredis/phpredis/commit/90cb69f3),
+  [c94e28f1](https://github.com/phpredis/phpredis/commit/c94e28f1),
+  [46da22b0](https://github.com/phpredis/phpredis/commit/46da22b0),
+  [5a609fa4](https://github.com/phpredis/phpredis/commit/5a609fa4),
+  [383779ed](https://github.com/phpredis/phpredis/commit/383779ed)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+### Fixed
+
+- Fixed ASK redirection logic
+  [ba73fbee](https://github.com/phpredis/phpredis/commit/ba73fbee)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+- Create specific 'test skipped' exception
+  [c3d83d44](https://github.com/phpredis/phpredis/commit/c3d83d44)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+- Fixed memory leaks in RedisCluster
+  [a107c9fc](https://github.com/phpredis/phpredis/commit/a107c9fc)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+- Fixes for session lifetime values that underflow or overflow
+  [7a79ad9c](https://github.com/phpredis/phpredis/commit/7a79ad9c),
+  [3c48a332](https://github.com/phpredis/phpredis/commit/3c48a332)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+- Enables slot caching for Redis Cluster
+  [23b1a9d8](https://github.com/phpredis/phpredis/commit/23b1a9d8)
+  ([Michael Booth](https://github.com/Michael03))
+
+- Housekeeping (spelling, doc changes, etc)
+  [23f9de30](https://github.com/phpredis/phpredis/commit/23f9de30),
+  [d07a8df6](https://github.com/phpredis/phpredis/commit/d07a8df6),
+  [2d39b48d](https://github.com/phpredis/phpredis/commit/2d39b48d),
+  [0ef488fc](https://github.com/phpredis/phpredis/commit/0ef488fc),
+  [2c35e435](https://github.com/phpredis/phpredis/commit/2c35e435),
+  [f52bd8a8](https://github.com/phpredis/phpredis/commit/f52bd8a8),
+  [2ddc5f21](https://github.com/phpredis/phpredis/commit/2ddc5f21),
+  [1ff7dfb7](https://github.com/phpredis/phpredis/commit/1ff7dfb7),
+  [db446138](https://github.com/phpredis/phpredis/commit/db446138)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko),
+   [Tyson Andre](https://github.com/TysonAndre), [Michael Grunder](https://github.com/michael-grunder),
+   [Paul DelRe](https://github.com/pdelre), [Tyson Andre](https://github.com/TysonAndre))
 
 ### Changed
 
-- Use ECHO to check liveness of connection
-  [99ebd0cc](https://github.com/phpredis/phpredis/commit/99ebd0cc),
-  [3243f426](https://github.com/phpredis/phpredis/commit/3243f426),
-  [a5f95925](https://github.com/phpredis/phpredis/commit/a5f95925)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
-- Enable slot caching for session cluster
-  [23b1a9d8](https://github.com/phpredis/phpredis/commit/23b1a9d84)
-  ([Michael03](https://github.com/Michael03))
+- Support TYPE argument for SCAN
+  [8eb39a26](https://github.com/phpredis/phpredis/commit/8eb39a26)
+  [b1724b84](https://github.com/phpredis/phpredis/commit/b1724b84)
+  [53fb36c9](https://github.com/phpredis/phpredis/commit/53fb36c9)
+  [544e641b](https://github.com/phpredis/phpredis/commit/544e641b)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 ---
 
@@ -109,7 +194,7 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [1f41da64](https://github.com/phpredis/phpredis/commit/1f41da64),
   ([Owen Smith](https://github.com/orls))
 - RedisCluster segfaults after second connection with cache_slots enabled
-  [f52cd237](https://github.com/phpredis/phpredis/commit/f52cd237), 
+  [f52cd237](https://github.com/phpredis/phpredis/commit/f52cd237),
   [cb5d6b94](https://github.com/phpredis/phpredis/commit/cb5d6b94)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))
 
@@ -463,7 +548,7 @@ Also many small improvements and bug fixes were made.
 - Fix zval_get_string impl for PHP5 [4e56ba](https://www.github.com/phpredis/phpredis/commit/4e56ba) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Fix Redis/RedisArray segfaults [be5c1f](https://www.github.com/phpredis/phpredis/commit/be5c1f), [635c3a](https://www.github.com/phpredis/phpredis/commit/635c3a), [1f8dde](https://www.github.com/phpredis/phpredis/commit/1f8dde), [43e1e0](https://www.github.com/phpredis/phpredis/commit/43e1e0)
 - ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Fix memory leak and potential segfault [aa6ff7](https://www.github.com/phpredis/phpredis/commit/aa6ff7), [88efaa](https://www.github.com/phpredis/phpredis/commit/88efaa) ([Michael Grunder](https://github.com/michael-grunder))
+- Fix memory leak and potential segfault [aa6ff77a](https://www.github.com/phpredis/phpredis/commit/aa6ff77a), [88efaa](https://www.github.com/phpredis/phpredis/commit/88efaa) ([Michael Grunder](https://github.com/michael-grunder))
 - Assume "NULL bulk" reply as success (empty session data) [4a81e1](https://www.github.com/phpredis/phpredis/commit/4a81e1)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Refactoring ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), [Michael Grunder](https://github.com/michael-grunder))

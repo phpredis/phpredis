@@ -1166,8 +1166,7 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
 
     /* replace */
     zval_dtor(z_tab);
-    ZVAL_ZVAL(z_tab, &z_ret, 1, 0);
-    zval_dtor(&z_ret);
+    ZVAL_ZVAL(z_tab, &z_ret, 0, 0);
 }
 
 static int
@@ -1476,7 +1475,7 @@ PHP_REDIS_API int
 redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements)
 {
     zval zv;
-    int i, len;
+    int i, len = 0;
     char *key = NULL, *data;
     REDIS_REPLY_TYPE type;
     long li;
@@ -1812,8 +1811,9 @@ redis_sock_check_liveness(RedisSock *redis_sock)
         redis_cmd_init_sstr(&cmd, 1, "AUTH", sizeof("AUTH") - 1);
         redis_cmd_append_sstr(&cmd, ZSTR_VAL(redis_sock->auth), ZSTR_LEN(redis_sock->auth));
     }
+
     gettimeofday(&tv, NULL);
-    uniqid_len = snprintf(uniqid, sizeof(uniqid), "phpredis_pool:%08lx%05lx:%08" PRIx32, (long)tv.tv_sec, (long)tv.tv_usec, php_mt_rand());
+    uniqid_len = snprintf(uniqid, sizeof(uniqid), "phpredis_pool:%08lx%05lx:%08lx", (long)tv.tv_sec, (long)tv.tv_usec, (long)php_rand());
     redis_cmd_init_sstr(&cmd, 1, "ECHO", sizeof("ECHO") - 1);
     redis_cmd_append_sstr(&cmd, uniqid, uniqid_len);
     smart_string_0(&cmd);

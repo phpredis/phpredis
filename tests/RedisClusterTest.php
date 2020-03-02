@@ -665,6 +665,21 @@ class Redis_Cluster_Test extends Redis_Test {
         ini_set('redis.clusters.cache_slots', 0);
     }
 
+    /* Regression test for connection pool liveness checks */
+    public function testConnectionPool() {
+        $prev_value = ini_get('redis.pconnect.pooling_enabled');
+        ini_set('redis.pconnect.pooling_enabled', 1);
+
+        $pong = 0;
+        for ($i = 0; $i < 10; $i++) {
+            $obj_rc = new RedisCluster(NULL, self::$_arr_node_map, 30, 30, true);
+            $pong += $obj_rc->ping("key:$i");
+        }
+
+        $this->assertEquals($pong, $i);
+        ini_set('redis.pconnect.pooling_enabled', $prev_value);
+    }
+
     /**
      * @inheritdoc
      */
