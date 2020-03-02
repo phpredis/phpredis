@@ -118,12 +118,13 @@ Redis cluster does allow commands that operate on multiple keys, but only if all
 
 For all of these multiple key commands (with the exception of MGET and MSET), the RedisCluster class will verify each key maps to the same hash slot and raise a "CROSSSLOT" warning, returning false if they don't.
 
-### MGET and MSET
-RedisCluster has specialized processing for MGET and MSET which allows you to send any number of keys (hashing to whichever slots) without having to consider where they live.  The way this works, is that the RedisCluster class will split the command as it iterates through keys, delivering a subset of commands per each key's slot.
+### MGET, MSET, DEL, and UNLINK
+RedisCluster has specialized processing for MGET, MSET, DEL, and UNLINK which allows you to send any number of keys (hashing to whichever slots) without having to consider where they live.  The way this works, is that the RedisCluster class will split the command as it iterates through keys, delivering a subset of commands per each key's slot.
+
+*Note:  If you send keys that hash to more than one slot, these commands are no longer atomic.*
 
 ~~~php
-// This will be delivered in two commands.  First for all of the {hash1} keys,
-// and then to grab 'otherkey'
+// This will send two `MGET` commands.  One for `{hash1}` keys, and one for `otherkey`
 $obj_cluster->mget(Array("{hash1}key1","{hash1}key2","{hash1}key3","otherkey"));
 ~~~
 
