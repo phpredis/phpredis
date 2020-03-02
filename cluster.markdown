@@ -125,7 +125,7 @@ RedisCluster has specialized processing for MGET, MSET, DEL, and UNLINK which al
 
 ~~~php
 // This will send two `MGET` commands.  One for `{hash1}` keys, and one for `otherkey`
-$obj_cluster->mget(Array("{hash1}key1","{hash1}key2","{hash1}key3","otherkey"));
+$obj_cluster->mget(["{hash1}key1","{hash1}key2","{hash1}key3","otherkey"]);
 ~~~
 
 This operation can also be done in MULTI mode transparently.
