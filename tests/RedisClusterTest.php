@@ -49,6 +49,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testTlsConnect() { return $this->markTestSkipped(); }
     public function testReset() { return $this->markTestSkipped(); }
     public function testInvalidAuthArgs() { return $this->markTestSkipped(); }
+    public function testScanErrors() { return $this->markTestSkipped(); }
 
     public function testlMove() { return $this->markTestSkipped(); }
     public function testlPos() { return $this->marktestSkipped(); }

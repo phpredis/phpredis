@@ -386,19 +386,25 @@ redis_check_eof(RedisSock *redis_sock, zend_bool no_retry, zend_bool no_throw)
     return -1;
 }
 
-
 PHP_REDIS_API int
 redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                            REDIS_SCAN_TYPE type, zend_long *iter)
 {
     REDIS_REPLY_TYPE reply_type;
     long reply_info;
-    char *p_iter;
+    char err[4096], *p_iter;
+    size_t errlen;
 
     /* Our response should have two multibulk replies */
     if(redis_read_reply_type(redis_sock, &reply_type, &reply_info)<0
        || reply_type != TYPE_MULTIBULK || reply_info != 2)
     {
+        if (reply_type == TYPE_ERR) {
+            if (redis_sock_gets(redis_sock, err, sizeof(err), &errlen) == 0) {
+                redis_sock_set_err(redis_sock, err, errlen);
+            }
+        }
+
         return -1;
     }
 
