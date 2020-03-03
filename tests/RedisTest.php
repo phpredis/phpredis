@@ -5695,6 +5695,17 @@ class Redis_Test extends TestSuite
         $this->assertEquals(0, $i_p_count);
     }
 
+    /* Make sure we capture errors when scanning */
+    public function testScanErrors() {
+        $this->redis->set('scankey', 'simplekey');
+
+        foreach (['sScan', 'hScan', 'zScan'] as $str_method) {
+            $it = NULL;
+            $this->redis->$str_method('scankey', $it);
+            $this->assertTrue(strpos($this->redis->getLastError(), 'WRONGTYPE') === 0);
+        }
+    }
+
     //
     // HyperLogLog (PF) commands
     //
