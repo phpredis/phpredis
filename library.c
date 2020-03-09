@@ -1892,8 +1892,9 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
                 if (redis_sock_check_liveness(redis_sock) == SUCCESS) {
                     redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
                     return SUCCESS;
+                } else if (redis_sock->stream) {
+                    php_stream_pclose(redis_sock->stream);
                 }
-                php_stream_pclose(redis_sock->stream);
                 p->nb_active--;
             }
 
