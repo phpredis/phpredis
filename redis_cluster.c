@@ -1953,36 +1953,37 @@ PHP_METHOD(RedisCluster, clearlasterror) {
 
 /* {{{ proto long RedisCluster::getOption(long option */
 PHP_METHOD(RedisCluster, getoption) {
-    redis_getoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        GET_CONTEXT()->flags, GET_CONTEXT());
+    redisCluster *c = GET_CONTEXT();
+    redis_getoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, c);
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::setOption(long option, mixed value) */
 PHP_METHOD(RedisCluster, setoption) {
-    redis_setoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        GET_CONTEXT()->flags, GET_CONTEXT());
+    redisCluster *c = GET_CONTEXT();
+    redis_setoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, c);
 }
 /* }}} */
 
 /* {{{ proto string RedisCluster::_prefix(string key) */
 PHP_METHOD(RedisCluster, _prefix) {
-    redis_prefix_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        GET_CONTEXT()->flags);
+    redisCluster *c = GET_CONTEXT();
+    redis_prefix_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags);
 }
 /* }}} */
 
 /* {{{ proto string RedisCluster::_serialize(mixed val) */
 PHP_METHOD(RedisCluster, _serialize) {
-    redis_serialize_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        GET_CONTEXT()->flags);
+    redisCluster *c = GET_CONTEXT();
+    redis_serialize_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags);
 }
 /* }}} */
 
 /* {{{ proto mixed RedisCluster::_unserialize(string val) */
 PHP_METHOD(RedisCluster, _unserialize) {
+    redisCluster *c = GET_CONTEXT();
     redis_unserialize_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        GET_CONTEXT()->flags, redis_cluster_exception_ce);
+        c->flags, redis_cluster_exception_ce);
 }
 /* }}} */
 
