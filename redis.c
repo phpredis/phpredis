@@ -567,7 +567,7 @@ static void cluster_cache_dtor(zend_resource *rsrc) {
 void
 free_redis_object(zend_object *object)
 {
-    redis_object *redis = (redis_object *)((char *)(object) - XtOffsetOf(redis_object, std));
+    redis_object *redis = PHPREDIS_GET_OBJECT(redis_object, object);
 
     zend_object_std_dtor(&redis->std);
     if (redis->sock) {
@@ -600,7 +600,7 @@ redis_sock_get_instance(zval *id, int no_throw)
     redis_object *redis;
 
     if (Z_TYPE_P(id) == IS_OBJECT) {
-        redis = PHPREDIS_GET_OBJECT(redis_object, id);
+        redis = PHPREDIS_ZVAL_GET_OBJECT(redis_object, id);
         if (redis->sock) {
             return redis->sock;
         }
@@ -1012,7 +1012,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
         port = 6379;
     }
 
-    redis = PHPREDIS_GET_OBJECT(redis_object, object);
+    redis = PHPREDIS_ZVAL_GET_OBJECT(redis_object, object);
     /* if there is a redis sock already we have to remove it */
     if (redis->sock) {
         redis_sock_disconnect(redis->sock, 0);

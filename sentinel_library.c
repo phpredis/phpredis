@@ -5,7 +5,7 @@ static zend_object_handlers redis_sentinel_object_handlers;
 static void
 free_redis_sentinel_object(zend_object *object)
 {
-    redis_sentinel_object *obj = (redis_sentinel_object *)((char *)(object) - XtOffsetOf(redis_sentinel_object, std));
+    redis_sentinel_object *obj = PHPREDIS_GET_OBJECT(redis_sentinel_object, object);
 
     if (obj->sock) {
         redis_sock_disconnect(obj->sock, 0);

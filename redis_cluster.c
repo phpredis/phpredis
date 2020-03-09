@@ -334,7 +334,7 @@ zend_object * create_cluster_context(zend_class_entry *class_type) {
 
 /* Free redisCluster context */
 void free_cluster_context(zend_object *object) {
-    redisCluster *cluster = (redisCluster*)((char*)(object) - XtOffsetOf(redisCluster, std));
+    redisCluster *cluster = PHPREDIS_GET_OBJECT(redisCluster, object);
 
     cluster_free(cluster, 0);
     zend_object_std_dtor(&cluster->std);

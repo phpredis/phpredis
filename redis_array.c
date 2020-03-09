@@ -178,7 +178,7 @@ zend_object_handlers redis_array_object_handlers;
 void
 free_redis_array_object(zend_object *object)
 {
-    redis_array_object *obj = (redis_array_object *)((char *)(object) - XtOffsetOf(redis_array_object, std));
+    redis_array_object *obj = PHPREDIS_GET_OBJECT(redis_array_object, object);
 
     if (obj->ra) {
         if (obj->ra->prev) redis_array_free(obj->ra->prev);
@@ -214,7 +214,7 @@ redis_array_get(zval *id)
     redis_array_object *obj;
 
     if (Z_TYPE_P(id) == IS_OBJECT) {
-        obj = PHPREDIS_GET_OBJECT(redis_array_object, id);
+        obj = PHPREDIS_ZVAL_GET_OBJECT(redis_array_object, id);
         return obj->ra;
     }
     return NULL;
@@ -224,7 +224,7 @@ PHP_REDIS_API int
 ra_call_user_function(HashTable *function_table, zval *object, zval *function_name, zval *retval_ptr, uint32_t param_count, zval params[])
 {
     if (object) {
-        redis_object *redis = PHPREDIS_GET_OBJECT(redis_object, object);
+        redis_object *redis = PHPREDIS_ZVAL_GET_OBJECT(redis_object, object);
         if (redis->sock->auth &&
             redis->sock->status != REDIS_SOCK_STATUS_CONNECTED &&
             redis_sock_server_open(redis->sock) == SUCCESS
@@ -366,7 +366,7 @@ PHP_METHOD(RedisArray, __construct)
         ra->auto_rehash = b_autorehash;
         ra->connect_timeout = d_connect_timeout;
         if(ra->prev) ra->prev->auto_rehash = b_autorehash;
-        obj = PHPREDIS_GET_OBJECT(redis_array_object, getThis());
+        obj = PHPREDIS_ZVAL_GET_OBJECT(redis_array_object, getThis());
         obj->ra = ra;
     }
 }
