@@ -89,11 +89,7 @@
 /* Helper to either return a bool value or add it to MULTI response */
 #define CLUSTER_RETURN_BOOL(c, b) \
     if(CLUSTER_IS_ATOMIC(c)) { \
-        if(b==1) {\
-            RETURN_TRUE; \
-        } else {\
-            RETURN_FALSE; \
-        } \
+        RETURN_BOOL(b); \
     } else { \
         add_next_index_bool(&c->multi_resp, b); \
     }

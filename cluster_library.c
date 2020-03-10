@@ -112,10 +112,9 @@ void cluster_free_reply(clusterReply *reply, int free_data) {
     efree(reply);
 }
 
-static void
+static int
 cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
-                                 clusterReply **element, int status_strings,
-                                 int *err)
+                                 clusterReply **element, int status_strings)
 {
     int i;
     size_t sz;
@@ -128,8 +127,7 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
 
         // Bomb out, flag error condition on a communication failure
         if (redis_read_reply_type(sock, &r->type, &len) < 0) {
-            *err = 1;
-            return;
+            return FAILURE;
         }
 
         /* Set our reply len */
@@ -139,8 +137,7 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
             case TYPE_ERR:
             case TYPE_LINE:
                 if (redis_sock_gets(sock,buf,sizeof(buf),&sz) < 0) {
-                    *err = 1;
-                    return;
+                    return FAILURE;
                 }
                 r->len = (long long)sz;
                 if (status_strings) r->str = estrndup(buf, r->len);
@@ -152,8 +149,7 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
                 if (r->len >= 0) {
                     r->str = redis_sock_read_bulk_reply(sock,r->len);
                     if (!r->str) {
-                        *err = 1;
-                        return;
+                        return FAILURE;
                     }
                 }
                 break;
@@ -162,17 +158,17 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
                     r->elements = r->len;
                     if (r->len > 0) {
                         r->element = ecalloc(r->len,sizeof(clusterReply*));
-                        cluster_multibulk_resp_recursive(sock, r->elements, r->element,
-                            status_strings, err);
+                        if (cluster_multibulk_resp_recursive(sock, r->elements, r->element, status_strings) < 0) {
+                            return FAILURE;
+                        }
                     }
-                    if (*err) return;
                 }
                 break;
             default:
-                *err = 1;
-                return;
+                return FAILURE;
         }
     }
+    return SUCCESS;
 }
 
 /* Return the socket for a slot and slave index */
@@ -215,9 +211,6 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
     r = ecalloc(1, sizeof(clusterReply));
     r->type = type;
 
-    // Error flag in case we go recursive
-    int err = 0;
-
     switch(r->type) {
         case TYPE_INT:
             r->integer = len;
@@ -241,19 +234,15 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
             r->elements = len;
             if (len != (size_t)-1) {
                 r->element = ecalloc(len, sizeof(clusterReply*));
-                cluster_multibulk_resp_recursive(redis_sock, len, r->element,
-                                                 line_reply != NULL, &err);
+                if (cluster_multibulk_resp_recursive(redis_sock, len, r->element, line_reply != NULL) < 0) {
+                    cluster_free_reply(r, 1);
+                    return NULL;
+                }
             }
             break;
         default:
             cluster_free_reply(r,1);
             return NULL;
-    }
-
-    // Free/return null on communication error
-    if (err) {
-        cluster_free_reply(r,1);
-        return NULL;
     }
 
     // Success, return the reply
@@ -2644,7 +2633,6 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
             }
             efree(line);
         } else {
-            if (line) efree(line);
             add_next_index_bool(z_result, 0);
         }
     }
@@ -2738,11 +2726,11 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
                           long long count, void *ctx)
 {
     char *line;
-    int line_len,i = 0;
+    int line_len, i;
     zval *z_keys = ctx;
 
     // Loop while we've got replies
-    while (count--) {
+    for (i = 0; i < count; ++i) {
         zend_string *zstr = zval_get_string(&z_keys[i]);
         line = redis_sock_read(redis_sock, &line_len);
 
@@ -2761,9 +2749,6 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
         // Clean up key context
         zend_string_release(zstr);
         zval_dtor(&z_keys[i]);
-
-        // Move to the next key
-        i++;
     }
 
     // Clean up our keys overall
@@ -2807,7 +2792,7 @@ PHP_REDIS_API redisCachedCluster *cluster_cache_load(HashTable *ht_seeds) {
 
     /* Look for cached slot information */
     h = cluster_hash_seeds(ht_seeds);
-    le = zend_hash_str_find_ptr(&EG(persistent_list), ZSTR_VAL(h), ZSTR_LEN(h));
+    le = zend_hash_find_ptr(&EG(persistent_list), h);
     zend_string_release(h);
 
     if (le != NULL) {
@@ -2831,8 +2816,11 @@ PHP_REDIS_API int cluster_cache_store(HashTable *ht_seeds, HashTable *nodes) {
     zend_string *hash;
 
     /* Short circuit if caching is disabled or there aren't any seeds */
-    if (!SLOT_CACHING_ENABLED() || zend_hash_num_elements(ht_seeds) == 0)
-        return !SLOT_CACHING_ENABLED() ? SUCCESS : FAILURE;
+    if (!SLOT_CACHING_ENABLED()) {
+        return SUCCESS;
+    } else if (zend_hash_num_elements(ht_seeds) == 0) {
+        return FAILURE;
+    }
 
     /* Construct our cache */
     hash = cluster_hash_seeds(ht_seeds);
