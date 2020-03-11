@@ -173,14 +173,7 @@ redis_pool_get_sock(redis_pool *pool, const char *key) {
 
     for(i = 0; i < pool->totalWeight;) {
         if (pos >= i && pos < i + rpm->weight) {
-            int needs_auth = 0;
-            if (rpm->redis_sock->auth && rpm->redis_sock->status != REDIS_SOCK_STATUS_CONNECTED) {
-                    needs_auth = 1;
-            }
             if (redis_sock_server_open(rpm->redis_sock) == 0) {
-                if (needs_auth) {
-                    redis_sock_auth(rpm->redis_sock);
-                }
                 if (rpm->database >= 0) { /* default is -1 which leaves the choice to redis. */
                     redis_pool_member_select(rpm);
                 }
