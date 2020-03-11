@@ -654,7 +654,7 @@ PHP_REDIS_API RedisSock *redis_sock_get_connected(INTERNAL_FUNCTION_PARAMETERS) 
     if((zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O",
        &object, redis_ce) == FAILURE) ||
        (redis_sock = redis_sock_get(object, 1)) == NULL ||
-       redis_sock->status != REDIS_SOCK_STATUS_CONNECTED)
+       redis_sock->status < REDIS_SOCK_STATUS_CONNECTED)
     {
         return NULL;
     }
