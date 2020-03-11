@@ -62,7 +62,7 @@
 
 /* Protected sending of data down the wire to a RedisSock->stream */
 #define CLUSTER_SEND_PAYLOAD(sock, buf, len) \
-    (sock && !cluster_sock_open(sock) && sock->stream && !redis_check_eof(sock, 1 ) && \
+    (sock && !redis_sock_server_open(sock) && sock->stream && !redis_check_eof(sock, 1 ) && \
      php_stream_write(sock->stream, buf, len)==len)
 
 /* Macro to read our reply type character */
