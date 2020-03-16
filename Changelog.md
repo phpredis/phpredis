@@ -5,6 +5,41 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack.com](https://audiomack.com)
+- [Till Krüss](https://github.com/tillkruss)
+
+### Fixed
+
+- Fix arginfo for Redis::zadd
+  [a8e2b021](https://github.com/phpredis/phpredis/commit/a8e2b021)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- Fix segfault on closing persistent stream
+  [b7f9df75](https://github.com/phpredis/phpredis/commit/b7f9df75)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+### Changed
+
+- Various small changes in cluster_library
+  [460c8f29](https://github.com/phpredis/phpredis/commit/460c8f29)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- PHP 8 compatibility
+  [9ee94ca4](https://github.com/phpredis/phpredis/commit/9ee94ca4)
+  [7e4c7b3e](https://github.com/phpredis/phpredis/commit/7e4c7b3e)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- Refactor PHPREDIS_GET_OBJECT macro
+  [d5dadaf6](https://github.com/phpredis/phpredis/commit/d5dadaf6)
+  [190c0d34](https://github.com/phpredis/phpredis/commit/190c0d34)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+---
+
 ## [5.2.0] - 2020-03-02 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.0), [PECL](https://pecl.php.net/package/redis/5.2.0))
 
 *There were no changes between 5.2.0RC2 and 5.2.0*
