@@ -90,6 +90,7 @@ PHP_INI_BEGIN()
     /* redis pconnect */
     PHP_INI_ENTRY("redis.pconnect.pooling_enabled", "1", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.pconnect.connection_limit", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.pconnect.group_by_persistent_id", "0", PHP_INI_ALL, NULL)
 
     /* redis session */
     PHP_INI_ENTRY("redis.session.locking_enabled", "0", PHP_INI_ALL, NULL)
