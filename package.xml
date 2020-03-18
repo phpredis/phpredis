@@ -27,65 +27,28 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2020-03-02</date>
+ <date>2020-03-19</date>
  <version>
-  <release>5.2.0</release>
-  <api>5.2.0</api>
+  <release>5.2.1RC1</release>
+  <api>5.2.1RC1</api>
  </version>
  <stability>
-  <release>stable</release>
-  <api>stable</api>
+  <release>alpha</release>
+  <api>alpha</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 5.2.0
+    phpredis 5.2.1RC1
 
-    - There were no changes between 5.2.0RC2 and 5.2.0.
+    This is a bugfix release that fixes `redis->zAdd` arginfo as well as a
+    segfault when closing persistent connections.
 
-    phpredis 5.2.0RC2
-
-    * Include RedisSentinelTest.php in package.xml! [eddbfc8f] (Michael Grunder)
-    * Fix -Wmaybe-uninitialized warning [740b8c87] (Remi Collet)
-    * Fix improper destructor when zipping values and scores [371ae7ae]
-      (Michael Grunder)
-    * Use php_rand instead of php_mt_rand for liveness challenge string
-      [9ef2ed89] (Michael Grunder)
-
-    phpredis 5.2.0RC1
-
-    This release contains initial support for Redis Sentinel as well as many
-    smaller bug fixes and improvements.  It is especially of interest if you
-    use persistent connections, as we've added logic to make sure they are in
-    a good state when retreving them from the pool.
-
-    IMPORTANT: Sentinel support is considered experimental and the API
-               will likely change based on user feedback.
+    * Fix arginfo for Redis::zadd [a8e2b021] (Pavlo Yatsukhnenko)
+    * Fix segfault on closing persistent stream [b7f9df75] (Pavlo Yatsukhnenko)
 
     * Sponsors
       ~ Audiomack.com - https://audiomack.com
       ~ Till Kruss - https://github.com/tillkruss
-
-    ---
-
-    * Initial support for RedisSentinel [90cb69f3, c94e28f1, 46da22b0, 5a609fa4,
-      383779ed] (Pavlo Yatsukhnenko)
-
-    * Houskeeping (spelling, doc changes, etc) [23f9de30, d07a8df6, 2d39b48d,
-      0ef488fc, 2c35e435, f52bd8a8, 2ddc5f21, 1ff7dfb7, db446138] (Tyson Andre,
-      Pavlo Yatsukhnenko, Michael Grunder, Tyson Andre)
-
-    * Fix for ASK redirections [ba73fbee] (Michael Grunder)
-    * Create specific 'test skipped' exception [c3d83d44] (Michael Grunder)
-    * Fixed memory leaks in RedisCluster [a107c9fc] (Michael Grunder)
-    * Fixes for session lifetime values that underflow or overflow  [7a79ad9c,
-      3c48a332] (Michael Grunder)
-    * Enables slot caching for Redis Cluster [23b1a9d8] (Michael Booth)
-
-    * Support TYPE argument for SCAN [8eb39a26, b1724b84, 53fb36c9, 544e641b]
-      (Pavlo Yatsukhnenko)
-
-    * Added challenge/response mechanism for persistent connections [a5f95925,
-      25cdaee6, 7b6072e0, 99ebd0cc, 3243f426] (Pavlo Yatsukhnenko, Michael Grunder)
  </notes>
  <contents>
   <dir name="/">
@@ -162,10 +125,58 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
   <release>
-   <stability><release>alpha</release><api>alpha</api></stability>
-   <version><release>5.2.0RC2</release><api>5.2.0RC2</api></version>
-   <date>2020-02-21</date>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.2.0</release><api>5.2.0</api></version>
+   <date>2020-03-02</date>
    <notes>
+    phpredis 5.2.0
+
+    - There were no changes between 5.2.0RC2 and 5.2.0.
+
+    phpredis 5.2.0RC2
+
+    * Include RedisSentinelTest.php in package.xml! [eddbfc8f] (Michael Grunder)
+    * Fix -Wmaybe-uninitialized warning [740b8c87] (Remi Collet)
+    * Fix improper destructor when zipping values and scores [371ae7ae]
+      (Michael Grunder)
+    * Use php_rand instead of php_mt_rand for liveness challenge string
+      [9ef2ed89] (Michael Grunder)
+
+    phpredis 5.2.0RC1
+
+    This release contains initial support for Redis Sentinel as well as many
+    smaller bug fixes and improvements.  It is especially of interest if you
+    use persistent connections, as we've added logic to make sure they are in
+    a good state when retreving them from the pool.
+
+    IMPORTANT: Sentinel support is considered experimental and the API
+               will likely change based on user feedback.
+
+    * Sponsors
+      ~ Audiomack.com - https://audiomack.com
+      ~ Till Kruss - https://github.com/tillkruss
+
+    ---
+
+    * Initial support for RedisSentinel [90cb69f3, c94e28f1, 46da22b0, 5a609fa4,
+      383779ed] (Pavlo Yatsukhnenko)
+
+    * Houskeeping (spelling, doc changes, etc) [23f9de30, d07a8df6, 2d39b48d,
+      0ef488fc, 2c35e435, f52bd8a8, 2ddc5f21, 1ff7dfb7, db446138] (Tyson Andre,
+      Pavlo Yatsukhnenko, Michael Grunder, Tyson Andre)
+
+    * Fix for ASK redirections [ba73fbee] (Michael Grunder)
+    * Create specific 'test skipped' exception [c3d83d44] (Michael Grunder)
+    * Fixed memory leaks in RedisCluster [a107c9fc] (Michael Grunder)
+    * Fixes for session lifetime values that underflow or overflow  [7a79ad9c,
+      3c48a332] (Michael Grunder)
+    * Enables slot caching for Redis Cluster [23b1a9d8] (Michael Booth)
+
+    * Support TYPE argument for SCAN [8eb39a26, b1724b84, 53fb36c9, 544e641b]
+      (Pavlo Yatsukhnenko)
+
+    * Added challenge/response mechanism for persistent connections [a5f95925,
+      25cdaee6, 7b6072e0, 99ebd0cc, 3243f426] (Pavlo Yatsukhnenko, Michael Grunder)
     phpredis 5.2.0RC2
 
     * Include RedisSentinelTest.php in package.xml! [eddbfc8f] (Michael Grunder)
