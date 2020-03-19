@@ -5,10 +5,6 @@
 #include <php.h>
 #include <stddef.h>
 
-/* Redis cluster hash slots and N-1 which we'll use to find it */
-#define REDIS_CLUSTER_SLOTS 16384
-#define REDIS_CLUSTER_MOD   (REDIS_CLUSTER_SLOTS-1)
-
 /* Get attached object context */
 #define GET_CONTEXT() PHPREDIS_ZVAL_GET_OBJECT(redisCluster, getThis())
 
