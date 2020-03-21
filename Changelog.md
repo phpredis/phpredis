@@ -12,16 +12,6 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - [Audiomack.com](https://audiomack.com)
 - [Till Krüss](https://github.com/tillkruss)
 
-### Fixed
-
-- Fix arginfo for Redis::zadd
-  [a8e2b021](https://github.com/phpredis/phpredis/commit/a8e2b021)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-
-- Fix segfault on closing persistent stream
-  [b7f9df75](https://github.com/phpredis/phpredis/commit/b7f9df75)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-
 ### Changed
 
 - Various small changes in cluster_library
@@ -36,6 +26,25 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Refactor PHPREDIS_GET_OBJECT macro
   [d5dadaf6](https://github.com/phpredis/phpredis/commit/d5dadaf6)
   [190c0d34](https://github.com/phpredis/phpredis/commit/190c0d34)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+---
+
+## [5.2.1] - 2020-03-19 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.1), [PECL](https://pecl.php.net/package/redis/5.2.1))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack.com](https://audiomack.com)
+- [Till Krüss](https://github.com/tillkruss)
+
+### Fixed
+
+- Fix arginfo for Redis::zadd
+  [a8e2b021](https://github.com/phpredis/phpredis/commit/a8e2b021)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- Fix segfault on closing persistent stream
+  [b7f9df75](https://github.com/phpredis/phpredis/commit/b7f9df75)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 ---
