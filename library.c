@@ -1894,6 +1894,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
                     return SUCCESS;
                 } else if (redis_sock->stream) {
                     php_stream_pclose(redis_sock->stream);
+                    redis_sock->stream = NULL;
                 }
                 p->nb_active--;
             }
