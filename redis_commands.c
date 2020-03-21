@@ -1,8 +1,6 @@
 /* -*- Mode: C; tab-width: 4 -*- */
 /*
   +----------------------------------------------------------------------+
-  | PHP Version 5                                                        |
-  +----------------------------------------------------------------------+
   | Copyright (c) 1997-2009 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
@@ -2176,7 +2174,7 @@ int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (src_free) efree(src);
     if (dst_free) efree(dst);
 
-    // Succcess!
+    // Success!
     return SUCCESS;
 }
 
@@ -3865,10 +3863,34 @@ int redis_xtrim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int
+redis_sentinel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") == FAILURE) {
+        return FAILURE;
+    }
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SENTINEL", "s", kw, strlen(kw));
+    return SUCCESS;
+}
+
+int
+redis_sentinel_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    zend_string *name;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &name) == FAILURE) {
+        return FAILURE;
+    }
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SENTINEL", "sS", kw, strlen(kw), name);
+    return SUCCESS;
+}
+
 /*
  * Redis commands that don't deal with the server at all.  The RedisSock*
- * pointer is the only thing retreived differently, so we just take that
- * in additon to the standard INTERNAL_FUNCTION_PARAMETERS for arg parsing,
+ * pointer is the only thing retrieved differently, so we just take that
+ * in addition to the standard INTERNAL_FUNCTION_PARAMETERS for arg parsing,
  * return value handling, and thread safety. */
 
 void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
@@ -4085,13 +4107,14 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
         // Just return the value that was passed to us
         RETURN_STRINGL(value, value_len);
     }
-    zval zv, *z_ret = &zv;
-    if (!redis_unserialize(redis_sock, value, value_len, z_ret)) {
-        // Badly formed input, throw an execption
+
+    zval z_ret;
+    if (!redis_unserialize(redis_sock, value, value_len, &z_ret)) {
+        // Badly formed input, throw an exception
         zend_throw_exception(ex, "Invalid serialized data, or unserialization error", 0);
         RETURN_FALSE;
     }
-    RETURN_ZVAL(z_ret, 1, 0);
+    RETURN_ZVAL(&z_ret, 0, 0);
 }
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

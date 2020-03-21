@@ -7,6 +7,7 @@
 #include <zend_exceptions.h>
 
 extern zend_class_entry *redis_cluster_exception_ce;
+int le_cluster_slot_cache;
 
 /* Debugging methods/
 static void cluster_dump_nodes(redisCluster *c) {
@@ -544,7 +545,7 @@ unsigned short cluster_hash_key(const char *key, int len) {
     // Hash the whole key if we don't find a tailing } or if {} is empty
     if (e == len || e == s+1) return crc16(key, len) & REDIS_CLUSTER_MOD;
 
-    // Hash just the bit betweeen { and }
+    // Hash just the bit between { and }
     return crc16((char*)key+s+1,e-s-1) & REDIS_CLUSTER_MOD;
 }
 
@@ -944,7 +945,7 @@ redisCachedCluster *cluster_cache_create(zend_string *hash, HashTable *nodes) {
     return cc;
 }
 
-/* Takes our input hash table and returns a straigt C array with elements,
+/* Takes our input hash table and returns a straight C array with elements,
  * which have been randomized.  The return value needs to be freed. */
 static zval **cluster_shuffle_seeds(HashTable *seeds, int *len) {
     zval **z_seeds, *z_ele;
@@ -1205,8 +1206,7 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
  *
  * This function will return -1 on a critical error (e.g. parse/communication
  * error, 0 if no redirection was encountered, and 1 if the data was moved. */
-static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
-                                 )
+static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
 {
     size_t sz;
 
@@ -1231,15 +1231,17 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
         }
 
         // Check for MOVED or ASK redirection
-        if ((moved = IS_MOVED(inbuf)) || IS_ASK(inbuf)) { // Set our redirection information
-            /* We'll want to invalidate slot cache if we're using one */
-            c->redirections++;
+        if ((moved = IS_MOVED(inbuf)) || IS_ASK(inbuf)) {
+            /* The Redis Cluster specification suggests clients do not update
+             * their slot mapping for an ASK redirection, only for MOVED */
+            if (moved) c->redirections++;
 
+            /* Make sure we can parse the redirection host and port */
             if (cluster_set_redirection(c,inbuf,moved) < 0) {
                 return -1;
             }
 
-            // Data moved
+            /* We've been redirected */
             return 1;
         } else {
             // Capture the error string Redis returned
@@ -1255,7 +1257,7 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type
         return -1;
     }
 
-    // For replies that will give us a numberic length, convert it
+    // For replies that will give us a numeric length, convert it
     if (*reply_type != TYPE_LINE) {
         c->reply_len = strtol(c->line_reply, NULL, 10);
     } else {
@@ -1379,8 +1381,7 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
     /* If in ASK redirection, get/create the node for that host:port, otherwise
      * just use the command socket. */
     if (c->redir_type == REDIR_ASK) {
-        redis_sock = cluster_get_asking_sock(c);
-        if (cluster_send_asking(redis_sock) < 0) {
+        if (cluster_send_asking(c->cmd_sock) < 0) {
             return -1;
         }
     }
@@ -1592,7 +1593,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
     msstart = mstime();
 
     /* Our main cluster request/reply loop.  This loop runs until we're able to
-     * get a valid reply from a node, hit our "request" timeout, or enounter a
+     * get a valid reply from a node, hit our "request" timeout, or encounter a
      * CLUSTERDOWN state from Redis Cluster. */
     do {
         /* Send MULTI to the socket if we're in MULTI mode but haven't yet */
@@ -1626,10 +1627,13 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
                return -1;
            }
 
-           /* Update mapping if the data has MOVED */
            if (c->redir_type == REDIR_MOVED) {
+               /* For MOVED redirection we want to update our cached mapping */
                cluster_update_slot(c);
                c->cmd_sock = SLOT_SOCK(c, slot);
+           } else if (c->redir_type == REDIR_ASK) {
+               /* For ASK redirection we want to redirect but not update slot mapping */
+               c->cmd_sock = cluster_get_asking_sock(c);
            }
         }
 
@@ -2045,7 +2049,7 @@ cluster_variant_resp_generic(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         CLUSTER_RETURN_FALSE(c);
     }
 
-    // Handle ATOMIC vs. MULTI mode in a seperate switch
+    // Handle ATOMIC vs. MULTI mode in a separate switch
     if (CLUSTER_IS_ATOMIC(c)) {
         switch(r->type) {
             case TYPE_INT:
@@ -2433,7 +2437,7 @@ PHP_REDIS_API void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS,
         mbulk_resp_loop(c->cmd_sock, mctx->z_multi, c->reply_len, NULL) == FAILURE;
 
     // If we had a failure, pad results with FALSE to indicate failure.  Non
-    // existant keys (e.g. for MGET will come back as NULL)
+    // existent keys (e.g. for MGET will come back as NULL)
     if (fail) {
         while (mctx->count--) {
             add_next_index_bool(mctx->z_multi, 0);
@@ -2447,6 +2451,8 @@ PHP_REDIS_API void cluster_mbulk_mget_resp(INTERNAL_FUNCTION_PARAMETERS,
         } else {
             add_next_index_zval(&c->multi_resp, mctx->z_multi);
         }
+
+        efree(mctx->z_multi);
     }
 
     // Clean up this context item
@@ -2654,7 +2660,7 @@ int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
     int line_len, key_len = 0;
     long long idx = 0;
 
-    // Our count wil need to be divisible by 2
+    // Our count will need to be divisible by 2
     if (count % 2 != 0) {
         return -1;
     }
@@ -2766,5 +2772,86 @@ int mbulk_resp_loop_assoc(RedisSock *redis_sock, zval *z_result,
     // Success!
     return SUCCESS;
 }
+
+/* Turn a seed array into a zend_string we can use to look up a slot cache */
+zend_string *cluster_hash_seeds(HashTable *ht) {
+    smart_str hash = {0};
+    zend_string *zstr;
+    zval *z_seed;
+
+    ZEND_HASH_FOREACH_VAL(ht, z_seed) {
+        zstr = zval_get_string(z_seed);
+        smart_str_appendc(&hash, '[');
+        smart_str_appendl(&hash, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
+        smart_str_appendc(&hash, ']');
+        zend_string_release(zstr);
+    } ZEND_HASH_FOREACH_END();
+
+    /* Not strictly needed but null terminate anyway */
+    smart_str_0(&hash);
+
+    /* smart_str is a zend_string internally */
+    return hash.s;
+}
+
+
+#define SLOT_CACHING_ENABLED() (INI_INT("redis.clusters.cache_slots") == 1)
+PHP_REDIS_API redisCachedCluster *cluster_cache_load(HashTable *ht_seeds) {
+    zend_resource *le;
+    zend_string *h;
+
+    /* Short circuit if we're not caching slots or if our seeds don't have any
+     * elements, since it doesn't make sense to cache an empty string */
+    if (!SLOT_CACHING_ENABLED() || zend_hash_num_elements(ht_seeds) == 0)
+        return NULL;
+
+    /* Look for cached slot information */
+    h = cluster_hash_seeds(ht_seeds);
+    le = zend_hash_str_find_ptr(&EG(persistent_list), ZSTR_VAL(h), ZSTR_LEN(h));
+    zend_string_release(h);
+
+    if (le != NULL) {
+        /* Sanity check on our list type */
+        if (le->type != le_cluster_slot_cache) {
+            php_error_docref(0, E_WARNING, "Invalid slot cache resource");
+            return NULL;
+        }
+
+        /* Success, return the cached entry */
+        return le->ptr;
+    }
+
+    /* Not found */
+    return NULL;
+}
+
+/* Cache a cluster's slot information in persistent_list if it's enabled */
+PHP_REDIS_API int cluster_cache_store(HashTable *ht_seeds, HashTable *nodes) {
+    redisCachedCluster *cc;
+    zend_string *hash;
+
+    /* Short circuit if caching is disabled or there aren't any seeds */
+    if (!SLOT_CACHING_ENABLED() || zend_hash_num_elements(ht_seeds) == 0)
+        return !SLOT_CACHING_ENABLED() ? SUCCESS : FAILURE;
+
+    /* Construct our cache */
+    hash = cluster_hash_seeds(ht_seeds);
+    cc = cluster_cache_create(hash, nodes);
+    zend_string_release(hash);
+
+    /* Set up our resource */
+#if PHP_VERSION_ID < 70300
+    zend_resource le;
+    le.type = le_cluster_slot_cache;
+    le.ptr = cc;
+
+    zend_hash_update_mem(&EG(persistent_list), cc->hash, (void*)&le, sizeof(zend_resource));
+#else
+    zend_register_persistent_resource_ex(cc->hash, cc, le_cluster_slot_cache);
+#endif
+
+    return SUCCESS;
+}
+
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

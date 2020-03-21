@@ -1,8 +1,6 @@
 /* -*- Mode: C; tab-width: 4 -*- */
 /*
   +----------------------------------------------------------------------+
-  | PHP Version 5                                                        |
-  +----------------------------------------------------------------------+
   | Copyright (c) 1997-2009 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
@@ -119,6 +117,20 @@ redis_pool_free(redis_pool *pool) {
 
     /* Cleanup pool itself */
     efree(pool);
+}
+
+/* Retreive session.gc_maxlifetime from php.ini protecting against an integer overflow */
+static int session_gc_maxlifetime() {
+    zend_long value = INI_INT("session.gc_maxlifetime");
+    if (value > INT_MAX) {
+        php_error_docref(NULL, E_NOTICE, "session.gc_maxlifetime overflows INT_MAX, truncating.");
+        return INT_MAX;
+    } else if (value <= 0) {
+        php_error_docref(NULL, E_NOTICE, "session.gc_maxlifetime is <= 0, defaulting to 1440 seconds");
+        return 1440;
+    }
+
+    return value;
 }
 
 /* Send a command to Redis.  Returns byte count written to socket (-1 on failure) */
@@ -573,7 +585,7 @@ PS_CREATE_SID_FUNC(redis)
 
         if (pool->lock_status.session_key) zend_string_release(pool->lock_status.session_key);
         pool->lock_status.session_key = redis_session_key(redis_sock, ZSTR_VAL(sid), ZSTR_LEN(sid));
-        
+
         if (lock_acquire(redis_sock, &pool->lock_status) == SUCCESS) {
             return sid;
         }
@@ -656,7 +668,7 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
 
     /* send EXPIRE command */
     zend_string *session = redis_session_key(redis_sock, skey, skeylen);
-    cmd_len = REDIS_SPPRINTF(&cmd, "EXPIRE", "Sd", session, INI_INT("session.gc_maxlifetime"));
+    cmd_len = REDIS_SPPRINTF(&cmd, "EXPIRE", "Sd", session, session_gc_maxlifetime());
     zend_string_release(session);
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
@@ -753,7 +765,7 @@ PS_WRITE_FUNC(redis)
     /* send SET command */
     zend_string *session = redis_session_key(redis_sock, skey, skeylen);
 
-    cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "Sds", session, INI_INT("session.gc_maxlifetime"), sval, svallen);
+    cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "Sds", session, session_gc_maxlifetime(), sval, svallen);
     zend_string_release(session);
 
     if (!write_allowed(redis_sock, &pool->lock_status) || redis_sock_write(redis_sock, cmd, cmd_len ) < 0) {
@@ -846,7 +858,7 @@ static void session_conf_timeout(HashTable *ht_conf, const char *key, int key_le
     }
 }
 
-/* Simple helper to retreive a boolean (0 or 1) value from a string stored in our
+/* Simple helper to retrieve a boolean (0 or 1) value from a string stored in our
  * session.save_path variable.  This is so the user can use 0, 1, or 'true',
  * 'false' */
 static void session_conf_bool(HashTable *ht_conf, char *key, int keylen,
@@ -959,10 +971,20 @@ PS_OPEN_FUNC(rediscluster) {
     if (auth && auth_len > 0) {
         c->auth = zend_string_init(auth, auth_len, 0);
     }
-    if (!cluster_init_seeds(c, ht_seeds) && !cluster_map_keyspace(c)) {
+
+    redisCachedCluster *cc;
+
+    /* Attempt to load from cache */
+    if ((cc = cluster_cache_load(ht_seeds))) {
+        cluster_init_cache(c, cc);
         /* Set up our prefix */
         c->flags->prefix = zend_string_init(prefix, prefix_len, 0);
-
+        PS_SET_MOD_DATA(c);
+        retval = SUCCESS;
+    } else if (!cluster_init_seeds(c, ht_seeds) && !cluster_map_keyspace(c)) {
+        /* Set up our prefix */
+        c->flags->prefix = zend_string_init(prefix, prefix_len, 0);
+        cluster_cache_store(ht_seeds, c->nodes);
         PS_SET_MOD_DATA(c);
         retval = SUCCESS;
     } else {
@@ -1036,7 +1058,7 @@ PS_WRITE_FUNC(rediscluster) {
     /* Set up command and slot info */
     skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
     cmdlen = redis_spprintf(NULL, NULL, &cmd, "SETEX", "sds", skey,
-                            skeylen, INI_INT("session.gc_maxlifetime"),
+                            skeylen, session_gc_maxlifetime(),
                             ZSTR_VAL(val), ZSTR_LEN(val));
     efree(skey);
 

@@ -1,7 +1,5 @@
 /*
   +----------------------------------------------------------------------+
-  | PHP Version 5                                                        |
-  +----------------------------------------------------------------------+
   | Copyright (c) 1997-2009 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
@@ -33,7 +31,6 @@
 #include <SAPI.h>
 
 zend_class_entry *redis_cluster_ce;
-int le_cluster_slot_cache;
 
 /* Exception handler */
 zend_class_entry *redis_cluster_exception_ce;
@@ -91,7 +88,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan_cl, 0, 0, 2)
     ZEND_ARG_INFO(0, i_count)
 ZEND_END_ARG_INFO()
 
-/* Argument infor for SCAN */
+/* Argument info for SCAN */
 ZEND_BEGIN_ARG_INFO_EX(arginfo_scan_cl, 0, 0, 2)
     ZEND_ARG_INFO(1, i_iterator)
     ZEND_ARG_INFO(0, str_node)
@@ -343,85 +340,6 @@ void free_cluster_context(zend_object *object) {
     zend_object_std_dtor(&cluster->std);
 }
 
-/* Turn a seed array into a zend_string we can use to look up a slot cache */
-static zend_string *cluster_hash_seeds(HashTable *ht) {
-    smart_str hash = {0};
-    zend_string *zstr;
-    zval *z_seed;
-
-    ZEND_HASH_FOREACH_VAL(ht, z_seed) {
-        zstr = zval_get_string(z_seed);
-        smart_str_appendc(&hash, '[');
-        smart_str_appendl(&hash, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
-        smart_str_appendc(&hash, ']');
-        zend_string_release(zstr);
-    } ZEND_HASH_FOREACH_END();
-
-    /* Not strictly needed but null terminate anyway */
-    smart_str_0(&hash);
-
-    /* smart_str is a zend_string internally */
-    return hash.s;
-}
-
-#define SLOT_CACHING_ENABLED() (INI_INT("redis.clusters.cache_slots") == 1)
-static redisCachedCluster *cluster_cache_load(HashTable *ht_seeds) {
-    zend_resource *le;
-    zend_string *h;
-
-    /* Short circuit if we're not caching slots or if our seeds don't have any
-     * elements, since it doesn't make sense to cache an empty string */
-    if (!SLOT_CACHING_ENABLED() || zend_hash_num_elements(ht_seeds) == 0)
-        return NULL;
-
-    /* Look for cached slot information */
-    h = cluster_hash_seeds(ht_seeds);
-    le = zend_hash_str_find_ptr(&EG(persistent_list), ZSTR_VAL(h), ZSTR_LEN(h));
-    zend_string_release(h);
-
-    if (le != NULL) {
-        /* Sanity check on our list type */
-        if (le->type != le_cluster_slot_cache) {
-            php_error_docref(0, E_WARNING, "Invalid slot cache resource");
-            return NULL;
-        }
-
-        /* Success, return the cached entry */
-        return le->ptr;
-    }
-
-    /* Not found */
-    return NULL;
-}
-
-/* Cache a cluster's slot information in persistent_list if it's enabled */
-static int cluster_cache_store(HashTable *ht_seeds, HashTable *nodes) {
-    redisCachedCluster *cc;
-    zend_string *hash;
-
-    /* Short circuit if caching is disabled or there aren't any seeds */
-    if (!SLOT_CACHING_ENABLED() || zend_hash_num_elements(ht_seeds) == 0)
-        return !SLOT_CACHING_ENABLED() ? SUCCESS : FAILURE;
-
-    /* Construct our cache */
-    hash = cluster_hash_seeds(ht_seeds);
-    cc = cluster_cache_create(hash, nodes);
-    zend_string_release(hash);
-
-    /* Set up our resource */
-#if PHP_VERSION_ID < 70300
-    zend_resource le;
-    le.type = le_cluster_slot_cache;
-    le.ptr = cc;
-
-    zend_hash_update_mem(&EG(persistent_list), cc->hash, (void*)&le, sizeof(zend_resource));
-#else
-    zend_register_persistent_resource_ex(cc->hash, cc, le_cluster_slot_cache);
-#endif
-
-    return SUCCESS;
-}
-
 /* Validate redis cluster construction arguments */
 static int
 cluster_validate_args(double timeout, double read_timeout, HashTable *seeds) {
@@ -459,7 +377,7 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
     c->read_timeout = read_timeout;
     c->persistent = persistent;
 
-    /* Calculate the number of miliseconds we will wait when bouncing around,
+    /* Calculate the number of milliseconds we will wait when bouncing around,
      * (e.g. a node goes down), which is not the same as a standard timeout. */
     c->waitms = (long)(timeout * 1000);
 
@@ -759,7 +677,7 @@ static HashTable *method_args_to_ht(zval *z_args, int argc) {
     return ht_ret;
 }
 
-/* Convienience handler for commands that take multiple keys such as
+/* Convenience handler for commands that take multiple keys such as
  * MGET, DEL, and UNLINK */
 static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
                             zval *z_ret, cluster_cb cb)
@@ -2331,7 +2249,7 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg)
         }
     } else {
         php_error_docref(0, E_WARNING,
-            "Direted commands musty be passed a key or [host,port] array");
+            "Directed commands must be passed a key or [host,port] array");
         return -1;
     }
 
@@ -2676,7 +2594,7 @@ PHP_METHOD(RedisCluster, hscan) {
 /* }}} */
 
 /* {{{ proto RedisCluster::save(string key)
- *     proto RedisCluster::save(string host, long port) */
+ *     proto RedisCluster::save(array host_port) */
 PHP_METHOD(RedisCluster, save) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SAVE", TYPE_LINE,
         cluster_bool_resp);
@@ -2684,7 +2602,7 @@ PHP_METHOD(RedisCluster, save) {
 /* }}} */
 
 /* {{{ proto RedisCluster::bgsave(string key)
- *     proto RedisCluster::bgsave(string host, long port) */
+ *     proto RedisCluster::bgsave(array host_port) */
 PHP_METHOD(RedisCluster, bgsave) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "BGSAVE",
         TYPE_LINE, cluster_bool_resp);
@@ -2708,7 +2626,7 @@ PHP_METHOD(RedisCluster, flushall) {
 /* }}} */
 
 /* {{{ proto RedisCluster::dbsize(string key)
- *     proto RedisCluster::dbsize(string host, long port) */
+ *     proto RedisCluster::dbsize(array host_port) */
 PHP_METHOD(RedisCluster, dbsize) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DBSIZE",
         TYPE_INT, cluster_long_resp);
@@ -2716,7 +2634,7 @@ PHP_METHOD(RedisCluster, dbsize) {
 /* }}} */
 
 /* {{{ proto RedisCluster::bgrewriteaof(string key)
- *     proto RedisCluster::bgrewriteaof(string host, long port) */
+ *     proto RedisCluster::bgrewriteaof(array host_port) */
 PHP_METHOD(RedisCluster, bgrewriteaof) {
     cluster_empty_node_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "BGREWRITEAOF",
         TYPE_LINE, cluster_bool_resp);
@@ -3039,7 +2957,7 @@ PHP_METHOD(RedisCluster, ping) {
     /* Send it off */
     rtype = CLUSTER_IS_ATOMIC(c) && arg != NULL ? TYPE_BULK : TYPE_LINE;
     if (cluster_send_slot(c, slot, cmd, cmdlen, rtype) < 0) {
-        CLUSTER_THROW_EXCEPTION("Unable to send commnad at the specificed node", 0);
+        CLUSTER_THROW_EXCEPTION("Unable to send command at the specified node", 0);
         efree(cmd);
         RETURN_FALSE;
     }
@@ -3161,7 +3079,7 @@ PHP_METHOD(RedisCluster, echo) {
     /* Send it off */
     rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
     if (cluster_send_slot(c,slot,cmd,cmd_len,rtype) < 0) {
-        CLUSTER_THROW_EXCEPTION("Unable to send commnad at the specificed node", 0);
+        CLUSTER_THROW_EXCEPTION("Unable to send command at the specified node", 0);
         efree(cmd);
         RETURN_FALSE;
     }

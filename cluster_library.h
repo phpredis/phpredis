@@ -26,7 +26,7 @@
 /* MOVED/ASK comparison macros */
 #define IS_MOVED(p) (p[0]=='M' && p[1]=='O' && p[2]=='V' && p[3]=='E' && \
                      p[4]=='D' && p[5]==' ')
-#define IS_ASK(p)   (p[0]=='A' && p[1]=='S' && p[3]=='K' && p[4]==' ')
+#define IS_ASK(p)   (p[0]=='A' && p[1]=='S' && p[2]=='K' && p[3]==' ')
 
 /* MOVED/ASK lengths */
 #define MOVED_LEN (sizeof("MOVED ")-1)
@@ -363,7 +363,7 @@ void cluster_multi_fini(clusterMultiCmd *mc);
 unsigned short cluster_hash_key_zval(zval *key);
 unsigned short cluster_hash_key(const char *key, int len);
 
-/* Get the current time in miliseconds */
+/* Get the current time in milliseconds */
 long long mstime(void);
 
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
@@ -397,6 +397,8 @@ PHP_REDIS_API void cluster_init_cache(redisCluster *c, redisCachedCluster *rcc);
 
 PHP_REDIS_API char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock,
     int *len);
+PHP_REDIS_API int cluster_cache_store(HashTable *ht_seeds, HashTable *nodes);
+PHP_REDIS_API redisCachedCluster *cluster_cache_load(HashTable *ht_seeds);
 
 /*
  * Redis Cluster response handlers.  Our response handlers generally take the

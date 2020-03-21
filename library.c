@@ -118,8 +118,7 @@ redis_sock_auth(RedisSock *redis_sock)
     char *cmd, *response;
     int cmd_len, response_len;
 
-    cmd_len = redis_spprintf(redis_sock, NULL, &cmd, "AUTH", "s",
-                             ZSTR_VAL(redis_sock->auth), ZSTR_LEN(redis_sock->auth));
+    cmd_len = redis_spprintf(redis_sock, NULL, &cmd, "AUTH", "S", redis_sock->auth);
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
         efree(cmd);
@@ -168,6 +167,8 @@ redis_error_throw(RedisSock *redis_sock)
      * Disque) */
     if (!REDIS_SOCK_ERRCMP_STATIC(redis_sock, "ERR") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOSCRIPT") &&
+        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOQUORUM") &&
+        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOGOODSLAVE") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "WRONGTYPE") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "BUSYGROUP") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOGROUP"))
@@ -575,7 +576,7 @@ union resparg {
 };
 
 /* A printf like method to construct a Redis RESP command.  It has been extended
- * to take a few different format specifiers that are convienient to phpredis.
+ * to take a few different format specifiers that are convenient to phpredis.
  *
  * s - C string followed by length as a
  * S - Pointer to a zend_string
@@ -1165,8 +1166,7 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
 
     /* replace */
     zval_dtor(z_tab);
-    ZVAL_ZVAL(z_tab, &z_ret, 1, 0);
-    zval_dtor(&z_ret);
+    ZVAL_ZVAL(z_tab, &z_ret, 0, 0);
 }
 
 static int
@@ -1275,7 +1275,7 @@ redis_read_stream_messages(RedisSock *redis_sock, int count, zval *z_ret
 
     /* Iterate over each message */
     for (i = 0; i < count; i++) {
-        /* Consume inner multi-bulk header, message ID itself and finaly
+        /* Consume inner multi-bulk header, message ID itself and finally
          * the multi-bulk header for field and values */
         if ((read_mbulk_header(redis_sock, &mhdr) < 0 || mhdr != 2) ||
             ((id = redis_sock_read(redis_sock, &idlen)) == NULL) ||
@@ -1475,7 +1475,7 @@ PHP_REDIS_API int
 redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements)
 {
     zval zv;
-    int i, len;
+    int i, len = 0;
     char *key = NULL, *data;
     REDIS_REPLY_TYPE type;
     long li;
@@ -1753,7 +1753,7 @@ PHP_REDIS_API void redis_debug_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
  * redis_sock_create
  */
 PHP_REDIS_API RedisSock*
-redis_sock_create(char *host, int host_len, unsigned short port,
+redis_sock_create(char *host, int host_len, int port,
                   double timeout, double read_timeout,
                   int persistent, char *persistent_id,
                   long retry_interval)
@@ -1796,6 +1796,51 @@ redis_sock_create(char *host, int host_len, unsigned short port,
     redis_sock->reply_literal = 0;
 
     return redis_sock;
+}
+
+static int
+redis_sock_check_liveness(RedisSock *redis_sock)
+{
+    char inbuf[4096], uniqid[64];
+    int uniqid_len;
+    smart_string cmd = {0};
+    struct timeval tv;
+    size_t len;
+
+    if (redis_sock->auth) {
+        redis_cmd_init_sstr(&cmd, 1, "AUTH", sizeof("AUTH") - 1);
+        redis_cmd_append_sstr(&cmd, ZSTR_VAL(redis_sock->auth), ZSTR_LEN(redis_sock->auth));
+    }
+
+    gettimeofday(&tv, NULL);
+    uniqid_len = snprintf(uniqid, sizeof(uniqid), "phpredis_pool:%08lx%05lx:%08lx", (long)tv.tv_sec, (long)tv.tv_usec, (long)php_rand());
+    redis_cmd_init_sstr(&cmd, 1, "ECHO", sizeof("ECHO") - 1);
+    redis_cmd_append_sstr(&cmd, uniqid, uniqid_len);
+    smart_string_0(&cmd);
+
+    if (redis_sock_write(redis_sock, cmd.c, cmd.len) < 0) {
+        smart_string_free(&cmd);
+        return FAILURE;
+    }
+    smart_string_free(&cmd);
+
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
+        return FAILURE;
+    } else if (redis_sock->auth) {
+        if (strncmp(inbuf, "+OK", 3) != 0) {
+            return FAILURE;
+        } else if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
+            return FAILURE;
+        }
+    }
+    if (*inbuf != TYPE_BULK ||
+        atoi(inbuf + 1) != uniqid_len ||
+        redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 ||
+        strncmp(inbuf, uniqid, uniqid_len) != 0
+    ) {
+        return FAILURE;
+    }
+    return SUCCESS;
 }
 
 /**
@@ -1843,12 +1888,13 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
             if (zend_llist_count(&p->list) > 0) {
                 redis_sock->stream = *(php_stream **)zend_llist_get_last(&p->list);
                 zend_llist_remove_tail(&p->list);
-                /* Check socket liveness using 0 second timeout */
-                if (php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_CHECK_LIVENESS, 0, NULL) == PHP_STREAM_OPTION_RETURN_OK) {
+
+                if (redis_sock_check_liveness(redis_sock) == SUCCESS) {
                     redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
                     return SUCCESS;
+                } else if (redis_sock->stream) {
+                    php_stream_pclose(redis_sock->stream);
                 }
-                php_stream_pclose(redis_sock->stream);
                 p->nb_active--;
             }
 

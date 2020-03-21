@@ -1,7 +1,5 @@
 /*
   +----------------------------------------------------------------------+
-  | PHP Version 5                                                        |
-  +----------------------------------------------------------------------+
   | Copyright (c) 1997-2009 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
@@ -25,7 +23,7 @@
 #define PHP_REDIS_H
 
 /* phpredis version */
-#define PHP_REDIS_VERSION "5.1.0"
+#define PHP_REDIS_VERSION "5.2.1"
 
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, __destruct);
@@ -263,7 +261,7 @@ PHP_MSHUTDOWN_FUNCTION(redis);
 PHP_MINFO_FUNCTION(redis);
 
 /* Redis response handler function callback prototype */
-typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS, 
+typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
 
 PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
@@ -271,7 +269,7 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
 PHP_REDIS_API int redis_response_enqueued(RedisSock *redis_sock);
 
 PHP_REDIS_API int redis_sock_read_multibulk_multi_reply_loop(
-    INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, 
+    INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab,
     int numElems);
 
 extern zend_module_entry redis_module_entry;

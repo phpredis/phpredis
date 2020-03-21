@@ -8,13 +8,22 @@ This code has been developed and maintained by Owlient from November 2009 to Mar
 
 You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to n.favrefelix@gmail.com ([@yowgi](https://twitter.com/yowgi)), to michael.grunder@gmail.com ([@grumi78](https://twitter.com/grumi78)) or to p.yatsukhnenko@gmail.com ([@yatsukhnenko](https://twitter.com/yatsukhnenko)).
 
-## Donating to the project
-If you've found phpredis useful and would like to buy the maintainers a coffee (or a Tesla, we're not picky), feel free to do so.
+## Supporting the project
+PhpRedis will always be free and open source software, but if you or your company has found it useful please consider supporting the project.  Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support would be appreciated! :heart:
 
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/michaelgrunder/5)
-[![Donate with Bitcoin](https://en.cryptobadges.io/badge/micro/1FXkYHBo5uoaztxFbajiPfbnkgKCbF3ykG)](https://en.cryptobadges.io/donate/1FXkYHBo5uoaztxFbajiPfbnkgKCbF3ykG)
-[![Donate with Ethereum](https://en.cryptobadges.io/badge/micro/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)](https://en.cryptobadges.io/donate/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)
+The best way to support the project is through [GitHub sponsors](https://github.com/sponsors/michael-grunder).  Many of the reward tiers grant access to our [slack channel](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly available to answer questions.  Additionally this will allow you to provide feedback on which fixes and new features to prioritize.
 
+You can also make a one-time contribution with one of the links below.
+
+[![PayPal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/michaelgrunder/5)
+[![Bitcoin](https://en.cryptobadges.io/badge/micro/1FXkYHBo5uoaztxFbajiPfbnkgKCbF3ykG)](https://en.cryptobadges.io/donate/1FXkYHBo5uoaztxFbajiPfbnkgKCbF3ykG)
+[![Ethereum](https://en.cryptobadges.io/badge/micro/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)](https://en.cryptobadges.io/donate/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)
+
+## Sponsors
+
+<a href="https://audiomack.com">
+    <img src="https://styleguide.audiomack.com/styleguide/assets/dl/inline-orange-large.png" alt="Audiomack.com" width="150">
+</a>
 
 # Table of contents
 -----
@@ -23,6 +32,7 @@ If you've found phpredis useful and would like to buy the maintainers a coffee (
    * [PHP Session handler](#php-session-handler)
    * [Distributed Redis Array](#distributed-redis-array)
    * [Redis Cluster support](#redis-cluster-support)
+   * [Redis Sentinel support](#redis-sentinel-support)
    * [Running the unit tests](#running-the-unit-tests)
 1. [Classes and methods](#classes-and-methods)
    * [Usage](#usage)
@@ -97,6 +107,10 @@ See [dedicated page](./arrays.markdown#readme).
 
 See [dedicated page](./cluster.markdown#readme).
 
+## Redis Sentinel support
+
+See [dedicated page](./sentinel.markdown#readme).
+
 ## Running the unit tests
 
 phpredis uses a small custom unit test suite for testing functionality of the various classes.  To run tests, simply do the following:
@@ -114,6 +128,9 @@ tests/mkring.sh stop
 tests/make-cluster.sh start
 php tests/TestRedis.php --class RedisCluster
 tests/make-cluster.sh stop
+
+# Run tests for RedisSentinel class
+php tests/TestRedis.php --class RedisSentinel
 ~~~
 
 Note that it is possible to run only tests which match a substring of the test itself by passing the additional argument '--test <str>' when invoking.
@@ -204,8 +221,9 @@ $redis->connect('tls://127.0.0.1'); // enable transport level security, port 637
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
 $redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
-$redis->connect('unix://redis.sock'); // relative path to unix domain socket requires version 5.0.0 or higher.
 ~~~
+
+**Note:** `open` is an alias for `connect` and will be removed in future versions of phpredis.
 
 ### pconnect, popen
 -----
@@ -246,8 +264,9 @@ $redis->pconnect('tls://127.0.0.1'); // enable transport level security, port 63
 $redis->pconnect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout and would be another connection than the two before.
 $redis->pconnect('127.0.0.1', 6379, 2.5, 'x'); // x is sent as persistent_id and would be another connection than the three before.
 $redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another connection than the four before.
-$redis->pconnect('unix://redis.sock'); // relative path to unix domain socket requires version 5.0.0 or higher.
 ~~~
+
+**Note:** `popen` is an alias for `pconnect` and will be removed in future versions of phpredis.
 
 ### auth
 -----
@@ -740,7 +759,7 @@ $redis->set('key','value', 10);
 // Will set the key, if it doesn't exist, with a ttl of 10 seconds
 $redis->set('key', 'value', ['nx', 'ex'=>10]);
 
-// Will set a key, if it does exist, with a ttl of 1000 miliseconds
+// Will set a key, if it does exist, with a ttl of 1000 milliseconds
 $redis->set('key', 'value', ['xx', 'px'=>1000]);
 
 ~~~
@@ -1173,8 +1192,6 @@ $redis->get('key'); /* 'value1value2' */
 -----
 _**Description**_: Return a substring of a larger string
 
-*Note*: substr also supported but deprecated in redis.
-
 ##### *Parameters*
 *key*  
 *start*  
@@ -1189,6 +1206,8 @@ $redis->set('key', 'string value');
 $redis->getRange('key', 0, 5); /* 'string' */
 $redis->getRange('key', -5, -1); /* 'value' */
 ~~~
+
+**Note**: `substr` is an alias for `getRange` and will be removed in future versions of phpredis.
 
 ### setRange
 -----
@@ -2432,6 +2451,8 @@ array(3) {
 ~~~
 The order is random and corresponds to redis' own internal representation of the set structure.
 
+**Note:** `sGetMembers` is an alias for `sMembers` and will be removed in future versions of phpredis.
+
 ### sMove
 -----
 _**Description**_: Moves the specified member from the set at srcKey to the set at dstKey.
@@ -2681,7 +2702,7 @@ $redis->bzPopMax(string $key1, string $key2, ... int $timeout): array
 ~~~
 
 ##### *Return value*
-*ARRAY:* Either an array with the key member and score of the higest or lowest element or an empty array if the timeout was reached without an element to pop.
+*ARRAY:* Either an array with the key member and score of the highest or lowest element or an empty array if the timeout was reached without an element to pop.
 
 ##### *Example*
 ~~~php
@@ -2694,7 +2715,7 @@ $redis->bzPopMax(['zs1', 'zs2'], 5);
 $redis->bzPopMax('zs1', 'zs2', 5);
 ~~~
 
-**Note:** Calling these functions with an array of keys or with a variable nubmer of arguments is functionally identical.
+**Note:** Calling these functions with an array of keys or with a variable number of arguments is functionally identical.
 
 ### zAdd
 -----
@@ -2731,8 +2752,10 @@ _**Description**_: Returns the cardinality of an ordered set.
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
-$redis->zSize('key'); /* 3 */
+$redis->zCard('key'); /* 3 */
 ~~~
+
+**Note**: `zSize` is an alias for `zCard` and will be removed in future versions of phpredis.
 
 ### zCount
 -----
@@ -2832,7 +2855,7 @@ $redis->zPopMax(string $key, int $count): array
 ~~~
 
 ##### *Return value*
-*ARRAY:* Either an array with the key member and score of the higest or lowest element or an empty array if there is no element available.
+*ARRAY:* Either an array with the key member and score of the highest or lowest element or an empty array if there is no element available.
 
 ##### *Example*
 ~~~php
@@ -3809,7 +3832,7 @@ $obj_redis->xTrim($str_stream, $i_max_len [, $boo_approximate]);
 _**Description**_:  Trim the stream length to a given maximum.  If the "approximate" flag is pasesed, Redis will use your size as a hint but only trim trees in whole nodes (this is more efficient).
 
 ##### *Return value*
-*long*:  The number of messages trimed from the stream.
+*long*:  The number of messages trimmed from the stream.
 
 ##### *Example*
 ~~~php

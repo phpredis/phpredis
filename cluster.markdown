@@ -122,7 +122,7 @@ For all of these multiple key commands (with the exception of MGET and MSET), th
 RedisCluster has specialized processing for MGET and MSET which allows you to send any number of keys (hashing to whichever slots) without having to consider where they live.  The way this works, is that the RedisCluster class will split the command as it iterates through keys, delivering a subset of commands per each key's slot.
 
 ~~~php
-// This will be delivered in two commands.  First for all of the {hash1} keys, 
+// This will be delivered in two commands.  First for all of the {hash1} keys,
 // and then to grab 'otherkey'
 $obj_cluster->mget(Array("{hash1}key1","{hash1}key2","{hash1}key3","otherkey"));
 ~~~
@@ -183,5 +183,5 @@ The save path for cluster based session storage takes the form of a PHP GET requ
 * _distribute_: phpredis will randomly distribute session reads between masters and any attached slaves (load balancing).
 * _failover (string)_:  How phpredis should distribute session reads between master and slave nodes.
   * _none_ : phpredis will only communicate with master nodes
-  * _error_: phpredis will communicate with master nodes unless one failes, in which case an attempt will be made to read session information from a slave. 
+  * _error_: phpredis will communicate with master nodes unless one fails, in which case an attempt will be made to read session information from a slave.
 * _auth (string, empty by default)_:  The password used to authenticate with the server prior to sending commands.

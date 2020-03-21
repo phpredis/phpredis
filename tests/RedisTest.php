@@ -2876,7 +2876,7 @@ class Redis_Test extends TestSuite
         $ret = $this->redis->multi($mode)
             ->ttl('key')
             ->mget(['{key}1', '{key}2', '{key}3'])
-            ->mset(['{key}3' => 'value3', 'key4' => 'value4'])
+            ->mset(['{key}3' => 'value3', '{key}4' => 'value4'])
             ->set('key', 'value')
             ->expire('key', 5)
             ->ttl('key')
@@ -4924,10 +4924,14 @@ class Redis_Test extends TestSuite
 
     protected function get_keyspace_count($str_db) {
         $arr_info = $this->redis->info();
-        $arr_info = $arr_info[$str_db];
-        $arr_info = explode(',', $arr_info);
-        $arr_info = explode('=', $arr_info[0]);
-        return $arr_info[1];
+        if (isset($arr_info[$str_db])) {
+            $arr_info = $arr_info[$str_db];
+            $arr_info = explode(',', $arr_info);
+            $arr_info = explode('=', $arr_info[0]);
+            return $arr_info[1];
+        } else {
+            return 0;
+        }
     }
 
     public function testScan() {
@@ -4962,6 +4966,41 @@ class Redis_Test extends TestSuite
             $i -= count($arr_keys);
         }
         $this->assertEquals(0, $i);
+
+        // SCAN with type is scheduled for release in Redis 6.
+        if (version_compare($this->version, "6.0.0") >= 0) {
+            // Use a unique ID so we can find our type keys
+            $id = uniqid();
+
+            // Create some simple keys and lists
+            for ($i = 0; $i < 3; $i++) {
+                $str_simple = "simple:{$id}:$i";
+                $str_list = "list:{$id}:$i";
+
+                $this->redis->set($str_simple, $i);
+                $this->redis->del($str_list);
+                $this->redis->rpush($str_list, ['foo']);
+
+                $arr_keys["STRING"][] = $str_simple;
+                $arr_keys["LIST"][] = $str_list;
+            }
+
+            // Make sure we can scan for specific types
+            foreach ($arr_keys as $str_type => $arr_vals) {
+                foreach ([NULL, 10] as $i_count) {
+                    $arr_resp = [];
+
+                    $it = NULL;
+                    while ($arr_scan = $this->redis->scan($it, "*$id*", $i_count, $str_type)) {
+                        $arr_resp = array_merge($arr_resp, $arr_scan);
+                    }
+
+                    sort($arr_vals); sort($arr_resp);
+                    $this->assertEquals($arr_vals, $arr_resp);
+                }
+            }
+        }
+
     }
 
     public function testHScan() {
@@ -5879,6 +5918,62 @@ class Redis_Test extends TestSuite
         foreach (['first-entry', 'last-entry'] as $key) {
             $this->assertTrue(array_key_exists($key, $info));
             $this->assertTrue(is_array($info[$key]));
+        }
+    }
+
+    /* If we detect a unix socket make sure we can connect to it in a variety of ways */
+    public function testUnixSocket() {
+        if ( ! file_exists("/tmp/redis.sock")) {
+            return $this->markTestSkipped();
+        }
+
+        $arr_sock_tests = [
+            ["/tmp/redis.sock"],
+            ["/tmp/redis.sock", null],
+            ["/tmp/redis.sock", 0],
+            ["/tmp/redis.sock", -1],
+        ];
+
+        try {
+            foreach ($arr_sock_tests as $arr_args) {
+                $obj_r = new Redis();
+
+                if (count($arr_args) == 2) {
+                    @$obj_r->connect($arr_args[0], $arr_args[1]);
+                } else {
+                    @$obj_r->connect($arr_args[0]);
+                }
+
+                $this->assertTrue($obj_r->ping());
+            }
+        } catch (Exception $ex) {
+            $this->assertTrue(false);
+        }
+    }
+
+    /* Test high ports if we detect Redis running there */
+    public function testHighPorts() {
+        $arr_ports = [32767, 32768, 32769];
+        $arr_test_ports = [];
+
+        foreach ($arr_ports as $port) {
+            if (is_resource(@fsockopen('localhost', $port))) {
+                $arr_test_ports[] = $port;
+            }
+        }
+
+        if ( ! $arr_test_ports) {
+            return $this->markTestSkipped();
+        }
+
+        foreach ($arr_test_ports as $port) {
+            $obj_r = new Redis();
+            try {
+                @$obj_r->connect('localhost', $port);
+                $this->assertTrue($obj_r->ping());
+            } catch(Exception $ex) {
+                $this->assertTrue(false);
+            }
         }
     }
 

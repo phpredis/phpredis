@@ -12,7 +12,7 @@ To build this extension for the sources tree:
 
 ~~~
 phpize
-./configure [--enable-redis-igbinary] [--enable-redis-msgpack] [--enable-redis-lzf [--with-liblzf[=DIR]]]
+./configure [--enable-redis-igbinary] [--enable-redis-msgpack] [--enable-redis-lzf [--with-liblzf[=DIR]]] [--enable-redis-zstd]
 make && make install
 ~~~
 
