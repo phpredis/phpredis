@@ -4,7 +4,10 @@
 class TestSkippedException extends Exception {}
 
 // phpunit is such a pain to install, we're going with pure-PHP here.
-class TestSuite {
+class TestSuite
+{
+    const AUTH = 'phpredis'; //replace with a string to use Redis authentication
+
     /* Host the tests will use */
     private $str_host;
 
