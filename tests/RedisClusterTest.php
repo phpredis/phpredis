@@ -639,9 +639,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSession()
     {
         @ini_set('session.save_handler', 'rediscluster');
-        @ini_set('session.save_path', implode('&', array_map(function ($seed) {
-            return 'seed[]=' . $seed;
-        }, self::$_arr_node_map)) . '&failover=error');
+        @ini_set('session.save_path', $this->getFullHostPath() . '&failover=error');
         if (!@session_start()) {
             return $this->markTestSkipped();
         }
@@ -685,11 +683,9 @@ class Redis_Cluster_Test extends Redis_Test {
      */
     protected function getFullHostPath()
     {
-        $hosts = array_map(function ($host) {
-            return 'seed[]=' . $host . '';
-        }, self::$_arr_node_map);
-
-        return implode('&', $hosts);
+        return implode('&', array_map(function ($host) {
+            return 'seed[]=' . $host;
+        }, self::$_arr_node_map));
     }
 }
 ?>
