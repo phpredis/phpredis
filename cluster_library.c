@@ -249,17 +249,6 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
     return r;
 }
 
-/* Helper to open connection and send AUTH if necessary */
-static zend_always_inline int
-cluster_sock_open(RedisSock *redis_sock)
-{
-    zend_bool need_auth = (redis_sock->auth && redis_sock->status != REDIS_SOCK_STATUS_CONNECTED);
-    if (!redis_sock_server_open(redis_sock) && (!need_auth || !redis_sock_auth(redis_sock ))) {
-        return SUCCESS;
-    }
-    return FAILURE;
-}
-
 /*
  * Helpers to send various 'control type commands to a specific node, e.g.
  * MULTI, ASKING, READONLY, READWRITE, etc
@@ -1127,7 +1116,7 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c) {
     // Iterate over seeds until we can get slots
     ZEND_HASH_FOREACH_PTR(c->seeds, seed) {
         // Attempt to connect to this seed node
-        if (seed == NULL || cluster_sock_open(seed) != 0) {
+        if (seed == NULL || redis_sock_server_open(seed) != SUCCESS) {
             continue;
         }
 

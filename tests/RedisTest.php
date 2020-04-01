@@ -5,7 +5,6 @@ require_once(dirname($_SERVER['PHP_SELF'])."/TestSuite.php");
 class Redis_Test extends TestSuite
 {
     const PORT = 6379;
-    const AUTH = NULL; //replace with a string to use Redis authentication
 
     /* City lat/long */
     protected $cities = [
@@ -52,6 +51,15 @@ class Redis_Test extends TestSuite
 
     protected function mstime() {
         return round(microtime(true)*1000);
+    }
+
+    protected function getFullHostPath()
+    {
+        $fullHostPath = parent::getFullHostPath();
+        if (isset($fullHostPath) && self::AUTH) {
+            $fullHostPath .= '?auth=' . self::AUTH;
+        }
+        return $fullHostPath;
     }
 
     protected function newInstance() {
@@ -5943,7 +5951,9 @@ class Redis_Test extends TestSuite
                 } else {
                     @$obj_r->connect($arr_args[0]);
                 }
-
+                if (self::AUTH) {
+                    $this->assertTrue($obj_r->auth(self::AUTH));
+                }
                 $this->assertTrue($obj_r->ping());
             }
         } catch (Exception $ex) {
@@ -5970,6 +5980,9 @@ class Redis_Test extends TestSuite
             $obj_r = new Redis();
             try {
                 @$obj_r->connect('localhost', $port);
+                if (self::AUTH) {
+                    $this->assertTrue($obj_r->auth(self::AUTH));
+                }
                 $this->assertTrue($obj_r->ping());
             } catch(Exception $ex) {
                 $this->assertTrue(false);
@@ -6155,7 +6168,10 @@ class Redis_Test extends TestSuite
 
         for($i = 0; $i < 5; $i++) {
             $this->redis->connect($host, $port);
-            $this->assertEquals(true, $this->redis->ping());
+            if (self::AUTH) {
+                $this->assertTrue($this->redis->auth(self::AUTH));
+            }
+            $this->assertTrue($this->redis->ping());
         }
     }
 
