@@ -1950,7 +1950,7 @@ $redis->lPush('key1', 'C', 'B', 'A'); // Returns 6
 _**Description**_: Adds the string value to the head (left) of the list if the list exists.
 
 ##### *Parameters*
-*key*
+*key*  
 *value* String, value to push in key
 
 ##### *Return value*
