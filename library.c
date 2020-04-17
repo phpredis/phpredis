@@ -1808,6 +1808,13 @@ redis_sock_check_liveness(RedisSock *redis_sock)
     struct timeval tv;
     size_t len;
 
+    /* Check socket liveness using 0 second timeout */
+    if (php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_CHECK_LIVENESS, 0, NULL) != PHP_STREAM_OPTION_RETURN_OK) {
+        return FAILURE;
+    } else if (!INI_INT("redis.pconnect.echo_check_liveness")) {
+        return SUCCESS;
+    }
+
     if (redis_sock->auth) {
         redis_cmd_init_sstr(&cmd, 1, "AUTH", sizeof("AUTH") - 1);
         redis_cmd_append_sstr(&cmd, ZSTR_VAL(redis_sock->auth), ZSTR_LEN(redis_sock->auth));
