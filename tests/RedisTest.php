@@ -56,8 +56,8 @@ class Redis_Test extends TestSuite
     protected function getFullHostPath()
     {
         $fullHostPath = parent::getFullHostPath();
-        if (isset($fullHostPath) && self::AUTH) {
-            $fullHostPath .= '?auth=' . self::AUTH;
+        if (isset($fullHostPath) && $this->getAuth()) {
+            $fullHostPath .= '?auth=' . $this->getAuth();
         }
         return $fullHostPath;
     }
@@ -67,8 +67,8 @@ class Redis_Test extends TestSuite
 
         $r->connect($this->getHost(), self::PORT);
 
-        if(self::AUTH) {
-            $this->assertTrue($r->auth(self::AUTH));
+        if($this->getAuth()) {
+            $this->assertTrue($r->auth($this->getAuth()));
         }
         return $r;
     }
@@ -4923,7 +4923,7 @@ class Redis_Test extends TestSuite
         // Simple introspection tests
         $this->assertTrue($this->redis->getHost() === $this->getHost());
         $this->assertTrue($this->redis->getPort() === self::PORT);
-        $this->assertTrue($this->redis->getAuth() === self::AUTH);
+        $this->assertTrue($this->redis->getAuth() === $this->getAuth());
     }
 
     /**
@@ -5951,8 +5951,8 @@ class Redis_Test extends TestSuite
                 } else {
                     @$obj_r->connect($arr_args[0]);
                 }
-                if (self::AUTH) {
-                    $this->assertTrue($obj_r->auth(self::AUTH));
+                if ($this->getAuth()) {
+                    $this->assertTrue($obj_r->auth($this->getAuth()));
                 }
                 $this->assertTrue($obj_r->ping());
             }
@@ -5980,8 +5980,8 @@ class Redis_Test extends TestSuite
             $obj_r = new Redis();
             try {
                 @$obj_r->connect('localhost', $port);
-                if (self::AUTH) {
-                    $this->assertTrue($obj_r->auth(self::AUTH));
+                if ($this->getAuth()) {
+                    $this->assertTrue($obj_r->auth($this->getAuth()));
                 }
                 $this->assertTrue($obj_r->ping());
             } catch(Exception $ex) {
@@ -6168,8 +6168,8 @@ class Redis_Test extends TestSuite
 
         for($i = 0; $i < 5; $i++) {
             $this->redis->connect($host, $port);
-            if (self::AUTH) {
-                $this->assertTrue($this->redis->auth(self::AUTH));
+            if ($this->getAuth()) {
+                $this->assertTrue($this->redis->auth($this->getAuth()));
             }
             $this->assertTrue($this->redis->ping());
         }
