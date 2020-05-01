@@ -27,24 +27,25 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2020-03-19</date>
+ <date>2020-05-02</date>
  <version>
-  <release>5.2.1</release>
-  <api>5.2.1</api>
+  <release>5.2.2RC1</release>
+  <api>5.2.2RC1</api>
  </version>
  <stability>
-  <release>stable</release>
-  <api>stable</api>
+  <release>alpha</release>
+  <api>alpha</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 5.2.1
+    phpredis 5.2.2RC1
 
-    This is a bugfix release that fixes `redis->zAdd` arginfo as well as a
-    segfault when closing persistent connections.
+    This is a bugfix release that contains a fix for authentication
+    when using persistent connections, and an option to make the
+    ECHO challenge response logic optional.
 
-    * Fix arginfo for Redis::zadd [a8e2b021] (Pavlo Yatsukhnenko)
-    * Fix segfault on closing persistent stream [b7f9df75] (Pavlo Yatsukhnenko)
+    * Inexpensive liveness check, and making ECHO optional [56898f81] (Pavlo Yatsukhnenko)
+    * Move `AUTH` to `redis_sock_server_open` [80f2529b](Pavlo Yatsukhnenko)
 
     * Sponsors
       ~ Audiomack.com - https://audiomack.com
@@ -124,6 +125,24 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-zstd" prompt="enable zstd compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.2.1</release><api>5.2.1</api></version>
+   <date>2020-03-19</date>
+   <notes>
+    phpredis 5.2.1
+
+    This is a bugfix release that fixes `redis->zAdd` arginfo as well as a
+    segfault when closing persistent connections.
+
+    * Fix arginfo for Redis::zadd [a8e2b021] (Pavlo Yatsukhnenko)
+    * Fix segfault on closing persistent stream [b7f9df75] (Pavlo Yatsukhnenko)
+
+    * Sponsors
+      ~ Audiomack.com - https://audiomack.com
+      ~ Till Kruss - https://github.com/tillkruss
+   </notes>
+  </release>
   <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>5.2.0</release><api>5.2.0</api></version>
