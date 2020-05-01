@@ -56,8 +56,8 @@ class Redis_Array_Test extends TestSuite
 
         global $newRing, $oldRing, $useIndex;
         $options = ['previous' => $oldRing, 'index' => $useIndex];
-        if (self::AUTH) {
-            $options['auth'] = self::AUTH;
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
         }
         $this->ra = new RedisArray($newRing, $options);
         $this->min_version = getMinVersion($this->ra);
@@ -84,8 +84,8 @@ class Redis_Array_Test extends TestSuite
 
             $r = new Redis;
             $r->pconnect($host, (int)$port);
-            if (self::AUTH) {
-                $this->assertTrue($r->auth(self::AUTH));
+            if ($this->getAuth()) {
+                $this->assertTrue($r->auth($this->getAuth()));
             }
             $this->assertTrue($v === $r->get($k));
         }
@@ -126,8 +126,8 @@ class Redis_Array_Test extends TestSuite
         // with common hashing function
         global $newRing, $oldRing, $useIndex;
         $options = ['previous' => $oldRing, 'index' => $useIndex, 'function' => 'custom_hash'];
-        if (self::AUTH) {
-            $options['auth'] = self::AUTH;
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
         }
         $this->ra = new RedisArray($newRing, $options);
 
@@ -149,8 +149,8 @@ class Redis_Array_Test extends TestSuite
     {
         global $newRing, $useIndex;
         $options = ['index' => $useIndex, 'function' => 'custom_hash', 'distributor' => [$this, "customDistributor"]];
-        if (self::AUTH) {
-            $options['auth'] = self::AUTH;
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
         }
         $this->ra = new RedisArray($newRing, $options);
 
@@ -218,8 +218,8 @@ class Redis_Rehashing_Test extends TestSuite
 
         global $newRing, $oldRing, $useIndex;
         $options = ['previous' => $oldRing, 'index' => $useIndex];
-        if (self::AUTH) {
-            $options['auth'] = self::AUTH;
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
         }
         // create array
         $this->ra = new RedisArray($newRing, $options);
@@ -234,8 +234,8 @@ class Redis_Rehashing_Test extends TestSuite
 
             $r = new Redis();
             $r->pconnect($host, (int)$port, 0);
-            if (self::AUTH) {
-                $this->assertTrue($r->auth(self::AUTH));
+            if ($this->getAuth()) {
+                $this->assertTrue($r->auth($this->getAuth()));
             }
             $r->flushdb();
         }
@@ -371,8 +371,8 @@ class Redis_Auto_Rehashing_Test extends TestSuite {
 
         global $newRing, $oldRing, $useIndex;
         $options = ['previous' => $oldRing, 'index' => $useIndex, 'autorehash' => TRUE];
-        if (self::AUTH) {
-            $options['auth'] = self::AUTH;
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
         }
         // create array
         $this->ra = new RedisArray($newRing, $options);
@@ -416,8 +416,8 @@ class Redis_Auto_Rehashing_Test extends TestSuite {
 
             $r = new Redis;
             $r->pconnect($host, $port);
-            if (self::AUTH) {
-                $this->assertTrue($r->auth(self::AUTH));
+            if ($this->getAuth()) {
+                $this->assertTrue($r->auth($this->getAuth()));
             }
 
             $this->assertTrue($v === $r->get($k));  // check that the key has actually been migrated to the new node.
@@ -433,8 +433,8 @@ class Redis_Multi_Exec_Test extends TestSuite {
     public function setUp() {
         global $newRing, $oldRing, $useIndex;
         $options = ['previous' => $oldRing, 'index' => $useIndex];
-        if (self::AUTH) {
-            $options['auth'] = self::AUTH;
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
         }
         // create array
         $this->ra = new RedisArray($newRing, $options);
@@ -578,8 +578,8 @@ class Redis_Distributor_Test extends TestSuite {
     public function setUp() {
         global $newRing, $oldRing, $useIndex;
         $options = ['previous' => $oldRing, 'index' => $useIndex, 'distributor' => [$this, 'distribute']];
-        if (self::AUTH) {
-            $options['auth'] = self::AUTH;
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
         }
         // create array
         $this->ra = new RedisArray($newRing, $options);
@@ -616,7 +616,7 @@ class Redis_Distributor_Test extends TestSuite {
     }
 }
 
-function run_tests($className, $str_filter, $str_host) {
+function run_tests($className, $str_filter, $str_host, $str_auth) {
         // reset rings
         global $newRing, $oldRing, $serverList;
 
@@ -625,7 +625,7 @@ function run_tests($className, $str_filter, $str_host) {
         $serverList = ["$str_host:6379", "$str_host:6380", "$str_host:6381", "$str_host:6382"];
 
         // run
-        return TestSuite::run($className, $str_filter);
+        return TestSuite::run($className, $str_filter, $str_host, $str_auth);
 }
 
 ?>

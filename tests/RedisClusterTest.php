@@ -62,7 +62,9 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSession_lockWaitTime() { return $this->markTestSkipped(); }
 
     /* Load our seeds on construction */
-    public function __construct() {
+    public function __construct($str_host, $str_auth) {
+        parent::__construct($str_host, $str_auth);
+
         $str_nodemap_file = dirname($_SERVER['PHP_SELF']) . '/nodes/nodemap';
 
         if (!file_exists($str_nodemap_file)) {
@@ -87,7 +89,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
     /* Override newInstance as we want a RedisCluster object */
     protected function newInstance() {
-        return new RedisCluster(NULL, self::$_arr_node_map, 30, 30, true, self::AUTH);
+        return new RedisCluster(NULL, self::$_arr_node_map, 30, 30, true, $this->getAuth());
     }
 
     /* Overrides for RedisTest where the function signature is different.  This
@@ -654,7 +656,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $pong = 0;
         for ($i = 0; $i < 10; $i++) {
-            $obj_rc = new RedisCluster(NULL, self::$_arr_node_map, 30, 30, true, self::AUTH);
+            $obj_rc = new RedisCluster(NULL, self::$_arr_node_map, 30, 30, true, $this->getAuth());
             $pong += $obj_rc->ping("key:$i");
         }
 
@@ -670,7 +672,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $pong = 0;
         for ($i = 0; $i < 10; $i++) {
-            $obj_rc = new RedisCluster(NULL, self::$_arr_node_map, 30, 30, true, self::AUTH);
+            $obj_rc = new RedisCluster(NULL, self::$_arr_node_map, 30, 30, true, $this->getAuth());
             $pong += $obj_rc->ping("key:$i");
         }
 
@@ -685,7 +687,7 @@ class Redis_Cluster_Test extends Redis_Test {
     {
         return implode('&', array_map(function ($host) {
             return 'seed[]=' . $host;
-        }, self::$_arr_node_map)) . (self::AUTH ? '&auth=' . self::AUTH : '');
+        }, self::$_arr_node_map)) . ($this->getAuth() ? '&auth=' . $this->getAuth() : '');
     }
 }
 ?>

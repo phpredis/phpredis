@@ -48,11 +48,11 @@ before_script:
   - echo yes | redis-cli --cluster create $(seq -f 127.0.0.1:%g 7000 7011) --cluster-replicas 3 -a phpredis
   - echo 'extension = redis.so' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 script:
-  - php tests/TestRedis.php --class Redis
-  - php tests/TestRedis.php --class RedisArray
-  - php tests/TestRedis.php --class RedisCluster
-  - php tests/TestRedis.php --class RedisSentinel
-  - USE_ZEND_ALLOC=0 valgrind --error-exitcode=1 php tests/TestRedis.php --class Redis
-  - USE_ZEND_ALLOC=0 valgrind --error-exitcode=1 php tests/TestRedis.php --class RedisArray
-  - USE_ZEND_ALLOC=0 valgrind --error-exitcode=1 php tests/TestRedis.php --class RedisCluster
-  - USE_ZEND_ALLOC=0 valgrind --error-exitcode=1 php tests/TestRedis.php --class RedisSentinel
+  - php tests/TestRedis.php --class Redis --auth phpredis
+  - php tests/TestRedis.php --class RedisArray --auth phpredis
+  - php tests/TestRedis.php --class RedisCluster --auth phpredis
+  - php tests/TestRedis.php --class RedisSentinel --auth phpredis
+  - USE_ZEND_ALLOC=0 valgrind --error-exitcode=1 php tests/TestRedis.php --class Redis --auth phpredis
+  - USE_ZEND_ALLOC=0 valgrind --error-exitcode=1 php tests/TestRedis.php --class RedisArray --auth phpredis
+  - USE_ZEND_ALLOC=0 valgrind --error-exitcode=1 php tests/TestRedis.php --class RedisCluster --auth phpredis
+  - USE_ZEND_ALLOC=0 valgrind --error-exitcode=1 php tests/TestRedis.php --class RedisSentinel --auth phpredis
