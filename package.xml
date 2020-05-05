@@ -29,16 +29,16 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </lead>
  <date>2020-05-05</date>
  <version>
-  <release>5.2.2RC1</release>
-  <api>5.2.2RC1</api>
+  <release>5.2.2</release>
+  <api>5.2.2</api>
  </version>
  <stability>
-  <release>alpha</release>
-  <api>alpha</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 5.2.2RC1
+    phpredis 5.2.2
 
     This is a bugfix release that contains a fix for authentication
     when using persistent connections, and an option to make the

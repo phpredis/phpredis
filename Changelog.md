@@ -5,7 +5,7 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.2.2RC1] - 2020-05-05 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.2RC1), [PECL](https://pecl.php.net/package/redis/5.2.2RC1))
+## [5.2.2] - 2020-05-05 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.2), [PECL](https://pecl.php.net/package/redis/5.2.2))
 
 ### Sponsors :sparkling_heart:
 
@@ -15,11 +15,11 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 - An inexpensive zero second timeout liveness check that can detect dropped connections quickly.
-  [56898f81](https://github.com/phpredis/phpredis/commit/80f2529b)
+  [56898f81](https://github.com/phpredis/phpredis/commit/56898f81)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 - An option to make our `ECHO` challenge/response optional for persistent connections.
-  [56898f81](https://github.com/phpredis/phpredis/commit/80f2529b)
+  [56898f81](https://github.com/phpredis/phpredis/commit/56898f81)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 
