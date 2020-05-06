@@ -926,7 +926,7 @@ PHP_METHOD(RedisArray, mget)
             key_len = Z_STRLEN_P(data);
             key_lookup = Z_STRVAL_P(data);
         } else {
-            key_len = snprintf(kbuf, sizeof(kbuf), "%ld", Z_LVAL_P(data));
+            key_len = snprintf(kbuf, sizeof(kbuf), ZEND_LONG_FMT, Z_LVAL_P(data));
             key_lookup = (char*)kbuf;
         }
 
@@ -1052,7 +1052,7 @@ PHP_METHOD(RedisArray, mset)
             key_len = ZSTR_LEN(zkey);
             key = ZSTR_VAL(zkey);
         } else {
-            key_len = snprintf(kbuf, sizeof(kbuf), "%lu", idx);
+            key_len = snprintf(kbuf, sizeof(kbuf), ZEND_ULONG_FMT, idx);
             key = kbuf;
         }
 
