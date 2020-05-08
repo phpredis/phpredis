@@ -728,10 +728,7 @@ redis_cmd_append_sstr_dbl(smart_string *str, double value)
     len = snprintf(tmp, sizeof(tmp), "%.16g", value);
 
     // Append the string
-    retval = redis_cmd_append_sstr(str, tmp, len);
-
-    /* Return new length */
-    return retval;
+    return redis_cmd_append_sstr(str, tmp, len);
 }
 
 /* Append a zval to a redis command.  The value will be serialized if we are
@@ -2400,7 +2397,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
     uint8_t *val8;
 #endif
 
-    *val = NULL;
+    *val = "";
     *val_len = 0;
     switch(redis_sock->serializer) {
         case REDIS_SERIALIZER_NONE:
