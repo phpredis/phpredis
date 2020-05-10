@@ -25,6 +25,23 @@
 #include <zstd.h>
 #endif
 
+#ifdef HAVE_REDIS_LZ4
+#include <lz4.h>
+#include <lz4hc.h>
+#if defined(LZ4HC_CLEVEL_MAX)
+/* version >= 1.7.5 */
+#define REDIS_LZ4_MAX_CLEVEL LZ4HC_CLEVEL_MAX
+
+#elif defined (LZ4HC_MAX_CLEVEL)
+/* version >= 1.7.3 */
+#define REDIS_LZ4_MAX_CLEVEL LZ4HC_MAX_CLEVEL
+
+#else
+/* older versions */
+#define REDIS_LZ4_MAX_CLEVEL 12
+#endif
+#endif
+
 #include <zend_exceptions.h>
 #include "php_redis.h"
 #include "library.h"
@@ -2331,6 +2348,37 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
             }
 #endif
             break;
+        case REDIS_COMPRESSION_LZ4:
+#ifdef HAVE_REDIS_LZ4
+            {
+                char *data;
+                int size;
+                int old_len = len;
+                long offset = sizeof(int) + 1;
+
+                size = LZ4_compressBound(len) + offset;
+                data = emalloc(size + offset);
+                data[0] = '\0';
+                memcpy(data + 1, &old_len, offset);
+
+                if (redis_sock->compression_level <= 0 || redis_sock->compression_level > REDIS_LZ4_MAX_CLEVEL) {
+                    size = LZ4_compress_default(buf, data + offset, len, size - offset - 1);
+                } else {
+                    size = LZ4_compress_HC(buf, data + offset, len, size - offset - 1, redis_sock->compression_level);
+                }
+
+                if (size <= 0 || PHP_REDIS_COMPRESSION_RATIO_CHECK(size)) {
+                    efree(data);
+                    break;
+                }
+
+                if (valfree) efree(buf);
+                *val = data;
+                *val_len = size + offset;
+                return 1;
+            }
+#endif
+            break;
     }
     *val = buf;
     *val_len = len;
@@ -2392,6 +2440,36 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
                     efree(data);
                     return 1;
                 }
+            }
+#endif
+            break;
+        case REDIS_COMPRESSION_LZ4:
+#ifdef HAVE_REDIS_LZ4
+            {
+                char *data;
+                int size, res;
+                long offset;
+
+                if (*val != '\0') {
+                    break;
+                }
+
+                offset = sizeof(int);
+                memcpy(&size, val + 1, offset);
+                offset++;
+
+                data = emalloc(size + 1);
+                res = LZ4_decompress_safe(val + offset, data, val_len - offset, size);
+                if (res > 0) {
+                    if (redis_unserialize(redis_sock, data, size, z_ret) == 0) {
+                        ZVAL_STRINGL(z_ret, data, size);
+                    } else {
+                        ZVAL_STRINGL(z_ret, data, size);
+                    }
+                    efree(data);
+                    return 1;
+                }
+                efree(data);
             }
 #endif
             break;

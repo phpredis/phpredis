@@ -3982,6 +3982,9 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
 #ifdef HAVE_REDIS_ZSTD
                 || val_long == REDIS_COMPRESSION_ZSTD
 #endif
+#ifdef HAVE_REDIS_LZ4
+                || val_long == REDIS_COMPRESSION_LZ4
+#endif
             ) {
                 redis_sock->compression = val_long;
                 RETURN_TRUE;

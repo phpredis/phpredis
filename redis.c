@@ -40,6 +40,10 @@
 #include <zstd.h>
 #endif
 
+#ifdef HAVE_REDIS_LZ4
+#include <lz4.h>
+#endif
+
 #ifdef PHP_SESSION
 extern ps_module ps_mod_redis;
 extern ps_module ps_mod_redis_cluster;
@@ -721,6 +725,10 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_MAX"), ZSTD_maxCLevel());
 #endif
 
+#ifdef HAVE_REDIS_LZ4
+    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_LZ4"), REDIS_COMPRESSION_LZ4);
+#endif
+
     /* scan options*/
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_SCAN"), REDIS_OPT_SCAN);
     zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_RETRY"), REDIS_SCAN_RETRY);
@@ -894,6 +902,12 @@ PHP_MINFO_FUNCTION(redis)
         smart_str_appends(&names, ", ");
     }
     smart_str_appends(&names, "zstd");
+#endif
+#ifdef HAVE_REDIS_LZ4
+    if (names.s) {
+        smart_str_appends(&names, ", ");
+    }
+    smart_str_appends(&names, "lz4");
 #endif
     if (names.s) {
         smart_str_0(&names);
