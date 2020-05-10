@@ -2518,6 +2518,10 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
                     || (memcmp(val, "\x00\x00\x00\x01", 4) != 0
                     && memcmp(val, "\x00\x00\x00\x02", 4) != 0))
             {
+                if (*val != '\0') {
+                    ZVAL_STRINGL(z_ret, val, val_len);
+                    return 1;
+                }
                 /* This is most definitely not an igbinary string, so do
                    not try to unserialize this as one. */
                 break;
