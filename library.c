@@ -2267,7 +2267,7 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
     size_t len;
 
     valfree = redis_serialize(redis_sock, z, &buf, &len);
-    if (redis_sock->compression && len >= redis_sock->compression_min_size) {
+    if (redis_sock->compression && redis_sock->compression_min_size > 0 && len < redis_sock->compression_min_size) {
         *val = buf;
         *val_len = len;
         return valfree;
