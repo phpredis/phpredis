@@ -2985,9 +2985,13 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
 #ifdef HAVE_REDIS_ZSTD
             {
                 char *data;
-                unsigned long long len;
+                long long len;
 
-                if (redis_sock->compression_min_size > 0 && !ZSTD_isFrame(val, val_len)) {
+                len = ZSTD_getFrameContentSize(val, val_len);
+                if (
+                    (redis_sock->compression_min_ratio > 0 || redis_sock->compression_min_size > 0)
+                    && (len == ZSTD_CONTENTSIZE_UNKNOWN || len == ZSTD_CONTENTSIZE_ERROR || len <= 0)
+                ) {
                     return redis_unserialize(redis_sock, val, val_len, z_ret);
                 }
 
