@@ -1781,6 +1781,8 @@ redis_sock_create(char *host, int host_len, int port,
     redis_sock->serializer = REDIS_SERIALIZER_NONE;
     redis_sock->compression = REDIS_COMPRESSION_NONE;
     redis_sock->compression_level = 0; /* default */
+    redis_sock->compression_min_size = -1; /* default */
+    redis_sock->compression_min_ratio = 0; /* default */
     redis_sock->mode = ATOMIC;
     redis_sock->head = NULL;
     redis_sock->current = NULL;
@@ -2262,6 +2264,12 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
     size_t len;
 
     valfree = redis_serialize(redis_sock, z, &buf, &len);
+    if (redis_sock->compression && redis_sock->compression_min_size > 0 && redis_sock->compression_min_size >= len) {
+        *val = buf;
+        *val_len = len;
+        return valfree;
+    }
+
     switch (redis_sock->compression) {
         case REDIS_COMPRESSION_LZF:
 #ifdef HAVE_REDIS_LZF
@@ -2274,6 +2282,10 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
                 size = len + MIN(UINT_MAX - len, MAX(LZF_MARGIN, len / 25));
                 data = emalloc(size);
                 if ((res = lzf_compress(buf, len, data, size)) > 0) {
+                    if (((double) res / (double) len) >= redis_sock->compression_min_ratio) {
+                        efree(data);
+                        break;
+                    }
                     if (valfree) efree(buf);
                     *val = data;
                     *val_len = res;
@@ -2305,7 +2317,7 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
                 size = ZSTD_compressBound(len);
                 data = emalloc(size);
                 size = ZSTD_compress(data, size, buf, len, level);
-                if (!ZSTD_isError(size)) {
+                if (!ZSTD_isError(size) && ((double) size / (double) len) < redis_sock->compression_min_ratio) {
                     if (valfree) efree(buf);
                     data = erealloc(data, size);
                     *val = data;
@@ -2356,6 +2368,10 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
             {
                 char *data;
                 size_t len;
+
+                if (redis_sock->compression_min_size > 0 && !ZSTD_isFrame(val, val_len)) {
+                    return redis_unserialize(redis_sock, val, val_len, z_ret);
+                }
 
                 len = ZSTD_getFrameContentSize(val, val_len);
                 if (len >= 0) {
