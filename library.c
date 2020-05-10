@@ -2442,6 +2442,11 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
             break;
         case REDIS_SERIALIZER_IGBINARY:
 #ifdef HAVE_REDIS_IGBINARY
+            if (Z_TYPE_P(z) == IS_STRING) {
+                *val = Z_STRVAL_P(z);
+                *val_len = Z_STRLEN_P(z);
+                return 1;
+            }
             if(igbinary_serialize(&val8, (size_t *)&sz, z) == 0) {
                 *val = (char*)val8;
                 *val_len = sz;
