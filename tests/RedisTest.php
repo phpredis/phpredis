@@ -4519,6 +4519,81 @@ class Redis_Test extends TestSuite
         $this->checkCompression(Redis::COMPRESSION_ZSTD, 9);
     }
 
+
+    public function testCompressionLZ4()
+    {
+        if (!defined('Redis::COMPRESSION_LZ4')) {
+            $this->markTestSkipped();
+        }
+        $this->checkCompression(Redis::COMPRESSION_LZ4, 0);
+        $this->checkCompression(Redis::COMPRESSION_LZ4, 9);
+    }
+
+    public function testCompressionLZFLimited()
+    {
+        if (!defined('Redis::COMPRESSION_LZF')) {
+            $this->markTestSkipped();
+        }
+
+        $checks = [
+            "test123"            => strlen("test123"),
+            str_repeat('a', 101) => 9,
+            random_bytes(110)    => 110,
+        ];
+
+        $this->limitedCompressionCheck($checks, Redis::COMPRESSION_LZF);
+    }
+
+    public function testCompressionZSTDLimited()
+    {
+        if (!defined('Redis::COMPRESSION_ZSTD')) {
+            $this->markTestSkipped();
+        }
+
+        $checks = [
+            "test123"            => strlen("test123"),
+            str_repeat('a', 101) => 17,
+            random_bytes(110)    => 110,
+        ];
+
+        $this->limitedCompressionCheck($checks, Redis::COMPRESSION_ZSTD);
+    }
+
+    public function testCompressionLZ4Limited()
+    {
+        if (!defined('Redis::COMPRESSION_LZ4')) {
+            $this->markTestSkipped();
+        }
+
+        $checks = [
+            "test123"            => strlen("test123"),
+            str_repeat('a', 101) => 16,
+            random_bytes(110)    => 110,
+        ];
+
+        $this->limitedCompressionCheck($checks, Redis::COMPRESSION_LZ4);
+    }
+
+    private function limitedCompressionCheck($checks, $mode)
+    {
+        $settings = [
+            Redis::OPT_COMPRESSION => $mode,
+            Redis::OPT_COMPRESSION_MIN_SIZE => 100,
+            Redis::OPT_COMPRESSION_MIN_RATIO => 0.3,
+            Redis::OPT_COMPRESSION_LEVEL => 0
+        ];
+        foreach ($settings as $k => $v) {
+            $this->assertTrue($this->redis->setOption($k, $v));
+            $this->assertEquals($this->redis->getOption($k), $v);
+        }
+
+        foreach ($checks as $v => $len) {
+            $this->assertTrue($this->redis->set('foo', $v));
+            $this->assertEquals($this->redis->get('foo'), $v);
+            $this->assertEquals($this->redis->strlen('foo'), $len);
+        }
+    }
+
     private function checkCompression($mode, $level)
     {
         $this->assertTrue($this->redis->setOption(Redis::OPT_COMPRESSION, $mode) === TRUE);  // set ok

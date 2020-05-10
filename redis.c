@@ -40,6 +40,10 @@
 #include <zstd.h>
 #endif
 
+#ifdef HAVE_REDIS_LZ4
+#include <lz4.h>
+#endif
+
 #ifdef PHP_SESSION
 extern ps_module ps_mod_redis;
 extern ps_module ps_mod_redis_cluster;
@@ -691,6 +695,8 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION"), REDIS_OPT_COMPRESSION);
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_REPLY_LITERAL"), REDIS_OPT_REPLY_LITERAL);
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION_LEVEL"), REDIS_OPT_COMPRESSION_LEVEL);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION_MIN_SIZE"), REDIS_OPT_COMPRESSION_MIN_SIZE);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION_MIN_RATIO"), REDIS_OPT_COMPRESSION_MIN_RATIO);
 
     /* serializer */
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_NONE"), REDIS_SERIALIZER_NONE);
@@ -717,6 +723,10 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_DEFAULT"), 3);
 #endif
     zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_MAX"), ZSTD_maxCLevel());
+#endif
+
+#ifdef HAVE_REDIS_LZ4
+    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_LZ4"), REDIS_COMPRESSION_LZ4);
 #endif
 
     /* scan options*/
@@ -886,6 +896,12 @@ PHP_MINFO_FUNCTION(redis)
         smart_str_appends(&names, ", ");
     }
     smart_str_appends(&names, "zstd");
+#endif
+#ifdef HAVE_REDIS_LZ4
+    if (names.s) {
+        smart_str_appends(&names, ", ");
+    }
+    smart_str_appends(&names, "lz4");
 #endif
     if (names.s) {
         smart_str_0(&names);

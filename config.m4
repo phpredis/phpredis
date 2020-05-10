@@ -29,6 +29,12 @@ PHP_ARG_ENABLE(redis-zstd, whether to enable Zstd compression,
 PHP_ARG_WITH(libzstd, use system libsztd,
 [  --with-libzstd[=DIR]      Use system libzstd], yes, no)
 
+PHP_ARG_ENABLE(redis-lz4, whether to enable lz4 compression,
+[  --enable-redis-lz4      Enable lz4 compression support], no, no)
+
+PHP_ARG_WITH(liblz4, use system liblz4,
+[  --with-liblz4[=DIR]       Use system liblz4], no, no)
+
 if test "$PHP_REDIS" != "no"; then
 
   if test "$PHP_REDIS_SESSION" != "no"; then
@@ -192,6 +198,31 @@ if test "$PHP_REDIS" != "no"; then
       PHP_ADD_BUILD_DIR(liblzf)
       lzf_sources="liblzf/lzf_c.c liblzf/lzf_d.c"
     fi
+  fi
+
+  if test "$PHP_REDIS_LZ4" != "no"; then
+      AC_DEFINE(HAVE_REDIS_LZ4, 1, [ ])
+      AC_MSG_CHECKING(for liblz4 files in default path)
+      for i in $PHP_LIBLZ4 /usr/local /usr; do
+        if test -r $i/include/lz4.h; then
+          AC_MSG_RESULT(found in $i)
+          LIBLZ4_DIR=$i
+          break
+        fi
+      done
+      if test -z "$LIBLZ4_DIR"; then
+        AC_MSG_RESULT([not found])
+        AC_MSG_ERROR([Please reinstall the liblz4 distribution])
+      fi
+      PHP_CHECK_LIBRARY(lz4, LZ4_compress,
+      [
+        PHP_ADD_LIBRARY_WITH_PATH(zstd, $LIBLZ4_DIR/$PHP_LIBDIR, REDIS_SHARED_LIBADD)
+      ], [
+        AC_MSG_ERROR([could not find usable liblz4])
+      ], [
+        -L$LIBLZ4_DIR/$PHP_LIBDIR
+      ])
+      PHP_SUBST(REDIS_SHARED_LIBADD)
   fi
 
   if test "$PHP_REDIS_ZSTD" != "no"; then

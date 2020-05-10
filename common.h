@@ -73,15 +73,17 @@ typedef enum _PUBSUB_TYPE {
 } PUBSUB_TYPE;
 
 /* options */
-#define REDIS_OPT_SERIALIZER         1
-#define REDIS_OPT_PREFIX             2
-#define REDIS_OPT_READ_TIMEOUT       3
-#define REDIS_OPT_SCAN               4
-#define REDIS_OPT_FAILOVER           5
-#define REDIS_OPT_TCP_KEEPALIVE      6
-#define REDIS_OPT_COMPRESSION        7
-#define REDIS_OPT_REPLY_LITERAL      8
-#define REDIS_OPT_COMPRESSION_LEVEL  9
+#define REDIS_OPT_SERIALIZER            1
+#define REDIS_OPT_PREFIX                2
+#define REDIS_OPT_READ_TIMEOUT          3
+#define REDIS_OPT_SCAN                  4
+#define REDIS_OPT_FAILOVER              5
+#define REDIS_OPT_TCP_KEEPALIVE         6
+#define REDIS_OPT_COMPRESSION           7
+#define REDIS_OPT_REPLY_LITERAL         8
+#define REDIS_OPT_COMPRESSION_LEVEL     9
+#define REDIS_OPT_COMPRESSION_MIN_SIZE  10
+#define REDIS_OPT_COMPRESSION_MIN_RATIO 11
 
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
@@ -100,6 +102,7 @@ typedef enum {
 #define REDIS_COMPRESSION_NONE 0
 #define REDIS_COMPRESSION_LZF  1
 #define REDIS_COMPRESSION_ZSTD 2
+#define REDIS_COMPRESSION_LZ4 3
 
 /* SCAN options */
 #define REDIS_SCAN_NORETRY 0
@@ -274,6 +277,8 @@ typedef struct {
     redis_serializer   serializer;
     int                compression;
     int                compression_level;
+    int               compression_min_size;
+    double            compression_min_ratio;
     long               dbNumber;
 
     zend_string        *prefix;
