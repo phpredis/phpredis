@@ -2256,6 +2256,9 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
     efree(redis_sock);
 }
 
+#define PHP_REDIS_COMPRESSION_RATIO_CHECK(__x) \
+    (redis_sock->compression_min_ratio > 0 && (((double) __x / (double) len) >= redis_sock->compression_min_ratio))
+
 PHP_REDIS_API int
 redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
 {
@@ -2264,7 +2267,7 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
     size_t len;
 
     valfree = redis_serialize(redis_sock, z, &buf, &len);
-    if (redis_sock->compression && redis_sock->compression_min_size > 0 && redis_sock->compression_min_size >= len) {
+    if (redis_sock->compression && len >= redis_sock->compression_min_size) {
         *val = buf;
         *val_len = len;
         return valfree;
@@ -2282,7 +2285,7 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
                 size = len + MIN(UINT_MAX - len, MAX(LZF_MARGIN, len / 25));
                 data = emalloc(size);
                 if ((res = lzf_compress(buf, len, data, size)) > 0) {
-                    if (((double) res / (double) len) >= redis_sock->compression_min_ratio) {
+                    if (PHP_REDIS_COMPRESSION_RATIO_CHECK(res)) {
                         efree(data);
                         break;
                     }
@@ -2317,7 +2320,7 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
                 size = ZSTD_compressBound(len);
                 data = emalloc(size);
                 size = ZSTD_compress(data, size, buf, len, level);
-                if (!ZSTD_isError(size) && ((double) size / (double) len) < redis_sock->compression_min_ratio) {
+                if (!ZSTD_isError(size) && !PHP_REDIS_COMPRESSION_RATIO_CHECK(size)) {
                     if (valfree) efree(buf);
                     data = erealloc(data, size);
                     *val = data;
