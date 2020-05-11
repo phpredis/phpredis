@@ -4480,6 +4480,18 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE);       // get ok
     }
 
+    public function testIgbinaryNoStrings()
+    {
+        if (!defined('Redis::OPT_IGBINARY_NO_STRINGS')) {
+            $this->markTestSkipped();
+        }
+        $this->assertTrue($this->redis->setOption(Redis::OPT_IGBINARY_NO_STRINGS, true));
+        $this->assertTrue($this->redis->getOption(Redis::OPT_IGBINARY_NO_STRINGS));
+
+        var_dump($this->redis->set("no_binary", "test string"));
+        $this->assertEquals($this->redis->rawCommand('get', 'no_binary'), "test string");
+    }
+
     public function testCompressionLZF()
     {
         if (!defined('Redis::COMPRESSION_LZF')) {

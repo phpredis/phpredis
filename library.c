@@ -1781,6 +1781,7 @@ redis_sock_create(char *host, int host_len, int port,
     redis_sock->serializer = REDIS_SERIALIZER_NONE;
     redis_sock->compression = REDIS_COMPRESSION_NONE;
     redis_sock->compression_level = 0; /* default */
+    redis_sock->no_strings = 0; /* default */
     redis_sock->mode = ATOMIC;
     redis_sock->head = NULL;
     redis_sock->current = NULL;
@@ -2442,7 +2443,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
             break;
         case REDIS_SERIALIZER_IGBINARY:
 #ifdef HAVE_REDIS_IGBINARY
-            if (Z_TYPE_P(z) == IS_STRING) {
+            if (Z_TYPE_P(z) == IS_STRING && redis_sock->no_strings) {
                 *val = Z_STRVAL_P(z);
                 *val_len = Z_STRLEN_P(z);
                 return 0;
@@ -2518,7 +2519,7 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
                     || (memcmp(val, "\x00\x00\x00\x01", 4) != 0
                     && memcmp(val, "\x00\x00\x00\x02", 4) != 0))
             {
-                if (*val != '\0') {
+                if (*val != '\0' && redis_sock->no_strings) {
                     ZVAL_STRINGL(z_ret, val, val_len);
                     return 1;
                 }
