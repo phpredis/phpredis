@@ -1993,7 +1993,7 @@ redis_sock_disconnect(RedisSock *redis_sock, int force)
 {
     if (redis_sock == NULL) {
         return FAILURE;
-    } else if (redis_sock->stream) {
+    } else if (redis_sock->stream && !redis_sock->clone) {
         if (redis_sock->persistent) {
             ConnectionPool *p = NULL;
             if (INI_INT("redis.pconnect.pooling_enabled")) {

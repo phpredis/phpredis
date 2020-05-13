@@ -570,7 +570,7 @@ free_redis_object(zend_object *object)
     redis_object *redis = (redis_object *)((char *)(object) - XtOffsetOf(redis_object, std));
 
     zend_object_std_dtor(&redis->std);
-    if (redis->sock && !redis->clone) {
+    if (redis->sock) {
         redis_sock_disconnect(redis->sock, 0);
         redis_free_socket(redis->sock);
     }
@@ -586,7 +586,7 @@ clone_redis_object(zval *this_ptr)
     if (old_redis->sock) {
         redis->sock = ecalloc(1, sizeof(RedisSock));
         redis->sock = memcpy(redis->sock, old_redis->sock, sizeof(RedisSock));
-        redis->clone = 1;
+        redis->sock->clone = 1;
     }
 
     zend_object_std_init(&redis->std, old_object->ce);
