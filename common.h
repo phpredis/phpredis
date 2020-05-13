@@ -289,6 +289,7 @@ typedef struct {
 typedef struct {
     RedisSock *sock;
     zend_object std;
+    int clone;
 } redis_object;
 
 /** Argument info for any function expecting 0 args */
