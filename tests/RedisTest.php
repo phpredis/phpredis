@@ -91,6 +91,11 @@ class Redis_Test extends TestSuite
 
     public function testClone()
     {
+        if (get_class($this->redis) !== 'Redis') {
+            $this->markTestSkipped();
+            return;
+        }
+
         $new = clone $this->redis;
         /* check that connection works */
         $this->assertTrue($new->ping());
