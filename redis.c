@@ -3402,7 +3402,7 @@ PHP_METHOD(Redis, command) {
 /* Helper to format any combination of SCAN arguments */
 PHP_REDIS_API int
 redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
-                     int iter, char *pattern, int pattern_len, int count,
+                     long iter, char *pattern, int pattern_len, int count,
                      zend_string *match_type)
 {
     smart_string cmdstr = {0};
@@ -3433,7 +3433,7 @@ redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     /* Start the command */
     redis_cmd_init_sstr(&cmdstr, argc, keyword, strlen(keyword));
     if (key_len) redis_cmd_append_sstr(&cmdstr, key, key_len);
-    redis_cmd_append_sstr_int(&cmdstr, iter);
+    redis_cmd_append_sstr_long(&cmdstr, iter);
 
     /* Append COUNT if we've got it */
     if(count) {
@@ -3543,7 +3543,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
         }
 
         // Format our SCAN command
-        cmd_len = redis_build_scan_cmd(&cmd, type, key, key_len, (int)iter,
+        cmd_len = redis_build_scan_cmd(&cmd, type, key, key_len, (long)iter,
                                    pattern, pattern_len, count, match_type);
 
         /* Execute our command getting our new iterator value */
