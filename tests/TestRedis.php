@@ -10,10 +10,10 @@ error_reporting(E_ALL);
 ini_set( 'display_errors','1');
 
 /* Grab options */
-$arr_args = getopt('', Array('host:', 'class:', 'test:', 'nocolors'));
+$arr_args = getopt('', ['host:', 'class:', 'test:', 'nocolors']);
 
 /* Grab the test the user is trying to run */
-$arr_valid_classes = Array('redis', 'redisarray', 'rediscluster');
+$arr_valid_classes = ['redis', 'redisarray', 'rediscluster'];
 $str_class = isset($arr_args['class']) ? strtolower($arr_args['class']) : 'redis';
 $boo_colorize = !isset($arr_args['nocolors']);
 
@@ -48,7 +48,7 @@ if ($str_class == 'redis') {
         echo "\n".($useIndex?"WITH":"WITHOUT"). " per-node index:\n";
 
         /* The various RedisArray subtests we can run */
-        $arr_ra_tests = Array('Redis_Array_Test', 'Redis_Rehashing_Test', 'Redis_Auto_Rehashing_Test', 'Redis_Multi_Exec_Test', 'Redis_Distributor_Test');
+        $arr_ra_tests = ['Redis_Array_Test', 'Redis_Rehashing_Test', 'Redis_Auto_Rehashing_Test', 'Redis_Multi_Exec_Test', 'Redis_Distributor_Test'];
         foreach ($arr_ra_tests as $str_test) {
             /* Run until we encounter a failure */
             if (run_tests($str_test, $str_filter, $str_host) != 0) {

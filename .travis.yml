@@ -1,30 +1,21 @@
 sudo: required
 language: php
 php:
-  - 5.4
-  - 5.5
-  - 5.6
   - 7.0
   - 7.1
   - 7.2
   - 7.3
+  - 7.4snapshot
   - nightly
 env: CC=gcc
 matrix:
   allow_failures:
     - php: 7.3
       env: CC=clang
+    - php: 7.4snapshot
+      env: CC=clang
     - php: nightly
   include:
-    # php 5.3 is only available on precise
-    - php: 5.3
-      dist: precise
-    - php: 5.4
-      env: CC=clang
-    - php: 5.5
-      env: CC=clang
-    - php: 5.6
-      env: CC=clang
     - php: 7.0
       env: CC=clang
     - php: 7.1
@@ -33,12 +24,17 @@ matrix:
       env: CC=clang
     - php: 7.3
       env: CC=clang
+    - php: 7.4snapshot
+      env: CC=clang
 addons:
   apt:
     packages: clang
 before_install:
   - phpize
-  - pecl install igbinary-2.0.8 && ./configure --enable-redis-igbinary --enable-redis-lzf || ./configure --enable-redis-lzf
+  - CFGARGS="--enable-redis-lzf"
+  - pecl install igbinary && CFGARGS="$CFGARGS --enable-redis-igbinary"
+  - pecl install msgpack && CFGARGS="$CFGARGS --enable-redis-msgpack"
+  - ./configure $CFGARGS
 install: make install
 before_script:
   - gem install redis
@@ -50,7 +46,6 @@ before_script:
   # but --cluster is an unknown option for travis trusty
   - echo yes | ruby redis-trib.rb create --replicas 3 $(seq -f 127.0.0.1:%g 7000 7011)
   - echo 'extension = redis.so' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
-  - echo 'redis.pconnect.pooling_enabled = 1' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 script:
   - php tests/TestRedis.php --class Redis
   - php tests/TestRedis.php --class RedisArray

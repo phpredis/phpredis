@@ -49,7 +49,6 @@ typedef struct {
 } Continuum;
 
 typedef struct RedisArray_ {
-
     int count;
     zend_string **hosts;    /* array of host:port strings */
     zval *redis;            /* array of Redis instances */
@@ -67,13 +66,8 @@ typedef struct RedisArray_ {
     struct RedisArray_ *prev;
 } RedisArray;
 
-#if (PHP_MAJOR_VERSION < 7)
-zend_object_value create_redis_array_object(zend_class_entry *ce TSRMLS_DC);
-void free_redis_array_object(void *object TSRMLS_DC);
-#else
 zend_object *create_redis_array_object(zend_class_entry *ce TSRMLS_DC);
 void free_redis_array_object(zend_object *object);
-#endif
 
 PHP_REDIS_API int ra_call_user_function(HashTable *function_table, zval *object, zval *function_name, zval *retval_ptr, uint param_count, zval params[] TSRMLS_DC);
 

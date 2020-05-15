@@ -7,21 +7,21 @@ require_once(dirname($_SERVER['PHP_SELF'])."/RedisTest.php");
  * where we're validating specific cluster mechanisms
  */
 class Redis_Cluster_Test extends Redis_Test {
-    private static $_arr_node_map = Array();
+    private static $_arr_node_map = [];
 
-    private $_arr_redis_types = Array(
+    private $_arr_redis_types = [
         Redis::REDIS_STRING,
         Redis::REDIS_SET,
         Redis::REDIS_LIST,  
         Redis::REDIS_ZSET,
         Redis::REDIS_HASH
-    );
+    ];
 
-    private $_arr_failover_types = Array(
+    private $_arr_failover_types = [
         RedisCluster::FAILOVER_NONE,
         RedisCluster::FAILOVER_ERROR,
         RedisCluster::FAILOVER_DISTRIBUTE
-    );
+    ];
 
     /**
      * @var string
@@ -95,9 +95,16 @@ class Redis_Cluster_Test extends Redis_Test {
      * at a specific node */
 
     public function testPing() {
-        for ($i = 0; $i < 100; $i++) {
+        for ($i = 0; $i < 20; $i++) {
             $this->assertTrue($this->redis->ping("key:$i"));
+            $this->assertEquals('BEEP', $this->redis->ping("key:$i", 'BEEP'));
         }
+
+        /* Make sure both variations work in MULTI mode */
+        $this->redis->multi();
+        $this->redis->ping('{ping-test}');
+        $this->redis->ping('{ping-test}','BEEP');
+        $this->assertEquals([true, 'BEEP'], $this->redis->exec());
     }
 
     public function testRandomKey() {
@@ -144,12 +151,12 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testInfo() {
-        $arr_check_keys = Array(
+        $arr_check_keys = [
             "redis_version", "arch_bits", "uptime_in_seconds", "uptime_in_days",
             "connected_clients", "connected_slaves", "used_memory",
             "total_connections_received", "total_commands_processed",
             "role"
-        );
+        ];
 
         for ($i = 0; $i < 3; $i++) {
             $arr_info = $this->redis->info("k:$i");
@@ -233,14 +240,14 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertTrue(is_array($result));
         $this->assertEquals(count($result), 4);
 
-        $arr_zipped = Array();
+        $arr_zipped = [];
         for ($i = 0; $i <= count($result) / 2; $i+=2) {
             $arr_zipped[$result[$i]] = $result[$i+1];
         }
         $result = $arr_zipped;
 
         // Make sure the elements are correct, and have zero counts
-        foreach(Array($c1,$c2) as $channel) {
+        foreach([$c1,$c2] as $channel) {
             $this->assertTrue(isset($result[$channel]));
             $this->assertEquals($result[$channel], 0);
         }
@@ -258,20 +265,20 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testMSetNX() {
         /* All of these keys should get set */
         $this->redis->del('x','y','z');
-        $ret = $this->redis->msetnx(Array('x'=>'a','y'=>'b','z'=>'c'));
+        $ret = $this->redis->msetnx(['x'=>'a','y'=>'b','z'=>'c']);
         $this->assertTrue(is_array($ret));
         $this->assertEquals(array_sum($ret),count($ret));
 
         /* Delete one key */
         $this->redis->del('x');
-        $ret = $this->redis->msetnx(Array('x'=>'a','y'=>'b','z'=>'c'));
+        $ret = $this->redis->msetnx(['x'=>'a','y'=>'b','z'=>'c']);
         $this->assertTrue(is_array($ret));
         $this->assertEquals(array_sum($ret),1);
         
         $this->assertFalse($this->redis->msetnx(array())); // set ø → FALSE
     }
 
-    /* Slowlog needs to take a key or Array(ip, port), to direct it to a node */
+    /* Slowlog needs to take a key or [ip, port], to direct it to a node */
     public function testSlowlog() {
         $str_key = uniqid() . '-' . rand(1, 1000);
 
@@ -308,7 +315,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         // This transaction should fail because the other client changed 'x'
         $ret = $this->redis->multi()->get('x')->exec();
-        $this->assertTrue($ret === Array(FALSE));
+        $this->assertTrue($ret === [false]);
         // watch and unwatch
         $this->redis->watch('x');
         $r->incr('x'); // other instance
@@ -370,8 +377,8 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->redis->script($str_key, 'flush');
 
         // Non existant script (but proper sha1), and a random (not) sha1 string
-        $this->assertFalse($this->redis->evalsha(sha1(uniqid()),Array($str_key), 1));
-        $this->assertFalse($this->redis->evalsha('some-random-data'),Array($str_key), 1);
+        $this->assertFalse($this->redis->evalsha(sha1(uniqid()),[$str_key], 1));
+        $this->assertFalse($this->redis->evalsha('some-random-data'),[$str_key], 1);
 
         // Load a script
         $cb  = uniqid(); // To ensure the script is new
@@ -379,9 +386,9 @@ class Redis_Cluster_Test extends Redis_Test {
         $sha = sha1($scr);
 
         // Run it when it doesn't exist, run it with eval, and then run it with sha1
-        $this->assertTrue(false === $this->redis->evalsha($scr,Array($str_key), 1));
-        $this->assertTrue(1 === $this->redis->eval($scr,Array($str_key), 1));
-        $this->assertTrue(1 === $this->redis->evalsha($sha,Array($str_key), 1));
+        $this->assertTrue(false === $this->redis->evalsha($scr,[$str_key], 1));
+        $this->assertTrue(1 === $this->redis->eval($scr,[$str_key], 1));
+        $this->assertTrue(1 === $this->redis->evalsha($sha,[$str_key], 1));
     }
     
     public function testEvalBulkResponse() {
@@ -393,7 +400,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $scr = "return {KEYS[1],KEYS[2]}";
 
-        $result = $this->redis->eval($scr,Array($str_key1, $str_key2), 2);
+        $result = $this->redis->eval($scr,[$str_key1, $str_key2], 2);
 
         $this->assertTrue($str_key1 === $result[0]);
         $this->assertTrue($str_key2 === $result[1]);
@@ -409,7 +416,7 @@ class Redis_Cluster_Test extends Redis_Test {
         $scr = "return {KEYS[1],KEYS[2]}";
 
         $this->redis->multi();
-        $this->redis->eval($scr,Array($str_key1, $str_key2), 2);
+        $this->redis->eval($scr, [$str_key1, $str_key2], 2);
 
         $result = $this->redis->exec();
 
@@ -426,7 +433,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $scr = "for _,key in ipairs(KEYS) do redis.call('SET', key, 'value') end";
 
-        $result = $this->redis->eval($scr,Array($str_key1, $str_key2), 2);
+        $result = $this->redis->eval($scr, [$str_key1, $str_key2], 2);
 
         $this->assertTrue(null === $result);
     }
@@ -441,7 +448,7 @@ class Redis_Cluster_Test extends Redis_Test {
         $scr = "for _,key in ipairs(KEYS) do redis.call('SET', key, 'value') end";
 
         $this->redis->multi();
-        $this->redis->eval($scr,Array($str_key1, $str_key2), 2);
+        $this->redis->eval($scr, [$str_key1, $str_key2], 2);
         $result = $this->redis->exec();
 
         $this->assertTrue(null === $result[0]);
@@ -487,37 +494,37 @@ class Redis_Cluster_Test extends Redis_Test {
                 $this->redis->set($str_key, $value); 
                 break;
             case Redis::REDIS_SET:
-                $value = Array(
+                $value = [
                     $str_key . '-mem1', $str_key . '-mem2', $str_key . '-mem3',
                     $str_key . '-mem4', $str_key . '-mem5', $str_key . '-mem6'
-                );
+                ];
                 $arr_args = $value;
                 array_unshift($arr_args, $str_key);
-                call_user_func_array(Array($this->redis, 'sadd'), $arr_args);
+                call_user_func_array([$this->redis, 'sadd'], $arr_args);
                 break;
             case Redis::REDIS_HASH:
-                $value = Array(
+                $value = [
                     $str_key . '-mem1' => $str_key . '-val1',
                     $str_key . '-mem2' => $str_key . '-val2',
                     $str_key . '-mem3' => $str_key . '-val3'
-                );
+                ];
                 $this->redis->hmset($str_key, $value);
                 break; 
             case Redis::REDIS_LIST:
-                $value = Array(
+                $value = [
                     $str_key . '-ele1', $str_key . '-ele2', $str_key . '-ele3',
                     $str_key . '-ele4', $str_key . '-ele5', $str_key . '-ele6'
-                );
+                ];
                 $arr_args = $value;
                 array_unshift($arr_args, $str_key);
-                call_user_func_array(Array($this->redis, 'rpush'), $arr_args);
+                call_user_func_array([$this->redis, 'rpush'], $arr_args);
                 break;
             case Redis::REDIS_ZSET:
                 $i_score = 1;
-                $value = Array(
+                $value = [
                     $str_key . '-mem1' => 1, $str_key . '-mem2' => 2,
                     $str_key . '-mem3' => 3, $str_key . '-mem3' => 3
-                );
+                ];
                 foreach ($value as $str_mem => $i_score) {
                     $this->redis->zadd($str_key, $i_score, $str_mem);
                 }
@@ -571,8 +578,8 @@ class Redis_Cluster_Test extends Redis_Test {
 
     /* Test automatic load distributor */
     public function testFailOver() {
-        $arr_value_ref = Array();
-        $arr_type_ref  = Array();
+        $arr_value_ref = [];
+        $arr_type_ref  = [];
 
         /* Set a bunch of keys of various redis types*/
         for ($i = 0; $i < 200; $i++) {
@@ -601,12 +608,32 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $this->redis->del('mylist');
         $this->redis->rpush('mylist', 'A','B','C','D');
-        $this->assertEquals($this->redis->lrange('mylist', 0, -1), Array('A','B','C','D'));
+        $this->assertEquals($this->redis->lrange('mylist', 0, -1), ['A','B','C','D']);
     }
 
     protected function rawCommandArray($key, $args) {
         array_unshift($args, $key);
-        return call_user_func_array(Array($this->redis, 'rawCommand'), $args);
+        return call_user_func_array([$this->redis, 'rawCommand'], $args);
+    }
+
+    /* Test that rawCommand and EVAL can be configured to return simple string values */
+    public function testReplyLiteral() {
+        $this->redis->setOption(Redis::OPT_REPLY_LITERAL, false);
+        $this->assertTrue($this->redis->rawCommand('foo', 'set', 'foo', 'bar'));
+        $this->assertTrue($this->redis->eval("return redis.call('set', KEYS[1], 'bar')", ['foo'], 1));
+
+        $rv = $this->redis->eval("return {redis.call('set', KEYS[1], 'bar'), redis.call('ping')}", ['foo'], 1);
+        $this->assertEquals([true, true], $rv);
+
+        $this->redis->setOption(Redis::OPT_REPLY_LITERAL, true);
+        $this->assertEquals('OK', $this->redis->rawCommand('foo', 'set', 'foo', 'bar'));
+        $this->assertEquals('OK', $this->redis->eval("return redis.call('set', KEYS[1], 'bar')", ['foo'], 1));
+
+        $rv = $this->redis->eval("return {redis.call('set', KEYS[1], 'bar'), redis.call('ping')}", ['foo'], 1);
+        $this->assertEquals(['OK', 'PONG'], $rv);
+
+        // Reset
+        $this->redis->setOption(Redis::OPT_REPLY_LITERAL, false);
     }
 
     public function testSession()
