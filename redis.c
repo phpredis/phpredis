@@ -500,7 +500,7 @@ zend_module_entry redis_module_entry = {
      "redis",
      NULL,
      PHP_MINIT(redis),
-     PHP_MSHUTDOWN(redis),
+     NULL,
      NULL,
      NULL,
      PHP_MINFO(redis),
@@ -824,14 +824,6 @@ PHP_MINIT_FUNCTION(redis)
     le_redis_pconnect = zend_register_list_destructors_ex(NULL, redis_connections_pool_dtor,
         "phpredis persistent connections pool", module_number);
 
-    return SUCCESS;
-}
-
-/**
- * PHP_MSHUTDOWN_FUNCTION
- */
-PHP_MSHUTDOWN_FUNCTION(redis)
-{
     return SUCCESS;
 }
 
