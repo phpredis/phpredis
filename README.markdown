@@ -354,6 +354,11 @@ $redis->setOption(Redis::OPT_PREFIX, 'myAppName:');	// use custom prefix on all 
 */
 $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
 $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+/* Scan can also be configured to automatically prepend the currently set PhpRedis
+   prefix to any MATCH pattern. */
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_PREFIX);
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NOPREFIX);
 ~~~
 
 

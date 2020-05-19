@@ -4034,6 +4034,8 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             val_long = zval_get_long(val);
             if (val_long == REDIS_SCAN_NORETRY) {
                 redis_sock->scan &= ~REDIS_SCAN_RETRY;
+            } else if (val_long == REDIS_SCAN_NOPREFIX) {
+                redis_sock->scan &= ~REDIS_SCAN_PREFIX;
             } else if (val_long == REDIS_SCAN_RETRY || val_long == REDIS_SCAN_PREFIX) {
                 redis_sock->scan |= val_long;
             } else {

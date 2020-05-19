@@ -5008,7 +5008,41 @@ class Redis_Test extends TestSuite
                 }
             }
         }
+    }
 
+    public function testScanPrefix() {
+        $keyid = uniqid();
+
+        /* Set some keys with different prefixes */
+        $arr_prefixes = ['prefix-a:', 'prefix-b:'];
+        foreach ($arr_prefixes as $str_prefix) {
+            $this->redis->setOption(Redis::OPT_PREFIX, $str_prefix);
+            $this->redis->set("$keyid", "LOLWUT");
+            $arr_all_keys["${str_prefix}${keyid}"] = true;
+        }
+
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_PREFIX);
+
+        foreach ($arr_prefixes as $str_prefix) {
+            $this->redis->setOption(Redis::OPT_PREFIX, $str_prefix);
+            $it = NULL;
+            $arr_keys = $this->redis->scan($it, "*$keyid*");
+            $this->assertEquals($arr_keys, ["${str_prefix}${keyid}"]);
+        }
+
+        /* Unset the prefix option */
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NOPREFIX);
+
+        $it = NULL;
+        while ($arr_keys = $this->redis->scan($it, "*$keyid*")) {
+            foreach ($arr_keys as $str_key) {
+                unset($arr_all_keys[$str_key]);
+            }
+        }
+
+        /* Should have touched every key */
+        $this->assertTrue(count($arr_all_keys) == 0);
     }
 
     public function testHScan() {

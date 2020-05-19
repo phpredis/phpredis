@@ -222,6 +222,55 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertEquals($i_scan_count, $i_key_count);
     }
 
+    public function testScanPrefix() {
+        $arr_prefixes = ['prefix-a:', 'prefix-b:'];
+        $str_id = uniqid();
+
+        $arr_keys = [];
+        foreach ($arr_prefixes as $str_prefix) {
+            $this->redis->setOption(Redis::OPT_PREFIX, $str_prefix);
+            $this->redis->set($str_id, "LOLWUT");
+            $arr_keys[$str_prefix] = $str_id;
+        }
+
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_PREFIX);
+
+        foreach ($arr_prefixes as $str_prefix) {
+            $arr_prefix_keys = [];
+            $this->redis->setOption(Redis::OPT_PREFIX, $str_prefix);
+
+            foreach ($this->redis->_masters() as $arr_master) {
+                $it = NULL;
+                while ($arr_iter = $this->redis->scan($it, $arr_master, "*$str_id*")) {
+                    foreach ($arr_iter as $str_key) {
+                        $arr_prefix_keys[$str_prefix] = $str_key;
+                    }
+                }
+            }
+
+            $this->assertTrue(count($arr_prefix_keys) == 1 && isset($arr_prefix_keys[$str_prefix]));
+        }
+
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NOPREFIX);
+
+        $arr_scan_keys = [];
+
+        foreach ($this->redis->_masters() as $arr_master) {
+            $it = NULL;
+            while ($arr_iter = $this->redis->scan($it, $arr_master, "*$str_id*")) {
+                foreach ($arr_iter as $str_key) {
+                    $arr_scan_keys[] = $str_key;
+                }
+            }
+        }
+
+        /* We should now have both prefixs' keys */
+        foreach ($arr_keys as $str_prefix => $str_id) {
+            $this->assertTrue(in_array("${str_prefix}${str_id}", $arr_scan_keys));
+        }
+    }
+
     // Run some simple tests against the PUBSUB command.  This is problematic, as we
     // can't be sure what's going on in the instance, but we can do some things.
     public function testPubSub() {
