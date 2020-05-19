@@ -722,7 +722,7 @@ int
 redis_cmd_append_sstr_dbl(smart_string *str, double value)
 {
     char tmp[64];
-    int len, retval;
+    int len;
 
     /* Convert to string */
     len = snprintf(tmp, sizeof(tmp), "%.16g", value);
@@ -1785,7 +1785,7 @@ redis_sock_create(char *host, int host_len, int port,
 
     redis_sock->err = NULL;
 
-    redis_sock->scan = REDIS_SCAN_NORETRY;
+    redis_sock->scan = 0;
 
     redis_sock->readonly = 0;
     redis_sock->tcp_keepalive = 0;

@@ -2411,7 +2411,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 {
     redisCluster *c = GET_CONTEXT();
     char *cmd, *pat = NULL, *key = NULL;
-    size_t key_len = 0, pat_len = 0;
+    size_t key_len = 0, pat_len = 0, pat_free = 0;
     int cmd_len, key_free = 0;
     short slot;
     zval *z_it;
@@ -2449,6 +2449,10 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     // Apply any key prefix we have, get the slot
     key_free = redis_key_prefix(c->flags, &key, &key_len);
     slot = cluster_hash_key(key, key_len);
+
+    if (c->flags->scan & REDIS_SCAN_PREFIX) {
+        pat_free = redis_key_prefix(c->flags, &pat, &pat_len);
+    }
 
     // If SCAN_RETRY is set, loop until we get a zero iterator or until
     // we get non-zero elements.  Otherwise we just send the command once.
@@ -2488,7 +2492,10 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
         // Free our command
         efree(cmd);
-    } while (c->flags->scan == REDIS_SCAN_RETRY && it != 0 && num_ele == 0);
+    } while (c->flags->scan & REDIS_SCAN_RETRY && it != 0 && num_ele == 0);
+
+    // Free our pattern
+    if (pat_free) efree(pat);
 
     // Free our key
     if (key_free) efree(key);
@@ -2505,7 +2512,7 @@ PHP_METHOD(RedisCluster, scan) {
     int cmd_len;
     short slot;
     zval *z_it, *z_node;
-    long it, num_ele;
+    long it, num_ele, pat_free = 0;
     zend_long count = 0;
 
     /* Treat as read-only */
@@ -2532,6 +2539,10 @@ PHP_METHOD(RedisCluster, scan) {
         it = Z_LVAL_P(z_it);
     } else {
         RETURN_FALSE;
+    }
+
+    if (c->flags->scan & REDIS_SCAN_PREFIX) {
+        pat_free = redis_key_prefix(c->flags, &pat, &pat_len);
     }
 
     /* With SCAN_RETRY on, loop until we get some keys, otherwise just return
@@ -2570,7 +2581,9 @@ PHP_METHOD(RedisCluster, scan) {
         efree(cmd);
 
         num_ele = zend_hash_num_elements(Z_ARRVAL_P(return_value));
-    } while (c->flags->scan == REDIS_SCAN_RETRY && it != 0 && num_ele == 0);
+    } while (c->flags->scan & REDIS_SCAN_RETRY && it != 0 && num_ele == 0);
+
+    if (pat_free) efree(pat);
 
     Z_LVAL_P(z_it) = it;
 }
