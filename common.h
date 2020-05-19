@@ -214,6 +214,11 @@ typedef enum {
     ((a[0]=='n' || a[0]=='N') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
 #define IS_XX_ARG(a) \
     ((a[0]=='x' || a[0]=='X') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
+#define IS_KTTL_ARG(a) \
+    ((a[0]=='k' || a[0]=='K') && (a[1]=='e' || a[1]=='E') && \
+    (a[2]=='e' || a[2]=='E') && (a[3]=='p' || a[3]=='P') && \
+    (a[4]=='t' || a[4]=='T') && (a[5]=='t' || a[5]=='T') && \
+    (a[6]=='l' || a[6]=='L') && a[7]=='\0')
 
 #define IS_EX_PX_ARG(a) (IS_EX_ARG(a) || IS_PX_ARG(a))
 #define IS_NX_XX_ARG(a) (IS_NX_ARG(a) || IS_XX_ARG(a))

@@ -1304,7 +1304,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     zval *z_value, *z_opts=NULL;
-    char *key = NULL, *exp_type = NULL, *set_type = NULL;
+    char *key = NULL, *exp_type = NULL, *set_type = NULL, *keep_ttl = NULL;
     long expire = -1;
     size_t key_len;
 
@@ -1351,6 +1351,8 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 if (expire < 1) {
                     return FAILURE;
                 }
+            } else if (Z_TYPE_P(v) == IS_STRING && IS_KTTL_ARG(Z_STRVAL_P(v))) {
+                keep_ttl = Z_STRVAL_P(v);
             } else if (Z_TYPE_P(v) == IS_STRING && IS_NX_XX_ARG(Z_STRVAL_P(v))) {
                 set_type = Z_STRVAL_P(v);
             }
@@ -1364,14 +1366,26 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Now let's construct the command we want */
-    if (exp_type && set_type) {
+	if (exp_type && set_type && keep_ttl) {
+        /* SET <key> <value> NX|XX PX|EX <timeout> */
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kvslss", key, key_len, z_value,
+                                     exp_type, 2, expire, set_type, 2, keep_ttl, 7);
+    } else if (exp_type && set_type) {
         /* SET <key> <value> NX|XX PX|EX <timeout> */
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kvsls", key, key_len, z_value,
                                      exp_type, 2, expire, set_type, 2);
+    } else if (exp_type && keep_ttl) {
+        /* SET <key> <value> PX|EX <timeout> */
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kvsls", key, key_len, z_value,
+                                     exp_type, 2, expire, keep_ttl, 7);
     } else if (exp_type) {
         /* SET <key> <value> PX|EX <timeout> */
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kvsl", key, key_len, z_value,
                                      exp_type, 2, expire);
+    } else if (set_type && keep_ttl) {
+        /* SET <key> <value> NX|XX */
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kvss", key, key_len, z_value,
+                                     set_type, 2, keep_ttl, 7);
     } else if (set_type) {
         /* SET <key> <value> NX|XX */
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kvs", key, key_len, z_value,
@@ -1380,6 +1394,10 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         /* Backward compatible SETEX redirection */
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SETEX", "klv", key, key_len, expire,
                                      z_value);
+    } else if (keep_ttl) {
+        /* SET <key> <value> */
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kvs", key, key_len, z_value,
+                                     keep_ttl, 7);
     } else {
         /* SET <key> <value> */
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kv", key, key_len, z_value);
