@@ -2463,8 +2463,6 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
                 if (res > 0) {
                     if (redis_unserialize(redis_sock, data, size, z_ret) == 0) {
                         ZVAL_STRINGL(z_ret, data, size);
-                    } else {
-                        ZVAL_STRINGL(z_ret, data, size);
                     }
                     efree(data);
                     return 1;
