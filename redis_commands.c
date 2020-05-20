@@ -1336,7 +1336,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ZEND_HASH_FOREACH_KEY_VAL(kt, idx, zkey, v) {
             ZVAL_DEREF(v);
             /* Detect PX or EX argument and validate timeout */
-            if (zkey && IS_EX_PX_ARG(ZSTR_VAL(zkey))) {
+            if (zkey && IS_EX_PX_ARG(zkey)) {
                 /* Set expire type */
                 exp_type = ZSTR_VAL(zkey);
 
@@ -1351,9 +1351,10 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 if (expire < 1) {
                     return FAILURE;
                 }
-            } else if (Z_TYPE_P(v) == IS_STRING && IS_KTTL_ARG(Z_STRVAL_P(v))) {
+
+            } else if (ZVAL_STRICMP_STATIC(v, "KEEPTTL")) {
                 keep_ttl = Z_STRVAL_P(v);
-            } else if (Z_TYPE_P(v) == IS_STRING && IS_NX_XX_ARG(Z_STRVAL_P(v))) {
+            } else if (ZVAL_STRICMP_STATIC(v, "NX") || ZVAL_STRICMP_STATIC(v, "XX")) {
                 set_type = Z_STRVAL_P(v);
             }
         } ZEND_HASH_FOREACH_END();
@@ -2587,15 +2588,11 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         zval *z_opt;
         ZEND_HASH_FOREACH_VAL(Z_ARRVAL(z_args[1]), z_opt) {
             if (Z_TYPE_P(z_opt) == IS_STRING) {
-                if (Z_STRLEN_P(z_opt) == 2) {
-                    if (IS_NX_XX_ARG(Z_STRVAL_P(z_opt))) {
-                        exp_type = Z_STRVAL_P(z_opt);
-                    } else if (strncasecmp(Z_STRVAL_P(z_opt), "ch", 2) == 0) {
-                        ch = 1;
-                    }
-                } else if (Z_STRLEN_P(z_opt) == 4 &&
-                    strncasecmp(Z_STRVAL_P(z_opt), "incr", 4) == 0
-                ) {
+                if (ZVAL_IS_NX_XX_ARG(z_opt)) {
+                    exp_type = Z_STRVAL_P(z_opt);
+                } else if (ZVAL_STRICMP_STATIC(z_opt, "CH")) {
+                    ch = 1;
+                } else if (ZVAL_STRICMP_STATIC(z_opt, "INCR")) {
                     if (num > 4) {
                         // Only one score-element pair can be specified in this mode.
                         efree(z_args);

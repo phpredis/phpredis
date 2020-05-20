@@ -377,6 +377,20 @@ class Redis_Test extends TestSuite
         $this->redis->set('foo','bar', NULL);
         $this->assertEquals($this->redis->get('foo'), 'bar');
         $this->assertTrue($this->redis->ttl('foo')<0);
+
+        if (version_compare($this->version, "6.0.0") < 0)
+            return;
+
+        /* KEEPTTL works by itself */
+        $this->redis->set('foo', 'bar', ['EX' => 100]);
+        $this->redis->set('foo', 'bar', ['KEEPTTL']);
+        $this->assertTrue($this->redis->ttl('foo') > -1);
+
+        /* Works with other options */
+        $this->redis->set('foo', 'bar', ['XX', 'KEEPTTL']);
+        $this->assertTrue($this->redis->ttl('foo') > -1);
+        $this->redis->set('foo', 'bar', ['XX']);
+        $this->assertTrue($this->redis->ttl('foo') == -1);
     }
 
     public function testGetSet() {

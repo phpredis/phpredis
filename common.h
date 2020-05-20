@@ -209,21 +209,26 @@ typedef enum {
         REDIS_PROCESS_RESPONSE_CLOSURE(resp_func, ctx) \
     }
 
-/* Extended SET argument detection */
-#define IS_EX_ARG(a) \
-    ((a[0]=='e' || a[0]=='E') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
-#define IS_PX_ARG(a) \
-    ((a[0]=='p' || a[0]=='P') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
-#define IS_NX_ARG(a) \
-    ((a[0]=='n' || a[0]=='N') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
-#define IS_XX_ARG(a) \
-    ((a[0]=='x' || a[0]=='X') && (a[1]=='x' || a[1]=='X') && a[2]=='\0')
-#define IS_KTTL_ARG(a) \
-    ((a[0]=='k' || a[0]=='K') && (a[1]=='e' || a[1]=='E') && \
-    (a[2]=='e' || a[2]=='E') && (a[3]=='p' || a[3]=='P') && \
-    (a[4]=='t' || a[4]=='T') && (a[5]=='t' || a[5]=='T') && \
-    (a[6]=='l' || a[6]=='L') && a[7]=='\0')
+/* Case insensitive compare against compile-time static string */
+#define REDIS_STRICMP_STATIC(s, len, sstr) \
+    (len == sizeof(sstr) - 1 && !strncasecmp(s, sstr, len))
 
+/* Test if a zval is a string and (case insensitive) matches a static string */
+#define ZVAL_STRICMP_STATIC(zv, sstr) \
+    REDIS_STRICMP_STATIC(Z_STRVAL_P(zv), Z_STRLEN_P(zv), sstr)
+
+/* Case insensitive compare of a zend_string to a static string */
+#define ZSTR_CMP_STATIC(zs, sstr) \
+    REDIS_STRICMP_STATIC(ZSTR_VAL(zs), ZSTR_LEN(zs), sstr)
+
+/* Extended SET argument detection */
+#define IS_EX_ARG(zs) ZSTR_CMP_STATIC(zs, "EX")
+#define IS_PX_ARG(zs) ZSTR_CMP_STATIC(zs, "PX")
+#define IS_NX_ARG(zs) ZSTR_CMP_STATIC(zs, "NX")
+#define IS_XX_ARG(zs) ZSTR_CMP_STATIC(zs, "XX")
+#define IS_KTTL_ARG(zs) ZSTR_CMP_STATIC(zs, "KEEPTTL")
+
+#define ZVAL_IS_NX_XX_ARG(zv) (ZVAL_STRICMP_STATIC(zv, "NX") || ZVAL_STRICMP_STATIC(zv, "XX"))
 #define IS_EX_PX_ARG(a) (IS_EX_ARG(a) || IS_PX_ARG(a))
 #define IS_NX_XX_ARG(a) (IS_NX_ARG(a) || IS_XX_ARG(a))
 
