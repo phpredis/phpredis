@@ -222,15 +222,13 @@ typedef enum {
     REDIS_STRICMP_STATIC(ZSTR_VAL(zs), ZSTR_LEN(zs), sstr)
 
 /* Extended SET argument detection */
-#define IS_EX_ARG(zs) ZSTR_CMP_STATIC(zs, "EX")
-#define IS_PX_ARG(zs) ZSTR_CMP_STATIC(zs, "PX")
-#define IS_NX_ARG(zs) ZSTR_CMP_STATIC(zs, "NX")
-#define IS_XX_ARG(zs) ZSTR_CMP_STATIC(zs, "XX")
-#define IS_KTTL_ARG(zs) ZSTR_CMP_STATIC(zs, "KEEPTTL")
+#define ZSTR_IS_EX_ARG(zs) ZSTR_CMP_STATIC(zs, "EX")
+#define ZSTR_IS_PX_ARG(zs) ZSTR_CMP_STATIC(zs, "PX")
+#define ZSTR_IS_NX_ARG(zs) ZSTR_CMP_STATIC(zs, "NX")
+#define ZSTR_IS_XX_ARG(zs) ZSTR_CMP_STATIC(zs, "XX")
 
 #define ZVAL_IS_NX_XX_ARG(zv) (ZVAL_STRICMP_STATIC(zv, "NX") || ZVAL_STRICMP_STATIC(zv, "XX"))
-#define IS_EX_PX_ARG(a) (IS_EX_ARG(a) || IS_PX_ARG(a))
-#define IS_NX_XX_ARG(a) (IS_NX_ARG(a) || IS_XX_ARG(a))
+#define ZSTR_IS_EX_PX_ARG(a) (ZSTR_IS_EX_ARG(a) || ZSTR_IS_PX_ARG(a))
 
 /* Given a string and length, validate a zRangeByLex argument.  The semantics
  * here are that the argument must start with '(' or '[' or be just the char
