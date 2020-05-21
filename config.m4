@@ -35,7 +35,7 @@ if test "$PHP_REDIS" != "no"; then
     AC_DEFINE(PHP_SESSION,1,[redis sessions])
   fi
 
-  if test "PHP_REDIS_JSON" != "no"; then
+  if test "$PHP_REDIS_JSON" != "no"; then
     AC_MSG_CHECKING([for json includes])
     json_inc_path=""
     if test -f "$abs_srcdir/include/php/ext/json/php_json.h"; then
