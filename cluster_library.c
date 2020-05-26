@@ -867,12 +867,14 @@ cluster_free(redisCluster *c, int free_ctx)
     /* Free any error we've got */
     if (c->err) zend_string_release(c->err);
 
-    /* Invalidate our cache if we were redirected during operation */
     if (c->cache_key) {
+        /* Invalidate persistent cache if the cluster has changed */
         if (c->redirections) {
             zend_hash_del(&EG(persistent_list), c->cache_key);
-            c->cache_key = NULL;
         }
+
+        /* Release our hold on the cache key */
+        zend_string_release(c->cache_key);
     }
 
     /* Free structure itself */
@@ -990,7 +992,6 @@ PHP_REDIS_API void cluster_cache_free(redisCachedCluster *rcc) {
         cluster_free_cached_master(&rcc->master[i]);
     }
 
-    /* Free hash key */
     zend_string_release(rcc->hash);
     pefree(rcc->master, 1);
     pefree(rcc, 1);
@@ -1011,17 +1012,17 @@ void cluster_init_cache(redisCluster *c, redisCachedCluster *cc) {
     for (i = 0; i < cc->count; i++) map[i] = i;
     fyshuffle(map, cc->count);
 
+    /* Attach cache key */
+    c->cache_key = cc->hash;
+    zend_string_addref(c->cache_key);
+
     /* Iterate over masters */
     for (i = 0; i < cc->count; i++) {
-        /* Attach cache key */
-        c->cache_key = cc->hash;
-
         /* Grab the next master */
         cm = &cc->master[map[i]];
 
         /* Hash our host and port */
-        keylen = snprintf(key, sizeof(key), "%s:%u", ZSTR_VAL(cm->host.addr),
-                          cm->host.port);
+        keylen = snprintf(key, sizeof(key), "%s:%u", ZSTR_VAL(cm->host.addr), cm->host.port);
 
         /* Create socket */
         sock = redis_sock_create(ZSTR_VAL(cm->host.addr), ZSTR_LEN(cm->host.addr), cm->host.port,
@@ -1080,8 +1081,10 @@ cluster_init_seeds(redisCluster *cluster, HashTable *ht_seeds) {
 
         /* Make sure we have a colon for host:port.  Search right to left in the
          * case of IPv6 */
-        if ((psep = strrchr(str, ':')) == NULL)
+        if ((psep = strrchr(str, ':')) == NULL) {
+            php_error_docref(NULL, E_WARNING, "Seed '%s' is not in <host>:<port> format", str);
             continue;
+        }
 
         // Allocate a structure for this seed
         redis_sock = redis_sock_create(str, psep-str,

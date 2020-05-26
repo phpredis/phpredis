@@ -384,9 +384,17 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
     /* Attempt to load from cache */
     if ((cc = cluster_cache_load(ht_seeds))) {
         cluster_init_cache(c, cc);
-    } else if (cluster_init_seeds(c, ht_seeds) == SUCCESS &&
-               cluster_map_keyspace(c) == SUCCESS)
-    {
+        return;
+    }
+
+    /* Abort if there aren't any valid seeds */
+    if (cluster_init_seeds(c, ht_seeds) != SUCCESS) {
+        CLUSTER_THROW_EXCEPTION("Couldn't find any valid seeds", 0);
+        return;
+    }
+
+    /* Finally cache slots if we can map the keyspace */
+    if (cluster_map_keyspace(c) == SUCCESS) {
         cluster_cache_store(ht_seeds, c->nodes);
     }
 }
