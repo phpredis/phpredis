@@ -258,38 +258,39 @@ typedef struct fold_item {
 
 /* {{{ struct RedisSock */
 typedef struct {
-    php_stream        *stream;
-    zend_string       *host;
-    int               port;
-    zend_string       *auth;
-    double            timeout;
-    double            read_timeout;
-    long              retry_interval;
-    redis_sock_status status;
-    int               persistent;
-    int               watching;
-    zend_string       *persistent_id;
+    php_stream         *stream;
+    php_stream_context *stream_ctx;
+    zend_string        *host;
+    int                port;
+    zend_string        *auth;
+    double             timeout;
+    double             read_timeout;
+    long               retry_interval;
+    redis_sock_status  status;
+    int                persistent;
+    int                watching;
+    zend_string        *persistent_id;
 
-    redis_serializer  serializer;
-    int               compression;
-    int               compression_level;
-    long              dbNumber;
+    redis_serializer   serializer;
+    int                compression;
+    int                compression_level;
+    long               dbNumber;
 
-    zend_string       *prefix;
+    zend_string        *prefix;
 
-    short             mode;
-    fold_item         *head;
-    fold_item         *current;
+    short              mode;
+    fold_item          *head;
+    fold_item          *current;
 
-    zend_string       *pipeline_cmd;
+    zend_string        *pipeline_cmd;
 
-    zend_string       *err;
+    zend_string        *err;
 
-    int               scan;
+    int                scan;
 
-    int               readonly;
-    int               reply_literal;
-    int               tcp_keepalive;
+    int                readonly;
+    int                reply_literal;
+    int                tcp_keepalive;
 } RedisSock;
 /* }}} */
 
