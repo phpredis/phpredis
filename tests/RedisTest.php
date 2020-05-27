@@ -5962,7 +5962,7 @@ class Redis_Test extends TestSuite
             $this->assertTrue(is_array($info[$key]));
         }
 
-        /* XSTREAM INFO FULL [COUNT N] Requires >= 6.0.0 */
+        /* XINFO STREAM FULL [COUNT N] Requires >= 6.0.0 */
         if (!$this->minVersionCheck("6.0"))
             return;
 
