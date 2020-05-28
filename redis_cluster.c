@@ -340,63 +340,51 @@ void free_cluster_context(zend_object *object) {
     zend_object_std_dtor(&cluster->std);
 }
 
-/* Validate redis cluster construction arguments */
-static int
-cluster_validate_args(double timeout, double read_timeout, HashTable *seeds) {
-    if (timeout < 0L || timeout > INT_MAX) {
-        CLUSTER_THROW_EXCEPTION("Invalid timeout", 0);
-        return FAILURE;
-    }
-    if (read_timeout < 0L || read_timeout > INT_MAX) {
-        CLUSTER_THROW_EXCEPTION("Invalid read timeout", 0);
-        return FAILURE;
-    }
-    /* Make sure there are some seeds */
-    if (zend_hash_num_elements(seeds) == 0) {
-        CLUSTER_THROW_EXCEPTION("Must pass seeds", 0);
-        return FAILURE;
-    }
-
-    return SUCCESS;
-}
-
+/* Take user provided seeds and return unique and valid ones */
 /* Attempt to connect to a Redis cluster provided seeds and timeout options */
 static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
                                double read_timeout, int persistent, char *auth,
                                size_t auth_len)
 {
+    zend_string *hash = NULL, **seeds;
     redisCachedCluster *cc;
+    uint32_t nseeds;
+    char *err;
 
-    cluster_validate_args(timeout, read_timeout, ht_seeds);
+    /* Validate our arguments and get a sanitized seed array */
+    seeds = cluster_validate_args(timeout, read_timeout, ht_seeds, &nseeds, &err);
+    if (seeds == NULL) {
+        CLUSTER_THROW_EXCEPTION(err, 0);
+        return;
+    }
 
-    if (auth && auth_len > 0) {
+    if (auth && auth_len) {
         c->auth = zend_string_init(auth, auth_len, 0);
     }
 
     c->timeout = timeout;
     c->read_timeout = read_timeout;
     c->persistent = persistent;
+    c->waitms = timeout * 1000L;
 
-    /* Calculate the number of milliseconds we will wait when bouncing around,
-     * (e.g. a node goes down), which is not the same as a standard timeout. */
-    c->waitms = (long)(timeout * 1000);
-
-    /* Attempt to load from cache */
-    if ((cc = cluster_cache_load(ht_seeds))) {
-        cluster_init_cache(c, cc);
-        return;
+    /* Attempt to load slots from cache if caching is enabled */
+    if (CLUSTER_CACHING_ENABLED()) {
+        /* Exit early if we can load from cache */
+        hash = cluster_hash_seeds(seeds, nseeds);
+        if ((cc = cluster_cache_load(hash))) {
+            cluster_init_cache(c, cc);
+            goto cleanup;
+        }
     }
 
-    /* Abort if there aren't any valid seeds */
-    if (cluster_init_seeds(c, ht_seeds) != SUCCESS) {
-        CLUSTER_THROW_EXCEPTION("Couldn't find any valid seeds", 0);
-        return;
-    }
+    /* Initialize seeds and attempt to map keyspace */
+    cluster_init_seeds(c, seeds, nseeds);
+    if (cluster_map_keyspace(c) == SUCCESS && hash)
+        cluster_cache_store(hash, c->nodes);
 
-    /* Finally cache slots if we can map the keyspace */
-    if (cluster_map_keyspace(c) == SUCCESS) {
-        cluster_cache_store(ht_seeds, c->nodes);
-    }
+cleanup:
+    if (hash) zend_string_release(hash);
+    free_seed_array(seeds, nseeds);
 }
 
 

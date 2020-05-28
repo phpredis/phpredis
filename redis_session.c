@@ -894,7 +894,7 @@ PS_OPEN_FUNC(rediscluster) {
     zval z_conf, *z_val;
     HashTable *ht_conf, *ht_seeds;
     double timeout = 0, read_timeout = 0;
-    int retval, persistent = 0, failover = REDIS_FAILOVER_NONE;
+    int persistent = 0, failover = REDIS_FAILOVER_NONE;
     size_t prefix_len, auth_len = 0;
     char *prefix, *auth = NULL;
 
@@ -960,35 +960,59 @@ PS_OPEN_FUNC(rediscluster) {
         auth_len = Z_STRLEN_P(z_val);
     }
 
-    c = cluster_create(timeout, read_timeout, failover, persistent);
-    if (auth && auth_len > 0) {
-        c->auth = zend_string_init(auth, auth_len, 0);
-    }
-
     redisCachedCluster *cc;
+    zend_string **seeds, *hash = NULL;
+    uint32_t nseeds;
 
-    /* Attempt to load from cache */
-    if ((cc = cluster_cache_load(ht_seeds))) {
-        cluster_init_cache(c, cc);
-        /* Set up our prefix */
-        c->flags->prefix = zend_string_init(prefix, prefix_len, 0);
-        PS_SET_MOD_DATA(c);
-        retval = SUCCESS;
-    } else if (!cluster_init_seeds(c, ht_seeds) && !cluster_map_keyspace(c)) {
-        /* Set up our prefix */
-        c->flags->prefix = zend_string_init(prefix, prefix_len, 0);
-        cluster_cache_store(ht_seeds, c->nodes);
-        PS_SET_MOD_DATA(c);
-        retval = SUCCESS;
-    } else {
-        cluster_free(c, 1);
-        retval = FAILURE;
+    #define CLUSTER_SESSION_CLEANUP() \
+        if (hash) zend_string_release(hash); \
+        free_seed_array(seeds, nseeds); \
+        zval_dtor(&z_conf); \
+
+    /* Extract at least one valid seed or abort */ 
+    seeds = cluster_validate_args(timeout, read_timeout, ht_seeds, &nseeds, NULL);
+    if (seeds == NULL) {
+        php_error_docref(NULL, E_WARNING, "No valid seeds detected");
+        zval_dtor(&z_conf);
+        return FAILURE;
     }
 
-    /* Cleanup */
-    zval_dtor(&z_conf);
+    c = cluster_create(timeout, read_timeout, failover, persistent);
+    c->flags->prefix = zend_string_init(prefix, prefix_len, 0);
 
-    return retval;
+    if (auth && auth_len) 
+        c->auth = zend_string_init(auth, auth_len, 0);
+
+    /* First attempt to load from cache */
+    if (CLUSTER_CACHING_ENABLED()) {
+        hash = cluster_hash_seeds(seeds, nseeds);
+        if ((cc = cluster_cache_load(hash))) {
+            cluster_init_cache(c, cc);
+            CLUSTER_SESSION_CLEANUP();
+            return SUCCESS;
+        }
+    }
+
+    /* Initialize seed array, and attempt to map keyspace */
+    cluster_init_seeds(c, seeds, nseeds);
+    if (cluster_map_keyspace(c) != SUCCESS) {
+        if (hash) zend_string_release(hash);
+        CLUSTER_SESSION_CLEANUP();
+        cluster_free(c, 1);
+        return FAILURE;
+    }
+
+    /* Now cache our cluster if caching is enabled */
+    if (hash) {
+        c->flags->prefix = zend_string_init(prefix, prefix_len, 0);
+        cluster_cache_store(hash, c->nodes);
+    }
+
+    CLUSTER_SESSION_CLEANUP();
+
+    /* Success */
+    PS_SET_MOD_DATA(c);
+    return SUCCESS;
 }
 
 /* {{{ PS_READ_FUNC

@@ -129,6 +129,8 @@
     mc.kw     = keyword; \
     mc.kw_len = keyword_len; \
 
+#define CLUSTER_CACHING_ENABLED() (INI_INT("redis.clusters.cache_slots") == 1)
+
 /* Cluster redirection enum */
 typedef enum CLUSTER_REDIR_TYPE {
     REDIR_NONE,
@@ -359,6 +361,15 @@ void cluster_multi_fini(clusterMultiCmd *mc);
 unsigned short cluster_hash_key_zval(zval *key);
 unsigned short cluster_hash_key(const char *key, int len);
 
+/* Validate and sanitize cluster construction args */
+zend_string** cluster_validate_args(double timeout, double read_timeout, 
+    HashTable *seeds, uint32_t *nseeds, char **errstr);
+
+void free_seed_array(zend_string **seeds, uint32_t nseeds);
+
+/* Generate a unique hash string from seeds array */
+zend_string *cluster_hash_seeds(zend_string **seeds, uint32_t nseeds);
+
 /* Get the current time in milliseconds */
 long long mstime(void);
 
@@ -380,7 +391,7 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
 PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     int failover, int persistent);
 PHP_REDIS_API void cluster_free(redisCluster *c, int free_ctx);
-PHP_REDIS_API int cluster_init_seeds(redisCluster *c, HashTable *ht_seeds);
+PHP_REDIS_API void cluster_init_seeds(redisCluster *c, zend_string **seeds, uint32_t nseeds);
 PHP_REDIS_API int cluster_map_keyspace(redisCluster *c);
 PHP_REDIS_API void cluster_free_node(redisClusterNode *node);
 
@@ -391,10 +402,10 @@ PHP_REDIS_API void cluster_init_cache(redisCluster *c, redisCachedCluster *rcc);
 
 /* Functions to facilitate cluster slot caching */
 
-PHP_REDIS_API char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock,
-    int *len);
-PHP_REDIS_API int cluster_cache_store(HashTable *ht_seeds, HashTable *nodes);
-PHP_REDIS_API redisCachedCluster *cluster_cache_load(HashTable *ht_seeds);
+PHP_REDIS_API char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock, int *len);
+
+PHP_REDIS_API int cluster_cache_store(zend_string *hash, HashTable *nodes);
+PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash);
 
 /*
  * Redis Cluster response handlers.  Our response handlers generally take the
