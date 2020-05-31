@@ -1589,11 +1589,9 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         redis_sock_disconnect(c->cmd_sock, 1);
 
         if (timedout) {
-            CLUSTER_THROW_EXCEPTION(
-                "Timed out attempting to find data in the correct node!", 0);
+            CLUSTER_THROW_EXCEPTION("Timed out attempting to find data in the correct node!", 0);
         } else {
-            CLUSTER_THROW_EXCEPTION(
-                "Error processing response from Redis node!", 0);
+            CLUSTER_THROW_EXCEPTION("Error processing response from Redis node!", 0);
         }
 
         return -1;
@@ -2423,10 +2421,11 @@ PHP_REDIS_API void cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluste
     // Set return value if it's our last response
     if (mctx->last) {
         if (CLUSTER_IS_ATOMIC(c)) {
-            RETVAL_ZVAL(mctx->z_multi, 0, 1);
+            RETVAL_ZVAL(mctx->z_multi, 0, 0);
         } else {
             add_next_index_zval(&c->multi_resp, mctx->z_multi);
         }
+        efree(mctx->z_multi);
     }
 
     // Free multi context

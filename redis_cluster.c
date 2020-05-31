@@ -552,11 +552,7 @@ distcmd_resp_handler(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, short slot,
     ctx->last    = last;
 
     // Attempt to send the command
-    if (cluster_send_command(c,slot,mc->cmd.c,mc->cmd.len) < 0 ||
-       c->err != NULL)
-    {
-        cluster_multi_free(mc);
-        zval_dtor(z_ret);
+    if (cluster_send_command(c,slot,mc->cmd.c,mc->cmd.len) < 0 || c->err != NULL) {
         efree(ctx);
         return -1;
     }
@@ -861,6 +857,7 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
             if (distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
                                     slot, &mc, z_ret, i == argc, cb) < 0)
             {
+                cluster_multi_free(&mc);
                 return -1;
             }
         }
@@ -886,6 +883,7 @@ static int cluster_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
         if (distcmd_resp_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, slot, &mc,
                                 z_ret, 1, cb) < 0)
         {
+            cluster_multi_free(&mc);
             return -1;
         }
     }
