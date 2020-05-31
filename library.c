@@ -2359,7 +2359,7 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
                 size = LZ4_compressBound(len) + offset;
                 data = emalloc(size + offset);
                 data[0] = '\0';
-                memcpy(data + 1, &old_len, offset);
+                memcpy(data + 1, &old_len, sizeof(int));
 
                 if (redis_sock->compression_level <= 0 || redis_sock->compression_level > REDIS_LZ4_MAX_CLEVEL) {
                     size = LZ4_compress_default(buf, data + offset, len, size - offset - 1);
