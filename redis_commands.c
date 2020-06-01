@@ -1684,7 +1684,7 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             mem_len = ZSTR_LEN(zkey);
             mem = ZSTR_VAL(zkey);
         } else {
-            mem_len = snprintf(kbuf, sizeof(kbuf), "%ld", (long)idx);
+            mem_len = snprintf(kbuf, sizeof(kbuf), ZEND_LONG_FMT, idx);
             mem = (char*)kbuf;
         }
 
