@@ -996,21 +996,17 @@ PS_OPEN_FUNC(rediscluster) {
     /* Initialize seed array, and attempt to map keyspace */
     cluster_init_seeds(c, seeds, nseeds);
     if (cluster_map_keyspace(c) != SUCCESS) {
-        if (hash) zend_string_release(hash);
         CLUSTER_SESSION_CLEANUP();
         cluster_free(c, 1);
         return FAILURE;
     }
 
     /* Now cache our cluster if caching is enabled */
-    if (hash) {
-        c->flags->prefix = zend_string_init(prefix, prefix_len, 0);
+    if (hash)
         cluster_cache_store(hash, c->nodes);
-    }
-
-    CLUSTER_SESSION_CLEANUP();
 
     /* Success */
+    CLUSTER_SESSION_CLEANUP();
     PS_SET_MOD_DATA(c);
     return SUCCESS;
 }
