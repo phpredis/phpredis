@@ -36,16 +36,12 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, zend_string *auth, long retry_in
     int i = 0, host_len;
     char *host, *p;
     short port;
-    zval *zpData, z_cons, z_ret;
+    zval *zpData;
     redis_object *redis;
-
-    /* function calls on the Redis object */
-    ZVAL_STRINGL(&z_cons, "__construct", 11);
 
     /* init connections */
     ZEND_HASH_FOREACH_VAL(hosts, zpData) {
         if (Z_TYPE_P(zpData) != IS_STRING) {
-            zval_dtor(&z_cons);
             return NULL;
         }
 
@@ -64,9 +60,6 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, zend_string *auth, long retry_in
 
         /* create Redis object */
         object_init_ex(&ra->redis[i], redis_ce);
-        call_user_function(&redis_ce->function_table, &ra->redis[i], &z_cons, &z_ret, 0, NULL);
-        zval_dtor(&z_ret);
-
         redis = PHPREDIS_ZVAL_GET_OBJECT(redis_object, &ra->redis[i]);
 
         /* create socket */
@@ -79,7 +72,6 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, zend_string *auth, long retry_in
         {
             /* connect */
             if (redis_sock_server_open(redis->sock) < 0) {
-                zval_dtor(&z_cons);
                 ra->count = ++i;
                 return NULL;
             }
@@ -87,8 +79,6 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, zend_string *auth, long retry_in
 
         ra->count = ++i;
     } ZEND_HASH_FOREACH_END();
-
-    zval_dtor(&z_cons);
 
     return ra;
 }
