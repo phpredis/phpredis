@@ -964,11 +964,6 @@ PS_OPEN_FUNC(rediscluster) {
     zend_string **seeds, *hash = NULL;
     uint32_t nseeds;
 
-    #define CLUSTER_SESSION_CLEANUP() \
-        if (hash) zend_string_release(hash); \
-        free_seed_array(seeds, nseeds); \
-        zval_dtor(&z_conf); \
-
     /* Extract at least one valid seed or abort */ 
     seeds = cluster_validate_args(timeout, read_timeout, ht_seeds, &nseeds, NULL);
     if (seeds == NULL) {
@@ -976,6 +971,11 @@ PS_OPEN_FUNC(rediscluster) {
         zval_dtor(&z_conf);
         return FAILURE;
     }
+
+    #define CLUSTER_SESSION_CLEANUP() \
+        if (hash) zend_string_release(hash); \
+        free_seed_array(seeds, nseeds); \
+        zval_dtor(&z_conf); \
 
     c = cluster_create(timeout, read_timeout, failover, persistent);
     c->flags->prefix = zend_string_init(prefix, prefix_len, 0);
@@ -988,27 +988,28 @@ PS_OPEN_FUNC(rediscluster) {
         hash = cluster_hash_seeds(seeds, nseeds);
         if ((cc = cluster_cache_load(hash))) {
             cluster_init_cache(c, cc);
-            CLUSTER_SESSION_CLEANUP();
-            return SUCCESS;
+            goto success;
         }
     }
 
     /* Initialize seed array, and attempt to map keyspace */
     cluster_init_seeds(c, seeds, nseeds);
-    if (cluster_map_keyspace(c) != SUCCESS) {
-        CLUSTER_SESSION_CLEANUP();
-        cluster_free(c, 1);
-        return FAILURE;
-    }
+    if (cluster_map_keyspace(c) != SUCCESS)
+        goto failure;
 
     /* Now cache our cluster if caching is enabled */
     if (hash)
         cluster_cache_store(hash, c->nodes);
 
-    /* Success */
+success:
     CLUSTER_SESSION_CLEANUP();
     PS_SET_MOD_DATA(c);
     return SUCCESS;
+
+failure:
+    CLUSTER_SESSION_CLEANUP();
+    cluster_free(c, 1);
+    return FAILURE;
 }
 
 /* {{{ PS_READ_FUNC

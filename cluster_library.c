@@ -985,7 +985,7 @@ void cluster_init_cache(redisCluster *c, redisCachedCluster *cc) {
     fyshuffle(map, cc->count);
 
     /* Duplicate the hash key so we can invalidate when redirected */
-    c->cache_key = zend_string_dup(cc->hash, 0);
+    c->cache_key = zend_string_copy(cc->hash);
 
     /* Iterate over masters */
     for (i = 0; i < cc->count; i++) {
@@ -1037,7 +1037,7 @@ cluster_init_seeds(redisCluster *cluster, zend_string **seeds, uint32_t nseeds) 
     int key_len, i, *map;
 
     /* Get a randomized order to hit our seeds */
-    map = emalloc(sizeof(*map) * nseeds);
+    map = ecalloc(nseeds, sizeof(*map));
     for (i = 0; i < nseeds; i++) map[i] = i;
     fyshuffle(map, nseeds);
 
@@ -2756,9 +2756,9 @@ static zend_string **get_valid_seeds(HashTable *input, uint32_t *nseeds) {
         goto cleanup;
 
     /* Populate our return array */
-    seeds = emalloc(sizeof(*seeds) * count);
+    seeds = ecalloc(count, sizeof(*seeds));
     ZEND_HASH_FOREACH_STR_KEY(valid, zkey) {
-        seeds[idx++] = zend_string_dup(zkey, 0);
+        seeds[idx++] = zend_string_copy(zkey);
     } ZEND_HASH_FOREACH_END();
 
     *nseeds = idx;
@@ -2785,15 +2785,12 @@ cluster_validate_args(double timeout, double read_timeout, HashTable *seeds,
 
     if (read_timeout < 0L || read_timeout > INT_MAX) {
         if (errstr) *errstr = "Invalid read timeout";
-        CLUSTER_THROW_EXCEPTION("Invalid read timeout", 0);
         return NULL;
     }
 
     retval = get_valid_seeds(seeds, nseeds);
-    if (retval == NULL) {
-        if (errstr) *errstr = "No valid seeds detected";
-        return NULL;
-    }
+    if (retval == NULL && errstr)
+        *errstr = "No valid seeds detected";
 
     return retval;
 }
