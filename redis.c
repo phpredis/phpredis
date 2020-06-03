@@ -959,7 +959,7 @@ PHP_METHOD(Redis, pconnect)
 PHP_REDIS_API int
 redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 {
-    zval *object;
+    zval *object, *ssl = NULL;
     char *host = NULL, *persistent_id = NULL;
     zend_long port = -1, retry_interval = 0;
     size_t host_len, persistent_id_len;
@@ -973,10 +973,10 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 #endif
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                     "Os|lds!ld", &object, redis_ce, &host,
+                                     "Os|lds!lda", &object, redis_ce, &host,
                                      &host_len, &port, &timeout, &persistent_id,
                                      &persistent_id_len, &retry_interval,
-                                     &read_timeout) == FAILURE)
+                                     &read_timeout, &ssl) == FAILURE)
     {
         return FAILURE;
     }
@@ -1015,6 +1015,10 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 
     redis->sock = redis_sock_create(host, host_len, port, timeout, read_timeout, persistent,
         persistent_id, retry_interval);
+
+    if (ssl != NULL) {
+        redis_sock_set_stream_context(redis->sock, ssl);
+    }
 
     if (redis_sock_server_open(redis->sock) < 0) {
         if (redis->sock->err) {
