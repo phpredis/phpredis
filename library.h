@@ -21,7 +21,7 @@
     zend_throw_exception(redis_cluster_exception_ce, (msg), code)
 
 int redis_cmd_init_sstr(smart_string *str, int num_args, char *keyword, int keyword_len);
-int redis_cmd_append_sstr(smart_string *str, char *append, int append_len);
+int redis_cmd_append_sstr(smart_string *str, char *append, size_t len);
 int redis_cmd_append_sstr_int(smart_string *str, int append);
 int redis_cmd_append_sstr_long(smart_string *str, long append);
 int redis_cmd_append_sstr_i64(smart_string *str, int64_t append);

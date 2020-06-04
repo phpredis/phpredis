@@ -28,6 +28,9 @@
 #ifdef HAVE_REDIS_LZ4
 #include <lz4.h>
 #include <lz4hc.h>
+
+/* uint8_t crf + int length */
+#define REDIS_LZ4_HDR_SIZE (sizeof(uint8_t) + sizeof(int))
 #if defined(LZ4HC_CLEVEL_MAX)
 /* version >= 1.7.5 */
 #define REDIS_LZ4_MAX_CLEVEL LZ4HC_CLEVEL_MAX
@@ -695,11 +698,11 @@ int redis_cmd_init_sstr(smart_string *str, int num_args, char *keyword, int keyw
 /*
  * Append a command sequence to a smart_string
  */
-int redis_cmd_append_sstr(smart_string *str, char *append, int append_len) {
+int redis_cmd_append_sstr(smart_string *str, char *append, size_t len) {
     smart_string_appendc(str, '$');
-    smart_string_append_long(str, append_len);
+    smart_string_append_long(str, len);
     smart_string_appendl(str, _NL, sizeof(_NL) - 1);
-    smart_string_appendl(str, append, append_len);
+    smart_string_appendl(str, append, len);
     smart_string_appendl(str, _NL, sizeof(_NL) - 1);
 
     /* Return our new length */
@@ -2273,8 +2276,26 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
     efree(redis_sock);
 }
 
-#define PHP_REDIS_COMPRESSION_RATIO_CHECK(__x) \
-    (redis_sock->compression_min_ratio > 0 && (((double) __x / (double) len) >= redis_sock->compression_min_ratio))
+#define PHP_REDIS_COMPRESSION_RATIO_CHECK(packed, unpacked) \
+    (redis_sock->compression_min_ratio > 0 && packed / (double)unpacked >= redis_sock->compression_min_ratio)
+
+/* Implementation of CRC8 for our LZ4 checksum value */
+static uint8_t crc8(uint8_t *input, size_t len) {
+    size_t i;
+    uint8_t crc = 0xFF;
+
+    while (len--) {
+        crc ^= *input++;
+        for (i = 0; i < 8; i++) {
+            if (crc & 0x80)
+                crc = (uint8_t)(crc << 1) ^ 0x31;
+            else
+                crc <<= 1;
+        }
+    }
+
+    return crc;
+}
 
 PHP_REDIS_API int
 redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
@@ -2302,7 +2323,7 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
                 size = len + MIN(UINT_MAX - len, MAX(LZF_MARGIN, len / 25));
                 data = emalloc(size);
                 if ((res = lzf_compress(buf, len, data, size)) > 0) {
-                    if (PHP_REDIS_COMPRESSION_RATIO_CHECK(res)) {
+                    if (PHP_REDIS_COMPRESSION_RATIO_CHECK(res, len)) {
                         efree(data);
                         break;
                     }
@@ -2337,7 +2358,7 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
                 size = ZSTD_compressBound(len);
                 data = emalloc(size);
                 size = ZSTD_compress(data, size, buf, len, level);
-                if (!ZSTD_isError(size) && !PHP_REDIS_COMPRESSION_RATIO_CHECK(size)) {
+                if (!ZSTD_isError(size) && !PHP_REDIS_COMPRESSION_RATIO_CHECK(size, len)) {
                     if (valfree) efree(buf);
                     data = erealloc(data, size);
                     *val = data;
@@ -2351,30 +2372,47 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
         case REDIS_COMPRESSION_LZ4:
 #ifdef HAVE_REDIS_LZ4
             {
-                char *data;
-                int size;
-                int old_len = len;
-                long offset = sizeof(int) + 1;
+                /* Compressing empty data is pointless */
+                if (len < 1)
+                    break;
 
-                size = LZ4_compressBound(len) + offset;
-                data = emalloc(size + offset);
-                data[0] = '\0';
-                memcpy(data + 1, &old_len, sizeof(int));
-
-                if (redis_sock->compression_level <= 0 || redis_sock->compression_level > REDIS_LZ4_MAX_CLEVEL) {
-                    size = LZ4_compress_default(buf, data + offset, len, size - offset - 1);
-                } else {
-                    size = LZ4_compress_HC(buf, data + offset, len, size - offset - 1, redis_sock->compression_level);
+                /* Compressing more than INT_MAX bytes would require multiple blocks */
+                if (len > INT_MAX) {
+                    php_error_docref(NULL, E_WARNING,
+                        "LZ4: compressing > %d bytes not supported", INT_MAX);
+                    break;
                 }
 
-                if (size <= 0 || PHP_REDIS_COMPRESSION_RATIO_CHECK(size)) {
-                    efree(data);
+                int old_len = len, lz4len, lz4bound;
+                uint8_t crc = crc8((uint8_t*)&old_len, sizeof(old_len));
+                char *lz4buf, *lz4pos;
+
+                lz4bound = LZ4_compressBound(len);
+                lz4buf = emalloc(REDIS_LZ4_HDR_SIZE + lz4bound);
+                lz4pos = lz4buf;
+
+                /* Copy and move past crc8 length checksum */
+                memcpy(lz4pos, &crc, sizeof(crc));
+                lz4pos += sizeof(crc);
+
+                /* Copy and advance past length */
+                memcpy(lz4pos, &old_len, sizeof(old_len));
+                lz4pos += sizeof(old_len);
+
+                if (redis_sock->compression_level <= 0 || redis_sock->compression_level > REDIS_LZ4_MAX_CLEVEL) {
+                    lz4len = LZ4_compress_default(buf, lz4pos, old_len, lz4bound);
+                } else {
+                    lz4len = LZ4_compress_HC(buf, lz4pos, old_len, lz4bound, redis_sock->compression_level);
+                }
+
+                if (lz4len <= 0 || PHP_REDIS_COMPRESSION_RATIO_CHECK(lz4len, len)) {
+                    efree(lz4buf);
                     break;
                 }
 
                 if (valfree) efree(buf);
-                *val = data;
-                *val_len = size + offset;
+                *val = lz4buf;
+                *val_len = lz4len + REDIS_LZ4_HDR_SIZE;
                 return 1;
             }
 #endif
@@ -2396,9 +2434,12 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
                 int i;
                 uint32_t res;
 
-                errno = E2BIG;
+                if (val_len == 0)
+                    break;
+
                 /* start from two-times bigger buffer and
                  * increase it exponentially  if needed */
+                errno = E2BIG;
                 for (i = 2; errno == E2BIG; i *= 2) {
                     data = emalloc(i * val_len);
                     if ((res = lzf_decompress(val, val_len, data, i * val_len)) == 0) {
@@ -2447,22 +2488,29 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
 #ifdef HAVE_REDIS_LZ4
             {
                 char *data;
-                int size, res;
-                long offset;
+                int datalen;
+                uint8_t lz4crc;
 
-                if (*val != '\0') {
+                /* We must have at least enough bytes for our header, and can't have more than
+                 * INT_MAX + our header size. */
+                if (val_len < REDIS_LZ4_HDR_SIZE || val_len > INT_MAX + REDIS_LZ4_HDR_SIZE)
                     break;
-                }
 
-                offset = sizeof(int);
-                memcpy(&size, val + 1, offset);
-                offset++;
+                /* Read in our header bytes */
+                memcpy(&lz4crc, val, sizeof(uint8_t));
+                val += sizeof(uint8_t); val_len -= sizeof(uint8_t);
+                memcpy(&datalen, val, sizeof(int));
+                val += sizeof(int); val_len -= sizeof(int);
 
-                data = emalloc(size + 1);
-                res = LZ4_decompress_safe(val + offset, data, val_len - offset, size);
-                if (res > 0) {
-                    if (redis_unserialize(redis_sock, data, size, z_ret) == 0) {
-                        ZVAL_STRINGL(z_ret, data, size);
+                /* Make sure our CRC matches (TODO:  Maybe issue a docref error?) */
+                if (crc8((uint8_t*)&datalen, sizeof(datalen)) != lz4crc)
+                    break;
+
+                /* Finally attempt decompression */
+                data = emalloc(datalen);
+                if (LZ4_decompress_safe(val, data, val_len, datalen) > 0) {
+                    if (redis_unserialize(redis_sock, data, datalen, z_ret) == 0) {
+                        ZVAL_STRINGL(z_ret, data, datalen);
                     }
                     efree(data);
                     return 1;

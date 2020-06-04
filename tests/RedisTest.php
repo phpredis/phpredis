@@ -16,10 +16,15 @@ class Redis_Test extends TestSuite
         'Cupertino'     => [-122.032182, 37.322998]
     ];
 
+    protected $opt_serializers = ['IGBINARY', 'MSGPACK', 'JSON' ];
+    protected $opt_compressors = ['ZSTD', 'LZF', 'LZ4'];
+
     protected $serializers = [
         Redis::SERIALIZER_NONE,
         Redis::SERIALIZER_PHP,
     ];
+
+    protected $compressors = [];
 
     /**
      * @var Redis
@@ -36,13 +41,26 @@ class Redis_Test extends TestSuite
      */
     protected $sessionSaveHandler = 'redis';
 
+    protected function getConstantID($type, $id) {
+        $name = sprintf("Redis::%s_%s", strtoupper($type), strtoupper($id));
+        if (defined($name))
+            return constant($name);
+        return false;
+    }
+
     public function setUp() {
         $this->redis = $this->newInstance();
         $info = $this->redis->info();
         $this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
 
-        if (defined('Redis::SERIALIZER_IGBINARY')) {
-            $this->serializers[] = Redis::SERIALIZER_IGBINARY;
+        foreach ($this->opt_serializers as $ser) {
+            if (($id = $this->getConstantID('serializer', $ser)) !== false)
+                $this->serializers[] = $id;
+        }
+
+        foreach ($this->opt_compressors as $cmp) {
+            if (($id = $this->getConstantID('compression', $cmp)) !== false)
+                $this->compressors[] = $id;
         }
     }
 
@@ -4480,6 +4498,32 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE);       // get ok
     }
 
+    public function testWrongCompression() {
+        foreach ($this->compressors as $compressor) {
+            $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+
+            /* Don't crash on empty data not actually compressed */
+            $this->redis->set('key', '');
+            $this->redis->setOption(Redis::OPT_COMPRESSION, $compressor);
+            $this->redis->get('key');
+
+            /* Iterate through data sizes and perform the same tests */
+            $arr_ab = [Redis::COMPRESSION_NONE, $compressor];
+            for($i = 1; $i < 65536; $i *= 2) {
+                foreach ([$arr_ab, array_reverse($arr_ab)] as $ab) {
+                    foreach ([str_repeat('A', $i), random_bytes($i)] as $data) {
+                        $this->redis->setOption(Redis::OPT_COMPRESSION, $a);
+                        $this->redis->set('key', $data);
+                        $this->redis->setOption(Redis::OPT_COMPRESSION, $b);
+                        $this->redis->get('key');
+                    }
+                }
+            }
+        }
+
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+    }
+
     public function testCompressionLZF()
     {
         if (!defined('Redis::COMPRESSION_LZF')) {
@@ -4583,6 +4627,18 @@ class Redis_Test extends TestSuite
         $val = 'xxxxxxxxxx';
         $this->redis->set('key', $val);
         $this->assertEquals($val, $this->redis->get('key'));
+
+        /* Empty data */
+        $this->redis->set('key', '');
+        $this->assertEquals('', $this->redis->get('key'));
+
+        /* Iterate through class sizes */
+        for ($i = 1; $i <= 65536; $i *= 2) {
+            foreach ([str_repeat('A', $i), random_bytes($i)] as $val) {
+                $this->redis->set('key', $val);
+                $this->assertEquals($val, $this->redis->get('key'));
+            }
+        }
     }
 
     public function testDumpRestore() {
