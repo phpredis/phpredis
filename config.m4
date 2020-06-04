@@ -173,7 +173,7 @@ if test "$PHP_REDIS" != "no"; then
   if test "$PHP_REDIS_LZF" != "no"; then
     AC_DEFINE(HAVE_REDIS_LZF, 1, [ ])
 
-    if test "$PHP_LIBLZF" == "yes" && test -x "$PKG_CONFIG" && $PKG_CONFIG --exists liblzf; then
+    if test "$PHP_LIBLZF" = "yes" && test -x "$PKG_CONFIG" && $PKG_CONFIG --exists liblzf; then
       AC_MSG_CHECKING(for liblzf using pkg-config)
 
       LIBLZF_INC=`$PKG_CONFIG liblzf --cflags`
@@ -244,7 +244,7 @@ if test "$PHP_REDIS" != "no"; then
   if test "$PHP_REDIS_ZSTD" != "no"; then
     AC_DEFINE(HAVE_REDIS_ZSTD, 1, [ ])
 
-    if test "$PHP_LIBZSTD" == "yes" && test -x "$PKG_CONFIG" && $PKG_CONFIG --exists libzstd; then
+    if test "$PHP_LIBZSTD" = "yes" && test -x "$PKG_CONFIG" && $PKG_CONFIG --exists libzstd; then
       AC_MSG_CHECKING(for libzstd using pkg-config)
 
       LIBZSTD_VER=`$PKG_CONFIG libzstd --modversion`
@@ -285,7 +285,7 @@ if test "$PHP_REDIS" != "no"; then
   fi
 
   AC_CHECK_PROG([GIT], [git], [yes], [no])
-  if test "$GIT" == "yes" && test -d "$srcdir/.git"; then
+  if test "$GIT" = "yes" && test -d "$srcdir/.git"; then
     AC_DEFINE_UNQUOTED(GIT_REVISION, ["$(git log -1 --format=%H)"], [ ])
   fi
 
