@@ -183,7 +183,6 @@ typedef struct clusterFoldItem clusterFoldItem;
 
 /* RedisCluster implementation structure */
 typedef struct redisCluster {
-    zend_string *auth;
 
     /* Timeout and read timeout (for normal operations) */
     double timeout;

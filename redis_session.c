@@ -962,7 +962,7 @@ PS_OPEN_FUNC(rediscluster) {
 
     c = cluster_create(timeout, read_timeout, failover, persistent);
     if (auth && auth_len > 0) {
-        c->auth = zend_string_init(auth, auth_len, 0);
+        c->flags->auth = zend_string_init(auth, auth_len, 0);
     }
 
     redisCachedCluster *cc;
