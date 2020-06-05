@@ -16,15 +16,10 @@ class Redis_Test extends TestSuite
         'Cupertino'     => [-122.032182, 37.322998]
     ];
 
-    protected $opt_serializers = ['IGBINARY', 'MSGPACK', 'JSON' ];
-    protected $opt_compressors = ['ZSTD', 'LZF', 'LZ4'];
-
     protected $serializers = [
         Redis::SERIALIZER_NONE,
         Redis::SERIALIZER_PHP,
     ];
-
-    protected $compressors = [];
 
     /**
      * @var Redis
@@ -53,15 +48,8 @@ class Redis_Test extends TestSuite
         $info = $this->redis->info();
         $this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
 
-        foreach ($this->opt_serializers as $ser) {
-            if (($id = $this->getConstantID('serializer', $ser)) !== false)
-                $this->serializers[] = $id;
-        }
-
-        foreach ($this->opt_compressors as $cmp) {
-            if (($id = $this->getConstantID('compression', $cmp)) !== false)
-                $this->compressors[] = $id;
-        }
+        if (defined('Redis::SERIALIZER_IGBINARY'))
+            $this->serializers[] = Redis::SERIALIZER_IGBINARY;
     }
 
     protected function minVersionCheck($version) {
@@ -2650,12 +2638,10 @@ class Redis_Test extends TestSuite
         $this->redis->del('key');
         $this->assertTrue($this->redis->object('encoding', 'key') === FALSE);
         $this->assertTrue($this->redis->object('refcount', 'key') === FALSE);
-        $this->assertTrue($this->redis->object('idletime', 'key') === FALSE);
 
         $this->redis->set('key', 'value');
         $this->assertTrue($this->redis->object('encoding', 'key') === $str_small_encoding);
         $this->assertTrue($this->redis->object('refcount', 'key') === 1);
-        $this->assertTrue($this->redis->object('idletime', 'key') === 0);
 
         $this->redis->del('key');
         $this->redis->lpush('key', 'value');
@@ -2666,20 +2652,17 @@ class Redis_Test extends TestSuite
         $this->assertTrue($str_encoding === "ziplist" || $str_encoding === 'quicklist');
 
         $this->assertTrue($this->redis->object('refcount', 'key') === 1);
-        $this->assertTrue($this->redis->object('idletime', 'key') === 0);
 
         $this->redis->del('key');
         $this->redis->sadd('key', 'value');
         $this->assertTrue($this->redis->object('encoding', 'key') === "hashtable");
         $this->assertTrue($this->redis->object('refcount', 'key') === 1);
-        $this->assertTrue($this->redis->object('idletime', 'key') === 0);
 
         $this->redis->del('key');
         $this->redis->sadd('key', 42);
         $this->redis->sadd('key', 1729);
         $this->assertTrue($this->redis->object('encoding', 'key') === "intset");
         $this->assertTrue($this->redis->object('refcount', 'key') === 1);
-        $this->assertTrue($this->redis->object('idletime', 'key') === 0);
 
         $this->redis->del('key');
         $this->redis->lpush('key', str_repeat('A', pow(10,6))); // 1M elements, too big for a ziplist.
@@ -2688,7 +2671,6 @@ class Redis_Test extends TestSuite
         $this->assertTrue($str_encoding === "linkedlist" || $str_encoding == "quicklist");
 
         $this->assertTrue($this->redis->object('refcount', 'key') === 1);
-        $this->assertTrue($this->redis->object('idletime', 'key') === 0);
     }
 
     public function testMultiExec() {
@@ -4496,32 +4478,6 @@ class Redis_Test extends TestSuite
         // revert
         $this->assertTrue($this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE) === TRUE);     // set ok
         $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE);       // get ok
-    }
-
-    public function testWrongCompression() {
-        foreach ($this->compressors as $compressor) {
-            $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
-
-            /* Don't crash on empty data not actually compressed */
-            $this->redis->set('key', '');
-            $this->redis->setOption(Redis::OPT_COMPRESSION, $compressor);
-            $this->redis->get('key');
-
-            /* Iterate through data sizes and perform the same tests */
-            $arr_ab = [Redis::COMPRESSION_NONE, $compressor];
-            for($i = 1; $i < 65536; $i *= 2) {
-                foreach ([$arr_ab, array_reverse($arr_ab)] as $ab) {
-                    foreach ([str_repeat('A', $i), random_bytes($i)] as $data) {
-                        $this->redis->setOption(Redis::OPT_COMPRESSION, $a);
-                        $this->redis->set('key', $data);
-                        $this->redis->setOption(Redis::OPT_COMPRESSION, $b);
-                        $this->redis->get('key');
-                    }
-                }
-            }
-        }
-
-        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
     }
 
     public function testCompressionLZF()
