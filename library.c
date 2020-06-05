@@ -1943,7 +1943,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
     redis_sock->stream = php_stream_xport_create(host, host_len,
         0, STREAM_XPORT_CLIENT | STREAM_XPORT_CONNECT,
         persistent_id ? ZSTR_VAL(persistent_id) : NULL,
-        tv_ptr, NULL, &estr, &err);
+        tv_ptr, redis_sock->stream_ctx, &estr, &err);
 
     if (persistent_id) {
         zend_string_release(persistent_id);
@@ -2063,6 +2063,24 @@ redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len)
         // Copy in our new error message
         redis_sock->err = zend_string_init(msg, msg_len, 0);
     }
+}
+
+PHP_REDIS_API int
+redis_sock_set_stream_context(RedisSock *redis_sock, zval *options)
+{
+    zend_string *zkey;
+    zval *z_ele;
+
+    if (!redis_sock || Z_TYPE_P(options) != IS_ARRAY) {
+        return FAILURE;
+    } else if (!redis_sock->stream_ctx) {
+        redis_sock->stream_ctx = php_stream_context_alloc();
+    }
+    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(options), zkey, z_ele) {
+        php_stream_context_set_option(redis_sock->stream_ctx, "ssl", ZSTR_VAL(zkey), z_ele);
+    } ZEND_HASH_FOREACH_END();
+
+    return SUCCESS;
 }
 
 /**

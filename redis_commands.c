@@ -1303,9 +1303,10 @@ int redis_blocking_pop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   char **cmd, int *cmd_len, short *slot, void **ctx)
 {
+    smart_string cmdstr = {0};
     zval *z_value, *z_opts=NULL;
     char *key = NULL, *exp_type = NULL, *set_type = NULL;
-    long expire = -1;
+    long expire = -1, exp_set = 0, keep_ttl = 0;
     size_t key_len;
 
     // Make sure the function is being called correctly
@@ -1336,7 +1337,9 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ZEND_HASH_FOREACH_KEY_VAL(kt, idx, zkey, v) {
             ZVAL_DEREF(v);
             /* Detect PX or EX argument and validate timeout */
-            if (zkey && IS_EX_PX_ARG(ZSTR_VAL(zkey))) {
+            if (zkey && ZSTR_IS_EX_PX_ARG(zkey)) {
+                exp_set = 1;
+
                 /* Set expire type */
                 exp_type = ZSTR_VAL(zkey);
 
@@ -1346,44 +1349,54 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 } else if (Z_TYPE_P(v) == IS_STRING) {
                     expire = atol(Z_STRVAL_P(v));
                 }
-
-                /* Expiry can't be set < 1 */
-                if (expire < 1) {
-                    return FAILURE;
-                }
-            } else if (Z_TYPE_P(v) == IS_STRING && IS_NX_XX_ARG(Z_STRVAL_P(v))) {
+            } else if (ZVAL_STRICMP_STATIC(v, "KEEPTTL")) {
+                keep_ttl  = 1;
+            } else if (ZVAL_IS_NX_XX_ARG(v)) {
                 set_type = Z_STRVAL_P(v);
             }
         } ZEND_HASH_FOREACH_END();
     } else if (z_opts && Z_TYPE_P(z_opts) == IS_LONG) {
-        /* Grab expiry and fail if it's < 1 */
         expire = Z_LVAL_P(z_opts);
-        if (expire < 1) {
-            return FAILURE;
-        }
+        exp_set = 1;
     }
 
-    /* Now let's construct the command we want */
-    if (exp_type && set_type) {
-        /* SET <key> <value> NX|XX PX|EX <timeout> */
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kvsls", key, key_len, z_value,
-                                     exp_type, 2, expire, set_type, 2);
-    } else if (exp_type) {
-        /* SET <key> <value> PX|EX <timeout> */
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kvsl", key, key_len, z_value,
-                                     exp_type, 2, expire);
-    } else if (set_type) {
-        /* SET <key> <value> NX|XX */
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kvs", key, key_len, z_value,
-                                     set_type, 2);
-    } else if (expire > 0) {
-        /* Backward compatible SETEX redirection */
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SETEX", "klv", key, key_len, expire,
-                                     z_value);
-    } else {
-        /* SET <key> <value> */
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SET", "kv", key, key_len, z_value);
+    /* Protect the user from syntax errors but give them some info about what's wrong */
+    if (exp_set && expire < 1) {
+        php_error_docref(NULL, E_WARNING, "EXPIRE can't be < 1");
+        return FAILURE;
+    } else if (exp_type && keep_ttl) {
+        php_error_docref(NULL, E_WARNING, "KEEPTTL can't be combined with EX or PX option");
+        return FAILURE;
     }
+
+    /* Backward compatibility:  If we are passed no options except an EXPIRE ttl, we
+     * actually execute a SETEX command */
+    if (expire > 0 && !exp_type && !set_type && !keep_ttl) {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SETEX", "klv", key, key_len, expire, z_value);
+        return SUCCESS;
+    }
+
+    /* Calculate argc based on options set */
+    int argc = 2 + (exp_type ? 2 : 0) + (set_type != NULL) + (keep_ttl != 0);
+
+    /* Initial SET <key> <value> */
+    redis_cmd_init_sstr(&cmdstr, argc, "SET", 3);
+    redis_cmd_append_sstr_key(&cmdstr, key, key_len, redis_sock, slot);
+    redis_cmd_append_sstr_zval(&cmdstr, z_value, redis_sock);
+
+    if (exp_type) {
+        redis_cmd_append_sstr(&cmdstr, exp_type, strlen(exp_type));
+        redis_cmd_append_sstr_long(&cmdstr, expire);
+    }
+
+    if (set_type)
+        redis_cmd_append_sstr(&cmdstr, set_type, strlen(set_type));
+    if (keep_ttl)
+        redis_cmd_append_sstr(&cmdstr, "KEEPTTL", 7);
+
+    /* Push command and length to the caller */
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
 
     return SUCCESS;
 }
@@ -1671,7 +1684,7 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             mem_len = ZSTR_LEN(zkey);
             mem = ZSTR_VAL(zkey);
         } else {
-            mem_len = snprintf(kbuf, sizeof(kbuf), "%ld", (long)idx);
+            mem_len = snprintf(kbuf, sizeof(kbuf), ZEND_LONG_FMT, idx);
             mem = (char*)kbuf;
         }
 
@@ -2569,15 +2582,11 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         zval *z_opt;
         ZEND_HASH_FOREACH_VAL(Z_ARRVAL(z_args[1]), z_opt) {
             if (Z_TYPE_P(z_opt) == IS_STRING) {
-                if (Z_STRLEN_P(z_opt) == 2) {
-                    if (IS_NX_XX_ARG(Z_STRVAL_P(z_opt))) {
-                        exp_type = Z_STRVAL_P(z_opt);
-                    } else if (strncasecmp(Z_STRVAL_P(z_opt), "ch", 2) == 0) {
-                        ch = 1;
-                    }
-                } else if (Z_STRLEN_P(z_opt) == 4 &&
-                    strncasecmp(Z_STRVAL_P(z_opt), "incr", 4) == 0
-                ) {
+                if (ZVAL_IS_NX_XX_ARG(z_opt)) {
+                    exp_type = Z_STRVAL_P(z_opt);
+                } else if (ZVAL_STRICMP_STATIC(z_opt, "CH")) {
+                    ch = 1;
+                } else if (ZVAL_STRICMP_STATIC(z_opt, "INCR")) {
                     if (num > 4) {
                         // Only one score-element pair can be specified in this mode.
                         efree(z_args);

@@ -1,4 +1,3 @@
-sudo: required
 language: php
 php:
   - 7.0
@@ -32,6 +31,7 @@ addons:
     - clang
     - libzstd1-dev
     - valgrind
+    - stunnel
 before_install:
   - phpize
   - CFGARGS="--enable-redis-lzf --enable-redis-zstd"
@@ -47,6 +47,9 @@ before_script:
   - for PORT in $(seq 26379 26380); do wget download.redis.io/redis-stable/sentinel.conf -O $PORT.conf; echo sentinel auth-pass mymaster phpredis >> $PORT.conf; redis-server $PORT.conf --port $PORT --daemonize yes --sentinel; done
   - echo yes | redis-cli --cluster create $(seq -f 127.0.0.1:%g 7000 7011) --cluster-replicas 3 -a phpredis
   - echo 'extension = redis.so' >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+  - openssl req -x509 -newkey rsa:1024 -nodes -keyout stunnel.key -out stunnel.pem -days 1 -subj '/CN=localhost'
+  - echo -e 'key=stunnel.key\ncert=stunnel.pem\npid=/tmp/stunnel.pid\n[redis]\naccept=6378\nconnect=6379' > stunnel.conf
+  - stunnel stunnel.conf
 script:
   - php tests/TestRedis.php --class Redis --auth phpredis
   - php tests/TestRedis.php --class RedisArray --auth phpredis
