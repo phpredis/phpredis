@@ -5,13 +5,8 @@
 #include <php.h>
 #include <stddef.h>
 
-/* Redis cluster hash slots and N-1 which we'll use to find it */
-#define REDIS_CLUSTER_SLOTS 16384
-#define REDIS_CLUSTER_MOD   (REDIS_CLUSTER_SLOTS-1)
-
 /* Get attached object context */
-#define GET_CONTEXT() \
-    ((redisCluster *)((char *)Z_OBJ_P(getThis()) - XtOffsetOf(redisCluster, std)))
+#define GET_CONTEXT() PHPREDIS_ZVAL_GET_OBJECT(redisCluster, getThis())
 
 /* Command building/processing is identical for every command */
 #define CLUSTER_BUILD_CMD(name, c, cmd, cmd_len, slot) \
@@ -96,18 +91,11 @@
     } \
     resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx); 
 
-/* For the creation of RedisCluster specific exceptions */
-PHP_REDIS_API zend_class_entry *rediscluster_get_exception_base(int root);
-
 /* Create cluster context */
 zend_object *create_cluster_context(zend_class_entry *class_type);
 
 /* Free cluster context struct */
 void free_cluster_context(zend_object *object);
-
-
-/* Inittialize our class with PHP */
-void init_rediscluster(void);
 
 /* RedisCluster method implementation */
 PHP_METHOD(RedisCluster, __construct);

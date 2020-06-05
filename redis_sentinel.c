@@ -93,7 +93,7 @@ PHP_METHOD(RedisSentinel, __construct)
         }
     }
 
-    obj = PHPREDIS_GET_OBJECT(redis_sentinel_object, getThis());
+    obj = PHPREDIS_ZVAL_GET_OBJECT(redis_sentinel_object, getThis());
     obj->sock = redis_sock_create(ZSTR_VAL(host), ZSTR_LEN(host), port,
         timeout, read_timeout, persistent, persistent_id, retry_interval);
 }

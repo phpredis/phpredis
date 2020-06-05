@@ -82,11 +82,9 @@ redis_sock_get_connection_pool(RedisSock *redis_sock)
 {
     ConnectionPool *p;
     zend_string *persistent_id = strpprintf(0, "phpredis_%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
-    zend_resource *le = zend_hash_find_ptr(&EG(persistent_list), persistent_id);
+    zend_resource *le;
 
-    if (le) {
-        p = le->ptr;
-    } else {
+    if ((le = zend_hash_find_ptr(&EG(persistent_list), persistent_id)) == NULL) {
         p = pecalloc(1, sizeof(*p), 1);
         zend_llist_init(&p->list, sizeof(php_stream *), NULL, 1);
 #if (PHP_VERSION_ID < 70300)
@@ -100,7 +98,7 @@ redis_sock_get_connection_pool(RedisSock *redis_sock)
 #endif
     }
     zend_string_release(persistent_id);
-    return p;
+    return le->ptr;
 }
 
 /* Helper to reselect the proper DB number when we reconnect */
@@ -254,6 +252,7 @@ redis_check_eof(RedisSock *redis_sock, int no_throw)
                         errmsg = "AUTH failed while reconnecting";
                         break;
                     }
+                    redis_sock->status = REDIS_SOCK_STATUS_READY;
                     /* If we're using a non-zero db, reselect it */
                     if (redis_sock->dbNumber && reselect_db(redis_sock) != 0) {
                         errmsg = "SELECT failed while reconnecting";
@@ -743,16 +742,13 @@ int
 redis_cmd_append_sstr_dbl(smart_string *str, double value)
 {
     char tmp[64];
-    int len, retval;
+    int len;
 
     /* Convert to string */
     len = snprintf(tmp, sizeof(tmp), "%.16g", value);
 
     // Append the string
-    retval = redis_cmd_append_sstr(str, tmp, len);
-
-    /* Return new length */
-    return retval;
+    return redis_cmd_append_sstr(str, tmp, len);
 }
 
 /* Append a zval to a redis command.  The value will be serialized if we are
@@ -1811,7 +1807,7 @@ redis_sock_create(char *host, int host_len, int port,
 
     redis_sock->err = NULL;
 
-    redis_sock->scan = REDIS_SCAN_NORETRY;
+    redis_sock->scan = 0;
 
     redis_sock->readonly = 0;
     redis_sock->tcp_keepalive = 0;
@@ -1912,10 +1908,11 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
                 zend_llist_remove_tail(&p->list);
 
                 if (redis_sock_check_liveness(redis_sock) == SUCCESS) {
-                    redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
+                    redis_sock->status = REDIS_SOCK_STATUS_READY;
                     return SUCCESS;
                 } else if (redis_sock->stream) {
                     php_stream_pclose(redis_sock->stream);
+                    redis_sock->stream = NULL;
                 }
                 p->nb_active--;
             }
@@ -1996,12 +1993,23 @@ redis_sock_server_open(RedisSock *redis_sock)
 {
     if (redis_sock) {
         switch (redis_sock->status) {
-        case REDIS_SOCK_STATUS_FAILED:
-            return FAILURE;
         case REDIS_SOCK_STATUS_DISCONNECTED:
-            return redis_sock_connect(redis_sock);
-        default:
+            if (redis_sock_connect(redis_sock) != SUCCESS) {
+                break;
+            } else if (redis_sock->status == REDIS_SOCK_STATUS_READY) {
+                return SUCCESS;
+            }
+            // fall through
+        case REDIS_SOCK_STATUS_CONNECTED:
+            if (redis_sock->auth && redis_sock_auth(redis_sock) != SUCCESS) {
+                break;
+            }
+            redis_sock->status = REDIS_SOCK_STATUS_READY;
+            // fall through
+        case REDIS_SOCK_STATUS_READY:
             return SUCCESS;
+        default:
+            return FAILURE;
         }
     }
     return FAILURE;
@@ -2535,7 +2543,7 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
     uint8_t *val8;
 #endif
 
-    *val = NULL;
+    *val = "";
     *val_len = 0;
     switch(redis_sock->serializer) {
         case REDIS_SERIALIZER_NONE:

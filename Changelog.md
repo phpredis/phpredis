@@ -5,6 +5,63 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack.com](https://audiomack.com)
+- [Till Krüss](https://github.com/tillkruss)
+
+### Changed
+
+- Use the portable `ZEND_LONG_FORMAT` family instead of C format specifiers
+  [b9b383f4](https://github.com/phpredis/phpredis/commit/b9b383f4)
+  ([Remi Collet](https://github.com/remicollet))
+
+- Make unit test authentication configurable
+  [201a9759](https://github.com/phpredis/phpredis/commit/201a9759)
+  ([Michel Grunder](https://github.com/michael-grunder))
+
+- Various small changes in library and cluster_library
+  [73212e14](https://github.com/phpredis/phpredis/commit/73212e14),
+  [460c8f29](https://github.com/phpredis/phpredis/commit/460c8f29)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- PHP 8 compatibility
+  [9ee94ca4](https://github.com/phpredis/phpredis/commit/9ee94ca4),
+  [7e4c7b3e](https://github.com/phpredis/phpredis/commit/7e4c7b3e)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- Refactor PHPREDIS_GET_OBJECT macro
+  [d5dadaf6](https://github.com/phpredis/phpredis/commit/d5dadaf6),
+  [190c0d34](https://github.com/phpredis/phpredis/commit/190c0d34)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- Fix documentation to show lPush and rPush are variadic
+  [6808cd6a](https://github.com/phpredis/phpredis/commit/6808cd6a)
+  ([Michel Grunder](https://github.com/michael-grunder))
+
+---
+
+## [5.2.2] - 2020-05-05 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.2), [PECL](https://pecl.php.net/package/redis/5.2.2))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack.com](https://audiomack.com)
+- [Till Krüss](https://github.com/tillkruss)
+
+### Changed
+
+- Inexpensive liveness check, and making ECHO optional
+  [56898f81](https://github.com/phpredis/phpredis/commit/56898f81)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- Move `AUTH` to `redis_sock_server_open`
+  [80f2529b](https://github.com/phpredis/phpredis/commit/80f2529b)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+---
+
 ## [5.2.1] - 2020-03-19 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.1), [PECL](https://pecl.php.net/package/redis/5.2.1))
 
 ### Sponsors :sparkling_heart:
@@ -21,6 +78,8 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Fix segfault on closing persistent stream
   [b7f9df75](https://github.com/phpredis/phpredis/commit/b7f9df75)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+---
 
 ## [5.2.0] - 2020-03-02 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.2.0), [PECL](https://pecl.php.net/package/redis/5.2.0))
 

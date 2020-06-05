@@ -5,7 +5,6 @@ require_once(dirname($_SERVER['PHP_SELF'])."/TestSuite.php");
 class Redis_Test extends TestSuite
 {
     const PORT = 6379;
-    const AUTH = NULL; //replace with a string to use Redis authentication
 
     /* City lat/long */
     protected $cities = [
@@ -53,11 +52,20 @@ class Redis_Test extends TestSuite
     }
 
     protected function minVersionCheck($version) {
-        return version_compare($this->version, $version, "ge");
+        return version_compare($this->version, $version) >= 0;
     }
 
     protected function mstime() {
         return round(microtime(true)*1000);
+    }
+
+    protected function getFullHostPath()
+    {
+        $fullHostPath = parent::getFullHostPath();
+        if (isset($fullHostPath) && $this->getAuth()) {
+            $fullHostPath .= '?auth=' . $this->getAuth();
+        }
+        return $fullHostPath;
     }
 
     protected function newInstance() {
@@ -65,8 +73,8 @@ class Redis_Test extends TestSuite
 
         $r->connect($this->getHost(), self::PORT);
 
-        if(self::AUTH) {
-            $this->assertTrue($r->auth(self::AUTH));
+        if($this->getAuth()) {
+            $this->assertTrue($r->auth($this->getAuth()));
         }
         return $r;
     }
@@ -92,7 +100,7 @@ class Redis_Test extends TestSuite
     public function testMinimumVersion()
     {
         // Minimum server version required for tests
-        $this->assertTrue(version_compare($this->version, "2.4.0", "ge"));
+        $this->assertTrue(version_compare($this->version, "2.4.0") >= 0);
     }
 
     public function testPing() {
@@ -125,7 +133,7 @@ class Redis_Test extends TestSuite
     // can't be sure what's going on in the instance, but we can do some things.
     public function testPubSub() {
         // Only available since 2.8.0
-        if(version_compare($this->version, "2.8.0", "lt")) {
+        if (version_compare($this->version, "2.8.0") < 0) {
             $this->markTestSkipped();
             return;
         }
@@ -205,7 +213,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testBitPos() {
-        if(version_compare($this->version, "2.8.7", "lt")) {
+        if (version_compare($this->version, "2.8.7") < 0) {
             $this->MarkTestSkipped();
             return;
         }
@@ -317,7 +325,7 @@ class Redis_Test extends TestSuite
     /* Extended SET options for Redis >= 2.6.12 */
     public function testExtendedSet() {
         // Skip the test if we don't have a new enough version of Redis
-        if(version_compare($this->version, '2.6.12', 'lt')) {
+        if (version_compare($this->version, '2.6.12') < 0) {
             $this->markTestSkipped();
             return;
         }
@@ -562,7 +570,7 @@ class Redis_Test extends TestSuite
     public function testIncrByFloat()
     {
         // incrbyfloat is new in 2.6.0
-        if (version_compare($this->version, "2.5.0", "lt")) {
+        if (version_compare($this->version, "2.5.0") < 0) {
             $this->markTestSkipped();
         }
 
@@ -701,7 +709,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testUnlink() {
-        if (version_compare($this->version, "4.0.0", "lt")) {
+        if (version_compare($this->version, "4.0.0") < 0) {
             $this->markTestSkipped();
             return;
         }
@@ -1037,7 +1045,7 @@ class Redis_Test extends TestSuite
         }
 
         // SORT list → [ghi, def, abc]
-        if (version_compare($this->version, "2.5.0", "lt")) {
+        if (version_compare($this->version, "2.5.0") < 0) {
             $this->assertEquals(array_reverse($list), $this->redis->sort('list'));
             $this->assertEquals(array_reverse($list), $this->redis->sort('list', ['sort' => 'asc']));
         } else {
@@ -1078,7 +1086,7 @@ class Redis_Test extends TestSuite
     }
 
     // SORT list → [ghi, abc, def]
-    if (version_compare($this->version, "2.5.0", "lt")) {
+    if (version_compare($this->version, "2.5.0") < 0) {
         $this->assertEquals(array_reverse($list), $this->redis->sort('list', ['sort' => 'desc']));
     } else {
         // TODO rewrite, from 2.6.0 release notes:
@@ -1809,7 +1817,7 @@ class Redis_Test extends TestSuite
         $this->assertEquals($this->redis->ttl('x'), -1);
 
         // A key that doesn't exist (> 2.8 will return -2)
-        if(version_compare($this->version, "2.8.0", "gte")) {
+        if(version_compare($this->version, "2.8.0") >= 0) {
             $this->redis->del('x');
             $this->assertEquals($this->redis->ttl('x'), -2);
         }
@@ -1863,7 +1871,7 @@ class Redis_Test extends TestSuite
 
     public function testWait() {
         // Closest we can check based on redis commmit history
-        if(version_compare($this->version, '2.9.11', 'lt')) {
+        if(version_compare($this->version, '2.9.11') < 0) {
             $this->markTestSkipped();
             return;
         }
@@ -1912,7 +1920,7 @@ class Redis_Test extends TestSuite
                 "total_commands_processed",
                 "role"
             ];
-            if (version_compare($this->version, "2.5.0", "lt")) {
+            if (version_compare($this->version, "2.5.0") < 0) {
                 array_push($keys,
                     "changes_since_last_save",
                     "bgsave_in_progress",
@@ -1935,7 +1943,7 @@ class Redis_Test extends TestSuite
     public function testInfoCommandStats() {
 
     // INFO COMMANDSTATS is new in 2.6.0
-    if (version_compare($this->version, "2.5.0", "lt")) {
+    if (version_compare($this->version, "2.5.0") < 0) {
         $this->markTestSkipped();
     }
 
@@ -1955,7 +1963,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testSwapDB() {
-        if (version_compare($this->version, "4.0.0", "lt")) {
+        if (version_compare($this->version, "4.0.0") < 0) {
             $this->markTestSkipped();
         }
 
@@ -2069,7 +2077,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue(1 === $this->redis->zAdd('key', 0, 'val0'));
         $this->assertTrue(1 === $this->redis->zAdd('key', 2, 'val2'));
         $this->assertTrue(2 === $this->redis->zAdd('key', 4, 'val4', 5, 'val5')); // multiple parameters
-        if (version_compare($this->version, "3.0.2", "lt")) {
+        if (version_compare($this->version, "3.0.2") < 0) {
             $this->assertTrue(1 === $this->redis->zAdd('key', 1, 'val1'));
             $this->assertTrue(1 === $this->redis->zAdd('key', 3, 'val3'));
         } else {
@@ -2363,7 +2371,7 @@ class Redis_Test extends TestSuite
 
     public function testZRangeByLex() {
         /* ZRANGEBYLEX available on versions >= 2.8.9 */
-        if(version_compare($this->version, "2.8.9", "lt")) {
+        if(version_compare($this->version, "2.8.9") < 0) {
             $this->MarkTestSkipped();
             return;
         }
@@ -2382,7 +2390,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testZLexCount() {
-        if (version_compare($this->version, "2.8.9", "lt")) {
+        if (version_compare($this->version, "2.8.9") < 0) {
             $this->MarkTestSkipped();
             return;
         }
@@ -2412,7 +2420,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testZRemRangeByLex() {
-        if (version_compare($this->version, "2.8.9", "lt")) {
+        if (version_compare($this->version, "2.8.9") < 0) {
             $this->MarkTestSkipped();
             return;
         }
@@ -2431,7 +2439,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testBZPop() {
-        if (version_compare($this->version, "5.0.0", "lt")) {
+        if (version_compare($this->version, "5.0.0") < 0) {
             $this->MarkTestSkipped();
             return;
         }
@@ -2453,7 +2461,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testZPop() {
-        if (version_compare($this->version, "5.0.0", "lt")) {
+        if (version_compare($this->version, "5.0.0") < 0) {
             $this->MarkTestSkipped();
             return;
         }
@@ -2542,7 +2550,7 @@ class Redis_Test extends TestSuite
         $this->redis->hSet('h', 'y', 'not-a-number');
         $this->assertTrue(FALSE === $this->redis->hIncrBy('h', 'y', 1));
 
-        if (version_compare($this->version, "2.5.0", "ge")) {
+        if (version_compare($this->version, "2.5.0") >= 0) {
             // hIncrByFloat
             $this->redis->del('h');
             $this->assertTrue(1.5 === $this->redis->hIncrByFloat('h','x', 1.5));
@@ -2598,7 +2606,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue('' === $h1['t']);
 
         // hstrlen
-        if (version_compare($this->version, '3.2.0', 'ge')) {
+        if (version_compare($this->version, '3.2.0') >= 0) {
             $this->redis->del('h');
             $this->assertTrue(0 === $this->redis->hStrLen('h', 'x')); // key doesn't exist
             $this->redis->hSet('h', 'foo', 'bar');
@@ -2629,7 +2637,7 @@ class Redis_Test extends TestSuite
     public function testObject() {
         /* Version 3.0.0 (represented as >= 2.9.0 in redis info)  and moving
          * forward uses "embstr" instead of "raw" for small string values */
-        if (version_compare($this->version, "2.9.0", "lt")) {
+        if (version_compare($this->version, "2.9.0") < 0) {
             $str_small_encoding = "raw";
         } else {
             $str_small_encoding = "embstr";
@@ -4599,7 +4607,7 @@ class Redis_Test extends TestSuite
 
     public function testDumpRestore() {
 
-        if (version_compare($this->version, "2.5.0", "lt")) {
+        if (version_compare($this->version, "2.5.0") < 0) {
             $this->markTestSkipped();
         }
 
@@ -4668,7 +4676,7 @@ class Redis_Test extends TestSuite
 
     public function testScript() {
 
-        if (version_compare($this->version, "2.5.0", "lt")) {
+        if (version_compare($this->version, "2.5.0") < 0) {
             $this->markTestSkipped();
         }
 
@@ -4700,7 +4708,7 @@ class Redis_Test extends TestSuite
 
     public function testEval() {
 
-        if (version_compare($this->version, "2.5.0", "lt")) {
+        if (version_compare($this->version, "2.5.0") < 0) {
             $this->markTestSkipped();
         }
 
@@ -4820,7 +4828,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testEvalSHA() {
-        if (version_compare($this->version, "2.5.0", "lt")) {
+        if (version_compare($this->version, "2.5.0") < 0) {
             $this->markTestSkipped();
         }
 
@@ -4980,7 +4988,7 @@ class Redis_Test extends TestSuite
 
     public function testTime() {
 
-        if (version_compare($this->version, "2.5.0", "lt")) {
+        if (version_compare($this->version, "2.5.0") < 0) {
             $this->markTestSkipped();
         }
 
@@ -5002,7 +5010,7 @@ class Redis_Test extends TestSuite
         // Simple introspection tests
         $this->assertTrue($this->redis->getHost() === $this->getHost());
         $this->assertTrue($this->redis->getPort() === self::PORT);
-        $this->assertTrue($this->redis->getAuth() === self::AUTH);
+        $this->assertTrue($this->redis->getAuth() === $this->getAuth());
     }
 
     /**
@@ -5022,7 +5030,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testScan() {
-        if(version_compare($this->version, "2.8.0", "lt")) {
+        if(version_compare($this->version, "2.8.0") < 0) {
             $this->markTestSkipped();
             return;
         }
@@ -5087,11 +5095,45 @@ class Redis_Test extends TestSuite
                 }
             }
         }
+    }
 
+    public function testScanPrefix() {
+        $keyid = uniqid();
+
+        /* Set some keys with different prefixes */
+        $arr_prefixes = ['prefix-a:', 'prefix-b:'];
+        foreach ($arr_prefixes as $str_prefix) {
+            $this->redis->setOption(Redis::OPT_PREFIX, $str_prefix);
+            $this->redis->set("$keyid", "LOLWUT");
+            $arr_all_keys["${str_prefix}${keyid}"] = true;
+        }
+
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_PREFIX);
+
+        foreach ($arr_prefixes as $str_prefix) {
+            $this->redis->setOption(Redis::OPT_PREFIX, $str_prefix);
+            $it = NULL;
+            $arr_keys = $this->redis->scan($it, "*$keyid*");
+            $this->assertEquals($arr_keys, ["${str_prefix}${keyid}"]);
+        }
+
+        /* Unset the prefix option */
+        $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NOPREFIX);
+
+        $it = NULL;
+        while ($arr_keys = $this->redis->scan($it, "*$keyid*")) {
+            foreach ($arr_keys as $str_key) {
+                unset($arr_all_keys[$str_key]);
+            }
+        }
+
+        /* Should have touched every key */
+        $this->assertTrue(count($arr_all_keys) == 0);
     }
 
     public function testHScan() {
-        if(version_compare($this->version, "2.8.0", "lt")) {
+        if (version_compare($this->version, "2.8.0") < 0) {
             $this->markTestSkipped();
             return;
         }
@@ -5131,7 +5173,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testSScan() {
-        if(version_compare($this->version, "2.8.0", "lt")) {
+        if (version_compare($this->version, "2.8.0") < 0) {
             $this->markTestSkipped();
             return;
         }
@@ -5163,7 +5205,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testZScan() {
-        if(version_compare($this->version, "2.8.0", "lt")) {
+        if (version_compare($this->version, "2.8.0") < 0) {
             $this->markTestSkipped();
             return;
         }
@@ -5246,7 +5288,7 @@ class Redis_Test extends TestSuite
 
     public function testPFCommands() {
         // Isn't available until 2.8.9
-        if(version_compare($this->version, "2.8.9", "lt")) {
+        if (version_compare($this->version, "2.8.9") < 0) {
             $this->markTestSkipped();
             return;
         }
@@ -6030,7 +6072,9 @@ class Redis_Test extends TestSuite
                 } else {
                     @$obj_r->connect($arr_args[0]);
                 }
-
+                if ($this->getAuth()) {
+                    $this->assertTrue($obj_r->auth($this->getAuth()));
+                }
                 $this->assertTrue($obj_r->ping());
             }
         } catch (Exception $ex) {
@@ -6057,6 +6101,9 @@ class Redis_Test extends TestSuite
             $obj_r = new Redis();
             try {
                 @$obj_r->connect('localhost', $port);
+                if ($this->getAuth()) {
+                    $this->assertTrue($obj_r->auth($this->getAuth()));
+                }
                 $this->assertTrue($obj_r->ping());
             } catch(Exception $ex) {
                 $this->assertTrue(false);
@@ -6242,7 +6289,10 @@ class Redis_Test extends TestSuite
 
         for($i = 0; $i < 5; $i++) {
             $this->redis->connect($host, $port);
-            $this->assertEquals(true, $this->redis->ping());
+            if ($this->getAuth()) {
+                $this->assertTrue($this->redis->auth($this->getAuth()));
+            }
+            $this->assertTrue($this->redis->ping());
         }
     }
 
@@ -6510,21 +6560,26 @@ class Redis_Test extends TestSuite
                 $cmd .= $test_args;
             } else {
                 /* Only append specific extension directives if PHP hasn't been compiled with what we need statically */
-                $result   = shell_exec("$cmd --no-php-ini -m");
-                $redis    = strpos($result, 'redis') !== false;
-                $igbinary = strpos($result, 'igbinary') !== false;
-                $msgpack  = strpos($result, 'msgpack') !== false;
+                $modules   = shell_exec("$cmd --no-php-ini -m");
 
-                if (!$redis || !$igbinary || !$msgpack) {
+                /* Determine if we need to specifically add extensions */
+                $arr_extensions = array_filter(
+                    ['redis', 'igbinary', 'msgpack', 'json'],
+                    function ($module) use ($modules) {
+                        return strpos($modules, $module) === false;
+                    }
+                );
+
+                /* If any are needed add them to the command */
+                if ($arr_extensions) {
                     $cmd .= ' --no-php-ini';
-                    if (!$msgpack) {
-                        $cmd .= ' --define extension=msgpack.so';
-                    }
-                    if (!$igbinary) {
-                        $cmd .= ' --define extension=igbinary.so';
-                    }
-                    if (!$redis) {
-                        $cmd .= ' --define extension=' . dirname(__DIR__) . '/modules/redis.so';
+                    foreach ($arr_extensions as $str_extension) {
+                        /* We want to use the locally built redis extension */
+                        if ($str_extension == 'redis') {
+                            $str_extension = dirname(__DIR__) . '/modules/redis';
+                        }
+
+                        $cmd .= " --define extension=$str_extension.so";
                     }
                 }
             }

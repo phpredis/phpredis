@@ -334,7 +334,7 @@ zend_object * create_cluster_context(zend_class_entry *class_type) {
 
 /* Free redisCluster context */
 void free_cluster_context(zend_object *object) {
-    redisCluster *cluster = (redisCluster*)((char*)(object) - XtOffsetOf(redisCluster, std));
+    redisCluster *cluster = PHPREDIS_GET_OBJECT(redisCluster, object);
 
     cluster_free(cluster, 0);
     zend_object_std_dtor(&cluster->std);
@@ -1953,36 +1953,37 @@ PHP_METHOD(RedisCluster, clearlasterror) {
 
 /* {{{ proto long RedisCluster::getOption(long option */
 PHP_METHOD(RedisCluster, getoption) {
-    redis_getoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        GET_CONTEXT()->flags, GET_CONTEXT());
+    redisCluster *c = GET_CONTEXT();
+    redis_getoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, c);
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::setOption(long option, mixed value) */
 PHP_METHOD(RedisCluster, setoption) {
-    redis_setoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        GET_CONTEXT()->flags, GET_CONTEXT());
+    redisCluster *c = GET_CONTEXT();
+    redis_setoption_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, c);
 }
 /* }}} */
 
 /* {{{ proto string RedisCluster::_prefix(string key) */
 PHP_METHOD(RedisCluster, _prefix) {
-    redis_prefix_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        GET_CONTEXT()->flags);
+    redisCluster *c = GET_CONTEXT();
+    redis_prefix_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags);
 }
 /* }}} */
 
 /* {{{ proto string RedisCluster::_serialize(mixed val) */
 PHP_METHOD(RedisCluster, _serialize) {
-    redis_serialize_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        GET_CONTEXT()->flags);
+    redisCluster *c = GET_CONTEXT();
+    redis_serialize_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags);
 }
 /* }}} */
 
 /* {{{ proto mixed RedisCluster::_unserialize(string val) */
 PHP_METHOD(RedisCluster, _unserialize) {
+    redisCluster *c = GET_CONTEXT();
     redis_unserialize_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-        GET_CONTEXT()->flags, redis_cluster_exception_ce);
+        c->flags, redis_cluster_exception_ce);
 }
 /* }}} */
 
@@ -2244,7 +2245,7 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg)
 
         /* Inform the caller if they've passed bad data */
         if (slot < 0) {
-            php_error_docref(0, E_WARNING, "Unknown node %s:%ld",
+            php_error_docref(0, E_WARNING, "Unknown node %s:" ZEND_LONG_FMT,
                 Z_STRVAL_P(z_host), Z_LVAL_P(z_port));
         }
     } else {
@@ -2410,7 +2411,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 {
     redisCluster *c = GET_CONTEXT();
     char *cmd, *pat = NULL, *key = NULL;
-    size_t key_len = 0, pat_len = 0;
+    size_t key_len = 0, pat_len = 0, pat_free = 0;
     int cmd_len, key_free = 0;
     short slot;
     zval *z_it;
@@ -2448,6 +2449,10 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     // Apply any key prefix we have, get the slot
     key_free = redis_key_prefix(c->flags, &key, &key_len);
     slot = cluster_hash_key(key, key_len);
+
+    if (c->flags->scan & REDIS_SCAN_PREFIX) {
+        pat_free = redis_key_prefix(c->flags, &pat, &pat_len);
+    }
 
     // If SCAN_RETRY is set, loop until we get a zero iterator or until
     // we get non-zero elements.  Otherwise we just send the command once.
@@ -2487,7 +2492,10 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
         // Free our command
         efree(cmd);
-    } while (c->flags->scan == REDIS_SCAN_RETRY && it != 0 && num_ele == 0);
+    } while (c->flags->scan & REDIS_SCAN_RETRY && it != 0 && num_ele == 0);
+
+    // Free our pattern
+    if (pat_free) efree(pat);
 
     // Free our key
     if (key_free) efree(key);
@@ -2504,7 +2512,7 @@ PHP_METHOD(RedisCluster, scan) {
     int cmd_len;
     short slot;
     zval *z_it, *z_node;
-    long it, num_ele;
+    long it, num_ele, pat_free = 0;
     zend_long count = 0;
 
     /* Treat as read-only */
@@ -2531,6 +2539,10 @@ PHP_METHOD(RedisCluster, scan) {
         it = Z_LVAL_P(z_it);
     } else {
         RETURN_FALSE;
+    }
+
+    if (c->flags->scan & REDIS_SCAN_PREFIX) {
+        pat_free = redis_key_prefix(c->flags, &pat, &pat_len);
     }
 
     /* With SCAN_RETRY on, loop until we get some keys, otherwise just return
@@ -2569,7 +2581,9 @@ PHP_METHOD(RedisCluster, scan) {
         efree(cmd);
 
         num_ele = zend_hash_num_elements(Z_ARRVAL_P(return_value));
-    } while (c->flags->scan == REDIS_SCAN_RETRY && it != 0 && num_ele == 0);
+    } while (c->flags->scan & REDIS_SCAN_RETRY && it != 0 && num_ele == 0);
+
+    if (pat_free) efree(pat);
 
     Z_LVAL_P(z_it) = it;
 }

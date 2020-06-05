@@ -13,7 +13,8 @@
 #include <ext/standard/php_smart_string.h>
 
 #define PHPREDIS_ZVAL_IS_STRICT_FALSE(z) (Z_TYPE_P(z) == IS_FALSE)
-#define PHPREDIS_GET_OBJECT(class_entry, z) (class_entry *)((char *)Z_OBJ_P(z) - XtOffsetOf(class_entry, std))
+#define PHPREDIS_GET_OBJECT(class_entry, o) (class_entry *)((char *)o - XtOffsetOf(class_entry, std))
+#define PHPREDIS_ZVAL_GET_OBJECT(class_entry, z) PHPREDIS_GET_OBJECT(class_entry, Z_OBJ_P(z))
 
 /* NULL check so Eclipse doesn't go crazy */
 #ifndef NULL
@@ -23,7 +24,8 @@
 typedef enum {
     REDIS_SOCK_STATUS_FAILED = -1,
     REDIS_SOCK_STATUS_DISCONNECTED,
-    REDIS_SOCK_STATUS_CONNECTED
+    REDIS_SOCK_STATUS_CONNECTED,
+    REDIS_SOCK_STATUS_READY
 } redis_sock_status;
 
 #define _NL "\r\n"
@@ -104,7 +106,9 @@ typedef enum {
 
 /* SCAN options */
 #define REDIS_SCAN_NORETRY 0
-#define REDIS_SCAN_RETRY 1
+#define REDIS_SCAN_RETRY   1
+#define REDIS_SCAN_PREFIX  2
+#define REDIS_SCAN_NOPREFIX 3
 
 /* GETBIT/SETBIT offset range limits */
 #define BITOP_MIN_OFFSET 0

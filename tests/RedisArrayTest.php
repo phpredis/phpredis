@@ -55,7 +55,11 @@ class Redis_Array_Test extends TestSuite
         }
 
         global $newRing, $oldRing, $useIndex;
-        $this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex));
+        $options = ['previous' => $oldRing, 'index' => $useIndex];
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
+        }
+        $this->ra = new RedisArray($newRing, $options);
         $this->min_version = getMinVersion($this->ra);
     }
 
@@ -80,6 +84,9 @@ class Redis_Array_Test extends TestSuite
 
             $r = new Redis;
             $r->pconnect($host, (int)$port);
+            if ($this->getAuth()) {
+                $this->assertTrue($r->auth($this->getAuth()));
+            }
             $this->assertTrue($v === $r->get($k));
         }
     }
@@ -118,9 +125,11 @@ class Redis_Array_Test extends TestSuite
 
         // with common hashing function
         global $newRing, $oldRing, $useIndex;
-        $this->ra = new RedisArray($newRing, array('previous' => $oldRing,
-                'index' => $useIndex,
-                'function' => 'custom_hash'));
+        $options = ['previous' => $oldRing, 'index' => $useIndex, 'function' => 'custom_hash'];
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
+        }
+        $this->ra = new RedisArray($newRing, $options);
 
         // basic key locality with custom hash
         $this->addData('fb'.rand());
@@ -139,10 +148,11 @@ class Redis_Array_Test extends TestSuite
     public function testKeyDistributor()
     {
         global $newRing, $useIndex;
-        $this->ra = new RedisArray($newRing, array(
-                'index' => $useIndex,
-                'function' => 'custom_hash',
-                'distributor' => array($this, "customDistributor")));
+        $options = ['index' => $useIndex, 'function' => 'custom_hash', 'distributor' => [$this, "customDistributor"]];
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
+        }
+        $this->ra = new RedisArray($newRing, $options);
 
         // custom key distribution function.
         $this->addData('fb'.rand());
@@ -207,9 +217,12 @@ class Redis_Rehashing_Test extends TestSuite
         }
 
         global $newRing, $oldRing, $useIndex;
-
+        $options = ['previous' => $oldRing, 'index' => $useIndex];
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
+        }
         // create array
-        $this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex));
+        $this->ra = new RedisArray($newRing, $options);
         $this->min_version = getMinVersion($this->ra);
     }
 
@@ -221,6 +234,9 @@ class Redis_Rehashing_Test extends TestSuite
 
             $r = new Redis();
             $r->pconnect($host, (int)$port, 0);
+            if ($this->getAuth()) {
+                $this->assertTrue($r->auth($this->getAuth()));
+            }
             $r->flushdb();
         }
     }
@@ -354,9 +370,12 @@ class Redis_Auto_Rehashing_Test extends TestSuite {
         }
 
         global $newRing, $oldRing, $useIndex;
-
+        $options = ['previous' => $oldRing, 'index' => $useIndex, 'autorehash' => TRUE];
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
+        }
         // create array
-        $this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex, 'autorehash' => TRUE));
+        $this->ra = new RedisArray($newRing, $options);
         $this->min_version = getMinVersion($this->ra);
     }
 
@@ -397,6 +416,9 @@ class Redis_Auto_Rehashing_Test extends TestSuite {
 
             $r = new Redis;
             $r->pconnect($host, $port);
+            if ($this->getAuth()) {
+                $this->assertTrue($r->auth($this->getAuth()));
+            }
 
             $this->assertTrue($v === $r->get($k));  // check that the key has actually been migrated to the new node.
         }
@@ -410,9 +432,12 @@ class Redis_Multi_Exec_Test extends TestSuite {
 
     public function setUp() {
         global $newRing, $oldRing, $useIndex;
-
+        $options = ['previous' => $oldRing, 'index' => $useIndex];
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
+        }
         // create array
-        $this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex));
+        $this->ra = new RedisArray($newRing, $options);
         $this->min_version = getMinVersion($this->ra);
     }
 
@@ -552,8 +577,12 @@ class Redis_Distributor_Test extends TestSuite {
 
     public function setUp() {
         global $newRing, $oldRing, $useIndex;
+        $options = ['previous' => $oldRing, 'index' => $useIndex, 'distributor' => [$this, 'distribute']];
+        if ($this->getAuth()) {
+            $options['auth'] = $this->getAuth();
+        }
         // create array
-        $this->ra = new RedisArray($newRing, array('previous' => $oldRing, 'index' => $useIndex, 'distributor' => array($this, 'distribute')));
+        $this->ra = new RedisArray($newRing, $options);
         $this->min_version = getMinVersion($this->ra);
     }
 
@@ -587,7 +616,7 @@ class Redis_Distributor_Test extends TestSuite {
     }
 }
 
-function run_tests($className, $str_filter, $str_host) {
+function run_tests($className, $str_filter, $str_host, $str_auth) {
         // reset rings
         global $newRing, $oldRing, $serverList;
 
@@ -596,7 +625,7 @@ function run_tests($className, $str_filter, $str_host) {
         $serverList = ["$str_host:6379", "$str_host:6380", "$str_host:6381", "$str_host:6382"];
 
         // run
-        return TestSuite::run($className, $str_filter);
+        return TestSuite::run($className, $str_filter, $str_host, $str_auth);
 }
 
 ?>

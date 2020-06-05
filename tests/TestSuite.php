@@ -4,9 +4,13 @@
 class TestSkippedException extends Exception {}
 
 // phpunit is such a pain to install, we're going with pure-PHP here.
-class TestSuite {
+class TestSuite
+{
     /* Host the tests will use */
     private $str_host;
+
+    /* Redis authentication we'll use */
+    private $str_auth;
 
     private static $_boo_colorize = false;
 
@@ -24,11 +28,13 @@ class TestSuite {
     public static $errors = [];
     public static $warnings = [];
 
-    public function __construct($str_host) {
+    public function __construct($str_host, $str_auth) {
         $this->str_host = $str_host;
+        $this->str_auth = $str_auth;
     }
 
     public function getHost() { return $this->str_host; }
+    public function getAuth() { return $this->str_auth; }
 
     /**
      * Returns the fully qualified host path,
@@ -151,7 +157,7 @@ class TestSuite {
             posix_isatty(STDOUT);
     }
 
-    public static function run($className, $str_limit = NULL, $str_host = NULL) {
+    public static function run($className, $str_limit = NULL, $str_host = NULL, $str_auth = NULL) {
         /* Lowercase our limit arg if we're passed one */
         $str_limit = $str_limit ? strtolower($str_limit) : $str_limit;
 
@@ -175,7 +181,7 @@ class TestSuite {
             echo self::make_bold($str_out_name);
 
             $count = count($className::$errors);
-            $rt = new $className($str_host);
+            $rt = new $className($str_host, $str_auth);
 
             try {
                 $rt->setUp();

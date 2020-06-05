@@ -354,6 +354,11 @@ $redis->setOption(Redis::OPT_PREFIX, 'myAppName:');	// use custom prefix on all 
 */
 $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
 $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+
+/* Scan can also be configured to automatically prepend the currently set PhpRedis
+   prefix to any MATCH pattern. */
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_PREFIX);
+$redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NOPREFIX);
 ~~~
 
 
@@ -1923,11 +1928,12 @@ $redis->lPop('key1'); /* key1 => [ 'B', 'C' ] */
 
 ### lPush
 -----
-_**Description**_: Adds the string value to the head (left) of the list. Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
+_**Description**_: Adds one or more values to the head of a LIST.  Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
 
-##### *Parameters*
-*key*  
-*value* String, value to push in key
+##### *Prototype*
+~~~php
+$redis->lPush($key, $entry [, $entry, $entry]);
+~~~
 
 ##### *Return value*
 *LONG* The new length of the list in case of success, `FALSE` in case of Failure.
@@ -1935,10 +1941,13 @@ _**Description**_: Adds the string value to the head (left) of the list. Creates
 ##### *Examples*
 ~~~php
 $redis->del('key1');
-$redis->lPush('key1', 'C'); // returns 1
-$redis->lPush('key1', 'B'); // returns 2
-$redis->lPush('key1', 'A'); // returns 3
-/* key1 now points to the following list: [ 'A', 'B', 'C' ] */
+$redis->lPush('key1', 'F'); // returns 1
+$redis->lPush('key1', 'E'); // returns 2
+$redis->lPush('key1', 'D'); // returns 3
+/* key1 now contains: [ 'D', 'E', 'F' ] */
+
+$redis->lPush('key1', 'C', 'B', 'A'); // Returns 6
+/* key1 now contains: [ 'A', 'B', 'C', 'D', 'E', 'F' ]
 ~~~
 
 ### lPushx
@@ -2127,11 +2136,12 @@ array(3) {
 
 ### rPush
 -----
-_**Description**_: Adds the string value to the tail (right) of the list. Creates the list if the key didn't exist. If the key exists and is not a list, `FALSE` is returned.
+_**Description**_: Adds one or more entries to the tail of a LIST. Redis will create the list if it doesn't exist.
 
-##### *Parameters*
-*key*  
-*value* String, value to push in key
+##### *Prototype*
+~~~php
+$redis->rPush($key, $entry [, $entry, $entry]);
+~~~
 
 ##### *Return value*
 *LONG* The new length of the list in case of success, `FALSE` in case of Failure.
@@ -2139,10 +2149,11 @@ _**Description**_: Adds the string value to the tail (right) of the list. Create
 ##### *Examples*
 ~~~php
 $redis->del('key1');
-$redis->rPush('key1', 'A'); // returns 1
-$redis->rPush('key1', 'B'); // returns 2
-$redis->rPush('key1', 'C'); // returns 3
-/* key1 now points to the following list: [ 'A', 'B', 'C' ] */
+$redis->rPush('key1', 'A');           // returns 1
+$redis->rPush('key1', 'B');           // returns 2
+$redis->rPush('key1', 'C');           // returns 3
+$redis->rPush('key1', 'D', 'E', 'F'); // returns 6
+/* key1 now contains: [ 'A', 'B', 'C', 'D', 'E', 'F' ] */
 ~~~
 
 ### rPushX

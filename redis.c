@@ -504,7 +504,7 @@ zend_module_entry redis_module_entry = {
      "redis",
      NULL,
      PHP_MINIT(redis),
-     PHP_MSHUTDOWN(redis),
+     NULL,
      NULL,
      NULL,
      PHP_MINFO(redis),
@@ -571,7 +571,7 @@ static void cluster_cache_dtor(zend_resource *rsrc) {
 void
 free_redis_object(zend_object *object)
 {
-    redis_object *redis = (redis_object *)((char *)(object) - XtOffsetOf(redis_object, std));
+    redis_object *redis = PHPREDIS_GET_OBJECT(redis_object, object);
 
     zend_object_std_dtor(&redis->std);
     if (redis->sock) {
@@ -604,7 +604,7 @@ redis_sock_get_instance(zval *id, int no_throw)
     redis_object *redis;
 
     if (Z_TYPE_P(id) == IS_OBJECT) {
-        redis = PHPREDIS_GET_OBJECT(redis_object, id);
+        redis = PHPREDIS_ZVAL_GET_OBJECT(redis_object, id);
         if (redis->sock) {
             return redis->sock;
         }
@@ -658,7 +658,7 @@ PHP_REDIS_API RedisSock *redis_sock_get_connected(INTERNAL_FUNCTION_PARAMETERS) 
     if((zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O",
        &object, redis_ce) == FAILURE) ||
        (redis_sock = redis_sock_get(object, 1)) == NULL ||
-       redis_sock->status != REDIS_SOCK_STATUS_CONNECTED)
+       redis_sock->status < REDIS_SOCK_STATUS_CONNECTED)
     {
         return NULL;
     }
@@ -733,6 +733,8 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_SCAN"), REDIS_OPT_SCAN);
     zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_RETRY"), REDIS_SCAN_RETRY);
     zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_NORETRY"), REDIS_SCAN_NORETRY);
+    zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_PREFIX"), REDIS_SCAN_PREFIX);
+    zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_NOPREFIX"), REDIS_SCAN_NOPREFIX);
 
     /* Cluster option to allow for slave failover */
     if (is_cluster) {
@@ -834,14 +836,6 @@ PHP_MINIT_FUNCTION(redis)
     le_redis_pconnect = zend_register_list_destructors_ex(NULL, redis_connections_pool_dtor,
         "phpredis persistent connections pool", module_number);
 
-    return SUCCESS;
-}
-
-/**
- * PHP_MSHUTDOWN_FUNCTION
- */
-PHP_MSHUTDOWN_FUNCTION(redis)
-{
     return SUCCESS;
 }
 
@@ -1028,11 +1022,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
         port = 6379;
     }
 
-    if (port < 0) {
-        port = 0;
-    }
-
-    redis = PHPREDIS_GET_OBJECT(redis_object, object);
+    redis = PHPREDIS_ZVAL_GET_OBJECT(redis_object, object);
     /* if there is a redis sock already we have to remove it */
     if (redis->sock) {
         redis_sock_disconnect(redis->sock, 0);
@@ -3428,7 +3418,7 @@ PHP_METHOD(Redis, command) {
 /* Helper to format any combination of SCAN arguments */
 PHP_REDIS_API int
 redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
-                     int iter, char *pattern, int pattern_len, int count,
+                     long iter, char *pattern, int pattern_len, int count,
                      zend_string *match_type)
 {
     smart_string cmdstr = {0};
@@ -3459,7 +3449,7 @@ redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     /* Start the command */
     redis_cmd_init_sstr(&cmdstr, argc, keyword, strlen(keyword));
     if (key_len) redis_cmd_append_sstr(&cmdstr, key, key_len);
-    redis_cmd_append_sstr_int(&cmdstr, iter);
+    redis_cmd_append_sstr_long(&cmdstr, iter);
 
     /* Append COUNT if we've got it */
     if(count) {
@@ -3490,7 +3480,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     RedisSock *redis_sock;
     HashTable *hash;
     char *pattern = NULL, *cmd, *key = NULL;
-    int cmd_len, num_elements, key_free = 0;
+    int cmd_len, num_elements, key_free = 0, pattern_free = 0;
     size_t key_len = 0, pattern_len = 0;
     zend_string *match_type = NULL;
     zend_long count = 0, iter;
@@ -3548,6 +3538,10 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
         key_free = redis_key_prefix(redis_sock, &key, &key_len);
     }
 
+    if (redis_sock->scan & REDIS_SCAN_PREFIX) {
+        pattern_free = redis_key_prefix(redis_sock, &pattern, &pattern_len);
+    }
+
     /**
      * Redis can return to us empty keys, especially in the case where there
      * are a large number of keys to scan, and we're matching against a
@@ -3565,7 +3559,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
         }
 
         // Format our SCAN command
-        cmd_len = redis_build_scan_cmd(&cmd, type, key, key_len, (int)iter,
+        cmd_len = redis_build_scan_cmd(&cmd, type, key, key_len, (long)iter,
                                    pattern, pattern_len, count, match_type);
 
         /* Execute our command getting our new iterator value */
@@ -3580,8 +3574,11 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
         /* Get the number of elements */
         hash = Z_ARRVAL_P(return_value);
         num_elements = zend_hash_num_elements(hash);
-    } while(redis_sock->scan == REDIS_SCAN_RETRY && iter != 0 &&
+    } while (redis_sock->scan & REDIS_SCAN_RETRY && iter != 0 &&
             num_elements == 0);
+
+    /* Free our pattern if it was prefixed */
+    if (pattern_free) efree(pattern);
 
     /* Free our key if it was prefixed */
     if(key_free) efree(key);
