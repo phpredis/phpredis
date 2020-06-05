@@ -697,7 +697,7 @@ int redis_cmd_init_sstr(smart_string *str, int num_args, char *keyword, int keyw
 /*
  * Append a command sequence to a smart_string
  */
-int redis_cmd_append_sstr(smart_string *str, char *append, size_t len) {
+int redis_cmd_append_sstr(smart_string *str, char *append, int len) {
     smart_string_appendc(str, '$');
     smart_string_append_long(str, len);
     smart_string_appendl(str, _NL, sizeof(_NL) - 1);
@@ -2287,8 +2287,9 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
 #define PHP_REDIS_COMPRESSION_RATIO_CHECK(packed, unpacked) \
     (redis_sock->compression_min_ratio > 0 && packed / (double)unpacked >= redis_sock->compression_min_ratio)
 
+#ifdef HAVE_REDIS_LZ4
 /* Implementation of CRC8 for our LZ4 checksum value */
-static uint8_t crc8(uint8_t *input, size_t len) {
+static uint8_t crc8(unsigned char *input, size_t len) {
     size_t i;
     uint8_t crc = 0xFF;
 
@@ -2304,6 +2305,7 @@ static uint8_t crc8(uint8_t *input, size_t len) {
 
     return crc;
 }
+#endif
 
 PHP_REDIS_API int
 redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
@@ -2392,7 +2394,7 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
                 }
 
                 int old_len = len, lz4len, lz4bound;
-                uint8_t crc = crc8((uint8_t*)&old_len, sizeof(old_len));
+                uint8_t crc = crc8((unsigned char*)&old_len, sizeof(old_len));
                 char *lz4buf, *lz4pos;
 
                 lz4bound = LZ4_compressBound(len);
@@ -2511,7 +2513,7 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
                 val += sizeof(int); val_len -= sizeof(int);
 
                 /* Make sure our CRC matches (TODO:  Maybe issue a docref error?) */
-                if (crc8((uint8_t*)&datalen, sizeof(datalen)) != lz4crc)
+                if (crc8((unsigned char*)&datalen, sizeof(datalen)) != lz4crc)
                     break;
 
                 /* Finally attempt decompression */
