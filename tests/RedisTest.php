@@ -4605,6 +4605,18 @@ class Redis_Test extends TestSuite
         $val = 'xxxxxxxxxx';
         $this->redis->set('key', $val);
         $this->assertEquals($val, $this->redis->get('key'));
+
+        /* Empty data */
+        $this->redis->set('key', '');
+        $this->assertEquals('', $this->redis->get('key'));
+
+        /* Iterate through class sizes */
+        for ($i = 1; $i <= 65536; $i *= 2) {
+            foreach ([str_repeat('A', $i), random_bytes($i)] as $val) {
+                $this->redis->set('key', $val);
+                $this->assertEquals($val, $this->redis->get('key'));
+            }
+        }
     }
 
     public function testDumpRestore() {
