@@ -3816,33 +3816,49 @@ int redis_xgroup_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return FAILURE;
 }
 
-
-
 /* XINFO CONSUMERS key group
  * XINFO GROUPS key
- * XINFO STREAM key
+ * XINFO STREAM key [FULL [COUNT N]]
  * XINFO HELP */
 int redis_xinfo_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *op, *key, *arg;
+    char *op, *key, *arg = NULL;
     size_t oplen, keylen, arglen;
-    char fmt[4];
+    zend_long count = -1;
     int argc = ZEND_NUM_ARGS();
+    char fmt[] = "skssl";
 
-    if (argc > 3 || zend_parse_parameters(ZEND_NUM_ARGS(), "s|ss",
+    if (argc > 4 || zend_parse_parameters(ZEND_NUM_ARGS(), "s|ssl",
                                           &op, &oplen, &key, &keylen, &arg,
-                                          &arglen) == FAILURE)
+                                          &arglen, &count) == FAILURE)
     {
         return FAILURE;
     }
 
-    /* Our format is simply "s", "sk" or "sks" depending on argc */
-    memcpy(fmt, "sks", sizeof("sks")-1);
+    /* Handle everything except XINFO STREAM */
+    if (strncasecmp(op, "STREAM", 6) != 0) {
+        fmt[argc] = '\0';
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XINFO", fmt, op, oplen, key, keylen,
+                                      arg, arglen);
+        return SUCCESS;
+    }
+
+    /* 'FULL' is the only legal option to XINFO STREAM */
+    if (argc > 2 && strncasecmp(arg, "FULL", 4) != 0) {
+        php_error_docref(NULL, E_WARNING, "'%s' is not a valid option for XINFO STREAM", arg);
+        return FAILURE;
+    }
+
+    /* If we have a COUNT bump the argument count to account for the 'COUNT' literal */
+    if (argc == 4) argc++;
+
     fmt[argc] = '\0';
 
-    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XINFO", fmt, op, oplen, key, keylen,
-                                  arg, arglen);
+    /* Build our XINFO STREAM variant */
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XINFO", fmt, "STREAM", 6, key, keylen,
+                                  "FULL", 4, "COUNT", 5, count);
+
     return SUCCESS;
 }
 

@@ -5975,6 +5975,31 @@ class Redis_Test extends TestSuite
             $this->assertTrue(array_key_exists($key, $info));
             $this->assertTrue(is_array($info[$key]));
         }
+
+        /* XINFO STREAM FULL [COUNT N] Requires >= 6.0.0 */
+        if (!$this->minVersionCheck("6.0"))
+            return;
+
+        /* Add some items to the stream so we can test COUNT */
+        for ($i = 0; $i < 5; $i++) {
+            $this->redis->xAdd($stream, '*', ['foo' => 'bar']);
+        }
+
+        $info = $this->redis->xInfo('STREAM', $stream, 'full');
+        $this->assertTrue(isset($info['groups']));
+
+        for ($count = 1; $count < 5; $count++) {
+            $info = $this->redis->xInfo('STREAM', $stream, 'full', $count);
+            $n = isset($info['entries']) ? count($info['entries']) : 0;
+            $this->assertEquals($n, $count);
+        }
+
+        /* Count <= 0 should be ignored */
+        foreach ([-1, 0] as $count) {
+            $info = $this->redis->xInfo('STREAM', $stream, 'full', 0);
+            $n = isset($info['entries']) ? count($info['entries']) : 0;
+            $this->assertEquals($n, $this->redis->xLen($stream));
+        }
     }
 
     /* If we detect a unix socket make sure we can connect to it in a variety of ways */
