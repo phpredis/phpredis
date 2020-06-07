@@ -100,6 +100,7 @@ typedef enum {
 #define REDIS_COMPRESSION_NONE 0
 #define REDIS_COMPRESSION_LZF  1
 #define REDIS_COMPRESSION_ZSTD 2
+#define REDIS_COMPRESSION_LZ4  3
 
 /* SCAN options */
 #define REDIS_SCAN_NORETRY 0

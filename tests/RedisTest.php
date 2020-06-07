@@ -4519,6 +4519,16 @@ class Redis_Test extends TestSuite
         $this->checkCompression(Redis::COMPRESSION_ZSTD, 9);
     }
 
+
+    public function testCompressionLZ4()
+    {
+        if (!defined('Redis::COMPRESSION_LZ4')) {
+            $this->markTestSkipped();
+        }
+        $this->checkCompression(Redis::COMPRESSION_LZ4, 0);
+        $this->checkCompression(Redis::COMPRESSION_LZ4, 9);
+    }
+
     private function checkCompression($mode, $level)
     {
         $this->assertTrue($this->redis->setOption(Redis::OPT_COMPRESSION, $mode) === TRUE);  // set ok
@@ -4530,6 +4540,18 @@ class Redis_Test extends TestSuite
         $val = 'xxxxxxxxxx';
         $this->redis->set('key', $val);
         $this->assertEquals($val, $this->redis->get('key'));
+
+        /* Empty data */
+        $this->redis->set('key', '');
+        $this->assertEquals('', $this->redis->get('key'));
+
+        /* Iterate through class sizes */
+        for ($i = 1; $i <= 65536; $i *= 2) {
+            foreach ([str_repeat('A', $i), random_bytes($i)] as $val) {
+                $this->redis->set('key', $val);
+                $this->assertEquals($val, $this->redis->get('key'));
+            }
+        }
     }
 
     public function testDumpRestore() {
