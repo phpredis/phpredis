@@ -82,8 +82,6 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_COMPRESSION           7
 #define REDIS_OPT_REPLY_LITERAL         8
 #define REDIS_OPT_COMPRESSION_LEVEL     9
-#define REDIS_OPT_COMPRESSION_MIN_SIZE  10
-#define REDIS_OPT_COMPRESSION_MIN_RATIO 11
 
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
