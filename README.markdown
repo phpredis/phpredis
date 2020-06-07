@@ -3671,7 +3671,7 @@ $obj_redis->xGroup('DESTROY', 'mystream', 'mygroup');
 ~~~php
 $obj_redis->xInfo('CONSUMERS', $str_stream, $str_group);
 $obj_redis->xInfo('GROUPS', $str_stream);
-$obj_redis->xInfo('STREAM', $str_stream [, 'FULL', [, $i_count]]);
+$obj_redis->xInfo('STREAM', $str_stream [, 'FULL' [, $i_count]]);
 $obj_redis->xInfo('HELP');
 ~~~
 

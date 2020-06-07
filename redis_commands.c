@@ -3827,7 +3827,7 @@ int redis_xinfo_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     size_t oplen, keylen, arglen;
     zend_long count = -1;
     int argc = ZEND_NUM_ARGS();
-    char fmt[6];
+    char fmt[] = "skssl";
 
     if (argc > 4 || zend_parse_parameters(ZEND_NUM_ARGS(), "s|ssl",
                                           &op, &oplen, &key, &keylen, &arg,
@@ -3835,9 +3835,6 @@ int redis_xinfo_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     {
         return FAILURE;
     }
-
-    /* The biggest possible format specifier for XINFO */
-    memcpy(fmt, "skssl", sizeof("skssl") - 1);
 
     /* Handle everything except XINFO STREAM */
     if (strncasecmp(op, "STREAM", 6) != 0) {
