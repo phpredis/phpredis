@@ -3921,10 +3921,6 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             RETURN_LONG(redis_sock->compression);
         case REDIS_OPT_COMPRESSION_LEVEL:
             RETURN_LONG(redis_sock->compression_level);
-        case REDIS_OPT_COMPRESSION_MIN_SIZE:
-            RETURN_LONG(redis_sock->compression_min_size)
-        case REDIS_OPT_COMPRESSION_MIN_RATIO:
-            RETURN_DOUBLE(redis_sock->compression_min_ratio)
         case REDIS_OPT_PREFIX:
             if (redis_sock->prefix) {
                 RETURN_STRINGL(ZSTR_VAL(redis_sock->prefix), ZSTR_LEN(redis_sock->prefix));
@@ -3999,13 +3995,6 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                 RETURN_TRUE;
             }
             break;
-        case REDIS_OPT_COMPRESSION_MIN_SIZE:
-            val_long = zval_get_long(val);
-            redis_sock->compression_min_size = val_long;
-            RETURN_TRUE;
-        case REDIS_OPT_COMPRESSION_MIN_RATIO:
-            redis_sock->compression_min_ratio = zval_get_double(val);
-            RETURN_TRUE;
         case REDIS_OPT_COMPRESSION_LEVEL:
             val_long = zval_get_long(val);
             redis_sock->compression_level = val_long;
