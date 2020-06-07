@@ -359,7 +359,7 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
     }
 
     if (auth && auth_len) {
-        c->auth = zend_string_init(auth, auth_len, 0);
+        c->flags->auth = zend_string_init(auth, auth_len, 0);
     }
 
     c->timeout = timeout;

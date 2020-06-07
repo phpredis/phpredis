@@ -637,8 +637,8 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
     node->sock = redis_sock_create(host, host_len, port, c->timeout,
         c->read_timeout, c->persistent, NULL, 0);
 
-    if (c->auth) {
-        node->sock->auth = zend_string_copy(c->auth);
+    if (c->flags->auth) {
+        node->sock->auth = zend_string_copy(c->flags->auth);
     }
 
     return node;
@@ -826,7 +826,6 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     c->read_timeout = read_timeout;
     c->failover = failover;
     c->persistent = persistent;
-    c->auth = NULL;
     c->err = NULL;
 
     /* Set up our waitms based on timeout */
@@ -851,6 +850,8 @@ cluster_free(redisCluster *c, int free_ctx)
 
     /* Free any allocated prefix */
     if (c->flags->prefix) zend_string_release(c->flags->prefix);
+    /* Free auth info we've got */
+    if (c->flags->auth) zend_string_release(c->flags->auth);
     efree(c->flags);
 
     /* Call hash table destructors */
@@ -860,9 +861,6 @@ cluster_free(redisCluster *c, int free_ctx)
     /* Free hash tables themselves */
     efree(c->seeds);
     efree(c->nodes);
-
-    /* Free auth info we've got */
-    if (c->auth) zend_string_release(c->auth);
 
     /* Free any error we've got */
     if (c->err) zend_string_release(c->err);
@@ -1053,8 +1051,8 @@ cluster_init_seeds(redisCluster *cluster, zend_string **seeds, uint32_t nseeds) 
             cluster->read_timeout, cluster->persistent, NULL, 0);
 
         // Set auth information if specified
-        if (cluster->auth) {
-            sock->auth = zend_string_copy(cluster->auth);
+        if (cluster->flags->auth) {
+            sock->auth = zend_string_copy(cluster->flags->auth);
         }
 
         // Index this seed by host/port

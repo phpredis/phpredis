@@ -981,7 +981,7 @@ PS_OPEN_FUNC(rediscluster) {
     c->flags->prefix = zend_string_init(prefix, prefix_len, 0);
 
     if (auth && auth_len) 
-        c->auth = zend_string_init(auth, auth_len, 0);
+        c->flags->auth = zend_string_init(auth, auth_len, 0);
 
     /* First attempt to load from cache */
     if (CLUSTER_CACHING_ENABLED()) {

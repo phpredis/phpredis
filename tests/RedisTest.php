@@ -377,6 +377,20 @@ class Redis_Test extends TestSuite
         $this->redis->set('foo','bar', NULL);
         $this->assertEquals($this->redis->get('foo'), 'bar');
         $this->assertTrue($this->redis->ttl('foo')<0);
+
+        if (version_compare($this->version, "6.0.0") < 0)
+            return;
+
+        /* KEEPTTL works by itself */
+        $this->redis->set('foo', 'bar', ['EX' => 100]);
+        $this->redis->set('foo', 'bar', ['KEEPTTL']);
+        $this->assertTrue($this->redis->ttl('foo') > -1);
+
+        /* Works with other options */
+        $this->redis->set('foo', 'bar', ['XX', 'KEEPTTL']);
+        $this->assertTrue($this->redis->ttl('foo') > -1);
+        $this->redis->set('foo', 'bar', ['XX']);
+        $this->assertTrue($this->redis->ttl('foo') == -1);
     }
 
     public function testGetSet() {
@@ -6219,6 +6233,17 @@ class Redis_Test extends TestSuite
             $redis->connect($host, 6379, 0.01);
         }  catch (Exception $e) {
             $this->assertTrue(strpos($e, "timed out") !== false);
+        }
+    }
+
+    public function testTlsConnect()
+    {
+        foreach (['localhost' => true, '127.0.0.1' => false] as $host => $verify) {
+            $redis = new Redis();
+            $this->assertTrue($redis->connect('tls://' . $host, 6378, 0, null, 0, 0, [
+                'verify_peer_name' => $verify,
+                'verify_peer' => false,
+            ]));
         }
     }
 

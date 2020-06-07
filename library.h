@@ -91,6 +91,7 @@ PHP_REDIS_API int redis_check_eof(RedisSock *redis_sock, int no_throw);
 PHP_REDIS_API RedisSock *redis_sock_get(zval *id, int nothrow);
 PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock);
 PHP_REDIS_API void redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len);
+PHP_REDIS_API int redis_sock_set_stream_context(RedisSock *redis_sock, zval *options);
 
 PHP_REDIS_API int
 redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len);
