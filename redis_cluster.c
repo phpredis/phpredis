@@ -343,8 +343,8 @@ void free_cluster_context(zend_object *object) {
 /* Take user provided seeds and return unique and valid ones */
 /* Attempt to connect to a Redis cluster provided seeds and timeout options */
 static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
-                               double read_timeout, int persistent, char *auth,
-                               size_t auth_len)
+                               double read_timeout, int persistent, zend_string *user,
+                               zend_string *pass)
 {
     zend_string *hash = NULL, **seeds;
     redisCachedCluster *cc;
@@ -358,9 +358,10 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
         return;
     }
 
-    if (auth && auth_len) {
-        c->flags->auth = zend_string_init(auth, auth_len, 0);
-    }
+    if (user && ZSTR_LEN(user))
+        c->flags->user = zend_string_copy(user);
+    if (pass && ZSTR_LEN(pass))
+        c->flags->pass = zend_string_copy(pass);
 
     c->timeout = timeout;
     c->read_timeout = read_timeout;
@@ -390,11 +391,12 @@ cleanup:
 
 /* Attempt to load a named cluster configured in php.ini */
 void redis_cluster_load(redisCluster *c, char *name, int name_len) {
-    zval z_seeds, z_timeout, z_read_timeout, z_persistent, z_auth, *z_value;
-    char *iptr, *auth = NULL;
-    size_t auth_len = 0;
+    zval z_seeds, z_timeout, z_read_timeout, z_persistent;
+    zval z_user, z_auth, *z_value;
+    zend_string *user = NULL, *pass = NULL;
     double timeout = 0, read_timeout = 0;
     int persistent = 0;
+    char *iptr;
     HashTable *ht_seeds = NULL;
 
     /* Seeds */
@@ -453,26 +455,26 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
         }
     }
 
-    /* Cluster auth */
+    array_init(&z_user);
     array_init(&z_auth);
-    if ((iptr = INI_STR("redis.clusters.auth")) != NULL) {
+
+    if ((iptr = INI_STR("redis.clusters.user")))
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_user);
+    if ((iptr = INI_STR("redis.clusters.auth")))
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_auth);
-    }
-    if ((z_value = zend_hash_str_find(Z_ARRVAL(z_auth), name, name_len)) != NULL &&
-        Z_TYPE_P(z_value) == IS_STRING && Z_STRLEN_P(z_value) > 0
-    ) {
-        auth = Z_STRVAL_P(z_value);
-        auth_len = Z_STRLEN_P(z_value);
-    }
+
+    redis_conf_string(Z_ARRVAL(z_user), name, name_len, &user);
+    redis_conf_string(Z_ARRVAL(z_auth), name, name_len, &pass);
 
     /* Attempt to create/connect to the cluster */
-    redis_cluster_init(c, ht_seeds, timeout, read_timeout, persistent, auth, auth_len);
+    redis_cluster_init(c, ht_seeds, timeout, read_timeout, persistent, user, pass);
 
     /* Clean up our arrays */
     zval_dtor(&z_seeds);
     zval_dtor(&z_timeout);
     zval_dtor(&z_read_timeout);
     zval_dtor(&z_persistent);
+    zval_dtor(&z_user);
     zval_dtor(&z_auth);
 }
 
@@ -483,17 +485,18 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
 /* Create a RedisCluster Object */
 PHP_METHOD(RedisCluster, __construct) {
     zval *object, *z_seeds = NULL;
-    char *name, *auth = NULL;
-    size_t name_len, auth_len = 0;
+    zend_string *user = NULL, *pass = NULL;
     double timeout = 0.0, read_timeout = 0.0;
+    size_t name_len;
     zend_bool persistent = 0;
     redisCluster *context = GET_CONTEXT();
+    char *name;
 
     // Parse arguments
     if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                    "Os!|addbs", &object, redis_cluster_ce, &name,
+                                    "Os!|addbSS", &object, redis_cluster_ce, &name,
                                     &name_len, &z_seeds, &timeout, &read_timeout,
-                                    &persistent, &auth, &auth_len) == FAILURE)
+                                    &persistent, &user, &pass) == FAILURE)
     {
         RETURN_FALSE;
     }
@@ -507,7 +510,7 @@ PHP_METHOD(RedisCluster, __construct) {
      * to a named cluster, stored in php.ini, otherwise we'll need manual seeds */
     if (ZEND_NUM_ARGS() > 1) {
         redis_cluster_init(context, Z_ARRVAL_P(z_seeds), timeout, read_timeout,
-            persistent, auth, auth_len);
+            persistent, user, pass);
     } else {
         redis_cluster_load(context, name, name_len);
     }

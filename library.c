@@ -129,34 +129,86 @@ static int reselect_db(RedisSock *redis_sock) {
     return 0;
 }
 
-/* Helper to resend AUTH <password> in the case of a reconnect */
+/* Append an AUTH command to a smart string if neccessary.  This will either
+ * append the new style AUTH <user> <password>, old style AUTH <password>, or
+ * append no command at all.  Function returns 1 if we appended a command
+ * and 0 otherwise. */
+static int redis_sock_append_auth(RedisSock *redis_sock, smart_string *str) {
+    /* NO OP */
+    if (redis_sock->user == NULL && redis_sock->pass == NULL)
+        return 0;
+
+    redis_cmd_init_sstr(str, !!redis_sock->user + !!redis_sock->pass, "AUTH", sizeof("AUTH") - 1);
+
+    if (redis_sock->user)
+        redis_cmd_append_sstr_zstr(str, redis_sock->user);
+    if (redis_sock->pass)
+        redis_cmd_append_sstr_zstr(str, redis_sock->pass);
+
+    /* We appended a command */
+    return 1;
+}
+
+PHP_REDIS_API void
+redis_sock_copy_auth(RedisSock *dst, RedisSock *src) {
+    redis_sock_set_auth(dst, src->user, src->pass);
+}
+
+PHP_REDIS_API void
+redis_sock_set_auth(RedisSock *redis_sock, zend_string *user, zend_string *pass)
+{
+    /* Release existing user/pass */
+    if (redis_sock->user)
+        zend_string_release(redis_sock->user);
+    if (redis_sock->pass)
+        zend_string_release(redis_sock->pass);
+
+    /* Set new user/pass */
+    redis_sock->user = user ? zend_string_copy(user) : NULL;
+    redis_sock->pass = pass ? zend_string_copy(pass) : NULL;
+}
+
+PHP_REDIS_API char *
+redis_sock_auth_cmd(RedisSock *redis_sock, int *cmdlen) {
+    char *cmd;
+
+    /* NO OP */
+    if (redis_sock->user == NULL && redis_sock->pass == NULL)
+        return NULL;
+
+    if (redis_sock->user && redis_sock->pass) {
+        *cmdlen = redis_spprintf(redis_sock, NULL, &cmd, "AUTH", "SS", redis_sock->user, redis_sock->pass);
+    } else {
+        *cmdlen = redis_spprintf(redis_sock, NULL, &cmd, "AUTH", "S", redis_sock->pass);
+    }
+
+    return cmd;
+}
+
+/* Send Redis AUTH and process response */
 PHP_REDIS_API int
 redis_sock_auth(RedisSock *redis_sock)
 {
-    char *cmd, *response;
-    int cmd_len, response_len;
+    char *cmd, *resp;
+    int cmdlen, resplen, rv = -1;
 
-    cmd_len = redis_spprintf(redis_sock, NULL, &cmd, "AUTH", "S", redis_sock->auth);
+    cmd = redis_sock_auth_cmd(redis_sock, &cmdlen);
+    if (cmd == NULL)
+        return SUCCESS;
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
-        efree(cmd);
-        return -1;
-    }
+    if (redis_sock_write(redis_sock, cmd, cmdlen) < 0)
+        goto cleanup;
 
+    resp = redis_sock_read(redis_sock, &resplen);
+    if (resp == NULL)
+        goto cleanup;
+
+    rv = !REDIS_STRICMP_STATIC(resp, resplen, "+OK");
+
+cleanup:
+    if (resp) efree(resp);
     efree(cmd);
-
-    response = redis_sock_read(redis_sock, &response_len);
-    if (response == NULL) {
-        return -1;
-    }
-
-    if (strncmp(response, "+OK", 3)) {
-        efree(response);
-        return -1;
-    }
-
-    efree(response);
-    return 0;
+    return rv;
 }
 
 /* Helper function and macro to test a RedisSock error prefix. */
@@ -167,7 +219,7 @@ static int redis_sock_errcmp(RedisSock *redis_sock, const char *err, size_t errl
 }
 
 /* Helper function that will throw an exception for a small number of ERR codes
- * returned by Redis.  Typically we just return FALSE to the caller in the event
+ * returned by Redis. eTypically we just return FALSE to the caller in the event
  * of an ERROR reply, but for the following error types:
  *    1) MASTERDOWN
  *    2) AUTH
@@ -247,11 +299,11 @@ redis_check_eof(RedisSock *redis_sock, int no_throw)
                 /* check for EOF again. */
                 errno = 0;
                 if (php_stream_eof(redis_sock->stream) == 0) {
-                    /* If we're using a password, attempt a reauthorization */
-                    if (redis_sock->auth && redis_sock_auth(redis_sock) != 0) {
+                    if (redis_sock_auth(redis_sock) != SUCCESS) {
                         errmsg = "AUTH failed while reconnecting";
                         break;
                     }
+
                     redis_sock->status = REDIS_SOCK_STATUS_READY;
                     /* If we're using a non-zero db, reselect it */
                     if (redis_sock->dbNumber && reselect_db(redis_sock) != 0) {
@@ -763,6 +815,10 @@ int redis_cmd_append_sstr_zval(smart_string *str, zval *z, RedisSock *redis_sock
     if (valfree) efree(val);
 
     return retval;
+}
+
+int redis_cmd_append_sstr_zstr(smart_string *str, zend_string *zstr) {
+    return redis_cmd_append_sstr(str, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
 }
 
 /* Append a string key to a redis command.  This function takes care of prefixing the key
@@ -1814,49 +1870,52 @@ redis_sock_create(char *host, int host_len, int port,
     return redis_sock;
 }
 
+static int redis_uniqid(char *buf, size_t buflen) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+
+    return snprintf(buf, buflen, "phpredis:%08lx%05lx:%08lx",
+                    (long)tv.tv_sec, (long)tv.tv_usec, (long)php_rand());
+}
+
 static int
 redis_sock_check_liveness(RedisSock *redis_sock)
 {
-    char inbuf[4096], uniqid[64];
-    int uniqid_len;
+    char inbuf[4096], uniqid[64], byte;
+    int uniqidlen, auth, rv = FAILURE;
     smart_string cmd = {0};
     struct timeval tv;
     size_t len;
 
-    if (redis_sock->auth) {
-        redis_cmd_init_sstr(&cmd, 1, "AUTH", sizeof("AUTH") - 1);
-        redis_cmd_append_sstr(&cmd, ZSTR_VAL(redis_sock->auth), ZSTR_LEN(redis_sock->auth));
-    }
+    /* AUTH if we need it */
+    auth = redis_sock_append_auth(redis_sock, &cmd);
 
-    gettimeofday(&tv, NULL);
-    uniqid_len = snprintf(uniqid, sizeof(uniqid), "phpredis_pool:%08lx%05lx:%08lx", (long)tv.tv_sec, (long)tv.tv_usec, (long)php_rand());
+    /* ECHO challenge/response */
+    uniqidlen = redis_uniqid(uniqid, sizeof(uniqid));
     redis_cmd_init_sstr(&cmd, 1, "ECHO", sizeof("ECHO") - 1);
-    redis_cmd_append_sstr(&cmd, uniqid, uniqid_len);
-    smart_string_0(&cmd);
+    redis_cmd_append_sstr(&cmd, uniqid, uniqidlen);
 
-    if (redis_sock_write(redis_sock, cmd.c, cmd.len) < 0) {
-        smart_string_free(&cmd);
-        return FAILURE;
+    /* Attempt to deliver command(s) */
+    if (redis_sock_write(redis_sock, cmd.c, cmd.len) < 0)
+        goto cleanup;
+
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1,  &len) < 0)
+        goto cleanup;
+
+    if (auth) {
+        if (!REDIS_STRCMP_STATIC(inbuf, len, "+OK"))
+            goto cleanup;
+        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len))
+            goto cleanup;
     }
+
+    rv = *inbuf != TYPE_BULK && atoi(inbuf+1) == uniqidlen &&
+        redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) == 0 &&
+        !strncmp(inbuf, uniqid, uniqidlen) ? SUCCESS : FAILURE;
+
+cleanup:
     smart_string_free(&cmd);
-
-    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
-        return FAILURE;
-    } else if (redis_sock->auth) {
-        if (strncmp(inbuf, "+OK", 3) != 0) {
-            return FAILURE;
-        } else if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
-            return FAILURE;
-        }
-    }
-    if (*inbuf != TYPE_BULK ||
-        atoi(inbuf + 1) != uniqid_len ||
-        redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 ||
-        strncmp(inbuf, uniqid, uniqid_len) != 0
-    ) {
-        return FAILURE;
-    }
-    return SUCCESS;
+    return rv;
 }
 
 /**
@@ -1999,9 +2058,8 @@ redis_sock_server_open(RedisSock *redis_sock)
             }
             // fall through
         case REDIS_SOCK_STATUS_CONNECTED:
-            if (redis_sock->auth && redis_sock_auth(redis_sock) != SUCCESS) {
+            if (redis_sock_auth(redis_sock) != SUCCESS)
                 break;
-            }
             redis_sock->status = REDIS_SOCK_STATUS_READY;
             // fall through
         case REDIS_SOCK_STATUS_READY:
@@ -2288,8 +2346,11 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
     if (redis_sock->err) {
         zend_string_release(redis_sock->err);
     }
-    if (redis_sock->auth) {
-        zend_string_release(redis_sock->auth);
+    if (redis_sock->user) {
+        zend_string_release(redis_sock->user);
+    }
+    if (redis_sock->pass) {
+        zend_string_release(redis_sock->pass);
     }
     if (redis_sock->persistent_id) {
         zend_string_release(redis_sock->persistent_id);
@@ -2974,5 +3035,72 @@ redis_read_variant_reply_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_
 {
     return variant_reply_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 1, z_tab, ctx);
 }
+
+/* Helper methods to extract configuration settings from a hash table */
+
+zval *redis_hash_str_find_type(HashTable *ht, const char *key, int keylen, int type) {
+    zval *zv = zend_hash_str_find(ht, key, keylen);
+    if (zv == NULL || Z_TYPE_P(zv) != type)
+        return NULL;
+
+    return zv;
+}
+
+void redis_conf_double(HashTable *ht, const char *key, int keylen, double *dval) {
+    zval *zv = zend_hash_str_find(ht, key, keylen);
+    if (zv == NULL)
+        return;
+
+    *dval = zval_get_double(zv);
+}
+
+void redis_conf_bool(HashTable *ht, const char *key, int keylen, int *ival) {
+    zend_string *zstr = NULL;
+
+    redis_conf_string(ht, key, keylen, &zstr);
+    if (zstr == NULL)
+        return;
+
+    *ival = zend_string_equals_literal_ci(zstr, "true") ||
+            zend_string_equals_literal_ci(zstr, "yes") ||
+            zend_string_equals_literal_ci(zstr, "1");
+
+    zend_string_release(zstr);
+}
+
+void redis_conf_zend_bool(HashTable *ht, const char *key, int keylen, zend_bool *bval) {
+    zval *zv = zend_hash_str_find(ht, key, keylen);
+    if (zv == NULL)
+        return;
+
+    *bval = zend_is_true(zv);
+}
+
+void redis_conf_long(HashTable *ht, const char *key, int keylen, zend_long *lval) {
+    zval *zv = zend_hash_str_find(ht, key, keylen);
+    if (zv == NULL)
+        return;
+
+    *lval = zval_get_long(zv);
+}
+
+void redis_conf_int(HashTable *ht, const char *key, int keylen, int *ival) {
+    zval *zv = zend_hash_str_find(ht, key, keylen);
+    if (zv == NULL)
+        return;
+
+    *ival = zval_get_long(zv);
+}
+
+void redis_conf_string(HashTable *ht, const char *key, size_t keylen,
+                       zend_string **sval)
+{
+    zval *zv = zend_hash_str_find(ht, key, keylen);
+    if (zv == NULL)
+        return;
+
+    *sval = zval_get_string(zv);
+}
+
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

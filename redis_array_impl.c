@@ -31,7 +31,8 @@
 extern zend_class_entry *redis_ce;
 
 static RedisArray *
-ra_load_hosts(RedisArray *ra, HashTable *hosts, zend_string *auth, long retry_interval, zend_bool b_lazy_connect)
+ra_load_hosts(RedisArray *ra, HashTable *hosts, zend_string *user,
+              zend_string *pass, long retry_interval, zend_bool b_lazy_connect)
 {
     int i = 0, host_len;
     char *host, *p;
@@ -63,14 +64,13 @@ ra_load_hosts(RedisArray *ra, HashTable *hosts, zend_string *auth, long retry_in
         redis = PHPREDIS_ZVAL_GET_OBJECT(redis_object, &ra->redis[i]);
 
         /* create socket */
-        redis->sock = redis_sock_create(host, host_len, port, ra->connect_timeout, ra->read_timeout, ra->pconnect, NULL, retry_interval);
+        redis->sock = redis_sock_create(host, host_len, port, ra->connect_timeout,
+                                        ra->read_timeout, ra->pconnect, NULL,
+                                        retry_interval);
 
-        /* copy password is specified */
-        if (auth) redis->sock->auth = zend_string_copy(auth);
+        redis_sock_set_auth(redis->sock, user, pass);
 
-        if (!b_lazy_connect)
-        {
-            /* connect */
+        if (!b_lazy_connect) {
             if (redis_sock_server_open(redis->sock) < 0) {
                 ra->count = ++i;
                 return NULL;
@@ -166,10 +166,11 @@ RedisArray *ra_load_array(const char *name) {
     zval z_params_read_timeout;
     zval z_params_lazy_connect;
     zval z_params_consistent;
+    zval z_params_user;
     zval z_params_auth;
     RedisArray *ra = NULL;
 
-    zend_string *algorithm = NULL, *auth = NULL;
+    zend_string *algorithm = NULL, *user = NULL, *auth = NULL;
     zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0, consistent = 0;
     long l_retry_interval = 0;
     zend_bool b_lazy_connect = 0;
@@ -235,9 +236,7 @@ RedisArray *ra_load_array(const char *name) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_index);
     }
     if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_index), name, name_len)) != NULL) {
-        if (Z_TYPE_P(z_data) == IS_STRING && strncmp(Z_STRVAL_P(z_data), "1", 1) == 0) {
-            b_index = 1;
-        }
+        b_index = zval_is_true(z_data);
     }
 
     /* find autorehash option */
@@ -246,9 +245,7 @@ RedisArray *ra_load_array(const char *name) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_autorehash);
     }
     if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_autorehash), name, name_len)) != NULL) {
-        if(Z_TYPE_P(z_data) == IS_STRING && strncmp(Z_STRVAL_P(z_data), "1", 1) == 0) {
-            b_autorehash = 1;
-        }
+        b_autorehash = zval_is_true(z_data);
     }
 
     /* find retry interval option */
@@ -257,11 +254,7 @@ RedisArray *ra_load_array(const char *name) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_retry_interval);
     }
     if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_retry_interval), name, name_len)) != NULL) {
-        if (Z_TYPE_P(z_data) == IS_LONG) {
-            l_retry_interval = Z_LVAL_P(z_data);
-        } else if (Z_TYPE_P(z_data) == IS_STRING) {
-            l_retry_interval = atol(Z_STRVAL_P(z_data));
-        }
+        l_retry_interval = zval_get_long(z_data);
     }
 
     /* find pconnect option */
@@ -270,9 +263,7 @@ RedisArray *ra_load_array(const char *name) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_pconnect);
     }
     if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_pconnect), name, name_len)) != NULL) {
-        if(Z_TYPE_P(z_data) == IS_STRING && strncmp(Z_STRVAL_P(z_data), "1", 1) == 0) {
-            b_pconnect = 1;
-        }
+        b_pconnect = zval_is_true(z_data);
     }
 
     /* find lazy connect option */
@@ -281,9 +272,7 @@ RedisArray *ra_load_array(const char *name) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_lazy_connect);
     }
     if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_lazy_connect), name, name_len)) != NULL) {
-        if (Z_TYPE_P(z_data) == IS_STRING && strncmp(Z_STRVAL_P(z_data), "1", 1) == 0) {
-            b_lazy_connect = 1;
-        }
+        b_lazy_connect = zval_is_true(z_data);
     }
 
     /* find connect timeout option */
@@ -292,13 +281,7 @@ RedisArray *ra_load_array(const char *name) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_connect_timeout);
     }
     if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_connect_timeout), name, name_len)) != NULL) {
-        if (Z_TYPE_P(z_data) == IS_DOUBLE) {
-            d_connect_timeout = Z_DVAL_P(z_data);
-        } else if (Z_TYPE_P(z_data) == IS_STRING)  {
-            d_connect_timeout = atof(Z_STRVAL_P(z_data));
-        } else if (Z_TYPE_P(z_data) == IS_LONG) {
-            d_connect_timeout = Z_LVAL_P(z_data);
-        }
+        d_connect_timeout = zval_get_double(z_data);
     }
 
     /* find read timeout option */
@@ -307,13 +290,7 @@ RedisArray *ra_load_array(const char *name) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_read_timeout);
     }
     if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_read_timeout), name, name_len)) != NULL) {
-        if (Z_TYPE_P(z_data) == IS_DOUBLE) {
-            read_timeout = Z_DVAL_P(z_data);
-        } else if (Z_TYPE_P(z_data) == IS_STRING)  {
-            read_timeout = atof(Z_STRVAL_P(z_data));
-        } else if (Z_TYPE_P(z_data) == IS_LONG) {
-            read_timeout = Z_LVAL_P(z_data);
-        }
+        read_timeout = zval_get_double(z_data);
     }
 
     /* find consistent option */
@@ -327,6 +304,12 @@ RedisArray *ra_load_array(const char *name) {
         }
     }
 
+    array_init(&z_params_user);
+    if ((iptr = INI_STR("redis.arrays.user"))) {
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_auth);
+    }
+    redis_conf_string(Z_ARRVAL(z_params_user), name, name_len, &user);
+
     /* find auth option */
     array_init(&z_params_auth);
     if ((iptr = INI_STR("redis.arrays.auth")) != NULL) {
@@ -337,14 +320,16 @@ RedisArray *ra_load_array(const char *name) {
     }
 
     /* create RedisArray object */
-    ra = ra_make_array(hHosts, &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout, read_timeout, consistent, algorithm, auth);
+    ra = ra_make_array(hHosts, &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval,
+                       b_lazy_connect, d_connect_timeout, read_timeout, consistent, algorithm,
+                       user, auth);
     if (ra) {
         ra->auto_rehash = b_autorehash;
         if(ra->prev) ra->prev->auto_rehash = b_autorehash;
     }
 
-    /* cleanup */
     if (algorithm) zend_string_release(algorithm);
+    if (user) zend_string_release(user);
     if (auth) zend_string_release(auth);
 
     zval_dtor(&z_params_hosts);
@@ -360,6 +345,7 @@ RedisArray *ra_load_array(const char *name) {
     zval_dtor(&z_params_read_timeout);
     zval_dtor(&z_params_lazy_connect);
     zval_dtor(&z_params_consistent);
+    zval_dtor(&z_params_user);
     zval_dtor(&z_params_auth);
     zval_dtor(&z_dist);
     zval_dtor(&z_fun);
@@ -408,7 +394,11 @@ ra_make_continuum(zend_string **hosts, int nb_hosts)
 }
 
 RedisArray *
-ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev, zend_bool b_index, zend_bool b_pconnect, long retry_interval, zend_bool b_lazy_connect, double connect_timeout, double read_timeout, zend_bool consistent, zend_string *algorithm, zend_string *auth)
+ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev,
+              zend_bool b_index, zend_bool b_pconnect, long retry_interval,
+              zend_bool b_lazy_connect, double connect_timeout, double read_timeout,
+              zend_bool consistent, zend_string *algorithm, zend_string *user,
+              zend_string *pass)
 {
     int i, count;
     RedisArray *ra;
@@ -429,7 +419,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
     ra->continuum = NULL;
     ra->algorithm = NULL;
 
-    if (ra_load_hosts(ra, hosts, auth, retry_interval, b_lazy_connect) == NULL || !ra->count) {
+    if (ra_load_hosts(ra, hosts, user, pass, retry_interval, b_lazy_connect) == NULL || !ra->count) {
         for (i = 0; i < ra->count; ++i) {
             zval_dtor(&ra->redis[i]);
             zend_string_release(ra->hosts[i]);
@@ -439,7 +429,8 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
         efree(ra);
         return NULL;
     }
-    ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect, connect_timeout, read_timeout, consistent, algorithm, auth) : NULL;
+
+    ra->prev = hosts_prev ? ra_make_array(hosts_prev, z_fun, z_dist, NULL, b_index, b_pconnect, retry_interval, b_lazy_connect, connect_timeout, read_timeout, consistent, algorithm, user, pass) : NULL;
 
     /* init array data structures */
     ra_init_function_table(ra);

@@ -210,6 +210,10 @@ typedef enum {
         REDIS_PROCESS_RESPONSE_CLOSURE(resp_func, ctx) \
     }
 
+/* Case sensitive compare against compile-time static string */
+#define REDIS_STRCMP_STATIC(s, len, sstr) \
+    (len == sizeof(sstr) - 1 && !strncmp(s, sstr, len))
+
 /* Case insensitive compare against compile-time static string */
 #define REDIS_STRICMP_STATIC(s, len, sstr) \
     (len == sizeof(sstr) - 1 && !strncasecmp(s, sstr, len))
@@ -263,7 +267,8 @@ typedef struct {
     php_stream_context *stream_ctx;
     zend_string        *host;
     int                port;
-    zend_string        *auth;
+    zend_string        *user;
+    zend_string        *pass;
     double             timeout;
     double             read_timeout;
     long               retry_interval;

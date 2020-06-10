@@ -184,6 +184,7 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_auth, 0, 0, 1)
     ZEND_ARG_INFO(0, password)
+    ZEND_ARG_INFO(0, username)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_select, 0, 0, 1)
@@ -3309,13 +3310,37 @@ PHP_METHOD(Redis, getPersistentID) {
 /* {{{ proto Redis::getAuth */
 PHP_METHOD(Redis, getAuth) {
     RedisSock *redis_sock;
+    zend_bool with_user = 0;
+    zval zret;
 
-    if ((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU)) == NULL) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "|b", &with_user) == FAILURE)
         RETURN_FALSE;
-    } else if (redis_sock->auth == NULL) {
-        RETURN_NULL();
+
+    redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+    if (redis_sock == NULL)
+        RETURN_FALSE;
+
+    if (with_user) {
+        array_init(return_value);
+
+        if (redis_sock->user) {
+            add_next_index_str(&zret, redis_sock->user);
+        } else {
+            add_next_index_stringl(&zret, "default", sizeof("default") - 1);
+        }
+
+        if (redis_sock->pass) {
+            add_next_index_str(&zret, redis_sock->pass);
+        } else {
+            add_next_index_null(&zret);
+        }
+    } else {
+        if (redis_sock->pass) {
+            RETURN_STR(redis_sock->pass);
+        } else {
+            RETURN_NULL();
+        }
     }
-    RETURN_STRINGL(ZSTR_VAL(redis_sock->auth), ZSTR_LEN(redis_sock->auth));
 }
 
 /*

@@ -637,9 +637,7 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
     node->sock = redis_sock_create(host, host_len, port, c->timeout,
         c->read_timeout, c->persistent, NULL, 0);
 
-    if (c->flags->auth) {
-        node->sock->auth = zend_string_copy(c->flags->auth);
-    }
+    redis_sock_set_auth(node->sock, c->flags->user, c->flags->pass);
 
     return node;
 }
@@ -850,8 +848,13 @@ cluster_free(redisCluster *c, int free_ctx)
 
     /* Free any allocated prefix */
     if (c->flags->prefix) zend_string_release(c->flags->prefix);
-    /* Free auth info we've got */
-    if (c->flags->auth) zend_string_release(c->flags->auth);
+
+    /* Auth */
+    if (c->flags->user)
+        zend_string_release(c->flags->user);
+    if (c->flags->pass)
+        zend_string_release(c->flags->pass);
+
     efree(c->flags);
 
     /* Call hash table destructors */
@@ -1050,10 +1053,8 @@ cluster_init_seeds(redisCluster *cluster, zend_string **seeds, uint32_t nseeds) 
             (unsigned short)atoi(sep+1), cluster->timeout,
             cluster->read_timeout, cluster->persistent, NULL, 0);
 
-        // Set auth information if specified
-        if (cluster->flags->auth) {
-            sock->auth = zend_string_copy(cluster->flags->auth);
-        }
+        /* Credentials */
+        redis_sock_set_auth(sock, cluster->flags->user, cluster->flags->pass);
 
         // Index this seed by host/port
         key_len = snprintf(key, sizeof(key), "%s:%u", ZSTR_VAL(sock->host),
@@ -2712,7 +2713,7 @@ void free_seed_array(zend_string **seeds, uint32_t nseeds) {
     if (seeds == NULL)
         return;
 
-    for (i = 0; i < nseeds; i++) 
+    for (i = 0; i < nseeds; i++)
         zend_string_release(seeds[i]);
 
     efree(seeds);
@@ -2771,11 +2772,11 @@ cleanup:
 /* Validate cluster construction arguments and return a sanitized and validated
  * array of seeds */
 zend_string**
-cluster_validate_args(double timeout, double read_timeout, HashTable *seeds, 
-                      uint32_t *nseeds, char **errstr) 
+cluster_validate_args(double timeout, double read_timeout, HashTable *seeds,
+                      uint32_t *nseeds, char **errstr)
 {
     zend_string **retval;
-    
+
     if (timeout < 0L || timeout > INT_MAX) {
         if (errstr) *errstr = "Invalid timeout";
         return NULL;

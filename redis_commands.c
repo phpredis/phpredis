@@ -2050,23 +2050,18 @@ int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *pw;
-    size_t pw_len;
+    zend_string *user, *pass;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &pw, &pw_len)
-                             ==FAILURE)
-    {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|S!", pass, user) == FAILURE)
         return FAILURE;
+
+    if (user && pass) {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "AUTH", "SS", user, pass);
+    } else {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "AUTH", "S", user);
     }
 
-    // Construct our AUTH command
-    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "AUTH", "s", pw, pw_len);
-
-    // Free previously allocated password, and update
-    if (redis_sock->auth) zend_string_release(redis_sock->auth);
-    redis_sock->auth = zend_string_init(pw, pw_len, 0);
-
-    // Success
+    redis_sock_set_auth(redis_sock, user, pass);
     return SUCCESS;
 }
 
