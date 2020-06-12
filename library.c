@@ -77,6 +77,8 @@ extern zend_class_entry *redis_exception_ce;
 
 extern int le_redis_pconnect;
 
+static int redis_mbulk_reply_zipped_raw_variant(RedisSock *redis_sock, zval *zret, int count);
+
 static ConnectionPool *
 redis_sock_get_connection_pool(RedisSock *redis_sock)
 {
@@ -1650,9 +1652,9 @@ int redis_read_acl_log_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock
             return FAILURE;
 
         array_init(&zsub);
+        if (redis_mbulk_reply_zipped_raw_variant(redis_sock, &zsub, nsub) == FAILURE)
+            return FAILURE;
 
-        redis_mbulk_reply_loop(redis_sock, &zsub, nsub, UNSERIALIZE_NONE);
-        array_zip_values_and_scores(redis_sock, &zsub, SCORE_DECODE_NONE);
         add_next_index_zval(zret, &zsub);
     }
 
@@ -2328,7 +2330,7 @@ redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval 
     } else {
         add_next_index_zval(z_tab, &z_multi_result);
     }
-    /*zval_copy_ctor(return_value); */
+
     return 0;
 }
 
@@ -2362,6 +2364,55 @@ redis_mbulk_reply_loop(RedisSock *redis_sock, zval *z_tab, int count,
         }
         efree(line);
     }
+}
+
+static int
+redis_mbulk_reply_zipped_raw_variant(RedisSock *redis_sock, zval *zret, int count) {
+    REDIS_REPLY_TYPE type;
+    char *key, *val;
+    int keylen, i;
+    zend_long lval;
+    double dval;
+    long vallen;
+
+    for (i = 0; i < count; i+= 2) {
+        /* Keys should always be bulk strings */
+        if ((key = redis_sock_read(redis_sock, &keylen)) == NULL)
+            return FAILURE;
+
+        /* This can vary */
+        if (redis_read_reply_type(redis_sock, &type, &vallen) < 0)
+            return FAILURE;
+
+        if (type == TYPE_BULK) {
+            if (vallen > INT_MAX || (val = redis_sock_read_bulk_reply(redis_sock, (int)vallen)) == NULL) {
+                efree(key);
+                return FAILURE;
+            }
+
+            /* Possibly overkill, but provides really nice types */
+            switch (is_numeric_string(val, vallen, &lval, &dval, 0)) {
+                case IS_LONG:
+                    add_assoc_long_ex(zret, key, keylen, lval);
+                    break;
+                case IS_DOUBLE:
+                    add_assoc_double_ex(zret, key, keylen, dval);
+                    break;
+                default:
+                    add_assoc_stringl_ex(zret, key, keylen, val, vallen);
+            }
+
+            efree(val);
+        } else if (type == TYPE_INT) {
+            add_assoc_long_ex(zret, key, keylen, (zend_long)vallen);
+        } else {
+            add_assoc_null_ex(zret, key, keylen);
+        }
+
+        efree(key);
+    }
+
+    return SUCCESS;
 }
 
 /* Specialized multibulk processing for HMGET where we need to pair requested
