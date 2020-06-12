@@ -491,7 +491,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
 
 /* Create a RedisCluster Object */
 PHP_METHOD(RedisCluster, __construct) {
-    zval *object, *z_seeds = NULL;
+    zval *object, *z_seeds = NULL, *z_auth = NULL;
     zend_string *user = NULL, *pass = NULL;
     double timeout = 0.0, read_timeout = 0.0;
     size_t name_len;
@@ -501,9 +501,9 @@ PHP_METHOD(RedisCluster, __construct) {
 
     // Parse arguments
     if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                    "Os!|addbSS", &object, redis_cluster_ce, &name,
+                                    "Os!|addbz", &object, redis_cluster_ce, &name,
                                     &name_len, &z_seeds, &timeout, &read_timeout,
-                                    &persistent, &user, &pass) == FAILURE)
+                                    &persistent, &z_auth) == FAILURE)
     {
         RETURN_FALSE;
     }
@@ -513,6 +513,9 @@ PHP_METHOD(RedisCluster, __construct) {
         CLUSTER_THROW_EXCEPTION("You must specify a name or pass seeds!", 0);
     }
 
+    /* Extract username or username and password if they were passed */
+    redis_extract_auth_info(z_auth, &user, &pass);
+
     /* If we've been passed only one argument, the user is attempting to connect
      * to a named cluster, stored in php.ini, otherwise we'll need manual seeds */
     if (ZEND_NUM_ARGS() > 1) {
@@ -521,6 +524,9 @@ PHP_METHOD(RedisCluster, __construct) {
     } else {
         redis_cluster_load(context, name, name_len);
     }
+
+    if (user) zend_string_release(user);
+    if (pass) zend_string_release(pass);
 }
 
 /*

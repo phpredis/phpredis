@@ -3113,8 +3113,7 @@ variant_reply_generic(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zval z_ret;
 
     // Attempt to read our header
-    if(redis_read_reply_type(redis_sock,&reply_type,&reply_info) < 0)
-    {
+    if(redis_read_reply_type(redis_sock,&reply_type,&reply_info) < 0) {
         return -1;
     }
 
@@ -3177,6 +3176,48 @@ redis_read_variant_reply_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_
                                  zval *z_tab, void *ctx)
 {
     return variant_reply_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 1, z_tab, ctx);
+}
+
+PHP_REDIS_API
+int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass) {
+    zval *ztmp;
+    HashTable *ht;
+    int num;
+
+    /* Null out user and password */
+    *user = *pass = NULL;
+
+    /* User passed nothing */
+    if (ztest == NULL)
+        return SUCCESS;
+
+    /* Handle a non-array first */
+    if (Z_TYPE_P(ztest) != IS_ARRAY) {
+        *pass = zval_get_string(ztest);
+        return SUCCESS;
+    }
+
+    /* Handle the array case */
+    ht = Z_ARRVAL_P(ztest);
+    num = zend_hash_num_elements(ht);
+
+    /* Something other than one or two entries makes no sense */
+    if (num != 1 && num != 2) {
+        php_error_docref(NULL, E_WARNING, "When passing an array as auth it must have one or two elements!");
+        return FAILURE;
+    }
+
+    if (num == 2) {
+        if ((ztmp = zend_hash_index_find(ht, 0)))
+            *user = zval_get_string(ztmp);
+        if ((ztmp = zend_hash_index_find(ht, 1)))
+            *pass = zval_get_string(ztmp);
+    } else {
+        if ((ztmp = zend_hash_index_find(ht, 0)))
+            *pass = zval_get_string(ztmp);
+    }
+
+    return SUCCESS;
 }
 
 /* Helper methods to extract configuration settings from a hash table */

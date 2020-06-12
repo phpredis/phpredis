@@ -183,8 +183,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_lrem, 0, 0, 3)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_auth, 0, 0, 1)
-    ZEND_ARG_INFO(0, password)
-    ZEND_ARG_INFO(0, username)
+    ZEND_ARG_INFO(0, auth)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_select, 0, 0, 1)
@@ -1376,11 +1375,15 @@ PHP_METHOD(Redis, acl) {
 
     /* Make our command and free args */
     cmd = redis_variadic_str_cmd("ACL", zargs, argc, &cmdlen);
+
+    zend_string_release(op);
     efree(zargs);
 
     REDIS_PROCESS_REQUEST(redis_sock, cmd, cmdlen);
     if (IS_ATOMIC(redis_sock)) {
-        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        if (cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL) < 0) {
+            RETURN_FALSE;
+        }
     }
     REDIS_PROCESS_RESPONSE(cb);
 }

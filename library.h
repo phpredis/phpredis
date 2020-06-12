@@ -23,6 +23,8 @@
 #define redis_sock_write_sstr(redis_sock, sstr) \
     redis_sock_write(redis_sock, (sstr)->c, (sstr)->len)
 
+PHP_REDIS_API int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass);
+
 int redis_cmd_init_sstr(smart_string *str, int num_args, char *keyword, int keyword_len);
 int redis_cmd_append_sstr(smart_string *str, char *append, int append_len);
 int redis_cmd_append_sstr_int(smart_string *str, int append);

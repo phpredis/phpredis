@@ -2068,17 +2068,25 @@ int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     zend_string *user, *pass;
+    zval *ztest;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|S!", &pass, &user) == FAILURE)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &ztest) == FAILURE ||
+        redis_extract_auth_info(ztest, &user, &pass) == FAILURE)
+    {
         return FAILURE;
+    }
 
     if (user && pass) {
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "AUTH", "SS", user, pass);
-    } else {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "AUTH", "S", user);
+    } else if (pass) {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "AUTH", "S", pass);
     }
 
     redis_sock_set_auth(redis_sock, user, pass);
+
+    if (user) zend_string_release(user);
+    if (pass) zend_string_release(pass);
+
     return SUCCESS;
 }
 
