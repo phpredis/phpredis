@@ -267,6 +267,17 @@ redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if(redis_read_reply_type(redis_sock, &reply_type, &reply_info)<0
        || reply_type != TYPE_MULTIBULK || reply_info != 2)
     {
+        // set error
+        if (reply_type == TYPE_ERR) {
+            char err_buf[128];
+            size_t err_len;
+
+            /* Throws exception on failure */
+            if (!redis_sock_gets(redis_sock, err_buf, sizeof(err_buf) - 1, &err_len)) {
+                redis_sock_set_err(redis_sock, err_buf, err_len);
+                redis_error_throw(redis_sock);
+            }
+        }
         return -1;
     }
 
