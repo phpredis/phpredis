@@ -498,6 +498,10 @@ PHP_REDIS_API void cluster_xclaim_resp(INTERNAL_FUNCTION_PARAMETERS,
 PHP_REDIS_API void cluster_xinfo_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 
+/* Custom ACL handlers */
+PHP_REDIS_API void cluster_acl_getuser_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx);
+PHP_REDIS_API void cluster_acl_log_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx);
+
 /* MULTI BULK processing callbacks */
 int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
     long long count, void *ctx);

@@ -2525,6 +2525,7 @@ PHP_METHOD(RedisCluster, acl) {
     redisCluster *c = GET_CONTEXT();
     smart_string cmdstr = {0};
     int argc = ZEND_NUM_ARGS(), i, readonly;
+    cluster_cb cb;
     zend_string *zs;
     zval *zargs;
     void *ctx = NULL;
@@ -2551,6 +2552,17 @@ PHP_METHOD(RedisCluster, acl) {
     zs = zval_get_string(&zargs[1]);
     readonly = redis_acl_op_readonly(zs);
     redis_cmd_append_sstr_zstr(&cmdstr, zs);
+
+    /* We have specialized handlers for GETUSER and LOG, whereas every
+     * other ACL command can be handled generically */
+    if (zend_string_equals_literal_ci(zs, "GETUSER")) {
+        cb = cluster_acl_getuser_resp;
+    } else if (zend_string_equals_literal_ci(zs, "LOG")) {
+        cb = cluster_acl_log_resp;
+    } else {
+        cb = cluster_variant_resp;
+    }
+
     zend_string_release(zs);
 
     /* Process remaining args */
@@ -2571,11 +2583,12 @@ PHP_METHOD(RedisCluster, acl) {
     }
 
     if (CLUSTER_IS_ATOMIC(c)) {
-        cluster_info_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
     } else {
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_resp, ctx);
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
     }
 
+    efree(cmdstr.c);
     efree(zargs);
 }
 

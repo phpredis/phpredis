@@ -1641,9 +1641,8 @@ redis_xinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_t
     return FAILURE;
 }
 
-int redis_read_acl_log_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                             zval *zret, long count)
-{
+PHP_REDIS_API int
+redis_read_acl_log_reply(RedisSock *redis_sock, zval *zret, long count) {
     zval zsub;
     int i, nsub;
 
@@ -1661,7 +1660,8 @@ int redis_read_acl_log_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock
     return SUCCESS;
 }
 
-int redis_read_acl_getuser_reply(RedisSock *redis_sock, zval *zret, long count) {
+PHP_REDIS_API int
+redis_read_acl_getuser_reply(RedisSock *redis_sock, zval *zret, long count) {
     REDIS_REPLY_TYPE type;
     zval zv;
     char *key, *val;
@@ -1695,7 +1695,8 @@ int redis_read_acl_getuser_reply(RedisSock *redis_sock, zval *zret, long count) 
     return SUCCESS;
 }
 
-int redis_acl_getuser_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
+int redis_acl_custom_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx,
+                           int (*cb)(RedisSock*, zval*, long)) {
     REDIS_REPLY_TYPE type;
     int res = FAILURE;
     zval zret;
@@ -1704,7 +1705,7 @@ int redis_acl_getuser_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (redis_read_reply_type(redis_sock, &type, &len) == 0 && type == TYPE_MULTIBULK) {
         array_init(&zret);
 
-        res = redis_read_acl_getuser_reply(redis_sock, &zret, len);
+        res = cb(redis_sock, &zret, len);
         if (res == FAILURE) {
             zval_dtor(&zret);
             ZVAL_FALSE(&zret);
@@ -1720,29 +1721,14 @@ int redis_acl_getuser_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return res;
 }
 
+int redis_acl_getuser_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
+    return redis_acl_custom_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, ctx,
+                                  redis_read_acl_getuser_reply);
+}
+
 int redis_acl_log_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
-    REDIS_REPLY_TYPE type;
-    int res = FAILURE;
-    zval zret;
-    long len;
-
-    if (redis_read_reply_type(redis_sock, &type, &len) == 0 && type == TYPE_MULTIBULK) {
-        array_init(&zret);
-
-        res = redis_read_acl_log_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &zret, len);
-        if (res == FAILURE) {
-            zval_dtor(&zret);
-            ZVAL_FALSE(&zret);
-        }
-    }
-
-    if (IS_ATOMIC(redis_sock)) {
-        RETVAL_ZVAL(&zret, 0, 0);
-    } else {
-        add_next_index_zval(z_tab, &zret);
-    }
-
-    return res;
+    return redis_acl_custom_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, ctx,
+                                  redis_read_acl_log_reply);
 }
 
 /* Zipped key => value reply but we don't touch anything (e.g. CONFIG GET) */

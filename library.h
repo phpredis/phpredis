@@ -123,6 +123,7 @@ redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements);
 /* Specialized ACL reply handlers */
 PHP_REDIS_API int redis_read_acl_getuser_reply(RedisSock *redis_sock, zval *zret, long len);
 PHP_REDIS_API int redis_acl_getuser_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
+PHP_REDIS_API int redis_read_acl_log_reply(RedisSock *redis_sock, zval *zret, long count);
 PHP_REDIS_API int redis_acl_log_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 
 /*
