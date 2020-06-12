@@ -2047,12 +2047,29 @@ int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+char *redis_variadic_str_cmd(char *kw, zval *argv, int argc, int *cmd_len) {
+    smart_string cmdstr = {0};
+    zend_string *zstr;
+    int i;
+
+    redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
+
+    for (i = 0; i < argc; i++) {
+        zstr = zval_get_string(&argv[i]);
+        redis_cmd_append_sstr_zstr(&cmdstr, zstr);
+        zend_string_release(zstr);
+    }
+
+    *cmd_len = cmdstr.len;
+    return cmdstr.c;
+}
+
 int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     zend_string *user, *pass;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|S!", pass, user) == FAILURE)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|S!", &pass, &user) == FAILURE)
         return FAILURE;
 
     if (user && pass) {

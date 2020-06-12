@@ -27,6 +27,7 @@
 
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, __destruct);
+PHP_METHOD(Redis, acl);
 PHP_METHOD(Redis, append);
 PHP_METHOD(Redis, auth);
 PHP_METHOD(Redis, bgSave);
@@ -261,8 +262,9 @@ PHP_MSHUTDOWN_FUNCTION(redis);
 PHP_MINFO_FUNCTION(redis);
 
 /* Redis response handler function callback prototype */
-typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock, zval *z_tab, void *ctx);
+typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
+
+typedef int (*FailableResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock*, zval*, void*);
 
 PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
 

@@ -96,6 +96,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_scan_cl, 0, 0, 2)
     ZEND_ARG_INFO(0, i_count)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_acl_cl, 0, 0, 2)
+    ZEND_ARG_INFO(0, key_or_address)
+    ZEND_ARG_INFO(0, subcmd)
+    ZEND_ARG_VARIADIC_INFO(0, args)
+ZEND_END_ARG_INFO()
+
 /* Function table */
 zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, __construct, arginfo_ctor, ZEND_ACC_PUBLIC)
@@ -104,6 +110,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, _redir, arginfo_void, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _serialize, arginfo_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _unserialize, arginfo_value, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, acl, arginfo_acl_cl, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, append, arginfo_key_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, bgrewriteaof, arginfo_key_or_address, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, bgsave, arginfo_key_or_address, ZEND_ACC_PUBLIC)
@@ -2499,6 +2506,77 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
     // Update iterator reference
     Z_LVAL_P(z_it) = it;
+}
+
+static int redis_acl_op_readonly(zend_string *op) {
+    /* Only return read-only for operations we know to be */
+    if (ZSTR_STRICMP_STATIC(op, "LIST") ||
+        ZSTR_STRICMP_STATIC(op, "USERS") ||
+        ZSTR_STRICMP_STATIC(op, "GETUSER") ||
+        ZSTR_STRICMP_STATIC(op, "CAT") ||
+        ZSTR_STRICMP_STATIC(op, "GENPASS") ||
+        ZSTR_STRICMP_STATIC(op, "WHOAMI") ||
+        ZSTR_STRICMP_STATIC(op, "LOG")) return 1;
+
+    return 0;
+}
+
+PHP_METHOD(RedisCluster, acl) {
+    redisCluster *c = GET_CONTEXT();
+    smart_string cmdstr = {0};
+    int argc = ZEND_NUM_ARGS(), i, readonly;
+    zend_string *zs;
+    zval *zargs;
+    void *ctx = NULL;
+    short slot;
+
+    /* ACL in cluster needs a slot argument, and then at least the op */
+    if (argc < 2) {
+        WRONG_PARAM_COUNT;
+        RETURN_FALSE;
+    }
+
+    /* Grab all our arguments and determine the command slot */
+    zargs = emalloc(argc * sizeof(*zargs));
+    if (zend_get_parameters_array(ht, argc, zargs) == FAILURE ||
+        (slot = cluster_cmd_get_slot(c, &zargs[0]) < 0))
+    {
+        efree(zargs);
+        RETURN_FALSE;
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc - 1, "ACL");
+
+    /* Read the op, determin if it's readonly, and add it */
+    zs = zval_get_string(&zargs[1]);
+    readonly = redis_acl_op_readonly(zs);
+    redis_cmd_append_sstr_zstr(&cmdstr, zs);
+    zend_string_release(zs);
+
+    /* Process remaining args */
+    for (i = 2; i < argc; i++) {
+        zs = zval_get_string(&zargs[i]);
+        redis_cmd_append_sstr_zstr(&cmdstr, zs);
+        zend_string_release(zs);
+    }
+
+    /* Can we use replicas? */
+    c->readonly = readonly && CLUSTER_IS_ATOMIC(c);
+
+    /* Kick off our command */
+    if (cluster_send_slot(c, slot, cmdstr.c, cmdstr.len, TYPE_EOF) < 0) {
+        CLUSTER_THROW_EXCEPTION("Unabler to send ACL command", 0);
+        efree(zargs);
+        RETURN_FALSE;
+    }
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        cluster_info_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_resp, ctx);
+    }
+
+    efree(zargs);
 }
 
 /* {{{ proto RedisCluster::scan(string master, long it [, string pat, long cnt]) */

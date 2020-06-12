@@ -849,12 +849,7 @@ cluster_free(redisCluster *c, int free_ctx)
     /* Free any allocated prefix */
     if (c->flags->prefix) zend_string_release(c->flags->prefix);
 
-    /* Auth */
-    if (c->flags->user)
-        zend_string_release(c->flags->user);
-    if (c->flags->pass)
-        zend_string_release(c->flags->pass);
-
+    redis_sock_free_auth(c->flags);
     efree(c->flags);
 
     /* Call hash table destructors */

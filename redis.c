@@ -201,6 +201,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_slaveof, 0, 0, 0)
     ZEND_ARG_INFO(0, port)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_acl, 0, 0, 1)
+    ZEND_ARG_INFO(0, subcmd)
+    ZEND_ARG_VARIADIC_INFO(0, args)
+ZEND_END_ARG_INFO()
+
 /* }}} */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_migrate, 0, 0, 5)
@@ -248,6 +253,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, _prefix, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _serialize, arginfo_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _unserialize, arginfo_value, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, acl, arginfo_acl, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, append, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, auth, arginfo_auth, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, bgSave, arginfo_void, ZEND_ACC_PUBLIC)
@@ -1335,6 +1341,49 @@ PHP_METHOD(Redis, type)
     REDIS_PROCESS_KW_CMD("TYPE", redis_key_cmd, redis_type_response);
 }
 /* }}} */
+
+/* {{{ proto mixed Redis::acl(string $op, ...) }}} */
+PHP_METHOD(Redis, acl) {
+    RedisSock *redis_sock;
+    FailableResultCallback cb;
+    zval *zargs;
+    zend_string *op;
+    char *cmd;
+    int cmdlen, argc = ZEND_NUM_ARGS();
+
+    if (argc < 1 || (redis_sock = redis_sock_get(getThis(), 0)) == NULL) {
+        if (argc < 1) {
+            php_error_docref(NULL, E_WARNING, "ACL command requires at least one argument");
+        }
+        RETURN_FALSE;
+    }
+
+    zargs = emalloc(argc * sizeof(*zargs));
+    if (zend_get_parameters_array(ht, argc, zargs) == FAILURE) {
+        efree(zargs);
+        RETURN_FALSE;
+    }
+
+    /* Read the subcommand and set response callback */
+    op = zval_get_string(&zargs[0]);
+    if (zend_string_equals_literal_ci(op, "GETUSER")) {
+        cb = redis_acl_getuser_reply;
+    } else if (zend_string_equals_literal_ci(op, "LOG")) {
+        cb = redis_acl_log_reply;
+    } else {
+        cb = redis_read_variant_reply;
+    }
+
+    /* Make our command and free args */
+    cmd = redis_variadic_str_cmd("ACL", zargs, argc, &cmdlen);
+    efree(zargs);
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmdlen);
+    if (IS_ATOMIC(redis_sock)) {
+        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(cb);
+}
 
 /* {{{ proto long Redis::append(string key, string val) */
 PHP_METHOD(Redis, append)
@@ -2543,8 +2592,7 @@ redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
 
     for (fi = redis_sock->head; fi; /* void */) {
         if (fi->fun) {
-            fi->fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab,
-                fi->ctx);
+            fi->fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, fi->ctx);
             fi = fi->next;
             continue;
         }

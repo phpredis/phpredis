@@ -380,7 +380,7 @@ static void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_
 PS_OPEN_FUNC(redis)
 {
     php_url *url;
-    zval params, *v;
+    zval params;
     int i, j, path_len;
 
     redis_pool *pool = ecalloc(1, sizeof(*pool));
@@ -929,10 +929,7 @@ PS_OPEN_FUNC(rediscluster) {
         c->flags->prefix = CLUSTER_DEFAULT_PREFIX();
     }
 
-    if (user && ZSTR_LEN(user))
-        c->flags->user = zend_string_copy(user);
-    if (pass && ZSTR_LEN(pass))
-        c->flags->pass = zend_string_copy(pass);
+    redis_sock_set_auth(c->flags, user, pass);
 
     /* First attempt to load from cache */
     if (CLUSTER_CACHING_ENABLED()) {
