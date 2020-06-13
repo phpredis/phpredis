@@ -82,6 +82,7 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_COMPRESSION        7
 #define REDIS_OPT_REPLY_LITERAL      8
 #define REDIS_OPT_COMPRESSION_LEVEL  9
+#define REDIS_OPT_IGBINARY_NO_STRINGS    10
 
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
@@ -273,6 +274,7 @@ typedef struct {
     zend_string        *persistent_id;
 
     redis_serializer   serializer;
+    int                no_strings;
     int                compression;
     int                compression_level;
     long               dbNumber;

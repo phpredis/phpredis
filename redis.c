@@ -701,6 +701,7 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_PHP"), REDIS_SERIALIZER_PHP);
 #ifdef HAVE_REDIS_IGBINARY
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_IGBINARY"), REDIS_SERIALIZER_IGBINARY);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_IGBINARY_NO_STRINGS"), REDIS_OPT_IGBINARY_NO_STRINGS);
 #endif
 #ifdef HAVE_REDIS_MSGPACK
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_MSGPACK"), REDIS_SERIALIZER_MSGPACK);

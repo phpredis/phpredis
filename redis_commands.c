@@ -3933,6 +3933,10 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
     switch(option) {
         case REDIS_OPT_SERIALIZER:
             RETURN_LONG(redis_sock->serializer);
+#ifdef HAVE_REDIS_IGBINARY
+        case REDIS_OPT_IGBINARY_NO_STRINGS:
+            RETURN_LONG(redis_sock->no_strings);
+#endif
         case REDIS_OPT_COMPRESSION:
             RETURN_LONG(redis_sock->compression);
         case REDIS_OPT_COMPRESSION_LEVEL:
@@ -3994,6 +3998,12 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             val_long = zval_get_long(val);
             redis_sock->reply_literal = val_long != 0;
             RETURN_TRUE;
+#ifdef HAVE_REDIS_IGBINARY
+        case REDIS_OPT_IGBINARY_NO_STRINGS:
+            val_long = zval_get_long(val);
+            redis_sock->no_strings = val_long != 0;
+            RETURN_TRUE;
+#endif
         case REDIS_OPT_COMPRESSION:
             val_long = zval_get_long(val);
             if (val_long == REDIS_COMPRESSION_NONE
