@@ -10,7 +10,7 @@ class TestSuite
     private $str_host;
 
     /* Redis authentication we'll use */
-    private $str_auth;
+    private $auth;
 
     private static $_boo_colorize = false;
 
@@ -28,13 +28,13 @@ class TestSuite
     public static $errors = [];
     public static $warnings = [];
 
-    public function __construct($str_host, $str_auth) {
+    public function __construct($str_host, $auth) {
         $this->str_host = $str_host;
-        $this->str_auth = $str_auth;
+        $this->auth = $auth;
     }
 
     public function getHost() { return $this->str_host; }
-    public function getAuth() { return $this->str_auth; }
+    public function getAuth() { return $this->auth; }
 
     /**
      * Returns the fully qualified host path,
@@ -157,7 +157,7 @@ class TestSuite
             posix_isatty(STDOUT);
     }
 
-    public static function run($className, $str_limit = NULL, $str_host = NULL, $str_auth = NULL) {
+    public static function run($className, $str_limit = NULL, $str_host = NULL, $auth = NULL) {
         /* Lowercase our limit arg if we're passed one */
         $str_limit = $str_limit ? strtolower($str_limit) : $str_limit;
 
@@ -181,7 +181,7 @@ class TestSuite
             echo self::make_bold($str_out_name);
 
             $count = count($className::$errors);
-            $rt = new $className($str_host, $str_auth);
+            $rt = new $className($str_host, $auth);
 
             try {
                 $rt->setUp();

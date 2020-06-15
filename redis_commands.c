@@ -2070,12 +2070,17 @@ int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zend_string *user, *pass;
     zval *ztest;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &ztest) == FAILURE ||
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z!", &ztest) == FAILURE ||
         redis_extract_auth_info(ztest, &user, &pass) == FAILURE)
     {
         return FAILURE;
     }
 
+    /* We weren't provided user or password, short circuit */
+    if (!user && !pass)
+        return FAILURE;
+
+    /* Construct either AUTH <user> <pass> or legacy AUTH <pass> */
     if (user && pass) {
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "AUTH", "SS", user, pass);
     } else if (pass) {

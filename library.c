@@ -229,7 +229,7 @@ static int redis_sock_errcmp(RedisSock *redis_sock, const char *err, size_t errl
 }
 
 /* Helper function that will throw an exception for a small number of ERR codes
- * returned by Redis. eTypically we just return FALSE to the caller in the event
+ * returned by Redis.  Typically we just return FALSE to the caller in the event
  * of an ERROR reply, but for the following error types:
  *    1) MASTERDOWN
  *    2) AUTH

@@ -3368,6 +3368,7 @@ PHP_METHOD(Redis, getAuth) {
         RETURN_FALSE;
 
     redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+
     if (redis_sock == NULL)
         RETURN_FALSE;
 
@@ -3385,12 +3386,10 @@ PHP_METHOD(Redis, getAuth) {
         } else {
             add_next_index_null(&zret);
         }
+    } else if (redis_sock->pass) {
+        RETURN_STR(redis_sock->pass);
     } else {
-        if (redis_sock->pass) {
-            RETURN_STR(redis_sock->pass);
-        } else {
-            RETURN_NULL();
-        }
+        RETURN_NULL();
     }
 }
 

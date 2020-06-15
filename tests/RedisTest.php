@@ -53,12 +53,45 @@ class Redis_Test extends TestSuite
         return round(microtime(true)*1000);
     }
 
+    protected function getAuthParts(&$user, &$pass) {
+        $user = $pass = NULL;
+
+        $auth = $this->getAuth();
+        if ( ! $auth)
+            return;
+
+        if (is_array($auth)) {
+            if (count($auth) > 1) {
+                list($user, $pass) = $auth;
+            } else {
+                $pass = $auth[0];
+            }
+        } else {
+            $pass = $auth;
+        }
+    }
+
+    protected function getAuthFragment() {
+        $this->getAuthParts($user, $pass);
+
+        if ($user && $pass) {
+            return "user=$user&auth=$pass";
+        } else if ($pass) {
+            return "auth=$pass";
+        } else {
+            return NULL;
+        }
+    }
+
     protected function getFullHostPath()
     {
         $fullHostPath = parent::getFullHostPath();
-        if (isset($fullHostPath) && $this->getAuth()) {
-            $fullHostPath .= '?auth=' . $this->getAuth();
+        $authFragment = $this->getAuthFragment();
+
+        if (isset($fullHostPath) && $authFragment) {
+            $fullHostPath .= "?auth=$authFragment";
         }
+
         return $fullHostPath;
     }
 
