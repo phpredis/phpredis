@@ -4,8 +4,6 @@ require_once(dirname($_SERVER['PHP_SELF'])."/TestSuite.php");
 
 class Redis_Test extends TestSuite
 {
-    const PORT = 6379;
-
     /* City lat/long */
     protected $cities = [
         'Chico'         => [-121.837478, 39.728494],
@@ -98,7 +96,7 @@ class Redis_Test extends TestSuite
     protected function newInstance() {
         $r = new Redis();
 
-        $r->connect($this->getHost(), self::PORT);
+        $r->connect($this->getHost(), $this->getPort());
 
         if($this->getAuth()) {
             $this->assertTrue($r->auth($this->getAuth()));
@@ -4991,7 +4989,7 @@ class Redis_Test extends TestSuite
     public function testIntrospection() {
         // Simple introspection tests
         $this->assertTrue($this->redis->getHost() === $this->getHost());
-        $this->assertTrue($this->redis->getPort() === self::PORT);
+        $this->assertTrue($this->redis->getPort() === $this->getPort());
         $this->assertTrue($this->redis->getAuth() === $this->getAuth());
     }
 

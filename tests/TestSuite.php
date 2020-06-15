@@ -6,8 +6,9 @@ class TestSkippedException extends Exception {}
 // phpunit is such a pain to install, we're going with pure-PHP here.
 class TestSuite
 {
-    /* Host the tests will use */
+    /* Host and port the unit tests will use */
     private $str_host;
+    private $i_port = 6379;
 
     /* Redis authentication we'll use */
     private $auth;
@@ -28,12 +29,14 @@ class TestSuite
     public static $errors = [];
     public static $warnings = [];
 
-    public function __construct($str_host, $auth) {
+    public function __construct($str_host, $i_port, $auth) {
         $this->str_host = $str_host;
+        $this->i_port = $i_port;
         $this->auth = $auth;
     }
 
     public function getHost() { return $this->str_host; }
+    public function getPort() { return $this->i_port; }
     public function getAuth() { return $this->auth; }
 
     /**
@@ -45,7 +48,7 @@ class TestSuite
     protected function getFullHostPath()
     {
         return $this->str_host
-            ? 'tcp://' . $this->str_host . ':6379'
+            ? 'tcp://' . $this->str_host . ':' . $this->i_port
             : null;
     }
 
@@ -157,7 +160,7 @@ class TestSuite
             posix_isatty(STDOUT);
     }
 
-    public static function run($className, $str_limit = NULL, $str_host = NULL, $auth = NULL) {
+    public static function run($className, $str_limit = NULL, $str_host = NULL, $i_port = NULL, $auth = NULL) {
         /* Lowercase our limit arg if we're passed one */
         $str_limit = $str_limit ? strtolower($str_limit) : $str_limit;
 
@@ -181,7 +184,7 @@ class TestSuite
             echo self::make_bold($str_out_name);
 
             $count = count($className::$errors);
-            $rt = new $className($str_host, $auth);
+            $rt = new $className($str_host, $i_port, $auth);
 
             try {
                 $rt->setUp();
