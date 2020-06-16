@@ -87,7 +87,7 @@ class Redis_Test extends TestSuite
         $authFragment = $this->getAuthFragment();
 
         if (isset($fullHostPath) && $authFragment) {
-            $fullHostPath .= "?auth=$authFragment";
+            $fullHostPath .= "?$authFragment";
         }
 
         return $fullHostPath;
