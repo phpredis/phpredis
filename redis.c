@@ -3387,7 +3387,7 @@ PHP_METHOD(Redis, getAuth) {
             add_next_index_null(&zret);
         }
     } else if (redis_sock->pass) {
-        RETURN_STR(redis_sock->pass);
+        RETURN_STR_COPY(redis_sock->pass);
     } else {
         RETURN_NULL();
     }
