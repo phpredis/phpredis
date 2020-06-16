@@ -6055,6 +6055,40 @@ class Redis_Test extends TestSuite
         }
     }
 
+    public function testAcl() {
+        if ( ! $this->minVersionCheck("6.0"))
+            return $this->markTestSkipped();
+
+        /* ACL USERS/adduser */
+        $this->assertTrue(in_array('default', $this->redis->acl('USERS')));
+        $this->redis->acl('ADDUSER', 'admin', 'on', '>admin', '+@all');
+        $this->assertTrue(in_array('default', $this->redis->acl('USERS')));
+
+        /* Verify ACL getuser has the correct hash and is in 'nice' format */
+        $arr_admin = $this->redis->acl('GETUSER', 'admin');
+        $this->assertTrue(in_array(hash('sha256', 'admin'), $arr_admin['passwords']));
+
+
+        /* Try to log in with a bad username/password */
+
+        try {
+            $rv = $this->redis->auth(['hacker', 'lolwut']);
+        } catch (Exception $ex) {
+            /* Just ignore the exception */
+        }
+
+        /* We attempted a bad login.  We should have an ACL log entry */
+        $arr_log = $this->redis->acl('log');
+        if (! $arr_log || !is_array($arr_log)) {
+            $this->assertTrue(false);
+            return;
+        }
+
+        $arr_entry = array_shift($arr_log);
+        $this->assertTrue(isset($arr_entry['age-seconds']));
+        $this->assertTrue(isset($arr_entry['count']));
+    }
+
     /* If we detect a unix socket make sure we can connect to it in a variety of ways */
     public function testUnixSocket() {
         if ( ! file_exists("/tmp/redis.sock")) {

@@ -242,18 +242,24 @@ redis_error_throw(RedisSock *redis_sock)
     if (redis_sock == NULL || redis_sock->err == NULL)
         return;
 
+    /* Redis 6 decided to add 'ERR AUTH' which has a normal 'ERR' prefix
+     * but is actually an authentication error that we will want to throw
+     * an exception for, so just short circuit if this is any other 'ERR'
+     * prefixed error. */
+    if (REDIS_SOCK_ERRCMP_STATIC(redis_sock, "ERR") &&
+        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "ERR AUTH")) return;
+
     /* We may want to flip this logic and check for MASTERDOWN, AUTH,
      * and LOADING but that may have side effects (esp for things like
      * Disque) */
-    if (!REDIS_SOCK_ERRCMP_STATIC(redis_sock, "ERR") &&
-        !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOSCRIPT") &&
+    if (!REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOSCRIPT") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOQUORUM") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOGOODSLAVE") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "WRONGTYPE") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "BUSYGROUP") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "NOGROUP"))
     {
-        REDIS_THROW_EXCEPTION( ZSTR_VAL(redis_sock->err), 0);
+        REDIS_THROW_EXCEPTION(ZSTR_VAL(redis_sock->err), 0);
     }
 }
 
