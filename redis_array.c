@@ -261,27 +261,10 @@ PHP_METHOD(RedisArray, __construct)
             ZVAL_ZVAL(&z_dist, zpData, 1, 0);
         }
 
-        /* extract function name. */
-        if ((zpData = REDIS_HASH_STR_FIND_STATIC(hOpts, "algorithm")) && Z_TYPE_P(zpData) == IS_STRING) {
-            algorithm = zval_get_string(zpData);
-        }
-
-        /* extract index option. */
-        if ((zpData = REDIS_HASH_STR_FIND_STATIC(hOpts, "index"))) {
-            b_index = zval_is_true(zpData);
-        }
-
-        /* extract autorehash option. */
-        if ((zpData = REDIS_HASH_STR_FIND_STATIC(hOpts, "autorehash"))) {
-            b_autorehash = zval_is_true(zpData);
-        }
-
-        /* pconnect */
-        if ((zpData = REDIS_HASH_STR_FIND_STATIC(hOpts, "pconnect"))) {
-            b_pconnect = zval_is_true(zpData);
-        }
-
-        /* extract retry_interval option. */
+        REDIS_CONF_STRING_STATIC(hOpts, "algorithm", &algorithm);
+        REDIS_CONF_ZEND_BOOL_STATIC(hOpts, "index", &b_index);
+        REDIS_CONF_ZEND_BOOL_STATIC(hOpts, "autorehash", &b_autorehash);
+        REDIS_CONF_ZEND_BOOL_STATIC(hOpts, "pconnect", &b_pconnect);
         REDIS_CONF_LONG_STATIC(hOpts, "retry_interval", &l_retry_interval);
         REDIS_CONF_ZEND_BOOL_STATIC(hOpts, "lazy_connect", &b_lazy_connect);
         REDIS_CONF_ZEND_BOOL_STATIC(hOpts, "consistent", &consistent);
