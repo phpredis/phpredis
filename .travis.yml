@@ -40,6 +40,7 @@ before_install:
   - ./configure $CFGARGS
 install: make install
 before_script:
+  - curl -L https://github.com/antirez/redis/archive/6.0.5.tar.gz| tar xvz && cd redis-6.0.5 && make && make install
   - mkdir -p tests/nodes/ && echo > tests/nodes/nodemap
   - redis-server --port 0 --daemonize yes --requirepass phpredis --unixsocket /tmp/redis.sock
   - for PORT in $(seq 6379 6382) $(seq 32767 32769); do redis-server --port $PORT --daemonize yes --requirepass phpredis; done
