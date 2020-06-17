@@ -98,6 +98,51 @@ class TestSuite
         return false;
     }
 
+    protected function assertInArray($ele, $arr, $cb = NULL) {
+        if ($cb && !is_callable($cb))
+            die("Fatal:  assertInArray callback must be callable!\n");
+
+        if (($in = in_array($ele, $arr)) && (!$cb || $cb($arr[array_search($ele, $arr)])))
+            return true;
+
+
+        $bt = debug_backtrace(false);
+        $ex = $in ? 'validation' : 'missing';
+        self::$errors []= sprintf("Assertion failed: %s:%d (%s) [%s '%s']\n",
+            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], $ex, $ele);
+
+        return false;
+    }
+
+    protected function assertArrayKey($arr, $key, $cb = NULL) {
+        if ($cb && !is_callable($cb))
+            die("Fatal:  assertArrayKey callback must be callable\n");
+
+        if (($exists = isset($arr[$key])) && (!$cb || $cb($arr[$key])))
+            return true;
+
+        $bt = debug_backtrace(false);
+        $ex = $exists ? 'validation' : 'missing';
+        self::$errors []= sprintf("Assertion failed: %s:%d (%s) [%s '%s']\n",
+            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], $ex, $key);
+
+        return false;
+    }
+
+    protected function assertValidate($val, $cb) {
+        if ( ! is_callable($cb))
+            die("Fatal:  Callable assertValidate callback required\n");
+
+        if ($cb($val))
+            return true;
+
+        $bt = debug_backtrace(false);
+        self::$errors []= sprintf("Assertion failed: %s:%d (%s)\n",
+            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+
+        return false;
+    }
+
     protected function assertLess($a, $b) {
         if($a < $b)
             return;

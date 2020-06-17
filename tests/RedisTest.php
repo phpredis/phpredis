@@ -6059,18 +6059,20 @@ class Redis_Test extends TestSuite
         if ( ! $this->minVersionCheck("6.0"))
             return $this->markTestSkipped();
 
-        /* ACL USERS/adduser */
+        /* ACL USERS/SETUSER */
         $this->assertTrue(in_array('default', $this->redis->acl('USERS')));
         $this->assertTrue($this->redis->acl('SETUSER', 'admin', 'on', '>admin', '+@all'));
-        $this->assertTrue(in_array('default', $this->redis->acl('USERS')));
+        $this->assertInArray('default', $this->redis->acl('USERS'));
 
-        /* Verify ACL getuser has the correct hash and is in 'nice' format */
+        /* Verify ACL GETUSER has the correct hash and is in 'nice' format */
         $arr_admin = $this->redis->acl('GETUSER', 'admin');
-        $this->assertTrue(in_array(hash('sha256', 'admin'), $arr_admin['passwords']));
+        $this->assertInArray(hash('sha256', 'admin'), $arr_admin['passwords']);
 
+        /* Now nuke our 'admin' user and make sure it went away */
+        $this->assertTrue($this->redis->acl('DELUSER', 'admin'));
+        $this->assertTrue(!in_array('admin', $this->redis->acl('USERS')));
 
         /* Try to log in with a bad username/password */
-
         try {
             $rv = $this->redis->auth(['hacker', 'lolwut']);
         } catch (Exception $ex) {
@@ -6084,9 +6086,29 @@ class Redis_Test extends TestSuite
             return;
         }
 
+        /* Make sure our ACL LOG entries are nice for the user */
         $arr_entry = array_shift($arr_log);
-        $this->assertTrue(isset($arr_entry['age-seconds']));
-        $this->assertTrue(isset($arr_entry['count']));
+        $this->assertArrayKey($arr_entry, 'age-seconds', 'is_numeric');
+        $this->assertArrayKey($arr_entry, 'count', 'is_int');
+
+        /* ACL CAT */
+        $cats = $this->redis->acl('CAT');
+        foreach (['read', 'write', 'slow'] as $cat) {
+            $this->assertInArray($cat, $cats);
+        }
+
+        /* ACL CAT <string> */
+        $cats = $this->redis->acl('CAT', 'string');
+        foreach (['get', 'set', 'setnx'] as $cat) {
+            $this->assertInArray($cat, $cats);
+        }
+
+        /* ACL GENPASS/ACL GENPASS <bits> */
+        $this->assertValidate($this->redis->acl('GENPASS'), 'ctype_xdigit');
+        $this->assertValidate($this->redis->acl('GENPASS', 1024), 'ctype_xdigit');
+
+        /* ACL WHOAMI */
+        $this->assertValidate($this->redis->acl('WHOAMI'), function($v) { return strlen($v) > 0; });
     }
 
     /* If we detect a unix socket make sure we can connect to it in a variety of ways */
