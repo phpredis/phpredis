@@ -1,0 +1,2 @@
+user default on nopass ~* -@all +cluster +info
+user phpredis on >phpredis ~* +@all
