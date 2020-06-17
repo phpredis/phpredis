@@ -6061,7 +6061,7 @@ class Redis_Test extends TestSuite
 
         /* ACL USERS/adduser */
         $this->assertTrue(in_array('default', $this->redis->acl('USERS')));
-        $this->redis->acl('ADDUSER', 'admin', 'on', '>admin', '+@all');
+        $this->assertTrue($this->redis->acl('SETUSER', 'admin', 'on', '>admin', '+@all'));
         $this->assertTrue(in_array('default', $this->redis->acl('USERS')));
 
         /* Verify ACL getuser has the correct hash and is in 'nice' format */
