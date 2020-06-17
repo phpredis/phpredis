@@ -6062,6 +6062,7 @@ class Redis_Test extends TestSuite
         /* ACL USERS/SETUSER */
         $this->assertTrue(in_array('default', $this->redis->acl('USERS')));
         $this->assertTrue($this->redis->acl('SETUSER', 'admin', 'on', '>admin', '+@all'));
+        $this->assertTrue($this->redis->acl('SETUSER', 'noperm', 'on', '>noperm', '-@all'));
         $this->assertInArray('default', $this->redis->acl('USERS'));
 
         /* Verify ACL GETUSER has the correct hash and is in 'nice' format */
@@ -6073,11 +6074,8 @@ class Redis_Test extends TestSuite
         $this->assertTrue(!in_array('admin', $this->redis->acl('USERS')));
 
         /* Try to log in with a bad username/password */
-        try {
-            $rv = $this->redis->auth(['hacker', 'lolwut']);
-        } catch (Exception $ex) {
-            /* Just ignore the exception */
-        }
+        $this->assertThrowsMatch($this->redis,
+            function($o) { $o->auth(['1337haxx00r', 'lolwut']); }, '/^WRONGPASS.*$/');
 
         /* We attempted a bad login.  We should have an ACL log entry */
         $arr_log = $this->redis->acl('log');
@@ -6109,6 +6107,13 @@ class Redis_Test extends TestSuite
 
         /* ACL WHOAMI */
         $this->assertValidate($this->redis->acl('WHOAMI'), function($v) { return strlen($v) > 0; });
+
+        /* Finally make sure AUTH errors throw an exception */
+        $r2 = $this->newInstance(true);
+
+        /* Test NOPERM exception */
+        $this->assertTrue($r2->auth(['noperms', 'noperms']));
+        $this->assertThrowsMatch($r2, function($r) { $r->set('foo', 'bar'); }, '/^NOPERM.*$/');
     }
 
     /* If we detect a unix socket make sure we can connect to it in a variety of ways */

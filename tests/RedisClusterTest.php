@@ -694,9 +694,7 @@ class Redis_Cluster_Test extends Redis_Test {
         if ( ! $this->minVersionCheck("6.0"))
             return $this->markTestSkipped();
 
-        $this->assertTrue(in_array('default', $this->redis->acl('foo', 'USERS')));
-        $arr_list = $this->redis->acl('foo', 'users');
-        $this->assertTrue(is_array($arr_list) && count($arr_list) > 0);
+        $this->assertInArray('default', $this->redis->acl('foo', 'USERS'));
     }
 
     public function testSession()

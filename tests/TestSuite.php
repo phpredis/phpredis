@@ -143,6 +143,30 @@ class TestSuite
         return false;
     }
 
+    protected function assertThrowsMatch($arg, $cb, $regex = NULL) {
+        $threw = $match = false;
+
+        if ( ! is_callable($cb))
+            die("Fatal:  Callable assertThrows callback required\n");
+
+        try {
+            $cb($arg);
+        } catch (Exception $ex) {
+            $threw = true;
+            $match = !$regex || preg_match($regex, $ex->getMessage());
+        }
+
+        if ($threw && $match)
+            return true;
+
+        $bt = debug_backtrace(false);
+        $ex = !$threw ? 'no exception' : "no match '$regex'";
+        self::$errors []= sprintf("Assertion failed: %s:%d (%s) [%s]\n",
+            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], $ex);
+
+        return false;
+    }
+
     protected function assertLess($a, $b) {
         if($a < $b)
             return;
