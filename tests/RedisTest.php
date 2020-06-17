@@ -6112,7 +6112,7 @@ class Redis_Test extends TestSuite
         $r2 = $this->newInstance(true);
 
         /* Test NOPERM exception */
-        $this->assertTrue($r2->auth(['noperms', 'noperms']));
+        $this->assertTrue($r2->auth(['noperm', 'noperm']));
         $this->assertThrowsMatch($r2, function($r) { $r->set('foo', 'bar'); }, '/^NOPERM.*$/');
     }
 
