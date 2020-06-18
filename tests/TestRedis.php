@@ -66,7 +66,7 @@ if ($str_class == 'redis') {
         /* The various RedisArray subtests we can run */
         $arr_ra_tests = [
             'Redis_Array_Test', 'Redis_Rehashing_Test', 'Redis_Auto_Rehashing_Test',
-            'Redis_Multi_Exec_Test', 'Redis_Distributor_Test'
+             'Redis_Multi_Exec_Test', 'Redis_Distributor_Test'
         ];
 
         foreach ($arr_ra_tests as $str_test) {

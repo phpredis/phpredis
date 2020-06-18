@@ -3361,31 +3361,20 @@ PHP_METHOD(Redis, getPersistentID) {
 /* {{{ proto Redis::getAuth */
 PHP_METHOD(Redis, getAuth) {
     RedisSock *redis_sock;
-    zend_bool with_user = 0;
     zval zret;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "|b", &with_user) == FAILURE)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") == FAILURE)
         RETURN_FALSE;
 
     redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU);
-
     if (redis_sock == NULL)
         RETURN_FALSE;
 
-    if (with_user) {
-        array_init(return_value);
-
-        if (redis_sock->user) {
-            add_next_index_str(&zret, redis_sock->user);
-        } else {
-            add_next_index_stringl(&zret, "default", sizeof("default") - 1);
-        }
-
-        if (redis_sock->pass) {
-            add_next_index_str(&zret, redis_sock->pass);
-        } else {
-            add_next_index_null(&zret);
-        }
+    if (redis_sock->user && redis_sock->pass) {
+        array_init(&zret);
+        add_next_index_str(&zret, zend_string_copy(redis_sock->user));
+        add_next_index_str(&zret, zend_string_copy(redis_sock->pass));
+        RETURN_ZVAL(&zret, 0, 0);
     } else if (redis_sock->pass) {
         RETURN_STR_COPY(redis_sock->pass);
     } else {

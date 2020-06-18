@@ -231,11 +231,24 @@ PHP_METHOD(RedisArray, __construct)
     long l_retry_interval = 0;
       zend_bool b_lazy_connect = 0;
     double d_connect_timeout = 0, read_timeout = 0.0;
-    zend_string *algorithm = NULL, *user = NULL, *auth = NULL;
+    zend_string *algorithm = NULL, *user = NULL, *pass = NULL;
     redis_array_object *obj;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "z|a", &z0, &z_opts) == FAILURE) {
         RETURN_FALSE;
+    }
+
+    /* Bail if z0 isn't a string or an array.
+     * Note:  WRONG_PARAM_COUNT seems wrong but this is what we have been doing
+     *        for ages so we can't really change it until the next major version.
+     */
+    if (Z_TYPE_P(z0) != IS_ARRAY && Z_TYPE_P(z0) != IS_STRING)
+        WRONG_PARAM_COUNT;
+
+    /* If it's a string we want to load the array from ini information */
+    if (Z_TYPE_P(z0) == IS_STRING) {
+        ra = ra_load_array(Z_STRVAL_P(z0));
+        goto finish;
     }
 
     ZVAL_NULL(&z_fun);
@@ -261,6 +274,11 @@ PHP_METHOD(RedisArray, __construct)
             ZVAL_ZVAL(&z_dist, zpData, 1, 0);
         }
 
+        /* AUTH */
+        if ((zpData = REDIS_HASH_STR_FIND_STATIC(hOpts, "auth"))) {
+            redis_extract_auth_info(zpData, &user, &pass);
+        }
+
         REDIS_CONF_STRING_STATIC(hOpts, "algorithm", &algorithm);
         REDIS_CONF_ZEND_BOOL_STATIC(hOpts, "index", &b_index);
         REDIS_CONF_ZEND_BOOL_STATIC(hOpts, "autorehash", &b_autorehash);
@@ -270,31 +288,20 @@ PHP_METHOD(RedisArray, __construct)
         REDIS_CONF_ZEND_BOOL_STATIC(hOpts, "consistent", &consistent);
         REDIS_CONF_DOUBLE_STATIC(hOpts, "connect_timeout", &d_connect_timeout);
         REDIS_CONF_DOUBLE_STATIC(hOpts, "read_timeout", &read_timeout);
-        REDIS_CONF_STRING_STATIC(hOpts, "user", &user);
-        REDIS_CONF_STRING_STATIC(hOpts, "auth", &auth);
     }
 
-    /* extract either name of list of hosts from z0 */
-    switch(Z_TYPE_P(z0)) {
-        case IS_STRING:
-            ra = ra_load_array(Z_STRVAL_P(z0));
-            break;
-
-        case IS_ARRAY:
-            ra = ra_make_array(Z_ARRVAL_P(z0), &z_fun, &z_dist, hPrev, b_index,
-                               b_pconnect, l_retry_interval, b_lazy_connect,
-                               d_connect_timeout, read_timeout, consistent,
-                               algorithm, user, auth);
-            break;
-
-        default:
-            WRONG_PARAM_COUNT;
-    }
+    ra = ra_make_array(Z_ARRVAL_P(z0), &z_fun, &z_dist, hPrev, b_index,
+                       b_pconnect, l_retry_interval, b_lazy_connect,
+                       d_connect_timeout, read_timeout, consistent,
+                       algorithm, user, pass);
 
     if (algorithm) zend_string_release(algorithm);
-    if (auth) zend_string_release(auth);
+    if (user) zend_string_release(user);
+    if (pass) zend_string_release(pass);
     zval_dtor(&z_dist);
     zval_dtor(&z_fun);
+
+finish:
 
     if(ra) {
         ra->auto_rehash = b_autorehash;
