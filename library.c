@@ -3292,5 +3292,14 @@ void redis_conf_string(HashTable *ht, const char *key, size_t keylen,
     *sval = zval_get_string(zv);
 }
 
+void redis_conf_zval(HashTable *ht, const char *key, size_t keylen, zval *zret,
+                     int copy, int dtor)
+{
+    zval *zv = zend_hash_str_find(ht, key, keylen);
+    if (zv == NULL)
+        return;
+
+    ZVAL_ZVAL(zret, zv, copy, dtor);
+}
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

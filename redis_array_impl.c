@@ -151,26 +151,12 @@ ra_find_name(const char *name) {
 
 /* load array from INI settings */
 RedisArray *ra_load_array(const char *name) {
-
-    zval *z_data, z_fun, z_dist;
+    zval *z_data, z_tmp, z_fun, z_dist;
     zval z_params_hosts;
     zval z_params_prev;
-    zval z_params_funs;
-    zval z_params_dist;
-    zval z_params_algo;
-    zval z_params_index;
-    zval z_params_autorehash;
-    zval z_params_retry_interval;
-    zval z_params_pconnect;
-    zval z_params_connect_timeout;
-    zval z_params_read_timeout;
-    zval z_params_lazy_connect;
-    zval z_params_consistent;
-    zval z_params_user;
-    zval z_params_auth;
     RedisArray *ra = NULL;
 
-    zend_string *algorithm = NULL, *user = NULL, *auth = NULL;
+    zend_string *algorithm = NULL, *user = NULL, *pass = NULL;
     zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0, consistent = 0;
     long l_retry_interval = 0;
     zend_bool b_lazy_connect = 0;
@@ -183,146 +169,133 @@ RedisArray *ra_load_array(const char *name) {
     if(!ra_find_name(name))
         return ra;
 
+    ZVAL_NULL(&z_fun);
+    ZVAL_NULL(&z_dist);
+
     /* find hosts */
     array_init(&z_params_hosts);
     if ((iptr = INI_STR("redis.arrays.hosts")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_hosts);
-    }
-    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_hosts), name, name_len)) != NULL) {
-        hHosts = Z_ARRVAL_P(z_data);
+        if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_hosts), name, name_len)) != NULL) {
+            hHosts = Z_ARRVAL_P(z_data);
+        }
     }
 
     /* find previous hosts */
     array_init(&z_params_prev);
     if ((iptr = INI_STR("redis.arrays.previous")) != NULL) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_prev);
-    }
-    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_prev), name, name_len)) != NULL) {
-        hPrev = Z_ARRVAL_P(z_data);
-    }
-
-    /* find function */
-    array_init(&z_params_funs);
-    if ((iptr = INI_STR("redis.arrays.functions")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_funs);
-    }
-    ZVAL_NULL(&z_fun);
-    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_funs), name, name_len)) != NULL) {
-        ZVAL_ZVAL(&z_fun, z_data, 1, 0);
-    }
-
-    /* find distributor */
-    array_init(&z_params_dist);
-    if ((iptr = INI_STR("redis.arrays.distributor")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_dist);
-    }
-    ZVAL_NULL(&z_dist);
-    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_dist), name, name_len)) != NULL) {
-        ZVAL_ZVAL(&z_dist, z_data, 1, 0);
-    }
-
-    /* find hash algorithm */
-    array_init(&z_params_algo);
-    if ((iptr = INI_STR("redis.arrays.algorithm")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_algo);
-    }
-    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_algo), name, name_len)) != NULL) {
-        algorithm = zval_get_string(z_data);
-    }
-
-    /* find index option */
-    array_init(&z_params_index);
-    if ((iptr = INI_STR("redis.arrays.index")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_index);
-    }
-    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_index), name, name_len)) != NULL) {
-        b_index = zval_is_true(z_data);
-    }
-
-    /* find autorehash option */
-    array_init(&z_params_autorehash);
-    if ((iptr = INI_STR("redis.arrays.autorehash")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_autorehash);
-    }
-    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_autorehash), name, name_len)) != NULL) {
-        b_autorehash = zval_is_true(z_data);
-    }
-
-    /* find retry interval option */
-    array_init(&z_params_retry_interval);
-    if ((iptr = INI_STR("redis.arrays.retryinterval")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_retry_interval);
-    }
-    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_retry_interval), name, name_len)) != NULL) {
-        l_retry_interval = zval_get_long(z_data);
-    }
-
-    /* find pconnect option */
-    array_init(&z_params_pconnect);
-    if ((iptr = INI_STR("redis.arrays.pconnect")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_pconnect);
-    }
-    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_pconnect), name, name_len)) != NULL) {
-        b_pconnect = zval_is_true(z_data);
-    }
-
-    /* find lazy connect option */
-    array_init(&z_params_lazy_connect);
-    if ((iptr = INI_STR("redis.arrays.lazyconnect")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_lazy_connect);
-    }
-    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_lazy_connect), name, name_len)) != NULL) {
-        b_lazy_connect = zval_is_true(z_data);
-    }
-
-    /* find connect timeout option */
-    array_init(&z_params_connect_timeout);
-    if ((iptr = INI_STR("redis.arrays.connecttimeout")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_connect_timeout);
-    }
-    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_connect_timeout), name, name_len)) != NULL) {
-        d_connect_timeout = zval_get_double(z_data);
-    }
-
-    /* find read timeout option */
-    array_init(&z_params_read_timeout);
-    if ((iptr = INI_STR("redis.arrays.readtimeout")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_read_timeout);
-    }
-    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_read_timeout), name, name_len)) != NULL) {
-        read_timeout = zval_get_double(z_data);
-    }
-
-    /* find consistent option */
-    array_init(&z_params_consistent);
-    if ((iptr = INI_STR("redis.arrays.consistent")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_consistent);
-    }
-    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_consistent), name, name_len)) != NULL) {
-        if (Z_TYPE_P(z_data) == IS_STRING && strncmp(Z_STRVAL_P(z_data), "1", 1) == 0) {
-            consistent = 1;
+        if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_prev), name, name_len)) != NULL) {
+            if (Z_TYPE_P(z_data) == IS_ARRAY) {
+                hPrev = Z_ARRVAL_P(z_data);
+            }
         }
     }
 
-    array_init(&z_params_user);
-    if ((iptr = INI_STR("redis.arrays.user"))) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_auth);
+    /* find function */
+    if ((iptr = INI_STR("redis.arrays.functions")) != NULL) {
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_zval(Z_ARRVAL(z_tmp), name, name_len, &z_fun, 1, 0);
+        zval_dtor(&z_tmp);
     }
-    redis_conf_string(Z_ARRVAL(z_params_user), name, name_len, &user);
+
+    /* find distributor */
+    if ((iptr = INI_STR("redis.arrays.distributor")) != NULL) {
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_zval(Z_ARRVAL(z_tmp), name, name_len, &z_dist, 1, 0);
+        zval_dtor(&z_tmp);
+    }
+
+    /* find hash algorithm */
+    if ((iptr = INI_STR("redis.arrays.algorithm")) != NULL) {
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_string(Z_ARRVAL(z_tmp), name, name_len, &algorithm);
+        zval_dtor(&z_tmp);
+    }
+
+    /* find index option */
+    if ((iptr = INI_STR("redis.arrays.index")) != NULL) {
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_zend_bool(Z_ARRVAL(z_tmp), name, name_len, &b_index);
+        zval_dtor(&z_tmp);
+    }
+
+    /* find autorehash option */
+    if ((iptr = INI_STR("redis.arrays.autorehash")) != NULL) {
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_zend_bool(Z_ARRVAL(z_tmp), name, name_len, &b_autorehash);
+        zval_dtor(&z_tmp);
+    }
+
+    /* find retry interval option */
+    if ((iptr = INI_STR("redis.arrays.retryinterval")) != NULL) {
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_long(Z_ARRVAL(z_tmp), name, name_len, &l_retry_interval);
+        zval_dtor(&z_tmp);
+    }
+
+    /* find pconnect option */
+    if ((iptr = INI_STR("redis.arrays.pconnect")) != NULL) {
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_zend_bool(Z_ARRVAL(z_tmp), name, name_len, &b_pconnect);
+        zval_dtor(&z_tmp);
+    }
+
+    /* find lazy connect option */
+    if ((iptr = INI_STR("redis.arrays.lazyconnect")) != NULL) {
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_zend_bool(Z_ARRVAL(z_tmp), name, name_len, &b_lazy_connect);
+        zval_dtor(&z_tmp);
+    }
+
+    /* find connect timeout option */
+    if ((iptr = INI_STR("redis.arrays.connecttimeout")) != NULL) {
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_double(Z_ARRVAL(z_tmp), name, name_len, &d_connect_timeout);
+        zval_dtor(&z_tmp);
+    }
+
+    /* find read timeout option */
+    if ((iptr = INI_STR("redis.arrays.readtimeout")) != NULL) {
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_double(Z_ARRVAL(z_tmp), name, name_len, &read_timeout);
+        zval_dtor(&z_tmp);
+    }
+
+    /* find consistent option */
+    if ((iptr = INI_STR("redis.arrays.consistent")) != NULL) {
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        if ((z_data = zend_hash_str_find(Z_ARRVAL(z_tmp), name, name_len)) != NULL) {
+            consistent = Z_TYPE_P(z_data) == IS_STRING && strncmp(Z_STRVAL_P(z_data), "1", 1) == 0;
+        }
+        zval_dtor(&z_tmp);
+    }
 
     /* find auth option */
-    array_init(&z_params_auth);
     if ((iptr = INI_STR("redis.arrays.auth")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_params_auth);
-    }
-    if ((z_data = zend_hash_str_find(Z_ARRVAL(z_params_auth), name, name_len)) != NULL) {
-        auth = zval_get_string(z_data);
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        if ((z_data = zend_hash_str_find(Z_ARRVAL(z_tmp), name, name_len)) != NULL) {
+            redis_extract_auth_info(z_data, &user, &pass);
+        }
+        zval_dtor(&z_tmp);
     }
 
     /* create RedisArray object */
     ra = ra_make_array(hHosts, &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval,
                        b_lazy_connect, d_connect_timeout, read_timeout, consistent, algorithm,
-                       user, auth);
+                       user, pass);
     if (ra) {
         ra->auto_rehash = b_autorehash;
         if(ra->prev) ra->prev->auto_rehash = b_autorehash;
@@ -330,23 +303,10 @@ RedisArray *ra_load_array(const char *name) {
 
     if (algorithm) zend_string_release(algorithm);
     if (user) zend_string_release(user);
-    if (auth) zend_string_release(auth);
+    if (pass) zend_string_release(pass);
 
     zval_dtor(&z_params_hosts);
     zval_dtor(&z_params_prev);
-    zval_dtor(&z_params_funs);
-    zval_dtor(&z_params_dist);
-    zval_dtor(&z_params_algo);
-    zval_dtor(&z_params_index);
-    zval_dtor(&z_params_autorehash);
-    zval_dtor(&z_params_retry_interval);
-    zval_dtor(&z_params_pconnect);
-    zval_dtor(&z_params_connect_timeout);
-    zval_dtor(&z_params_read_timeout);
-    zval_dtor(&z_params_lazy_connect);
-    zval_dtor(&z_params_consistent);
-    zval_dtor(&z_params_user);
-    zval_dtor(&z_params_auth);
     zval_dtor(&z_dist);
     zval_dtor(&z_fun);
 
