@@ -580,6 +580,31 @@ free_redis_object(zend_object *object)
     }
 }
 
+static zend_object *
+clone_redis_object(zval *this_ptr)
+{
+    zend_object *old_object = Z_OBJ_P(this_ptr);
+    redis_object *old_redis = PHPREDIS_GET_OBJECT(redis_object, this_ptr);
+    redis_object *redis = ecalloc(1, sizeof(redis_object) + zend_object_properties_size(old_object->ce));
+
+    if (old_redis->sock) {
+        redis->sock = ecalloc(1, sizeof(RedisSock));
+        redis->sock = memcpy(redis->sock, old_redis->sock, sizeof(RedisSock));
+        redis->sock->clone = 1;
+    }
+
+    zend_object_std_init(&redis->std, old_object->ce);
+    object_properties_init(&redis->std, old_object->ce);
+
+    memcpy(&redis_object_handlers, zend_get_std_object_handlers(), sizeof(redis_object_handlers));
+    redis_object_handlers.offset = XtOffsetOf(redis_object, std);
+    redis_object_handlers.free_obj = free_redis_object;
+    redis_object_handlers.clone_obj = clone_redis_object;
+    redis->std.handlers = &redis_object_handlers;
+
+    return &redis->std;
+}
+
 zend_object *
 create_redis_object(zend_class_entry *ce)
 {
@@ -593,6 +618,7 @@ create_redis_object(zend_class_entry *ce)
     memcpy(&redis_object_handlers, zend_get_std_object_handlers(), sizeof(redis_object_handlers));
     redis_object_handlers.offset = XtOffsetOf(redis_object, std);
     redis_object_handlers.free_obj = free_redis_object;
+    redis_object_handlers.clone_obj = clone_redis_object;
     redis->std.handlers = &redis_object_handlers;
 
     return &redis->std;
