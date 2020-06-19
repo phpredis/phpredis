@@ -2007,32 +2007,25 @@ static int redis_uniqid(char *buf, size_t buflen) {
 static int
 redis_sock_check_liveness(RedisSock *redis_sock)
 {
-    char id[64];
-    int idlen, auth, rv = FAILURE;
+    char id[64], ok;
+    int idlen, auth;
     smart_string cmd = {0};
 
-    /* AUTH if we need it */
+    /* AUTH (if we need it) */
     auth = redis_sock_append_auth(redis_sock, &cmd);
 
     /* ECHO challenge/response */
     idlen = redis_uniqid(id, sizeof(id));
-    redis_cmd_init_sstr(&cmd, 1, "ECHO", sizeof("ECHO") - 1);
+    REDIS_CMD_INIT_SSTR_STATIC(&cmd, 1, "ECHO");
     redis_cmd_append_sstr(&cmd, id, idlen);
 
-    /* Attempt to deliver command(s) */
-    if (redis_sock_write(redis_sock, cmd.c, cmd.len) < 0)
-        goto cleanup;
+    /* Send command(s) and make sure we can consume reply(ies) */
+    ok = (redis_sock_write(redis_sock, cmd.c, cmd.len) >= 0) &&
+         (!auth || redis_sock_read_ok(redis_sock) == SUCCESS) &&
+         (redis_sock_read_cmp(redis_sock, id, idlen) == SUCCESS);
 
-    if (auth && redis_sock_read_ok(redis_sock) == FAILURE)
-        goto cleanup;
-
-    if (redis_sock_read_cmp(redis_sock, id, idlen) == FAILURE)
-        goto cleanup;
-
-    rv = SUCCESS;
-cleanup:
     smart_string_free(&cmd);
-    return rv;
+    return ok ? SUCCESS : FAILURE;
 }
 
 /**
