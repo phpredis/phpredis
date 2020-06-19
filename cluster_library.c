@@ -2887,21 +2887,9 @@ PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash) {
 
 /* Cache a cluster's slot information in persistent_list if it's enabled */
 PHP_REDIS_API int cluster_cache_store(zend_string *hash, HashTable *nodes) {
-    redisCachedCluster *cc;
+    redisCachedCluster *cc = cluster_cache_create(hash, nodes);
 
-    /* Construct our cache */
-    cc = cluster_cache_create(hash, nodes);
-
-    /* Set up our resource */
-#if PHP_VERSION_ID < 70300
-    zend_resource le;
-    le.type = le_cluster_slot_cache;
-    le.ptr = cc;
-
-    zend_hash_update_mem(&EG(persistent_list), cc->hash, (void*)&le, sizeof(zend_resource));
-#else
-    zend_register_persistent_resource_ex(cc->hash, cc, le_cluster_slot_cache);
-#endif
+    redis_register_persistent_resource(cc->hash, cc, le_cluster_slot_cache);
 
     return SUCCESS;
 }

@@ -79,26 +79,39 @@ extern int le_redis_pconnect;
 
 static int redis_mbulk_reply_zipped_raw_variant(RedisSock *redis_sock, zval *zret, int count);
 
+/* Register a persistent resource and return the list entry in a way that is
+ * compatible across any PHP 7 version */
+zend_resource *
+redis_register_persistent_resource(zend_string *id, void *ptr, int le_id) {
+    zend_resource *le;
+
+#if PHP_VERSION_ID < 70300
+    zend_resource res;
+    res.type = le_id;
+    res.ptr = ptr;
+    le = &res;
+
+    zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(id), ZSTR_LEN(id), le, sizeof(*le));
+#else
+    le = zend_register_persistent_resource(ZSTR_VAL(id), ZSTR_LEN(id), ptr, le_id);
+#endif
+    return le;
+}
+
 static ConnectionPool *
 redis_sock_get_connection_pool(RedisSock *redis_sock)
 {
-    ConnectionPool *p;
-    zend_string *persistent_id = strpprintf(0, "phpredis_%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
+    ConnectionPool *pool;
+    zend_string *persistent_id = strpprintf(0, "phpredis_%s:%d:%s", ZSTR_VAL(redis_sock->host), redis_sock->port,
+                                            redis_sock->user ? ZSTR_VAL(redis_sock->user) : "default");
     zend_resource *le;
 
     if ((le = zend_hash_find_ptr(&EG(persistent_list), persistent_id)) == NULL) {
-        p = pecalloc(1, sizeof(*p), 1);
-        zend_llist_init(&p->list, sizeof(php_stream *), NULL, 1);
-#if (PHP_VERSION_ID < 70300)
-        zend_resource res;
-        res.type = le_redis_pconnect;
-        res.ptr = p;
-        le = &res;
-        zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(persistent_id), ZSTR_LEN(persistent_id), le, sizeof(*le));
-#else
-        le = zend_register_persistent_resource(ZSTR_VAL(persistent_id), ZSTR_LEN(persistent_id), p, le_redis_pconnect);
-#endif
+        pool = pecalloc(1, sizeof(*pool), 1);
+        zend_llist_init(&pool->list, sizeof(php_stream *), NULL, 1);
+        le = redis_register_persistent_resource(persistent_id, pool, le_redis_pconnect);
     }
+
     zend_string_release(persistent_id);
     return le->ptr;
 }

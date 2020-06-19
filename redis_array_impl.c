@@ -475,6 +475,12 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len)
     return ret;
 }
 
+#if PHP_VERSION_ID < 80000
+    #define redis_hash_fetch_ops(zstr) php_hash_fetch_ops(ZSTR_VAL((zstr)), ZSTR_LEN((zstr)))
+#else
+    #define redis_hash_fetch_ops(zstr) php_hash_fetch_ops(zstr)
+#endif
+
 zval *
 ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos)
 {
@@ -492,13 +498,7 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos)
         const php_hash_ops *ops;
 
         /* hash */
-        if (ra->algorithm && (
-#if (PHP_VERSION_ID < 80000)
-            ops = php_hash_fetch_ops(ZSTR_VAL(ra->algorithm), ZSTR_LEN(ra->algorithm))
-#else
-            ops = php_hash_fetch_ops(ra->algorithm)
-#endif
-        ) != NULL) {
+        if (ra->algorithm && (ops = redis_hash_fetch_ops(ra->algorithm))) {
             void *ctx = emalloc(ops->context_size);
             unsigned char *digest = emalloc(ops->digest_size);
 
