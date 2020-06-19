@@ -584,13 +584,29 @@ static zend_object *
 clone_redis_object(zval *this_ptr)
 {
     zend_object *old_object = Z_OBJ_P(this_ptr);
-    redis_object *old_redis = PHPREDIS_GET_OBJECT(redis_object, this_ptr);
+    redis_object *old_redis = PHPREDIS_GET_OBJECT(redis_object, old_object);
     redis_object *redis = ecalloc(1, sizeof(redis_object) + zend_object_properties_size(old_object->ce));
 
     if (old_redis->sock) {
-        redis->sock = ecalloc(1, sizeof(RedisSock));
-        redis->sock = memcpy(redis->sock, old_redis->sock, sizeof(RedisSock));
-        redis->sock->clone = 1;
+        redis->sock = redis_sock_create(ZSTR_VAL(old_redis->sock->host), ZSTR_LEN(old_redis->sock->host),
+                                        old_redis->sock->port,
+                                        old_redis->sock->timeout,
+                                        old_redis->sock->read_timeout,
+                                        old_redis->sock->persistent,
+                                        ZSTR_VAL(old_redis->sock->persistent_id),
+                                        old_redis->sock->retry_interval);
+
+        if (old_redis->sock->stream_ctx) {
+            redis_sock_set_stream_context(redis->sock, &old_redis->sock->stream_ctx->options);
+        }
+
+        if (redis_sock_server_open(redis->sock) < 0) {
+            if (redis->sock->err) {
+                REDIS_THROW_EXCEPTION(ZSTR_VAL(redis->sock->err), 0);
+            }
+            redis_free_socket(redis->sock);
+            redis->sock = NULL;
+        }
     }
 
     zend_object_std_init(&redis->std, old_object->ce);

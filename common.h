@@ -292,7 +292,6 @@ typedef struct {
     int                readonly;
     int                reply_literal;
     int                tcp_keepalive;
-    int                clone;
 } RedisSock;
 /* }}} */
 
