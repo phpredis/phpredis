@@ -131,6 +131,17 @@ static int reselect_db(RedisSock *redis_sock) {
     return 0;
 }
 
+/* Attempt to read a single +OK response */
+static int redis_sock_read_ok(RedisSock *redis_sock) {
+    char buf[64];
+    size_t len;
+
+    if (redis_sock_read_single_line(redis_sock, buf, sizeof(buf), &len, 0) < 0)
+        return FAILURE;
+
+    return REDIS_STRCMP_STATIC(buf, len, "OK") ? SUCCESS : FAILURE;
+}
+
 /* Append an AUTH command to a smart string if neccessary.  This will either
  * append the new style AUTH <user> <password>, old style AUTH <password>, or
  * append no command at all.  Function returns 1 if we appended a command
@@ -167,6 +178,20 @@ redis_sock_set_auth(RedisSock *redis_sock, zend_string *user, zend_string *pass)
     redis_sock->pass = pass ? zend_string_copy(pass) : NULL;
 }
 
+
+PHP_REDIS_API void
+redis_sock_set_auth_zval(RedisSock *redis_sock, zval *zv) {
+    zend_string *user, *pass;
+
+    if (redis_extract_auth_info(zv, &user, &pass) == FAILURE)
+        return;
+
+    redis_sock_set_auth(redis_sock, user, pass);
+
+    if (user) zend_string_release(user);
+    if (pass) zend_string_release(pass);
+}
+
 PHP_REDIS_API void
 redis_sock_free_auth(RedisSock *redis_sock) {
     if (redis_sock->user)
@@ -196,27 +221,18 @@ redis_sock_auth_cmd(RedisSock *redis_sock, int *cmdlen) {
 }
 
 /* Send Redis AUTH and process response */
-PHP_REDIS_API int
-redis_sock_auth(RedisSock *redis_sock)
-{
-    char *cmd, *resp = NULL;
-    int cmdlen, resplen, rv = -1;
+PHP_REDIS_API int redis_sock_auth(RedisSock *redis_sock) {
+    char *cmd;
+    int cmdlen, rv = FAILURE;
 
-    cmd = redis_sock_auth_cmd(redis_sock, &cmdlen);
-    if (cmd == NULL)
+    if ((cmd = redis_sock_auth_cmd(redis_sock, &cmdlen)) == NULL)
         return SUCCESS;
 
     if (redis_sock_write(redis_sock, cmd, cmdlen) < 0)
         goto cleanup;
 
-    resp = redis_sock_read(redis_sock, &resplen);
-    if (resp == NULL)
-        goto cleanup;
-
-    rv = !REDIS_STRICMP_STATIC(resp, resplen, "+OK");
-
+    rv = redis_sock_read_ok(redis_sock) == SUCCESS ? SUCCESS : FAILURE;
 cleanup:
-    if (resp) efree(resp);
     efree(cmd);
     return rv;
 }
@@ -649,6 +665,19 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
     }
 
     return NULL;
+}
+
+static int redis_sock_read_cmp(RedisSock *redis_sock, const char *cmp, int cmplen) {
+    char *resp;
+    int len, rv = FAILURE;
+
+    if ((resp = redis_sock_read(redis_sock, &len)) == NULL)
+        return FAILURE;
+
+    rv = len == cmplen && !memcmp(resp, cmp, cmplen) ? SUCCESS : FAILURE;
+
+    efree(resp);
+    return rv;
 }
 
 /* A simple union to store the various arg types we might handle in our
@@ -1938,15 +1967,13 @@ redis_sock_create(char *host, int host_len, int port,
 {
     RedisSock *redis_sock;
 
-    redis_sock         = ecalloc(1, sizeof(RedisSock));
+    redis_sock = ecalloc(1, sizeof(RedisSock));
     redis_sock->host = zend_string_init(host, host_len, 0);
-    redis_sock->stream = NULL;
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->watching = 0;
     redis_sock->dbNumber = 0;
     redis_sock->retry_interval = retry_interval * 1000;
     redis_sock->persistent = persistent;
-    redis_sock->persistent_id = NULL;
 
     if (persistent && persistent_id != NULL) {
         redis_sock->persistent_id = zend_string_init(persistent_id, strlen(persistent_id), 0);
@@ -1960,15 +1987,8 @@ redis_sock_create(char *host, int host_len, int port,
     redis_sock->compression = REDIS_COMPRESSION_NONE;
     redis_sock->compression_level = 0; /* default */
     redis_sock->mode = ATOMIC;
-    redis_sock->head = NULL;
-    redis_sock->current = NULL;
-
-    redis_sock->pipeline_cmd = NULL;
-
-    redis_sock->err = NULL;
 
     redis_sock->scan = 0;
-
     redis_sock->readonly = 0;
     redis_sock->tcp_keepalive = 0;
     redis_sock->reply_literal = 0;
@@ -1987,37 +2007,29 @@ static int redis_uniqid(char *buf, size_t buflen) {
 static int
 redis_sock_check_liveness(RedisSock *redis_sock)
 {
-    char inbuf[4096], uniqid[64];
-    int uniqidlen, auth, rv = FAILURE;
+    char id[64];
+    int idlen, auth, rv = FAILURE;
     smart_string cmd = {0};
-    size_t len;
 
     /* AUTH if we need it */
     auth = redis_sock_append_auth(redis_sock, &cmd);
 
     /* ECHO challenge/response */
-    uniqidlen = redis_uniqid(uniqid, sizeof(uniqid));
+    idlen = redis_uniqid(id, sizeof(id));
     redis_cmd_init_sstr(&cmd, 1, "ECHO", sizeof("ECHO") - 1);
-    redis_cmd_append_sstr(&cmd, uniqid, uniqidlen);
+    redis_cmd_append_sstr(&cmd, id, idlen);
 
     /* Attempt to deliver command(s) */
     if (redis_sock_write(redis_sock, cmd.c, cmd.len) < 0)
         goto cleanup;
 
-    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1,  &len) < 0)
+    if (auth && redis_sock_read_ok(redis_sock) == FAILURE)
         goto cleanup;
 
-    if (auth) {
-        if (!REDIS_STRCMP_STATIC(inbuf, len, "+OK"))
-            goto cleanup;
-        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len))
-            goto cleanup;
-    }
+    if (redis_sock_read_cmp(redis_sock, id, idlen) == FAILURE)
+        goto cleanup;
 
-    rv = *inbuf != TYPE_BULK && atoi(inbuf+1) == uniqidlen &&
-        redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) == 0 &&
-        !strncmp(inbuf, uniqid, uniqidlen) ? SUCCESS : FAILURE;
-
+    rv = SUCCESS;
 cleanup:
     smart_string_free(&cmd);
     return rv;
@@ -2232,11 +2244,12 @@ redis_sock_set_stream_context(RedisSock *redis_sock, zval *options)
     zend_string *zkey;
     zval *z_ele;
 
-    if (!redis_sock || Z_TYPE_P(options) != IS_ARRAY) {
+    if (!redis_sock || Z_TYPE_P(options) != IS_ARRAY)
         return FAILURE;
-    } else if (!redis_sock->stream_ctx) {
+
+    if (!redis_sock->stream_ctx)
         redis_sock->stream_ctx = php_stream_context_alloc();
-    }
+
     ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(options), zkey, z_ele) {
         php_stream_context_set_option(redis_sock->stream_ctx, "ssl", ZSTR_VAL(zkey), z_ele);
     } ZEND_HASH_FOREACH_END();

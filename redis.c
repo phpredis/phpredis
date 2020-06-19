@@ -979,7 +979,7 @@ PHP_METHOD(Redis, pconnect)
 PHP_REDIS_API int
 redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 {
-    zval *object, *ssl = NULL;
+    zval *object, *context = NULL, *ele;
     char *host = NULL, *persistent_id = NULL;
     zend_long port = -1, retry_interval = 0;
     size_t host_len, persistent_id_len;
@@ -996,7 +996,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
                                      "Os|lds!lda", &object, redis_ce, &host,
                                      &host_len, &port, &timeout, &persistent_id,
                                      &persistent_id_len, &retry_interval,
-                                     &read_timeout, &ssl) == FAILURE)
+                                     &read_timeout, &context) == FAILURE)
     {
         return FAILURE;
     }
@@ -1027,6 +1027,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     }
 
     redis = PHPREDIS_ZVAL_GET_OBJECT(redis_object, object);
+
     /* if there is a redis sock already we have to remove it */
     if (redis->sock) {
         redis_sock_disconnect(redis->sock, 0);
@@ -1036,8 +1037,16 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     redis->sock = redis_sock_create(host, host_len, port, timeout, read_timeout, persistent,
         persistent_id, retry_interval);
 
-    if (ssl != NULL) {
-        redis_sock_set_stream_context(redis->sock, ssl);
+    if (context) {
+        /* Stream context (e.g. TLS) */
+        if ((ele = REDIS_HASH_STR_FIND_STATIC(Z_ARRVAL_P(context), "stream"))) {
+            redis_sock_set_stream_context(redis->sock, ele);
+        }
+
+        /* AUTH */
+        if ((ele = REDIS_HASH_STR_FIND_STATIC(Z_ARRVAL_P(context), "auth"))) {
+            redis_sock_set_auth_zval(redis->sock, ele);
+        }
     }
 
     if (redis_sock_server_open(redis->sock) < 0) {

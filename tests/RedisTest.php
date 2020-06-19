@@ -6380,8 +6380,7 @@ class Redis_Test extends TestSuite
         foreach (['localhost' => true, '127.0.0.1' => false] as $host => $verify) {
             $redis = new Redis();
             $this->assertTrue($redis->connect('tls://' . $host, 6378, 0, null, 0, 0, [
-                'verify_peer_name' => $verify,
-                'verify_peer' => false,
+                'stream' => ['verify_peer_name' => $verify, 'verify_peer' => false]
             ]));
         }
     }
