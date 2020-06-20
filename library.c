@@ -81,39 +81,39 @@ static int redis_mbulk_reply_zipped_raw_variant(RedisSock *redis_sock, zval *zre
 
 /* Register a persistent resource and return the list entry in a way that is
  * compatible across any PHP 7 version */
-zend_resource *
+void
 redis_register_persistent_resource(zend_string *id, void *ptr, int le_id) {
-    zend_resource *le;
-
 #if PHP_VERSION_ID < 70300
     zend_resource res;
     res.type = le_id;
     res.ptr = ptr;
-    le = &res;
 
-    zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(id), ZSTR_LEN(id), le, sizeof(*le));
+    zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(id), ZSTR_LEN(id), &res, sizeof(res));
 #else
-    le = zend_register_persistent_resource(ZSTR_VAL(id), ZSTR_LEN(id), ptr, le_id);
+    zend_register_persistent_resource(ZSTR_VAL(id), ZSTR_LEN(id), ptr, le_id);
 #endif
-    return le;
 }
 
 static ConnectionPool *
 redis_sock_get_connection_pool(RedisSock *redis_sock)
 {
     ConnectionPool *pool;
-    zend_string *persistent_id = strpprintf(0, "phpredis_%s:%d:%s", ZSTR_VAL(redis_sock->host), redis_sock->port,
-                                            redis_sock->user ? ZSTR_VAL(redis_sock->user) : "default");
+    zend_string *persistent_id = strpprintf(0, "phpredis_%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
     zend_resource *le;
 
-    if ((le = zend_hash_find_ptr(&EG(persistent_list), persistent_id)) == NULL) {
-        pool = pecalloc(1, sizeof(*pool), 1);
-        zend_llist_init(&pool->list, sizeof(php_stream *), NULL, 1);
-        le = redis_register_persistent_resource(persistent_id, pool, le_redis_pconnect);
+    /* Return early if we can find the pool */
+    if ((le = zend_hash_find_ptr(&EG(persistent_list), persistent_id))) {
+        zend_string_release(persistent_id);
+        return le->ptr;
     }
 
+    /* Create the pool and store it in our persistent list */
+    pool = pecalloc(1, sizeof(*pool), 1);
+    zend_llist_init(&pool->list, sizeof(php_stream *), NULL, 1);
+    redis_register_persistent_resource(persistent_id, pool, le_redis_pconnect);
+
     zend_string_release(persistent_id);
-    return le->ptr;
+    return pool;
 }
 
 /* Helper to reselect the proper DB number when we reconnect */
