@@ -15,6 +15,7 @@ MAPFILE=$NODEDIR/nodemap
 
 # Host, nodes, replicas, ports, etc.  Change if you want different values
 HOST="127.0.0.1"
+NOASK=0
 NODES=12
 REPLICAS=3
 START_PORT=7000
@@ -36,10 +37,15 @@ verboseRun() {
 
 # Spawn a specific redis instance, cluster enabled 
 spawnNode() {
+    # ACL file if we have one
+    if [ ! -z "$ACLFILE" ]; then
+        ACLARG="--aclfile $ACLFILE"
+    fi
+
     # Attempt to spawn the node
     verboseRun redis-server --cluster-enabled yes --dir $NODEDIR --port $PORT \
         --cluster-config-file node-$PORT.conf --daemonize yes --save \'\' \
-        --bind $HOST --dbfilename node-$PORT.rdb
+        --bind $HOST --dbfilename node-$PORT.rdb $ACLARG
 
     # Abort if we can't spin this instance
     if [ $? -ne 0 ]; then 
@@ -80,6 +86,10 @@ checkNodes() {
 cleanConfigInfo() {
     verboseRun mkdir -p $NODEDIR
     verboseRun rm -f $NODEDIR/*
+
+    if [ -f "$ACLFILE" ]; then
+        cp $ACLFILE $NODEDIR/$ACLFILE
+    fi
 }
 
 # Initialize our cluster with redis-trib.rb
@@ -89,7 +99,18 @@ initCluster() {
         TRIBARGS="$TRIBARGS $HOST:$PORT"
     done
 
-    verboseRun redis-trib.rb create --replicas $REPLICAS $TRIBARGS
+    if [[ ! -z "$USER" ]]; then
+        USERARG="--user $USER"
+    fi
+    if [[ ! -z "$PASS" ]]; then
+        PASSARG="-a $PASS"
+    fi
+
+    if [[ "$1" -eq "1" ]]; then
+        echo yes | redis-cli $USERARG $PASSARG -p $START_PORT --cluster create $TRIBARGS --cluster-replicas $REPLICAS
+    else
+        verboseRun redis-cli $USERARG $PASSARG -p $START_PORT --cluster create $TRIBARGS --cluster-replicas $REPLICAS
+    fi
 
     if [ $? -ne 0 ]; then
         echo "Error:  Couldn't create cluster!"
@@ -109,7 +130,7 @@ startCluster() {
     spawnNodes
 
     # Attempt to initialize the cluster
-    initCluster
+    initCluster $1
 }
 
 # Shut down nodes in our cluster
@@ -119,24 +140,86 @@ stopCluster() {
     done
 }
 
-# Make sure we have redis-server and redis-trib.rb on the path
-checkExe redis-server
-checkExe redis-trib.rb
+# Shut down nodes by killing them
+killCluster() {
+    for PORT in `seq $START_PORT $END_PORT`; do
+        PID=$(ps aux|grep [r]edis-server|grep $PORT|awk '{print $2}')
+        echo -n "Killing $PID: "
+        if kill $PID; then
+            echo "OK"
+        else
+            echo "ERROR"
+        fi
+    done
+}
 
-# Override the host if we've got $2
-if [[ ! -z "$2" ]]; then
-   HOST=$2
+printUsage() {
+    echo "Usage: make-cluster [OPTIONS] <start|stop|kill>"
+    echo
+    echo "  Options"
+    echo
+    echo "  -u Redis username to use when spawning cluster"
+    echo "  -p Redis password to use when spawning cluster"
+    echo "  -a Redis acl filename to use when spawning cluster"
+    echo "  -y Automatically send 'yes' when starting cluster"
+    echo "  -h This message"
+    echo
+    exit 0
+}
+
+# We need redis-server
+checkExe redis-server
+
+while getopts "u:p:a:hy" OPT; do
+    case $OPT in
+        h)
+            printUsage
+            ;;
+        a)
+            if [ ! -f "$OPTARG" ]; then
+                echo "Error:  '$OPTARG' is not a filename!"
+                exit -1
+            fi
+            ACLFILE=$OPTARG
+            ;;
+        u)
+            USER=$OPTARG
+            ;;
+        p)
+            PASS=$OPTARG
+            ;;
+        h)
+            HOST=$OPTARG
+            ;;
+        y)
+            NOASK=1
+            ;;
+        *)
+            echo "Unknown option: $OPT"
+            exit 1
+            ;;
+    esac
+done
+
+shift "$((OPTIND - 1))"
+
+if [[ $# -lt 1 ]]; then
+    echo "Error:  Must pass an operation (start or stop)"
+    exit -1
 fi
 
-# Main entry point to start or stop/kill a cluster
 case "$1" in
     start)
-        startCluster
+        startCluster $NOASK
         ;;
     stop)
         stopCluster
         ;;
+    kill)
+        killCluster
+        ;;
     *)
-        echo "Usage $0 <start|stop> [host]"
+        echo "Usage: make-cluster.sh [options] <start|stop>"
+        exit 1
         ;;
 esac
