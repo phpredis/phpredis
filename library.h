@@ -23,6 +23,12 @@
 #define redis_sock_write_sstr(redis_sock, sstr) \
     redis_sock_write(redis_sock, (sstr)->c, (sstr)->len)
 
+#if PHP_VERSION_ID < 80000
+    #define redis_hash_fetch_ops(zstr) php_hash_fetch_ops(ZSTR_VAL((zstr)), ZSTR_LEN((zstr)))
+#else
+    #define redis_hash_fetch_ops(zstr) php_hash_fetch_ops(zstr)
+#endif
+
 void redis_register_persistent_resource(zend_string *id, void *ptr, int le_id);
 
 PHP_REDIS_API int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass);
@@ -39,6 +45,7 @@ int redis_cmd_append_sstr_key(smart_string *str, char *key, size_t len, RedisSoc
 int redis_cmd_append_sstr_arrkey(smart_string *cmd, zend_string *kstr, zend_ulong idx);
 
 PHP_REDIS_API int redis_spprintf(RedisSock *redis_sock, short *slot, char **ret, char *kw, char *fmt, ...);
+PHP_REDIS_API zend_string *redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...);
 
 PHP_REDIS_API char *redis_sock_read(RedisSock *redis_sock, int *buf_len);
 PHP_REDIS_API int redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t* line_len);

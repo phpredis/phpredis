@@ -475,12 +475,6 @@ ra_call_distributor(RedisArray *ra, const char *key, int key_len)
     return ret;
 }
 
-#if PHP_VERSION_ID < 80000
-    #define redis_hash_fetch_ops(zstr) php_hash_fetch_ops(ZSTR_VAL((zstr)), ZSTR_LEN((zstr)))
-#else
-    #define redis_hash_fetch_ops(zstr) php_hash_fetch_ops(zstr)
-#endif
-
 zval *
 ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos)
 {

@@ -1,3 +1,5 @@
+#include "php_redis.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -55,6 +57,7 @@
 #endif
 
 #include <ext/standard/php_rand.h>
+#include <ext/hash/php_hash.h>
 
 #define UNSERIALIZE_NONE 0
 #define UNSERIALIZE_KEYS 1
@@ -79,10 +82,8 @@ extern int le_redis_pconnect;
 
 static int redis_mbulk_reply_zipped_raw_variant(RedisSock *redis_sock, zval *zret, int count);
 
-/* Register a persistent resource and return the list entry in a way that is
- * compatible across any PHP 7 version */
-void
-redis_register_persistent_resource(zend_string *id, void *ptr, int le_id) {
+/* Register a persistent resource in a a way that works for every PHP 7 version. */
+void redis_register_persistent_resource(zend_string *id, void *ptr, int le_id) {
 #if PHP_VERSION_ID < 70300
     zend_resource res;
     res.type = le_id;
@@ -98,8 +99,11 @@ static ConnectionPool *
 redis_sock_get_connection_pool(RedisSock *redis_sock)
 {
     ConnectionPool *pool;
-    zend_string *persistent_id = strpprintf(0, "phpredis_%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
     zend_resource *le;
+    zend_string *persistent_id;
+
+    /* Generate our unique pool id depending on configuration */
+    persistent_id = redis_pool_spprintf(redis_sock, INI_STR("redis.pconnect.pool_pattern"));
 
     /* Return early if we can find the pool */
     if ((le = zend_hash_find_ptr(&EG(persistent_list), persistent_id))) {
@@ -703,6 +707,98 @@ union resparg {
     long lval;
     double dval;
 };
+
+static zend_string *redis_hash_auth(zend_string *user, zend_string *pass) {
+    zend_string *algo, *digest, *hex;
+    smart_str salted = {0};
+    const php_hash_ops *ops;
+    void *ctx;
+
+    /* No op if there is not username/password */
+    if (user == NULL && pass == NULL)
+        return NULL;
+
+    algo = zend_string_init("sha256", sizeof("sha256") - 1, 0);
+
+    /* Theoretically inpossible but check anyway */
+    if ((ops = redis_hash_fetch_ops(algo)) == NULL) {
+        zend_string_release(algo);
+        return NULL;
+    }
+
+    /* Hash username + password with our salt global */
+    smart_str_alloc(&salted, 256, 0);
+    if (user) smart_str_append_ex(&salted, user, 0);
+    if (pass) smart_str_append_ex(&salted, pass, 0);
+    smart_str_appendl_ex(&salted, REDIS_G(salt), sizeof(REDIS_G(salt)), 0);
+
+    ctx = emalloc(ops->context_size);
+    ops->hash_init(ctx);
+    ops->hash_update(ctx, (const unsigned char *)ZSTR_VAL(salted.s), ZSTR_LEN(salted.s));
+
+    digest = zend_string_alloc(ops->digest_size, 0);
+    ops->hash_final((unsigned char*)ZSTR_VAL(digest), ctx);
+    efree(ctx);
+
+    hex = zend_string_safe_alloc(ops->digest_size, 2, 0, 0);
+    php_hash_bin2hex(ZSTR_VAL(hex), (unsigned char*)ZSTR_VAL(digest), ops->digest_size);
+    ZSTR_VAL(hex)[2 * ops->digest_size] = 0;
+
+    zend_string_release(digest);
+    zend_string_release(algo);
+    smart_str_free(&salted);
+
+    return hex;
+}
+
+/* A printf like function to generate our connection pool hash value. */
+PHP_REDIS_API zend_string *
+redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...) {
+    zend_string *s;
+    smart_str str = {0};
+
+    smart_str_alloc(&str, 128, 0);
+
+    /* We always include phpredis_<host>:<port> */
+    smart_str_append_printf(&str, "phpredis_%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
+
+    /* Short circuit if we don't have a pattern */
+    if (fmt == NULL)
+        return str.s;
+
+    while (*fmt) {
+        switch (*fmt) {
+            case 'p':
+                if (redis_sock->persistent_id) {
+                    smart_str_appendc(&str, ':');
+                    smart_str_append_ex(&str, redis_sock->persistent_id, 0);
+                }
+                break;
+            case 'u':
+                smart_str_appendc(&str, ':');
+                if (redis_sock->user) {
+                    smart_str_append_ex(&str, redis_sock->user, 0);
+                } else {
+                    smart_str_appendl(&str, "default", sizeof("default") - 1);
+                }
+                break;
+            case 'a':
+                if ((s = redis_hash_auth(redis_sock->user, redis_sock->pass)) != NULL) {
+                    smart_str_appendc(&str, ':');
+                    smart_str_append_ex(&str, s, 0);
+                    zend_string_release(s);
+                }
+                break;
+            default:
+                /* Maybe issue a php_error_docref? */
+                break;
+        }
+
+        fmt++;
+    }
+
+    return str.s;
+}
 
 /* A printf like method to construct a Redis RESP command.  It has been extended
  * to take a few different format specifiers that are convenient to phpredis.

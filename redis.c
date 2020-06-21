@@ -27,8 +27,10 @@
 #include "redis_cluster.h"
 #include "redis_commands.h"
 #include "redis_sentinel.h"
+#include <standard/php_random.h>
 #include <zend_exceptions.h>
 #include <ext/standard/info.h>
+
 
 #ifdef PHP_SESSION
 #include <ext/session/php_session.h>
@@ -94,6 +96,7 @@ PHP_INI_BEGIN()
     /* redis pconnect */
     PHP_INI_ENTRY("redis.pconnect.pooling_enabled", "1", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.pconnect.connection_limit", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.pconnect.pool_pattern", "", PHP_INI_ALL, NULL)
 
     /* redis session */
     PHP_INI_ENTRY("redis.session.locking_enabled", "0", PHP_INI_ALL, NULL)
@@ -503,6 +506,9 @@ static const zend_module_dep redis_deps[] = {
      ZEND_MOD_END
 };
 
+ZEND_DECLARE_MODULE_GLOBALS(redis)
+static PHP_GINIT_FUNCTION(redis);
+
 zend_module_entry redis_module_entry = {
      STANDARD_MODULE_HEADER_EX,
      NULL,
@@ -515,7 +521,11 @@ zend_module_entry redis_module_entry = {
      NULL,
      PHP_MINFO(redis),
      PHP_REDIS_VERSION,
-     STANDARD_MODULE_PROPERTIES
+     PHP_MODULE_GLOBALS(redis),
+     PHP_GINIT(redis),
+     NULL,
+     NULL,
+     STANDARD_MODULE_PROPERTIES_EX
 };
 
 #ifdef COMPILE_DL_REDIS
@@ -760,6 +770,26 @@ static ZEND_RSRC_DTOR_FUNC(redis_connections_pool_dtor)
         zend_llist_destroy(&p->list);
         pefree(res->ptr, 1);
     }
+}
+
+static PHP_GINIT_FUNCTION(redis)
+{
+    zend_string *bin = zend_string_alloc(sizeof(redis_globals->salt), 0);
+
+    if (php_random_bytes_silent(ZSTR_VAL(bin), sizeof(redis_globals->salt)/2) == FAILURE) {
+        char *bytes = redis_globals->salt, *p = bytes;
+        size_t rem = sizeof(redis_globals->salt);
+
+        while (rem) {
+            snprintf(p, rem, "%08x", rand());
+            p += 8; rem -= 8;
+        }
+    } else {
+        php_hash_bin2hex(redis_globals->salt, (unsigned char *)ZSTR_VAL(bin),
+                         sizeof(redis_globals->salt)/2);
+    }
+
+    zend_string_release(bin);
 }
 
 /**

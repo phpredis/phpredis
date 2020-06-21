@@ -253,6 +253,13 @@ PHP_METHOD(Redis, getPersistentID);
 PHP_METHOD(Redis, getAuth);
 PHP_METHOD(Redis, getMode);
 
+ZEND_BEGIN_MODULE_GLOBALS(redis)
+	char salt[64];
+ZEND_END_MODULE_GLOBALS(redis)
+
+ZEND_EXTERN_MODULE_GLOBALS(redis)
+#define REDIS_G(v) ZEND_MODULE_GLOBALS_ACCESSOR(redis, v)
+
 #ifdef ZTS
 #include "TSRM.h"
 #endif
