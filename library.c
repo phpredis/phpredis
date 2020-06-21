@@ -769,7 +769,10 @@ redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...) {
     smart_str_alloc(&str, 128, 0);
 
     /* We always include phpredis_<host>:<port> */
-    smart_str_append_printf(&str, "phpredis_%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
+    smart_str_appendl(&str, "phpredis_", sizeof("phpredis_") - 1);
+    smart_str_append_ex(&str, redis_sock->host, 0);
+    smart_str_appendc(&str, ':');
+    smart_str_append_long(&str, (zend_long)redis_sock->port);
 
     /* Short circuit if we don't have a pattern */
     if (fmt == NULL)
