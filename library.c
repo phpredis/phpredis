@@ -57,6 +57,7 @@
 #endif
 
 #include <ext/standard/php_rand.h>
+#include <ext/standard/php_password.h>
 #include <ext/hash/php_hash.h>
 
 #define UNSERIALIZE_NONE 0
@@ -718,9 +719,8 @@ static zend_string *redis_hash_auth(zend_string *user, zend_string *pass) {
     if (user == NULL && pass == NULL)
         return NULL;
 
-    algo = zend_string_init("sha256", sizeof("sha256") - 1, 0);
-
     /* Theoretically inpossible but check anyway */
+    algo = zend_string_init("sha256", sizeof("sha256") - 1, 0);
     if ((ops = redis_hash_fetch_ops(algo)) == NULL) {
         zend_string_release(algo);
         return NULL;
@@ -751,10 +751,19 @@ static zend_string *redis_hash_auth(zend_string *user, zend_string *pass) {
     return hex;
 }
 
+static void append_auth_hash(smart_str *dst, zend_string *user, zend_string *pass) {
+    zend_string *s;
+
+    if ((s = redis_hash_auth(user, pass)) != NULL) {
+        smart_str_appendc(dst, ':');
+        smart_str_append_ex(dst, s, 0);
+        zend_string_release(s);
+    }
+}
+
 /* A printf like function to generate our connection pool hash value. */
 PHP_REDIS_API zend_string *
 redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...) {
-    zend_string *s;
     smart_str str = {0};
 
     smart_str_alloc(&str, 128, 0);
@@ -768,7 +777,7 @@ redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...) {
 
     while (*fmt) {
         switch (*fmt) {
-            case 'p':
+            case 'i':
                 if (redis_sock->persistent_id) {
                     smart_str_appendc(&str, ':');
                     smart_str_append_ex(&str, redis_sock->persistent_id, 0);
@@ -778,16 +787,13 @@ redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...) {
                 smart_str_appendc(&str, ':');
                 if (redis_sock->user) {
                     smart_str_append_ex(&str, redis_sock->user, 0);
-                } else {
-                    smart_str_appendl(&str, "default", sizeof("default") - 1);
                 }
                 break;
+            case 'p':
+                append_auth_hash(&str, NULL, redis_sock->pass);
+                break;
             case 'a':
-                if ((s = redis_hash_auth(redis_sock->user, redis_sock->pass)) != NULL) {
-                    smart_str_appendc(&str, ':');
-                    smart_str_append_ex(&str, s, 0);
-                    zend_string_release(s);
-                }
+                append_auth_hash(&str, redis_sock->user, redis_sock->pass);
                 break;
             default:
                 /* Maybe issue a php_error_docref? */

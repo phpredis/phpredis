@@ -772,24 +772,37 @@ static ZEND_RSRC_DTOR_FUNC(redis_connections_pool_dtor)
     }
 }
 
-static PHP_GINIT_FUNCTION(redis)
-{
-    zend_string *bin = zend_string_alloc(sizeof(redis_globals->salt), 0);
+static void redis_random_hex_bytes(char *dst, size_t dstsize) {
+    char chunk[9], *ptr = dst;
+    ssize_t rem = dstsize, len, clen;
+    size_t bytes;
 
-    if (php_random_bytes_silent(ZSTR_VAL(bin), sizeof(redis_globals->salt)/2) == FAILURE) {
-        char *bytes = redis_globals->salt, *p = bytes;
-        size_t rem = sizeof(redis_globals->salt);
+    /* We need two characters per hex byte */
+    bytes = dstsize / 2;
+    zend_string *s = zend_string_alloc(bytes, 0);
 
-        while (rem) {
-            snprintf(p, rem, "%08x", rand());
-            p += 8; rem -= 8;
-        }
-    } else {
-        php_hash_bin2hex(redis_globals->salt, (unsigned char *)ZSTR_VAL(bin),
-                         sizeof(redis_globals->salt)/2);
+    /* First try to have PHP generate the bytes */
+    if (php_random_bytes_silent(ZSTR_VAL(s), bytes) == SUCCESS) {
+        php_hash_bin2hex(dst, (unsigned char *)ZSTR_VAL(s), bytes);
+        zend_string_release(s);
+        return;
     }
 
-    zend_string_release(bin);
+    /* PHP shouldn't have failed, but generate manually if it did. */
+    while (rem > 0) {
+        clen = snprintf(chunk, sizeof(chunk), "%08x", rand());
+        len = rem >= clen ? clen : rem;
+        memcpy(ptr, chunk, len);
+        ptr += len; rem -= len;
+    }
+
+    zend_string_release(s);
+}
+
+static PHP_GINIT_FUNCTION(redis)
+{
+    redis_random_hex_bytes(redis_globals->salt, sizeof(redis_globals->salt) - 1);
+    redis_globals->salt[sizeof(redis_globals->salt)-1] = '\0';
 }
 
 /**

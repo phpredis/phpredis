@@ -253,8 +253,13 @@ PHP_METHOD(Redis, getPersistentID);
 PHP_METHOD(Redis, getAuth);
 PHP_METHOD(Redis, getMode);
 
+/* For convenience we store the salt as a printable hex string which requires 2
+ * characters per byte + 1 for the NULL terminator */
+#define REDIS_SALT_BYTES 32
+#define REDIS_SALT_SIZE ((2 * REDIS_SALT_BYTES) + 1)
+
 ZEND_BEGIN_MODULE_GLOBALS(redis)
-	char salt[64];
+	char salt[REDIS_SALT_SIZE];
 ZEND_END_MODULE_GLOBALS(redis)
 
 ZEND_EXTERN_MODULE_GLOBALS(redis)
