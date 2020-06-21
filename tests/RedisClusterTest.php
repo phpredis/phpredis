@@ -748,7 +748,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         return implode('&', array_map(function ($host) {
             return 'seed[]=' . $host;
-        }, self::$_arr_node_map)) . ($auth ? "&$auth" : ''); 
+        }, self::$_arr_node_map)) . ($auth ? "&$auth" : '');
     }
 }
 ?>
