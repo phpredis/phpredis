@@ -6055,6 +6055,30 @@ class Redis_Test extends TestSuite
         }
     }
 
+    public function testInvalidAuthArgs() {
+        $obj_new = $this->newInstance();
+
+        $arr_args = [
+            [],
+            [NULL, NULL],
+            ['foo', 'bar', 'baz'],
+            ['a','b','c','d'],
+            ['a','b','c'],
+            [['a','b'], 'a'],
+            [['a','b','c']],
+            [[NULL, 'pass']],
+            [[NULL, NULL]],
+        ];
+
+        foreach ($arr_args as $arr_arg) {
+            try {
+                @call_user_func_array([$obj_new, 'auth'], $arr_arg);
+            } catch (Exception $ex) {
+                unset($ex); /* Suppress intellisense warning */
+            }
+        }
+    }
+
     public function testAcl() {
         if ( ! $this->minVersionCheck("6.0"))
             return $this->markTestSkipped();

@@ -2067,7 +2067,7 @@ char *redis_variadic_str_cmd(char *kw, zval *argv, int argc, int *cmd_len) {
 int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    zend_string *user, *pass;
+    zend_string *user = NULL, *pass = NULL;
     zval *ztest;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "z!", &ztest) == FAILURE ||

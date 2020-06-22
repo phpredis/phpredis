@@ -47,6 +47,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSwapDB() { return $this->markTestSkipped(); }
     public function testConnectException() { return $this->markTestSkipped(); }
     public function testTlsConnect() { return $this->markTestSkipped(); }
+    public function testInvalidAuthArgs() { return $this->markTestSkipped(); }
 
     /* Session locking feature is currently not supported in in context of Redis Cluster.
        The biggest issue for this is the distribution nature of Redis cluster */
