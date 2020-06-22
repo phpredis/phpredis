@@ -57,7 +57,6 @@
 #endif
 
 #include <ext/standard/php_rand.h>
-#include <ext/standard/php_password.h>
 #include <ext/hash/php_hash.h>
 
 #define UNSERIALIZE_NONE 0

@@ -6101,12 +6101,21 @@ class Redis_Test extends TestSuite
             $this->assertInArray($cat, $cats);
         }
 
+        /* ctype_xdigit even if PHP doesn't have it */
+        $ctype_xdigit = function($v) {
+            if (function_exists('ctype_xdigit')) {
+                return ctype_xdigit($v);
+            } else {
+                return strspn(strtoupper($v), '0123456789ABCDEF') == strlen($v);
+            }
+        };
+
         /* ACL GENPASS/ACL GENPASS <bits> */
-        $this->assertValidate($this->redis->acl('GENPASS'), 'ctype_xdigit');
-        $this->assertValidate($this->redis->acl('GENPASS', 1024), 'ctype_xdigit');
+        $this->assertValidate($this->redis->acl('GENPASS'), $ctype_xdigit);
+        $this->assertValidate($this->redis->acl('GENPASS', 1024), $ctype_xdigit);
 
         /* ACL WHOAMI */
-        $this->assertValidate($this->redis->acl('WHOAMI'), function($v) { return strlen($v) > 0; });
+        $this->assertValidate($this->redis->acl('WHOAMI'), 'strlen');
 
         /* Finally make sure AUTH errors throw an exception */
         $r2 = $this->newInstance(true);
