@@ -6386,6 +6386,11 @@ class Redis_Test extends TestSuite
 
     public function testTlsConnect()
     {
+        if (($fp = @fsockopen($this->getHost(), 6378)) == NULL)
+            return $this->markTestSkipped();
+
+        fclose($fp);
+
         foreach (['localhost' => true, '127.0.0.1' => false] as $host => $verify) {
             $redis = new Redis();
             $this->assertTrue($redis->connect('tls://' . $host, 6378, 0, null, 0, 0, [
