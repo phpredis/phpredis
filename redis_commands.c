@@ -2081,7 +2081,7 @@ int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     /* Construct either AUTH <user> <pass> or AUTH <pass> */
     if (user && pass) {
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "AUTH", "SS", user, pass);
-    } else if (pass) {
+    } else {
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "AUTH", "S", pass);
     }
 
