@@ -1825,7 +1825,7 @@ redis_read_acl_getuser_reply(RedisSock *redis_sock, zval *zret, long count) {
         if (!(key = redis_sock_read(redis_sock, &klen)) ||
             redis_read_reply_type(redis_sock, &type, &vlen) < 0 ||
             (type != TYPE_BULK && type != TYPE_MULTIBULK) ||
-            klen > INT_MAX || vlen > INT_MAX)
+            vlen > INT_MAX)
         {
             if (key) efree(key);
             return FAILURE;
