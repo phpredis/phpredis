@@ -264,11 +264,8 @@ PHP_METHOD(RedisArray, __construct)
             hPrev = Z_ARRVAL_P(zpData);
         }
 
-        /* AUTH */
-        if ((zpData = REDIS_HASH_STR_FIND_STATIC(hOpts, "auth"))) {
-            redis_extract_auth_info(zpData, &user, &pass);
-        }
 
+        REDIS_CONF_AUTH_STATIC(hOpts, "auth", &user, &pass);
         REDIS_CONF_ZVAL_STATIC(hOpts, "function", &z_fun, 1, 0);
         REDIS_CONF_ZVAL_STATIC(hOpts, "distributor", &z_dist, 1, 0);
         REDIS_CONF_STRING_STATIC(hOpts, "algorithm", &algorithm);

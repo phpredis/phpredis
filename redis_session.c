@@ -446,11 +446,9 @@ PS_OPEN_FUNC(redis)
                 REDIS_CONF_DOUBLE_STATIC(ht, "timeout", &timeout);
                 REDIS_CONF_DOUBLE_STATIC(ht, "read_timeout", &read_timeout);
                 REDIS_CONF_LONG_STATIC(ht, "retry_interval", &retry_interval);
-
                 REDIS_CONF_STRING_STATIC(ht, "persistent_id", &persistent_id);
                 REDIS_CONF_STRING_STATIC(ht, "prefix", &prefix);
-                REDIS_CONF_STRING_STATIC(ht, "user", &user);
-                REDIS_CONF_STRING_STATIC(ht, "auth", &pass);
+                REDIS_CONF_AUTH_STATIC(ht, "auth", &user, &pass);
 
                 zval_dtor(&params);
             }
@@ -887,8 +885,7 @@ PS_OPEN_FUNC(rediscluster) {
     }
 
     REDIS_CONF_STRING_STATIC(ht_conf, "prefix", &prefix);
-    REDIS_CONF_STRING_STATIC(ht_conf, "user", &user);
-    REDIS_CONF_STRING_STATIC(ht_conf, "auth", &pass);
+    REDIS_CONF_AUTH_STATIC(ht_conf, "auth", &user, &pass);
     REDIS_CONF_STRING_STATIC(ht_conf, "failover", &failstr);
 
     /* Need to massage failover string if we have it */

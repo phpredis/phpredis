@@ -286,9 +286,7 @@ RedisArray *ra_load_array(const char *name) {
     if ((iptr = INI_STR("redis.arrays.auth")) != NULL) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
-        if ((z_data = zend_hash_str_find(Z_ARRVAL(z_tmp), name, name_len)) != NULL) {
-            redis_extract_auth_info(z_data, &user, &pass);
-        }
+        redis_conf_auth(Z_ARRVAL(z_tmp), name, name_len, &user, &pass);
         zval_dtor(&z_tmp);
     }
 

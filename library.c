@@ -3442,4 +3442,14 @@ void redis_conf_zval(HashTable *ht, const char *key, size_t keylen, zval *zret,
     ZVAL_ZVAL(zret, zv, copy, dtor);
 }
 
+void redis_conf_auth(HashTable *ht, const char *key, size_t keylen,
+                     zend_string **user, zend_string **pass)
+{
+    zval *zv = zend_hash_str_find(ht, key, keylen);
+    if (zv == NULL)
+        return;
+
+    redis_extract_auth_info(zv, user, pass);
+}
+
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

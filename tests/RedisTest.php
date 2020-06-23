@@ -73,7 +73,7 @@ class Redis_Test extends TestSuite
         $this->getAuthParts($user, $pass);
 
         if ($user && $pass) {
-            return "user=$user&auth=$pass";
+            return "auth[]=$user&auth[]=$pass";
         } else if ($pass) {
             return "auth=$pass";
         } else {
@@ -89,7 +89,6 @@ class Redis_Test extends TestSuite
         if (isset($fullHostPath) && $authFragment) {
             $fullHostPath .= "?$authFragment";
         }
-
         return $fullHostPath;
     }
 
@@ -5466,7 +5465,6 @@ class Redis_Test extends TestSuite
                             $ret2 = $this->redis->$cmd('{gk}', $city, 500, 'mi', $realopts);
                         }
 
-                        if ($ret1 != $ret2) die();
                         $this->assertEquals($ret1, $ret2);
                     }
                 }

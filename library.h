@@ -171,6 +171,8 @@ PHP_REDIS_API void redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSo
     redis_conf_string(ht, sstr, sizeof(sstr) - 1, sval)
 #define REDIS_CONF_ZVAL_STATIC(ht, sstr, zret, copy, dtor) \
     redis_conf_zval(ht, sstr, sizeof(sstr) - 1, zret, copy, dtor)
+#define REDIS_CONF_AUTH_STATIC(ht, sstr, user, pass) \
+    redis_conf_auth(ht, sstr, sizeof(sstr) - 1, user, pass)
 
 zval *redis_hash_str_find_type(HashTable *ht, const char *key, int keylen, int type);
 void redis_conf_double(HashTable *ht, const char *key, int keylen, double *dval);
@@ -180,5 +182,6 @@ void redis_conf_long(HashTable *ht, const char *key, int keylen, zend_long *lval
 void redis_conf_int(HashTable *ht, const char *key, int keylen, int *ival);
 void redis_conf_string(HashTable *ht, const char *key, size_t keylen, zend_string **sval);
 void redis_conf_zval(HashTable *ht, const char *key, size_t keylen, zval *zret, int copy, int dtor);
+void redis_conf_auth(HashTable *ht, const char *key, size_t keylen, zend_string **user, zend_string **pass);
 
 #endif

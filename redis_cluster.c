@@ -445,9 +445,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
     if ((iptr = INI_STR("redis.clusters.auth"))) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
-        if ((z_value = zend_hash_str_find(Z_ARRVAL(z_tmp), name, name_len)) != NULL) {
-            redis_extract_auth_info(z_value, &user, &pass);
-        }
+        redis_conf_auth(Z_ARRVAL(z_tmp), name, name_len, &user, &pass);
         zval_dtor(&z_tmp);
     }
 
