@@ -164,11 +164,11 @@ static int redis_sock_read_ok(RedisSock *redis_sock) {
  * append no command at all.  Function returns 1 if we appended a command
  * and 0 otherwise. */
 static int redis_sock_append_auth(RedisSock *redis_sock, smart_string *str) {
-    /* NO OP */
-    if (redis_sock->user == NULL && redis_sock->pass == NULL)
+    /* We need a password at least */
+    if (redis_sock->pass == NULL)
         return 0;
 
-    redis_cmd_init_sstr(str, !!redis_sock->user + !!redis_sock->pass, "AUTH", sizeof("AUTH") - 1);
+    REDIS_CMD_INIT_SSTR_STATIC(str, !!redis_sock->user + !!redis_sock->pass, "AUTH");
 
     if (redis_sock->user)
         redis_cmd_append_sstr_zstr(str, redis_sock->user);
@@ -224,8 +224,8 @@ PHP_REDIS_API char *
 redis_sock_auth_cmd(RedisSock *redis_sock, int *cmdlen) {
     char *cmd;
 
-    /* NO OP */
-    if (redis_sock->user == NULL && redis_sock->pass == NULL)
+    /* AUTH requires at least a password */
+    if (redis_sock->pass == NULL)
         return NULL;
 
     if (redis_sock->user && redis_sock->pass) {
@@ -3313,6 +3313,15 @@ int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass)
     HashTable *ht;
     int num;
 
+    /* The user may wish to send us something like [NULL, 'password'] or
+     * [false, 'password'] so don't convert NULL or FALSE into "". */
+    #define TRY_SET_AUTH_ARG(zv, ppzstr) \
+        do { \
+            if (Z_TYPE_P(zv) != IS_NULL && Z_TYPE_P(zv) != IS_FALSE) { \
+                *(ppzstr) = zval_get_string(zv); \
+            } \
+        } while (0)
+
     /* Null out user and password */
     *user = *pass = NULL;
 
@@ -3338,15 +3347,23 @@ int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass)
 
     if (num == 2) {
         if ((ztmp = zend_hash_index_find(ht, 0)))
-            *user = zval_get_string(ztmp);
+            TRY_SET_AUTH_ARG(ztmp, user);
         if ((ztmp = zend_hash_index_find(ht, 1)))
-            *pass = zval_get_string(ztmp);
+            TRY_SET_AUTH_ARG(ztmp, pass);
     } else {
         if ((ztmp = zend_hash_index_find(ht, 0)))
-            *pass = zval_get_string(ztmp);
+            TRY_SET_AUTH_ARG(ztmp, pass);
     }
 
-    return SUCCESS;
+    /* If we at least have a password, we're good */
+    if (*pass != NULL)
+        return SUCCESS;
+
+    /* Failure, clean everything up so caller doesn't need to care */
+    if (*user) zend_string_release(*user);
+    *user = *pass = NULL;
+
+    return FAILURE;
 }
 
 /* Helper methods to extract configuration settings from a hash table */

@@ -2071,10 +2071,8 @@ int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zval *ztest;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "z!", &ztest) == FAILURE ||
-        redis_extract_auth_info(ztest, &user, &pass) == FAILURE ||
-        ((!user && !pass) || (user && !pass)))
+        redis_extract_auth_info(ztest, &user, &pass) == FAILURE)
     {
-        if (user) zend_string_release(user);
         return FAILURE;
     }
 
