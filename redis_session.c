@@ -484,10 +484,11 @@ PS_OPEN_FUNC(redis)
 
             redis_pool_add(pool, redis_sock, weight, db);
             redis_sock->prefix = prefix;
-            redis_sock->user = user;
-            redis_sock->pass = pass;
+            redis_sock_set_auth(redis_sock, user, pass);
 
             efree(addr);
+            if (user) zend_string_release(user);
+            if (pass) zend_string_release(pass);
             php_url_free(url);
         }
     }
