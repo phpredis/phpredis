@@ -172,8 +172,8 @@ static int redis_sock_append_auth(RedisSock *redis_sock, smart_string *str) {
 
     if (redis_sock->user)
         redis_cmd_append_sstr_zstr(str, redis_sock->user);
-    if (redis_sock->pass)
-        redis_cmd_append_sstr_zstr(str, redis_sock->pass);
+
+    redis_cmd_append_sstr_zstr(str, redis_sock->pass);
 
     /* We appended a command */
     return 1;
@@ -211,13 +211,15 @@ redis_sock_set_auth_zval(RedisSock *redis_sock, zval *zv) {
 
 PHP_REDIS_API void
 redis_sock_free_auth(RedisSock *redis_sock) {
-    if (redis_sock->user)
+    if (redis_sock->user) {
         zend_string_release(redis_sock->user);
-    if (redis_sock->pass)
-        zend_string_release(redis_sock->pass);
+        redis_sock->user = NULL;
+    }
 
-    redis_sock->user = NULL;
-    redis_sock->pass = NULL;
+    if (redis_sock->pass) {
+        zend_string_release(redis_sock->pass);
+        redis_sock->pass = NULL;
+    }
 }
 
 PHP_REDIS_API char *
@@ -228,7 +230,7 @@ redis_sock_auth_cmd(RedisSock *redis_sock, int *cmdlen) {
     if (redis_sock->pass == NULL)
         return NULL;
 
-    if (redis_sock->user && redis_sock->pass) {
+    if (redis_sock->user) {
         *cmdlen = redis_spprintf(redis_sock, NULL, &cmd, "AUTH", "SS", redis_sock->user, redis_sock->pass);
     } else {
         *cmdlen = redis_spprintf(redis_sock, NULL, &cmd, "AUTH", "S", redis_sock->pass);
@@ -709,9 +711,10 @@ union resparg {
 };
 
 static zend_string *redis_hash_auth(zend_string *user, zend_string *pass) {
-    zend_string *algo, *digest, *hex;
+    zend_string *algo, *hex;
     smart_str salted = {0};
     const php_hash_ops *ops;
+    unsigned char *digest;
     void *ctx;
 
     /* No op if there is not username/password */
@@ -735,15 +738,15 @@ static zend_string *redis_hash_auth(zend_string *user, zend_string *pass) {
     ops->hash_init(ctx);
     ops->hash_update(ctx, (const unsigned char *)ZSTR_VAL(salted.s), ZSTR_LEN(salted.s));
 
-    digest = zend_string_alloc(ops->digest_size, 0);
-    ops->hash_final((unsigned char*)ZSTR_VAL(digest), ctx);
+    digest = emalloc(ops->digest_size);
+    ops->hash_final(digest, ctx);
     efree(ctx);
 
     hex = zend_string_safe_alloc(ops->digest_size, 2, 0, 0);
-    php_hash_bin2hex(ZSTR_VAL(hex), (unsigned char*)ZSTR_VAL(digest), ops->digest_size);
+    php_hash_bin2hex(ZSTR_VAL(hex), digest, ops->digest_size);
     ZSTR_VAL(hex)[2 * ops->digest_size] = 0;
 
-    zend_string_release(digest);
+    efree(digest);
     zend_string_release(algo);
     smart_str_free(&salted);
 
@@ -1862,6 +1865,8 @@ int redis_acl_custom_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
             zval_dtor(&zret);
             ZVAL_FALSE(&zret);
         }
+    } else {
+        ZVAL_FALSE(&zret);
     }
 
     if (IS_ATOMIC(redis_sock)) {
@@ -2087,8 +2092,6 @@ redis_sock_create(char *host, int host_len, int port,
     redis_sock = ecalloc(1, sizeof(RedisSock));
     redis_sock->host = zend_string_init(host, host_len, 0);
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
-    redis_sock->watching = 0;
-    redis_sock->dbNumber = 0;
     redis_sock->retry_interval = retry_interval * 1000;
     redis_sock->persistent = persistent;
 
@@ -2102,13 +2105,7 @@ redis_sock_create(char *host, int host_len, int port,
 
     redis_sock->serializer = REDIS_SERIALIZER_NONE;
     redis_sock->compression = REDIS_COMPRESSION_NONE;
-    redis_sock->compression_level = 0; /* default */
     redis_sock->mode = ATOMIC;
-
-    redis_sock->scan = 0;
-    redis_sock->readonly = 0;
-    redis_sock->tcp_keepalive = 0;
-    redis_sock->reply_literal = 0;
 
     return redis_sock;
 }
@@ -3309,7 +3306,7 @@ redis_read_variant_reply_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_
 
 PHP_REDIS_API
 int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass) {
-    zval *ztmp;
+    zval *zv;
     HashTable *ht;
     int num;
 
@@ -3346,13 +3343,21 @@ int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass)
     }
 
     if (num == 2) {
-        if ((ztmp = zend_hash_index_find(ht, 0)))
-            TRY_SET_AUTH_ARG(ztmp, user);
-        if ((ztmp = zend_hash_index_find(ht, 1)))
-            TRY_SET_AUTH_ARG(ztmp, pass);
-    } else {
-        if ((ztmp = zend_hash_index_find(ht, 0)))
-            TRY_SET_AUTH_ARG(ztmp, pass);
+        if ((zv = REDIS_HASH_STR_FIND_STATIC(ht, "user")) ||
+            (zv = zend_hash_index_find(ht, 0)))
+        {
+            TRY_SET_AUTH_ARG(zv, user);
+        }
+
+        if ((zv = REDIS_HASH_STR_FIND_STATIC(ht, "pass")) ||
+            (zv = zend_hash_index_find(ht, 1)))
+        {
+            TRY_SET_AUTH_ARG(zv, pass);
+        }
+    } else if ((zv = REDIS_HASH_STR_FIND_STATIC(ht, "pass")) ||
+               (zv = zend_hash_index_find(ht, 0)))
+    {
+        TRY_SET_AUTH_ARG(zv, pass);
     }
 
     /* If we at least have a password, we're good */
@@ -3361,7 +3366,7 @@ int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass)
 
     /* Failure, clean everything up so caller doesn't need to care */
     if (*user) zend_string_release(*user);
-    *user = *pass = NULL;
+    *user = NULL;
 
     return FAILURE;
 }

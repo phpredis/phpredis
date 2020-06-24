@@ -70,12 +70,23 @@ class Redis_Test extends TestSuite
     }
 
     protected function getAuthFragment() {
+        static $_authidx = 0;
+        $_authidx++;
+
         $this->getAuthParts($user, $pass);
 
         if ($user && $pass) {
-            return "auth[]=$user&auth[]=$pass";
+            if ($_authidx % 2 == 0)
+                return "auth[user]=$user&auth[pass]=$pass";
+            else
+                return "auth[]=$user&auth[]=$pass";
         } else if ($pass) {
-            return "auth=$pass";
+            if ($_authidx % 3 == 0)
+                return "auth[pass]=$pass";
+            if ($_authidx % 2 == 0)
+                return "auth[]=$pass";
+            else
+                return "auth=$pass";
         } else {
             return NULL;
         }
