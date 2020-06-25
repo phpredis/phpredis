@@ -75,7 +75,7 @@ session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeou
 * timeout (float): the connection timeout to a redis host, expressed in seconds. If the host is unreachable in that amount of time, the session storage will be unavailable for the client. The default timeout is very high (86400 seconds).
 * persistent (integer, should be 1 or 0): defines if a persistent connection should be used. **(experimental setting)**
 * prefix (string, defaults to "PHPREDIS_SESSION:"): used as a prefix to the Redis key in which the session is stored. The key is composed of the prefix followed by the session ID.
-* auth (string, empty by default): used to authenticate with the server prior to sending commands.
+* auth (string, or an array with one or two elements): used to authenticate with the server prior to sending commands.
 * database (integer): selects a different database.
 
 Sessions have a lifetime expressed in seconds and stored in the INI variable "session.gc_maxlifetime". You can change it with [`ini_set()`](http://php.net/ini_set).
@@ -270,18 +270,27 @@ $redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another co
 
 ### auth
 -----
-_**Description**_: Authenticate the connection using a password.
+_**Description**_: Authenticate the connection using a password or a username and password.
 *Warning*: The password is sent in plain-text over the network.
 
 ##### *Parameters*
-*STRING*: password
+*MIXED*: password
 
 ##### *Return value*
 *BOOL*: `TRUE` if the connection is authenticated, `FALSE` otherwise.
 
+*Note*: In order to authenticate with a username and password you need Redis >= 6.0.
+
 ##### *Example*
 ~~~php
+/* Authenticate with the password 'foobared' */
 $redis->auth('foobared');
+
+/* Authenticate with the username 'phpredis', and password 'haxx00r' */
+$redis->auth(['phpredis', 'haxx00r']);
+
+/* Authenticate with the password 'foobared' */
+$redis->auth(['foobared']);
 ~~~
 
 ### select
@@ -417,6 +426,7 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 
 ## Server
 
+1. [acl](#acl) - Manage Redis ACLs
 1. [bgRewriteAOF](#bgrewriteaof) - Asynchronously rewrite the append-only file
 1. [bgSave](#bgsave) - Asynchronously save the dataset to disk (in background)
 1. [config](#config) - Get or Set the Redis server configuration parameters
@@ -430,6 +440,23 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 1. [slaveOf](#slaveof) - Make the server a slave of another instance, or promote it to master
 1. [time](#time) - Return the current server time
 1. [slowLog](#slowlog) - Access the Redis slowLog entries
+
+### acl
+-----
+_**Description**_: Execute the Redis ACL command.
+
+##### *Parameters*
+_variable_:  Minumum of one argument for `Redis` and two for `RedisCluster`.
+
+##### *Example*
+~~~php
+$redis->acl('USERS'); /* Get a list of users */
+$redis->acl('LOG');   /* See log of Redis' ACL subsystem */
+~~~
+
+*Note*:  In order to user the `ACL` command you must be communicating with Redis >= 6.0 and be logged into an account that has access to administration commands such as ACL.  Please reference [this tutorial](https://redis.io/topics/acl) for an overview of Redis 6 ACLs and [the redis command reference](https://redis.io/commands) for every ACL subcommand.
+
+*Note*: If you are connecting to Redis server >= 4.0.0 you can remove a key with the `unlink` method in the exact same way you would use `del`.  The Redis [unlink](https://redis.io/commands/unlink) command is non-blocking and will perform the actual deletion asynchronously.
 
 ### bgRewriteAOF
 -----

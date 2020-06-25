@@ -1,0 +1,2 @@
+user default on >phpredis ~* +@all
+user phpredis on >phpredis ~* +@all

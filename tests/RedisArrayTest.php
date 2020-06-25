@@ -616,7 +616,7 @@ class Redis_Distributor_Test extends TestSuite {
     }
 }
 
-function run_tests($className, $str_filter, $str_host, $str_auth) {
+function run_tests($className, $str_filter, $str_host, $auth) {
         // reset rings
         global $newRing, $oldRing, $serverList;
 
@@ -625,7 +625,7 @@ function run_tests($className, $str_filter, $str_host, $str_auth) {
         $serverList = ["$str_host:6379", "$str_host:6380", "$str_host:6381", "$str_host:6382"];
 
         // run
-        return TestSuite::run($className, $str_filter, $str_host, $str_auth);
+        return TestSuite::run($className, $str_filter, $str_host, NULL, $auth);
 }
 
 ?>

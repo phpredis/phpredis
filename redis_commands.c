@@ -2047,26 +2047,47 @@ int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+char *redis_variadic_str_cmd(char *kw, zval *argv, int argc, int *cmd_len) {
+    smart_string cmdstr = {0};
+    zend_string *zstr;
+    int i;
+
+    redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
+
+    for (i = 0; i < argc; i++) {
+        zstr = zval_get_string(&argv[i]);
+        redis_cmd_append_sstr_zstr(&cmdstr, zstr);
+        zend_string_release(zstr);
+    }
+
+    *cmd_len = cmdstr.len;
+    return cmdstr.c;
+}
+
 int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *pw;
-    size_t pw_len;
+    zend_string *user = NULL, *pass = NULL;
+    zval *ztest;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &pw, &pw_len)
-                             ==FAILURE)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z!", &ztest) == FAILURE ||
+        redis_extract_auth_info(ztest, &user, &pass) == FAILURE)
     {
         return FAILURE;
     }
 
-    // Construct our AUTH command
-    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "AUTH", "s", pw, pw_len);
+    /* Construct either AUTH <user> <pass> or AUTH <pass> */
+    if (user && pass) {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "AUTH", "SS", user, pass);
+    } else {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "AUTH", "S", pass);
+    }
 
-    // Free previously allocated password, and update
-    if (redis_sock->auth) zend_string_release(redis_sock->auth);
-    redis_sock->auth = zend_string_init(pw, pw_len, 0);
+    redis_sock_set_auth(redis_sock, user, pass);
 
-    // Success
+    if (user) zend_string_release(user);
+    if (pass) zend_string_release(pass);
+
     return SUCCESS;
 }
 

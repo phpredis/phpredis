@@ -231,121 +231,66 @@ PHP_METHOD(RedisArray, __construct)
     long l_retry_interval = 0;
       zend_bool b_lazy_connect = 0;
     double d_connect_timeout = 0, read_timeout = 0.0;
-    zend_string *algorithm = NULL, *auth = NULL;
+    zend_string *algorithm = NULL, *user = NULL, *pass = NULL;
     redis_array_object *obj;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "z|a", &z0, &z_opts) == FAILURE) {
         RETURN_FALSE;
     }
 
+    /* Bail if z0 isn't a string or an array.
+     * Note:  WRONG_PARAM_COUNT seems wrong but this is what we have been doing
+     *        for ages so we can't really change it until the next major version.
+     */
+    if (Z_TYPE_P(z0) != IS_ARRAY && Z_TYPE_P(z0) != IS_STRING)
+        WRONG_PARAM_COUNT;
+
+    /* If it's a string we want to load the array from ini information */
+    if (Z_TYPE_P(z0) == IS_STRING) {
+        ra = ra_load_array(Z_STRVAL_P(z0));
+        goto finish;
+    }
+
     ZVAL_NULL(&z_fun);
     ZVAL_NULL(&z_dist);
+
     /* extract options */
     if(z_opts) {
         hOpts = Z_ARRVAL_P(z_opts);
 
         /* extract previous ring. */
-        if ((zpData = zend_hash_str_find(hOpts, "previous", sizeof("previous") - 1)) != NULL && Z_TYPE_P(zpData) == IS_ARRAY
-            && zend_hash_num_elements(Z_ARRVAL_P(zpData)) != 0
-        ) {
-            /* consider previous array as non-existent if empty. */
+        zpData = REDIS_HASH_STR_FIND_STATIC(hOpts, "previous");
+        if (zpData && Z_TYPE_P(zpData) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(zpData)) > 0) {
             hPrev = Z_ARRVAL_P(zpData);
         }
 
-        /* extract function name. */
-        if ((zpData = zend_hash_str_find(hOpts, "function", sizeof("function") - 1)) != NULL) {
-            ZVAL_ZVAL(&z_fun, zpData, 1, 0);
-        }
 
-        /* extract function name. */
-        if ((zpData = zend_hash_str_find(hOpts, "distributor", sizeof("distributor") - 1)) != NULL) {
-            ZVAL_ZVAL(&z_dist, zpData, 1, 0);
-        }
-
-        /* extract function name. */
-        if ((zpData = zend_hash_str_find(hOpts, "algorithm", sizeof("algorithm") - 1)) != NULL && Z_TYPE_P(zpData) == IS_STRING) {
-            algorithm = zval_get_string(zpData);
-        }
-
-        /* extract index option. */
-        if ((zpData = zend_hash_str_find(hOpts, "index", sizeof("index") - 1)) != NULL) {
-            b_index = zval_is_true(zpData);
-        }
-
-        /* extract autorehash option. */
-        if ((zpData = zend_hash_str_find(hOpts, "autorehash", sizeof("autorehash") - 1)) != NULL) {
-            b_autorehash = zval_is_true(zpData);
-        }
-
-        /* pconnect */
-        if ((zpData = zend_hash_str_find(hOpts, "pconnect", sizeof("pconnect") - 1)) != NULL) {
-            b_pconnect = zval_is_true(zpData);
-        }
-
-        /* extract retry_interval option. */
-        if ((zpData = zend_hash_str_find(hOpts, "retry_interval", sizeof("retry_interval") - 1)) != NULL) {
-            if (Z_TYPE_P(zpData) == IS_LONG) {
-                l_retry_interval = Z_LVAL_P(zpData);
-            } else if (Z_TYPE_P(zpData) == IS_STRING) {
-                l_retry_interval = atol(Z_STRVAL_P(zpData));
-            }
-        }
-
-        /* extract lazy connect option. */
-        if ((zpData = zend_hash_str_find(hOpts, "lazy_connect", sizeof("lazy_connect") - 1)) != NULL) {
-            b_lazy_connect = zval_is_true(zpData);
-        }
-
-        /* extract connect_timeout option */
-        if ((zpData = zend_hash_str_find(hOpts, "connect_timeout", sizeof("connect_timeout") - 1)) != NULL) {
-            if (Z_TYPE_P(zpData) == IS_DOUBLE) {
-                d_connect_timeout = Z_DVAL_P(zpData);
-            } else if (Z_TYPE_P(zpData) == IS_LONG) {
-                d_connect_timeout = Z_LVAL_P(zpData);
-            } else if (Z_TYPE_P(zpData) == IS_STRING) {
-                d_connect_timeout = atof(Z_STRVAL_P(zpData));
-            }
-        }
-
-        /* extract read_timeout option */
-        if ((zpData = zend_hash_str_find(hOpts, "read_timeout", sizeof("read_timeout") - 1)) != NULL) {
-            if (Z_TYPE_P(zpData) == IS_DOUBLE) {
-                read_timeout = Z_DVAL_P(zpData);
-            } else if (Z_TYPE_P(zpData) == IS_LONG) {
-                read_timeout = Z_LVAL_P(zpData);
-            } else if (Z_TYPE_P(zpData) == IS_STRING) {
-                read_timeout = atof(Z_STRVAL_P(zpData));
-            }
-        }
-
-        /* consistent */
-        if ((zpData = zend_hash_str_find(hOpts, "consistent", sizeof("consistent") - 1)) != NULL) {
-            consistent = zval_is_true(zpData);
-        }
-
-        /* auth */
-        if ((zpData = zend_hash_str_find(hOpts, "auth", sizeof("auth") - 1)) != NULL) {
-            auth = zval_get_string(zpData);
-        }
+        REDIS_CONF_AUTH_STATIC(hOpts, "auth", &user, &pass);
+        REDIS_CONF_ZVAL_STATIC(hOpts, "function", &z_fun, 1, 0);
+        REDIS_CONF_ZVAL_STATIC(hOpts, "distributor", &z_dist, 1, 0);
+        REDIS_CONF_STRING_STATIC(hOpts, "algorithm", &algorithm);
+        REDIS_CONF_ZEND_BOOL_STATIC(hOpts, "index", &b_index);
+        REDIS_CONF_ZEND_BOOL_STATIC(hOpts, "autorehash", &b_autorehash);
+        REDIS_CONF_ZEND_BOOL_STATIC(hOpts, "pconnect", &b_pconnect);
+        REDIS_CONF_LONG_STATIC(hOpts, "retry_interval", &l_retry_interval);
+        REDIS_CONF_ZEND_BOOL_STATIC(hOpts, "lazy_connect", &b_lazy_connect);
+        REDIS_CONF_ZEND_BOOL_STATIC(hOpts, "consistent", &consistent);
+        REDIS_CONF_DOUBLE_STATIC(hOpts, "connect_timeout", &d_connect_timeout);
+        REDIS_CONF_DOUBLE_STATIC(hOpts, "read_timeout", &read_timeout);
     }
 
-    /* extract either name of list of hosts from z0 */
-    switch(Z_TYPE_P(z0)) {
-        case IS_STRING:
-            ra = ra_load_array(Z_STRVAL_P(z0));
-            break;
+    ra = ra_make_array(Z_ARRVAL_P(z0), &z_fun, &z_dist, hPrev, b_index,
+                       b_pconnect, l_retry_interval, b_lazy_connect,
+                       d_connect_timeout, read_timeout, consistent,
+                       algorithm, user, pass);
 
-        case IS_ARRAY:
-            ra = ra_make_array(Z_ARRVAL_P(z0), &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval, b_lazy_connect, d_connect_timeout, read_timeout, consistent, algorithm, auth);
-            break;
-
-        default:
-            WRONG_PARAM_COUNT;
-    }
     if (algorithm) zend_string_release(algorithm);
-    if (auth) zend_string_release(auth);
+    if (user) zend_string_release(user);
+    if (pass) zend_string_release(pass);
     zval_dtor(&z_dist);
     zval_dtor(&z_fun);
+
+finish:
 
     if(ra) {
         ra->auto_rehash = b_autorehash;
@@ -357,7 +302,9 @@ PHP_METHOD(RedisArray, __construct)
 }
 
 static void
-ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, int cmd_len, zval *z_args, zval *z_new_target) {
+ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd,
+                int cmd_len, zval *z_args, zval *z_new_target)
+{
 
     zval z_fun, *redis_inst, *z_callargs, *zp_tmp;
     char *key = NULL; /* set to avoid "unused-but-set-variable" */
