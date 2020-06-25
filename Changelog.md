@@ -12,12 +12,13 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - [Audiomack.com](https://audiomack.com)
 - [BlueHost](https://bluehost.com)
 - [Redis Cache Pro for WordPress](https://wprediscache.com/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
 
 ### Added
 
- - Support for Redis 6 ACLs
-   [a311cc4e](https://github.com/phpredis/phpredis/commit/a311cc4ec3cecdbaf83ba66985efa82137e37cc0)
-   ([Michael Grunder](https://github.com/michael-grunder))
+- Support for Redis 6 ACLs
+  [a311cc4e](https://github.com/phpredis/phpredis/commit/a311cc4ec3cecdbaf83ba66985efa82137e37cc0)
+  ([Michael Grunder](https://github.com/michael-grunder))
 
 - LZ4 Compression
   [04def9fb](https://github.com/phpredis/phpredis/commit/04def9fbe2194b3b711362de57260a6cd5216e69)
@@ -27,7 +28,7 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Support for new Redis 6 arguments (XINFO FULL, SET KEEPTTL)
   [a0c53e0b](https://github.com/phpredis/phpredis/commit/a0c53e0b30e0c6af15cc137415e7d65f6d1867f7),
   [f9c7bb57](https://github.com/phpredis/phpredis/commit/f9c7bb5788c39614c23e3bb9ec42ec8d6d5bbaa1)
-  ([Viktor Sekindo](https://github.com/victor <viktork@sekindo.com>),
+  ([Victor Kislov](https://github.com/vityank),
    [Michael Grunder](https://github.com/michael-grunder))
 
 - Support for TLS connections
@@ -42,7 +43,8 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Configurable unit test authentication arguments
   [e37f38a3](https://github.com/phpredis/phpredis/commit/e37f38a39eb4bece8f49ebd0652112dc992084a0),
   [201a9759](https://github.com/phpredis/phpredis/commit/201a97599953a9621bb8eb02dc8d5f08d16499a3)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko), ([Michael Grunder](https://github.com/michael-grunder))
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko),
+   [Michael Grunder](https://github.com/michael-grunder))
 
 ### Fixed
 
@@ -60,7 +62,7 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Use long for SCAN iteration to fix potential overflow
   [f13f9b7c](https://github.com/phpredis/phpredis/commit/f13f9b7c7f5e3a7d286b412541199a408a0a98bd)
-  ([Viktor Sekindo](https://github.com/victor <viktork@sekindo.com>))
+  ([Victor Kislov](https://github.com/vityank))
 
 - Fix config.m4 to test for the variable $PHP_REDIS_JSON and not the literal PHP_REDIS_JSON
   [20a3dc72](https://github.com/phpredis/phpredis/commit/20a3dc7251cb0bf450ef2a1cfeeeaeaa10355cd2)
@@ -105,12 +107,12 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [dd66fce](https://github.com/phpredis/phpredis/commit/dd66fceeb232f9e1fb0a26373949e810180dc5fc)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
- - Refactoring various bits of logic
-   [bbcf32a3](https://github.com/phpredis/phpredis/commit/bbcf32a37fa856ba0b50b489ba05bd3d43800fcc),
-   [a42cf189](https://github.com/phpredis/phpredis/commit/a42cf189a776fc43acf47ca519f1d7385cc27f2f),
-   [460c8f29](https://github.com/phpredis/phpredis/commit/460c8f29239c263e15a093c9bcdb6fb24587ec7d),
-   [b7f9df75](https://github.com/phpredis/phpredis/commit/b7f9df758b30187864012d5cd831dbbc5fa053d0),
-   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Refactoring various bits of logic
+  [bbcf32a3](https://github.com/phpredis/phpredis/commit/bbcf32a37fa856ba0b50b489ba05bd3d43800fcc),
+  [a42cf189](https://github.com/phpredis/phpredis/commit/a42cf189a776fc43acf47ca519f1d7385cc27f2f),
+  [460c8f29](https://github.com/phpredis/phpredis/commit/460c8f29239c263e15a093c9bcdb6fb24587ec7d),
+  [b7f9df75](https://github.com/phpredis/phpredis/commit/b7f9df758b30187864012d5cd831dbbc5fa053d0),
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 - Use the portable `ZEND_LONG_FORMAT` family instead of C format specifiers
   [b9b383f4](https://github.com/phpredis/phpredis/commit/b9b383f4)

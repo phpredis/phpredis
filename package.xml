@@ -27,7 +27,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2020-06-24</date>
+ <date>2020-06-25</date>
  <version>
   <release>5.3.0RC1</release>
   <api>5.3.0RC1</api>
@@ -48,16 +48,17 @@ http://pear.php.net/dtd/package-2.0.xsd">
     improvements.
 
     * Sponsors
-     ~ Audiomack.com - https://audiomack.com
-     ~ BlueHost.com - https://bluehost.com
-     ~ Redis Cache Pro for WordPress - https://wprediscache.com/
+      ~ Audiomack.com - https://audiomack.com
+      ~ BlueHost.com - https://bluehost.com
+      ~ Redis Cache Pro for WordPress - https://wprediscache.com/
+      ~ Avtandil Kikabidze - https://github.com/akalongman
 
     ---
 
     * Support for Redis 6 ACLs [a311cc4e] (Michael Grunder)
     * LZ4 Compression [04def9fb] (Ilia Alshanetsky)
     * Support for new Redis 6 arguments (XINFO FULL, SET KEEPTTL) [a0c53e0b,
-      f9c7bb57] (Michael Grunder, Viktor Sekindo)
+      f9c7bb57] (Michael Grunder, Victor Kislov)
     * Support for TLS connections [890ee0e6, b0671296] (Pavlo Yatsukhnenko)
     * New option Redis::SCAN_PREFIX, Redis::SCAN_NOPREFIX [e80600e2] (Pavlo
       Yatsukhnenko)
@@ -69,7 +70,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
       (Pavlo Yatsukhnenko)
     * Use ZEND_LONG_FMT instead of system `long` [5bf88124] (Michael Grunder)
     * Use long for SCAN iteration to fix potential overflow [f13f9b7c]
-      (Viktor Sekindo)
+      (Victor Kislov)
     * Fix config.m4 to test for the variable $PHP_REDIS_JSON and not the
       literal PHP_REDIS_JSON [20a3dc72] (Mizuki Nakano)
     * Fix compiler warnings [b9b383f4, 215828e] (Remi Collet),
