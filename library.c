@@ -808,6 +808,7 @@ redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...) {
         fmt++;
     }
 
+    smart_str_0(&str);
     return str.s;
 }
 
