@@ -777,8 +777,10 @@ redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...) {
     smart_str_append_long(&str, (zend_long)redis_sock->port);
 
     /* Short circuit if we don't have a pattern */
-    if (fmt == NULL)
+    if (fmt == NULL) {
+        smart_str_0(&str);
         return str.s;
+    }
 
     while (*fmt) {
         switch (*fmt) {
