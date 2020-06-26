@@ -214,7 +214,18 @@ if test "$PHP_REDIS" != "no"; then
 
   if test "$PHP_REDIS_LZ4" != "no"; then
     AC_DEFINE(HAVE_REDIS_LZ4, 1, [ ])
-    if test "$PHP_LIBLZ4" != "no"; then
+
+    if test "$PHP_LIBLZ4" = "yes" && test -x "$PKG_CONFIG" && $PKG_CONFIG --exists liblz4; then
+      AC_MSG_CHECKING(for liblz4 using pkg-config)
+
+      LIBLZ4_VER=`$PKG_CONFIG liblz4 --modversion`
+      LIBLZ4_INC=`$PKG_CONFIG liblz4 --cflags`
+      LIBLZ4_LIB=`$PKG_CONFIG liblz4 --libs`
+      AC_MSG_RESULT(found version $LIBLZ4_VER)
+      PHP_EVAL_LIBLINE($LIBLZ4_LIB, REDIS_SHARED_LIBADD)
+      PHP_EVAL_INCLINE($LIBLZ4_INC)
+
+    elif test "$PHP_LIBLZ4" != "no"; then
       AC_MSG_CHECKING(for liblz4 files in default path)
       for i in $PHP_LIBLZ4 /usr/local /usr; do
         if test -r $i/include/lz4.h; then
