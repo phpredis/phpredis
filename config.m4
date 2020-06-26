@@ -168,9 +168,22 @@ if test "$PHP_REDIS" != "no"; then
     MSGPACK_INCLUDES=""
   fi
 
+  AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+
   if test "$PHP_REDIS_LZF" != "no"; then
     AC_DEFINE(HAVE_REDIS_LZF, 1, [ ])
-    if test "$PHP_LIBLZF" != "no"; then
+
+    if test "$PHP_LIBLZF" = "yes" && test -x "$PKG_CONFIG" && $PKG_CONFIG --exists liblzf; then
+      AC_MSG_CHECKING(for liblzf using pkg-config)
+
+      LIBLZF_INC=`$PKG_CONFIG liblzf --cflags`
+      LIBLZF_LIB=`$PKG_CONFIG liblzf --libs`
+      LIBLZF_VER=`$PKG_CONFIG liblzf --modversion`
+      AC_MSG_RESULT(found version $LIBLZF_VER)
+      PHP_EVAL_LIBLINE($LIBLZF_LIB, REDIS_SHARED_LIBADD)
+      PHP_EVAL_INCLINE($LIBLZF_INC)
+
+    elif test "$PHP_LIBLZF" != "no"; then
       AC_MSG_CHECKING(for liblzf files in default path)
       for i in $PHP_LIBLZF /usr/local /usr; do
         if test -r $i/include/lzf.h; then
@@ -191,7 +204,6 @@ if test "$PHP_REDIS" != "no"; then
       ], [
         -L$LIBLZF_DIR/$PHP_LIBDIR
       ])
-      PHP_SUBST(REDIS_SHARED_LIBADD)
     else
       PHP_ADD_INCLUDE(liblzf)
       PHP_ADD_INCLUDE($srcdir/liblzf)
@@ -201,7 +213,19 @@ if test "$PHP_REDIS" != "no"; then
   fi
 
   if test "$PHP_REDIS_LZ4" != "no"; then
-      AC_DEFINE(HAVE_REDIS_LZ4, 1, [ ])
+    AC_DEFINE(HAVE_REDIS_LZ4, 1, [ ])
+
+    if test "$PHP_LIBLZ4" = "yes" && test -x "$PKG_CONFIG" && $PKG_CONFIG --exists liblz4; then
+      AC_MSG_CHECKING(for liblz4 using pkg-config)
+
+      LIBLZ4_VER=`$PKG_CONFIG liblz4 --modversion`
+      LIBLZ4_INC=`$PKG_CONFIG liblz4 --cflags`
+      LIBLZ4_LIB=`$PKG_CONFIG liblz4 --libs`
+      AC_MSG_RESULT(found version $LIBLZ4_VER)
+      PHP_EVAL_LIBLINE($LIBLZ4_LIB, REDIS_SHARED_LIBADD)
+      PHP_EVAL_INCLINE($LIBLZ4_INC)
+
+    elif test "$PHP_LIBLZ4" != "no"; then
       AC_MSG_CHECKING(for liblz4 files in default path)
       for i in $PHP_LIBLZ4 /usr/local /usr; do
         if test -r $i/include/lz4.h; then
@@ -216,18 +240,36 @@ if test "$PHP_REDIS" != "no"; then
       fi
       PHP_CHECK_LIBRARY(lz4, LZ4_compress,
       [
-        PHP_ADD_LIBRARY_WITH_PATH(zstd, $LIBLZ4_DIR/$PHP_LIBDIR, REDIS_SHARED_LIBADD)
+        PHP_ADD_LIBRARY_WITH_PATH(lz4, $LIBLZ4_DIR/$PHP_LIBDIR, REDIS_SHARED_LIBADD)
       ], [
         AC_MSG_ERROR([could not find usable liblz4])
       ], [
         -L$LIBLZ4_DIR/$PHP_LIBDIR
       ])
       PHP_SUBST(REDIS_SHARED_LIBADD)
+    else
+      AC_MSG_ERROR([only system libz4 is supported])
+    fi
   fi
 
   if test "$PHP_REDIS_ZSTD" != "no"; then
     AC_DEFINE(HAVE_REDIS_ZSTD, 1, [ ])
-    if test "$PHP_LIBZSTD" != "no"; then
+
+    if test "$PHP_LIBZSTD" = "yes" && test -x "$PKG_CONFIG" && $PKG_CONFIG --exists libzstd; then
+      AC_MSG_CHECKING(for libzstd using pkg-config)
+
+      LIBZSTD_VER=`$PKG_CONFIG libzstd --modversion`
+      if $PKG_CONFIG libzstd --atleast-version 1.3.0; then
+        LIBZSTD_INC=`$PKG_CONFIG libzstd --cflags`
+        LIBZSTD_LIB=`$PKG_CONFIG libzstd --libs`
+        AC_MSG_RESULT(found version $LIBZSTD_VER)
+        PHP_EVAL_LIBLINE($LIBZSTD_LIB, REDIS_SHARED_LIBADD)
+        PHP_EVAL_INCLINE($LIBZSTD_INC)
+      else
+        AC_MSG_ERROR([found version $LIBZSTD_VER, version 1.3.0 required])
+      fi
+
+    elif test "$PHP_LIBZSTD" != "no"; then
       AC_MSG_CHECKING(for libzstd files in default path)
       for i in $PHP_LIBZSTD /usr/local /usr; do
         if test -r $i/include/zstd.h; then
@@ -248,55 +290,16 @@ if test "$PHP_REDIS" != "no"; then
       ], [
         -L$LIBZSTD_DIR/$PHP_LIBDIR
       ])
-      PHP_SUBST(REDIS_SHARED_LIBADD)
     else
       AC_MSG_ERROR([only system libzstd is supported])
     fi
   fi
 
   AC_CHECK_PROG([GIT], [git], [yes], [no])
-  if test "$GIT" == "yes" && test -d "$srcdir/.git"; then
+  if test "$GIT" = "yes" && test -d "$srcdir/.git"; then
     AC_DEFINE_UNQUOTED(GIT_REVISION, ["$(git log -1 --format=%H)"], [ ])
   fi
 
-  dnl # --with-redis -> check with-path
-  dnl SEARCH_PATH="/usr/local /usr"     # you might want to change this
-  dnl SEARCH_FOR="/include/redis.h"  # you most likely want to change this
-  dnl if test -r $PHP_REDIS/$SEARCH_FOR; then # path given as parameter
-  dnl   REDIS_DIR=$PHP_REDIS
-  dnl else # search default path list
-  dnl   AC_MSG_CHECKING([for redis files in default path])
-  dnl   for i in $SEARCH_PATH ; do
-  dnl     if test -r $i/$SEARCH_FOR; then
-  dnl       REDIS_DIR=$i
-  dnl       AC_MSG_RESULT(found in $i)
-  dnl     fi
-  dnl   done
-  dnl fi
-  dnl
-  dnl if test -z "$REDIS_DIR"; then
-  dnl   AC_MSG_RESULT([not found])
-  dnl   AC_MSG_ERROR([Please reinstall the redis distribution])
-  dnl fi
-
-  dnl # --with-redis -> add include path
-  dnl PHP_ADD_INCLUDE($REDIS_DIR/include)
-
-  dnl # --with-redis -> check for lib and symbol presence
-  dnl LIBNAME=redis # you may want to change this
-  dnl LIBSYMBOL=redis # you most likely want to change this 
-
-  dnl PHP_CHECK_LIBRARY($LIBNAME,$LIBSYMBOL,
-  dnl [
-  dnl   PHP_ADD_LIBRARY_WITH_PATH($LIBNAME, $REDIS_DIR/lib, REDIS_SHARED_LIBADD)
-  dnl   AC_DEFINE(HAVE_REDISLIB,1,[ ])
-  dnl ],[
-  dnl   AC_MSG_ERROR([wrong redis lib version or lib not found])
-  dnl ],[
-  dnl   -L$REDIS_DIR/lib -lm -ldl
-  dnl ])
-  dnl
-  dnl PHP_SUBST(REDIS_SHARED_LIBADD)
-
+  PHP_SUBST(REDIS_SHARED_LIBADD)
   PHP_NEW_EXTENSION(redis, redis.c redis_commands.c library.c redis_session.c redis_array.c redis_array_impl.c redis_cluster.c cluster_library.c redis_sentinel.c sentinel_library.c $lzf_sources, $ext_shared)
 fi
