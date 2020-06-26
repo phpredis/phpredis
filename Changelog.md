@@ -5,6 +5,32 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.0RC2]
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [BlueHost](https://bluehost.com)
+- [Redis Cache Pro for WordPress](https://wprediscache.com/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+
+### Fixed
+
+- Fix LZ4 configuration and use pkg-config if we have it
+  [df398cb0](https://github.com/phpredis/phpredis/commit/df398cb07cd10d870c6805d5834703dc39590b0f)
+  ([Remi Collet](https://github.com/remicollet))
+
+- Make sure persistent pool ID is NULL terminated
+  [0838b5bd](https://github.com/phpredis/phpredis/commit/0838b5bde7ef25d419868c7e705bf6c70d68ea20),
+  [57bb95bf](https://github.com/phpredis/phpredis/commit/57bb95bf5a01a2adb74e2bf73bb285488e0d1586)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+### Changed
+
+- Run LZ4 tests in Travis
+  [3ba3f06d](https://github.com/phpredis/phpredis/commit/3ba3f06d51ff126eb51dd697381c0e56b38bbcf3)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
 ## [5.3.0RC1]
 
 ### Sponsors :sparkling_heart:

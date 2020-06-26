@@ -27,31 +27,43 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2020-06-25</date>
+ <date>2020-06-26</date>
  <version>
-  <release>5.3.0RC1</release>
-  <api>5.3.0RC1</api>
+  <release>5.3.0RC2</release>
+  <api>5.3.0RC2</api>
  </version>
  <stability>
-  <release>alpha</release>
-  <api>alpha</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 5.3.0RC1
+    phpredis 5.3.0RC2
 
-    This release adds the first round of support for Redis 6 functionality including,
-    most importantly ACLs.  Other Redis 6 functionality is included as well such as
-    KEEPTTL and XINFO FULL command support.
+    This release contains initial support for Redis 6 ACLs, LZ4 compression,
+    and many more fixes and improvements.
 
-    Aside from the Redis 6 functionality this releasae contains many bugfixes and
-    improvements.
+    You can find a detailed list of changes in Changelog.md and package.xml
+
+    A special thanks to BlueHost for sponsoring ACL support \o/
 
     * Sponsors
-      ~ Audiomack.com - https://audiomack.com
-      ~ BlueHost.com - https://bluehost.com
-      ~ Redis Cache Pro for WordPress - https://wprediscache.com/
+      ~ Audiomack - https://audiomack.com
+      ~ BlueHost - https://bluehost.com
+      ~ Redis Cache Pro for WordPress - https://wprediscache.com
       ~ Avtandil Kikabidze - https://github.com/akalongman
+
+    phpredis 5.3.0RC2
+
+    ---
+
+    * Fix LZ4 configuration and use pkg-config if we have it [df398cb0]
+      (Remi Collet)
+    * Make sure persistent pool ID is NULL terminated [0838b5bd, 57bb95bf]
+      (Michael Grunder)
+    * Run LZ4 tests in Travis [3ba3f06d] (Michael Grunder)
+
+    phpredis 5.3.0RC1
 
     ---
 
