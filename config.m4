@@ -201,7 +201,8 @@ if test "$PHP_REDIS" != "no"; then
   fi
 
   if test "$PHP_REDIS_LZ4" != "no"; then
-      AC_DEFINE(HAVE_REDIS_LZ4, 1, [ ])
+    AC_DEFINE(HAVE_REDIS_LZ4, 1, [ ])
+    if test "$PHP_LIBZSTD" != "no"; then
       AC_MSG_CHECKING(for liblz4 files in default path)
       for i in $PHP_LIBLZ4 /usr/local /usr; do
         if test -r $i/include/lz4.h; then
@@ -216,13 +217,16 @@ if test "$PHP_REDIS" != "no"; then
       fi
       PHP_CHECK_LIBRARY(lz4, LZ4_compress,
       [
-        PHP_ADD_LIBRARY_WITH_PATH(zstd, $LIBLZ4_DIR/$PHP_LIBDIR, REDIS_SHARED_LIBADD)
+        PHP_ADD_LIBRARY_WITH_PATH(lz4, $LIBLZ4_DIR/$PHP_LIBDIR, REDIS_SHARED_LIBADD)
       ], [
         AC_MSG_ERROR([could not find usable liblz4])
       ], [
         -L$LIBLZ4_DIR/$PHP_LIBDIR
       ])
       PHP_SUBST(REDIS_SHARED_LIBADD)
+    else
+      AC_MSG_ERROR([only system libz4 is supported])
+    fi
   fi
 
   if test "$PHP_REDIS_ZSTD" != "no"; then
