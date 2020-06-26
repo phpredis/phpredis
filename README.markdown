@@ -218,6 +218,9 @@ $redis->connect('tls://127.0.0.1'); // enable transport level security, port 637
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
 $redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
+
+/* With PhpRedis >= 5.3.0 you can specify authentication information on connect */
+$redis->connect('127.0.0.1', 6379, 1, NULL, 0, 0, ['auth' => ['phpredis', 'phpredis']]);
 ~~~
 
 **Note:** `open` is an alias for `connect` and will be removed in future versions of phpredis.
@@ -288,6 +291,10 @@ $redis->auth(['phpredis', 'haxx00r']);
 
 /* Authenticate with the password 'foobared' */
 $redis->auth(['foobared']);
+
+/* You can also use an associative array specifying user and pass */
+$redis->auth(['user' => 'phpredis', 'pass' => 'phpredis]);
+$redis->auth(['pass' => 'phpredis']);
 ~~~
 
 ### select
@@ -4324,10 +4331,10 @@ using a persistent ID, and FALSE if we're not connected
 
 ### getAuth
 -----
-_**Description**_:  Get the password used to authenticate the phpredis connection
+_**Description**_:  Get the password (or username and password if using Redis 6 ACLs) used to authenticate the connection.
 
 ### *Parameters*
 None
 
 ### *Return value*
-*Mixed*  Returns the password used to authenticate a phpredis session or NULL if none was used, and FALSE if we're not connected
+*Mixed*  Returns NULL if no username/password are set, the password string if a password is set, and a `[username, password]` array if authenticated with a username and password.
