@@ -202,7 +202,7 @@ if test "$PHP_REDIS" != "no"; then
 
   if test "$PHP_REDIS_LZ4" != "no"; then
     AC_DEFINE(HAVE_REDIS_LZ4, 1, [ ])
-    if test "$PHP_LIBZSTD" != "no"; then
+    if test "$PHP_LIBLZ4" != "no"; then
       AC_MSG_CHECKING(for liblz4 files in default path)
       for i in $PHP_LIBLZ4 /usr/local /usr; do
         if test -r $i/include/lz4.h; then
