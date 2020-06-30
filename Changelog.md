@@ -5,7 +5,18 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.3.0RC2]
+## [5.3.0] - 2020-06-30 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.3.0), [PECL](https://pecl.php.net/package/redis/5.3.0))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [BlueHost](https://bluehost.com)
+- [Redis Cache Pro for WordPress](https://wprediscache.com)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+
+*There were no changes between 5.3.0RC2 and 5.3.0*
+
+## [5.3.0RC2] - 2020-06-26 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.3.0RC2), [PECL](https://pecl.php.net/package/redis/5.3.0RC2))
 
 ### Sponsors :sparkling_heart:
 
