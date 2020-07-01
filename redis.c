@@ -503,6 +503,7 @@ static const zend_module_dep redis_deps[] = {
 #ifdef PHP_SESSION
      ZEND_MOD_REQUIRED("session")
 #endif
+     ZEND_MOD_REQUIRED("hash")
      ZEND_MOD_END
 };
 
