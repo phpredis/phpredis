@@ -710,8 +710,28 @@ union resparg {
     double dval;
 };
 
+/* Convert binary data to printable hex */
+static inline zend_string *redis_bin2hex(unsigned char *src, size_t len) {
+    static const char charset[] = "0123456789abcdef";
+    zend_string *ret;
+    char *dst;
+
+    ret = zend_string_safe_alloc(len, 2, 0, 0);
+    dst = ZSTR_VAL(ret);
+
+    while (len) {
+        *dst++ = charset[*src >> 4];
+        *dst++ = charset[*src & 0xF];
+        len--; src++;
+    }
+
+    *dst = 0;
+
+    return ret;
+}
+
 static zend_string *redis_hash_auth(zend_string *user, zend_string *pass) {
-    zend_string *algo, *hex;
+    zend_string *algo, *str;
     smart_str salted = {0};
     const php_hash_ops *ops;
     unsigned char *digest;
@@ -742,15 +762,13 @@ static zend_string *redis_hash_auth(zend_string *user, zend_string *pass) {
     ops->hash_final(digest, ctx);
     efree(ctx);
 
-    hex = zend_string_safe_alloc(ops->digest_size, 2, 0, 0);
-    php_hash_bin2hex(ZSTR_VAL(hex), digest, ops->digest_size);
-    ZSTR_VAL(hex)[2 * ops->digest_size] = 0;
+    str = redis_bin2hex(digest, ops->digest_size);
 
     efree(digest);
     zend_string_release(algo);
     smart_str_free(&salted);
 
-    return hex;
+    return str;
 }
 
 static void append_auth_hash(smart_str *dst, zend_string *user, zend_string *pass) {
