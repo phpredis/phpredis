@@ -41,6 +41,28 @@ if test "$PHP_REDIS" != "no"; then
     AC_DEFINE(PHP_SESSION,1,[redis sessions])
   fi
 
+  AC_MSG_CHECKING([for hash includes])
+  hash_inc_path=""
+  if test -f "$abs_srcdir/include/php/ext/hash/php_hash.h"; then
+    hash_inc_path="$abs_srcdir/include/php"
+  elif test -f "$abs_srcdir/ext/hash/php_hash.h"; then
+    hash_inc_path="$abs_srcdir"
+  elif test -f "$phpincludedir/ext/hash/php_hash.h"; then
+    hash_inc_path="$phpincludedir"
+  else
+    for i in php php7; do
+      if test -f "$prefix/include/$i/ext/hash/php_hash.h"; then
+        hash_inc_path="$prefix/include/$i"
+      fi
+    done
+  fi
+
+  if test "$hash_inc_path" = ""; then
+    AC_MSG_ERROR([Cannot find php_hash.h])
+  else
+    AC_MSG_RESULT([$hash_inc_path])
+  fi
+
   if test "$PHP_REDIS_JSON" != "no"; then
     AC_MSG_CHECKING([for json includes])
     json_inc_path=""
