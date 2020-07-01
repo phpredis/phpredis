@@ -777,8 +777,10 @@ redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...) {
     smart_str_append_long(&str, (zend_long)redis_sock->port);
 
     /* Short circuit if we don't have a pattern */
-    if (fmt == NULL)
+    if (fmt == NULL) {
+        smart_str_0(&str);
         return str.s;
+    }
 
     while (*fmt) {
         switch (*fmt) {
@@ -808,6 +810,7 @@ redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...) {
         fmt++;
     }
 
+    smart_str_0(&str);
     return str.s;
 }
 
@@ -2118,12 +2121,25 @@ static int redis_uniqid(char *buf, size_t buflen) {
                     (long)tv.tv_sec, (long)tv.tv_usec, (long)php_rand());
 }
 
+static int redis_stream_liveness_check(php_stream *stream) {
+    return php_stream_set_option(stream, PHP_STREAM_OPTION_CHECK_LIVENESS,
+                                 0, NULL) == PHP_STREAM_OPTION_RETURN_OK ?
+                                 SUCCESS : FAILURE;
+}
+
 static int
 redis_sock_check_liveness(RedisSock *redis_sock)
 {
     char id[64], ok;
     int idlen, auth;
     smart_string cmd = {0};
+
+    /* Short circuit if we detect the stream has gone bad or if the user has
+     * configured persistent connection "YOLO mode". */
+    if (redis_stream_liveness_check(redis_sock->stream) != SUCCESS)
+        return FAILURE;
+    else if (!INI_INT("redis.pconnect.echo_check_liveness"))
+        return SUCCESS;
 
     /* AUTH (if we need it) */
     auth = redis_sock_append_auth(redis_sock, &cmd);

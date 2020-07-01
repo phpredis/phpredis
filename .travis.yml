@@ -30,11 +30,13 @@ addons:
     packages:
     - clang
     - libzstd1-dev
+    - liblz4-dev
+    - pkg-config
     - valgrind
     - stunnel
 before_install:
   - phpize
-  - CFGARGS="--enable-redis-lzf --enable-redis-zstd"
+  - CFGARGS="--enable-redis-lzf --enable-redis-zstd --enable-redis-lz4 --with-liblz4"
   - pecl install igbinary && CFGARGS="$CFGARGS --enable-redis-igbinary"
   - pecl install msgpack && CFGARGS="$CFGARGS --enable-redis-msgpack"
   - ./configure $CFGARGS
