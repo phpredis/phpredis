@@ -30,6 +30,7 @@
 #include <standard/php_random.h>
 #include <zend_exceptions.h>
 #include <ext/standard/info.h>
+#include <ext/hash/php_hash.h>
 
 
 #ifdef PHP_SESSION
