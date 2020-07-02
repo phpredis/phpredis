@@ -38,14 +38,6 @@ Follow the DLL link on the [https://pecl.php.net/package/redis](https://pecl.php
 
 Fedora users can install the package from the official repository.
 
-### Fedora ≤ 30, Version 4
-
-Installation of the [php-pecl-redis4](https://apps.fedoraproject.org/packages/php-pecl-redis4) package:
-
-~~~
-dnf install php-pecl-redis4
-~~~
-
 ### Fedora ≥ 29, Version 5
 
 Installation of the [php-pecl-redis5](https://apps.fedoraproject.org/packages/php-pecl-redis5) package:
