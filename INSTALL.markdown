@@ -54,6 +54,14 @@ Installation of the [php-pecl-redis](https://apps.fedoraproject.org/packages/php
 yum install php-pecl-redis
 ~~~
 
+### openSUSE ≥ 15.1
+
+Installation of the [php7-redis](https://software.opensuse.org/package/php7-redis?search_term=php7-redis) package:
+
+~~~
+zypper in php7-redis
+~~~
+
 
 # Installation on OSX
 
