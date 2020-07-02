@@ -5,10 +5,10 @@ PHP_ARG_ENABLE(redis, whether to enable redis support,
 dnl Make sure that the comment is aligned:
 [  --enable-redis               Enable redis support])
 
-PHP_ARG_ENABLE(redis-session, whether to disable sessions,
+PHP_ARG_ENABLE(redis-session, whether to enable sessions,
 [  --disable-redis-session      Disable session support], yes, no)
 
-PHP_ARG_ENABLE(redis-json, whether to disable json serializer support,
+PHP_ARG_ENABLE(redis-json, whether to enable json serializer support,
 [  --disable-redis-json         Disable json serializer support], yes, no)
 
 PHP_ARG_ENABLE(redis-igbinary, whether to enable igbinary serializer support,
