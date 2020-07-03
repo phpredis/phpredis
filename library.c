@@ -2165,9 +2165,9 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
 {
     struct timeval tv, read_tv, *tv_ptr = NULL;
     zend_string *persistent_id = NULL, *estr = NULL;
-    char host[1024], *pos, *address, *schema = NULL;
+    char host[1024], *pos, *address, *scheme = NULL;
     const char *fmtstr = "%s://%s:%d";
-    int host_len, usocket = 0, err = 0, tcp_flag = 1;
+    int host_len, usocket = 0, err = 0, tcp_flag = 1, scheme_free = 0;
     ConnectionPool *p = NULL;
 
     if (redis_sock->stream != NULL) {
@@ -2175,9 +2175,12 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
     }
 
     address = ZSTR_VAL(redis_sock->host);
-    if ((pos = strstr(address, "://")) != NULL) {
-        schema = estrndup(address, pos - address);
+    if ((pos = strstr(address, "://")) == NULL) {
+        scheme = redis_sock->stream_ctx ? "ssl" : "tcp";
+    } else {
+        scheme = estrndup(address, pos - address);
         address = pos + sizeof("://") - 1;
+        scheme_free = 1;
     }
     if (address[0] == '/' && redis_sock->port < 1) {
         host_len = snprintf(host, sizeof(host), "unix://%s", address);
@@ -2193,9 +2196,9 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
             fmtstr = "%s://[%s]:%d";
         }
 #endif
-        host_len = snprintf(host, sizeof(host), fmtstr, schema ? schema : "tcp", address, redis_sock->port);
-        if (schema) efree(schema);
+        host_len = snprintf(host, sizeof(host), fmtstr, scheme, address, redis_sock->port);
     }
+    if (scheme_free) efree(scheme);
 
     if (redis_sock->persistent) {
         if (INI_INT("redis.pconnect.pooling_enabled")) {

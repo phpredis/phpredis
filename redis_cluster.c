@@ -351,7 +351,7 @@ void free_cluster_context(zend_object *object) {
 /* Attempt to connect to a Redis cluster provided seeds and timeout options */
 static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
                                double read_timeout, int persistent, zend_string *user,
-                               zend_string *pass)
+                               zend_string *pass, zval *context)
 {
     zend_string *hash = NULL, **seeds;
     redisCachedCluster *cc;
@@ -369,10 +369,13 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
         c->flags->user = zend_string_copy(user);
     if (pass && ZSTR_LEN(pass))
         c->flags->pass = zend_string_copy(pass);
+    if (context) {
+        redis_sock_set_stream_context(c->flags, context);
+    }
 
-    c->timeout = timeout;
-    c->read_timeout = read_timeout;
-    c->persistent = persistent;
+    c->flags->timeout = timeout;
+    c->flags->read_timeout = read_timeout;
+    c->flags->persistent = persistent;
     c->waitms = timeout * 1000L;
 
     /* Attempt to load slots from cache if caching is enabled */
@@ -450,7 +453,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
     }
 
     /* Attempt to create/connect to the cluster */
-    redis_cluster_init(c, ht_seeds, timeout, read_timeout, persistent, user, pass);
+    redis_cluster_init(c, ht_seeds, timeout, read_timeout, persistent, user, pass, NULL);
 
     /* Clean up */
     zval_dtor(&z_seeds);
@@ -464,38 +467,36 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
 
 /* Create a RedisCluster Object */
 PHP_METHOD(RedisCluster, __construct) {
-    zval *object, *z_seeds = NULL, *z_auth = NULL;
+    zval *object, *z_seeds = NULL, *z_auth = NULL, *context = NULL;
     zend_string *user = NULL, *pass = NULL;
     double timeout = 0.0, read_timeout = 0.0;
     size_t name_len;
     zend_bool persistent = 0;
-    redisCluster *context = GET_CONTEXT();
+    redisCluster *c = GET_CONTEXT();
     char *name;
 
     // Parse arguments
     if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                    "Os!|addbz", &object, redis_cluster_ce, &name,
+                                    "Os!|addbza", &object, redis_cluster_ce, &name,
                                     &name_len, &z_seeds, &timeout, &read_timeout,
-                                    &persistent, &z_auth) == FAILURE)
+                                    &persistent, &z_auth, &context) == FAILURE)
     {
         RETURN_FALSE;
     }
 
-    // Require a name
-    if (name_len == 0 && ZEND_NUM_ARGS() < 2) {
-        CLUSTER_THROW_EXCEPTION("You must specify a name or pass seeds!", 0);
-    }
-
     /* If we've got a string try to load from INI */
     if (ZEND_NUM_ARGS() < 2) {
-        redis_cluster_load(context, name, name_len);
+        if (name_len == 0) { // Require a name
+            CLUSTER_THROW_EXCEPTION("You must specify a name or pass seeds!", 0);
+        }
+        redis_cluster_load(c, name, name_len);
         return;
     }
 
     /* The normal case, loading from arguments */
     redis_extract_auth_info(z_auth, &user, &pass);
-    redis_cluster_init(context, Z_ARRVAL_P(z_seeds), timeout, read_timeout,
-                       persistent, user, pass);
+    redis_cluster_init(c, Z_ARRVAL_P(z_seeds), timeout, read_timeout,
+                       persistent, user, pass, context);
 
     if (user) zend_string_release(user);
     if (pass) zend_string_release(pass);
