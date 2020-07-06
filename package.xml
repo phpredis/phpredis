@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2020-06-30</date>
+ <date>2020-07-06</date>
  <version>
-  <release>5.3.0</release>
-  <api>5.3.0</api>
+  <release>5.3.1</release>
+  <api>5.3.1</api>
  </version>
  <stability>
   <release>stable</release>
@@ -38,6 +38,109 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
+    phpredis 5.3.1
+
+    This is a small bugfix release that fixes a couple of issues in 5.3.0.
+
+    You should upgrade if you're using persistent_id in session.save_path or
+    of if you're having trouble building 5.3.0 because the php_hash_bin2hex
+    symbol is missing.
+
+    You can find a detailed list of changes in Changelog.md and package.xml
+
+    * Sponsors
+      ~ Audiomack - https://audiomack.com
+      ~ BlueHost - https://bluehost.com
+      ~ Redis Cache Pro for WordPress - https://wprediscache.com
+      ~ Avtandil Kikabidze - https://github.com/akalongman
+
+    ---
+
+    * Don't dereference a NULL zend_string [ff2e160f] (Michael Grunder)
+    * Fix config.m4 messages and test for and include php_hash.h [83a1b7c5,
+      3c56289c, 08f202e7] (Remi Collet)
+    * Add openSUSE installation instructions [13a168f4] (Pavlo Yatsukhnenko)
+    * Remove EOL Fedora installation instructions [b4779e6a] (Remi Collet)
+ </notes>
+ <contents>
+  <dir name="/">
+   <file role='doc' name='COPYING'/>
+   <file role='doc' name='CREDITS'/>
+   <file role='doc' name='README.markdown'/>
+   <file role='src' name='INSTALL.markdown'/>
+   <file role='doc' name='arrays.markdown'/>
+   <file role='doc' name='cluster.markdown'/>
+   <file role='doc' name='sentinel.markdown'/>
+   <file role='src' name='cluster_library.c'/>
+   <file role='src' name='cluster_library.h'/>
+   <file role='src' name='common.h'/>
+   <file role='src' name='config.m4'/>
+   <file role='src' name='config.w32'/>
+   <file role='src' name='crc16.h'/>
+   <file role='src' name='library.c'/>
+   <file role='src' name='library.h'/>
+   <file role='src' name='php_redis.h'/>
+   <file role='src' name='redis.c'/>
+   <file role='src' name='redis_array.c'/>
+   <file role='src' name='redis_array.h'/>
+   <file role='src' name='redis_array_impl.c'/>
+   <file role='src' name='redis_array_impl.h'/>
+   <file role='src' name='redis_cluster.c'/>
+   <file role='src' name='redis_cluster.h'/>
+   <file role='src' name='redis_commands.c'/>
+   <file role='src' name='redis_commands.h'/>
+   <file role='src' name='redis_session.c'/>
+   <file role='src' name='redis_session.h'/>
+   <file role='src' name='redis_sentinel.c'/>
+   <file role='src' name='redis_sentinel.h'/>
+   <file role='src' name='sentinel_library.c'/>
+   <file role='src' name='sentinel_library.h'/>
+   <dir name='liblzf'>
+     <file role='doc' name='LICENSE'/>
+     <file role='doc' name='README'/>
+     <file role='src' name='lzf.h'/>
+     <file role='src' name='lzfP.h'/>
+     <file role='src' name='lzf_c.c'/>
+     <file role='src' name='lzf_d.c'/>
+   </dir> <!-- liblzf -->
+   <dir name='tests'>
+     <file role='test' name='RedisArrayTest.php'/>
+     <file role='test' name='RedisClusterTest.php'/>
+     <file role='test' name='RedisSentinelTest.php'/>
+     <file role='test' name='RedisTest.php'/>
+     <file role='test' name='TestRedis.php'/>
+     <file role='test' name='TestSuite.php'/>
+     <file role='test' name='getSessionData.php'/>
+     <file role='test' name='regenerateSessionId.php'/>
+     <file role='test' name='startSession.php'/>
+     <file role='test' name='make-cluster.sh'/>
+     <file role='test' name='mkring.sh'/>
+   </dir> <!-- tests -->
+  </dir> <!-- / -->
+ </contents>
+ <dependencies>
+  <required>
+   <php>
+    <min>7.0.0</min>
+    <max>7.9.99</max>
+   </php>
+   <pearinstaller>
+    <min>1.4.0b1</min>
+   </pearinstaller>
+  </required>
+ </dependencies>
+ <providesextension>redis</providesextension>
+ <extsrcrelease>
+  <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
+  <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
+  <configureoption name="enable-redis-zstd" prompt="enable zstd compression support?" default="no"/>
+ </extsrcrelease>
+ <changelog>
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.3.0</release><api>5.3.0</api></version>
+   <date>2020-06-30</date>
+   <notes>
     phpredis 5.3.0
 
     This release contains initial support for Redis 6 ACLs, LZ4 compression,
@@ -115,81 +218,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
       (Pavlo Yatsukhnenko)
     * Fix documentation showing lPush and rPush are variadic [6808cd6a]
       (Michael Grunder)
- </notes>
- <contents>
-  <dir name="/">
-   <file role='doc' name='COPYING'/>
-   <file role='doc' name='CREDITS'/>
-   <file role='doc' name='README.markdown'/>
-   <file role='src' name='INSTALL.markdown'/>
-   <file role='doc' name='arrays.markdown'/>
-   <file role='doc' name='cluster.markdown'/>
-   <file role='doc' name='sentinel.markdown'/>
-   <file role='src' name='cluster_library.c'/>
-   <file role='src' name='cluster_library.h'/>
-   <file role='src' name='common.h'/>
-   <file role='src' name='config.m4'/>
-   <file role='src' name='config.w32'/>
-   <file role='src' name='crc16.h'/>
-   <file role='src' name='library.c'/>
-   <file role='src' name='library.h'/>
-   <file role='src' name='php_redis.h'/>
-   <file role='src' name='redis.c'/>
-   <file role='src' name='redis_array.c'/>
-   <file role='src' name='redis_array.h'/>
-   <file role='src' name='redis_array_impl.c'/>
-   <file role='src' name='redis_array_impl.h'/>
-   <file role='src' name='redis_cluster.c'/>
-   <file role='src' name='redis_cluster.h'/>
-   <file role='src' name='redis_commands.c'/>
-   <file role='src' name='redis_commands.h'/>
-   <file role='src' name='redis_session.c'/>
-   <file role='src' name='redis_session.h'/>
-   <file role='src' name='redis_sentinel.c'/>
-   <file role='src' name='redis_sentinel.h'/>
-   <file role='src' name='sentinel_library.c'/>
-   <file role='src' name='sentinel_library.h'/>
-   <dir name='liblzf'>
-     <file role='doc' name='LICENSE'/>
-     <file role='doc' name='README'/>
-     <file role='src' name='lzf.h'/>
-     <file role='src' name='lzfP.h'/>
-     <file role='src' name='lzf_c.c'/>
-     <file role='src' name='lzf_d.c'/>
-   </dir> <!-- liblzf -->
-   <dir name='tests'>
-     <file role='test' name='RedisArrayTest.php'/>
-     <file role='test' name='RedisClusterTest.php'/>
-     <file role='test' name='RedisSentinelTest.php'/>
-     <file role='test' name='RedisTest.php'/>
-     <file role='test' name='TestRedis.php'/>
-     <file role='test' name='TestSuite.php'/>
-     <file role='test' name='getSessionData.php'/>
-     <file role='test' name='regenerateSessionId.php'/>
-     <file role='test' name='startSession.php'/>
-     <file role='test' name='make-cluster.sh'/>
-     <file role='test' name='mkring.sh'/>
-   </dir> <!-- tests -->
-  </dir> <!-- / -->
- </contents>
- <dependencies>
-  <required>
-   <php>
-    <min>7.0.0</min>
-    <max>7.9.99</max>
-   </php>
-   <pearinstaller>
-    <min>1.4.0b1</min>
-   </pearinstaller>
-  </required>
- </dependencies>
- <providesextension>redis</providesextension>
- <extsrcrelease>
-  <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
-  <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
-  <configureoption name="enable-redis-zstd" prompt="enable zstd compression support?" default="no"/>
- </extsrcrelease>
- <changelog>
+   </notes>
+  </release>
   <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>5.2.2</release><api>5.2.2</api></version>

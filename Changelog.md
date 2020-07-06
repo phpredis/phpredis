@@ -5,6 +5,38 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.1] - 2020-07-06 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.1), [PECL](https://pecl.php.net/package/redis/5.3.1))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [BlueHost](https://bluehost.com)
+- [Redis Cache Pro for WordPress](https://wprediscache.com)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+
+### Fixed
+
+- Don't dereference a NULL zend_string [ff2e160f] (Michael Grunder)
+  [ff2e160f](https://github.com/phpredis/phpredis/commit/ff2e160f408efdc97676cffaa02093e65c2ad634)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Fix config.m4 messages and test for and include php_hash.h
+  [83a1b7c5](https://github.com/phpredis/phpredis/commit/83a1b7c5e225abd94cd3459c52bf7d502dfb0979),
+  [3c56289c](https://github.com/phpredis/phpredis/commit/3c56289c71516a7c0ac81713ef2786c2b9e52274),
+  [08f202e7](https://github.com/phpredis/phpredis/commit/08f202e775037ccf849d7b933dddb467c9c2ee5f),
+  ([Remi Collet](https://github.com/remicollet))
+
+### Added
+
+- Add openSUSE installation instructions
+  [13a168f4](https://github.com/phpredis/phpredis/commit/13a168f42d6639a051d6f829d573dd81bcb97f3a)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+### Removed
+
+- Remove EOL Fedora installation instructions
+  [b4779e6a](https://github.com/phpredis/phpredis/commit/b4779e6a919103bd65fa0e6a0c88e658e05a3e7c)
+  ([Remi Collet](https://github.com/remicollet))
+
 ## [5.3.0] - 2020-06-30 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.3.0), [PECL](https://pecl.php.net/package/redis/5.3.0))
 
 ### Sponsors :sparkling_heart:
