@@ -16,8 +16,9 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
-- Don't dereference a NULL zend_string
-  [ff2e160f](https://github.com/phpredis/phpredis/commit/ff2e160f408efdc97676cffaa02093e65c2ad634)
+- Don't dereference a NULL zend_string or try to efree it
+  [ff2e160f](https://github.com/phpredis/phpredis/commit/ff2e160f408efdc97676cffaa02093e65c2ad634),
+  [7fed06f2](https://github.com/phpredis/phpredis/commit/7fed60f248e2249e6cac5c5c3090509aa47647fb)
   ([Michael Grunder](https://github.com/michael-grunder))
 - Fix config.m4 messages and test for and include php_hash.h
   [83a1b7c5](https://github.com/phpredis/phpredis/commit/83a1b7c5e225abd94cd3459c52bf7d502dfb0979),

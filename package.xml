@@ -27,7 +27,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2020-07-06</date>
+ <date>2020-07-07</date>
  <version>
   <release>5.3.1</release>
   <api>5.3.1</api>
@@ -56,7 +56,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     ---
 
-    * Don't dereference a NULL zend_string [ff2e160f] (Michael Grunder)
+    * Don't dereference a NULL zend_string or efree one [ff2e160f, 7fed06f2]
+      (Michael Grunder)
     * Fix config.m4 messages and test for and include php_hash.h [83a1b7c5,
       3c56289c, 08f202e7] (Remi Collet)
     * Add openSUSE installation instructions [13a168f4] (Pavlo Yatsukhnenko)
