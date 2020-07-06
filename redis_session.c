@@ -455,7 +455,7 @@ PS_OPEN_FUNC(redis)
 
             if ((url->path == NULL && url->host == NULL) || weight <= 0 || timeout <= 0) {
                 php_url_free(url);
-                if (persistent_id) efree(persistent_id);
+                if (persistent_id) zend_string_release(persistent_id);
                 if (prefix) zend_string_release(prefix);
                 if (user) zend_string_release(user);
                 if (pass) zend_string_release(pass);
