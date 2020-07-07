@@ -634,8 +634,12 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
     zend_llist_init(&node->slots, sizeof(redisSlotRange), NULL, 0);
 
     // Attach socket
-    node->sock = redis_sock_create(host, host_len, port, c->timeout,
-        c->read_timeout, c->persistent, NULL, 0);
+    node->sock = redis_sock_create(host, host_len, port,
+                                   c->flags->timeout, c->flags->read_timeout,
+                                   c->flags->persistent, NULL, 0);
+
+    /* Stream context */
+    node->sock->stream_ctx = c->flags->stream_ctx;
 
     redis_sock_set_auth(node->sock, c->flags->user, c->flags->pass);
 
@@ -818,12 +822,12 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
 
     /* Initialize flags and settings */
     c->flags = ecalloc(1, sizeof(RedisSock));
+    c->flags->timeout = timeout;
+    c->flags->read_timeout = read_timeout;
+    c->flags->persistent = persistent;
     c->subscribed_slot = -1;
     c->clusterdown = 0;
-    c->timeout = timeout;
-    c->read_timeout = read_timeout;
     c->failover = failover;
-    c->persistent = persistent;
     c->err = NULL;
 
     /* Set up our waitms based on timeout */
@@ -993,8 +997,11 @@ void cluster_init_cache(redisCluster *c, redisCachedCluster *cc) {
 
         /* Create socket */
         sock = redis_sock_create(ZSTR_VAL(cm->host.addr), ZSTR_LEN(cm->host.addr), cm->host.port,
-                                 c->timeout, c->read_timeout, c->persistent,
+                                 c->flags->timeout, c->flags->read_timeout, c->flags->persistent,
                                  NULL, 0);
+
+        /* Stream context */
+        sock->stream_ctx = c->flags->stream_ctx;
 
         /* Add to seed nodes */
         zend_hash_str_update_ptr(c->seeds, key, keylen, sock);
@@ -1027,7 +1034,8 @@ void cluster_init_cache(redisCluster *c, redisCachedCluster *cc) {
  * seeds array and know we have a non-empty array of strings all in
  * host:port format. */
 PHP_REDIS_API void
-cluster_init_seeds(redisCluster *cluster, zend_string **seeds, uint32_t nseeds) {
+cluster_init_seeds(redisCluster *c, zend_string **seeds, uint32_t nseeds)
+{
     RedisSock *sock;
     char *seed, *sep, key[1024];
     int key_len, i, *map;
@@ -1044,19 +1052,22 @@ cluster_init_seeds(redisCluster *cluster, zend_string **seeds, uint32_t nseeds) 
         ZEND_ASSERT(sep != NULL);
 
         // Allocate a structure for this seed
-        sock = redis_sock_create(seed, sep - seed,
-            (unsigned short)atoi(sep+1), cluster->timeout,
-            cluster->read_timeout, cluster->persistent, NULL, 0);
+        sock = redis_sock_create(seed, sep - seed, atoi(sep + 1),
+                                 c->flags->timeout, c->flags->read_timeout,
+                                 c->flags->persistent, NULL, 0);
+
+        /* Stream context */
+        sock->stream_ctx = c->flags->stream_ctx;
 
         /* Credentials */
-        redis_sock_set_auth(sock, cluster->flags->user, cluster->flags->pass);
+        redis_sock_set_auth(sock, c->flags->user, c->flags->pass);
 
         // Index this seed by host/port
         key_len = snprintf(key, sizeof(key), "%s:%u", ZSTR_VAL(sock->host),
             sock->port);
 
         // Add to our seed HashTable
-        zend_hash_str_update_ptr(cluster->seeds, key, key_len, sock);
+        zend_hash_str_update_ptr(c->seeds, key, key_len, sock);
     }
 
     efree(map);

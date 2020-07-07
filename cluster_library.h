@@ -186,12 +186,8 @@ typedef struct clusterFoldItem clusterFoldItem;
 /* RedisCluster implementation structure */
 typedef struct redisCluster {
 
-    /* Timeout and read timeout (for normal operations) */
-    double timeout;
-    double read_timeout;
-
-    /* Are we using persistent connections */
-    int persistent;
+    /* One RedisSock struct for serialization and prefix information */
+    RedisSock *flags;
 
     /* How long in milliseconds should we wait when being bounced around */
     long waitms;
@@ -240,9 +236,6 @@ typedef struct redisCluster {
 
     /* The slot where we're subscribed */
     short subscribed_slot;
-
-    /* One RedisSock struct for serialization and prefix information */
-    RedisSock *flags;
 
     /* The first line of our last reply, not including our reply type byte
      * or the trailing \r\n */
