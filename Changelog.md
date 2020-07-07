@@ -20,7 +20,8 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [066cff6a](https://github.com/phpredis/phpredis/commit/066cff6adee03ce05ec5d57083eb7995dfa4344d)
   ([Michael Grunder](https://github.com/michael-grunder))
 - Treat NULL as a failure for redis_extract_auth_info
-  [49428a2f](https://github.com/phpredis/phpredis/commit/49428a2f7072dc30a52db4155aed3d382800b1a6)
+  [49428a2f](https://github.com/phpredis/phpredis/commit/49428a2f7072dc30a52db4155aed3d382800b1a6),
+  [14ac969d](https://github.com/phpredis/phpredis/commit/14ac969da29dbf7203f8db31988ca26b9b45f583)
   ([Michael Grunder](https://github.com/michael-grunder))
 - Don't dereference a NULL zend_string or try to efree it
   [ff2e160f](https://github.com/phpredis/phpredis/commit/ff2e160f408efdc97676cffaa02093e65c2ad634),
