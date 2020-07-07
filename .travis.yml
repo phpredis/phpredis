@@ -27,6 +27,8 @@ matrix:
       env: CC=clang
 addons:
   apt:
+    sources:
+    - sourceline: 'ppa:chris-lea/redis-server'
     packages:
     - clang
     - libzstd1-dev
@@ -34,6 +36,7 @@ addons:
     - pkg-config
     - valgrind
     - stunnel
+    - redis
 before_install:
   - phpize
   - CFGARGS="--enable-redis-lzf --enable-redis-zstd --enable-redis-lz4 --with-liblz4"
