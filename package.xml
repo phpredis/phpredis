@@ -56,6 +56,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     ---
 
+    * Properly clean up on session start failure [066cff6a] (Michael Grunder)
+    * Treat NULL as a failure for redis_extract_auth_info [49428a2f]
+      (Michael Grunder)
     * Don't dereference a NULL zend_string or efree one [ff2e160f, 7fed06f2]
       (Michael Grunder)
     * Fix config.m4 messages and test for and include php_hash.h [83a1b7c5,
