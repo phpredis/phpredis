@@ -467,12 +467,13 @@ PS_OPEN_FUNC(redis)
             RedisSock *redis_sock;
             char *addr, *scheme;
             size_t addrlen;
-            int port;
+            int port, addr_free = 0;
 
             scheme = url->scheme ? REDIS_URL_STR(url->scheme) : "tcp";
             if (url->host) {
                 port = url->port;
                 addrlen = spprintf(&addr, 0, "%s://%s", scheme, REDIS_URL_STR(url->host));
+                addr_free = 1;
             } else { /* unix */
                 port = 0;
                 addr = REDIS_URL_STR(url->path);
@@ -487,7 +488,8 @@ PS_OPEN_FUNC(redis)
             redis_sock->prefix = prefix;
             redis_sock_set_auth(redis_sock, user, pass);
 
-            efree(addr);
+            if (addr_free) efree(addr);
+            if (persistent_id) zend_string_release(persistent_id);
             if (user) zend_string_release(user);
             if (pass) zend_string_release(pass);
             php_url_free(url);
