@@ -6068,6 +6068,7 @@ class Redis_Test extends TestSuite
         $obj_new = $this->newInstance();
 
         $arr_args = [
+            NULL,
             [],
             [NULL, NULL],
             ['foo', 'bar', 'baz'],
