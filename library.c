@@ -3340,7 +3340,7 @@ int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass)
 
     /* User passed nothing */
     if (ztest == NULL)
-        return SUCCESS;
+        return FAILURE;
 
     /* Handle a non-array first */
     if (Z_TYPE_P(ztest) != IS_ARRAY) {
