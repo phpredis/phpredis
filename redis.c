@@ -773,6 +773,9 @@ PHP_MINIT_FUNCTION(redis)
     redis_ce = zend_register_internal_class(&redis_class_entry);
     redis_ce->create_object = create_redis_object;
 
+    /* ADD PATCH SIGN*/
+    REGISTER_BOOL_CONSTANT("REDIS_SUBSCRIBE_PATCHED", 1, CONST_CS | CONST_PERSISTENT);
+
     /* RedisArray class */
     INIT_CLASS_ENTRY(redis_array_class_entry, "RedisArray", redis_array_functions);
     redis_array_ce = zend_register_internal_class(&redis_array_class_entry);

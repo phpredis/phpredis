@@ -416,9 +416,23 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
             break;
         }
 
+        zval_dtor(&z_resp);
+        // return if user func return NON-NULL value
+        if (Z_TYPE(z_ret) != IS_NULL) {
+            // when will be IS_UNDEF?
+            if (Z_TYPE(z_ret) == IS_UNDEF) {
+                RETVAL_FALSE;
+            } else {
+                if (Z_ISREF(z_ret)) {
+                    zend_unwrap_reference(&z_ret);
+                }
+                ZVAL_COPY_VALUE(return_value, &z_ret);
+            }
+            return 0;
+        }
+
         // If we have a return value free it
         zval_ptr_dtor(&z_ret);
-        zval_dtor(&z_resp);
     }
 
     // This is an error state, clean up
