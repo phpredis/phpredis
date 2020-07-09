@@ -464,7 +464,6 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
     zval z_ret, z_args[4];
     sctx->cb.retval = &z_ret;
     sctx->cb.params = z_args;
-    sctx->cb.no_separation = 0;
 
     /* Multibulk response, {[pattern], type, channel, payload } */
     while(1) {

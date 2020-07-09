@@ -793,7 +793,7 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zval *z_arr, *z_chan;
     HashTable *ht_chan;
     smart_string cmdstr = {0};
-    subscribeContext *sctx = emalloc(sizeof(subscribeContext));
+    subscribeContext *sctx = ecalloc(1, sizeof(*sctx));
     size_t key_len;
     int key_free;
     char *key;
@@ -854,7 +854,7 @@ int redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zval *z_arr, *z_chan;
     HashTable *ht_arr;
     smart_string cmdstr = {0};
-    subscribeContext *sctx = emalloc(sizeof(subscribeContext));
+    subscribeContext *sctx = ecalloc(1, sizeof(*sctx));
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &z_arr) == FAILURE) {
         efree(sctx);
