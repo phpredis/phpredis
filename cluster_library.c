@@ -634,12 +634,14 @@ cluster_node_create(redisCluster *c, char *host, size_t host_len,
     zend_llist_init(&node->slots, sizeof(redisSlotRange), NULL, 0);
 
     // Attach socket
-    node->sock = redis_sock_create(host, host_len, port, c->timeout,
-        c->read_timeout, c->persistent, NULL, 0);
+    node->sock = redis_sock_create(host, host_len, port,
+                                   c->flags->timeout, c->flags->read_timeout,
+                                   c->flags->persistent, NULL, 0);
 
-    if (c->flags->auth) {
-        node->sock->auth = zend_string_copy(c->flags->auth);
-    }
+    /* Stream context */
+    node->sock->stream_ctx = c->flags->stream_ctx;
+
+    redis_sock_set_auth(node->sock, c->flags->user, c->flags->pass);
 
     return node;
 }
@@ -820,12 +822,12 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
 
     /* Initialize flags and settings */
     c->flags = ecalloc(1, sizeof(RedisSock));
+    c->flags->timeout = timeout;
+    c->flags->read_timeout = read_timeout;
+    c->flags->persistent = persistent;
     c->subscribed_slot = -1;
     c->clusterdown = 0;
-    c->timeout = timeout;
-    c->read_timeout = read_timeout;
     c->failover = failover;
-    c->persistent = persistent;
     c->err = NULL;
 
     /* Set up our waitms based on timeout */
@@ -850,8 +852,8 @@ cluster_free(redisCluster *c, int free_ctx)
 
     /* Free any allocated prefix */
     if (c->flags->prefix) zend_string_release(c->flags->prefix);
-    /* Free auth info we've got */
-    if (c->flags->auth) zend_string_release(c->flags->auth);
+
+    redis_sock_free_auth(c->flags);
     efree(c->flags);
 
     /* Call hash table destructors */
@@ -995,8 +997,11 @@ void cluster_init_cache(redisCluster *c, redisCachedCluster *cc) {
 
         /* Create socket */
         sock = redis_sock_create(ZSTR_VAL(cm->host.addr), ZSTR_LEN(cm->host.addr), cm->host.port,
-                                 c->timeout, c->read_timeout, c->persistent,
+                                 c->flags->timeout, c->flags->read_timeout, c->flags->persistent,
                                  NULL, 0);
+
+        /* Stream context */
+        sock->stream_ctx = c->flags->stream_ctx;
 
         /* Add to seed nodes */
         zend_hash_str_update_ptr(c->seeds, key, keylen, sock);
@@ -1029,7 +1034,8 @@ void cluster_init_cache(redisCluster *c, redisCachedCluster *cc) {
  * seeds array and know we have a non-empty array of strings all in
  * host:port format. */
 PHP_REDIS_API void
-cluster_init_seeds(redisCluster *cluster, zend_string **seeds, uint32_t nseeds) {
+cluster_init_seeds(redisCluster *c, zend_string **seeds, uint32_t nseeds)
+{
     RedisSock *sock;
     char *seed, *sep, key[1024];
     int key_len, i, *map;
@@ -1046,21 +1052,22 @@ cluster_init_seeds(redisCluster *cluster, zend_string **seeds, uint32_t nseeds) 
         ZEND_ASSERT(sep != NULL);
 
         // Allocate a structure for this seed
-        sock = redis_sock_create(seed, sep - seed,
-            (unsigned short)atoi(sep+1), cluster->timeout,
-            cluster->read_timeout, cluster->persistent, NULL, 0);
+        sock = redis_sock_create(seed, sep - seed, atoi(sep + 1),
+                                 c->flags->timeout, c->flags->read_timeout,
+                                 c->flags->persistent, NULL, 0);
 
-        // Set auth information if specified
-        if (cluster->flags->auth) {
-            sock->auth = zend_string_copy(cluster->flags->auth);
-        }
+        /* Stream context */
+        sock->stream_ctx = c->flags->stream_ctx;
+
+        /* Credentials */
+        redis_sock_set_auth(sock, c->flags->user, c->flags->pass);
 
         // Index this seed by host/port
         key_len = snprintf(key, sizeof(key), "%s:%u", ZSTR_VAL(sock->host),
             sock->port);
 
         // Add to our seed HashTable
-        zend_hash_str_update_ptr(cluster->seeds, key, key_len, sock);
+        zend_hash_str_update_ptr(c->seeds, key, key_len, sock);
     }
 
     efree(map);
@@ -1811,7 +1818,6 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
     zval z_ret, z_args[4];
     sctx->cb.retval = &z_ret;
     sctx->cb.params = z_args;
-    sctx->cb.no_separation = 0;
 
     /* We're in a subscribe loop */
     c->subscribed_slot = c->cmd_slot;
@@ -2294,11 +2300,40 @@ cluster_xinfo_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
     add_next_index_zval(&c->multi_resp, &z_ret);
 }
 
+static void
+cluster_acl_custom_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx,
+                        int (*cb)(RedisSock*, zval*, long))
+{
+    zval z_ret;
+
+    array_init(&z_ret);
+    if (cb(c->cmd_sock, &z_ret, c->reply_len) != SUCCESS) {
+        zval_dtor(&z_ret);
+        CLUSTER_RETURN_FALSE(c);
+    }
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        RETURN_ZVAL(&z_ret, 0, 1);
+    }
+    add_next_index_zval(&c->multi_resp, &z_ret);
+}
+
+PHP_REDIS_API void
+cluster_acl_getuser_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
+    cluster_acl_custom_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx, redis_read_acl_getuser_reply);
+}
+
+PHP_REDIS_API void
+cluster_acl_log_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
+    cluster_acl_custom_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx, redis_read_acl_log_reply);
+}
+
 /* MULTI BULK response loop where we might pull the next one */
 PHP_REDIS_API zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
                                      redisCluster *c, int pull, mbulk_cb cb, zval *z_ret)
 {
     ZVAL_NULL(z_ret);
+
     // Pull our next response if directed
     if (pull) {
         if (cluster_check_response(c, &c->reply_type) < 0)
@@ -2712,7 +2747,7 @@ void free_seed_array(zend_string **seeds, uint32_t nseeds) {
     if (seeds == NULL)
         return;
 
-    for (i = 0; i < nseeds; i++) 
+    for (i = 0; i < nseeds; i++)
         zend_string_release(seeds[i]);
 
     efree(seeds);
@@ -2771,11 +2806,11 @@ cleanup:
 /* Validate cluster construction arguments and return a sanitized and validated
  * array of seeds */
 zend_string**
-cluster_validate_args(double timeout, double read_timeout, HashTable *seeds, 
-                      uint32_t *nseeds, char **errstr) 
+cluster_validate_args(double timeout, double read_timeout, HashTable *seeds,
+                      uint32_t *nseeds, char **errstr)
 {
     zend_string **retval;
-    
+
     if (timeout < 0L || timeout > INT_MAX) {
         if (errstr) *errstr = "Invalid timeout";
         return NULL;
@@ -2862,21 +2897,9 @@ PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash) {
 
 /* Cache a cluster's slot information in persistent_list if it's enabled */
 PHP_REDIS_API int cluster_cache_store(zend_string *hash, HashTable *nodes) {
-    redisCachedCluster *cc;
+    redisCachedCluster *cc = cluster_cache_create(hash, nodes);
 
-    /* Construct our cache */
-    cc = cluster_cache_create(hash, nodes);
-
-    /* Set up our resource */
-#if PHP_VERSION_ID < 70300
-    zend_resource le;
-    le.type = le_cluster_slot_cache;
-    le.ptr = cc;
-
-    zend_hash_update_mem(&EG(persistent_list), cc->hash, (void*)&le, sizeof(zend_resource));
-#else
-    zend_register_persistent_resource_ex(cc->hash, cc, le_cluster_slot_cache);
-#endif
+    redis_register_persistent_resource(cc->hash, cc, le_cluster_slot_cache);
 
     return SUCCESS;
 }

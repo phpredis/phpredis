@@ -23,10 +23,11 @@
 #define PHP_REDIS_H
 
 /* phpredis version */
-#define PHP_REDIS_VERSION "5.2.0"
+#define PHP_REDIS_VERSION "5.3.1"
 
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, __destruct);
+PHP_METHOD(Redis, acl);
 PHP_METHOD(Redis, append);
 PHP_METHOD(Redis, auth);
 PHP_METHOD(Redis, bgSave);
@@ -252,6 +253,18 @@ PHP_METHOD(Redis, getPersistentID);
 PHP_METHOD(Redis, getAuth);
 PHP_METHOD(Redis, getMode);
 
+/* For convenience we store the salt as a printable hex string which requires 2
+ * characters per byte + 1 for the NULL terminator */
+#define REDIS_SALT_BYTES 32
+#define REDIS_SALT_SIZE ((2 * REDIS_SALT_BYTES) + 1)
+
+ZEND_BEGIN_MODULE_GLOBALS(redis)
+	char salt[REDIS_SALT_SIZE];
+ZEND_END_MODULE_GLOBALS(redis)
+
+ZEND_EXTERN_MODULE_GLOBALS(redis)
+#define REDIS_G(v) ZEND_MODULE_GLOBALS_ACCESSOR(redis, v)
+
 #ifdef ZTS
 #include "TSRM.h"
 #endif
@@ -261,8 +274,9 @@ PHP_MSHUTDOWN_FUNCTION(redis);
 PHP_MINFO_FUNCTION(redis);
 
 /* Redis response handler function callback prototype */
-typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock, zval *z_tab, void *ctx);
+typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
+
+typedef int (*FailableResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock*, zval*, void*);
 
 PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
 

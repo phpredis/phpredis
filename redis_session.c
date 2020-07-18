@@ -39,6 +39,9 @@
 #include "SAPI.h"
 #include "ext/standard/url.h"
 
+#define REDIS_SESSION_PREFIX "PHPREDIS_SESSION:"
+#define CLUSTER_SESSION_PREFIX "PHPREDIS_CLUSTER_SESSION:"
+
 /* Session lock LUA as well as its SHA1 hash */
 #define LOCK_RELEASE_LUA_STR "if redis.call(\"get\",KEYS[1]) == ARGV[1] then return redis.call(\"del\",KEYS[1]) else return 0 end"
 #define LOCK_RELEASE_LUA_LEN (sizeof(LOCK_RELEASE_LUA_STR) - 1)
@@ -48,6 +51,9 @@
 /* Check if a response is the Redis +OK status response */
 #define IS_REDIS_OK(r, len) (r != NULL && len == 3 && !memcmp(r, "+OK", 3))
 #define NEGATIVE_LOCK_RESPONSE 1
+
+#define CLUSTER_DEFAULT_PREFIX() \
+    zend_string_init(CLUSTER_SESSION_PREFIX, sizeof(CLUSTER_SESSION_PREFIX) - 1, 0)
 
 ps_module ps_mod_redis = {
     PS_MOD_UPDATE_TIMESTAMP(redis)
@@ -82,6 +88,9 @@ typedef struct {
     redis_session_lock_status lock_status;
 
 } redis_pool;
+
+// static char *session_conf_string(HashTable *ht, const char *key, size_t keylen) {
+// }
 
 PHP_REDIS_API void
 redis_pool_add(redis_pool *pool, RedisSock *redis_sock, int weight, int database)
@@ -360,12 +369,18 @@ static void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_
     }
 }
 
+#if PHP_VERSION_ID < 70300
+#define REDIS_URL_STR(umem) umem
+#else
+#define REDIS_URL_STR(umem) ZSTR_VAL(umem)
+#endif
+
 /* {{{ PS_OPEN_FUNC
  */
 PS_OPEN_FUNC(redis)
 {
     php_url *url;
-    zval params, *param;
+    zval params;
     int i, j, path_len;
 
     redis_pool *pool = ecalloc(1, sizeof(*pool));
@@ -383,11 +398,10 @@ PS_OPEN_FUNC(redis)
         if (i < j) {
             int weight = 1;
             double timeout = 86400.0, read_timeout = 0.0;
-            int persistent = 0;
-            int database = -1;
-            char *persistent_id = NULL;
-            long retry_interval = 0;
-            zend_string *prefix = NULL, *auth = NULL;
+            int persistent = 0, db = -1;
+            zend_long retry_interval = 0;
+            zend_string *persistent_id = NULL, *prefix = NULL;
+            zend_string *user = NULL, *pass = NULL;
 
             /* translate unix: into file: */
             if (!strncmp(save_path+i, "unix:", sizeof("unix:")-1)) {
@@ -413,86 +427,71 @@ PS_OPEN_FUNC(redis)
 
             /* parse parameters */
             if (url->query != NULL) {
+                HashTable *ht;
                 char *query;
                 array_init(&params);
 
-#if (PHP_VERSION_ID < 70300)
-                if (url->fragment != NULL) {
-                    spprintf(&query, 0, "%s#%s", url->query, url->fragment);
+                if (url->fragment) {
+                    spprintf(&query, 0, "%s#%s", REDIS_URL_STR(url->query), REDIS_URL_STR(url->fragment));
                 } else {
-                    query = estrdup(url->query);
+                    query = estrdup(REDIS_URL_STR(url->query));
                 }
-#else
-                if (url->fragment != NULL) {
-                    spprintf(&query, 0, "%s#%s", ZSTR_VAL(url->query), ZSTR_VAL(url->fragment));
-                } else {
-                    query = estrndup(ZSTR_VAL(url->query), ZSTR_LEN(url->query));
-                }
-#endif
-                sapi_module.treat_data(PARSE_STRING, query, &params);
 
-                if ((param = zend_hash_str_find(Z_ARRVAL(params), "weight", sizeof("weight") - 1)) != NULL) {
-                    weight = zval_get_long(param);
-                }
-                if ((param = zend_hash_str_find(Z_ARRVAL(params), "timeout", sizeof("timeout") - 1)) != NULL) {
-                    timeout = zval_get_double(param);
-                }
-                if ((param = zend_hash_str_find(Z_ARRVAL(params), "read_timeout", sizeof("read_timeout") - 1)) != NULL) {
-                    read_timeout = zval_get_double(param);
-                }
-                if ((param = zend_hash_str_find(Z_ARRVAL(params), "persistent", sizeof("persistent") - 1)) != NULL) {
-                    persistent = (atol(Z_STRVAL_P(param)) == 1 ? 1 : 0);
-                }
-                if ((param = zend_hash_str_find(Z_ARRVAL(params), "persistent_id", sizeof("persistent_id") - 1)) != NULL) {
-                    persistent_id = estrndup(Z_STRVAL_P(param), Z_STRLEN_P(param));
-                }
-                if ((param = zend_hash_str_find(Z_ARRVAL(params), "prefix", sizeof("prefix") - 1)) != NULL) {
-                    prefix = zend_string_init(Z_STRVAL_P(param), Z_STRLEN_P(param), 0);
-                }
-                if ((param = zend_hash_str_find(Z_ARRVAL(params), "auth", sizeof("auth") - 1)) != NULL) {
-                    auth = zend_string_init(Z_STRVAL_P(param), Z_STRLEN_P(param), 0);
-                }
-                if ((param = zend_hash_str_find(Z_ARRVAL(params), "database", sizeof("database") - 1)) != NULL) {
-                    database = zval_get_long(param);
-                }
-                if ((param = zend_hash_str_find(Z_ARRVAL(params), "retry_interval", sizeof("retry_interval") - 1)) != NULL) {
-                    retry_interval = zval_get_long(param);
-                }
+                sapi_module.treat_data(PARSE_STRING, query, &params);
+                ht = Z_ARRVAL(params);
+
+                REDIS_CONF_INT_STATIC(ht, "weight", &weight);
+                REDIS_CONF_BOOL_STATIC(ht, "persistent", &persistent);
+                REDIS_CONF_INT_STATIC(ht, "database", &db);
+                REDIS_CONF_DOUBLE_STATIC(ht, "timeout", &timeout);
+                REDIS_CONF_DOUBLE_STATIC(ht, "read_timeout", &read_timeout);
+                REDIS_CONF_LONG_STATIC(ht, "retry_interval", &retry_interval);
+                REDIS_CONF_STRING_STATIC(ht, "persistent_id", &persistent_id);
+                REDIS_CONF_STRING_STATIC(ht, "prefix", &prefix);
+                REDIS_CONF_AUTH_STATIC(ht, "auth", &user, &pass);
 
                 zval_dtor(&params);
             }
 
             if ((url->path == NULL && url->host == NULL) || weight <= 0 || timeout <= 0) {
                 php_url_free(url);
-                if (persistent_id) efree(persistent_id);
+                if (persistent_id) zend_string_release(persistent_id);
                 if (prefix) zend_string_release(prefix);
-                if (auth) zend_string_release(auth);
+                if (user) zend_string_release(user);
+                if (pass) zend_string_release(pass);
                 redis_pool_free(pool);
                 PS_SET_MOD_DATA(NULL);
                 return FAILURE;
             }
 
             RedisSock *redis_sock;
-            if (url->host) {
-                zend_string *address;
-#if (PHP_VERSION_ID < 70300)
-                address = strpprintf(0, "%s://%s", url->scheme ? url->scheme : "tcp", url->host);
-#else
-                address = strpprintf(0, "%s://%s", url->scheme ? ZSTR_VAL(url->scheme) : "tcp", ZSTR_VAL(url->host));
-#endif
-                redis_sock = redis_sock_create(ZSTR_VAL(address), ZSTR_LEN(address), url->port, timeout, read_timeout, persistent, persistent_id, retry_interval);
-                zend_string_release(address);
-            } else { /* unix */
-#if (PHP_VERSION_ID < 70300)
-                redis_sock = redis_sock_create(url->path, strlen(url->path), 0, timeout, read_timeout, persistent, persistent_id, retry_interval);
-#else
-                redis_sock = redis_sock_create(ZSTR_VAL(url->path), ZSTR_LEN(url->path), 0, timeout, read_timeout, persistent, persistent_id, retry_interval);
-#endif
-            }
-            redis_pool_add(pool, redis_sock, weight, database);
-            redis_sock->prefix = prefix;
-            redis_sock->auth = auth;
+            char *addr, *scheme;
+            size_t addrlen;
+            int port, addr_free = 0;
 
+            scheme = url->scheme ? REDIS_URL_STR(url->scheme) : "tcp";
+            if (url->host) {
+                port = url->port;
+                addrlen = spprintf(&addr, 0, "%s://%s", scheme, REDIS_URL_STR(url->host));
+                addr_free = 1;
+            } else { /* unix */
+                port = 0;
+                addr = REDIS_URL_STR(url->path);
+                addrlen = strlen(addr);
+            }
+
+            redis_sock = redis_sock_create(addr, addrlen, port, timeout, read_timeout,
+                                           persistent, persistent_id ? ZSTR_VAL(persistent_id) : NULL,
+                                           retry_interval);
+
+            redis_pool_add(pool, redis_sock, weight, db);
+            redis_sock->prefix = prefix;
+            redis_sock_set_auth(redis_sock, user, pass);
+
+            if (addr_free) efree(addr);
+            if (persistent_id) zend_string_release(persistent_id);
+            if (user) zend_string_release(user);
+            if (pass) zend_string_release(pass);
             php_url_free(url);
         }
     }
@@ -534,7 +533,7 @@ static zend_string *
 redis_session_key(RedisSock *redis_sock, const char *key, int key_len)
 {
     zend_string *session;
-    char default_prefix[] = "PHPREDIS_SESSION:";
+    char default_prefix[] = REDIS_SESSION_PREFIX;
     char *prefix = default_prefix;
     size_t prefix_len = sizeof(default_prefix)-1;
 
@@ -838,42 +837,6 @@ PS_GC_FUNC(redis)
  * Redis Cluster session handler functions
  */
 
-/* Helper to extract timeout values */
-static void session_conf_timeout(HashTable *ht_conf, const char *key, int key_len,
-                                 double *val)
-{
-    zval *z_val;
-
-    if ((z_val = zend_hash_str_find(ht_conf, key, key_len - 1)) != NULL &&
-        Z_TYPE_P(z_val) == IS_STRING
-    ) {
-        *val = atof(Z_STRVAL_P(z_val));
-    }
-}
-
-/* Simple helper to retrieve a boolean (0 or 1) value from a string stored in our
- * session.save_path variable.  This is so the user can use 0, 1, or 'true',
- * 'false' */
-static void session_conf_bool(HashTable *ht_conf, char *key, int keylen,
-                              int *retval) {
-    zval *z_val;
-    char *str;
-    int strlen;
-
-    /* See if we have the option, and it's a string */
-    if ((z_val = zend_hash_str_find(ht_conf, key, keylen - 1)) != NULL &&
-        Z_TYPE_P(z_val) == IS_STRING
-    ) {
-        str = Z_STRVAL_P(z_val);
-        strlen = Z_STRLEN_P(z_val);
-
-        /* true/yes/1 are treated as true.  Everything else is false */
-        *retval = (strlen == 4 && !strncasecmp(str, "true", 4)) ||
-                  (strlen == 3 && !strncasecmp(str, "yes", 3)) ||
-                  (strlen == 1 && !strncasecmp(str, "1", 1));
-    }
-}
-
 /* Prefix a session key */
 static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
                                  int *skeylen, short *slot) {
@@ -891,36 +854,31 @@ static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
 
 PS_OPEN_FUNC(rediscluster) {
     redisCluster *c;
-    zval z_conf, *z_val;
+    zval z_conf, *zv;
     HashTable *ht_conf, *ht_seeds;
     double timeout = 0, read_timeout = 0;
     int persistent = 0, failover = REDIS_FAILOVER_NONE;
-    size_t prefix_len, auth_len = 0;
-    char *prefix, *auth = NULL;
+    zend_string *prefix = NULL, *user = NULL, *pass = NULL, *failstr = NULL;
 
     /* Parse configuration for session handler */
     array_init(&z_conf);
     sapi_module.treat_data(PARSE_STRING, estrdup(save_path), &z_conf);
 
-    /* Sanity check that we're able to parse and have a seeds array */
-    if (Z_TYPE(z_conf) != IS_ARRAY ||
-        (z_val = zend_hash_str_find(Z_ARRVAL(z_conf), "seed", sizeof("seed") - 1)) == NULL ||
-        Z_TYPE_P(z_val) != IS_ARRAY)
-    {
+    /* We need seeds */
+    zv = REDIS_HASH_STR_FIND_TYPE_STATIC(Z_ARRVAL(z_conf), "seed", IS_ARRAY);
+    if (zv == NULL) {
         zval_dtor(&z_conf);
         return FAILURE;
     }
 
     /* Grab a copy of our config hash table and keep seeds array */
     ht_conf = Z_ARRVAL(z_conf);
-    ht_seeds = Z_ARRVAL_P(z_val);
+    ht_seeds = Z_ARRVAL_P(zv);
 
-    /* Grab timeouts if they were specified */
-    session_conf_timeout(ht_conf, "timeout", sizeof("timeout"), &timeout);
-    session_conf_timeout(ht_conf, "read_timeout", sizeof("read_timeout"), &read_timeout);
-
-    /* Grab persistent option */
-    session_conf_bool(ht_conf, "persistent", sizeof("persistent"), &persistent);
+    /* Optional configuration settings */
+    REDIS_CONF_DOUBLE_STATIC(ht_conf, "timeout", &timeout);
+    REDIS_CONF_DOUBLE_STATIC(ht_conf, "read_timeout", &read_timeout);
+    REDIS_CONF_BOOL_STATIC(ht_conf, "persistent", &persistent);
 
     /* Sanity check on our timeouts */
     if (timeout < 0 || read_timeout < 0) {
@@ -930,58 +888,49 @@ PS_OPEN_FUNC(rediscluster) {
         return FAILURE;
     }
 
-    /* Look for a specific prefix */
-    if ((z_val = zend_hash_str_find(ht_conf, "prefix", sizeof("prefix") - 1)) != NULL &&
-        Z_TYPE_P(z_val) == IS_STRING && Z_STRLEN_P(z_val) > 0
-    ) {
-        prefix = Z_STRVAL_P(z_val);
-        prefix_len = Z_STRLEN_P(z_val);
-    } else {
-        prefix = "PHPREDIS_CLUSTER_SESSION:";
-        prefix_len = sizeof("PHPREDIS_CLUSTER_SESSION:")-1;
-    }
+    REDIS_CONF_STRING_STATIC(ht_conf, "prefix", &prefix);
+    REDIS_CONF_AUTH_STATIC(ht_conf, "auth", &user, &pass);
+    REDIS_CONF_STRING_STATIC(ht_conf, "failover", &failstr);
 
-    /* Look for a specific failover setting */
-    if ((z_val = zend_hash_str_find(ht_conf, "failover", sizeof("failover") - 1)) != NULL &&
-        Z_TYPE_P(z_val) == IS_STRING && Z_STRLEN_P(z_val) > 0
-    ) {
-        if (!strcasecmp(Z_STRVAL_P(z_val), "error")) {
+    /* Need to massage failover string if we have it */
+    if (failstr) {
+        if (zend_string_equals_literal_ci(failstr, "error")) {
             failover = REDIS_FAILOVER_ERROR;
-        } else if (!strcasecmp(Z_STRVAL_P(z_val), "distribute")) {
+        } else if (zend_string_equals_literal_ci(failstr, "distribute")) {
             failover = REDIS_FAILOVER_DISTRIBUTE;
         }
-    }
-
-    /* Look for a specific auth setting */
-    if ((z_val = zend_hash_str_find(ht_conf, "auth", sizeof("auth") - 1)) != NULL &&
-        Z_TYPE_P(z_val) == IS_STRING && Z_STRLEN_P(z_val) > 0
-    ) {
-        auth = Z_STRVAL_P(z_val);
-        auth_len = Z_STRLEN_P(z_val);
     }
 
     redisCachedCluster *cc;
     zend_string **seeds, *hash = NULL;
     uint32_t nseeds;
 
-    /* Extract at least one valid seed or abort */ 
+    #define CLUSTER_SESSION_CLEANUP() \
+        if (hash) zend_string_release(hash); \
+        if (prefix) zend_string_release(prefix); \
+        if (user) zend_string_release(user); \
+        if (pass) zend_string_release(pass); \
+        free_seed_array(seeds, nseeds); \
+        zval_dtor(&z_conf); \
+
+    /* Extract at least one valid seed or abort */
     seeds = cluster_validate_args(timeout, read_timeout, ht_seeds, &nseeds, NULL);
     if (seeds == NULL) {
         php_error_docref(NULL, E_WARNING, "No valid seeds detected");
+        CLUSTER_SESSION_CLEANUP();
         zval_dtor(&z_conf);
         return FAILURE;
     }
 
-    #define CLUSTER_SESSION_CLEANUP() \
-        if (hash) zend_string_release(hash); \
-        free_seed_array(seeds, nseeds); \
-        zval_dtor(&z_conf); \
-
     c = cluster_create(timeout, read_timeout, failover, persistent);
-    c->flags->prefix = zend_string_init(prefix, prefix_len, 0);
 
-    if (auth && auth_len) 
-        c->flags->auth = zend_string_init(auth, auth_len, 0);
+    if (prefix) {
+        c->flags->prefix = zend_string_copy(prefix);
+    } else {
+        c->flags->prefix = CLUSTER_DEFAULT_PREFIX();
+    }
+
+    redis_sock_set_auth(c->flags, user, pass);
 
     /* First attempt to load from cache */
     if (CLUSTER_CACHING_ENABLED()) {

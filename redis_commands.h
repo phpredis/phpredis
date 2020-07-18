@@ -23,8 +23,11 @@ typedef struct subscribeContext {
 
 /* Construct a raw command */
 int redis_build_raw_cmd(zval *z_args, int argc, char **cmd, int *cmd_len);
+
 /* Construct a script command */
 smart_string *redis_build_script_cmd(smart_string *cmd, int argc, zval *z_args);
+
+char *redis_variadic_str_cmd(char *kw, zval *argv, int argc, int *cmd_len);
 
 /* Redis command generics.  Many commands share common prototypes meaning that
  * we can write one function to handle all of them.  For example, there are

@@ -186,12 +186,8 @@ typedef struct clusterFoldItem clusterFoldItem;
 /* RedisCluster implementation structure */
 typedef struct redisCluster {
 
-    /* Timeout and read timeout (for normal operations) */
-    double timeout;
-    double read_timeout;
-
-    /* Are we using persistent connections */
-    int persistent;
+    /* One RedisSock struct for serialization and prefix information */
+    RedisSock *flags;
 
     /* How long in milliseconds should we wait when being bounced around */
     long waitms;
@@ -240,9 +236,6 @@ typedef struct redisCluster {
 
     /* The slot where we're subscribed */
     short subscribed_slot;
-
-    /* One RedisSock struct for serialization and prefix information */
-    RedisSock *flags;
 
     /* The first line of our last reply, not including our reply type byte
      * or the trailing \r\n */
@@ -497,6 +490,10 @@ PHP_REDIS_API void cluster_xclaim_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 PHP_REDIS_API void cluster_xinfo_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
+
+/* Custom ACL handlers */
+PHP_REDIS_API void cluster_acl_getuser_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx);
+PHP_REDIS_API void cluster_acl_log_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx);
 
 /* MULTI BULK processing callbacks */
 int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,

@@ -96,6 +96,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_scan_cl, 0, 0, 2)
     ZEND_ARG_INFO(0, i_count)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_acl_cl, 0, 0, 2)
+    ZEND_ARG_INFO(0, key_or_address)
+    ZEND_ARG_INFO(0, subcmd)
+    ZEND_ARG_VARIADIC_INFO(0, args)
+ZEND_END_ARG_INFO()
+
 /* Function table */
 zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, __construct, arginfo_ctor, ZEND_ACC_PUBLIC)
@@ -104,6 +110,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, _redir, arginfo_void, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _serialize, arginfo_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _unserialize, arginfo_value, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, acl, arginfo_acl_cl, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, append, arginfo_key_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, bgrewriteaof, arginfo_key_or_address, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, bgsave, arginfo_key_or_address, ZEND_ACC_PUBLIC)
@@ -344,8 +351,8 @@ void free_cluster_context(zend_object *object) {
 /* Take user provided seeds and return unique and valid ones */
 /* Attempt to connect to a Redis cluster provided seeds and timeout options */
 static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double timeout,
-                               double read_timeout, int persistent, char *auth,
-                               size_t auth_len)
+                               double read_timeout, int persistent, zend_string *user,
+                               zend_string *pass, zval *context)
 {
     zend_string *hash = NULL, **seeds;
     redisCachedCluster *cc;
@@ -359,13 +366,17 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
         return;
     }
 
-    if (auth && auth_len) {
-        c->flags->auth = zend_string_init(auth, auth_len, 0);
+    if (user && ZSTR_LEN(user))
+        c->flags->user = zend_string_copy(user);
+    if (pass && ZSTR_LEN(pass))
+        c->flags->pass = zend_string_copy(pass);
+    if (context) {
+        redis_sock_set_stream_context(c->flags, context);
     }
 
-    c->timeout = timeout;
-    c->read_timeout = read_timeout;
-    c->persistent = persistent;
+    c->flags->timeout = timeout;
+    c->flags->read_timeout = read_timeout;
+    c->flags->persistent = persistent;
     c->waitms = timeout * 1000L;
 
     /* Attempt to load slots from cache if caching is enabled */
@@ -391,11 +402,11 @@ cleanup:
 
 /* Attempt to load a named cluster configured in php.ini */
 void redis_cluster_load(redisCluster *c, char *name, int name_len) {
-    zval z_seeds, z_timeout, z_read_timeout, z_persistent, z_auth, *z_value;
-    char *iptr, *auth = NULL;
-    size_t auth_len = 0;
+    zval z_seeds, z_tmp, *z_value;
+    zend_string *user = NULL, *pass = NULL;
     double timeout = 0, read_timeout = 0;
     int persistent = 0;
+    char *iptr;
     HashTable *ht_seeds = NULL;
 
     /* Seeds */
@@ -412,69 +423,43 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
     }
 
     /* Connection timeout */
-    array_init(&z_timeout);
     if ((iptr = INI_STR("redis.clusters.timeout")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_timeout);
-    }
-    if ((z_value = zend_hash_str_find(Z_ARRVAL(z_timeout), name, name_len)) != NULL) {
-        if (Z_TYPE_P(z_value) == IS_STRING) {
-            timeout = atof(Z_STRVAL_P(z_value));
-        } else if (Z_TYPE_P(z_value) == IS_DOUBLE) {
-            timeout = Z_DVAL_P(z_value);
-        } else if (Z_TYPE_P(z_value) == IS_LONG) {
-            timeout = Z_LVAL_P(z_value);
-        }
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_double(Z_ARRVAL(z_tmp), name, name_len, &timeout);
+        zval_dtor(&z_tmp);
     }
 
     /* Read timeout */
-    array_init(&z_read_timeout);
     if ((iptr = INI_STR("redis.clusters.read_timeout")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_read_timeout);
-    }
-    if ((z_value = zend_hash_str_find(Z_ARRVAL(z_read_timeout), name, name_len)) != NULL) {
-        if (Z_TYPE_P(z_value) == IS_STRING) {
-            read_timeout = atof(Z_STRVAL_P(z_value));
-        } else if (Z_TYPE_P(z_value) == IS_DOUBLE) {
-            read_timeout = Z_DVAL_P(z_value);
-        } else if (Z_TYPE_P(z_value) == IS_LONG) {
-            read_timeout = Z_LVAL_P(z_value);
-        }
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_double(Z_ARRVAL(z_tmp), name, name_len, &read_timeout);
+        zval_dtor(&z_tmp);
     }
 
     /* Persistent connections */
-    array_init(&z_persistent);
     if ((iptr = INI_STR("redis.clusters.persistent")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_persistent);
-    }
-    if ((z_value = zend_hash_str_find(Z_ARRVAL(z_persistent), name, name_len)) != NULL) {
-        if (Z_TYPE_P(z_value) == IS_STRING) {
-            persistent = atoi(Z_STRVAL_P(z_value));
-        } else if (Z_TYPE_P(z_value) == IS_LONG) {
-            persistent = Z_LVAL_P(z_value);
-        }
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_bool(Z_ARRVAL(z_tmp), name, name_len, &persistent);
+        zval_dtor(&z_tmp);
     }
 
-    /* Cluster auth */
-    array_init(&z_auth);
-    if ((iptr = INI_STR("redis.clusters.auth")) != NULL) {
-        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_auth);
-    }
-    if ((z_value = zend_hash_str_find(Z_ARRVAL(z_auth), name, name_len)) != NULL &&
-        Z_TYPE_P(z_value) == IS_STRING && Z_STRLEN_P(z_value) > 0
-    ) {
-        auth = Z_STRVAL_P(z_value);
-        auth_len = Z_STRLEN_P(z_value);
+    if ((iptr = INI_STR("redis.clusters.auth"))) {
+        array_init(&z_tmp);
+        sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
+        redis_conf_auth(Z_ARRVAL(z_tmp), name, name_len, &user, &pass);
+        zval_dtor(&z_tmp);
     }
 
     /* Attempt to create/connect to the cluster */
-    redis_cluster_init(c, ht_seeds, timeout, read_timeout, persistent, auth, auth_len);
+    redis_cluster_init(c, ht_seeds, timeout, read_timeout, persistent, user, pass, NULL);
 
-    /* Clean up our arrays */
+    /* Clean up */
     zval_dtor(&z_seeds);
-    zval_dtor(&z_timeout);
-    zval_dtor(&z_read_timeout);
-    zval_dtor(&z_persistent);
-    zval_dtor(&z_auth);
+    if (user) zend_string_release(user);
+    if (pass) zend_string_release(pass);
 }
 
 /*
@@ -483,35 +468,39 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len) {
 
 /* Create a RedisCluster Object */
 PHP_METHOD(RedisCluster, __construct) {
-    zval *object, *z_seeds = NULL;
-    char *name, *auth = NULL;
-    size_t name_len, auth_len = 0;
+    zval *object, *z_seeds = NULL, *z_auth = NULL, *context = NULL;
+    zend_string *user = NULL, *pass = NULL;
     double timeout = 0.0, read_timeout = 0.0;
+    size_t name_len;
     zend_bool persistent = 0;
-    redisCluster *context = GET_CONTEXT();
+    redisCluster *c = GET_CONTEXT();
+    char *name;
 
     // Parse arguments
     if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                    "Os!|addbs", &object, redis_cluster_ce, &name,
+                                    "Os!|addbza", &object, redis_cluster_ce, &name,
                                     &name_len, &z_seeds, &timeout, &read_timeout,
-                                    &persistent, &auth, &auth_len) == FAILURE)
+                                    &persistent, &z_auth, &context) == FAILURE)
     {
         RETURN_FALSE;
     }
 
-    // Require a name
-    if (name_len == 0 && ZEND_NUM_ARGS() < 2) {
-        CLUSTER_THROW_EXCEPTION("You must specify a name or pass seeds!", 0);
+    /* If we've got a string try to load from INI */
+    if (ZEND_NUM_ARGS() < 2) {
+        if (name_len == 0) { // Require a name
+            CLUSTER_THROW_EXCEPTION("You must specify a name or pass seeds!", 0);
+        }
+        redis_cluster_load(c, name, name_len);
+        return;
     }
 
-    /* If we've been passed only one argument, the user is attempting to connect
-     * to a named cluster, stored in php.ini, otherwise we'll need manual seeds */
-    if (ZEND_NUM_ARGS() > 1) {
-        redis_cluster_init(context, Z_ARRVAL_P(z_seeds), timeout, read_timeout,
-            persistent, auth, auth_len);
-    } else {
-        redis_cluster_load(context, name, name_len);
-    }
+    /* The normal case, loading from arguments */
+    redis_extract_auth_info(z_auth, &user, &pass);
+    redis_cluster_init(c, Z_ARRVAL_P(z_seeds), timeout, read_timeout,
+                       persistent, user, pass, context);
+
+    if (user) zend_string_release(user);
+    if (pass) zend_string_release(pass);
 }
 
 /*
@@ -2497,6 +2486,90 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
     // Update iterator reference
     Z_LVAL_P(z_it) = it;
+}
+
+static int redis_acl_op_readonly(zend_string *op) {
+    /* Only return read-only for operations we know to be */
+    if (ZSTR_STRICMP_STATIC(op, "LIST") ||
+        ZSTR_STRICMP_STATIC(op, "USERS") ||
+        ZSTR_STRICMP_STATIC(op, "GETUSER") ||
+        ZSTR_STRICMP_STATIC(op, "CAT") ||
+        ZSTR_STRICMP_STATIC(op, "GENPASS") ||
+        ZSTR_STRICMP_STATIC(op, "WHOAMI") ||
+        ZSTR_STRICMP_STATIC(op, "LOG")) return 1;
+
+    return 0;
+}
+
+PHP_METHOD(RedisCluster, acl) {
+    redisCluster *c = GET_CONTEXT();
+    smart_string cmdstr = {0};
+    int argc = ZEND_NUM_ARGS(), i, readonly;
+    cluster_cb cb;
+    zend_string *zs;
+    zval *zargs;
+    void *ctx = NULL;
+    short slot;
+
+    /* ACL in cluster needs a slot argument, and then at least the op */
+    if (argc < 2) {
+        WRONG_PARAM_COUNT;
+        RETURN_FALSE;
+    }
+
+    /* Grab all our arguments and determine the command slot */
+    zargs = emalloc(argc * sizeof(*zargs));
+    if (zend_get_parameters_array(ht, argc, zargs) == FAILURE ||
+        (slot = cluster_cmd_get_slot(c, &zargs[0]) < 0))
+    {
+        efree(zargs);
+        RETURN_FALSE;
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc - 1, "ACL");
+
+    /* Read the op, determin if it's readonly, and add it */
+    zs = zval_get_string(&zargs[1]);
+    readonly = redis_acl_op_readonly(zs);
+    redis_cmd_append_sstr_zstr(&cmdstr, zs);
+
+    /* We have specialized handlers for GETUSER and LOG, whereas every
+     * other ACL command can be handled generically */
+    if (zend_string_equals_literal_ci(zs, "GETUSER")) {
+        cb = cluster_acl_getuser_resp;
+    } else if (zend_string_equals_literal_ci(zs, "LOG")) {
+        cb = cluster_acl_log_resp;
+    } else {
+        cb = cluster_variant_resp;
+    }
+
+    zend_string_release(zs);
+
+    /* Process remaining args */
+    for (i = 2; i < argc; i++) {
+        zs = zval_get_string(&zargs[i]);
+        redis_cmd_append_sstr_zstr(&cmdstr, zs);
+        zend_string_release(zs);
+    }
+
+    /* Can we use replicas? */
+    c->readonly = readonly && CLUSTER_IS_ATOMIC(c);
+
+    /* Kick off our command */
+    if (cluster_send_slot(c, slot, cmdstr.c, cmdstr.len, TYPE_EOF) < 0) {
+        CLUSTER_THROW_EXCEPTION("Unabler to send ACL command", 0);
+        efree(zargs);
+        RETURN_FALSE;
+    }
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
+    }
+
+    efree(cmdstr.c);
+    efree(zargs);
 }
 
 /* {{{ proto RedisCluster::scan(string master, long it [, string pat, long cnt]) */

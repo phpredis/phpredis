@@ -20,10 +20,7 @@ You can also make a one-time contribution with one of the links below.
 [![Ethereum](https://en.cryptobadges.io/badge/micro/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)](https://en.cryptobadges.io/donate/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)
 
 ## Sponsors
-
-<a href="https://audiomack.com">
-    <img src="https://styleguide.audiomack.com/styleguide/assets/dl/inline-orange-large.png" alt="Audiomack.com" width="150">
-</a>
+<a href="https://audiomack.com"><img src="https://styleguide.audiomack.com/styleguide/assets/dl/inline-orange-large.png" alt="Audiomack.com" width="150"></a><a href="https://bluehost.com"><img src="https://upload.wikimedia.org/wikipedia/commons/2/22/Bluehost-logo.png" alt="Bluehost.com" width="150"></a>
 
 # Table of contents
 -----
@@ -75,7 +72,7 @@ session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeou
 * timeout (float): the connection timeout to a redis host, expressed in seconds. If the host is unreachable in that amount of time, the session storage will be unavailable for the client. The default timeout is very high (86400 seconds).
 * persistent (integer, should be 1 or 0): defines if a persistent connection should be used. **(experimental setting)**
 * prefix (string, defaults to "PHPREDIS_SESSION:"): used as a prefix to the Redis key in which the session is stored. The key is composed of the prefix followed by the session ID.
-* auth (string, empty by default): used to authenticate with the server prior to sending commands.
+* auth (string, or an array with one or two elements): used to authenticate with the server prior to sending commands.
 * database (integer): selects a different database.
 
 Sessions have a lifetime expressed in seconds and stored in the INI variable "session.gc_maxlifetime". You can change it with [`ini_set()`](http://php.net/ini_set).
@@ -221,6 +218,9 @@ $redis->connect('tls://127.0.0.1'); // enable transport level security, port 637
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
 $redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
+
+/* With PhpRedis >= 5.3.0 you can specify authentication information on connect */
+$redis->connect('127.0.0.1', 6379, 1, NULL, 0, 0, ['auth' => ['phpredis', 'phpredis']]);
 ~~~
 
 **Note:** `open` is an alias for `connect` and will be removed in future versions of phpredis.
@@ -270,18 +270,31 @@ $redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another co
 
 ### auth
 -----
-_**Description**_: Authenticate the connection using a password.
+_**Description**_: Authenticate the connection using a password or a username and password.
 *Warning*: The password is sent in plain-text over the network.
 
 ##### *Parameters*
-*STRING*: password
+*MIXED*: password
 
 ##### *Return value*
 *BOOL*: `TRUE` if the connection is authenticated, `FALSE` otherwise.
 
+*Note*: In order to authenticate with a username and password you need Redis >= 6.0.
+
 ##### *Example*
 ~~~php
+/* Authenticate with the password 'foobared' */
 $redis->auth('foobared');
+
+/* Authenticate with the username 'phpredis', and password 'haxx00r' */
+$redis->auth(['phpredis', 'haxx00r']);
+
+/* Authenticate with the password 'foobared' */
+$redis->auth(['foobared']);
+
+/* You can also use an associative array specifying user and pass */
+$redis->auth(['user' => 'phpredis', 'pass' => 'phpredis]);
+$redis->auth(['pass' => 'phpredis']);
 ~~~
 
 ### select
@@ -417,6 +430,7 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 
 ## Server
 
+1. [acl](#acl) - Manage Redis ACLs
 1. [bgRewriteAOF](#bgrewriteaof) - Asynchronously rewrite the append-only file
 1. [bgSave](#bgsave) - Asynchronously save the dataset to disk (in background)
 1. [config](#config) - Get or Set the Redis server configuration parameters
@@ -430,6 +444,23 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 1. [slaveOf](#slaveof) - Make the server a slave of another instance, or promote it to master
 1. [time](#time) - Return the current server time
 1. [slowLog](#slowlog) - Access the Redis slowLog entries
+
+### acl
+-----
+_**Description**_: Execute the Redis ACL command.
+
+##### *Parameters*
+_variable_:  Minumum of one argument for `Redis` and two for `RedisCluster`.
+
+##### *Example*
+~~~php
+$redis->acl('USERS'); /* Get a list of users */
+$redis->acl('LOG');   /* See log of Redis' ACL subsystem */
+~~~
+
+*Note*:  In order to user the `ACL` command you must be communicating with Redis >= 6.0 and be logged into an account that has access to administration commands such as ACL.  Please reference [this tutorial](https://redis.io/topics/acl) for an overview of Redis 6 ACLs and [the redis command reference](https://redis.io/commands) for every ACL subcommand.
+
+*Note*: If you are connecting to Redis server >= 4.0.0 you can remove a key with the `unlink` method in the exact same way you would use `del`.  The Redis [unlink](https://redis.io/commands/unlink) command is non-blocking and will perform the actual deletion asynchronously.
 
 ### bgRewriteAOF
 -----
@@ -4300,10 +4331,10 @@ using a persistent ID, and FALSE if we're not connected
 
 ### getAuth
 -----
-_**Description**_:  Get the password used to authenticate the phpredis connection
+_**Description**_:  Get the password (or username and password if using Redis 6 ACLs) used to authenticate the connection.
 
 ### *Parameters*
 None
 
 ### *Return value*
-*Mixed*  Returns the password used to authenticate a phpredis session or NULL if none was used, and FALSE if we're not connected
+*Mixed*  Returns NULL if no username/password are set, the password string if a password is set, and a `[username, password]` array if authenticated with a username and password.
