@@ -2766,7 +2766,7 @@ _**Description**_: Add one or more members to a sorted set or update its score i
 
 ##### *Prototype*
 ~~~php
-$redis->zAdd($key, [, $options, ] $score, $value [, $score1 $value1, ...]);
+$redis->zAdd($key, [ $options ,] $score, $value [, $score1, $value1, ...]);
 ~~~
 
 ##### *Parameters*
@@ -2787,7 +2787,7 @@ $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 5, 'val5');
 $redis->zRange('key', 0, -1); // [val0, val1, val5]
 
-// From Redis 3.0.2 possible to add options like XX, NX, CH, INCR
+// From Redis 3.0.2 it's possible to add options like XX, NX, CH, INCR
 $redis->zAdd('key', ['CH'], 5, 'val5', 10, 'val10', 15, 'val15');
 ~~~
 
