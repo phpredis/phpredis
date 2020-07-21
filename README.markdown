@@ -2763,10 +2763,19 @@ $redis->bzPopMax('zs1', 'zs2', 5);
 -----
 _**Description**_: Add one or more members to a sorted set or update its score if it already exists
 
+
+##### *Prototype*
+~~~php
+$redis->zAdd($key, [, $options, ] $score, $value [, $score1 $value1, ...]);
+~~~
+
 ##### *Parameters*
-*key*
+*key*: string
+*options*: array (optional)
 *score*: double  
 *value*: string
+*score1*: double
+*value1*: string
 
 ##### *Return value*
 *Long* 1 if the element is added. 0 otherwise.
@@ -2777,6 +2786,9 @@ $redis->zAdd('key', 1, 'val1');
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 5, 'val5');
 $redis->zRange('key', 0, -1); // [val0, val1, val5]
+
+// From Redis 3.0.2 possible to add options like XX, NX, CH, INCR
+$redis->zAdd('key', ['CH'], 5, 'val5', 10, 'val10', 15, 'val15');
 ~~~
 
 ### zCard, zSize
