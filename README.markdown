@@ -2972,6 +2972,7 @@ $redis->zRangeByScore('key', 0, 3); /* ['val0', 'val2'] */
 $redis->zRangeByScore('key', 0, 3, ['withscores' => TRUE]); /* ['val0' => 0, 'val2' => 2] */
 $redis->zRangeByScore('key', 0, 3, ['limit' => [1, 1]]); /* ['val2'] */
 $redis->zRangeByScore('key', 0, 3, ['withscores' => TRUE, 'limit' => [1, 1]]); /* ['val2' => 2] */
+$redis->zRangeByScore('key', '-inf', '+inf', ['withscores' => TRUE]); /* ['val0' => 0, 'val2' => 2, 'val10' => 10] */
 ~~~
 
 ### zRangeByLex
