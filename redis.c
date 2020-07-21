@@ -618,6 +618,10 @@ clone_redis_object(zval *this_ptr)
             redis_sock_set_stream_context(redis->sock, &old_redis->sock->stream_ctx->options);
         }
 
+        if (old_redis->sock->user) {
+            redis_sock_set_auth(redis->sock, old_redis->sock->user, old_redis->sock->pass);
+        }
+
         if (redis_sock_server_open(redis->sock) < 0) {
             if (redis->sock->err) {
                 REDIS_THROW_EXCEPTION(ZSTR_VAL(redis->sock->err), 0);
