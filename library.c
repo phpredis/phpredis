@@ -685,17 +685,33 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
     return NULL;
 }
 
-static int redis_sock_read_cmp(RedisSock *redis_sock, const char *cmp, int cmplen) {
-    char *resp;
-    int len, rv = FAILURE;
+/* Check the reply from our ECHO "liveness" check.  We can consider it a success if the
+ * reply is the random ID we generated or if Redis returns to us an `-ERR NOAUTH`.  This
+ * is because if we're not authenticated we know there aren't pending replies on the 
+ * socket. */
+static int redis_sock_read_liveness_resp(RedisSock *redis_sock, const char *id, int idlen) {
+    char *resp, buf[1024];
+    REDIS_REPLY_TYPE type;
+    long linelen;
+    size_t errlen;
 
-    if ((resp = redis_sock_read(redis_sock, &len)) == NULL)
+    if (redis_read_reply_type(redis_sock, &type, &linelen) == FAILURE)
         return FAILURE;
 
-    rv = len == cmplen && !memcmp(resp, cmp, cmplen) ? SUCCESS : FAILURE;
+    if (type == TYPE_BULK) {
+        if (linelen != idlen || (resp = redis_sock_read_bulk_reply(redis_sock, linelen)) == NULL)
+            return FAILURE;
+        int rv = !strncmp(id, resp, idlen) ? SUCCESS : FAILURE;
+        efree(resp);
+        return rv;
+    } else if (type == TYPE_ERR) {
+        if (redis_sock_gets(redis_sock, buf, sizeof(buf), &errlen) == FAILURE)
+            return FAILURE;
+        return errlen > 6 && !strncmp(buf, "NOAUTH", 6) ? SUCCESS : FAILURE;
+    }
 
-    efree(resp);
-    return rv;
+    /* Not a bulk or error response, failure */
+    return FAILURE;
 }
 
 /* A simple union to store the various arg types we might handle in our
@@ -2151,7 +2167,7 @@ redis_sock_check_liveness(RedisSock *redis_sock)
     /* Send command(s) and make sure we can consume reply(ies) */
     ok = (redis_sock_write(redis_sock, cmd.c, cmd.len) >= 0) &&
          (!auth || redis_sock_read_ok(redis_sock) == SUCCESS) &&
-         (redis_sock_read_cmp(redis_sock, id, idlen) == SUCCESS);
+         (redis_sock_read_liveness_resp(redis_sock, id, idlen) == SUCCESS);
 
     smart_string_free(&cmd);
     return ok ? SUCCESS : FAILURE;
