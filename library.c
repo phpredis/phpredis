@@ -685,19 +685,6 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
     return NULL;
 }
 
-static int redis_sock_read_cmp(RedisSock *redis_sock, const char *cmp, int cmplen) {
-    char *resp;
-    int len, rv = FAILURE;
-
-    if ((resp = redis_sock_read(redis_sock, &len)) == NULL)
-        return FAILURE;
-
-    rv = len == cmplen && !memcmp(resp, cmp, cmplen) ? SUCCESS : FAILURE;
-
-    efree(resp);
-    return rv;
-}
-
 /* A simple union to store the various arg types we might handle in our
  * redis_spprintf command formatting function */
 union resparg {
@@ -2129,16 +2116,21 @@ static int redis_stream_liveness_check(php_stream *stream) {
 static int
 redis_sock_check_liveness(RedisSock *redis_sock)
 {
-    char id[64], ok;
+    char id[64], inbuf[4096];
     int idlen, auth;
     smart_string cmd = {0};
+    size_t len;
 
     /* Short circuit if we detect the stream has gone bad or if the user has
      * configured persistent connection "YOLO mode". */
-    if (redis_stream_liveness_check(redis_sock->stream) != SUCCESS)
-        return FAILURE;
-    else if (!INI_INT("redis.pconnect.echo_check_liveness"))
+    if (redis_stream_liveness_check(redis_sock->stream) != SUCCESS) {
+        goto failure;
+    }
+
+    redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
+    if (!INI_INT("redis.pconnect.echo_check_liveness")) {
         return SUCCESS;
+    }
 
     /* AUTH (if we need it) */
     auth = redis_sock_append_auth(redis_sock, &cmd);
@@ -2149,12 +2141,55 @@ redis_sock_check_liveness(RedisSock *redis_sock)
     redis_cmd_append_sstr(&cmd, id, idlen);
 
     /* Send command(s) and make sure we can consume reply(ies) */
-    ok = (redis_sock_write(redis_sock, cmd.c, cmd.len) >= 0) &&
-         (!auth || redis_sock_read_ok(redis_sock) == SUCCESS) &&
-         (redis_sock_read_cmp(redis_sock, id, idlen) == SUCCESS);
-
+    if (redis_sock_write(redis_sock, cmd.c, cmd.len) < 0) {
+        smart_string_free(&cmd);
+        goto failure;
+    }
     smart_string_free(&cmd);
-    return ok ? SUCCESS : FAILURE;
+
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
+        goto failure;
+    }
+
+    if (auth) {
+        if (strncmp(inbuf, "+OK", 3) == 0 || strncmp(inbuf, "-ERR Client sent AUTH", 21) == 0) {
+            /* successfully authenticated or authentication isn't required */
+            if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
+                goto failure;
+            }
+        } else if (strncmp(inbuf, "-NOAUTH", 7) == 0) {
+            /* connection is fine but authentication failed, next command must fails too */
+            if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 || strncmp(inbuf, "-NOAUTH", 7) != 0) {
+                goto failure;
+            }
+            return SUCCESS;
+        } else {
+            goto failure;
+        }
+        redis_sock->status = REDIS_SOCK_STATUS_READY;
+    } else {
+        if (strncmp(inbuf, "-NOAUTH", 7) == 0) {
+            /* connection is fine but authentication required */
+            return SUCCESS;
+        }
+    }
+
+    /* check echo response */
+    if (*inbuf != TYPE_BULK || atoi(inbuf + 1) != idlen ||
+        redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 ||
+        strncmp(inbuf, id, idlen) != 0
+    ) {
+        goto failure;
+    }
+
+    return SUCCESS;
+failure:
+    redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
+    if (redis_sock->stream) {
+        php_stream_pclose(redis_sock->stream);
+        redis_sock->stream = NULL;
+    }
+    return FAILURE;
 }
 
 /**
@@ -2207,11 +2242,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
                 zend_llist_remove_tail(&p->list);
 
                 if (redis_sock_check_liveness(redis_sock) == SUCCESS) {
-                    redis_sock->status = REDIS_SOCK_STATUS_READY;
                     return SUCCESS;
-                } else if (redis_sock->stream) {
-                    php_stream_pclose(redis_sock->stream);
-                    redis_sock->stream = NULL;
                 }
                 p->nb_active--;
             }
