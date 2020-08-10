@@ -1876,7 +1876,9 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
     zval z_ret, z_args[4];
     sctx->cb.retval = &z_ret;
     sctx->cb.params = z_args;
+#if PHP_VERSION_ID < 80000
     sctx->cb.no_separation = 0;
+#endif
 
     /* We're in a subscribe loop */
     c->subscribed_slot = c->cmd_slot;

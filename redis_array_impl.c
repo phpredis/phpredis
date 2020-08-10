@@ -1195,7 +1195,9 @@ zval_rehash_callback(zend_fcall_info *z_cb, zend_fcall_info_cache *z_cb_cache,
     z_cb->params = z_args;
     z_cb->retval = z_ret;
 
+#if (PHP_VERSION_ID < 80000)
     z_cb->no_separation = 0;
+#endif
     z_cb->param_count = 2;
 
     /* run cb(hostname, count) */
