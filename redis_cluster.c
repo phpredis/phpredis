@@ -2244,7 +2244,7 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg)
 
         /* Inform the caller if they've passed bad data */
         if (slot < 0) {
-            php_error_docref(0, E_WARNING, "Unknown node %s:%ld",
+            php_error_docref(0, E_WARNING, "Unknown node %s:" ZEND_LONG_FMT,
                 Z_STRVAL_P(z_host), Z_LVAL_P(z_port));
         }
     } else {

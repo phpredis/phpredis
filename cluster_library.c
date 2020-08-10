@@ -574,7 +574,7 @@ unsigned short cluster_hash_key_zval(zval *z_key) {
             klen = Z_STRLEN_P(z_key);
             break;
         case IS_LONG:
-            klen = snprintf(buf,sizeof(buf),"%ld",Z_LVAL_P(z_key));
+            klen = snprintf(buf,sizeof(buf),ZEND_LONG_FMT,Z_LVAL_P(z_key));
             kptr = (const char *)buf;
             break;
         case IS_DOUBLE:
