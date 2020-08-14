@@ -907,6 +907,7 @@ PS_OPEN_FUNC(rediscluster) {
 
     #define CLUSTER_SESSION_CLEANUP() \
         if (hash) zend_string_release(hash); \
+        if (failstr) zend_string_release(failstr); \
         if (prefix) zend_string_release(prefix); \
         if (user) zend_string_release(user); \
         if (pass) zend_string_release(pass); \
@@ -918,7 +919,6 @@ PS_OPEN_FUNC(rediscluster) {
     if (seeds == NULL) {
         php_error_docref(NULL, E_WARNING, "No valid seeds detected");
         CLUSTER_SESSION_CLEANUP();
-        zval_dtor(&z_conf);
         return FAILURE;
     }
 
