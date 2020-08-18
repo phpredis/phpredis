@@ -372,8 +372,8 @@ class Redis_Test extends TestSuite
         $this->assertEquals($this->redis->ttl('foo'), 20);
 
         /* Invalid third arguments */
-        $this->assertFalse($this->redis->set('foo','bar','baz'));
-        $this->assertFalse($this->redis->set('foo','bar',new StdClass()));
+        $this->assertFalse(@$this->redis->set('foo','bar','baz'));
+        $this->assertFalse(@$this->redis->set('foo','bar',new StdClass()));
 
         /* Set if not exist */
         $this->redis->del('foo');

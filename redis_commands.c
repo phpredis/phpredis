@@ -1316,14 +1316,6 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    /* Our optional argument can either be a long (to support legacy SETEX */
-    /* redirection), or an array with Redis >= 2.6.12 set options */
-    if (z_opts && Z_TYPE_P(z_opts) != IS_LONG && Z_TYPE_P(z_opts) != IS_ARRAY
-       && Z_TYPE_P(z_opts) != IS_NULL)
-    {
-        return FAILURE;
-    }
-
     // Check for an options array
     if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
         HashTable *kt = Z_ARRVAL_P(z_opts);
@@ -1355,9 +1347,14 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 set_type = Z_STRVAL_P(v);
             }
         } ZEND_HASH_FOREACH_END();
-    } else if (z_opts && Z_TYPE_P(z_opts) == IS_LONG) {
-        expire = Z_LVAL_P(z_opts);
+    } else if (z_opts && Z_TYPE_P(z_opts) != IS_NULL) {
+        if (Z_TYPE_P(z_opts) != IS_LONG && Z_TYPE_P(z_opts) != IS_STRING) {
+            php_error_docref(NULL, E_WARNING, "Expire must be numeric or a numeric string");
+            return FAILURE;
+        }
+
         exp_set = 1;
+        expire = zval_get_long(z_opts);
     }
 
     /* Protect the user from syntax errors but give them some info about what's wrong */
