@@ -1348,8 +1348,10 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             }
         } ZEND_HASH_FOREACH_END();
     } else if (z_opts && Z_TYPE_P(z_opts) != IS_NULL) {
-        if (Z_TYPE_P(z_opts) != IS_LONG && Z_TYPE_P(z_opts) != IS_STRING) {
-            php_error_docref(NULL, E_WARNING, "Expire must be numeric or a numeric string");
+        if (Z_TYPE_P(z_opts) != IS_LONG && Z_TYPE_P(z_opts) != IS_DOUBLE &&
+            Z_TYPE_P(z_opts) != IS_STRING)
+        {
+            php_error_docref(NULL, E_WARNING, "Expire must be a long, double, or a numeric string");
             return FAILURE;
         }
 

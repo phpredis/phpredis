@@ -371,6 +371,11 @@ class Redis_Test extends TestSuite
         $this->assertEquals($this->redis->get('foo'), 'bar');
         $this->assertEquals($this->redis->ttl('foo'), 20);
 
+        /* Should coerce doubles into long */
+        $this->assertTrue($this->redis->set('foo', 'bar-20.5', 20.5));
+        $this->assertEquals($this->redis->ttl('foo'), 20);
+        $this->assertEquals($this->redis->get('foo'), 'bar-20.5');
+
         /* Invalid third arguments */
         $this->assertFalse(@$this->redis->set('foo','bar','baz'));
         $this->assertFalse(@$this->redis->set('foo','bar',new StdClass()));
