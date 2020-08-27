@@ -281,7 +281,8 @@ redis_error_throw(RedisSock *redis_sock)
      * but is actually an authentication error that we will want to throw
      * an exception for, so just short circuit if this is any other 'ERR'
      * prefixed error. */
-    if (REDIS_SOCK_ERRCMP_STATIC(redis_sock, "ERR") &&
+    if (!redis_sock->throw_on_err &&
+        REDIS_SOCK_ERRCMP_STATIC(redis_sock, "ERR") &&
         !REDIS_SOCK_ERRCMP_STATIC(redis_sock, "ERR AUTH")) return;
 
     /* We may want to flip this logic and check for MASTERDOWN, AUTH,
@@ -2094,6 +2095,7 @@ redis_sock_create(char *host, int host_len, int port,
 
     redis_sock->serializer = REDIS_SERIALIZER_NONE;
     redis_sock->compression = REDIS_COMPRESSION_NONE;
+    redis_sock->throw_on_err = 0;
     redis_sock->mode = ATOMIC;
 
     return redis_sock;

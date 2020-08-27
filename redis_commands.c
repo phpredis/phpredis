@@ -4102,6 +4102,10 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                 RETURN_TRUE;
             }
             break;
+        case REDIS_OPT_THROW_ON_ERR:
+            redis_sock->throw_on_err = zval_get_long(val) > 0 ? 1 : 0;
+            RETURN_TRUE;
+            break;
         EMPTY_SWITCH_DEFAULT_CASE()
     }
     RETURN_FALSE;

@@ -82,6 +82,7 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_COMPRESSION        7
 #define REDIS_OPT_REPLY_LITERAL      8
 #define REDIS_OPT_COMPRESSION_LEVEL  9
+#define REDIS_OPT_THROW_ON_ERR       10
 
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
@@ -297,6 +298,8 @@ typedef struct {
     int                readonly;
     int                reply_literal;
     int                tcp_keepalive;
+
+    int                throw_on_err;
 } RedisSock;
 /* }}} */
 
