@@ -6064,6 +6064,21 @@ class Redis_Test extends TestSuite
         }
     }
 
+    /* Regression test for issue-1831 (XINFO STREAM on an empty stream) */
+    public function testXInfoEmptyStream() {
+        /* Configure an empty stream */
+        $this->redis->del('s');
+        $this->redis->xAdd('s', '*', ['foo' => 'bar']);
+        $this->redis->xTrim('s', 0);
+
+        $arr_info = $this->redis->xInfo('STREAM', 's');
+
+        $this->assertTrue(is_array($arr_info));
+        $this->assertEquals(0, $arr_info['length']);
+        $this->assertEquals(NULL, $arr_info['first-entry']);
+        $this->assertEquals(NULL, $arr_info['last-entry']);
+    }
+
     public function testInvalidAuthArgs() {
         $obj_new = $this->newInstance();
 
