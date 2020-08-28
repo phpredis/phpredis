@@ -1713,7 +1713,10 @@ redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements)
         switch (type) {
         case TYPE_BULK:
             if ((data = redis_sock_read_bulk_reply(redis_sock, li)) == NULL) {
-                goto failure;
+                if (!key) goto failure;
+                add_assoc_null_ex(z_ret, key, len);
+                efree(key);
+                key = NULL;
             } else if (key) {
                 add_assoc_stringl_ex(z_ret, key, len, data, li);
                 efree(data);
