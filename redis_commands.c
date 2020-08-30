@@ -1299,6 +1299,34 @@ int redis_blocking_pop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
  * have specific processing (argument validation, etc) that make them unique
  */
 
+/* Attempt to pull a long expiry from a zval.  We're more restrictave than zval_get_long
+ * because that function will return integers from things like open file descriptors
+ * which should simply fail as a TTL */
+static int redis_try_get_expiry(zval *zv, zend_long *lval) {
+    double dval;
+
+    /* Success on an actual long or double */
+    if (Z_TYPE_P(zv) == IS_LONG || Z_TYPE_P(zv) == IS_DOUBLE) {
+        *lval = zval_get_long(zv);
+        return SUCCESS;
+    }
+
+    /* Automatically fail if we're not a string */
+    if (Z_TYPE_P(zv) != IS_STRING)
+        return FAILURE;
+
+    /* Attempt to get a long from the string */
+    switch (is_numeric_string(Z_STRVAL_P(zv), Z_STRLEN_P(zv), lval, &dval, 0)) {
+        case IS_DOUBLE:
+            *lval = dval;
+            /* fallthrough */
+        case IS_LONG:
+            return SUCCESS;
+        default:
+            return FAILURE;
+    }
+}
+
 /* SET */
 int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   char **cmd, int *cmd_len, short *slot, void **ctx)
@@ -1306,20 +1334,13 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     smart_string cmdstr = {0};
     zval *z_value, *z_opts=NULL;
     char *key = NULL, *exp_type = NULL, *set_type = NULL;
-    long expire = -1, exp_set = 0, keep_ttl = 0;
+    long exp_set = 0, keep_ttl = 0;
+    zend_long expire = -1;
     size_t key_len;
 
     // Make sure the function is being called correctly
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz|z", &key, &key_len,
                              &z_value, &z_opts) == FAILURE)
-    {
-        return FAILURE;
-    }
-
-    /* Our optional argument can either be a long (to support legacy SETEX */
-    /* redirection), or an array with Redis >= 2.6.12 set options */
-    if (z_opts && Z_TYPE_P(z_opts) != IS_LONG && Z_TYPE_P(z_opts) != IS_ARRAY
-       && Z_TYPE_P(z_opts) != IS_NULL)
     {
         return FAILURE;
     }
@@ -1355,8 +1376,12 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 set_type = Z_STRVAL_P(v);
             }
         } ZEND_HASH_FOREACH_END();
-    } else if (z_opts && Z_TYPE_P(z_opts) == IS_LONG) {
-        expire = Z_LVAL_P(z_opts);
+    } else if (z_opts && Z_TYPE_P(z_opts) != IS_NULL) {
+        if (redis_try_get_expiry(z_opts, &expire) == FAILURE) {
+            php_error_docref(NULL, E_WARNING, "Expire must be a long, double, or a numeric string");
+            return FAILURE;
+        }
+
         exp_set = 1;
     }
 
@@ -1386,7 +1411,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     if (exp_type) {
         redis_cmd_append_sstr(&cmdstr, exp_type, strlen(exp_type));
-        redis_cmd_append_sstr_long(&cmdstr, expire);
+        redis_cmd_append_sstr_long(&cmdstr, (long)expire);
     }
 
     if (set_type)
