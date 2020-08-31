@@ -1505,17 +1505,21 @@ redis_read_stream_messages(RedisSock *redis_sock, int count, zval *z_ret
          * the multi-bulk header for field and values */
         if ((read_mbulk_header(redis_sock, &mhdr) < 0 || mhdr != 2) ||
             ((id = redis_sock_read(redis_sock, &idlen)) == NULL) ||
-            (read_mbulk_header(redis_sock, &fields) < 0 || fields % 2 != 0))
+            (read_mbulk_header(redis_sock, &fields) < 0 ||
+            (fields > 0 && fields % 2 != 0)))
         {
             if (id) efree(id);
             return -1;
         }
 
-        array_init(&z_message);
-
-        redis_mbulk_reply_loop(redis_sock, &z_message, fields, UNSERIALIZE_VALS);
-        array_zip_values_and_scores(redis_sock, &z_message, SCORE_DECODE_NONE);
-        add_assoc_zval_ex(z_ret, id, idlen, &z_message);
+        if (fields < 0) {
+            add_assoc_null_ex(z_ret, id, idlen);
+        } else {
+            array_init(&z_message);
+            redis_mbulk_reply_loop(redis_sock, &z_message, fields, UNSERIALIZE_VALS);
+            array_zip_values_and_scores(redis_sock, &z_message, SCORE_DECODE_NONE);
+            add_assoc_zval_ex(z_ret, id, idlen, &z_message);
+        }
         efree(id);
     }
 
