@@ -854,7 +854,7 @@ static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
 
 PS_OPEN_FUNC(rediscluster) {
     redisCluster *c;
-    zval z_conf, *zv;
+    zval z_conf, *zv, *context;
     HashTable *ht_conf, *ht_seeds;
     double timeout = 0, read_timeout = 0;
     int persistent = 0, failover = REDIS_FAILOVER_NONE;
@@ -931,6 +931,10 @@ PS_OPEN_FUNC(rediscluster) {
     }
 
     redis_sock_set_auth(c->flags, user, pass);
+
+    if ((context = REDIS_HASH_STR_FIND_TYPE_STATIC(ht_conf, "stream", IS_ARRAY)) != NULL) {
+        redis_sock_set_stream_context(c->flags, context);
+    }
 
     /* First attempt to load from cache */
     if (CLUSTER_CACHING_ENABLED()) {
