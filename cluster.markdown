@@ -169,7 +169,7 @@ To do this, you must configure your `session.save_handler` and `session.save_pat
 
 ~~~ini
 session.save_handler = rediscluster
-session.save_path = "seed[]=host1:port1&seed[]=host2:port2&seed[]=hostN:portN&timeout=2&read_timeout=2&failover=error&persistent=1&auth=password"
+session.save_path = "seed[]=host1:port1&seed[]=host2:port2&seed[]=hostN:portN&timeout=2&read_timeout=2&failover=error&persistent=1&auth=password&stream[verify_peer]=0"
 ~~~
 
 ### session.session_handler
@@ -186,3 +186,4 @@ The save path for cluster based session storage takes the form of a PHP GET requ
   * _none_ : phpredis will only communicate with master nodes
   * _error_: phpredis will communicate with master nodes unless one fails, in which case an attempt will be made to read session information from a slave.
 * _auth (string, empty by default)_:  The password used to authenticate with the server prior to sending commands.
+* _stream (array)_: ssl/tls stream context options.
