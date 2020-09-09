@@ -3121,7 +3121,7 @@ _**Description**_: Returns the score of a given member in the specified sorted s
 *member*
 
 ##### *Return value*
-*Double*
+*Double* or *FALSE* when the value is not found
 
 ##### *Example*
 ~~~php
