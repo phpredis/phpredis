@@ -41,8 +41,8 @@ addons:
 before_install:
   - phpize
   - CFGARGS="--enable-redis-lzf --enable-redis-zstd --enable-redis-lz4 --with-liblz4"
-  - pecl install igbinary && CFGARGS="$CFGARGS --enable-redis-igbinary"
-  - pecl install msgpack && CFGARGS="$CFGARGS --enable-redis-msgpack"
+  - pecl install igbinary && CFGARGS="$CFGARGS --enable-redis-igbinary" || true
+  - pecl install msgpack && CFGARGS="$CFGARGS --enable-redis-msgpack" || true
   - ./configure $CFGARGS
 install: make install
 before_script:
