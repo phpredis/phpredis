@@ -27,6 +27,9 @@ matrix:
       env: CC=clang
 addons:
   apt:
+    update: true
+    sources:
+    - sourceline: ppa:redislabs/redis
     packages:
     - clang
     - libzstd1-dev
@@ -34,6 +37,7 @@ addons:
     - pkg-config
     - valgrind
     - stunnel
+    - redis
 before_install:
   - phpize
   - CFGARGS="--enable-redis-lzf --enable-redis-zstd --enable-redis-lz4 --with-liblz4"
@@ -42,7 +46,6 @@ before_install:
   - ./configure $CFGARGS
 install: make install
 before_script:
-  - sudo add-apt-repository ppa:chris-lea/redis-server -y && sudo apt-get update && sudo apt install redis-server
   - mkdir -p tests/nodes/ && echo > tests/nodes/nodemap
   - redis-server --port 0 --daemonize yes --aclfile tests/users.acl --unixsocket /tmp/redis.sock
   - for PORT in $(seq 6379 6382) $(seq 32767 32769); do redis-server --port $PORT --daemonize yes --aclfile tests/users.acl; done
