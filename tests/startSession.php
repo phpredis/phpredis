@@ -22,11 +22,11 @@ ini_set('redis.session.lock_retries', $lock_retries);
 ini_set('redis.session.lock_expire', $lock_expire);
 ini_set('session.gc_maxlifetime', $sessionLifetime);
 
-if (isset($argv[8])) {
+if (isset($argv[10])) {
     ini_set('redis.session.locking_enabled', $argv[10]);
 }
 
-if (isset($argv[9])) {
+if (isset($argv[11])) {
     ini_set('redis.session.lock_wait_time', $argv[11]);
 }
 
