@@ -6102,8 +6102,14 @@ class Redis_Test extends TestSuite
 
         foreach ($arr_args as $arr_arg) {
             try {
-                @call_user_func_array([$obj_new, 'auth'], $arr_arg);
+                if (is_array($arr_arg)) {
+                    @call_user_func_array([$obj_new, 'auth'], $arr_arg);
+                } else {
+                    call_user_func([$obj_new, 'auth']);
+                }
             } catch (Exception $ex) {
+                unset($ex); /* Suppress intellisense warning */
+            } catch (ArgumentCountError $ex) {
                 unset($ex); /* Suppress intellisense warning */
             }
         }
