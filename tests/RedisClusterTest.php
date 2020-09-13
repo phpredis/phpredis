@@ -751,5 +751,20 @@ class Redis_Cluster_Test extends Redis_Test {
             return 'seed[]=' . $host;
         }, self::$_arr_node_map)) . ($auth ? "&$auth" : '');
     }
+
+    /* Test correct handling of null multibulk replies */
+    public function testNullArray()
+    {
+        $key = "key:arr";
+        $this->redis->del($key);
+
+        $r = $this->redis->rawCommand($key, "BLPOP", $key, "1");
+        $this->assertEquals(null, $r);
+
+        $this->redis->multi();
+        $this->redis->rawCommand($key, "BLPOP", $key, "1");
+        $r = $this->redis->exec();
+        $this->assertEquals([null], $r);
+    }
 }
 ?>
