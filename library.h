@@ -23,11 +23,37 @@
 #define redis_sock_write_sstr(redis_sock, sstr) \
     redis_sock_write(redis_sock, (sstr)->c, (sstr)->len)
 
+#if PHP_VERSION_ID < 70200
+/* drop return type hinting in PHP 7.0 and 7.1*/
+#undef  ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX
+#define ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(name, return_reference, required_num_args, type, allow_null) \
+        ZEND_BEGIN_ARG_INFO_EX(name, 0, return_reference, required_num_args)
+#endif
+
 #if PHP_VERSION_ID < 80000
     #define redis_hash_fetch_ops(zstr) php_hash_fetch_ops(ZSTR_VAL((zstr)), ZSTR_LEN((zstr)))
+
+    /* use RedisException when ValueError not available */
+    #define REDIS_VALUE_EXCEPTION(m) REDIS_THROW_EXCEPTION(m, 0)
+    #define RETURN_THROWS() RETURN_FALSE
+
+    /* default value only managed in 8+ */
+    #define ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(pass_by_ref, name, type_hint, allow_null, default_value) \
+            ZEND_ARG_TYPE_INFO(pass_by_ref, name, type_hint, allow_null)
+
+    /* union type only managed in 8+ */
+    #define ZEND_ARG_TYPE_MASK(pass_by_ref, name, type_mask, default_value) ZEND_ARG_INFO(pass_by_ref, name)
+
+    #define ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(name, return_reference, required_num_args, type) \
+            ZEND_BEGIN_ARG_INFO_EX(name, 0, return_reference, required_num_args)
+
+    #define IS_MIXED 0
 #else
     #define redis_hash_fetch_ops(zstr) php_hash_fetch_ops(zstr)
+
+    #define REDIS_VALUE_EXCEPTION(m) zend_value_error(m)
 #endif
+
 
 void redis_register_persistent_resource(zend_string *id, void *ptr, int le_id);
 
