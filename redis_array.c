@@ -38,7 +38,7 @@ extern zend_class_entry *redis_ce;
 zend_class_entry *redis_array_ce;
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_ctor, 0, 0, 1)
-    ZEND_ARG_INFO(0, name_or_hosts)
+    ZEND_ARG_TYPE_MASK(0, name_or_hosts, MAY_BE_ARRAY|MAY_BE_STRING, NULL)
     ZEND_ARG_ARRAY_INFO(0, options, 0)
 ZEND_END_ARG_INFO()
 
@@ -239,7 +239,12 @@ PHP_METHOD(RedisArray, __construct)
      *        for ages so we can't really change it until the next major version.
      */
     if (Z_TYPE_P(z0) != IS_ARRAY && Z_TYPE_P(z0) != IS_STRING)
+#if PHP_VERSION_ID < 80000
         WRONG_PARAM_COUNT;
+#else
+        zend_argument_type_error(1, "must be of type string|array, %s given", zend_zval_type_name(z0));
+        RETURN_THROWS();
+#endif
 
     /* If it's a string we want to load the array from ini information */
     if (Z_TYPE_P(z0) == IS_STRING) {

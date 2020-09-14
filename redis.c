@@ -64,7 +64,6 @@ extern int le_cluster_slot_cache;
 
 extern zend_function_entry redis_array_functions[];
 extern zend_function_entry redis_cluster_functions[];
-extern zend_function_entry redis_sentinel_functions[];
 
 int le_redis_pconnect;
 
@@ -873,7 +872,7 @@ PHP_MINIT_FUNCTION(redis)
     redis_cluster_ce->create_object = create_cluster_context;
 
     /* RedisSentinel class */
-    INIT_CLASS_ENTRY(redis_sentinel_class_entry, "RedisSentinel", redis_sentinel_functions);
+    INIT_CLASS_ENTRY(redis_sentinel_class_entry, "RedisSentinel", redis_sentinel_get_methods());
     redis_sentinel_ce = zend_register_internal_class(&redis_sentinel_class_entry);
     redis_sentinel_ce->create_object = create_sentinel_object;
 
@@ -1080,17 +1079,17 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     }
 
     if (timeout < 0L || timeout > INT_MAX) {
-        REDIS_THROW_EXCEPTION("Invalid connect timeout", 0);
+        REDIS_VALUE_EXCEPTION("Invalid connect timeout");
         return FAILURE;
     }
 
     if (read_timeout < 0L || read_timeout > INT_MAX) {
-        REDIS_THROW_EXCEPTION("Invalid read timeout", 0);
+        REDIS_VALUE_EXCEPTION("Invalid read timeout");
         return FAILURE;
     }
 
     if (retry_interval < 0L || retry_interval > INT_MAX) {
-        REDIS_THROW_EXCEPTION("Invalid retry interval", 0);
+        REDIS_VALUE_EXCEPTION("Invalid retry interval");
         return FAILURE;
     }
 

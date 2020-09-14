@@ -23,30 +23,12 @@
 zend_class_entry *redis_sentinel_ce;
 extern zend_class_entry *redis_exception_ce;
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_ctor, 0, 0, 1)
-    ZEND_ARG_INFO(0, host)
-    ZEND_ARG_INFO(0, port)
-    ZEND_ARG_INFO(0, timeout)
-    ZEND_ARG_INFO(0, persistent)
-    ZEND_ARG_INFO(0, retry_interval)
-    ZEND_ARG_INFO(0, read_timeout)
-ZEND_END_ARG_INFO()
+#include "redis_sentinel_arginfo.h"
 
-zend_function_entry redis_sentinel_functions[] = {
-     PHP_ME(RedisSentinel, __construct, arginfo_ctor, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisSentinel, ckquorum, arginfo_value, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisSentinel, failover, arginfo_value, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisSentinel, flushconfig, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisSentinel, getMasterAddrByName, arginfo_value, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisSentinel, master, arginfo_value, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisSentinel, masters, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisSentinel, myid, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisSentinel, ping, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisSentinel, reset, arginfo_value, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisSentinel, sentinels, arginfo_value, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisSentinel, slaves, arginfo_value, ZEND_ACC_PUBLIC)
-     PHP_FE_END
-};
+extern const zend_function_entry *redis_sentinel_get_methods(void)
+{
+    return class_RedisSentinel_methods;
+}
 
 PHP_METHOD(RedisSentinel, __construct)
 {
@@ -66,23 +48,23 @@ PHP_METHOD(RedisSentinel, __construct)
     }
 
     if (port < 0 || port > UINT16_MAX) {
-        REDIS_THROW_EXCEPTION("Invalid port", 0);
-        RETURN_FALSE;
+        REDIS_VALUE_EXCEPTION("Invalid port");
+        RETURN_THROWS();
     }
 
     if (timeout < 0L || timeout > INT_MAX) {
-        REDIS_THROW_EXCEPTION("Invalid connect timeout", 0);
-        RETURN_FALSE;
+        REDIS_VALUE_EXCEPTION("Invalid connect timeout");
+        RETURN_THROWS();
     }
 
     if (read_timeout < 0L || read_timeout > INT_MAX) {
-        REDIS_THROW_EXCEPTION("Invalid read timeout", 0);
-        RETURN_FALSE;
+        REDIS_VALUE_EXCEPTION("Invalid read timeout");
+        RETURN_THROWS();
     }
 
     if (retry_interval < 0L || retry_interval > INT_MAX) {
-        REDIS_THROW_EXCEPTION("Invalid retry interval", 0);
-        RETURN_FALSE;
+        REDIS_VALUE_EXCEPTION("Invalid retry interval");
+        RETURN_THROWS();
     }
 
     if (zv) {
