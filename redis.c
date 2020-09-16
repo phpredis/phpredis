@@ -986,7 +986,7 @@ PHP_MINFO_FUNCTION(redis)
     Public constructor */
 PHP_METHOD(Redis, __construct)
 {
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") == FAILURE) {
+    if (zend_parse_parameters_none() == FAILURE) {
         RETURN_FALSE;
     }
 }
@@ -996,7 +996,7 @@ PHP_METHOD(Redis, __construct)
     Public Destructor
  */
 PHP_METHOD(Redis,__destruct) {
-    if(zend_parse_parameters(ZEND_NUM_ARGS(), "") == FAILURE) {
+    if (zend_parse_parameters_none() == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -3488,8 +3488,9 @@ PHP_METHOD(Redis, getAuth) {
     RedisSock *redis_sock;
     zval zret;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") == FAILURE)
+    if (zend_parse_parameters_none() == FAILURE) {
         RETURN_FALSE;
+    }
 
     redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU);
     if (redis_sock == NULL)
