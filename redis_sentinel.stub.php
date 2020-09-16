@@ -22,7 +22,7 @@ class RedisSentinel {
     public function master(string $master);
 
 	/** @return array|bool|RedisSentinel */
-    public function masters(): array;
+    public function masters();
 
 	/** @return bool|RedisSentinel */
     public function ping();

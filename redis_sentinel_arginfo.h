@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: a054acbf095ee7d0215af7481fe06eb397b0c377 */
+ * Stub hash: 779d2b82a083131e73402389db47d08355a2417e */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, host, IS_STRING, 0)
@@ -23,8 +23,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisSentinel_master arginfo_class_RedisSentinel_ckquorum
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisSentinel_masters, 0, 0, IS_ARRAY, 0)
-ZEND_END_ARG_INFO()
+#define arginfo_class_RedisSentinel_masters arginfo_class_RedisSentinel_flushconfig
 
 #define arginfo_class_RedisSentinel_ping arginfo_class_RedisSentinel_flushconfig
 
