@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: cfb8ad8fbaaed2ecae02a1385d26e9645364ba9d */
+ * Stub hash: a054acbf095ee7d0215af7481fe06eb397b0c377 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, host, IS_STRING, 0)
@@ -10,33 +10,31 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, read_timeout, IS_DOUBLE, 0, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisSentinel_ckquorum, 0, 1, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel_ckquorum, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, master, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisSentinel_failover arginfo_class_RedisSentinel_ckquorum
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisSentinel_flushconfig, 0, 0, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel_flushconfig, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisSentinel_getMasterAddrByName, 0, 1, MAY_BE_ARRAY|MAY_BE_FALSE)
-	ZEND_ARG_TYPE_INFO(0, master, IS_STRING, 0)
-ZEND_END_ARG_INFO()
+#define arginfo_class_RedisSentinel_getMasterAddrByName arginfo_class_RedisSentinel_ckquorum
 
-#define arginfo_class_RedisSentinel_master arginfo_class_RedisSentinel_getMasterAddrByName
+#define arginfo_class_RedisSentinel_master arginfo_class_RedisSentinel_ckquorum
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisSentinel_masters, 0, 0, MAY_BE_ARRAY|MAY_BE_FALSE)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisSentinel_masters, 0, 0, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisSentinel_ping arginfo_class_RedisSentinel_flushconfig
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisSentinel_reset, 0, 1, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel_reset, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, pattern, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisSentinel_sentinels arginfo_class_RedisSentinel_getMasterAddrByName
+#define arginfo_class_RedisSentinel_sentinels arginfo_class_RedisSentinel_ckquorum
 
-#define arginfo_class_RedisSentinel_slaves arginfo_class_RedisSentinel_getMasterAddrByName
+#define arginfo_class_RedisSentinel_slaves arginfo_class_RedisSentinel_ckquorum
 
 
 ZEND_METHOD(RedisSentinel, __construct);
