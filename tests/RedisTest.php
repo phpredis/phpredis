@@ -935,8 +935,15 @@ class Redis_Test extends TestSuite
 
         // blocking blpop, brpop
         $this->redis->del('list');
-        $this->assertTrue($this->redis->blPop(['list'], 1) === []);
-        $this->assertTrue($this->redis->brPop(['list'], 1) === []);
+
+        /* Also test our option that we want *-1 to be returned as NULL */
+        foreach ([false => [], true => NULL] as $opt => $val) {
+            $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, $opt);
+            $this->assertEquals($val, $this->redis->blPop(['list'], 1));
+            $this->assertEquals($val, $this->redis->brPop(['list'], 1));
+        }
+
+        $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, false);
     }
 
     public function testllen()
@@ -4950,6 +4957,25 @@ class Redis_Test extends TestSuite
 
         // Reset
         $this->redis->setOption(Redis::OPT_REPLY_LITERAL, false);
+    }
+
+    public function testNullArray() {
+        $key = "key:arr";
+        $this->redis->del($key);
+
+        foreach ([false => [], true => NULL] as $opt => $test) {
+            $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, $opt);
+
+            $r = $this->redis->rawCommand("BLPOP", $key, .05);
+            $this->assertEquals($test, $r);
+
+            $this->redis->multi();
+            $this->redis->rawCommand("BLPOP", $key, .05);
+            $r = $this->redis->exec();
+            $this->assertEquals([$test], $r);
+        }
+
+        $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, false);
     }
 
     public function testReconnectSelect() {

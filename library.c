@@ -1600,10 +1600,13 @@ redis_xread_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (read_mbulk_header(redis_sock, &streams) < 0)
         goto failure;
 
-    array_init(&z_rv);
-
-    if (redis_read_stream_messages_multi(redis_sock, streams, &z_rv) < 0)
-        goto cleanup;
+    if (streams == -1 && redis_sock->null_mbulk_as_null) {
+        ZVAL_NULL(&z_rv);
+    } else {
+        array_init(&z_rv);
+        if (redis_read_stream_messages_multi(redis_sock, streams, &z_rv) < 0)
+            goto cleanup;
+    }
 
     if (IS_ATOMIC(redis_sock)) {
         RETVAL_ZVAL(&z_rv, 0, 1);
@@ -2427,6 +2430,7 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
                                            RedisSock *redis_sock, zval *z_tab,
                                            void *ctx)
 {
+    zval z_multi_result;
     char inbuf[4096];
     int numElems;
     size_t len;
@@ -2448,10 +2452,13 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
     }
 
     numElems = atoi(inbuf+1);
-    zval z_multi_result;
-    array_init(&z_multi_result); /* pre-allocate array for multi's results. */
 
-    redis_mbulk_reply_loop(redis_sock, &z_multi_result, numElems, UNSERIALIZE_ALL);
+    if (numElems == -1 && redis_sock->null_mbulk_as_null) {
+        ZVAL_NULL(&z_multi_result);
+    } else {
+        array_init(&z_multi_result);
+        redis_mbulk_reply_loop(redis_sock, &z_multi_result, numElems, UNSERIALIZE_ALL);
+    }
 
     if (IS_ATOMIC(redis_sock)) {
         RETVAL_ZVAL(&z_multi_result, 0, 1);
@@ -2459,7 +2466,6 @@ PHP_REDIS_API int redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAMETERS,
         add_next_index_zval(z_tab, &z_multi_result);
     }
 
-    /*zval_copy_ctor(return_value); */
     return 0;
 }
 
@@ -3287,7 +3293,8 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, int status_s
 
 static int
 variant_reply_generic(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                      int status_strings, zval *z_tab, void *ctx)
+                      int status_strings, int null_mbulk_as_null,
+                      zval *z_tab, void *ctx)
 {
     // Reply type, and reply size vars
     REDIS_REPLY_TYPE reply_type;
@@ -3312,13 +3319,15 @@ variant_reply_generic(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             redis_read_variant_bulk(redis_sock, reply_info, &z_ret);
             break;
         case TYPE_MULTIBULK:
-            /* Initialize an array for our multi-bulk response */
-            array_init(&z_ret);
-
-            // If we've got more than zero elements, parse our multi bulk
-            // response recursively
             if (reply_info > -1) {
+                array_init(&z_ret);
                 redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, &z_ret);
+            } else {
+                if (null_mbulk_as_null) {
+                    ZVAL_NULL(&z_ret);
+                } else {
+                    array_init(&z_ret);
+                }
             }
             break;
         default:
@@ -3343,21 +3352,24 @@ redis_read_raw_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock
                              zval *z_tab, void *ctx)
 {
     return variant_reply_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-                                 redis_sock->reply_literal, z_tab, ctx);
+                                 redis_sock->reply_literal,
+                                 redis_sock->null_mbulk_as_null,
+                                 z_tab, ctx);
 }
 
 PHP_REDIS_API int
 redis_read_variant_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                          zval *z_tab, void *ctx)
 {
-    return variant_reply_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 0, z_tab, ctx);
+    return variant_reply_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 0,
+                                 redis_sock->null_mbulk_as_null, z_tab, ctx);
 }
 
 PHP_REDIS_API int
 redis_read_variant_reply_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                                  zval *z_tab, void *ctx)
 {
-    return variant_reply_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 1, z_tab, ctx);
+    return variant_reply_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 1, 0, z_tab, ctx);
 }
 
 PHP_REDIS_API
