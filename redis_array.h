@@ -1,7 +1,7 @@
 #ifndef REDIS_ARRAY_H
 #define REDIS_ARRAY_H
 
-#ifdef PHP_WIN32
+#if (defined(_MSC_VER) && _MSC_VER <= 1920)
 #include "win32/php_stdint.h"
 #else
 #include <stdint.h>
