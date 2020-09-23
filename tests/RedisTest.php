@@ -4978,6 +4978,22 @@ class Redis_Test extends TestSuite
         $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, false);
     }
 
+    /* Test that we can configure PhpRedis to return NULL for *-1 even nestedwithin replies */
+    public function testNestedNullArray() {
+        $this->redis->del('{notaset}');
+
+        foreach ([false => [], true => NULL] as $opt => $test) {
+            $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, $opt);
+            $this->assertEquals([$test, $test], $this->redis->geoPos('{notaset}', 'm1', 'm2'));
+
+            $this->redis->multi();
+            $this->redis->geoPos('{notaset}', 'm1', 'm2');
+            $this->assertEquals([[$test, $test]], $this->redis->exec());
+        }
+
+        $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, false);
+    }
+
     public function testReconnectSelect() {
         $key = 'reconnect-select';
         $value = 'Has been set!';

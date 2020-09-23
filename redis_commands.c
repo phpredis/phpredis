@@ -4045,6 +4045,7 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
         case REDIS_OPT_NULL_MBULK_AS_NULL:
             val_long = zval_get_long(val);
             redis_sock->null_mbulk_as_null = val_long != 0;
+            RETURN_TRUE;
         case REDIS_OPT_COMPRESSION:
             val_long = zval_get_long(val);
             if (val_long == REDIS_COMPRESSION_NONE

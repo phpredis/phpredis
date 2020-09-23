@@ -3237,7 +3237,7 @@ redis_read_variant_bulk(RedisSock *redis_sock, int size, zval *z_ret
 }
 
 PHP_REDIS_API int
-redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, int status_strings,
+redis_read_multibulk_recursive(RedisSock *redis_sock, long long elements, int status_strings,
                                zval *z_ret)
 {
     long reply_info;
@@ -3273,11 +3273,15 @@ redis_read_multibulk_recursive(RedisSock *redis_sock, int elements, int status_s
                 add_next_index_zval(z_ret, &z_subelem);
                 break;
             case TYPE_MULTIBULK:
-                // Construct an array for our sub element, and add it, and recurse
-                array_init(&z_subelem);
-                add_next_index_zval(z_ret, &z_subelem);
-                redis_read_multibulk_recursive(redis_sock, reply_info, status_strings,
-                                               &z_subelem);
+                if (reply_info < 0 && redis_sock->null_mbulk_as_null) {
+                    add_next_index_null(z_ret);
+                } else {
+                    array_init(&z_subelem);
+                    if (reply_info > 0) {
+                        redis_read_multibulk_recursive(redis_sock, reply_info, status_strings, &z_subelem);
+                    }
+                    add_next_index_zval(z_ret, &z_subelem);
+                }
                 break;
             default:
                 // Stop the compiler from whinging

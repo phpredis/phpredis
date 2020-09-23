@@ -325,14 +325,14 @@ typedef struct clusterReply {
     size_t integer;                /* Integer reply */
     long long len;                 /* Length of our string */
     char *str;                     /* String reply */
-    size_t elements;               /* Count of array elements */
+    long long elements;            /* Count of array elements */
     struct clusterReply **element; /* Array elements */
 } clusterReply;
 
 /* Direct variant response handler */
 clusterReply *cluster_read_resp(redisCluster *c, int status_strings);
 clusterReply *cluster_read_sock_resp(RedisSock *redis_sock,
-    REDIS_REPLY_TYPE type, char *line_reply, size_t reply_len);
+    REDIS_REPLY_TYPE type, char *line_reply, long long reply_len);
 void cluster_free_reply(clusterReply *reply, int free_data);
 
 /* Cluster distribution helpers for WATCH */
