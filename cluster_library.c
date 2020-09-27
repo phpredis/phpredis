@@ -234,7 +234,7 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
             break;
         case TYPE_MULTIBULK:
             r->elements = len;
-            if (r->elements > -1) {
+            if (r->elements > 0) {
                 r->element = ecalloc(len, sizeof(clusterReply*));
                 if (cluster_multibulk_resp_recursive(redis_sock, len, r->element, line_reply != NULL) < 0) {
                     cluster_free_reply(r, 1);
