@@ -3996,6 +3996,8 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             RETURN_LONG(redis_sock->scan);
         case REDIS_OPT_REPLY_LITERAL:
             RETURN_LONG(redis_sock->reply_literal);
+        case REDIS_OPT_NULL_MBULK_AS_NULL:
+            RETURN_LONG(redis_sock->null_mbulk_as_null);
         case REDIS_OPT_FAILOVER:
             RETURN_LONG(c->failover);
         default:
@@ -4039,6 +4041,10 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
         case REDIS_OPT_REPLY_LITERAL:
             val_long = zval_get_long(val);
             redis_sock->reply_literal = val_long != 0;
+            RETURN_TRUE;
+        case REDIS_OPT_NULL_MBULK_AS_NULL:
+            val_long = zval_get_long(val);
+            redis_sock->null_mbulk_as_null = val_long != 0;
             RETURN_TRUE;
         case REDIS_OPT_COMPRESSION:
             val_long = zval_get_long(val);
