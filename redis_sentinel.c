@@ -55,11 +55,12 @@ PHP_METHOD(RedisSentinel, __construct)
     zend_long port = 26379, retry_interval = 0;
     redis_sentinel_object *obj;
     zend_string *host;
-    zval *zv = NULL;
+    zval *auth = NULL, *zv = NULL;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|ldz!ld",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|ldz!ldz",
                                 &host, &port, &timeout, &zv,
-                                &retry_interval, &read_timeout) == FAILURE) {
+                                &retry_interval, &read_timeout,
+                                &auth) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -96,6 +97,9 @@ PHP_METHOD(RedisSentinel, __construct)
     obj = PHPREDIS_ZVAL_GET_OBJECT(redis_sentinel_object, getThis());
     obj->sock = redis_sock_create(ZSTR_VAL(host), ZSTR_LEN(host), port,
         timeout, read_timeout, persistent, persistent_id, retry_interval);
+    if (auth) {
+        redis_sock_set_auth_zval(obj->sock, auth);
+    }
 }
 
 PHP_METHOD(RedisSentinel, ckquorum)
