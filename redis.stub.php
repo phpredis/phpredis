@@ -105,13 +105,61 @@ class Redis {
     public function keys(string $pattern);
 
 	/** @return int|Redis */
-    public function keys(string $key);
+    public function type(string $key);
 
     /**
      * @param string $args 
      * @return mixed|Redis
      */
     public function acl(string $subcmd, ...$args);
+
+	/** @return int|Redis */
+    public function append(string $key, mixed $value);
+
+	/** @return string|Redis */
+    public function getRange(string $key, int $start, int $end);
+
+	/** @return int|Redis */
+    public function setRange(string $key, int $start, string $value);
+
+	/** @return int|Redis */
+    public function getBit(string $key, int $idx);
+
+	/** @return int|Redis */
+    public function setBit(string $key, int $idx, bool $value);
+
+	/** @return int|Redis */
+    public function strlen(string $key);
+
+    /**
+     * @param mixed $elements
+     * @return int|Redis
+     */
+    public function lPush(string $key, ...$elements);
+
+    /**
+     * @param mixed $elements
+     * @return int|Redis
+     */
+    public function rPush(string $key, ...$elements);
+
+    /**
+     * @param mixed $elements
+     * @return int|Redis
+     */
+    public function lInsert(string $key, string $pos, mixed $pivot, mixed $value);
+
+	/** @return int|Redis */
+    public function lPushx(string $key, mixed $value);
+
+	/** @return int|Redis */
+    public function rPushx(string $key, mixed $value);
+
+	/** @return string|Redis */
+    public function lPop(string $key);
+
+	/** @return string|Redis */
+    public function rPop(string $key);
 
     /**
      * @param string $otherkeys 
