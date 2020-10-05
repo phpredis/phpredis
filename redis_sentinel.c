@@ -23,7 +23,11 @@
 zend_class_entry *redis_sentinel_ce;
 extern zend_class_entry *redis_exception_ce;
 
+#if PHP_VERSION_ID < 80000
+#include "redis_sentinel_legacy_arginfo.h"
+#else
 #include "redis_sentinel_arginfo.h"
+#endif
 
 extern const zend_function_entry *redis_sentinel_get_methods(void)
 {
