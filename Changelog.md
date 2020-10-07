@@ -5,6 +5,70 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [BlueHost](https://bluehost.com)
+- [Redis Cache Pro for WordPress](https://wprediscache.com)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+
+### Fixed
+
+- Fix cluster segfault when dealing with NULL multi bulk replies in RedisCluster
+  [950e8de8](https://github.com/phpredis/phpredis/commit/950e8de807ba17ecfff62504a6ee7a959a5df714)
+  ([Michael Grunder](https://github.com/michael-grunder),
+   [Alex Offshore](https://github.com/offshore))
+- Fix xReadGroup() must return message id
+  [500916a4](https://github.com/phpredis/phpredis/commit/500916a4d052aa180aa8d27a9e147e64f3ee6303)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix memory leak in rediscluster session handler
+  [b2cffffc](https://github.com/phpredis/phpredis/commit/b2cffffc107541643bab7eb81751b497bc264639)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix XInfo() returns false if the stream is empty
+  [5719c9f7](https://github.com/phpredis/phpredis/commit/5719c9f7ff8ba4595c0f2d82e9549a604d925ed7),
+  [566fdeeb](https://github.com/phpredis/phpredis/commit/566fdeeb19c8112ac83cf4e47be6928626aa7b37)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko),
+   [Michael Grunder](https://github.com/michael-grunder))
+
+### Changed
+
+- Relax requirements on set's expire argument
+  [36458071](https://github.com/phpredis/phpredis/commit/364580718891de94aac13dc352aa994d531d4272)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor redis_sock_check_liveness
+  [c5950644](https://github.com/phpredis/phpredis/commit/c5950644e92e61e0c3f38a8ab8a380f707102eb0)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- PHP8 compatibility
+  [a7662da7](https://github.com/phpredis/phpredis/commit/a7662da7924dcbaa74f5f2c6e1dce06b19e64bfc),
+  [f4a30cb2](https://github.com/phpredis/phpredis/commit/f4a30cb2bda7414b159bf8b1be69dad52ed6f008),
+  [17848791](https://github.com/phpredis/phpredis/commit/178487919148a0f8f1ad4cae62847bc4ae82ee8c)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko),
+   [Remi Collet](https://github.com/remicollet))
+- Update documentation
+  [c9ed151d](https://github.com/phpredis/phpredis/commit/c9ed151dbae1532a98c0c9322c9401c47d1da149),
+  [398c99d9](https://github.com/phpredis/phpredis/commit/398c99d9851b267d9aaaa42c097c5fe54d507a6e)
+  ([Ali Alwash](https://github.com/aalwash),
+   [Gregoire Pineau](https://github.com/lyrixx))
+
+### Added
+
+- Add `Redis::OPT_NULL_MULTIBULK_AS_NULL` setting to treat NULL multi bulk replies as `NULL` instead of `[]`.
+  [950e8de8](https://github.com/phpredis/phpredis/commit/950e8de807ba17ecfff62504a6ee7a959a5df714)
+  ([Michael Grunder](https://github.com/michael-grunder),
+   [Alex Offshore](https://github.com/offshore))
+- Allow to specify stream context for rediscluster session handler
+  [a8daaff8](https://github.com/phpredis/phpredis/commit/a8daaff87a055bb6b4fb8702151915f56e144649),
+  [4fbe7df7](https://github.com/phpredis/phpredis/commit/4fbe7df79b9b0e03f92e8323aed0bda9513bc20a)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add new parameter to RedisCluster to specify stream ssl/tls context.
+  [f771ea16](https://github.com/phpredis/phpredis/commit/f771ea16b77f39fcca555bec2d952412265197aa)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add new parameter to RedisSentinel to specify auth information
+  [81c502ae](https://github.com/phpredis/phpredis/commit/81c502ae7c0de65d63cd514ee59849c9d1b0b952)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
 ## [5.3.1] - 2020-07-06 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.1), [PECL](https://pecl.php.net/package/redis/5.3.1))
 
 ### Sponsors :sparkling_heart:
