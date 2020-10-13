@@ -1370,10 +1370,12 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 } else if (Z_TYPE_P(v) == IS_STRING) {
                     expire = atol(Z_STRVAL_P(v));
                 }
-            } else if (ZVAL_STRICMP_STATIC(v, "KEEPTTL")) {
-                keep_ttl  = 1;
-            } else if (ZVAL_IS_NX_XX_ARG(v)) {
-                set_type = Z_STRVAL_P(v);
+            } else if (Z_TYPE_P(v) == IS_STRING) {
+                if (ZVAL_STRICMP_STATIC(v, "KEEPTTL")) {
+                    keep_ttl  = 1;
+                } else if (ZVAL_IS_NX_XX_ARG(v)) {
+                    set_type = Z_STRVAL_P(v);
+                }
             }
         } ZEND_HASH_FOREACH_END();
     } else if (z_opts && Z_TYPE_P(z_opts) != IS_NULL) {

@@ -424,6 +424,11 @@ class Redis_Test extends TestSuite
         $this->assertEquals($this->redis->get('foo'), 'bar');
         $this->assertTrue($this->redis->ttl('foo')<0);
 
+        /* Make sure we ignore bad/non-string options (regression test for #1835) */
+        $this->assertTrue($this->redis->set('foo', 'bar', [NULL, 'EX' => 60]));
+        $this->assertTrue($this->redis->set('foo', 'bar', [NULL, new stdClass(), 'EX' => 60]));
+        $this->assertFalse(@$this->redis->set('foo', 'bar', [NULL, 'EX' => []]));
+
         if (version_compare($this->version, "6.0.0") < 0)
             return;
 
