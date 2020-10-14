@@ -13,9 +13,13 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - [BlueHost](https://bluehost.com)
 - [Redis Cache Pro for WordPress](https://wprediscache.com)
 - [Avtandil Kikabidze](https://github.com/akalongman)
+- [Oleg Babushkin](https://github.com/olbabushkin)
 
 ### Fixed
 
+- Verify SET options are strings before testing them as strings
+  [514bc371](https://github.com/phpredis/phpredis/commit/514bc37102c08c1ba7222212b125390f34c35803)
+  ([Michael Grunder](https://github.com/michael-grunder))
 - Fix cluster segfault when dealing with NULL multi bulk replies in RedisCluster
   [950e8de8](https://github.com/phpredis/phpredis/commit/950e8de807ba17ecfff62504a6ee7a959a5df714)
   ([Michael Grunder](https://github.com/michael-grunder),
