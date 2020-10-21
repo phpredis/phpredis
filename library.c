@@ -951,7 +951,7 @@ redis_cmd_append_sstr_dbl(smart_string *str, double value)
     int len;
 
     /* Convert to string */
-    len = snprintf(tmp, sizeof(tmp), "%.16g", value);
+    len = snprintf(tmp, sizeof(tmp), "%.17g", value);
 
     // Append the string
     return redis_cmd_append_sstr(str, tmp, len);
