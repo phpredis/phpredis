@@ -477,7 +477,7 @@ PHP_METHOD(RedisCluster, __construct) {
 
     // Parse arguments
     if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                    "Os!|addbza", &object, redis_cluster_ce, &name,
+                                    "Os!|addbza!", &object, redis_cluster_ce, &name,
                                     &name_len, &z_seeds, &timeout, &read_timeout,
                                     &persistent, &z_auth, &context) == FAILURE)
     {
