@@ -38,6 +38,9 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Changed
 
+- Use "%.17g" sprintf format for doubles as done in Redis server.
+  [32be3006](https://github.com/phpredis/phpredis/commit/32be3006e6d5a9d58636efd53fe02aa22f18c496)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Relax requirements on set's expire argument
   [36458071](https://github.com/phpredis/phpredis/commit/364580718891de94aac13dc352aa994d531d4272)
   ([Michael Grunder](https://github.com/michael-grunder))
@@ -67,7 +70,8 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [4fbe7df7](https://github.com/phpredis/phpredis/commit/4fbe7df79b9b0e03f92e8323aed0bda9513bc20a)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Add new parameter to RedisCluster to specify stream ssl/tls context.
-  [f771ea16](https://github.com/phpredis/phpredis/commit/f771ea16b77f39fcca555bec2d952412265197aa)
+  [f771ea16](https://github.com/phpredis/phpredis/commit/f771ea16b77f39fcca555bec2d952412265197aa),
+  [72024afe](https://github.com/phpredis/phpredis/commit/72024afed3640230bbd1a017b2a374d12ab88e59)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Add new parameter to RedisSentinel to specify auth information
   [81c502ae](https://github.com/phpredis/phpredis/commit/81c502ae7c0de65d63cd514ee59849c9d1b0b952)
