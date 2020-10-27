@@ -475,12 +475,11 @@ PHP_METHOD(RedisArray, _instance)
 {
     zval *object;
     RedisArray *ra;
-    char *target;
-    size_t target_len;
+    zend_string *host;
     zval *z_redis;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Os",
-                &object, redis_array_ce, &target, &target_len) == FAILURE) {
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "OS",
+                &object, redis_array_ce, &host) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -488,12 +487,10 @@ PHP_METHOD(RedisArray, _instance)
         RETURN_FALSE;
     }
 
-    z_redis = ra_find_node_by_name(ra, target, target_len);
-    if(z_redis) {
-        RETURN_ZVAL(z_redis, 1, 0);
-    } else {
+    if ((z_redis = ra_find_node_by_name(ra, host)) == NULL) {
         RETURN_NULL();
     }
+    RETURN_ZVAL(z_redis, 1, 0);
 }
 
 PHP_METHOD(RedisArray, _function)
@@ -1225,12 +1222,11 @@ PHP_METHOD(RedisArray, multi)
     zval *object;
     RedisArray *ra;
     zval *z_redis;
-    char *host;
-    size_t host_len;
+    zend_string *host;
     zend_long multi_value = MULTI;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Os|l",
-                &object, redis_array_ce, &host, &host_len, &multi_value) == FAILURE) {
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "OS|l",
+                &object, redis_array_ce, &host, &multi_value) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -1239,8 +1235,7 @@ PHP_METHOD(RedisArray, multi)
     }
 
     /* find node */
-    z_redis = ra_find_node_by_name(ra, host, host_len);
-    if(!z_redis) {
+    if ((z_redis = ra_find_node_by_name(ra, host)) == NULL) {
         RETURN_FALSE;
     }
 

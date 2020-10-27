@@ -19,7 +19,7 @@ RedisArray *ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist,
                           zend_string *algorithm, zend_string *auth,
                           zend_string *pass);
 
-zval *ra_find_node_by_name(RedisArray *ra, const char *host, int host_len);
+zval *ra_find_node_by_name(RedisArray *ra, zend_string *host);
 zval *ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos);
 void ra_init_function_table(RedisArray *ra);
 
