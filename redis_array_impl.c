@@ -546,11 +546,11 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos)
 }
 
 zval *
-ra_find_node_by_name(RedisArray *ra, const char *host, int host_len) {
+ra_find_node_by_name(RedisArray *ra, zend_string *host) {
 
     int i;
     for(i = 0; i < ra->count; ++i) {
-        if (ZSTR_LEN(ra->hosts[i]) == host_len && strcmp(ZSTR_VAL(ra->hosts[i]), host) == 0) {
+        if (zend_string_equals(host, ra->hosts[i])) {
             return &ra->redis[i];
         }
     }
