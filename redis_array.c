@@ -889,7 +889,8 @@ PHP_METHOD(RedisArray, mget)
 
         for(i = 0; i < argc; ++i) {
             if (pos[i] == n) {
-                add_next_index_zval(&z_arg, argv[i]);
+                ZVAL_ZVAL(&z_ret, argv[i], 1, 0);
+                add_next_index_zval(&z_arg, &z_ret);
             }
         }
 
