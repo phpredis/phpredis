@@ -1060,15 +1060,14 @@ PHP_METHOD(RedisArray, mset)
 }
 
 /* Generic handler for DEL or UNLINK which behave identically to phpredis */
-static void ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) {
-    zval *object, z_keys, z_fun, *data, z_ret, *z_args;
-    int i, n;
-    RedisArray *ra;
-    int *pos, argc = ZEND_NUM_ARGS(), *argc_each;
+static void
+ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
+{
+    zval *object, z_keys, z_fun, *data, z_ret, *z_args, **argv;
+    int i, n, *pos, argc = ZEND_NUM_ARGS(), *argc_each, free_zkeys = 0;
     HashTable *h_keys;
-    zval **argv;
+    RedisArray *ra;
     long total = 0;
-    int free_zkeys = 0;
 
     if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
@@ -1078,7 +1077,7 @@ static void ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) {
     HANDLE_MULTI_EXEC(ra, kw, kw_len);
 
     /* get all args in z_args */
-    z_args = emalloc(argc * sizeof(zval));
+    z_args = ecalloc(argc, sizeof(*z_args));
     if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
         RETURN_FALSE;
@@ -1091,11 +1090,7 @@ static void ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) {
         /* copy all elements to z_keys */
         array_init(&z_keys);
         for (i = 0; i < argc; ++i) {
-            zval *z_arg = &z_args[i];
-            zval z_ret;
-            ZVAL_ZVAL(&z_ret, z_arg, 1, 0);
-            /* add copy to z_keys */
-            add_next_index_zval(&z_keys, &z_ret);
+            add_next_index_zval(&z_keys, &z_args[i]);
         }
         free_zkeys = 1;
     }
@@ -1107,27 +1102,23 @@ static void ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) {
         efree(z_args);
         RETURN_FALSE;
     }
-    argv = emalloc(argc * sizeof(zval*));
-    pos = emalloc(argc * sizeof(int));
+    argv = ecalloc(argc, sizeof(*argv));
+    pos = ecalloc(argc, sizeof(*pos));
 
-    argc_each = emalloc(ra->count * sizeof(int));
-    memset(argc_each, 0, ra->count * sizeof(int));
+    argc_each = ecalloc(ra->count, sizeof(*argc_each));
 
     /* associate each key to a redis node */
     i = 0;
     ZEND_HASH_FOREACH_VAL(h_keys, data) {
         if (Z_TYPE_P(data) != IS_STRING) {
             php_error_docref(NULL, E_ERROR, "DEL: all keys must be string.");
-            if (free_zkeys) zval_dtor(&z_keys);
-            efree(z_args);
-            efree(argv);
-            efree(pos);
-            efree(argc_each);
-            RETURN_FALSE;
+            RETVAL_FALSE;
+            goto cleanup;
         }
 
         if (ra_find_node(ra, Z_STRVAL_P(data), Z_STRLEN_P(data), &pos[i]) == NULL) {
-            // TODO: handle
+            RETVAL_FALSE;
+            goto cleanup;
         }
         argc_each[pos[i]]++;    /* count number of keys per node */
         argv[i++] = data;
@@ -1147,12 +1138,10 @@ static void ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) {
         /* copy args */
         array_init(&z_argarray);
         for(i = 0; i < argc; ++i) {
-            if(pos[i] != n) continue;
-
-            zval z_ret;
-            ZVAL_ZVAL(&z_ret, argv[i], 1, 0);
-            add_next_index_zval(&z_argarray, &z_ret);
-            found++;
+            if (pos[i] == n) {
+                add_next_index_zval(&z_argarray, argv[i]);
+                found++;
+            }
         }
 
         if(!found) {    /* don't run empty DEL or UNLINK commands */
@@ -1162,15 +1151,11 @@ static void ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) {
 
         if(ra->index) { /* add MULTI */
             ra_index_multi(&ra->redis[n], MULTI);
-        }
-
-        /* call */
-        call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
-
-        if(ra->index) {
-            zval_dtor(&z_ret);
+            call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
             ra_index_del(&z_argarray, &ra->redis[n]); /* use SREM to remove keys from node index */
             ra_index_exec(&ra->redis[n], &z_ret, 0); /* run EXEC */
+        } else {
+            call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
         }
         total += Z_LVAL(z_ret);    /* increment total */
 
@@ -1178,8 +1163,11 @@ static void ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) {
         zval_dtor(&z_ret);
     }
 
-    /* cleanup */
     zval_dtor(&z_fun);
+
+    RETVAL_LONG(total);
+
+cleanup:
     efree(argv);
     efree(pos);
     efree(argc_each);
@@ -1187,9 +1175,7 @@ static void ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len) {
     if(free_zkeys) {
         zval_dtor(&z_keys);
     }
-
     efree(z_args);
-    RETURN_LONG(total);
 }
 
 /* DEL will distribute the call to several nodes and regroup the values. */
