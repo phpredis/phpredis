@@ -495,7 +495,7 @@ PHP_METHOD(RedisArray, _instance)
 
 PHP_METHOD(RedisArray, _function)
 {
-    zval *object, *z_fun;
+    zval *object;
     RedisArray *ra;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O",
@@ -507,13 +507,12 @@ PHP_METHOD(RedisArray, _function)
         RETURN_FALSE;
     }
 
-    z_fun = &ra->z_fun;
-    RETURN_ZVAL(z_fun, 1, 0);
+    RETURN_ZVAL(&ra->z_fun, 1, 0);
 }
 
 PHP_METHOD(RedisArray, _distributor)
 {
-    zval *object, *z_dist;
+    zval *object;
     RedisArray *ra;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O",
@@ -525,8 +524,7 @@ PHP_METHOD(RedisArray, _distributor)
         RETURN_FALSE;
     }
 
-    z_dist = &ra->z_dist;
-    RETURN_ZVAL(z_dist, 1, 0);
+    RETURN_ZVAL(&ra->z_dist, 1, 0);
 }
 
 PHP_METHOD(RedisArray, _rehash)
@@ -815,12 +813,10 @@ PHP_METHOD(RedisArray, select)
 /* MGET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mget)
 {
-    zval *object, *z_keys, z_argarray, *data, z_ret, *z_cur, z_tmp_array;
-    int i, j, n;
-    RedisArray *ra;
-    int *pos, argc, *argc_each;
+    zval *object, *z_keys, *data, z_ret, *z_cur, z_tmp_array, z_fun, z_arg, **argv;
+    int i, j, n, *pos, argc, *argc_each;
     HashTable *h_keys;
-    zval **argv;
+    RedisArray *ra;
 
     if ((ra = redis_array_get(getThis())) == NULL) {
         RETURN_FALSE;
@@ -840,11 +836,10 @@ PHP_METHOD(RedisArray, mget)
     if ((argc = zend_hash_num_elements(h_keys)) == 0) {
         RETURN_FALSE;
     }
-    argv = emalloc(argc * sizeof(zval*));
-    pos = emalloc(argc * sizeof(int));
+    argv = ecalloc(argc, sizeof(*argv));
+    pos = ecalloc(argc, sizeof(*pos));
 
-    argc_each = emalloc(ra->count * sizeof(int));
-    memset(argc_each, 0, ra->count * sizeof(int));
+    argc_each = ecalloc(ra->count, sizeof(*argc_each));
 
     /* associate each key to a redis node */
     i = 0;
@@ -856,95 +851,86 @@ PHP_METHOD(RedisArray, mget)
         /* Handle the possibility that we're a reference */
         ZVAL_DEREF(data);
 
-        /* phpredis proper can only use string or long keys, so restrict to that here */
-        if (Z_TYPE_P(data) != IS_STRING && Z_TYPE_P(data) != IS_LONG) {
-            php_error_docref(NULL, E_ERROR, "MGET: all keys must be strings or longs");
-            efree(argv);
-            efree(pos);
-            efree(argc_each);
-            RETURN_FALSE;
-        }
-
         /* Convert to a string for hash lookup if it isn't one */
         if (Z_TYPE_P(data) == IS_STRING) {
             key_len = Z_STRLEN_P(data);
             key_lookup = Z_STRVAL_P(data);
-        } else {
+        } else if (Z_TYPE_P(data) == IS_LONG) {
             key_len = snprintf(kbuf, sizeof(kbuf), ZEND_LONG_FMT, Z_LVAL_P(data));
             key_lookup = (char*)kbuf;
+        } else {
+            /* phpredis proper can only use string or long keys, so restrict to that here */
+            php_error_docref(NULL, E_ERROR, "MGET: all keys must be strings or longs");
+            RETVAL_FALSE;
+            goto cleanup;
         }
 
         /* Find our node */
         if (ra_find_node(ra, key_lookup, key_len, &pos[i]) == NULL) {
-            /* TODO: handle */
+            RETVAL_FALSE;
+            goto cleanup;
         }
 
         argc_each[pos[i]]++;    /* count number of keys per node */
         argv[i++] = data;
     } ZEND_HASH_FOREACH_END();
 
+    /* prepare call */
     array_init(&z_tmp_array);
+    ZVAL_STRINGL(&z_fun, "MGET", sizeof("MGET") - 1);
+
     /* calls */
     for(n = 0; n < ra->count; ++n) { /* for each node */
         /* We don't even need to make a call to this node if no keys go there */
         if(!argc_each[n]) continue;
 
         /* copy args for MGET call on node. */
-        array_init(&z_argarray);
+        array_init(&z_arg);
 
         for(i = 0; i < argc; ++i) {
-            if(pos[i] != n) continue;
-
-            zval z_ret;
-            ZVAL_ZVAL(&z_ret, argv[i], 1, 0);
-            add_next_index_zval(&z_argarray, &z_ret);
+            if (pos[i] == n) {
+                add_next_index_zval(&z_arg, argv[i]);
+            }
         }
 
-        zval z_fun;
-        /* prepare call */
-        ZVAL_STRINGL(&z_fun, "MGET", 4);
         /* call MGET on the node */
-        call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
-        zval_dtor(&z_fun);
+        call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_arg);
 
         /* cleanup args array */
-        zval_dtor(&z_argarray);
+        zval_dtor(&z_arg);
 
         /* Error out if we didn't get a proper response */
         if (Z_TYPE(z_ret) != IS_ARRAY) {
             /* cleanup */
             zval_dtor(&z_ret);
             zval_dtor(&z_tmp_array);
-            efree(argv);
-            efree(pos);
-            efree(argc_each);
-
-            /* failure */
-            RETURN_FALSE;
+            RETVAL_FALSE;
+            goto cleanup;
         }
 
         for(i = 0, j = 0; i < argc; ++i) {
             if (pos[i] != n || (z_cur = zend_hash_index_find(Z_ARRVAL(z_ret), j++)) == NULL) continue;
 
-            zval z_ret;
-            ZVAL_ZVAL(&z_ret, z_cur, 1, 0);
-            add_index_zval(&z_tmp_array, i, &z_ret);
+            ZVAL_ZVAL(&z_arg, z_cur, 1, 0);
+            add_index_zval(&z_tmp_array, i, &z_arg);
         }
         zval_dtor(&z_ret);
     }
+
+    zval_dtor(&z_fun);
 
     array_init(return_value);
     /* copy temp array in the right order to return_value */
     for(i = 0; i < argc; ++i) {
         if ((z_cur = zend_hash_index_find(Z_ARRVAL(z_tmp_array), i)) == NULL) continue;
 
-        zval z_ret;
-        ZVAL_ZVAL(&z_ret, z_cur, 1, 0);
-        add_next_index_zval(return_value, &z_ret);
+        ZVAL_ZVAL(&z_arg, z_cur, 1, 0);
+        add_next_index_zval(return_value, &z_arg);
     }
 
     /* cleanup */
     zval_dtor(&z_tmp_array);
+cleanup:
     efree(argv);
     efree(pos);
     efree(argc_each);
@@ -954,13 +940,11 @@ PHP_METHOD(RedisArray, mget)
 /* MSET will distribute the call to several nodes and regroup the values. */
 PHP_METHOD(RedisArray, mset)
 {
-    zval *object, *z_keys, z_argarray, *data, z_ret, **argv;
-    int i = 0, n;
+    zval *object, *z_keys, z_argarray, *data, z_fun, z_ret, **argv;
+    int i = 0, n, *pos, argc, *argc_each, key_len;
     RedisArray *ra;
-    int *pos, argc, *argc_each;
     HashTable *h_keys;
     char *key, kbuf[40];
-    int key_len;
     zend_string **keys, *zkey;
     zend_ulong idx;
 
@@ -982,12 +966,11 @@ PHP_METHOD(RedisArray, mset)
     if ((argc = zend_hash_num_elements(h_keys)) == 0) {
         RETURN_FALSE;
     }
-    argv = emalloc(argc * sizeof(zval*));
-    pos = emalloc(argc * sizeof(int));
-    keys = ecalloc(argc, sizeof(zend_string *));
+    argv = ecalloc(argc, sizeof(*argv));
+    pos = ecalloc(argc, sizeof(*pos));
+    keys = ecalloc(argc, sizeof(*keys));
 
-    argc_each = emalloc(ra->count * sizeof(int));
-    memset(argc_each, 0, ra->count * sizeof(int));
+    argc_each = ecalloc(ra->count, sizeof(*argc_each));
 
     /* associate each key to a redis node */
     ZEND_HASH_FOREACH_KEY_VAL(h_keys, idx, zkey, data) {
@@ -1001,15 +984,25 @@ PHP_METHOD(RedisArray, mset)
         }
 
         if (ra_find_node(ra, key, (int)key_len, &pos[i]) == NULL) {
-            // TODO: handle
+            for (n = 0; n < i; ++n) {
+                zend_string_release(keys[n]);
+            }
+            efree(keys);
+            efree(argv);
+            efree(pos);
+            efree(argc_each);
+            RETURN_FALSE;
         }
 
         argc_each[pos[i]]++;    /* count number of keys per node */
-        keys[i] = zend_string_init(key, key_len, 0);
+        keys[i] = zkey ? zend_string_copy(zkey) : zend_string_init(key, key_len, 0);
         argv[i] = data;
         i++;
     } ZEND_HASH_FOREACH_END();
 
+
+    /* prepare call */
+    ZVAL_STRINGL(&z_fun, "MSET", sizeof("MSET") - 1);
 
     /* calls */
     for (n = 0; n < ra->count; ++n) { /* for each node */
@@ -1023,7 +1016,6 @@ PHP_METHOD(RedisArray, mset)
         for(i = 0; i < argc; ++i) {
             if(pos[i] != n) continue;
 
-            zval z_ret;
             if (argv[i] == NULL) {
                 ZVAL_NULL(&z_ret);
             } else {
@@ -1040,25 +1032,18 @@ PHP_METHOD(RedisArray, mset)
 
         if(ra->index) { /* add MULTI */
             ra_index_multi(&ra->redis[n], MULTI);
-        }
-
-        zval z_fun;
-
-        /* prepare call */
-        ZVAL_STRINGL(&z_fun, "MSET", 4);
-
-        /* call */
-        call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
-        zval_dtor(&z_fun);
-        zval_dtor(&z_ret);
-
-        if(ra->index) {
+            call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
             ra_index_keys(&z_argarray, &ra->redis[n]); /* use SADD to add keys to node index */
             ra_index_exec(&ra->redis[n], NULL, 0); /* run EXEC */
+        } else {
+            call_user_function(&redis_ce->function_table, &ra->redis[n], &z_fun, &z_ret, 1, &z_argarray);
         }
 
         zval_dtor(&z_argarray);
+        zval_dtor(&z_ret);
     }
+
+    zval_dtor(&z_fun);
 
     /* Free any keys that we needed to allocate memory for, because they weren't strings */
     for(i = 0; i < argc; i++) {
