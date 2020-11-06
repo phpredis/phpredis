@@ -172,6 +172,9 @@ class Redis {
      */
     public function delete(array|string $key, ...$otherkeys);
 
+	/** @return mixed|Redis */
+    public function ping(string $message = NULL);
+
     /**
      * @deprecated
      * @alias Redis::connect
