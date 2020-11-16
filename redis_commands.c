@@ -2669,16 +2669,28 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Now the rest of our arguments
     while (i < num) {
         // Append score and member
-        if (Z_TYPE(z_args[i]) == IS_STRING && (
-            /* The score values should be the string representation of a double
+        switch (Z_TYPE(z_args[i])) {
+        case IS_LONG:
+        case IS_DOUBLE:
+            redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(&z_args[i]));
+            break;
+        case IS_STRING:
+            /* The score values must be the string representation of a double
              * precision floating point number. +inf and -inf values are valid
              * values as well. */
-            strncasecmp(Z_STRVAL(z_args[i]), "-inf", 4) == 0 ||
-            strncasecmp(Z_STRVAL(z_args[i]), "+inf", 4) == 0
-        )) {
-            redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[i]), Z_STRLEN(z_args[i]));
-        } else {
-            redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(&z_args[i]));
+            if (strncasecmp(Z_STRVAL(z_args[i]), "-inf", 4) == 0 ||
+                strncasecmp(Z_STRVAL(z_args[i]), "+inf", 4) == 0 ||
+                is_numeric_string(Z_STRVAL(z_args[i]), Z_STRLEN(z_args[i]), NULL, NULL, 0) != 0
+            ) {
+                redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[i]), Z_STRLEN(z_args[i]));
+                break;
+            }
+            // fall through
+        default:
+            php_error_docref(NULL, E_WARNING, "Scores must be numeric or '-inf','+inf'");
+            smart_string_free(&cmdstr);
+            efree(z_args);
+            return FAILURE;
         }
         // serialize value if requested
         val_free = redis_pack(redis_sock, &z_args[i+1], &val, &val_len);
