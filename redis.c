@@ -278,7 +278,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, connect, arginfo_connect, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dbSize, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, debug, arginfo_key, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, decr, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, decr, arginfo_decr, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, decrBy, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, del, arginfo_del, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, discard, arginfo_void, ZEND_ACC_PUBLIC)
