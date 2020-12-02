@@ -788,6 +788,11 @@ redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...) {
             case 'a':
                 append_auth_hash(&str, redis_sock->user, redis_sock->pass);
                 break;
+            case 'x':
+                smart_str_append(&str, ':');
+                if (redis_sock->prefix) {
+                    smart_str_append_ex(&str, redis_sock->prefix, 0);
+                }
             default:
                 /* Maybe issue a php_error_docref? */
                 break;
