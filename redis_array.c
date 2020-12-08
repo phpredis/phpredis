@@ -127,8 +127,6 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, setOption,arginfo_setopt, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, unlink, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, unwatch, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(RedisArray, delete, del, arginfo_del, ZEND_ACC_PUBLIC)
-     PHP_MALIAS(RedisArray, getMultiple, mget, arginfo_mget, ZEND_ACC_PUBLIC)
      PHP_FE_END
 };
 
