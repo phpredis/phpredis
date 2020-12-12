@@ -19,19 +19,16 @@
 #include "config.h"
 #endif
 
-#include "common.h"
-#include "ext/standard/info.h"
-#include "php_ini.h"
-#include "php_redis.h"
-#include <zend_exceptions.h>
-
 #include "library.h"
 #include "redis_array.h"
 #include "redis_array_impl.h"
 
+#include <ext/standard/info.h>
+#include <zend_exceptions.h>
+
 /* Simple macro to detect failure in a RedisArray call */
 #define RA_CALL_FAILED(rv, cmd) ( \
-    PHPREDIS_ZVAL_IS_STRICT_FALSE(rv) || \
+    (Z_TYPE_P(rv) == IS_FALSE) || \
     (Z_TYPE_P(rv) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(rv)) == 0) || \
     (Z_TYPE_P(rv) == IS_LONG && Z_LVAL_P(rv) == 0 && !strcasecmp(cmd, "TYPE")) \
 )
