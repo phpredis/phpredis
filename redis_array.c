@@ -37,96 +37,16 @@
 extern zend_class_entry *redis_ce;
 zend_class_entry *redis_array_ce;
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_ctor, 0, 0, 1)
-    ZEND_ARG_TYPE_MASK(0, name_or_hosts, MAY_BE_ARRAY|MAY_BE_STRING, NULL)
-    ZEND_ARG_ARRAY_INFO(0, options, 0)
-ZEND_END_ARG_INFO()
+#if PHP_VERSION_ID < 80000
+#include "redis_array_legacy_arginfo.h"
+#else
+#include "redis_array_arginfo.h"
+#endif
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_call, 0, 0, 2)
-    ZEND_ARG_INFO(0, function_name)
-    ZEND_ARG_INFO(0, arguments)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_target, 0, 0, 1)
-    ZEND_ARG_INFO(0, key)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_instance, 0, 0, 1)
-    ZEND_ARG_INFO(0, host)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_rehash, 0, 0, 0)
-    ZEND_ARG_INFO(0, callable)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_select, 0, 0, 1)
-    ZEND_ARG_INFO(0, index)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_mget, 0, 0, 1)
-    ZEND_ARG_INFO(0, keys)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_mset, 0, 0, 1)
-    ZEND_ARG_INFO(0, pairs)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_del, 0, 0, 1)
-    ZEND_ARG_INFO(0, keys)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_getopt, 0, 0, 1)
-    ZEND_ARG_INFO(0, opt)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_setopt, 0, 0, 2)
-    ZEND_ARG_INFO(0, opt)
-    ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_keys, 0, 0, 1)
-    ZEND_ARG_INFO(0, pattern)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_multi, 0, 0, 1)
-    ZEND_ARG_INFO(0, host)
-    ZEND_ARG_INFO(0, mode)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_flush, 0, 0, 0)
-    ZEND_ARG_INFO(0, async)
-ZEND_END_ARG_INFO()
-
-zend_function_entry redis_array_functions[] = {
-     PHP_ME(RedisArray, __call, arginfo_call, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, __construct, arginfo_ctor, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, _continuum, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, _distributor, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, _function, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, _hosts, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, _instance, arginfo_instance, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, _rehash, arginfo_rehash, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, _target, arginfo_target, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, bgsave, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, del, arginfo_del, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, discard, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, exec, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, flushall, arginfo_flush, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, flushdb, arginfo_flush, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, getOption, arginfo_getopt, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, info, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, keys, arginfo_keys, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, mget, arginfo_mget, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, mset, arginfo_mset, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, multi, arginfo_multi, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, ping, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, save, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, select, arginfo_select, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, setOption,arginfo_setopt, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, unlink, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_ME(RedisArray, unwatch, arginfo_void, ZEND_ACC_PUBLIC)
-     PHP_FE_END
-};
+extern const zend_function_entry *redis_array_get_methods(void)
+{
+    return class_RedisArray_methods;
+}
 
 static void
 redis_array_free(RedisArray *ra)

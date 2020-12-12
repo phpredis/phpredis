@@ -862,7 +862,7 @@ PHP_MINIT_FUNCTION(redis)
     redis_ce->create_object = create_redis_object;
 
     /* RedisArray class */
-    INIT_CLASS_ENTRY(redis_array_class_entry, "RedisArray", redis_array_functions);
+    INIT_CLASS_ENTRY(redis_array_class_entry, "RedisArray", redis_array_get_methods());
     redis_array_ce = zend_register_internal_class(&redis_array_class_entry);
     redis_array_ce->create_object = create_redis_array_object;
 
