@@ -19,6 +19,7 @@
 #include "config.h"
 #endif
 
+#include "common.h"
 #include "library.h"
 #include "redis_array.h"
 #include "redis_array_impl.h"
@@ -333,7 +334,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd,
 
     /* pass call through */
     ZVAL_STRINGL(&z_fun, cmd, cmd_len); /* method name */
-    z_callargs = ecalloc(argc, sizeof(zval));
+    z_callargs = ecalloc(argc, sizeof(*z_callargs));
 
     /* copy args to array */
     i = 0;
