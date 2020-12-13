@@ -61,10 +61,6 @@ zend_class_entry *redis_ce;
 zend_class_entry *redis_exception_ce;
 
 extern int le_cluster_slot_cache;
-
-extern zend_function_entry redis_array_functions[];
-extern zend_function_entry redis_cluster_functions[];
-
 int le_redis_pconnect;
 
 PHP_INI_BEGIN()
@@ -867,7 +863,7 @@ PHP_MINIT_FUNCTION(redis)
     redis_array_ce->create_object = create_redis_array_object;
 
     /* RedisCluster class */
-    INIT_CLASS_ENTRY(redis_cluster_class_entry, "RedisCluster", redis_cluster_functions);
+    INIT_CLASS_ENTRY(redis_cluster_class_entry, "RedisCluster", redis_cluster_get_methods());
     redis_cluster_ce = zend_register_internal_class(&redis_cluster_class_entry);
     redis_cluster_ce->create_object = create_cluster_context;
 
