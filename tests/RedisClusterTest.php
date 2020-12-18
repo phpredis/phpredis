@@ -663,6 +663,32 @@ class Redis_Cluster_Test extends Redis_Test {
         }
     }
 
+    public function testFailOverPreferred() {
+        return $this->markTestSkipped(); // this test is racy.
+        $arr_value_ref = [];
+        $arr_type_ref  = [];
+
+        /* Set a bunch of keys of various redis types*/
+        for ($i = 0; $i < 1; $i++) {
+            foreach ($this->_arr_redis_types as $i_type) {
+                $str_key = $this->setKeyVals($i, $i_type, $arr_value_ref);
+                $arr_type_ref[$str_key] = $i_type;
+            }
+        }
+
+        // Give slaves a chance to catch up with the master.
+        // This is racy... which is probably why the above test skips the
+        // failover modes other than 'NONE'.
+        usleep(1000);
+
+        $this->redis->setOption(RedisCluster::OPT_SLAVE_FAILOVER, RedisCluster::FAILOVER_PREFERRED);
+        $this->redis->setOption(RedisCluster::OPT_PREFERRED_NODES, ['127.0.0.1:7000']);
+
+        foreach ($arr_value_ref as $str_key => $value) {
+            $this->checkKeyValue($str_key, $arr_type_ref[$str_key], $value);
+        }
+    }
+
     /* Test a 'raw' command */
     public function testRawCommand() {
         $this->redis->rawCommand('mykey', 'set', 'mykey', 'my-value');

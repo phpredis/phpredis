@@ -208,6 +208,9 @@ typedef struct redisCluster {
     /* All RedisCluster objects we've created/are connected to */
     HashTable *nodes;
 
+    /* A list of nodes we prefer to talk to when in FAILOVER_PREFERRED mode */
+    HashTable *preferred_nodes;
+
     /* Transaction handling linked list, and where we are as we EXEC */
     clusterFoldItem *multi_head;
     clusterFoldItem *multi_curr;
@@ -258,6 +261,12 @@ typedef struct redisCluster {
 
 /* RedisCluster response processing callback */
 typedef void (*cluster_cb)(INTERNAL_FUNCTION_PARAMETERS, redisCluster*, void*);
+
+typedef struct preferredNode {
+    int idx;
+    int preferred;
+    int original_order;
+} preferredNode;
 
 /* Context for processing transactions */
 struct clusterFoldItem {

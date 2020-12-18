@@ -82,6 +82,10 @@ zend_object * create_cluster_context(zend_class_entry *class_type) {
     ALLOC_HASHTABLE(cluster->nodes);
     zend_hash_init(cluster->nodes, 0, NULL, ht_free_node, 0);
 
+    /* Allocate our preferred nodes HashTable */
+    ALLOC_HASHTABLE(cluster->preferred_nodes);
+    zend_hash_init(cluster->preferred_nodes, 0, NULL, NULL, 0);
+
     // Initialize it
     zend_object_std_init(&cluster->std, class_type);
 
