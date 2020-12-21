@@ -1455,6 +1455,27 @@ class Redis_Test extends TestSuite
         $this->assertEquals($array, $sMembers); // test alias
     }
 
+    public function testsMisMember()
+    {
+        // Only available since 6.2.0
+        if (version_compare($this->version, '6.2.0') < 0) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->del('set');
+
+        $this->redis->sAdd('set', 'val');
+        $this->redis->sAdd('set', 'val2');
+        $this->redis->sAdd('set', 'val3');
+
+        $misMembers = $this->redis->sMisMember('set', 'val', 'notamember', 'val3');
+        $this->assertEquals([1, 0, 1], $misMembers);
+
+        $misMembers = $this->redis->sMisMember('wrongkey', 'val', 'val2', 'val3');
+        $this->assertEquals([0, 0, 0], $misMembers);
+    }
+
     public function testlSet() {
 
         $this->redis->del('list');
