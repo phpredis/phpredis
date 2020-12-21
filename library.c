@@ -947,11 +947,14 @@ int redis_cmd_append_sstr_i64(smart_string *str, int64_t append) {
 int
 redis_cmd_append_sstr_dbl(smart_string *str, double value)
 {
-    char tmp[64];
+    char tmp[64], *p;
     int len;
 
     /* Convert to string */
     len = snprintf(tmp, sizeof(tmp), "%.17g", value);
+
+    /* snprintf depends on locale, replace comma with point */
+    if ((p = strchr(tmp, ',')) != NULL) *p = '.';
 
     // Append the string
     return redis_cmd_append_sstr(str, tmp, len);
