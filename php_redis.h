@@ -94,6 +94,7 @@ PHP_METHOD(Redis, sDiffStore);
 PHP_METHOD(Redis, sInter);
 PHP_METHOD(Redis, sInterStore);
 PHP_METHOD(Redis, sMembers);
+PHP_METHOD(Redis, sMisMember);
 PHP_METHOD(Redis, sMove);
 PHP_METHOD(Redis, sPop);
 PHP_METHOD(Redis, sRandMember);
