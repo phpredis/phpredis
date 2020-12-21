@@ -385,6 +385,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sInter, arginfo_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sInterStore, arginfo_dst_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sMembers, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sMisMember, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sMove, arginfo_smove, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sPop, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sRandMember, arginfo_srand_member, ZEND_ACC_PUBLIC)
@@ -1652,6 +1653,12 @@ PHP_METHOD(Redis, sMembers)
 {
     REDIS_PROCESS_KW_CMD("SMEMBERS", redis_key_cmd,
         redis_sock_read_multibulk_reply);
+}
+
+/* {{{ proto array Redis::sMisMember(string key, string member0, ...memberN) */
+PHP_METHOD(Redis, sMisMember)
+{
+    REDIS_PROCESS_KW_CMD("SMISMEMBER", redis_key_varval_cmd, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
