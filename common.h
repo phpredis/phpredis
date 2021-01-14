@@ -471,6 +471,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_zadd, 0, 0, 3)
     ZEND_ARG_VARIADIC_INFO(0, extra_args)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zpop, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_INFO(0, count)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_zincrby, 0, 0, 3)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, value)
