@@ -91,10 +91,10 @@ Following INI variables can be used to configure session locking:
 redis.session.locking_enabled = 1
 ; How long should the lock live (in seconds)? Defaults to: value of max_execution_time.
 redis.session.lock_expire = 60
-; How long to wait between attempts to acquire lock, in microseconds (µs)?. Defaults to: 2000
+; How long to wait between attempts to acquire lock, in microseconds (µs)?. Defaults to: 20000
 redis.session.lock_wait_time = 50000
-; Maximum number of times to retry (-1 means infinite). Defaults to: 10
-redis.session.lock_retries = 10
+; Maximum number of times to retry (-1 means infinite). Defaults to: 1000
+redis.session.lock_retries = 2000
 ~~~
 
 ## Distributed Redis Array
