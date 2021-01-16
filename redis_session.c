@@ -231,13 +231,13 @@ static int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_s
     /* How long to wait between attempts to acquire lock */
     lock_wait_time = INI_INT("redis.session.lock_wait_time");
     if (lock_wait_time == 0) {
-        lock_wait_time = 2000;
+        lock_wait_time = 20000;
     }
 
     /* Maximum number of times to retry (-1 means infinite) */
     retries = INI_INT("redis.session.lock_retries");
     if (retries == 0) {
-        retries = 10;
+        retries = 1000;
     }
 
     /* How long should the lock live (in seconds) */
@@ -323,7 +323,7 @@ static int write_allowed(RedisSock *redis_sock, redis_session_lock_status *lock_
          * if we aren't flagged as locked, so if we're not flagged here something
          * failed */
         if (!lock_status->is_locked) {
-            php_error_docref(NULL, E_WARNING, "Failed to refresh session lock");
+            php_error_docref(NULL, E_WARNING, "Session lock expired");
         }
     }
 
@@ -454,6 +454,11 @@ PS_OPEN_FUNC(redis)
             }
 
             if ((url->path == NULL && url->host == NULL) || weight <= 0 || timeout <= 0) {
+                char *path = estrndup(save_path+i, j-i);
+                php_error_docref(NULL, E_WARNING,
+                    "Failed to parse session.save_path (error at offset %d, url was '%s')", i, path);
+                efree(path);
+
                 php_url_free(url);
                 if (persistent_id) zend_string_release(persistent_id);
                 if (prefix) zend_string_release(prefix);
@@ -461,6 +466,7 @@ PS_OPEN_FUNC(redis)
                 if (pass) zend_string_release(pass);
                 redis_pool_free(pool);
                 PS_SET_MOD_DATA(NULL);
+
                 return FAILURE;
             }
 
@@ -568,9 +574,7 @@ PS_CREATE_SID_FUNC(redis)
         RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
 
         if (!redis_sock) {
-            php_error_docref(NULL, E_NOTICE,
-                "Redis not available while creating session_id");
-
+            php_error_docref(NULL, E_NOTICE, "Redis connection not available");
             zend_string_release(sid);
             return php_session_create_id(NULL);
         }
@@ -588,7 +592,7 @@ PS_CREATE_SID_FUNC(redis)
         sid = NULL;
     }
 
-    php_error_docref(NULL, E_NOTICE,
+    php_error_docref(NULL, E_WARNING,
         "Acquiring session lock failed while creating session_id");
 
     return NULL;
@@ -611,6 +615,7 @@ PS_VALIDATE_SID_FUNC(redis)
     redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
     if (!redis_sock) {
+        php_error_docref(NULL, E_WARNING, "Redis connection not available");
         return FAILURE;
     }
 
@@ -618,16 +623,13 @@ PS_VALIDATE_SID_FUNC(redis)
     zend_string *session = redis_session_key(redis_sock, skey, skeylen);
     cmd_len = REDIS_SPPRINTF(&cmd, "EXISTS", "S", session);
     zend_string_release(session);
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0 || (response = redis_sock_read(redis_sock, &response_len)) == NULL) {
+        php_error_docref(NULL, E_WARNING, "Error communicating with Redis server");
         efree(cmd);
         return FAILURE;
     }
-    efree(cmd);
 
-    /* read response */
-    if ((response = redis_sock_read(redis_sock, &response_len)) == NULL) {
-        return FAILURE;
-    }
+    efree(cmd);
 
     if (response_len == 2 && response[0] == ':' && response[1] == '1') {
         efree(response);
@@ -655,6 +657,7 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
     redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
     if (!redis_sock) {
+        php_error_docref(NULL, E_WARNING, "Redis connection not available");
         return FAILURE;
     }
 
@@ -663,16 +666,13 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
     cmd_len = REDIS_SPPRINTF(&cmd, "EXPIRE", "Sd", session, session_gc_maxlifetime());
     zend_string_release(session);
 
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0 || (response = redis_sock_read(redis_sock, &response_len)) == NULL) {
+        php_error_docref(NULL, E_WARNING, "Error communicating with Redis server");
         efree(cmd);
         return FAILURE;
     }
-    efree(cmd);
 
-    /* read response */
-    if ((response = redis_sock_read(redis_sock, &response_len)) == NULL) {
-        return FAILURE;
-    }
+    efree(cmd);
 
     if (response_len == 2 && response[0] == ':') {
         efree(response);
@@ -699,6 +699,7 @@ PS_READ_FUNC(redis)
     redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
     if (!redis_sock) {
+        php_error_docref(NULL, E_WARNING, "Redis connection not available");
         return FAILURE;
     }
 
@@ -708,20 +709,24 @@ PS_READ_FUNC(redis)
     cmd_len = REDIS_SPPRINTF(&cmd, "GET", "S", pool->lock_status.session_key);
 
     if (lock_acquire(redis_sock, &pool->lock_status) != SUCCESS) {
-        php_error_docref(NULL, E_NOTICE,
-            "Acquire of session lock was not successful");
-    }
-
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        php_error_docref(NULL, E_WARNING, "Failed to acquire session lock");
         efree(cmd);
         return FAILURE;
     }
+
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+        php_error_docref(NULL, E_WARNING, "Error communicating with Redis server");
+        efree(cmd);
+        return FAILURE;
+    }
+
     efree(cmd);
 
     /* Read response from Redis.  If we get a NULL response from redis_sock_read
      * this can indicate an error, OR a "NULL bulk" reply (empty session data)
      * in which case we can reply with success. */
     if ((resp = redis_sock_read(redis_sock, &resp_len)) == NULL && resp_len != -1) {
+        php_error_docref(NULL, E_WARNING, "Error communicating with Redis server");
         return FAILURE;
     }
 
@@ -751,6 +756,7 @@ PS_WRITE_FUNC(redis)
     redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
     if (!redis_sock) {
+        php_error_docref(NULL, E_WARNING, "Redis connection not available");
         return FAILURE;
     }
 
@@ -760,21 +766,25 @@ PS_WRITE_FUNC(redis)
     cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "Sds", session, session_gc_maxlifetime(), sval, svallen);
     zend_string_release(session);
 
-    if (!write_allowed(redis_sock, &pool->lock_status) || redis_sock_write(redis_sock, cmd, cmd_len ) < 0) {
+    if (!write_allowed(redis_sock, &pool->lock_status)) {
+        php_error_docref(NULL, E_WARNING, "Unable to write session: session lock not held");
         efree(cmd);
         return FAILURE;
     }
-    efree(cmd);
 
-    /* read response */
-    if ((response = redis_sock_read(redis_sock, &response_len)) == NULL) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len ) < 0 || (response = redis_sock_read(redis_sock, &response_len)) == NULL) {
+        php_error_docref(NULL, E_WARNING, "Error communicating with Redis server");
+        efree(cmd);
         return FAILURE;
     }
+
+    efree(cmd);
 
     if (IS_REDIS_OK(response, response_len)) {
         efree(response);
         return SUCCESS;
     } else {
+        php_error_docref(NULL, E_WARNING, "Error writing session data to Redis: %s", response);
         efree(response);
         return FAILURE;
     }
@@ -794,6 +804,7 @@ PS_DESTROY_FUNC(redis)
     redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
     if (!redis_sock) {
+        php_error_docref(NULL, E_WARNING, "Redis connection not available");
         return FAILURE;
     }
 
@@ -804,16 +815,13 @@ PS_DESTROY_FUNC(redis)
     zend_string *session = redis_session_key(redis_sock, skey, skeylen);
     cmd_len = REDIS_SPPRINTF(&cmd, "DEL", "S", session);
     zend_string_release(session);
-    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
+    if (redis_sock_write(redis_sock, cmd, cmd_len) < 0 || (response = redis_sock_read(redis_sock, &response_len)) == NULL) {
+        php_error_docref(NULL, E_WARNING, "Error communicating with Redis server");
         efree(cmd);
         return FAILURE;
     }
-    efree(cmd);
 
-    /* read response */
-    if ((response = redis_sock_read(redis_sock, &response_len)) == NULL) {
-        return FAILURE;
-    }
+    efree(cmd);
 
     if (response_len == 2 && response[0] == ':' && (response[1] == '0' || response[1] == '1')) {
         efree(response);
