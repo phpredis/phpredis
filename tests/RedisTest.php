@@ -1470,7 +1470,7 @@ class Redis_Test extends TestSuite
         $this->redis->sAdd('set', 'val3');
 
         $misMembers = $this->redis->sMisMember('set', 'val', 'notamember', 'val3');
-        $this->assertEquals([1, 0, 1], $smembers);
+        $this->assertEquals([1, 0, 1], $misMembers);
 
         $misMembers = $this->redis->sMisMember('wrongkey', 'val', 'val2', 'val3');
         $this->assertEquals([0, 0, 0], $misMembers);
