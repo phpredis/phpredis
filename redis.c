@@ -441,6 +441,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zCount, arginfo_key_min_max, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zIncrBy, arginfo_zincrby, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zLexCount, arginfo_key_min_max, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zMscore, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zPopMax, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zPopMin, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRange, arginfo_zrange, ZEND_ACC_PUBLIC)
@@ -2247,6 +2248,13 @@ PHP_METHOD(Redis, zScore)
 {
     REDIS_PROCESS_KW_CMD("ZSCORE", redis_kv_cmd,
         redis_bulk_double_response);
+}
+/* }}} */
+
+/* {{{ proto array Redis::zMscore(string key, string member0, ...memberN) */
+PHP_METHOD(Redis, zMscore)
+{
+    REDIS_PROCESS_KW_CMD("ZMSCORE", redis_key_varval_cmd, redis_mbulk_reply_double);
 }
 /* }}} */
 
