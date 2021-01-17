@@ -2506,6 +2506,26 @@ class Redis_Test extends TestSuite
         }
     }
 
+    public function testzMscore()
+    {
+        // Only available since 6.2.0
+        if (version_compare($this->version, '6.2.0') < 0) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->del('key');
+        foreach (range('a', 'c') as $c) {
+            $this->redis->zAdd('key', 1, $c);
+        }
+
+        $scores = $this->redis->zMscore('key', 'a', 'notamember', 'c');
+        $this->assertEquals([1.0, false, 1.0], $scores);
+
+        $scores = $this->redis->zMscore('wrongkey', 'a', 'b', 'c');
+        $this->assertEquals([false, false, false], $scores);
+    }
+
     public function testZRemRangeByLex() {
         if (version_compare($this->version, "2.8.9") < 0) {
             $this->MarkTestSkipped();
