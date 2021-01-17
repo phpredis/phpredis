@@ -1689,7 +1689,7 @@ PHP_METHOD(Redis, sMembers)
 /* {{{ proto array Redis::sMisMember(string key, string member0, ...memberN) */
 PHP_METHOD(Redis, sMisMember)
 {
-    REDIS_PROCESS_KW_CMD("SMISMEMBER", redis_key_varval_cmd, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_KW_CMD("SMISMEMBER", redis_key_varval_cmd, redis_read_variant_reply);
 }
 /* }}} */
 
