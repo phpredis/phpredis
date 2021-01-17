@@ -6523,7 +6523,7 @@ class Redis_Test extends TestSuite
         usleep(100000);
 
         $start = microtime(true);
-        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false, 10, true, 200000, 0);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false, 10, true, 2000, 0);
         $end = microtime(true);
         $elapsedTime = $end - $start;
 
