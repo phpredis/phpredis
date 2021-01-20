@@ -9,7 +9,7 @@ To maintain consistency with the RedisArray class, one can create and connect to
 
 #### Declaring a cluster with an array of seeds
 ~~~php
-// Create a cluster setting two nodes as seeds
+// Create a cluster setting three nodes as seeds
 $obj_cluster = new RedisCluster(NULL, Array('host:7000', 'host:7001', 'host:7003'));
 
 // Connect and specify timeout and read_timeout
