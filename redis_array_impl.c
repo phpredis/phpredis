@@ -494,7 +494,11 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos)
             void *ctx = emalloc(ops->context_size);
             unsigned char *digest = emalloc(ops->digest_size);
 
+#if PHP_VERSION_ID >= 80100
+            ops->hash_init(ctx,NULL);
+#else
             ops->hash_init(ctx);
+#endif
             ops->hash_update(ctx, (const unsigned char *)ZSTR_VAL(out), ZSTR_LEN(out));
             ops->hash_final(digest, ctx);
 

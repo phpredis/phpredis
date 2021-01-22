@@ -721,7 +721,11 @@ static zend_string *redis_hash_auth(zend_string *user, zend_string *pass) {
     smart_str_appendl_ex(&salted, REDIS_G(salt), sizeof(REDIS_G(salt)), 0);
 
     ctx = emalloc(ops->context_size);
+#if PHP_VERSION_ID >= 80100
+    ops->hash_init(ctx,NULL);
+#else
     ops->hash_init(ctx);
+#endif
     ops->hash_update(ctx, (const unsigned char *)ZSTR_VAL(salted.s), ZSTR_LEN(salted.s));
 
     digest = emalloc(ops->digest_size);
