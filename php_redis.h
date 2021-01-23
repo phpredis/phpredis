@@ -126,6 +126,7 @@ PHP_METHOD(Redis, zCard);
 PHP_METHOD(Redis, zCount);
 PHP_METHOD(Redis, zIncrBy);
 PHP_METHOD(Redis, zLexCount);
+PHP_METHOD(Redis, zMscore);
 PHP_METHOD(Redis, zPopMax);
 PHP_METHOD(Redis, zPopMin);
 PHP_METHOD(Redis, zRange);
