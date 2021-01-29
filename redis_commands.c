@@ -2139,6 +2139,39 @@ int redis_setbit_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int
+redis_lmove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *src, *dst, *from, *to;
+    size_t src_len, dst_len, from_len, to_len;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssss",
+                                &src, &src_len, &dst, &dst_len,
+                                &from, &from_len, &to, &to_len) == FAILURE
+    ) {
+        return FAILURE;
+    }
+
+    // Validate wherefrom/whereto
+    if (strcasecmp(from, "left") != 0 && strcasecmp(from, "right") != 0) {
+        php_error_docref(NULL, E_WARNING,
+            "Wherefrom argument must be either 'LEFT' or 'RIGHT'");
+        return FAILURE;
+    } else if (strcasecmp(to, "left") != 0 && strcasecmp(to, "right") != 0) {
+        php_error_docref(NULL, E_WARNING,
+            "Whereto argument must be either 'LEFT' or 'RIGHT'");
+        return FAILURE;
+    }
+
+    /* Construct command */
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "LMOVE", "kkss",
+                                  src, src_len, dst, dst_len,
+                                  from, from_len, to, to_len);
+
+    return SUCCESS;
+}
+
 /* LINSERT */
 int redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char **cmd, int *cmd_len, short *slot, void **ctx)
@@ -2154,7 +2187,7 @@ int redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Validate position
-    if (strncasecmp(pos, "after", 5) && strncasecmp(pos, "before", 6)) {
+    if (strcasecmp(pos, "after") && strcasecmp(pos, "before")) {
         php_error_docref(NULL, E_WARNING,
             "Position must be either 'BEFORE' or 'AFTER'");
         return FAILURE;

@@ -1186,6 +1186,30 @@ class Redis_Test extends TestSuite
         $this->assertEquals('val4', $this->redis->lIndex('list', -1));
     }
 
+    public function testlMove()
+    {
+        // Only available since 6.2.0
+        if (version_compare($this->version, '6.2.0') < 0) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->del('list0', 'list1');
+        $this->redis->lPush('list0', 'a');
+        $this->redis->lPush('list0', 'b');
+        $this->redis->lPush('list0', 'c');
+
+        $return = $this->redis->lMove('list0', 'list1', Redis::LEFT, Redis::RIGHT);
+        $this->assertEquals('c', $return);
+
+        $return = $this->redis->lMove('list0', 'list1', Redis::RIGHT, Redis::LEFT);
+        $this->assertEquals('a', $return);
+
+        $this->assertEquals(['b'], $this->redis->lRange('list0', 0, -1));
+        $this->assertEquals(['a', 'c'], $this->redis->lRange('list1', 0, -1));
+
+    }
+
     // lRem testing
     public function testlrem() {
         $this->redis->del('list');
