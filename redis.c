@@ -385,6 +385,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sInter, arginfo_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sInterStore, arginfo_dst_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sMembers, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sMisMember, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sMove, arginfo_smove, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sPop, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sRandMember, arginfo_srand_member, ZEND_ACC_PUBLIC)
@@ -440,6 +441,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zCount, arginfo_key_min_max, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zIncrBy, arginfo_zincrby, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zLexCount, arginfo_key_min_max, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zMscore, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zPopMax, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zPopMin, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRange, arginfo_zrange, ZEND_ACC_PUBLIC)
@@ -458,37 +460,6 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zinterstore, arginfo_zstore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zunionstore, arginfo_zstore, ZEND_ACC_PUBLIC)
-
-     /* Mark all of these aliases deprecated.  They aren't actual Redis commands. */
-     PHP_MALIAS(Redis, delete, del, arginfo_del, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, evaluate, eval, arginfo_eval, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, evaluateSha, evalsha, arginfo_evalsha, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, getKeys, keys, arginfo_keys, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, getMultiple, mget, arginfo_mget, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, lGet, lindex, arginfo_lindex, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, lGetRange, lrange, arginfo_key_start_end, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, lRemove, lrem, arginfo_lrem, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, lSize, lLen, arginfo_key, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, listTrim, ltrim, arginfo_ltrim, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, open, connect, arginfo_connect, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, popen, pconnect, arginfo_pconnect, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, renameKey, rename, arginfo_key_newkey, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, sContains, sismember, arginfo_key_value, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, sGetMembers, sMembers, arginfo_key, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, sRemove, srem, arginfo_key_members, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, sSize, scard, arginfo_key, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, sendEcho, echo, arginfo_echo, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, setTimeout, expire, arginfo_expire, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, substr, getRange, arginfo_key_start_end, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, zDelete, zRem, arginfo_key_members, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, zDeleteRangeByRank, zRemRangeByRank, arginfo_key_min_max, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, zDeleteRangeByScore, zRemRangeByScore, arginfo_key_min_max, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, zInter, zinterstore, arginfo_zstore, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, zRemove, zRem, arginfo_key_members, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, zRemoveRangeByScore, zRemRangeByScore, arginfo_key_min_max, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, zReverseRange, zRevRange, arginfo_zrange, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, zSize, zCard, arginfo_key, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
-     PHP_MALIAS(Redis, zUnion, zunionstore, arginfo_zstore, ZEND_ACC_PUBLIC | ZEND_ACC_DEPRECATED)
      PHP_FE_END
 };
 
@@ -759,6 +730,7 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION"), REDIS_OPT_COMPRESSION);
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_REPLY_LITERAL"), REDIS_OPT_REPLY_LITERAL);
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION_LEVEL"), REDIS_OPT_COMPRESSION_LEVEL);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_NULL_MULTIBULK_AS_NULL"), REDIS_OPT_NULL_MBULK_AS_NULL);
 
     /* serializer */
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_NONE"), REDIS_SERIALIZER_NONE);
@@ -1729,6 +1701,12 @@ PHP_METHOD(Redis, sMembers)
     REDIS_PROCESS_KW_CMD("SMEMBERS", redis_key_cmd,
         redis_sock_read_multibulk_reply);
 }
+
+/* {{{ proto array Redis::sMisMember(string key, string member0, ...memberN) */
+PHP_METHOD(Redis, sMisMember)
+{
+    REDIS_PROCESS_KW_CMD("SMISMEMBER", redis_key_varval_cmd, redis_read_variant_reply);
+}
 /* }}} */
 
 /* {{{ proto array Redis::sInter(string key0, ... string keyN) */
@@ -2316,6 +2294,13 @@ PHP_METHOD(Redis, zScore)
 {
     REDIS_PROCESS_KW_CMD("ZSCORE", redis_kv_cmd,
         redis_bulk_double_response);
+}
+/* }}} */
+
+/* {{{ proto array Redis::zMscore(string key, string member0, ...memberN) */
+PHP_METHOD(Redis, zMscore)
+{
+    REDIS_PROCESS_KW_CMD("ZMSCORE", redis_key_varval_cmd, redis_mbulk_reply_double);
 }
 /* }}} */
 

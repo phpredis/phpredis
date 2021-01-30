@@ -23,7 +23,7 @@
 #define PHP_REDIS_H
 
 /* phpredis version */
-#define PHP_REDIS_VERSION "5.3.1"
+#define PHP_REDIS_VERSION "5.3.2"
 
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, __destruct);
@@ -94,6 +94,7 @@ PHP_METHOD(Redis, sDiffStore);
 PHP_METHOD(Redis, sInter);
 PHP_METHOD(Redis, sInterStore);
 PHP_METHOD(Redis, sMembers);
+PHP_METHOD(Redis, sMisMember);
 PHP_METHOD(Redis, sMove);
 PHP_METHOD(Redis, sPop);
 PHP_METHOD(Redis, sRandMember);
@@ -125,6 +126,7 @@ PHP_METHOD(Redis, zCard);
 PHP_METHOD(Redis, zCount);
 PHP_METHOD(Redis, zIncrBy);
 PHP_METHOD(Redis, zLexCount);
+PHP_METHOD(Redis, zMscore);
 PHP_METHOD(Redis, zPopMax);
 PHP_METHOD(Redis, zPopMin);
 PHP_METHOD(Redis, zRange);

@@ -61,7 +61,7 @@ static void dump_reply(clusterReply *reply, int indent) {
             smart_string_appendl(&buf, "\"", 1);
             break;
         case TYPE_MULTIBULK:
-            if (reply->elements == (size_t)-1) {
+            if (reply->elements < 0) {
                 smart_string_appendl(&buf, "(nil)", sizeof("(nil)")-1);
             } else {
                 for (i = 0; i < reply->elements; i++) {
@@ -91,7 +91,7 @@ static void dump_reply(clusterReply *reply, int indent) {
 /* Recursively free our reply object.  If free_data is non-zero we'll also free
  * the payload data (strings) themselves.  If not, we just free the structs */
 void cluster_free_reply(clusterReply *reply, int free_data) {
-    int i;
+    long long i;
 
     switch(reply->type) {
         case TYPE_ERR:
@@ -101,10 +101,14 @@ void cluster_free_reply(clusterReply *reply, int free_data) {
                 efree(reply->str);
             break;
         case TYPE_MULTIBULK:
-            for (i = 0; i < reply->elements && reply->element[i]; i++) {
-                cluster_free_reply(reply->element[i], free_data);
+            if (reply->element) {
+                if (reply->elements > 0) {
+                    for (i = 0; i < reply->elements && reply->element[i]; i++) {
+                        cluster_free_reply(reply->element[i], free_data);
+                    }
+                }
+                efree(reply->element);
             }
-            if (reply->element) efree(reply->element);
             break;
         default:
             break;
@@ -154,13 +158,11 @@ cluster_multibulk_resp_recursive(RedisSock *sock, size_t elements,
                 }
                 break;
             case TYPE_MULTIBULK:
-                if (r->len >= 0) {
-                    r->elements = r->len;
-                    if (r->len > 0) {
-                        r->element = ecalloc(r->len,sizeof(clusterReply*));
-                        if (cluster_multibulk_resp_recursive(sock, r->elements, r->element, status_strings) < 0) {
-                            return FAILURE;
-                        }
+                r->elements = r->len;
+                if (r->elements > 0) {
+                    r->element = ecalloc(r->len, sizeof(*r->element));
+                    if (cluster_multibulk_resp_recursive(sock, r->elements, r->element, status_strings) < 0) {
+                        return FAILURE;
                     }
                 }
                 break;
@@ -204,7 +206,7 @@ clusterReply *cluster_read_resp(redisCluster *c, int status_strings) {
  * command and consumed the reply type and meta info (length) */
 clusterReply*
 cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
-                       char *line_reply, size_t len)
+                       char *line_reply, long long len)
 {
     clusterReply *r;
 
@@ -232,7 +234,7 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
             break;
         case TYPE_MULTIBULK:
             r->elements = len;
-            if (len != (size_t)-1) {
+            if (r->elements > 0) {
                 r->element = ecalloc(len, sizeof(clusterReply*));
                 if (cluster_multibulk_resp_recursive(redis_sock, len, r->element, line_reply != NULL) < 0) {
                     cluster_free_reply(r, 1);
@@ -241,7 +243,7 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
             }
             break;
         default:
-            cluster_free_reply(r,1);
+            cluster_free_reply(r, 1);
             return NULL;
     }
 
@@ -1939,10 +1941,11 @@ PHP_REDIS_API void cluster_unsub_resp(INTERNAL_FUNCTION_PARAMETERS,
 }
 
 /* Recursive MULTI BULK -> PHP style response handling */
-static void cluster_mbulk_variant_resp(clusterReply *r, zval *z_ret)
+static void cluster_mbulk_variant_resp(clusterReply *r, int null_mbulk_as_null,
+                                       zval *z_ret)
 {
     zval z_sub_ele;
-    int i;
+    long long i;
 
     switch(r->type) {
         case TYPE_INT:
@@ -1963,11 +1966,15 @@ static void cluster_mbulk_variant_resp(clusterReply *r, zval *z_ret)
             }
             break;
         case TYPE_MULTIBULK:
-            array_init(&z_sub_ele);
-            for (i = 0; i < r->elements; i++) {
-                cluster_mbulk_variant_resp(r->element[i], &z_sub_ele);
+            if (r->elements < 0 && null_mbulk_as_null) {
+                add_next_index_null(z_ret);
+            } else {
+                array_init(&z_sub_ele);
+                for (i = 0; i < r->elements; i++) {
+                    cluster_mbulk_variant_resp(r->element[i], null_mbulk_as_null, &z_sub_ele);
+                }
+                add_next_index_zval(z_ret, &z_sub_ele);
             }
-            add_next_index_zval(z_ret, &z_sub_ele);
             break;
         default:
             add_next_index_bool(z_ret, 0);
@@ -1983,7 +1990,7 @@ cluster_variant_resp_generic(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 {
     clusterReply *r;
     zval zv, *z_arr = &zv;
-    int i;
+    long long i;
 
     // Make sure we can read it
     if ((r = cluster_read_resp(c, status_strings)) == NULL) {
@@ -2014,12 +2021,15 @@ cluster_variant_resp_generic(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                 }
                 break;
             case TYPE_MULTIBULK:
-                array_init(z_arr);
-
-                for (i = 0; i < r->elements; i++) {
-                    cluster_mbulk_variant_resp(r->element[i], z_arr);
+                if (r->elements < 0 && c->flags->null_mbulk_as_null) {
+                    RETVAL_NULL();
+                } else {
+                    array_init(z_arr);
+                    for (i = 0; i < r->elements; i++) {
+                        cluster_mbulk_variant_resp(r->element[i], c->flags->null_mbulk_as_null, z_arr);
+                    }
+                    RETVAL_ZVAL(z_arr, 0, 0);
                 }
-                RETVAL_ZVAL(z_arr, 0, 0);
                 break;
             default:
                 RETVAL_FALSE;
@@ -2048,7 +2058,11 @@ cluster_variant_resp_generic(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                 }
                 break;
             case TYPE_MULTIBULK:
-                cluster_mbulk_variant_resp(r, &c->multi_resp);
+                if (r->elements < 0 && c->flags->null_mbulk_as_null) {
+                    add_next_index_null(&c->multi_resp);
+                } else {
+                    cluster_mbulk_variant_resp(r, c->flags->null_mbulk_as_null, &c->multi_resp);
+                }
                 break;
             default:
                 add_next_index_bool(&c->multi_resp, 0);
@@ -2069,7 +2083,8 @@ PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisClust
 PHP_REDIS_API void cluster_variant_raw_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                                             void *ctx)
 {
-    cluster_variant_resp_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, c->flags->reply_literal, ctx);
+    cluster_variant_resp_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
+                                 c->flags->reply_literal, ctx);
 }
 
 PHP_REDIS_API void cluster_variant_resp_strings(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
@@ -2084,23 +2099,25 @@ PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 {
     zval z_result;
 
-    /* Return FALSE if we didn't get a multi-bulk response */
-    if (c->reply_type != TYPE_MULTIBULK) {
+    /* Abort if the reply isn't MULTIBULK or has an invalid length */
+    if (c->reply_type != TYPE_MULTIBULK || c->reply_len < -1) {
         CLUSTER_RETURN_FALSE(c);
     }
 
-    /* Allocate our array */
-    array_init(&z_result);
+    if (c->reply_len == -1 && c->flags->null_mbulk_as_null) {
+        ZVAL_NULL(&z_result);
+    } else {
+        array_init(&z_result);
 
-    /* Consume replies as long as there are more than zero */
-    if (c->reply_len > 0) {
-        /* Push serialization settings from the cluster into our socket */
-        c->cmd_sock->serializer = c->flags->serializer;
+        if (c->reply_len > 0) {
+            /* Push serialization settings from the cluster into our socket */
+            c->cmd_sock->serializer = c->flags->serializer;
 
-        /* Call our specified callback */
-        if (cb(c->cmd_sock, &z_result, c->reply_len, ctx) == FAILURE) {
-            zval_dtor(&z_result);
-            CLUSTER_RETURN_FALSE(c);
+            /* Call our specified callback */
+            if (cb(c->cmd_sock, &z_result, c->reply_len, ctx) == FAILURE) {
+                zval_dtor(&z_result);
+                CLUSTER_RETURN_FALSE(c);
+            }
         }
     }
 
@@ -2245,14 +2262,17 @@ PHP_REDIS_API void
 cluster_xread_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
     zval z_streams;
 
-    array_init(&z_streams);
-
     c->cmd_sock->serializer = c->flags->serializer;
     c->cmd_sock->compression = c->flags->compression;
 
-    if (redis_read_stream_messages_multi(c->cmd_sock, c->reply_len, &z_streams) < 0) {
-        zval_dtor(&z_streams);
-        CLUSTER_RETURN_FALSE(c);
+    if (c->reply_len == -1 && c->flags->null_mbulk_as_null) {
+        ZVAL_NULL(&z_streams);
+    } else {
+        array_init(&z_streams);
+        if (redis_read_stream_messages_multi(c->cmd_sock, c->reply_len, &z_streams) < 0) {
+            zval_dtor(&z_streams);
+            CLUSTER_RETURN_FALSE(c);
+        }
     }
 
     if (CLUSTER_IS_ATOMIC(c)) {

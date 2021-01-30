@@ -509,12 +509,6 @@ int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     return cmdstr.len;
 }
 
-/* ZRANGEBYSCORE/ZREVRANGEBYSCORE */
-#define IS_WITHSCORES_ARG(s, l) \
-    (l == sizeof("withscores") - 1 && !strncasecmp(s, "withscores", l))
-#define IS_LIMIT_ARG(s, l) \
-    (l == sizeof("limit") - 1 && !strncasecmp(s,"limit", l))
-
 /* ZRANGE/ZREVRANGE */
 int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char *kw, char **cmd, int *cmd_len, int *withscores,
@@ -540,7 +534,7 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         if (Z_TYPE_P(z_ws) == IS_ARRAY) {
             ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_ws), zkey, z_ele) {
                 ZVAL_DEREF(z_ele);
-                if (IS_WITHSCORES_ARG(ZSTR_VAL(zkey), ZSTR_LEN(zkey))) {
+                if (zend_string_equals_literal_ci(zkey, "withscores")) {
                     *withscores = zval_is_true(z_ele);
                     break;
                 }
@@ -590,9 +584,9 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
            if (!zkey) continue;
            ZVAL_DEREF(z_ele);
            /* Check for withscores and limit */
-           if (IS_WITHSCORES_ARG(ZSTR_VAL(zkey), ZSTR_LEN(zkey))) {
+           if (zend_string_equals_literal_ci(zkey, "withscores")) {
                *withscores = zval_is_true(z_ele);
-           } else if (IS_LIMIT_ARG(ZSTR_VAL(zkey), ZSTR_LEN(zkey)) && Z_TYPE_P(z_ele) == IS_ARRAY) {
+           } else if (zend_string_equals_literal_ci(zkey, "limit") && Z_TYPE_P(z_ele) == IS_ARRAY) {
                 HashTable *htlimit = Z_ARRVAL_P(z_ele);
                 zval *zoff, *zcnt;
 
@@ -1299,6 +1293,34 @@ int redis_blocking_pop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
  * have specific processing (argument validation, etc) that make them unique
  */
 
+/* Attempt to pull a long expiry from a zval.  We're more restrictave than zval_get_long
+ * because that function will return integers from things like open file descriptors
+ * which should simply fail as a TTL */
+static int redis_try_get_expiry(zval *zv, zend_long *lval) {
+    double dval;
+
+    /* Success on an actual long or double */
+    if (Z_TYPE_P(zv) == IS_LONG || Z_TYPE_P(zv) == IS_DOUBLE) {
+        *lval = zval_get_long(zv);
+        return SUCCESS;
+    }
+
+    /* Automatically fail if we're not a string */
+    if (Z_TYPE_P(zv) != IS_STRING)
+        return FAILURE;
+
+    /* Attempt to get a long from the string */
+    switch (is_numeric_string(Z_STRVAL_P(zv), Z_STRLEN_P(zv), lval, &dval, 0)) {
+        case IS_DOUBLE:
+            *lval = dval;
+            /* fallthrough */
+        case IS_LONG:
+            return SUCCESS;
+        default:
+            return FAILURE;
+    }
+}
+
 /* SET */
 int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   char **cmd, int *cmd_len, short *slot, void **ctx)
@@ -1306,20 +1328,13 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     smart_string cmdstr = {0};
     zval *z_value, *z_opts=NULL;
     char *key = NULL, *exp_type = NULL, *set_type = NULL;
-    long expire = -1, exp_set = 0, keep_ttl = 0;
+    long exp_set = 0, keep_ttl = 0;
+    zend_long expire = -1;
     size_t key_len;
 
     // Make sure the function is being called correctly
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz|z", &key, &key_len,
                              &z_value, &z_opts) == FAILURE)
-    {
-        return FAILURE;
-    }
-
-    /* Our optional argument can either be a long (to support legacy SETEX */
-    /* redirection), or an array with Redis >= 2.6.12 set options */
-    if (z_opts && Z_TYPE_P(z_opts) != IS_LONG && Z_TYPE_P(z_opts) != IS_ARRAY
-       && Z_TYPE_P(z_opts) != IS_NULL)
     {
         return FAILURE;
     }
@@ -1349,14 +1364,20 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 } else if (Z_TYPE_P(v) == IS_STRING) {
                     expire = atol(Z_STRVAL_P(v));
                 }
-            } else if (ZVAL_STRICMP_STATIC(v, "KEEPTTL")) {
-                keep_ttl  = 1;
-            } else if (ZVAL_IS_NX_XX_ARG(v)) {
-                set_type = Z_STRVAL_P(v);
+            } else if (Z_TYPE_P(v) == IS_STRING) {
+                if (ZVAL_STRICMP_STATIC(v, "KEEPTTL")) {
+                    keep_ttl  = 1;
+                } else if (ZVAL_IS_NX_XX_ARG(v)) {
+                    set_type = Z_STRVAL_P(v);
+                }
             }
         } ZEND_HASH_FOREACH_END();
-    } else if (z_opts && Z_TYPE_P(z_opts) == IS_LONG) {
-        expire = Z_LVAL_P(z_opts);
+    } else if (z_opts && Z_TYPE_P(z_opts) != IS_NULL) {
+        if (redis_try_get_expiry(z_opts, &expire) == FAILURE) {
+            php_error_docref(NULL, E_WARNING, "Expire must be a long, double, or a numeric string");
+            return FAILURE;
+        }
+
         exp_set = 1;
     }
 
@@ -1386,7 +1407,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     if (exp_type) {
         redis_cmd_append_sstr(&cmdstr, exp_type, strlen(exp_type));
-        redis_cmd_append_sstr_long(&cmdstr, expire);
+        redis_cmd_append_sstr_long(&cmdstr, (long)expire);
     }
 
     if (set_type)
@@ -2648,16 +2669,28 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Now the rest of our arguments
     while (i < num) {
         // Append score and member
-        if (Z_TYPE(z_args[i]) == IS_STRING && (
-            /* The score values should be the string representation of a double
+        switch (Z_TYPE(z_args[i])) {
+        case IS_LONG:
+        case IS_DOUBLE:
+            redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(&z_args[i]));
+            break;
+        case IS_STRING:
+            /* The score values must be the string representation of a double
              * precision floating point number. +inf and -inf values are valid
              * values as well. */
-            strncasecmp(Z_STRVAL(z_args[i]), "-inf", 4) == 0 ||
-            strncasecmp(Z_STRVAL(z_args[i]), "+inf", 4) == 0
-        )) {
-            redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[i]), Z_STRLEN(z_args[i]));
-        } else {
-            redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(&z_args[i]));
+            if (strncasecmp(Z_STRVAL(z_args[i]), "-inf", 4) == 0 ||
+                strncasecmp(Z_STRVAL(z_args[i]), "+inf", 4) == 0 ||
+                is_numeric_string(Z_STRVAL(z_args[i]), Z_STRLEN(z_args[i]), NULL, NULL, 0) != 0
+            ) {
+                redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[i]), Z_STRLEN(z_args[i]));
+                break;
+            }
+            // fall through
+        default:
+            php_error_docref(NULL, E_WARNING, "Scores must be numeric or '-inf','+inf'");
+            smart_string_free(&cmdstr);
+            efree(z_args);
+            return FAILURE;
         }
         // serialize value if requested
         val_free = redis_pack(redis_sock, &z_args[i+1], &val, &val_len);
@@ -3971,6 +4004,8 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             RETURN_LONG(redis_sock->scan);
         case REDIS_OPT_REPLY_LITERAL:
             RETURN_LONG(redis_sock->reply_literal);
+        case REDIS_OPT_NULL_MBULK_AS_NULL:
+            RETURN_LONG(redis_sock->null_mbulk_as_null);
         case REDIS_OPT_FAILOVER:
             RETURN_LONG(c->failover);
         default:
@@ -4014,6 +4049,10 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
         case REDIS_OPT_REPLY_LITERAL:
             val_long = zval_get_long(val);
             redis_sock->reply_literal = val_long != 0;
+            RETURN_TRUE;
+        case REDIS_OPT_NULL_MBULK_AS_NULL:
+            val_long = zval_get_long(val);
+            redis_sock->null_mbulk_as_null = val_long != 0;
             RETURN_TRUE;
         case REDIS_OPT_COMPRESSION:
             val_long = zval_get_long(val);

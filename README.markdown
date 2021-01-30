@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/phpredis/phpredis.svg?branch=develop)](https://travis-ci.org/phpredis/phpredis)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/13205/badge.svg)](https://scan.coverity.com/projects/phpredis-phpredis)
+[![PHP version from Travis config](https://img.shields.io/travis/php-v/phpredis/phpredis/develop)](https://img.shields.io/travis/php-v/phpredis/phpredis/develop)
 
 The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 This code has been developed and maintained by Owlient from November 2009 to March 2011.
@@ -77,7 +78,7 @@ session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeou
 
 Sessions have a lifetime expressed in seconds and stored in the INI variable "session.gc_maxlifetime". You can change it with [`ini_set()`](http://php.net/ini_set).
 The session handler requires a version of Redis supporting `EX` and `NX` options of `SET` command (at least 2.6.12).
-phpredis can also connect to a unix domain socket: `session.save_path = "unix:///var/run/redis/redis.sock?persistent=1&weight=1&database=0`.
+phpredis can also connect to a unix domain socket: `session.save_path = "unix:///var/run/redis/redis.sock?persistent=1&weight=1&database=0"`.
 
 ### Session locking
 
@@ -2763,10 +2764,19 @@ $redis->bzPopMax('zs1', 'zs2', 5);
 -----
 _**Description**_: Add one or more members to a sorted set or update its score if it already exists
 
+
+##### *Prototype*
+~~~php
+$redis->zAdd($key, [ $options ,] $score, $value [, $score1, $value1, ...]);
+~~~
+
 ##### *Parameters*
-*key*
+*key*: string
+*options*: array (optional)
 *score*: double  
 *value*: string
+*score1*: double
+*value1*: string
 
 ##### *Return value*
 *Long* 1 if the element is added. 0 otherwise.
@@ -2777,6 +2787,9 @@ $redis->zAdd('key', 1, 'val1');
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 5, 'val5');
 $redis->zRange('key', 0, -1); // [val0, val1, val5]
+
+// From Redis 3.0.2 it's possible to add options like XX, NX, CH, INCR
+$redis->zAdd('key', ['CH'], 5, 'val5', 10, 'val10', 15, 'val15');
 ~~~
 
 ### zCard, zSize
@@ -2960,6 +2973,7 @@ $redis->zRangeByScore('key', 0, 3); /* ['val0', 'val2'] */
 $redis->zRangeByScore('key', 0, 3, ['withscores' => TRUE]); /* ['val0' => 0, 'val2' => 2] */
 $redis->zRangeByScore('key', 0, 3, ['limit' => [1, 1]]); /* ['val2'] */
 $redis->zRangeByScore('key', 0, 3, ['withscores' => TRUE, 'limit' => [1, 1]]); /* ['val2' => 2] */
+$redis->zRangeByScore('key', '-inf', '+inf', ['withscores' => TRUE]); /* ['val0' => 0, 'val2' => 2, 'val10' => 10] */
 ~~~
 
 ### zRangeByLex
@@ -3108,7 +3122,7 @@ _**Description**_: Returns the score of a given member in the specified sorted s
 *member*
 
 ##### *Return value*
-*Double*
+*Double* or *FALSE* when the value is not found
 
 ##### *Example*
 ~~~php

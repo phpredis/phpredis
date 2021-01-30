@@ -387,9 +387,14 @@ class Redis_Test extends TestSuite
         $this->assertEquals($this->redis->get('foo'), 'bar');
         $this->assertEquals($this->redis->ttl('foo'), 20);
 
+        /* Should coerce doubles into long */
+        $this->assertTrue($this->redis->set('foo', 'bar-20.5', 20.5));
+        $this->assertEquals($this->redis->ttl('foo'), 20);
+        $this->assertEquals($this->redis->get('foo'), 'bar-20.5');
+
         /* Invalid third arguments */
-        $this->assertFalse($this->redis->set('foo','bar','baz'));
-        $this->assertFalse($this->redis->set('foo','bar',new StdClass()));
+        $this->assertFalse(@$this->redis->set('foo','bar','baz'));
+        $this->assertFalse(@$this->redis->set('foo','bar',new StdClass()));
 
         /* Set if not exist */
         $this->redis->del('foo');
@@ -434,6 +439,11 @@ class Redis_Test extends TestSuite
         $this->redis->set('foo','bar', NULL);
         $this->assertEquals($this->redis->get('foo'), 'bar');
         $this->assertTrue($this->redis->ttl('foo')<0);
+
+        /* Make sure we ignore bad/non-string options (regression test for #1835) */
+        $this->assertTrue($this->redis->set('foo', 'bar', [NULL, 'EX' => 60]));
+        $this->assertTrue($this->redis->set('foo', 'bar', [NULL, new stdClass(), 'EX' => 60]));
+        $this->assertFalse(@$this->redis->set('foo', 'bar', [NULL, 'EX' => []]));
 
         if (version_compare($this->version, "6.0.0") < 0)
             return;
@@ -946,8 +956,15 @@ class Redis_Test extends TestSuite
 
         // blocking blpop, brpop
         $this->redis->del('list');
-        $this->assertTrue($this->redis->blPop(['list'], 1) === []);
-        $this->assertTrue($this->redis->brPop(['list'], 1) === []);
+
+        /* Also test our option that we want *-1 to be returned as NULL */
+        foreach ([false => [], true => NULL] as $opt => $val) {
+            $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, $opt);
+            $this->assertEquals($val, $this->redis->blPop(['list'], 1));
+            $this->assertEquals($val, $this->redis->brPop(['list'], 1));
+        }
+
+        $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, false);
     }
 
     public function testllen()
@@ -1452,6 +1469,27 @@ class Redis_Test extends TestSuite
         $sMembers = $this->redis->sMembers('set');
         sort($sMembers);
         $this->assertEquals($array, $sMembers); // test alias
+    }
+
+    public function testsMisMember()
+    {
+        // Only available since 6.2.0
+        if (version_compare($this->version, '6.2.0') < 0) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->del('set');
+
+        $this->redis->sAdd('set', 'val');
+        $this->redis->sAdd('set', 'val2');
+        $this->redis->sAdd('set', 'val3');
+
+        $misMembers = $this->redis->sMisMember('set', 'val', 'notamember', 'val3');
+        $this->assertEquals([1, 0, 1], $misMembers);
+
+        $misMembers = $this->redis->sMisMember('wrongkey', 'val', 'val2', 'val3');
+        $this->assertEquals([0, 0, 0], $misMembers);
     }
 
     public function testlSet() {
@@ -2482,6 +2520,26 @@ class Redis_Test extends TestSuite
             $this->assertEquals($this->redis->zLexCount('key', "[$start", "($end"), $i);
             $this->assertEquals($this->redis->zLexCount('key', "($start", "($end"), $i - 1);
         }
+    }
+
+    public function testzMscore()
+    {
+        // Only available since 6.2.0
+        if (version_compare($this->version, '6.2.0') < 0) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->del('key');
+        foreach (range('a', 'c') as $c) {
+            $this->redis->zAdd('key', 1, $c);
+        }
+
+        $scores = $this->redis->zMscore('key', 'a', 'notamember', 'c');
+        $this->assertEquals([1.0, false, 1.0], $scores);
+
+        $scores = $this->redis->zMscore('wrongkey', 'a', 'b', 'c');
+        $this->assertEquals([false, false, false], $scores);
     }
 
     public function testZRemRangeByLex() {
@@ -4963,6 +5021,41 @@ class Redis_Test extends TestSuite
         $this->redis->setOption(Redis::OPT_REPLY_LITERAL, false);
     }
 
+    public function testNullArray() {
+        $key = "key:arr";
+        $this->redis->del($key);
+
+        foreach ([false => [], true => NULL] as $opt => $test) {
+            $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, $opt);
+
+            $r = $this->redis->rawCommand("BLPOP", $key, .05);
+            $this->assertEquals($test, $r);
+
+            $this->redis->multi();
+            $this->redis->rawCommand("BLPOP", $key, .05);
+            $r = $this->redis->exec();
+            $this->assertEquals([$test], $r);
+        }
+
+        $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, false);
+    }
+
+    /* Test that we can configure PhpRedis to return NULL for *-1 even nestedwithin replies */
+    public function testNestedNullArray() {
+        $this->redis->del('{notaset}');
+
+        foreach ([false => [], true => NULL] as $opt => $test) {
+            $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, $opt);
+            $this->assertEquals([$test, $test], $this->redis->geoPos('{notaset}', 'm1', 'm2'));
+
+            $this->redis->multi();
+            $this->redis->geoPos('{notaset}', 'm1', 'm2');
+            $this->assertEquals([[$test, $test]], $this->redis->exec());
+        }
+
+        $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, false);
+    }
+
     public function testReconnectSelect() {
         $key = 'reconnect-select';
         $value = 'Has been set!';
@@ -6080,6 +6173,21 @@ class Redis_Test extends TestSuite
         }
     }
 
+    /* Regression test for issue-1831 (XINFO STREAM on an empty stream) */
+    public function testXInfoEmptyStream() {
+        /* Configure an empty stream */
+        $this->redis->del('s');
+        $this->redis->xAdd('s', '*', ['foo' => 'bar']);
+        $this->redis->xTrim('s', 0);
+
+        $arr_info = $this->redis->xInfo('STREAM', 's');
+
+        $this->assertTrue(is_array($arr_info));
+        $this->assertEquals(0, $arr_info['length']);
+        $this->assertEquals(NULL, $arr_info['first-entry']);
+        $this->assertEquals(NULL, $arr_info['last-entry']);
+    }
+
     public function testInvalidAuthArgs() {
         $obj_new = $this->newInstance();
 
@@ -6098,8 +6206,14 @@ class Redis_Test extends TestSuite
 
         foreach ($arr_args as $arr_arg) {
             try {
-                @call_user_func_array([$obj_new, 'auth'], $arr_arg);
+                if (is_array($arr_arg)) {
+                    @call_user_func_array([$obj_new, 'auth'], $arr_arg);
+                } else {
+                    call_user_func([$obj_new, 'auth']);
+                }
             } catch (Exception $ex) {
+                unset($ex); /* Suppress intellisense warning */
+            } catch (ArgumentCountError $ex) {
                 unset($ex); /* Suppress intellisense warning */
             }
         }

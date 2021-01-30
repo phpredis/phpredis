@@ -12,7 +12,6 @@
 #include <zend_smart_str.h>
 #include <ext/standard/php_smart_string.h>
 
-#define PHPREDIS_ZVAL_IS_STRICT_FALSE(z) (Z_TYPE_P(z) == IS_FALSE)
 #define PHPREDIS_GET_OBJECT(class_entry, o) (class_entry *)((char *)o - XtOffsetOf(class_entry, std))
 #define PHPREDIS_ZVAL_GET_OBJECT(class_entry, z) PHPREDIS_GET_OBJECT(class_entry, Z_OBJ_P(z))
 
@@ -82,6 +81,7 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_COMPRESSION        7
 #define REDIS_OPT_REPLY_LITERAL      8
 #define REDIS_OPT_COMPRESSION_LEVEL  9
+#define REDIS_OPT_NULL_MBULK_AS_NULL 10
 
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
@@ -296,6 +296,7 @@ typedef struct {
 
     int                readonly;
     int                reply_literal;
+    int                null_mbulk_as_null;
     int                tcp_keepalive;
 } RedisSock;
 /* }}} */
