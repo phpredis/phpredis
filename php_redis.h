@@ -62,6 +62,7 @@ PHP_METHOD(Redis, info);
 PHP_METHOD(Redis, keys);
 PHP_METHOD(Redis, lInsert);
 PHP_METHOD(Redis, lLen);
+PHP_METHOD(Redis, lMove);
 PHP_METHOD(Redis, lPop);
 PHP_METHOD(Redis, lPush);
 PHP_METHOD(Redis, lPushx);

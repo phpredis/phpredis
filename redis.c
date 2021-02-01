@@ -158,6 +158,13 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_mget, 0, 0, 1)
     ZEND_ARG_ARRAY_INFO(0, keys, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_lmove, 0, 0, 4)
+    ZEND_ARG_INFO(0, source)
+    ZEND_ARG_INFO(0, destination)
+    ZEND_ARG_INFO(0, wherefrom)
+    ZEND_ARG_INFO(0, whereto)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_exists, 0, 0, 1)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_VARIADIC_INFO(0, other_keys)
@@ -337,6 +344,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, keys, arginfo_keys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lInsert, arginfo_linsert, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lLen, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lMove, arginfo_lmove, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPop, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPush, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPushx, arginfo_key_value, ZEND_ACC_PUBLIC)
@@ -667,11 +675,6 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_HASH"), REDIS_HASH);
     zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_STREAM"), REDIS_STREAM);
 
-    /* Cluster doesn't support pipelining at this time */
-    if(!is_cluster) {
-        zend_declare_class_constant_long(ce, ZEND_STRL("PIPELINE"), PIPELINE);
-    }
-
     /* Add common mode constants */
     zend_declare_class_constant_long(ce, ZEND_STRL("ATOMIC"), ATOMIC);
     zend_declare_class_constant_long(ce, ZEND_STRL("MULTI"), MULTI);
@@ -724,17 +727,23 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_PREFIX"), REDIS_SCAN_PREFIX);
     zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_NOPREFIX"), REDIS_SCAN_NOPREFIX);
 
-    /* Cluster option to allow for slave failover */
+    zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5);
+    zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6);
+
     if (is_cluster) {
+        /* Cluster option to allow for slave failover */
         zend_declare_class_constant_long(ce, ZEND_STRL("OPT_SLAVE_FAILOVER"), REDIS_OPT_FAILOVER);
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_NONE"), REDIS_FAILOVER_NONE);
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_ERROR"), REDIS_FAILOVER_ERROR);
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE"), REDIS_FAILOVER_DISTRIBUTE);
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE_SLAVES"), REDIS_FAILOVER_DISTRIBUTE_SLAVES);
-    }
+    } else {
+        /* Cluster doesn't support pipelining at this time */
+        zend_declare_class_constant_long(ce, ZEND_STRL("PIPELINE"), PIPELINE);
 
-    zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5);
-    zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6);
+        zend_declare_class_constant_stringl(ce, "LEFT", 4, "left", 4);
+        zend_declare_class_constant_stringl(ce, "RIGHT", 5, "right", 5);
+    }
 }
 
 static ZEND_RSRC_DTOR_FUNC(redis_connections_pool_dtor)
@@ -1528,6 +1537,12 @@ PHP_METHOD(Redis, lLen)
     REDIS_PROCESS_KW_CMD("LLEN", redis_key_cmd, redis_long_response);
 }
 /* }}} */
+
+/* {{{ proto string Redis::lMove(string source, string destination, string wherefrom, string whereto) */
+PHP_METHOD(Redis, lMove)
+{
+    REDIS_PROCESS_CMD(lmove, redis_string_response);
+}
 
 /* {{{ proto boolean Redis::lrem(string list, string value, int count = 0) */
 PHP_METHOD(Redis, lrem)
