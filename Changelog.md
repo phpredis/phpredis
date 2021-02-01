@@ -5,7 +5,28 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [5.3.3] - 2021-02-01 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.3), [PECL](https:/pecl.php.net/package/redis/5.3.3))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [BlueHost](https://bluehost.com)
+- [Redis Cache Pro for WordPress](https://wprediscache.com)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Oleg Babushkin](https://github.com/olbabushkin)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+
+### Fixed
+
+- Fixed Windows includes for PHP 8
+  [270b4db8](https://www.github.com/phpredis//phpredis/commit/270b4db821fcbe9fb881eef83e046f87587c4110)
+  ([Jan-E](https://github.com/Jan-E))
+- Fix hash_ops for PHP 8.0.1
+  [87297cbb](https://www.github.com/phpredis/phpredis/commit/87297cbb4000c88b07e729b9379de321ead74aa2)
+  ([defender-11](https://github.com/defender-11))
+
+## [5.3.2] - 2020-10-22 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.2), [PECL](https://pecl.php.net/package/redis/5.3.2))
 
 ### Sponsors :sparkling_heart:
 
