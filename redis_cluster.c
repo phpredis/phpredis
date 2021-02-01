@@ -333,6 +333,7 @@ zend_object * create_cluster_context(zend_class_entry *class_type) {
     memcpy(&RedisCluster_handlers, zend_get_std_object_handlers(), sizeof(RedisCluster_handlers));
     RedisCluster_handlers.offset = XtOffsetOf(redisCluster, std);
     RedisCluster_handlers.free_obj = free_cluster_context;
+    RedisCluster_handlers.clone_obj = NULL;
 
     cluster->std.handlers = &RedisCluster_handlers;
 

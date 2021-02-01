@@ -611,6 +611,7 @@ create_redis_object(zend_class_entry *ce)
     memcpy(&redis_object_handlers, zend_get_std_object_handlers(), sizeof(redis_object_handlers));
     redis_object_handlers.offset = XtOffsetOf(redis_object, std);
     redis_object_handlers.free_obj = free_redis_object;
+    redis_object_handlers.clone_obj = NULL;
     redis->std.handlers = &redis_object_handlers;
 
     return &redis->std;
