@@ -38,7 +38,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredsi 5.3.3
+    phpredis 5.3.3
 
     This release mostly includes just small PHP 8 Windows compatibility fixes
     such that pecl.php.net can automatically build Windows DLLs.
