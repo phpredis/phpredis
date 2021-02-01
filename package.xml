@@ -47,6 +47,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     * Fix PHP8 Windows includes [270b4db8] (Jan-E)
     * Fix hash ops for php 8.0.1 [87297cbb] (defender-11)
+    * Disable cloning Redis and RedisCluster objects [cd05a344]
+      (Michael Grunder)
 
     * Sponsors
       ~ Audiomack - https://audiomack.com

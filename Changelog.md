@@ -25,6 +25,9 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Fix hash_ops for PHP 8.0.1
   [87297cbb](https://www.github.com/phpredis/phpredis/commit/87297cbb4000c88b07e729b9379de321ead74aa2)
   ([defender-11](https://github.com/defender-11))
+- Disable clone for Redis and RedisCluster objects.  Presently they segfault.
+  [cd05a344](https://www.github.com/phpredis/phpredis/commit/87297cbb4000c88b07e729b9379de321ead74aa2)
+  ([Michael Grunder](https://github.com/michael-grunder))
 
 ## [5.3.2] - 2020-10-22 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.2), [PECL](https://pecl.php.net/package/redis/5.3.2))
 
