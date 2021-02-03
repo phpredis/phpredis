@@ -1048,8 +1048,9 @@ PHP_REDIS_API int redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *r
     if ((response = redis_sock_read(redis_sock, &response_len)) == NULL) {
         if (IS_ATOMIC(redis_sock)) {
             RETVAL_FALSE;
+        } else {
+            add_next_index_bool(z_tab, 0);
         }
-        add_next_index_bool(z_tab, 0);
         return FAILURE;
     }
 
