@@ -978,7 +978,8 @@ PHP_METHOD(Redis,__destruct) {
     }
 }
 
-/* {{{ proto boolean Redis::connect(string host, int port [, double timeout [, long retry_interval]])
+/* {{{ proto boolean Redis::connect(string host, int port
+ * [, double timeout [, NULL reserved, long retry_interval [, float read_timeout]]])
  */
 PHP_METHOD(Redis, connect)
 {
@@ -990,7 +991,8 @@ PHP_METHOD(Redis, connect)
 }
 /* }}} */
 
-/* {{{ proto boolean Redis::pconnect(string host, int port [, double timeout])
+/* {{{ proto boolean Redis::pconnect(string host, int port
+ * [, double timeout[, string persistent_id, long retry_interval [, float read_timeout]]])
  */
 PHP_METHOD(Redis, pconnect)
 {
