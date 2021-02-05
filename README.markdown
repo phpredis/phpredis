@@ -294,7 +294,7 @@ $redis->auth(['phpredis', 'haxx00r']);
 $redis->auth(['foobared']);
 
 /* You can also use an associative array specifying user and pass */
-$redis->auth(['user' => 'phpredis', 'pass' => 'phpredis]);
+$redis->auth(['user' => 'phpredis', 'pass' => 'phpredis']);
 $redis->auth(['pass' => 'phpredis']);
 ~~~
 
