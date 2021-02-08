@@ -32,26 +32,45 @@ class RedisCluster {
     public function bitop(string $operation, string $deskey, string $srckey, string ...$otherkeys): bool|int;
 
     public function bitpos(string $key, int $bit, int $start = NULL, int $end = NULL): bool|int;
+
+    public function blpop(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array;
+
+    public function brpop(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array;
+
+    public function brpoplpush(string $srckey, string $deskey, int $timeout): mixed;
+
+    public function bzpopmax(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array;
+
+    public function bzpopmin(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array;
+
+    public function clearlasterror(): bool;
+
+    public function client(string|array $node, string $subcommand, string|null $arg): array|string|bool;
+
+    public function close(): bool;
+
+    public function cluster(string|array $node, string $command, mixed ...$extra_args): mixed;
+
+    public function command(mixed ...$extra_args): mixed;
+
+    public function config(string|array $node, string $subcommand, mixed ...$extra_args): mixed;
+
+    public function dbsize(string|array $key_or_address): int;
+
+    public function decr(string $key): int;
+
+    public function decrby(string $key, int $value): int;
+
+    public function del(string $key, string ...$other_keys): array;
+
+    public function discard(): bool;
+
+    public function dump(string $key): string;
+
 }
 
 /*
     TODO:
-    public function brpop
-    public function brpoplpush
-    public function clearlasterror
-    public function bzpopmax
-    public function bzpopmin
-    public function client
-    public function close
-    public function cluster
-    public function command
-    public function config
-    public function dbsize
-    public function decr
-    public function decrby
-    public function del
-    public function discard
-    public function dump
     public function echo
     public function eval
     public function evalsha
