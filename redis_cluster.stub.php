@@ -67,34 +67,58 @@ class RedisCluster {
 
     public function dump(string $key): string;
 
+    public function echo(string|array $node, string $msg): string;
+
+    public function eval(string $script, array $args = [], int $num_keys = 0): mixed;
+
+    public function evalsha(string $script_sha, array $args = [], int $num_keys = 0): mixed;
+
+    public function exec(): array;
+
+    public function exists(string $key): int;
+
+    public function expire(string $key, int $timeout): bool;
+
+    public function expireat(string $key, int $timestamp): bool;
+
+    public function flushall(string|array $node, bool $async = false): bool;
+
+    public function flushdb(string|array $node, bool $async = false): bool;
+
+    public function geoadd(string $key, float $lng, float $lat, string $member, mixed ...$other_triples): int;
+
+    public function geodist(string $key, string $src, string $dest, ?string $unit = null): array;
+
+    public function geohash(string $key, string $member, string ...$other_members): array;
+
+    public function geopos(string $key, string $member, string ...$other_members): array;
+
+    public function georadius(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): array;
+
+    public function georadius_ro(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): array;
+
+    public function georadiusbymember(string $key, string $member, float $radius, string $unit, array $options = []): array;
+
+    public function georadiusbymember_ro(string $key, string $member, float $radius, string $unit, array $options = []): array;
+
+    public function get(string $key): string;
+
+    public function getbit(string $key, int $value): int;
+
+    public function getlasterror(): string|null;
+
+    public function getmode(): int;
+
+    public function getoption(int $option): mixed;
+
+    public function getrange(string $key, int $start, int $end): string;
+
+    public function getset(string $key, mixed $value): string;
+
 }
 
 /*
     TODO:
-    public function echo
-    public function eval
-    public function evalsha
-    public function exec
-    public function exists
-    public function expire
-    public function expireat
-    public function flushall
-    public function flushdb
-    public function geoadd
-    public function geodist
-    public function geohash
-    public function geopos
-    public function georadius
-    public function georadius_ro
-    public function georadiusbymember
-    public function georadiusbymember_ro
-    public function get
-    public function getbit
-    public function getlasterror
-    public function getmode
-    public function getoption
-    public function getrange
-    public function getset
     public function hdel
     public function hexists
     public function hget
