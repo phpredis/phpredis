@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: b00398a68b9846d7266b8232d11de787fc4bae0c */
+ * Stub hash: 5b130a06b4290b7ebec9b20d3973f726cc3fe7af */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -135,6 +135,112 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_dump, 0, 1, I
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_echo, 0, 2, IS_STRING, 0)
+	ZEND_ARG_TYPE_MASK(0, node, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
+	ZEND_ARG_TYPE_INFO(0, msg, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_eval, 0, 1, IS_MIXED, 0)
+	ZEND_ARG_TYPE_INFO(0, script, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, args, IS_ARRAY, 0, "[]")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, num_keys, IS_LONG, 0, "0")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_evalsha, 0, 1, IS_MIXED, 0)
+	ZEND_ARG_TYPE_INFO(0, script_sha, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, args, IS_ARRAY, 0, "[]")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, num_keys, IS_LONG, 0, "0")
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_exec arginfo_class_RedisCluster__masters
+
+#define arginfo_class_RedisCluster_exists arginfo_class_RedisCluster_decr
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_expire, 0, 2, _IS_BOOL, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, timeout, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_expireat, 0, 2, _IS_BOOL, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, timestamp, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_flushall, 0, 1, _IS_BOOL, 0)
+	ZEND_ARG_TYPE_MASK(0, node, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, async, _IS_BOOL, 0, "false")
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_flushdb arginfo_class_RedisCluster_flushall
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_geoadd, 0, 4, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, lng, IS_DOUBLE, 0)
+	ZEND_ARG_TYPE_INFO(0, lat, IS_DOUBLE, 0)
+	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_triples, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_geodist, 0, 3, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, src, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, dest, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, unit, IS_STRING, 1, "null")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_geohash, 0, 2, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_members, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_geopos arginfo_class_RedisCluster_geohash
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_georadius, 0, 5, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, lng, IS_DOUBLE, 0)
+	ZEND_ARG_TYPE_INFO(0, lat, IS_DOUBLE, 0)
+	ZEND_ARG_TYPE_INFO(0, radius, IS_DOUBLE, 0)
+	ZEND_ARG_TYPE_INFO(0, unit, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "[]")
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_georadius_ro arginfo_class_RedisCluster_georadius
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_georadiusbymember, 0, 4, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, radius, IS_DOUBLE, 0)
+	ZEND_ARG_TYPE_INFO(0, unit, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "[]")
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_georadiusbymember_ro arginfo_class_RedisCluster_georadiusbymember
+
+#define arginfo_class_RedisCluster_get arginfo_class_RedisCluster_dump
+
+#define arginfo_class_RedisCluster_getbit arginfo_class_RedisCluster_decrby
+
+#define arginfo_class_RedisCluster_getlasterror arginfo_class_RedisCluster__redir
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_getmode, 0, 0, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_getoption, 0, 1, IS_MIXED, 0)
+	ZEND_ARG_TYPE_INFO(0, option, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_getrange, 0, 3, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_getset, 0, 2, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
+
 
 ZEND_METHOD(RedisCluster, __construct);
 ZEND_METHOD(RedisCluster, _masters);
@@ -166,6 +272,30 @@ ZEND_METHOD(RedisCluster, decrby);
 ZEND_METHOD(RedisCluster, del);
 ZEND_METHOD(RedisCluster, discard);
 ZEND_METHOD(RedisCluster, dump);
+ZEND_METHOD(RedisCluster, echo);
+ZEND_METHOD(RedisCluster, eval);
+ZEND_METHOD(RedisCluster, evalsha);
+ZEND_METHOD(RedisCluster, exec);
+ZEND_METHOD(RedisCluster, exists);
+ZEND_METHOD(RedisCluster, expire);
+ZEND_METHOD(RedisCluster, expireat);
+ZEND_METHOD(RedisCluster, flushall);
+ZEND_METHOD(RedisCluster, flushdb);
+ZEND_METHOD(RedisCluster, geoadd);
+ZEND_METHOD(RedisCluster, geodist);
+ZEND_METHOD(RedisCluster, geohash);
+ZEND_METHOD(RedisCluster, geopos);
+ZEND_METHOD(RedisCluster, georadius);
+ZEND_METHOD(RedisCluster, georadius_ro);
+ZEND_METHOD(RedisCluster, georadiusbymember);
+ZEND_METHOD(RedisCluster, georadiusbymember_ro);
+ZEND_METHOD(RedisCluster, get);
+ZEND_METHOD(RedisCluster, getbit);
+ZEND_METHOD(RedisCluster, getlasterror);
+ZEND_METHOD(RedisCluster, getmode);
+ZEND_METHOD(RedisCluster, getoption);
+ZEND_METHOD(RedisCluster, getrange);
+ZEND_METHOD(RedisCluster, getset);
 
 
 static const zend_function_entry class_RedisCluster_methods[] = {
@@ -199,5 +329,29 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, del, arginfo_class_RedisCluster_del, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, discard, arginfo_class_RedisCluster_discard, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, dump, arginfo_class_RedisCluster_dump, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, echo, arginfo_class_RedisCluster_echo, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, eval, arginfo_class_RedisCluster_eval, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, evalsha, arginfo_class_RedisCluster_evalsha, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, exec, arginfo_class_RedisCluster_exec, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, exists, arginfo_class_RedisCluster_exists, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, expire, arginfo_class_RedisCluster_expire, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, expireat, arginfo_class_RedisCluster_expireat, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, flushall, arginfo_class_RedisCluster_flushall, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, flushdb, arginfo_class_RedisCluster_flushdb, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, geoadd, arginfo_class_RedisCluster_geoadd, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, geodist, arginfo_class_RedisCluster_geodist, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, geohash, arginfo_class_RedisCluster_geohash, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, geopos, arginfo_class_RedisCluster_geopos, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, georadius, arginfo_class_RedisCluster_georadius, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, georadius_ro, arginfo_class_RedisCluster_georadius_ro, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, georadiusbymember, arginfo_class_RedisCluster_georadiusbymember, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, georadiusbymember_ro, arginfo_class_RedisCluster_georadiusbymember_ro, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, get, arginfo_class_RedisCluster_get, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, getbit, arginfo_class_RedisCluster_getbit, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, getlasterror, arginfo_class_RedisCluster_getlasterror, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, getmode, arginfo_class_RedisCluster_getmode, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, getoption, arginfo_class_RedisCluster_getoption, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, getrange, arginfo_class_RedisCluster_getrange, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, getset, arginfo_class_RedisCluster_getset, ZEND_ACC_PUBLIC)
 	ZEND_FE_END
 };
