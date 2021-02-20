@@ -40,6 +40,7 @@ zend_function_entry redis_sentinel_functions[] = {
      PHP_ME(RedisSentinel, getMasterAddrByName, arginfo_value, ZEND_ACC_PUBLIC)
      PHP_ME(RedisSentinel, master, arginfo_value, ZEND_ACC_PUBLIC)
      PHP_ME(RedisSentinel, masters, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisSentinel, myid, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisSentinel, ping, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisSentinel, reset, arginfo_value, ZEND_ACC_PUBLIC)
      PHP_ME(RedisSentinel, sentinels, arginfo_value, ZEND_ACC_PUBLIC)
@@ -130,6 +131,11 @@ PHP_METHOD(RedisSentinel, master)
 PHP_METHOD(RedisSentinel, masters)
 {
     REDIS_PROCESS_KW_CMD("masters", redis_sentinel_cmd, sentinel_mbulk_reply_zipped_assoc);
+}
+
+PHP_METHOD(RedisSentinel, myid)
+{
+    REDIS_PROCESS_KW_CMD("myid", redis_sentinel_cmd, redis_string_response);
 }
 
 PHP_METHOD(RedisSentinel, ping)
