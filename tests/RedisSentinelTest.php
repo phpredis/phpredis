@@ -83,6 +83,17 @@ class Redis_Sentinel_Test extends TestSuite
         }
     }
 
+    public function testMyid()
+    {
+        // Only available since 6.2.0
+        if (version_compare($this->version, '6.2.0') < 0) {
+            $this->markTestSkipped();
+            return;
+        }
+        $result = $this->sentinel->myid();
+        $this->assertTrue(is_string($result));
+    }
+
     public function testPing()
     {
         $this->assertTrue($this->sentinel->ping());
