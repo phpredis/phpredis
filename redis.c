@@ -1109,10 +1109,10 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 }
 
 /* {{{ proto long Redis::bitop(string op, string key, ...) */
-PHP_METHOD(Redis, bitop)
-{
+PHP_METHOD(Redis, bitop) {
     REDIS_PROCESS_CMD(bitop, redis_long_response);
 }
+
 /* }}} */
 
 /* {{{ proto long Redis::bitcount(string key, [int start], [int end])
@@ -1248,8 +1248,7 @@ PHP_METHOD(Redis, incrBy){
 /* {{{ proto float Redis::incrByFloat(string key, float value)
  */
 PHP_METHOD(Redis, incrByFloat) {
-    REDIS_PROCESS_KW_CMD("INCRBYFLOAT", redis_key_dbl_cmd,
-        redis_bulk_double_response);
+    REDIS_PROCESS_KW_CMD("INCRBYFLOAT", redis_key_dbl_cmd, redis_bulk_double_response);
 }
 /* }}} */
 
@@ -1345,10 +1344,10 @@ PHP_REDIS_API void redis_set_watch(RedisSock *redis_sock)
     redis_sock->watching = 1;
 }
 
-PHP_REDIS_API void redis_watch_response(INTERNAL_FUNCTION_PARAMETERS,
+PHP_REDIS_API int redis_watch_response(INTERNAL_FUNCTION_PARAMETERS,
                                  RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
-    redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+    return redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         z_tab, ctx, redis_set_watch);
 }
 
@@ -1365,12 +1364,12 @@ PHP_REDIS_API void redis_clear_watch(RedisSock *redis_sock)
     redis_sock->watching = 0;
 }
 
-PHP_REDIS_API void redis_unwatch_response(INTERNAL_FUNCTION_PARAMETERS,
+PHP_REDIS_API int redis_unwatch_response(INTERNAL_FUNCTION_PARAMETERS,
                                    RedisSock *redis_sock, zval *z_tab,
                                    void *ctx)
 {
-    redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-        z_tab, ctx, redis_clear_watch);
+    return redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                                       z_tab, ctx, redis_clear_watch);
 }
 
 /* {{{ proto boolean Redis::unwatch()
@@ -2056,7 +2055,7 @@ PHP_METHOD(Redis, move) {
 /* }}} */
 
 static
-void generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun)
+void generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, FailableResultCallback fun)
 {
     RedisSock *redis_sock;
     smart_string cmd = {0};
@@ -2102,6 +2101,7 @@ void generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun)
     if (IS_ATOMIC(redis_sock)) {
         fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
+
     REDIS_PROCESS_RESPONSE(fun);
 }
 
@@ -3477,8 +3477,7 @@ PHP_METHOD(Redis, client) {
     /* We handle CLIENT LIST with a custom response function */
     if(!strncasecmp(opt, "list", 4)) {
         if (IS_ATOMIC(redis_sock)) {
-            redis_client_list_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock,
-                NULL);
+            redis_client_list_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock, NULL, NULL);
         }
         REDIS_PROCESS_RESPONSE(redis_client_list_reply);
     } else {
