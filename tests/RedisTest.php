@@ -4573,6 +4573,14 @@ class Redis_Test extends TestSuite
         if (!defined('Redis::COMPRESSION_ZSTD')) {
             $this->markTestSkipped();
         }
+
+        /* Issue 1936 regression.  Make sure we don't overflow on bad data */
+        $this->redis->del('badzstd');
+        $this->redis->set('badzstd', '123');
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_ZSTD);
+        $this->assertEquals('123', $this->redis->get('badzstd'));
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+
         $this->checkCompression(Redis::COMPRESSION_ZSTD, 0);
         $this->checkCompression(Redis::COMPRESSION_ZSTD, 9);
     }
