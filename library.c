@@ -2952,7 +2952,8 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
                 size_t len;
 
                 len = ZSTD_getFrameContentSize(val, val_len);
-                if (len >= 0) {
+
+                if (len != ZSTD_CONTENTSIZE_ERROR && len != ZSTD_CONTENTSIZE_UNKNOWN) {
                     data = emalloc(len);
                     len = ZSTD_decompress(data, len, val, val_len);
                     if (ZSTD_isError(len)) {
