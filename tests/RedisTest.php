@@ -6571,6 +6571,27 @@ class Redis_Test extends TestSuite
         }
     }
 
+    public function testCopy()
+    {
+        // Only available since 6.2.0
+        if (version_compare($this->version, '6.2.0') < 0) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->del('key2');
+        $this->redis->set('key', 'foo');
+        $this->assertTrue($this->redis->copy('key', 'key2'));
+        $this->assertEquals('foo', $this->redis->get('key2'));
+
+        $this->redis->set('key', 'bar');
+        $this->assertFalse($this->redis->copy('key', 'key2'));
+        $this->assertEquals('foo', $this->redis->get('key2'));
+
+        $this->assertTrue($this->redis->copy('key', 'key2', ['replace' => true]));
+        $this->assertEquals('bar', $this->redis->get('key2'));
+    }
+
     public  function testSession_regenerateSessionId_noLock_noDestroy() {
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();

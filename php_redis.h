@@ -41,6 +41,7 @@ PHP_METHOD(Redis, bzPopMax);
 PHP_METHOD(Redis, bzPopMin);
 PHP_METHOD(Redis, close);
 PHP_METHOD(Redis, connect);
+PHP_METHOD(Redis, copy);
 PHP_METHOD(Redis, dbSize);
 PHP_METHOD(Redis, decr);
 PHP_METHOD(Redis, decrBy);

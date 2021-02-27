@@ -3299,6 +3299,56 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int
+redis_copy_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+               char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    smart_string cmdstr = {0};
+    char *src, *dst;
+    size_t src_len, dst_len;
+    zend_long db = -1;
+    zend_bool replace = 0;
+    zval *opts = NULL;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss|a",
+                              &src, &src_len, &dst, &dst_len, &opts) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    if (opts != NULL && Z_TYPE_P(opts) == IS_ARRAY) {
+        zend_ulong idx;
+        zend_string *zkey;
+        zval *z_ele;
+        ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(opts), idx, zkey, z_ele) {
+            if (zkey != NULL) {
+                ZVAL_DEREF(z_ele);
+                if (zend_string_equals_literal_ci(zkey, "db")) {
+                    db = zval_get_long(z_ele);
+                } else if (zend_string_equals_literal_ci(zkey, "replace")) {
+                    replace = zval_is_true(z_ele);
+                }
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2 + (db > -1) + replace, "COPY");
+    redis_cmd_append_sstr(&cmdstr, src, src_len);
+    redis_cmd_append_sstr(&cmdstr, dst, dst_len);
+
+    if (db > -1) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "DB");
+        redis_cmd_append_sstr_long(&cmdstr, db);
+    }
+    if (replace) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "REPLACE");
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    return SUCCESS;
+}
+
 /* XADD */
 int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char **cmd, int *cmd_len, short *slot, void **ctx)
