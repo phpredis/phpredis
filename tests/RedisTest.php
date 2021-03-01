@@ -1186,6 +1186,30 @@ class Redis_Test extends TestSuite
         $this->assertEquals('val4', $this->redis->lIndex('list', -1));
     }
 
+    public function testlMove()
+    {
+        // Only available since 6.2.0
+        if (version_compare($this->version, '6.2.0') < 0) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->del('list0', 'list1');
+        $this->redis->lPush('list0', 'a');
+        $this->redis->lPush('list0', 'b');
+        $this->redis->lPush('list0', 'c');
+
+        $return = $this->redis->lMove('list0', 'list1', Redis::LEFT, Redis::RIGHT);
+        $this->assertEquals('c', $return);
+
+        $return = $this->redis->lMove('list0', 'list1', Redis::RIGHT, Redis::LEFT);
+        $this->assertEquals('a', $return);
+
+        $this->assertEquals(['b'], $this->redis->lRange('list0', 0, -1));
+        $this->assertEquals(['a', 'c'], $this->redis->lRange('list1', 0, -1));
+
+    }
+
     // lRem testing
     public function testlrem() {
         $this->redis->del('list');
@@ -1470,7 +1494,7 @@ class Redis_Test extends TestSuite
         $this->redis->sAdd('set', 'val3');
 
         $misMembers = $this->redis->sMisMember('set', 'val', 'notamember', 'val3');
-        $this->assertEquals([1, 0, 1], $smembers);
+        $this->assertEquals([1, 0, 1], $misMembers);
 
         $misMembers = $this->redis->sMisMember('wrongkey', 'val', 'val2', 'val3');
         $this->assertEquals([0, 0, 0], $misMembers);
@@ -2504,6 +2528,26 @@ class Redis_Test extends TestSuite
             $this->assertEquals($this->redis->zLexCount('key', "[$start", "($end"), $i);
             $this->assertEquals($this->redis->zLexCount('key', "($start", "($end"), $i - 1);
         }
+    }
+
+    public function testzMscore()
+    {
+        // Only available since 6.2.0
+        if (version_compare($this->version, '6.2.0') < 0) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->del('key');
+        foreach (range('a', 'c') as $c) {
+            $this->redis->zAdd('key', 1, $c);
+        }
+
+        $scores = $this->redis->zMscore('key', 'a', 'notamember', 'c');
+        $this->assertEquals([1.0, false, 1.0], $scores);
+
+        $scores = $this->redis->zMscore('wrongkey', 'a', 'b', 'c');
+        $this->assertEquals([false, false, false], $scores);
     }
 
     public function testZRemRangeByLex() {
@@ -4594,6 +4638,14 @@ class Redis_Test extends TestSuite
         if (!defined('Redis::COMPRESSION_ZSTD')) {
             $this->markTestSkipped();
         }
+
+        /* Issue 1936 regression.  Make sure we don't overflow on bad data */
+        $this->redis->del('badzstd');
+        $this->redis->set('badzstd', '123');
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_ZSTD);
+        $this->assertEquals('123', $this->redis->get('badzstd'));
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+
         $this->checkCompression(Redis::COMPRESSION_ZSTD, 0);
         $this->checkCompression(Redis::COMPRESSION_ZSTD, 9);
     }

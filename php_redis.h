@@ -62,6 +62,7 @@ PHP_METHOD(Redis, info);
 PHP_METHOD(Redis, keys);
 PHP_METHOD(Redis, lInsert);
 PHP_METHOD(Redis, lLen);
+PHP_METHOD(Redis, lMove);
 PHP_METHOD(Redis, lPop);
 PHP_METHOD(Redis, lPush);
 PHP_METHOD(Redis, lPushx);
@@ -126,6 +127,7 @@ PHP_METHOD(Redis, zCard);
 PHP_METHOD(Redis, zCount);
 PHP_METHOD(Redis, zIncrBy);
 PHP_METHOD(Redis, zLexCount);
+PHP_METHOD(Redis, zMscore);
 PHP_METHOD(Redis, zPopMax);
 PHP_METHOD(Redis, zPopMin);
 PHP_METHOD(Redis, zRange);
@@ -273,11 +275,6 @@ ZEND_EXTERN_MODULE_GLOBALS(redis)
 PHP_MINIT_FUNCTION(redis);
 PHP_MSHUTDOWN_FUNCTION(redis);
 PHP_MINFO_FUNCTION(redis);
-
-/* Redis response handler function callback prototype */
-typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
-
-typedef int (*FailableResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock*, zval*, void*);
 
 PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
 

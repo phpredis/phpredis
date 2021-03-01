@@ -139,7 +139,7 @@ typedef enum {
 
 #define REDIS_SAVE_CALLBACK(callback, closure_context) do { \
     fold_item *fi = malloc(sizeof(fold_item)); \
-    fi->fun = (void *)callback; \
+    fi->fun = callback; \
     fi->ctx = closure_context; \
     fi->next = NULL; \
     if (redis_sock->current) { \
@@ -194,7 +194,7 @@ typedef enum {
         REDIS_PROCESS_RESPONSE_CLOSURE(resp_func, ctx) \
     }
 
-/* Process a command but with a specific command building function 
+/* Process a command but with a specific command building function
  * and keyword which is passed to us*/
 #define REDIS_PROCESS_KW_CMD(kw, cmdfunc, resp_func) \
     RedisSock *redis_sock; char *cmd; int cmd_len; void *ctx=NULL; \
@@ -255,12 +255,6 @@ typedef enum {
     #endif
 #endif
 
-typedef struct fold_item {
-    zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, void *, ...);
-    void *ctx;
-    struct fold_item *next;
-} fold_item;
-
 /* {{{ struct RedisSock */
 typedef struct {
     php_stream         *stream;
@@ -285,8 +279,8 @@ typedef struct {
     zend_string        *prefix;
 
     short              mode;
-    fold_item          *head;
-    fold_item          *current;
+    struct fold_item   *head;
+    struct fold_item   *current;
 
     zend_string        *pipeline_cmd;
 
@@ -300,6 +294,16 @@ typedef struct {
     int                tcp_keepalive;
 } RedisSock;
 /* }}} */
+
+/* Redis response handler function callback prototype */
+typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
+typedef int (*FailableResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock*, zval*, void*);
+
+typedef struct fold_item {
+    FailableResultCallback fun;
+    void *ctx;
+    struct fold_item *next;
+} fold_item;
 
 typedef struct {
     zend_llist list;
