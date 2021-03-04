@@ -134,6 +134,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_config, 0, 0, 2)
     ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_copy, 0, 0, 2)
+    ZEND_ARG_INFO(0, source)
+    ZEND_ARG_INFO(0, destination)
+    ZEND_ARG_ARRAY_INFO(0, options, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_flush, 0, 0, 0)
     ZEND_ARG_INFO(0, async)
 ZEND_END_ARG_INFO()
@@ -283,6 +289,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, command, arginfo_command, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, config, arginfo_config, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, connect, arginfo_connect, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, copy, arginfo_copy, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dbSize, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, debug, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, decr, arginfo_key, ZEND_ACC_PUBLIC)
@@ -3531,6 +3538,12 @@ PHP_METHOD(Redis, rawcommand) {
  *     proto array Redis::command('getkeys', array cmd_args) */
 PHP_METHOD(Redis, command) {
     REDIS_PROCESS_CMD(command, redis_read_variant_reply);
+}
+/* }}} */
+
+/* {{{ proto array Redis::copy(string $source, string $destination, array $options = null) */
+PHP_METHOD(Redis, copy) {
+    REDIS_PROCESS_CMD(copy, redis_1_response)
 }
 /* }}} */
 
