@@ -6208,7 +6208,6 @@ class Redis_Test extends TestSuite
         $obj_new = $this->newInstance();
 
         $arr_args = [
-            NULL,
             [],
             [NULL, NULL],
             ['foo', 'bar', 'baz'],
@@ -6224,8 +6223,6 @@ class Redis_Test extends TestSuite
             try {
                 if (is_array($arr_arg)) {
                     @call_user_func_array([$obj_new, 'auth'], $arr_arg);
-                } else {
-                    call_user_func([$obj_new, 'auth']);
                 }
             } catch (Exception $ex) {
                 unset($ex); /* Suppress intellisense warning */
