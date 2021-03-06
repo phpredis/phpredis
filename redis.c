@@ -115,6 +115,16 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_connect, 0, 0, 1)
     ZEND_ARG_INFO(0, retry_interval)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zdiff, 0, 0, 1)
+    ZEND_ARG_ARRAY_INFO(0, keys, 0)
+    ZEND_ARG_ARRAY_INFO(0, options, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zdiffstore, 0, 0, 2)
+    ZEND_ARG_INFO(0, destination)
+    ZEND_ARG_ARRAY_INFO(0, keys, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_info, 0, 0, 0)
     ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
@@ -472,6 +482,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zRevRangeByScore, arginfo_zrangebyscore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRevRank, arginfo_key_member, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zScore, arginfo_key_member, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zdiff, arginfo_zdiff, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zdiffstore, arginfo_zdiffstore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zinterstore, arginfo_zstore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zunionstore, arginfo_zstore, ZEND_ACC_PUBLIC)
@@ -2296,6 +2308,18 @@ PHP_METHOD(Redis, zRevRank) {
 PHP_METHOD(Redis, zIncrBy)
 {
     REDIS_PROCESS_CMD(zincrby, redis_bulk_double_response);
+}
+/* }}} */
+
+/* {{{ proto array Redis::zdiff(array keys, array options) */
+PHP_METHOD(Redis, zdiff) {
+    REDIS_PROCESS_CMD(zdiff, redis_zdiff_response);
+}
+/* }}} */
+
+/* {{{ proto array Redis::zdiffstore(string destination, array keys) */
+PHP_METHOD(Redis, zdiffstore) {
+    REDIS_PROCESS_CMD(zdiffstore, redis_long_response);
 }
 /* }}} */
 

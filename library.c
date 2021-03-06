@@ -1285,6 +1285,15 @@ redis_parse_client_list_response(char *response, zval *z_ret)
 }
 
 PHP_REDIS_API int
+redis_zdiff_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    if (ctx == NULL) {
+        return redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    }
+    return redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+}
+
+PHP_REDIS_API int
 redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                             zval *z_tab, void *ctx,
                             SuccessCallback success_callback)
@@ -1455,7 +1464,12 @@ redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     size_t len;
 
     if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
-        return -1;
+        if (IS_ATOMIC(redis_sock)) {
+            RETVAL_FALSE;
+        } else {
+            add_next_index_bool(z_tab, 0);
+        }
+        return FAILURE;
     }
 
     if(inbuf[0] != '*') {
@@ -2514,7 +2528,12 @@ redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval 
     size_t len;
 
     if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
-        return -1;
+        if (IS_ATOMIC(redis_sock)) {
+            RETVAL_FALSE;
+        } else {
+            add_next_index_bool(z_tab, 0);
+        }
+        return FAILURE;
     }
 
     if(inbuf[0] != '*') {

@@ -625,6 +625,89 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     return SUCCESS;
 }
+int
+redis_zdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    int numkeys;
+    smart_string cmdstr = {0};
+    zval *z_keys, *z_opts = NULL, *z_ele;
+    zend_bool withscores = 0;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "a|a",
+                              &z_keys, &z_opts) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    if ((numkeys = zend_hash_num_elements(Z_ARRVAL_P(z_keys))) == 0) {
+        return FAILURE;
+    }
+
+    if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
+        zend_ulong idx;
+        zend_string *zkey;
+        ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(z_opts), idx, zkey, z_ele) {
+            if (zkey != NULL) {
+                ZVAL_DEREF(z_ele);
+                if (zend_string_equals_literal_ci(zkey, "withscores")) {
+                    withscores = zval_is_true(z_ele);
+                }
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + numkeys + withscores, "ZDIFF");
+    redis_cmd_append_sstr_long(&cmdstr, numkeys);
+
+    ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_keys), z_ele) {
+        ZVAL_DEREF(z_ele);
+        redis_cmd_append_sstr_zval(&cmdstr, z_ele, redis_sock);
+    } ZEND_HASH_FOREACH_END();
+
+    if (withscores) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WITHSCORES");
+        *ctx = redis_sock;
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    return SUCCESS;
+}
+
+int
+redis_zdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *dst;
+    size_t dst_len;
+    int numkeys;
+    zval *z_keys, *z_ele;
+    smart_string cmdstr = {0};
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sa",
+                              &dst, &dst_len, &z_keys) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    if ((numkeys = zend_hash_num_elements(Z_ARRVAL_P(z_keys))) == 0) {
+        return FAILURE;
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2 + numkeys, "ZDIFFSTORE");
+    redis_cmd_append_sstr(&cmdstr, dst, dst_len);
+    redis_cmd_append_sstr_long(&cmdstr, numkeys);
+
+    ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_keys), z_ele) {
+        ZVAL_DEREF(z_ele);
+        redis_cmd_append_sstr_zval(&cmdstr, z_ele, redis_sock);
+    } ZEND_HASH_FOREACH_END();
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    return SUCCESS;
+}
 
 /* ZUNIONSTORE, ZINTERSTORE */
 int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
