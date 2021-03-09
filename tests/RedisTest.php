@@ -2530,6 +2530,39 @@ class Redis_Test extends TestSuite
         }
     }
 
+    public function testzDiff()
+    {
+        // Only available since 6.2.0
+        if (version_compare($this->version, '6.2.0') < 0) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->del('key');
+        foreach (range('a', 'c') as $c) {
+            $this->redis->zAdd('key', 1, $c);
+        }
+
+        $this->assertEquals(['a', 'b', 'c'], $this->redis->zDiff(['key']));
+        $this->assertEquals(['a' => 1.0, 'b' => 1.0, 'c' => 1.0], $this->redis->zDiff(['key'], ['withscores' => true]));
+    }
+
+    public function testzDiffStore()
+    {
+        // Only available since 6.2.0
+        if (version_compare($this->version, '6.2.0') < 0) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->del('key');
+        foreach (range('a', 'c') as $c) {
+            $this->redis->zAdd('key', 1, $c);
+        }
+        $this->assertEquals(3, $this->redis->zDiffStore('key2', ['key']));
+        $this->assertEquals(['a', 'b', 'c'], $this->redis->zRange('key2', 0, -1));
+    }
+
     public function testzMscore()
     {
         // Only available since 6.2.0
