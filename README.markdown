@@ -93,7 +93,7 @@ redis.session.locking_enabled = 1
 redis.session.lock_expire = 60
 ; How long to wait between attempts to acquire lock, in microseconds (µs)?. Defaults to: 20000
 redis.session.lock_wait_time = 50000
-; Maximum number of times to retry (-1 means infinite). Defaults to: 1000
+; Maximum number of times to retry (-1 means infinite). Defaults to: 100
 redis.session.lock_retries = 2000
 ~~~
 

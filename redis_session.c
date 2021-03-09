@@ -237,7 +237,7 @@ static int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_s
     /* Maximum number of times to retry (-1 means infinite) */
     retries = INI_INT("redis.session.lock_retries");
     if (retries == 0) {
-        retries = 1000;
+        retries = 100;
     }
 
     /* How long should the lock live (in seconds) */
