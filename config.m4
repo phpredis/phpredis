@@ -270,7 +270,7 @@ if test "$PHP_REDIS" != "no"; then
       ])
       PHP_SUBST(REDIS_SHARED_LIBADD)
     else
-      AC_MSG_ERROR([only system libz4 is supported])
+      AC_MSG_ERROR([only system liblz4 is supported])
     fi
   fi
 
