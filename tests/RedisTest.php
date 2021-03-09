@@ -6527,7 +6527,7 @@ class Redis_Test extends TestSuite
         $end = microtime(true);
         $elapsedTime = $end - $start;
 
-        $this->assertTrue($elapsedTime > 2 && $elapsedTime < 3);
+        $this->assertTrue($elapsedTime > .2 && $elapsedTime < .3);
         $this->assertFalse($sessionSuccessful);
     }
 
