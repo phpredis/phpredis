@@ -4610,6 +4610,10 @@ class Redis_Test extends TestSuite
                 $this->assertEquals($val, $this->redis->get('key'));
             }
         }
+
+        // Issue 1945. Ensure we decompress data with hmget.
+        $this->redis->hset('hkey', 'data', 'abc');
+        $this->assertEquals('abc', current($this->redis->hmget('hkey', ['data'])));
     }
 
     public function testDumpRestore() {
