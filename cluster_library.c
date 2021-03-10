@@ -2112,6 +2112,7 @@ PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
         if (c->reply_len > 0) {
             /* Push serialization settings from the cluster into our socket */
             c->cmd_sock->serializer = c->flags->serializer;
+            c->cmd_sock->compression = c->flags->compression;
 
             /* Call our specified callback */
             if (cb(c->cmd_sock, &z_result, c->reply_len, ctx) == FAILURE) {
