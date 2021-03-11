@@ -202,7 +202,23 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testTime() {
-        $time_arr = $this->redis->time("k:" . rand(1,100));
+        $time_arr = NULL;
+
+        /* It's unclear why, but Travis is having issues with this command under
+         * RedisCluster, so give it more than one attempt if we detect Travis */
+        if (getenv('TRAVIS') !== false) {
+            for ($i = 0; !$time_arr && $i < 3; $i++) {
+                try {
+                    $time_arr = $this->redis->time('timekey:' . $i);
+                } catch (Exception $ex) {
+                    /* Small delay */
+                    usleep(10000);
+                }
+            }
+        } else {
+            $time_arr = $this->redis->time('timekey:' . uniqid());
+        }
+
         $this->assertTrue(is_array($time_arr) && count($time_arr) == 2 &&
                           strval(intval($time_arr[0])) === strval($time_arr[0]) &&
                           strval(intval($time_arr[1])) === strval($time_arr[1]));
