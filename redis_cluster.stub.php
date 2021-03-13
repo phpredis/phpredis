@@ -61,6 +61,8 @@ class RedisCluster {
 
     public function decrby(string $key, int $value): int;
 
+    public function decrbyfloat(string $key, float $value): float;
+
     public function del(string $key, string ...$other_keys): array;
 
     public function discard(): bool;
@@ -115,30 +117,50 @@ class RedisCluster {
 
     public function getset(string $key, mixed $value): string;
 
+    public function hdel(string $key, string $member, string ...$other_members): int;
+
+    public function hexists(string $key, string $member): bool;
+
+    public function hget(string $key, string $member): string;
+
+    public function hgetall(string $key): array;
+
+    public function hincrby(string $key, string $member, int $value): int;
+
+    public function hincrbyfloat(string $key, string $member, float $value): float;
+
+    public function hkeys(string $key): array;
+
+    public function hlen(string $key): int;
+
+    public function hmget(string $key, array $members): array;
+
+    public function hmset(string $key, array $key_values): bool;
+
+    public function hscan(string $key, int $iterator, ?string $pattern = null, int $count = 0): array|bool;
+
+    public function hset(string $key, string $member, mixed $value): int;
+
+    public function hsetnx(string $key, string $member, mixed $value): bool;
+
+    public function hstrlen(string $key, string $field): int;
+
+    public function hvals(string $key): array;
+
+    public function incr(string $key): int;
+
+    public function incrby(string $key, int $value): int;
+
+    public function incrbyfloat(string $key, float $value): float;
+
+    public function info(string|array $node, ?string $section = null): array;
+
+    public function keys(string $pattern): array;
+
 }
 
 /*
     TODO:
-    public function hdel
-    public function hexists
-    public function hget
-    public function hgetall
-    public function hincrby
-    public function hincrbyfloat
-    public function hkeys
-    public function hlen
-    public function hmget
-    public function hmset
-    public function hscan
-    public function hset
-    public function hsetnx
-    public function hstrlen
-    public function hvals
-    public function incr
-    public function incrby
-    public function incrbyfloat
-    public function info
-    public function keys
     public function lastsave
     public function lget
     public function lindex
