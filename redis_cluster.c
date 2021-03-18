@@ -247,7 +247,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, subscribe, arginfo_subscribe, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sunion, arginfo_nkeys, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sunionstore, arginfo_dst_nkeys, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, time, arginfo_void, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, time, key_or_address, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, ttl, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, type, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, unsubscribe, arginfo_unsubscribe, ZEND_ACC_PUBLIC)
