@@ -676,6 +676,124 @@ redis_zdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 int
+redis_zinterunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char *kw, char **cmd, int *cmd_len, short *slot,
+                      void **ctx)
+{
+    int numkeys;
+    smart_string cmdstr = {0};
+    zval *z_keys, *z_weights = NULL, *z_opts = NULL, *z_ele;
+    zend_string *aggregate = NULL;
+    zend_bool withscores = 0;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "a|a!a",
+                             &z_keys, &z_weights, &z_opts) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    if ((numkeys = zend_hash_num_elements(Z_ARRVAL_P(z_keys))) == 0) {
+        return FAILURE;
+    }
+
+    if (z_weights) {
+        if (zend_hash_num_elements(Z_ARRVAL_P(z_weights)) != numkeys) {
+            php_error_docref(NULL, E_WARNING,
+                "WEIGHTS and keys array should be the same size!");
+            return FAILURE;
+        }
+    }
+
+    if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
+        zend_ulong idx;
+        zend_string *zkey;
+        ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(z_opts), idx, zkey, z_ele) {
+            if (zkey != NULL) {
+                ZVAL_DEREF(z_ele);
+                if (zend_string_equals_literal_ci(zkey, "aggregate")) {
+                    aggregate = zval_get_string(z_ele);
+                    if (!zend_string_equals_literal_ci(aggregate, "sum") &&
+                        !zend_string_equals_literal_ci(aggregate, "min") &&
+                        !zend_string_equals_literal_ci(aggregate, "max")
+                    ) {
+                        php_error_docref(NULL, E_WARNING,
+                            "Invalid AGGREGATE option provided!");
+                        zend_string_release(aggregate);
+                        return FAILURE;
+                    }
+                } else if (zend_string_equals_literal_ci(zkey, "withscores")) {
+                    withscores = zval_is_true(z_ele);
+                }
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    redis_cmd_init_sstr(&cmdstr, 1 + numkeys + (z_weights ? 1 + numkeys : 0) + (aggregate ? 2 : 0) + withscores, kw, strlen(kw));
+    redis_cmd_append_sstr_long(&cmdstr, numkeys);
+
+
+    ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_keys), z_ele) {
+        ZVAL_DEREF(z_ele);
+        redis_cmd_append_sstr_zval(&cmdstr, z_ele, redis_sock);
+    } ZEND_HASH_FOREACH_END();
+
+    if (z_weights) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WEIGHTS");
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_weights), z_ele) {
+            ZVAL_DEREF(z_ele);
+            switch (Z_TYPE_P(z_ele)) {
+                case IS_LONG:
+                    redis_cmd_append_sstr_long(&cmdstr, Z_LVAL_P(z_ele));
+                    break;
+                case IS_DOUBLE:
+                    redis_cmd_append_sstr_dbl(&cmdstr, Z_DVAL_P(z_ele));
+                    break;
+                case IS_STRING: {
+                    double dval;
+                    zend_long lval;
+                    zend_uchar type = is_numeric_string(Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), &lval, &dval, 0);
+                    if (type == IS_LONG) {
+                        redis_cmd_append_sstr_long(&cmdstr, lval);
+                        break;
+                    } else if (type == IS_DOUBLE) {
+                        redis_cmd_append_sstr_dbl(&cmdstr, dval);
+                        break;
+                    } else if (strncasecmp(Z_STRVAL_P(z_ele), "-inf", sizeof("-inf") - 1) == 0 ||
+                               strncasecmp(Z_STRVAL_P(z_ele), "+inf", sizeof("+inf") - 1) == 0 ||
+                               strncasecmp(Z_STRVAL_P(z_ele), "inf", sizeof("inf") - 1) == 0
+                    ) {
+                        redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
+                        break;
+                    }
+                    // fall through
+                }
+                default:
+                    php_error_docref(NULL, E_WARNING,
+                        "Weights must be numeric or '-inf','inf','+inf'");
+                    if (aggregate) zend_string_release(aggregate);
+                    efree(cmdstr.c);
+                    return FAILURE;
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    if (aggregate) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "AGGREGATE");
+        redis_cmd_append_sstr_zstr(&cmdstr, aggregate);
+        zend_string_release(aggregate);
+    }
+
+    if (withscores) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WITHSCORES");
+        *ctx = redis_sock;
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    return SUCCESS;
+}
+
+int
 redis_zdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char **cmd, int *cmd_len, short *slot, void **ctx)
 {
@@ -710,7 +828,8 @@ redis_zdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 /* ZUNIONSTORE, ZINTERSTORE */
-int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+int
+redis_zinterunionstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char *kw, char **cmd, int *cmd_len, short *slot,
                      void **ctx)
 {

@@ -146,7 +146,9 @@ PHP_METHOD(Redis, zRevRank);
 PHP_METHOD(Redis, zScore);
 PHP_METHOD(Redis, zdiff);
 PHP_METHOD(Redis, zdiffstore);
+PHP_METHOD(Redis, zinter);
 PHP_METHOD(Redis, zinterstore);
+PHP_METHOD(Redis, zunion);
 PHP_METHOD(Redis, zunionstore);
 
 PHP_METHOD(Redis, eval);
