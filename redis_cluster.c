@@ -1683,14 +1683,14 @@ PHP_METHOD(RedisCluster, zrangebyscore) {
 /* {{{ proto RedisCluster::zunionstore(string dst, array keys, [array weights,
  *                                     string agg]) */
 PHP_METHOD(RedisCluster, zunionstore) {
-    CLUSTER_PROCESS_KW_CMD("ZUNIONSTORE", redis_zinter_cmd, cluster_long_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("ZUNIONSTORE", redis_zinterunionstore_cmd, cluster_long_resp, 0);
 }
 /* }}} */
 
 /* {{{ proto RedisCluster::zinterstore(string dst, array keys, [array weights,
  *                                     string agg]) */
 PHP_METHOD(RedisCluster, zinterstore) {
-    CLUSTER_PROCESS_KW_CMD("ZINTERSTORE", redis_zinter_cmd, cluster_long_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("ZINTERSTORE", redis_zinterunionstore_cmd, cluster_long_resp, 0);
 }
 /* }}} */
 

@@ -120,6 +120,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_zdiff, 0, 0, 1)
     ZEND_ARG_ARRAY_INFO(0, options, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zinterunion, 0, 0, 1)
+    ZEND_ARG_ARRAY_INFO(0, keys, 0)
+    ZEND_ARG_ARRAY_INFO(0, weights, 1)
+    ZEND_ARG_ARRAY_INFO(0, options, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_zdiffstore, 0, 0, 2)
     ZEND_ARG_INFO(0, destination)
     ZEND_ARG_ARRAY_INFO(0, keys, 0)
@@ -484,8 +490,10 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zScore, arginfo_key_member, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zdiff, arginfo_zdiff, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zdiffstore, arginfo_zdiffstore, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zinter, arginfo_zinterunion, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zinterstore, arginfo_zstore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zunion, arginfo_zinterunion, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zunionstore, arginfo_zstore, ZEND_ACC_PUBLIC)
      PHP_FE_END
 };
@@ -2317,6 +2325,18 @@ PHP_METHOD(Redis, zdiff) {
 }
 /* }}} */
 
+/* {{{ proto array Redis::zinter(array keys, array|null weights, array options) */
+PHP_METHOD(Redis, zinter) {
+    REDIS_PROCESS_KW_CMD("ZINTER", redis_zinterunion_cmd, redis_zdiff_response);
+}
+/* }}} */
+
+/* {{{ proto array Redis::zunion(array keys, array|null weights, array options) */
+PHP_METHOD(Redis, zunion) {
+    REDIS_PROCESS_KW_CMD("ZUNION", redis_zinterunion_cmd, redis_zdiff_response);
+}
+/* }}} */
+
 /* {{{ proto array Redis::zdiffstore(string destination, array keys) */
 PHP_METHOD(Redis, zdiffstore) {
     REDIS_PROCESS_CMD(zdiffstore, redis_long_response);
@@ -2325,12 +2345,12 @@ PHP_METHOD(Redis, zdiffstore) {
 
 /* zinterstore */
 PHP_METHOD(Redis, zinterstore) {
-    REDIS_PROCESS_KW_CMD("ZINTERSTORE", redis_zinter_cmd, redis_long_response);
+    REDIS_PROCESS_KW_CMD("ZINTERSTORE", redis_zinterunionstore_cmd, redis_long_response);
 }
 
 /* zunionstore */
 PHP_METHOD(Redis, zunionstore) {
-    REDIS_PROCESS_KW_CMD("ZUNIONSTORE", redis_zinter_cmd, redis_long_response);
+    REDIS_PROCESS_KW_CMD("ZUNIONSTORE", redis_zinterunionstore_cmd, redis_long_response);
 }
 
 /* {{{ proto array Redis::zPopMax(string key) */
