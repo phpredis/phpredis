@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2021-02-01</date>
+ <date>2021-03-23</date>
  <version>
-  <release>5.3.3</release>
-  <api>5.3.3</api>
+  <release>5.3.4</release>
+  <api>5.3.4</api>
  </version>
  <stability>
   <release>stable</release>
@@ -38,24 +38,23 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 5.3.3
+    phpredis 5.3.4
 
-    This release mostly includes just small PHP 8 Windows compatibility fixes
-    such that pecl.php.net can automatically build Windows DLLs.
+    This release fixes a multi/pipeline segfault on apple silicon as well as 
+    two small compression related bugs.
 
     You can find a detailed list of changes in Changelog.md and package.xml
 
-    * Fix PHP8 Windows includes [270b4db8] (Jan-E)
-    * Fix hash ops for php 8.0.1 [87297cbb] (defender-11)
-    * Disable cloning Redis and RedisCluster objects [cd05a344]
-      (Michael Grunder)
+    * Fix multi/pipeline segfault on Apple silicon [e0796d48] (Michael Grunder)
+    * Pass compression flag on HMGET in RedisCluster [edc724e6] (Adam Olley)
+    * Abide by ZSTD error return constants [8400ed1c] (Michael Grunder)
 
     * Sponsors
       ~ Audiomack - https://audiomack.com
+      ~ Open LMS - https://openlms.net
       ~ BlueHost - https://bluehost.com
-      ~ Redis Cache Pro for WordPress - https://wprediscache.com
+      ~ Object Cache Pro for WordPress - https://objectcache.pro
       ~ Avtandil Kikabidze - https://github.com/akalongman
-      ~ Oleg Babushkin - https://github.com/olbabushkin
       ~ Zaher Ghaibeh - https://github.com/zaherg
       ~ BatchLabs - https://batch.com
  </notes>
@@ -132,6 +131,33 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-zstd" prompt="enable zstd compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.3.3</release><api>5.3.3</api></version>
+   <date>2021-03-23</date>
+   <notes>
+    phpredis 5.3.3
+
+    This release mostly includes just small PHP 8 Windows compatibility fixes
+    such that pecl.php.net can automatically build Windows DLLs.
+
+    You can find a detailed list of changes in Changelog.md and package.xml
+
+    * Fix PHP8 Windows includes [270b4db8] (Jan-E)
+    * Fix hash ops for php 8.0.1 [87297cbb] (defender-11)
+    * Disable cloning Redis and RedisCluster objects [cd05a344]
+      (Michael Grunder)
+
+    * Sponsors
+      ~ Audiomack - https://audiomack.com
+      ~ BlueHost - https://bluehost.com
+      ~ Redis Cache Pro for WordPress - https://wprediscache.com
+      ~ Avtandil Kikabidze - https://github.com/akalongman
+      ~ Zaher Ghaibeh - https://github.com/zaherg
+      ~ BatchLabs - https://batch.com
+   </notes>
+  </release>
+
   <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>5.3.2</release><api>5.3.2</api></version>

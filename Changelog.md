@@ -5,6 +5,30 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.4] - 2021-03-23 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.4), [PECL](https:/pecl.php.net/package/redis/5.3.4))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+
+### Fixed
+
+- Fix multi/pipeline segfault on Apple silicon [#1917](https://github.com/phpredis/phpredis/issues/1917)
+  [e0796d48](https://github.com/phpredis/phpredis/commit/e0796d48af18adac2b93982474e7df8de79ec854)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Pass compression flag on HMGET in RedisCluster [#1945](https://github.com/phpredis/phpredis/issues/1945)
+  [edc724e6](https://github.com/phpredis/phpredis/commit/edc724e6022620414abf4f90256522d03c3160fd)
+  ([Adam Olley](https://github.com/aolley))
+- Abide by ZSTD error return constants [#1936](https://github.com/phpredis/phpredis/issues/1936)
+  [8400ed1c](https://github.com/phpredis/phpredis/pull/1937/commits/8400ed1cb23a22f70727cb60e88ca5397ee10d23)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
 ## [5.3.3] - 2021-02-01 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.3), [PECL](https:/pecl.php.net/package/redis/5.3.3))
 
 ### Sponsors :sparkling_heart:
