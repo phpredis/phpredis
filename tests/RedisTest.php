@@ -6279,6 +6279,7 @@ class Redis_Test extends TestSuite
         $obj_new = $this->newInstance();
 
         $arr_args = [
+            NULL,
             [],
             [NULL, NULL],
             ['foo', 'bar', 'baz'],
@@ -6294,6 +6295,8 @@ class Redis_Test extends TestSuite
             try {
                 if (is_array($arr_arg)) {
                     @call_user_func_array([$obj_new, 'auth'], $arr_arg);
+                } else {
+                    call_user_func([$obj_new, 'auth']);
                 }
             } catch (Exception $ex) {
                 unset($ex); /* Suppress intellisense warning */
@@ -6449,7 +6452,6 @@ class Redis_Test extends TestSuite
     {
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
-
         $this->startSessionProcess($sessionId, 5, true);
 
         $maxwait = (ini_get('redis.session.lock_wait_time') *
@@ -6483,7 +6485,7 @@ class Redis_Test extends TestSuite
         $sessionId = $this->generateSessionId();
         $this->startSessionProcess($sessionId, 1, true);
         $sleep = ini_get('redis.session.lock_wait_time') * ini_get('redis.session.lock_retries');
-        usleep($sleep + 10000);
+        usleep($sleep + 1000000);
         $this->assertFalse($this->redis->exists($this->sessionPrefix . $sessionId . '_LOCK'));
     }
 
@@ -6542,23 +6544,20 @@ class Redis_Test extends TestSuite
         $this->assertTrue('firstProcess' !== $this->getSessionData($sessionId));
     }
 
-    public function testSession_correctLockRetryCount() {
+    public function testSession_correctLockRetryCount()
+    {
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
-
-        /* Start another process and wait until it has the lock */
         $this->startSessionProcess($sessionId, 10, true);
-        if ( ! $this->waitForSessionLockKey($sessionId, 2)) {
-            $this->assertTrue(false);
-            return;
-        }
+        usleep(100000);
 
-        $t1 = microtime(true);
-        $ok = $this->startSessionProcess($sessionId, 0, false, 10, true, 100000, 10);
-        if ( ! $this->assertFalse($ok)) return;
-        $t2 = microtime(true);
+        $start = microtime(true);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false, 10, true, 1000000, 3);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
 
-        $this->assertTrue($t2 - $t1 >= 1 && $t2 - $t1 <= 3);
+        $this->assertTrue($elapsedTime > 3 && $elapsedTime < 4);
+        $this->assertFalse($sessionSuccessful);
     }
 
     public function testSession_defaultLockRetryCount()
@@ -6566,17 +6565,10 @@ class Redis_Test extends TestSuite
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
         $this->startSessionProcess($sessionId, 10, true);
-
-        $keyname = $this->sessionPrefix . $sessionId . '_LOCK';
-        $begin = microtime(true);
-
-        if ( ! $this->waitForSessionLockKey($sessionId, 3)) {
-            $this->assertTrue(false);
-            return;
-        }
+        usleep(100000);
 
         $start = microtime(true);
-        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false, 10, true, 20000, 0);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false, 10, true, 200000, 0);
         $end = microtime(true);
         $elapsedTime = $end - $start;
 
@@ -6588,27 +6580,20 @@ class Redis_Test extends TestSuite
     {
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
+        $this->startSessionProcess($sessionId, 3, true, 1); // Process 1
+        usleep(100000);
+        $this->startSessionProcess($sessionId, 5, true);    // Process 2
 
-        $t1 = microtime(true);
+        $start = microtime(true);
+        // Waiting until TTL of process 1 ended and process 2 locked the session,
+        // because is not guaranteed which waiting process gets the next lock
+        sleep(1);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false);
+        $end = microtime(true);
+        $elapsedTime = $end - $start;
 
-        /* 1.  Start a background process, and wait until we are certain
-         *     the lock was attained. */
-        $nsec = 3;
-        $this->startSessionProcess($sessionId, $nsec, true, $nsec);
-        if ( ! $this->waitForSessionLockKey($sessionId, 1)) {
-            $this->assertFalse(true);
-            return;
-        }
-
-        /* 2.  Attempt to lock the same session.  This should force us to
-         *     wait until the first lock is released. */
-        $t2 = microtime(true);
-        $ok = $this->startSessionProcess($sessionId, 0, false);
-        $t3 = microtime(true);
-
-        /* 3.  Verify that we did in fact have to wait for this lock */
-        $this->assertTrue($ok);
-        $this->assertTrue($t3 - $t2 >= $nsec - ($t2 - $t1));
+        $this->assertTrue($elapsedTime > 5);
+        $this->assertTrue($sessionSuccessful);
     }
 
     public function testSession_lockWaitTime()
@@ -6667,27 +6652,6 @@ class Redis_Test extends TestSuite
                 'stream' => ['verify_peer_name' => $verify, 'verify_peer' => false]
             ]));
         }
-    }
-
-    public function testCopy()
-    {
-        // Only available since 6.2.0
-        if (version_compare($this->version, '6.2.0') < 0) {
-            $this->markTestSkipped();
-            return;
-        }
-
-        $this->redis->del('key2');
-        $this->redis->set('key', 'foo');
-        $this->assertTrue($this->redis->copy('key', 'key2'));
-        $this->assertEquals('foo', $this->redis->get('key2'));
-
-        $this->redis->set('key', 'bar');
-        $this->assertFalse($this->redis->copy('key', 'key2'));
-        $this->assertEquals('foo', $this->redis->get('key2'));
-
-        $this->assertTrue($this->redis->copy('key', 'key2', ['replace' => true]));
-        $this->assertEquals('bar', $this->redis->get('key2'));
     }
 
     public  function testSession_regenerateSessionId_noLock_noDestroy() {
@@ -6887,30 +6851,6 @@ class Redis_Test extends TestSuite
             return ($background || (count($output) == 1 && $output[0] == 'SUCCESS')) ? true : false;
         }
     }
-
-    /**
-     * @param string $session_id
-     * @param string $max_wait_sec
-     *
-     * Sometimes we want to block until a session lock has been detected
-     * This is better and faster than arbitrarily sleeping.  If we don't
-     * detect the session key within the specified maximum number of
-     * seconds, the function returns failure.
-     *
-     * @return bool
-     */
-    private function waitForSessionLockKey($session_id, $max_wait_sec) {
-        $now = microtime(true);
-        $key = $this->sessionPrefix . $session_id . '_LOCK';
-
-        do {
-            usleep(10000);
-            $exists = $this->redis->exists($key);
-        } while (!$exists && microtime(true) <= $now + $max_wait_sec);
-
-        return $exists || $this->redis->exists($key);
-    }
-
 
     /**
      * @param string $sessionId
