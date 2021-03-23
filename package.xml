@@ -48,6 +48,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix multi/pipeline segfault on Apple silicon [e0796d48] (Michael Grunder)
     * Pass compression flag on HMGET in RedisCluster [edc724e6] (Adam Olley)
     * Abide by ZSTD error return constants [8400ed1c] (Michael Grunder)
+    * Fix timing related CI session tests [9b986bf8] (Michael Grunder)
 
     * Sponsors
       ~ Audiomack - https://audiomack.com

@@ -28,6 +28,9 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Abide by ZSTD error return constants [#1936](https://github.com/phpredis/phpredis/issues/1936)
   [8400ed1c](https://github.com/phpredis/phpredis/pull/1937/commits/8400ed1cb23a22f70727cb60e88ca5397ee10d23)
   ([Michael Grunder](https://github.com/michael-grunder))
+- Fix timing related CI session tests
+  [9b986bf8](https://github.com/phpredis/phpredis/commit/9b986bf81859f5a5983cd148cb15ee6ce292d288)
+  ([Michael Grunder](https://github.com/michael-grunder))
 
 ## [5.3.3] - 2021-02-01 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.3), [PECL](https:/pecl.php.net/package/redis/5.3.3))
 
