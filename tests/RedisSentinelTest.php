@@ -40,7 +40,7 @@ class Redis_Sentinel_Test extends TestSuite
 
     public function testCkquorum()
     {
-        $this->assertTrue($this->sentinel->ckquorum(self::NAME));
+        $this->assertTrue(is_bool($this->sentinel->ckquorum(self::NAME)));
     }
 
     public function testFailover()
