@@ -276,7 +276,7 @@ PHP_METHOD(RedisArray, __construct)
     }
 
     ra = ra_make_array(Z_ARRVAL_P(z0), &z_fun, &z_dist, hPrev, b_index,
-                       b_pconnect, (long)l_retry_interval, b_lazy_connect,
+                       b_pconnect, l_retry_interval, b_lazy_connect,
                        d_connect_timeout, read_timeout, consistent,
                        algorithm, user, pass);
 
