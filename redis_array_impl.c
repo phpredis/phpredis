@@ -158,7 +158,7 @@ RedisArray *ra_load_array(const char *name) {
 
     zend_string *algorithm = NULL, *user = NULL, *pass = NULL;
     zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0, consistent = 0;
-    long l_retry_interval = 0;
+    zend_long l_retry_interval = 0;
     zend_bool b_lazy_connect = 0;
     double d_connect_timeout = 0, read_timeout = 0.0;
     HashTable *hHosts = NULL, *hPrev = NULL;
@@ -291,7 +291,7 @@ RedisArray *ra_load_array(const char *name) {
     }
 
     /* create RedisArray object */
-    ra = ra_make_array(hHosts, &z_fun, &z_dist, hPrev, b_index, b_pconnect, l_retry_interval,
+    ra = ra_make_array(hHosts, &z_fun, &z_dist, hPrev, b_index, b_pconnect, (long)l_retry_interval,
                        b_lazy_connect, d_connect_timeout, read_timeout, consistent, algorithm,
                        user, pass);
     if (ra) {
