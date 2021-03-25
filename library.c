@@ -2905,7 +2905,7 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
 #ifdef HAVE_REDIS_ZSTD
             {
                 char *data;
-                size_t len;
+                unsigned long long len;
 
                 len = ZSTD_getFrameContentSize(val, val_len);
 
