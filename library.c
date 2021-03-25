@@ -2909,14 +2909,17 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
 
                 len = ZSTD_getFrameContentSize(val, val_len);
 
-                if (len != ZSTD_CONTENTSIZE_ERROR && len != ZSTD_CONTENTSIZE_UNKNOWN) {
+                if (len != ZSTD_CONTENTSIZE_ERROR && len != ZSTD_CONTENTSIZE_UNKNOWN && len <= INT_MAX)
+                {
+                    size_t zlen;
+
                     data = emalloc(len);
-                    len = ZSTD_decompress(data, len, val, val_len);
-                    if (ZSTD_isError(len)) {
+                    zlen = ZSTD_decompress(data, len, val, val_len);
+                    if (ZSTD_isError(zlen) || zlen != len) {
                         efree(data);
                         break;
-                    } else if (redis_unserialize(redis_sock, data, len, z_ret) == 0) {
-                        ZVAL_STRINGL(z_ret, data, len);
+                    } else if (redis_unserialize(redis_sock, data, zlen, z_ret) == 0) {
+                        ZVAL_STRINGL(z_ret, data, zlen);
                     }
                     efree(data);
                     return 1;
