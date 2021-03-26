@@ -224,7 +224,7 @@ PHP_METHOD(RedisArray, __construct)
     RedisArray *ra = NULL;
     zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0, consistent = 0;
     HashTable *hPrev = NULL, *hOpts = NULL;
-    long l_retry_interval = 0;
+    zend_long l_retry_interval = 0;
       zend_bool b_lazy_connect = 0;
     double d_connect_timeout = 0, read_timeout = 0.0;
     zend_string *algorithm = NULL, *user = NULL, *pass = NULL;

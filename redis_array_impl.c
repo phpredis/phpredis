@@ -158,7 +158,7 @@ RedisArray *ra_load_array(const char *name) {
 
     zend_string *algorithm = NULL, *user = NULL, *pass = NULL;
     zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0, consistent = 0;
-    long l_retry_interval = 0;
+    zend_long l_retry_interval = 0;
     zend_bool b_lazy_connect = 0;
     double d_connect_timeout = 0, read_timeout = 0.0;
     HashTable *hHosts = NULL, *hPrev = NULL;
