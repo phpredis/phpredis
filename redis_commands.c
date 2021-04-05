@@ -3316,6 +3316,248 @@ int redis_georadiusbymember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
     return SUCCESS;
 }
 
+int
+redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key, *unit;
+    int argc = 2;
+    short store_slot = 0;
+    size_t keylen, unitlen;
+    geoOptions gopts = {0};
+    smart_string cmdstr = {0};
+    zval *position, *shape, *opts = NULL, *z_ele;
+    zend_string *zkey;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "szzs|a",
+                              &key, &keylen, &position, &shape,
+                              &unit, &unitlen, &opts) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    if (Z_TYPE_P(position) == IS_STRING && Z_STRLEN_P(position) > 0) {
+        argc += 2;
+    } else if (Z_TYPE_P(position) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(position)) == 2) {
+        argc += 3;
+    } else {
+        php_error_docref(NULL, E_WARNING, "Invalid position");
+        return FAILURE;
+    }
+
+    if (Z_TYPE_P(shape) == IS_LONG || Z_TYPE_P(shape) == IS_DOUBLE) {
+        argc += 2;
+    } else if (Z_TYPE_P(shape) == IS_ARRAY) {
+        argc += 3;
+    } else {
+        php_error_docref(NULL, E_WARNING, "Invalid shape dimensions");
+        return FAILURE;
+    }
+
+    /* Attempt to parse our options array */
+    if (opts != NULL && Z_TYPE_P(opts) == IS_ARRAY) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(opts), zkey, z_ele) {
+            ZVAL_DEREF(z_ele);
+            if (zkey != NULL) {
+                if (zend_string_equals_literal_ci(zkey, "COUNT")) {
+                    if (Z_TYPE_P(z_ele) != IS_LONG || Z_LVAL_P(z_ele) <= 0) {
+                        php_error_docref(NULL, E_WARNING, "COUNT must be an integer > 0!");
+                        return FAILURE;
+                    }
+                    gopts.count = Z_LVAL_P(z_ele);
+                }
+            } else if (Z_TYPE_P(z_ele) == IS_STRING) {
+                if (!strcasecmp(Z_STRVAL_P(z_ele), "WITHCOORD")) {
+                    gopts.withcoord = 1;
+                } else if (!strcasecmp(Z_STRVAL_P(z_ele), "WITHDIST")) {
+                    gopts.withdist = 1;
+                } else if (!strcasecmp(Z_STRVAL_P(z_ele), "WITHHASH")) {
+                    gopts.withhash = 1;
+                } else if (!strcasecmp(Z_STRVAL_P(z_ele), "ASC")) {
+                    gopts.sort = SORT_ASC;
+                } else if (!strcasecmp(Z_STRVAL_P(z_ele), "DESC")) {
+                    gopts.sort = SORT_DESC;
+                }
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    /* Increment argc based on options */
+    argc += gopts.withcoord + gopts.withdist + gopts.withhash
+         + (gopts.sort != SORT_NONE) + (gopts.count ? 2 : 0);
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "GEOSEARCH");
+    redis_cmd_append_sstr_key(&cmdstr, key, keylen, redis_sock, slot);
+
+    if (Z_TYPE_P(position) == IS_ARRAY) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FROMLONLAT");
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(position), z_ele) {
+            ZVAL_DEREF(z_ele);
+            redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(z_ele));
+        } ZEND_HASH_FOREACH_END();
+    } else {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FROMMEMBER");
+        redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(position), Z_STRLEN_P(position));
+    }
+
+    if (Z_TYPE_P(shape) == IS_ARRAY) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "BYBOX");
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(shape), z_ele) {
+            ZVAL_DEREF(z_ele);
+            redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(z_ele));
+        } ZEND_HASH_FOREACH_END();
+    } else {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "BYRADIUS");
+        redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(shape));
+    }
+    redis_cmd_append_sstr(&cmdstr, unit, unitlen);
+
+    /* Append optional arguments */
+    if (gopts.withcoord) REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WITHCOORD");
+    if (gopts.withdist) REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WITHDIST");
+    if (gopts.withhash) REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WITHHASH");
+
+    /* Append sort if it's not GEO_NONE */
+    if (gopts.sort == SORT_ASC) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "ASC");
+    } else if (gopts.sort == SORT_DESC) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "DESC");
+    }
+
+    /* Append our count if we've got one */
+    if (gopts.count) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "COUNT");
+        redis_cmd_append_sstr_long(&cmdstr, gopts.count);
+    }
+
+    if ((argc = gopts.withcoord + gopts.withdist + gopts.withhash) > 0) {
+        *ctx = PHPREDIS_CTX_PTR;
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+int
+redis_geosearchstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                         char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    int argc = 3;
+    char *dest, *src, *unit;
+    short store_slot = 0;
+    size_t destlen, srclen, unitlen;
+    geoOptions gopts = {0};
+    smart_string cmdstr = {0};
+    zval *position, *shape, *opts = NULL, *z_ele;
+    zend_string *zkey;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sszzs|a",
+                              &dest, &destlen, &src, &srclen, &position, &shape,
+                              &unit, &unitlen, &opts) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    if (Z_TYPE_P(position) == IS_STRING && Z_STRLEN_P(position) > 0) {
+        argc += 2;
+    } else if (Z_TYPE_P(position) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(position)) == 2) {
+        argc += 3;
+    } else {
+        php_error_docref(NULL, E_WARNING, "Invalid position");
+        return FAILURE;
+    }
+
+    if (Z_TYPE_P(shape) == IS_LONG || Z_TYPE_P(shape) == IS_DOUBLE) {
+        argc += 2;
+    } else if (Z_TYPE_P(shape) == IS_ARRAY) {
+        argc += 3;
+    } else {
+        php_error_docref(NULL, E_WARNING, "Invalid shape dimensions");
+        return FAILURE;
+    }
+
+    /* Attempt to parse our options array */
+    if (opts != NULL && Z_TYPE_P(opts) == IS_ARRAY) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(opts), zkey, z_ele) {
+            ZVAL_DEREF(z_ele);
+            if (zkey != NULL) {
+                if (zend_string_equals_literal_ci(zkey, "COUNT")) {
+                    if (Z_TYPE_P(z_ele) != IS_LONG || Z_LVAL_P(z_ele) <= 0) {
+                        php_error_docref(NULL, E_WARNING, "COUNT must be an integer > 0!");
+                        return FAILURE;
+                    }
+                    gopts.count = Z_LVAL_P(z_ele);
+                }
+            } else if (Z_TYPE_P(z_ele) == IS_STRING) {
+                if (!strcasecmp(Z_STRVAL_P(z_ele), "ASC")) {
+                    gopts.sort = SORT_ASC;
+                } else if (!strcasecmp(Z_STRVAL_P(z_ele), "DESC")) {
+                    gopts.sort = SORT_DESC;
+                } else if (!strcasecmp(Z_STRVAL_P(z_ele), "STOREDIST")) {
+                    gopts.store = STORE_DIST;
+                }
+            }
+        } ZEND_HASH_FOREACH_END();
+
+    }
+
+    /* Increment argc based on options */
+    argc += gopts.withcoord + gopts.withdist + gopts.withhash
+         + (gopts.sort != SORT_NONE) + (gopts.count ? 2 : 0)
+         + (gopts.store != STORE_NONE);
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "GEOSEARCHSTORE");
+    redis_cmd_append_sstr_key(&cmdstr, dest, destlen, redis_sock, slot);
+    redis_cmd_append_sstr_key(&cmdstr, src, srclen, redis_sock, slot);
+
+    if (Z_TYPE_P(position) == IS_ARRAY) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FROMLONLAT");
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(position), z_ele) {
+            ZVAL_DEREF(z_ele);
+            redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(z_ele));
+        } ZEND_HASH_FOREACH_END();
+    } else {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FROMMEMBER");
+        redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(position), Z_STRLEN_P(position));
+    }
+
+    if (Z_TYPE_P(shape) == IS_ARRAY) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "BYBOX");
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(shape), z_ele) {
+            ZVAL_DEREF(z_ele);
+            redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(z_ele));
+        } ZEND_HASH_FOREACH_END();
+    } else {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "BYRADIUS");
+        redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(shape));
+    }
+    redis_cmd_append_sstr(&cmdstr, unit, unitlen);
+
+    /* Append sort if it's not GEO_NONE */
+    if (gopts.sort == SORT_ASC) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "ASC");
+    } else if (gopts.sort == SORT_DESC) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "DESC");
+    }
+
+    /* Append our count if we've got one */
+    if (gopts.count) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "COUNT");
+        redis_cmd_append_sstr_long(&cmdstr, gopts.count);
+    }
+
+    if (gopts.store == STORE_DIST) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "STOREDIST");
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 /* MIGRATE */
 int redis_migrate_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char **cmd, int *cmd_len, short *slot, void **ctx)

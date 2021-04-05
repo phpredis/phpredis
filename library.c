@@ -1543,6 +1543,75 @@ redis_sock_read_single_line(RedisSock *redis_sock, char *buffer, size_t buflen,
     return type == TYPE_LINE ? 0 : -1;
 }
 
+static int
+geosearch_cast(zval *zv)
+{
+    if (Z_TYPE_P(zv) == IS_ARRAY) {
+        zend_hash_apply(Z_ARRVAL_P(zv), geosearch_cast);
+    } else if (Z_TYPE_P(zv) == IS_STRING) {
+        convert_to_double(zv);
+    }
+    return SUCCESS;
+}
+
+PHP_REDIS_API int
+redis_geosearch_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                         zval *z_tab, void *ctx)
+{
+    int numElems;
+    zval z_ret, z_multi_result, z_sub, z_tmp, *z_ele, *zv;
+    zend_string *zkey;
+
+    if (read_mbulk_header(redis_sock, &numElems) < 0) {
+        return FAILURE;
+    }
+
+    if (numElems < 0 && redis_sock->null_mbulk_as_null) {
+        ZVAL_NULL(&z_ret);
+    } else {
+        array_init(&z_ret);
+        if (ctx == NULL) {
+            redis_mbulk_reply_loop(redis_sock, &z_ret, numElems, UNSERIALIZE_NONE);
+        } else {
+            array_init(&z_multi_result);
+            redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_multi_result);
+
+            ZEND_HASH_FOREACH_VAL(Z_ARRVAL(z_multi_result), z_ele) {
+                // The first item in the sub-array is always the name of the returned item
+                zv = zend_hash_index_find(Z_ARRVAL_P(z_ele), 0);
+                zkey = zval_get_string(zv);
+
+                zend_hash_index_del(Z_ARRVAL_P(z_ele), 0);
+
+                // The other information is returned in the following order as successive
+                // elements of the sub-array: distance, geohash, coordinates
+                zend_hash_apply(Z_ARRVAL_P(z_ele), geosearch_cast);
+
+                // Copy values to re-order from zero
+                array_init(&z_sub);
+                ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_ele), zv) {
+                    ZVAL_ZVAL(&z_tmp, zv, 1, 0);
+                    add_next_index_zval(&z_sub, &z_tmp);
+                } ZEND_HASH_FOREACH_END();
+
+                add_assoc_zval_ex(&z_ret, ZSTR_VAL(zkey), ZSTR_LEN(zkey), &z_sub);
+                zend_string_release(zkey);
+            } ZEND_HASH_FOREACH_END();
+
+            // Cleanup
+            zval_dtor(&z_multi_result);
+        }
+    }
+
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_ZVAL(&z_ret, 0, 1);
+    } else {
+        add_next_index_zval(z_tab, &z_ret);
+    }
+
+    return SUCCESS;
+}
+
 /* Helper function to consume Redis stream message data.  This is useful for
  * multiple stream callers (e.g. XREAD[GROUP], and X[REV]RANGE handlers). */
 PHP_REDIS_API int
