@@ -920,7 +920,7 @@ $redis->exists('key'); /* 1 */
 $redis->exists('NonExistingKey'); /* 0 */
 
 $redis->mset(['foo' => 'foo', 'bar' => 'bar', 'baz' => 'baz']);
-$redis->exists(['foo', 'bar', 'baz]); /* 3 */
+$redis->exists(['foo', 'bar', 'baz']); /* 3 */
 $redis->exists('foo', 'bar', 'baz'); /* 3 */
 ~~~
 
