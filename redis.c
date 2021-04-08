@@ -1152,7 +1152,7 @@ PHP_METHOD(Redis, close)
 /* {{{ proto boolean Redis::set(string key, mixed val, long timeout,
  *                              [array opt) */
 PHP_METHOD(Redis, set) {
-    REDIS_PROCESS_CMD(set, redis_boolean_response);
+    REDIS_PROCESS_CMD(set, redis_set_response);
 }
 
 /* {{{ proto boolean Redis::setex(string key, long expire, string value)

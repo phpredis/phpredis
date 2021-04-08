@@ -1532,6 +1532,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key = NULL, *exp_type = NULL, *set_type = NULL;
     long exp_set = 0, keep_ttl = 0;
     zend_long expire = -1;
+    zend_bool get = 0;
     size_t key_len;
 
     // Make sure the function is being called correctly
@@ -1569,6 +1570,8 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             } else if (Z_TYPE_P(v) == IS_STRING) {
                 if (ZVAL_STRICMP_STATIC(v, "KEEPTTL")) {
                     keep_ttl  = 1;
+                } else if (ZVAL_STRICMP_STATIC((v), "GET")) {
+                    get = 1;
                 } else if (ZVAL_IS_NX_XX_ARG(v)) {
                     set_type = Z_STRVAL_P(v);
                 }
@@ -1600,7 +1603,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Calculate argc based on options set */
-    int argc = 2 + (exp_type ? 2 : 0) + (set_type != NULL) + (keep_ttl != 0);
+    int argc = 2 + (exp_type ? 2 : 0) + (set_type != NULL) + (keep_ttl != 0) + get;
 
     /* Initial SET <key> <value> */
     redis_cmd_init_sstr(&cmdstr, argc, "SET", 3);
@@ -1616,6 +1619,10 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_cmd_append_sstr(&cmdstr, set_type, strlen(set_type));
     if (keep_ttl)
         redis_cmd_append_sstr(&cmdstr, "KEEPTTL", 7);
+    if (get) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "GET");
+        *ctx = redis_sock;
+    }
 
     /* Push command and length to the caller */
     *cmd = cmdstr.c;
