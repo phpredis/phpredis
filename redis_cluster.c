@@ -520,7 +520,7 @@ PHP_METHOD(RedisCluster, get) {
 
 /* {{{ proto bool RedisCluster::set(string key, string value) */
 PHP_METHOD(RedisCluster, set) {
-    CLUSTER_PROCESS_CMD(set, cluster_bool_resp, 0);
+    CLUSTER_PROCESS_CMD(set, cluster_set_resp, 0);
 }
 /* }}} */
 

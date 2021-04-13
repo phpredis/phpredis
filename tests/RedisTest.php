@@ -442,6 +442,11 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->ttl('foo') > -1);
         $this->redis->set('foo', 'bar', ['XX']);
         $this->assertTrue($this->redis->ttl('foo') == -1);
+
+        if (version_compare($this->version, "6.2.0") < 0)
+            return;
+
+        $this->assertTrue($this->redis->set('foo', 'baz', ['GET']) === 'bar');
     }
 
     public function testGetSet() {

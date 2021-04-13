@@ -1294,6 +1294,15 @@ redis_zdiff_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *
 }
 
 PHP_REDIS_API int
+redis_set_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    if (ctx == NULL) {
+        return redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    }
+    return redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+}
+
+PHP_REDIS_API int
 redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                             zval *z_tab, void *ctx,
                             SuccessCallback success_callback)
