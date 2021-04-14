@@ -667,7 +667,7 @@ redis_zdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     if (withscores) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WITHSCORES");
-        *ctx = redis_sock;
+        *ctx = PHPREDIS_CTX_PTR;
     }
 
     *cmd = cmdstr.c;
@@ -785,7 +785,7 @@ redis_zinterunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     if (withscores) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WITHSCORES");
-        *ctx = redis_sock;
+        *ctx = PHPREDIS_CTX_PTR;
     }
 
     *cmd = cmdstr.c;
@@ -1621,7 +1621,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_cmd_append_sstr(&cmdstr, "KEEPTTL", 7);
     if (get) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "GET");
-        *ctx = redis_sock;
+        *ctx = PHPREDIS_CTX_PTR;
     }
 
     /* Push command and length to the caller */
