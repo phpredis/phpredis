@@ -3619,7 +3619,7 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
-// XPENDING key group [start end count] [consumer]
+// XPENDING key group [start end count [consumer] [idle]]
 int redis_xpending_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                        char **cmd, int *cmd_len, short *slot, void **ctx)
 {
@@ -3627,13 +3627,13 @@ int redis_xpending_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key, *group, *start = NULL, *end = NULL, *consumer = NULL;
     size_t keylen, grouplen, startlen, endlen, consumerlen;
     int argc;
-    zend_long count = -1;
+    zend_long count = -1, idle = 0;
 
     // XPENDING mystream group55 - + 10 consumer-123
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss|ssls", &key,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss|sslsl", &key,
                               &keylen, &group, &grouplen, &start, &startlen,
-                              &end, &endlen, &count, &consumer, &consumerlen)
-                              == FAILURE)
+                              &end, &endlen, &count, &consumer, &consumerlen,
+                              &idle) == FAILURE)
     {
         return FAILURE;
     }
@@ -3643,8 +3643,8 @@ int redis_xpending_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    /* Calculate argc.  It's either 2, 5, or 6 */
-    argc = 2 + (start != NULL ? 3 + (consumer != NULL) : 0);
+    /* Calculate argc.  It's either 2, 5, 6 or 7 */
+    argc = 2 + (start != NULL ? 3 + (consumer != NULL) + (idle != 0) : 0);
 
     /* Construct command and add required arguments */
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "XPENDING");
@@ -3653,6 +3653,10 @@ int redis_xpending_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Add optional argumentst */
     if (start) {
+        if (idle != 0) {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "IDLE");
+            redis_cmd_append_sstr_long(&cmdstr, (long)idle);
+        }
         redis_cmd_append_sstr(&cmdstr, start, startlen);
         redis_cmd_append_sstr(&cmdstr, end, endlen);
         redis_cmd_append_sstr_long(&cmdstr, (long)count);
