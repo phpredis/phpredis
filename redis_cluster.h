@@ -13,7 +13,7 @@
     redis_##name##_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &cmd, \
                        &cmd_len, &slot)
 
-/* Append information required to handle MULTI commands to the tail of our MULTI 
+/* Append information required to handle MULTI commands to the tail of our MULTI
  * linked list. */
 #define CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx) \
     clusterFoldItem *_item; \
@@ -69,8 +69,8 @@
         CLUSTER_ENQUEUE_RESPONSE(c, slot, resp_func, ctx); \
         RETURN_ZVAL(getThis(), 1, 0); \
     } \
-    resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx); 
-        
+    resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
+
 /* More generic processing, where only the keyword differs */
 #define CLUSTER_PROCESS_KW_CMD(kw, cmdfunc, resp_func, readcmd) \
     redisCluster *c = GET_CONTEXT(); \
@@ -89,7 +89,7 @@
         CLUSTER_ENQUEUE_RESPONSE(c, slot, resp_func, ctx); \
         RETURN_ZVAL(getThis(), 1, 0); \
     } \
-    resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx); 
+    resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
 
 /* Create cluster context */
 zend_object *create_cluster_context(zend_class_entry *class_type);
@@ -293,6 +293,10 @@ PHP_METHOD(RedisCluster, setoption);
 PHP_METHOD(RedisCluster, _prefix);
 PHP_METHOD(RedisCluster, _serialize);
 PHP_METHOD(RedisCluster, _unserialize);
+PHP_METHOD(RedisCluster, _compress);
+PHP_METHOD(RedisCluster, _uncompress);
+PHP_METHOD(RedisCluster, _pack);
+PHP_METHOD(RedisCluster, _unpack);
 PHP_METHOD(RedisCluster, _masters);
 PHP_METHOD(RedisCluster, _redir);
 

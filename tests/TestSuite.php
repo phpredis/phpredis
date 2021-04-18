@@ -39,6 +39,18 @@ class TestSuite
     public function getPort() { return $this->i_port; }
     public function getAuth() { return $this->auth; }
 
+    public static function getAvailableCompression() {
+        $result[] = Redis::COMPRESSION_NONE;
+        if (defined('Redis::COMPRESSION_LZF'))
+            $result[] = Redis::COMPRESSION_LZF;
+        if (defined('Redis::COMPRESSION_LZ4'))
+            $result[] = Redis::COMPRESSION_LZ4;
+        if (defined('Redis::COMPRESSION_ZSTD'))
+            $result[] = Redis::COMPRESSION_ZSTD;
+
+        return $result;
+    }
+
     /**
      * Returns the fully qualified host path,
      * which may be used directly for php.ini parameters like session.save_path

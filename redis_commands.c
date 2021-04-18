@@ -4210,4 +4210,67 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     RETURN_ZVAL(&z_ret, 0, 0);
 }
 
+void redis_compress_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+    zend_string *zstr;
+    size_t len;
+    char *buf;
+    int cmp_free;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &zstr) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    cmp_free = redis_compress(redis_sock, &buf, &len, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
+    RETVAL_STRINGL(buf, len);
+    if (cmp_free) efree(buf);
+}
+
+void redis_uncompress_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                              zend_class_entry *ex)
+{
+    zend_string *zstr;
+    size_t len;
+    char *buf;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &zstr) == FAILURE) {
+        RETURN_FALSE;
+    } else if (ZSTR_LEN(zstr) == 0 || redis_sock->compression == REDIS_COMPRESSION_NONE) {
+        RETURN_STR_COPY(zstr);
+    }
+
+    if (!redis_uncompress(redis_sock, &buf, &len, ZSTR_VAL(zstr), ZSTR_LEN(zstr))) {
+        zend_throw_exception(ex, "Invalid compressed data or uncompression error", 0);
+        RETURN_FALSE;
+    }
+
+    RETVAL_STRINGL(buf, len);
+    efree(buf);
+}
+
+void redis_pack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+    int valfree;
+    size_t len;
+    char *val;
+    zval *zv;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &zv) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    valfree = redis_pack(redis_sock, zv, &val, &len);
+    RETVAL_STRINGL(val, len);
+    if (valfree) efree(val);
+}
+
+void redis_unpack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+    zend_string *str;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &str) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_unpack(redis_sock, ZSTR_VAL(str), ZSTR_LEN(str), return_value) == 0) {
+        RETURN_STR_COPY(str);
+    }
+}
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */
