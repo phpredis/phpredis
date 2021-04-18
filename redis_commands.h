@@ -52,7 +52,7 @@ int redis_kv_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_key_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);     
+    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_key_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
@@ -96,11 +96,11 @@ typedef int (*zrange_cb)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                          char *,char**,int*,int*,short*,void**);
 
 int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char *kw, char **cmd, int *cmd_len, int *withscores, short *slot, 
+    char *kw, char **cmd, int *cmd_len, int *withscores, short *slot,
     void **ctx);
 
 int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char *kw, char **cmd, int *cmd_len, int *withscores, short *slot, 
+    char *kw, char **cmd, int *cmd_len, int *withscores, short *slot,
     void **ctx);
 
 int redis_zdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
@@ -143,7 +143,7 @@ int redis_georadiusbymember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
 /* Commands which need a unique construction mechanism.  This is either because
- * they don't share a signature with any other command, or because there is 
+ * they don't share a signature with any other command, or because there is
  * specific processing we do (e.g. verifying subarguments) that make them
  * unique */
 
@@ -174,7 +174,7 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_hstrlen_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
-int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
+int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_bitcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
@@ -313,21 +313,28 @@ int redis_sentinel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_sentinel_str_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
-/* Commands that don't communicate with Redis at all (such as getOption, 
+/* Commands that don't communicate with Redis at all (such as getOption,
  * setOption, _prefix, _serialize, etc).  These can be handled in one place
- * with the method of grabbing our RedisSock* object in different ways 
+ * with the method of grabbing our RedisSock* object in different ways
  * depending if this is a Redis object or a RedisCluster object. */
 
-void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS, 
+void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, redisCluster *c);
-void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS, 
+void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, redisCluster *c);
-void redis_prefix_handler(INTERNAL_FUNCTION_PARAMETERS, 
+void redis_prefix_handler(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock);
-void redis_serialize_handler(INTERNAL_FUNCTION_PARAMETERS, 
+void redis_serialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock);
-void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS, 
+void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zend_class_entry *ex);
+void redis_compress_handler(INTERNAL_FUNCTION_PARAMETERS,
+    RedisSock *redis_sock);
+void redis_uncompress_handler(INTERNAL_FUNCTION_PARAMETERS,
+    RedisSock *redis_sock, zend_class_entry *ex);
+
+void redis_pack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
+void redis_unpack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock);
 
 #endif
 

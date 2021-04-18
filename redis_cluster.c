@@ -110,6 +110,10 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, _redir, arginfo_void, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _serialize, arginfo_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, _unserialize, arginfo_value, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, _compress, arginfo_value, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, _uncompress, arginfo_value, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, _pack, arginfo_value, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, _unpack, arginfo_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, acl, arginfo_acl_cl, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, append, arginfo_key_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, bgrewriteaof, arginfo_key_or_address, ZEND_ACC_PUBLIC)
@@ -1969,6 +1973,27 @@ PHP_METHOD(RedisCluster, _unserialize) {
         c->flags, redis_cluster_exception_ce);
 }
 /* }}} */
+
+PHP_METHOD(RedisCluster, _compress) {
+    redisCluster *c = GET_CONTEXT();
+    redis_compress_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags);
+}
+
+PHP_METHOD(RedisCluster, _uncompress) {
+    redisCluster *c = GET_CONTEXT();
+    redis_uncompress_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags,
+                             redis_cluster_exception_ce);
+}
+
+PHP_METHOD(RedisCluster, _pack) {
+    redisCluster *c = GET_CONTEXT();
+    redis_pack_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags);
+}
+
+PHP_METHOD(RedisCluster, _unpack) {
+    redisCluster *c = GET_CONTEXT();
+    redis_unpack_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags);
+}
 
 /* {{{ proto array RedisCluster::_masters() */
 PHP_METHOD(RedisCluster, _masters) {

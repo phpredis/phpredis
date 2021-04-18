@@ -165,8 +165,14 @@ PHP_METHOD(Redis, role);
 PHP_METHOD(Redis, getLastError);
 PHP_METHOD(Redis, clearLastError);
 PHP_METHOD(Redis, _prefix);
+PHP_METHOD(Redis, _pack);
+PHP_METHOD(Redis, _unpack);
+
 PHP_METHOD(Redis, _serialize);
 PHP_METHOD(Redis, _unserialize);
+
+PHP_METHOD(Redis, _compress);
+PHP_METHOD(Redis, _uncompress);
 
 PHP_METHOD(Redis, mset);
 PHP_METHOD(Redis, msetnx);

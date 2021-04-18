@@ -286,6 +286,10 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, _prefix, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _serialize, arginfo_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _unserialize, arginfo_value, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, _pack, arginfo_value, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, _unpack, arginfo_value, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, _compress, arginfo_value, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, _uncompress, arginfo_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, acl, arginfo_acl, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, append, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, auth, arginfo_auth, ZEND_ACC_PUBLIC)
@@ -3292,6 +3296,51 @@ PHP_METHOD(Redis, _unserialize) {
 
     redis_unserialize_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         redis_exception_ce);
+}
+
+PHP_METHOD(Redis, _compress) {
+    RedisSock *redis_sock;
+
+    // Grab socket
+    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    redis_compress_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+}
+
+PHP_METHOD(Redis, _uncompress) {
+    RedisSock *redis_sock;
+
+    // Grab socket
+    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    redis_uncompress_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+        redis_exception_ce);
+}
+
+PHP_METHOD(Redis, _pack) {
+    RedisSock *redis_sock;
+
+    // Grab socket
+    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    redis_pack_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+}
+
+PHP_METHOD(Redis, _unpack) {
+    RedisSock *redis_sock;
+
+    // Grab socket
+    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    redis_unpack_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 }
 
 /* {{{ proto Redis::getLastError() */

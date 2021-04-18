@@ -121,6 +121,11 @@ redis_key_prefix(RedisSock *redis_sock, char **key, size_t *key_len);
 PHP_REDIS_API int
 redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret);
 
+PHP_REDIS_API int
+redis_compress(RedisSock *redis_sock, char **dst, size_t *dstlen, char *buf, size_t len);
+PHP_REDIS_API int
+redis_uncompress(RedisSock *redis_sock, char **dst, size_t *dstlen, const char *src, size_t len);
+
 PHP_REDIS_API int redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len);
 PHP_REDIS_API int redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret);
 
