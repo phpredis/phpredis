@@ -680,6 +680,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_xpending, 0, 0, 2)
     ZEND_ARG_INFO(0, str_end)
     ZEND_ARG_INFO(0, i_count)
     ZEND_ARG_INFO(0, str_consumer)
+    ZEND_ARG_INFO(0, idle)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_xrange, 0, 0, 3)
