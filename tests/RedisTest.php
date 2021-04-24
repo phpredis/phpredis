@@ -1971,8 +1971,13 @@ class Redis_Test extends TestSuite
         /* CLIENT GETNAME */
         $this->assertTrue($this->redis->client('getname'), 'phpredis_unit_tests');
 
+        if (version_compare($this->version, "6.2.0") >= 0) {
+            $this->assertFalse(empty($this->redis->client('info')));
+        }
+
         /* CLIENT KILL -- phpredis will reconnect, so we can do this */
         $this->assertTrue($this->redis->client('kill', $str_addr));
+
     }
 
     public function testSlowlog() {

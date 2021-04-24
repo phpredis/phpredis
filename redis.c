@@ -3489,6 +3489,7 @@ PHP_METHOD(Redis, getAuth) {
 
 /*
  * $redis->client('list');
+ * $redis->client('info');
  * $redis->client('kill', <ip:port>);
  * $redis->client('setname', <name>);
  * $redis->client('getname');
@@ -3529,6 +3530,11 @@ PHP_METHOD(Redis, client) {
             redis_client_list_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock, NULL, NULL);
         }
         REDIS_PROCESS_RESPONSE(redis_client_list_reply);
+    } else if (!strncasecmp(opt, "info", 4)) {
+        if (IS_ATOMIC(redis_sock)) {
+            redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        }
+        REDIS_PROCESS_RESPONSE(redis_string_response);
     } else {
         if (IS_ATOMIC(redis_sock)) {
             redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
