@@ -2205,6 +2205,11 @@ class Redis_Test extends TestSuite
             $this->assertTrue(1 === $this->redis->zAdd('key', [], 1, 'val1')); // empty options
             $this->assertTrue(1 === $this->redis->zAdd('key', ['nx'], 3, 'val3')); // nx option
             $this->assertTrue(0 === $this->redis->zAdd('key', ['xx'], 3, 'val3')); // xx option
+
+            if (version_compare($this->version, "6.2.0") >= 0) {
+                $this->assertTrue(0 === $this->redis->zAdd('key', ['lt'], 4, 'val3')); // lt option
+                $this->assertTrue(0 === $this->redis->zAdd('key', ['gt'], 2, 'val3')); // gt option
+            }
         }
 
         $this->assertTrue(['val0', 'val1', 'val2', 'val3', 'val4', 'val5'] === $this->redis->zRange('key', 0, -1));
