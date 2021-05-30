@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2020-10-22</date>
+ <date>2021-03-24</date>
  <version>
-  <release>5.3.2</release>
-  <api>5.3.2</api>
+  <release>5.3.4</release>
+  <api>5.3.4</api>
  </version>
  <stability>
   <release>stable</release>
@@ -38,46 +38,26 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    This release containse some bugfixes and small improvements.
+    phpredis 5.3.4
+
+    This release fixes a multi/pipeline segfault on apple silicon as well as 
+    two small compression related bugs.
+
     You can find a detailed list of changes in Changelog.md and package.xml
+
+    * Fix multi/pipeline segfault on Apple silicon [e0796d48] (Michael Grunder)
+    * Pass compression flag on HMGET in RedisCluster [edc724e6] (Adam Olley)
+    * Abide by ZSTD error return constants [8400ed1c] (Michael Grunder)
+    * Fix timing related CI session tests [9b986bf8] (Michael Grunder)
 
     * Sponsors
       ~ Audiomack - https://audiomack.com
+      ~ Open LMS - https://openlms.net
       ~ BlueHost - https://bluehost.com
-      ~ Redis Cache Pro for WordPress - https://wprediscache.com
+      ~ Object Cache Pro for WordPress - https://objectcache.pro
       ~ Avtandil Kikabidze - https://github.com/akalongman
-      ~ Oleg Babushkin - https://github.com/olbabushkin
-
-    phpredis 5.3.2
-
-    * Use "%.17g" sprintf format for doubles as done in Redis server. [32be3006] (Pavlo Yatsukhnenko)
-    * Allow to pass NULL as RedisCluster stream context options. [72024afe] (Pavlo Yatsukhnenko)
-
-    ---
-
-    phpredis 5.3.2RC2
-
-    ---
-
-    * Verify SET options are strings before testing them as strings [514bc371] (Michael Grunder)
-
-    ---
-
-    phpredis 5.3.2RC1
-
-    ---
-    * Fix cluster segfault when dealing with NULL multi bulk replies in RedisCluster [950e8de8] (Michael Grunder, Alex Offshore)
-    * Fix xReadGroup() must return message id [500916a4] (Pavlo Yatsukhnenko)
-    * Fix memory leak in rediscluster session handler [b2cffffc] (Pavlo Yatsukhnenko)
-    * Fix XInfo() returns false if the stream is empty [5719c9f7, 566fdeeb] (Pavlo Yatsukhnenko, Michael Grunder)
-    * Relax requirements on set's expire argument [36458071] (Michael Grunder)
-    * Refactor redis_sock_check_liveness [c5950644] (Pavlo Yatsukhnenko)
-    * PHP8 compatibility [a7662da7, f4a30cb2, 17848791] (Pavlo Yatsukhnenko, Remi Collet)
-    * Update documentation [c9ed151d, 398c99d9] (Ali Alwash, Gregoire Pineau)
-    * Add Redis::OPT_NULL_MULTIBULK_AS_NULL setting to treat NULL multi bulk replies as NULL instead of []. [950e8de8] (Michael Grunder, Alex Offshore)
-    * Allow to specify stream context for rediscluster session handler [a8daaff8, 4fbe7df7] (Pavlo Yatsukhnenko)
-    * Add new parameter to RedisCluster to specify stream ssl/tls context. [f771ea16] (Pavlo Yatsukhnenko)
-    * Add new parameter to RedisSentinel to specify auth information [81c502ae] (Pavlo Yatsukhnenko)
+      ~ Zaher Ghaibeh - https://github.com/zaherg
+      ~ BatchLabs - https://batch.com
  </notes>
  <contents>
   <dir name="/">
@@ -152,6 +132,33 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-zstd" prompt="enable zstd compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.3.3</release><api>5.3.3</api></version>
+   <date>2021-03-23</date>
+   <notes>
+    phpredis 5.3.3
+
+    This release mostly includes just small PHP 8 Windows compatibility fixes
+    such that pecl.php.net can automatically build Windows DLLs.
+
+    You can find a detailed list of changes in Changelog.md and package.xml
+
+    * Fix PHP8 Windows includes [270b4db8] (Jan-E)
+    * Fix hash ops for php 8.0.1 [87297cbb] (defender-11)
+    * Disable cloning Redis and RedisCluster objects [cd05a344]
+      (Michael Grunder)
+
+    * Sponsors
+      ~ Audiomack - https://audiomack.com
+      ~ BlueHost - https://bluehost.com
+      ~ Redis Cache Pro for WordPress - https://wprediscache.com
+      ~ Avtandil Kikabidze - https://github.com/akalongman
+      ~ Zaher Ghaibeh - https://github.com/zaherg
+      ~ BatchLabs - https://batch.com
+   </notes>
+  </release>
+
   <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>5.3.2</release><api>5.3.2</api></version>

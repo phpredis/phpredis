@@ -2986,7 +2986,6 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
                 if (len != ZSTD_CONTENTSIZE_ERROR && len != ZSTD_CONTENTSIZE_UNKNOWN && len <= INT_MAX)
                 {
                     size_t zlen;
-
                     data = emalloc(len);
                     zlen = ZSTD_decompress(data, len, val, val_len);
                     if (ZSTD_isError(zlen) || zlen != len) {
