@@ -17,3 +17,4 @@ run-tests.php
 idea/*
 .cquery
 tags
+.vscode/*

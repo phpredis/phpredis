@@ -1,7 +1,8 @@
 # PhpRedis
 
-[![Build Status](https://travis-ci.org/phpredis/phpredis.svg?branch=develop)](https://travis-ci.org/phpredis/phpredis)
+[![Build Status](https://travis-ci.com/phpredis/phpredis.svg?branch=develop)](https://travis-ci.com/phpredis/phpredis)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/13205/badge.svg)](https://scan.coverity.com/projects/phpredis-phpredis)
+[![PHP version from Travis config](https://img.shields.io/travis/php-v/phpredis/phpredis/develop)](https://img.shields.io/travis/php-v/phpredis/phpredis/develop)
 
 The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 This code has been developed and maintained by Owlient from November 2009 to March 2011.
@@ -20,10 +21,7 @@ You can also make a one-time contribution with one of the links below.
 [![Ethereum](https://en.cryptobadges.io/badge/micro/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)](https://en.cryptobadges.io/donate/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)
 
 ## Sponsors
-
-<a href="https://audiomack.com">
-    <img src="https://styleguide.audiomack.com/styleguide/assets/dl/inline-orange-large.png" alt="Audiomack.com" width="150">
-</a>
+<a href="https://audiomack.com"><img src="https://styleguide.audiomack.com/styleguide/assets/dl/inline-orange-large.png" alt="Audiomack.com" width="150"></a><a href="https://bluehost.com"><img src="https://upload.wikimedia.org/wikipedia/commons/2/22/Bluehost-logo.png" alt="Bluehost.com" width="150"></a>
 
 # Table of contents
 -----
@@ -75,12 +73,12 @@ session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeou
 * timeout (float): the connection timeout to a redis host, expressed in seconds. If the host is unreachable in that amount of time, the session storage will be unavailable for the client. The default timeout is very high (86400 seconds).
 * persistent (integer, should be 1 or 0): defines if a persistent connection should be used. **(experimental setting)**
 * prefix (string, defaults to "PHPREDIS_SESSION:"): used as a prefix to the Redis key in which the session is stored. The key is composed of the prefix followed by the session ID.
-* auth (string, empty by default): used to authenticate with the server prior to sending commands.
+* auth (string, or an array with one or two elements): used to authenticate with the server prior to sending commands.
 * database (integer): selects a different database.
 
 Sessions have a lifetime expressed in seconds and stored in the INI variable "session.gc_maxlifetime". You can change it with [`ini_set()`](http://php.net/ini_set).
 The session handler requires a version of Redis supporting `EX` and `NX` options of `SET` command (at least 2.6.12).
-phpredis can also connect to a unix domain socket: `session.save_path = "unix:///var/run/redis/redis.sock?persistent=1&weight=1&database=0`.
+phpredis can also connect to a unix domain socket: `session.save_path = "unix:///var/run/redis/redis.sock?persistent=1&weight=1&database=0"`.
 
 ### Session locking
 
@@ -93,10 +91,10 @@ Following INI variables can be used to configure session locking:
 redis.session.locking_enabled = 1
 ; How long should the lock live (in seconds)? Defaults to: value of max_execution_time.
 redis.session.lock_expire = 60
-; How long to wait between attempts to acquire lock, in microseconds (µs)?. Defaults to: 2000
+; How long to wait between attempts to acquire lock, in microseconds (µs)?. Defaults to: 20000
 redis.session.lock_wait_time = 50000
-; Maximum number of times to retry (-1 means infinite). Defaults to: 10
-redis.session.lock_retries = 10
+; Maximum number of times to retry (-1 means infinite). Defaults to: 100
+redis.session.lock_retries = 2000
 ~~~
 
 ## Distributed Redis Array
@@ -221,6 +219,9 @@ $redis->connect('tls://127.0.0.1'); // enable transport level security, port 637
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
 $redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
+
+/* With PhpRedis >= 5.3.0 you can specify authentication information on connect */
+$redis->connect('127.0.0.1', 6379, 1, NULL, 0, 0, ['auth' => ['phpredis', 'phpredis']]);
 ~~~
 
 **Note:** `open` is an alias for `connect` and will be removed in future versions of phpredis.
@@ -270,18 +271,31 @@ $redis->pconnect('/tmp/redis.sock'); // unix domain socket - would be another co
 
 ### auth
 -----
-_**Description**_: Authenticate the connection using a password.
+_**Description**_: Authenticate the connection using a password or a username and password.
 *Warning*: The password is sent in plain-text over the network.
 
 ##### *Parameters*
-*STRING*: password
+*MIXED*: password
 
 ##### *Return value*
 *BOOL*: `TRUE` if the connection is authenticated, `FALSE` otherwise.
 
+*Note*: In order to authenticate with a username and password you need Redis >= 6.0.
+
 ##### *Example*
 ~~~php
+/* Authenticate with the password 'foobared' */
 $redis->auth('foobared');
+
+/* Authenticate with the username 'phpredis', and password 'haxx00r' */
+$redis->auth(['phpredis', 'haxx00r']);
+
+/* Authenticate with the password 'foobared' */
+$redis->auth(['foobared']);
+
+/* You can also use an associative array specifying user and pass */
+$redis->auth(['user' => 'phpredis', 'pass' => 'phpredis]);
+$redis->auth(['pass' => 'phpredis']);
 ~~~
 
 ### select
@@ -417,6 +431,7 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 
 ## Server
 
+1. [acl](#acl) - Manage Redis ACLs
 1. [bgRewriteAOF](#bgrewriteaof) - Asynchronously rewrite the append-only file
 1. [bgSave](#bgsave) - Asynchronously save the dataset to disk (in background)
 1. [config](#config) - Get or Set the Redis server configuration parameters
@@ -430,6 +445,23 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 1. [slaveOf](#slaveof) - Make the server a slave of another instance, or promote it to master
 1. [time](#time) - Return the current server time
 1. [slowLog](#slowlog) - Access the Redis slowLog entries
+
+### acl
+-----
+_**Description**_: Execute the Redis ACL command.
+
+##### *Parameters*
+_variable_:  Minumum of one argument for `Redis` and two for `RedisCluster`.
+
+##### *Example*
+~~~php
+$redis->acl('USERS'); /* Get a list of users */
+$redis->acl('LOG');   /* See log of Redis' ACL subsystem */
+~~~
+
+*Note*:  In order to user the `ACL` command you must be communicating with Redis >= 6.0 and be logged into an account that has access to administration commands such as ACL.  Please reference [this tutorial](https://redis.io/topics/acl) for an overview of Redis 6 ACLs and [the redis command reference](https://redis.io/commands) for every ACL subcommand.
+
+*Note*: If you are connecting to Redis server >= 4.0.0 you can remove a key with the `unlink` method in the exact same way you would use `del`.  The Redis [unlink](https://redis.io/commands/unlink) command is non-blocking and will perform the actual deletion asynchronously.
 
 ### bgRewriteAOF
 -----
@@ -2732,10 +2764,19 @@ $redis->bzPopMax('zs1', 'zs2', 5);
 -----
 _**Description**_: Add one or more members to a sorted set or update its score if it already exists
 
+
+##### *Prototype*
+~~~php
+$redis->zAdd($key, [ $options ,] $score, $value [, $score1, $value1, ...]);
+~~~
+
 ##### *Parameters*
-*key*
+*key*: string
+*options*: array (optional)
 *score*: double  
 *value*: string
+*score1*: double
+*value1*: string
 
 ##### *Return value*
 *Long* 1 if the element is added. 0 otherwise.
@@ -2746,6 +2787,9 @@ $redis->zAdd('key', 1, 'val1');
 $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 5, 'val5');
 $redis->zRange('key', 0, -1); // [val0, val1, val5]
+
+// From Redis 3.0.2 it's possible to add options like XX, NX, CH, INCR
+$redis->zAdd('key', ['CH'], 5, 'val5', 10, 'val10', 15, 'val15');
 ~~~
 
 ### zCard, zSize
@@ -2929,6 +2973,7 @@ $redis->zRangeByScore('key', 0, 3); /* ['val0', 'val2'] */
 $redis->zRangeByScore('key', 0, 3, ['withscores' => TRUE]); /* ['val0' => 0, 'val2' => 2] */
 $redis->zRangeByScore('key', 0, 3, ['limit' => [1, 1]]); /* ['val2'] */
 $redis->zRangeByScore('key', 0, 3, ['withscores' => TRUE, 'limit' => [1, 1]]); /* ['val2' => 2] */
+$redis->zRangeByScore('key', '-inf', '+inf', ['withscores' => TRUE]); /* ['val0' => 0, 'val2' => 2, 'val10' => 10] */
 ~~~
 
 ### zRangeByLex
@@ -3077,7 +3122,7 @@ _**Description**_: Returns the score of a given member in the specified sorted s
 *member*
 
 ##### *Return value*
-*Double*
+*Double* or *FALSE* when the value is not found
 
 ##### *Example*
 ~~~php
@@ -4300,10 +4345,10 @@ using a persistent ID, and FALSE if we're not connected
 
 ### getAuth
 -----
-_**Description**_:  Get the password used to authenticate the phpredis connection
+_**Description**_:  Get the password (or username and password if using Redis 6 ACLs) used to authenticate the connection.
 
 ### *Parameters*
 None
 
 ### *Return value*
-*Mixed*  Returns the password used to authenticate a phpredis session or NULL if none was used, and FALSE if we're not connected
+*Mixed*  Returns NULL if no username/password are set, the password string if a password is set, and a `[username, password]` array if authenticated with a username and password.

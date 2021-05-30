@@ -4,6 +4,7 @@
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
 
+#define PHPREDIS_CTX_PTR ((void *)0xDEADC0DE)
 #define PHPREDIS_NOTUSED(v) ((void)v)
 
 #include "zend_llist.h"
@@ -12,7 +13,6 @@
 #include <zend_smart_str.h>
 #include <ext/standard/php_smart_string.h>
 
-#define PHPREDIS_ZVAL_IS_STRICT_FALSE(z) (Z_TYPE_P(z) == IS_FALSE)
 #define PHPREDIS_GET_OBJECT(class_entry, o) (class_entry *)((char *)o - XtOffsetOf(class_entry, std))
 #define PHPREDIS_ZVAL_GET_OBJECT(class_entry, z) PHPREDIS_GET_OBJECT(class_entry, Z_OBJ_P(z))
 
@@ -82,7 +82,8 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_COMPRESSION        7
 #define REDIS_OPT_REPLY_LITERAL      8
 #define REDIS_OPT_COMPRESSION_LEVEL  9
-#define REDIS_OPT_IGBINARY_NO_STRINGS    10
+#define REDIS_OPT_NULL_MBULK_AS_NULL 10
+#define REDIS_OPT_IGBINARY_NO_STRINGS 11
 
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
@@ -140,7 +141,7 @@ typedef enum {
 
 #define REDIS_SAVE_CALLBACK(callback, closure_context) do { \
     fold_item *fi = malloc(sizeof(fold_item)); \
-    fi->fun = (void *)callback; \
+    fi->fun = callback; \
     fi->ctx = closure_context; \
     fi->next = NULL; \
     if (redis_sock->current) { \
@@ -195,7 +196,7 @@ typedef enum {
         REDIS_PROCESS_RESPONSE_CLOSURE(resp_func, ctx) \
     }
 
-/* Process a command but with a specific command building function 
+/* Process a command but with a specific command building function
  * and keyword which is passed to us*/
 #define REDIS_PROCESS_KW_CMD(kw, cmdfunc, resp_func) \
     RedisSock *redis_sock; char *cmd; int cmd_len; void *ctx=NULL; \
@@ -210,6 +211,10 @@ typedef enum {
     } else { \
         REDIS_PROCESS_RESPONSE_CLOSURE(resp_func, ctx) \
     }
+
+/* Case sensitive compare against compile-time static string */
+#define REDIS_STRCMP_STATIC(s, len, sstr) \
+    (len == sizeof(sstr) - 1 && !strncmp(s, sstr, len))
 
 /* Case insensitive compare against compile-time static string */
 #define REDIS_STRICMP_STATIC(s, len, sstr) \
@@ -252,19 +257,14 @@ typedef enum {
     #endif
 #endif
 
-typedef struct fold_item {
-    zval * (*fun)(INTERNAL_FUNCTION_PARAMETERS, void *, ...);
-    void *ctx;
-    struct fold_item *next;
-} fold_item;
-
 /* {{{ struct RedisSock */
 typedef struct {
     php_stream         *stream;
     php_stream_context *stream_ctx;
     zend_string        *host;
     int                port;
-    zend_string        *auth;
+    zend_string        *user;
+    zend_string        *pass;
     double             timeout;
     double             read_timeout;
     long               retry_interval;
@@ -282,8 +282,8 @@ typedef struct {
     zend_string        *prefix;
 
     short              mode;
-    fold_item          *head;
-    fold_item          *current;
+    struct fold_item   *head;
+    struct fold_item   *current;
 
     zend_string        *pipeline_cmd;
 
@@ -293,9 +293,20 @@ typedef struct {
 
     int                readonly;
     int                reply_literal;
+    int                null_mbulk_as_null;
     int                tcp_keepalive;
 } RedisSock;
 /* }}} */
+
+/* Redis response handler function callback prototype */
+typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
+typedef int (*FailableResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock*, zval*, void*);
+
+typedef struct fold_item {
+    FailableResultCallback fun;
+    void *ctx;
+    struct fold_item *next;
+} fold_item;
 
 typedef struct {
     zend_llist list;
@@ -671,6 +682,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_xpending, 0, 0, 2)
     ZEND_ARG_INFO(0, str_end)
     ZEND_ARG_INFO(0, i_count)
     ZEND_ARG_INFO(0, str_consumer)
+    ZEND_ARG_INFO(0, idle)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_xrange, 0, 0, 3)

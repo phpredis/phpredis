@@ -6,11 +6,12 @@ class TestSkippedException extends Exception {}
 // phpunit is such a pain to install, we're going with pure-PHP here.
 class TestSuite
 {
-    /* Host the tests will use */
+    /* Host and port the unit tests will use */
     private $str_host;
+    private $i_port = 6379;
 
     /* Redis authentication we'll use */
-    private $str_auth;
+    private $auth;
 
     private static $_boo_colorize = false;
 
@@ -28,13 +29,15 @@ class TestSuite
     public static $errors = [];
     public static $warnings = [];
 
-    public function __construct($str_host, $str_auth) {
+    public function __construct($str_host, $i_port, $auth) {
         $this->str_host = $str_host;
-        $this->str_auth = $str_auth;
+        $this->i_port = $i_port;
+        $this->auth = $auth;
     }
 
     public function getHost() { return $this->str_host; }
-    public function getAuth() { return $this->str_auth; }
+    public function getPort() { return $this->i_port; }
+    public function getAuth() { return $this->auth; }
 
     /**
      * Returns the fully qualified host path,
@@ -45,7 +48,7 @@ class TestSuite
     protected function getFullHostPath()
     {
         return $this->str_host
-            ? 'tcp://' . $this->str_host . ':6379'
+            ? 'tcp://' . $this->str_host . ':' . $this->i_port
             : null;
     }
 
@@ -91,6 +94,75 @@ class TestSuite
         $bt = debug_backtrace(false);
         self::$errors []= sprintf("Assertion failed: %s:%d (%s)\n",
             $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+
+        return false;
+    }
+
+    protected function assertInArray($ele, $arr, $cb = NULL) {
+        if ($cb && !is_callable($cb))
+            die("Fatal:  assertInArray callback must be callable!\n");
+
+        if (($in = in_array($ele, $arr)) && (!$cb || $cb($arr[array_search($ele, $arr)])))
+            return true;
+
+
+        $bt = debug_backtrace(false);
+        $ex = $in ? 'validation' : 'missing';
+        self::$errors []= sprintf("Assertion failed: %s:%d (%s) [%s '%s']\n",
+            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], $ex, $ele);
+
+        return false;
+    }
+
+    protected function assertArrayKey($arr, $key, $cb = NULL) {
+        if ($cb && !is_callable($cb))
+            die("Fatal:  assertArrayKey callback must be callable\n");
+
+        if (($exists = isset($arr[$key])) && (!$cb || $cb($arr[$key])))
+            return true;
+
+        $bt = debug_backtrace(false);
+        $ex = $exists ? 'validation' : 'missing';
+        self::$errors []= sprintf("Assertion failed: %s:%d (%s) [%s '%s']\n",
+            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], $ex, $key);
+
+        return false;
+    }
+
+    protected function assertValidate($val, $cb) {
+        if ( ! is_callable($cb))
+            die("Fatal:  Callable assertValidate callback required\n");
+
+        if ($cb($val))
+            return true;
+
+        $bt = debug_backtrace(false);
+        self::$errors []= sprintf("Assertion failed: %s:%d (%s)\n",
+            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+
+        return false;
+    }
+
+    protected function assertThrowsMatch($arg, $cb, $regex = NULL) {
+        $threw = $match = false;
+
+        if ( ! is_callable($cb))
+            die("Fatal:  Callable assertThrows callback required\n");
+
+        try {
+            $cb($arg);
+        } catch (Exception $ex) {
+            $threw = true;
+            $match = !$regex || preg_match($regex, $ex->getMessage());
+        }
+
+        if ($threw && $match)
+            return true;
+
+        $bt = debug_backtrace(false);
+        $ex = !$threw ? 'no exception' : "no match '$regex'";
+        self::$errors []= sprintf("Assertion failed: %s:%d (%s) [%s]\n",
+            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], $ex);
 
         return false;
     }
@@ -157,7 +229,7 @@ class TestSuite
             posix_isatty(STDOUT);
     }
 
-    public static function run($className, $str_limit = NULL, $str_host = NULL, $str_auth = NULL) {
+    public static function run($className, $str_limit = NULL, $str_host = NULL, $i_port = NULL, $auth = NULL) {
         /* Lowercase our limit arg if we're passed one */
         $str_limit = $str_limit ? strtolower($str_limit) : $str_limit;
 
@@ -181,7 +253,7 @@ class TestSuite
             echo self::make_bold($str_out_name);
 
             $count = count($className::$errors);
-            $rt = new $className($str_host, $str_auth);
+            $rt = new $className($str_host, $i_port, $auth);
 
             try {
                 $rt->setUp();

@@ -23,10 +23,11 @@
 #define PHP_REDIS_H
 
 /* phpredis version */
-#define PHP_REDIS_VERSION "5.2.0"
+#define PHP_REDIS_VERSION "5.3.2"
 
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, __destruct);
+PHP_METHOD(Redis, acl);
 PHP_METHOD(Redis, append);
 PHP_METHOD(Redis, auth);
 PHP_METHOD(Redis, bgSave);
@@ -40,6 +41,7 @@ PHP_METHOD(Redis, bzPopMax);
 PHP_METHOD(Redis, bzPopMin);
 PHP_METHOD(Redis, close);
 PHP_METHOD(Redis, connect);
+PHP_METHOD(Redis, copy);
 PHP_METHOD(Redis, dbSize);
 PHP_METHOD(Redis, decr);
 PHP_METHOD(Redis, decrBy);
@@ -61,6 +63,7 @@ PHP_METHOD(Redis, info);
 PHP_METHOD(Redis, keys);
 PHP_METHOD(Redis, lInsert);
 PHP_METHOD(Redis, lLen);
+PHP_METHOD(Redis, lMove);
 PHP_METHOD(Redis, lPop);
 PHP_METHOD(Redis, lPush);
 PHP_METHOD(Redis, lPushx);
@@ -93,6 +96,7 @@ PHP_METHOD(Redis, sDiffStore);
 PHP_METHOD(Redis, sInter);
 PHP_METHOD(Redis, sInterStore);
 PHP_METHOD(Redis, sMembers);
+PHP_METHOD(Redis, sMisMember);
 PHP_METHOD(Redis, sMove);
 PHP_METHOD(Redis, sPop);
 PHP_METHOD(Redis, sRandMember);
@@ -124,6 +128,7 @@ PHP_METHOD(Redis, zCard);
 PHP_METHOD(Redis, zCount);
 PHP_METHOD(Redis, zIncrBy);
 PHP_METHOD(Redis, zLexCount);
+PHP_METHOD(Redis, zMscore);
 PHP_METHOD(Redis, zPopMax);
 PHP_METHOD(Redis, zPopMin);
 PHP_METHOD(Redis, zRange);
@@ -139,7 +144,11 @@ PHP_METHOD(Redis, zRevRangeByLex);
 PHP_METHOD(Redis, zRevRangeByScore);
 PHP_METHOD(Redis, zRevRank);
 PHP_METHOD(Redis, zScore);
+PHP_METHOD(Redis, zdiff);
+PHP_METHOD(Redis, zdiffstore);
+PHP_METHOD(Redis, zinter);
 PHP_METHOD(Redis, zinterstore);
+PHP_METHOD(Redis, zunion);
 PHP_METHOD(Redis, zunionstore);
 
 PHP_METHOD(Redis, eval);
@@ -252,6 +261,18 @@ PHP_METHOD(Redis, getPersistentID);
 PHP_METHOD(Redis, getAuth);
 PHP_METHOD(Redis, getMode);
 
+/* For convenience we store the salt as a printable hex string which requires 2
+ * characters per byte + 1 for the NULL terminator */
+#define REDIS_SALT_BYTES 32
+#define REDIS_SALT_SIZE ((2 * REDIS_SALT_BYTES) + 1)
+
+ZEND_BEGIN_MODULE_GLOBALS(redis)
+	char salt[REDIS_SALT_SIZE];
+ZEND_END_MODULE_GLOBALS(redis)
+
+ZEND_EXTERN_MODULE_GLOBALS(redis)
+#define REDIS_G(v) ZEND_MODULE_GLOBALS_ACCESSOR(redis, v)
+
 #ifdef ZTS
 #include "TSRM.h"
 #endif
@@ -259,10 +280,6 @@ PHP_METHOD(Redis, getMode);
 PHP_MINIT_FUNCTION(redis);
 PHP_MSHUTDOWN_FUNCTION(redis);
 PHP_MINFO_FUNCTION(redis);
-
-/* Redis response handler function callback prototype */
-typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS,
-    RedisSock *redis_sock, zval *z_tab, void *ctx);
 
 PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
 

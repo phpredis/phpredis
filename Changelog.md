@@ -7,25 +7,267 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [5.3.2] - 2020-10-22 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.2), [PECL](https://pecl.php.net/package/redis/5.3.2))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [BlueHost](https://bluehost.com)
+- [Redis Cache Pro for WordPress](https://wprediscache.com)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Oleg Babushkin](https://github.com/olbabushkin)
+
+### Fixed
+
+- Verify SET options are strings before testing them as strings
+  [514bc371](https://github.com/phpredis/phpredis/commit/514bc37102c08c1ba7222212b125390f34c35803)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Fix cluster segfault when dealing with NULL multi bulk replies in RedisCluster
+  [950e8de8](https://github.com/phpredis/phpredis/commit/950e8de807ba17ecfff62504a6ee7a959a5df714)
+  ([Michael Grunder](https://github.com/michael-grunder),
+   [Alex Offshore](https://github.com/offshore))
+- Fix xReadGroup() must return message id
+  [500916a4](https://github.com/phpredis/phpredis/commit/500916a4d052aa180aa8d27a9e147e64f3ee6303)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix memory leak in rediscluster session handler
+  [b2cffffc](https://github.com/phpredis/phpredis/commit/b2cffffc107541643bab7eb81751b497bc264639)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix XInfo() returns false if the stream is empty
+  [5719c9f7](https://github.com/phpredis/phpredis/commit/5719c9f7ff8ba4595c0f2d82e9549a604d925ed7),
+  [566fdeeb](https://github.com/phpredis/phpredis/commit/566fdeeb19c8112ac83cf4e47be6928626aa7b37)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko),
+   [Michael Grunder](https://github.com/michael-grunder))
+
+### Changed
+
+- Use "%.17g" sprintf format for doubles as done in Redis server.
+  [32be3006](https://github.com/phpredis/phpredis/commit/32be3006e6d5a9d58636efd53fe02aa22f18c496)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Relax requirements on set's expire argument
+  [36458071](https://github.com/phpredis/phpredis/commit/364580718891de94aac13dc352aa994d531d4272)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor redis_sock_check_liveness
+  [c5950644](https://github.com/phpredis/phpredis/commit/c5950644e92e61e0c3f38a8ab8a380f707102eb0)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- PHP8 compatibility
+  [a7662da7](https://github.com/phpredis/phpredis/commit/a7662da7924dcbaa74f5f2c6e1dce06b19e64bfc),
+  [f4a30cb2](https://github.com/phpredis/phpredis/commit/f4a30cb2bda7414b159bf8b1be69dad52ed6f008),
+  [17848791](https://github.com/phpredis/phpredis/commit/178487919148a0f8f1ad4cae62847bc4ae82ee8c)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko),
+   [Remi Collet](https://github.com/remicollet))
+- Update documentation
+  [c9ed151d](https://github.com/phpredis/phpredis/commit/c9ed151dbae1532a98c0c9322c9401c47d1da149),
+  [398c99d9](https://github.com/phpredis/phpredis/commit/398c99d9851b267d9aaaa42c097c5fe54d507a6e)
+  ([Ali Alwash](https://github.com/aalwash),
+   [Gregoire Pineau](https://github.com/lyrixx))
+
+### Added
+
+- Add `Redis::OPT_NULL_MULTIBULK_AS_NULL` setting to treat NULL multi bulk replies as `NULL` instead of `[]`.
+  [950e8de8](https://github.com/phpredis/phpredis/commit/950e8de807ba17ecfff62504a6ee7a959a5df714)
+  ([Michael Grunder](https://github.com/michael-grunder),
+   [Alex Offshore](https://github.com/offshore))
+- Allow to specify stream context for rediscluster session handler
+  [a8daaff8](https://github.com/phpredis/phpredis/commit/a8daaff87a055bb6b4fb8702151915f56e144649),
+  [4fbe7df7](https://github.com/phpredis/phpredis/commit/4fbe7df79b9b0e03f92e8323aed0bda9513bc20a)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add new parameter to RedisCluster to specify stream ssl/tls context.
+  [f771ea16](https://github.com/phpredis/phpredis/commit/f771ea16b77f39fcca555bec2d952412265197aa),
+  [72024afe](https://github.com/phpredis/phpredis/commit/72024afed3640230bbd1a017b2a374d12ab88e59)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add new parameter to RedisSentinel to specify auth information
+  [81c502ae](https://github.com/phpredis/phpredis/commit/81c502ae7c0de65d63cd514ee59849c9d1b0b952)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+## [5.3.1] - 2020-07-06 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.1), [PECL](https://pecl.php.net/package/redis/5.3.1))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [BlueHost](https://bluehost.com)
+- [Redis Cache Pro for WordPress](https://wprediscache.com)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+
+### Fixed
+
+- Properly clean up on session start failure
+  [066cff6a](https://github.com/phpredis/phpredis/commit/066cff6adee03ce05ec5d57083eb7995dfa4344d)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Treat NULL as a failure for redis_extract_auth_info
+  [49428a2f](https://github.com/phpredis/phpredis/commit/49428a2f7072dc30a52db4155aed3d382800b1a6),
+  [14ac969d](https://github.com/phpredis/phpredis/commit/14ac969da29dbf7203f8db31988ca26b9b45f583)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Don't dereference a NULL zend_string or try to efree it
+  [ff2e160f](https://github.com/phpredis/phpredis/commit/ff2e160f408efdc97676cffaa02093e65c2ad634),
+  [7fed06f2](https://github.com/phpredis/phpredis/commit/7fed60f248e2249e6cac5c5c3090509aa47647fb)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Fix config.m4 messages and test for and include php_hash.h
+  [83a1b7c5](https://github.com/phpredis/phpredis/commit/83a1b7c5e225abd94cd3459c52bf7d502dfb0979),
+  [3c56289c](https://github.com/phpredis/phpredis/commit/3c56289c71516a7c0ac81713ef2786c2b9e52274),
+  [08f202e7](https://github.com/phpredis/phpredis/commit/08f202e775037ccf849d7b933dddb467c9c2ee5f),
+  ([Remi Collet](https://github.com/remicollet))
+
+### Added
+
+- Add openSUSE installation instructions
+  [13a168f4](https://github.com/phpredis/phpredis/commit/13a168f42d6639a051d6f829d573dd81bcb97f3a)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+### Removed
+
+- Remove EOL Fedora installation instructions
+  [b4779e6a](https://github.com/phpredis/phpredis/commit/b4779e6a919103bd65fa0e6a0c88e658e05a3e7c)
+  ([Remi Collet](https://github.com/remicollet))
+
+## [5.3.0] - 2020-06-30 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.3.0), [PECL](https://pecl.php.net/package/redis/5.3.0))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [BlueHost](https://bluehost.com)
+- [Redis Cache Pro for WordPress](https://wprediscache.com)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+
+*There were no changes between 5.3.0RC2 and 5.3.0*
+
+## [5.3.0RC2] - 2020-06-26 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/5.3.0RC2), [PECL](https://pecl.php.net/package/redis/5.3.0RC2))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [BlueHost](https://bluehost.com)
+- [Redis Cache Pro for WordPress](https://wprediscache.com/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+
+### Fixed
+
+- Fix LZ4 configuration and use pkg-config if we have it
+  [df398cb0](https://github.com/phpredis/phpredis/commit/df398cb07cd10d870c6805d5834703dc39590b0f)
+  ([Remi Collet](https://github.com/remicollet))
+
+- Make sure persistent pool ID is NULL terminated
+  [0838b5bd](https://github.com/phpredis/phpredis/commit/0838b5bde7ef25d419868c7e705bf6c70d68ea20),
+  [57bb95bf](https://github.com/phpredis/phpredis/commit/57bb95bf5a01a2adb74e2bf73bb285488e0d1586)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+### Changed
+
+- Run LZ4 tests in Travis
+  [3ba3f06d](https://github.com/phpredis/phpredis/commit/3ba3f06d51ff126eb51dd697381c0e56b38bbcf3)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+## [5.3.0RC1]
+
 ### Sponsors :sparkling_heart:
 
 - [Audiomack.com](https://audiomack.com)
-- [Till Krüss](https://github.com/tillkruss)
+- [BlueHost](https://bluehost.com)
+- [Redis Cache Pro for WordPress](https://wprediscache.com/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+
+### Added
+
+- Support for Redis 6 ACLs
+  [a311cc4e](https://github.com/phpredis/phpredis/commit/a311cc4ec3cecdbaf83ba66985efa82137e37cc0)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+- LZ4 Compression
+  [04def9fb](https://github.com/phpredis/phpredis/commit/04def9fbe2194b3b711362de57260a6cd5216e69)
+  ([Ilia Alshanetsky](https://github.com/iliaal),
+   [Michael Grunder](https://github.com/michael-grunder))
+
+- Support for new Redis 6 arguments (XINFO FULL, SET KEEPTTL)
+  [a0c53e0b](https://github.com/phpredis/phpredis/commit/a0c53e0b30e0c6af15cc137415e7d65f6d1867f7),
+  [f9c7bb57](https://github.com/phpredis/phpredis/commit/f9c7bb5788c39614c23e3bb9ec42ec8d6d5bbaa1)
+  ([Victor Kislov](https://github.com/vityank),
+   [Michael Grunder](https://github.com/michael-grunder))
+
+- Support for TLS connections
+  [890ee0e6](https://github.com/phpredis/phpredis/commit/890ee0e656e545b18179cf247db94a33179ce1ab),
+  [b0671296](https://github.com/phpredis/phpredis/commit/b067129678264fc1c5c0f611ce1b192e05c14669)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- New option Redis::SCAN_PREFIX, Redis::SCAN_NOPREFIX
+  [e80600e2](https://github.com/phpredis/phpredis/commit/e80600e244b8442cb7c86e99b067966cd59bf2ee)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- Configurable unit test authentication arguments
+  [e37f38a3](https://github.com/phpredis/phpredis/commit/e37f38a39eb4bece8f49ebd0652112dc992084a0),
+  [201a9759](https://github.com/phpredis/phpredis/commit/201a97599953a9621bb8eb02dc8d5f08d16499a3)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko),
+   [Michael Grunder](https://github.com/michael-grunder))
+
+### Fixed
+
+- Improved cluster slot caching mechanism to fix a couple of bugs and make it more efficient.
+  [5ca4141c](https://github.com/phpredis/phpredis/commit/5ca4141c72e23816f146b49877a6a4b8098b34c6)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+- Stop calling Redis constructor when creating a RedisArray
+  [e41e19a8](https://github.com/phpredis/phpredis/commit/e41e19a8342212ee9cfe35f622804c9870d05ec2)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- Use ZEND_LONG_FMT instead of system `long`
+  [5bf88124](https://github.com/phpredis/phpredis/commit/5bf881244dd30b5310fcfcaf5bcd8f9e2675bb01)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+- Use long for SCAN iteration to fix potential overflow
+  [f13f9b7c](https://github.com/phpredis/phpredis/commit/f13f9b7c7f5e3a7d286b412541199a408a0a98bd)
+  ([Victor Kislov](https://github.com/vityank))
+
+- Fix config.m4 to test for the variable $PHP_REDIS_JSON and not the literal PHP_REDIS_JSON
+  [20a3dc72](https://github.com/phpredis/phpredis/commit/20a3dc7251cb0bf450ef2a1cfeeeaeaa10355cd2)
+  ([Mizuki Nakano](https://github.com/mi-nakano))
+
+- Fix compiler warnings
+  [b9b383f4](https://github.com/phpredis/phpredis/commit/b9b383f49939484dcddf1a5edefdb9d753baa7f8),
+  [215828e](https://github.com/phpredis/phpredis/commit/215828e3474dfd9ea72fdc6da67aa6bee2d95ddf)
+  ([Remi Collet](https://github.com/remicollet), [Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- Avoid use-after-free of RediSock
+  [8c45816d](https://github.com/phpredis/phpredis/commit/8c45816dbf4746f6557f83332be874bd78b5ce34)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- Fixed ZADD arginfo
+  [a8e2b021](https://github.com/phpredis/phpredis/commit/a8e2b021f9eb51ad3ed0cc89064e2f004c56f8ba)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 ### Changed
+
+- Store AUTH information in flags RedisSock rather than duplicating information.
+  [58dab564](https://github.com/phpredis/phpredis/commit/58dab5649fcc2cc63f5a29df83f783e154d7fa22)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- Refactor redis_sock_get_connection_pool logic.
+  [73212e1](https://github.com/phpredis/phpredis/commit/73212e141403ec47441142fe1c7fd5fad24f6720)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- Updated documentation to show LPUSH and RPUSH are variadic and fixed DEL documentation.
+  [92f8dde1](https://github.com/phpredis/phpredis/commit/92f8dde1c996d4e1c3d79226b888119307612c40)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+- Authenticate in redis_server_sock_open
+  [4ef465b5](https://github.com/phpredis/phpredis/commit/4ef465b57325d2d93234fd66af06a7091ce7d1ea)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- Dynamically include json.so in unit tests based on configuration
+  [0ce7ca2f](https://github.com/phpredis/phpredis/commit/0ce7ca2fb1eb2f3c445487957a49b70ad8d4ecb6)
+  (([Michael Grunder](https://github.com/michael-grunder))
+
+- Update save_path logic in Redis Cluster session unit tests
+  [dd66fce](https://github.com/phpredis/phpredis/commit/dd66fceeb232f9e1fb0a26373949e810180dc5fc)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+- Refactoring various bits of logic
+  [bbcf32a3](https://github.com/phpredis/phpredis/commit/bbcf32a37fa856ba0b50b489ba05bd3d43800fcc),
+  [a42cf189](https://github.com/phpredis/phpredis/commit/a42cf189a776fc43acf47ca519f1d7385cc27f2f),
+  [460c8f29](https://github.com/phpredis/phpredis/commit/460c8f29239c263e15a093c9bcdb6fb24587ec7d),
+  [b7f9df75](https://github.com/phpredis/phpredis/commit/b7f9df758b30187864012d5cd831dbbc5fa053d0),
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 - Use the portable `ZEND_LONG_FORMAT` family instead of C format specifiers
   [b9b383f4](https://github.com/phpredis/phpredis/commit/b9b383f4)
   ([Remi Collet](https://github.com/remicollet))
-
-- Make unit test authentication configurable
-  [201a9759](https://github.com/phpredis/phpredis/commit/201a9759)
-  ([Michel Grunder](https://github.com/michael-grunder))
-
-- Various small changes in library and cluster_library
-  [73212e14](https://github.com/phpredis/phpredis/commit/73212e14),
-  [460c8f29](https://github.com/phpredis/phpredis/commit/460c8f29)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 - PHP 8 compatibility
   [9ee94ca4](https://github.com/phpredis/phpredis/commit/9ee94ca4),

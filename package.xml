@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2020-03-02</date>
+ <date>2020-10-22</date>
  <version>
-  <release>5.2.0</release>
-  <api>5.2.0</api>
+  <release>5.3.2</release>
+  <api>5.3.2</api>
  </version>
  <stability>
   <release>stable</release>
@@ -38,54 +38,46 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 5.2.0
-
-    - There were no changes between 5.2.0RC2 and 5.2.0.
-
-    phpredis 5.2.0RC2
-
-    * Include RedisSentinelTest.php in package.xml! [eddbfc8f] (Michael Grunder)
-    * Fix -Wmaybe-uninitialized warning [740b8c87] (Remi Collet)
-    * Fix improper destructor when zipping values and scores [371ae7ae]
-      (Michael Grunder)
-    * Use php_rand instead of php_mt_rand for liveness challenge string
-      [9ef2ed89] (Michael Grunder)
-
-    phpredis 5.2.0RC1
-
-    This release contains initial support for Redis Sentinel as well as many
-    smaller bug fixes and improvements.  It is especially of interest if you
-    use persistent connections, as we've added logic to make sure they are in
-    a good state when retreving them from the pool.
-
-    IMPORTANT: Sentinel support is considered experimental and the API
-               will likely change based on user feedback.
+    This release containse some bugfixes and small improvements.
+    You can find a detailed list of changes in Changelog.md and package.xml
 
     * Sponsors
-      ~ Audiomack.com - https://audiomack.com
-      ~ Till Kruss - https://github.com/tillkruss
+      ~ Audiomack - https://audiomack.com
+      ~ BlueHost - https://bluehost.com
+      ~ Redis Cache Pro for WordPress - https://wprediscache.com
+      ~ Avtandil Kikabidze - https://github.com/akalongman
+      ~ Oleg Babushkin - https://github.com/olbabushkin
+
+    phpredis 5.3.2
+
+    * Use "%.17g" sprintf format for doubles as done in Redis server. [32be3006] (Pavlo Yatsukhnenko)
+    * Allow to pass NULL as RedisCluster stream context options. [72024afe] (Pavlo Yatsukhnenko)
 
     ---
 
-    * Initial support for RedisSentinel [90cb69f3, c94e28f1, 46da22b0, 5a609fa4,
-      383779ed] (Pavlo Yatsukhnenko)
+    phpredis 5.3.2RC2
 
-    * Houskeeping (spelling, doc changes, etc) [23f9de30, d07a8df6, 2d39b48d,
-      0ef488fc, 2c35e435, f52bd8a8, 2ddc5f21, 1ff7dfb7, db446138] (Tyson Andre,
-      Pavlo Yatsukhnenko, Michael Grunder, Tyson Andre)
+    ---
 
-    * Fix for ASK redirections [ba73fbee] (Michael Grunder)
-    * Create specific 'test skipped' exception [c3d83d44] (Michael Grunder)
-    * Fixed memory leaks in RedisCluster [a107c9fc] (Michael Grunder)
-    * Fixes for session lifetime values that underflow or overflow  [7a79ad9c,
-      3c48a332] (Michael Grunder)
-    * Enables slot caching for Redis Cluster [23b1a9d8] (Michael Booth)
+    * Verify SET options are strings before testing them as strings [514bc371] (Michael Grunder)
 
-    * Support TYPE argument for SCAN [8eb39a26, b1724b84, 53fb36c9, 544e641b]
-      (Pavlo Yatsukhnenko)
+    ---
 
-    * Added challenge/response mechanism for persistent connections [a5f95925,
-      25cdaee6, 7b6072e0, 99ebd0cc, 3243f426] (Pavlo Yatsukhnenko, Michael Grunder)
+    phpredis 5.3.2RC1
+
+    ---
+    * Fix cluster segfault when dealing with NULL multi bulk replies in RedisCluster [950e8de8] (Michael Grunder, Alex Offshore)
+    * Fix xReadGroup() must return message id [500916a4] (Pavlo Yatsukhnenko)
+    * Fix memory leak in rediscluster session handler [b2cffffc] (Pavlo Yatsukhnenko)
+    * Fix XInfo() returns false if the stream is empty [5719c9f7, 566fdeeb] (Pavlo Yatsukhnenko, Michael Grunder)
+    * Relax requirements on set's expire argument [36458071] (Michael Grunder)
+    * Refactor redis_sock_check_liveness [c5950644] (Pavlo Yatsukhnenko)
+    * PHP8 compatibility [a7662da7, f4a30cb2, 17848791] (Pavlo Yatsukhnenko, Remi Collet)
+    * Update documentation [c9ed151d, 398c99d9] (Ali Alwash, Gregoire Pineau)
+    * Add Redis::OPT_NULL_MULTIBULK_AS_NULL setting to treat NULL multi bulk replies as NULL instead of []. [950e8de8] (Michael Grunder, Alex Offshore)
+    * Allow to specify stream context for rediscluster session handler [a8daaff8, 4fbe7df7] (Pavlo Yatsukhnenko)
+    * Add new parameter to RedisCluster to specify stream ssl/tls context. [f771ea16] (Pavlo Yatsukhnenko)
+    * Add new parameter to RedisSentinel to specify auth information [81c502ae] (Pavlo Yatsukhnenko)
  </notes>
  <contents>
   <dir name="/">
@@ -147,7 +139,6 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <required>
    <php>
     <min>7.0.0</min>
-    <max>7.9.99</max>
    </php>
    <pearinstaller>
     <min>1.4.0b1</min>
@@ -162,10 +153,265 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
   <release>
-   <stability><release>alpha</release><api>alpha</api></stability>
-   <version><release>5.2.0RC2</release><api>5.2.0RC2</api></version>
-   <date>2020-02-21</date>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.3.2</release><api>5.3.2</api></version>
+   <date>2020-10-22</date>
    <notes>
+    This release containse some bugfixes and small improvements.
+    You can find a detailed list of changes in Changelog.md and package.xml
+
+    * Sponsors
+      ~ Audiomack - https://audiomack.com
+      ~ BlueHost - https://bluehost.com
+      ~ Redis Cache Pro for WordPress - https://wprediscache.com
+      ~ Avtandil Kikabidze - https://github.com/akalongman
+      ~ Oleg Babushkin - https://github.com/olbabushkin
+
+    phpredis 5.3.2
+
+    * Use "%.17g" sprintf format for doubles as done in Redis server. [32be3006] (Pavlo Yatsukhnenko)
+    * Allow to pass NULL as RedisCluster stream context options. [72024afe] (Pavlo Yatsukhnenko)
+
+    ---
+
+    phpredis 5.3.2RC2
+
+    ---
+
+    * Verify SET options are strings before testing them as strings [514bc371] (Michael Grunder)
+
+    ---
+
+    phpredis 5.3.2RC1
+
+    ---
+    * Fix cluster segfault when dealing with NULL multi bulk replies in RedisCluster [950e8de8] (Michael Grunder, Alex Offshore)
+    * Fix xReadGroup() must return message id [500916a4] (Pavlo Yatsukhnenko)
+    * Fix memory leak in rediscluster session handler [b2cffffc] (Pavlo Yatsukhnenko)
+    * Fix XInfo() returns false if the stream is empty [5719c9f7, 566fdeeb] (Pavlo Yatsukhnenko, Michael Grunder)
+    * Relax requirements on set's expire argument [36458071] (Michael Grunder)
+    * Refactor redis_sock_check_liveness [c5950644] (Pavlo Yatsukhnenko)
+    * PHP8 compatibility [a7662da7, f4a30cb2, 17848791] (Pavlo Yatsukhnenko, Remi Collet)
+    * Update documentation [c9ed151d, 398c99d9] (Ali Alwash, Gregoire Pineau)
+    * Add Redis::OPT_NULL_MULTIBULK_AS_NULL setting to treat NULL multi bulk replies as NULL instead of []. [950e8de8] (Michael Grunder, Alex Offshore)
+    * Allow to specify stream context for rediscluster session handler [a8daaff8, 4fbe7df7] (Pavlo Yatsukhnenko)
+    * Add new parameter to RedisCluster to specify stream ssl/tls context. [f771ea16] (Pavlo Yatsukhnenko)
+    * Add new parameter to RedisSentinel to specify auth information [81c502ae] (Pavlo Yatsukhnenko)
+   </notes>
+  </release>
+
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.3.1</release><api>5.3.1</api></version>
+   <date>2020-07-07</date>
+   <notes>
+    phpredis 5.3.1
+
+    This is a small bugfix release that fixes a couple of issues in 5.3.0.
+
+    You should upgrade if you're using persistent_id in session.save_path or
+    of if you're having trouble building 5.3.0 because the php_hash_bin2hex
+    symbol is missing.
+
+    You can find a detailed list of changes in Changelog.md and package.xml
+
+    * Sponsors
+      ~ Audiomack - https://audiomack.com
+      ~ BlueHost - https://bluehost.com
+      ~ Redis Cache Pro for WordPress - https://wprediscache.com
+      ~ Avtandil Kikabidze - https://github.com/akalongman
+
+    ---
+    * Properly clean up on session start failure [066cff6a] (Michael Grunder)
+    * Treat NULL as a failure for redis_extract_auth_info [49428a2f, 14ac969d]
+      (Michael Grunder)
+    * Don't dereference a NULL zend_string or efree one [ff2e160f, 7fed06f2]
+      (Michael Grunder)
+    * Fix config.m4 messages and test for and include php_hash.h [83a1b7c5,
+      3c56289c, 08f202e7] (Remi Collet)
+    * Add openSUSE installation instructions [13a168f4] (Pavlo Yatsukhnenko)
+    * Remove EOL Fedora installation instructions [b4779e6a] (Remi Collet)
+   </notes>
+  </release>
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.3.0</release><api>5.3.0</api></version>
+   <date>2020-06-30</date>
+   <notes>
+    phpredis 5.3.0
+
+    This release contains initial support for Redis 6 ACLs, LZ4 compression,
+    and many more fixes and improvements.
+
+    You can find a detailed list of changes in Changelog.md and package.xml
+
+    A special thanks to BlueHost for sponsoring ACL support \o/
+
+    * Sponsors
+      ~ Audiomack - https://audiomack.com
+      ~ BlueHost - https://bluehost.com
+      ~ Redis Cache Pro for WordPress - https://wprediscache.com
+      ~ Avtandil Kikabidze - https://github.com/akalongman
+
+    phpredis 5.3.0
+
+    - There were no changes between 5.3.0RC2 and 5.3.0.
+
+    ---
+
+    phpredis 5.3.0RC2
+
+    ---
+
+    * Fix LZ4 configuration and use pkg-config if we have it [df398cb0]
+      (Remi Collet)
+    * Make sure persistent pool ID is NULL terminated [0838b5bd, 57bb95bf]
+      (Michael Grunder)
+    * Run LZ4 tests in Travis [3ba3f06d] (Michael Grunder)
+
+    phpredis 5.3.0RC1
+
+    ---
+
+    * Support for Redis 6 ACLs [a311cc4e] (Michael Grunder)
+    * LZ4 Compression [04def9fb] (Ilia Alshanetsky)
+    * Support for new Redis 6 arguments (XINFO FULL, SET KEEPTTL) [a0c53e0b,
+      f9c7bb57] (Michael Grunder, Victor Kislov)
+    * Support for TLS connections [890ee0e6, b0671296] (Pavlo Yatsukhnenko)
+    * New option Redis::SCAN_PREFIX, Redis::SCAN_NOPREFIX [e80600e2] (Pavlo
+      Yatsukhnenko)
+    * Configurable unit test authentication arguments [e37f38a3, 201a9759]
+      (Pavlo Yatsukhnenko, Michael Grunder)
+    * Improved cluster slot caching mechanism to fix a couple of bugs and make
+      it more efficient. [5ca4141c] (Michael Grunder)
+    * Stop calling Redis constructor when creating a RedisArray [e41e19a8]
+      (Pavlo Yatsukhnenko)
+    * Use ZEND_LONG_FMT instead of system `long` [5bf88124] (Michael Grunder)
+    * Use long for SCAN iteration to fix potential overflow [f13f9b7c]
+      (Victor Kislov)
+    * Fix config.m4 to test for the variable $PHP_REDIS_JSON and not the
+      literal PHP_REDIS_JSON [20a3dc72] (Mizuki Nakano)
+    * Fix compiler warnings [b9b383f4, 215828e] (Remi Collet),
+      Pavlo Yatsukhnenko)
+    * Avoid use-after-free of RediSock [8c45816d] (Pavlo Yatsukhnenko)
+    * Fixed ZADD arginfo [a8e2b021] (Pavlo Yatsukhnenko)
+    * Store AUTH information in flags RedisSock rather than duplicating
+      information. [58dab564] (Pavlo Yatsukhnenko)
+    * Refactor redis_sock_get_connection_pool logic. [73212e1]
+      (Pavlo Yatsukhnenko)
+    * Updated documentation to show LPUSH and RPUSH are variadic and fixed DEL
+      documentation. [92f8dde1] (Michael Grunder)
+    * Authenticate in redis_server_sock_open [4ef465b5] (Pavlo Yatsukhnenko)
+    * Dynamically include json.so in unit tests based on configuration
+      [0ce7ca2f] (Michael Grunder)
+    * Update save_path logic in Redis Cluster session unit tests [dd66fce]
+      (Pavlo Yatsukhnenko)
+    * Refactoring various bits of logic [bbcf32a3, a42cf189, 460c8f29,
+      b7f9df75] (Pavlo Yatsukhnenko)
+    * Use the portable `ZEND_LONG_FORMAT` family instead of C format specifiers
+      [b9b383f4](Remi Collet)
+    * PHP 8 compatibility [9ee94ca4, 7e4c7b3e] (Pavlo Yatsukhnenko)
+    * Refactor PHPREDIS_GET_OBJECT macro [d5dadaf6, 190c0d34]
+      (Pavlo Yatsukhnenko)
+    * Fix documentation showing lPush and rPush are variadic [6808cd6a]
+      (Michael Grunder)
+   </notes>
+  </release>
+
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.2.2</release><api>5.2.2</api></version>
+   <date>2020-05-05</date>
+   <notes>
+    phpredis 5.2.2
+
+    This is a bugfix release that contains a fix for authentication
+    when using persistent connections, and an option to make the
+    ECHO challenge response logic optional.
+
+    * Inexpensive liveness check, and making ECHO optional [56898f81] (Pavlo Yatsukhnenko)
+    * Move `AUTH` to `redis_sock_server_open` [80f2529b](Pavlo Yatsukhnenko)
+
+    * Sponsors
+      ~ Audiomack.com - https://audiomack.com
+      ~ Till Kruss - https://github.com/tillkruss
+   </notes>
+  </release>
+
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.2.1</release><api>5.2.1</api></version>
+   <date>2020-03-19</date>
+   <notes>
+    phpredis 5.2.1
+
+    This is a bugfix release that fixes `redis->zAdd` arginfo as well as a
+    segfault when closing persistent connections.
+
+    * Fix arginfo for Redis::zadd [a8e2b021] (Pavlo Yatsukhnenko)
+    * Fix segfault on closing persistent stream [b7f9df75] (Pavlo Yatsukhnenko)
+
+    * Sponsors
+      ~ Audiomack.com - https://audiomack.com
+      ~ Till Kruss - https://github.com/tillkruss
+   </notes>
+  </release>
+
+
+
+  <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.2.0</release><api>5.2.0</api></version>
+   <date>2020-03-02</date>
+   <notes>
+    phpredis 5.2.0
+
+    - There were no changes between 5.2.0RC2 and 5.2.0.
+
+    phpredis 5.2.0RC2
+
+    * Include RedisSentinelTest.php in package.xml! [eddbfc8f] (Michael Grunder)
+    * Fix -Wmaybe-uninitialized warning [740b8c87] (Remi Collet)
+    * Fix improper destructor when zipping values and scores [371ae7ae]
+      (Michael Grunder)
+    * Use php_rand instead of php_mt_rand for liveness challenge string
+      [9ef2ed89] (Michael Grunder)
+
+    phpredis 5.2.0RC1
+
+    This release contains initial support for Redis Sentinel as well as many
+    smaller bug fixes and improvements.  It is especially of interest if you
+    use persistent connections, as we've added logic to make sure they are in
+    a good state when retreving them from the pool.
+
+    IMPORTANT: Sentinel support is considered experimental and the API
+               will likely change based on user feedback.
+
+    * Sponsors
+      ~ Audiomack.com - https://audiomack.com
+      ~ Till Kruss - https://github.com/tillkruss
+
+    ---
+
+    * Initial support for RedisSentinel [90cb69f3, c94e28f1, 46da22b0, 5a609fa4,
+      383779ed] (Pavlo Yatsukhnenko)
+
+    * Houskeeping (spelling, doc changes, etc) [23f9de30, d07a8df6, 2d39b48d,
+      0ef488fc, 2c35e435, f52bd8a8, 2ddc5f21, 1ff7dfb7, db446138] (Tyson Andre,
+      Pavlo Yatsukhnenko, Michael Grunder, Tyson Andre)
+
+    * Fix for ASK redirections [ba73fbee] (Michael Grunder)
+    * Create specific 'test skipped' exception [c3d83d44] (Michael Grunder)
+    * Fixed memory leaks in RedisCluster [a107c9fc] (Michael Grunder)
+    * Fixes for session lifetime values that underflow or overflow  [7a79ad9c,
+      3c48a332] (Michael Grunder)
+    * Enables slot caching for Redis Cluster [23b1a9d8] (Michael Booth)
+
+    * Support TYPE argument for SCAN [8eb39a26, b1724b84, 53fb36c9, 544e641b]
+      (Pavlo Yatsukhnenko)
+
+    * Added challenge/response mechanism for persistent connections [a5f95925,
+      25cdaee6, 7b6072e0, 99ebd0cc, 3243f426] (Pavlo Yatsukhnenko, Michael Grunder)
     phpredis 5.2.0RC2
 
     * Include RedisSentinelTest.php in package.xml! [eddbfc8f] (Michael Grunder)

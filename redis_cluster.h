@@ -99,6 +99,7 @@ void free_cluster_context(zend_object *object);
 
 /* RedisCluster method implementation */
 PHP_METHOD(RedisCluster, __construct);
+PHP_METHOD(RedisCluster, acl);
 PHP_METHOD(RedisCluster, close);
 PHP_METHOD(RedisCluster, get);
 PHP_METHOD(RedisCluster, set);

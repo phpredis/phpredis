@@ -47,6 +47,16 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSwapDB() { return $this->markTestSkipped(); }
     public function testConnectException() { return $this->markTestSkipped(); }
     public function testTlsConnect() { return $this->markTestSkipped(); }
+    public function testInvalidAuthArgs() { return $this->markTestSkipped(); }
+
+    public function testlMove() { return $this->markTestSkipped(); }
+    public function testsMisMember() { return $this->markTestSkipped(); }
+    public function testzDiff() { return $this->markTestSkipped(); }
+    public function testzInter() { return $this->markTestSkipped(); }
+    public function testzUnion() { return $this->markTestSkipped(); }
+    public function testzDiffStore() { return $this->markTestSkipped(); }
+    public function testzMscore() { return $this->marktestSkipped(); }
+    public function testCopy() { return $this->marktestSkipped(); }
 
     /* Session locking feature is currently not supported in in context of Redis Cluster.
        The biggest issue for this is the distribution nature of Redis cluster */
@@ -63,8 +73,8 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSession_lockWaitTime() { return $this->markTestSkipped(); }
 
     /* Load our seeds on construction */
-    public function __construct($str_host, $str_auth) {
-        parent::__construct($str_host, $str_auth);
+    public function __construct($str_host, $i_port, $str_auth) {
+        parent::__construct($str_host, $i_port, $str_auth);
 
         $str_nodemap_file = dirname($_SERVER['PHP_SELF']) . '/nodes/nodemap';
 
@@ -688,6 +698,15 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->redis->setOption(Redis::OPT_REPLY_LITERAL, false);
     }
 
+    /* Redis and RedisCluster use the same handler for the ACL command but verify we can direct
+       the command to a specific node. */
+    public function testAcl() {
+        if ( ! $this->minVersionCheck("6.0"))
+            return $this->markTestSkipped();
+
+        $this->assertInArray('default', $this->redis->acl('foo', 'USERS'));
+    }
+
     public function testSession()
     {
         @ini_set('session.save_handler', 'rediscluster');
@@ -735,9 +754,31 @@ class Redis_Cluster_Test extends Redis_Test {
      */
     protected function getFullHostPath()
     {
+        $auth = $this->getAuthFragment();
+
         return implode('&', array_map(function ($host) {
             return 'seed[]=' . $host;
-        }, self::$_arr_node_map)) . ($this->getAuth() ? '&auth=' . $this->getAuth() : '');
+        }, self::$_arr_node_map)) . ($auth ? "&$auth" : '');
+    }
+
+    /* Test correct handling of null multibulk replies */
+    public function testNullArray() {
+        $key = "key:arr";
+        $this->redis->del($key);
+
+        foreach ([false => [], true => NULL] as $opt => $test) {
+            $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, $opt);
+
+            $r = $this->redis->rawCommand($key, "BLPOP", $key, .05);
+            $this->assertEquals($test, $r);
+
+            $this->redis->multi();
+            $this->redis->rawCommand($key, "BLPOP", $key, .05);
+            $r = $this->redis->exec();
+            $this->assertEquals([$test], $r);
+        }
+
+        $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, false);
     }
 }
 ?>
