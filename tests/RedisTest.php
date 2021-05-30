@@ -6496,8 +6496,9 @@ class Redis_Test extends TestSuite
                     ini_get('redis.session.lock_retries') /
                     1000000.00);
 
-        $exist = $this->waitForSessionLockKey($sessionId, $maxwait);
+        $exist = $this->waitForSessionLockKey($sessionId, $maxwait + 1);
         $this->assertTrue($exist);
+        $this->redis->del($this->sessionPrefix . $sessionId . '_LOCK');
     }
 
     public function testSession_lockingDisabledByDefault()
@@ -6522,8 +6523,7 @@ class Redis_Test extends TestSuite
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
         $this->startSessionProcess($sessionId, 1, true);
-        $sleep = ini_get('redis.session.lock_wait_time') * ini_get('redis.session.lock_retries');
-        usleep($sleep + 10000);
+        $this->waitForProcess('startSession.php', 5);
         $this->assertFalse($this->redis->exists($this->sessionPrefix . $sessionId . '_LOCK'));
     }
 
