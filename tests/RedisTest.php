@@ -6332,6 +6332,8 @@ class Redis_Test extends TestSuite
             try {
                 if (is_array($arr_arg)) {
                     @call_user_func_array([$obj_new, 'auth'], $arr_arg);
+                } else {
+                    @call_user_func([$obj_new, 'auth']);
                 }
             } catch (Exception $ex) {
                 unset($ex); /* Suppress intellisense warning */
@@ -6949,6 +6951,29 @@ class Redis_Test extends TestSuite
         return $exists || $this->redis->exists($key);
     }
 
+    /**
+     * @param string $str_search pattern to look for in ps
+     * @param int    $timeout    Maximum amount of time to wait
+     *
+     * Small helper function to wait until we no longer detect a running process.
+     * This is an attempt to fix timing related false failures on session tests
+     * when running in CI.
+     */
+    function waitForProcess($str_search, $timeout = 0.0) {
+        $st = microtime(true);
+
+        do {
+            $str_procs = shell_exec("ps aux|grep $str_search|grep -v grep");
+            $arr_procs = array_filter(explode("\n", $str_procs));
+            if (count($arr_procs) == 0)
+                return true;
+
+            usleep(10000);
+            $elapsed = microtime(true) - $st;
+        } while ($timeout < 0 || $elapsed < $timeout);
+
+        return false;
+    }
 
     /**
      * @param string $sessionId
