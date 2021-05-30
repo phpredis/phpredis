@@ -761,6 +761,8 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_REPLY_LITERAL"), REDIS_OPT_REPLY_LITERAL);
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION_LEVEL"), REDIS_OPT_COMPRESSION_LEVEL);
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_NULL_MULTIBULK_AS_NULL"), REDIS_OPT_NULL_MBULK_AS_NULL);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION_MIN_SIZE"), REDIS_OPT_COMPRESSION_MIN_SIZE);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION_MIN_RATIO"), REDIS_OPT_COMPRESSION_MIN_RATIO);
 
     /* serializer */
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_NONE"), REDIS_SERIALIZER_NONE);
