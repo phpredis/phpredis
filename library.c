@@ -2934,7 +2934,7 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
                     lz4len = LZ4_compress_HC(buf, lz4pos, old_len, lz4bound, redis_sock->compression_level);
                 }
 
-                if (lz4len <= 0) {
+                if (lz4len <= 0 || PHP_REDIS_COMPRESSION_RATIO_CHECK(lz4len)) {
                     efree(lz4buf);
                     break;
                 }
@@ -3026,8 +3026,9 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
 
                 /* We must have at least enough bytes for our header, and can't have more than
                  * INT_MAX + our header size. */
-                if (val_len < REDIS_LZ4_HDR_SIZE || val_len > INT_MAX + REDIS_LZ4_HDR_SIZE)
+                if (val_len < REDIS_LZ4_HDR_SIZE || val_len > INT_MAX + REDIS_LZ4_HDR_SIZE) {
                     break;
+                }
 
                 /* Operate on copies in case our CRC fails */
                 const char *copy = val;
@@ -3040,8 +3041,9 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
                 copy += sizeof(int); copylen -= sizeof(int);
 
                 /* Make sure our CRC matches (TODO:  Maybe issue a docref error?) */
-                if (crc8((unsigned char*)&datalen, sizeof(datalen)) != lz4crc)
+                if (crc8((unsigned char*)&datalen, sizeof(datalen)) != lz4crc) {
                     break;
+                }
 
                 /* Finally attempt decompression */
                 data = emalloc(datalen);
