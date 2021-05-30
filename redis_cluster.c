@@ -247,7 +247,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, subscribe, arginfo_subscribe, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sunion, arginfo_nkeys, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, sunionstore, arginfo_dst_nkeys, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, time, arginfo_void, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, time, arginfo_key_or_address, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, ttl, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, type, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, unsubscribe, arginfo_unsubscribe, ZEND_ACC_PUBLIC)
@@ -521,7 +521,7 @@ PHP_METHOD(RedisCluster, get) {
 
 /* {{{ proto bool RedisCluster::set(string key, string value) */
 PHP_METHOD(RedisCluster, set) {
-    CLUSTER_PROCESS_CMD(set, cluster_bool_resp, 0);
+    CLUSTER_PROCESS_CMD(set, cluster_set_resp, 0);
 }
 /* }}} */
 
@@ -1684,14 +1684,14 @@ PHP_METHOD(RedisCluster, zrangebyscore) {
 /* {{{ proto RedisCluster::zunionstore(string dst, array keys, [array weights,
  *                                     string agg]) */
 PHP_METHOD(RedisCluster, zunionstore) {
-    CLUSTER_PROCESS_KW_CMD("ZUNIONSTORE", redis_zinter_cmd, cluster_long_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("ZUNIONSTORE", redis_zinterunionstore_cmd, cluster_long_resp, 0);
 }
 /* }}} */
 
 /* {{{ proto RedisCluster::zinterstore(string dst, array keys, [array weights,
  *                                     string agg]) */
 PHP_METHOD(RedisCluster, zinterstore) {
-    CLUSTER_PROCESS_KW_CMD("ZINTERSTORE", redis_zinter_cmd, cluster_long_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("ZINTERSTORE", redis_zinterunionstore_cmd, cluster_long_resp, 0);
 }
 /* }}} */
 

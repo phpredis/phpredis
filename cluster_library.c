@@ -1737,6 +1737,16 @@ PHP_REDIS_API void cluster_ping_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     CLUSTER_RETURN_BOOL(c, 1);
 }
 
+PHP_REDIS_API void
+cluster_set_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
+{
+    if (ctx == NULL) {
+        cluster_bool_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    }
+}
+
 /* 1 or 0 response, for things like SETNX */
 PHP_REDIS_API void cluster_1_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                            void *ctx)
@@ -2112,6 +2122,7 @@ PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
         if (c->reply_len > 0) {
             /* Push serialization settings from the cluster into our socket */
             c->cmd_sock->serializer = c->flags->serializer;
+            c->cmd_sock->compression = c->flags->compression;
 
             /* Call our specified callback */
             if (cb(c->cmd_sock, &z_result, c->reply_len, ctx) == FAILURE) {

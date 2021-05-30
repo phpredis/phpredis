@@ -1,6 +1,6 @@
 # PhpRedis
 
-[![Build Status](https://travis-ci.org/phpredis/phpredis.svg?branch=develop)](https://travis-ci.org/phpredis/phpredis)
+[![Build Status](https://travis-ci.com/phpredis/phpredis.svg?branch=develop)](https://travis-ci.com/phpredis/phpredis)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/13205/badge.svg)](https://scan.coverity.com/projects/phpredis-phpredis)
 [![PHP version from Travis config](https://img.shields.io/travis/php-v/phpredis/phpredis/develop)](https://img.shields.io/travis/php-v/phpredis/phpredis/develop)
 
@@ -91,10 +91,10 @@ Following INI variables can be used to configure session locking:
 redis.session.locking_enabled = 1
 ; How long should the lock live (in seconds)? Defaults to: value of max_execution_time.
 redis.session.lock_expire = 60
-; How long to wait between attempts to acquire lock, in microseconds (µs)?. Defaults to: 2000
+; How long to wait between attempts to acquire lock, in microseconds (µs)?. Defaults to: 20000
 redis.session.lock_wait_time = 50000
-; Maximum number of times to retry (-1 means infinite). Defaults to: 10
-redis.session.lock_retries = 10
+; Maximum number of times to retry (-1 means infinite). Defaults to: 100
+redis.session.lock_retries = 2000
 ~~~
 
 ## Distributed Redis Array

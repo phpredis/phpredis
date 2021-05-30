@@ -41,6 +41,7 @@ PHP_METHOD(Redis, bzPopMax);
 PHP_METHOD(Redis, bzPopMin);
 PHP_METHOD(Redis, close);
 PHP_METHOD(Redis, connect);
+PHP_METHOD(Redis, copy);
 PHP_METHOD(Redis, dbSize);
 PHP_METHOD(Redis, decr);
 PHP_METHOD(Redis, decrBy);
@@ -62,6 +63,7 @@ PHP_METHOD(Redis, info);
 PHP_METHOD(Redis, keys);
 PHP_METHOD(Redis, lInsert);
 PHP_METHOD(Redis, lLen);
+PHP_METHOD(Redis, lMove);
 PHP_METHOD(Redis, lPop);
 PHP_METHOD(Redis, lPush);
 PHP_METHOD(Redis, lPushx);
@@ -142,7 +144,11 @@ PHP_METHOD(Redis, zRevRangeByLex);
 PHP_METHOD(Redis, zRevRangeByScore);
 PHP_METHOD(Redis, zRevRank);
 PHP_METHOD(Redis, zScore);
+PHP_METHOD(Redis, zdiff);
+PHP_METHOD(Redis, zdiffstore);
+PHP_METHOD(Redis, zinter);
 PHP_METHOD(Redis, zinterstore);
+PHP_METHOD(Redis, zunion);
 PHP_METHOD(Redis, zunionstore);
 
 PHP_METHOD(Redis, eval);
@@ -274,11 +280,6 @@ ZEND_EXTERN_MODULE_GLOBALS(redis)
 PHP_MINIT_FUNCTION(redis);
 PHP_MSHUTDOWN_FUNCTION(redis);
 PHP_MINFO_FUNCTION(redis);
-
-/* Redis response handler function callback prototype */
-typedef void (*ResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
-
-typedef int (*FailableResultCallback)(INTERNAL_FUNCTION_PARAMETERS, RedisSock*, zval*, void*);
 
 PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
 

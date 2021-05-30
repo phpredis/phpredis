@@ -103,8 +103,8 @@ PHP_INI_BEGIN()
     /* redis session */
     PHP_INI_ENTRY("redis.session.locking_enabled", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.session.lock_expire", "0", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.session.lock_retries", "10", PHP_INI_ALL, NULL)
-    PHP_INI_ENTRY("redis.session.lock_wait_time", "2000", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.lock_retries", "100", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.lock_wait_time", "20000", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
 /** {{{ Argument info for commands in redis 1.0 */
@@ -113,6 +113,22 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_connect, 0, 0, 1)
     ZEND_ARG_INFO(0, port)
     ZEND_ARG_INFO(0, timeout)
     ZEND_ARG_INFO(0, retry_interval)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zdiff, 0, 0, 1)
+    ZEND_ARG_ARRAY_INFO(0, keys, 0)
+    ZEND_ARG_ARRAY_INFO(0, options, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zinterunion, 0, 0, 1)
+    ZEND_ARG_ARRAY_INFO(0, keys, 0)
+    ZEND_ARG_ARRAY_INFO(0, weights, 1)
+    ZEND_ARG_ARRAY_INFO(0, options, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_zdiffstore, 0, 0, 2)
+    ZEND_ARG_INFO(0, destination)
+    ZEND_ARG_ARRAY_INFO(0, keys, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_info, 0, 0, 0)
@@ -132,6 +148,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_config, 0, 0, 2)
     ZEND_ARG_INFO(0, cmd)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_copy, 0, 0, 2)
+    ZEND_ARG_INFO(0, source)
+    ZEND_ARG_INFO(0, destination)
+    ZEND_ARG_ARRAY_INFO(0, options, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_flush, 0, 0, 0)
@@ -156,6 +178,13 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_mget, 0, 0, 1)
     ZEND_ARG_ARRAY_INFO(0, keys, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_lmove, 0, 0, 4)
+    ZEND_ARG_INFO(0, source)
+    ZEND_ARG_INFO(0, destination)
+    ZEND_ARG_INFO(0, wherefrom)
+    ZEND_ARG_INFO(0, whereto)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_exists, 0, 0, 1)
@@ -276,6 +305,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, command, arginfo_command, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, config, arginfo_config, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, connect, arginfo_connect, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, copy, arginfo_copy, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dbSize, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, debug, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, decr, arginfo_key, ZEND_ACC_PUBLIC)
@@ -337,6 +367,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, keys, arginfo_keys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lInsert, arginfo_linsert, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lLen, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, lMove, arginfo_lmove, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPop, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPush, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, lPushx, arginfo_key_value, ZEND_ACC_PUBLIC)
@@ -457,8 +488,12 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, zRevRangeByScore, arginfo_zrangebyscore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zRevRank, arginfo_key_member, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zScore, arginfo_key_member, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zdiff, arginfo_zdiff, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zdiffstore, arginfo_zdiffstore, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zinter, arginfo_zinterunion, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zinterstore, arginfo_zstore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, zunion, arginfo_zinterunion, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, zunionstore, arginfo_zstore, ZEND_ACC_PUBLIC)
      PHP_FE_END
 };
@@ -713,11 +748,6 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_HASH"), REDIS_HASH);
     zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_STREAM"), REDIS_STREAM);
 
-    /* Cluster doesn't support pipelining at this time */
-    if(!is_cluster) {
-        zend_declare_class_constant_long(ce, ZEND_STRL("PIPELINE"), PIPELINE);
-    }
-
     /* Add common mode constants */
     zend_declare_class_constant_long(ce, ZEND_STRL("ATOMIC"), ATOMIC);
     zend_declare_class_constant_long(ce, ZEND_STRL("MULTI"), MULTI);
@@ -770,17 +800,23 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_PREFIX"), REDIS_SCAN_PREFIX);
     zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_NOPREFIX"), REDIS_SCAN_NOPREFIX);
 
-    /* Cluster option to allow for slave failover */
+    zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5);
+    zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6);
+
     if (is_cluster) {
+        /* Cluster option to allow for slave failover */
         zend_declare_class_constant_long(ce, ZEND_STRL("OPT_SLAVE_FAILOVER"), REDIS_OPT_FAILOVER);
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_NONE"), REDIS_FAILOVER_NONE);
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_ERROR"), REDIS_FAILOVER_ERROR);
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE"), REDIS_FAILOVER_DISTRIBUTE);
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE_SLAVES"), REDIS_FAILOVER_DISTRIBUTE_SLAVES);
-    }
+    } else {
+        /* Cluster doesn't support pipelining at this time */
+        zend_declare_class_constant_long(ce, ZEND_STRL("PIPELINE"), PIPELINE);
 
-    zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5);
-    zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6);
+        zend_declare_class_constant_stringl(ce, "LEFT", 4, "left", 4);
+        zend_declare_class_constant_stringl(ce, "RIGHT", 5, "right", 5);
+    }
 }
 
 static ZEND_RSRC_DTOR_FUNC(redis_connections_pool_dtor)
@@ -1125,10 +1161,10 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 }
 
 /* {{{ proto long Redis::bitop(string op, string key, ...) */
-PHP_METHOD(Redis, bitop)
-{
+PHP_METHOD(Redis, bitop) {
     REDIS_PROCESS_CMD(bitop, redis_long_response);
 }
+
 /* }}} */
 
 /* {{{ proto long Redis::bitcount(string key, [int start], [int end])
@@ -1162,7 +1198,7 @@ PHP_METHOD(Redis, close)
 /* {{{ proto boolean Redis::set(string key, mixed val, long timeout,
  *                              [array opt) */
 PHP_METHOD(Redis, set) {
-    REDIS_PROCESS_CMD(set, redis_boolean_response);
+    REDIS_PROCESS_CMD(set, redis_set_response);
 }
 
 /* {{{ proto boolean Redis::setex(string key, long expire, string value)
@@ -1264,8 +1300,7 @@ PHP_METHOD(Redis, incrBy){
 /* {{{ proto float Redis::incrByFloat(string key, float value)
  */
 PHP_METHOD(Redis, incrByFloat) {
-    REDIS_PROCESS_KW_CMD("INCRBYFLOAT", redis_key_dbl_cmd,
-        redis_bulk_double_response);
+    REDIS_PROCESS_KW_CMD("INCRBYFLOAT", redis_key_dbl_cmd, redis_bulk_double_response);
 }
 /* }}} */
 
@@ -1361,10 +1396,10 @@ PHP_REDIS_API void redis_set_watch(RedisSock *redis_sock)
     redis_sock->watching = 1;
 }
 
-PHP_REDIS_API void redis_watch_response(INTERNAL_FUNCTION_PARAMETERS,
+PHP_REDIS_API int redis_watch_response(INTERNAL_FUNCTION_PARAMETERS,
                                  RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
-    redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+    return redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
         z_tab, ctx, redis_set_watch);
 }
 
@@ -1381,12 +1416,12 @@ PHP_REDIS_API void redis_clear_watch(RedisSock *redis_sock)
     redis_sock->watching = 0;
 }
 
-PHP_REDIS_API void redis_unwatch_response(INTERNAL_FUNCTION_PARAMETERS,
+PHP_REDIS_API int redis_unwatch_response(INTERNAL_FUNCTION_PARAMETERS,
                                    RedisSock *redis_sock, zval *z_tab,
                                    void *ctx)
 {
-    redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-        z_tab, ctx, redis_clear_watch);
+    return redis_boolean_response_impl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                                       z_tab, ctx, redis_clear_watch);
 }
 
 /* {{{ proto boolean Redis::unwatch()
@@ -1574,6 +1609,12 @@ PHP_METHOD(Redis, lLen)
     REDIS_PROCESS_KW_CMD("LLEN", redis_key_cmd, redis_long_response);
 }
 /* }}} */
+
+/* {{{ proto string Redis::lMove(string source, string destination, string wherefrom, string whereto) */
+PHP_METHOD(Redis, lMove)
+{
+    REDIS_PROCESS_CMD(lmove, redis_string_response);
+}
 
 /* {{{ proto boolean Redis::lrem(string list, string value, int count = 0) */
 PHP_METHOD(Redis, lrem)
@@ -2078,7 +2119,7 @@ PHP_METHOD(Redis, move) {
 /* }}} */
 
 static
-void generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun)
+void generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, FailableResultCallback fun)
 {
     RedisSock *redis_sock;
     smart_string cmd = {0};
@@ -2124,6 +2165,7 @@ void generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, ResultCallback fun)
     if (IS_ATOMIC(redis_sock)) {
         fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
+
     REDIS_PROCESS_RESPONSE(fun);
 }
 
@@ -2323,14 +2365,38 @@ PHP_METHOD(Redis, zIncrBy)
 }
 /* }}} */
 
+/* {{{ proto array Redis::zdiff(array keys, array options) */
+PHP_METHOD(Redis, zdiff) {
+    REDIS_PROCESS_CMD(zdiff, redis_zdiff_response);
+}
+/* }}} */
+
+/* {{{ proto array Redis::zinter(array keys, array|null weights, array options) */
+PHP_METHOD(Redis, zinter) {
+    REDIS_PROCESS_KW_CMD("ZINTER", redis_zinterunion_cmd, redis_zdiff_response);
+}
+/* }}} */
+
+/* {{{ proto array Redis::zunion(array keys, array|null weights, array options) */
+PHP_METHOD(Redis, zunion) {
+    REDIS_PROCESS_KW_CMD("ZUNION", redis_zinterunion_cmd, redis_zdiff_response);
+}
+/* }}} */
+
+/* {{{ proto array Redis::zdiffstore(string destination, array keys) */
+PHP_METHOD(Redis, zdiffstore) {
+    REDIS_PROCESS_CMD(zdiffstore, redis_long_response);
+}
+/* }}} */
+
 /* zinterstore */
 PHP_METHOD(Redis, zinterstore) {
-    REDIS_PROCESS_KW_CMD("ZINTERSTORE", redis_zinter_cmd, redis_long_response);
+    REDIS_PROCESS_KW_CMD("ZINTERSTORE", redis_zinterunionstore_cmd, redis_long_response);
 }
 
 /* zunionstore */
 PHP_METHOD(Redis, zunionstore) {
-    REDIS_PROCESS_KW_CMD("ZUNIONSTORE", redis_zinter_cmd, redis_long_response);
+    REDIS_PROCESS_KW_CMD("ZUNIONSTORE", redis_zinterunionstore_cmd, redis_long_response);
 }
 
 /* {{{ proto array Redis::zPopMax(string key) */
@@ -3469,6 +3535,7 @@ PHP_METHOD(Redis, getAuth) {
 
 /*
  * $redis->client('list');
+ * $redis->client('info');
  * $redis->client('kill', <ip:port>);
  * $redis->client('setname', <name>);
  * $redis->client('getname');
@@ -3506,10 +3573,14 @@ PHP_METHOD(Redis, client) {
     /* We handle CLIENT LIST with a custom response function */
     if(!strncasecmp(opt, "list", 4)) {
         if (IS_ATOMIC(redis_sock)) {
-            redis_client_list_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock,
-                NULL);
+            redis_client_list_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock, NULL, NULL);
         }
         REDIS_PROCESS_RESPONSE(redis_client_list_reply);
+    } else if (!strncasecmp(opt, "info", 4)) {
+        if (IS_ATOMIC(redis_sock)) {
+            redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+        }
+        REDIS_PROCESS_RESPONSE(redis_string_response);
     } else {
         if (IS_ATOMIC(redis_sock)) {
             redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
@@ -3563,6 +3634,12 @@ PHP_METHOD(Redis, rawcommand) {
  *     proto array Redis::command('getkeys', array cmd_args) */
 PHP_METHOD(Redis, command) {
     REDIS_PROCESS_CMD(command, redis_read_variant_reply);
+}
+/* }}} */
+
+/* {{{ proto array Redis::copy(string $source, string $destination, array $options = null) */
+PHP_METHOD(Redis, copy) {
+    REDIS_PROCESS_CMD(copy, redis_1_response)
 }
 /* }}} */
 
