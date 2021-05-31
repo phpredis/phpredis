@@ -2998,8 +2998,6 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
                     return redis_unserialize(redis_sock, val, val_len, z_ret);
                 }
 
-                len = ZSTD_getFrameContentSize(val, val_len);
-
                 if (len != ZSTD_CONTENTSIZE_ERROR && len != ZSTD_CONTENTSIZE_UNKNOWN && len <= INT_MAX)
                 {
                     size_t zlen;
