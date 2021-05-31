@@ -4815,6 +4815,21 @@ class Redis_Test extends TestSuite
         $this->checkCompression(Redis::COMPRESSION_LZ4, 9);
     }
 
+    public function testCompressionLZ4Limited()
+    {
+        if (!defined('Redis::COMPRESSION_LZ4')) {
+            $this->markTestSkipped();
+        }
+
+        $checks = [
+            "test123"            => strlen("test123"),
+            str_repeat('a', 101) => 17,
+            random_bytes(110)    => 110,
+        ];
+
+        $this->limitedCompressionCheck($checks, Redis::COMPRESSION_ZSTD);
+    }
+
     private function checkCompression($mode, $level)
     {
         $this->assertTrue($this->redis->setOption(Redis::OPT_COMPRESSION, $mode) === TRUE);  // set ok
