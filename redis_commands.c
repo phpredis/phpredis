@@ -2842,7 +2842,7 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     zval *z_args;
-    char *key, *val, *exp_type = NULL;
+    char *key, *val, *exp_type = NULL, *range_type = NULL;
     size_t key_len, val_len;
     int key_free, val_free;
     int num = ZEND_NUM_ARGS(), i = 1, argc;
@@ -2857,7 +2857,7 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Need key, [NX|XX] [CH] [INCR] score, value, [score, value...] */
+    // Need key, [NX|XX] [LT|GT] [CH] [INCR] score, value, [score, value...] */
     if (num % 2 == 0) {
         if (Z_TYPE(z_args[1]) != IS_ARRAY) {
             efree(z_args);
@@ -2868,6 +2868,8 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             if (Z_TYPE_P(z_opt) == IS_STRING) {
                 if (ZVAL_IS_NX_XX_ARG(z_opt)) {
                     exp_type = Z_STRVAL_P(z_opt);
+                } else if (ZVAL_STRICMP_STATIC(z_opt, "LT") || ZVAL_STRICMP_STATIC(z_opt, "GT")) {
+                    range_type = Z_STRVAL_P(z_opt);
                 } else if (ZVAL_STRICMP_STATIC(z_opt, "CH")) {
                     ch = 1;
                 } else if (ZVAL_STRICMP_STATIC(z_opt, "INCR")) {
@@ -2883,6 +2885,7 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         } ZEND_HASH_FOREACH_END();
         argc  = num - 1;
         if (exp_type) argc++;
+        if (range_type) argc++;
         argc += ch + incr;
         i++;
     } else {
@@ -2905,6 +2908,7 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (key_free) efree(key);
 
     if (exp_type) redis_cmd_append_sstr(&cmdstr, exp_type, 2);
+    if (range_type) redis_cmd_append_sstr(&cmdstr, range_type, 2);
     if (ch) redis_cmd_append_sstr(&cmdstr, "CH", 2);
     if (incr) redis_cmd_append_sstr(&cmdstr, "INCR", 4);
 
