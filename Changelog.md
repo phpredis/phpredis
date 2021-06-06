@@ -5,7 +5,58 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [5.3.4] - 2021-03-24 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.4), [PECL](https:/pecl.php.net/package/redis/5.3.4))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+
+### Fixed
+
+- Fix multi/pipeline segfault on Apple silicon [#1917](https://github.com/phpredis/phpredis/issues/1917)
+  [e0796d48](https://github.com/phpredis/phpredis/commit/e0796d48af18adac2b93982474e7df8de79ec854)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Pass compression flag on HMGET in RedisCluster [#1945](https://github.com/phpredis/phpredis/issues/1945)
+  [edc724e6](https://github.com/phpredis/phpredis/commit/edc724e6022620414abf4f90256522d03c3160fd)
+  ([Adam Olley](https://github.com/aolley))
+- Abide by ZSTD error return constants [#1936](https://github.com/phpredis/phpredis/issues/1936)
+  [8400ed1c](https://github.com/phpredis/phpredis/pull/1937/commits/8400ed1cb23a22f70727cb60e88ca5397ee10d23)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Fix timing related CI session tests
+  [9b986bf8](https://github.com/phpredis/phpredis/commit/9b986bf81859f5a5983cd148cb15ee6ce292d288)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+## [5.3.3] - 2021-02-01 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.3), [PECL](https:/pecl.php.net/package/redis/5.3.3))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [BlueHost](https://bluehost.com)
+- [Redis Cache Pro for WordPress](https://wprediscache.com)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Oleg Babushkin](https://github.com/olbabushkin)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+
+### Fixed
+
+- Fixed Windows includes for PHP 8
+  [270b4db8](https://www.github.com/phpredis//phpredis/commit/270b4db821fcbe9fb881eef83e046f87587c4110)
+  ([Jan-E](https://github.com/Jan-E))
+- Fix hash_ops for PHP 8.0.1
+  [87297cbb](https://www.github.com/phpredis/phpredis/commit/87297cbb4000c88b07e729b9379de321ead74aa2)
+  ([defender-11](https://github.com/defender-11))
+- Disable clone for Redis and RedisCluster objects.  Presently they segfault.
+  [cd05a344](https://www.github.com/phpredis/phpredis/commit/87297cbb4000c88b07e729b9379de321ead74aa2)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+## [5.3.2] - 2020-10-22 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.2), [PECL](https://pecl.php.net/package/redis/5.3.2))
 
 ## [5.3.2] - 2020-10-22 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.2), [PECL](https://pecl.php.net/package/redis/5.3.2))
 

@@ -604,6 +604,51 @@ free_redis_object(zend_object *object)
     }
 }
 
+static zend_object *
+clone_redis_object(zval *this_ptr)
+{
+    zend_object *old_object = Z_OBJ_P(this_ptr);
+    redis_object *old_redis = PHPREDIS_GET_OBJECT(redis_object, old_object);
+    redis_object *redis = ecalloc(1, sizeof(redis_object) + zend_object_properties_size(old_object->ce));
+
+    if (old_redis->sock) {
+        redis->sock = redis_sock_create(ZSTR_VAL(old_redis->sock->host), ZSTR_LEN(old_redis->sock->host),
+                                        old_redis->sock->port,
+                                        old_redis->sock->timeout,
+                                        old_redis->sock->read_timeout,
+                                        old_redis->sock->persistent,
+                                        ZSTR_VAL(old_redis->sock->persistent_id),
+                                        old_redis->sock->retry_interval);
+
+        if (old_redis->sock->stream_ctx) {
+            redis_sock_set_stream_context(redis->sock, &old_redis->sock->stream_ctx->options);
+        }
+
+        if (old_redis->sock->user) {
+            redis_sock_set_auth(redis->sock, old_redis->sock->user, old_redis->sock->pass);
+        }
+
+        if (redis_sock_server_open(redis->sock) < 0) {
+            if (redis->sock->err) {
+                REDIS_THROW_EXCEPTION(ZSTR_VAL(redis->sock->err), 0);
+            }
+            redis_free_socket(redis->sock);
+            redis->sock = NULL;
+        }
+    }
+
+    zend_object_std_init(&redis->std, old_object->ce);
+    object_properties_init(&redis->std, old_object->ce);
+
+    memcpy(&redis_object_handlers, zend_get_std_object_handlers(), sizeof(redis_object_handlers));
+    redis_object_handlers.offset = XtOffsetOf(redis_object, std);
+    redis_object_handlers.free_obj = free_redis_object;
+    redis_object_handlers.clone_obj = clone_redis_object;
+    redis->std.handlers = &redis_object_handlers;
+
+    return &redis->std;
+}
+
 zend_object *
 create_redis_object(zend_class_entry *ce)
 {
@@ -617,6 +662,7 @@ create_redis_object(zend_class_entry *ce)
     memcpy(&redis_object_handlers, zend_get_std_object_handlers(), sizeof(redis_object_handlers));
     redis_object_handlers.offset = XtOffsetOf(redis_object, std);
     redis_object_handlers.free_obj = free_redis_object;
+    redis_object_handlers.clone_obj = clone_redis_object;
     redis->std.handlers = &redis_object_handlers;
 
     return &redis->std;
@@ -715,12 +761,15 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_REPLY_LITERAL"), REDIS_OPT_REPLY_LITERAL);
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION_LEVEL"), REDIS_OPT_COMPRESSION_LEVEL);
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_NULL_MULTIBULK_AS_NULL"), REDIS_OPT_NULL_MBULK_AS_NULL);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION_MIN_SIZE"), REDIS_OPT_COMPRESSION_MIN_SIZE);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION_MIN_RATIO"), REDIS_OPT_COMPRESSION_MIN_RATIO);
 
     /* serializer */
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_NONE"), REDIS_SERIALIZER_NONE);
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_PHP"), REDIS_SERIALIZER_PHP);
 #ifdef HAVE_REDIS_IGBINARY
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_IGBINARY"), REDIS_SERIALIZER_IGBINARY);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_IGBINARY_NO_STRINGS"), REDIS_OPT_IGBINARY_NO_STRINGS);
 #endif
 #ifdef HAVE_REDIS_MSGPACK
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_MSGPACK"), REDIS_SERIALIZER_MSGPACK);

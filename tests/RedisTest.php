@@ -138,6 +138,22 @@ class Redis_Test extends TestSuite
         $this->assertTrue(version_compare($this->version, "2.4.0") >= 0);
     }
 
+    public function testClone()
+    {
+        if (get_class($this->redis) !== 'Redis') {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $new = clone $this->redis;
+        /* check that connection works */
+        $this->assertTrue($new->ping());
+        /* confirm socket settings are disconnected from source object */
+        $this->assertTrue($new->setOption(Redis::OPT_PREFIX, 'test'));
+        $this->assertEquals($new->getOption(Redis::OPT_PREFIX), 'test');
+        $this->assertFalse($this->redis->getOption(Redis::OPT_PREFIX));
+    }
+
     public function testPing() {
         /* Reply literal off */
         $this->assertTrue($this->redis->ping());
@@ -4707,12 +4723,74 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->getOption(Redis::OPT_SERIALIZER) === Redis::SERIALIZER_NONE);       // get ok
     }
 
+    public function testIgbinaryNoStrings()
+    {
+        if (!defined('Redis::OPT_IGBINARY_NO_STRINGS')) {
+            $this->markTestSkipped();
+        }
+        $this->assertTrue($this->redis->setOption(Redis::OPT_IGBINARY_NO_STRINGS, true));
+        $this->assertTrue($this->redis->getOption(Redis::OPT_IGBINARY_NO_STRINGS));
+
+        $this->assertTrue($this->redis->set("no_binary", "test string"));
+        $this->assertEquals($this->redis->get('no_binary'), "test string");
+    }
+
     public function testCompressionLZF()
     {
         if (!defined('Redis::COMPRESSION_LZF')) {
             $this->markTestSkipped();
         }
         $this->checkCompression(Redis::COMPRESSION_LZF, 0);
+    }
+
+    public function testCompressionLZFLimited()
+    {
+        if (!defined('Redis::COMPRESSION_LZF')) {
+            $this->markTestSkipped();
+        }
+
+        $checks = [
+            "test123"            => strlen("test123"),
+            str_repeat('a', 101) => 9,
+            random_bytes(110)    => 110,
+        ];
+
+        $this->limitedCompressionCheck($checks, Redis::COMPRESSION_LZF);
+    }
+
+    public function testCompressionZSTDLimited()
+    {
+        if (!defined('Redis::COMPRESSION_ZSTD')) {
+            $this->markTestSkipped();
+        }
+
+        $checks = [
+            "test123"            => strlen("test123"),
+            str_repeat('a', 101) => 17,
+            random_bytes(110)    => 110,
+        ];
+
+        $this->limitedCompressionCheck($checks, Redis::COMPRESSION_ZSTD);
+    }
+
+    private function limitedCompressionCheck($checks, $mode)
+    {
+        $settings = [
+            Redis::OPT_COMPRESSION => $mode,
+            Redis::OPT_COMPRESSION_MIN_SIZE => 100,
+            Redis::OPT_COMPRESSION_MIN_RATIO => 0.3,
+            Redis::OPT_COMPRESSION_LEVEL => 0
+        ];
+        foreach ($settings as $k => $v) {
+            $this->assertTrue($this->redis->setOption($k, $v));
+            $this->assertEquals($this->redis->getOption($k), $v);
+        }
+
+        foreach ($checks as $v => $len) {
+            $this->assertTrue($this->redis->set('foo', $v));
+            $this->assertEquals($this->redis->get('foo'), $v);
+            $this->assertEquals($this->redis->strlen('foo'), $len);
+        }
     }
 
     public function testCompressionZSTD()
@@ -4740,6 +4818,21 @@ class Redis_Test extends TestSuite
         }
         $this->checkCompression(Redis::COMPRESSION_LZ4, 0);
         $this->checkCompression(Redis::COMPRESSION_LZ4, 9);
+    }
+
+    public function testCompressionLZ4Limited()
+    {
+        if (!defined('Redis::COMPRESSION_LZ4')) {
+            $this->markTestSkipped();
+        }
+
+        $checks = [
+            "test123"            => strlen("test123"),
+            str_repeat('a', 101) => 17,
+            random_bytes(110)    => 110,
+        ];
+
+        $this->limitedCompressionCheck($checks, Redis::COMPRESSION_ZSTD);
     }
 
     private function checkCompression($mode, $level)
@@ -6309,6 +6402,8 @@ class Redis_Test extends TestSuite
             try {
                 if (is_array($arr_arg)) {
                     @call_user_func_array([$obj_new, 'auth'], $arr_arg);
+                } else {
+                    @call_user_func([$obj_new, 'auth']);
                 }
             } catch (Exception $ex) {
                 unset($ex); /* Suppress intellisense warning */
@@ -6471,8 +6566,9 @@ class Redis_Test extends TestSuite
                     ini_get('redis.session.lock_retries') /
                     1000000.00);
 
-        $exist = $this->waitForSessionLockKey($sessionId, $maxwait);
+        $exist = $this->waitForSessionLockKey($sessionId, $maxwait + 1);
         $this->assertTrue($exist);
+        $this->redis->del($this->sessionPrefix . $sessionId . '_LOCK');
     }
 
     public function testSession_lockingDisabledByDefault()
@@ -6497,8 +6593,7 @@ class Redis_Test extends TestSuite
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
         $this->startSessionProcess($sessionId, 1, true);
-        $sleep = ini_get('redis.session.lock_wait_time') * ini_get('redis.session.lock_retries');
-        usleep($sleep + 10000);
+        $this->waitForProcess('startSession.php', 5);
         $this->assertFalse($this->redis->exists($this->sessionPrefix . $sessionId . '_LOCK'));
     }
 
@@ -6926,6 +7021,29 @@ class Redis_Test extends TestSuite
         return $exists || $this->redis->exists($key);
     }
 
+    /**
+     * @param string $str_search pattern to look for in ps
+     * @param int    $timeout    Maximum amount of time to wait
+     *
+     * Small helper function to wait until we no longer detect a running process.
+     * This is an attempt to fix timing related false failures on session tests
+     * when running in CI.
+     */
+    function waitForProcess($str_search, $timeout = 0.0) {
+        $st = microtime(true);
+
+        do {
+            $str_procs = shell_exec("ps aux|grep $str_search|grep -v grep");
+            $arr_procs = array_filter(explode("\n", $str_procs));
+            if (count($arr_procs) == 0)
+                return true;
+
+            usleep(10000);
+            $elapsed = microtime(true) - $st;
+        } while ($timeout < 0 || $elapsed < $timeout);
+
+        return false;
+    }
 
     /**
      * @param string $sessionId
