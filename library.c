@@ -2205,7 +2205,7 @@ redis_sock_check_liveness(RedisSock *redis_sock)
 
     /* ECHO challenge/response */
     idlen = redis_uniqid(id, sizeof(id));
-    REDIS_CMD_INIT_SSTR_STATIC(&cmd, 1, "ECHO");
+    REDIS_CMD_INIT_SSTR_STATIC(&cmd, 1, "PING");
     redis_cmd_append_sstr(&cmd, id, idlen);
 
     /* Send command(s) and make sure we can consume reply(ies) */
@@ -2242,7 +2242,7 @@ redis_sock_check_liveness(RedisSock *redis_sock)
         }
     }
 
-    /* check echo response */
+    /* check ping response */
     if (*inbuf != TYPE_BULK || atoi(inbuf + 1) != idlen ||
         redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 ||
         strncmp(inbuf, id, idlen) != 0
