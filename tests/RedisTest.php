@@ -5089,6 +5089,71 @@ class Redis_Test extends TestSuite
         }
     }
 
+    public function testCompressHelpers() {
+        $compressors = self::getAvailableCompression();
+
+        $vals = ['foo', 12345, random_bytes(128), ''];
+
+        $oldcmp = $this->redis->getOption(Redis::OPT_COMPRESSION);
+
+        foreach ($compressors as $cmp) {
+            foreach ($vals as $val) {
+                $this->redis->setOption(Redis::OPT_COMPRESSION, $cmp);
+                $this->redis->set('cmpkey', $val);
+
+                /* Get the value raw */
+                $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+                $raw = $this->redis->get('cmpkey');
+                $this->redis->setOption(Redis::OPT_COMPRESSION, $cmp);
+
+                $this->assertEquals($raw, $this->redis->_compress($val));
+
+                $uncompressed = $this->redis->get('cmpkey');
+                $this->assertEquals($uncompressed, $this->redis->_uncompress($raw));
+            }
+        }
+
+        $this->redis->setOption(Redis::OPT_COMPRESSION, $oldcmp);
+    }
+
+    public function testPackHelpers() {
+        list ($oldser, $oldcmp) = [
+            $this->redis->getOption(Redis::OPT_SERIALIZER),
+            $this->redis->getOption(Redis::OPT_COMPRESSION)
+        ];
+
+        foreach ($this->serializers as $ser) {
+            $compressors = self::getAvailableCompression();
+            foreach ($compressors as $cmp) {
+                $this->redis->setOption(Redis::OPT_SERIALIZER, $ser);
+                $this->redis->setOption(Redis::OPT_COMPRESSION, $cmp);
+
+		foreach (['foo', 12345, random_bytes(128), '', ['an', 'array']] as $v) {
+                    /* Can only attempt the array if we're serializing */
+                    if (is_array($v) && $ser == Redis::SERIALIZER_NONE)
+                        continue;
+
+                    $this->redis->set('packkey', $v);
+
+                    /* Get the value raw */
+                    $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+                    $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+                    $raw = $this->redis->get('packkey');
+                    $this->redis->setOption(Redis::OPT_SERIALIZER, $ser);
+                    $this->redis->setOption(Redis::OPT_COMPRESSION, $cmp);
+
+                    $this->assertEquals($raw, $this->redis->_pack($v));
+
+                    $unpacked = $this->redis->get('packkey');
+		    $this->assertEquals($unpacked, $this->redis->_unpack($raw));
+		}
+	    }
+        }
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, $oldser);
+        $this->redis->setOption(Redis::OPT_COMPRESSION, $oldcmp);
+    }
+
     public function testPrefix() {
         // no prefix
         $this->redis->setOption(Redis::OPT_PREFIX, '');
