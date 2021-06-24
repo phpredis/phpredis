@@ -1,0 +1,81 @@
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0']
+        experimental: [false]
+        include:
+          - php: '8.1'
+            experimental: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: json, igbinary, msgpack, :redis
+          coverage: none
+          tools: none
+      - name: Install dependencies
+        run: |
+          sudo add-apt-repository ppa:redislabs/redis
+          sudo add-apt-repository ppa:ondrej/php
+          sudo apt-get update
+          sudo apt-get install redis valgrind libzstd-dev liblz4-dev
+      - name: Build phpredis
+        run: |
+          phpize
+          ./configure --enable-redis-lzf --enable-redis-zstd --enable-redis-igbinary --enable-redis-msgpack --enable-redis-lz4 --with-liblz4
+          sudo make install
+          sudo mkdir -p /etc/php/${{ matrix.php }}/cli/conf.d
+          echo 'extension = redis.so' | sudo tee -a /etc/php/${{ matrix.php }}/cli/conf.d/90-redis.ini
+      - name: Start redis
+        run: |
+          redis-cli SHUTDOWN NOSAVE
+          for PORT in $(seq 6379 6382) $(seq 32767 32769); do
+            redis-server --port $PORT --daemonize yes --aclfile tests/users.acl
+          done
+          redis-server --port 0 --unixsocket /tmp/redis.sock --daemonize yes --aclfile tests/users.acl
+      - name: Start redis cluster
+        run: |
+          mkdir -p tests/nodes
+          echo -n > tests/nodes/nodemap
+          for PORT in $(seq 7000 7011); do
+            redis-server --port $PORT --cluster-enabled yes --cluster-config-file $PORT.conf --daemonize yes --aclfile tests/users.acl
+            echo 127.0.0.1:$PORT >> tests/nodes/nodemap
+          done
+          echo yes | redis-cli --cluster create $(seq -f 127.0.0.1:%g 7000 7011) --cluster-replicas 3 --user phpredis -a phpredis
+      - name: Start redis sentinel
+        run: |
+          wget raw.githubusercontent.com/redis/redis/6.2/sentinel.conf
+          for PORT in $(seq 26379 26380); do
+            cp sentinel.conf $PORT.conf
+            sed -i '/^sentinel/d' $PORT.conf
+            redis-server $PORT.conf --port $PORT --daemonize yes --sentinel monitor mymaster 127.0.0.1 6379 1 --sentinel auth-pass mymaster phpredis
+          done
+      - name: Run tests
+        run: |
+          php tests/TestRedis.php --class Redis --user phpredis --auth phpredis
+          php tests/TestRedis.php --class RedisArray --user phpredis --auth phpredis
+          php tests/TestRedis.php --class RedisCluster --user phpredis --auth phpredis
+          php tests/TestRedis.php --class RedisSentinel --auth phpredis
+        env:
+          TEST_PHP_ARGS: -e
+      - name: Run tests using valgrind
+        continue-on-error: true
+        run: |
+          valgrind --error-exitcode=1 php tests/TestRedis.php --class Redis --user phpredis --auth phpredis
+          valgrind --error-exitcode=1 php tests/TestRedis.php --class RedisArray --user phpredis --auth phpredis
+          valgrind --error-exitcode=1 php tests/TestRedis.php --class RedisCluster --user phpredis --auth phpredis
+          valgrind --error-exitcode=1 php tests/TestRedis.php --class RedisSentinel --auth phpredis
+        env:
+          TEST_PHP_ARGS: -e
+          USE_ZEND_ALLOC: 0

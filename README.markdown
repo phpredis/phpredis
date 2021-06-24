@@ -1,6 +1,6 @@
 # PhpRedis
 
-[![Build Status](https://travis-ci.org/phpredis/phpredis.svg?branch=develop)](https://travis-ci.org/phpredis/phpredis)
+[![Build Status](https://github.com/phpredis/phpredis/actions/workflows/ci.yml/badge.svg)](https://github.com/phpredis/phpredis/actions/workflows/ci.yml)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/13205/badge.svg)](https://scan.coverity.com/projects/phpredis-phpredis)
 [![PHP version from Travis config](https://img.shields.io/travis/php-v/phpredis/phpredis/develop)](https://img.shields.io/travis/php-v/phpredis/phpredis/develop)
 
