@@ -775,6 +775,22 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
         zend_declare_class_constant_stringl(ce, "LEFT", 4, "left", 4);
         zend_declare_class_constant_stringl(ce, "RIGHT", 5, "right", 5);
     }
+
+    /* retry/backoff options*/
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_MAX_RETRIES"), REDIS_OPT_MAX_RETRIES);
+
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_BACKOFF_ALGORITHM"), REDIS_OPT_BACKOFF_ALGORITHM);
+    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_DEFAULT"), REDIS_BACKOFF_ALGORITHM_DEFAULT);
+    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_CONSTANT"), REDIS_BACKOFF_ALGORITHM_CONSTANT);
+    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_UNIFORM"), REDIS_BACKOFF_ALGORITHM_UNIFORM);
+    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_EXPONENTIAL"), REDIS_BACKOFF_ALGORITHM_EXPONENTIAL);
+    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_FULL_JITTER"), REDIS_BACKOFF_ALGORITHM_FULL_JITTER);
+    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_EQUAL_JITTER"), REDIS_BACKOFF_ALGORITHM_EQUAL_JITTER);
+    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_DECORRELATED_JITTER"), REDIS_BACKOFF_ALGORITHM_DECORRELATED_JITTER);
+
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_BACKOFF_BASE"), REDIS_OPT_BACKOFF_BASE);
+
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_BACKOFF_CAP"), REDIS_OPT_BACKOFF_CAP);
 }
 
 static ZEND_RSRC_DTOR_FUNC(redis_connections_pool_dtor)
