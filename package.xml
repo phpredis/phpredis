@@ -68,6 +68,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='doc' name='arrays.markdown'/>
    <file role='doc' name='cluster.markdown'/>
    <file role='doc' name='sentinel.markdown'/>
+   <file role='src' name='backoff.c'/>
+   <file role='src' name='backoff.h'/>
    <file role='src' name='cluster_library.c'/>
    <file role='src' name='cluster_library.h'/>
    <file role='src' name='common.h'/>

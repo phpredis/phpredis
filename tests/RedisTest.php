@@ -5272,6 +5272,50 @@ class Redis_Test extends TestSuite
         $this->assertTrue(count($arr_all_keys) == 0);
     }
 
+    public function testMaxRetriesOption() {
+        $maxRetriesExpected = 5;
+        $this->redis->setOption(Redis::OPT_MAX_RETRIES, $maxRetriesExpected);
+        $maxRetriesActual=$this->redis->getOption(Redis::OPT_MAX_RETRIES);
+        $this->assertEquals($maxRetriesActual, $maxRetriesExpected);
+    }
+
+    public function testBackoffOptions() {
+        $this->redis->setOption(Redis::OPT_MAX_RETRIES, 5);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_MAX_RETRIES), 5);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_DEFAULT);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_DEFAULT);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_CONSTANT);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_CONSTANT);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_UNIFORM);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_UNIFORM);
+
+        $this->redis -> setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_EXPONENTIAL);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_EXPONENTIAL);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_FULL_JITTER);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_FULL_JITTER);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_DECORRELATED_JITTER);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_DECORRELATED_JITTER);
+
+        $this->assertFalse($this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, 55555));
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_BASE, 500);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_BASE), 500);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_BASE, 750);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_BASE), 750);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_CAP, 500);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_CAP), 500);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_CAP, 750);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_CAP), 750);
+    }
+
     public function testHScan() {
         if (version_compare($this->version, "2.8.0") < 0) {
             $this->markTestSkipped();

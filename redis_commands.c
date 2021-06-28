@@ -4008,6 +4008,14 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             RETURN_LONG(redis_sock->null_mbulk_as_null);
         case REDIS_OPT_FAILOVER:
             RETURN_LONG(c->failover);
+        case REDIS_OPT_MAX_RETRIES:
+            RETURN_LONG(redis_sock->max_retries);
+        case REDIS_OPT_BACKOFF_ALGORITHM:
+            RETURN_LONG(redis_sock->backoff.algorithm);
+        case REDIS_OPT_BACKOFF_BASE:
+            RETURN_LONG(redis_sock->backoff.base / 1000);
+        case REDIS_OPT_BACKOFF_CAP:
+            RETURN_LONG(redis_sock->backoff.cap / 1000);
         default:
             RETURN_FALSE;
     }
@@ -4138,6 +4146,35 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                 val_long == REDIS_FAILOVER_DISTRIBUTE_SLAVES)
             {
                 c->failover = val_long;
+                RETURN_TRUE;
+            }
+            break;
+        case REDIS_OPT_MAX_RETRIES:
+            val_long = zval_get_long(val);
+            if(val_long >= 0) {
+                redis_sock->max_retries = val_long;
+                RETURN_TRUE;
+            }
+            break;
+        case REDIS_OPT_BACKOFF_ALGORITHM:
+            val_long = zval_get_long(val);
+            if(val_long >= 0 &&
+               val_long < REDIS_BACKOFF_ALGORITHMS) {
+                redis_sock->backoff.algorithm = val_long;
+                RETURN_TRUE;
+            }
+            break;
+        case REDIS_OPT_BACKOFF_BASE:
+            val_long = zval_get_long(val);
+            if(val_long >= 0) {
+                redis_sock->backoff.base = val_long * 1000;
+                RETURN_TRUE;
+            }
+            break;
+        case REDIS_OPT_BACKOFF_CAP:
+            val_long = zval_get_long(val);
+            if(val_long >= 0) {
+                redis_sock->backoff.cap = val_long * 1000;
                 RETURN_TRUE;
             }
             break;

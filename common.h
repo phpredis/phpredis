@@ -20,6 +20,8 @@
 #define NULL   ((void *) 0)
 #endif
 
+#include "backoff.h"
+
 typedef enum {
     REDIS_SOCK_STATUS_FAILED = -1,
     REDIS_SOCK_STATUS_DISCONNECTED,
@@ -82,6 +84,10 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_OPT_REPLY_LITERAL      8
 #define REDIS_OPT_COMPRESSION_LEVEL  9
 #define REDIS_OPT_NULL_MBULK_AS_NULL 10
+#define REDIS_OPT_MAX_RETRIES        11
+#define REDIS_OPT_BACKOFF_ALGORITHM  12
+#define REDIS_OPT_BACKOFF_BASE       13
+#define REDIS_OPT_BACKOFF_CAP        14
 
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
@@ -107,6 +113,16 @@ typedef enum {
 #define REDIS_SCAN_RETRY   1
 #define REDIS_SCAN_PREFIX  2
 #define REDIS_SCAN_NOPREFIX 3
+
+/* BACKOFF_ALGORITHM options */
+#define REDIS_BACKOFF_ALGORITHMS                    7
+#define REDIS_BACKOFF_ALGORITHM_DEFAULT             0
+#define REDIS_BACKOFF_ALGORITHM_DECORRELATED_JITTER 1
+#define REDIS_BACKOFF_ALGORITHM_FULL_JITTER         2
+#define REDIS_BACKOFF_ALGORITHM_EQUAL_JITTER        3
+#define REDIS_BACKOFF_ALGORITHM_EXPONENTIAL         4
+#define REDIS_BACKOFF_ALGORITHM_UNIFORM             5
+#define REDIS_BACKOFF_ALGORITHM_CONSTANT            6
 
 /* GETBIT/SETBIT offset range limits */
 #define BITOP_MIN_OFFSET 0
@@ -257,41 +273,43 @@ typedef enum {
 
 /* {{{ struct RedisSock */
 typedef struct {
-    php_stream         *stream;
-    php_stream_context *stream_ctx;
-    zend_string        *host;
-    int                port;
-    zend_string        *user;
-    zend_string        *pass;
-    double             timeout;
-    double             read_timeout;
-    long               retry_interval;
-    redis_sock_status  status;
-    int                persistent;
-    int                watching;
-    zend_string        *persistent_id;
+    php_stream          *stream;
+    php_stream_context  *stream_ctx;
+    zend_string         *host;
+    int                 port;
+    zend_string         *user;
+    zend_string         *pass;
+    double              timeout;
+    double              read_timeout;
+    long                retry_interval;
+    int                 max_retries;
+    struct RedisBackoff backoff;
+    redis_sock_status   status;
+    int                 persistent;
+    int                 watching;
+    zend_string         *persistent_id;
 
-    redis_serializer   serializer;
-    int                compression;
-    int                compression_level;
-    long               dbNumber;
+    redis_serializer    serializer;
+    int                 compression;
+    int                 compression_level;
+    long                dbNumber;
 
-    zend_string        *prefix;
+    zend_string         *prefix;
 
-    short              mode;
-    struct fold_item   *head;
-    struct fold_item   *current;
+    short               mode;
+    struct fold_item    *head;
+    struct fold_item    *current;
 
-    zend_string        *pipeline_cmd;
+    zend_string         *pipeline_cmd;
 
-    zend_string        *err;
+    zend_string         *err;
 
-    int                scan;
+    int                 scan;
 
-    int                readonly;
-    int                reply_literal;
-    int                null_mbulk_as_null;
-    int                tcp_keepalive;
+    int                 readonly;
+    int                 reply_literal;
+    int                 null_mbulk_as_null;
+    int                 tcp_keepalive;
 } RedisSock;
 /* }}} */
 
