@@ -200,10 +200,10 @@ _**Description**_: Connects to a Redis instance.
 
 *host*: string. can be a host, or the path to a unix domain socket. Starting from version 5.0.0 it is possible to specify schema 
 *port*: int, optional  
-*timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
+*timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)  
 *reserved*: should be NULL if retry_interval is specified  
 *retry_interval*: int, value in milliseconds (optional)  
-*read_timeout*: float, value in seconds (optional, default is 0 meaning unlimited)
+*read_timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)
 
 ##### *Return value*
 
@@ -246,10 +246,10 @@ persistent equivalents.
 
 *host*: string. can be a host, or the path to a unix domain socket. Starting from version 5.0.0 it is possible to specify schema 
 *port*: int, optional  
-*timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
+*timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)  
 *persistent_id*: string. identity for the requested persistent connection  
 *retry_interval*: int, value in milliseconds (optional)  
-*read_timeout*: float, value in seconds (optional, default is 0 meaning unlimited)
+*read_timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)
 
 ##### *Return value*
 

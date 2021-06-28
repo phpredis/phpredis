@@ -2842,12 +2842,12 @@ cluster_validate_args(double timeout, double read_timeout, HashTable *seeds,
 {
     zend_string **retval;
 
-    if (timeout < 0L || timeout > INT_MAX) {
+    if (timeout > INT_MAX) {
         if (errstr) *errstr = "Invalid timeout";
         return NULL;
     }
 
-    if (read_timeout < 0L || read_timeout > INT_MAX) {
+    if (read_timeout > INT_MAX) {
         if (errstr) *errstr = "Invalid read timeout";
         return NULL;
     }
