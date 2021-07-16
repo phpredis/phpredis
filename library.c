@@ -301,7 +301,7 @@ redis_error_throw(RedisSock *redis_sock)
 PHP_REDIS_API int
 redis_check_eof(RedisSock *redis_sock, int no_throw)
 {
-    int count;
+    unsigned int retry_index;
     char *errmsg;
 
     if (!redis_sock || !redis_sock->stream || redis_sock->status == REDIS_SOCK_STATUS_FAILED) {
@@ -333,18 +333,17 @@ redis_check_eof(RedisSock *redis_sock, int no_throw)
         errmsg = "Connection lost and socket is in MULTI/watching mode";
     } else {
         errmsg = "Connection lost";
-        /* TODO: configurable max retry count */
-        for (count = 0; count < 10; ++count) {
+        redis_backoff_reset(&redis_sock->backoff);
+        for (retry_index = 0; retry_index < redis_sock->max_retries; ++retry_index) {
             /* close existing stream before reconnecting */
             if (redis_sock->stream) {
                 redis_sock_disconnect(redis_sock, 1);
             }
-            // Wait for a while before trying to reconnect
-            if (redis_sock->retry_interval) {
-                // Random factor to avoid having several (or many) concurrent connections trying to reconnect at the same time
-                long retry_interval = (count ? redis_sock->retry_interval : (php_rand() % redis_sock->retry_interval));
-                usleep(retry_interval);
-            }
+            /* Sleep based on our backoff algorithm */
+            zend_ulong delay = redis_backoff_compute(&redis_sock->backoff, retry_index);
+            if (delay != 0)
+                usleep(delay);
+
             /* reconnect */
             if (redis_sock_connect(redis_sock) == 0) {
                 /* check for EOF again. */
@@ -2150,6 +2149,8 @@ redis_sock_create(char *host, int host_len, int port,
     redis_sock->host = zend_string_init(host, host_len, 0);
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->retry_interval = retry_interval * 1000;
+    redis_sock->max_retries = 10;
+    redis_initialize_backoff(&redis_sock->backoff, retry_interval);
     redis_sock->persistent = persistent;
 
     if (persistent && persistent_id != NULL) {
