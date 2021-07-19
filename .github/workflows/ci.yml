@@ -35,8 +35,7 @@ jobs:
           phpize
           ./configure --enable-redis-lzf --enable-redis-zstd --enable-redis-igbinary --enable-redis-msgpack --enable-redis-lz4 --with-liblz4
           sudo make install
-          sudo mkdir -p /etc/php/${{ matrix.php }}/cli/conf.d
-          echo 'extension = redis.so' | sudo tee -a /etc/php/${{ matrix.php }}/cli/conf.d/90-redis.ini
+          echo 'extension = redis.so' | sudo tee -a $(php --ini | grep 'Scan for additional .ini files' | awk '{print $7}')/90-redis.ini
       - name: Start redis
         run: |
           redis-cli SHUTDOWN NOSAVE
