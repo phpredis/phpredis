@@ -4,7 +4,8 @@ To pull latest stable released version, from [pecl](https://pecl.php.net/package
 
 ~~~
 pecl install redis
-// or 
+
+// If using PHP >= 7.3
 pickle install redis
 ~~~
 
