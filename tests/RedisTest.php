@@ -1,4 +1,7 @@
-<?php defined('PHPREDIS_TESTRUN') or die("Use TestRedis.php to run tests!\n");
+<?php 
+declare(strict_types=1);
+
+defined('PHPREDIS_TESTRUN') or die("Use TestRedis.php to run tests!\n");
 
 require_once(dirname($_SERVER['PHP_SELF'])."/TestSuite.php");
 
