@@ -1,9 +1,11 @@
-# Installation from pecl
+# Installation from pecl/pickle
 
-To pull latest stable released version, from [pecl](https://pecl.php.net/package/redis):
+To pull latest stable released version, from [pecl](https://pecl.php.net/package/redis) / [pickle](https://wiki.php.net/rfc/deprecate-pear-include-composer):
 
 ~~~
 pecl install redis
+// or 
+pickle install redis
 ~~~
 
 # Installation from sources
