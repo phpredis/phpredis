@@ -47,7 +47,7 @@ static zend_ulong redis_full_jitter_backoff(struct RedisBackoff *self, unsigned 
     zend_ulong pow = MIN(retry_index, 10);
     zend_ulong backoff = self->base * (1 << pow);
     zend_ulong cap = MIN(self->cap, backoff);
-    return random_range(0, self->cap);
+    return random_range(0, cap);
 }
 
 static zend_ulong redis_equal_jitter_backoff(struct RedisBackoff *self, unsigned int retry_index) {
