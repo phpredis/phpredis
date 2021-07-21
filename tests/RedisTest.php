@@ -5406,9 +5406,6 @@ class Redis_Test extends TestSuite
     }
 
     public function testBackoffOptions() {
-        $this->redis->setOption(Redis::OPT_MAX_RETRIES, 5);
-        $this->assertEquals($this->redis->getOption(Redis::OPT_MAX_RETRIES), 5);
-
         $this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_DEFAULT);
         $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_DEFAULT);
 
@@ -5420,6 +5417,9 @@ class Redis_Test extends TestSuite
 
         $this->redis -> setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_EXPONENTIAL);
         $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_EXPONENTIAL);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_EQUAL_JITTER);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_EQUAL_JITTER);
 
         $this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_FULL_JITTER);
         $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_FULL_JITTER);
