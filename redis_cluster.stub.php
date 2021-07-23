@@ -157,27 +157,43 @@ class RedisCluster {
 
     public function keys(string $pattern): array;
 
+    public function lastsave(string|array $node): int;
+
+    public function lget(string $key, int $index): string|bool;
+
+    public function lindex(string $key, int $index): string|bool;
+
+    public function linsert(string $key, string $pos, mixed $pivot, mixed $value): int;
+
+    public function llen(string $key): int|bool;
+
+    public function lpop(string $key): string|bool;
+
+    public function lpush(string $key, mixed $value, ...mixed $other_values): int|bool;
+
+    public function lpushx(string $key, mixed $value): int|bool;
+
+    public function lrange(string $key, int $start, int $end): array;
+
+    public function lrem(string $key, int $count, string $value): int|bool;
+
+    public function lset(string $key, int $index, string $value): bool;
+
+    public function ltrim(string $key, int $start, int $end): bool;
+
+    public function mget(array $keys): array;
+
+    public function mset(array $key_values): bool;
+
+    public function msetnx(array $key_values): int;
+
+    public function multi(): self|bool;
+
+    public function object(string $subcommand, string $key): string|int|bool;
 }
 
 /*
     TODO:
-    public function lastsave
-    public function lget
-    public function lindex
-    public function linsert
-    public function llen
-    public function lpop
-    public function lpush
-    public function lpushx
-    public function lrange
-    public function lrem
-    public function lset
-    public function ltrim
-    public function mget
-    public function mset
-    public function msetnx
-    public function multi
-    public function object
     public function persist
     public function pexpire
     public function pexpireat
