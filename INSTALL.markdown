@@ -19,6 +19,7 @@ cd phpredis
 phpize
 ./configure [--enable-redis-igbinary] [--enable-redis-msgpack] [--enable-redis-lzf [--with-liblzf[=DIR]]] [--enable-redis-zstd]
 make && make install
+cd .. && rm -r phpredis
 ~~~
 
 If you would like phpredis to serialize your data using the igbinary library, run configure with `--enable-redis-igbinary`.
