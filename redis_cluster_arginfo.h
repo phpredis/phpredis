@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d6ed41291334f05001a55176b2aef85a183f09dc */
+ * Stub hash: 52c97ef3f0f7fb1a3205fdfce3b9929852f540b6 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -333,6 +333,140 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_keys, 0, 1, I
 	ZEND_ARG_TYPE_INFO(0, pattern, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_lastsave, 0, 1, IS_LONG, 0)
+	ZEND_ARG_TYPE_MASK(0, node, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_lget, 0, 2, MAY_BE_STRING|MAY_BE_BOOL)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_lindex arginfo_class_RedisCluster_lget
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_linsert, 0, 4, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, pos, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, pivot, IS_MIXED, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_llen, 0, 1, MAY_BE_LONG|MAY_BE_BOOL)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_lpop, 0, 1, MAY_BE_STRING|MAY_BE_BOOL)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_lpush, 0, 2, MAY_BE_LONG|MAY_BE_BOOL)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_values, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_lpushx, 0, 2, MAY_BE_LONG|MAY_BE_BOOL)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_lrange, 0, 3, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_lrem, 0, 3, MAY_BE_LONG|MAY_BE_BOOL)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, count, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_lset, 0, 3, _IS_BOOL, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_ltrim, 0, 3, _IS_BOOL, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_mget, 0, 1, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_mset, 0, 1, _IS_BOOL, 0)
+	ZEND_ARG_TYPE_INFO(0, key_values, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_msetnx, 0, 1, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, key_values, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_multi, 0, 0, self, MAY_BE_BOOL)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_object, 0, 2, MAY_BE_STRING|MAY_BE_LONG|MAY_BE_BOOL)
+	ZEND_ARG_TYPE_INFO(0, subcommand, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_persist, 0, 1, _IS_BOOL, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_pexpire arginfo_class_RedisCluster_expire
+
+#define arginfo_class_RedisCluster_pexpireat arginfo_class_RedisCluster_expireat
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_pfadd, 0, 2, _IS_BOOL, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, elements, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_pfcount arginfo_class_RedisCluster_decr
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_pfmerge, 0, 2, _IS_BOOL, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_ping, 0, 2, IS_MIXED, 0)
+	ZEND_ARG_TYPE_MASK(0, key_or_address, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
+	ZEND_ARG_TYPE_INFO(0, message, IS_STRING, 1)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_psetex, 0, 3, _IS_BOOL, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, timeout, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_psubscribe, 0, 2, IS_VOID, 0)
+	ZEND_ARG_TYPE_INFO(0, patterns, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, callback, IS_CALLABLE, 0)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_pttl arginfo_class_RedisCluster_decr
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_publish, 0, 2, _IS_BOOL, 0)
+	ZEND_ARG_TYPE_INFO(0, channel, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, message, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_pubsub, 0, 1, IS_MIXED, 0)
+	ZEND_ARG_TYPE_MASK(0, key_or_address, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, values, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_punsubscribe, 0, 1, MAY_BE_BOOL|MAY_BE_ARRAY)
+	ZEND_ARG_TYPE_INFO(0, pattern, IS_STRING, 0)
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_patterns, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
 
 ZEND_METHOD(RedisCluster, __construct);
 ZEND_METHOD(RedisCluster, _masters);
@@ -409,6 +543,36 @@ ZEND_METHOD(RedisCluster, incrby);
 ZEND_METHOD(RedisCluster, incrbyfloat);
 ZEND_METHOD(RedisCluster, info);
 ZEND_METHOD(RedisCluster, keys);
+ZEND_METHOD(RedisCluster, lastsave);
+ZEND_METHOD(RedisCluster, lget);
+ZEND_METHOD(RedisCluster, lindex);
+ZEND_METHOD(RedisCluster, linsert);
+ZEND_METHOD(RedisCluster, llen);
+ZEND_METHOD(RedisCluster, lpop);
+ZEND_METHOD(RedisCluster, lpush);
+ZEND_METHOD(RedisCluster, lpushx);
+ZEND_METHOD(RedisCluster, lrange);
+ZEND_METHOD(RedisCluster, lrem);
+ZEND_METHOD(RedisCluster, lset);
+ZEND_METHOD(RedisCluster, ltrim);
+ZEND_METHOD(RedisCluster, mget);
+ZEND_METHOD(RedisCluster, mset);
+ZEND_METHOD(RedisCluster, msetnx);
+ZEND_METHOD(RedisCluster, multi);
+ZEND_METHOD(RedisCluster, object);
+ZEND_METHOD(RedisCluster, persist);
+ZEND_METHOD(RedisCluster, pexpire);
+ZEND_METHOD(RedisCluster, pexpireat);
+ZEND_METHOD(RedisCluster, pfadd);
+ZEND_METHOD(RedisCluster, pfcount);
+ZEND_METHOD(RedisCluster, pfmerge);
+ZEND_METHOD(RedisCluster, ping);
+ZEND_METHOD(RedisCluster, psetex);
+ZEND_METHOD(RedisCluster, psubscribe);
+ZEND_METHOD(RedisCluster, pttl);
+ZEND_METHOD(RedisCluster, publish);
+ZEND_METHOD(RedisCluster, pubsub);
+ZEND_METHOD(RedisCluster, punsubscribe);
 
 
 static const zend_function_entry class_RedisCluster_methods[] = {
@@ -487,5 +651,35 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, incrbyfloat, arginfo_class_RedisCluster_incrbyfloat, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, info, arginfo_class_RedisCluster_info, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, keys, arginfo_class_RedisCluster_keys, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, lastsave, arginfo_class_RedisCluster_lastsave, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, lget, arginfo_class_RedisCluster_lget, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, lindex, arginfo_class_RedisCluster_lindex, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, linsert, arginfo_class_RedisCluster_linsert, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, llen, arginfo_class_RedisCluster_llen, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, lpop, arginfo_class_RedisCluster_lpop, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, lpush, arginfo_class_RedisCluster_lpush, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, lpushx, arginfo_class_RedisCluster_lpushx, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, lrange, arginfo_class_RedisCluster_lrange, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, lrem, arginfo_class_RedisCluster_lrem, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, lset, arginfo_class_RedisCluster_lset, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, ltrim, arginfo_class_RedisCluster_ltrim, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, mget, arginfo_class_RedisCluster_mget, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, mset, arginfo_class_RedisCluster_mset, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, msetnx, arginfo_class_RedisCluster_msetnx, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, multi, arginfo_class_RedisCluster_multi, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, object, arginfo_class_RedisCluster_object, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, persist, arginfo_class_RedisCluster_persist, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, pexpire, arginfo_class_RedisCluster_pexpire, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, pexpireat, arginfo_class_RedisCluster_pexpireat, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, pfadd, arginfo_class_RedisCluster_pfadd, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, pfcount, arginfo_class_RedisCluster_pfcount, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, pfmerge, arginfo_class_RedisCluster_pfmerge, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, ping, arginfo_class_RedisCluster_ping, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, psetex, arginfo_class_RedisCluster_psetex, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, psubscribe, arginfo_class_RedisCluster_psubscribe, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, pttl, arginfo_class_RedisCluster_pttl, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, publish, arginfo_class_RedisCluster_publish, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, pubsub, arginfo_class_RedisCluster_pubsub, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, punsubscribe, arginfo_class_RedisCluster_punsubscribe, ZEND_ACC_PUBLIC)
 	ZEND_FE_END
 };

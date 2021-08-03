@@ -169,7 +169,7 @@ class RedisCluster {
 
     public function lpop(string $key): string|bool;
 
-    public function lpush(string $key, mixed $value, ...mixed $other_values): int|bool;
+    public function lpush(string $key, mixed $value, mixed ...$other_values): int|bool;
 
     public function lpushx(string $key, mixed $value): int|bool;
 
@@ -190,23 +190,36 @@ class RedisCluster {
     public function multi(): self|bool;
 
     public function object(string $subcommand, string $key): string|int|bool;
+
+    public function persist(string $key): bool;
+
+    public function pexpire(string $key, int $timeout): bool;
+
+    public function pexpireat(string $key, int $timestamp): bool;
+
+    public function pfadd(string $key, array $elements): bool;
+
+    public function pfcount(string $key): int;
+
+    public function pfmerge(string $key, array $keys): bool;
+
+    public function ping(string|array $key_or_address, ?string $message): mixed;
+
+    public function psetex(string $key, int $timeout, string $value): bool;
+
+    public function psubscribe(array $patterns, callable $callback): void;
+
+    public function pttl(string $key): int;
+
+    public function publish(string $channel, string $message): bool;
+
+    public function pubsub(string|array $key_or_address, string ...$values): mixed;
+
+    public function punsubscribe(string $pattern, string ...$other_patterns): bool|array;
 }
 
 /*
     TODO:
-    public function persist
-    public function pexpire
-    public function pexpireat
-    public function pfadd
-    public function pfcount
-    public function pfmerge
-    public function ping
-    public function psetex
-    public function psubscribe
-    public function pttl
-    public function publish
-    public function pubsub
-    public function punsubscribe
     public function randomkey
     public function rawcommand
     public function rename
