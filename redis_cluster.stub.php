@@ -216,20 +216,30 @@ class RedisCluster {
     public function pubsub(string|array $key_or_address, string ...$values): mixed;
 
     public function punsubscribe(string $pattern, string ...$other_patterns): bool|array;
+
+    public function randomkey(string|array $key_or_address): bool|string;
+
+    public function rawcommand(string|array $key_or_address, string $command, mixed ...$args): mixed;
+
+    public function rename(string $key, string $newkey): bool;
+
+    public function renamenx(string $key, string $newkey): bool;
+
+    public function restore(string $key, int $timeout, string $value): bool;
+
+    public function role(string|array $key_or_address): mixed;
+
+    public function rpop(string $key): bool|string;
+
+    public function rpoplpush(string $src, string $dst): bool|string;
+
+    public function rpush(string $key, string $value, string ...$other_values): bool|int;
+
+    public function rpushx(string $key, string $value): bool|int;
 }
 
 /*
     TODO:
-    public function randomkey
-    public function rawcommand
-    public function rename
-    public function renamenx
-    public function restore
-    public function role
-    public function rpop
-    public function rpoplpush
-    public function rpush
-    public function rpushx
     public function sadd
     public function saddarray
     public function save
