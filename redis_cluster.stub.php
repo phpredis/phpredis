@@ -236,39 +236,68 @@ class RedisCluster {
     public function rpush(string $key, string $value, string ...$other_values): bool|int;
 
     public function rpushx(string $key, string $value): bool|int;
+
+    public function sadd(string $key, string $value, string ...$other_values): bool|int;
+
+    public function saddarray(string $key, array $values): bool|int;
+
+    public function save(string|array $key_or_address): bool;
+
+    public function scan(int &$iterator, mixed $node, ?string $pattern = null, int $count = 0): bool|array;
+
+    public function scard(string $key): int;
+
+    public function script(string|array $key_or_address, mixed ...$args): mixed;
+
+    public function sdiff(string $key, string ...$other_keys): array;
+
+    public function sdiffstore(string $dst, string $key, string ...$other_keys): int;
+
+    public function set(string $key, string $value): bool;
+
+    public function setbit(string $key, int $offset, bool $onoff): bool;
+
+    public function setex(string $key, string $value, int $timeout): bool;
+
+    public function setnx(string $key, string $value, int $timeout): bool;
+
+    public function setoption(int $option, mixed $value): bool;
+
+    public function setrange(string $key, int $offset, string $value): int;
+
+    public function sinter(string $key, string ...$other_keys): array;
+
+    public function sinterstore(string $dst, string $key, string ...$other_keys): bool;
+
+    public function sismember(string $key): int;
+
+    public function slowlog(string|array $key_or_address, mixed ...$args): mixed;
+
+    public function smembers(string $key): array;
+
+    public function smove(string $src, string $dst, string $member): bool;
+
+    public function sort(string $key, array $options): bool|int|string;
+
+    public function spop(string $key): string|array;
+
+    public function srandmember(string $key, int $count = 0): string|array;
+
+    public function srem(string $key, string $value, string ...$other_values): int;
+
+    public function sscan(string $key, int &$iterator, mixed $node, ?string $pattern = null, int $count = 0): bool|array;
+
+    public function strlen(string $key): int;
+
+    public function subscribe(array $channels, callable $cb): void;
+
+    public function sunion(string $key, string ...$other_keys): bool|array;
+
+    public function sunionstore(string $dst, string $key, string ...$other_keys): int;
 }
 
 /*
     TODO:
-    public function sadd
-    public function saddarray
-    public function save
-    public function scan
-    public function scard
-    public function script
-    public function sdiff
-    public function sdiffstore
-    public function set
-    public function setbit
-    public function setex
-    public function setnx
-    public function setoption
-    public function setrange
-    public function sinter
-    public function sinterstore
-    public function sismember
-    public function slowlog
-    public function smembers
-    public function smove
-    public function sort
-    public function spop
-    public function srandmember
-    public function srem
-    public function sscan
-    public function strlen
-    public function subscribe
-    public function sunion
-    public function sunionstore
     public function time
     public function ttl
     public function type
