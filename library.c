@@ -3028,6 +3028,11 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
                     break;
                 }
 
+                /* don't bother with strings smaller then minimum size */
+                if (redis_sock->compression_min_size > 0 && val_len < redis_sock->compression_min_size) {
+                    break;
+                }
+
                 /* Operate on copies in case our CRC fails */
                 const char *copy = val;
                 size_t copylen = val_len;
@@ -3040,6 +3045,11 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
 
                 /* Make sure our CRC matches (TODO:  Maybe issue a docref error?) */
                 if (crc8((unsigned char*)&datalen, sizeof(datalen)) != lz4crc) {
+                    break;
+                }
+
+                /* likely not valid header, compressed value >100megs or 1meg with > 100x compression ratio */
+                if (datalen > 100000000 || (datalen >= 1000000 && datalen / val_len > 100)) {
                     break;
                 }
 
