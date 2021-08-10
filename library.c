@@ -2917,8 +2917,11 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
                 char *lz4buf, *lz4pos;
 
                 lz4bound = LZ4_compressBound(len);
-                lz4buf = emalloc(REDIS_LZ4_HDR_SIZE + lz4bound);
+                lz4buf = emalloc(REDIS_LZ4_HDR_SIZE + lz4bound + 1);
                 lz4pos = lz4buf;
+
+                /* Added LZ4 header */
+                *lz4pos++ = '\4';
 
                 /* Copy and move past crc8 length checksum */
                 memcpy(lz4pos, &crc, sizeof(crc));
@@ -2941,7 +2944,7 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
 
                 if (valfree) efree(buf);
                 *val = lz4buf;
-                *val_len = lz4len + REDIS_LZ4_HDR_SIZE;
+                *val_len = lz4len + REDIS_LZ4_HDR_SIZE + 1;
                 return 1;
             }
 #endif
@@ -3028,14 +3031,14 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
                     break;
                 }
 
-                /* don't bother with strings smaller then minimum size */
-                if (redis_sock->compression_min_size > 0 && val_len < redis_sock->compression_min_size) {
+                /* check bit to ensure payload is LZ4 */
+                if (*val != '\4') {
                     break;
                 }
 
                 /* Operate on copies in case our CRC fails */
-                const char *copy = val;
-                size_t copylen = val_len;
+                const char *copy = (val + 1);
+                size_t copylen = val_len - 1;
 
                 /* Read in our header bytes */
                 memcpy(&lz4crc, copy, sizeof(uint8_t));
@@ -3045,11 +3048,6 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
 
                 /* Make sure our CRC matches (TODO:  Maybe issue a docref error?) */
                 if (crc8((unsigned char*)&datalen, sizeof(datalen)) != lz4crc) {
-                    break;
-                }
-
-                /* likely not valid header, compressed value >100megs or 1meg with > 100x compression ratio */
-                if (datalen > 100000000 || (datalen >= 1000000 && datalen / val_len > 100)) {
                     break;
                 }
 
