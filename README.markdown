@@ -2291,7 +2291,7 @@ $redis->lLen('key1');/* 2 */
 
 ### sAdd
 -----
-_**Description**_: Adds a value to the set value stored at key. If this value is already in the set, `FALSE` is returned.
+_**Description**_: Adds a value to the set value stored at key.
 ##### *Parameters*
 *key*  
 *value*
