@@ -15,7 +15,9 @@ Redis Sentinel also provides other collateral tasks such as monitoring, notifica
 *timeout*: Float, value in seconds (optional, default is 0 meaning unlimited)  
 *persistent*: String, persistent connection id (optional, default is NULL meaning not persistent)  
 *retry_interval*: Int, value in milliseconds (optional, default is 0)  
-*read_timeout*: Float, value in seconds (optional, default is 0 meaning unlimited)  
+*read_timeout*: Float, value in seconds (optional, default is 0 meaning unlimited)
+
+*auth*: String, password to authenticate to the sentinel with. (Requires version >= 5.3.2)
 
 ##### *Example*
 
@@ -25,6 +27,7 @@ $sentinel = new RedisSentinel('127.0.0.1', 26379, 2.5); // 2.5 sec timeout.
 $sentinel = new RedisSentinel('127.0.0.1', 26379, 0, 'sentinel'); // persistent connection with id 'sentinel'
 $sentinel = new RedisSentinel('127.0.0.1', 26379, 0, ''); // also persistent connection with id ''
 $sentinel = new RedisSentinel('127.0.0.1', 26379, 1, null, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
+$sentinel = new RedisSentinel('127.0.0.1',26379, 0, null, 0, 0, 'foobar'); // auth with the password foobar. 
 ~~~
 
 ### Usage
