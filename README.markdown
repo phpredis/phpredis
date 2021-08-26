@@ -2274,6 +2274,7 @@ $redis->lLen('key1');/* 2 */
 ## Sets
 
 * [sAdd](#sadd) - Add one or more members to a set
+* [sAddArray](#saddarray) - Add array of members to a set
 * [sCard, sSize](#scard-ssize) - Get the number of members in a set
 * [sDiff](#sdiff) - Subtract multiple sets
 * [sDiffStore](#sdiffstore) - Subtract multiple sets and store the resulting set in a key
@@ -2303,6 +2304,21 @@ _**Description**_: Adds a value to the set value stored at key. If this value is
 $redis->sAdd('key1' , 'member1'); /* 1, 'key1' => {'member1'} */
 $redis->sAdd('key1' , 'member2', 'member3'); /* 2, 'key1' => {'member1', 'member2', 'member3'}*/
 $redis->sAdd('key1' , 'member2'); /* 0, 'key1' => {'member1', 'member2', 'member3'}*/
+~~~
+
+### sAddArray
+-----
+_**Description**_: Adds array of values to the set value stored at key.
+##### *Parameters*
+*key*
+*value*
+
+##### *Return value*
+*LONG* the number of elements added to the set.
+##### *Example*
+~~~php
+$redis->sAddArray('key1' , array('member1')); /* 1, 'key1' => {'member1'} */
+$redis->sAddArray('key1' , array('member2', 'member3')); /* 2, 'key1' => {'member1', 'member2', 'member3'}*/
 ~~~
 
 ### sCard, sSize
