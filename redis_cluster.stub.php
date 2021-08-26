@@ -334,31 +334,50 @@ class RedisCluster {
     public function xrevrange(string $key, string $start, string $end, int $count = -1): bool|array;
 
     public function xtrim(string $key, int $maxlen, bool $approx = false): int;
-}
 
-/*
-    TODO:
-    public function zadd
-    public function zcard
-    public function zcount
-    public function zincrby
-    public function zinterstore
-    public function zlexcount
-    public function zpopmax
-    public function zpopmin
-    public function zrange
-    public function zrangebylex
-    public function zrangebyscore
-    public function zrank
-    public function zrem
-    public function zremrangebylex
-    public function zremrangebyrank
-    public function zremrangebyscore
-    public function zrevrange
-    public function zrevrangebylex
-    public function zrevrangebyscore
-    public function zrevrank
-    public function zscan
-    public function zscore
-    public function zunionstore
-*/
+    public function zadd(string $key, float $score, string $member, mixed ...$extra_args): int;
+
+    public function zcard(string $key): int;
+
+    public function zcount(string $key, string $start, string $end): int;
+
+    public function zincrby(string $key, float $value, string $member): float;
+
+    public function zinterstore(string $key, array $keys, array $weights = null, string $aggregate = null): int;
+
+    public function zlexcount(string $key, string $min, string $max): int;
+
+    public function zpopmax(string $key, int $value = null): bool|array;
+
+    public function zpopmin(string $key, int $value = null): bool|array;
+
+    public function zrange(string $key, int $start, int $end, array $options = null): bool|array;
+
+    public function zrangebylex(string $key, int $start, int $end, array $options = null): bool|array;
+
+    public function zrangebyscore(string $key, int $start, int $end, array $options = null): bool|array;
+
+    public function zrank(string $key, mixed $member): int;
+
+    public function zrem(string $key, string $value, string ...$other_values): int;
+
+    public function zremrangebylex(string $key, string $min, string $max): int;
+
+    public function zremrangebyrank(string $key, string $min, string $max): int;
+
+    public function zremrangebyscore(string $key, string $min, string $max): int;
+
+    public function zrevrange(string $key, string $min, string $max, array $options = null): bool|array;
+
+    public function zrevrangebylex(string $key, string $min, string $max, array $options = null): bool|array;
+
+    public function zrevrangebyscore(string $key, string $min, string $max, array $options = null): bool|array;
+
+    public function zrevrank(string $key, mixed $member): int;
+
+    public function zscan(string $key, int $iterator, ?string $pattern = null, int $count = 0): bool|array;
+
+    public function zscore(string $key): float;
+
+    public function zunionstore(string $key, array $keys, array $weights = null, string $aggregate = null): int;
+}
