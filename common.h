@@ -482,6 +482,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_sadd_array, 0, 0, 2)
     ZEND_ARG_ARRAY_INFO(0, options, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sadd_int_array, 0, 0, 2)
+    ZEND_ARG_INFO(0, key)
+    ZEND_ARG_ARRAY_INFO(0, options, 0)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_srand_member, 0, 0, 1)
     ZEND_ARG_INFO(0, key)
     ZEND_ARG_INFO(0, count)

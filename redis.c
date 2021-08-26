@@ -413,8 +413,13 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, restore, arginfo_restore, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, role, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, rpoplpush, arginfo_rpoplpush, ZEND_ACC_PUBLIC)
+
      PHP_ME(Redis, sAdd, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sAddArray, arginfo_sadd_array, ZEND_ACC_PUBLIC)
+
+     PHP_ME(Redis, sAddInt, arginfo_key_value, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sAddIntArray, arginfo_sadd_int_array, ZEND_ACC_PUBLIC)
+
      PHP_ME(Redis, sDiff, arginfo_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sDiffStore, arginfo_dst_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sInter, arginfo_nkeys, ZEND_ACC_PUBLIC)
@@ -1630,6 +1635,18 @@ PHP_METHOD(Redis, sAdd)
 /* {{{ proto boolean Redis::sAddArray(string key, array $values) */
 PHP_METHOD(Redis, sAddArray) {
     REDIS_PROCESS_KW_CMD("SADD", redis_key_val_arr_cmd, redis_long_response);
+} /* }}} */
+
+/* {{{ proto long Redis::sAddInt(string key , mixed value) */
+PHP_METHOD(Redis, sAddInt)
+{
+    REDIS_PROCESS_KW_CMD("SADD", redis_key_long_cmd, redis_long_response);
+}
+/* }}} */
+
+/* {{{ proto boolean Redis::sAddIntArray(string key, array $values) */
+PHP_METHOD(Redis, sAddIntArray) {
+    REDIS_PROCESS_KW_CMD("SADD", redis_key_long_arr_cmd, redis_long_response);
 } /* }}} */
 
 /* {{{ proto int Redis::scard(string key) */

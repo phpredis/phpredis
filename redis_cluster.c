@@ -222,8 +222,13 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, rpoplpush, arginfo_rpoplpush, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, rpush, arginfo_key_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, rpushx, arginfo_key_value, ZEND_ACC_PUBLIC)
+
     PHP_ME(RedisCluster, sadd, arginfo_key_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, saddarray, arginfo_sadd_array, ZEND_ACC_PUBLIC)
+
+    PHP_ME(RedisCluster, saddint, arginfo_key_value, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, saddintarray, arginfo_sadd_int_array, ZEND_ACC_PUBLIC)
+
     PHP_ME(RedisCluster, save, arginfo_key_or_address, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, scan, arginfo_scan_cl, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, scard, arginfo_key, ZEND_ACC_PUBLIC)
@@ -1236,6 +1241,18 @@ PHP_METHOD(RedisCluster, sadd) {
 
 /* {{{ proto long RedisCluster::saddarray(string key, array values) */
 PHP_METHOD(RedisCluster, saddarray) {
+    CLUSTER_PROCESS_KW_CMD("SADD", redis_key_val_arr_cmd, cluster_long_resp, 0);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::saddint(string key, string val1 [, ...]) */
+PHP_METHOD(RedisCluster, saddint) {
+    CLUSTER_PROCESS_KW_CMD("SADD", redis_key_varval_cmd, cluster_long_resp, 0);
+}
+/* }}} */
+
+/* {{{ proto long RedisCluster::saddintarray(string key, array values) */
+PHP_METHOD(RedisCluster, saddintarray) {
     CLUSTER_PROCESS_KW_CMD("SADD", redis_key_val_arr_cmd, cluster_long_resp, 0);
 }
 /* }}} */
@@ -3263,4 +3280,3 @@ PHP_METHOD(RedisCluster, command) {
 }
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */
-

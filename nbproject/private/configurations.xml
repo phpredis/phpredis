@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="100">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <df root="/tb2/root/github/phpredis" name="0">
+      <df name=".github">
+        <df name="workflows">
+        </df>
+      </df>
+      <df name="debian">
+      </df>
+      <df name="liblzf">
+      </df>
+      <df name="rpm">
+      </df>
+      <df name="tests">
+      </df>
+      <in>backoff.c</in>
+      <in>backoff.h</in>
+      <in>cluster_library.c</in>
+      <in>cluster_library.h</in>
+      <in>common.h</in>
+      <in>crc16.h</in>
+      <in>library.c</in>
+      <in>library.h</in>
+      <in>php_redis.h</in>
+      <in>redis.c</in>
+      <in>redis_array.c</in>
+      <in>redis_array.h</in>
+      <in>redis_array_impl.c</in>
+      <in>redis_array_impl.h</in>
+      <in>redis_cluster.c</in>
+      <in>redis_cluster.h</in>
+      <in>redis_commands.c</in>
+      <in>redis_commands.h</in>
+      <in>redis_sentinel.c</in>
+      <in>redis_sentinel.h</in>
+      <in>redis_session.c</in>
+      <in>redis_session.h</in>
+      <in>sentinel_library.c</in>
+      <in>sentinel_library.h</in>
+    </df>
+  </logicalFolder>
+  <projectmakefile></projectmakefile>
+  <confs>
+    <conf name="Default" type="0">
+      <toolsSet>
+        <developmentServer>localhost</developmentServer>
+        <platform>2</platform>
+      </toolsSet>
+      <compile>
+        <compiledirpicklist>
+          <compiledirpicklistitem>.</compiledirpicklistitem>
+          <compiledirpicklistitem>${AUTO_FOLDER}</compiledirpicklistitem>
+        </compiledirpicklist>
+        <compiledir>${AUTO_FOLDER}</compiledir>
+        <compilecommandpicklist>
+          <compilecommandpicklistitem>${MAKE} ${ITEM_NAME}.o</compilecommandpicklistitem>
+          <compilecommandpicklistitem>${AUTO_COMPILE}</compilecommandpicklistitem>
+        </compilecommandpicklist>
+        <compilecommand>${AUTO_COMPILE}</compilecommand>
+      </compile>
+      <dbx_gdbdebugger version="1">
+        <gdb_pathmaps>
+        </gdb_pathmaps>
+        <gdb_interceptlist>
+          <gdbinterceptoptions gdb_all="false" gdb_unhandled="true" gdb_unexpected="true"/>
+        </gdb_interceptlist>
+        <gdb_options>
+          <DebugOptions>
+          </DebugOptions>
+        </gdb_options>
+        <gdb_buildfirst gdb_buildfirst_overriden="false" gdb_buildfirst_old="false"/>
+      </dbx_gdbdebugger>
+      <nativedebugger version="1">
+        <engine>gdb</engine>
+      </nativedebugger>
+      <runprofile version="9">
+        <runcommandpicklist>
+          <runcommandpicklistitem>"${OUTPUT_PATH}"</runcommandpicklistitem>
+        </runcommandpicklist>
+        <runcommand>"${OUTPUT_PATH}"</runcommand>
+        <rundir>.</rundir>
+        <buildfirst>false</buildfirst>
+        <terminal-type>0</terminal-type>
+        <remove-instrumentation>0</remove-instrumentation>
+        <environment>
+        </environment>
+      </runprofile>
+    </conf>
+  </confs>
+</configurationDescriptor>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="100">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <df root="/tb2/root/github/phpredis" name="0">
+      <in>backoff.c</in>
+      <in>cluster_library.c</in>
+      <in>library.c</in>
+      <in>redis.c</in>
+      <in>redis_array.c</in>
+      <in>redis_array_impl.c</in>
+      <in>redis_cluster.c</in>
+      <in>redis_commands.c</in>
+      <in>redis_sentinel.c</in>
+      <in>redis_session.c</in>
+      <in>sentinel_library.c</in>
+    </df>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>/root/github/phpredis/nbproject/private/launcher.properties</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <sourceFolderFilter>^(nbproject)$</sourceFolderFilter>
+  <sourceRootList>
+    <Elem>/root/github/phpredis</Elem>
+  </sourceRootList>
+  <projectmakefile></projectmakefile>
+  <confs>
+    <conf name="Default" type="0">
+      <toolsSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>false</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
+      </toolsSet>
+      <codeAssistance>
+        <resolveSymbolicLinks>true</resolveSymbolicLinks>
+      </codeAssistance>
+      <makefileType>
+        <makeTool>
+          <buildCommandWorkingDir>/root/github/phpredis</buildCommandWorkingDir>
+          <buildCommand>echo build</buildCommand>
+          <cleanCommand>echo clean</cleanCommand>
+          <executablePath></executablePath>
+        </makeTool>
+        <preBuild>
+          <preBuildCommandWorkingDir>.</preBuildCommandWorkingDir>
+          <preBuildCommand></preBuildCommand>
+        </preBuild>
+      </makefileType>
+      <item path="/tb2/root/github/phpredis/backoff.c"
+            ex="false"
+            tool="0"
+            flavor2="0">
+      </item>
+      <item path="/tb2/root/github/phpredis/cluster_library.c"
+            ex="false"
+            tool="0"
+            flavor2="0">
+      </item>
+      <item path="/tb2/root/github/phpredis/library.c"
+            ex="false"
+            tool="0"
+            flavor2="0">
+      </item>
+      <item path="/tb2/root/github/phpredis/redis.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="/tb2/root/github/phpredis/redis_array.c"
+            ex="false"
+            tool="0"
+            flavor2="0">
+      </item>
+      <item path="/tb2/root/github/phpredis/redis_array_impl.c"
+            ex="false"
+            tool="0"
+            flavor2="0">
+      </item>
+      <item path="/tb2/root/github/phpredis/redis_cluster.c"
+            ex="false"
+            tool="0"
+            flavor2="0">
+      </item>
+      <item path="/tb2/root/github/phpredis/redis_commands.c"
+            ex="false"
+            tool="0"
+            flavor2="0">
+      </item>
+      <item path="/tb2/root/github/phpredis/redis_sentinel.c"
+            ex="false"
+            tool="0"
+            flavor2="0">
+      </item>
+      <item path="/tb2/root/github/phpredis/redis_session.c"
+            ex="false"
+            tool="0"
+            flavor2="0">
+      </item>
+      <item path="/tb2/root/github/phpredis/sentinel_library.c"
+            ex="false"
+            tool="0"
+            flavor2="0">
+      </item>
+    </conf>
+  </confs>
+</configurationDescriptor>

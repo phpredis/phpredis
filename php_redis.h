@@ -91,6 +91,8 @@ PHP_METHOD(Redis, rename);
 PHP_METHOD(Redis, renameNx);
 PHP_METHOD(Redis, sAdd);
 PHP_METHOD(Redis, sAddArray);
+PHP_METHOD(Redis, sAddInt);
+PHP_METHOD(Redis, sAddIntArray);
 PHP_METHOD(Redis, sDiff);
 PHP_METHOD(Redis, sDiffStore);
 PHP_METHOD(Redis, sInter);
