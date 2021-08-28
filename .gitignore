@@ -18,3 +18,5 @@ idea/*
 .cquery
 tags
 .vscode/*
+nbproject/*
+nbproject
