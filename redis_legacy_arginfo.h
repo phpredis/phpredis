@@ -1,10 +1,32 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 3997a1b8acf7d0a4a3affc95c10d84906d354e6c */
+ * Stub hash: b8e05484964566b2307222ba5813c92a3935d60d */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis__compress, 0, 0, 1)
+	ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
+
 #define arginfo_class_Redis___destruct arginfo_class_Redis___construct
+
+#define arginfo_class_Redis__pack arginfo_class_Redis__compress
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis__prefix, 0, 0, 1)
+	ZEND_ARG_INFO(0, key)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis__serialize arginfo_class_Redis__compress
+
+#define arginfo_class_Redis__uncompress arginfo_class_Redis__compress
+
+#define arginfo_class_Redis__unpack arginfo_class_Redis__compress
+
+#define arginfo_class_Redis__unserialize arginfo_class_Redis__compress
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_auth, 0, 0, 1)
+	ZEND_ARG_INFO(0, credentials)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_connect, 0, 0, 1)
 	ZEND_ARG_INFO(0, host)
@@ -74,21 +96,19 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_renameNx arginfo_class_Redis_rename
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_get, 0, 0, 1)
-	ZEND_ARG_INFO(0, key)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_get arginfo_class_Redis__prefix
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_ping, 0, 0, 0)
 	ZEND_ARG_INFO(0, key)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_incr arginfo_class_Redis_get
+#define arginfo_class_Redis_incr arginfo_class_Redis__prefix
 
 #define arginfo_class_Redis_incrBy arginfo_class_Redis_setnx
 
 #define arginfo_class_Redis_incrByFloat arginfo_class_Redis_setnx
 
-#define arginfo_class_Redis_decr arginfo_class_Redis_get
+#define arginfo_class_Redis_decr arginfo_class_Redis__prefix
 
 #define arginfo_class_Redis_decrBy arginfo_class_Redis_setnx
 
@@ -96,7 +116,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_mget, 0, 0, 1)
 	ZEND_ARG_INFO(0, keys)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_exists arginfo_class_Redis_get
+#define arginfo_class_Redis_exists arginfo_class_Redis__prefix
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_del, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
@@ -113,7 +133,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_keys, 0, 0, 1)
 	ZEND_ARG_INFO(0, pattern)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_type arginfo_class_Redis_get
+#define arginfo_class_Redis_type arginfo_class_Redis__prefix
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_acl, 0, 0, 1)
 	ZEND_ARG_INFO(0, subcmd)
@@ -145,7 +165,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_setBit, 0, 0, 3)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_strlen arginfo_class_Redis_get
+#define arginfo_class_Redis_strlen arginfo_class_Redis__prefix
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_lPush, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
@@ -165,9 +185,9 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_rPushx arginfo_class_Redis_setnx
 
-#define arginfo_class_Redis_lPop arginfo_class_Redis_get
+#define arginfo_class_Redis_lPop arginfo_class_Redis__prefix
 
-#define arginfo_class_Redis_rPop arginfo_class_Redis_get
+#define arginfo_class_Redis_rPop arginfo_class_Redis__prefix
 
 #define arginfo_class_Redis_delete arginfo_class_Redis_del
 
@@ -177,7 +197,15 @@ ZEND_END_ARG_INFO()
 
 
 ZEND_METHOD(Redis, __construct);
+ZEND_METHOD(Redis, _compress);
 ZEND_METHOD(Redis, __destruct);
+ZEND_METHOD(Redis, _pack);
+ZEND_METHOD(Redis, _prefix);
+ZEND_METHOD(Redis, _serialize);
+ZEND_METHOD(Redis, _uncompress);
+ZEND_METHOD(Redis, _unpack);
+ZEND_METHOD(Redis, _unserialize);
+ZEND_METHOD(Redis, auth);
 ZEND_METHOD(Redis, connect);
 ZEND_METHOD(Redis, pconnect);
 ZEND_METHOD(Redis, bitop);
@@ -226,7 +254,15 @@ ZEND_METHOD(Redis, rPop);
 
 static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, __construct, arginfo_class_Redis___construct, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, _compress, arginfo_class_Redis__compress, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, __destruct, arginfo_class_Redis___destruct, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, _pack, arginfo_class_Redis__pack, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, _prefix, arginfo_class_Redis__prefix, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, _serialize, arginfo_class_Redis__serialize, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, _uncompress, arginfo_class_Redis__uncompress, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, _unpack, arginfo_class_Redis__unpack, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, _unserialize, arginfo_class_Redis__unserialize, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, auth, arginfo_class_Redis_auth, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, connect, arginfo_class_Redis_connect, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, pconnect, arginfo_class_Redis_pconnect, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bitop, arginfo_class_Redis_bitop, ZEND_ACC_PUBLIC)

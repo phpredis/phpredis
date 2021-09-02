@@ -9,7 +9,23 @@ class Redis {
 
     public function __construct();
 
+    public function _compress(string $value): string;
+
     public function __destruct();
+
+    public function _pack(mixed $value): string;
+
+    public function _prefix(string $key): string;
+
+    public function _serialize(mixed $value): string;
+
+    public function _uncompress(string $value): string;
+
+    public function _unpack(string $value): mixed;
+
+    public function _unserialize(string $value): mixed;
+
+    public function auth(mixed $credentials): bool;
 
     public function connect(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
 
@@ -187,14 +203,6 @@ class Redis {
 
 /*
     TODO:
-    public function _prefix
-    public function _serialize
-    public function _unserialize
-    public function _pack
-    public function _unpack
-    public function _compress
-    public function _uncompress
-    public function auth
     public function bgSave
     public function bgrewriteaof
     public function blPop
