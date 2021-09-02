@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: b3a02d01273649649ff8627a90ab9c46b9beddbb */
+ * Stub hash: 3997a1b8acf7d0a4a3affc95c10d84906d354e6c */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 ZEND_END_ARG_INFO()
@@ -171,10 +171,6 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_delete arginfo_class_Redis_del
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_ping, 0, 0, 0)
-	ZEND_ARG_INFO(0, message)
-ZEND_END_ARG_INFO()
-
 #define arginfo_class_Redis_open arginfo_class_Redis_connect
 
 #define arginfo_class_Redis_popen arginfo_class_Redis_connect
@@ -276,7 +272,6 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, lPop, arginfo_class_Redis_lPop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, rPop, arginfo_class_Redis_rPop, ZEND_ACC_PUBLIC)
 	ZEND_MALIAS(Redis, delete, del, arginfo_class_Redis_delete, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
-	ZEND_ME(Redis, ping, arginfo_class_Redis_ping, ZEND_ACC_PUBLIC)
 	ZEND_MALIAS(Redis, open, connect, arginfo_class_Redis_open, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
 	ZEND_MALIAS(Redis, popen, pconnect, arginfo_class_Redis_popen, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
 	ZEND_FE_END
