@@ -104,6 +104,9 @@ class Redis {
 
     public function dump(string $key): string;
 
+	/** @return string|Redis */
+    public function echo(string $str);
+
     public function eval(string $script, array $keys = null, int $num_keys = 0): mixed;
 
     public function evalsha(string $sha1, array $keys = null, int $num_keys = 0): mixed;
@@ -212,6 +215,9 @@ class Redis {
 
     public function isConnected(): bool;
 
+	/** @return array|Redis */
+    public function keys(string $pattern);
+
     /**
      * @param mixed $elements
      * @return int|Redis
@@ -269,25 +275,58 @@ class Redis {
 
     public function multi(int $value = Redis::MULTI): bool|Redis;
 
+    public function object(string $key): int|string;
+    /**
+     * @deprecated
+     * @alias Redis::connect
+     */
+    public function open(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
+
     public function pconnect(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
 
-    /** @return bool|Redis */
-    public function set(string $key, mixed $value, mixed $opt = NULL);
+public function persist(string $key): bool;
 
-    /** @return bool|Redis */
-    public function setex(string $key, int $expire, mixed $value);
+    public function pexpire(string $key, int $timeout): bool;
+
+    public function pexpireAt(string $key, int $timestamp): bool;
+
+    public function pfadd(string $key, array $elements): int;
+
+    public function pfcount(string $key): int;
+
+    public function pfmerge(string $dst, array $keys): bool;
+
+	/** @return string|Redis */
+    public function ping(string $key = NULL);
+
+    public function pipeline(): bool|Redis;
+
+    /**
+     * @deprecated
+     * @alias Redis::pconnect
+     */
+    public function popen(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
 
     /** @return bool|Redis */
     public function psetex(string $key, int $expire, mixed $value);
 
-	/** @return bool|array|Redis */
-    public function setnx(string $key, mixed $value);
+    public function psubscribe(array $patterns): void;
+
+    public function pttl(string $key): int;
+
+    public function publish(string $channel, string $message): int;
+
+    public function pubsub(string $command, mixed $arg = null): mixed;
+
+    public function punsubscribe(array $patterns): array;
+
+	/** @return string|Redis */
+    public function rPop(string $key);
 
 	/** @return string|Redis */
     public function randomKey();
 
-	/** @return string|Redis */
-    public function echo(string $str);
+    public function rawcommand(string $command, mixed ...$args): mixed;
 
 	/** @return bool|Redis */
     public function rename(string $key_src, string $key_dst);
@@ -295,8 +334,20 @@ class Redis {
 	/** @return bool|Redis */
     public function renameNx(string $key_src, string $key_dst);
 
-	/** @return string|Redis */
-    public function ping(string $key = NULL);
+    public function restore(string $key, int $timeout, string $value): bool;
+
+    public function role(): mixed;
+
+    public function rpoplpush(string $src, string $dst): string;
+
+    /** @return bool|Redis */
+    public function set(string $key, mixed $value, mixed $opt = NULL);
+
+    /** @return bool|Redis */
+    public function setex(string $key, int $expire, mixed $value);
+
+	/** @return bool|array|Redis */
+    public function setnx(string $key, mixed $value);
 
     /**
      * @param string $otherkeys
@@ -313,9 +364,6 @@ class Redis {
 	/** @return bool|Redis */
     public function unwatch();
 
-	/** @return array|Redis */
-    public function keys(string $pattern);
-
 	/** @return int|Redis */
     public function type(string $key);
 
@@ -327,44 +375,10 @@ class Redis {
 
 	/** @return int|Redis */
     public function strlen(string $key);
-
-	/** @return string|Redis */
-    public function rPop(string $key);
-
-    /**
-     * @deprecated
-     * @alias Redis::connect
-     */
-    public function open(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
-
-    public function pipeline(): bool|Redis;
-
-    /**
-     * @deprecated
-     * @alias Redis::pconnect
-     */
-    public function popen(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
-
-    public function publish(string $channel, string $message): int;
 }
 
 /*
     TODO:
-    public function object
-    public function persist
-    public function pexpire
-    public function pexpireAt
-    public function pfadd
-    public function pfcount
-    public function pfmerge
-    public function psubscribe
-    public function pttl
-    public function pubsub
-    public function punsubscribe
-    public function rawcommand
-    public function restore
-    public function role
-    public function rpoplpush
     public function sAdd
     public function sAddArray
     public function sDiff
