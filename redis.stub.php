@@ -121,6 +121,51 @@ class Redis {
 
     public function flushDB(bool $async = false): bool;
 
+    public function geoadd(string $key, float $lng, float $lat, string $member, mixed ...$other_triples): int;
+
+    public function geodist(string $key, string $src, string $dst, ?string $unit = null): array;
+
+    public function geohash(string $key, string $member, string ...$other_members): array;
+
+    public function geopos(string $key, string $member, string ...$other_members): array;
+
+    public function georadius(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): array;
+
+    public function georadius_ro(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): array;
+
+    public function georadiusbymember(string $key, string $member, float $radius, string $unit, array $options = []): array;
+
+    public function georadiusbymember_ro(string $key, string $member, float $radius, string $unit, array $options = []): array;
+
+	/** @return string|Redis */
+    public function get(string $key);
+
+    public function getAuth(): mixed;
+
+	/** @return int|Redis */
+    public function getBit(string $key, int $idx);
+
+    public function getDBNum(): int;
+
+    public function getHost(): string;
+
+    public function getLastError(): ?string;
+
+    public function getMode(): int;
+
+    public function getOption(int $option): mixed;
+
+    public function getPersistentID(): ?string;
+
+    public function getPort(): int;
+
+    public function getReadTimeout(): int;
+
+	/** @return string|Redis */
+    public function getset(string $key, mixed $value);
+
+    public function getTimeout(): int;
+
     public function pconnect(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
 
     /** @return bool|Redis */
@@ -136,9 +181,6 @@ class Redis {
     public function setnx(string $key, mixed $value);
 
 	/** @return string|Redis */
-    public function getset(string $key, mixed $value);
-
-	/** @return string|Redis */
     public function randomKey();
 
 	/** @return string|Redis */
@@ -149,9 +191,6 @@ class Redis {
 
 	/** @return bool|Redis */
     public function renameNx(string $key_src, string $key_dst);
-
-	/** @return string|Redis */
-    public function get(string $key);
 
 	/** @return string|Redis */
     public function ping(string $key = NULL);
@@ -166,6 +205,8 @@ class Redis {
     public function incrByFloat(string $key, float $value);
 
     public function info(string $opt = null): array;
+
+    public function isConnected(): bool;
 
 	/** @return array|Redis */
     public function mget(array $keys);
@@ -196,9 +237,6 @@ class Redis {
 
 	/** @return int|Redis */
     public function setRange(string $key, int $start, string $value);
-
-	/** @return int|Redis */
-    public function getBit(string $key, int $idx);
 
 	/** @return int|Redis */
     public function setBit(string $key, int $idx, bool $value);
@@ -233,6 +271,8 @@ class Redis {
 	/** @return string|Redis */
     public function lPop(string $key);
 
+    public function multi(int $value = Redis::MULTI): bool|Redis;
+
 	/** @return string|Redis */
     public function rPop(string $key);
 
@@ -251,25 +291,6 @@ class Redis {
 
 /*
     TODO:
-    public function geoadd
-    public function geodist
-    public function geohash
-    public function geopos
-    public function georadius
-    public function georadius_ro
-    public function georadiusbymember
-    public function georadiusbymember_ro
-    public function getAuth
-    public function getDBNum
-    public function getHost
-    public function getLastError
-    public function getMode
-    public function getOption
-    public function getPersistentID
-    public function getPort
-    public function getReadTimeout
-    public function getSet
-    public function getTimeout
     public function hDel
     public function hExists
     public function hGet
@@ -285,7 +306,6 @@ class Redis {
     public function hStrLen
     public function hVals
     public function hscan
-    public function isConnected
     public function lLen
     public function lMove
     public function lSet
@@ -298,7 +318,6 @@ class Redis {
     public function move
     public function mset
     public function msetnx
-    public function multi
     public function object
     public function persist
     public function pexpire
