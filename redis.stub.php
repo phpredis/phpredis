@@ -340,8 +340,53 @@ public function persist(string $key): bool;
 
     public function rpoplpush(string $src, string $dst): string;
 
+    public function sAdd(string $key, mixed $value, mixed ...$other_values): int;
+
+    public function sAddArray(string $key, array $values): int;
+
+    public function sDiff(string $key, string ...$other_keys): array;
+
+    public function sDiffStore(string $dst, string $key, string ...$other_keys): int;
+
+    public function sInter(string $key, string ...$other_keys): array;
+
+    public function sInterStore(string $dst, string $key, string ...$other_keys): int;
+
+    public function sMembers(string $key): array;
+
+    public function sMisMember(string $key, string $member, string ...$other_members): array;
+
+    public function sMove(string $src, string $dst, mixed $value): bool;
+
+    public function sPop(string $key, int $count = 0): string|array;
+
+    public function sRandMember(string $key, int $count = 0): string|array;
+
+    public function sUnion(string $key, string ...$other_keys): array;
+
+    public function sUnionStore(string $dst, string $key, string ...$other_keys): int;
+
+    public function save(): bool;
+
+    public function scan(int &$iterator, ?string $pattern = null, int $count = 0): array;
+
+    public function scard(string $key): int;
+
+    public function script(string $command, mixed ...$args): mixed;
+
+    public function select(int $db): bool;
+
     /** @return bool|Redis */
     public function set(string $key, mixed $value, mixed $opt = NULL);
+
+	/** @return int|Redis */
+    public function setBit(string $key, int $idx, bool $value);
+
+	/** @return int|Redis */
+    public function setRange(string $key, int $start, string $value);
+
+
+    public function setOption(string $option, mixed $value): bool;
 
     /** @return bool|Redis */
     public function setex(string $key, int $expire, mixed $value);
@@ -349,11 +394,62 @@ public function persist(string $key): bool;
 	/** @return bool|array|Redis */
     public function setnx(string $key, mixed $value);
 
+    public function sismember(string $key, string $value): bool;
+
+    public function slaveof(string $host = null, int $port = 6379): bool;
+
+    public function slowlog(string $mode, int $option = 0): mixed;
+
+    public function sort(string $key, array $options = null): mixed;
+
     /**
+     * @deprecated
+     */
+    public function sortAsc(string $key, ?string $pattern = null, mixed $get = null, int $offset = -1, int $count = -1, ?string $store = null): array;
+
+    /**
+     * @deprecated
+     */
+    public function sortAscAlpha(string $key, ?string $pattern = null, mixed $get = null, int $offset = -1, int $count = -1, ?string $store = null): array;
+
+    /**
+     * @deprecated
+     */
+    public function sortDesc(string $key, ?string $pattern = null, mixed $get = null, int $offset = -1, int $count = -1, ?string $store = null): array;
+
+    /**
+     * @deprecated
+     */
+    public function sortDescAlpha(string $key, ?string $pattern = null, mixed $get = null, int $offset = -1, int $count = -1, ?string $store = null): array;
+
+    public function srem(string $key, string $value, string ...$other_values): int;
+
+    public function sscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): array;
+
+	/** @return int|Redis */
+    public function strlen(string $key);
+
+    public function subscribe(string $channel, string ...$other_channels): array;
+
+    public function swapdb(string $src, string $dst): bool;
+
+    public function time(): array;
+
+    public function ttl(string $key): int;
+
+	/** @return int|Redis */
+    public function type(string $key);
+
+       /**
      * @param string $otherkeys
      * @return int|Redis
      */
     public function unlink(array|string $key, ...$otherkeys);
+
+    public function unsubscribe(string $channel, string ...$other_channels): array;
+
+	/** @return bool|Redis */
+    public function unwatch();
 
     /**
      * @param string $otherkeys
@@ -361,59 +457,11 @@ public function persist(string $key): bool;
      */
     public function watch(array|string $key, ...$otherkeys);
 
-	/** @return bool|Redis */
-    public function unwatch();
-
-	/** @return int|Redis */
-    public function type(string $key);
-
-	/** @return int|Redis */
-    public function setRange(string $key, int $start, string $value);
-
-	/** @return int|Redis */
-    public function setBit(string $key, int $idx, bool $value);
-
-	/** @return int|Redis */
-    public function strlen(string $key);
+    public function wait(int $count, int $timeout): int;
 }
 
 /*
     TODO:
-    public function sAdd
-    public function sAddArray
-    public function sDiff
-    public function sDiffStore
-    public function sInter
-    public function sInterStore
-    public function sMembers
-    public function sMisMember
-    public function sMove
-    public function sPop
-    public function sRandMember
-    public function sUnion
-    public function sUnionStore
-    public function save
-    public function scan
-    public function scard
-    public function script
-    public function select
-    public function setOption
-    public function sismember
-    public function slaveof
-    public function slowlog
-    public function sort
-    public function sortAsc
-    public function sortAscAlpha
-    public function sortDesc
-    public function sortDescAlpha
-    public function srem
-    public function sscan
-    public function subscribe
-    public function swapdb
-    public function time
-    public function ttl
-    public function unsubscribe
-    public function wait
     public function xack
     public function xadd
     public function xclaim
