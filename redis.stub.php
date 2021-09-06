@@ -159,6 +159,9 @@ class Redis {
 
     public function getPort(): int;
 
+	/** @return string|Redis */
+    public function getRange(string $key, int $start, int $end);
+
     public function getReadTimeout(): int;
 
 	/** @return string|Redis */
@@ -209,6 +212,63 @@ class Redis {
 
     public function isConnected(): bool;
 
+    /**
+     * @param mixed $elements
+     * @return int|Redis
+     */
+    public function lInsert(string $key, string $pos, mixed $pivot, mixed $value);
+
+
+    public function lLen(string $key): int;
+
+    public function lMove(string $src, string $dst, string $wherefrom, string $whereto): string;
+
+	/** @return string|Redis */
+    public function lPop(string $key);
+
+    /**
+     * @param mixed $elements
+     * @return int|Redis
+     */
+    public function lPush(string $key, ...$elements);
+
+    /**
+     * @param mixed $elements
+     * @return int|Redis
+     */
+    public function rPush(string $key, ...$elements);
+
+	/** @return int|Redis */
+    public function lPushx(string $key, mixed $value);
+
+	/** @return int|Redis */
+    public function rPushx(string $key, mixed $value);
+
+    public function lSet(string $key, int $index, string $value): bool;
+
+    public function lastSave(): int;
+
+    public function lindex(string $key, int $index): string;
+
+    public function lrange(string $key, int $start , int $end): array;
+
+    public function lrem(string $key, string $value, int $count = 0): bool;
+
+    public function ltrim(string $key, int $start , int $end): bool;
+
+	/** @return array|Redis */
+    public function mget(array $keys);
+
+    public function migrate(string $host, int $port, string $key, string $dst, int $timeout, bool $copy = false, bool $replace = false): bool;
+
+    public function move(string $key, int $index): bool;
+
+    public function mset(array $key_values): bool;
+
+    public function msetnx(array $key_values): int;
+
+    public function multi(int $value = Redis::MULTI): bool|Redis;
+
     public function pconnect(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
 
     /** @return bool|Redis */
@@ -238,9 +298,6 @@ class Redis {
 	/** @return string|Redis */
     public function ping(string $key = NULL);
 
-	/** @return array|Redis */
-    public function mget(array $keys);
-
     /**
      * @param string $otherkeys
      * @return int|Redis
@@ -262,9 +319,6 @@ class Redis {
 	/** @return int|Redis */
     public function type(string $key);
 
-	/** @return string|Redis */
-    public function getRange(string $key, int $start, int $end);
-
 	/** @return int|Redis */
     public function setRange(string $key, int $start, string $value);
 
@@ -273,35 +327,6 @@ class Redis {
 
 	/** @return int|Redis */
     public function strlen(string $key);
-
-    /**
-     * @param mixed $elements
-     * @return int|Redis
-     */
-    public function lPush(string $key, ...$elements);
-
-    /**
-     * @param mixed $elements
-     * @return int|Redis
-     */
-    public function rPush(string $key, ...$elements);
-
-    /**
-     * @param mixed $elements
-     * @return int|Redis
-     */
-    public function lInsert(string $key, string $pos, mixed $pivot, mixed $value);
-
-	/** @return int|Redis */
-    public function lPushx(string $key, mixed $value);
-
-	/** @return int|Redis */
-    public function rPushx(string $key, mixed $value);
-
-	/** @return string|Redis */
-    public function lPop(string $key);
-
-    public function multi(int $value = Redis::MULTI): bool|Redis;
 
 	/** @return string|Redis */
     public function rPop(string $key);
@@ -319,22 +344,12 @@ class Redis {
      * @alias Redis::pconnect
      */
     public function popen(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
+
+    public function publish(string $channel, string $message): int;
 }
 
 /*
     TODO:
-    public function lLen
-    public function lMove
-    public function lSet
-    public function lastSave
-    public function lindex
-    public function lrange
-    public function lrem
-    public function ltrim
-    public function migrate
-    public function move
-    public function mset
-    public function msetnx
     public function object
     public function persist
     public function pexpire
@@ -344,7 +359,6 @@ class Redis {
     public function pfmerge
     public function psubscribe
     public function pttl
-    public function publish
     public function pubsub
     public function punsubscribe
     public function rawcommand
