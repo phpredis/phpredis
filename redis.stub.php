@@ -458,23 +458,36 @@ public function persist(string $key): bool;
     public function watch(array|string $key, ...$otherkeys);
 
     public function wait(int $count, int $timeout): int;
+
+    public function xack(string $key, string $group, array $ids): int;
+
+    public function xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false): string;
+
+    public function xclaim(string $key, string $group, string $consumer, int $min_iddle, array $ids, array $options): string|array;
+
+    public function xdel(string $key, array $ids): int;
+
+    public function xgroup(string $operation, string $key = null, string $arg1 = null, string $arg2 = null, bool $arg3 = false): mixed;
+
+    public function xinfo(string $operation, string $arg1 = null, string $arg2 = null): mixed;
+
+    public function xlen(string $key): int;
+
+    public function xpending(string $key, string $group, string $start = null, string $end = null, int $count = -1, string $consumer = null): string;
+
+    public function xrange(string $key, string $start, string $end, int $count = -1): bool|array;
+
+    public function xread(array $streams, int $count = -1, int $block = -1): bool|array;
+
+    public function xreadgroup(string $group, string $consumer, array $streams, int $count = 1, int $block = 1): bool|array;
+
+    public function xrevrange(string $key, string $start, string $end, int $count = -1): bool|array;
+
+    public function xtrim(string $key, int $maxlen, bool $approx = false): int;
 }
 
 /*
     TODO:
-    public function xack
-    public function xadd
-    public function xclaim
-    public function xdel
-    public function xgroup
-    public function xinfo
-    public function xlen
-    public function xpending
-    public function xrange
-    public function xread
-    public function xreadgroup
-    public function xrevrange
-    public function xtrim
     public function zAdd
     public function zCard
     public function zCount
