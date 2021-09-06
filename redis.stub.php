@@ -80,6 +80,18 @@ class Redis {
 
     public function debug(string $key): string;
 
+	/** @return int|Redis */
+    public function decr(string $key);
+
+	/** @return int|Redis */
+    public function decrBy(string $key, int $value);
+
+    /**
+     * @param string $otherkeys
+     * @return int|Redis
+     */
+    public function del(array|string $key, ...$otherkeys);
+
     /**
      * @param string $otherkeys
      * @deprecated
@@ -91,6 +103,23 @@ class Redis {
     public function discard(): bool;
 
     public function dump(string $key): string;
+
+    public function eval(string $script, array $keys = null, int $num_keys = 0): mixed;
+
+    public function evalsha(string $sha1, array $keys = null, int $num_keys = 0): mixed;
+
+    public function exec(): array;
+
+	/** @return bool|Redis */
+    public function exists(string $key);
+
+    public function expire(string $key, int $timeout): bool;
+
+    public function expireAt(string $key, int $timestamp): bool;
+
+    public function flushAll(bool $async = false): bool;
+
+    public function flushDB(bool $async = false): bool;
 
     public function pconnect(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
 
@@ -136,23 +165,10 @@ class Redis {
 	/** @return int|Redis */
     public function incrByFloat(string $key, float $value);
 
-	/** @return int|Redis */
-    public function decr(string $key);
-
-	/** @return int|Redis */
-    public function decrBy(string $key, int $value);
+    public function info(string $opt = null): array;
 
 	/** @return array|Redis */
     public function mget(array $keys);
-
-	/** @return bool|Redis */
-    public function exists(string $key);
-
-    /**
-     * @param string $otherkeys
-     * @return int|Redis
-     */
-    public function del(array|string $key, ...$otherkeys);
 
     /**
      * @param string $otherkeys
@@ -235,13 +251,6 @@ class Redis {
 
 /*
     TODO:
-    public function eval
-    public function evalsha
-    public function exec
-    public function expire
-    public function expireAt
-    public function flushAll
-    public function flushDB
     public function geoadd
     public function geodist
     public function geohash
@@ -276,7 +285,6 @@ class Redis {
     public function hStrLen
     public function hVals
     public function hscan
-    public function info
     public function isConnected
     public function lLen
     public function lMove

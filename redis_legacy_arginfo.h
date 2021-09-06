@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 29b47dbcf96368be84c77a1881756e903d68042d */
+ * Stub hash: 19c4026366635e6429dd7a7c17fbe8cdfe6b00e0 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 ZEND_END_ARG_INFO()
@@ -120,14 +120,52 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_debug arginfo_class_Redis__prefix
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_delete, 0, 0, 1)
+#define arginfo_class_Redis_decr arginfo_class_Redis__prefix
+
+#define arginfo_class_Redis_decrBy arginfo_class_Redis_append
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_del, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_VARIADIC_INFO(0, otherkeys)
 ZEND_END_ARG_INFO()
 
+#define arginfo_class_Redis_delete arginfo_class_Redis_del
+
 #define arginfo_class_Redis_discard arginfo_class_Redis___construct
 
 #define arginfo_class_Redis_dump arginfo_class_Redis__prefix
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_eval, 0, 0, 1)
+	ZEND_ARG_INFO(0, script)
+	ZEND_ARG_INFO(0, keys)
+	ZEND_ARG_INFO(0, num_keys)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_evalsha, 0, 0, 1)
+	ZEND_ARG_INFO(0, sha1)
+	ZEND_ARG_INFO(0, keys)
+	ZEND_ARG_INFO(0, num_keys)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_exec arginfo_class_Redis___construct
+
+#define arginfo_class_Redis_exists arginfo_class_Redis__prefix
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_expire, 0, 0, 2)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, timeout)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_expireAt, 0, 0, 2)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, timestamp)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_flushAll, 0, 0, 0)
+	ZEND_ARG_INFO(0, async)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_flushDB arginfo_class_Redis_flushAll
 
 #define arginfo_class_Redis_pconnect arginfo_class_Redis_connect
 
@@ -174,21 +212,17 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_incrByFloat arginfo_class_Redis_append
 
-#define arginfo_class_Redis_decr arginfo_class_Redis__prefix
-
-#define arginfo_class_Redis_decrBy arginfo_class_Redis_append
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_info, 0, 0, 0)
+	ZEND_ARG_INFO(0, opt)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_mget, 0, 0, 1)
 	ZEND_ARG_INFO(0, keys)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_exists arginfo_class_Redis__prefix
+#define arginfo_class_Redis_unlink arginfo_class_Redis_del
 
-#define arginfo_class_Redis_del arginfo_class_Redis_delete
-
-#define arginfo_class_Redis_unlink arginfo_class_Redis_delete
-
-#define arginfo_class_Redis_watch arginfo_class_Redis_delete
+#define arginfo_class_Redis_watch arginfo_class_Redis_del
 
 #define arginfo_class_Redis_unwatch arginfo_class_Redis___construct
 
@@ -281,9 +315,19 @@ ZEND_METHOD(Redis, connect);
 ZEND_METHOD(Redis, copy);
 ZEND_METHOD(Redis, dbSize);
 ZEND_METHOD(Redis, debug);
+ZEND_METHOD(Redis, decr);
+ZEND_METHOD(Redis, decrBy);
 ZEND_METHOD(Redis, del);
 ZEND_METHOD(Redis, discard);
 ZEND_METHOD(Redis, dump);
+ZEND_METHOD(Redis, eval);
+ZEND_METHOD(Redis, evalsha);
+ZEND_METHOD(Redis, exec);
+ZEND_METHOD(Redis, exists);
+ZEND_METHOD(Redis, expire);
+ZEND_METHOD(Redis, expireAt);
+ZEND_METHOD(Redis, flushAll);
+ZEND_METHOD(Redis, flushDB);
 ZEND_METHOD(Redis, pconnect);
 ZEND_METHOD(Redis, set);
 ZEND_METHOD(Redis, setex);
@@ -299,10 +343,8 @@ ZEND_METHOD(Redis, ping);
 ZEND_METHOD(Redis, incr);
 ZEND_METHOD(Redis, incrBy);
 ZEND_METHOD(Redis, incrByFloat);
-ZEND_METHOD(Redis, decr);
-ZEND_METHOD(Redis, decrBy);
+ZEND_METHOD(Redis, info);
 ZEND_METHOD(Redis, mget);
-ZEND_METHOD(Redis, exists);
 ZEND_METHOD(Redis, unlink);
 ZEND_METHOD(Redis, watch);
 ZEND_METHOD(Redis, unwatch);
@@ -354,9 +396,20 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, copy, arginfo_class_Redis_copy, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, dbSize, arginfo_class_Redis_dbSize, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, debug, arginfo_class_Redis_debug, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, decr, arginfo_class_Redis_decr, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, decrBy, arginfo_class_Redis_decrBy, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, del, arginfo_class_Redis_del, ZEND_ACC_PUBLIC)
 	ZEND_MALIAS(Redis, delete, del, arginfo_class_Redis_delete, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
 	ZEND_ME(Redis, discard, arginfo_class_Redis_discard, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, dump, arginfo_class_Redis_dump, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, eval, arginfo_class_Redis_eval, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, evalsha, arginfo_class_Redis_evalsha, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, exec, arginfo_class_Redis_exec, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, exists, arginfo_class_Redis_exists, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, expire, arginfo_class_Redis_expire, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, expireAt, arginfo_class_Redis_expireAt, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, flushAll, arginfo_class_Redis_flushAll, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, flushDB, arginfo_class_Redis_flushDB, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, pconnect, arginfo_class_Redis_pconnect, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, set, arginfo_class_Redis_set, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, setex, arginfo_class_Redis_setex, ZEND_ACC_PUBLIC)
@@ -372,11 +425,8 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, incr, arginfo_class_Redis_incr, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, incrBy, arginfo_class_Redis_incrBy, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, incrByFloat, arginfo_class_Redis_incrByFloat, ZEND_ACC_PUBLIC)
-	ZEND_ME(Redis, decr, arginfo_class_Redis_decr, ZEND_ACC_PUBLIC)
-	ZEND_ME(Redis, decrBy, arginfo_class_Redis_decrBy, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, info, arginfo_class_Redis_info, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, mget, arginfo_class_Redis_mget, ZEND_ACC_PUBLIC)
-	ZEND_ME(Redis, exists, arginfo_class_Redis_exists, ZEND_ACC_PUBLIC)
-	ZEND_ME(Redis, del, arginfo_class_Redis_del, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, unlink, arginfo_class_Redis_unlink, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, watch, arginfo_class_Redis_watch, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, unwatch, arginfo_class_Redis_unwatch, ZEND_ACC_PUBLIC)
