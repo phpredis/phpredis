@@ -166,6 +166,49 @@ class Redis {
 
     public function getTimeout(): int;
 
+    public function hDel(string $key, string $member, string ...$other_members): int;
+
+    public function hExists(string $key, string $member): bool;
+
+    public function hGet(string $key, string $member): string;
+
+    public function hGetAll(string $key): array;
+
+    public function hIncrBy(string $key, string $member, int $value): int;
+
+    public function hIncrByFloat(string $key, string $member, float $value): float;
+
+    public function hKeys(string $key): array;
+
+    public function hLen(string $key): int;
+
+    public function hMget(string $key, array $keys): array;
+
+    public function hMset(string $key, array $keyvals): bool;
+
+    public function hSet(string $key, string $member, string $value): int;
+
+    public function hSetNx(string $key, string $member, string $value): int;
+
+    public function hStrLen(string $key, string $member): int;
+
+    public function hVals(string $key): array;
+
+    public function hscan(string $key, int $iterator, ?string $pattern = null, int $count = 0): bool|array;
+
+	/** @return int|Redis */
+    public function incr(string $key);
+
+	/** @return int|Redis */
+    public function incrBy(string $key, int $value);
+
+	/** @return int|Redis */
+    public function incrByFloat(string $key, float $value);
+
+    public function info(string $opt = null): array;
+
+    public function isConnected(): bool;
+
     public function pconnect(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
 
     /** @return bool|Redis */
@@ -194,19 +237,6 @@ class Redis {
 
 	/** @return string|Redis */
     public function ping(string $key = NULL);
-
-	/** @return int|Redis */
-    public function incr(string $key);
-
-	/** @return int|Redis */
-    public function incrBy(string $key, int $value);
-
-	/** @return int|Redis */
-    public function incrByFloat(string $key, float $value);
-
-    public function info(string $opt = null): array;
-
-    public function isConnected(): bool;
 
 	/** @return array|Redis */
     public function mget(array $keys);
@@ -282,6 +312,8 @@ class Redis {
      */
     public function open(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
 
+    public function pipeline(): bool|Redis;
+
     /**
      * @deprecated
      * @alias Redis::pconnect
@@ -291,21 +323,6 @@ class Redis {
 
 /*
     TODO:
-    public function hDel
-    public function hExists
-    public function hGet
-    public function hGetAll
-    public function hIncrBy
-    public function hIncrByFloat
-    public function hKeys
-    public function hLen
-    public function hMget
-    public function hMset
-    public function hSet
-    public function hSetNx
-    public function hStrLen
-    public function hVals
-    public function hscan
     public function lLen
     public function lMove
     public function lSet
@@ -325,7 +342,6 @@ class Redis {
     public function pfadd
     public function pfcount
     public function pfmerge
-    public function pipeline
     public function psubscribe
     public function pttl
     public function publish
