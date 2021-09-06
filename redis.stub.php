@@ -25,25 +25,74 @@ class Redis {
 
     public function _unserialize(string $value): mixed;
 
+    /**
+     * @param string $args
+     * @return mixed|Redis
+     */
+    public function acl(string $subcmd, ...$args);
+
+	/** @return int|Redis */
+    public function append(string $key, mixed $value);
+
     public function auth(mixed $credentials): bool;
 
-    public function connect(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
+    public function bgSave(): bool;
 
-    public function pconnect(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
+    public function bgrewriteaof(): bool;
+
+    /** @return int|Redis */
+    public function bitcount(string $key, int $start = 0, int $end = -1);
 
     /**
-     * @param string $otherkeys 
+     * @param string $otherkeys
      * @return int|Redis
      */
     public function bitop(string $operation, string $deskey, string $srckey, ...$otherkeys): int;
 
     /** @return int|Redis */
-    public function bitcount(string $key, int $start = 0, int $end = -1);
-
-    /** @return int|Redis */
     public function bitpos(string $key, int $bit, int $start = 0, int $end = -1);
 
+    public function blPop(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array;
+
+    public function brPop(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array;
+
+    public function brpoplpush(string $src, string $dst, int $timeout): string;
+
+    public function bzPopMax(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array;
+
+    public function bzPopMin(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array;
+
+    public function clearLastError(): bool;
+
+    public function client(string $opt, string $arg = null): mixed;
+
     public function close(): bool;
+
+    public function command(string $opt = null, string|array $arg): mixed;
+
+    public function config(string $operation, string $key, mixed $value = null): mixed;
+
+    public function connect(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, array $context = null): bool;
+
+    public function copy(string $src, string $dst, array $options = null): bool;
+
+    public function dbSize(): int;
+
+    public function debug(string $key): string;
+
+    /**
+     * @param string $otherkeys
+     * @deprecated
+     * @alias Redis::del
+     * @return int|Redis
+     */
+    public function delete(array|string $key, ...$otherkeys);
+
+    public function discard(): bool;
+
+    public function dump(string $key): string;
+
+    public function pconnect(string $host, int $port = 26379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
 
     /** @return bool|Redis */
     public function set(string $key, mixed $value, mixed $opt = NULL);
@@ -100,19 +149,19 @@ class Redis {
     public function exists(string $key);
 
     /**
-     * @param string $otherkeys 
+     * @param string $otherkeys
      * @return int|Redis
      */
     public function del(array|string $key, ...$otherkeys);
 
     /**
-     * @param string $otherkeys 
+     * @param string $otherkeys
      * @return int|Redis
      */
     public function unlink(array|string $key, ...$otherkeys);
 
     /**
-     * @param string $otherkeys 
+     * @param string $otherkeys
      * @return bool|Redis
      */
     public function watch(array|string $key, ...$otherkeys);
@@ -125,15 +174,6 @@ class Redis {
 
 	/** @return int|Redis */
     public function type(string $key);
-
-    /**
-     * @param string $args 
-     * @return mixed|Redis
-     */
-    public function acl(string $subcmd, ...$args);
-
-	/** @return int|Redis */
-    public function append(string $key, mixed $value);
 
 	/** @return string|Redis */
     public function getRange(string $key, int $start, int $end);
@@ -181,14 +221,6 @@ class Redis {
     public function rPop(string $key);
 
     /**
-     * @param string $otherkeys 
-     * @deprecated
-     * @alias Redis::del
-     * @return int|Redis
-     */
-    public function delete(array|string $key, ...$otherkeys);
-
-    /**
      * @deprecated
      * @alias Redis::connect
      */
@@ -203,22 +235,6 @@ class Redis {
 
 /*
     TODO:
-    public function bgSave
-    public function bgrewriteaof
-    public function blPop
-    public function brPop
-    public function brpoplpush
-    public function bzPopMax
-    public function bzPopMin
-    public function clearLastError
-    public function client
-    public function command
-    public function config
-    public function copy
-    public function dbSize
-    public function debug
-    public function discard
-    public function dump
     public function eval
     public function evalsha
     public function exec
