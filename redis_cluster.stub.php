@@ -9,6 +9,8 @@ class RedisCluster {
 
     public function __construct(string|null $name, array $seeds = NULL, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistant = false, mixed $auth = NULL, array $context = NULL);
 
+    public function _compress(string $value): string;
+
     public function _masters(): array;
 
     public function _prefix(string $key): bool|string;
@@ -187,7 +189,7 @@ class RedisCluster {
 
     public function msetnx(array $key_values): int;
 
-    public function multi(): self|bool;
+    public function multi(): RedisCluster|bool;
 
     public function object(string $subcommand, string $key): string|int|bool;
 
