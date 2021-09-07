@@ -200,7 +200,7 @@ class Redis {
 
     public function hVals(string $key): array;
 
-    public function hscan(string $key, int $iterator, ?string $pattern = null, int $count = 0): bool|array;
+    public function hscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
 
 	/** @return int|Redis */
     public function incr(string $key);
@@ -484,36 +484,60 @@ public function persist(string $key): bool;
     public function xrevrange(string $key, string $start, string $end, int $count = -1): bool|array;
 
     public function xtrim(string $key, int $maxlen, bool $approx = false): int;
-}
 
-/*
-    TODO:
-    public function zAdd
-    public function zCard
-    public function zCount
-    public function zIncrBy
-    public function zLexCount
-    public function zMscore
-    public function zPopMax
-    public function zPopMin
-    public function zRange
-    public function zRangeByLex
-    public function zRangeByScore
-    public function zRank
-    public function zRem
-    public function zRemRangeByLex
-    public function zRemRangeByRank
-    public function zRemRangeByScore
-    public function zRevRange
-    public function zRevRangeByLex
-    public function zRevRangeByScore
-    public function zRevRank
-    public function zScore
-    public function zdiff
-    public function zdiffstore
-    public function zinter
-    public function zinterstore
-    public function zscan
-    public function zunion
-    public function zunionstore
-*/
+    public function zAdd(string $key, int $score, string $value): int;
+
+    public function zCard(string $key): int;
+
+    public function zCount(string $key, string $start , string $end): int;
+
+    public function zIncrBy(string $key, float $value, mixed $member): float;
+
+    public function zLexCount(string $key, string $min, string $max): int;
+
+    public function zMscore(string $key, string $member, string ...$other_members): array;
+
+    public function zPopMax(string $key, int $value = null): array;
+
+    public function zPopMin(string $key, int $value = null): array;
+
+    public function zRange(string $key, int $start, int $end, mixed $scores = null): array;
+
+    public function zRangeByLex(string $key, string $min, string $max, int $offset = -1, int $count = -1): array;
+
+    public function zRangeByScore(string $key, string $start, string $end, array $options = []): array;
+
+    public function zRank(string $key, string $member): int;
+
+    public function zRem(string $key, string $member, string ...$other_members): int;
+
+    public function zRemRangeByLex(string $key, string $min, string $max): int;
+
+    public function zRemRangeByRank(string $key, int $start, int $end): int;
+
+    public function zRemRangeByScore(string $key, string $start, string $end): int;
+
+    public function zRevRange(string $key, int $start, int $end, mixed $scores = null): array;
+
+    public function zRevRangeByLex(string $key, string $min, string $max, int $offset = -1, int $count = -1): array;
+
+    public function zRevRangeByScore(string $key, string $start, string $end, array $options = []): array;
+
+    public function zRevRank(string $key, string $member): int;
+
+    public function zScore(string $key, mixed $member): float;
+
+    public function zdiff(array $keys, array $options = null): array;
+
+    public function zdiffstore(string $dst, array $keys, array $options = null): int;
+
+    public function zinter(array $keys, array $weights = null, array $options = null): array;
+
+    public function zinterstore(string $dst, array $keys, array $weights = null, string $aggregate = null): int;
+
+    public function zscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
+
+    public function zunion(array $keys, array $weights = null, array $options = null): array;
+
+    public function zunionstore(string $dst, array $keys, array $weights = null, string $aggregate = null): int;
+}

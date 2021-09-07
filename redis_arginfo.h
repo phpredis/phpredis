@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: bd4e41e930b7d0c585a0b800c99d39cc0a9a1325 */
+ * Stub hash: 5b7df02bd08341bc68ca6717d5486aff1393c83f */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 ZEND_END_ARG_INFO()
@@ -332,7 +332,7 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_hscan, 0, 2, MAY_BE_BOOL|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, iterator, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(1, iterator, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, pattern, IS_STRING, 1, "null")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
@@ -798,6 +798,120 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_xtrim, 0, 2, IS_LONG
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, approx, _IS_BOOL, 0, "false")
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_zAdd, 0, 3, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, score, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_zCard arginfo_class_Redis_hLen
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_zCount, 0, 3, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, start, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, end, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_zIncrBy, 0, 3, IS_DOUBLE, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_DOUBLE, 0)
+	ZEND_ARG_TYPE_INFO(0, member, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_zLexCount, 0, 3, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, min, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, max, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_zMscore arginfo_class_Redis_geohash
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_zPopMax, 0, 1, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, value, IS_LONG, 0, "null")
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_zPopMin arginfo_class_Redis_zPopMax
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_zRange, 0, 3, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, scores, IS_MIXED, 0, "null")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_zRangeByLex, 0, 3, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, min, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, max, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, offset, IS_LONG, 0, "-1")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "-1")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_zRangeByScore, 0, 3, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, start, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, end, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "[]")
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_zRank arginfo_class_Redis_hStrLen
+
+#define arginfo_class_Redis_zRem arginfo_class_Redis_hDel
+
+#define arginfo_class_Redis_zRemRangeByLex arginfo_class_Redis_zLexCount
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_zRemRangeByRank, 0, 3, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_zRemRangeByScore arginfo_class_Redis_zCount
+
+#define arginfo_class_Redis_zRevRange arginfo_class_Redis_zRange
+
+#define arginfo_class_Redis_zRevRangeByLex arginfo_class_Redis_zRangeByLex
+
+#define arginfo_class_Redis_zRevRangeByScore arginfo_class_Redis_zRangeByScore
+
+#define arginfo_class_Redis_zRevRank arginfo_class_Redis_hStrLen
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_zScore, 0, 2, IS_DOUBLE, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, member, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_zdiff, 0, 1, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_zdiffstore, 0, 2, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, dst, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_zinter, 0, 1, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, weights, IS_ARRAY, 0, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_zinterstore, 0, 2, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, dst, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, weights, IS_ARRAY, 0, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, aggregate, IS_STRING, 0, "null")
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_zscan arginfo_class_Redis_hscan
+
+#define arginfo_class_Redis_zunion arginfo_class_Redis_zinter
+
+#define arginfo_class_Redis_zunionstore arginfo_class_Redis_zinterstore
+
 
 ZEND_METHOD(Redis, __construct);
 ZEND_METHOD(Redis, _compress);
@@ -989,6 +1103,34 @@ ZEND_METHOD(Redis, xread);
 ZEND_METHOD(Redis, xreadgroup);
 ZEND_METHOD(Redis, xrevrange);
 ZEND_METHOD(Redis, xtrim);
+ZEND_METHOD(Redis, zAdd);
+ZEND_METHOD(Redis, zCard);
+ZEND_METHOD(Redis, zCount);
+ZEND_METHOD(Redis, zIncrBy);
+ZEND_METHOD(Redis, zLexCount);
+ZEND_METHOD(Redis, zMscore);
+ZEND_METHOD(Redis, zPopMax);
+ZEND_METHOD(Redis, zPopMin);
+ZEND_METHOD(Redis, zRange);
+ZEND_METHOD(Redis, zRangeByLex);
+ZEND_METHOD(Redis, zRangeByScore);
+ZEND_METHOD(Redis, zRank);
+ZEND_METHOD(Redis, zRem);
+ZEND_METHOD(Redis, zRemRangeByLex);
+ZEND_METHOD(Redis, zRemRangeByRank);
+ZEND_METHOD(Redis, zRemRangeByScore);
+ZEND_METHOD(Redis, zRevRange);
+ZEND_METHOD(Redis, zRevRangeByLex);
+ZEND_METHOD(Redis, zRevRangeByScore);
+ZEND_METHOD(Redis, zRevRank);
+ZEND_METHOD(Redis, zScore);
+ZEND_METHOD(Redis, zdiff);
+ZEND_METHOD(Redis, zdiffstore);
+ZEND_METHOD(Redis, zinter);
+ZEND_METHOD(Redis, zinterstore);
+ZEND_METHOD(Redis, zscan);
+ZEND_METHOD(Redis, zunion);
+ZEND_METHOD(Redis, zunionstore);
 
 
 static const zend_function_entry class_Redis_methods[] = {
@@ -1185,5 +1327,33 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, xreadgroup, arginfo_class_Redis_xreadgroup, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xrevrange, arginfo_class_Redis_xrevrange, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xtrim, arginfo_class_Redis_xtrim, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zAdd, arginfo_class_Redis_zAdd, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zCard, arginfo_class_Redis_zCard, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zCount, arginfo_class_Redis_zCount, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zIncrBy, arginfo_class_Redis_zIncrBy, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zLexCount, arginfo_class_Redis_zLexCount, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zMscore, arginfo_class_Redis_zMscore, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zPopMax, arginfo_class_Redis_zPopMax, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zPopMin, arginfo_class_Redis_zPopMin, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zRange, arginfo_class_Redis_zRange, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zRangeByLex, arginfo_class_Redis_zRangeByLex, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zRangeByScore, arginfo_class_Redis_zRangeByScore, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zRank, arginfo_class_Redis_zRank, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zRem, arginfo_class_Redis_zRem, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zRemRangeByLex, arginfo_class_Redis_zRemRangeByLex, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zRemRangeByRank, arginfo_class_Redis_zRemRangeByRank, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zRemRangeByScore, arginfo_class_Redis_zRemRangeByScore, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zRevRange, arginfo_class_Redis_zRevRange, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zRevRangeByLex, arginfo_class_Redis_zRevRangeByLex, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zRevRangeByScore, arginfo_class_Redis_zRevRangeByScore, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zRevRank, arginfo_class_Redis_zRevRank, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zScore, arginfo_class_Redis_zScore, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zdiff, arginfo_class_Redis_zdiff, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zdiffstore, arginfo_class_Redis_zdiffstore, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zinter, arginfo_class_Redis_zinter, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zinterstore, arginfo_class_Redis_zinterstore, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zscan, arginfo_class_Redis_zscan, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zunion, arginfo_class_Redis_zunion, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zunionstore, arginfo_class_Redis_zunionstore, ZEND_ACC_PUBLIC)
 	ZEND_FE_END
 };
