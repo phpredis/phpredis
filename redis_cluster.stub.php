@@ -13,6 +13,8 @@ class RedisCluster {
 
     public function _masters(): array;
 
+    public function _pack(mixed $value): string;
+
     public function _prefix(string $key): bool|string;
 
     public function _redir(): string|null;
@@ -20,6 +22,8 @@ class RedisCluster {
     public function _serialize(mixed $value): bool|string;
 
     public function _uncompress(string $value): string;
+
+    public function _unpack(string $value): mixed;
 
     public function _unserialize(string $value): mixed;
 
