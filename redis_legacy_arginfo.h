@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 5b7df02bd08341bc68ca6717d5486aff1393c83f */
+ * Stub hash: 144b4c3c5209a1fac7a11881040e657179581a29 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 ZEND_END_ARG_INFO()
@@ -52,7 +52,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_bitop, 0, 0, 3)
 	ZEND_ARG_INFO(0, operation)
 	ZEND_ARG_INFO(0, deskey)
 	ZEND_ARG_INFO(0, srckey)
-	ZEND_ARG_VARIADIC_INFO(0, otherkeys)
+	ZEND_ARG_VARIADIC_INFO(0, other_keys)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_bitpos, 0, 0, 2)
@@ -126,7 +126,7 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_del, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_VARIADIC_INFO(0, otherkeys)
+	ZEND_ARG_VARIADIC_INFO(0, other_keys)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_delete arginfo_class_Redis_del
@@ -490,10 +490,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_sAddArray, 0, 0, 2)
 	ZEND_ARG_INFO(0, values)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_sDiff, 0, 0, 1)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_VARIADIC_INFO(0, other_keys)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_sDiff arginfo_class_Redis_del
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_sDiffStore, 0, 0, 2)
 	ZEND_ARG_INFO(0, dst)
@@ -501,7 +498,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_sDiffStore, 0, 0, 2)
 	ZEND_ARG_VARIADIC_INFO(0, other_keys)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_sInter arginfo_class_Redis_sDiff
+#define arginfo_class_Redis_sInter arginfo_class_Redis_del
 
 #define arginfo_class_Redis_sInterStore arginfo_class_Redis_sDiffStore
 
@@ -522,7 +519,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_sRandMember arginfo_class_Redis_sPop
 
-#define arginfo_class_Redis_sUnion arginfo_class_Redis_sDiff
+#define arginfo_class_Redis_sUnion arginfo_class_Redis_del
 
 #define arginfo_class_Redis_sUnionStore arginfo_class_Redis_sDiffStore
 

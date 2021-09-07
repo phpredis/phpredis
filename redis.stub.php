@@ -44,10 +44,9 @@ class Redis {
     public function bitcount(string $key, int $start = 0, int $end = -1);
 
     /**
-     * @param string $otherkeys
      * @return int|Redis
      */
-    public function bitop(string $operation, string $deskey, string $srckey, ...$otherkeys): int;
+    public function bitop(string $operation, string $deskey, string $srckey, string ...$other_keys): int;
 
     /** @return int|Redis */
     public function bitpos(string $key, int $bit, int $start = 0, int $end = -1);
@@ -87,18 +86,16 @@ class Redis {
     public function decrBy(string $key, int $value);
 
     /**
-     * @param string $otherkeys
      * @return int|Redis
      */
-    public function del(array|string $key, ...$otherkeys);
+    public function del(array|string $key, string ...$other_keys);
 
     /**
-     * @param string $otherkeys
      * @deprecated
      * @alias Redis::del
      * @return int|Redis
      */
-    public function delete(array|string $key, ...$otherkeys);
+    public function delete(array|string $key, string ...$other_keys);
 
     public function discard(): bool;
 
@@ -441,10 +438,9 @@ public function persist(string $key): bool;
     public function type(string $key);
 
        /**
-     * @param string $otherkeys
      * @return int|Redis
      */
-    public function unlink(array|string $key, ...$otherkeys);
+    public function unlink(array|string $key, string ...$other_keys);
 
     public function unsubscribe(string $channel, string ...$other_channels): array;
 
@@ -452,10 +448,9 @@ public function persist(string $key): bool;
     public function unwatch();
 
     /**
-     * @param string $otherkeys
      * @return bool|Redis
      */
-    public function watch(array|string $key, ...$otherkeys);
+    public function watch(array|string $key, string ...$other_keys);
 
     public function wait(int $count, int $timeout): int;
 
