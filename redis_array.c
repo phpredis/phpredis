@@ -158,13 +158,14 @@ PHP_METHOD(RedisArray, __construct)
      * Note:  WRONG_PARAM_COUNT seems wrong but this is what we have been doing
      *        for ages so we can't really change it until the next major version.
      */
-    if (Z_TYPE_P(z0) != IS_ARRAY && Z_TYPE_P(z0) != IS_STRING)
+    if (Z_TYPE_P(z0) != IS_ARRAY && Z_TYPE_P(z0) != IS_STRING) {
 #if PHP_VERSION_ID < 80000
         WRONG_PARAM_COUNT;
 #else
         zend_argument_type_error(1, "must be of type string|array, %s given", zend_zval_type_name(z0));
         RETURN_THROWS();
 #endif
+    }
 
     /* If it's a string we want to load the array from ini information */
     if (Z_TYPE_P(z0) == IS_STRING) {
