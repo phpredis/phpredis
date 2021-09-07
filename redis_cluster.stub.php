@@ -19,6 +19,8 @@ class RedisCluster {
 
     public function _serialize(mixed $value): bool|string;
 
+    public function _uncompress(string $value): string;
+
     public function _unserialize(string $value): mixed;
 
     public function acl(string|array $key_or_address, string $subcmd, string ...$args): mixed;

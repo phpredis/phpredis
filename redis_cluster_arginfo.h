@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: cabae8161c1b40ddcb0782e887ff699778e20624 */
+ * Stub hash: 37b910dcb490d2b0a2fcdf4b272f1d96d09311b9 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -28,6 +28,8 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster__serialize, 0, 1, MAY_BE_BOOL|MAY_BE_STRING)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster__uncompress arginfo_class_RedisCluster__compress
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster__unserialize, 0, 1, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
@@ -836,6 +838,7 @@ ZEND_METHOD(RedisCluster, _masters);
 ZEND_METHOD(RedisCluster, _prefix);
 ZEND_METHOD(RedisCluster, _redir);
 ZEND_METHOD(RedisCluster, _serialize);
+ZEND_METHOD(RedisCluster, _uncompress);
 ZEND_METHOD(RedisCluster, _unserialize);
 ZEND_METHOD(RedisCluster, acl);
 ZEND_METHOD(RedisCluster, append);
@@ -1027,6 +1030,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, _prefix, arginfo_class_RedisCluster__prefix, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _redir, arginfo_class_RedisCluster__redir, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _serialize, arginfo_class_RedisCluster__serialize, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, _uncompress, arginfo_class_RedisCluster__uncompress, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _unserialize, arginfo_class_RedisCluster__unserialize, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, acl, arginfo_class_RedisCluster_acl, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, append, arginfo_class_RedisCluster_append, ZEND_ACC_PUBLIC)
