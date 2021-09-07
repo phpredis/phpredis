@@ -27,6 +27,8 @@ class RedisSentinel {
 	/** @return array|bool|RedisSentinel */
     public function masters();
 
+    public function myid(): string;
+
 	/** @return bool|RedisSentinel */
     public function ping();
 

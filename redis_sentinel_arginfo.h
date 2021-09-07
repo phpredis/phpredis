@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 25dd3e55b8118797bf37ac517c2380bb77efdcea */
+ * Stub hash: 9a7a43f9bee2da879c1419d203ddfd12e6052e25 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, host, IS_STRING, 0)
@@ -25,6 +25,9 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisSentinel_masters arginfo_class_RedisSentinel_flushconfig
 
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisSentinel_myid, 0, 0, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
 #define arginfo_class_RedisSentinel_ping arginfo_class_RedisSentinel_flushconfig
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel_reset, 0, 0, 1)
@@ -43,6 +46,7 @@ ZEND_METHOD(RedisSentinel, flushconfig);
 ZEND_METHOD(RedisSentinel, getMasterAddrByName);
 ZEND_METHOD(RedisSentinel, master);
 ZEND_METHOD(RedisSentinel, masters);
+ZEND_METHOD(RedisSentinel, myid);
 ZEND_METHOD(RedisSentinel, ping);
 ZEND_METHOD(RedisSentinel, reset);
 ZEND_METHOD(RedisSentinel, sentinels);
@@ -57,6 +61,7 @@ static const zend_function_entry class_RedisSentinel_methods[] = {
 	ZEND_ME(RedisSentinel, getMasterAddrByName, arginfo_class_RedisSentinel_getMasterAddrByName, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisSentinel, master, arginfo_class_RedisSentinel_master, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisSentinel, masters, arginfo_class_RedisSentinel_masters, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisSentinel, myid, arginfo_class_RedisSentinel_myid, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisSentinel, ping, arginfo_class_RedisSentinel_ping, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisSentinel, reset, arginfo_class_RedisSentinel_reset, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisSentinel, sentinels, arginfo_class_RedisSentinel_sentinels, ZEND_ACC_PUBLIC)
