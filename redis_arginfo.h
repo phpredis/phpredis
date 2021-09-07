@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 144b4c3c5209a1fac7a11881040e657179581a29 */
+ * Stub hash: d32b3d0f25155fa5d5f1c9626bbf3f4bcfdf75ae */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 ZEND_END_ARG_INFO()
@@ -447,7 +447,8 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_multi, 0, 0, Red
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, value, IS_LONG, 0, "Redis::MULTI")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_object, 0, 1, MAY_BE_LONG|MAY_BE_STRING)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_object, 0, 2, MAY_BE_LONG|MAY_BE_STRING)
+	ZEND_ARG_TYPE_INFO(0, subcommand, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 

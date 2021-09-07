@@ -272,7 +272,8 @@ class Redis {
 
     public function multi(int $value = Redis::MULTI): bool|Redis;
 
-    public function object(string $key): int|string;
+    public function object(string $subcommand, string $key): int|string;
+
     /**
      * @deprecated
      * @alias Redis::connect

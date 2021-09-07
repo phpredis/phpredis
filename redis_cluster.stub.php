@@ -197,7 +197,7 @@ class RedisCluster {
 
     public function multi(): RedisCluster|bool;
 
-    public function object(string $subcommand, string $key): string|int|bool;
+    public function object(string $subcommand, string $key): int|string;
 
     public function persist(string $key): bool;
 
