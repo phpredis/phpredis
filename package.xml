@@ -100,18 +100,30 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <file role='src' name='library.h'/>
    <file role='src' name='php_redis.h'/>
    <file role='src' name='redis.c'/>
+   <file role='src' name='redis.stub.php'/>
+   <file role='src' name='redis_arginfo.h'/>
+   <file role='src' name='redis_legacy_arginfo.h'/>
    <file role='src' name='redis_array.c'/>
    <file role='src' name='redis_array.h'/>
+   <file role='src' name='redis_array.stub.php'/>
+   <file role='src' name='redis_array_arginfo.h'/>
+   <file role='src' name='redis_array_legacy_arginfo.h'/>
    <file role='src' name='redis_array_impl.c'/>
    <file role='src' name='redis_array_impl.h'/>
    <file role='src' name='redis_cluster.c'/>
    <file role='src' name='redis_cluster.h'/>
+   <file role='src' name='redis_cluster.stub.php'/>
+   <file role='src' name='redis_cluster_arginfo.h'/>
+   <file role='src' name='redis_cluster_legacy_arginfo.h'/>
    <file role='src' name='redis_commands.c'/>
    <file role='src' name='redis_commands.h'/>
    <file role='src' name='redis_session.c'/>
    <file role='src' name='redis_session.h'/>
    <file role='src' name='redis_sentinel.c'/>
    <file role='src' name='redis_sentinel.h'/>
+   <file role='src' name='redis_sentinel.stub.php'/>
+   <file role='src' name='redis_sentinel_arginfo.h'/>
+   <file role='src' name='redis_sentinel_legacy_arginfo.h'/>
    <file role='src' name='sentinel_library.c'/>
    <file role='src' name='sentinel_library.h'/>
    <dir name='liblzf'>
