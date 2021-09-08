@@ -4246,7 +4246,8 @@ int
 redis_sentinel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") == FAILURE) {
+    if (zend_parse_parameters_none() == FAILURE) {
+
         return FAILURE;
     }
     *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SENTINEL", "s", kw, strlen(kw));

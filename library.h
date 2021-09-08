@@ -25,9 +25,16 @@
 
 #if PHP_VERSION_ID < 80000
     #define redis_hash_fetch_ops(zstr) php_hash_fetch_ops(ZSTR_VAL((zstr)), ZSTR_LEN((zstr)))
+
+    /* use RedisException when ValueError not available */
+    #define REDIS_VALUE_EXCEPTION(m) REDIS_THROW_EXCEPTION(m, 0)
+    #define RETURN_THROWS() RETURN_FALSE
 #else
     #define redis_hash_fetch_ops(zstr) php_hash_fetch_ops(zstr)
+
+    #define REDIS_VALUE_EXCEPTION(m) zend_value_error(m)
 #endif
+
 
 void redis_register_persistent_resource(zend_string *id, void *ptr, int le_id);
 
