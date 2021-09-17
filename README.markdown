@@ -158,6 +158,32 @@ _**Description**_: Creates a Redis client
 $redis = new Redis();
 ~~~
 
+Starting from version 6.0.0 it's possible to specify configuration options.
+This allows to connect to the server without explicitly invoking `connect` command.
+
+##### *Example*
+
+~~~php
+$redis = new Redis([
+    'host' => '127.0.0.1',
+    'port' => 6379,
+    'connectTimeout' => 2.5,
+    'auth' => ['phpredis', 'phpredis'],
+    'ssl' => ['verify_peer' => false],
+]);
+~~~
+
+##### *Parameters*
+
+*host*: string. can be a host, or the path to a unix domain socket.
+*port*: int
+*connectTimeout*: float, value in seconds (default is 0 meaning unlimited)
+*retryInterval*: int, value in milliseconds (optional)
+*readTimeout*: float, value in seconds (default is 0 meaning unlimited)
+*persistent*: mixed, if value is string then it used as persistend id, else value casts to boolean
+*auth*: mixed, authentication information
+*ssl*: array, SSL context options
+
 ### Class RedisException
 -----
 phpredis throws a [RedisException](#class-redisexception) object if it can't reach the Redis server. That can happen in case of connectivity issues,

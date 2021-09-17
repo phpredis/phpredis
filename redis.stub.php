@@ -7,7 +7,7 @@
 
 class Redis {
 
-    public function __construct();
+    public function __construct(array $options = null);
 
     public function _compress(string $value): string;
 
