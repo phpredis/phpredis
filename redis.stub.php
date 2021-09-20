@@ -336,6 +336,8 @@ public function persist(string $key): bool;
 	/** @return bool|Redis */
     public function renameNx(string $key_src, string $key_dst);
 
+    public function reset(): bool;
+
     public function restore(string $key, int $timeout, string $value): bool;
 
     public function role(): mixed;

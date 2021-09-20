@@ -904,6 +904,50 @@ PHP_METHOD(Redis, renameNx)
 }
 /* }}} */
 
+/** {{{ proto bool Redis::reset()
+ */
+PHP_METHOD(Redis, reset)
+{
+    char *response;
+    int response_len;
+    RedisSock *redis_sock;
+    smart_string cmd = {0};
+    zend_bool ret = 0;
+
+    if ((redis_sock = redis_sock_get(getThis(), 0)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    if (IS_PIPELINE(redis_sock)) {
+        php_error_docref(NULL, E_ERROR, "Reset ins't allowed in pipeline mode!");
+        RETURN_FALSE;
+    }
+
+    redis_cmd_init_sstr(&cmd, 0, "RESET", 5);
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
+
+    if ((response = redis_sock_read(redis_sock, &response_len)) != NULL) {
+        ret = REDIS_STRCMP_STATIC(response, response_len, "+RESET");
+        efree(response);
+    }
+
+    if (!ret) {
+        if (IS_ATOMIC(redis_sock)) {
+            RETURN_FALSE;
+        }
+        REDIS_THROW_EXCEPTION("Reset failed in multi mode!", 0);
+        RETURN_ZVAL(getThis(), 1, 0);
+    }
+
+    free_reply_callbacks(redis_sock);
+    redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
+    redis_sock->mode = ATOMIC;
+    redis_sock->dbNumber = 0;
+    redis_sock->watching = 0;
+
+    RETURN_TRUE;
+}
 /* }}} */
 
 /* {{{ proto string Redis::get(string key)
