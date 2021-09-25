@@ -2695,6 +2695,25 @@ class Redis_Test extends TestSuite
         $this->assertTrue(array('a' => 0.0, 'b' => 1.0, 'c' => 2.0) === $this->redis->zPopMin('key', 3));
     }
 
+    public function testZRandMember()
+    {
+        if (version_compare($this->version, "6.2.0") < 0) {
+            $this->MarkTestSkipped();
+            return;
+        }
+        $this->redis->del('key');
+        $this->redis->zAdd('key', 0, 'a', 1, 'b', 2, 'c', 3, 'd', 4, 'e');
+        $this->assertInArray($this->redis->zRandMember('key'), ['a', 'b', 'c', 'd', 'e']);
+
+        $result = $this->redis->zRandMember('key', ['count' => 3]);
+        $this->assertEquals(3, count($result));
+        $this->assertEquals(array_intersect($result, ['a', 'b', 'c', 'd', 'e']), $result);
+
+        $result = $this->redis->zRandMember('key', ['count' => 2, 'withscores' => true]);
+        $this->assertEquals(2, count($result));
+        $this->assertEquals(array_intersect_key($result, ['a' => 0, 'b' => 1, 'c' => 2, 'd' => 3, 'e' => 4]), $result);
+    }
+
     public function testHashes() {
         $this->redis->del('h', 'key');
         $this->assertTrue(0 === $this->redis->hLen('h'));

@@ -622,6 +622,55 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     return SUCCESS;
 }
+
+int
+redis_zrandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key;
+    int count = 0;
+    size_t key_len;
+    smart_string cmdstr = {0};
+    zend_bool withscores = 0;
+    zval *z_opts = NULL, *z_ele;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|a",
+                              &key, &key_len, &z_opts) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
+        zend_string *zkey;
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey, z_ele) {
+            ZVAL_DEREF(z_ele);
+            if (zend_string_equals_literal_ci(zkey, "count")) {
+                count = zval_get_long(z_ele);
+            } else if (zend_string_equals_literal_ci(zkey, "withscores")) {
+                withscores = zval_is_true(z_ele);
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + (count != 0) + withscores, "ZRANDMEMBER");
+    redis_cmd_append_sstr_key(&cmdstr, key, key_len, redis_sock, slot);
+
+    if (count != 0) {
+        redis_cmd_append_sstr_long(&cmdstr, count);
+        *ctx = PHPREDIS_CTX_PTR;
+    }
+
+    if (withscores) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WITHSCORES");
+        *ctx = PHPREDIS_CTX_PTR + 1;
+    }
+
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    return SUCCESS;
+}
+
 int
 redis_zdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 char **cmd, int *cmd_len, short *slot, void **ctx)

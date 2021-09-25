@@ -1279,6 +1279,17 @@ redis_parse_client_list_response(char *response, zval *z_ret)
 }
 
 PHP_REDIS_API int
+redis_zrandmember_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    if (ctx == NULL) {
+        return redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR) {
+        return redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    }
+    return redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+}
+
+PHP_REDIS_API int
 redis_zdiff_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
     if (ctx == NULL) {
