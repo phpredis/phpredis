@@ -175,14 +175,14 @@ $redis = new Redis([
 
 ##### *Parameters*
 
-*host*: string. can be a host, or the path to a unix domain socket.
-*port*: int
-*connectTimeout*: float, value in seconds (default is 0 meaning unlimited)
-*retryInterval*: int, value in milliseconds (optional)
-*readTimeout*: float, value in seconds (default is 0 meaning unlimited)
-*persistent*: mixed, if value is string then it used as persistend id, else value casts to boolean
-*auth*: mixed, authentication information
-*ssl*: array, SSL context options
+*host*: string. can be a host, or the path to a unix domain socket.  
+*port*: int (default is 6379, should be -1 for unix domain socket)  
+*connectTimeout*: float, value in seconds (default is 0 meaning unlimited)  
+*retryInterval*: int, value in milliseconds (optional)  
+*readTimeout*: float, value in seconds (default is 0 meaning unlimited)  
+*persistent*: mixed, if value is string then it used as persistend id, else value casts to boolean  
+*auth*: mixed, authentication information  
+*ssl*: array, SSL context options  
 
 ### Class RedisException
 -----
