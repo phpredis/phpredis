@@ -564,10 +564,7 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     size_t key_len, start_len, end_len;
     zval *z_opt=NULL, *z_ele;
     zend_string *zkey;
-    zend_ulong idx;
     HashTable *ht_opt;
-
-    PHPREDIS_NOTUSED(idx);
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "sss|a", &key, &key_len,
                              &start, &start_len, &end, &end_len, &z_opt)
@@ -579,7 +576,7 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Check for an options array
     if (z_opt && Z_TYPE_P(z_opt) == IS_ARRAY) {
         ht_opt = Z_ARRVAL_P(z_opt);
-        ZEND_HASH_FOREACH_KEY_VAL(ht_opt, idx, zkey, z_ele) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(ht_opt, zkey, z_ele) {
            /* All options require a string key type */
            if (!zkey) continue;
            ZVAL_DEREF(z_ele);
@@ -1546,13 +1543,10 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
         HashTable *kt = Z_ARRVAL_P(z_opts);
         zend_string *zkey;
-        zend_ulong idx;
         zval *v;
 
-        PHPREDIS_NOTUSED(idx);
-
         /* Iterate our option array */
-        ZEND_HASH_FOREACH_KEY_VAL(kt, idx, zkey, v) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(kt, zkey, v) {
             ZVAL_DEREF(v);
             /* Detect PX or EX argument and validate timeout */
             if (zkey && ZSTR_IS_EX_PX_ARG(zkey)) {
@@ -3030,15 +3024,12 @@ geoStoreType get_georadius_store_type(zend_string *key) {
 
 /* Helper function to extract optional arguments for GEORADIUS and GEORADIUSBYMEMBER */
 static int get_georadius_opts(HashTable *ht, geoOptions *opts) {
-    zend_ulong idx;
     char *optstr;
     zend_string *zkey;
     zval *optval;
 
-    PHPREDIS_NOTUSED(idx);
-
     /* Iterate over our argument array, collating which ones we have */
-    ZEND_HASH_FOREACH_KEY_VAL(ht, idx, zkey, optval) {
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht, zkey, optval) {
         ZVAL_DEREF(optval);
 
         /* If the key is numeric it's a non value option */
@@ -3980,10 +3971,7 @@ static void get_xclaim_options(zval *z_arr, xclaimOptions *opt) {
     zend_string *zkey;
     char *kval;
     size_t klen;
-    zend_ulong idx;
     zval *zv;
-
-    PHPREDIS_NOTUSED(idx);
 
     /* Initialize options array to sane defaults */
     memset(opt, 0, sizeof(*opt));
@@ -3996,7 +3984,7 @@ static void get_xclaim_options(zval *z_arr, xclaimOptions *opt) {
 
     /* Iterate over our options array */
     ht = Z_ARRVAL_P(z_arr);
-    ZEND_HASH_FOREACH_KEY_VAL(ht, idx, zkey, zv) {
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht, zkey, zv) {
         if (zkey) {
             kval = ZSTR_VAL(zkey);
             klen = ZSTR_LEN(zkey);
