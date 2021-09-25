@@ -1,14 +1,16 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d32b3d0f25155fa5d5f1c9626bbf3f4bcfdf75ae */
+ * Stub hash: fb1a3f1245758210548e5ed11543fe059e6e8770 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis__compress, 0, 1, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis___destruct arginfo_class_Redis___construct
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___destruct, 0, 0, 0)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis__pack, 0, 1, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
@@ -521,7 +523,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_rPop arginfo_class_Redis_decr
 
-#define arginfo_class_Redis_randomKey arginfo_class_Redis___construct
+#define arginfo_class_Redis_randomKey arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_rawcommand, 0, 1, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, command, IS_STRING, 0)
@@ -708,7 +710,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_unsubscribe arginfo_class_Redis_subscribe
 
-#define arginfo_class_Redis_unwatch arginfo_class_Redis___construct
+#define arginfo_class_Redis_unwatch arginfo_class_Redis___destruct
 
 #define arginfo_class_Redis_watch arginfo_class_Redis_del
 

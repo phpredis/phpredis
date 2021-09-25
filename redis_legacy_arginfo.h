@@ -1,14 +1,16 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d32b3d0f25155fa5d5f1c9626bbf3f4bcfdf75ae */
+ * Stub hash: fb1a3f1245758210548e5ed11543fe059e6e8770 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
+	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis__compress, 0, 0, 1)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis___destruct arginfo_class_Redis___construct
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___destruct, 0, 0, 0)
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis__pack arginfo_class_Redis__compress
 
@@ -38,9 +40,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_auth, 0, 0, 1)
 	ZEND_ARG_INFO(0, credentials)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_bgSave arginfo_class_Redis___construct
+#define arginfo_class_Redis_bgSave arginfo_class_Redis___destruct
 
-#define arginfo_class_Redis_bgrewriteaof arginfo_class_Redis___construct
+#define arginfo_class_Redis_bgrewriteaof arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_bitcount, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
@@ -80,14 +82,14 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_bzPopMin arginfo_class_Redis_blPop
 
-#define arginfo_class_Redis_clearLastError arginfo_class_Redis___construct
+#define arginfo_class_Redis_clearLastError arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_client, 0, 0, 1)
 	ZEND_ARG_INFO(0, opt)
 	ZEND_ARG_INFO(0, arg)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_close arginfo_class_Redis___construct
+#define arginfo_class_Redis_close arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_command, 0, 0, 2)
 	ZEND_ARG_INFO(0, opt)
@@ -116,7 +118,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_copy, 0, 0, 2)
 	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_dbSize arginfo_class_Redis___construct
+#define arginfo_class_Redis_dbSize arginfo_class_Redis___destruct
 
 #define arginfo_class_Redis_debug arginfo_class_Redis__prefix
 
@@ -131,7 +133,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_delete arginfo_class_Redis_del
 
-#define arginfo_class_Redis_discard arginfo_class_Redis___construct
+#define arginfo_class_Redis_discard arginfo_class_Redis___destruct
 
 #define arginfo_class_Redis_dump arginfo_class_Redis__prefix
 
@@ -151,7 +153,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_evalsha, 0, 0, 1)
 	ZEND_ARG_INFO(0, num_keys)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_exec arginfo_class_Redis___construct
+#define arginfo_class_Redis_exec arginfo_class_Redis___destruct
 
 #define arginfo_class_Redis_exists arginfo_class_Redis__prefix
 
@@ -217,28 +219,28 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_get arginfo_class_Redis__prefix
 
-#define arginfo_class_Redis_getAuth arginfo_class_Redis___construct
+#define arginfo_class_Redis_getAuth arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_getBit, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, idx)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_getDBNum arginfo_class_Redis___construct
+#define arginfo_class_Redis_getDBNum arginfo_class_Redis___destruct
 
-#define arginfo_class_Redis_getHost arginfo_class_Redis___construct
+#define arginfo_class_Redis_getHost arginfo_class_Redis___destruct
 
-#define arginfo_class_Redis_getLastError arginfo_class_Redis___construct
+#define arginfo_class_Redis_getLastError arginfo_class_Redis___destruct
 
-#define arginfo_class_Redis_getMode arginfo_class_Redis___construct
+#define arginfo_class_Redis_getMode arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_getOption, 0, 0, 1)
 	ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_getPersistentID arginfo_class_Redis___construct
+#define arginfo_class_Redis_getPersistentID arginfo_class_Redis___destruct
 
-#define arginfo_class_Redis_getPort arginfo_class_Redis___construct
+#define arginfo_class_Redis_getPort arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_getRange, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
@@ -246,11 +248,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_getRange, 0, 0, 3)
 	ZEND_ARG_INFO(0, end)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_getReadTimeout arginfo_class_Redis___construct
+#define arginfo_class_Redis_getReadTimeout arginfo_class_Redis___destruct
 
 #define arginfo_class_Redis_getset arginfo_class_Redis_append
 
-#define arginfo_class_Redis_getTimeout arginfo_class_Redis___construct
+#define arginfo_class_Redis_getTimeout arginfo_class_Redis___destruct
 
 #define arginfo_class_Redis_hDel arginfo_class_Redis_geohash
 
@@ -310,7 +312,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_info, 0, 0, 0)
 	ZEND_ARG_INFO(0, opt)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_isConnected arginfo_class_Redis___construct
+#define arginfo_class_Redis_isConnected arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_keys, 0, 0, 1)
 	ZEND_ARG_INFO(0, pattern)
@@ -351,7 +353,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_lSet, 0, 0, 3)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_lastSave arginfo_class_Redis___construct
+#define arginfo_class_Redis_lastSave arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_lindex, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
@@ -425,7 +427,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_ping, 0, 0, 0)
 	ZEND_ARG_INFO(0, key)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_pipeline arginfo_class_Redis___construct
+#define arginfo_class_Redis_pipeline arginfo_class_Redis___destruct
 
 #define arginfo_class_Redis_popen arginfo_class_Redis_connect
 
@@ -455,7 +457,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_rPop arginfo_class_Redis__prefix
 
-#define arginfo_class_Redis_randomKey arginfo_class_Redis___construct
+#define arginfo_class_Redis_randomKey arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_rawcommand, 0, 0, 1)
 	ZEND_ARG_INFO(0, command)
@@ -475,7 +477,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_restore, 0, 0, 3)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_role arginfo_class_Redis___construct
+#define arginfo_class_Redis_role arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_rpoplpush, 0, 0, 2)
 	ZEND_ARG_INFO(0, src)
@@ -526,7 +528,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_sUnionStore arginfo_class_Redis_sDiffStore
 
-#define arginfo_class_Redis_save arginfo_class_Redis___construct
+#define arginfo_class_Redis_save arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_scan, 0, 0, 1)
 	ZEND_ARG_INFO(1, iterator)
@@ -614,7 +616,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_swapdb arginfo_class_Redis_rpoplpush
 
-#define arginfo_class_Redis_time arginfo_class_Redis___construct
+#define arginfo_class_Redis_time arginfo_class_Redis___destruct
 
 #define arginfo_class_Redis_ttl arginfo_class_Redis__prefix
 
@@ -624,7 +626,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_unsubscribe arginfo_class_Redis_subscribe
 
-#define arginfo_class_Redis_unwatch arginfo_class_Redis___construct
+#define arginfo_class_Redis_unwatch arginfo_class_Redis___destruct
 
 #define arginfo_class_Redis_watch arginfo_class_Redis_del
 
