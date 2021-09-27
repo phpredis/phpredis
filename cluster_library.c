@@ -1596,7 +1596,7 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
                                          int cmd_len)
 {
-    int resp, timedout = 0;
+    int failovertoggle, resp, timedout = 0;
     long msstart;
 
     if (!SLOT(c, slot)) {
@@ -1653,6 +1653,11 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
                /* For MOVED redirection we want to update our cached mapping */
                cluster_update_slot(c);
                c->cmd_sock = SLOT_SOCK(c, slot);
+               if (c->failover == REDIS_FAILOVER_PREFERRED) {
+                   // On MOVED, turn off preferred mode until we're done with the command.
+                   c->failover = REDIS_FAILOVER_NONE;
+                   failovertoggle = REDIS_FAILOVER_PREFERRED;
+               }
            } else if (c->redir_type == REDIR_ASK) {
                /* For ASK redirection we want to redirect but not update slot mapping */
                c->cmd_sock = cluster_get_asking_sock(c);
@@ -1682,6 +1687,11 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
 
     /* Clear redirection flag */
     c->redir_type = REDIR_NONE;
+
+    // If we changed failover mode, switch it back.
+    if (failovertoggle) {
+        c->failover = failovertoggle;
+    }
 
     // Success, return the slot where data exists.
     return 0;
