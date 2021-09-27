@@ -181,9 +181,9 @@ The save path for cluster based session storage takes the form of a PHP GET requ
 * _timeout (double)_:  The amount of time phpredis will wait when connecting or writing to the cluster.
 * _read_timeout (double)_: The amount of time phpredis will wait for a result from the cluster.
 * _persistent_: Tells phpredis whether persistent connections should be used.
-* _distribute_: phpredis will randomly distribute session reads between masters and any attached slaves (load balancing).
 * _failover (string)_:  How phpredis should distribute session reads between master and slave nodes.
   * _none_ : phpredis will only communicate with master nodes
   * _error_: phpredis will communicate with master nodes unless one fails, in which case an attempt will be made to read session information from a slave.
+  * _distribute_: phpredis will randomly distribute session reads between masters and any attached slaves (load balancing).
 * _auth (string, empty by default)_:  The password used to authenticate with the server prior to sending commands.
 * _stream (array)_: ssl/tls stream context options.
