@@ -2679,7 +2679,7 @@ $redis->sAdd('s2', '4');
 var_dump($redis->sUnion('s0', 's1', 's2'));
 
 /* Pass a single array */
-var_dump($redis->sUnion(['s0', 's1', 's2']);
+var_dump($redis->sUnion(['s0', 's1', 's2']));
 
 ~~~
 Return value: all elements that are either in s0 or in s1 or in s2.
@@ -3858,7 +3858,7 @@ $obj_redis->xRange('mystream', '-', '+', 2);
 
 ##### *Prototype*
 ~~~php
-$obj_redis->xRead($arr_streams [, $i_count, $i_block);
+$obj_redis->xRead($arr_streams [, $i_count, $i_block]);
 ~~~
 
 _**Description**_:  Read data from one or more streams and only return IDs greater than sent in the command.
@@ -4074,7 +4074,7 @@ $redis->rawCommand("set", "foo", "bar");
 $redis->rawCommand("get", "foo");
 
 /* Returns: 3 */
-$redis->rawCommand("rpush", "mylist", "one", 2, 3.5));
+$redis->rawCommand("rpush", "mylist", "one", 2, 3.5);
 
 /* Returns: ["one", "2", "3.5000000000000000"] */
 $redis->rawCommand("lrange", "mylist", 0, -1);
