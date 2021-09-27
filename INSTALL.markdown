@@ -90,7 +90,7 @@ See also: [Install Redis & PHP Extension PHPRedis with Macports](http://www.lecl
 You can install it using MacPorts:
 
 - [Get macports-php](https://www.macports.org/)
-- `sudo port install php56-redis` (or php53-redis, php54-redis, php55-redis, php70-redis, php71-redis, php72-redis)
+- `sudo port install php56-redis` (or php53-redis, php54-redis, php55-redis, php70-redis, php71-redis, php72-redis, php73-redis, php74-redis)
 
 # Building on Windows
 
