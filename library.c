@@ -2184,7 +2184,7 @@ static int redis_stream_liveness_check(php_stream *stream) {
 
 /* Try to get the underlying socket FD for use with poll/select.
  * Returns -1 on failure. */
-static int redis_stream_fd_for_select(php_stream *stream) {
+static php_socket_t redis_stream_fd_for_select(php_stream *stream) {
     php_socket_t fd;
     int flags;
 
@@ -2265,6 +2265,11 @@ redis_sock_check_liveness(RedisSock *redis_sock)
     int idlen, auth;
     smart_string cmd = {0};
     size_t len;
+
+    /* Short circuit if we detect the stream is "dirty", can't or are
+       configured not to try and fix it */
+    if (redis_stream_detect_dirty(redis_sock->stream) != SUCCESS)
+        goto failure;
 
     /* Short circuit if we detect the stream has gone bad or if the user has
      * configured persistent connection "YOLO mode". */
@@ -2386,9 +2391,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
                 redis_sock->stream = *(php_stream **)zend_llist_get_last(&p->list);
                 zend_llist_remove_tail(&p->list);
 
-                if (redis_stream_detect_dirty(redis_sock->stream) == SUCCESS &&
-                    redis_sock_check_liveness(redis_sock) == SUCCESS)
-                {
+                if (redis_sock_check_liveness(redis_sock) == SUCCESS) {
                     return SUCCESS;
                 }
 
