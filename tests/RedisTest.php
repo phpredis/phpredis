@@ -6454,7 +6454,7 @@ class Redis_Test extends TestSuite
                     ini_get('redis.session.lock_retries') /
                     1000000.00);
 
-        $exist = $this->waitForSessionLockKey($sessionId, $maxwait);
+        $exist = $this->waitForSessionLockKey($sessionId, $maxwait + 1);
         $this->assertTrue($exist);
     }
 
@@ -6480,8 +6480,17 @@ class Redis_Test extends TestSuite
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
         $this->startSessionProcess($sessionId, 1, true);
-        $sleep = ini_get('redis.session.lock_wait_time') * ini_get('redis.session.lock_retries');
-        usleep($sleep + 10000);
+
+        /* Wait for a key to actually exist */
+        if ( ! $this->waitForSessionLockKey($sessionId, 1)) {
+            $this->assertFalse(true);
+            return;
+        }
+
+        /* Wait long enough for our background process to exit */
+        usleep(1100000);
+
+        /* Key should have been deleted */
         $this->assertFalse($this->redis->exists($this->sessionPrefix . $sessionId . '_LOCK'));
     }
 
@@ -6574,6 +6583,7 @@ class Redis_Test extends TestSuite
         }
 
         $start = microtime(true);
+        $sessionSuccessful = $this->startSessionProcess($sessionId, 0, false, 10, true, 200000, 0);
         $end = microtime(true);
         $elapsedTime = $end - $start;
 
@@ -6841,13 +6851,20 @@ class Redis_Test extends TestSuite
      * @return bool
      * @throws Exception
      */
-    private function startSessionProcess($sessionId, $sleepTime, $background, $maxExecutionTime = 300, $locking_enabled = true, $lock_wait_time = null, $lock_retries = -1, $lock_expires = 0, $sessionData = '', $sessionLifetime = 1440)
+    private function startSessionProcess($sessionId, $sleepTime, $background, $maxExecutionTime = 300,
+                                         $locking_enabled = true, $lock_wait_time = null, $lock_retries = -1,
+                                         $lock_expires = 0, $sessionData = '', $sessionLifetime = 1440)
     {
         if (substr(php_uname(), 0, 7) == "Windows"){
             $this->markTestSkipped();
             return true;
         } else {
-            $commandParameters = [$this->getFullHostPath(), $this->sessionSaveHandler, $sessionId, $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires, $sessionData, $sessionLifetime];
+            $commandParameters = [
+                $this->getFullHostPath(), $this->sessionSaveHandler, $sessionId,
+                $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires,
+                $sessionData, $sessionLifetime
+            ];
+
             if ($locking_enabled) {
                 $commandParameters[] = '1';
 

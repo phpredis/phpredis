@@ -761,6 +761,9 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_PREFIX"), REDIS_SCAN_PREFIX);
     zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_NOPREFIX"), REDIS_SCAN_NOPREFIX);
 
+    zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5);
+    zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6);
+
     /* Cluster option to allow for slave failover */
     if (is_cluster) {
         zend_declare_class_constant_long(ce, ZEND_STRL("OPT_SLAVE_FAILOVER"), REDIS_OPT_FAILOVER);

@@ -83,12 +83,6 @@ class Redis_Sentinel_Test extends TestSuite
         }
     }
 
-    public function testMyid()
-    {
-        $result = $this->sentinel->myid();
-        $this->assertTrue(is_string($result));
-    }
-
     public function testPing()
     {
         $this->assertTrue($this->sentinel->ping());
