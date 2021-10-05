@@ -134,6 +134,17 @@ typedef enum {
 #define MULTI    1
 #define PIPELINE 2
 
+#define PHPREDIS_DEBUG_LOGGING 0
+
+#if PHPREDIS_DEBUG_LOGGING == 1
+#define redisDbgFmt(fmt, ...) \
+    php_printf("%s:%d:%s(): " fmt "\n", __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define redisDbgStr(str) phpredisDebugFmt("%s", str)
+#else
+#define redisDbgFmt(fmt, ...) ((void)0)
+#define redisDbgStr(str) ((void)0)
+#endif
+
 #define IS_ATOMIC(redis_sock) (redis_sock->mode == ATOMIC)
 #define IS_MULTI(redis_sock) (redis_sock->mode & MULTI)
 #define IS_PIPELINE(redis_sock) (redis_sock->mode & PIPELINE)
