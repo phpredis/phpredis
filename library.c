@@ -2266,16 +2266,14 @@ redis_sock_check_liveness(RedisSock *redis_sock)
     smart_string cmd = {0};
     size_t len;
 
+    /* Short circuit if PHP detects the stream isn't live */
+    if (redis_stream_liveness_check(redis_sock->stream) != SUCCESS)
+        goto failure;
+
     /* Short circuit if we detect the stream is "dirty", can't or are
        configured not to try and fix it */
     if (redis_stream_detect_dirty(redis_sock->stream) != SUCCESS)
         goto failure;
-
-    /* Short circuit if we detect the stream has gone bad or if the user has
-     * configured persistent connection "YOLO mode". */
-    if (redis_stream_liveness_check(redis_sock->stream) != SUCCESS) {
-        goto failure;
-    }
 
     redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
     if (!INI_INT("redis.pconnect.echo_check_liveness")) {
