@@ -28,9 +28,9 @@ You can also make a one-time contribution with one of the links below.
 1. [Installing/Configuring](#installingconfiguring)
    * [Installation](#installation)
    * [PHP Session handler](#php-session-handler)
-   * [Distributed Redis Array](#distributed-redis-array)
-   * [Redis Cluster support](#redis-cluster-support)
-   * [Redis Sentinel support](#redis-sentinel-support)
+   * [Distributed Redis Array](./arrays.markdown#readme)
+   * [Redis Cluster support](./cluster.markdown#readme)
+   * [Redis Sentinel support](./sentinel.markdown#readme)
    * [Running the unit tests](#running-the-unit-tests)
 1. [Classes and methods](#classes-and-methods)
    * [Usage](#usage)
@@ -97,18 +97,6 @@ redis.session.lock_wait_time = 50000
 ; Maximum number of times to retry (-1 means infinite). Defaults to: 100
 redis.session.lock_retries = 2000
 ~~~
-
-## Distributed Redis Array
-
-See [dedicated page](./arrays.markdown#readme).
-
-## Redis Cluster support
-
-See [dedicated page](./cluster.markdown#readme).
-
-## Redis Sentinel support
-
-See [dedicated page](./sentinel.markdown#readme).
 
 ## Running the unit tests
 
