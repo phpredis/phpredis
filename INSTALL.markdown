@@ -37,7 +37,7 @@ Most distributions provides pre-build binary packages of this extension.
 
 ## Windows:
 
-Follow the DLL link on the [https://pecl.php.net/package/redis](https://pecl.php.net/package/redis) page.
+Follow the DLL link on the [https://pecl.php.net/package/redis](https://pecl.php.net/package/redis) page or use [https://windows.php.net/downloads/pecl/releases/redis/](https://windows.php.net/downloads/pecl/releases/redis/)
 
 ## Fedora
 
