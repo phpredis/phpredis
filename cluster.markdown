@@ -9,7 +9,7 @@ To maintain consistency with the RedisArray class, one can create and connect to
 
 #### Declaring a cluster with an array of seeds
 ~~~php
-// Create a cluster setting two nodes as seeds
+// Create a cluster setting three nodes as seeds
 $obj_cluster = new RedisCluster(NULL, Array('host:7000', 'host:7001', 'host:7003'));
 
 // Connect and specify timeout and read_timeout
@@ -45,7 +45,7 @@ $obj_cluster = new RedisCluster('mycluster');
 On construction, the RedisCluster class will iterate over the provided seed nodes until it can attain a connection to the cluster and run CLUSTER SLOTS to map every node in the cluster locally.  Once the keyspace is mapped, RedisCluster will only connect to nodes when it needs to (e.g. you're getting a key that we believe is on that node.)
 
 ## Slot caching
-Each time the a `RedisCluster` class is constructed from scratch, phpredis needs to execute a `CLUSTER SLOTS` command to map the keyspace.  Although this isn't an expensive command, it does require a round trip for each newly created object, which is inefficient.  Starting from PhpRedis 5.0.0 these slots can be cached by setting `redis.clusters.cache_slots = 1` in `php.ini`.
+Each time the `RedisCluster` class is constructed from scratch, phpredis needs to execute a `CLUSTER SLOTS` command to map the keyspace.  Although this isn't an expensive command, it does require a round trip for each newly created object, which is inefficient.  Starting from PhpRedis 5.0.0 these slots can be cached by setting `redis.clusters.cache_slots = 1` in `php.ini`.
 
 ## Timeouts
 Because Redis cluster is intended to provide high availability, timeouts do not work in the same way they do in normal socket communication.  It's fully possible to have a timeout or even exception on a given socket (say in the case that a master node has failed), and continue to serve the request if and when a slave can be promoted as the new master.
@@ -181,9 +181,9 @@ The save path for cluster based session storage takes the form of a PHP GET requ
 * _timeout (double)_:  The amount of time phpredis will wait when connecting or writing to the cluster.
 * _read_timeout (double)_: The amount of time phpredis will wait for a result from the cluster.
 * _persistent_: Tells phpredis whether persistent connections should be used.
-* _distribute_: phpredis will randomly distribute session reads between masters and any attached slaves (load balancing).
 * _failover (string)_:  How phpredis should distribute session reads between master and slave nodes.
   * _none_ : phpredis will only communicate with master nodes
   * _error_: phpredis will communicate with master nodes unless one fails, in which case an attempt will be made to read session information from a slave.
+  * _distribute_: phpredis will randomly distribute session reads between masters and any attached slaves (load balancing).
 * _auth (string, empty by default)_:  The password used to authenticate with the server prior to sending commands.
 * _stream (array)_: ssl/tls stream context options.

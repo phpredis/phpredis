@@ -94,6 +94,7 @@ PHP_METHOD(Redis, sDiffStore);
 PHP_METHOD(Redis, sInter);
 PHP_METHOD(Redis, sInterStore);
 PHP_METHOD(Redis, sMembers);
+PHP_METHOD(Redis, sMisMember);
 PHP_METHOD(Redis, sMove);
 PHP_METHOD(Redis, sPop);
 PHP_METHOD(Redis, sRandMember);
@@ -157,8 +158,14 @@ PHP_METHOD(Redis, role);
 PHP_METHOD(Redis, getLastError);
 PHP_METHOD(Redis, clearLastError);
 PHP_METHOD(Redis, _prefix);
+PHP_METHOD(Redis, _pack);
+PHP_METHOD(Redis, _unpack);
+
 PHP_METHOD(Redis, _serialize);
 PHP_METHOD(Redis, _unserialize);
+
+PHP_METHOD(Redis, _compress);
+PHP_METHOD(Redis, _uncompress);
 
 PHP_METHOD(Redis, mset);
 PHP_METHOD(Redis, msetnx);

@@ -98,6 +98,8 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("redis.pconnect.pooling_enabled", "1", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.pconnect.connection_limit", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.pconnect.echo_check_liveness", "1", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.pconnect.pool_detect_dirty", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.pconnect.pool_poll_timeout", "0", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.pconnect.pool_pattern", "", PHP_INI_ALL, NULL)
 
     /* redis session */
@@ -257,6 +259,10 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, _prefix, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _serialize, arginfo_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _unserialize, arginfo_value, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, _pack, arginfo_value, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, _unpack, arginfo_value, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, _compress, arginfo_value, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, _uncompress, arginfo_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, acl, arginfo_acl, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, append, arginfo_key_value, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, auth, arginfo_auth, ZEND_ACC_PUBLIC)
@@ -385,6 +391,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, sInter, arginfo_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sInterStore, arginfo_dst_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sMembers, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, sMisMember, arginfo_key_members, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sMove, arginfo_smove, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sPop, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, sRandMember, arginfo_srand_member, ZEND_ACC_PUBLIC)
@@ -754,6 +761,9 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_PREFIX"), REDIS_SCAN_PREFIX);
     zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_NOPREFIX"), REDIS_SCAN_NOPREFIX);
 
+    zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5);
+    zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6);
+
     /* Cluster option to allow for slave failover */
     if (is_cluster) {
         zend_declare_class_constant_long(ce, ZEND_STRL("OPT_SLAVE_FAILOVER"), REDIS_OPT_FAILOVER);
@@ -763,8 +773,21 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE_SLAVES"), REDIS_FAILOVER_DISTRIBUTE_SLAVES);
     }
 
-    zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5);
-    zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6);
+    /* retry/backoff options*/
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_MAX_RETRIES"), REDIS_OPT_MAX_RETRIES);
+
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_BACKOFF_ALGORITHM"), REDIS_OPT_BACKOFF_ALGORITHM);
+    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_DEFAULT"), REDIS_BACKOFF_ALGORITHM_DEFAULT);
+    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_CONSTANT"), REDIS_BACKOFF_ALGORITHM_CONSTANT);
+    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_UNIFORM"), REDIS_BACKOFF_ALGORITHM_UNIFORM);
+    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_EXPONENTIAL"), REDIS_BACKOFF_ALGORITHM_EXPONENTIAL);
+    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_FULL_JITTER"), REDIS_BACKOFF_ALGORITHM_FULL_JITTER);
+    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_EQUAL_JITTER"), REDIS_BACKOFF_ALGORITHM_EQUAL_JITTER);
+    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_DECORRELATED_JITTER"), REDIS_BACKOFF_ALGORITHM_DECORRELATED_JITTER);
+
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_BACKOFF_BASE"), REDIS_OPT_BACKOFF_BASE);
+
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_BACKOFF_CAP"), REDIS_OPT_BACKOFF_CAP);
 }
 
 static ZEND_RSRC_DTOR_FUNC(redis_connections_pool_dtor)
@@ -968,7 +991,7 @@ PHP_MINFO_FUNCTION(redis)
     Public constructor */
 PHP_METHOD(Redis, __construct)
 {
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") == FAILURE) {
+    if (zend_parse_parameters_none() == FAILURE) {
         RETURN_FALSE;
     }
 }
@@ -978,7 +1001,7 @@ PHP_METHOD(Redis, __construct)
     Public Destructor
  */
 PHP_METHOD(Redis,__destruct) {
-    if(zend_parse_parameters(ZEND_NUM_ARGS(), "") == FAILURE) {
+    if (zend_parse_parameters_none() == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -1683,6 +1706,12 @@ PHP_METHOD(Redis, sMembers)
 {
     REDIS_PROCESS_KW_CMD("SMEMBERS", redis_key_cmd,
         redis_sock_read_multibulk_reply);
+}
+
+/* {{{ proto array Redis::sMisMember(string key, string member0, ...memberN) */
+PHP_METHOD(Redis, sMisMember)
+{
+    REDIS_PROCESS_KW_CMD("SMISMEMBER", redis_key_varval_cmd, redis_read_variant_reply);
 }
 /* }}} */
 
@@ -3245,6 +3274,51 @@ PHP_METHOD(Redis, _unserialize) {
         redis_exception_ce);
 }
 
+PHP_METHOD(Redis, _compress) {
+    RedisSock *redis_sock;
+
+    // Grab socket
+    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    redis_compress_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+}
+
+PHP_METHOD(Redis, _uncompress) {
+    RedisSock *redis_sock;
+
+    // Grab socket
+    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    redis_uncompress_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+        redis_exception_ce);
+}
+
+PHP_METHOD(Redis, _pack) {
+    RedisSock *redis_sock;
+
+    // Grab socket
+    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    redis_pack_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+}
+
+PHP_METHOD(Redis, _unpack) {
+    RedisSock *redis_sock;
+
+    // Grab socket
+    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    redis_unpack_handler(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+}
+
 /* {{{ proto Redis::getLastError() */
 PHP_METHOD(Redis, getLastError) {
     zval *object;
@@ -3419,8 +3493,9 @@ PHP_METHOD(Redis, getAuth) {
     RedisSock *redis_sock;
     zval zret;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") == FAILURE)
+    if (zend_parse_parameters_none() == FAILURE) {
         RETURN_FALSE;
+    }
 
     redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU);
     if (redis_sock == NULL)

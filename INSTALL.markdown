@@ -1,9 +1,12 @@
-# Installation from pecl
+# Installation from pecl/pickle
 
-To pull latest stable released version, from [pecl](https://pecl.php.net/package/redis):
+To pull latest stable released version, from [pecl](https://pecl.php.net/package/redis) / [pickle](https://wiki.php.net/rfc/deprecate-pear-include-composer):
 
 ~~~
 pecl install redis
+
+// If using PHP >= 7.3
+pickle install redis
 ~~~
 
 # Installation from sources
@@ -11,6 +14,8 @@ pecl install redis
 To build this extension for the sources tree:
 
 ~~~
+git clone https://github.com/phpredis/phpredis.git
+cd phpredis
 phpize
 ./configure [--enable-redis-igbinary] [--enable-redis-msgpack] [--enable-redis-lzf [--with-liblzf[=DIR]]] [--enable-redis-zstd]
 make && make install
@@ -84,7 +89,7 @@ See also: [Install Redis & PHP Extension PHPRedis with Macports](http://www.lecl
 You can install it using MacPorts:
 
 - [Get macports-php](https://www.macports.org/)
-- `sudo port install php56-redis` (or php53-redis, php54-redis, php55-redis, php70-redis, php71-redis, php72-redis)
+- `sudo port install php56-redis` (or php53-redis, php54-redis, php55-redis, php70-redis, php71-redis, php72-redis, php73-redis, php74-redis)
 
 # Building on Windows
 

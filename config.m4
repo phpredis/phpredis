@@ -270,7 +270,7 @@ if test "$PHP_REDIS" != "no"; then
       ])
       PHP_SUBST(REDIS_SHARED_LIBADD)
     else
-      AC_MSG_ERROR([only system libz4 is supported])
+      AC_MSG_ERROR([only system liblz4 is supported])
     fi
   fi
 
@@ -323,5 +323,5 @@ if test "$PHP_REDIS" != "no"; then
   fi
 
   PHP_SUBST(REDIS_SHARED_LIBADD)
-  PHP_NEW_EXTENSION(redis, redis.c redis_commands.c library.c redis_session.c redis_array.c redis_array_impl.c redis_cluster.c cluster_library.c redis_sentinel.c sentinel_library.c $lzf_sources, $ext_shared)
+  PHP_NEW_EXTENSION(redis, redis.c redis_commands.c library.c redis_session.c redis_array.c redis_array_impl.c redis_cluster.c cluster_library.c redis_sentinel.c sentinel_library.c backoff.c $lzf_sources, $ext_shared)
 fi

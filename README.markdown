@@ -1,7 +1,8 @@
 # PhpRedis
 
-[![Build Status](https://travis-ci.org/phpredis/phpredis.svg?branch=develop)](https://travis-ci.org/phpredis/phpredis)
+[![Build Status](https://github.com/phpredis/phpredis/actions/workflows/ci.yml/badge.svg)](https://github.com/phpredis/phpredis/actions/workflows/ci.yml)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/13205/badge.svg)](https://scan.coverity.com/projects/phpredis-phpredis)
+[![PHP version from Travis config](https://img.shields.io/travis/php-v/phpredis/phpredis/develop)](https://img.shields.io/travis/php-v/phpredis/phpredis/develop)
 
 The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 This code has been developed and maintained by Owlient from November 2009 to March 2011.
@@ -34,6 +35,7 @@ You can also make a one-time contribution with one of the links below.
 1. [Classes and methods](#classes-and-methods)
    * [Usage](#usage)
    * [Connection](#connection)
+   * [Retry and backoff](#retry-and-backoff)
    * [Server](#server)
    * [Keys and strings](#keys-and-strings)
    * [Hashes](#hashes)
@@ -77,7 +79,7 @@ session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeou
 
 Sessions have a lifetime expressed in seconds and stored in the INI variable "session.gc_maxlifetime". You can change it with [`ini_set()`](http://php.net/ini_set).
 The session handler requires a version of Redis supporting `EX` and `NX` options of `SET` command (at least 2.6.12).
-phpredis can also connect to a unix domain socket: `session.save_path = "unix:///var/run/redis/redis.sock?persistent=1&weight=1&database=0`.
+phpredis can also connect to a unix domain socket: `session.save_path = "unix:///var/run/redis/redis.sock?persistent=1&weight=1&database=0"`.
 
 ### Session locking
 
@@ -293,7 +295,7 @@ $redis->auth(['phpredis', 'haxx00r']);
 $redis->auth(['foobared']);
 
 /* You can also use an associative array specifying user and pass */
-$redis->auth(['user' => 'phpredis', 'pass' => 'phpredis]);
+$redis->auth(['user' => 'phpredis', 'pass' => 'phpredis']);
 $redis->auth(['pass' => 'phpredis']);
 ~~~
 
@@ -356,6 +358,7 @@ $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);	  // Don't ser
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);	  // Use built-in serialize/unserialize
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_IGBINARY); // Use igBinary serialize/unserialize
 $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_MSGPACK);  // Use msgpack serialize/unserialize
+$redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_JSON);  // Use JSON to serialize/unserialize
 
 $redis->setOption(Redis::OPT_PREFIX, 'myAppName:');	// use custom prefix on all keys
 
@@ -388,7 +391,7 @@ Parameter value.
 ##### *Example*
 ~~~php
 // return Redis::SERIALIZER_NONE, Redis::SERIALIZER_PHP, 
-//        Redis::SERIALIZER_IGBINARY, or Redis::SERIALIZER_MSGPACK
+//        Redis::SERIALIZER_IGBINARY, Redis::SERIALIZER_MSGPACK or Redis::SERIALIZER_JSON
 $redis->getOption(Redis::OPT_SERIALIZER);
 ~~~
 
@@ -427,6 +430,41 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 
 *STRING*: the same message.
 
+## Retry and backoff
+
+1. [Maximum retries](#maximum-retries)
+1. [Backoff algorithms](#backoff-algorithms)
+
+### Maximum retries
+You can set and get the maximum retries upon connection issues using the `OPT_MAX_RETRIES` option. Note that this is the number of _retries_, meaning if you set this option to _n_, there will be a maximum _n+1_ attemps overall. Defaults to 10.
+
+##### *Example*
+
+~~~php
+$redis->setOption(Redis::OPT_MAX_RETRIES, 5);
+$redis->getOption(Redis::OPT_MAX_RETRIES);
+~~~
+
+### Backoff algorithms
+You can set the backoff algorithm using the `Redis::OPT_BACKOFF_ALGORITHM` option and choose among the following algorithms described in this blog post by Marc Brooker from AWS: [Exponential Backoff And Jitter](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter):
+
+* Default: `Redis::BACKOFF_ALGORITHM_DEFAULT`
+* Decorrelated jitter: `Redis::BACKOFF_ALGORITHM_DECORRELATED_JITTER`
+* Full jitter: `Redis::BACKOFF_ALGORITHM_FULL_JITTER`
+* Equal jitter: `Redis::BACKOFF_ALGORITHM_EQUAL_JITTER`
+* Exponential: `Redis::BACKOFF_ALGORITHM_EXPONENTIAL`
+* Uniform: `Redis::BACKOFF_ALGORITHM_UNIFORM`
+* Constant: `Redis::BACKOFF_ALGORITHM_CONSTANT`
+
+These algorithms depend on the _base_ and _cap_ parameters, both in milliseconds, which you can set using the `Redis::OPT_BACKOFF_BASE` and `Redis::OPT_BACKOFF_CAP` options, respectively.
+
+##### *Example*
+
+~~~php
+$redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_DECORRELATED_JITTER);
+$redis->setOption(Redis::OPT_BACKOFF_BASE, 500); // base for backoff computation: 500ms
+$redis->setOption(Redis::OPT_BACKOFF_CAP, 750); // backoff time capped at 750ms
+~~~
 
 ## Server
 
@@ -882,7 +920,7 @@ $redis->exists('key'); /* 1 */
 $redis->exists('NonExistingKey'); /* 0 */
 
 $redis->mset(['foo' => 'foo', 'bar' => 'bar', 'baz' => 'baz']);
-$redis->exists(['foo', 'bar', 'baz]); /* 3 */
+$redis->exists(['foo', 'bar', 'baz']); /* 3 */
 $redis->exists('foo', 'bar', 'baz'); /* 3 */
 ~~~
 
@@ -2254,7 +2292,7 @@ $redis->lLen('key1');/* 2 */
 
 ### sAdd
 -----
-_**Description**_: Adds a value to the set value stored at key. If this value is already in the set, `FALSE` is returned.
+_**Description**_: Adds a value to the set value stored at key.
 ##### *Parameters*
 *key*  
 *value*
@@ -2615,7 +2653,7 @@ $redis->sAdd('s2', '4');
 var_dump($redis->sUnion('s0', 's1', 's2'));
 
 /* Pass a single array */
-var_dump($redis->sUnion(['s0', 's1', 's2']);
+var_dump($redis->sUnion(['s0', 's1', 's2']));
 
 ~~~
 Return value: all elements that are either in s0 or in s1 or in s2.
@@ -3794,7 +3832,7 @@ $obj_redis->xRange('mystream', '-', '+', 2);
 
 ##### *Prototype*
 ~~~php
-$obj_redis->xRead($arr_streams [, $i_count, $i_block);
+$obj_redis->xRead($arr_streams [, $i_count, $i_block]);
 ~~~
 
 _**Description**_:  Read data from one or more streams and only return IDs greater than sent in the command.
@@ -4010,7 +4048,7 @@ $redis->rawCommand("set", "foo", "bar");
 $redis->rawCommand("get", "foo");
 
 /* Returns: 3 */
-$redis->rawCommand("rpush", "mylist", "one", 2, 3.5));
+$redis->rawCommand("rpush", "mylist", "one", 2, 3.5);
 
 /* Returns: ["one", "2", "3.5000000000000000"] */
 $redis->rawCommand("lrange", "mylist", 0, -1);

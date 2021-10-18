@@ -1455,6 +1455,27 @@ class Redis_Test extends TestSuite
         $this->assertEquals($array, $sMembers); // test alias
     }
 
+    public function testsMisMember()
+    {
+        // Only available since 6.2.0
+        if (version_compare($this->version, '6.2.0') < 0) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->redis->del('set');
+
+        $this->redis->sAdd('set', 'val');
+        $this->redis->sAdd('set', 'val2');
+        $this->redis->sAdd('set', 'val3');
+
+        $misMembers = $this->redis->sMisMember('set', 'val', 'notamember', 'val3');
+        $this->assertEquals([1, 0, 1], $misMembers);
+
+        $misMembers = $this->redis->sMisMember('wrongkey', 'val', 'val2', 'val3');
+        $this->assertEquals([0, 0, 0], $misMembers);
+    }
+
     public function testlSet() {
 
         $this->redis->del('list');
@@ -4942,6 +4963,71 @@ class Redis_Test extends TestSuite
         }
     }
 
+    public function testCompressHelpers() {
+        $compressors = self::getAvailableCompression();
+
+        $vals = ['foo', 12345, random_bytes(128), ''];
+
+        $oldcmp = $this->redis->getOption(Redis::OPT_COMPRESSION);
+
+        foreach ($compressors as $cmp) {
+            foreach ($vals as $val) {
+                $this->redis->setOption(Redis::OPT_COMPRESSION, $cmp);
+                $this->redis->set('cmpkey', $val);
+
+                /* Get the value raw */
+                $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+                $raw = $this->redis->get('cmpkey');
+                $this->redis->setOption(Redis::OPT_COMPRESSION, $cmp);
+
+                $this->assertEquals($raw, $this->redis->_compress($val));
+
+                $uncompressed = $this->redis->get('cmpkey');
+                $this->assertEquals($uncompressed, $this->redis->_uncompress($raw));
+            }
+        }
+
+        $this->redis->setOption(Redis::OPT_COMPRESSION, $oldcmp);
+    }
+
+    public function testPackHelpers() {
+        list ($oldser, $oldcmp) = [
+            $this->redis->getOption(Redis::OPT_SERIALIZER),
+            $this->redis->getOption(Redis::OPT_COMPRESSION)
+        ];
+
+        foreach ($this->serializers as $ser) {
+            $compressors = self::getAvailableCompression();
+            foreach ($compressors as $cmp) {
+                $this->redis->setOption(Redis::OPT_SERIALIZER, $ser);
+                $this->redis->setOption(Redis::OPT_COMPRESSION, $cmp);
+
+		foreach (['foo', 12345, random_bytes(128), '', ['an', 'array']] as $v) {
+                    /* Can only attempt the array if we're serializing */
+                    if (is_array($v) && $ser == Redis::SERIALIZER_NONE)
+                        continue;
+
+                    $this->redis->set('packkey', $v);
+
+                    /* Get the value raw */
+                    $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+                    $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+                    $raw = $this->redis->get('packkey');
+                    $this->redis->setOption(Redis::OPT_SERIALIZER, $ser);
+                    $this->redis->setOption(Redis::OPT_COMPRESSION, $cmp);
+
+                    $this->assertEquals($raw, $this->redis->_pack($v));
+
+                    $unpacked = $this->redis->get('packkey');
+		    $this->assertEquals($unpacked, $this->redis->_unpack($raw));
+		}
+	    }
+        }
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, $oldser);
+        $this->redis->setOption(Redis::OPT_COMPRESSION, $oldcmp);
+    }
+
     public function testPrefix() {
         // no prefix
         $this->redis->setOption(Redis::OPT_PREFIX, '');
@@ -5184,6 +5270,50 @@ class Redis_Test extends TestSuite
 
         /* Should have touched every key */
         $this->assertTrue(count($arr_all_keys) == 0);
+    }
+
+    public function testMaxRetriesOption() {
+        $maxRetriesExpected = 5;
+        $this->redis->setOption(Redis::OPT_MAX_RETRIES, $maxRetriesExpected);
+        $maxRetriesActual=$this->redis->getOption(Redis::OPT_MAX_RETRIES);
+        $this->assertEquals($maxRetriesActual, $maxRetriesExpected);
+    }
+
+    public function testBackoffOptions() {
+        $this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_DEFAULT);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_DEFAULT);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_CONSTANT);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_CONSTANT);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_UNIFORM);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_UNIFORM);
+
+        $this->redis -> setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_EXPONENTIAL);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_EXPONENTIAL);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_EQUAL_JITTER);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_EQUAL_JITTER);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_FULL_JITTER);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_FULL_JITTER);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, Redis::BACKOFF_ALGORITHM_DECORRELATED_JITTER);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_ALGORITHM), Redis::BACKOFF_ALGORITHM_DECORRELATED_JITTER);
+
+        $this->assertFalse($this->redis->setOption(Redis::OPT_BACKOFF_ALGORITHM, 55555));
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_BASE, 500);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_BASE), 500);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_BASE, 750);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_BASE), 750);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_CAP, 500);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_CAP), 500);
+
+        $this->redis->setOption(Redis::OPT_BACKOFF_CAP, 750);
+        $this->assertEquals($this->redis->getOption(Redis::OPT_BACKOFF_CAP), 750);
     }
 
     public function testHScan() {
@@ -6147,7 +6277,6 @@ class Redis_Test extends TestSuite
         $obj_new = $this->newInstance();
 
         $arr_args = [
-            NULL,
             [],
             [NULL, NULL],
             ['foo', 'bar', 'baz'],
@@ -6163,8 +6292,6 @@ class Redis_Test extends TestSuite
             try {
                 if (is_array($arr_arg)) {
                     @call_user_func_array([$obj_new, 'auth'], $arr_arg);
-                } else {
-                    @call_user_func([$obj_new, 'auth']);
                 }
             } catch (Exception $ex) {
                 unset($ex); /* Suppress intellisense warning */
@@ -6329,7 +6456,6 @@ class Redis_Test extends TestSuite
 
         $exist = $this->waitForSessionLockKey($sessionId, $maxwait + 1);
         $this->assertTrue($exist);
-        $this->redis->del($this->sessionPrefix . $sessionId . '_LOCK');
     }
 
     public function testSession_lockingDisabledByDefault()
@@ -6354,7 +6480,17 @@ class Redis_Test extends TestSuite
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
         $this->startSessionProcess($sessionId, 1, true);
-        $this->waitForProcess('startSession.php', 5);
+
+        /* Wait for a key to actually exist */
+        if ( ! $this->waitForSessionLockKey($sessionId, 1)) {
+            $this->assertFalse(true);
+            return;
+        }
+
+        /* Wait long enough for our background process to exit */
+        usleep(1100000);
+
+        /* Key should have been deleted */
         $this->assertFalse($this->redis->exists($this->sessionPrefix . $sessionId . '_LOCK'));
     }
 
@@ -6715,13 +6851,20 @@ class Redis_Test extends TestSuite
      * @return bool
      * @throws Exception
      */
-    private function startSessionProcess($sessionId, $sleepTime, $background, $maxExecutionTime = 300, $locking_enabled = true, $lock_wait_time = null, $lock_retries = -1, $lock_expires = 0, $sessionData = '', $sessionLifetime = 1440)
+    private function startSessionProcess($sessionId, $sleepTime, $background, $maxExecutionTime = 300,
+                                         $locking_enabled = true, $lock_wait_time = null, $lock_retries = -1,
+                                         $lock_expires = 0, $sessionData = '', $sessionLifetime = 1440)
     {
         if (substr(php_uname(), 0, 7) == "Windows"){
             $this->markTestSkipped();
             return true;
         } else {
-            $commandParameters = [$this->getFullHostPath(), $this->sessionSaveHandler, $sessionId, $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires, $sessionData, $sessionLifetime];
+            $commandParameters = [
+                $this->getFullHostPath(), $this->sessionSaveHandler, $sessionId,
+                $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires,
+                $sessionData, $sessionLifetime
+            ];
+
             if ($locking_enabled) {
                 $commandParameters[] = '1';
 
@@ -6826,7 +6969,7 @@ class Redis_Test extends TestSuite
      *
      * @return string
      */
-    private function getPhpCommand($script)
+    private static function getPhpCommand($script)
     {
         static $cmd = NULL;
 

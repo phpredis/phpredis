@@ -509,12 +509,6 @@ int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     return cmdstr.len;
 }
 
-/* ZRANGEBYSCORE/ZREVRANGEBYSCORE */
-#define IS_WITHSCORES_ARG(s, l) \
-    (l == sizeof("withscores") - 1 && !strncasecmp(s, "withscores", l))
-#define IS_LIMIT_ARG(s, l) \
-    (l == sizeof("limit") - 1 && !strncasecmp(s,"limit", l))
-
 /* ZRANGE/ZREVRANGE */
 int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char *kw, char **cmd, int *cmd_len, int *withscores,
@@ -540,7 +534,7 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         if (Z_TYPE_P(z_ws) == IS_ARRAY) {
             ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_ws), zkey, z_ele) {
                 ZVAL_DEREF(z_ele);
-                if (IS_WITHSCORES_ARG(ZSTR_VAL(zkey), ZSTR_LEN(zkey))) {
+                if (zend_string_equals_literal_ci(zkey, "withscores")) {
                     *withscores = zval_is_true(z_ele);
                     break;
                 }
@@ -570,10 +564,7 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     size_t key_len, start_len, end_len;
     zval *z_opt=NULL, *z_ele;
     zend_string *zkey;
-    zend_ulong idx;
     HashTable *ht_opt;
-
-    PHPREDIS_NOTUSED(idx);
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "sss|a", &key, &key_len,
                              &start, &start_len, &end, &end_len, &z_opt)
@@ -585,14 +576,14 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Check for an options array
     if (z_opt && Z_TYPE_P(z_opt) == IS_ARRAY) {
         ht_opt = Z_ARRVAL_P(z_opt);
-        ZEND_HASH_FOREACH_KEY_VAL(ht_opt, idx, zkey, z_ele) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(ht_opt, zkey, z_ele) {
            /* All options require a string key type */
            if (!zkey) continue;
            ZVAL_DEREF(z_ele);
            /* Check for withscores and limit */
-           if (IS_WITHSCORES_ARG(ZSTR_VAL(zkey), ZSTR_LEN(zkey))) {
+           if (zend_string_equals_literal_ci(zkey, "withscores")) {
                *withscores = zval_is_true(z_ele);
-           } else if (IS_LIMIT_ARG(ZSTR_VAL(zkey), ZSTR_LEN(zkey)) && Z_TYPE_P(z_ele) == IS_ARRAY) {
+           } else if (zend_string_equals_literal_ci(zkey, "limit") && Z_TYPE_P(z_ele) == IS_ARRAY) {
                 HashTable *htlimit = Z_ARRVAL_P(z_ele);
                 zval *zoff, *zcnt;
 
@@ -1349,13 +1340,10 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
         HashTable *kt = Z_ARRVAL_P(z_opts);
         zend_string *zkey;
-        zend_ulong idx;
         zval *v;
 
-        PHPREDIS_NOTUSED(idx);
-
         /* Iterate our option array */
-        ZEND_HASH_FOREACH_KEY_VAL(kt, idx, zkey, v) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(kt, zkey, v) {
             ZVAL_DEREF(v);
             /* Detect PX or EX argument and validate timeout */
             if (zkey && ZSTR_IS_EX_PX_ARG(zkey)) {
@@ -2675,16 +2663,28 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Now the rest of our arguments
     while (i < num) {
         // Append score and member
-        if (Z_TYPE(z_args[i]) == IS_STRING && (
-            /* The score values should be the string representation of a double
+        switch (Z_TYPE(z_args[i])) {
+        case IS_LONG:
+        case IS_DOUBLE:
+            redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(&z_args[i]));
+            break;
+        case IS_STRING:
+            /* The score values must be the string representation of a double
              * precision floating point number. +inf and -inf values are valid
              * values as well. */
-            strncasecmp(Z_STRVAL(z_args[i]), "-inf", 4) == 0 ||
-            strncasecmp(Z_STRVAL(z_args[i]), "+inf", 4) == 0
-        )) {
-            redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[i]), Z_STRLEN(z_args[i]));
-        } else {
-            redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(&z_args[i]));
+            if (strncasecmp(Z_STRVAL(z_args[i]), "-inf", 4) == 0 ||
+                strncasecmp(Z_STRVAL(z_args[i]), "+inf", 4) == 0 ||
+                is_numeric_string(Z_STRVAL(z_args[i]), Z_STRLEN(z_args[i]), NULL, NULL, 0) != 0
+            ) {
+                redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[i]), Z_STRLEN(z_args[i]));
+                break;
+            }
+            // fall through
+        default:
+            php_error_docref(NULL, E_WARNING, "Scores must be numeric or '-inf','+inf'");
+            smart_string_free(&cmdstr);
+            efree(z_args);
+            return FAILURE;
         }
         // serialize value if requested
         val_free = redis_pack(redis_sock, &z_args[i+1], &val, &val_len);
@@ -2778,15 +2778,12 @@ geoStoreType get_georadius_store_type(zend_string *key) {
 
 /* Helper function to extract optional arguments for GEORADIUS and GEORADIUSBYMEMBER */
 static int get_georadius_opts(HashTable *ht, geoOptions *opts) {
-    zend_ulong idx;
     char *optstr;
     zend_string *zkey;
     zval *optval;
 
-    PHPREDIS_NOTUSED(idx);
-
     /* Iterate over our argument array, collating which ones we have */
-    ZEND_HASH_FOREACH_KEY_VAL(ht, idx, zkey, optval) {
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht, zkey, optval) {
         ZVAL_DEREF(optval);
 
         /* If the key is numeric it's a non value option */
@@ -3674,10 +3671,7 @@ static void get_xclaim_options(zval *z_arr, xclaimOptions *opt) {
     zend_string *zkey;
     char *kval;
     size_t klen;
-    zend_ulong idx;
     zval *zv;
-
-    PHPREDIS_NOTUSED(idx);
 
     /* Initialize options array to sane defaults */
     memset(opt, 0, sizeof(*opt));
@@ -3690,7 +3684,7 @@ static void get_xclaim_options(zval *z_arr, xclaimOptions *opt) {
 
     /* Iterate over our options array */
     ht = Z_ARRVAL_P(z_arr);
-    ZEND_HASH_FOREACH_KEY_VAL(ht, idx, zkey, zv) {
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht, zkey, zv) {
         if (zkey) {
             kval = ZSTR_VAL(zkey);
             klen = ZSTR_LEN(zkey);
@@ -3940,7 +3934,8 @@ int
 redis_sentinel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "") == FAILURE) {
+    if (zend_parse_parameters_none() == FAILURE) {
+
         return FAILURE;
     }
     *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SENTINEL", "s", kw, strlen(kw));
@@ -4002,6 +3997,14 @@ void redis_getoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             RETURN_LONG(redis_sock->null_mbulk_as_null);
         case REDIS_OPT_FAILOVER:
             RETURN_LONG(c->failover);
+        case REDIS_OPT_MAX_RETRIES:
+            RETURN_LONG(redis_sock->max_retries);
+        case REDIS_OPT_BACKOFF_ALGORITHM:
+            RETURN_LONG(redis_sock->backoff.algorithm);
+        case REDIS_OPT_BACKOFF_BASE:
+            RETURN_LONG(redis_sock->backoff.base / 1000);
+        case REDIS_OPT_BACKOFF_CAP:
+            RETURN_LONG(redis_sock->backoff.cap / 1000);
         default:
             RETURN_FALSE;
     }
@@ -4135,6 +4138,35 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                 RETURN_TRUE;
             }
             break;
+        case REDIS_OPT_MAX_RETRIES:
+            val_long = zval_get_long(val);
+            if(val_long >= 0) {
+                redis_sock->max_retries = val_long;
+                RETURN_TRUE;
+            }
+            break;
+        case REDIS_OPT_BACKOFF_ALGORITHM:
+            val_long = zval_get_long(val);
+            if(val_long >= 0 &&
+               val_long < REDIS_BACKOFF_ALGORITHMS) {
+                redis_sock->backoff.algorithm = val_long;
+                RETURN_TRUE;
+            }
+            break;
+        case REDIS_OPT_BACKOFF_BASE:
+            val_long = zval_get_long(val);
+            if(val_long >= 0) {
+                redis_sock->backoff.base = val_long * 1000;
+                RETURN_TRUE;
+            }
+            break;
+        case REDIS_OPT_BACKOFF_CAP:
+            val_long = zval_get_long(val);
+            if(val_long >= 0) {
+                redis_sock->backoff.cap = val_long * 1000;
+                RETURN_TRUE;
+            }
+            break;
         EMPTY_SWITCH_DEFAULT_CASE()
     }
     RETURN_FALSE;
@@ -4204,4 +4236,67 @@ void redis_unserialize_handler(INTERNAL_FUNCTION_PARAMETERS,
     RETURN_ZVAL(&z_ret, 0, 0);
 }
 
+void redis_compress_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+    zend_string *zstr;
+    size_t len;
+    char *buf;
+    int cmp_free;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &zstr) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    cmp_free = redis_compress(redis_sock, &buf, &len, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
+    RETVAL_STRINGL(buf, len);
+    if (cmp_free) efree(buf);
+}
+
+void redis_uncompress_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                              zend_class_entry *ex)
+{
+    zend_string *zstr;
+    size_t len;
+    char *buf;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &zstr) == FAILURE) {
+        RETURN_FALSE;
+    } else if (ZSTR_LEN(zstr) == 0 || redis_sock->compression == REDIS_COMPRESSION_NONE) {
+        RETURN_STR_COPY(zstr);
+    }
+
+    if (!redis_uncompress(redis_sock, &buf, &len, ZSTR_VAL(zstr), ZSTR_LEN(zstr))) {
+        zend_throw_exception(ex, "Invalid compressed data or uncompression error", 0);
+        RETURN_FALSE;
+    }
+
+    RETVAL_STRINGL(buf, len);
+    efree(buf);
+}
+
+void redis_pack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+    int valfree;
+    size_t len;
+    char *val;
+    zval *zv;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &zv) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    valfree = redis_pack(redis_sock, zv, &val, &len);
+    RETVAL_STRINGL(val, len);
+    if (valfree) efree(val);
+}
+
+void redis_unpack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
+    zend_string *str;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S", &str) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_unpack(redis_sock, ZSTR_VAL(str), ZSTR_LEN(str), return_value) == 0) {
+        RETURN_STR_COPY(str);
+    }
+}
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

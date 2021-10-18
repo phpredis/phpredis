@@ -158,7 +158,7 @@ RedisArray *ra_load_array(const char *name) {
 
     zend_string *algorithm = NULL, *user = NULL, *pass = NULL;
     zend_bool b_index = 0, b_autorehash = 0, b_pconnect = 0, consistent = 0;
-    long l_retry_interval = 0;
+    zend_long l_retry_interval = 0;
     zend_bool b_lazy_connect = 0;
     double d_connect_timeout = 0, read_timeout = 0.0;
     HashTable *hHosts = NULL, *hPrev = NULL;
@@ -546,11 +546,11 @@ ra_find_node(RedisArray *ra, const char *key, int key_len, int *out_pos)
 }
 
 zval *
-ra_find_node_by_name(RedisArray *ra, const char *host, int host_len) {
+ra_find_node_by_name(RedisArray *ra, zend_string *host) {
 
     int i;
     for(i = 0; i < ra->count; ++i) {
-        if (ZSTR_LEN(ra->hosts[i]) == host_len && strcmp(ZSTR_VAL(ra->hosts[i]), host) == 0) {
+        if (zend_string_equals(host, ra->hosts[i])) {
             return &ra->redis[i];
         }
     }

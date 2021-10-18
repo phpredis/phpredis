@@ -301,7 +301,7 @@ redis_error_throw(RedisSock *redis_sock)
 PHP_REDIS_API int
 redis_check_eof(RedisSock *redis_sock, int no_throw)
 {
-    int count;
+    unsigned int retry_index;
     char *errmsg;
 
     if (!redis_sock || !redis_sock->stream || redis_sock->status == REDIS_SOCK_STATUS_FAILED) {
@@ -333,18 +333,17 @@ redis_check_eof(RedisSock *redis_sock, int no_throw)
         errmsg = "Connection lost and socket is in MULTI/watching mode";
     } else {
         errmsg = "Connection lost";
-        /* TODO: configurable max retry count */
-        for (count = 0; count < 10; ++count) {
+        redis_backoff_reset(&redis_sock->backoff);
+        for (retry_index = 0; retry_index < redis_sock->max_retries; ++retry_index) {
             /* close existing stream before reconnecting */
             if (redis_sock->stream) {
                 redis_sock_disconnect(redis_sock, 1);
             }
-            // Wait for a while before trying to reconnect
-            if (redis_sock->retry_interval) {
-                // Random factor to avoid having several (or many) concurrent connections trying to reconnect at the same time
-                long retry_interval = (count ? redis_sock->retry_interval : (php_rand() % redis_sock->retry_interval));
-                usleep(retry_interval);
-            }
+            /* Sleep based on our backoff algorithm */
+            zend_ulong delay = redis_backoff_compute(&redis_sock->backoff, retry_index);
+            if (delay != 0)
+                usleep(delay);
+
             /* reconnect */
             if (redis_sock_connect(redis_sock) == 0) {
                 /* check for EOF again. */
@@ -951,11 +950,14 @@ int redis_cmd_append_sstr_i64(smart_string *str, int64_t append) {
 int
 redis_cmd_append_sstr_dbl(smart_string *str, double value)
 {
-    char tmp[64];
+    char tmp[64], *p;
     int len;
 
     /* Convert to string */
     len = snprintf(tmp, sizeof(tmp), "%.17g", value);
+
+    /* snprintf depends on locale, replace comma with point */
+    if ((p = strchr(tmp, ',')) != NULL) *p = '.';
 
     // Append the string
     return redis_cmd_append_sstr(str, tmp, len);
@@ -2124,6 +2126,8 @@ redis_sock_create(char *host, int host_len, int port,
     redis_sock->host = zend_string_init(host, host_len, 0);
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->retry_interval = retry_interval * 1000;
+    redis_sock->max_retries = 10;
+    redis_initialize_backoff(&redis_sock->backoff, retry_interval);
     redis_sock->persistent = persistent;
 
     if (persistent && persistent_id != NULL) {
@@ -2155,6 +2159,82 @@ static int redis_stream_liveness_check(php_stream *stream) {
                                  SUCCESS : FAILURE;
 }
 
+/* Try to get the underlying socket FD for use with poll/select.
+ * Returns -1 on failure. */
+static php_socket_t redis_stream_fd_for_select(php_stream *stream) {
+    php_socket_t fd;
+    int flags;
+
+    flags = PHP_STREAM_AS_FD_FOR_SELECT | PHP_STREAM_CAST_INTERNAL;
+    if (php_stream_cast(stream, flags, (void*)&fd, 1) == FAILURE)
+        return -1;
+
+    return fd;
+}
+
+static int redis_detect_dirty_config(void) {
+    int val = INI_INT("redis.pconnect.pool_detect_dirty");
+
+    if (val >= 0 && val <= 2)
+        return val;
+    else if (val > 2)
+        return 2;
+    else
+        return 0;
+}
+
+static int redis_pool_poll_timeout(void) {
+    int val = INI_INT("redis.pconnect.pool_poll_timeout");
+    if (val >= 0)
+        return val;
+
+    return 0;
+}
+
+#define REDIS_POLL_FD_SET(_pfd, _fd, _events) \
+    (_pfd).fd = _fd; (_pfd).events = _events; (_pfd).revents = 0
+
+/* Try to determine if the socket is out of sync (has unconsumed replies) */
+static int redis_stream_detect_dirty(php_stream *stream) {
+    php_socket_t fd;
+    php_pollfd pfd;
+    int rv, action;
+
+    /* Short circuit if this is disabled */
+    if ((action = redis_detect_dirty_config()) == 0)
+        return SUCCESS;
+
+    /* Seek past unconsumed bytes if we detect them */
+    if (stream->readpos < stream->writepos) {
+        redisDbgFmt("%s on unconsumed buffer (%ld < %ld)",
+                    action > 1 ? "Aborting" : "Seeking",
+                    (long)stream->readpos, (long)stream->writepos);
+
+        /* Abort if we are configured to immediately fail */
+        if (action == 1)
+            return FAILURE;
+
+        /* Seek to the end of buffered data */
+        zend_off_t offset = stream->writepos - stream->readpos;
+        if (php_stream_seek(stream, offset, SEEK_CUR) == FAILURE)
+            return FAILURE;
+    }
+
+    /* Get the underlying FD */
+    if ((fd = redis_stream_fd_for_select(stream)) == -1)
+        return FAILURE;
+
+    /* We want to detect a readable socket (it shouln't be) */
+    REDIS_POLL_FD_SET(pfd, fd, PHP_POLLREADABLE);
+    rv = php_poll2(&pfd, 1, redis_pool_poll_timeout());
+
+    /* If we detect the socket is readable, it's dirty which is
+     * a failure.  Otherwise as best we can tell it's good.
+     * TODO:  We could attempt to consume up to N bytes */
+    redisDbgFmt("Detected %s socket", rv > 0 ? "readable" : "unreadable");
+    return rv == 0 ? SUCCESS : FAILURE;
+}
+
 static int
 redis_sock_check_liveness(RedisSock *redis_sock)
 {
@@ -2163,11 +2243,14 @@ redis_sock_check_liveness(RedisSock *redis_sock)
     smart_string cmd = {0};
     size_t len;
 
-    /* Short circuit if we detect the stream has gone bad or if the user has
-     * configured persistent connection "YOLO mode". */
-    if (redis_stream_liveness_check(redis_sock->stream) != SUCCESS) {
+    /* Short circuit if PHP detects the stream isn't live */
+    if (redis_stream_liveness_check(redis_sock->stream) != SUCCESS)
         goto failure;
-    }
+
+    /* Short circuit if we detect the stream is "dirty", can't or are
+       configured not to try and fix it */
+    if (redis_stream_detect_dirty(redis_sock->stream) != SUCCESS)
+        goto failure;
 
     redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
     if (!INI_INT("redis.pconnect.echo_check_liveness")) {
@@ -2286,6 +2369,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
                 if (redis_sock_check_liveness(redis_sock) == SUCCESS) {
                     return SUCCESS;
                 }
+
                 p->nb_active--;
             }
 
@@ -2745,19 +2829,7 @@ static uint8_t crc8(unsigned char *input, size_t len) {
 #endif
 
 PHP_REDIS_API int
-redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
-{
-    char *buf;
-    int valfree;
-    size_t len;
-
-    valfree = redis_serialize(redis_sock, z, &buf, &len);
-    if (redis_sock->compression == REDIS_COMPRESSION_NONE) {
-        *val = buf;
-        *val_len = len;
-        return valfree;
-    }
-
+redis_compress(RedisSock *redis_sock, char **dst, size_t *dstlen, char *buf, size_t len) {
     switch (redis_sock->compression) {
         case REDIS_COMPRESSION_LZF:
 #ifdef HAVE_REDIS_LZF
@@ -2770,9 +2842,8 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
                 size = len + MIN(UINT_MAX - len, MAX(LZF_MARGIN, len / 25));
                 data = emalloc(size);
                 if ((res = lzf_compress(buf, len, data, size)) > 0) {
-                    if (valfree) efree(buf);
-                    *val = data;
-                    *val_len = res;
+                    *dst = data;
+                    *dstlen = res;
                     return 1;
                 }
                 efree(data);
@@ -2802,10 +2873,8 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
                 data = emalloc(size);
                 size = ZSTD_compress(data, size, buf, len, level);
                 if (!ZSTD_isError(size)) {
-                    if (valfree) efree(buf);
-                    data = erealloc(data, size);
-                    *val = data;
-                    *val_len = size;
+                    *dst = erealloc(data, size);
+                    *dstlen = size;
                     return 1;
                 }
                 efree(data);
@@ -2853,22 +2922,21 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
                     break;
                 }
 
-                if (valfree) efree(buf);
-                *val = lz4buf;
-                *val_len = lz4len + REDIS_LZ4_HDR_SIZE;
+                *dst = lz4buf;
+                *dstlen = lz4len + REDIS_LZ4_HDR_SIZE;
                 return 1;
             }
 #endif
             break;
     }
-    *val = buf;
-    *val_len = len;
-    return valfree;
+
+    *dst = buf;
+    *dstlen = len;
+    return 0;
 }
 
 PHP_REDIS_API int
-redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
-{
+redis_uncompress(RedisSock *redis_sock, char **dst, size_t *dstlen, const char *src, size_t len) {
     switch (redis_sock->compression) {
         case REDIS_COMPRESSION_LZF:
 #ifdef HAVE_REDIS_LZF
@@ -2877,24 +2945,27 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
                 int i;
                 uint32_t res;
 
-                if (val_len == 0)
+                if (len == 0)
                     break;
 
                 /* start from two-times bigger buffer and
                  * increase it exponentially  if needed */
                 errno = E2BIG;
                 for (i = 2; errno == E2BIG; i *= 2) {
-                    data = emalloc(i * val_len);
-                    if ((res = lzf_decompress(val, val_len, data, i * val_len)) == 0) {
+                    data = emalloc(i * len);
+                    if ((res = lzf_decompress(src, len, data, i * len)) == 0) {
                         /* errno != E2BIG will brake for loop */
                         efree(data);
                         continue;
-                    } else if (redis_unserialize(redis_sock, data, res, z_ret) == 0) {
-                        ZVAL_STRINGL(z_ret, data, res);
                     }
-                    efree(data);
+
+                    *dst = data;
+                    *dstlen = res;
                     return 1;
                 }
+
+                efree(data);
+                break;
             }
 #endif
             break;
@@ -2902,22 +2973,21 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
 #ifdef HAVE_REDIS_ZSTD
             {
                 char *data;
-                size_t len;
+                unsigned long long zlen;
 
-                len = ZSTD_getFrameContentSize(val, val_len);
+                zlen = ZSTD_getFrameContentSize(src, len);
+                if (zlen == ZSTD_CONTENTSIZE_ERROR || zlen == ZSTD_CONTENTSIZE_UNKNOWN || zlen > INT_MAX)
+                    break;
 
-                if (len != ZSTD_CONTENTSIZE_ERROR && len != ZSTD_CONTENTSIZE_UNKNOWN) {
-                    data = emalloc(len);
-                    len = ZSTD_decompress(data, len, val, val_len);
-                    if (ZSTD_isError(len)) {
-                        efree(data);
-                        break;
-                    } else if (redis_unserialize(redis_sock, data, len, z_ret) == 0) {
-                        ZVAL_STRINGL(z_ret, data, len);
-                    }
+                data = emalloc(zlen);
+                *dstlen = ZSTD_decompress(data, zlen, src, len);
+                if (ZSTD_isError(*dstlen) || *dstlen != zlen) {
                     efree(data);
-                    return 1;
+                    break;
                 }
+
+                *dst = data;
+                return 1;
             }
 #endif
             break;
@@ -2930,12 +3000,12 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
 
                 /* We must have at least enough bytes for our header, and can't have more than
                  * INT_MAX + our header size. */
-                if (val_len < REDIS_LZ4_HDR_SIZE || val_len > INT_MAX + REDIS_LZ4_HDR_SIZE)
+                if (len < REDIS_LZ4_HDR_SIZE || len > INT_MAX + REDIS_LZ4_HDR_SIZE)
                     break;
 
                 /* Operate on copies in case our CRC fails */
-                const char *copy = val;
-                size_t copylen = val_len;
+                const char *copy = src;
+                size_t copylen = len;
 
                 /* Read in our header bytes */
                 memcpy(&lz4crc, copy, sizeof(uint8_t));
@@ -2950,23 +3020,59 @@ redis_unpack(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret)
                 /* Finally attempt decompression */
                 data = emalloc(datalen);
                 if (LZ4_decompress_safe(copy, data, copylen, datalen) > 0) {
-                    if (redis_unserialize(redis_sock, data, datalen, z_ret) == 0) {
-                        ZVAL_STRINGL(z_ret, data, datalen);
-                    }
-                    efree(data);
+                    *dst = data;
+                    *dstlen = datalen;
                     return 1;
                 }
+
                 efree(data);
             }
 #endif
             break;
     }
-    return redis_unserialize(redis_sock, val, val_len, z_ret);
+
+    *dst = (char*)src;
+    *dstlen = len;
+    return 0;
 }
 
 PHP_REDIS_API int
-redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len
-               )
+redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len) {
+    size_t tmplen;
+    int tmpfree;
+    char *tmp;
+
+    /* First serialize */
+    tmpfree = redis_serialize(redis_sock, z, &tmp, &tmplen);
+
+    /* Now attempt compression */
+    if (redis_compress(redis_sock, val, val_len, tmp, tmplen)) {
+        if (tmpfree) efree(tmp);
+        return 1;
+    }
+
+    return tmpfree;
+}
+
+PHP_REDIS_API int
+redis_unpack(RedisSock *redis_sock, const char *src, int srclen, zval *zdst) {
+    size_t len;
+    char *buf;
+
+    /* Uncompress, then unserialize */
+    if (redis_uncompress(redis_sock, &buf, &len, src, srclen)) {
+        if (!redis_unserialize(redis_sock, buf, len, zdst)) {
+            ZVAL_STRINGL(zdst, buf, len);
+        }
+        efree(buf);
+        return 1;
+    }
+
+    return redis_unserialize(redis_sock, buf, len, zdst);
+}
+
+PHP_REDIS_API int
+redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
 {
     php_serialize_data_t ht;
 
