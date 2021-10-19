@@ -327,7 +327,7 @@ class RedisCluster {
 
     public function xgroup(string $operation, string $key = null, string $arg1 = null, string $arg2 = null, bool $arg3 = false): mixed;
 
-    public function xinfo(string $operation, string $arg1 = null, string $arg2 = null): mixed;
+    public function xinfo(string $operation, string $arg1 = null, string $arg2 = null, int $arg3 = 0): mixed;
 
     public function xlen(string $key): int;
 
