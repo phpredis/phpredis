@@ -675,6 +675,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_xinfo, 0, 0, 1)
 	ZEND_ARG_INFO(0, operation)
 	ZEND_ARG_INFO(0, arg1)
 	ZEND_ARG_INFO(0, arg2)
+	ZEND_ARG_INFO(0, arg3)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_xlen arginfo_class_Redis__prefix

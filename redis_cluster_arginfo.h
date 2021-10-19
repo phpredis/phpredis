@@ -704,6 +704,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_xinfo, 0, 1, 
 	ZEND_ARG_TYPE_INFO(0, operation, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg1, IS_STRING, 0, "null")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg2, IS_STRING, 0, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg3, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_xlen arginfo_class_RedisCluster_decr
