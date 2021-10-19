@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 283dfe4ac5bc9e222563c92eaa29618644c0163a */
+ * Stub hash: 0269bff785cf90b2cf5066ef32ffe17e2609b9c2 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -759,7 +759,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_xinfo, 0, 1, IS_MIXE
 	ZEND_ARG_TYPE_INFO(0, operation, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg1, IS_STRING, 0, "null")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg2, IS_STRING, 0, "null")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg3, IS_LONG, 0, "0")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg3, IS_LONG, 0, "-1")
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_xlen arginfo_class_Redis_hLen
