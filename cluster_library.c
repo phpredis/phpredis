@@ -1080,6 +1080,7 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c) {
     RedisSock *seed;
     clusterReply *slots = NULL;
     int mapped = 0;
+    
     // Iterate over seeds until we can get slots
     ZEND_HASH_FOREACH_PTR(c->seeds, seed) {
         // Attempt to connect to this seed node
@@ -1108,6 +1109,7 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c) {
         CLUSTER_THROW_EXCEPTION("Couldn't map cluster keyspace using any provided seed", 0);
         return FAILURE;
     }
+
     return SUCCESS;
 }
 
@@ -1274,6 +1276,7 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
                 c->cmd_sock = redis_sock;
                 efree(nodes);
                 return 0;
+            }
         }
     }
 
