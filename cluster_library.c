@@ -683,7 +683,7 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
     clusterReply *r2, *r3;
     unsigned short port;
     char *host, key[1024];
-
+    zend_hash_clean(c->nodes);
     for (i = 0; i < r->elements; i++) {
         // Inner response
         r2 = r->element[i];
@@ -1080,7 +1080,6 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c) {
     RedisSock *seed;
     clusterReply *slots = NULL;
     int mapped = 0;
-
     // Iterate over seeds until we can get slots
     ZEND_HASH_FOREACH_PTR(c->seeds, seed) {
         // Attempt to connect to this seed node
@@ -1109,7 +1108,6 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c) {
         CLUSTER_THROW_EXCEPTION("Couldn't map cluster keyspace using any provided seed", 0);
         return FAILURE;
     }
-
     return SUCCESS;
 }
 
@@ -1276,7 +1274,6 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
                 c->cmd_sock = redis_sock;
                 efree(nodes);
                 return 0;
-            }
         }
     }
 
@@ -1396,17 +1393,33 @@ static void cluster_update_slot(redisCluster *c) {
     /* Do we already have the new slot mapped */
     if (c->master[c->redir_slot]) {
         /* No need to do anything if it's the same node */
-        if (!CLUSTER_REDIR_CMP(c)) {
+        if (!CLUSTER_REDIR_CMP(c, SLOT_SOCK(c,c->redir_slot))) {
             return;
         }
 
         /* Check to see if we have this new node mapped */
         node = cluster_find_node(c, c->redir_host, c->redir_port);
-
+        
         if (node) {
             /* Just point to this slot */
             c->master[c->redir_slot] = node;
         } else {
+            /* If the redirected node is a replica of the previous slot owner, a failover has taken place.
+            We must then remap the cluster's keyspace in order to update the cluster's topology. */
+            redisClusterNode *prev_master = SLOT(c,c->redir_slot);
+            redisClusterNode *slave;
+            ZEND_HASH_FOREACH_PTR(prev_master->slaves, slave) {
+                if (slave == NULL) {
+                    continue;
+                }
+                if (!CLUSTER_REDIR_CMP(c, slave->sock)) {
+                    // Detected a failover, the redirected node was a replica 
+                    // Remap the cluster's keyspace
+                    cluster_map_keyspace(c);
+                    return;
+                }
+            } ZEND_HASH_FOREACH_END();
+
             /* Create our node */
             node = cluster_node_create(c, c->redir_host, c->redir_host_len,
                 c->redir_port, c->redir_slot, 0);
@@ -1417,6 +1430,7 @@ static void cluster_update_slot(redisCluster *c) {
 
             /* Now point our slot at the node */
             c->master[c->redir_slot] = node;
+            
         }
     } else {
         /* Check to see if the ip and port are mapped */
@@ -1520,7 +1534,7 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
                                          int cmd_len)
 {
-    int resp, timedout = 0;
+    int resp, timedout = 0, remaped = 0;
     long msstart;
 
     if (!SLOT(c, slot)) {
