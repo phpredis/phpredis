@@ -1080,7 +1080,7 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c) {
     RedisSock *seed;
     clusterReply *slots = NULL;
     int mapped = 0;
-    
+
     // Iterate over seeds until we can get slots
     ZEND_HASH_FOREACH_PTR(c->seeds, seed) {
         // Attempt to connect to this seed node
@@ -1276,6 +1276,7 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
                 c->cmd_sock = redis_sock;
                 efree(nodes);
                 return 0;
+
             }
         }
     }
@@ -1402,7 +1403,7 @@ static void cluster_update_slot(redisCluster *c) {
 
         /* Check to see if we have this new node mapped */
         node = cluster_find_node(c, c->redir_host, c->redir_port);
-        
+
         if (node) {
             /* Just point to this slot */
             c->master[c->redir_slot] = node;
@@ -1433,7 +1434,6 @@ static void cluster_update_slot(redisCluster *c) {
 
             /* Now point our slot at the node */
             c->master[c->redir_slot] = node;
-            
         }
     } else {
         /* Check to see if the ip and port are mapped */
@@ -1537,7 +1537,7 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
                                          int cmd_len)
 {
-    int resp, timedout = 0, remaped = 0;
+    int resp, timedout = 0;
     long msstart;
 
     if (!SLOT(c, slot)) {
