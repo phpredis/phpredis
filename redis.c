@@ -3130,13 +3130,20 @@ PHP_METHOD(Redis, role) {
 
 /* {{{ proto Redis::IsConnected */
 PHP_METHOD(Redis, isConnected) {
+    zval *object;
     RedisSock *redis_sock;
 
-    if((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU))) {
-        RETURN_TRUE;
-    } else {
+    /* Grab our object */
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "O", &object, redis_ce) == FAILURE) {
         RETURN_FALSE;
     }
+
+    /* Grab socket */
+    if ((redis_sock = redis_sock_get_instance(object, 1)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    RETURN_BOOL(redis_sock->status >= REDIS_SOCK_STATUS_CONNECTED);
 }
 
 /* {{{ proto Redis::getHost() */
