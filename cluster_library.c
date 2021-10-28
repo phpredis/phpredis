@@ -683,7 +683,7 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
     clusterReply *r2, *r3;
     unsigned short port;
     char *host, key[1024];
-
+    zend_hash_clean(c->nodes);
     for (i = 0; i < r->elements; i++) {
         // Inner response
         r2 = r->element[i];
@@ -1396,7 +1396,7 @@ static void cluster_update_slot(redisCluster *c) {
     /* Do we already have the new slot mapped */
     if (c->master[c->redir_slot]) {
         /* No need to do anything if it's the same node */
-        if (!CLUSTER_REDIR_CMP(c)) {
+        if (!CLUSTER_REDIR_CMP(c, SLOT_SOCK(c,c->redir_slot))) {
             return;
         }
 
@@ -1407,6 +1407,22 @@ static void cluster_update_slot(redisCluster *c) {
             /* Just point to this slot */
             c->master[c->redir_slot] = node;
         } else {
+            /* If the redirected node is a replica of the previous slot owner, a failover has taken place.
+            We must then remap the cluster's keyspace in order to update the cluster's topology. */
+            redisClusterNode *prev_master = SLOT(c,c->redir_slot);
+            redisClusterNode *slave;
+            ZEND_HASH_FOREACH_PTR(prev_master->slaves, slave) {
+                if (slave == NULL) {
+                    continue;
+                }
+                if (!CLUSTER_REDIR_CMP(c, slave->sock)) {
+                    // Detected a failover, the redirected node was a replica 
+                    // Remap the cluster's keyspace
+                    cluster_map_keyspace(c);
+                    return;
+                }
+            } ZEND_HASH_FOREACH_END();
+
             /* Create our node */
             node = cluster_node_create(c, c->redir_host, c->redir_host_len,
                 c->redir_port, c->redir_slot, 0);

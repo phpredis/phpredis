@@ -45,11 +45,11 @@
 #define CMD_SOCK(c) (c->cmd_sock)
 #define CMD_STREAM(c) (c->cmd_sock->stream)
 
-/* Compare redirection slot information with what we have */
-#define CLUSTER_REDIR_CMP(c) \
-    (SLOT_SOCK(c,c->redir_slot)->port != c->redir_port || \
-    ZSTR_LEN(SLOT_SOCK(c,c->redir_slot)->host) != c->redir_host_len || \
-    memcmp(ZSTR_VAL(SLOT_SOCK(c,c->redir_slot)->host),c->redir_host,c->redir_host_len))
+/* Compare redirection slot information with the passed node */
+#define CLUSTER_REDIR_CMP(c, sock) \
+    (sock->port != c->redir_port || \
+    ZSTR_LEN(sock->host) != c->redir_host_len || \
+    memcmp(ZSTR_VAL(sock->host),c->redir_host,c->redir_host_len))
 
 /* Clear out our "last error" */
 #define CLUSTER_CLEAR_ERROR(c) do { \
