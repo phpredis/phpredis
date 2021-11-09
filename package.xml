@@ -27,28 +27,25 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2021-03-24</date>
+ <date>2021-11-10</date>
  <version>
-  <release>5.3.4</release>
-  <api>5.3.4</api>
+  <release>5.3.5RC1</release>
+  <api>5.3.5RC1</api>
  </version>
  <stability>
-  <release>stable</release>
-  <api>stable</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 5.3.4
+    phpredis 5.3.5RC1
 
-    This release fixes a multi/pipeline segfault on apple silicon as well as 
-    two small compression related bugs.
+    This release adds support for exponential backoff w/jitter, experimental
+    support for detecting a dirty connection, as well as many other fixes
+    and improvements.
 
     You can find a detailed list of changes in Changelog.md and package.xml
-
-    * Fix multi/pipeline segfault on Apple silicon [e0796d48] (Michael Grunder)
-    * Pass compression flag on HMGET in RedisCluster [edc724e6] (Adam Olley)
-    * Abide by ZSTD error return constants [8400ed1c] (Michael Grunder)
-    * Fix timing related CI session tests [9b986bf8] (Michael Grunder)
+    or by inspecting the git commit logs.
 
     * Sponsors
       ~ Audiomack - https://audiomack.com
@@ -58,6 +55,62 @@ http://pear.php.net/dtd/package-2.0.xsd">
       ~ Avtandil Kikabidze - https://github.com/akalongman
       ~ Zaher Ghaibeh - https://github.com/zaherg
       ~ BatchLabs - https://batch.com
+      ~ Luis Zárate - https://github.com/jlzaratec
+
+     ---
+
+     * Fix masters array in the event of a cluster failover [bce692962] (Bar Shaul)
+     * Fix 32 bit type error [672dec87f] (Remi Collet)
+     * Fix radix character in certain locales [89a871e24] (Pavlo Yatsukhnenko)
+     * ZSTD Validation fix [6a77ef5cd] (Michael Grunder)
+     * Remove superfluous typecast [b2871471f] (Remi Collet)
+
+     * Updated documentation [f84168657, d017788e7, 20ac84710, 0adf05260, 
+       aee29bf73, 09a095e72, 12ffbf33a, ff331af98, a6bdb8731, 305c15840, 
+       1aa10e93a, d78b0c79d, c6d37c27c, a6303f5b9, d144bd2c7, a6fb815ef, 9ef862bc6] 
+      (neodisco, Clément Tessier, T. Todua, dengliming, Maxime Cornet, 
+       Emanuele Filannino Michael Grunder)
+
+     * Travis CI Fixes
+       [a43f4586e, 4fde8178f, 7bd5415ac, fdb8c4bb7, d4f407470]
+       (Pavlo Yatsukhnenko)
+
+     * Minor fixes/cleanup
+       [2e190adc1, 99975b592, 9d0879fa5, 22b06457b]
+       (Pavlo Yatsukhnenko)
+
+     * Fix RedisArray constructor bug
+       [85dc883ba](https://github.com/phpredis/phpredis/commit/85dc883ba)
+       ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+     * Moved to GitHub Actions
+       [4d2afa786, 502d09fd5] (Pavlo Yatsukhnenko)
+
+     * Use more appropriate array iteration macro
+       [6008900c2] (Pavlo Yatsukhnenko)
+
+     * Clean up session tests
+       [ab25ae7f3] (Michael Grunder)
+
+     * RedisArray refactors [1250f0001, 017b2ea7f, 37ed3f079]
+       (Pavlo Yatsukhnenko)
+
+     * Use zend_parse_parameters_none helper
+       [a26b14dbe] (Remi Collet)
+
+     * Support for various exponential backoff strategies
+       [#1986, #1993, 732eb8dcb, 05129c3a3, 5bba6a7fc],
+       (Nathaniel Braun)
+
+     * Added experimental support for detecting a dirty connection
+       [d68579562] (Michael Grunder)
+
+     * Created distinct compression utility methods (pack/unpack)
+       [#1939, da2790aec] (Michael Grunder)
+
+     * SMISMEMBER Command
+       [#1894, ae2382472, ed283e1ab] (Pavlo Yatsukhnenko)
+
  </notes>
  <contents>
   <dir name="/">
@@ -134,10 +187,37 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-zstd" prompt="enable zstd compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
-  <release>
+ <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.3.4</release><api>5.3.4</api></version>
+   <date>2021-03-24</date>
+   <notes>
+    phpredis 5.3.4
+
+    This release fixes a multi/pipeline segfault on apple silicon as well as 
+    two small compression related bugs.
+
+    You can find a detailed list of changes in Changelog.md and package.xml
+
+    * Fix multi/pipeline segfault on Apple silicon [e0796d48] (Michael Grunder)
+    * Pass compression flag on HMGET in RedisCluster [edc724e6] (Adam Olley)
+    * Abide by ZSTD error return constants [8400ed1c] (Michael Grunder)
+    * Fix timing related CI session tests [9b986bf8] (Michael Grunder)
+
+    * Sponsors
+      ~ Audiomack - https://audiomack.com
+      ~ Open LMS - https://openlms.net
+      ~ BlueHost - https://bluehost.com
+      ~ Object Cache Pro for WordPress - https://objectcache.pro
+      ~ Avtandil Kikabidze - https://github.com/akalongman
+      ~ Zaher Ghaibeh - https://github.com/zaherg
+      ~ BatchLabs - https://batch.com
+   </notes>
+ </release>
+ <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>5.3.3</release><api>5.3.3</api></version>
-   <date>2021-03-23</date>
+   <date>2021-02-01</date>
    <notes>
     phpredis 5.3.3
 
