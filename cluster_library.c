@@ -1416,7 +1416,7 @@ static void cluster_update_slot(redisCluster *c) {
                     continue;
                 }
                 if (!CLUSTER_REDIR_CMP(c, slave->sock)) {
-                    // Detected a failover, the redirected node was a replica 
+                    // Detected a failover, the redirected node was a replica
                     // Remap the cluster's keyspace
                     cluster_map_keyspace(c);
                     return;
