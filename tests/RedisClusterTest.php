@@ -210,14 +210,13 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testTime() {
-        if (isset($_SERVER['CI'])) {
-            echo "\nDETECTED _SERVER['CI']\n";
-            echo "\nDETECTED _SERVER['CI']\n";
-            echo "\nDETECTED _SERVER['CI']\n";
-            echo "\nDETECTED _SERVER['CI']\n";
+        if (getenv('GITHUB_RUN_ID')) {
             /* This test produces random 'read error on connection' failures but
                only in GitHub Actions, so try to account for that */
-            foreach ($this->redis->_masters() as $primary) {
+            $primaries = $this->redis->_masters();
+            shuffle($primaries);
+            echo "\nDetected GitHub CI\n";
+            foreach ($primaries as $primary) {
                 try {
                     $reply = $this->redis->time($primary);
                     $this->assertTrue($this->validateTimeReply($reply));
@@ -226,12 +225,9 @@ class Redis_Cluster_Test extends Redis_Test {
                     /* Possible read error on connection, try again */
                 }
             }
-        } else {
-            echo "\nNO _SERVER['CI']\n";
-            echo "\nNO _SERVER['CI']\n";
-            echo "\nNO _SERVER['CI']\n";
-            echo "\nNO _SERVER['CI']\n";
 
+            $this->assertTrue(false);
+        } else {
             /* Not running in GitHub Actions, test normally */
             $reply = $this->redis->time("k:" . rand(1,100));
             $this->assertTrue($this->validateTimeReply($reply));
