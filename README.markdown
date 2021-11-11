@@ -219,6 +219,7 @@ _**Description**_: Connects to a Redis instance.
 *reserved*: should be NULL if retry_interval is specified  
 *retry_interval*: int, value in milliseconds (optional)  
 *read_timeout*: float, value in seconds (optional, default is 0 meaning unlimited)
+*others*: array, with PhpRedis >= 5.3.0, it allows setting _auth_ and [_stream_](https://www.php.net/manual/en/context.ssl.php) configuration.
 
 ##### *Return value*
 
@@ -235,7 +236,7 @@ $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
 $redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
 
-/* With PhpRedis >= 5.3.0 you can specify authentication information on connect */
+/* With PhpRedis >= 5.3.0 you can specify authentication and stream information on connect */
 $redis->connect('127.0.0.1', 6379, 1, NULL, 0, 0, ['auth' => ['phpredis', 'phpredis']]);
 ~~~
 
