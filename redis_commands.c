@@ -4428,6 +4428,7 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
             }
             RETURN_TRUE;
         case REDIS_OPT_FAILOVER:
+            if (c == NULL) RETURN_FALSE;
             val_long = zval_get_long(val);
             if (val_long == REDIS_FAILOVER_NONE ||
                 val_long == REDIS_FAILOVER_ERROR ||
