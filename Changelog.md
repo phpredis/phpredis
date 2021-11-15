@@ -22,6 +22,10 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Fixed
 
+- Fixed segfault in redis_setoption_handler
+  [#2030](https://github.com/phpredis/phpredis/issues/2030)
+  [692e4e84](https://github.com/phpredis/phpredis/commit/692e4e84)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Fix masters array in the event of a cluster failover
   [bce692962](https://github.com/phpredis/phpredis/commit/bce692962)
   [#2025](https://github.com/phpredis/phpredis/pull/2025)

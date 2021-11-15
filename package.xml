@@ -59,6 +59,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
      ---
 
+     * Fixed segfault in redis_setoption_handler [692e4e84] (Pavlo Yatsukhnenko)
      * Fix masters array in the event of a cluster failover [bce692962] (Bar Shaul)
      * Fix 32 bit type error [672dec87f] (Remi Collet)
      * Fix radix character in certain locales [89a871e24] (Pavlo Yatsukhnenko)
