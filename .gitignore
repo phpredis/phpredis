@@ -18,3 +18,4 @@ idea/*
 .cquery
 tags
 .vscode/*
+compile_commands.json
