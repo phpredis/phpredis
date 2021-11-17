@@ -7,6 +7,185 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+
+
+## [5.3.5RC1] - 2021-11-16 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.5RC1), [PECL](https:/pecl.php.net/package/redis/5.3.5RC1))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+### Fixed
+
+- Fixed segfault in redis_setoption_handler
+  [#2030](https://github.com/phpredis/phpredis/issues/2030)
+  [692e4e84](https://github.com/phpredis/phpredis/commit/692e4e84)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix masters array in the event of a cluster failover
+  [bce692962](https://github.com/phpredis/phpredis/commit/bce692962)
+  [#2025](https://github.com/phpredis/phpredis/pull/2025)
+  ([Bar Shaul](https://github.com/barshaul))
+- Fix 32bit type error
+  [672dec87f](https://github.com/phpredis/phpredis/commit/672dec87f)
+  ([#1956](https://github.com/phpredis/phpredis/issues/1956))
+  ([Remi Collet](https://github.com/remicollet))
+- Fix radix character in certain locales
+  [#1893](https://github.com/phpredis/phpredis/issues/1893)
+  [89a871e24](https://github.com/phpredis/phpredis/commit/89a871e24)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- ZSTD Validation fix
+  [6a77ef5cd](https://github.com/phpredis/phpredis/commit/6a77ef5cd)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Remove superfluous typecast
+  [b2871471f](https://github.com/phpredis/phpredis/commit/b2871471f)
+  ([Remi Collet](https://github.com/remicollet))
+- Updated documentation
+  [f84168657](https://github.com/phpredis/phpredis/commit/f84168657),
+  [d017788e7](https://github.com/phpredis/phpredis/commit/d017788e7),
+  [20ac84710](https://github.com/phpredis/phpredis/commit/20ac84710),
+  [0adf05260](https://github.com/phpredis/phpredis/commit/0adf05260),
+  [aee29bf73](https://github.com/phpredis/phpredis/commit/aee29bf73),
+  [09a095e72](https://github.com/phpredis/phpredis/commit/09a095e72),
+  [12ffbf33a](https://github.com/phpredis/phpredis/commit/12ffbf33a),
+  [ff331af98](https://github.com/phpredis/phpredis/commit/ff331af98),
+  [a6bdb8731](https://github.com/phpredis/phpredis/commit/a6bdb8731),
+  [305c15840](https://github.com/phpredis/phpredis/commit/305c15840),
+  [1aa10e93a](https://github.com/phpredis/phpredis/commit/1aa10e93a),
+  [d78b0c79d](https://github.com/phpredis/phpredis/commit/d78b0c79d),
+  [c6d37c27c](https://github.com/phpredis/phpredis/commit/c6d37c27c),
+  [a6303f5b9](https://github.com/phpredis/phpredis/commit/a6303f5b9),
+  [d144bd2c7](https://github.com/phpredis/phpredis/commit/d144bd2c7),
+  [a6fb815ef](https://github.com/phpredis/phpredis/commit/a6fb815ef),
+  [9ef862bc6](https://github.com/phpredis/phpredis/commit/9ef862bc6)
+  ([neodisco](https://github.com/neodisco), [Billy Wilson](https://github.com/wilsonwr),
+  [Clément Tessier](https://github.com/ctessier), [wangqr](https://github.com/wangqr),
+  [T. Todua](https://github.com/ttodua), [Naphat Deepar](https://github.com/feverxai),
+  [dengliming](https://github.com/dengliming), [Poplary](https://github.com/poplary),
+  [Maxime Cornet](https://github.com/xElysioN), [Michael Grunder](https://github.com/michael-grunder),
+  [Emanuele Filannino](https://github.com/tatekan), [MiRacLe](https://github.com/MiRacLe-RPZ),
+  [Michael Grunder](https://github.com/michael-grunder))
+- Travis CI Fixes
+  [a43f4586e](https://github.com/phpredis/phpredis/commit/a43f4586e),
+  [4fde8178f](https://github.com/phpredis/phpredis/commit/4fde8178f),
+  [7bd5415ac](https://github.com/phpredis/phpredis/commit/7bd5415ac),
+  [fdb8c4bb7](https://github.com/phpredis/phpredis/commit/fdb8c4bb7),
+  [d4f407470](https://github.com/phpredis/phpredis/commit/d4f407470)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Minor fixes/cleanup
+  [2e190adc1](https://github.com/phpredis/phpredis/commit/2e190adc1),
+  [99975b592](https://github.com/phpredis/phpredis/commit/99975b592),
+  [9d0879fa5](https://github.com/phpredis/phpredis/commit/9d0879fa5),
+  [22b06457b](https://github.com/phpredis/phpredis/commit/22b06457b),
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix RedisArray constructor bug
+  [85dc883ba](https://github.com/phpredis/phpredis/commit/85dc883ba)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+### Changed
+
+- Moved to GitHub Actions
+  [4d2afa786](https://github.com/phpredis/phpredis/commit/4d2afa786),
+  [502d09fd5](https://github.com/phpredis/phpredis/commit/502d09fd5)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Use more appropriate array iteration macro
+  [6008900c2](https://github.com/phpredis/phpredis/commit/6008900c2)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Clean up session tests
+  [ab25ae7f3](https://github.com/phpredis/phpredis/commit/ab25ae7f3)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- RedisArray refactors
+  [1250f0001](https://github.com/phpredis/phpredis/commit/1250f0001),
+  [017b2ea7f](https://github.com/phpredis/phpredis/commit/017b2ea7f),
+  [37ed3f079](https://github.com/phpredis/phpredis/commit/37ed3f079)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Use zend_parse_parameters_none helper
+  [a26b14dbe](https://github.com/phpredis/phpredis/commit/a26b14dbe)
+  ([Remi Collet](https://github.com/remicollet))
+
+### Added
+
+- Support for various exponential backoff strategies
+  [#1986](https://github.com/phpredis/phpredis/commit/#1986),
+  [#1993](https://github.com/phpredis/phpredis/commit/#1993),
+  [732eb8dcb](https://github.com/phpredis/phpredis/commit/732eb8dcb)
+  [05129c3a3](https://github.com/phpredis/phpredis/commit/05129c3a3)
+  [5bba6a7fc](https://github.com/phpredis/phpredis/commit/5bba6a7fc)
+  ([Nathaniel Braun](https://github.com/nbraun-amazon))
+- Added experimental support for detecting a dirty connection by 
+  trying to determine if the underlying stream is readable.
+  [d68579562](https://github.com/phpredis/phpredis/commit/d68579562)
+  [#2013](https://github.com/phpredis/phpredis/issues/2013)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Created distinct compression utility methods (pack/unpack)
+  [#1939](https://github.com/phpredis/phpredis/issues/1939)
+  [da2790aec](https://github.com/phpredis/phpredis/commit/da2790aec)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- SMISMEMBER Command
+  [#1894](https://github.com/phpredis/phpredis/commit/#1894)
+  [ae2382472](https://github.com/phpredis/phpredis/commit/ae2382472),
+  [ed283e1ab](https://github.com/phpredis/phpredis/commit/ed283e1ab),
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+## [5.3.4] - 2021-03-24 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.4), [PECL](https:/pecl.php.net/package/redis/5.3.4))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+
+### Fixed
+
+- Fix multi/pipeline segfault on Apple silicon [#1917](https://github.com/phpredis/phpredis/issues/1917)
+  [e0796d48](https://github.com/phpredis/phpredis/commit/e0796d48af18adac2b93982474e7df8de79ec854)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Pass compression flag on HMGET in RedisCluster [#1945](https://github.com/phpredis/phpredis/issues/1945)
+  [edc724e6](https://github.com/phpredis/phpredis/commit/edc724e6022620414abf4f90256522d03c3160fd)
+  ([Adam Olley](https://github.com/aolley))
+- Abide by ZSTD error return constants [#1936](https://github.com/phpredis/phpredis/issues/1936)
+  [8400ed1c](https://github.com/phpredis/phpredis/pull/1937/commits/8400ed1cb23a22f70727cb60e88ca5397ee10d23)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Fix timing related CI session tests
+  [9b986bf8](https://github.com/phpredis/phpredis/commit/9b986bf81859f5a5983cd148cb15ee6ce292d288)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+## [5.3.3] - 2021-02-01 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.3), [PECL](https:/pecl.php.net/package/redis/5.3.3))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [BlueHost](https://bluehost.com)
+- [Redis Cache Pro for WordPress](https://wprediscache.com)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Oleg Babushkin](https://github.com/olbabushkin)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+
+### Fixed
+
+- Fixed Windows includes for PHP 8
+  [270b4db8](https://www.github.com/phpredis//phpredis/commit/270b4db821fcbe9fb881eef83e046f87587c4110)
+  ([Jan-E](https://github.com/Jan-E))
+- Fix hash_ops for PHP 8.0.1
+  [87297cbb](https://www.github.com/phpredis/phpredis/commit/87297cbb4000c88b07e729b9379de321ead74aa2)
+  ([defender-11](https://github.com/defender-11))
+- Disable clone for Redis and RedisCluster objects.  Presently they segfault.
+  [cd05a344](https://www.github.com/phpredis/phpredis/commit/87297cbb4000c88b07e729b9379de321ead74aa2)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
 ## [5.3.2] - 2020-10-22 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.2), [PECL](https://pecl.php.net/package/redis/5.3.2))
 
 ### Sponsors :sparkling_heart:
