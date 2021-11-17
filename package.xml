@@ -47,70 +47,71 @@ http://pear.php.net/dtd/package-2.0.xsd">
     You can find a detailed list of changes in Changelog.md and package.xml
     or by inspecting the git commit logs.
 
-    * Sponsors
-      ~ Audiomack - https://audiomack.com
-      ~ Open LMS - https://openlms.net
-      ~ BlueHost - https://bluehost.com
-      ~ Object Cache Pro for WordPress - https://objectcache.pro
-      ~ Avtandil Kikabidze - https://github.com/akalongman
-      ~ Zaher Ghaibeh - https://github.com/zaherg
-      ~ BatchLabs - https://batch.com
-      ~ Luis Zárate - https://github.com/jlzaratec
+    --- Sponsors ---
 
-     ---
+    Audiomack - https://audiomack.com
+    Open LMS - https://openlms.net
+    BlueHost - https://bluehost.com
+    Object Cache Pro for WordPress - https://objectcache.pro
+    Avtandil Kikabidze - https://github.com/akalongman
+    Zaher Ghaibeh - https://github.com/zaherg
+    BatchLabs - https://batch.com
+    Luis Zarate - https://github.com/jlzaratec
 
-     * Fixed segfault in redis_setoption_handler [692e4e84] (Pavlo Yatsukhnenko)
-     * Fix masters array in the event of a cluster failover [bce692962] (Bar Shaul)
-     * Fix 32 bit type error [672dec87f] (Remi Collet)
-     * Fix radix character in certain locales [89a871e24] (Pavlo Yatsukhnenko)
-     * ZSTD Validation fix [6a77ef5cd] (Michael Grunder)
-     * Remove superfluous typecast [b2871471f] (Remi Collet)
+    ---
 
-     * Updated documentation [f84168657, d017788e7, 20ac84710, 0adf05260, 
-       aee29bf73, 09a095e72, 12ffbf33a, ff331af98, a6bdb8731, 305c15840, 
-       1aa10e93a, d78b0c79d, c6d37c27c, a6303f5b9, d144bd2c7, a6fb815ef, 9ef862bc6] 
-      (neodisco, Clément Tessier, T. Todua, dengliming, Maxime Cornet, 
-       Emanuele Filannino Michael Grunder)
+    * Fixed segfault in redis_setoption_handler [692e4e84] (Pavlo Yatsukhnenko)
+    * Fix masters array in the event of a cluster failover [bce692962] (Bar Shaul)
+    * Fix 32 bit type error [672dec87f] (Remi Collet)
+    * Fix radix character in certain locales [89a871e24] (Pavlo Yatsukhnenko)
+    * ZSTD Validation fix [6a77ef5cd] (Michael Grunder)
+    * Remove superfluous typecast [b2871471f] (Remi Collet)
 
-     * Travis CI Fixes
-       [a43f4586e, 4fde8178f, 7bd5415ac, fdb8c4bb7, d4f407470]
-       (Pavlo Yatsukhnenko)
+    * Updated documentation [f84168657, d017788e7, 20ac84710, 0adf05260,
+      aee29bf73, 09a095e72, 12ffbf33a, ff331af98, a6bdb8731, 305c15840,
+      1aa10e93a, d78b0c79d, c6d37c27c, a6303f5b9, d144bd2c7, a6fb815ef, 9ef862bc6]
+     (neodisco, Clement Tessier, T. Todua, dengliming, Maxime Cornet,
+      Emanuele Filannino Michael Grunder)
 
-     * Minor fixes/cleanup
-       [2e190adc1, 99975b592, 9d0879fa5, 22b06457b]
-       (Pavlo Yatsukhnenko)
+    * Travis CI Fixes
+      [a43f4586e, 4fde8178f, 7bd5415ac, fdb8c4bb7, d4f407470]
+      (Pavlo Yatsukhnenko)
 
-     * Fix RedisArray constructor bug
-       [85dc883ba](https://github.com/phpredis/phpredis/commit/85dc883ba)
-       ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+    * Minor fixes/cleanup
+      [2e190adc1, 99975b592, 9d0879fa5, 22b06457b]
+      (Pavlo Yatsukhnenko)
 
-     * Moved to GitHub Actions
-       [4d2afa786, 502d09fd5] (Pavlo Yatsukhnenko)
+    * Fix RedisArray constructor bug
+      [85dc883ba](https://github.com/phpredis/phpredis/commit/85dc883ba)
+      ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
-     * Use more appropriate array iteration macro
-       [6008900c2] (Pavlo Yatsukhnenko)
+    * Moved to GitHub Actions
+      [4d2afa786, 502d09fd5] (Pavlo Yatsukhnenko)
 
-     * Clean up session tests
-       [ab25ae7f3] (Michael Grunder)
+    * Use more appropriate array iteration macro
+      [6008900c2] (Pavlo Yatsukhnenko)
 
-     * RedisArray refactors [1250f0001, 017b2ea7f, 37ed3f079]
-       (Pavlo Yatsukhnenko)
+    * Clean up session tests
+      [ab25ae7f3] (Michael Grunder)
 
-     * Use zend_parse_parameters_none helper
-       [a26b14dbe] (Remi Collet)
+    * RedisArray refactors [1250f0001, 017b2ea7f, 37ed3f079]
+      (Pavlo Yatsukhnenko)
 
-     * Support for various exponential backoff strategies
-       [#1986, #1993, 732eb8dcb, 05129c3a3, 5bba6a7fc],
-       (Nathaniel Braun)
+    * Use zend_parse_parameters_none helper
+      [a26b14dbe] (Remi Collet)
 
-     * Added experimental support for detecting a dirty connection
-       [d68579562] (Michael Grunder)
+    * Support for various exponential backoff strategies
+      [#1986, #1993, 732eb8dcb, 05129c3a3, 5bba6a7fc],
+      (Nathaniel Braun)
 
-     * Created distinct compression utility methods (pack/unpack)
-       [#1939, da2790aec] (Michael Grunder)
+    * Added experimental support for detecting a dirty connection
+      [d68579562] (Michael Grunder)
 
-     * SMISMEMBER Command
-       [#1894, ae2382472, ed283e1ab] (Pavlo Yatsukhnenko)
+    * Created distinct compression utility methods (pack/unpack)
+      [#1939, da2790aec] (Michael Grunder)
+
+    * SMISMEMBER Command
+      [#1894, ae2382472, ed283e1ab] (Pavlo Yatsukhnenko)
 
  </notes>
  <contents>
@@ -195,7 +196,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <notes>
     phpredis 5.3.4
 
-    This release fixes a multi/pipeline segfault on apple silicon as well as 
+    This release fixes a multi/pipeline segfault on apple silicon as well as
     two small compression related bugs.
 
     You can find a detailed list of changes in Changelog.md and package.xml
