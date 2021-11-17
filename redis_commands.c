@@ -642,9 +642,8 @@ redis_zdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
-        zend_ulong idx;
         zend_string *zkey;
-        ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(z_opts), idx, zkey, z_ele) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey, z_ele) {
             if (zkey != NULL) {
                 ZVAL_DEREF(z_ele);
                 if (zend_string_equals_literal_ci(zkey, "withscores")) {
@@ -702,9 +701,8 @@ redis_zinterunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
-        zend_ulong idx;
         zend_string *zkey;
-        ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(z_opts), idx, zkey, z_ele) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey, z_ele) {
             if (zkey != NULL) {
                 ZVAL_DEREF(z_ele);
                 if (zend_string_equals_literal_ci(zkey, "aggregate")) {
@@ -3521,10 +3519,9 @@ redis_copy_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     if (opts != NULL && Z_TYPE_P(opts) == IS_ARRAY) {
-        zend_ulong idx;
         zend_string *zkey;
         zval *z_ele;
-        ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(opts), idx, zkey, z_ele) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(opts), zkey, z_ele) {
             if (zkey != NULL) {
                 ZVAL_DEREF(z_ele);
                 if (zend_string_equals_literal_ci(zkey, "db")) {
