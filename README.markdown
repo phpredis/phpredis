@@ -21,7 +21,9 @@ You can also make a one-time contribution with one of the links below.
 [![Ethereum](https://en.cryptobadges.io/badge/micro/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)](https://en.cryptobadges.io/donate/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)
 
 ## Sponsors
-<a href="https://audiomack.com"><img src="https://styleguide.audiomack.com/assets/dl/inline-orange-large.png" align="center" alt="Audiomack.com" width="150"></a><a href="https://bluehost.com"><img align="center" src="https://upload.wikimedia.org/wikipedia/commons/2/22/Bluehost-logo.png" alt="Bluehost.com" width="150"></a>
+<a href="https://audiomack.com"><img src="https://styleguide.audiomack.com/assets/dl/inline-orange-large.png" align="center" alt="Audiomack.com" width="150"></a>
+<a href="https://bluehost.com"><img src="https://upload.wikimedia.org/wikipedia/commons/2/22/Bluehost-logo.png" align="center" alt="Bluehost.com" width="150"></a>
+<a href="https://openlms.net"><img src="https://help.openlms.net/wp-content/uploads/2020/05/cropped-open-lms.png" align="center" alt="OpenLMS.net" width="150"></a>
 
 # Table of contents
 -----
