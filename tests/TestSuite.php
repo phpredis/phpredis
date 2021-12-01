@@ -13,6 +13,9 @@ class TestSuite
     /* Redis authentication we'll use */
     private $auth;
 
+    /* Redis server version */
+    protected $version;
+
     private static $_boo_colorize = false;
 
     private static $BOLD_ON = "\033[1m";
