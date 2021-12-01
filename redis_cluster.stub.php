@@ -269,7 +269,7 @@ class RedisCluster {
 
     public function setnx(string $key, string $value, int $timeout): bool;
 
-    public function setoption(int $option, mixed $value): bool;
+    public function setoption(string $option, mixed $value): bool;
 
     public function setrange(string $key, int $offset, string $value): int;
 
