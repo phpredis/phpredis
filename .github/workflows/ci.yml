@@ -51,7 +51,7 @@ jobs:
             redis-server --port $PORT --cluster-enabled yes --cluster-config-file $PORT.conf --daemonize yes --aclfile tests/users.acl
             echo 127.0.0.1:$PORT >> tests/nodes/nodemap
           done
-          echo yes | redis-cli --cluster create $(seq -f 127.0.0.1:%g 7000 7011) --cluster-replicas 3 --user phpredis -a phpredis
+          echo yes | redis-cli --cluster create $(seq -f 127.0.0.1:%g 7000 7006) --cluster-replicas 1 --user phpredis -a phpredis
       - name: Start redis sentinel
         run: |
           wget raw.githubusercontent.com/redis/redis/6.2/sentinel.conf
