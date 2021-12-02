@@ -384,7 +384,7 @@ public function persist(string $key): bool;
     public function setRange(string $key, int $start, string $value);
 
 
-    public function setOption(string $option, mixed $value): bool;
+    public function setOption(int $option, mixed $value): bool;
 
     /** @return bool|Redis */
     public function setex(string $key, int $expire, mixed $value);
