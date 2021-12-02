@@ -1924,10 +1924,8 @@ class Redis_Test extends TestSuite
     public function testttl() {
         $this->redis->set('x', 'y');
         $this->redis->expire('x', 5);
-        for($i = 5; $i > 0; $i--) {
-            $this->assertEquals($i, $this->redis->ttl('x'));
-            sleep(1);
-        }
+        $ttl = $this->redis->ttl('x');
+        $this->assertTrue($ttl > 0 && $ttl <= 5);
 
         // A key with no TTL
         $this->redis->del('x'); $this->redis->set('x', 'bar');
