@@ -222,7 +222,6 @@ class TestSuite
     private static function getMaxTestLen($arr_methods, $str_limit) {
         $i_result = 0;
 
-        $str_limit = strtolower($str_limit);
         foreach ($arr_methods as $obj_method) {
             $str_name = strtolower($obj_method->name);
 
