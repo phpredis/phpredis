@@ -27,18 +27,18 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2021-11-16</date>
+ <date>2021-12-07</date>
  <version>
-  <release>5.3.5RC1</release>
-  <api>5.3.5RC1</api>
+  <release>5.3.5</release>
+  <api>5.3.5</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 5.3.5RC1
+    phpredis 5.3.5
 
     This release adds support for exponential backoff w/jitter, experimental
     support for detecting a dirty connection, as well as many other fixes
@@ -59,6 +59,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Luis Zarate - https://github.com/jlzaratec
 
     ---
+
+    There were no code changes between 5.3.5RC1 and 5.3.5
+
+    ---
+
+    phpredis 5.3.5RC1
 
     * Fixed segfault in redis_setoption_handler [692e4e84] (Pavlo Yatsukhnenko)
     * Fix masters array in the event of a cluster failover [bce692962] (Bar Shaul)
