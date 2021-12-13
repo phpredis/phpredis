@@ -180,11 +180,6 @@ static int redis_sock_append_auth(RedisSock *redis_sock, smart_string *str) {
 }
 
 PHP_REDIS_API void
-redis_sock_copy_auth(RedisSock *dst, RedisSock *src) {
-    redis_sock_set_auth(dst, src->user, src->pass);
-}
-
-PHP_REDIS_API void
 redis_sock_set_auth(RedisSock *redis_sock, zend_string *user, zend_string *pass)
 {
     /* Release existing user/pass */

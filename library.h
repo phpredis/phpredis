@@ -77,7 +77,6 @@ PHP_REDIS_API int redis_sock_auth(RedisSock *redis_sock);
 PHP_REDIS_API char *redis_sock_auth_cmd(RedisSock *redis_sock, int *cmdlen);
 PHP_REDIS_API void redis_sock_set_auth(RedisSock *redis_sock, zend_string *user, zend_string *pass);
 PHP_REDIS_API void redis_sock_set_auth_zval(RedisSock *redis_sock, zval *zv);
-PHP_REDIS_API void redis_sock_copy_auth(RedisSock *dst, RedisSock *src);
 PHP_REDIS_API void redis_sock_free_auth(RedisSock *redis_sock);
 PHP_REDIS_API int redis_sock_disconnect(RedisSock *redis_sock, int force);
 PHP_REDIS_API zval *redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
