@@ -503,6 +503,8 @@ public function persist(string $key): bool;
 
     public function zRangeByScore(string $key, string $start, string $end, array $options = []): array;
 
+    public function zRandMember(string $key, array $options = null): string|array;
+
     public function zRank(string $key, string $member): int;
 
     public function zRem(string $key, string $member, string ...$other_members): int;

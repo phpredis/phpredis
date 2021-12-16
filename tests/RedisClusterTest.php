@@ -56,6 +56,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testzUnion() { return $this->markTestSkipped(); }
     public function testzDiffStore() { return $this->markTestSkipped(); }
     public function testzMscore() { return $this->marktestSkipped(); }
+    public function testZRandMember() { return $this->marktestSkipped(); }
     public function testCopy() { return $this->marktestSkipped(); }
 
     /* Session locking feature is currently not supported in in context of Redis Cluster.

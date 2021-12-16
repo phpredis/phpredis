@@ -1892,12 +1892,20 @@ static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
     }
 }
 
+/* {{{ proto array Redis::zRandMember(string key, array options) */
+PHP_METHOD(Redis, zRandMember)
+{
+    REDIS_PROCESS_CMD(zrandmember, redis_zrandmember_response);
+}
+/* }}} */
+
 /* {{{ proto array Redis::zRange(string key,int start,int end,bool scores = 0) */
 PHP_METHOD(Redis, zRange)
 {
     generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGE",
         redis_zrange_cmd);
 }
+/* }}} */
 
 /* {{{ proto array Redis::zRevRange(string k, long s, long e, bool scores = 0) */
 PHP_METHOD(Redis, zRevRange) {

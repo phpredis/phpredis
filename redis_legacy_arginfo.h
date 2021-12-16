@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: e01609c0f0b0cbd15608feab843ac3b4e7b1caf9 */
+ * Stub hash: 1c4a88252c8b66263f1b1d72af974ba5ce992d40 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -770,6 +770,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zRangeByScore, 0, 0, 3)
 	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
+#define arginfo_class_Redis_zRandMember arginfo_class_Redis_sort
+
 #define arginfo_class_Redis_zRank arginfo_class_Redis_hExists
 
 #define arginfo_class_Redis_zRem arginfo_class_Redis_geohash
@@ -1022,6 +1024,7 @@ ZEND_METHOD(Redis, zPopMin);
 ZEND_METHOD(Redis, zRange);
 ZEND_METHOD(Redis, zRangeByLex);
 ZEND_METHOD(Redis, zRangeByScore);
+ZEND_METHOD(Redis, zRandMember);
 ZEND_METHOD(Redis, zRank);
 ZEND_METHOD(Redis, zRem);
 ZEND_METHOD(Redis, zRemRangeByLex);
@@ -1246,6 +1249,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, zRange, arginfo_class_Redis_zRange, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zRangeByLex, arginfo_class_Redis_zRangeByLex, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zRangeByScore, arginfo_class_Redis_zRangeByScore, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zRandMember, arginfo_class_Redis_zRandMember, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zRank, arginfo_class_Redis_zRank, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zRem, arginfo_class_Redis_zRem, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zRemRangeByLex, arginfo_class_Redis_zRemRangeByLex, ZEND_ACC_PUBLIC)
