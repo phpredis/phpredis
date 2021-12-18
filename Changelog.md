@@ -5,7 +5,7 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.3.5] - 2021-12-07 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.5), [PECL](https:/pecl.php.net/package/redis/5.3.5))
+## [5.3.5] - 2021-12-18 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.5), [PECL](https:/pecl.php.net/package/redis/5.3.5))
 
 ### Sponsors :sparkling_heart:
 
@@ -20,7 +20,10 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - [Florian Levis](https://github.com/Gounlaf)
 - [Luis Zárate](https://github.com/jlzaratec)
 
-### NOTE: There were only changes to README.markdown between 5.3.5RC1 and 5.3.5
+### Fixed
+
+- Fixed typo in cluster_scan_resp
+  [44affad2](https://github.com/phpredis/phpredis/commit/44affad2)
 
 ## [5.3.5RC1] - 2021-11-16 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.5RC1), [PECL](https:/pecl.php.net/package/redis/5.3.5RC1))
 

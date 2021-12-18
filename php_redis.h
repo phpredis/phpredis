@@ -23,7 +23,7 @@
 #define PHP_REDIS_H
 
 /* phpredis version */
-#define PHP_REDIS_VERSION "5.3.5RC1"
+#define PHP_REDIS_VERSION "5.3.5"
 
 PHP_METHOD(Redis, __construct);
 PHP_METHOD(Redis, __destruct);

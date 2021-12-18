@@ -27,7 +27,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2021-12-07</date>
+ <date>2021-12-18</date>
  <version>
   <release>5.3.5</release>
   <api>5.3.5</api>
@@ -60,7 +60,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     ---
 
-    There were no code changes between 5.3.5RC1 and 5.3.5
+    phpredis 5.3.5
+
+    * Fix typo in cluster_scan_resp [44affad2] (Michael Grunder)
 
     ---
 
