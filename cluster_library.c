@@ -2169,8 +2169,8 @@ PHP_REDIS_API int cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
     }
 
     // Read the BULK size
-    if (cluster_check_response(c, &c->reply_type),0 ||
-       c->reply_type != TYPE_BULK)
+    if (cluster_check_response(c, &c->reply_type) ||
+        c->reply_type != TYPE_BULK)
     {
         return FAILURE;
     }
