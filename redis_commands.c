@@ -720,6 +720,42 @@ redis_zdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+static int redis_cmd_append_sstr_score(smart_string *dst, zval *score) {
+    zend_uchar type;
+    zend_long lval;
+    size_t cmdlen;
+    double dval;
+
+    /* Get current command length */
+    cmdlen = dst->len;
+
+    if (Z_TYPE_P(score) == IS_LONG) {
+        redis_cmd_append_sstr_long(dst, Z_LVAL_P(score));
+    } else if (Z_TYPE_P(score) == IS_DOUBLE) {
+        redis_cmd_append_sstr_dbl(dst, Z_DVAL_P(score));
+    } else if (Z_TYPE_P(score) == IS_STRING) {
+        type = is_numeric_string(Z_STRVAL_P(score), Z_STRLEN_P(score), &lval, &dval, 0);
+        if (type == IS_LONG) {
+            redis_cmd_append_sstr_long(dst, lval);
+        } else if (type == IS_DOUBLE) {
+            redis_cmd_append_sstr_dbl(dst, dval);
+        } else if (zend_string_equals_literal_ci(Z_STR_P(score), "-inf") ||
+                   zend_string_equals_literal_ci(Z_STR_P(score), "+inf") ||
+                   zend_string_equals_literal_ci(Z_STR_P(score), "inf"))
+        {
+            redis_cmd_append_sstr_zstr(dst, Z_STR_P(score));
+        }
+    }
+
+    /* Success if we appended something */
+    if (dst->len > cmdlen)
+        return SUCCESS;
+
+    /* Nothing appended, failure */
+    php_error_docref(NULL, E_WARNING, "Weights must be numeric or '-inf','inf','+inf'");
+    return FAILURE;
+}
+
 int
 redis_zinterunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char *kw, char **cmd, int *cmd_len, short *slot,
@@ -785,38 +821,10 @@ redis_zinterunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WEIGHTS");
         ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_weights), z_ele) {
             ZVAL_DEREF(z_ele);
-            switch (Z_TYPE_P(z_ele)) {
-                case IS_LONG:
-                    redis_cmd_append_sstr_long(&cmdstr, Z_LVAL_P(z_ele));
-                    break;
-                case IS_DOUBLE:
-                    redis_cmd_append_sstr_dbl(&cmdstr, Z_DVAL_P(z_ele));
-                    break;
-                case IS_STRING: {
-                    double dval;
-                    zend_long lval;
-                    zend_uchar type = is_numeric_string(Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), &lval, &dval, 0);
-                    if (type == IS_LONG) {
-                        redis_cmd_append_sstr_long(&cmdstr, lval);
-                        break;
-                    } else if (type == IS_DOUBLE) {
-                        redis_cmd_append_sstr_dbl(&cmdstr, dval);
-                        break;
-                    } else if (strncasecmp(Z_STRVAL_P(z_ele), "-inf", sizeof("-inf") - 1) == 0 ||
-                               strncasecmp(Z_STRVAL_P(z_ele), "+inf", sizeof("+inf") - 1) == 0 ||
-                               strncasecmp(Z_STRVAL_P(z_ele), "inf", sizeof("inf") - 1) == 0
-                    ) {
-                        redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
-                        break;
-                    }
-                    // fall through
-                }
-                default:
-                    php_error_docref(NULL, E_WARNING,
-                        "Weights must be numeric or '-inf','inf','+inf'");
-                    if (aggregate) zend_string_release(aggregate);
-                    efree(cmdstr.c);
-                    return FAILURE;
+            if (redis_cmd_append_sstr_score(&cmdstr, z_ele) == FAILURE) {
+                if (aggregate) zend_string_release(aggregate);
+                efree(cmdstr.c);
+                return FAILURE;
             }
         } ZEND_HASH_FOREACH_END();
     }
@@ -975,39 +983,10 @@ redis_zinterunionstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         // Process our weights
         ZEND_HASH_FOREACH_VAL(ht_weights, z_ele) {
-            // Ignore non numeric args unless they're inf/-inf
             ZVAL_DEREF(z_ele);
-            switch (Z_TYPE_P(z_ele)) {
-                case IS_LONG:
-                    redis_cmd_append_sstr_long(&cmdstr, Z_LVAL_P(z_ele));
-                    break;
-                case IS_DOUBLE:
-                    redis_cmd_append_sstr_dbl(&cmdstr, Z_DVAL_P(z_ele));
-                    break;
-                case IS_STRING: {
-                    double dval;
-                    zend_long lval;
-                    zend_uchar type = is_numeric_string(Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele), &lval, &dval, 0);
-                    if (type == IS_LONG) {
-                        redis_cmd_append_sstr_long(&cmdstr, lval);
-                        break;
-                    } else if (type == IS_DOUBLE) {
-                        redis_cmd_append_sstr_dbl(&cmdstr, dval);
-                        break;
-                    } else if (strncasecmp(Z_STRVAL_P(z_ele), "-inf", sizeof("-inf") - 1) == 0 ||
-                               strncasecmp(Z_STRVAL_P(z_ele), "+inf", sizeof("+inf") - 1) == 0 ||
-                               strncasecmp(Z_STRVAL_P(z_ele), "inf", sizeof("inf") - 1) == 0
-                    ) {
-                        redis_cmd_append_sstr(&cmdstr, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
-                        break;
-                    }
-                    // fall through
-                }
-                default:
-                    php_error_docref(NULL, E_WARNING,
-                        "Weights must be numeric or '-inf','inf','+inf'");
-                    efree(cmdstr.c);
-                    return FAILURE;
+            if (redis_cmd_append_sstr_score(&cmdstr, z_ele) == FAILURE) {
+                efree(cmdstr.c);
+                return FAILURE;
             }
         } ZEND_HASH_FOREACH_END();
     }
@@ -1559,7 +1538,7 @@ static int redis_try_get_expiry(zval *zv, zend_long *lval) {
     switch (is_numeric_string(Z_STRVAL_P(zv), Z_STRLEN_P(zv), lval, &dval, 0)) {
         case IS_DOUBLE:
             *lval = dval;
-            /* fallthrough */
+            REDIS_FALLTHROUGH;
         case IS_LONG:
             return SUCCESS;
         default:
@@ -2956,25 +2935,7 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Now the rest of our arguments
     while (i < num) {
         // Append score and member
-        switch (Z_TYPE(z_args[i])) {
-        case IS_LONG:
-        case IS_DOUBLE:
-            redis_cmd_append_sstr_dbl(&cmdstr, zval_get_double(&z_args[i]));
-            break;
-        case IS_STRING:
-            /* The score values must be the string representation of a double
-             * precision floating point number. +inf and -inf values are valid
-             * values as well. */
-            if (strncasecmp(Z_STRVAL(z_args[i]), "-inf", 4) == 0 ||
-                strncasecmp(Z_STRVAL(z_args[i]), "+inf", 4) == 0 ||
-                is_numeric_string(Z_STRVAL(z_args[i]), Z_STRLEN(z_args[i]), NULL, NULL, 0) != 0
-            ) {
-                redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[i]), Z_STRLEN(z_args[i]));
-                break;
-            }
-            // fall through
-        default:
-            php_error_docref(NULL, E_WARNING, "Scores must be numeric or '-inf','+inf'");
+        if (redis_cmd_append_sstr_score(&cmdstr, &z_args[i]) == FAILURE) {
             smart_string_free(&cmdstr);
             efree(z_args);
             return FAILURE;

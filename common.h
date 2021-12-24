@@ -16,6 +16,16 @@
 #define PHPREDIS_GET_OBJECT(class_entry, o) (class_entry *)((char *)o - XtOffsetOf(class_entry, std))
 #define PHPREDIS_ZVAL_GET_OBJECT(class_entry, z) PHPREDIS_GET_OBJECT(class_entry, Z_OBJ_P(z))
 
+/* We'll fallthrough if we want to */
+#ifndef __has_attribute
+#define __has_attribute(x) 0
+#endif
+#if __has_attribute(__fallthrough__)
+#define REDIS_FALLTHROUGH __attribute__((__fallthrough__))
+#else
+#define REDIS_FALLTHROUGH do { } while (0)
+#endif
+
 /* NULL check so Eclipse doesn't go crazy */
 #ifndef NULL
 #define NULL   ((void *) 0)
