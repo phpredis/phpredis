@@ -3344,20 +3344,17 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size,
     if(php_stream_get_line(redis_sock->stream, buf, buf_size, line_size)
                            == NULL)
     {
-        char *errmsg = NULL;
-
         if (redis_sock->port < 0) {
-            spprintf(&errmsg, 0, "read error on connection to %s", ZSTR_VAL(redis_sock->host));
+            snprintf(buf, buf_size, "read error on connection to %s", ZSTR_VAL(redis_sock->host));
         } else {
-            spprintf(&errmsg, 0, "read error on connection to %s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
+            snprintf(buf, buf_size, "read error on connection to %s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
         }
         // Close our socket
         redis_sock_disconnect(redis_sock, 1);
 
         // Throw a read error exception
-        REDIS_THROW_EXCEPTION(errmsg, 0);
-        efree(errmsg);
-        return -1;
+        REDIS_THROW_EXCEPTION(buf, 0);
+        return FAILURE;
     }
 
     /* We don't need \r\n */
