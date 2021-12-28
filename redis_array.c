@@ -1013,7 +1013,8 @@ ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
         /* copy all elements to z_keys */
         array_init(&z_keys);
         for (i = 0; i < argc; ++i) {
-            add_next_index_zval(&z_keys, &z_args[i]);
+            ZVAL_ZVAL(&z_ret, &z_args[i], 1, 0);
+            add_next_index_zval(&z_keys, &z_ret);
         }
         free_zkeys = 1;
     }
@@ -1062,7 +1063,8 @@ ra_generic_del(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
         array_init(&z_argarray);
         for(i = 0; i < argc; ++i) {
             if (pos[i] == n) {
-                add_next_index_zval(&z_argarray, argv[i]);
+                ZVAL_ZVAL(&z_ret, argv[i], 1, 0);
+                add_next_index_zval(&z_argarray, &z_ret);
                 found++;
             }
         }
