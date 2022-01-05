@@ -5875,6 +5875,34 @@ class Redis_Test extends TestSuite
         $this->assertEquals(round($r1, 8), round($r2, 8));
     }
 
+    public function testGeoSearch() {
+        if (!$this->minVersionCheck("6.2.0")) {
+            return $this->markTestSkipped();
+        }
+
+        $this->addCities('gk');
+
+        $this->assertEquals($this->redis->geosearch('gk', 'Chico', 1, 'm'), ['Chico']);
+        $this->assertValidate($this->redis->geosearch('gk', 'Chico', 1, 'm', ['withcoord', 'withdist', 'withhash']), function ($v) {
+            $this->assertArrayKey($v, 'Chico', 'is_array');
+            $this->assertEquals(count($v['Chico']), 3);
+            $this->assertArrayKey($v['Chico'], 0, 'is_float');
+            $this->assertArrayKey($v['Chico'], 1, 'is_int');
+            $this->assertArrayKey($v['Chico'], 2, 'is_array');
+            return true;
+        });
+    }
+
+    public function testGeoSearchStore() {
+        if (!$this->minVersionCheck("6.2.0")) {
+            return $this->markTestSkipped();
+        }
+
+        $this->addCities('gk');
+        $this->assertEquals($this->redis->geosearchstore('{gk}', 'gk', 'Chico', 100, 'km'), 3);
+        $this->assertEquals($this->redis->geosearch('{gk}', 'Chico', 1, 'm'), ['Chico']);
+    }
+
     /* Test a 'raw' command */
     public function testRawCommand() {
         $this->redis->set('mykey','some-value');

@@ -137,6 +137,10 @@ class Redis {
 
     public function georadiusbymember_ro(string $key, string $member, float $radius, string $unit, array $options = []): array;
 
+    public function geosearch(string $key, array|string $position, array|int|float $shape, string $unit, array $options = []): array;
+
+    public function geosearchstore(string $dst, string $src, array|string $position, array|int|float $shape, string $unit, array $options = []): array;
+
 	/** @return string|Redis */
     public function get(string $key);
 

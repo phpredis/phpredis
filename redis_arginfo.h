@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 1c4a88252c8b66263f1b1d72af974ba5ce992d40 */
+ * Stub hash: c2cbe49e22cba6f23e98c1676b7769c55a6fd043 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -228,6 +228,23 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_georadiusbymember, 0
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_georadiusbymember_ro arginfo_class_Redis_georadiusbymember
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_geosearch, 0, 4, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_MASK(0, position, MAY_BE_ARRAY|MAY_BE_STRING, NULL)
+	ZEND_ARG_TYPE_MASK(0, shape, MAY_BE_ARRAY|MAY_BE_LONG|MAY_BE_DOUBLE, NULL)
+	ZEND_ARG_TYPE_INFO(0, unit, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "[]")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_geosearchstore, 0, 5, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, dst, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, src, IS_STRING, 0)
+	ZEND_ARG_TYPE_MASK(0, position, MAY_BE_ARRAY|MAY_BE_STRING, NULL)
+	ZEND_ARG_TYPE_MASK(0, shape, MAY_BE_ARRAY|MAY_BE_LONG|MAY_BE_DOUBLE, NULL)
+	ZEND_ARG_TYPE_INFO(0, unit, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "[]")
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_get arginfo_class_Redis_decr
 
@@ -974,6 +991,8 @@ ZEND_METHOD(Redis, georadius);
 ZEND_METHOD(Redis, georadius_ro);
 ZEND_METHOD(Redis, georadiusbymember);
 ZEND_METHOD(Redis, georadiusbymember_ro);
+ZEND_METHOD(Redis, geosearch);
+ZEND_METHOD(Redis, geosearchstore);
 ZEND_METHOD(Redis, get);
 ZEND_METHOD(Redis, getAuth);
 ZEND_METHOD(Redis, getBit);
@@ -1197,6 +1216,8 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, georadius_ro, arginfo_class_Redis_georadius_ro, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, georadiusbymember, arginfo_class_Redis_georadiusbymember, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, georadiusbymember_ro, arginfo_class_Redis_georadiusbymember_ro, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, geosearch, arginfo_class_Redis_geosearch, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, geosearchstore, arginfo_class_Redis_geosearchstore, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, get, arginfo_class_Redis_get, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getAuth, arginfo_class_Redis_getAuth, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getBit, arginfo_class_Redis_getBit, ZEND_ACC_PUBLIC)

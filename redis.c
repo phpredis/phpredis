@@ -3598,6 +3598,14 @@ PHP_METHOD(Redis, georadiusbymember_ro) {
     REDIS_PROCESS_KW_CMD("GEORADIUSBYMEMBER_RO", redis_georadiusbymember_cmd, redis_read_variant_reply);
 }
 
+PHP_METHOD(Redis, geosearch) {
+    REDIS_PROCESS_CMD(geosearch, redis_geosearch_response);
+}
+
+PHP_METHOD(Redis, geosearchstore) {
+    REDIS_PROCESS_CMD(geosearchstore, redis_long_response);
+}
+
 /*
  * Streams
  */
