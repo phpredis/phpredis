@@ -5,6 +5,27 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.6] - 2021-01-12 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.6), [PECL](https:/pecl.php.net/package/redis/5.3.6))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+### Fixed
+
+- Fix a segfault in RedisArray::del
+  [d2f2a7d9](https://github.com/phpredis/phpredis/commit/d2f2a7d9)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
 ## [5.3.5] - 2021-12-18 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.5), [PECL](https:/pecl.php.net/package/redis/5.3.5))
 
 ### Sponsors :sparkling_heart:

@@ -27,10 +27,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2021-12-18</date>
+ <date>2022-01-12</date>
  <version>
-  <release>5.3.5</release>
-  <api>5.3.5</api>
+  <release>5.3.6</release>
+  <api>5.3.6</api>
  </version>
  <stability>
   <release>stable</release>
@@ -38,6 +38,104 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
+    --- Sponsors ---
+
+    Audiomack - https://audiomack.com
+    Open LMS - https://openlms.net
+    BlueHost - https://bluehost.com
+    Object Cache Pro for WordPress - https://objectcache.pro
+    Avtandil Kikabidze - https://github.com/akalongman
+    Zaher Ghaibeh - https://github.com/zaherg
+    BatchLabs - https://batch.com
+    Luis Zarate - https://github.com/jlzaratec
+
+    ---
+
+    phpredis 5.3.6
+
+    - Fix a segfault in RedisArray::del [d2f2a7d9] (Pavlo Yatsukhnenko)
+
+ </notes>
+ <contents>
+  <dir name="/">
+   <file role='doc' name='COPYING'/>
+   <file role='doc' name='CREDITS'/>
+   <file role='doc' name='README.markdown'/>
+   <file role='src' name='INSTALL.markdown'/>
+   <file role='doc' name='arrays.markdown'/>
+   <file role='doc' name='cluster.markdown'/>
+   <file role='doc' name='sentinel.markdown'/>
+   <file role='src' name='backoff.c'/>
+   <file role='src' name='backoff.h'/>
+   <file role='src' name='cluster_library.c'/>
+   <file role='src' name='cluster_library.h'/>
+   <file role='src' name='common.h'/>
+   <file role='src' name='config.m4'/>
+   <file role='src' name='config.w32'/>
+   <file role='src' name='crc16.h'/>
+   <file role='src' name='library.c'/>
+   <file role='src' name='library.h'/>
+   <file role='src' name='php_redis.h'/>
+   <file role='src' name='redis.c'/>
+   <file role='src' name='redis_array.c'/>
+   <file role='src' name='redis_array.h'/>
+   <file role='src' name='redis_array_impl.c'/>
+   <file role='src' name='redis_array_impl.h'/>
+   <file role='src' name='redis_cluster.c'/>
+   <file role='src' name='redis_cluster.h'/>
+   <file role='src' name='redis_commands.c'/>
+   <file role='src' name='redis_commands.h'/>
+   <file role='src' name='redis_session.c'/>
+   <file role='src' name='redis_session.h'/>
+   <file role='src' name='redis_sentinel.c'/>
+   <file role='src' name='redis_sentinel.h'/>
+   <file role='src' name='sentinel_library.c'/>
+   <file role='src' name='sentinel_library.h'/>
+   <dir name='liblzf'>
+     <file role='doc' name='LICENSE'/>
+     <file role='doc' name='README'/>
+     <file role='src' name='lzf.h'/>
+     <file role='src' name='lzfP.h'/>
+     <file role='src' name='lzf_c.c'/>
+     <file role='src' name='lzf_d.c'/>
+   </dir> <!-- liblzf -->
+   <dir name='tests'>
+     <file role='test' name='RedisArrayTest.php'/>
+     <file role='test' name='RedisClusterTest.php'/>
+     <file role='test' name='RedisSentinelTest.php'/>
+     <file role='test' name='RedisTest.php'/>
+     <file role='test' name='TestRedis.php'/>
+     <file role='test' name='TestSuite.php'/>
+     <file role='test' name='getSessionData.php'/>
+     <file role='test' name='regenerateSessionId.php'/>
+     <file role='test' name='startSession.php'/>
+     <file role='test' name='make-cluster.sh'/>
+     <file role='test' name='mkring.sh'/>
+   </dir> <!-- tests -->
+  </dir> <!-- / -->
+ </contents>
+ <dependencies>
+  <required>
+   <php>
+    <min>7.0.0</min>
+   </php>
+   <pearinstaller>
+    <min>1.4.0b1</min>
+   </pearinstaller>
+  </required>
+ </dependencies>
+ <providesextension>redis</providesextension>
+ <extsrcrelease>
+  <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
+  <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
+  <configureoption name="enable-redis-zstd" prompt="enable zstd compression support?" default="no"/>
+ </extsrcrelease>
+ <changelog>
+ <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.3.5</release><api>5.3.5</api></version>
+   <date>2021-12-18</date>
+   <notes>
     phpredis 5.3.5
 
     This release adds support for exponential backoff w/jitter, experimental
@@ -120,83 +218,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     * SMISMEMBER Command
       [#1894, ae2382472, ed283e1ab] (Pavlo Yatsukhnenko)
-
- </notes>
- <contents>
-  <dir name="/">
-   <file role='doc' name='COPYING'/>
-   <file role='doc' name='CREDITS'/>
-   <file role='doc' name='README.markdown'/>
-   <file role='src' name='INSTALL.markdown'/>
-   <file role='doc' name='arrays.markdown'/>
-   <file role='doc' name='cluster.markdown'/>
-   <file role='doc' name='sentinel.markdown'/>
-   <file role='src' name='backoff.c'/>
-   <file role='src' name='backoff.h'/>
-   <file role='src' name='cluster_library.c'/>
-   <file role='src' name='cluster_library.h'/>
-   <file role='src' name='common.h'/>
-   <file role='src' name='config.m4'/>
-   <file role='src' name='config.w32'/>
-   <file role='src' name='crc16.h'/>
-   <file role='src' name='library.c'/>
-   <file role='src' name='library.h'/>
-   <file role='src' name='php_redis.h'/>
-   <file role='src' name='redis.c'/>
-   <file role='src' name='redis_array.c'/>
-   <file role='src' name='redis_array.h'/>
-   <file role='src' name='redis_array_impl.c'/>
-   <file role='src' name='redis_array_impl.h'/>
-   <file role='src' name='redis_cluster.c'/>
-   <file role='src' name='redis_cluster.h'/>
-   <file role='src' name='redis_commands.c'/>
-   <file role='src' name='redis_commands.h'/>
-   <file role='src' name='redis_session.c'/>
-   <file role='src' name='redis_session.h'/>
-   <file role='src' name='redis_sentinel.c'/>
-   <file role='src' name='redis_sentinel.h'/>
-   <file role='src' name='sentinel_library.c'/>
-   <file role='src' name='sentinel_library.h'/>
-   <dir name='liblzf'>
-     <file role='doc' name='LICENSE'/>
-     <file role='doc' name='README'/>
-     <file role='src' name='lzf.h'/>
-     <file role='src' name='lzfP.h'/>
-     <file role='src' name='lzf_c.c'/>
-     <file role='src' name='lzf_d.c'/>
-   </dir> <!-- liblzf -->
-   <dir name='tests'>
-     <file role='test' name='RedisArrayTest.php'/>
-     <file role='test' name='RedisClusterTest.php'/>
-     <file role='test' name='RedisSentinelTest.php'/>
-     <file role='test' name='RedisTest.php'/>
-     <file role='test' name='TestRedis.php'/>
-     <file role='test' name='TestSuite.php'/>
-     <file role='test' name='getSessionData.php'/>
-     <file role='test' name='regenerateSessionId.php'/>
-     <file role='test' name='startSession.php'/>
-     <file role='test' name='make-cluster.sh'/>
-     <file role='test' name='mkring.sh'/>
-   </dir> <!-- tests -->
-  </dir> <!-- / -->
- </contents>
- <dependencies>
-  <required>
-   <php>
-    <min>7.0.0</min>
-   </php>
-   <pearinstaller>
-    <min>1.4.0b1</min>
-   </pearinstaller>
-  </required>
- </dependencies>
- <providesextension>redis</providesextension>
- <extsrcrelease>
-  <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
-  <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
-  <configureoption name="enable-redis-zstd" prompt="enable zstd compression support?" default="no"/>
- </extsrcrelease>
- <changelog>
+   </notes>
+ </release>
  <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>5.3.4</release><api>5.3.4</api></version>
