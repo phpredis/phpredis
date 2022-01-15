@@ -39,6 +39,8 @@ class RedisArray {
 
     public function getOption(int $opt): bool|array;
 
+    public function hscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
+
     public function info(): bool|array;
 
     public function keys(string $pattern): bool|array;
@@ -57,8 +59,11 @@ class RedisArray {
 
     public function setOption(int $opt, string $value): bool|array;
 
+    public function sscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
+
     public function unlink(string|array $key, string ...$otherkeys): bool|int;
 
     public function unwatch(): bool|null;
 
+    public function zscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
 }
