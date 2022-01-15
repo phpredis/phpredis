@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: e7f3cbb6cba7b52d3cc2d8b2f311dcb37c93ea5b */
+ * Stub hash: 16a0857d62817f14eef16a00e80e587f318b9052 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisArray___call, 0, 0, 2)
 	ZEND_ARG_INFO(0, function_name)
@@ -51,6 +51,13 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisArray_getOption, 0, 0, 1)
 	ZEND_ARG_INFO(0, opt)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisArray_hscan, 0, 0, 2)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(1, iterator)
+	ZEND_ARG_INFO(0, pattern)
+	ZEND_ARG_INFO(0, count)
+ZEND_END_ARG_INFO()
+
 #define arginfo_class_RedisArray_info arginfo_class_RedisArray__continuum
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisArray_keys, 0, 0, 1)
@@ -83,9 +90,13 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisArray_setOption, 0, 0, 2)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
+#define arginfo_class_RedisArray_sscan arginfo_class_RedisArray_hscan
+
 #define arginfo_class_RedisArray_unlink arginfo_class_RedisArray_del
 
 #define arginfo_class_RedisArray_unwatch arginfo_class_RedisArray__continuum
+
+#define arginfo_class_RedisArray_zscan arginfo_class_RedisArray_hscan
 
 
 ZEND_METHOD(RedisArray, __call);
@@ -104,6 +115,7 @@ ZEND_METHOD(RedisArray, exec);
 ZEND_METHOD(RedisArray, flushall);
 ZEND_METHOD(RedisArray, flushdb);
 ZEND_METHOD(RedisArray, getOption);
+ZEND_METHOD(RedisArray, hscan);
 ZEND_METHOD(RedisArray, info);
 ZEND_METHOD(RedisArray, keys);
 ZEND_METHOD(RedisArray, mget);
@@ -113,8 +125,10 @@ ZEND_METHOD(RedisArray, ping);
 ZEND_METHOD(RedisArray, save);
 ZEND_METHOD(RedisArray, select);
 ZEND_METHOD(RedisArray, setOption);
+ZEND_METHOD(RedisArray, sscan);
 ZEND_METHOD(RedisArray, unlink);
 ZEND_METHOD(RedisArray, unwatch);
+ZEND_METHOD(RedisArray, zscan);
 
 
 static const zend_function_entry class_RedisArray_methods[] = {
@@ -134,6 +148,7 @@ static const zend_function_entry class_RedisArray_methods[] = {
 	ZEND_ME(RedisArray, flushall, arginfo_class_RedisArray_flushall, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisArray, flushdb, arginfo_class_RedisArray_flushdb, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisArray, getOption, arginfo_class_RedisArray_getOption, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisArray, hscan, arginfo_class_RedisArray_hscan, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisArray, info, arginfo_class_RedisArray_info, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisArray, keys, arginfo_class_RedisArray_keys, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisArray, mget, arginfo_class_RedisArray_mget, ZEND_ACC_PUBLIC)
@@ -143,7 +158,9 @@ static const zend_function_entry class_RedisArray_methods[] = {
 	ZEND_ME(RedisArray, save, arginfo_class_RedisArray_save, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisArray, select, arginfo_class_RedisArray_select, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisArray, setOption, arginfo_class_RedisArray_setOption, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisArray, sscan, arginfo_class_RedisArray_sscan, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisArray, unlink, arginfo_class_RedisArray_unlink, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisArray, unwatch, arginfo_class_RedisArray_unwatch, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisArray, zscan, arginfo_class_RedisArray_zscan, ZEND_ACC_PUBLIC)
 	ZEND_FE_END
 };
