@@ -243,16 +243,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_scan, 0, 0, 1)
     ZEND_ARG_INFO(0, i_count)
 ZEND_END_ARG_INFO()
 
-/**
- * Argument info for key scanning
- */
-ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan, 0, 0, 2)
-    ZEND_ARG_INFO(0, str_key)
-    ZEND_ARG_INFO(1, i_iterator)
-    ZEND_ARG_INFO(0, str_pattern)
-    ZEND_ARG_INFO(0, i_count)
-ZEND_END_ARG_INFO()
-
 static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, __construct, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, __destruct, arginfo_void, ZEND_ACC_PUBLIC)

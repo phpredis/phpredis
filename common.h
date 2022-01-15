@@ -771,4 +771,15 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_xdel, 0, 0, 2)
     ZEND_ARG_ARRAY_INFO(0, arr_ids, 0)
 ZEND_END_ARG_INFO()
 
+/**
+ * Argument info for key scanning
+ */
+ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan, 0, 0, 2)
+    ZEND_ARG_INFO(0, str_key)
+    ZEND_ARG_INFO(1, i_iterator)
+    ZEND_ARG_INFO(0, str_pattern)
+    ZEND_ARG_INFO(0, i_count)
+ZEND_END_ARG_INFO()
+
+
 #endif

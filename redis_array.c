@@ -114,6 +114,7 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, flushall, arginfo_flush, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, flushdb, arginfo_flush, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, getOption, arginfo_getopt, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, hscan, arginfo_kscan, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, info, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, keys, arginfo_keys, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, mget, arginfo_mget, ZEND_ACC_PUBLIC)
@@ -123,8 +124,10 @@ zend_function_entry redis_array_functions[] = {
      PHP_ME(RedisArray, save, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, select, arginfo_select, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, setOption,arginfo_setopt, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, sscan, arginfo_kscan, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, unlink, arginfo_void, ZEND_ACC_PUBLIC)
      PHP_ME(RedisArray, unwatch, arginfo_void, ZEND_ACC_PUBLIC)
+     PHP_ME(RedisArray, zscan, arginfo_kscan, ZEND_ACC_PUBLIC)
      PHP_MALIAS(RedisArray, delete, del, arginfo_del, ZEND_ACC_PUBLIC)
      PHP_MALIAS(RedisArray, getMultiple, mget, arginfo_mget, ZEND_ACC_PUBLIC)
      PHP_FE_END
@@ -1194,6 +1197,56 @@ PHP_METHOD(RedisArray, del)
 PHP_METHOD(RedisArray, unlink) {
     ra_generic_del(INTERNAL_FUNCTION_PARAM_PASSTHRU, "UNLINK", sizeof("UNLINK") - 1);
 }
+
+static void
+ra_generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw_len)
+{
+    RedisArray *ra;
+    zend_string *key, *pattern = NULL;
+    zval *object, *redis_inst, *z_iter, z_fun, z_args[4];
+    zend_long count = 0;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "OSz/|S!l",
+            &object, redis_array_ce, &key, &z_iter, &pattern, &count) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if ((ra = redis_array_get(object)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    if ((redis_inst = ra_find_node(ra, ZSTR_VAL(key), ZSTR_LEN(key), NULL)) == NULL) {
+        php_error_docref(NULL, E_ERROR, "Could not find any redis servers for this key.");
+        RETURN_FALSE;
+    }
+
+    ZVAL_STR(&z_args[0], key);
+    ZVAL_NEW_REF(&z_args[1], z_iter);
+    if (pattern) ZVAL_STR(&z_args[2], pattern);
+    ZVAL_LONG(&z_args[3], count);
+
+    ZVAL_STRINGL(&z_fun, kw, kw_len);
+    call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, ZEND_NUM_ARGS(), z_args);
+    zval_dtor(&z_fun);
+
+    ZVAL_ZVAL(z_iter, &z_args[1], 0, 1);
+}
+
+PHP_METHOD(RedisArray, hscan)
+{
+    ra_generic_scan_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "HSCAN", sizeof("HSCAN") - 1);
+}
+
+PHP_METHOD(RedisArray, sscan)
+{
+    ra_generic_scan_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "SSCAN", sizeof("SSCAN") - 1);
+}
+
+PHP_METHOD(RedisArray, zscan)
+{
+    ra_generic_scan_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZSCAN", sizeof("ZSCAN") - 1);
+}
+
 
 PHP_METHOD(RedisArray, multi)
 {

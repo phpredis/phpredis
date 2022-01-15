@@ -8,35 +8,36 @@
 #endif
 #include "common.h"
 
-PHP_METHOD(RedisArray, __construct);
 PHP_METHOD(RedisArray, __call);
-PHP_METHOD(RedisArray, _hosts);
-PHP_METHOD(RedisArray, _target);
-PHP_METHOD(RedisArray, _instance);
-PHP_METHOD(RedisArray, _function);
-PHP_METHOD(RedisArray, _distributor);
-PHP_METHOD(RedisArray, _rehash);
+PHP_METHOD(RedisArray, __construct);
 PHP_METHOD(RedisArray, _continuum);
-
-PHP_METHOD(RedisArray, select);
-PHP_METHOD(RedisArray, info);
-PHP_METHOD(RedisArray, ping);
-PHP_METHOD(RedisArray, flushdb);
+PHP_METHOD(RedisArray, _distributor);
+PHP_METHOD(RedisArray, _function);
+PHP_METHOD(RedisArray, _hosts);
+PHP_METHOD(RedisArray, _instance);
+PHP_METHOD(RedisArray, _rehash);
+PHP_METHOD(RedisArray, _target);
+PHP_METHOD(RedisArray, bgsave);
+PHP_METHOD(RedisArray, del);
+PHP_METHOD(RedisArray, discard);
+PHP_METHOD(RedisArray, exec);
 PHP_METHOD(RedisArray, flushall);
+PHP_METHOD(RedisArray, flushdb);
+PHP_METHOD(RedisArray, getOption);
+PHP_METHOD(RedisArray, hscan);
+PHP_METHOD(RedisArray, info);
+PHP_METHOD(RedisArray, keys);
 PHP_METHOD(RedisArray, mget);
 PHP_METHOD(RedisArray, mset);
-PHP_METHOD(RedisArray, del);
-PHP_METHOD(RedisArray, unlink);
-PHP_METHOD(RedisArray, keys);
-PHP_METHOD(RedisArray, getOption);
-PHP_METHOD(RedisArray, setOption);
-PHP_METHOD(RedisArray, save);
-PHP_METHOD(RedisArray, bgsave);
-
 PHP_METHOD(RedisArray, multi);
-PHP_METHOD(RedisArray, exec);
-PHP_METHOD(RedisArray, discard);
+PHP_METHOD(RedisArray, ping);
+PHP_METHOD(RedisArray, save);
+PHP_METHOD(RedisArray, select);
+PHP_METHOD(RedisArray, setOption);
+PHP_METHOD(RedisArray, sscan);
+PHP_METHOD(RedisArray, unlink);
 PHP_METHOD(RedisArray, unwatch);
+PHP_METHOD(RedisArray, zscan);
 
 typedef struct {
     uint32_t value;
