@@ -1162,6 +1162,36 @@ PHP_METHOD(RedisArray, zscan)
     ra_generic_scan_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZSCAN", sizeof("ZSCAN") - 1);
 }
 
+PHP_METHOD(RedisArray, scan)
+{
+    RedisArray *ra;
+    zend_string *host, *pattern = NULL;
+    zval *object, *redis_inst, *z_iter, z_fun, z_args[3];
+    zend_long count = 0;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Oz/S|S!l",
+            &object, redis_array_ce, &z_iter, &host, &pattern, &count) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if ((ra = redis_array_get(object)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    if ((redis_inst = ra_find_node_by_name(ra, host)) == NULL) {
+        RETURN_FALSE;
+    }
+
+    ZVAL_NEW_REF(&z_args[0], z_iter);
+    if (pattern) ZVAL_STR(&z_args[1], pattern);
+    ZVAL_LONG(&z_args[2], count);
+
+    ZVAL_STRING(&z_fun, "SCAN");
+    call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, ZEND_NUM_ARGS() - 1, z_args);
+    zval_dtor(&z_fun);
+
+    ZVAL_ZVAL(z_iter, &z_args[0], 0, 1);
+}
 
 PHP_METHOD(RedisArray, multi)
 {

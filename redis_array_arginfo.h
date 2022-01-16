@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 16a0857d62817f14eef16a00e80e587f318b9052 */
+ * Stub hash: 52eb7c6a57cea5f116106d24db1c98c7c4469e09 */
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisArray___call, 0, 2, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, function_name, IS_STRING, 0)
@@ -84,6 +84,13 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisArray_save arginfo_class_RedisArray__continuum
 
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisArray_scan, 0, 2, MAY_BE_BOOL|MAY_BE_ARRAY)
+	ZEND_ARG_TYPE_INFO(1, iterator, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, node, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, pattern, IS_STRING, 1, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisArray_select, 0, 1, MAY_BE_BOOL|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
 ZEND_END_ARG_INFO()
@@ -126,6 +133,7 @@ ZEND_METHOD(RedisArray, mset);
 ZEND_METHOD(RedisArray, multi);
 ZEND_METHOD(RedisArray, ping);
 ZEND_METHOD(RedisArray, save);
+ZEND_METHOD(RedisArray, scan);
 ZEND_METHOD(RedisArray, select);
 ZEND_METHOD(RedisArray, setOption);
 ZEND_METHOD(RedisArray, sscan);
@@ -159,6 +167,7 @@ static const zend_function_entry class_RedisArray_methods[] = {
 	ZEND_ME(RedisArray, multi, arginfo_class_RedisArray_multi, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisArray, ping, arginfo_class_RedisArray_ping, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisArray, save, arginfo_class_RedisArray_save, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisArray, scan, arginfo_class_RedisArray_scan, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisArray, select, arginfo_class_RedisArray_select, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisArray, setOption, arginfo_class_RedisArray_setOption, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisArray, sscan, arginfo_class_RedisArray_sscan, ZEND_ACC_PUBLIC)
