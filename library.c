@@ -2095,30 +2095,6 @@ PHP_REDIS_API int redis_string_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock 
     return SUCCESS;
 }
 
-PHP_REDIS_API
-void redis_single_line_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                             zval *z_tab, void *ctx)
-{
-    char buffer[4096];
-    size_t len;
-
-    if (redis_sock_read_single_line(redis_sock, buffer, sizeof(buffer), &len, 1) < 0) {
-        if (IS_ATOMIC(redis_sock)) {
-            RETURN_FALSE;
-        } else {
-            add_next_index_bool(z_tab, 0);
-        }
-        return;
-    }
-
-    //str = estrndup(buffer, len);
-    if (IS_ATOMIC(redis_sock)) {
-        RETVAL_STRINGL(buffer, len);
-    } else {
-        add_next_index_stringl(z_tab, buffer, len);
-    }
-}
-
 /* like string response, but never unserialized. */
 PHP_REDIS_API int
 redis_ping_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
