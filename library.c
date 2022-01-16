@@ -148,17 +148,6 @@ static int reselect_db(RedisSock *redis_sock) {
     return 0;
 }
 
-/* Attempt to read a single +OK response */
-static int redis_sock_read_ok(RedisSock *redis_sock) {
-    char buf[64];
-    size_t len;
-
-    if (redis_sock_read_single_line(redis_sock, buf, sizeof(buf), &len, 0) < 0)
-        return FAILURE;
-
-    return REDIS_STRCMP_STATIC(buf, len, "OK") ? SUCCESS : FAILURE;
-}
-
 /* Append an AUTH command to a smart string if neccessary.  This will either
  * append the new style AUTH <user> <password>, old style AUTH <password>, or
  * append no command at all.  Function returns 1 if we appended a command
@@ -236,19 +225,23 @@ redis_sock_auth_cmd(RedisSock *redis_sock, int *cmdlen) {
 
 /* Send Redis AUTH and process response */
 PHP_REDIS_API int redis_sock_auth(RedisSock *redis_sock) {
-    char *cmd;
-    int cmdlen, rv = FAILURE;
+    char *cmd, inbuf[4096];
+    int cmdlen;
+    size_t len;
 
     if ((cmd = redis_sock_auth_cmd(redis_sock, &cmdlen)) == NULL)
         return SUCCESS;
 
-    if (redis_sock_write(redis_sock, cmd, cmdlen) < 0)
-        goto cleanup;
-
-    rv = redis_sock_read_ok(redis_sock) == SUCCESS ? SUCCESS : FAILURE;
-cleanup:
+    if (redis_sock_write(redis_sock, cmd, cmdlen) < 0) {
+        efree(cmd);
+        return FAILURE;
+    }
     efree(cmd);
-    return rv;
+
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 || strncmp(inbuf, "+OK", 3)) {
+        return FAILURE;
+    }
+    return SUCCESS;
 }
 
 /* Helper function and macro to test a RedisSock error prefix. */
@@ -1514,33 +1507,6 @@ redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     return 0;
-}
-
-/* Consume message ID */
-PHP_REDIS_API int
-redis_sock_read_single_line(RedisSock *redis_sock, char *buffer, size_t buflen,
-                            size_t *linelen, int set_err)
-{
-    REDIS_REPLY_TYPE type;
-    long info;
-
-    if (redis_read_reply_type(redis_sock, &type, &info) < 0 ||
-        (type != TYPE_LINE && type != TYPE_ERR))
-    {
-        return -1;
-    }
-
-    if (redis_sock_gets(redis_sock, buffer, buflen, linelen) < 0) {
-        return -1;
-    }
-
-    if (set_err && type == TYPE_ERR) {
-        if (IS_ATOMIC(redis_sock)) {
-            redis_sock_set_err(redis_sock, buffer, *linelen);
-        }
-    }
-
-    return type == TYPE_LINE ? 0 : -1;
 }
 
 static int
