@@ -32,6 +32,7 @@ PHP_METHOD(RedisArray, mset);
 PHP_METHOD(RedisArray, multi);
 PHP_METHOD(RedisArray, ping);
 PHP_METHOD(RedisArray, save);
+PHP_METHOD(RedisArray, scan);
 PHP_METHOD(RedisArray, select);
 PHP_METHOD(RedisArray, setOption);
 PHP_METHOD(RedisArray, sscan);
