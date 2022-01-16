@@ -55,6 +55,8 @@ class RedisArray {
 
     public function save(): bool|array;
 
+    public function scan(int &$iterator, string $node, ?string $pattern = null, int $count = 0): bool|array;
+
     public function select(int $index): bool|array;
 
     public function setOption(int $opt, string $value): bool|array;
