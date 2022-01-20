@@ -3064,7 +3064,7 @@ _**Description**_: Returns the rank of a given member in the specified sorted se
 *member*
 
 ##### *Return value*
-*Long*, the item's score.
+*Long*, the item's rank.
 
 ##### *Example*
 ~~~php
