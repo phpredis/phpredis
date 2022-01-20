@@ -166,6 +166,43 @@ class Redis_Array_Test extends TestSuite
         }
     }
 
+    /* Scan a whole key and return the overall result */
+    protected function execKeyScan($cmd, $key) {
+        $res = [];
+
+        $it = NULL;
+        do {
+            $chunk = $this->ra->$cmd($key, $it);
+            foreach ($chunk as $field => $value) {
+                $res[$field] = $value;
+            }
+        } while ($it !== 0);
+
+        return $res;
+    }
+
+    public function testKeyScanning() {
+        $h_vals = ['foo' => 'bar', 'baz' => 'bop'];
+        $z_vals = ['one' => 1, 'two' => 2, 'three' => 3];
+        $s_vals = ['mem1', 'mem2', 'mem3'];
+
+        $this->ra->del(['scan-hash', 'scan-set', 'scan-zset']);
+
+        $this->ra->hMSet('scan-hash', $h_vals);
+        foreach ($z_vals as $k => $v)
+            $this->ra->zAdd('scan-zset', $v, $k);
+        $this->ra->sAdd('scan-set', ...$s_vals);
+
+        $s_scan = $this->execKeyScan('sScan', 'scan-set');
+        $this->assertTrue(count(array_diff_key(array_flip($s_vals), array_flip($s_scan))) == 0);
+
+        $this->assertEquals($h_vals, $this->execKeyScan('hScan', 'scan-hash'));
+
+        $z_scan = $this->execKeyScan('zScan', 'scan-zset');
+        $this->assertTrue(count($z_scan) == count($z_vals) &&
+                          count(array_diff_key($z_vals, $z_scan)) == 0 &&
+                          array_sum($z_scan) == array_sum($z_vals));
+    }
 }
 
 class Redis_Rehashing_Test extends TestSuite
