@@ -652,8 +652,7 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
             if(memcmp(inbuf + 1, "-1", 2) == 0) {
                 return NULL;
             }
-            /* fall through */
-
+            REDIS_FALLTHROUGH;
         case '+':
         case ':':
             /* Single Line Reply */
@@ -662,6 +661,7 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
                 *buf_len = len;
                 return estrndup(inbuf, *buf_len);
             }
+            REDIS_FALLTHROUGH;
         default:
             zend_throw_exception_ex(redis_exception_ce, 0,
                 "protocol error, got '%c' as reply type byte\n",

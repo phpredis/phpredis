@@ -222,6 +222,7 @@ cluster_read_sock_resp(RedisSock *redis_sock, REDIS_REPLY_TYPE type,
                 r->str = estrndup(line_reply, len);
                 r->len = len;
             }
+            REDIS_FALLTHROUGH;
         case TYPE_ERR:
             return r;
         case TYPE_BULK:
