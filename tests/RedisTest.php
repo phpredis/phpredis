@@ -4730,6 +4730,14 @@ class Redis_Test extends TestSuite
         if (!defined('Redis::COMPRESSION_LZF')) {
             $this->markTestSkipped();
         }
+
+        /* Don't crash on improperly compressed LZF data */
+        $payload = 'not-actually-lzf-compressed';
+        $this->redis->set('badlzf', $payload);
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_LZF);
+        $this->assertEquals($payload, $this->redis->get('badlzf'));
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+
         $this->checkCompression(Redis::COMPRESSION_LZF, 0);
     }
 
