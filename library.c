@@ -3030,27 +3030,22 @@ redis_uncompress(RedisSock *redis_sock, char **dst, size_t *dstlen, const char *
         case REDIS_COMPRESSION_LZF:
 #ifdef HAVE_REDIS_LZF
             {
-                char *data;
-                int i;
+                char *data = NULL;
                 uint32_t res;
+                int i;
 
                 if (len == 0)
                     break;
 
-                /* start from two-times bigger buffer and
-                 * increase it exponentially  if needed */
+                /* Grow our buffer until we succeed or get a non E2BIG error */
                 errno = E2BIG;
                 for (i = 2; errno == E2BIG; i *= 2) {
-                    data = emalloc(i * len);
-                    if ((res = lzf_decompress(src, len, data, i * len)) == 0) {
-                        /* errno != E2BIG will brake for loop */
-                        efree(data);
-                        continue;
+                    data = erealloc(data, len * i);
+                    if ((res = lzf_decompress(src, len, data, len * i)) > 0) {
+                        *dst = data;
+                        *dstlen = res;
+                        return 1;
                     }
-
-                    *dst = data;
-                    *dstlen = res;
-                    return 1;
                 }
 
                 efree(data);
