@@ -3032,7 +3032,7 @@ redis_uncompress(RedisSock *redis_sock, char **dst, size_t *dstlen, const char *
             {
                 char *data = NULL;
                 uint32_t res;
-                int i = 2;
+                int i;
 
                 if (len == 0)
                     break;
