@@ -145,7 +145,7 @@ class RedisCluster {
 
     public function hmset(string $key, array $key_values): bool;
 
-    public function hscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): array|bool;
+    public function hscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): array|bool;
 
     public function hset(string $key, string $member, mixed $value): int;
 
@@ -251,7 +251,7 @@ class RedisCluster {
 
     public function save(string|array $key_or_address): bool;
 
-    public function scan(int &$iterator, mixed $node, ?string $pattern = null, int $count = 0): bool|array;
+    public function scan(?int &$iterator, mixed $node, ?string $pattern = null, int $count = 0): bool|array;
 
     public function scard(string $key): int;
 
@@ -293,7 +293,7 @@ class RedisCluster {
 
     public function srem(string $key, string $value, string ...$other_values): int;
 
-    public function sscan(string $key, int &$iterator, mixed $node, ?string $pattern = null, int $count = 0): bool|array;
+    public function sscan(string $key, ?int &$iterator, mixed $node, ?string $pattern = null, int $count = 0): bool|array;
 
     public function strlen(string $key): int;
 
@@ -383,7 +383,7 @@ class RedisCluster {
 
     public function zrevrank(string $key, mixed $member): int;
 
-    public function zscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
+    public function zscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
 
     public function zscore(string $key): float;
 
