@@ -201,7 +201,7 @@ class Redis {
 
     public function hVals(string $key): array;
 
-    public function hscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
+    public function hscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
 
 	/** @return int|Redis */
     public function incr(string $key);
@@ -370,7 +370,7 @@ public function persist(string $key): bool;
 
     public function save(): bool;
 
-    public function scan(int &$iterator, ?string $pattern = null, int $count = 0): array;
+    public function scan(?int &$iterator, ?string $pattern = null, int $count = 0): array;
 
     public function scard(string $key): int;
 
@@ -426,7 +426,7 @@ public function persist(string $key): bool;
 
     public function srem(string $key, string $value, string ...$other_values): int;
 
-    public function sscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): array;
+    public function sscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): array;
 
 	/** @return int|Redis */
     public function strlen(string $key);
@@ -537,7 +537,7 @@ public function persist(string $key): bool;
 
     public function zinterstore(string $dst, array $keys, array $weights = null, string $aggregate = null): int;
 
-    public function zscan(string $key, int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
+    public function zscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
 
     public function zunion(array $keys, array $weights = null, array $options = null): array;
 
