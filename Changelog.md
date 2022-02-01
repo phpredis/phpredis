@@ -5,6 +5,37 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [5.3.7RC1] - 2021-02-02 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.7RC1), [PECL](https:/pecl.php.net/package/redis/5.3.7RC1))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+### Fixed
+
+- Fix RedisArray::[hsz]scan and tests
+  [08a9d5db](https://github.com/phpredis/phpredis/commit/08a9d5db),
+  [0264de18](https://github.com/phpredis/phpredis/commit/0264de18),
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)),
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Fix RedisArray::scan
+  [8689ab1c](https://github.com/phpredis/phpredis/commit/8689ab1c)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix LZF decompression logic
+  [0719c1ec](https://github.com/phpredis/phpredis/commit/0719c1ec)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
 ## [5.3.6] - 2021-01-17 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.6), [PECL](https:/pecl.php.net/package/redis/5.3.6))
 
 ### Sponsors :sparkling_heart:
