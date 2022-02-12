@@ -27,14 +27,14 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2022-02-02</date>
+ <date>2022-02-12</date>
  <version>
-  <release>5.3.7RC1</release>
+  <release>5.3.7RC2</release>
   <api>5.3.7</api>
  </version>
  <stability>
-  <release>alpha</release>
-  <api>alpha</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
@@ -48,6 +48,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Zaher Ghaibeh - https://github.com/zaherg
     BatchLabs - https://batch.com
     Luis Zarate - https://github.com/jlzaratec
+
+    phpredis 5.3.7RC2
+
+    - There were no changes between 5.3.7RC2 and 5.3.7RC1.
 
     ---
 
