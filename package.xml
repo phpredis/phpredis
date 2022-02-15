@@ -27,14 +27,14 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2022-02-12</date>
+ <date>2022-02-15</date>
  <version>
-  <release>5.3.7RC2</release>
+  <release>5.3.7</release>
   <api>5.3.7</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
@@ -48,6 +48,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Zaher Ghaibeh - https://github.com/zaherg
     BatchLabs - https://batch.com
     Luis Zarate - https://github.com/jlzaratec
+
+    phpredis 5.3.7
+
+    - There were no changes between 5.3.7 and 5.3.7RC2.
+
+    ---
 
     phpredis 5.3.7RC2
 
@@ -137,6 +143,42 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-zstd" prompt="enable zstd compression support?" default="no"/>
  </extsrcrelease>
  <changelog>
+ <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>5.3.7</release><api>5.3.7</api></version>
+   <date>2022-02-15</date>
+   <notes>
+    --- Sponsors ---
+
+    Audiomack - https://audiomack.com
+    Open LMS - https://openlms.net
+    BlueHost - https://bluehost.com
+    Object Cache Pro for WordPress - https://objectcache.pro
+    Avtandil Kikabidze - https://github.com/akalongman
+    Zaher Ghaibeh - https://github.com/zaherg
+    BatchLabs - https://batch.com
+    Luis Zarate - https://github.com/jlzaratec
+
+    phpredis 5.3.7
+
+    - There were no changes between 5.3.7 and 5.3.7RC2.
+
+    ---
+
+    phpredis 5.3.7RC2
+
+    - There were no changes between 5.3.7RC2 and 5.3.7RC1.
+
+    ---
+
+    phpredis 5.3.7RC1
+
+    - Fix RedisArray::[hsz]scan and tests [08a9d5db, 0264de18] (Pavlo Yatsukhnenko, Michael Grunder)
+    - Fix RedisArray::scan [8689ab1c] (Pavlo Yatsukhnenko)
+    - Fix LZF decompression logic [0719c1ec] (Michael Grunder)
+
+   </notes>
+ </release>
  <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>5.3.6</release><api>5.3.6</api></version>

@@ -7,6 +7,23 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [5.3.7] - 2021-02-15 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.7), [PECL](https://pecl.php.net/package/redis/5.3.7))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+*There were no changes between 5.3.7 and 5.3.7RC2*
+
 ## [5.3.7RC2] - 2021-02-12 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.7RC2), [PECL](https://pecl.php.net/package/redis/5.3.7RC2))
 
 ### Sponsors :sparkling_heart:
