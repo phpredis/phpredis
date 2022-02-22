@@ -3863,6 +3863,51 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int redis_xautoclaim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                         char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    zend_string *key, *group, *consumer, *start;
+    zend_long min_idle_time, count = 0;
+    smart_string cmdstr = {0};
+    zend_bool just_id = 0;
+    int argc;
+
+    ZEND_PARSE_PARAMETERS_START(5, 7)
+        Z_PARAM_STR(key)
+        Z_PARAM_STR(group)
+        Z_PARAM_STR(consumer)
+        Z_PARAM_LONG(min_idle_time)
+        Z_PARAM_STR(start)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(count)
+        Z_PARAM_BOOL(just_id)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (count < 0)
+        php_error_docref(NULL, E_WARNING, "Warning:  COUNT must be > 0, ignoring");
+
+    argc = 5 + (count > 0 ? 2 : 0) + just_id;
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "XAUTOCLAIM");
+    redis_cmd_append_sstr_key(&cmdstr, ZSTR_VAL(key), ZSTR_LEN(key), redis_sock, slot);
+    redis_cmd_append_sstr_zstr(&cmdstr, group);
+    redis_cmd_append_sstr_zstr(&cmdstr, consumer);
+    redis_cmd_append_sstr_long(&cmdstr, min_idle_time);
+    redis_cmd_append_sstr_zstr(&cmdstr, start);
+
+    if (count > 0) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "COUNT");
+        redis_cmd_append_sstr_long(&cmdstr, count);
+    }
+
+    if (just_id)
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "JUSTID");
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    return SUCCESS;
+}
+
 // XPENDING key group [start end count [consumer] [idle]]
 int redis_xpending_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                        char **cmd, int *cmd_len, short *slot, void **ctx)

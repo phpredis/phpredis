@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: de74da38c8a832457554c3a0e1e042d47464e36c */
+ * Stub hash: 79df5f4e50dffaf7cdffaff305ab882acee66bb8 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -666,6 +666,16 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_xadd, 0, 0, 3)
 	ZEND_ARG_INFO(0, approx)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_xautoclaim, 0, 0, 5)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, group)
+	ZEND_ARG_INFO(0, consumer)
+	ZEND_ARG_INFO(0, min_idle_time)
+	ZEND_ARG_INFO(0, start)
+	ZEND_ARG_INFO(0, count)
+	ZEND_ARG_INFO(0, just_id)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_xclaim, 0, 0, 6)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, group)
@@ -1021,6 +1031,7 @@ ZEND_METHOD(Redis, watch);
 ZEND_METHOD(Redis, wait);
 ZEND_METHOD(Redis, xack);
 ZEND_METHOD(Redis, xadd);
+ZEND_METHOD(Redis, xautoclaim);
 ZEND_METHOD(Redis, xclaim);
 ZEND_METHOD(Redis, xdel);
 ZEND_METHOD(Redis, xgroup);
@@ -1248,6 +1259,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, wait, arginfo_class_Redis_wait, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xack, arginfo_class_Redis_xack, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xadd, arginfo_class_Redis_xadd, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, xautoclaim, arginfo_class_Redis_xautoclaim, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xclaim, arginfo_class_Redis_xclaim, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xdel, arginfo_class_Redis_xdel, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, xgroup, arginfo_class_Redis_xgroup, ZEND_ACC_PUBLIC)

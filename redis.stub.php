@@ -463,6 +463,8 @@ public function persist(string $key): bool;
 
     public function xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false): string;
 
+    public function xautoclaim(string $key, string $group, string $consumer, int $min_idle_time, string $start, int $count = 0, bool $just_id = false): array|Redis|bool;
+
     public function xclaim(string $key, string $group, string $consumer, int $min_iddle, array $ids, array $options): string|array;
 
     public function xdel(string $key, array $ids): int;
