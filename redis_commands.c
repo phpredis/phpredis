@@ -3810,15 +3810,16 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zend_string *arrkey;
     zval *z_fields, *value;
     zend_long maxlen = 0;
-    zend_bool approx = 0;
+    zend_bool approx = 0, nomkstream = 0;
     zend_ulong idx;
     HashTable *ht_fields;
     int fcount, argc;
     char *key, *id;
     size_t keylen, idlen;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssa|lb", &key, &keylen,
-                              &id, &idlen, &z_fields, &maxlen, &approx) == FAILURE)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssa|lbb", &key, &keylen,
+                              &id, &idlen, &z_fields, &maxlen, &approx,
+                              &nomkstream) == FAILURE)
     {
         return FAILURE;
     }
@@ -3838,11 +3839,15 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     /* Calculate argc for XADD.  It's a bit complex because we've got
      * an optional MAXLEN argument which can either take the form MAXLEN N
      * or MAXLEN ~ N */
-    argc = 2 + (fcount*2) + (maxlen > 0 ? (approx ? 3 : 2) : 0);
+    argc = 2 + nomkstream + (fcount * 2) + (maxlen > 0 ? (approx ? 3 : 2) : 0);
 
     /* XADD key ID field string [field string ...] */
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "XADD");
     redis_cmd_append_sstr_key(&cmdstr, key, keylen, redis_sock, slot);
+
+    if (nomkstream) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "NOMKSTREAM");
+    }
 
     /* Now append our MAXLEN bits if we've got them */
     if (maxlen > 0) {

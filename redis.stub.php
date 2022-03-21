@@ -461,7 +461,7 @@ public function persist(string $key): bool;
 
     public function xack(string $key, string $group, array $ids): int;
 
-    public function xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false): string;
+    public function xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false, bool $nomkstream = false): string;
 
     public function xclaim(string $key, string $group, string $consumer, int $min_iddle, array $ids, array $options): string|array;
 
