@@ -463,7 +463,9 @@ public function persist(string $key): bool;
 
     public function xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false, bool $nomkstream = false): string;
 
-    public function xclaim(string $key, string $group, string $consumer, int $min_iddle, array $ids, array $options): string|array;
+    public function xautoclaim(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false): bool|array;
+
+    public function xclaim(string $key, string $group, string $consumer, int $min_idle, array $ids, array $options): bool|array;
 
     public function xdel(string $key, array $ids): int;
 
