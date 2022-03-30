@@ -4305,6 +4305,49 @@ static void append_xclaim_options(smart_string *cmd, xclaimOptions *opt) {
         REDIS_CMD_APPEND_SSTR_STATIC(cmd, "JUSTID");
 }
 
+
+int
+redis_xautoclaim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    smart_string cmdstr = {0};
+    char *key, *group, *consumer, *start;
+    size_t keylen, grouplen, consumerlen, startlen;
+    zend_long min_idle, count = -1;
+    zend_bool justid = 0;
+    int argc;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sssls|lb", &key, &keylen,
+                              &group, &grouplen, &consumer, &consumerlen,
+                              &min_idle, &start, &startlen, &count, &justid
+                              ) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    argc = 5 + (count > 0 ? 1 + count : 0) + justid;
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "XAUTOCLAIM");
+    redis_cmd_append_sstr_key(&cmdstr, key, keylen, redis_sock, slot);
+    redis_cmd_append_sstr(&cmdstr, group, grouplen);
+    redis_cmd_append_sstr(&cmdstr, consumer, consumerlen);
+    redis_cmd_append_sstr_long(&cmdstr, min_idle);
+    redis_cmd_append_sstr(&cmdstr, start, startlen);
+
+    if (count > 0) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "COUNT");
+        redis_cmd_append_sstr_long(&cmdstr, count);
+    }
+
+    if (justid) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "JUSTID");
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+	return SUCCESS;
+}
+
 /* XCLAIM <key> <group> <consumer> <min-idle-time> <ID-1> <ID-2>
           [IDLE <milliseconds>] [TIME <mstime>] [RETRYCOUNT <count>]
           [FORCE] [JUSTID] */

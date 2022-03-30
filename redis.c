@@ -3618,6 +3618,10 @@ PHP_METHOD(Redis, xadd) {
     REDIS_PROCESS_CMD(xadd, redis_read_variant_reply);
 }
 
+PHP_METHOD(Redis, xautoclaim) {
+    REDIS_PROCESS_CMD(xautoclaim, redis_xclaim_reply);
+}
+
 PHP_METHOD(Redis, xclaim) {
     REDIS_PROCESS_CMD(xclaim, redis_xclaim_reply);
 }
