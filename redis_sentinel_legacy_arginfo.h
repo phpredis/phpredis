@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 9a7a43f9bee2da879c1419d203ddfd12e6052e25 */
+ * Stub hash: deae7b4a55435fb2ab39f314544064a34c56d218 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, host)
@@ -8,6 +8,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, persistent)
 	ZEND_ARG_INFO(0, retry_interval)
 	ZEND_ARG_INFO(0, read_timeout)
+	ZEND_ARG_INFO(0, auth)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel_ckquorum, 0, 0, 1)
