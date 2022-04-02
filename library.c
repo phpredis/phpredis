@@ -2340,7 +2340,10 @@ redis_sock_check_liveness(RedisSock *redis_sock)
     }
 
     /* check echo response */
-    if (*inbuf != TYPE_BULK || atoi(inbuf + 1) != idlen ||
+    if ((redis_sock->sentinel && (
+        strncmp(inbuf, "-ERR unknown command", 20) != 0 ||
+        strstr(inbuf, id) == NULL
+    )) || *inbuf != TYPE_BULK || atoi(inbuf + 1) != idlen ||
         redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 ||
         strncmp(inbuf, id, idlen) != 0
     ) {

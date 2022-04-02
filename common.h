@@ -332,6 +332,7 @@ typedef struct {
     int                 reply_literal;
     int                 null_mbulk_as_null;
     int                 tcp_keepalive;
+    int                 sentinel;
 } RedisSock;
 /* }}} */
 
