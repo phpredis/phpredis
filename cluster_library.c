@@ -1161,7 +1161,7 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
     CLUSTER_CLEAR_ERROR(c);
     CLUSTER_CLEAR_REPLY(c);
 
-    if (-1 == redis_check_eof(c->cmd_sock, 1) ||
+    if (-1 == redis_check_eof(c->cmd_sock, 1, 1) ||
        EOF == (*reply_type = php_stream_getc(c->cmd_sock->stream)))
     {
         return -1;

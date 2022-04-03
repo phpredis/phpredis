@@ -287,7 +287,7 @@ redis_error_throw(RedisSock *redis_sock)
 }
 
 PHP_REDIS_API int
-redis_check_eof(RedisSock *redis_sock, int no_throw)
+redis_check_eof(RedisSock *redis_sock, zend_bool no_retry, zend_bool no_throw)
 {
     unsigned int retry_index;
     char *errmsg;
@@ -322,7 +322,7 @@ redis_check_eof(RedisSock *redis_sock, int no_throw)
     } else {
         errmsg = "Connection lost";
         redis_backoff_reset(&redis_sock->backoff);
-        for (retry_index = 0; retry_index < redis_sock->max_retries; ++retry_index) {
+        for (retry_index = 0; !no_retry && retry_index < redis_sock->max_retries; ++retry_index) {
             /* close existing stream before reconnecting */
             if (redis_sock->stream) {
                 redis_sock_disconnect(redis_sock, 1);
@@ -592,7 +592,7 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
     char *reply;
     size_t got;
 
-    if (-1 == bytes || -1 == redis_check_eof(redis_sock, 0)) {
+    if (-1 == bytes || -1 == redis_check_eof(redis_sock, 1, 0)) {
         return NULL;
     }
 
@@ -2865,7 +2865,7 @@ failure:
 PHP_REDIS_API int
 redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz)
 {
-    if (redis_check_eof(redis_sock, 0) == 0 &&
+    if (redis_check_eof(redis_sock, 0, 0) == 0 &&
         php_stream_write(redis_sock->stream, cmd, sz) == sz
     ) {
         return sz;
@@ -3343,7 +3343,7 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size,
                 size_t *line_size)
 {
     // Handle EOF
-    if(-1 == redis_check_eof(redis_sock, 0)) {
+    if(-1 == redis_check_eof(redis_sock, 1, 0)) {
         return -1;
     }
 
@@ -3376,7 +3376,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
                       long *reply_info)
 {
     // Make sure we haven't lost the connection, even trying to reconnect
-    if(-1 == redis_check_eof(redis_sock, 0)) {
+    if(-1 == redis_check_eof(redis_sock, 1, 0)) {
         // Failure
         *reply_type = EOF;
         return -1;
