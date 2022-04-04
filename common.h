@@ -210,12 +210,6 @@ typedef enum {
     REDIS_PROCESS_RESPONSE_CLOSURE(function, NULL) \
 }
 
-/* Clear redirection info */
-#define REDIS_MOVED_CLEAR(redis_sock) \
-    redis_sock->redir_slot = 0; \
-    redis_sock->redir_port = 0; \
-    redis_sock->redir_type = MOVED_NONE; \
-
 /* Process a command assuming our command where our command building
  * function is redis_<cmdname>_cmd */
 #define REDIS_PROCESS_CMD(cmdname, resp_func) \
@@ -263,21 +257,6 @@ typedef enum {
 /* Case insensitive compare of a zend_string to a static string */
 #define ZSTR_STRICMP_STATIC(zs, sstr) \
     REDIS_STRICMP_STATIC(ZSTR_VAL(zs), ZSTR_LEN(zs), sstr)
-
-/* Extended SET argument detection */
-#define ZSTR_IS_EX_ARG(zs) ZSTR_STRICMP_STATIC(zs, "EX")
-#define ZSTR_IS_PX_ARG(zs) ZSTR_STRICMP_STATIC(zs, "PX")
-#define ZSTR_IS_NX_ARG(zs) ZSTR_STRICMP_STATIC(zs, "NX")
-#define ZSTR_IS_XX_ARG(zs) ZSTR_STRICMP_STATIC(zs, "XX")
-
-#define ZVAL_IS_NX_XX_ARG(zv) (ZVAL_STRICMP_STATIC(zv, "NX") || ZVAL_STRICMP_STATIC(zv, "XX"))
-#define ZSTR_IS_EX_PX_ARG(a) (ZSTR_IS_EX_ARG(a) || ZSTR_IS_PX_ARG(a))
-
-/* Given a string and length, validate a zRangeByLex argument.  The semantics
- * here are that the argument must start with '(' or '[' or be just the char
- * '+' or '-' */
-#define IS_LEX_ARG(s,l) \
-    (l>0 && (*s=='(' || *s=='[' || (l==1 && (*s=='+' || *s=='-'))))
 
 #define REDIS_ENABLE_MODE(redis_sock, m) (redis_sock->mode |= m)
 #define REDIS_DISABLE_MODE(redis_sock, m) (redis_sock->mode &= ~m)

@@ -1575,7 +1575,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ZEND_HASH_FOREACH_STR_KEY_VAL(kt, zkey, v) {
             ZVAL_DEREF(v);
             /* Detect PX or EX argument and validate timeout */
-            if (zkey && ZSTR_IS_EX_PX_ARG(zkey)) {
+            if (zkey && (ZSTR_STRICMP_STATIC(zkey, "EX") || ZSTR_STRICMP_STATIC(zkey, "PX"))) {
                 exp_set = 1;
 
                 /* Set expire type */
@@ -1592,7 +1592,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     keep_ttl  = 1;
                 } else if (ZVAL_STRICMP_STATIC((v), "GET")) {
                     get = 1;
-                } else if (ZVAL_IS_NX_XX_ARG(v)) {
+                } else if (ZVAL_STRICMP_STATIC(v, "NX") || ZVAL_STRICMP_STATIC(v, "XX")) {
                     set_type = Z_STRVAL_P(v);
                 }
             }
@@ -2886,7 +2886,7 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         zval *z_opt;
         ZEND_HASH_FOREACH_VAL(Z_ARRVAL(z_args[1]), z_opt) {
             if (Z_TYPE_P(z_opt) == IS_STRING) {
-                if (ZVAL_IS_NX_XX_ARG(z_opt)) {
+                if (ZVAL_STRICMP_STATIC(z_opt, "NX") || ZVAL_STRICMP_STATIC(z_opt, "XX")) {
                     exp_type = Z_STRVAL_P(z_opt);
                 } else if (ZVAL_STRICMP_STATIC(z_opt, "LT") || ZVAL_STRICMP_STATIC(z_opt, "GT")) {
                     range_type = Z_STRVAL_P(z_opt);
