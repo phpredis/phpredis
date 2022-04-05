@@ -37,6 +37,7 @@
 
 
 void redis_register_persistent_resource(zend_string *id, void *ptr, int le_id);
+void free_reply_callbacks(RedisSock *redis_sock);
 
 PHP_REDIS_API int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass);
 

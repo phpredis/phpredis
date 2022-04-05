@@ -2527,8 +2527,9 @@ redis_sock_disconnect(RedisSock *redis_sock, int force)
             if (INI_INT("redis.pconnect.pooling_enabled")) {
                 p = redis_sock_get_connection_pool(redis_sock);
             }
-            if (force) {
+            if (force || !IS_ATOMIC(redis_sock)) {
                 php_stream_pclose(redis_sock->stream);
+                free_reply_callbacks(redis_sock);
                 if (p) p->nb_active--;
             } else if (p) {
                 zend_llist_prepend_element(&p->list, &redis_sock->stream);
@@ -2876,6 +2877,19 @@ redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz)
     return -1;
 }
 
+void
+free_reply_callbacks(RedisSock *redis_sock)
+{
+    fold_item *fi;
+
+    while (redis_sock->head != NULL) {
+        fi = redis_sock->head->next;
+        free(redis_sock->head);
+        redis_sock->head = fi;
+    }
+    redis_sock->current = NULL;
+}
+
 /**
  * redis_free_socket
  */
@@ -2897,6 +2911,7 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
         zend_string_release(redis_sock->host);
     }
     redis_sock_free_auth(redis_sock);
+    free_reply_callbacks(redis_sock);
     efree(redis_sock);
 }
 
