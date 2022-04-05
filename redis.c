@@ -188,20 +188,6 @@ redis_send_discard(RedisSock *redis_sock)
     return result;
 }
 
-static void
-free_reply_callbacks(RedisSock *redis_sock)
-{
-    fold_item *fi;
-
-    for (fi = redis_sock->head; fi; ) {
-        fold_item *fi_next = fi->next;
-        free(fi);
-        fi = fi_next;
-    }
-    redis_sock->head = NULL;
-    redis_sock->current = NULL;
-}
-
 /* Passthru for destroying cluster cache */
 static void cluster_cache_dtor(zend_resource *rsrc) {
     if (rsrc->ptr) {
@@ -2228,7 +2214,6 @@ PHP_METHOD(Redis, multi)
 
         /* Enable PIPELINE if we're not already in one */
         if (IS_ATOMIC(redis_sock)) {
-            free_reply_callbacks(redis_sock);
             REDIS_ENABLE_MODE(redis_sock, PIPELINE);
         }
     } else if (multi_value == MULTI) {
@@ -2467,7 +2452,6 @@ PHP_METHOD(Redis, pipeline)
         /* NB : we keep the function fold, to detect the last function.
          * We need the response format of the n - 1 command. So, we can delete
          * when n > 2, the { 1 .. n - 2} commands */
-        free_reply_callbacks(redis_sock);
         REDIS_ENABLE_MODE(redis_sock, PIPELINE);
     }
 
