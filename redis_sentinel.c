@@ -87,6 +87,7 @@ PHP_METHOD(RedisSentinel, __construct)
     if (auth) {
         redis_sock_set_auth_zval(obj->sock, auth);
     }
+    obj->sock->sentinel = 1;
 }
 
 PHP_METHOD(RedisSentinel, ckquorum)
