@@ -131,10 +131,24 @@ redis_build_script_cmd(smart_string *cmd, int argc, zval *z_args)
         return NULL;
     }
     // Branch based on the directive
-    if (!strcasecmp(Z_STRVAL(z_args[0]), "flush") || !strcasecmp(Z_STRVAL(z_args[0]), "kill")) {
-        // Simple SCRIPT FLUSH, or SCRIPT_KILL command
+    if (!strcasecmp(Z_STRVAL(z_args[0]), "kill")) {
+        // Simple SCRIPT_KILL command
         REDIS_CMD_INIT_SSTR_STATIC(cmd, argc, "SCRIPT");
-        redis_cmd_append_sstr(cmd, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
+        redis_cmd_append_sstr(cmd, "KILL", sizeof("KILL") - 1);
+    } else if (!strcasecmp(Z_STRVAL(z_args[0]), "flush")) {
+        // Simple SCRIPT FLUSH [ASYNC | SYNC]
+        if (argc > 1 && (
+            Z_TYPE(z_args[1]) != IS_STRING ||
+            strcasecmp(Z_STRVAL(z_args[1]), "sync") ||
+            strcasecmp(Z_STRVAL(z_args[1]), "async")
+        )) {
+            return NULL;
+        }
+        REDIS_CMD_INIT_SSTR_STATIC(cmd, argc, "SCRIPT");
+        redis_cmd_append_sstr(cmd, "FLUSH", sizeof("FLUSH") - 1);
+        if (argc > 1) {
+            redis_cmd_append_sstr(cmd, Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1]));
+        }
     } else if (!strcasecmp(Z_STRVAL(z_args[0]), "load")) {
         // Make sure we have a second argument, and it's not empty.  If it is
         // empty, we can just return an empty array (which is what Redis does)
@@ -436,16 +450,18 @@ int redis_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_flush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    zend_bool async = 0;
+    zend_bool sync = -1;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "|b", &async) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "|b", &sync) == FAILURE) {
         return FAILURE;
     }
 
-    if (async) {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "s", "ASYNC", sizeof("ASYNC") - 1);
-    } else {
+    if (sync < 0) {
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "");
+    } else if (sync > 0) {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "s", "SYNC", sizeof("SYNC") - 1);
+    } else {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "s", "ASYNC", sizeof("ASYNC") - 1);
     }
 
     return SUCCESS;
