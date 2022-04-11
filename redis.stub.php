@@ -193,6 +193,8 @@ class Redis {
 
     public function hMset(string $key, array $keyvals): bool;
 
+    public function hRandField(string $key, array $options = null): string|array;
+
     public function hSet(string $key, string $member, string $value): int;
 
     public function hSetNx(string $key, string $member, string $value): int;
