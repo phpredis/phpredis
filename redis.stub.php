@@ -117,9 +117,9 @@ class Redis {
 
     public function expireAt(string $key, int $timestamp): bool;
 
-    public function flushAll(bool $async = false): bool;
+    public function flushAll(?bool $sync = null): bool;
 
-    public function flushDB(bool $async = false): bool;
+    public function flushDB(?bool $sync = null): bool;
 
     public function geoadd(string $key, float $lng, float $lat, string $member, mixed ...$other_triples): int;
 
