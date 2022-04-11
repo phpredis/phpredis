@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 0475243df03f4f3d6e568fa9ae164073dadc930d */
+ * Stub hash: 4b894d8f0c04d6c25398e5dc399598d0ede4ed05 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -487,6 +487,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_rename, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_renameNx arginfo_class_Redis_rename
+
+#define arginfo_class_Redis_reset arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_restore, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
@@ -982,6 +984,7 @@ ZEND_METHOD(Redis, randomKey);
 ZEND_METHOD(Redis, rawcommand);
 ZEND_METHOD(Redis, rename);
 ZEND_METHOD(Redis, renameNx);
+ZEND_METHOD(Redis, reset);
 ZEND_METHOD(Redis, restore);
 ZEND_METHOD(Redis, role);
 ZEND_METHOD(Redis, rpoplpush);
@@ -1210,6 +1213,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, rawcommand, arginfo_class_Redis_rawcommand, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, rename, arginfo_class_Redis_rename, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, renameNx, arginfo_class_Redis_renameNx, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, reset, arginfo_class_Redis_reset, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, restore, arginfo_class_Redis_restore, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, role, arginfo_class_Redis_role, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, rpoplpush, arginfo_class_Redis_rpoplpush, ZEND_ACC_PUBLIC)

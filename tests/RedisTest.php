@@ -6847,6 +6847,19 @@ class Redis_Test extends TestSuite
         }
     }
 
+    public function testReset()
+    {
+        // Only available since 6.2.0
+        if (version_compare($this->version, '6.2.0') < 0) {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $this->assertTrue($this->redis->multi()->select(2)->set('foo', 'bar')->reset());
+        $this->assertEquals(Redis::ATOMIC, $this->redis->getMode());
+        $this->assertEquals(0, $this->redis->getDBNum());
+    }
+
     public function testCopy()
     {
         // Only available since 6.2.0
