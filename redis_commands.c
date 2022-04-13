@@ -649,6 +649,7 @@ redis_zrandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     smart_string cmdstr = {0};
     zend_bool withscores = 0;
     zval *z_opts = NULL, *z_ele;
+    zend_string *zkey;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|a",
                               &key, &key_len, &z_opts) == FAILURE)
@@ -656,14 +657,15 @@ redis_zrandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
-        zend_string *zkey;
+    if (z_opts != NULL) {
         ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey, z_ele) {
-            ZVAL_DEREF(z_ele);
-            if (zend_string_equals_literal_ci(zkey, "count")) {
-                count = zval_get_long(z_ele);
-            } else if (zend_string_equals_literal_ci(zkey, "withscores")) {
-                withscores = zval_is_true(z_ele);
+            if (zkey != NULL) {
+                ZVAL_DEREF(z_ele);
+                if (zend_string_equals_literal_ci(zkey, "count")) {
+                    count = zval_get_long(z_ele);
+                } else if (zend_string_equals_literal_ci(zkey, "withscores")) {
+                    withscores = zval_is_true(z_ele);
+                }
             }
         } ZEND_HASH_FOREACH_END();
     }
@@ -695,6 +697,7 @@ redis_zdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     smart_string cmdstr = {0};
     zval *z_keys, *z_opts = NULL, *z_ele;
     zend_bool withscores = 0;
+    zend_string *zkey;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a|a",
                               &z_keys, &z_opts) == FAILURE)
@@ -706,8 +709,7 @@ redis_zdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
-        zend_string *zkey;
+    if (z_opts != NULL) {
         ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey, z_ele) {
             if (zkey != NULL) {
                 ZVAL_DEREF(z_ele);
@@ -780,7 +782,7 @@ redis_zinterunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     int numkeys;
     smart_string cmdstr = {0};
     zval *z_keys, *z_weights = NULL, *z_opts = NULL, *z_ele;
-    zend_string *aggregate = NULL;
+    zend_string *aggregate = NULL, *zkey;
     zend_bool withscores = 0;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a|a!a",
@@ -801,8 +803,7 @@ redis_zinterunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         }
     }
 
-    if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
-        zend_string *zkey;
+    if (z_opts != NULL) {
         ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey, z_ele) {
             if (zkey != NULL) {
                 ZVAL_DEREF(z_ele);
@@ -2558,6 +2559,7 @@ redis_hrandfield_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     smart_string cmdstr = {0};
     zend_bool withvalues = 0;
     zval *z_opts = NULL, *z_ele;
+    zend_string *zkey;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|a",
                               &key, &key_len, &z_opts) == FAILURE)
@@ -2565,14 +2567,15 @@ redis_hrandfield_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
-        zend_string *zkey;
+    if (z_opts != NULL) {
         ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey, z_ele) {
-            ZVAL_DEREF(z_ele);
-            if (zend_string_equals_literal_ci(zkey, "count")) {
-                count = zval_get_long(z_ele);
-            } else if (zend_string_equals_literal_ci(zkey, "withvalues")) {
-                withvalues = zval_is_true(z_ele);
+            if (zkey != NULL) {
+                ZVAL_DEREF(z_ele);
+                if (zend_string_equals_literal_ci(zkey, "count")) {
+                    count = zval_get_long(z_ele);
+                } else if (zend_string_equals_literal_ci(zkey, "withvalues")) {
+                    withvalues = zval_is_true(z_ele);
+                }
             }
         } ZEND_HASH_FOREACH_END();
     }
@@ -3379,7 +3382,7 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Attempt to parse our options array */
-    if (opts != NULL && Z_TYPE_P(opts) == IS_ARRAY) {
+    if (opts != NULL) {
         ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(opts), zkey, z_ele) {
             ZVAL_DEREF(z_ele);
             if (zkey != NULL) {
@@ -3502,7 +3505,7 @@ redis_geosearchstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Attempt to parse our options array */
-    if (opts != NULL && Z_TYPE_P(opts) == IS_ARRAY) {
+    if (opts != NULL) {
         ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(opts), zkey, z_ele) {
             ZVAL_DEREF(z_ele);
             if (zkey != NULL) {
@@ -3824,7 +3827,8 @@ redis_copy_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     size_t src_len, dst_len;
     zend_long db = -1;
     zend_bool replace = 0;
-    zval *opts = NULL;
+    zval *opts = NULL, *z_ele;
+    zend_string *zkey;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss|a",
                               &src, &src_len, &dst, &dst_len, &opts) == FAILURE)
@@ -3832,9 +3836,7 @@ redis_copy_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    if (opts != NULL && Z_TYPE_P(opts) == IS_ARRAY) {
-        zend_string *zkey;
-        zval *z_ele;
+    if (opts != NULL) {
         ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(opts), zkey, z_ele) {
             if (zkey != NULL) {
                 ZVAL_DEREF(z_ele);

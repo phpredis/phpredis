@@ -1278,8 +1278,11 @@ redis_zrandmember_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
         return redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
     } else if (ctx == PHPREDIS_CTX_PTR) {
         return redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR + 1) {
+        return redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else {
+        ZEND_ASSERT(!"memory corruption?");
     }
-    return redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
 }
 
 PHP_REDIS_API int
@@ -1287,8 +1290,11 @@ redis_zdiff_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *
 {
     if (ctx == NULL) {
         return redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR) {
+        return redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else {
+        ZEND_ASSERT(!"memory corruption?");
     }
-    return redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
 }
 
 PHP_REDIS_API int
@@ -1296,8 +1302,11 @@ redis_set_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_
 {
     if (ctx == NULL) {
         return redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR) {
+        return redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else {
+        ZEND_ASSERT(!"memory corruption?");
     }
-    return redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
 }
 
 PHP_REDIS_API int
@@ -1307,8 +1316,11 @@ redis_hrandfield_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, z
         return redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
     } else if (ctx == PHPREDIS_CTX_PTR) {
         return redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR + 1) {
+        return redis_mbulk_reply_zipped_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else {
+        ZEND_ASSERT(!"memory corruption?");
     }
-    return redis_mbulk_reply_zipped_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
 }
 
 PHP_REDIS_API int
