@@ -450,7 +450,7 @@ int redis_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_flush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    zend_bool sync = -1;
+    int sync = -1;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "|b", &sync) == FAILURE) {
         return FAILURE;
@@ -549,10 +549,12 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (z_ws) {
         if (Z_TYPE_P(z_ws) == IS_ARRAY) {
             ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_ws), zkey, z_ele) {
-                ZVAL_DEREF(z_ele);
-                if (zend_string_equals_literal_ci(zkey, "withscores")) {
-                    *withscores = zval_is_true(z_ele);
-                    break;
+                if (zkey != NULL) {
+                    ZVAL_DEREF(z_ele);
+                    if (zend_string_equals_literal_ci(zkey, "withscores")) {
+                        *withscores = zval_is_true(z_ele);
+                        break;
+                    }
                 }
             } ZEND_HASH_FOREACH_END();
         } else if (Z_TYPE_P(z_ws) == IS_TRUE) {
@@ -4024,15 +4026,12 @@ append_stream_args(smart_string *cmdstr, HashTable *ht, RedisSock *redis_sock,
     char *kptr, kbuf[40];
     int klen, i, pos = 0;
     zend_string *key, *idstr;
-    short oldslot;
+    short oldslot = -1;
     zval **id;
     zend_ulong idx;
 
     /* Append STREAM qualifier */
     REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "STREAMS");
-
-    /* Sentinel slot */
-    if (slot) oldslot = -1;
 
     /* Allocate memory to keep IDs */
     id = emalloc(sizeof(*id) * zend_hash_num_elements(ht));
