@@ -2219,6 +2219,14 @@ PHP_METHOD(Redis, hMset)
 }
 /* }}} */
 
+/* {{{ proto bool Redis::hRandField(string key, [array $options]) */
+PHP_METHOD(Redis, hRandField)
+{
+    REDIS_PROCESS_CMD(hrandfield, redis_hrandfield_response);
+}
+/* }}} */
+
+
 /* {{{ proto long Redis::hstrlen(string key, string field) */
 PHP_METHOD(Redis, hStrLen) {
     REDIS_PROCESS_CMD(hstrlen, redis_long_response);

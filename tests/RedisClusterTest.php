@@ -61,6 +61,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testCopy() { return $this->marktestSkipped(); }
     public function testGeoSearch() { return $this->marktestSkipped(); }
     public function testGeoSearchStore() { return $this->marktestSkipped(); }
+    public function testHRandField() { return $this->marktestSkipped(); }
 
     /* Session locking feature is currently not supported in in context of Redis Cluster.
        The biggest issue for this is the distribution nature of Redis cluster */

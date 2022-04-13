@@ -2548,6 +2548,54 @@ int redis_hsetnx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         cmd, cmd_len, slot);
 }
 
+int
+redis_hrandfield_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key;
+    int count = 0;
+    size_t key_len;
+    smart_string cmdstr = {0};
+    zend_bool withvalues = 0;
+    zval *z_opts = NULL, *z_ele;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|a",
+                              &key, &key_len, &z_opts) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
+        zend_string *zkey;
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey, z_ele) {
+            ZVAL_DEREF(z_ele);
+            if (zend_string_equals_literal_ci(zkey, "count")) {
+                count = zval_get_long(z_ele);
+            } else if (zend_string_equals_literal_ci(zkey, "withvalues")) {
+                withvalues = zval_is_true(z_ele);
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + (count != 0) + withvalues, "HRANDFIELD");
+    redis_cmd_append_sstr_key(&cmdstr, key, key_len, redis_sock, slot);
+
+    if (count != 0) {
+        redis_cmd_append_sstr_long(&cmdstr, count);
+        *ctx = PHPREDIS_CTX_PTR;
+    }
+
+    if (withvalues) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WITHVALUES");
+        *ctx = PHPREDIS_CTX_PTR + 1;
+    }
+
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    return SUCCESS;
+}
+
 /* SRANDMEMBER */
 int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                           char **cmd, int *cmd_len, short *slot, void **ctx,
@@ -3299,7 +3347,6 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     char *key, *unit;
     int argc = 2;
-    short store_slot = 0;
     size_t keylen, unitlen;
     geoOptions gopts = {0};
     smart_string cmdstr = {0};
@@ -3423,7 +3470,6 @@ redis_geosearchstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     int argc = 3;
     char *dest, *src, *unit;
-    short store_slot = 0;
     size_t destlen, srclen, unitlen;
     geoOptions gopts = {0};
     smart_string cmdstr = {0};

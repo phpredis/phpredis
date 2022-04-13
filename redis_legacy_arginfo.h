@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 4b894d8f0c04d6c25398e5dc399598d0ede4ed05 */
+ * Stub hash: 452d7bafe0b4a9d6d67353613d9cde2d407aa2a2 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -304,6 +304,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hMset, 0, 0, 2)
 	ZEND_ARG_INFO(0, keyvals)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hRandField, 0, 0, 1)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
+
 #define arginfo_class_Redis_hSet arginfo_class_Redis_hIncrBy
 
 #define arginfo_class_Redis_hSetNx arginfo_class_Redis_hIncrBy
@@ -602,10 +607,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_slowlog, 0, 0, 1)
 	ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_sort, 0, 0, 1)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, options)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_sort arginfo_class_Redis_hRandField
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_sortAsc, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
@@ -800,7 +802,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zRangeByScore, 0, 0, 3)
 	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_zRandMember arginfo_class_Redis_sort
+#define arginfo_class_Redis_zRandMember arginfo_class_Redis_hRandField
 
 #define arginfo_class_Redis_zRank arginfo_class_Redis_hExists
 
@@ -932,6 +934,7 @@ ZEND_METHOD(Redis, hKeys);
 ZEND_METHOD(Redis, hLen);
 ZEND_METHOD(Redis, hMget);
 ZEND_METHOD(Redis, hMset);
+ZEND_METHOD(Redis, hRandField);
 ZEND_METHOD(Redis, hSet);
 ZEND_METHOD(Redis, hSetNx);
 ZEND_METHOD(Redis, hStrLen);
@@ -1159,6 +1162,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, hLen, arginfo_class_Redis_hLen, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hMget, arginfo_class_Redis_hMget, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hMset, arginfo_class_Redis_hMset, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, hRandField, arginfo_class_Redis_hRandField, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hSet, arginfo_class_Redis_hSet, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hSetNx, arginfo_class_Redis_hSetNx, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hStrLen, arginfo_class_Redis_hStrLen, ZEND_ACC_PUBLIC)

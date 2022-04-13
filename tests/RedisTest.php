@@ -2846,6 +2846,25 @@ class Redis_Test extends TestSuite
 	}
     }
 
+    public function testHRandField()
+    {
+        if (version_compare($this->version, "6.2.0") < 0) {
+            $this->MarkTestSkipped();
+            return;
+        }
+        $this->redis->del('key');
+        $this->redis->hMSet('key', ['a' => 0, 'b' => 1, 'c' => 'foo', 'd' => 'bar', 'e' => null]);
+        $this->assertInArray($this->redis->hRandField('key'), ['a', 'b', 'c', 'd', 'e']);
+
+        $result = $this->redis->hRandField('key', ['count' => 3]);
+        $this->assertEquals(3, count($result));
+        $this->assertEquals(array_intersect($result, ['a', 'b', 'c', 'd', 'e']), $result);
+
+        $result = $this->redis->hRandField('key', ['count' => 2, 'withvalues' => true]);
+        $this->assertEquals(2, count($result));
+        $this->assertEquals(array_intersect_key($result, ['a' => 0, 'b' => 1, 'c' => 'foo', 'd' => 'bar', 'e' => null]), $result);
+    }
+
     public function testSetRange() {
 
         $this->redis->del('key');
