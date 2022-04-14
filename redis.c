@@ -606,6 +606,9 @@ PHP_METHOD(Redis, __construct)
         redis->sock = redis_sock_create("127.0.0.1", 0, 6379, 0, 0, 0, NULL, 0);
 
         ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(opts), zkey, val) {
+            if (zkey == NULL) {
+                continue;
+            }
             ZVAL_DEREF(val);
             if (zend_string_equals_literal_ci(zkey, "host")) {
                 if (Z_TYPE_P(val) != IS_STRING) {

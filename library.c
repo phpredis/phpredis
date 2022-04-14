@@ -2581,7 +2581,9 @@ redis_sock_set_stream_context(RedisSock *redis_sock, zval *options)
         redis_sock->stream_ctx = php_stream_context_alloc();
 
     ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(options), zkey, z_ele) {
-        php_stream_context_set_option(redis_sock->stream_ctx, "ssl", ZSTR_VAL(zkey), z_ele);
+        if (zkey != NULL) {
+            php_stream_context_set_option(redis_sock->stream_ctx, "ssl", ZSTR_VAL(zkey), z_ele);
+        }
     } ZEND_HASH_FOREACH_END();
 
     return SUCCESS;
