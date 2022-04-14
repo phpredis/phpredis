@@ -1594,7 +1594,11 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ZEND_HASH_FOREACH_STR_KEY_VAL(kt, zkey, v) {
             ZVAL_DEREF(v);
             /* Detect PX or EX argument and validate timeout */
-            if (zkey && (ZSTR_STRICMP_STATIC(zkey, "EX") || ZSTR_STRICMP_STATIC(zkey, "PX"))) {
+            if (zkey && (ZSTR_STRICMP_STATIC(zkey, "EX") ||
+                         ZSTR_STRICMP_STATIC(zkey, "PX") ||
+                         ZSTR_STRICMP_STATIC(zkey, "EXAT") ||
+                         ZSTR_STRICMP_STATIC(zkey, "PXAT"))
+            ) {
                 exp_set = 1;
 
                 /* Set expire type */
