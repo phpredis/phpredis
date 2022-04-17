@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 452d7bafe0b4a9d6d67353613d9cde2d407aa2a2 */
+ * Stub hash: 8ad4d58327d1b0b07b0dbec026b27ed6a594b8b9 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -243,7 +243,14 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_getBit, 0, 0, 2)
 	ZEND_ARG_INFO(0, idx)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_getEx, 0, 0, 1)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
+
 #define arginfo_class_Redis_getDBNum arginfo_class_Redis___destruct
+
+#define arginfo_class_Redis_getDel arginfo_class_Redis__prefix
 
 #define arginfo_class_Redis_getHost arginfo_class_Redis___destruct
 
@@ -304,10 +311,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hMset, 0, 0, 2)
 	ZEND_ARG_INFO(0, keyvals)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hRandField, 0, 0, 1)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, options)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_hRandField arginfo_class_Redis_getEx
 
 #define arginfo_class_Redis_hSet arginfo_class_Redis_hIncrBy
 
@@ -607,7 +611,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_slowlog, 0, 0, 1)
 	ZEND_ARG_INFO(0, option)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_sort arginfo_class_Redis_hRandField
+#define arginfo_class_Redis_sort arginfo_class_Redis_getEx
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_sortAsc, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
@@ -802,7 +806,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zRangeByScore, 0, 0, 3)
 	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_zRandMember arginfo_class_Redis_hRandField
+#define arginfo_class_Redis_zRandMember arginfo_class_Redis_getEx
 
 #define arginfo_class_Redis_zRank arginfo_class_Redis_hExists
 
@@ -913,7 +917,9 @@ ZEND_METHOD(Redis, geosearchstore);
 ZEND_METHOD(Redis, get);
 ZEND_METHOD(Redis, getAuth);
 ZEND_METHOD(Redis, getBit);
+ZEND_METHOD(Redis, getEx);
 ZEND_METHOD(Redis, getDBNum);
+ZEND_METHOD(Redis, getDel);
 ZEND_METHOD(Redis, getHost);
 ZEND_METHOD(Redis, getLastError);
 ZEND_METHOD(Redis, getMode);
@@ -1141,7 +1147,9 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, get, arginfo_class_Redis_get, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getAuth, arginfo_class_Redis_getAuth, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getBit, arginfo_class_Redis_getBit, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, getEx, arginfo_class_Redis_getEx, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getDBNum, arginfo_class_Redis_getDBNum, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, getDel, arginfo_class_Redis_getDel, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getHost, arginfo_class_Redis_getHost, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getLastError, arginfo_class_Redis_getLastError, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getMode, arginfo_class_Redis_getMode, ZEND_ACC_PUBLIC)

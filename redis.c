@@ -961,6 +961,21 @@ PHP_METHOD(Redis, get)
 }
 /* }}} */
 
+/* {{{ proto string Redis::getDel(string key)
+ */
+PHP_METHOD(Redis, getDel)
+{
+    REDIS_PROCESS_KW_CMD("GETDEL", redis_key_cmd, redis_string_response);
+}
+/* }}} */
+
+/* {{{ proto string Redis::getEx(string key [, array $options = []])
+ */
+PHP_METHOD(Redis, getEx)
+{
+    REDIS_PROCESS_CMD(getex, redis_string_response);
+}
+/* }}} */
 
 /* {{{ proto string Redis::ping()
  */

@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 452d7bafe0b4a9d6d67353613d9cde2d407aa2a2 */
+ * Stub hash: 8ad4d58327d1b0b07b0dbec026b27ed6a594b8b9 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -256,7 +256,16 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_getBit, 0, 0, 2)
 	ZEND_ARG_TYPE_INFO(0, idx, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_getEx, 0, 1, MAY_BE_BOOL|MAY_BE_STRING)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "[]")
+ZEND_END_ARG_INFO()
+
 #define arginfo_class_Redis_getDBNum arginfo_class_Redis_dbSize
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_getDel, 0, 1, MAY_BE_BOOL|MAY_BE_STRING)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_getHost, 0, 0, IS_STRING, 0)
 ZEND_END_ARG_INFO()
@@ -1011,7 +1020,9 @@ ZEND_METHOD(Redis, geosearchstore);
 ZEND_METHOD(Redis, get);
 ZEND_METHOD(Redis, getAuth);
 ZEND_METHOD(Redis, getBit);
+ZEND_METHOD(Redis, getEx);
 ZEND_METHOD(Redis, getDBNum);
+ZEND_METHOD(Redis, getDel);
 ZEND_METHOD(Redis, getHost);
 ZEND_METHOD(Redis, getLastError);
 ZEND_METHOD(Redis, getMode);
@@ -1239,7 +1250,9 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, get, arginfo_class_Redis_get, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getAuth, arginfo_class_Redis_getAuth, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getBit, arginfo_class_Redis_getBit, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, getEx, arginfo_class_Redis_getEx, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getDBNum, arginfo_class_Redis_getDBNum, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, getDel, arginfo_class_Redis_getDel, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getHost, arginfo_class_Redis_getHost, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getLastError, arginfo_class_Redis_getLastError, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getMode, arginfo_class_Redis_getMode, ZEND_ACC_PUBLIC)
