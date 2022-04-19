@@ -149,7 +149,11 @@ class Redis {
 	/** @return int|Redis */
     public function getBit(string $key, int $idx);
 
+    public function getEx(string $key, array $options = []): bool|string;
+
     public function getDBNum(): int;
+
+    public function getDel(string $key): bool|string;
 
     public function getHost(): string;
 

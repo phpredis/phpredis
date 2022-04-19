@@ -1674,6 +1674,65 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int
+redis_getex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    smart_string cmdstr = {0};
+    char *key, *exp_type = NULL;
+    zval *z_opts = NULL, *z_ele;
+    zend_long expire = -1;
+    zend_bool persist = 0;
+    zend_string *zkey;
+    size_t key_len;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|a",
+                              &key, &key_len, &z_opts) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    if (z_opts != NULL) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey, z_ele) {
+            if (zkey != NULL) {
+                ZVAL_DEREF(z_ele);
+                if (ZSTR_STRICMP_STATIC(zkey, "EX") ||
+                    ZSTR_STRICMP_STATIC(zkey, "PX") ||
+                    ZSTR_STRICMP_STATIC(zkey, "EXAT") ||
+                    ZSTR_STRICMP_STATIC(zkey, "PXAT")
+                ) {
+                    exp_type = ZSTR_VAL(zkey);
+                    expire = zval_get_long(z_ele);
+                    persist = 0;
+                } else if (ZSTR_STRICMP_STATIC(zkey, "PERSIST")) {
+                    persist = zval_is_true(z_ele);
+                    exp_type = NULL;
+                }
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    if (exp_type != NULL && expire < 1) {
+        php_error_docref(NULL, E_WARNING, "EXPIRE can't be < 1");
+        return FAILURE;
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + (exp_type ? 2 : persist), "GETEX");
+    redis_cmd_append_sstr_key(&cmdstr, key, key_len, redis_sock, slot);
+
+    if (exp_type != NULL) {
+        redis_cmd_append_sstr(&cmdstr, exp_type, strlen(exp_type));
+        redis_cmd_append_sstr_long(&cmdstr, expire);
+    } else if (persist) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "PERSIST");
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 /* BRPOPLPUSH */
 int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                          char **cmd, int *cmd_len, short *slot, void **ctx)
