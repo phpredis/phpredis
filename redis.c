@@ -2452,14 +2452,15 @@ redis_response_enqueued(RedisSock *redis_sock)
     return ret;
 }
 
-/* TODO:  Investigate/fix the odd logic going on in here.  Looks like previous abort
- *        conditions that are now simply empty if { } { } blocks. */
 PHP_REDIS_API int
 redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
                                            RedisSock *redis_sock, zval *z_tab,
                                            int numElems)
 {
+    size_t len;
+    char inbuf[4096];
     fold_item *fi;
+    zval z_ret;
 
     for (fi = redis_sock->head; fi; /* void */) {
         if (fi->fun) {
@@ -2467,35 +2468,35 @@ redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
             fi = fi->next;
             continue;
         }
-        size_t len;
-        char inbuf[255];
 
-        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
-        } else if (strncmp(inbuf, "+OK", 3) != 0) {
+        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 || strncmp(inbuf, "+OK", 3) != 0) {
+            // MULTI failed, subsequent processing is undefined behavior
+            goto error;
         }
 
         while ((fi = fi->next) && fi->fun) {
-            if (redis_response_enqueued(redis_sock) == SUCCESS) {
-            } else {
+            if (redis_response_enqueued(redis_sock) != SUCCESS) {
+                // not all commands successfully enqueued
+                goto error;
             }
         }
 
-        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
+        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 || *inbuf != TYPE_MULTIBULK) {
+            // EXEC failed, return FALSE as a result of transaction
+            ZVAL_FALSE(&z_ret);
+        } else {
+            array_init(&z_ret);
+            redis_read_multibulk_recursive(redis_sock, atol(inbuf + 1), 0, &z_ret);
         }
-
-        zval z_ret;
-        array_init(&z_ret);
         add_next_index_zval(z_tab, &z_ret);
-
-        int num = atol(inbuf + 1);
-
-        if (num > 0 && redis_read_multibulk_recursive(redis_sock, num, 0, &z_ret) < 0) {
-        }
 
         if (fi) fi = fi->next;
     }
     redis_sock->current = fi;
-    return 0;
+    return SUCCESS;
+error:
+    redis_sock_disconnect(redis_sock, 1);
+    return FAILURE;
 }
 
 PHP_METHOD(Redis, pipeline)
