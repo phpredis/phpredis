@@ -117,6 +117,8 @@ class Redis {
 
     public function expireAt(string $key, int $timestamp): bool;
 
+    public function failover(?array $to = null, bool $abort = false, int $timeout = 0): bool;
+
     public function flushAll(?bool $sync = null): bool;
 
     public function flushDB(?bool $sync = null): bool;
