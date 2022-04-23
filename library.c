@@ -3599,7 +3599,7 @@ int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass)
 
     /* Handle a non-array first */
     if (Z_TYPE_P(ztest) != IS_ARRAY) {
-        *pass = zval_get_string(ztest);
+        TRY_SET_AUTH_ARG(ztest, pass);
         return SUCCESS;
     }
 
