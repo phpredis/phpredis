@@ -1695,6 +1695,13 @@ PHP_METHOD(Redis, lastSave)
 }
 /* }}} */
 
+/* {{{ proto bool Redis::failover([array to [,bool abort [,int timeout]]] ) */
+PHP_METHOD(Redis, failover)
+{
+    REDIS_PROCESS_CMD(failover, redis_boolean_response);
+}
+/* }}} */
+
 /* {{{ proto bool Redis::flushDB([bool async]) */
 PHP_METHOD(Redis, flushDB)
 {

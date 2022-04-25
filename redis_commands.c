@@ -447,6 +447,70 @@ int redis_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int
+redis_failover_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    int argc;
+    smart_string cmdstr = {0};
+    zend_bool abort = 0, force = 0;
+    zend_long timeout = 0, port = 0;
+    zend_string *zkey, *host = NULL;
+    zval *z_to = NULL, *z_ele;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "|a!bl",
+                              &z_to, &abort, &timeout) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    if (z_to != NULL) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_to), zkey, z_ele) {
+            if (zkey != NULL) {
+                ZVAL_DEREF(z_ele);
+                if (zend_string_equals_literal_ci(zkey, "host")) {
+                    host = zval_get_string(z_ele);
+                } else if (zend_string_equals_literal_ci(zkey, "port")) {
+                    port = zval_get_long(z_ele);
+                } else if (zend_string_equals_literal_ci(zkey, "force")) {
+                    force = zval_is_true(z_ele);
+                }
+            }
+        } ZEND_HASH_FOREACH_END();
+        if (!host || !port) {
+            php_error_docref(NULL, E_WARNING, "host and port must be provided!");
+            if (host) zend_string_release(host);
+            return FAILURE;
+        }
+    }
+
+    argc = (host && port ? 3 + force : 0) + abort + (timeout > 0 ? 2 : 0);
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "FAILOVER");
+
+    if (host && port) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "TO");
+        redis_cmd_append_sstr_zstr(&cmdstr, host);
+        redis_cmd_append_sstr_int(&cmdstr, port);
+        if (force) {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FORCE");
+        }
+        zend_string_release(host);
+    }
+
+    if (abort) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "ABORT");
+    }
+    if (timeout > 0) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "TIMEOUT");
+        redis_cmd_append_sstr_long(&cmdstr, timeout);
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 int redis_flush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
 {
