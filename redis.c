@@ -603,7 +603,7 @@ PHP_METHOD(Redis, __construct)
 
     if (opts != NULL) {
         redis = PHPREDIS_ZVAL_GET_OBJECT(redis_object, getThis());
-        redis->sock = redis_sock_create("127.0.0.1", 0, 6379, 0, 0, 0, NULL, 0);
+        redis->sock = redis_sock_create("127.0.0.1", sizeof("127.0.0.1") - 1, 6379, 0, 0, 0, NULL, 0);
 
         ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(opts), zkey, val) {
             if (zkey == NULL) {
