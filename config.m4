@@ -26,7 +26,7 @@ PHP_ARG_WITH(liblzf, use system liblzf,
 PHP_ARG_ENABLE(redis-zstd, whether to enable Zstd compression,
 [  --enable-redis-zstd     Enable Zstd compression support], no, no)
 
-PHP_ARG_WITH(libzstd, use system libsztd,
+PHP_ARG_WITH(libzstd, use system libzstd,
 [  --with-libzstd[=DIR]      Use system libzstd], yes, no)
 
 PHP_ARG_ENABLE(redis-lz4, whether to enable lz4 compression,
