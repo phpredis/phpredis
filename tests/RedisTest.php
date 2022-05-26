@@ -5752,6 +5752,13 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->getAuth() === $this->getAuth());
     }
 
+    public function testTransferredBytes() {
+        $this->assertTrue($this->redis->ping());
+        $this->assertEquals(strlen("*1\r\n$4\r\nPING\r\n"), $this->redis->getTransferredBytes());
+        $this->assertEquals(['cluster_enabled' => 0], $this->redis->info('cluster'));
+        $this->assertEquals(strlen("*2\r\n$4\r\nINFO\r\n$7\r\ncluster\r\n"), $this->redis->getTransferredBytes());
+    }
+
     /**
      * Scan and variants
      */

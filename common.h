@@ -323,6 +323,7 @@ typedef struct {
     int                 null_mbulk_as_null;
     int                 tcp_keepalive;
     int                 sentinel;
+    size_t              txBytes;
 } RedisSock;
 /* }}} */
 

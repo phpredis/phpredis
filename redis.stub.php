@@ -294,6 +294,8 @@ class Redis {
 
     public function getTimeout(): int;
 
+    public function getTransferredBytes(): int|false;
+
     public function hDel(string $key, string $member, string ...$other_members): Redis|int|false;
 
     public function hExists(string $key, string $member): Redis|bool;

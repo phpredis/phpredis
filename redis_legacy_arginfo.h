@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 0ff60ed233053935cfc7c5a5ecacd6adaf06a458 */
+ * Stub hash: 894a03b9e9db1e8ded0f016a00e7e7150dc26f31 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -325,6 +325,8 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_Redis_getset arginfo_class_Redis_append
 
 #define arginfo_class_Redis_getTimeout arginfo_class_Redis___destruct
+
+#define arginfo_class_Redis_getTransferredBytes arginfo_class_Redis___destruct
 
 #define arginfo_class_Redis_hDel arginfo_class_Redis_geohash
 
@@ -1023,6 +1025,7 @@ ZEND_METHOD(Redis, lcs);
 ZEND_METHOD(Redis, getReadTimeout);
 ZEND_METHOD(Redis, getset);
 ZEND_METHOD(Redis, getTimeout);
+ZEND_METHOD(Redis, getTransferredBytes);
 ZEND_METHOD(Redis, hDel);
 ZEND_METHOD(Redis, hExists);
 ZEND_METHOD(Redis, hGet);
@@ -1268,6 +1271,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, getReadTimeout, arginfo_class_Redis_getReadTimeout, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getset, arginfo_class_Redis_getset, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getTimeout, arginfo_class_Redis_getTimeout, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, getTransferredBytes, arginfo_class_Redis_getTransferredBytes, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hDel, arginfo_class_Redis_hDel, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hExists, arginfo_class_Redis_hExists, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hGet, arginfo_class_Redis_hGet, ZEND_ACC_PUBLIC)

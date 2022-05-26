@@ -3128,7 +3128,7 @@ redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz)
     if (redis_check_eof(redis_sock, 0, 0) == 0 &&
         php_stream_write(redis_sock->stream, cmd, sz) == sz
     ) {
-        return sz;
+        return redis_sock->txBytes = sz;
     }
     return -1;
 }
