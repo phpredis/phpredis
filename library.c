@@ -2589,6 +2589,44 @@ redis_sock_set_stream_context(RedisSock *redis_sock, zval *options)
     return SUCCESS;
 }
 
+PHP_REDIS_API int
+redis_sock_set_backoff(RedisSock *redis_sock, zval *options)
+{
+    zend_string *zkey;
+    zend_long val;
+    zval *z_ele;
+
+    if (!redis_sock || Z_TYPE_P(options) != IS_ARRAY) {
+        return FAILURE;
+    }
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(options), zkey, z_ele) {
+        if (zkey != NULL) {
+            ZVAL_DEREF(z_ele);
+            if (zend_string_equals_literal_ci(zkey, "algorithm")) {
+                if ((val = zval_get_long(z_ele)) < 0 || val >= REDIS_BACKOFF_ALGORITHMS) {
+                    return FAILURE;
+                }
+                redis_sock->backoff.algorithm = val;
+            } else if (zend_string_equals_literal_ci(zkey, "base")) {
+                if ((val = zval_get_long(z_ele)) < 0) {
+                    return FAILURE;
+                }
+                redis_sock->backoff.base = val * 1000;
+            } else if (zend_string_equals_literal_ci(zkey, "cap")) {
+                if ((val = zval_get_long(z_ele)) < 0) {
+                    return FAILURE;
+                }
+                redis_sock->backoff.cap = val * 1000;
+            } else {
+                php_error_docref(NULL, E_WARNING, "Skip unknown backoff option '%s'", ZSTR_VAL(zkey));
+            }
+        }
+    } ZEND_HASH_FOREACH_END();
+
+    return SUCCESS;
+}
+
 /**
  * redis_sock_read_multibulk_reply
  */

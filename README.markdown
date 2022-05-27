@@ -161,6 +161,11 @@ $redis = new Redis([
     'connectTimeout' => 2.5,
     'auth' => ['phpredis', 'phpredis'],
     'ssl' => ['verify_peer' => false],
+    'backoff' => [
+        'algorithm' => Redis::BACKOFF_ALGORITHM_DECORRELATED_JITTER,
+        'base' => 500,
+        'cap' => 750,
+    ],
 ]);
 ~~~
 

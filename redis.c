@@ -650,17 +650,21 @@ PHP_METHOD(Redis, __construct)
                 }
                 redis->sock->retry_interval = zval_get_long(val);
             } else if (zend_string_equals_literal_ci(zkey, "ssl")) {
-                if (Z_TYPE_P(val) != IS_ARRAY) {
+                if (redis_sock_set_stream_context(redis->sock, val) != SUCCESS) {
                     REDIS_VALUE_EXCEPTION("Invalid SSL context options");
                     RETURN_THROWS();
                 }
-                redis_sock_set_stream_context(redis->sock, val);
             } else if (zend_string_equals_literal_ci(zkey, "auth")) {
                 if (Z_TYPE_P(val) != IS_STRING && Z_TYPE_P(val) != IS_ARRAY) {
                     REDIS_VALUE_EXCEPTION("Invalid auth credentials");
                     RETURN_THROWS();
                 }
                 redis_sock_set_auth_zval(redis->sock, val);
+            } else if (zend_string_equals_literal_ci(zkey, "backoff")) {
+                if (redis_sock_set_backoff(redis->sock, val) != SUCCESS) {
+                    REDIS_VALUE_EXCEPTION("Invalid backoff options");
+                    RETURN_THROWS();
+                }
             } else {
                 php_error_docref(NULL, E_WARNING, "Skip unknown option '%s'", ZSTR_VAL(zkey));
             }
