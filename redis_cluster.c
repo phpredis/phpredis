@@ -820,15 +820,15 @@ PHP_METHOD(RedisCluster, type) {
 }
 /* }}} */
 
-/* {{{ proto string RedisCluster::pop(string key) */
+/* {{{ proto string RedisCluster::pop(string key, [int count = 0]) */
 PHP_METHOD(RedisCluster, lpop) {
-    CLUSTER_PROCESS_KW_CMD("LPOP", redis_key_cmd, cluster_bulk_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("LPOP", redis_pop_cmd, cluster_pop_resp, 0);
 }
 /* }}} */
 
-/* {{{ proto string RedisCluster::rpop(string key) */
+/* {{{ proto string RedisCluster::rpop(string key, [int count = 0]) */
 PHP_METHOD(RedisCluster, rpop) {
-    CLUSTER_PROCESS_KW_CMD("RPOP", redis_key_cmd, cluster_bulk_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("RPOP", redis_pop_cmd, cluster_pop_resp, 0);
 }
 /* }}} */
 

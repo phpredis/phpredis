@@ -1280,17 +1280,17 @@ PHP_METHOD(Redis, rPushx)
 }
 /* }}} */
 
-/* {{{ proto string Redis::lPOP(string key) */
+/* {{{ proto string Redis::lPop(string key, [int count = 0]) */
 PHP_METHOD(Redis, lPop)
 {
-    REDIS_PROCESS_KW_CMD("LPOP", redis_key_cmd, redis_string_response);
+    REDIS_PROCESS_KW_CMD("LPOP", redis_pop_cmd, redis_pop_response);
 }
 /* }}} */
 
-/* {{{ proto string Redis::rPOP(string key) */
+/* {{{ proto string Redis::rPop(string key, [int count = 0]) */
 PHP_METHOD(Redis, rPop)
 {
-    REDIS_PROCESS_KW_CMD("RPOP", redis_key_cmd, redis_string_response);
+    REDIS_PROCESS_KW_CMD("RPOP", redis_pop_cmd, redis_pop_response);
 }
 /* }}} */
 

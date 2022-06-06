@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 858f814d5b91c0829ae6b6a265a740cc037586dd */
+ * Stub hash: 9671c30926e8d581a126833360b123c8ae2dd913 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -366,7 +366,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_lMove, 0, 0, 4)
 	ZEND_ARG_INFO(0, whereto)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_lPop arginfo_class_Redis__prefix
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_lPop, 0, 0, 1)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, count)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_lPush, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
@@ -487,7 +490,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_punsubscribe arginfo_class_Redis_psubscribe
 
-#define arginfo_class_Redis_rPop arginfo_class_Redis__prefix
+#define arginfo_class_Redis_rPop arginfo_class_Redis_lPop
 
 #define arginfo_class_Redis_randomKey arginfo_class_Redis___destruct
 
@@ -551,12 +554,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_sMove, 0, 0, 3)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_sPop, 0, 0, 1)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, count)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_sPop arginfo_class_Redis_lPop
 
-#define arginfo_class_Redis_sRandMember arginfo_class_Redis_sPop
+#define arginfo_class_Redis_sRandMember arginfo_class_Redis_lPop
 
 #define arginfo_class_Redis_sUnion arginfo_class_Redis_del
 
