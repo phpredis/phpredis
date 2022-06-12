@@ -199,6 +199,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-igbinary" prompt="enable igbinary serializer support?" default="no"/>
   <configureoption name="enable-redis-lzf" prompt="enable lzf compression support?" default="no"/>
   <configureoption name="enable-redis-zstd" prompt="enable zstd compression support?" default="no"/>
+  <configureoption name="enable-redis-msgpack" prompt="enable msgpack serializer support?" default="no"/>
+  <configureoption name="enable-redis-lz4" prompt="enable lz4 compression?" default="no"/>
  </extsrcrelease>
  <changelog>
  <release>
