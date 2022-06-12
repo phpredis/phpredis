@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 7f045c90abd99a53f8fb6557942cd17e00ee8a01 */
+ * Stub hash: 8029a0d6df2bbd9cf5d140ff8d9efcc4de2a5bcc */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -320,7 +320,10 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_llen arginfo_class_RedisCluster__prefix
 
-#define arginfo_class_RedisCluster_lpop arginfo_class_RedisCluster__prefix
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_lpop, 0, 0, 1)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, count)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_lpush, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
@@ -433,7 +436,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_role arginfo_class_RedisCluster_bgrewriteaof
 
-#define arginfo_class_RedisCluster_rpop arginfo_class_RedisCluster__prefix
+#define arginfo_class_RedisCluster_rpop arginfo_class_RedisCluster_lpop
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_rpoplpush, 0, 0, 2)
 	ZEND_ARG_INFO(0, src)
@@ -525,10 +528,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_spop arginfo_class_RedisCluster__prefix
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_srandmember, 0, 0, 1)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, count)
-ZEND_END_ARG_INFO()
+#define arginfo_class_RedisCluster_srandmember arginfo_class_RedisCluster_lpop
 
 #define arginfo_class_RedisCluster_srem arginfo_class_RedisCluster_lpush
 

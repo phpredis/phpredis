@@ -175,7 +175,7 @@ class RedisCluster {
 
     public function llen(string $key): int|bool;
 
-    public function lpop(string $key): string|bool;
+    public function lpop(string $key, int $count = 0): bool|string|array;
 
     public function lpush(string $key, mixed $value, mixed ...$other_values): int|bool;
 
@@ -237,7 +237,7 @@ class RedisCluster {
 
     public function role(string|array $key_or_address): mixed;
 
-    public function rpop(string $key): bool|string;
+    public function rpop(string $key, int $count = 0): bool|string|array;
 
     public function rpoplpush(string $src, string $dst): bool|string;
 

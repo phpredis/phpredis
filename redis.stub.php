@@ -238,8 +238,7 @@ class Redis {
 
     public function lMove(string $src, string $dst, string $wherefrom, string $whereto): string;
 
-	/** @return string|Redis */
-    public function lPop(string $key);
+    public function lPop(string $key, int $count = 0): bool|string|array;
 
     /**
      * @param mixed $elements
@@ -330,8 +329,7 @@ public function persist(string $key): bool;
 
     public function punsubscribe(array $patterns): array;
 
-	/** @return string|Redis */
-    public function rPop(string $key);
+    public function rPop(string $key, int $count = 0): bool|string|array;
 
 	/** @return string|Redis */
     public function randomKey();

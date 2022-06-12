@@ -878,11 +878,16 @@ class Redis_Test extends TestSuite
         $this->redis->lPush('list', 'val2');
     $this->redis->rPush('list', 'val3');
 
+
     // 'list' = [ 'val2', 'val', 'val3']
 
     $this->assertEquals('val2', $this->redis->lPop('list'));
-        $this->assertEquals('val', $this->redis->lPop('list'));
-        $this->assertEquals('val3', $this->redis->lPop('list'));
+        if (version_compare($this->version, "6.2.0") < 0) {
+            $this->assertEquals('val', $this->redis->lPop('list'));
+            $this->assertEquals('val3', $this->redis->lPop('list'));
+        } else {
+            $this->assertEquals(['val', 'val3'], $this->redis->lPop('list', 2));
+        }
         $this->assertEquals(FALSE, $this->redis->lPop('list'));
 
     // testing binary data
@@ -895,7 +900,6 @@ class Redis_Test extends TestSuite
     $this->assertEquals('val3', gzuncompress($this->redis->lPop('list')));
     $this->assertEquals('val2', gzuncompress($this->redis->lPop('list')));
     $this->assertEquals('val1', gzuncompress($this->redis->lPop('list')));
-
     }
 
     // PUSH, POP : RPUSH, RPOP
@@ -913,8 +917,12 @@ class Redis_Test extends TestSuite
     // 'list' = [ 'val3', 'val', 'val2']
 
     $this->assertEquals('val2', $this->redis->rPop('list'));
-        $this->assertEquals('val', $this->redis->rPop('list'));
-        $this->assertEquals('val3', $this->redis->rPop('list'));
+        if (version_compare($this->version, "6.2.0") < 0) {
+            $this->assertEquals('val', $this->redis->rPop('list'));
+            $this->assertEquals('val3', $this->redis->rPop('list'));
+        } else {
+            $this->assertEquals(['val', 'val3'], $this->redis->rPop('list', 2));
+        }
         $this->assertEquals(FALSE, $this->redis->rPop('list'));
 
     // testing binary data

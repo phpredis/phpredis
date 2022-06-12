@@ -1601,6 +1601,35 @@ int redis_blocking_pop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
  * have specific processing (argument validation, etc) that make them unique
  */
 
+int
+redis_pop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+              char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key;
+    size_t key_len;
+    smart_string cmdstr = {0};
+    zend_long count = 0;
+
+    // Make sure the function is being called correctly
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|l",
+                              &key, &key_len, &count) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    redis_cmd_init_sstr(&cmdstr, 1 + (count > 0), kw, strlen(kw));
+    redis_cmd_append_sstr_key(&cmdstr, key, key_len, redis_sock, slot);
+    if (count > 0) {
+        redis_cmd_append_sstr_long(&cmdstr, (long)count);
+        *ctx = PHPREDIS_CTX_PTR;
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 /* Attempt to pull a long expiry from a zval.  We're more restrictave than zval_get_long
  * because that function will return integers from things like open file descriptors
  * which should simply fail as a TTL */
