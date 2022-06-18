@@ -1218,7 +1218,7 @@ redis_parse_client_list_response(char *response, zval *z_ret)
                             add_assoc_double_ex(&z_sub, p2, p - p2, dval);
                             break;
                         default:
-                            add_assoc_stringl_ex(&z_sub, p2, p - p2, p + 1, s2 - p - 1);
+                            add_assoc_stringl_ex(&z_sub, p2, p - p2, p + 1, s2 - p - 2);
                         }
                     } else {
                         add_next_index_string(&z_sub, p2);

@@ -111,12 +111,9 @@ class Redis_Sentinel_Test extends TestSuite
     public function testSlaves()
     {
         $result = $this->sentinel->slaves(self::NAME);
-        /**
-         * Comment until fix for https://github.com/redis/redis/issues/10722 released
         $this->assertTrue(is_array($result));
         foreach ($result as $slave) {
             $this->checkFields($slave);
         }
-         */
     }
 }
