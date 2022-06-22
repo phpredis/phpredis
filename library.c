@@ -1195,13 +1195,13 @@ redis_parse_client_list_response(char *response, zval *z_ret)
 {
     char *p1, *s1 = NULL;
 
-    if ((p1 = strtok_r(response, _NL, &s1)) != NULL) {
+    if ((p1 = php_strtok_r(response, _NL, &s1)) != NULL) {
         array_init(z_ret);
         do {
             char *p2, *s2 = NULL;
             zval z_sub;
 
-            if ((p2 = strtok_r(p1, " ", &s2)) != NULL) {
+            if ((p2 = php_strtok_r(p1, " ", &s2)) != NULL) {
                 array_init(&z_sub);
                 do {
                     char *p;
