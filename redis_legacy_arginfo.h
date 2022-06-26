@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 9671c30926e8d581a126833360b123c8ae2dd913 */
+ * Stub hash: efcda1ed028d65d0b4848d32133dc0e32f17871f */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -472,8 +472,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_psetex, 0, 0, 3)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_psubscribe, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_psubscribe, 0, 0, 2)
 	ZEND_ARG_INFO(0, patterns)
+	ZEND_ARG_INFO(0, cb)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_pttl arginfo_class_Redis__prefix
@@ -488,7 +489,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_pubsub, 0, 0, 1)
 	ZEND_ARG_INFO(0, arg)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_punsubscribe arginfo_class_Redis_psubscribe
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_punsubscribe, 0, 0, 1)
+	ZEND_ARG_INFO(0, patterns)
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_rPop arginfo_class_Redis_lPop
 
@@ -640,9 +643,9 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_strlen arginfo_class_Redis__prefix
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_subscribe, 0, 0, 1)
-	ZEND_ARG_INFO(0, channel)
-	ZEND_ARG_VARIADIC_INFO(0, other_channels)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_subscribe, 0, 0, 2)
+	ZEND_ARG_INFO(0, channels)
+	ZEND_ARG_INFO(0, cb)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_swapdb arginfo_class_Redis_rpoplpush
@@ -655,7 +658,9 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_unlink arginfo_class_Redis_del
 
-#define arginfo_class_Redis_unsubscribe arginfo_class_Redis_subscribe
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_unsubscribe, 0, 0, 1)
+	ZEND_ARG_INFO(0, channels)
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_unwatch arginfo_class_Redis___destruct
 

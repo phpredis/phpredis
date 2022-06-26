@@ -1101,7 +1101,7 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "af", &z_arr,
-                             &(sctx->cb), &(sctx->cb_cache)) == FAILURE)
+                             &sctx->cb.fci, &sctx->cb.fci_cache) == FAILURE)
     {
         efree(sctx);
         return FAILURE;

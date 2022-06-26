@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 9671c30926e8d581a126833360b123c8ae2dd913 */
+ * Stub hash: efcda1ed028d65d0b4848d32133dc0e32f17871f */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -541,8 +541,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_psetex, 0, 0, 3)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_psubscribe, 0, 1, IS_VOID, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_psubscribe, 0, 2, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_INFO(0, patterns, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, cb, IS_CALLABLE, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_pttl arginfo_class_Redis_hLen
@@ -557,7 +558,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_pubsub, 0, 1, IS_MIX
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg, IS_MIXED, 0, "null")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_punsubscribe, 0, 1, IS_ARRAY, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_punsubscribe, 0, 1, MAY_BE_BOOL|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_INFO(0, patterns, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
@@ -732,9 +733,9 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_strlen arginfo_class_Redis_decr
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_subscribe, 0, 1, IS_ARRAY, 0)
-	ZEND_ARG_TYPE_INFO(0, channel, IS_STRING, 0)
-	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_channels, IS_STRING, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_subscribe, 0, 2, _IS_BOOL, 0)
+	ZEND_ARG_TYPE_INFO(0, channels, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, cb, IS_CALLABLE, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_swapdb, 0, 2, _IS_BOOL, 0)
@@ -750,7 +751,9 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_unlink arginfo_class_Redis_del
 
-#define arginfo_class_Redis_unsubscribe arginfo_class_Redis_subscribe
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_unsubscribe, 0, 1, MAY_BE_BOOL|MAY_BE_ARRAY)
+	ZEND_ARG_TYPE_INFO(0, channels, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_unwatch arginfo_class_Redis___destruct
 

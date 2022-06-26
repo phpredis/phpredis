@@ -289,7 +289,7 @@ typedef struct {
     int                 persistent;
     int                 watching;
     zend_string         *persistent_id;
-
+    HashTable           *subs;
     redis_serializer    serializer;
     int                 compression;
     int                 compression_level;

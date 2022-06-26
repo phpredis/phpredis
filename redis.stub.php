@@ -319,7 +319,7 @@ public function persist(string $key): bool;
     /** @return bool|Redis */
     public function psetex(string $key, int $expire, mixed $value);
 
-    public function psubscribe(array $patterns): void;
+    public function psubscribe(array $patterns, callable $cb): bool;
 
     public function pttl(string $key): int;
 
@@ -327,7 +327,7 @@ public function persist(string $key): bool;
 
     public function pubsub(string $command, mixed $arg = null): mixed;
 
-    public function punsubscribe(array $patterns): array;
+    public function punsubscribe(array $patterns): bool|array;
 
     public function rPop(string $key, int $count = 0): bool|string|array;
 
@@ -439,7 +439,7 @@ public function persist(string $key): bool;
 	/** @return int|Redis */
     public function strlen(string $key);
 
-    public function subscribe(string $channel, string ...$other_channels): array;
+    public function subscribe(array $channels, callable $cb): bool;
 
     public function swapdb(string $src, string $dst): bool;
 
@@ -455,7 +455,7 @@ public function persist(string $key): bool;
      */
     public function unlink(array|string $key, string ...$other_keys);
 
-    public function unsubscribe(string $channel, string ...$other_channels): array;
+    public function unsubscribe(array $channels): bool|array;
 
 	/** @return bool|Redis */
     public function unwatch();
