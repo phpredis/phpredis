@@ -1223,12 +1223,12 @@ redis_parse_client_list_response(char *response, zval *z_ret)
                     } else {
                         add_next_index_string(&z_sub, p2);
                     }
-                } while ((p2 = strtok_r(NULL, " ", &s2)) != NULL);
+                } while ((p2 = php_strtok_r(NULL, " ", &s2)) != NULL);
             } else {
                 ZVAL_FALSE(&z_sub);
             }
             add_next_index_zval(z_ret, &z_sub);
-        } while ((p1 = strtok_r(NULL, _NL, &s1)) != NULL);
+        } while ((p1 = php_strtok_r(NULL, _NL, &s1)) != NULL);
     } else {
         ZVAL_FALSE(z_ret);
     }
