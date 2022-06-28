@@ -1195,12 +1195,14 @@ redis_parse_client_list_response(char *response, zval *z_ret)
 {
     char *p1, *s1 = NULL;
 
+    ZVAL_FALSE(z_ret);
     if ((p1 = php_strtok_r(response, _NL, &s1)) != NULL) {
         array_init(z_ret);
         do {
             char *p2, *s2 = NULL;
             zval z_sub;
 
+            ZVAL_FALSE(&z_sub);
             if ((p2 = php_strtok_r(p1, " ", &s2)) != NULL) {
                 array_init(&z_sub);
                 do {
@@ -1218,19 +1220,15 @@ redis_parse_client_list_response(char *response, zval *z_ret)
                             add_assoc_double_ex(&z_sub, p2, p - p2, dval);
                             break;
                         default:
-                            add_assoc_stringl_ex(&z_sub, p2, p - p2, p + 1, s2 - p - 2);
+                            add_assoc_string_ex(&z_sub, p2, p - p2, p + 1);
                         }
                     } else {
                         add_next_index_string(&z_sub, p2);
                     }
                 } while ((p2 = php_strtok_r(NULL, " ", &s2)) != NULL);
-            } else {
-                ZVAL_FALSE(&z_sub);
             }
             add_next_index_zval(z_ret, &z_sub);
         } while ((p1 = php_strtok_r(NULL, _NL, &s1)) != NULL);
-    } else {
-        ZVAL_FALSE(z_ret);
     }
 }
 
