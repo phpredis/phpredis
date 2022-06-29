@@ -26,10 +26,9 @@ jobs:
           tools: none
       - name: Install dependencies
         run: |
-          sudo add-apt-repository ppa:redislabs/redis
-          sudo add-apt-repository ppa:ondrej/php
+          curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
           sudo apt-get update
-          sudo apt --fix-broken install
           sudo apt-get install redis valgrind libzstd-dev liblz4-dev
       - name: Build phpredis
         run: |
@@ -48,11 +47,11 @@ jobs:
         run: |
           mkdir -p tests/nodes
           echo -n > tests/nodes/nodemap
-          for PORT in $(seq 7000 7006); do
+          for PORT in $(seq 7000 7005); do
             redis-server --port $PORT --cluster-enabled yes --cluster-config-file $PORT.conf --daemonize yes --aclfile tests/users.acl --acl-pubsub-default allchannels
             echo 127.0.0.1:$PORT >> tests/nodes/nodemap
           done
-          echo yes | redis-cli --cluster create $(seq -f 127.0.0.1:%g 7000 7006) --cluster-replicas 1 --user phpredis -a phpredis
+          echo yes | redis-cli --cluster create $(seq -f 127.0.0.1:%g 7000 7005) --cluster-replicas 1 --user phpredis -a phpredis
       - name: Start redis sentinel
         run: |
           wget raw.githubusercontent.com/redis/redis/7.0/sentinel.conf
