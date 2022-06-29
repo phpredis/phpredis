@@ -4,7 +4,7 @@
 #ifndef REDIS_COMMON_H
 #define REDIS_COMMON_H
 
-#define PHPREDIS_CTX_PTR ((void *)0xDEADC0DE)
+#define PHPREDIS_CTX_PTR ((char *)0xDEADC0DE)
 #define PHPREDIS_NOTUSED(v) ((void)v)
 
 #include "zend_llist.h"
