@@ -1111,50 +1111,33 @@ PHP_REDIS_API int redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *r
 PHP_REDIS_API void
 redis_parse_info_response(char *response, zval *z_ret)
 {
-    char *cur, *pos;
+    char *p1, *s1 = NULL;
 
-    array_init(z_ret);
-
-    cur = response;
-    while(1) {
-        /* skip comments and empty lines */
-        if (*cur == '#' || *cur == '\r') {
-            if ((cur = strstr(cur, _NL)) == NULL) {
-                break;
+    ZVAL_FALSE(z_ret);
+    if ((p1 = php_strtok_r(response, _NL, &s1)) != NULL) {
+        array_init(z_ret);
+        do {
+            if (*p1 == '#') continue;
+            char *p;
+            zend_uchar type;
+            zend_long lval;
+            double dval;
+            if ((p = strchr(p1, ':')) != NULL) {
+                type = is_numeric_string(p + 1, strlen(p + 1), &lval, &dval, 0);
+                switch (type) {
+                case IS_LONG:
+                    add_assoc_long_ex(z_ret, p1, p - p1, lval);
+                    break;
+                case IS_DOUBLE:
+                    add_assoc_double_ex(z_ret, p1, p - p1, dval);
+                    break;
+                default:
+                    add_assoc_string_ex(z_ret, p1, p - p1, p + 1);
+                }
+            } else {
+                add_next_index_string(z_ret, p1);
             }
-            cur += 2;
-            continue;
-        }
-
-        /* key */
-        if ((pos = strchr(cur, ':')) == NULL) {
-            break;
-        }
-        char *key = cur;
-        int key_len = pos - cur;
-        key[key_len] = '\0';
-
-        /* value */
-        cur = pos + 1;
-        if ((pos = strstr(cur, _NL)) == NULL) {
-            break;
-        }
-        char *value = cur;
-        int value_len = pos - cur;
-        value[value_len] = '\0';
-
-        double dval;
-        zend_long lval;
-        zend_uchar type = is_numeric_string(value, value_len, &lval, &dval, 0);
-        if (type == IS_LONG) {
-            add_assoc_long_ex(z_ret, key, key_len, lval);
-        } else if (type == IS_DOUBLE) {
-            add_assoc_double_ex(z_ret, key, key_len, dval);
-        } else {
-            add_assoc_stringl_ex(z_ret, key, key_len, value, value_len);
-        }
-
-        cur = pos + 2; /* \r, \n */
+        } while ((p1 = php_strtok_r(NULL, _NL, &s1)) != NULL);
     }
 }
 
@@ -1211,7 +1194,7 @@ redis_parse_client_list_response(char *response, zval *z_ret)
                     zend_long lval;
                     double dval;
                     if ((p = strchr(p2, '=')) != NULL) {
-                        type = is_numeric_string(p + 1, s2 - p - 1, &lval, &dval, 0);
+                        type = is_numeric_string(p + 1, strlen(p + 1), &lval, &dval, 0);
                         switch (type) {
                         case IS_LONG:
                             add_assoc_long_ex(&z_sub, p2, p - p2, lval);
