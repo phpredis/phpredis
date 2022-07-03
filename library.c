@@ -2340,7 +2340,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
 #ifdef HAVE_IPV6
         /* If we've got IPv6 and find a colon in our address, convert to proper
          * IPv6 [host]:port format */
-        if (strchr(address, ':') != NULL) {
+        if (strchr(address, ':') != NULL && strchr(address, '[') == NULL) {
             fmtstr = "%s://[%s]:%d";
         }
 #endif
