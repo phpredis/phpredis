@@ -28,6 +28,7 @@
 #include "redis_commands.h"
 #include "redis_sentinel.h"
 #include <standard/php_random.h>
+#include <ext/spl/spl_exceptions.h>
 #include <zend_exceptions.h>
 #include <ext/standard/info.h>
 #include <ext/hash/php_hash.h>
@@ -436,7 +437,6 @@ static PHP_GINIT_FUNCTION(redis)
 PHP_MINIT_FUNCTION(redis)
 {
     struct timeval tv;
-    zend_class_entry *exception_ce = NULL;
 
     /* Seed random generator (for RedisCluster failover) */
     gettimeofday(&tv, NULL);
@@ -462,14 +462,8 @@ PHP_MINIT_FUNCTION(redis)
                                                               "Redis cluster slot cache",
                                                               module_number);
 
-    /* Base Exception class */
-    exception_ce = zend_hash_str_find_ptr(CG(class_table), "RuntimeException", sizeof("RuntimeException") - 1);
-    if (exception_ce == NULL) {
-        exception_ce = zend_exception_get_default();
-    }
-
     /* RedisException class */
-    redis_exception_ce = register_class_RedisException(exception_ce);
+    redis_exception_ce = register_class_RedisException(spl_ce_RuntimeException);
 
     /* Add shared class constants to Redis and RedisCluster objects */
     add_class_constants(redis_ce, 0);
