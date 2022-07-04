@@ -3,10 +3,12 @@
 /**
  * @generate-function-entries
  * @generate-legacy-arginfo
+ * @generate-class-entries
  */
 
 class RedisSentinel {
 
+    /** @sensitive-param $auth **/
     public function __construct(string $host, int $port = 26379, float $timeout = 0, mixed $persistent = NULL, int $retry_interval = 0, float $read_timeout = 0, mixed $auth = NULL);
 
 	/** @return bool|RedisSentinel */

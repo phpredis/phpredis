@@ -26,12 +26,17 @@ extern zend_class_entry *redis_exception_ce;
 #if PHP_VERSION_ID < 80000
 #include "redis_sentinel_legacy_arginfo.h"
 #else
+#include "zend_attributes.h"
 #include "redis_sentinel_arginfo.h"
 #endif
 
-extern const zend_function_entry *redis_sentinel_get_methods(void)
+PHP_MINIT_FUNCTION(redis_sentinel)
 {
-    return class_RedisSentinel_methods;
+    /* RedisSentinel class */
+    redis_sentinel_ce = register_class_RedisSentinel();
+    redis_sentinel_ce->create_object = create_sentinel_object;
+
+    return SUCCESS;
 }
 
 PHP_METHOD(RedisSentinel, __construct)

@@ -3,10 +3,12 @@
 /**
  * @generate-function-entries
  * @generate-legacy-arginfo
+ * @generate-class-entries
  */
 
 class RedisCluster {
 
+    /** @sensitive-param $auth **/
     public function __construct(string|null $name, array $seeds = NULL, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistant = false, mixed $auth = NULL, array $context = NULL);
 
     public function _compress(string $value): string;
@@ -389,3 +391,5 @@ class RedisCluster {
 
     public function zunionstore(string $key, array $keys, array $weights = null, string $aggregate = null): int;
 }
+
+class RedisClusterException extends RuntimeException {}

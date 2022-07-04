@@ -52,17 +52,13 @@ extern ps_module ps_mod_redis;
 extern ps_module ps_mod_redis_cluster;
 #endif
 
-extern zend_class_entry *redis_array_ce;
-extern zend_class_entry *redis_cluster_ce;
-extern zend_class_entry *redis_cluster_exception_ce;
-extern zend_class_entry *redis_sentinel_ce;
-
 zend_class_entry *redis_ce;
 zend_class_entry *redis_exception_ce;
 
 #if PHP_VERSION_ID < 80000
 #include "redis_legacy_arginfo.h"
 #else
+#include "zend_attributes.h"
 #include "redis_arginfo.h"
 #endif
 
@@ -440,14 +436,6 @@ static PHP_GINIT_FUNCTION(redis)
 PHP_MINIT_FUNCTION(redis)
 {
     struct timeval tv;
-
-    zend_class_entry redis_class_entry;
-    zend_class_entry redis_array_class_entry;
-    zend_class_entry redis_cluster_class_entry;
-    zend_class_entry redis_sentinel_class_entry;
-    zend_class_entry redis_exception_class_entry;
-    zend_class_entry redis_cluster_exception_class_entry;
-
     zend_class_entry *exception_ce = NULL;
 
     /* Seed random generator (for RedisCluster failover) */
@@ -457,24 +445,17 @@ PHP_MINIT_FUNCTION(redis)
     REGISTER_INI_ENTRIES();
 
     /* Redis class */
-    INIT_CLASS_ENTRY(redis_class_entry, "Redis", redis_get_methods());
-    redis_ce = zend_register_internal_class(&redis_class_entry);
+    redis_ce = register_class_Redis();
     redis_ce->create_object = create_redis_object;
 
     /* RedisArray class */
-    INIT_CLASS_ENTRY(redis_array_class_entry, "RedisArray", redis_array_get_methods());
-    redis_array_ce = zend_register_internal_class(&redis_array_class_entry);
-    redis_array_ce->create_object = create_redis_array_object;
+    ZEND_MINIT(redis_array)(INIT_FUNC_ARGS_PASSTHRU);
 
     /* RedisCluster class */
-    INIT_CLASS_ENTRY(redis_cluster_class_entry, "RedisCluster", redis_cluster_get_methods());
-    redis_cluster_ce = zend_register_internal_class(&redis_cluster_class_entry);
-    redis_cluster_ce->create_object = create_cluster_context;
+    ZEND_MINIT(redis_cluster)(INIT_FUNC_ARGS_PASSTHRU);
 
     /* RedisSentinel class */
-    INIT_CLASS_ENTRY(redis_sentinel_class_entry, "RedisSentinel", redis_sentinel_get_methods());
-    redis_sentinel_ce = zend_register_internal_class(&redis_sentinel_class_entry);
-    redis_sentinel_ce->create_object = create_sentinel_object;
+    ZEND_MINIT(redis_sentinel)(INIT_FUNC_ARGS_PASSTHRU);
 
     /* Register our cluster cache list item */
     le_cluster_slot_cache = zend_register_list_destructors_ex(NULL, cluster_cache_dtor,
@@ -488,16 +469,7 @@ PHP_MINIT_FUNCTION(redis)
     }
 
     /* RedisException class */
-    INIT_CLASS_ENTRY(redis_exception_class_entry, "RedisException", NULL);
-    redis_exception_ce = zend_register_internal_class_ex(
-        &redis_exception_class_entry,
-        exception_ce);
-
-    /* RedisClusterException class */
-    INIT_CLASS_ENTRY(redis_cluster_exception_class_entry,
-        "RedisClusterException", NULL);
-    redis_cluster_exception_ce = zend_register_internal_class_ex(
-        &redis_cluster_exception_class_entry, exception_ce);
+    redis_exception_ce = register_class_RedisException(exception_ce);
 
     /* Add shared class constants to Redis and RedisCluster objects */
     add_class_constants(redis_ce, 0);

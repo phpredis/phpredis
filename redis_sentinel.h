@@ -5,6 +5,7 @@
 
 #define PHP_REDIS_SENTINEL_VERSION "0.1"
 
-extern const zend_function_entry *redis_sentinel_get_methods(void);
+extern zend_class_entry *redis_sentinel_ce;
+extern PHP_MINIT_FUNCTION(redis_sentinel);
 
 #endif /* REDIS_SENTINEL_H */

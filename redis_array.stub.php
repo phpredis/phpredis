@@ -3,6 +3,7 @@
 /**
  * @generate-function-entries
  * @generate-legacy-arginfo
+ * @generate-class-entries
  */
 
 class RedisArray {

@@ -35,6 +35,9 @@
     #define REDIS_VALUE_EXCEPTION(m) zend_value_error(m)
 #endif
 
+#if PHP_VERSION_ID < 80200
+#define zend_mark_function_parameter_as_sensitive(a,b,c)
+#endif
 
 void redis_register_persistent_resource(zend_string *id, void *ptr, int le_id);
 void free_reply_callbacks(RedisSock *redis_sock);

@@ -38,12 +38,25 @@ zend_class_entry *redis_cluster_exception_ce;
 #if PHP_VERSION_ID < 80000
 #include "redis_cluster_legacy_arginfo.h"
 #else
+#include "zend_attributes.h"
 #include "redis_cluster_arginfo.h"
 #endif
 
-extern const zend_function_entry *redis_cluster_get_methods(void)
+PHP_MINIT_FUNCTION(redis_cluster)
 {
-    return class_RedisCluster_methods;
+    zend_class_entry *exception_ce = NULL;
+
+    redis_cluster_ce = register_class_RedisCluster();
+    redis_cluster_ce->create_object = create_cluster_context;
+
+    /* Base Exception class */
+    exception_ce = zend_hash_str_find_ptr(CG(class_table), "RuntimeException", sizeof("RuntimeException") - 1);
+    if (exception_ce == NULL) {
+        exception_ce = zend_exception_get_default();
+    }
+    redis_cluster_exception_ce = register_class_RedisClusterException(exception_ce);
+
+    return SUCCESS;
 }
 
 /* Handlers for RedisCluster */

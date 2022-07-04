@@ -91,12 +91,11 @@
     } \
     resp_func(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
 
-extern const zend_function_entry *redis_cluster_get_methods(void);
-
-/* Create cluster context */
-zend_object *create_cluster_context(zend_class_entry *class_type);
-
-/* Free cluster context struct */
-void free_cluster_context(zend_object *object);
-
 #endif
+
+extern zend_class_entry *redis_cluster_ce;
+extern zend_class_entry *redis_cluster_exception_ce;
+extern PHP_MINIT_FUNCTION(redis_cluster);
+extern zend_object * create_cluster_context(zend_class_entry *class_type);
+extern void free_cluster_context(zend_object *object);
+

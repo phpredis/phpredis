@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: deae7b4a55435fb2ab39f314544064a34c56d218 */
+ * Stub hash: 4e8243076e2c4470473a08456ff20be9f230ee74 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, host, IS_STRING, 0)
@@ -69,3 +69,13 @@ static const zend_function_entry class_RedisSentinel_methods[] = {
 	ZEND_ME(RedisSentinel, slaves, arginfo_class_RedisSentinel_slaves, ZEND_ACC_PUBLIC)
 	ZEND_FE_END
 };
+
+static zend_class_entry *register_class_RedisSentinel(void)
+{
+	zend_class_entry ce, *class_entry;
+
+	INIT_CLASS_ENTRY(ce, "RedisSentinel", class_RedisSentinel_methods);
+	class_entry = zend_register_internal_class_ex(&ce, NULL);
+
+	return class_entry;
+}
