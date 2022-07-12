@@ -2670,9 +2670,83 @@ int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
-/* Generic command construction for HSET and HSETNX */
-static int gen_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                        char *kw, char **cmd, int *cmd_len, short *slot)
+/* HSET */
+int redis_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    int i, argc;
+    smart_string cmdstr = {0};
+    zend_string *zkey;
+    zval *z_args, *z_ele;
+
+    if ((argc = ZEND_NUM_ARGS()) < 2) {
+        return FAILURE;
+    }
+
+    z_args = ecalloc(argc, sizeof(*z_args));
+    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
+        efree(z_args);
+        return FAILURE;
+    }
+
+    if (argc == 2) {
+        if (Z_TYPE(z_args[1]) != IS_ARRAY || zend_hash_num_elements(Z_ARRVAL(z_args[1])) == 0) {
+            efree(z_args);
+            return FAILURE;
+        }
+
+        /* Initialize our command */
+        redis_cmd_init_sstr(&cmdstr, 1 + zend_hash_num_elements(Z_ARRVAL(z_args[1])), ZEND_STRL("HSET"));
+
+        /* Append key */
+        zkey = zval_get_string(&z_args[0]);
+        redis_cmd_append_sstr_key(&cmdstr, ZSTR_VAL(zkey), ZSTR_LEN(zkey), redis_sock, slot);
+        zend_string_release(zkey);
+
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL(z_args[1]), zkey, z_ele) {
+            if (zkey != NULL) {
+                ZVAL_DEREF(z_ele);
+                redis_cmd_append_sstr(&cmdstr, ZSTR_VAL(zkey), ZSTR_LEN(zkey));
+                redis_cmd_append_sstr_zval(&cmdstr, z_ele, redis_sock);
+            }
+        } ZEND_HASH_FOREACH_END();
+    } else {
+        if (argc % 2 == 0) {
+            efree(z_args);
+            return FAILURE;
+        }
+        /* Initialize our command */
+        redis_cmd_init_sstr(&cmdstr, argc, ZEND_STRL("HSET"));
+
+        /* Append key */
+        zkey = zval_get_string(&z_args[0]);
+        redis_cmd_append_sstr_key(&cmdstr, ZSTR_VAL(zkey), ZSTR_LEN(zkey), redis_sock, slot);
+        zend_string_release(zkey);
+
+        for (i = 1; i < argc; ++i) {
+            if (i % 2) {
+                zkey = zval_get_string(&z_args[i]);
+                redis_cmd_append_sstr(&cmdstr, ZSTR_VAL(zkey), ZSTR_LEN(zkey));
+                zend_string_release(zkey);
+            } else {
+                redis_cmd_append_sstr_zval(&cmdstr, &z_args[i], redis_sock);
+            }
+        }
+    }
+
+    // Push out values
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    // Cleanup arg array
+    efree(z_args);
+
+    return SUCCESS;
+}
+
+/* HSETNX */
+int redis_hsetnx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *key, *mem;
     size_t key_len, mem_len;
@@ -2685,26 +2759,10 @@ static int gen_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Construct command */
-    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ksv", key, key_len, mem, mem_len, z_val);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "HSETNX", "ksv", key, key_len, mem, mem_len, z_val);
 
     // Success
     return SUCCESS;
-}
-
-/* HSET */
-int redis_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                   char **cmd, int *cmd_len, short *slot, void **ctx)
-{
-    return gen_hset_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, "HSET",
-        cmd, cmd_len, slot);
-}
-
-/* HSETNX */
-int redis_hsetnx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     char **cmd, int *cmd_len, short *slot, void **ctx)
-{
-    return gen_hset_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, "HSETNX",
-        cmd, cmd_len, slot);
 }
 
 int
