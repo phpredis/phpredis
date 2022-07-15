@@ -1166,11 +1166,6 @@ int redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     ht_arr = Z_ARRVAL_P(z_arr);
 
     sctx->argc = zend_hash_num_elements(ht_arr);
-    if (sctx->argc == 0) {
-        efree(sctx);
-        return FAILURE;
-    }
-
     redis_cmd_init_sstr(&cmdstr, sctx->argc, kw, strlen(kw));
 
     ZEND_HASH_FOREACH_VAL(ht_arr, z_chan) {
@@ -1182,6 +1177,10 @@ int redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_cmd_append_sstr(&cmdstr, key, key_len);
         if (key_free) efree(key);
     } ZEND_HASH_FOREACH_END();
+
+    if (!sctx->argc && redis_sock->subs) {
+        sctx->argc = zend_hash_num_elements(redis_sock->subs);
+    }
 
     // Push out vals
     *cmd_len = cmdstr.len;
