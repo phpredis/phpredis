@@ -1857,8 +1857,8 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
 
     // Set up our callback pointers
     zval z_ret, z_args[4];
-    sctx->cb.retval = &z_ret;
-    sctx->cb.params = z_args;
+    sctx->cb.fci.retval = &z_ret;
+    sctx->cb.fci.params = z_args;
 
     /* We're in a subscribe loop */
     c->subscribed_slot = c->cmd_slot;
@@ -1911,12 +1911,10 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
         }
 
         // Set arg count
-        sctx->cb.param_count = tab_idx;
+        sctx->cb.fci.param_count = tab_idx;
 
         // Execute our callback
-        if (zend_call_function(&(sctx->cb), &(sctx->cb_cache)) !=
-                              SUCCESS)
-        {
+        if (zend_call_function(&sctx->cb.fci, &sctx->cb.fci_cache) != SUCCESS) {
             break;
         }
 

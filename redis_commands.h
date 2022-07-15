@@ -14,11 +14,15 @@
     if (slot) *slot = cluster_hash_key(key,key_len);
 
 /* Simple container so we can push subscribe context out */
+typedef struct {
+    zend_fcall_info fci;
+    zend_fcall_info_cache fci_cache;
+} subscribeCallback;
+
 typedef struct subscribeContext {
     char *kw;
     int argc;
-    zend_fcall_info cb;
-    zend_fcall_info_cache cb_cache;
+    subscribeCallback cb;
 } subscribeContext;
 
 /* Construct a raw command */
