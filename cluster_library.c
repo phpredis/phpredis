@@ -709,25 +709,25 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
         if ((pnode = zend_hash_str_find_ptr(c->nodes, key, klen)) == NULL) {
             master = cluster_node_create(c, host, hlen, port, low, 0);
             zend_hash_str_update_ptr(c->nodes, key, klen, master);
+
+            // Attach slaves first time we encounter a given master in order to avoid regitering the slaves multiple times
+            for (j = 3; j< r2->elements; j++) {
+                r3 = r2->element[j];
+                if (!VALIDATE_SLOTS_INNER(r3)) {
+                    return -1;
+                }
+
+                // Skip slaves where the host is ""
+                if (r3->element[0]->len == 0) continue;
+
+                // Attach this node to our slave
+                slave = cluster_node_create(c, r3->element[0]->str,
+                    (int)r3->element[0]->len,
+                    (unsigned short)r3->element[1]->integer, low, 1);
+                cluster_node_add_slave(master, slave);
+            }
         } else {
             master = pnode;
-        }
-
-        // Attach slaves
-        for (j = 3; j< r2->elements; j++) {
-            r3 = r2->element[j];
-            if (!VALIDATE_SLOTS_INNER(r3)) {
-                return -1;
-            }
-
-            // Skip slaves where the host is ""
-            if (r3->element[0]->len == 0) continue;
-
-            // Attach this node to our slave
-            slave = cluster_node_create(c, r3->element[0]->str,
-                (int)r3->element[0]->len,
-                (unsigned short)r3->element[1]->integer, low, 1);
-            cluster_node_add_slave(master, slave);
         }
 
         // Attach this node to each slot in the range
