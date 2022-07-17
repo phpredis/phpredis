@@ -1,15 +1,15 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 954ed131a20d6939f9653dbc384e6244a0862b6e */
+ * Stub hash: 7fc0b991dc8404945a0081aef8a422c9c670eab9 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis__compress, 0, 1, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___destruct, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___destruct, 0, 0, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis__compress, 0, 1, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis__pack, 0, 1, IS_STRING, 0)
@@ -414,6 +414,12 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_lPop, 0, 1, MAY_BE_BOOL|MAY_BE_STRING|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_lPos, 0, 2, MAY_BE_BOOL|MAY_BE_LONG|MAY_BE_ARRAY)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_lPush, 0, 0, 1)
@@ -975,8 +981,8 @@ ZEND_END_ARG_INFO()
 
 
 ZEND_METHOD(Redis, __construct);
-ZEND_METHOD(Redis, _compress);
 ZEND_METHOD(Redis, __destruct);
+ZEND_METHOD(Redis, _compress);
 ZEND_METHOD(Redis, _pack);
 ZEND_METHOD(Redis, _prefix);
 ZEND_METHOD(Redis, _serialize);
@@ -1072,6 +1078,7 @@ ZEND_METHOD(Redis, lInsert);
 ZEND_METHOD(Redis, lLen);
 ZEND_METHOD(Redis, lMove);
 ZEND_METHOD(Redis, lPop);
+ZEND_METHOD(Redis, lPos);
 ZEND_METHOD(Redis, lPush);
 ZEND_METHOD(Redis, rPush);
 ZEND_METHOD(Redis, lPushx);
@@ -1205,8 +1212,8 @@ ZEND_METHOD(Redis, zunionstore);
 
 static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, __construct, arginfo_class_Redis___construct, ZEND_ACC_PUBLIC)
-	ZEND_ME(Redis, _compress, arginfo_class_Redis__compress, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, __destruct, arginfo_class_Redis___destruct, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, _compress, arginfo_class_Redis__compress, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, _pack, arginfo_class_Redis__pack, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, _prefix, arginfo_class_Redis__prefix, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, _serialize, arginfo_class_Redis__serialize, ZEND_ACC_PUBLIC)
@@ -1303,6 +1310,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, lLen, arginfo_class_Redis_lLen, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, lMove, arginfo_class_Redis_lMove, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, lPop, arginfo_class_Redis_lPop, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, lPos, arginfo_class_Redis_lPos, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, lPush, arginfo_class_Redis_lPush, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, rPush, arginfo_class_Redis_rPush, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, lPushx, arginfo_class_Redis_lPushx, ZEND_ACC_PUBLIC)

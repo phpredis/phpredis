@@ -1015,6 +1015,19 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->lrange('key', 0, -1) === ['val2', 'val0', 'val1']);
     }
 
+    public function testlPos()
+    {
+        $this->redis->del('key');
+        $this->redis->lPush('key', 'val0', 'val1', 'val1');
+        $this->assertEquals(2, $this->redis->lPos('key', 'val0'));
+        $this->assertEquals(0, $this->redis->lPos('key', 'val1'));
+        $this->assertEquals(1, $this->redis->lPos('key', 'val1', ['rank' => 2]));
+        $this->assertEquals([0, 1], $this->redis->lPos('key', 'val1', ['count' => 2]));
+        $this->assertEquals([0], $this->redis->lPos('key', 'val1', ['count' => 2, 'maxlen' => 1]));
+        $this->assertEquals([], $this->redis->lPos('key', 'val2', ['count' => 1]));
+        $this->assertEquals(-1, $this->redis->lPos('key', 'val2'));
+    }
+
     // ltrim, lsize, lpop
     public function testltrim()
     {

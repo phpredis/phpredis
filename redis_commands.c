@@ -2626,6 +2626,69 @@ int redis_lrem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int
+redis_lpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+               char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    char *key;
+    int argc = 2;
+    size_t key_len;
+    smart_string cmdstr = {0};
+    zend_bool withrank = 0;
+    zend_long rank = 0, count = -1, maxlen = -1;
+    zend_string *zkey;
+    zval *z_val, *z_ele, *z_opts = NULL;
+
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz|a",
+                              &key, &key_len, &z_val, &z_opts) == FAILURE)
+    {
+        return FAILURE;
+    }
+
+    if (z_opts != NULL) {
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey, z_ele) {
+            if (zkey != NULL) {
+                ZVAL_DEREF(z_ele);
+                if (zend_string_equals_literal_ci(zkey, "count")) {
+                    count = zval_get_long(z_ele);
+                } else if (zend_string_equals_literal_ci(zkey, "maxlen")) {
+                    maxlen = zval_get_long(z_ele);
+                } else if (zend_string_equals_literal_ci(zkey, "rank")) {
+                    rank = zval_get_long(z_ele);
+                    withrank = 1;
+                }
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    argc += (withrank ? 2 : 0) + (count >= 0 ? 2 : 0) + (maxlen >= 0 ? 2 : 0);
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "LPOS");
+
+    redis_cmd_append_sstr_key(&cmdstr, key, key_len, redis_sock, slot);
+    redis_cmd_append_sstr_zval(&cmdstr, z_val, redis_sock);
+
+    if (withrank) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "RANK");
+        redis_cmd_append_sstr_long(&cmdstr, rank);
+    }
+
+    if (count >= 0) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "COUNT");
+        redis_cmd_append_sstr_long(&cmdstr, count);
+        *ctx = PHPREDIS_CTX_PTR;
+    }
+
+    if (maxlen >= 0) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "MAXLEN");
+        redis_cmd_append_sstr_long(&cmdstr, maxlen);
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {

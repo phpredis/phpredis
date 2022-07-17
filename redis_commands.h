@@ -229,6 +229,9 @@ int redis_linsert_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_lrem_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
+int redis_lpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+    char **cmd, int *cmd_len, short *slot, void **ctx);
+
 int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
