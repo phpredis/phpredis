@@ -8,8 +8,7 @@
 
 class RedisCluster {
 
-    /** @sensitive-param $auth **/
-    public function __construct(string|null $name, array $seeds = NULL, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistant = false, mixed $auth = NULL, array $context = NULL);
+    public function __construct(string|null $name, array $seeds = NULL, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistant = false, #[\SensitiveParameter] mixed $auth = NULL, array $context = NULL);
 
     public function _compress(string $value): string;
 

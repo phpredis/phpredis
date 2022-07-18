@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 72e55bab630cd2a6dd6620d77e97ec0716d667b1 */
+ * Stub hash: 7ff59229ef9ab94d3bb918d666610b70a5676030 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -1238,6 +1238,11 @@ static zend_class_entry *register_class_RedisCluster(void)
 
 	INIT_CLASS_ENTRY(ce, "RedisCluster", class_RedisCluster_methods);
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
+#if (PHP_VERSION_ID >= 80200)
+
+
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "__construct", sizeof("__construct") - 1), 5, ZSTR_KNOWN(ZEND_STR_SENSITIVEPARAMETER), 0);
+#endif
 
 	return class_entry;
 }

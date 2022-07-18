@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 4e8243076e2c4470473a08456ff20be9f230ee74 */
+ * Stub hash: 946942bc5a7612650fc0416902778452f6860d13 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, host, IS_STRING, 0)
@@ -76,6 +76,11 @@ static zend_class_entry *register_class_RedisSentinel(void)
 
 	INIT_CLASS_ENTRY(ce, "RedisSentinel", class_RedisSentinel_methods);
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
+#if (PHP_VERSION_ID >= 80200)
+
+
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "__construct", sizeof("__construct") - 1), 6, ZSTR_KNOWN(ZEND_STR_SENSITIVEPARAMETER), 0);
+#endif
 
 	return class_entry;
 }

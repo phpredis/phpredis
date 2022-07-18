@@ -35,8 +35,7 @@ class Redis {
 	/** @return int|Redis */
     public function append(string $key, mixed $value);
 
-    /** @sensitive-param $credentials **/
-    public function auth(mixed $credentials): bool;
+    public function auth(#[\SensitiveParameter] mixed $credentials): bool;
 
     public function bgSave(): bool;
 

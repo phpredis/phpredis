@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 0e9010a9567392f6f2a8ad7f1f5f09a28a086c45 */
+ * Stub hash: 954ed131a20d6939f9653dbc384e6244a0862b6e */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -1448,6 +1448,11 @@ static zend_class_entry *register_class_Redis(void)
 
 	INIT_CLASS_ENTRY(ce, "Redis", class_Redis_methods);
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
+#if (PHP_VERSION_ID >= 80200)
+
+
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "auth", sizeof("auth") - 1), 0, ZSTR_KNOWN(ZEND_STR_SENSITIVEPARAMETER), 0);
+#endif
 
 	return class_entry;
 }
