@@ -35,6 +35,7 @@
     #define REDIS_VALUE_EXCEPTION(m) zend_value_error(m)
 #endif
 
+
 void redis_register_persistent_resource(zend_string *id, void *ptr, int le_id);
 void free_reply_callbacks(RedisSock *redis_sock);
 
