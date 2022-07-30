@@ -25,6 +25,7 @@
 #include "crc16.h"
 #include "redis_cluster.h"
 #include "redis_commands.h"
+#include <ext/spl/spl_exceptions.h>
 #include <zend_exceptions.h>
 #include "library.h"
 #include <php_variables.h>
@@ -38,12 +39,18 @@ zend_class_entry *redis_cluster_exception_ce;
 #if PHP_VERSION_ID < 80000
 #include "redis_cluster_legacy_arginfo.h"
 #else
+#include "zend_attributes.h"
 #include "redis_cluster_arginfo.h"
 #endif
 
-extern const zend_function_entry *redis_cluster_get_methods(void)
+PHP_MINIT_FUNCTION(redis_cluster)
 {
-    return class_RedisCluster_methods;
+    redis_cluster_ce = register_class_RedisCluster();
+    redis_cluster_ce->create_object = create_cluster_context;
+
+    redis_cluster_exception_ce = register_class_RedisClusterException(spl_ce_RuntimeException);
+
+    return SUCCESS;
 }
 
 /* Handlers for RedisCluster */

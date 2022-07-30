@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: db47879ea03ea74832fe777fcc5d834ea554bb4a */
+ * Stub hash: fb17c785beccf1dbeedaa48afb4aa7d48fd8b655 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisArray___call, 0, 0, 2)
 	ZEND_ARG_INFO(0, function_name)
@@ -173,3 +173,13 @@ static const zend_function_entry class_RedisArray_methods[] = {
 	ZEND_ME(RedisArray, zscan, arginfo_class_RedisArray_zscan, ZEND_ACC_PUBLIC)
 	ZEND_FE_END
 };
+
+static zend_class_entry *register_class_RedisArray(void)
+{
+	zend_class_entry ce, *class_entry;
+
+	INIT_CLASS_ENTRY(ce, "RedisArray", class_RedisArray_methods);
+	class_entry = zend_register_internal_class_ex(&ce, NULL);
+
+	return class_entry;
+}

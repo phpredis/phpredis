@@ -36,8 +36,8 @@ typedef struct RedisArray_ {
     struct RedisArray_ *prev;
 } RedisArray;
 
-extern const zend_function_entry *redis_array_get_methods(void);
-zend_object *create_redis_array_object(zend_class_entry *ce);
-void free_redis_array_object(zend_object *object);
+extern zend_class_entry *redis_array_ce;
+extern PHP_MINIT_FUNCTION(redis_array);
+extern zend_object *create_redis_array_object(zend_class_entry *ce);
 
 #endif

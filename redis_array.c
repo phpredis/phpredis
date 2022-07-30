@@ -40,12 +40,17 @@ zend_class_entry *redis_array_ce;
 #if PHP_VERSION_ID < 80000
 #include "redis_array_legacy_arginfo.h"
 #else
+#include "zend_attributes.h"
 #include "redis_array_arginfo.h"
 #endif
 
-extern const zend_function_entry *redis_array_get_methods(void)
+PHP_MINIT_FUNCTION(redis_array)
 {
-    return class_RedisArray_methods;
+    /* RedisSentinel class */
+    redis_array_ce = register_class_RedisArray();
+    redis_array_ce->create_object = create_redis_array_object;
+
+    return SUCCESS;
 }
 
 static void

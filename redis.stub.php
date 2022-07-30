@@ -3,6 +3,7 @@
 /**
  * @generate-function-entries
  * @generate-legacy-arginfo
+ * @generate-class-entries
  */
 
 class Redis {
@@ -34,7 +35,7 @@ class Redis {
 	/** @return int|Redis */
     public function append(string $key, mixed $value);
 
-    public function auth(mixed $credentials): bool;
+    public function auth(#[\SensitiveParameter] mixed $credentials): bool;
 
     public function bgSave(): bool;
 
@@ -553,3 +554,5 @@ public function persist(string $key): bool;
 
     public function zunionstore(string $dst, array $keys, array $weights = null, string $aggregate = null): int;
 }
+
+class RedisException extends RuntimeException {}
