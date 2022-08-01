@@ -380,7 +380,7 @@ static void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_
 PS_OPEN_FUNC(redis)
 {
     php_url *url;
-    zval params;
+    zval params, *context;
     int i, j, path_len;
 
     redis_pool *pool = ecalloc(1, sizeof(*pool));
@@ -451,6 +451,7 @@ PS_OPEN_FUNC(redis)
                 REDIS_CONF_AUTH_STATIC(ht, "auth", &user, &pass);
 
                 zval_dtor(&params);
+                context = REDIS_HASH_STR_FIND_TYPE_STATIC(ht, "stream", IS_ARRAY);
             }
 
             if ((url->path == NULL && url->host == NULL) || weight <= 0 || timeout <= 0) {
@@ -489,6 +490,10 @@ PS_OPEN_FUNC(redis)
             redis_sock = redis_sock_create(addr, addrlen, port, timeout, read_timeout,
                                            persistent, persistent_id ? ZSTR_VAL(persistent_id) : NULL,
                                            retry_interval);
+
+            if (context  != NULL) {
+                redis_sock_set_stream_context(redis_sock, context);
+            }
 
             redis_pool_add(pool, redis_sock, weight, db);
             redis_sock->prefix = prefix;
