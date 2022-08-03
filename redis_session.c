@@ -494,6 +494,7 @@ PS_OPEN_FUNC(redis)
 
             if (context  != NULL) {
                 redis_sock_set_stream_context(redis_sock, context);
+                context = NULL;
             }
 
             redis_pool_add(pool, redis_sock, weight, db);
