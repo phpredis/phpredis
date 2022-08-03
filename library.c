@@ -1335,6 +1335,56 @@ redis_pop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_
 }
 
 PHP_REDIS_API int
+redis_lpos_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    char inbuf[4096];
+    int i, numElems;
+    size_t len;
+    zval z_ret;
+
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf), &len) < 0) {
+        goto failure;
+    }
+
+    if (ctx == NULL) {
+        if (*inbuf != TYPE_INT && *inbuf != TYPE_BULK) {
+            goto failure;
+        }
+        ZVAL_LONG(&z_ret, atol(inbuf + 1));
+    } else if (ctx == PHPREDIS_CTX_PTR) {
+        if (*inbuf != TYPE_MULTIBULK) {
+            goto failure;
+        }
+        array_init(&z_ret);
+        numElems = atol(inbuf + 1);
+        for (i = 0;  i < numElems; ++i) {
+            if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf), &len) < 0) {
+                zval_dtor(&z_ret);
+                goto failure;
+            }
+            add_next_index_long(&z_ret, atol(inbuf + 1));
+        }
+    } else {
+        ZEND_ASSERT(!"memory corruption?");
+    }
+
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_ZVAL(&z_ret, 0, 1);
+    } else {
+        add_next_index_zval(z_tab, &z_ret);
+    }
+    return SUCCESS;
+
+failure:
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_FALSE;
+    } else {
+        add_next_index_bool(z_tab, 0);
+    }
+    return FAILURE;
+}
+
+PHP_REDIS_API int
 redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                             zval *z_tab, void *ctx,
                             SuccessCallback success_callback)

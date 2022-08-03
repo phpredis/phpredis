@@ -1253,6 +1253,13 @@ PHP_METHOD(Redis, lPop)
 }
 /* }}} */
 
+/* {{{ proto string Redis::lPos(string key, mixed value, [array options = null]) */
+PHP_METHOD(Redis, lPos)
+{
+    REDIS_PROCESS_CMD(lpos, redis_lpos_response);
+}
+/* }}} */
+
 /* {{{ proto string Redis::rPop(string key, [int count = 0]) */
 PHP_METHOD(Redis, rPop)
 {

@@ -10,9 +10,9 @@ class Redis {
 
     public function __construct(array $options = null);
 
-    public function _compress(string $value): string;
-
     public function __destruct();
+
+    public function _compress(string $value): string;
 
     public function _pack(mixed $value): string;
 
@@ -240,6 +240,8 @@ class Redis {
     public function lMove(string $src, string $dst, string $wherefrom, string $whereto): string;
 
     public function lPop(string $key, int $count = 0): bool|string|array;
+
+    public function lPos(string $key, mixed $value, array $options = null): bool|int|array;
 
     /**
      * @param mixed $elements
