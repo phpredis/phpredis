@@ -1,14 +1,15 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 946942bc5a7612650fc0416902778452f6860d13 */
+ * Stub hash: 4055ace9f1cf20bef89bdb5d3219470b4c8915e6 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, host, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, port, IS_LONG, 0, "26379")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, timeout, IS_DOUBLE, 0, "0")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, persistent, IS_MIXED, 0, "NULL")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, persistent, IS_MIXED, 0, "null")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, retry_interval, IS_LONG, 0, "0")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, read_timeout, IS_DOUBLE, 0, "0")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, auth, IS_MIXED, 0, "NULL")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, auth, IS_MIXED, 0, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, context, IS_ARRAY, 0, "null")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel_ckquorum, 0, 0, 1)
