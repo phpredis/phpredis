@@ -8,7 +8,7 @@
 
 class RedisSentinel {
 
-    public function __construct(string $host, int $port = 26379, float $timeout = 0, mixed $persistent = NULL, int $retry_interval = 0, float $read_timeout = 0, #[\SensitiveParameter] mixed $auth = NULL);
+    public function __construct(string $host, int $port = 26379, float $timeout = 0, mixed $persistent = null, int $retry_interval = 0, float $read_timeout = 0, #[\SensitiveParameter] mixed $auth = null, array $context = null);
 
 	/** @return bool|RedisSentinel */
     public function ckquorum(string $master);
