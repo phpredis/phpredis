@@ -864,7 +864,7 @@ The main feature of this release is new Streams API implemented by
 
 - Streams API [2c9e0572](https://www.github.com/phpredis/phpredis/commit/2c9e0572), [0b97ec37](https://www.github.com/phpredis/phpredis/commit/0b97ec37) ([Michael Grunder](https://github.com/michael-grunder))
 - Display ini entries in output of phpinfo [908ac4b3](https://www.github.com/phpredis/phpredis/commit/908ac4b3) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Persistant connections can be closed via close method + change reconnection
+- Persistent connections can be closed via close method + change reconnection
   logic [1d997873](https://www.github.com/phpredis/phpredis/commit/1d997873) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
 ### Changed

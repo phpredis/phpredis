@@ -725,7 +725,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
       * Session module is required [58bd8cc8] (@remicollet)
       * Set default values for ini entries [e206ce9c] (Pavlo Yatsukhnenko)
       * Display ini entries in output of phpinfo [908ac4b3] (Pavlo Yatsukhnenko)
-      * Persistant connections can be closed via close method + change reconnection logic [1d997873] (Pavlo Yatsukhnenko)
+      * Persistent connections can be closed via close method + change reconnection logic [1d997873] (Pavlo Yatsukhnenko)
       * Documentation improvements (@mg, @elcheco, @lucascourot, @nolimitdev, Michael Grunder)
    </notes>
    </release>
@@ -815,7 +815,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Add tcp_keepalive option to redis sock [68c58513, 5101172a, 010336d5, 51e48729] (@git-hulk, Michael Grunder)
     * More robust GEORADIUS COUNT validation [f7edee5d] (Michael Grunder)
     * Add LZF compression (experimental) [e2c51251, 8cb2d5bd, 8657557] (Pavlo Yatsukhnenko)
-    * Allow to use empty string as persistant_id [ec4fd1bd] (Pavlo Yatsukhnenko)
+    * Allow to use empty string as persistent_id [ec4fd1bd] (Pavlo Yatsukhnenko)
     * Don't use convert_to_string in redis_hmget_cmd [99335d6] (Pavlo Yatsukhnenko)
     * Allow mixing MULTI and PIPELINE modes (experimental) [5874b0] (Pavlo Yatsukhnenko)
     * PHP >=7.3.0 uses zend_string to store `php_url` elements [b566fb44] (@fmk)
@@ -846,7 +846,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     * Fix segfault when extending Redis class in PHP 5 [d23eff] (Pavlo Yatsukhnenko)
     * Fix RedisCluster constructor with PHP 7 strict scalar type [5c21d7] (Pavlo Yatsukhnenko)
-    * Allow to use empty string as persistant_id [344de5] (Pavlo Yatsukhnenko)
+    * Allow to use empty string as persistent_id [344de5] (Pavlo Yatsukhnenko)
     * Fix cluster_init_seeds. [db1347] (@adlagares)
     * Fix z_seeds may be a reference [42581a] (@janic716)
     * PHP >=7.3 uses zend_string for php_url elements [b566fb] (@fmk)
