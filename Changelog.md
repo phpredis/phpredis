@@ -9,7 +9,7 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 
 
-## [5.3.5RC1] - 2021-11-16 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.5RC1), [PECL](https:/pecl.php.net/package/redis/5.3.5RC1))
+## [5.3.5RC1] - 2021-11-16 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.5RC1), [PECL](https://pecl.php.net/package/redis/5.3.5RC1))
 
 ### Sponsors :sparkling_heart:
 
@@ -135,7 +135,7 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [ed283e1ab](https://github.com/phpredis/phpredis/commit/ed283e1ab),
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
-## [5.3.4] - 2021-03-24 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.4), [PECL](https:/pecl.php.net/package/redis/5.3.4))
+## [5.3.4] - 2021-03-24 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.4), [PECL](https://pecl.php.net/package/redis/5.3.4))
 
 ### Sponsors :sparkling_heart:
 
@@ -162,7 +162,7 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [9b986bf8](https://github.com/phpredis/phpredis/commit/9b986bf81859f5a5983cd148cb15ee6ce292d288)
   ([Michael Grunder](https://github.com/michael-grunder))
 
-## [5.3.3] - 2021-02-01 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.3), [PECL](https:/pecl.php.net/package/redis/5.3.3))
+## [5.3.3] - 2021-02-01 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.3), [PECL](https://pecl.php.net/package/redis/5.3.3))
 
 ### Sponsors :sparkling_heart:
 
