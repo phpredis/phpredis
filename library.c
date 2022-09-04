@@ -1196,6 +1196,67 @@ redis_parse_info_response(char *response, zval *z_ret)
     }
 }
 
+static void
+redis_parse_client_info(char *info, zval *z_ret)
+{
+    char *p1, *s1 = NULL;
+
+    ZVAL_FALSE(z_ret);
+    if ((p1 = php_strtok_r(info, " ", &s1)) != NULL) {
+        array_init(z_ret);
+        do {
+            char *p;
+            zend_uchar type;
+            zend_long lval;
+            double dval;
+            if ((p = strchr(p1, '=')) != NULL) {
+                type = is_numeric_string(p + 1, strlen(p + 1), &lval, &dval, 0);
+                switch (type) {
+                case IS_LONG:
+                    add_assoc_long_ex(z_ret, p1, p - p1, lval);
+                    break;
+                case IS_DOUBLE:
+                    add_assoc_double_ex(z_ret, p1, p - p1, dval);
+                    break;
+                default:
+                    add_assoc_string_ex(z_ret, p1, p - p1, p + 1);
+                }
+            } else {
+                add_next_index_string(z_ret, p1);
+            }
+        } while ((p1 = php_strtok_r(NULL, " ", &s1)) != NULL);
+    }
+}
+
+static int
+redis_client_info_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    char *resp;
+    int resp_len;
+    zval z_ret;
+
+    /* Make sure we can read the bulk response from Redis */
+    if ((resp = redis_sock_read(redis_sock, &resp_len)) == NULL) {
+        RETVAL_FALSE;
+        return FAILURE;
+    }
+
+    /* Parse it out */
+    redis_parse_client_info(resp, &z_ret);
+
+    /* Free our response */
+    efree(resp);
+
+    /* Return or append depending if we're atomic */
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_ZVAL(&z_ret, 0, 1);
+    } else {
+        add_next_index_zval(z_tab, &z_ret);
+    }
+
+    return SUCCESS;
+}
+
 /*
  * Specialized handling of the CLIENT LIST output so it comes out in a simple way for PHP userland code
  * to handle.
@@ -1210,10 +1271,12 @@ redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zva
     if ((resp = redis_sock_read(redis_sock, &resp_len)) == NULL) {
         RETVAL_FALSE;
         return FAILURE;
+    } else if (resp_len > 0) {
+        /* Parse it out */
+        redis_parse_client_list_response(resp, &z_ret);
+    } else {
+        array_init(&z_ret);
     }
-
-    /* Parse it out */
-    redis_parse_client_list_response(resp, &z_ret);
 
     /* Free our response */
     efree(resp);
@@ -1231,42 +1294,16 @@ redis_client_list_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zva
 PHP_REDIS_API void
 redis_parse_client_list_response(char *response, zval *z_ret)
 {
-    char *p1, *s1 = NULL;
+    char *p, *s = NULL;
 
     ZVAL_FALSE(z_ret);
-    if ((p1 = php_strtok_r(response, _NL, &s1)) != NULL) {
+    if ((p = php_strtok_r(response, _NL, &s)) != NULL) {
         array_init(z_ret);
         do {
-            char *p2, *s2 = NULL;
             zval z_sub;
-
-            ZVAL_FALSE(&z_sub);
-            if ((p2 = php_strtok_r(p1, " ", &s2)) != NULL) {
-                array_init(&z_sub);
-                do {
-                    char *p;
-                    zend_uchar type;
-                    zend_long lval;
-                    double dval;
-                    if ((p = strchr(p2, '=')) != NULL) {
-                        type = is_numeric_string(p + 1, strlen(p + 1), &lval, &dval, 0);
-                        switch (type) {
-                        case IS_LONG:
-                            add_assoc_long_ex(&z_sub, p2, p - p2, lval);
-                            break;
-                        case IS_DOUBLE:
-                            add_assoc_double_ex(&z_sub, p2, p - p2, dval);
-                            break;
-                        default:
-                            add_assoc_string_ex(&z_sub, p2, p - p2, p + 1);
-                        }
-                    } else {
-                        add_next_index_string(&z_sub, p2);
-                    }
-                } while ((p2 = php_strtok_r(NULL, " ", &s2)) != NULL);
-            }
+            redis_parse_client_info(p, &z_sub);
             add_next_index_zval(z_ret, &z_sub);
-        } while ((p1 = php_strtok_r(NULL, _NL, &s1)) != NULL);
+        } while ((p = php_strtok_r(NULL, _NL, &s)) != NULL);
     }
 }
 
@@ -1627,6 +1664,54 @@ redis_geosearch_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     return SUCCESS;
+}
+
+static int
+redis_client_trackinginfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    int numElems;
+    zval z_ret;
+
+    if (read_mbulk_header(redis_sock, &numElems) < 0) {
+        if (IS_ATOMIC(redis_sock)) {
+            RETVAL_FALSE;
+        } else {
+            add_next_index_bool(z_tab, 0);
+        }
+        return FAILURE;
+    }
+
+    array_init(&z_ret);
+    redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret);
+    array_zip_values_and_scores(redis_sock, &z_ret, 0);
+
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_ZVAL(&z_ret, 0, 1);
+    } else {
+        add_next_index_zval(z_tab, &z_ret);
+    }
+
+    return SUCCESS;
+}
+
+PHP_REDIS_API int
+redis_client_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    if (ctx == NULL) {
+        return redis_client_info_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR) {
+        return redis_client_list_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR + 1) {
+        return redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR + 2) {
+        return redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR + 3) {
+        return redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR + 4) {
+        return redis_client_trackinginfo_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else {
+        ZEND_ASSERT(!"memory corruption?");
+    }
 }
 
 /* Helper function to consume Redis stream message data.  This is useful for

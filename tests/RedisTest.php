@@ -1991,8 +1991,26 @@ class Redis_Test extends TestSuite
         /* CLIENT GETNAME */
         $this->assertTrue($this->redis->client('getname'), 'phpredis_unit_tests');
 
-        if (version_compare($this->version, "6.2.0") >= 0) {
-            $this->assertFalse(empty($this->redis->client('info')));
+        if (version_compare($this->version, '5.0.0') >= 0) {
+            $this->assertLess(0, $this->redis->client('id'));
+            if (version_compare($this->version, '6.0.0') >= 0) {
+                $this->assertEquals($this->redis->client('getredir'), -1);
+                $this->assertTrue($this->redis->client('tracking', 'on', ['optin' => true]));
+                $this->assertEquals($this->redis->client('getredir'), 0);
+                $this->assertTrue($this->redis->client('caching', 'yes'));
+                $this->assertTrue($this->redis->client('tracking', 'off'));
+                if (version_compare($this->version, '6.2.0') >= 0) {
+                    $this->assertFalse(empty($this->redis->client('info')));
+                    $this->assertEquals($this->redis->client('trackinginfo'), [
+                        'flags' => ['off'],
+                        'redirect' => -1,
+                        'prefixes' => [],
+                    ]);
+                    if (version_compare($this->version, '7.0.0') >= 0) {
+                        $this->assertTrue($this->redis->client('no-evict', 'on'));
+                    }
+                }
+            }
         }
 
         /* CLIENT KILL -- phpredis will reconnect, so we can do this */
