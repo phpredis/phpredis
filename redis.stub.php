@@ -64,7 +64,7 @@ class Redis {
 
     public function clearLastError(): bool;
 
-    public function client(string $opt, string $arg = null): mixed;
+    public function client(string $opt, mixed ...$args): mixed;
 
     public function close(): bool;
 

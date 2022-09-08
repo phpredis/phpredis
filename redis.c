@@ -3286,62 +3286,11 @@ PHP_METHOD(Redis, getAuth) {
     }
 }
 
-/*
- * $redis->client('list');
- * $redis->client('info');
- * $redis->client('kill', <ip:port>);
- * $redis->client('setname', <name>);
- * $redis->client('getname');
- */
+/* {{{ proto mixed Redis::client(string $command, [ $arg1 ... $argN]) */
 PHP_METHOD(Redis, client) {
-    zval *object;
-    RedisSock *redis_sock;
-    char *cmd, *opt = NULL, *arg = NULL;
-    size_t opt_len, arg_len;
-    int cmd_len;
-
-    // Parse our method parameters
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                    "Os|s", &object, redis_ce, &opt, &opt_len,
-                                    &arg, &arg_len) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-    /* Grab our socket */
-    if ((redis_sock = redis_sock_get(object, 0)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    /* Build our CLIENT command */
-    if (ZEND_NUM_ARGS() == 2) {
-        cmd_len = REDIS_SPPRINTF(&cmd, "CLIENT", "ss", opt, opt_len, arg, arg_len);
-    } else {
-        cmd_len = REDIS_SPPRINTF(&cmd, "CLIENT", "s", opt, opt_len);
-    }
-
-    /* Execute our queue command */
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-
-    /* We handle CLIENT LIST with a custom response function */
-    if(!strncasecmp(opt, "list", 4)) {
-        if (IS_ATOMIC(redis_sock)) {
-            redis_client_list_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock, NULL, NULL);
-        }
-        REDIS_PROCESS_RESPONSE(redis_client_list_reply);
-    } else if (!strncasecmp(opt, "info", 4)) {
-        if (IS_ATOMIC(redis_sock)) {
-            redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-        }
-        REDIS_PROCESS_RESPONSE(redis_string_response);
-    } else {
-        if (IS_ATOMIC(redis_sock)) {
-            redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                redis_sock,NULL,NULL);
-        }
-        REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
-    }
+    REDIS_PROCESS_CMD(client, redis_client_response);
 }
+/* }}} */
 
 /* {{{ proto mixed Redis::rawcommand(string $command, [ $arg1 ... $argN]) */
 PHP_METHOD(Redis, rawcommand) {

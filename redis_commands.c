@@ -4028,6 +4028,421 @@ int redis_sdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         "SDIFFSTORE", sizeof("SDIFFSTORE")-1, 1, 0, cmd, cmd_len, slot);
 }
 
+static int
+redis_build_client_list_command(smart_string *cmdstr, int argc, zval *z_args)
+{
+    zend_string *zkey;
+    zval *z_ele, *type = NULL, *id = NULL;
+
+    if (argc > 1) {
+        if (Z_TYPE(z_args[1]) != IS_ARRAY) {
+            return FAILURE;
+        }
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL(z_args[1]), zkey, z_ele) {
+            if (zkey != NULL) {
+                ZVAL_DEREF(z_ele);
+                if (zend_string_equals_literal_ci(zkey, "type")) {
+                    if (Z_TYPE_P(z_ele) != IS_STRING || (
+                        !ZVAL_STRICMP_STATIC(z_ele, "normal") &&
+                        !ZVAL_STRICMP_STATIC(z_ele, "master") &&
+                        !ZVAL_STRICMP_STATIC(z_ele, "replica") &&
+                        !ZVAL_STRICMP_STATIC(z_ele, "pubsub")
+                    )) {
+                        return FAILURE;
+                    }
+                    type = z_ele;
+                } else if (zend_string_equals_literal_ci(zkey, "id")) {
+                    if (Z_TYPE_P(z_ele) != IS_STRING && (
+                        Z_TYPE_P(z_ele) != IS_ARRAY ||
+                        !zend_hash_num_elements(Z_ARRVAL_P(z_ele))
+                    )) {
+                        return FAILURE;
+                    }
+                    id = z_ele;
+                }
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+    REDIS_CMD_INIT_SSTR_STATIC(cmdstr, 1 + (type ? 2 : 0) + (
+        id ? (Z_TYPE_P(id) == IS_ARRAY ? 1 + zend_hash_num_elements(Z_ARRVAL_P(id)) : 2) : 0
+    ), "CLIENT");
+    REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "LIST");
+    if (type != NULL) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "TYPE");
+        redis_cmd_append_sstr(cmdstr, Z_STRVAL_P(type), Z_STRLEN_P(type));
+    }
+    if (id != NULL) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "ID");
+        if (Z_TYPE_P(id) == IS_ARRAY) {
+            ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(id), z_ele) {
+                if (Z_TYPE_P(z_ele) == IS_STRING) {
+                    redis_cmd_append_sstr(cmdstr, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
+                } else {
+                    zkey = zval_get_string(z_ele);
+                    redis_cmd_append_sstr(cmdstr, ZSTR_VAL(zkey), ZSTR_LEN(zkey));
+                    zend_string_release(zkey);
+                }
+            } ZEND_HASH_FOREACH_END();
+        } else {
+            redis_cmd_append_sstr(cmdstr, Z_STRVAL_P(id), Z_STRLEN_P(id));
+        }
+    }
+    return SUCCESS;
+}
+
+static int
+redis_build_client_kill_command(smart_string *cmdstr, int argc, zval *z_args)
+{
+    zend_string *zkey;
+    zval *z_ele, *id = NULL, *type = NULL, *address = NULL, *opts = NULL,
+        *user = NULL, *addr = NULL, *laddr = NULL, *skipme = NULL;
+
+    if (argc > 1) {
+        if (argc > 2) {
+            if (Z_TYPE(z_args[1]) != IS_STRING || Z_TYPE(z_args[2]) != IS_ARRAY) {
+                return FAILURE;
+            }
+            address = &z_args[1];
+            opts = &z_args[2];
+        } else if (Z_TYPE(z_args[1]) == IS_STRING) {
+            address = &z_args[1];
+        } else if (Z_TYPE(z_args[1]) == IS_ARRAY) {
+            opts = &z_args[1];
+        } else {
+            return FAILURE;
+        }
+        if (opts != NULL) {
+            ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(opts), zkey, z_ele) {
+                if (zkey != NULL) {
+                    ZVAL_DEREF(z_ele);
+                    if (Z_TYPE_P(z_ele) != IS_STRING) {
+                        return FAILURE;
+                    }
+                    if (zend_string_equals_literal_ci(zkey, "id")) {
+                        id = z_ele;
+                    } else if (zend_string_equals_literal_ci(zkey, "type")) {
+                        if (!ZVAL_STRICMP_STATIC(z_ele, "normal") &&
+                            !ZVAL_STRICMP_STATIC(z_ele, "master") &&
+                            !ZVAL_STRICMP_STATIC(z_ele, "slave") &&
+                            !ZVAL_STRICMP_STATIC(z_ele, "replica") &&
+                            !ZVAL_STRICMP_STATIC(z_ele, "pubsub")
+                        ) {
+                            return FAILURE;
+                        }
+                        type = z_ele;
+                    } else if (zend_string_equals_literal_ci(zkey, "user")) {
+                        user = z_ele;
+                    } else if (zend_string_equals_literal_ci(zkey, "addr")) {
+                        addr = z_ele;
+                    } else if (zend_string_equals_literal_ci(zkey, "laddr")) {
+                        laddr = z_ele;
+                    } else if (zend_string_equals_literal_ci(zkey, "skipme")) {
+                        if (!ZVAL_STRICMP_STATIC(z_ele, "yes") &&
+                            !ZVAL_STRICMP_STATIC(z_ele, "no")
+                        ) {
+                            return FAILURE;
+                        }
+                        skipme = z_ele;
+                    }
+                }
+            } ZEND_HASH_FOREACH_END();
+        }
+    }
+    REDIS_CMD_INIT_SSTR_STATIC(cmdstr, 1 + (address != 0) + (id ? 2 : 0)
+        + (type ? 2 : 0) + (user ? 2 : 0) + (addr ? 2 : 0) + (laddr ? 2 : 0)
+        + (skipme ? 2 : 0), "CLIENT");
+    REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "KILL");
+    if (address != NULL) {
+        redis_cmd_append_sstr(cmdstr, Z_STRVAL_P(address), Z_STRLEN_P(address));
+    }
+    if (id != NULL) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "ID");
+        redis_cmd_append_sstr(cmdstr, Z_STRVAL_P(id), Z_STRLEN_P(id));
+    }
+    if (type != NULL) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "TYPE");
+        redis_cmd_append_sstr(cmdstr, Z_STRVAL_P(type), Z_STRLEN_P(type));
+    }
+    if (user != NULL) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "USER");
+        redis_cmd_append_sstr(cmdstr, Z_STRVAL_P(user), Z_STRLEN_P(user));
+    }
+    if (addr != NULL) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "ADDR");
+        redis_cmd_append_sstr(cmdstr, Z_STRVAL_P(addr), Z_STRLEN_P(addr));
+    }
+    if (laddr != NULL) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "LADDR");
+        redis_cmd_append_sstr(cmdstr, Z_STRVAL_P(laddr), Z_STRLEN_P(laddr));
+    }
+    if (skipme != NULL) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "SKIPME");
+        redis_cmd_append_sstr(cmdstr, Z_STRVAL_P(skipme), Z_STRLEN_P(skipme));
+    }
+    return SUCCESS;
+}
+
+static int
+redis_build_client_tracking_command(smart_string *cmdstr, int argc, zval *z_args)
+{
+    zend_string *zkey;
+    zval *z_ele, *redirect = NULL, *prefix = NULL;
+    zend_bool bcast = 0, optin = 0, optout = 0, noloop = 0;
+
+    if (argc < 2) {
+        return FAILURE;
+    }
+    if (argc > 2) {
+        if (Z_TYPE(z_args[2]) != IS_ARRAY) {
+            return FAILURE;
+        }
+        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL(z_args[2]), zkey, z_ele) {
+            if (zkey != NULL) {
+                ZVAL_DEREF(z_ele);
+                if (zend_string_equals_literal_ci(zkey, "redirect")) {
+                    if (Z_TYPE_P(z_ele) != IS_STRING) {
+                        return FAILURE;
+                    }
+                    redirect = z_ele;
+                } else if (zend_string_equals_literal_ci(zkey, "prefix")) {
+                    if (Z_TYPE_P(z_ele) != IS_STRING && Z_TYPE_P(z_ele) != IS_ARRAY) {
+                        return FAILURE;
+                    }
+                    prefix = z_ele;
+                } else if (zend_string_equals_literal_ci(zkey, "bcast")) {
+                    bcast = zval_is_true(z_ele);
+                } else if (zend_string_equals_literal_ci(zkey, "optin")) {
+                    optin = zval_is_true(z_ele);
+                } else if (zend_string_equals_literal_ci(zkey, "optout")) {
+                    optout = zval_is_true(z_ele);
+                } else if (zend_string_equals_literal_ci(zkey, "noloop")) {
+                    noloop = zval_is_true(z_ele);
+                }
+            }
+        } ZEND_HASH_FOREACH_END();
+    }
+    REDIS_CMD_INIT_SSTR_STATIC(cmdstr, 2 + (redirect ? 2 : 0)
+        + (prefix ? 2 * zend_hash_num_elements(Z_ARRVAL_P(prefix)) : 0)
+        + bcast + optin + optout + noloop, "CLIENT");
+    REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "TRACKING");
+    if (Z_TYPE(z_args[1]) == IS_STRING && (
+        ZVAL_STRICMP_STATIC(&z_args[1], "on") ||
+        ZVAL_STRICMP_STATIC(&z_args[1], "off")
+    )) {
+        redis_cmd_append_sstr(cmdstr, Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1]));
+    } else if (zval_is_true(&z_args[1])) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "ON");
+    } else {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "OFF");
+    }
+    if (redirect != NULL) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "REDIRECT");
+        redis_cmd_append_sstr(cmdstr, Z_STRVAL_P(redirect), Z_STRLEN_P(redirect));
+    }
+    if (prefix != NULL) {
+        if (Z_TYPE_P(prefix) == IS_ARRAY) {
+            ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(prefix), z_ele) {
+                REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "PREFIX");
+                if (Z_TYPE_P(z_ele) == IS_STRING) {
+                    redis_cmd_append_sstr(cmdstr, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
+                } else {
+                    zkey = zval_get_string(z_ele);
+                    redis_cmd_append_sstr(cmdstr, ZSTR_VAL(zkey), ZSTR_LEN(zkey));
+                    zend_string_release(zkey);
+                }
+            } ZEND_HASH_FOREACH_END();
+        } else {
+            REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "PREFIX");
+            redis_cmd_append_sstr(cmdstr, Z_STRVAL_P(prefix), Z_STRLEN_P(prefix));
+        }
+    }
+    if (bcast) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "BCAST");
+    }
+    if (optin) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "OPTIN");
+    }
+    if (optout) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "OPTOUT");
+    }
+    if (noloop) {
+        REDIS_CMD_APPEND_SSTR_STATIC(cmdstr, "NOLOOP");
+    }
+    return SUCCESS;
+}
+
+int
+redis_client_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                 char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    int argc;
+    smart_string cmdstr = {0};
+    zval *z_args;
+
+    if ((argc = ZEND_NUM_ARGS()) < 1) {
+        return FAILURE;
+    }
+
+    z_args = ecalloc(argc, sizeof(*z_args));
+    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
+        Z_TYPE(z_args[0]) != IS_STRING
+    ) {
+        efree(z_args);
+        return FAILURE;
+    }
+
+    if (ZVAL_STRICMP_STATIC(&z_args[0], "info")) {
+        REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1, "CLIENT");
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "INFO");
+    } else if (ZVAL_STRICMP_STATIC(&z_args[0], "list")) {
+        if (redis_build_client_list_command(&cmdstr, argc, z_args) != 0) {
+            efree(z_args);
+            return FAILURE;
+        }
+        *ctx = PHPREDIS_CTX_PTR;
+    } else if (ZVAL_STRICMP_STATIC(&z_args[0], "caching")) {
+        if (argc < 2) {
+            efree(z_args);
+            return FAILURE;
+        }
+        REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2, "CLIENT");
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "CACHING");
+        if (Z_TYPE(z_args[1]) == IS_STRING && (
+            ZVAL_STRICMP_STATIC(&z_args[1], "yes") ||
+            ZVAL_STRICMP_STATIC(&z_args[1], "no")
+        )) {
+            redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1]));
+        } else if (zval_is_true(&z_args[1])) {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "YES");
+        } else {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "NO");
+        }
+        *ctx = PHPREDIS_CTX_PTR + 1;
+    } else if (ZVAL_STRICMP_STATIC(&z_args[0], "getname")) {
+        REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1, "CLIENT");
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "GETNAME");
+        *ctx = PHPREDIS_CTX_PTR + 3;
+    } else if (ZVAL_STRICMP_STATIC(&z_args[0], "getredir") || ZVAL_STRICMP_STATIC(&z_args[0], "id")) {
+        REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1, "CLIENT");
+        redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
+        *ctx = PHPREDIS_CTX_PTR + 2;
+    } else if (ZVAL_STRICMP_STATIC(&z_args[0], "kill")) {
+        if (redis_build_client_kill_command(&cmdstr, argc, z_args) != 0) {
+            efree(z_args);
+            return FAILURE;
+        }
+        *ctx = PHPREDIS_CTX_PTR + 1;
+    } else if (ZVAL_STRICMP_STATIC(&z_args[0], "no-evict")) {
+        if (argc < 2) {
+            efree(z_args);
+            return FAILURE;
+        }
+        REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2, "CLIENT");
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "NO-EVICT");
+        if (Z_TYPE(z_args[1]) == IS_STRING && (
+            ZVAL_STRICMP_STATIC(&z_args[1], "on") ||
+            ZVAL_STRICMP_STATIC(&z_args[1], "off")
+        )) {
+            redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1]));
+        } else if (zval_is_true(&z_args[1])) {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "ON");
+        } else {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "OFF");
+        }
+        *ctx = PHPREDIS_CTX_PTR + 1;
+    } else if (ZVAL_STRICMP_STATIC(&z_args[0], "pause")) {
+        if (argc < 2 || Z_TYPE(z_args[1]) != IS_LONG || (
+            argc > 2 && (
+                Z_TYPE(z_args[2]) != IS_STRING || (
+                    !ZVAL_STRICMP_STATIC(&z_args[2], "write") &&
+                    !ZVAL_STRICMP_STATIC(&z_args[2], "all")
+                )
+            )
+        )) {
+            efree(z_args);
+            return FAILURE;
+        }
+        REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc > 2 ? 3 : 2, "CLIENT");
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "PAUSE");
+        redis_cmd_append_sstr_long(&cmdstr, Z_LVAL(z_args[1]));
+        if (argc > 2) {
+            redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[2]), Z_STRLEN(z_args[2]));
+        }
+        *ctx = PHPREDIS_CTX_PTR + 1;
+    } else if (ZVAL_STRICMP_STATIC(&z_args[0], "reply")) {
+        if (argc > 1 && (
+            Z_TYPE(z_args[1]) != IS_STRING || (
+                !ZVAL_STRICMP_STATIC(&z_args[1], "on") &&
+                !ZVAL_STRICMP_STATIC(&z_args[1], "off") &&
+                !ZVAL_STRICMP_STATIC(&z_args[1], "skip")
+            )
+        )) {
+            efree(z_args);
+            return FAILURE;
+        }
+        REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc > 1 ? 2 : 1, "CLIENT");
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "REPLY");
+        if (argc > 1) {
+            redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1]));
+        }
+        *ctx = PHPREDIS_CTX_PTR + 1;
+    } else if (ZVAL_STRICMP_STATIC(&z_args[0], "setname")) {
+        if (argc < 2 || Z_TYPE(z_args[1]) != IS_STRING) {
+            efree(z_args);
+            return FAILURE;
+        }
+        REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2, "CLIENT");
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "SETNAME");
+        redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1]));
+        *ctx = PHPREDIS_CTX_PTR + 1;
+    } else if (ZVAL_STRICMP_STATIC(&z_args[0], "tracking")) {
+        if (redis_build_client_tracking_command(&cmdstr, argc, z_args) != 0) {
+            efree(z_args);
+            return FAILURE;
+        }
+        *ctx = PHPREDIS_CTX_PTR + 1;
+    } else if (ZVAL_STRICMP_STATIC(&z_args[0], "trackinginfo")) {
+        REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1, "CLIENT");
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "TRACKINGINFO");
+        *ctx = PHPREDIS_CTX_PTR + 4;
+    } else if (ZVAL_STRICMP_STATIC(&z_args[0], "unblock")) {
+        if (argc < 2 || Z_TYPE(z_args[1]) != IS_STRING || (
+            argc > 2 && (
+                Z_TYPE(z_args[2]) != IS_STRING || (
+                    !ZVAL_STRICMP_STATIC(&z_args[2], "timeout") &&
+                    !ZVAL_STRICMP_STATIC(&z_args[2], "error")
+                )
+            )
+        )) {
+            efree(z_args);
+            return FAILURE;
+        }
+        REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc > 2 ? 3 : 2, "CLIENT");
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "UNBLOCK");
+        redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1]));
+        if (argc > 2) {
+            redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[2]), Z_STRLEN(z_args[2]));
+        }
+        *ctx = PHPREDIS_CTX_PTR + 2;
+    } else if (ZVAL_STRICMP_STATIC(&z_args[0], "unpause")) {
+        REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2, "CLIENT");
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "UNPAUSE");
+        *ctx = PHPREDIS_CTX_PTR + 1;
+    } else {
+        efree(z_args);
+        return FAILURE;
+    }
+
+    // Push out values
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    // Cleanup arg array
+    efree(z_args);
+
+    return SUCCESS;
+}
+
 /* COMMAND */
 int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char **cmd, int *cmd_len, short *slot, void **ctx)
