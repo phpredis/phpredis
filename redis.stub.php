@@ -144,7 +144,7 @@ class Redis {
 
     public function geosearchstore(string $dst, string $src, array|string $position, array|int|float $shape, string $unit, array $options = []): array;
 
-	/** @return string|Redis */
+	/** @return false|string|Redis */
     public function get(string $key);
 
     public function getAuth(): mixed;
