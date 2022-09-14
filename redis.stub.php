@@ -42,7 +42,7 @@ class Redis {
     public function bgrewriteaof(): bool;
 
     /** @return int|Redis */
-    public function bitcount(string $key, int $start = 0, int $end = -1);
+    public function bitcount(string $key, int $start = 0, int $end = -1, bool $bybit = false);
 
     /**
      * @return int|Redis

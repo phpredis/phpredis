@@ -206,6 +206,30 @@ class Redis_Test extends TestSuite
         $this->assertFalse($this->redis->pubsub("numsub", "not-an-array"));
     }
 
+    /* These test cases were generated randomly.  We're just trying to test
+       that PhpRedis handles all combination of arguments correctly. */
+    public function testBitcount() {
+        /* key */
+        $this->redis->set('bitcountkey', hex2bin('bd906b854ca76cae'));
+        $this->assertEquals(33, $this->redis->bitcount('bitcountkey'));
+
+        /* key, start */
+        $this->redis->set('bitcountkey', hex2bin('400aac171382a29bebaab554f178'));
+        $this->assertEquals(4, $this->redis->bitcount('bitcountkey', 13));
+
+        /* key, start, end */
+        $this->redis->set('bitcountkey', hex2bin('b1f32405'));
+        $this->assertEquals(2, $this->redis->bitcount('bitcountkey', 3, 3));
+
+        /* key, start, end BYTE */
+        $this->redis->set('bitcountkey', hex2bin('10eb8939e68bfdb640260f0629f3'));
+        $this->assertEquals(1, $this->redis->bitcount('bitcountkey', 8, 8, false));
+
+        /* key, start, end, BIT */
+        $this->redis->set('bitcountkey', hex2bin('cd0e4c80f9e4590d888a10'));
+        $this->assertEquals(5, $this->redis->bitcount('bitcountkey', 0, 9, true));
+    }
+
     public function testBitsets() {
 
         $this->redis->del('key');
