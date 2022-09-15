@@ -3412,9 +3412,9 @@ error:
 
 /* Helper function to extract optional arguments for GEORADIUS and GEORADIUSBYMEMBER */
 static int get_georadius_opts(HashTable *ht, geoOptions *opts) {
-    char *optstr;
     zend_string *zkey;
-    zval *optval, *z_tmp;
+    char *optstr;
+    zval *optval;
 
     /* Iterate over our argument array, collating which ones we have */
     ZEND_HASH_FOREACH_STR_KEY_VAL(ht, zkey, optval) {
@@ -3664,7 +3664,7 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     size_t keylen, unitlen;
     geoOptions gopts = {0};
     smart_string cmdstr = {0};
-    zval *position, *shape, *opts = NULL, *z_ele, *z_tmp;
+    zval *position, *shape, *opts = NULL, *z_ele;
     zend_string *zkey, *zstr;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "szzs|a",
