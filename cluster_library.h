@@ -336,7 +336,7 @@ clusterReply *cluster_read_sock_resp(RedisSock *redis_sock,
 void cluster_free_reply(clusterReply *reply, int free_data);
 
 /* Cluster distribution helpers for WATCH */
-HashTable *cluster_dist_create();
+HashTable *cluster_dist_create(void);
 void cluster_dist_free(HashTable *ht);
 int cluster_dist_add_key(redisCluster *c, HashTable *ht, char *key,
     size_t key_len, clusterKeyVal **kv);
@@ -354,7 +354,7 @@ unsigned short cluster_hash_key_zval(zval *key);
 unsigned short cluster_hash_key(const char *key, int len);
 
 /* Validate and sanitize cluster construction args */
-zend_string** cluster_validate_args(double timeout, double read_timeout, 
+zend_string** cluster_validate_args(double timeout, double read_timeout,
     HashTable *seeds, uint32_t *nseeds, char **errstr);
 
 void free_seed_array(zend_string **seeds, uint32_t nseeds);

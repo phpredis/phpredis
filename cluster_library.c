@@ -359,7 +359,7 @@ static void cluster_dist_free_ht(zval *p) {
 }
 
 /* Spin up a HashTable that will contain distribution lists */
-HashTable *cluster_dist_create() {
+HashTable *cluster_dist_create(void) {
     HashTable *ret;
 
     ALLOC_HASHTABLE(ret);
@@ -375,7 +375,7 @@ void cluster_dist_free(HashTable *ht) {
 }
 
 /* Create a clusterDistList object */
-static clusterDistList *cluster_dl_create() {
+static clusterDistList *cluster_dl_create(void) {
     clusterDistList *dl;
 
     dl        = emalloc(sizeof(clusterDistList));
