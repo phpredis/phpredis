@@ -52,6 +52,7 @@ typedef struct geoOptions {
     int withdist;
     int withhash;
     long count;
+    zend_bool any;
     geoSortType sort;
     geoStoreType store;
     zend_string *key;
@@ -3381,10 +3382,44 @@ geoStoreType get_georadius_store_type(zend_string *key) {
     return STORE_NONE;
 }
 
+/* Helper function to get COUNT and possible ANY flag which is passable to
+ * both GEORADIUS and GEOSEARCH */
+static int get_georadius_count_options(zval *optval, geoOptions *opts) {
+    zval *z_tmp;
+
+    /* Short circuit on bad options */
+    if (Z_TYPE_P(optval) != IS_ARRAY && Z_TYPE_P(optval) != IS_LONG)
+        goto error;
+
+    if (Z_TYPE_P(optval) == IS_ARRAY) {
+        z_tmp = zend_hash_index_find(Z_ARRVAL_P(optval), 0);
+        if (z_tmp) {
+            if (Z_TYPE_P(z_tmp) != IS_LONG || Z_LVAL_P(z_tmp) <= 0)
+                goto error;
+            opts->count = Z_LVAL_P(z_tmp);
+        }
+
+        z_tmp = zend_hash_index_find(Z_ARRVAL_P(optval), 1);
+        if (z_tmp) {
+            opts->any = zval_is_true(z_tmp);
+        }
+    } else {
+        if (Z_LVAL_P(optval) <= 0)
+            goto error;
+        opts->count = Z_LVAL_P(optval);
+    }
+
+    return SUCCESS;
+
+error:
+    php_error_docref(NULL, E_WARNING, "Invalid COUNT value");
+    return FAILURE;
+}
+
 /* Helper function to extract optional arguments for GEORADIUS and GEORADIUSBYMEMBER */
 static int get_georadius_opts(HashTable *ht, geoOptions *opts) {
-    char *optstr;
     zend_string *zkey;
+    char *optstr;
     zval *optval;
 
     /* Iterate over our argument array, collating which ones we have */
@@ -3393,16 +3428,11 @@ static int get_georadius_opts(HashTable *ht, geoOptions *opts) {
 
         /* If the key is numeric it's a non value option */
         if (zkey) {
-            if (ZSTR_LEN(zkey) == 5 && !strcasecmp(ZSTR_VAL(zkey), "count")) {
-                if (Z_TYPE_P(optval) != IS_LONG || Z_LVAL_P(optval) <= 0) {
-                    php_error_docref(NULL, E_WARNING,
-                            "COUNT must be an integer > 0!");
+            if (zend_string_equals_literal_ci(zkey, "COUNT")) {
+                if (get_georadius_count_options(optval, opts) == FAILURE) {
                     if (opts->key) zend_string_release(opts->key);
                     return FAILURE;
                 }
-
-                /* Set our count */
-                opts->count = Z_LVAL_P(optval);
             } else if (opts->store == STORE_NONE) {
                 opts->store = get_georadius_store_type(zkey);
                 if (opts->store != STORE_NONE) {
@@ -3468,6 +3498,9 @@ void append_georadius_opts(RedisSock *redis_sock, smart_string *str, short *slot
     if (opt->count) {
         REDIS_CMD_APPEND_SSTR_STATIC(str, "COUNT");
         redis_cmd_append_sstr_long(str, opt->count);
+        if (opt->any) {
+            REDIS_CMD_APPEND_SSTR_STATIC(str, "ANY");
+        }
     }
 
     /* Append store options if we've got them */
@@ -3522,7 +3555,7 @@ int redis_georadius_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Increment argc depending on options */
     argc += gopts.withcoord + gopts.withdist + gopts.withhash +
-            (gopts.sort != SORT_NONE) + (gopts.count ? 2 : 0) +
+            (gopts.sort != SORT_NONE) + (gopts.count ? 2 + gopts.any : 0) +
             (gopts.store != STORE_NONE ? 2 : 0);
 
     /* Begin construction of our command */
@@ -3591,7 +3624,7 @@ int redis_georadiusbymember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_s
 
     /* Increment argc based on options */
     argc += gopts.withcoord + gopts.withdist + gopts.withhash +
-            (gopts.sort != SORT_NONE) + (gopts.count ? 2 : 0) +
+            (gopts.sort != SORT_NONE) + (gopts.count ? 2 + gopts.any : 0) +
             (gopts.store != STORE_NONE ? 2 : 0);
 
     /* Begin command construction*/
@@ -3638,7 +3671,7 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     geoOptions gopts = {0};
     smart_string cmdstr = {0};
     zval *position, *shape, *opts = NULL, *z_ele;
-    zend_string *zkey;
+    zend_string *zkey, *zstr;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "szzs|a",
                               &key, &keylen, &position, &shape,
@@ -3669,24 +3702,21 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (opts != NULL) {
         ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(opts), zkey, z_ele) {
             ZVAL_DEREF(z_ele);
-            if (zkey != NULL) {
-                if (zend_string_equals_literal_ci(zkey, "COUNT")) {
-                    if (Z_TYPE_P(z_ele) != IS_LONG || Z_LVAL_P(z_ele) <= 0) {
-                        php_error_docref(NULL, E_WARNING, "COUNT must be an integer > 0!");
-                        return FAILURE;
-                    }
-                    gopts.count = Z_LVAL_P(z_ele);
+            if (zkey != NULL && zend_string_equals_literal_ci(zkey, "COUNT")) {
+                if (get_georadius_count_options(z_ele, &gopts) == FAILURE) {
+                    return FAILURE;
                 }
             } else if (Z_TYPE_P(z_ele) == IS_STRING) {
-                if (!strcasecmp(Z_STRVAL_P(z_ele), "WITHCOORD")) {
+                zstr = Z_STR_P(z_ele);
+                if (zend_string_equals_literal_ci(zstr, "WITHCOORD")) {
                     gopts.withcoord = 1;
-                } else if (!strcasecmp(Z_STRVAL_P(z_ele), "WITHDIST")) {
+                } else if (zend_string_equals_literal_ci(zstr, "WITHDIST")) {
                     gopts.withdist = 1;
-                } else if (!strcasecmp(Z_STRVAL_P(z_ele), "WITHHASH")) {
+                } else if (zend_string_equals_literal_ci(zstr, "WITHHASH")) {
                     gopts.withhash = 1;
-                } else if (!strcasecmp(Z_STRVAL_P(z_ele), "ASC")) {
+                } else if (zend_string_equals_literal_ci(zstr, "ASC")) {
                     gopts.sort = SORT_ASC;
-                } else if (!strcasecmp(Z_STRVAL_P(z_ele), "DESC")) {
+                } else if (zend_string_equals_literal_ci(zstr, "DESC")) {
                     gopts.sort = SORT_DESC;
                 }
             }
@@ -3695,7 +3725,7 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Increment argc based on options */
     argc += gopts.withcoord + gopts.withdist + gopts.withhash
-         + (gopts.sort != SORT_NONE) + (gopts.count ? 2 : 0);
+         + (gopts.sort != SORT_NONE) + (gopts.count ? 2 + gopts.any : 0);
 
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "GEOSEARCH");
     redis_cmd_append_sstr_key(&cmdstr, key, keylen, redis_sock, slot);
@@ -3739,6 +3769,9 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (gopts.count) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "COUNT");
         redis_cmd_append_sstr_long(&cmdstr, gopts.count);
+        if (gopts.any) {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "ANY");
+        }
     }
 
     if ((argc = gopts.withcoord + gopts.withdist + gopts.withhash) > 0) {
