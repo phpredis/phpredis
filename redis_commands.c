@@ -3376,6 +3376,40 @@ geoStoreType get_georadius_store_type(zend_string *key) {
     return STORE_NONE;
 }
 
+/* Helper function to get COUNT and possible ANY flag which is passable to
+ * both GEORADIUS and GEOSEARCH */
+static int get_georadius_count_options(zval *optval, geoOptions *opts) {
+    zval *z_tmp;
+
+    /* Short circuit on bad options */
+    if (Z_TYPE_P(optval) != IS_ARRAY && Z_TYPE_P(optval) != IS_LONG)
+        goto error;
+
+    if (Z_TYPE_P(optval) == IS_ARRAY) {
+        z_tmp = zend_hash_index_find(Z_ARRVAL_P(optval), 0);
+        if (z_tmp) {
+            if (Z_TYPE_P(z_tmp) != IS_LONG || Z_LVAL_P(z_tmp) <= 0)
+                goto error;
+            opts->count = Z_LVAL_P(z_tmp);
+        }
+
+        z_tmp = zend_hash_index_find(Z_ARRVAL_P(optval), 1);
+        if (z_tmp) {
+            opts->any = zval_is_true(z_tmp);
+        }
+    } else {
+        if (Z_LVAL_P(optval) <= 0)
+            goto error;
+        opts->count = Z_LVAL_P(optval);
+    }
+
+    return SUCCESS;
+
+error:
+    php_error_docref(NULL, E_WARNING, "Invalid COUNT value");
+    return FAILURE;
+}
+
 /* Helper function to extract optional arguments for GEORADIUS and GEORADIUSBYMEMBER */
 static int get_georadius_opts(HashTable *ht, geoOptions *opts) {
     char *optstr;
@@ -3389,26 +3423,7 @@ static int get_georadius_opts(HashTable *ht, geoOptions *opts) {
         /* If the key is numeric it's a non value option */
         if (zkey) {
             if (zend_string_equals_literal_ci(zkey, "COUNT")) {
-                if (Z_TYPE_P(optval) == IS_ARRAY) {
-                    if ((z_tmp = zend_hash_index_find(Z_ARRVAL_P(optval), 0)) == NULL ||
-                        Z_TYPE_P(z_tmp) != IS_LONG ||
-                        (opts->count = Z_LVAL_P(z_tmp)) <= 0
-                    ) {
-                        php_error_docref(NULL, E_WARNING, "Invalid COUNT value");
-                        if (opts->key) zend_string_release(opts->key);
-                        return FAILURE;
-                    }
-                    if ((z_tmp = zend_hash_index_find(Z_ARRVAL_P(optval), 1)) != NULL) {
-                        opts->any = zval_is_true(z_tmp);
-                    }
-                } else if (Z_TYPE_P(optval) == IS_LONG) {
-                    if ((opts->count = Z_LVAL_P(optval)) <= 0) {
-                        php_error_docref(NULL, E_WARNING, "Invalid COUNT value");
-                        if (opts->key) zend_string_release(opts->key);
-                        return FAILURE;
-                    }
-                } else {
-                    php_error_docref(NULL, E_WARNING, "Invalid COUNT value");
+                if (get_georadius_count_options(optval, opts) == FAILURE) {
                     if (opts->key) zend_string_release(opts->key);
                     return FAILURE;
                 }
@@ -3650,7 +3665,7 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     geoOptions gopts = {0};
     smart_string cmdstr = {0};
     zval *position, *shape, *opts = NULL, *z_ele, *z_tmp;
-    zend_string *zkey;
+    zend_string *zkey, *zstr;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "szzs|a",
                               &key, &keylen, &position, &shape,
@@ -3681,39 +3696,21 @@ redis_geosearch_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (opts != NULL) {
         ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(opts), zkey, z_ele) {
             ZVAL_DEREF(z_ele);
-            if (zkey != NULL) {
-                if (zend_string_equals_literal_ci(zkey, "COUNT")) {
-                    if (Z_TYPE_P(z_ele) == IS_ARRAY) {
-                        if ((z_tmp = zend_hash_index_find(Z_ARRVAL_P(z_ele), 0)) == NULL ||
-                            Z_TYPE_P(z_tmp) != IS_LONG ||
-                            (gopts.count = Z_LVAL_P(z_tmp)) <= 0
-                        ) {
-                            php_error_docref(NULL, E_WARNING, "Invalid COUNT value");
-                            return FAILURE;
-                        }
-                        if ((z_tmp = zend_hash_index_find(Z_ARRVAL_P(z_ele), 1)) != NULL) {
-                            gopts.any = zval_is_true(z_tmp);
-                        }
-                    } else if (Z_TYPE_P(z_ele) == IS_LONG) {
-                        if ((gopts.count = Z_LVAL_P(z_ele)) <= 0) {
-                            php_error_docref(NULL, E_WARNING, "Invalid COUNT value");
-                            return FAILURE;
-                        }
-                    } else {
-                        php_error_docref(NULL, E_WARNING, "Invalid COUNT value");
-                        return FAILURE;
-                    }
+            if (zkey != NULL && zend_string_equals_literal_ci(zkey, "COUNT")) {
+                if (get_georadius_count_options(z_ele, &gopts) == FAILURE) {
+                    return FAILURE;
                 }
             } else if (Z_TYPE_P(z_ele) == IS_STRING) {
-                if (!strcasecmp(Z_STRVAL_P(z_ele), "WITHCOORD")) {
+                zstr = Z_STR_P(z_ele);
+                if (zend_string_equals_literal_ci(zstr, "WITHCOORD")) {
                     gopts.withcoord = 1;
-                } else if (!strcasecmp(Z_STRVAL_P(z_ele), "WITHDIST")) {
+                } else if (zend_string_equals_literal_ci(zstr, "WITHDIST")) {
                     gopts.withdist = 1;
-                } else if (!strcasecmp(Z_STRVAL_P(z_ele), "WITHHASH")) {
+                } else if (zend_string_equals_literal_ci(zstr, "WITHHASH")) {
                     gopts.withhash = 1;
-                } else if (!strcasecmp(Z_STRVAL_P(z_ele), "ASC")) {
+                } else if (zend_string_equals_literal_ci(zstr, "ASC")) {
                     gopts.sort = SORT_ASC;
-                } else if (!strcasecmp(Z_STRVAL_P(z_ele), "DESC")) {
+                } else if (zend_string_equals_literal_ci(zstr, "DESC")) {
                     gopts.sort = SORT_DESC;
                 }
             }
