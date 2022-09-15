@@ -2267,15 +2267,21 @@ int redis_bitcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *key;
     size_t key_len;
     zend_long start = 0, end = -1;
+    zend_bool isbit = 0;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|ll", &key, &key_len,
-                             &start, &end) == FAILURE)
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|llb", &key, &key_len,
+                             &start, &end, &isbit) == FAILURE)
     {
         return FAILURE;
     }
 
-    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "BITCOUNT", "kdd", key, key_len,
-                                 (int)start, (int)end);
+    if (isbit) {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "BITCOUNT", "kdds", key, key_len,
+                                     (int)start, (int)end, "BIT", 3);
+    } else {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "BITCOUNT", "kdd", key, key_len,
+                                     (int)start, (int)end);
+    }
 
     return SUCCESS;
 }
