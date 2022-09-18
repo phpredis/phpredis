@@ -1049,7 +1049,12 @@ class Redis_Test extends TestSuite
         $this->assertEquals([0, 1], $this->redis->lPos('key', 'val1', ['count' => 2]));
         $this->assertEquals([0], $this->redis->lPos('key', 'val1', ['count' => 2, 'maxlen' => 1]));
         $this->assertEquals([], $this->redis->lPos('key', 'val2', ['count' => 1]));
-        $this->assertEquals(-1, $this->redis->lPos('key', 'val2'));
+
+        foreach ([[true, NULL], [false, false]] as $optpack) {
+            list ($setting, $expected) = $optpack;
+            $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, $setting);
+            $this->assertEquals($expected, $this->redis->lPos('key', 'val2'));
+        }
     }
 
     // ltrim, lsize, lpop

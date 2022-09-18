@@ -1378,6 +1378,7 @@ redis_lpos_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z
     int i, numElems;
     size_t len;
     zval z_ret;
+    long lval;
 
     if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf), &len) < 0) {
         goto failure;
@@ -1387,7 +1388,14 @@ redis_lpos_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z
         if (*inbuf != TYPE_INT && *inbuf != TYPE_BULK) {
             goto failure;
         }
-        ZVAL_LONG(&z_ret, atol(inbuf + 1));
+        lval = atol(inbuf + 1);
+        if (lval > -1) {
+            ZVAL_LONG(&z_ret, lval);
+        } else if (redis_sock->null_mbulk_as_null) {
+            ZVAL_NULL(&z_ret);
+        } else {
+            ZVAL_FALSE(&z_ret);
+        }
     } else if (ctx == PHPREDIS_CTX_PTR) {
         if (*inbuf != TYPE_MULTIBULK) {
             goto failure;
