@@ -52,9 +52,9 @@ class Redis {
     /** @return int|Redis */
     public function bitpos(string $key, int $bit, int $start = 0, int $end = -1);
 
-    public function blPop(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array;
+    public function blPop(string|array $key, string|double|int $timeout_or_key, mixed ...$extra_args): array;
 
-    public function brPop(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array;
+    public function brPop(string|array $key, string|double|int $timeout_or_key, mixed ...$extra_args): array;
 
     public function brpoplpush(string $src, string $dst, int $timeout): string;
 
