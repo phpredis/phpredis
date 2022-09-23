@@ -963,18 +963,24 @@ class Redis_Test extends TestSuite
     }
 
     public function testblockingPop() {
+        /* Test with a double timeout in Redis >= 6.0.0 */
+        if (version_compare($this->version, "6.0.0") >= 0) {
+            $this->redis->del('list');
+            $this->redis->lpush('list', 'val1', 'val2');
+            $this->assertEquals(['list', 'val2'], $this->redis->blpop(['list'], .1));
+            $this->assertEquals(['list', 'val1'], $this->redis->blpop(['list'], .1));
+        }
+
         // non blocking blPop, brPop
         $this->redis->del('list');
-        $this->redis->lPush('list', 'val1');
-        $this->redis->lPush('list', 'val2');
-        $this->assertTrue($this->redis->blPop(['list'], 2) === ['list', 'val2']);
-        $this->assertTrue($this->redis->blPop(['list'], 2) === ['list', 'val1']);
+        $this->redis->lPush('list', 'val1', 'val2');
+        $this->assertEquals(['list', 'val2'], $this->redis->blPop(['list'], 2));
+        $this->assertEquals(['list', 'val1'], $this->redis->blPop(['list'], 2));
 
         $this->redis->del('list');
-        $this->redis->lPush('list', 'val1');
-        $this->redis->lPush('list', 'val2');
-        $this->assertTrue($this->redis->brPop(['list'], 1) === ['list', 'val1']);
-        $this->assertTrue($this->redis->brPop(['list'], 1) === ['list', 'val2']);
+        $this->redis->lPush('list', 'val1', 'val2');
+        $this->assertEquals(['list', 'val1'], $this->redis->brPop(['list'], 1));
+        $this->assertEquals(['list', 'val2'], $this->redis->brPop(['list'], 1));
 
         // blocking blpop, brpop
         $this->redis->del('list');

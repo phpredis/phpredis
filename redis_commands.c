@@ -1461,14 +1461,13 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                           char *kw, int kw_len, int min_argc, int has_timeout,
                           char **cmd, int *cmd_len, short *slot)
 {
-    zval *z_args, *z_ele;
+    zval *z_args, *z_ele, ztimeout = {0};
     HashTable *ht_arr;
     char *key;
     int key_free, i, tail;
     size_t key_len;
     int single_array = 0, argc = ZEND_NUM_ARGS();
     smart_string cmdstr = {0};
-    long timeout = 0;
     short kslot = -1;
     zend_string *zstr;
 
@@ -1489,8 +1488,9 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         single_array = argc==1 && Z_TYPE(z_args[0]) == IS_ARRAY;
     } else {
         single_array = argc==2 && Z_TYPE(z_args[0]) == IS_ARRAY &&
-            Z_TYPE(z_args[1]) == IS_LONG;
-        timeout = Z_LVAL(z_args[1]);
+            (Z_TYPE(z_args[1]) == IS_LONG || Z_TYPE(z_args[1]) == IS_DOUBLE);
+        if (single_array)
+            ZVAL_COPY_VALUE(&ztimeout, &z_args[1]);
     }
 
     // If we're running a single array, rework args
@@ -1533,17 +1533,22 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             zend_string_release(zstr);
             if (key_free) efree(key);
         } ZEND_HASH_FOREACH_END();
-        if (has_timeout) {
-            redis_cmd_append_sstr_long(&cmdstr, timeout);
+        if (Z_TYPE(ztimeout) == IS_LONG) {
+            redis_cmd_append_sstr_long(&cmdstr, Z_LVAL(ztimeout));
+        } else if (Z_TYPE(ztimeout) == IS_DOUBLE) {
+            redis_cmd_append_sstr_dbl(&cmdstr, Z_DVAL(ztimeout));
         }
     } else {
-        if (has_timeout && Z_TYPE(z_args[argc-1])!=IS_LONG) {
-            php_error_docref(NULL, E_ERROR,
-                "Timeout value must be a LONG");
-            efree(z_args);
-            return FAILURE;
+        if (has_timeout) {
+            zend_uchar type = Z_TYPE(z_args[argc - 1]);
+            if (type == IS_LONG || type == IS_DOUBLE) {
+                ZVAL_COPY_VALUE(&ztimeout, &z_args[argc - 1]);
+            } else {
+                php_error_docref(NULL, E_ERROR, "Timeout value must be a long or double");
+                efree(z_args);
+                return FAILURE;
+            }
         }
-
         tail = has_timeout ? argc-1 : argc;
         for(i = 0; i < tail; i++) {
             zstr = zval_get_string(&z_args[i]);
@@ -1571,7 +1576,10 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             zend_string_release(zstr);
             if (key_free) efree(key);
         }
-        if (has_timeout) {
+
+        if (Z_TYPE(ztimeout) == IS_DOUBLE) {
+            redis_cmd_append_sstr_dbl(&cmdstr, Z_DVAL(z_args[tail]));
+        } else if (Z_TYPE(ztimeout) == IS_LONG) {
             redis_cmd_append_sstr_long(&cmdstr, Z_LVAL(z_args[tail]));
         }
 
