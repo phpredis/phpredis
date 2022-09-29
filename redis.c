@@ -315,6 +315,7 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_REPLY_LITERAL"), REDIS_OPT_REPLY_LITERAL);
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION_LEVEL"), REDIS_OPT_COMPRESSION_LEVEL);
     zend_declare_class_constant_long(ce, ZEND_STRL("OPT_NULL_MULTIBULK_AS_NULL"), REDIS_OPT_NULL_MBULK_AS_NULL);
+    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_PREFERRED_NODES"), REDIS_OPT_PREFERRED_NODES);
 
     /* serializer */
     zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_NONE"), REDIS_SERIALIZER_NONE);
@@ -364,6 +365,7 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_ERROR"), REDIS_FAILOVER_ERROR);
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE"), REDIS_FAILOVER_DISTRIBUTE);
         zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE_SLAVES"), REDIS_FAILOVER_DISTRIBUTE_SLAVES);
+        zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_PREFERRED"), REDIS_FAILOVER_PREFERRED);
     } else {
         /* Cluster doesn't support pipelining at this time */
         zend_declare_class_constant_long(ce, ZEND_STRL("PIPELINE"), PIPELINE);

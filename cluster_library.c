@@ -844,6 +844,10 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     ALLOC_HASHTABLE(c->nodes);
     zend_hash_init(c->nodes, 0, NULL, ht_free_node, 0);
 
+    /* Allocate our preferred nodes HashTable */
+    ALLOC_HASHTABLE(c->preferred_nodes);
+    zend_hash_init(c->preferred_nodes, 0, NULL, NULL, 0);
+
     return c;
 }
 
@@ -862,10 +866,12 @@ cluster_free(redisCluster *c, int free_ctx)
     /* Call hash table destructors */
     zend_hash_destroy(c->seeds);
     zend_hash_destroy(c->nodes);
+    zend_hash_destroy(c->preferred_nodes);
 
     /* Free hash tables themselves */
     efree(c->seeds);
     efree(c->nodes);
+    efree(c->preferred_nodes);
 
     /* Free any error we've got */
     if (c->err) zend_string_release(c->err);
@@ -1236,10 +1242,72 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force) {
     } ZEND_HASH_FOREACH_END();
 }
 
+int preferred_compare(const void *const first, const void *const second)
+{
+    const preferredNode* a = (const preferredNode*)first;
+    const preferredNode* b = (const preferredNode*)second;
+    if (a->preferred == 1 && b->preferred == 0)
+        return -1;
+    else if (a->preferred == 0 && b->preferred == 1)
+        return 1;
+    else if (a->original_order < b->original_order)
+        return -1;
+    else if (a->original_order > b->original_order)
+        return 1;
+    else
+        return 0;
+}
+
+/* This method takes the randomised list of nodes and sorts preferred nodes to
+ * the top. */
+static void preferredsort(int *array, size_t len, redisCluster *c,
+							unsigned short slot)
+{
+    int i, temp, key_len, *prefnodes;
+    size_t r;
+    RedisSock *redis_sock;
+    char key[1024];
+    zval *node;
+
+    struct preferredNode ab[len];
+
+    // array: key => order; value => node-idx (0=master)
+    for (i = 0; i < len; i++) {
+        // Get node host+port string.
+        redis_sock = cluster_slot_sock(c, c->cmd_slot, array[i]);
+
+        ab[i].idx = array[i];
+        ab[i].original_order = i;
+        ab[i].preferred = 0;
+        if (!redis_sock) {
+            continue;
+        }
+
+        // Is it in the preferred_nodes map?
+        snprintf(key, sizeof(key), "%s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
+        // Perhaps the preferred_nodes table should be keyed on the host:port string to make this
+        // easier and faster.
+        ZEND_HASH_FOREACH_VAL(c->preferred_nodes, node) {
+            if (strcmp(Z_STRVAL_P(node), key) == 0) {
+                ab[i].preferred = 1;
+                break;
+            }
+
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    // Sort preferred nodes to the top of the list.
+    qsort(ab, len, sizeof(*ab), preferred_compare);
+    for (i = 0; i < len; i++) {
+        array[i] = ab[i].idx;
+    }
+}
+
+
 /* This method attempts to write our command at random to the master and any
  * attached slaves, until we either successufly do so, or fail. */
 static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
-                              int nomaster)
+                              int nomaster, int preferred)
 {
     int i, count = 1, *nodes;
     RedisSock *redis_sock;
@@ -1256,6 +1324,11 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
      * randomize them, so we will pick from the master or some slave.  */
     for (i = 0; i < count; i++) nodes[i] = i;
     fyshuffle(nodes, count);
+
+    /* Shift preferred nodes to the top of the list if we're in preferred
+     * mode */
+    if (preferred && zend_hash_num_elements(c->preferred_nodes) > 0)
+        preferredsort(nodes, count, c, c->cmd_slot);
 
     /* Iterate through our nodes until we find one we can write to or fail */
     for (i = 0; i < count; i++) {
@@ -1307,6 +1380,8 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
  * REDIS_FAILOVER_DISTRIBUTE_SLAVES:
  *   We pick at random from slave nodes of a given master.  This option is
  *   used to load balance read queries against N slaves.
+ * REDIS_FAILOVER_PREFERRED:
+ *   Similar to DISTRIBUTE, but with a list of nodes we prefer over others.
  *
  * Once we are able to find a node we can write to, we check for MOVED or
  * ASKING redirection, such that the keyspace can be updated.
@@ -1316,7 +1391,7 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
 {
     redisClusterNode *seed_node;
     RedisSock *redis_sock;
-    int failover, nomaster;
+    int failover, nomaster, preferred;
 
     /* First try the socket requested */
     redis_sock = c->cmd_sock;
@@ -1344,12 +1419,13 @@ static int cluster_sock_write(redisCluster *c, const char *cmd, size_t sz,
     } else if (failover == REDIS_FAILOVER_ERROR) {
         /* Try the master, then fall back to any slaves we may have */
         if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz) ||
-           !cluster_dist_write(c, cmd, sz, 1)) return 0;
+           !cluster_dist_write(c, cmd, sz, 1, 0)) return 0;
     } else {
         /* Include or exclude master node depending on failover option and
          * attempt to make our write */
         nomaster = failover == REDIS_FAILOVER_DISTRIBUTE_SLAVES;
-        if (!cluster_dist_write(c, cmd, sz, nomaster)) {
+        preferred = failover == REDIS_FAILOVER_PREFERRED;
+        if (!cluster_dist_write(c, cmd, sz, nomaster, preferred)) {
             /* We were able to write to a master or slave at random */
             return 0;
         }
@@ -1537,7 +1613,7 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
 PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char *cmd,
                                          int cmd_len)
 {
-    int resp, timedout = 0;
+    int failovertoggle, resp, timedout = 0;
     long msstart;
 
     if (!SLOT(c, slot)) {
@@ -1594,6 +1670,11 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
                /* For MOVED redirection we want to update our cached mapping */
                cluster_update_slot(c);
                c->cmd_sock = SLOT_SOCK(c, slot);
+               if (c->failover == REDIS_FAILOVER_PREFERRED) {
+                   // On MOVED, turn off preferred mode until we're done with the command.
+                   c->failover = REDIS_FAILOVER_NONE;
+                   failovertoggle = REDIS_FAILOVER_PREFERRED;
+               }
            } else if (c->redir_type == REDIR_ASK) {
                /* For ASK redirection we want to redirect but not update slot mapping */
                c->cmd_sock = cluster_get_asking_sock(c);
@@ -1623,6 +1704,11 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
 
     /* Clear redirection flag */
     c->redir_type = REDIR_NONE;
+
+    // If we changed failover mode, switch it back.
+    if (failovertoggle) {
+        c->failover = failovertoggle;
+    }
 
     // Success, return the slot where data exists.
     return 0;
