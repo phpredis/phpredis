@@ -5566,7 +5566,9 @@ void redis_setoption_handler(INTERNAL_FUNCTION_PARAMETERS,
                 RETURN_TRUE;
             }
             break;
-        EMPTY_SWITCH_DEFAULT_CASE()
+        default:
+            php_error_docref(NULL, E_WARNING, "Unknown option '" ZEND_LONG_FMT "'", option);
+            break;
     }
     RETURN_FALSE;
 }

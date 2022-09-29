@@ -6985,6 +6985,11 @@ class Redis_Test extends TestSuite
         $this->assertEquals('bar', $this->redis->get('key2'));
     }
 
+    /* Make sure we handle a bad option value gracefully */
+    public function testBadOptionValue() {
+        $this->assertFalse(@$this->redis->setOption(pow(2, 32), false));
+    }
+
     public  function testSession_regenerateSessionId_noLock_noDestroy() {
         $this->setSessionHandler();
         $sessionId = $this->generateSessionId();
