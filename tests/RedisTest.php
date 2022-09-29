@@ -1948,6 +1948,55 @@ class Redis_Test extends TestSuite
         $this->assertTrue($count === 0);
     }
 
+    public function testInterCard() {
+        if(version_compare($this->version, "7.0.0") < 0) {
+            $this->markTestSkipped();
+        }
+
+        $set_data = [
+            ['aardvark', 'dog', 'fish', 'squirrel', 'tiger'],
+            ['bear', 'coyote', 'fish', 'gorilla', 'dog']
+        ];
+
+        $ssets = $zsets = [];
+
+        foreach ($set_data as $n => $values) {
+            $sset = "s{set}:$n";
+            $zset = "z{set}:$n";
+
+            $this->redis->del([$sset, $zset]);
+
+            $ssets[] = $sset;
+            $zsets[] = $zset;
+
+            foreach ($values as $score => $value) {
+                $this->assertEquals(1, $this->redis->sAdd("s{set}:$n", $value));
+                $this->assertEquals(1, $this->redis->zAdd("z{set}:$n", $score, $value));
+            }
+        }
+
+        $exp = count(array_intersect(...$set_data));
+
+        $act = $this->redis->sintercard($ssets);
+        $this->assertEquals($exp, $act);
+        $act = $this->redis->zintercard($zsets);
+        $this->assertEquals($exp, $act);
+
+        $this->assertEquals(1, $this->redis->sintercard($ssets, 1));
+        $this->assertEquals(2, $this->redis->sintercard($ssets, 2));
+
+        $this->assertEquals(1, $this->redis->zintercard($zsets, 1));
+        $this->assertEquals(2, $this->redis->zintercard($zsets, 2));
+
+        $this->assertFalse(@$this->redis->sintercard($ssets, -1));
+        $this->assertFalse(@$this->redis->zintercard($ssets, -1));
+
+        $this->assertFalse(@$this->redis->sintercard([]));
+        $this->assertFalse(@$this->redis->zintercard([]));
+
+        $this->redis->del(array_merge($ssets, $zsets));
+    }
+
     public function testlrange() {
         $this->redis->del('list');
         $this->redis->lPush('list', 'val');

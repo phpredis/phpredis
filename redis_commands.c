@@ -841,6 +841,63 @@ static int redis_cmd_append_sstr_score(smart_string *dst, zval *score) {
     return FAILURE;
 }
 
+int redis_intercard_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                        char *kw, char **cmd, int *cmd_len, short *slot,
+                        void **ctx)
+{
+    smart_string cmdstr = {0};
+    zend_long limit = -1;
+    HashTable *keys;
+    zend_string *key;
+    zval *zv;
+
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_ARRAY_HT(keys)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(limit)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(keys) == 0) {
+        php_error_docref(NULL, E_WARNING, "Must pass at least one key");
+        return FAILURE;
+    } else if (ZEND_NUM_ARGS() == 2 && limit < 0) {
+        php_error_docref(NULL, E_WARNING, "LIMIT cannot be negative");
+        return FAILURE;
+    }
+
+    redis_cmd_init_sstr(&cmdstr, 1 + zend_hash_num_elements(keys) + (limit > 0 ? 2 : 0), kw, strlen(kw));
+    redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(keys));
+
+    if (slot) *slot = -1;
+
+    ZEND_HASH_FOREACH_VAL(keys, zv) {
+        key = redis_key_prefix_zval(redis_sock, zv);
+
+        if (slot) {
+            if (*slot == -1) {
+                *slot = cluster_hash_key_zstr(key);
+            } else if (*slot != cluster_hash_key_zstr(key)) {
+                php_error_docref(NULL, E_WARNING, "All keys don't hash to the same slot");
+                efree(cmdstr.c);
+                zend_string_release(key);
+                return FAILURE;
+            }
+        }
+
+        redis_cmd_append_sstr_zstr(&cmdstr, key);
+        zend_string_release(key);
+    } ZEND_HASH_FOREACH_END();
+
+    if (limit > 0) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "LIMIT");
+        redis_cmd_append_sstr_long(&cmdstr, limit);
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    return SUCCESS;
+}
+
 int
 redis_zinterunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char *kw, char **cmd, int *cmd_len, short *slot,

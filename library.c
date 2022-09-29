@@ -3496,6 +3496,35 @@ redis_key_prefix(RedisSock *redis_sock, char **key, size_t *key_len) {
     return 1;
 }
 
+static zend_string *redis_zstr_concat(zend_string *prefix, zend_string *key) {
+    ZEND_ASSERT(prefix != NULL && key != NULL);
+    return zend_string_concat2(ZSTR_VAL(prefix), ZSTR_LEN(prefix),
+                               ZSTR_VAL(key), ZSTR_LEN(key));
+}
+
+PHP_REDIS_API zend_string *
+redis_key_prefix_zval(RedisSock *redis_sock, zval *zv) {
+    zend_string *zstr, *dup;
+
+    zstr = zval_get_string(zv);
+    if (redis_sock->prefix == NULL)
+        return zstr;
+
+    dup = redis_zstr_concat(redis_sock->prefix, zstr);
+
+    zend_string_release(zstr);
+
+    return dup;
+}
+
+PHP_REDIS_API zend_string *
+redis_key_prefix_zstr(RedisSock *redis_sock, zend_string *key) {
+    if (redis_sock->prefix == NULL)
+        return zend_string_copy(key);
+
+    return redis_zstr_concat(redis_sock->prefix, key);
+}
+
 /*
  * Processing for variant reply types (think EVAL)
  */

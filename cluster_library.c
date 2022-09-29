@@ -530,6 +530,10 @@ unsigned short cluster_hash_key(const char *key, int len) {
     return crc16((char*)key+s+1,e-s-1) & REDIS_CLUSTER_MOD;
 }
 
+unsigned short cluster_hash_key_zstr(zend_string *key) {
+    return cluster_hash_key(ZSTR_VAL(key), ZSTR_LEN(key));
+}
+
 /* Grab the current time in milliseconds */
 long long mstime(void) {
     struct timeval tv;
