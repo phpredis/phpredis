@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 28b297e0067c033cea6e2c42fb1f42d4585234ac */
+ * Stub hash: 2c5f558917526d1a034a45b63bf7890bd8cb49e5 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)

@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 28b297e0067c033cea6e2c42fb1f42d4585234ac */
+ * Stub hash: 2c5f558917526d1a034a45b63bf7890bd8cb49e5 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -72,7 +72,7 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_blPop, 0, 2, IS_ARRAY, 0)
 	ZEND_ARG_TYPE_MASK(0, key, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
-	ZEND_ARG_OBJ_TYPE_MASK(0, timeout_or_key, double, MAY_BE_STRING|MAY_BE_LONG, NULL)
+	ZEND_ARG_TYPE_MASK(0, timeout_or_key, MAY_BE_STRING|MAY_BE_DOUBLE|MAY_BE_LONG, NULL)
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, extra_args, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
