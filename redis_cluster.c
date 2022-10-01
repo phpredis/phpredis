@@ -1315,13 +1315,18 @@ PHP_METHOD(RedisCluster, lget) {
 }
 /* }}} */
 
-/* {{{ proto string RedisCluster::getrange(string key, long start, long end) */
-PHP_METHOD(RedisCluster, getrange) {
+/* {{{ proto string RedisCluster::getrange(string key, long start, long end) */ PHP_METHOD(RedisCluster, getrange) {
     CLUSTER_PROCESS_KW_CMD("GETRANGE", redis_key_long_long_cmd,
         cluster_bulk_resp, 1);
 }
 /* }}} */
 
+/* {{{ prot RedisCluster::lcs(string $key1, string $key2, ?array $options = NULL): mixed; */
+PHP_METHOD(RedisCluster, lcs) {
+    CLUSTER_PROCESS_CMD(lcs, cluster_variant_resp, 1);
+}
+
+/* }}} */
 /* {{{ proto string RedisCluster::ltrim(string key, long start, long end) */
 PHP_METHOD(RedisCluster, ltrim) {
     CLUSTER_PROCESS_KW_CMD("LTRIM", redis_key_long_long_cmd, cluster_bool_resp, 0);

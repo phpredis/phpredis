@@ -1182,6 +1182,12 @@ PHP_METHOD(Redis, getRange)
 }
 /* }}} */
 
+/* {{{ proto mixed Redis::lcs(string $key1, string $key2, ?array $options = NULL); */
+PHP_METHOD(Redis, lcs) {
+    REDIS_PROCESS_CMD(lcs, redis_read_variant_reply);
+}
+/* }}} */
+
 /* {{{ proto string Redis::setRange(string key, long start, string value) */
 PHP_METHOD(Redis, setRange)
 {

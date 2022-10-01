@@ -272,6 +272,27 @@ class Redis_Test extends TestSuite
         $this->assertEquals(1, $this->redis->getBit('key', 0x7fffffff));
     }
 
+    public function testLcs() {
+        $key1 = '{lcs}1'; $key2 = '{lcs}2';
+        $this->assertTrue($this->redis->set($key1, '12244447777777'));
+        $this->assertTrue($this->redis->set($key2, '6666662244441'));
+
+        $this->assertEquals('224444', $this->redis->lcs($key1, $key2));
+
+        $this->assertEquals(
+            ['matches', [[[1, 6], [6, 11]]], 'len', 6],
+            $this->redis->lcs($key1, $key2, ['idx'])
+        );
+        $this->assertEquals(
+            ['matches', [[[1, 6], [6, 11], 6]], 'len', 6],
+            $this->redis->lcs($key1, $key2, ['idx', 'withmatchlen'])
+        );
+
+        $this->assertEquals(6, $this->redis->lcs($key1, $key2, ['len']));
+
+        $this->redis->del([$key1, $key2]);
+    }
+
     public function testBitPos() {
         if (version_compare($this->version, "2.8.7") < 0) {
             $this->MarkTestSkipped();

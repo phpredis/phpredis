@@ -58,6 +58,13 @@ typedef struct geoOptions {
     zend_string *key;
 } geoOptions;
 
+typedef struct redisLcsOptions {
+    zend_bool len;
+    zend_bool idx;
+    zend_long minmatchlen;
+    zend_bool withmatchlen;
+} redisLcsOptions;
+
 /* Local passthrough macro for command construction.  Given that these methods
  * are generic (so they work whether the caller is Redis or RedisCluster) we
  * will always have redis_sock, slot*, and */
@@ -2221,6 +2228,102 @@ redis_hstrlen_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     return SUCCESS;
 }
+
+void redis_get_lcs_options(redisLcsOptions *dst, HashTable *ht) {
+    zend_string *key;
+    zval *zv;
+
+    ZEND_ASSERT(dst != NULL);
+
+    memset(dst, 0, sizeof(*dst));
+
+    if (ht == NULL)
+        return;
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht, key, zv) {
+        if (key) {
+            if (zend_string_equals_literal_ci(key, "LEN")) {
+                dst->idx = 0;
+                dst->len = zval_is_true(zv);
+            } else if (zend_string_equals_literal_ci(key, "IDX")) {
+                dst->len = 0;
+                dst->idx = zval_is_true(zv);
+            } else if (zend_string_equals_literal_ci(key, "MINMATCHLEN")) {
+                dst->minmatchlen = zval_get_long(zv);
+            } else if (zend_string_equals_literal_ci(key, "WITHMATCHLEN")) {
+                dst->withmatchlen = zval_is_true(zv);
+            } else {
+                php_error_docref(NULL, E_WARNING, "Unknown LCS option '%s'", ZSTR_VAL(key));
+            }
+        } else if (Z_TYPE_P(zv) == IS_STRING) {
+            if (zend_string_equals_literal_ci(Z_STR_P(zv), "LEN")) {
+                dst->idx = 0;
+                dst->len = 1;
+            } else if (zend_string_equals_literal_ci(Z_STR_P(zv), "IDX")) {
+                dst->idx = 1;
+                dst->len = 0;
+            } else if (zend_string_equals_literal_ci(Z_STR_P(zv), "WITHMATCHLEN")) {
+                dst->withmatchlen = 1;
+            }
+        }
+    } ZEND_HASH_FOREACH_END();
+}
+
+/* LCS */
+int redis_lcs_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                  char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    zend_string *key1 = NULL, *key2 = NULL;
+    smart_string cmdstr = {0};
+    HashTable *ht = NULL;
+    redisLcsOptions opt;
+    int argc;
+
+    ZEND_PARSE_PARAMETERS_START(2, 3)
+        Z_PARAM_STR(key1)
+        Z_PARAM_STR(key2)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT_OR_NULL(ht)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    key1 = redis_key_prefix_zstr(redis_sock, key1);
+    key2 = redis_key_prefix_zstr(redis_sock, key2);
+
+    if (slot) {
+        *slot = cluster_hash_key_zstr(key1);
+        if (*slot != cluster_hash_key_zstr(key2)) {
+            php_error_docref(NULL, E_WARNING, "Warning, not all keys hash to the same slot!");
+            zend_string_release(key1);
+            zend_string_release(key2);
+            return FAILURE;
+        }
+    }
+
+    redis_get_lcs_options(&opt, ht);
+
+    argc = 2 + !!opt.idx + !!opt.len + !!opt.withmatchlen + (opt.minmatchlen ? 2 : 0);
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "LCS");
+
+    redis_cmd_append_sstr_zstr(&cmdstr, key1);
+    redis_cmd_append_sstr_zstr(&cmdstr, key2);
+
+    REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, opt.idx, "IDX");
+    REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, opt.len, "LEN");
+    REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, opt.withmatchlen, "WITHMATCHLEN");
+
+    if (opt.minmatchlen) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "MINMATCHLEN");
+        redis_cmd_append_sstr_long(&cmdstr, opt.minmatchlen);
+    }
+
+    zend_string_release(key1);
+    zend_string_release(key2);
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    return SUCCESS;
+}
+
 
 /* BITPOS */
 int redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,

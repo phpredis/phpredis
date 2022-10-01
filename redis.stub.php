@@ -173,6 +173,8 @@ class Redis {
 	/** @return string|Redis */
     public function getRange(string $key, int $start, int $end);
 
+    public function lcs(string $key1, string $key2, ?array $options = NULL): Redis|string|array|int|false;
+
     public function getReadTimeout(): int;
 
 	/** @return string|Redis */
