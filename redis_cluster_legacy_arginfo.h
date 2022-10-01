@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 45d120a35a1c256964c45c71ab91c025ea00e862 */
+ * Stub hash: d6e8120d2edd3cb4a18baa99c6013ac428049448 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -162,6 +162,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_expireat, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, timestamp)
 ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_expiretime arginfo_class_RedisCluster__prefix
+
+#define arginfo_class_RedisCluster_pexpiretime arginfo_class_RedisCluster__prefix
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_flushall, 0, 0, 1)
 	ZEND_ARG_INFO(0, node)
@@ -782,6 +786,8 @@ ZEND_METHOD(RedisCluster, exec);
 ZEND_METHOD(RedisCluster, exists);
 ZEND_METHOD(RedisCluster, expire);
 ZEND_METHOD(RedisCluster, expireat);
+ZEND_METHOD(RedisCluster, expiretime);
+ZEND_METHOD(RedisCluster, pexpiretime);
 ZEND_METHOD(RedisCluster, flushall);
 ZEND_METHOD(RedisCluster, flushdb);
 ZEND_METHOD(RedisCluster, geoadd);
@@ -979,6 +985,8 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, exists, arginfo_class_RedisCluster_exists, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, expire, arginfo_class_RedisCluster_expire, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, expireat, arginfo_class_RedisCluster_expireat, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, expiretime, arginfo_class_RedisCluster_expiretime, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, pexpiretime, arginfo_class_RedisCluster_pexpiretime, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, flushall, arginfo_class_RedisCluster_flushall, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, flushdb, arginfo_class_RedisCluster_flushdb, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, geoadd, arginfo_class_RedisCluster_geoadd, ZEND_ACC_PUBLIC)

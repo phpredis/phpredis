@@ -1273,6 +1273,16 @@ PHP_METHOD(RedisCluster, pexpireat) {
 }
 /* }}} */
 
+/* {{{ Redis::expiretime(string $key): int */
+PHP_METHOD(RedisCluster, expiretime) {
+    CLUSTER_PROCESS_KW_CMD("EXPIRETIME", redis_key_cmd, cluster_long_resp, 1);
+}
+
+/* {{{ Redis::pexpiretime(string $key): int */
+PHP_METHOD(RedisCluster, pexpiretime) {
+    CLUSTER_PROCESS_KW_CMD("PEXPIRETIME", redis_key_cmd, cluster_long_resp, 1);
+}
+
 /* {{{ proto long RedisCluster::append(string key, string val) */
 PHP_METHOD(RedisCluster, append) {
     CLUSTER_PROCESS_KW_CMD("APPEND", redis_kv_cmd, cluster_long_resp, 0);

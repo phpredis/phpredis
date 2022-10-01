@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 45d120a35a1c256964c45c71ab91c025ea00e862 */
+ * Stub hash: d6e8120d2edd3cb4a18baa99c6013ac428049448 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -182,6 +182,12 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_expireat, 0, 
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, timestamp, IS_LONG, 0)
 ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_expiretime, 0, 1, Redis, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_pexpiretime arginfo_class_RedisCluster_expiretime
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_flushall, 0, 1, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_MASK(0, node, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
@@ -894,6 +900,8 @@ ZEND_METHOD(RedisCluster, exec);
 ZEND_METHOD(RedisCluster, exists);
 ZEND_METHOD(RedisCluster, expire);
 ZEND_METHOD(RedisCluster, expireat);
+ZEND_METHOD(RedisCluster, expiretime);
+ZEND_METHOD(RedisCluster, pexpiretime);
 ZEND_METHOD(RedisCluster, flushall);
 ZEND_METHOD(RedisCluster, flushdb);
 ZEND_METHOD(RedisCluster, geoadd);
@@ -1091,6 +1099,8 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, exists, arginfo_class_RedisCluster_exists, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, expire, arginfo_class_RedisCluster_expire, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, expireat, arginfo_class_RedisCluster_expireat, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, expiretime, arginfo_class_RedisCluster_expiretime, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, pexpiretime, arginfo_class_RedisCluster_pexpiretime, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, flushall, arginfo_class_RedisCluster_flushall, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, flushdb, arginfo_class_RedisCluster_flushdb, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, geoadd, arginfo_class_RedisCluster_geoadd, ZEND_ACC_PUBLIC)

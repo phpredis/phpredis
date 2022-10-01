@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 1c32099810101448fc32ce331e2b494dabc22cc4 */
+ * Stub hash: 177e08fec3c3ef380c1cdbab99235090c656cde4 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -173,6 +173,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_failover, 0, 0, 0)
 	ZEND_ARG_INFO(0, abort)
 	ZEND_ARG_INFO(0, timeout)
 ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_expiretime arginfo_class_Redis__prefix
+
+#define arginfo_class_Redis_pexpiretime arginfo_class_Redis__prefix
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_flushAll, 0, 0, 0)
 	ZEND_ARG_INFO(0, sync)
@@ -934,6 +938,8 @@ ZEND_METHOD(Redis, exists);
 ZEND_METHOD(Redis, expire);
 ZEND_METHOD(Redis, expireAt);
 ZEND_METHOD(Redis, failover);
+ZEND_METHOD(Redis, expiretime);
+ZEND_METHOD(Redis, pexpiretime);
 ZEND_METHOD(Redis, flushAll);
 ZEND_METHOD(Redis, flushDB);
 ZEND_METHOD(Redis, geoadd);
@@ -1169,6 +1175,8 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, expire, arginfo_class_Redis_expire, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, expireAt, arginfo_class_Redis_expireAt, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, failover, arginfo_class_Redis_failover, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, expiretime, arginfo_class_Redis_expiretime, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, pexpiretime, arginfo_class_Redis_pexpiretime, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, flushAll, arginfo_class_Redis_flushAll, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, flushDB, arginfo_class_Redis_flushDB, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, geoadd, arginfo_class_Redis_geoadd, ZEND_ACC_PUBLIC)
