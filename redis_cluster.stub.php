@@ -92,6 +92,10 @@ class RedisCluster {
 
     public function expireat(string $key, int $timestamp): bool;
 
+    public function expiretime(string $key): Redis|int|false;
+
+    public function pexpiretime(string $key): Redis|int|false;
+
     public function flushall(string|array $node, bool $async = false): bool;
 
     public function flushdb(string|array $node, bool $async = false): bool;

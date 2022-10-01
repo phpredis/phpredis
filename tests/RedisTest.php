@@ -605,6 +605,21 @@ class Redis_Test extends TestSuite
         $this->assertTrue($success);
     }
 
+    public function testExpiretime() {
+        if(version_compare($this->version, "7.0.0") < 0) {
+            $this->markTestSkipped();
+        }
+
+        $now = time();
+
+        $this->assertTrue($this->redis->set('key1', 'value'));
+        $this->assertTrue($this->redis->expireat('key1', $now + 10));
+        $this->assertEquals($now + 10, $this->redis->expiretime('key1'));
+        $this->assertEquals(1000 * ($now + 10), $this->redis->pexpiretime('key1'));
+
+        $this->redis->del('key1');
+    }
+
     public function testSetEx() {
 
         $this->redis->del('key');

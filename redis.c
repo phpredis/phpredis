@@ -1654,6 +1654,18 @@ PHP_METHOD(Redis, pexpireAt) {
 }
 /* }}} */
 
+/* {{{ proto Redis::expiretime(string $key): int */
+PHP_METHOD(Redis, expiretime) {
+    REDIS_PROCESS_KW_CMD("EXPIRETIME", redis_key_cmd, redis_long_response);
+}
+/* }}} */
+
+/* {{{ proto Redis::expiretime(string $key): int */
+PHP_METHOD(Redis, pexpiretime) {
+    REDIS_PROCESS_KW_CMD("PEXPIRETIME", redis_key_cmd, redis_long_response);
+}
+
+/* }}} */
 /* {{{ proto array Redis::lSet(string key, int index, string value) */
 PHP_METHOD(Redis, lSet) {
     REDIS_PROCESS_KW_CMD("LSET", redis_key_long_val_cmd,
