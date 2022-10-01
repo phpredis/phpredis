@@ -5342,6 +5342,31 @@ class Redis_Test extends TestSuite
         $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, false);
     }
 
+    public function testConfig() {
+        /* GET */
+        $cfg = $this->redis->config('GET', 'timeout');
+        $this->assertTrue(is_array($cfg) && isset($cfg['timeout']));
+        $sec = $cfg['timeout'];
+
+        /* SET */
+        foreach ([$sec + 30, $sec] as $val) {
+            $this->assertTrue($this->redis->config('SET', 'timeout', $val));
+            $cfg = $this->redis->config('GET', 'timeout');
+            $this->assertTrue(isset($cfg['timeout']) && $cfg['timeout'] == $val);
+        }
+
+        /* RESETSTAT */
+        $c1 = count($this->redis->info('commandstats'));
+        $this->assertTrue($this->redis->config('resetstat'));
+        $this->assertTrue(count($this->redis->info('commandstats')) < $c1);
+
+        /* Ensure invalid calls are handled by PhpRedis */
+        foreach (['notacommand', 'get', 'set'] as $cmd) {
+            $this->assertFalse($this->redis->config($cmd));
+        }
+        $this->assertFalse($this->redis->config('set', 'foo'));
+    }
+
     public function testReconnectSelect() {
         $key = 'reconnect-select';
         $value = 'Has been set!';

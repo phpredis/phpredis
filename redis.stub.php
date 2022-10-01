@@ -70,7 +70,7 @@ class Redis {
 
     public function command(string $opt = null, string|array $arg): mixed;
 
-    public function config(string $operation, string $key, mixed $value = null): mixed;
+    public function config(string $operation, ?string $key = NULL, mixed $value = null): mixed;
 
     public function connect(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, array $context = null): bool;
 

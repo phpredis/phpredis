@@ -2663,26 +2663,16 @@ PHP_METHOD(Redis, setOption)
 /* {{{ proto boolean Redis::config(string op, string key [, mixed value]) */
 PHP_METHOD(Redis, config)
 {
-    zval *object;
+    zend_string *op, *key = NULL, *val = NULL;
+    FailableResultCallback cb;
     RedisSock *redis_sock;
-    char *key = NULL, *val = NULL, *cmd, *op = NULL;
-    size_t key_len, val_len, op_len;
-    enum {CFG_GET, CFG_SET} mode;
+    zval *object;
     int cmd_len;
+    char *cmd;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                     "Oss|s", &object, redis_ce, &op, &op_len,
-                                     &key, &key_len, &val, &val_len) == FAILURE)
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "OS|SS", &object,
+                                     redis_ce, &op, &key, &val) == FAILURE)
     {
-        RETURN_FALSE;
-    }
-
-    /* op must be GET or SET */
-    if(strncasecmp(op, "GET", 3) == 0) {
-        mode = CFG_GET;
-    } else if(strncasecmp(op, "SET", 3) == 0) {
-        mode = CFG_SET;
-    } else {
         RETURN_FALSE;
     }
 
@@ -2690,27 +2680,26 @@ PHP_METHOD(Redis, config)
         RETURN_FALSE;
     }
 
-    if (mode == CFG_GET && val == NULL) {
-        cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "ss", op, op_len, key, key_len);
-
-        REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len)
-        if (IS_ATOMIC(redis_sock)) {
-            redis_mbulk_reply_zipped_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-        }
-        REDIS_PROCESS_RESPONSE(redis_mbulk_reply_zipped_raw);
-
-    } else if(mode == CFG_SET && val != NULL) {
-        cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "sss", op, op_len, key, key_len, val, val_len);
-
-        REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len)
-        if (IS_ATOMIC(redis_sock)) {
-            redis_boolean_response(
-                INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-        }
-        REDIS_PROCESS_RESPONSE(redis_boolean_response);
+    if (zend_string_equals_literal_ci(op, "GET") && key != NULL) {
+        cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "SS", op, key);
+        cb = redis_mbulk_reply_zipped_raw;
+    } else if (zend_string_equals_literal_ci(op, "RESETSTAT")) {
+        cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "s", ZEND_STRL("RESETSTAT"));
+        cb = redis_boolean_response;
+    } else if (zend_string_equals_literal_ci(op, "SET") && key != NULL && val != NULL) {
+        cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "SSS", op, key, val);
+        cb = redis_boolean_response;
     } else {
         RETURN_FALSE;
     }
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len)
+    if (IS_ATOMIC(redis_sock)) {
+        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_boolean_response);
+
+    return;
 }
 /* }}} */
 
