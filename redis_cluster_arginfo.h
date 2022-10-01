@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 97fe79bf371074b77d22e1e820903fb2103d10c9 */
+ * Stub hash: c9bfd7de5c930c9d7190139e207eb6025e33bdb2 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -584,6 +584,11 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_sinter arginfo_class_RedisCluster_del
 
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_sintercard, 0, 1, Redis, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, limit, IS_LONG, 0, "-1")
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_sinterstore, 0, 2, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_INFO(0, dst, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
@@ -774,6 +779,8 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_zinterstore, 
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, weights, IS_ARRAY, 0, "null")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, aggregate, IS_STRING, 0, "null")
 ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_zintercard arginfo_class_RedisCluster_sintercard
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_zlexcount, 0, 3, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
@@ -973,6 +980,7 @@ ZEND_METHOD(RedisCluster, setnx);
 ZEND_METHOD(RedisCluster, setoption);
 ZEND_METHOD(RedisCluster, setrange);
 ZEND_METHOD(RedisCluster, sinter);
+ZEND_METHOD(RedisCluster, sintercard);
 ZEND_METHOD(RedisCluster, sinterstore);
 ZEND_METHOD(RedisCluster, sismember);
 ZEND_METHOD(RedisCluster, slowlog);
@@ -1012,6 +1020,7 @@ ZEND_METHOD(RedisCluster, zcard);
 ZEND_METHOD(RedisCluster, zcount);
 ZEND_METHOD(RedisCluster, zincrby);
 ZEND_METHOD(RedisCluster, zinterstore);
+ZEND_METHOD(RedisCluster, zintercard);
 ZEND_METHOD(RedisCluster, zlexcount);
 ZEND_METHOD(RedisCluster, zpopmax);
 ZEND_METHOD(RedisCluster, zpopmin);
@@ -1167,6 +1176,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, setoption, arginfo_class_RedisCluster_setoption, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, setrange, arginfo_class_RedisCluster_setrange, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, sinter, arginfo_class_RedisCluster_sinter, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, sintercard, arginfo_class_RedisCluster_sintercard, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, sinterstore, arginfo_class_RedisCluster_sinterstore, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, sismember, arginfo_class_RedisCluster_sismember, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, slowlog, arginfo_class_RedisCluster_slowlog, ZEND_ACC_PUBLIC)
@@ -1206,6 +1216,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, zcount, arginfo_class_RedisCluster_zcount, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, zincrby, arginfo_class_RedisCluster_zincrby, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, zinterstore, arginfo_class_RedisCluster_zinterstore, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, zintercard, arginfo_class_RedisCluster_zintercard, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, zlexcount, arginfo_class_RedisCluster_zlexcount, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, zpopmax, arginfo_class_RedisCluster_zpopmax, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, zpopmin, arginfo_class_RedisCluster_zpopmin, ZEND_ACC_PUBLIC)

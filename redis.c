@@ -1435,6 +1435,10 @@ PHP_METHOD(Redis, sInter) {
 }
 /* }}} */
 
+PHP_METHOD(Redis, sintercard) {
+    REDIS_PROCESS_KW_CMD("SINTERCARD", redis_intercard_cmd, redis_long_response);
+}
+
 /* {{{ proto array Redis::sInterStore(string dst, string key0,...string keyN) */
 PHP_METHOD(Redis, sInterStore) {
     REDIS_PROCESS_CMD(sinterstore, redis_long_response);
@@ -2070,6 +2074,10 @@ PHP_METHOD(Redis, zinter) {
     REDIS_PROCESS_KW_CMD("ZINTER", redis_zinterunion_cmd, redis_zdiff_response);
 }
 /* }}} */
+
+PHP_METHOD(Redis, zintercard) {
+    REDIS_PROCESS_KW_CMD("ZINTERCARD", redis_intercard_cmd, redis_long_response);
+}
 
 /* {{{ proto array Redis::zunion(array keys, array|null weights, array options) */
 PHP_METHOD(Redis, zunion) {

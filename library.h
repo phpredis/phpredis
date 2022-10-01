@@ -123,6 +123,10 @@ PHP_REDIS_API int
 redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len);
 PHP_REDIS_API int
 redis_key_prefix(RedisSock *redis_sock, char **key, size_t *key_len);
+PHP_REDIS_API zend_string*
+redis_key_prefix_zval(RedisSock *redis_sock, zval *zv);
+PHP_REDIS_API zend_string *
+redis_key_prefix_zstr(RedisSock *redis_sock, zend_string *key);
 
 PHP_REDIS_API int
 redis_unserialize(RedisSock *redis_sock, const char *val, int val_len, zval *z_ret);

@@ -1021,6 +1021,13 @@ PHP_METHOD(RedisCluster, sunionstore) {
 PHP_METHOD(RedisCluster, sinter) {
     CLUSTER_PROCESS_CMD(sinter, cluster_mbulk_resp, 0);
 }
+
+/* {{{ proto RedisCluster::sintercard(array $keys, int $count = -1) */
+PHP_METHOD(RedisCluster, sintercard) {
+    CLUSTER_PROCESS_KW_CMD("SINTERCARD", redis_intercard_cmd, cluster_long_resp, 0);
+}
+/* }}} */
+
 /* }}} */
 
 /* {{{ ptoto long RedisCluster::sinterstore(string dst, string k1, ... kN) */
@@ -1454,6 +1461,12 @@ PHP_METHOD(RedisCluster, zunionstore) {
  *                                     string agg]) */
 PHP_METHOD(RedisCluster, zinterstore) {
     CLUSTER_PROCESS_KW_CMD("ZINTERSTORE", redis_zinterunionstore_cmd, cluster_long_resp, 0);
+}
+/* }}} */
+
+/* {{{ proto RedisCluster::zintercard(array $keys, int $count = -1) */
+PHP_METHOD(RedisCluster, zintercard) {
+    CLUSTER_PROCESS_KW_CMD("ZINTERCARD", redis_intercard_cmd, cluster_long_resp, 0);
 }
 /* }}} */
 

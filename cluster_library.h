@@ -352,6 +352,7 @@ void cluster_multi_fini(clusterMultiCmd *mc);
 /* Hash a key to it's slot, using the Redis Cluster hash algorithm */
 unsigned short cluster_hash_key_zval(zval *key);
 unsigned short cluster_hash_key(const char *key, int len);
+unsigned short cluster_hash_key_zstr(zend_string *key);
 
 /* Validate and sanitize cluster construction args */
 zend_string** cluster_validate_args(double timeout, double read_timeout,

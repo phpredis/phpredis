@@ -363,6 +363,8 @@ public function persist(string $key): bool;
 
     public function sInter(string $key, string ...$other_keys): array;
 
+    public function sintercard(array $keys, int $limit = -1): Redis|int|false;
+
     public function sInterStore(string $dst, string $key, string ...$other_keys): int;
 
     public function sMembers(string $key): array;
@@ -547,6 +549,8 @@ public function persist(string $key): bool;
     public function zdiffstore(string $dst, array $keys, array $options = null): int;
 
     public function zinter(array $keys, array $weights = null, array $options = null): array;
+
+    public function zintercard(array $keys, int $limit = -1): Redis|int|false;
 
     public function zinterstore(string $dst, array $keys, array $weights = null, string $aggregate = null): int;
 
