@@ -124,6 +124,8 @@ class RedisCluster {
 
     public function getrange(string $key, int $start, int $end): string;
 
+    public function lcs(string $key1, string $key2, ?array $options = NULL): Redis|string|array|int|false;
+
     public function getset(string $key, mixed $value): string;
 
     public function hdel(string $key, string $member, string ...$other_members): int;

@@ -146,6 +146,13 @@ typedef enum {
 
 #define PHPREDIS_DEBUG_LOGGING 0
 
+#if PHP_VERSION_ID < 80000
+#define Z_PARAM_ARRAY_HT_OR_NULL(dest) \
+        Z_PARAM_ARRAY_HT_EX(dest, 1, 0)
+#define Z_PARAM_STR_OR_NULL(dest) \
+        Z_PARAM_STR_EX(dest, 1, 0)
+#endif
+
 #if PHPREDIS_DEBUG_LOGGING == 1
 #define redisDbgFmt(fmt, ...) \
     php_printf("%s:%d:%s(): " fmt "\n", __FILE__, __LINE__, __func__, __VA_ARGS__)
