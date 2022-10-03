@@ -68,6 +68,17 @@
 #define SCORE_DECODE_INT  1
 #define SCORE_DECODE_DOUBLE 2
 
+/* PhpRedis often returns either FALSE or NULL depending on whether we have
+ * an option set, so this macro just wraps that often repeated logic */
+#define REDIS_ZVAL_NULL(sock_, zv_) \
+    do { \
+        if ((sock_)->null_mbulk_as_null) { \
+            ZVAL_NULL((zv_)); \
+        } else { \
+            ZVAL_FALSE((zv_)); \
+        } \
+    } while (0)
+
 #ifndef PHP_WIN32
     #include <netinet/tcp.h> /* TCP_NODELAY */
     #include <sys/socket.h>  /* SO_KEEPALIVE */
@@ -1612,30 +1623,24 @@ geosearch_cast(zval *zv)
 }
 
 PHP_REDIS_API int
-redis_mpop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                    zval *z_tab, void *ctx)
+redis_read_mpop_response(RedisSock *redis_sock, zval *zdst, int elements,
+                         void *ctx)
 {
-    zval zret = {0}, zele = {0};
-    int elements, subele, keylen;
+    int subele, keylen;
+    zval zele = {0};
     char *key;
 
     ZEND_ASSERT(ctx == NULL || ctx == PHPREDIS_CTX_PTR);
 
-    if (read_mbulk_header(redis_sock, &elements) == FAILURE) {
-        goto fail;
-    } else if (elements < 0) {
-        if (redis_sock->null_mbulk_as_null) {
-            ZVAL_NULL(&zret);
-        } else {
-            ZVAL_FALSE(&zret);
-        }
-        goto exit;
+    if (elements < 0) {
+        REDIS_ZVAL_NULL(redis_sock, zdst);
+        return SUCCESS;
     }
 
     /* Invariant:  We should have two elements */
     ZEND_ASSERT(elements == 2);
 
-    array_init(&zret);
+    array_init(zdst);
 
     /* Key name and number of entries */
     if ((key = redis_sock_read(redis_sock, &keylen)) == NULL ||
@@ -1645,7 +1650,7 @@ redis_mpop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         goto fail;
     }
 
-    add_next_index_stringl(&zret, key, keylen);
+    add_next_index_stringl(zdst, key, keylen);
     efree(key);
 
     array_init_size(&zele, elements);
@@ -1664,9 +1669,30 @@ redis_mpop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_mbulk_reply_loop(redis_sock, &zele, elements, UNSERIALIZE_ALL);
     }
 
-    add_next_index_zval(&zret, &zele);
+    add_next_index_zval(zdst, &zele);
 
-exit:
+    return SUCCESS;
+
+fail:
+    zval_dtor(zdst);
+    ZVAL_FALSE(zdst);
+
+    return FAILURE;
+}
+
+PHP_REDIS_API int
+redis_mpop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    zval *z_tab, void *ctx)
+{
+    int elements, res = SUCCESS;
+    zval zret = {0};
+
+    if (read_mbulk_header(redis_sock, &elements) == FAILURE ||
+        redis_read_mpop_response(redis_sock, &zret, elements, ctx) == FAILURE)
+    {
+        res = FAILURE;
+        ZVAL_FALSE(&zret);
+    }
 
     if (IS_ATOMIC(redis_sock)) {
         RETVAL_ZVAL(&zret, 0, 0);
@@ -1674,18 +1700,7 @@ exit:
         add_next_index_zval(z_tab, &zret);
     }
 
-    return SUCCESS;
-
-fail:
-    zval_dtor(&zret);
-
-    if (IS_ATOMIC(redis_sock)) {
-        RETVAL_FALSE;
-    } else {
-        add_next_index_bool(z_tab, 0);
-    }
-
-    return FAILURE;
+    return res;
 }
 
 PHP_REDIS_API int
