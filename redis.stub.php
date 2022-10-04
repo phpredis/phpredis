@@ -52,11 +52,11 @@ class Redis {
     /** @return int|Redis */
     public function bitpos(string $key, int $bit, int $start = 0, int $end = -1);
 
-    public function blPop(string|array $key, string|float|int $timeout_or_key, mixed ...$extra_args): array;
+    public function blPop(string|array $key, string|float|int $timeout_or_key, mixed ...$extra_args): array|null|false;
 
-    public function brPop(string|array $key, string|float|int $timeout_or_key, mixed ...$extra_args): array;
+    public function brPop(string|array $key, string|float|int $timeout_or_key, mixed ...$extra_args): array|null|false;
 
-    public function brpoplpush(string $src, string $dst, int $timeout): string;
+    public function brpoplpush(string $src, string $dst, int $timeout): Redis|string|false;
 
     public function bzPopMax(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array;
 
@@ -81,7 +81,7 @@ class Redis {
     public function debug(string $key): string;
 
 	/** @return int|Redis */
-    public function decr(string $key);
+    public function decr(string $key, int $by = 1);
 
 	/** @return int|Redis */
     public function decrBy(string $key, int $value);
@@ -109,14 +109,14 @@ class Redis {
 
     public function evalsha(string $sha1, array $keys = null, int $num_keys = 0): mixed;
 
-    public function exec(): array;
+    public function exec(): Redis|array|false;
 
-	/** @return bool|Redis */
-    public function exists(string $key);
+	/** @return int|Redis|bool */
+    public function exists(mixed $key, mixed ...$other_keys);
 
-    public function expire(string $key, int $timeout): bool;
+    public function expire(string $key, int $timeout): Redis|bool;
 
-    public function expireAt(string $key, int $timestamp): bool;
+    public function expireAt(string $key, int $timestamp): Redis|bool;
 
     public function failover(?array $to = null, bool $abort = false, int $timeout = 0): bool;
 
@@ -130,19 +130,19 @@ class Redis {
 
     public function geoadd(string $key, float $lng, float $lat, string $member, mixed ...$other_triples): int;
 
-    public function geodist(string $key, string $src, string $dst, ?string $unit = null): array;
+    public function geodist(string $key, string $src, string $dst, ?string $unit = null): Redis|float|false;
 
     public function geohash(string $key, string $member, string ...$other_members): array;
 
-    public function geopos(string $key, string $member, string ...$other_members): array;
+    public function geopos(string $key, string $member, string ...$other_members): Redis|array|false;
 
-    public function georadius(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): array;
+    public function georadius(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): Redis|mixed|false;
 
-    public function georadius_ro(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): array;
+    public function georadius_ro(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): Redis|mixed|false;
 
-    public function georadiusbymember(string $key, string $member, float $radius, string $unit, array $options = []): array;
+    public function georadiusbymember(string $key, string $member, float $radius, string $unit, array $options = []): Redis|mixed|false;
 
-    public function georadiusbymember_ro(string $key, string $member, float $radius, string $unit, array $options = []): array;
+    public function georadiusbymember_ro(string $key, string $member, float $radius, string $unit, array $options = []): Redis|mixed|false;
 
     public function geosearch(string $key, array|string $position, array|int|float $shape, string $unit, array $options = []): array;
 
@@ -186,40 +186,40 @@ class Redis {
 
     public function getTimeout(): int;
 
-    public function hDel(string $key, string $member, string ...$other_members): int;
+    public function hDel(string $key, string $member, string ...$other_members): Redis|int|false;
 
-    public function hExists(string $key, string $member): bool;
+    public function hExists(string $key, string $member): Redis|bool;
 
-    public function hGet(string $key, string $member): string;
+    public function hGet(string $key, string $member): Redis|mixed|false;
 
-    public function hGetAll(string $key): array;
+    public function hGetAll(string $key): Redis|array|false;
 
-    public function hIncrBy(string $key, string $member, int $value): int;
+    public function hIncrBy(string $key, string $member, int $value): Redis|int|false;
 
-    public function hIncrByFloat(string $key, string $member, float $value): float;
+    public function hIncrByFloat(string $key, string $member, float $value): Redis|float|false;
 
-    public function hKeys(string $key): array;
+    public function hKeys(string $key): Redis|array|false;
 
-    public function hLen(string $key): int;
+    public function hLen(string $key): Redis|int|false;
 
-    public function hMget(string $key, array $keys): array;
+    public function hMget(string $key, array $keys): Redis|array|false;
 
-    public function hMset(string $key, array $keyvals): bool;
+    public function hMset(string $key, array $keyvals): Redis|bool|false;
 
-    public function hRandField(string $key, array $options = null): string|array;
+    public function hRandField(string $key, array $options = null): Redis|string|array;
 
-    public function hSet(string $key, string $member, string $value): int;
+    public function hSet(string $key, string $member, mixed $value): Redis|int|false;
 
-    public function hSetNx(string $key, string $member, string $value): int;
+    public function hSetNx(string $key, string $member, string $value): Redis|bool;
 
     public function hStrLen(string $key, string $member): int;
 
-    public function hVals(string $key): array;
+    public function hVals(string $key): Redis|array|false;
 
     public function hscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
 
 	/** @return int|Redis */
-    public function incr(string $key);
+    public function incr(string $key, int $by = 1);
 
 	/** @return int|Redis */
     public function incrBy(string $key, int $value);
@@ -227,7 +227,7 @@ class Redis {
 	/** @return int|Redis */
     public function incrByFloat(string $key, float $value);
 
-    public function info(string $opt = null): array;
+    public function info(string $opt = null): Redis|array|false;
 
     public function isConnected(): bool;
 
@@ -241,7 +241,7 @@ class Redis {
     public function lInsert(string $key, string $pos, mixed $pivot, mixed $value);
 
 
-    public function lLen(string $key): int;
+    public function lLen(string $key): Redis|int|false;
 
     public function lMove(string $src, string $dst, string $wherefrom, string $whereto): string;
 
@@ -267,17 +267,20 @@ class Redis {
 	/** @return int|Redis */
     public function rPushx(string $key, mixed $value);
 
-    public function lSet(string $key, int $index, string $value): bool;
+    public function lSet(string $key, int $index, mixed $value): Redis|bool;
 
     public function lastSave(): int;
 
-    public function lindex(string $key, int $index): string;
+    public function lindex(string $key, int $index): Redis|mixed|false;
 
-    public function lrange(string $key, int $start , int $end): array;
+    public function lrange(string $key, int $start , int $end): Redis|array|false;
 
-    public function lrem(string $key, string $value, int $count = 0): bool;
+    /**
+     * @return int|Redis|false
+     */
+    public function lrem(string $key, mixed $value, int $count = 0);
 
-    public function ltrim(string $key, int $start , int $end): bool;
+    public function ltrim(string $key, int $start , int $end): Redis|bool;
 
 	/** @return array|Redis */
     public function mget(array $keys);
@@ -286,13 +289,13 @@ class Redis {
 
     public function move(string $key, int $index): bool;
 
-    public function mset(array $key_values): bool;
+    public function mset(array $key_values): Redis|bool;
 
-    public function msetnx(array $key_values): int;
+    public function msetnx(array $key_values): Redis|bool;
 
     public function multi(int $value = Redis::MULTI): bool|Redis;
 
-    public function object(string $subcommand, string $key): int|string;
+    public function object(string $subcommand, string $key): Redis|int|string|false;
 
     /**
      * @deprecated
@@ -330,9 +333,9 @@ public function persist(string $key): bool;
 
     public function psubscribe(array $patterns, callable $cb): bool;
 
-    public function pttl(string $key): int;
+    public function pttl(string $key): Redis|int|false;
 
-    public function publish(string $channel, string $message): int;
+    public function publish(string $channel, string $message): mixed;
 
     public function pubsub(string $command, mixed $arg = null): mixed;
 
@@ -357,41 +360,41 @@ public function persist(string $key): bool;
 
     public function role(): mixed;
 
-    public function rpoplpush(string $src, string $dst): string;
+    public function rpoplpush(string $src, string $dst): Redis|string|false;
 
-    public function sAdd(string $key, mixed $value, mixed ...$other_values): int;
+    public function sAdd(string $key, mixed $value, mixed ...$other_values): Redis|int|false;
 
     public function sAddArray(string $key, array $values): int;
 
-    public function sDiff(string $key, string ...$other_keys): array;
+    public function sDiff(string $key, string ...$other_keys): Redis|array|false;
 
-    public function sDiffStore(string $dst, string $key, string ...$other_keys): int;
+    public function sDiffStore(string $dst, string $key, string ...$other_keys): Redis|int|false;
 
-    public function sInter(string $key, string ...$other_keys): array;
+    public function sInter(array|string $key, string ...$other_keys): Redis|array|false;
 
     public function sintercard(array $keys, int $limit = -1): Redis|int|false;
 
-    public function sInterStore(string $dst, string $key, string ...$other_keys): int;
+    public function sInterStore(array|string $key, string ...$other_keys): Redis|int|false;
 
-    public function sMembers(string $key): array;
+    public function sMembers(string $key): Redis|array|false;
 
     public function sMisMember(string $key, string $member, string ...$other_members): array;
 
-    public function sMove(string $src, string $dst, mixed $value): bool;
+    public function sMove(string $src, string $dst, mixed $value): Redis|bool;
 
-    public function sPop(string $key, int $count = 0): string|array;
+    public function sPop(string $key, int $count = 0): Redis|string|array|false;
 
-    public function sRandMember(string $key, int $count = 0): string|array;
+    public function sRandMember(string $key, int $count = 0): Redis|string|array|false;
 
-    public function sUnion(string $key, string ...$other_keys): array;
+    public function sUnion(string $key, string ...$other_keys): Redis|array|false;
 
-    public function sUnionStore(string $dst, string $key, string ...$other_keys): int;
+    public function sUnionStore(string $dst, string $key, string ...$other_keys): Redis|int|false;
 
     public function save(): bool;
 
-    public function scan(?int &$iterator, ?string $pattern = null, int $count = 0): array;
+    public function scan(?int &$iterator, ?string $pattern = null, int $count = 0, string $type = NULL): array|false;
 
-    public function scard(string $key): int;
+    public function scard(string $key): Redis|int|false;
 
     public function script(string $command, mixed ...$args): mixed;
 
@@ -415,7 +418,7 @@ public function persist(string $key): bool;
 	/** @return bool|array|Redis */
     public function setnx(string $key, mixed $value);
 
-    public function sismember(string $key, string $value): bool;
+    public function sismember(string $key, mixed $value): Redis|bool;
 
     public function slaveof(string $host = null, int $port = 6379): bool;
 
@@ -443,9 +446,9 @@ public function persist(string $key): bool;
      */
     public function sortDescAlpha(string $key, ?string $pattern = null, mixed $get = null, int $offset = -1, int $count = -1, ?string $store = null): array;
 
-    public function srem(string $key, string $value, string ...$other_values): int;
+    public function srem(string $key, mixed $value, mixed ...$other_values): Redis|int|false;
 
-    public function sscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): array;
+    public function sscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): array|false;
 
 	/** @return int|Redis */
     public function strlen(string $key);
@@ -456,7 +459,7 @@ public function persist(string $key): bool;
 
     public function time(): array;
 
-    public function ttl(string $key): int;
+    public function ttl(string $key): Redis|int|false;
 
 	/** @return int|Redis */
     public function type(string $key);
@@ -476,25 +479,25 @@ public function persist(string $key): bool;
      */
     public function watch(array|string $key, string ...$other_keys);
 
-    public function wait(int $count, int $timeout): int;
+    public function wait(int $count, int $timeout): int|false;
 
-    public function xack(string $key, string $group, array $ids): int;
+    public function xack(string $key, string $group, array $ids): int|false;
 
-    public function xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false, bool $nomkstream = false): string;
+    public function xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false, bool $nomkstream = false): string|false;
 
     public function xautoclaim(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false): bool|array;
 
     public function xclaim(string $key, string $group, string $consumer, int $min_idle, array $ids, array $options): bool|array;
 
-    public function xdel(string $key, array $ids): int;
+    public function xdel(string $key, array $ids): Redis|int|false;
 
     public function xgroup(string $operation, string $key = null, string $arg1 = null, string $arg2 = null, bool $arg3 = false): mixed;
 
-    public function xinfo(string $operation, string $arg1 = null, string $arg2 = null): mixed;
+    public function xinfo(string $operation, ?string $arg1 = null, ?string $arg2 = null, int $count = -1): mixed;
 
     public function xlen(string $key): int;
 
-    public function xpending(string $key, string $group, string $start = null, string $end = null, int $count = -1, string $consumer = null): string;
+    public function xpending(string $key, string $group, string $start = null, string $end = null, int $count = -1, string $consumer = null): Redis|array|false;
 
     public function xrange(string $key, string $start, string $end, int $count = -1): bool|array;
 
@@ -506,15 +509,15 @@ public function persist(string $key): bool;
 
     public function xtrim(string $key, int $maxlen, bool $approx = false): int;
 
-    public function zAdd(string $key, int $score, string $value): int;
+    public function zAdd(string $key, array|float $score_or_options, mixed ...$more_scores_and_mems): Redis|int|false;
 
-    public function zCard(string $key): int;
+    public function zCard(string $key): Redis|int|false;
 
-    public function zCount(string $key, string $start , string $end): int;
+    public function zCount(string $key, string $start , string $end): Redis|int|false;
 
-    public function zIncrBy(string $key, float $value, mixed $member): float;
+    public function zIncrBy(string $key, float $value, mixed $member): Redis|float|false;
 
-    public function zLexCount(string $key, string $min, string $max): int;
+    public function zLexCount(string $key, string $min, string $max): Redis|int|false;
 
     public function zMscore(string $key, string $member, string ...$other_members): array;
 
@@ -522,49 +525,49 @@ public function persist(string $key): bool;
 
     public function zPopMin(string $key, int $value = null): array;
 
-    public function zRange(string $key, int $start, int $end, mixed $scores = null): array;
+    public function zRange(string $key, int $start, int $end, mixed $scores = null): Redis|array|false;
 
     public function zRangeByLex(string $key, string $min, string $max, int $offset = -1, int $count = -1): array;
 
-    public function zRangeByScore(string $key, string $start, string $end, array $options = []): array;
+    public function zRangeByScore(string $key, string $start, string $end, array $options = []): Redis|array|false;
 
     public function zRandMember(string $key, array $options = null): string|array;
 
-    public function zRank(string $key, string $member): int;
+    public function zRank(string $key, mixed $member): Redis|int|false;
 
-    public function zRem(string $key, string $member, string ...$other_members): int;
+    public function zRem(mixed $key, mixed $member, mixed ...$other_members): Redis|int|false;
 
     public function zRemRangeByLex(string $key, string $min, string $max): int;
 
-    public function zRemRangeByRank(string $key, int $start, int $end): int;
+    public function zRemRangeByRank(string $key, int $start, int $end): Redis|int|false;
 
-    public function zRemRangeByScore(string $key, string $start, string $end): int;
+    public function zRemRangeByScore(string $key, string $start, string $end): Redis|int|false;
 
-    public function zRevRange(string $key, int $start, int $end, mixed $scores = null): array;
+    public function zRevRange(string $key, int $start, int $end, mixed $scores = null): Redis|array|false;
 
     public function zRevRangeByLex(string $key, string $min, string $max, int $offset = -1, int $count = -1): array;
 
     public function zRevRangeByScore(string $key, string $start, string $end, array $options = []): array;
 
-    public function zRevRank(string $key, string $member): int;
+    public function zRevRank(string $key, mixed $member): Redis|int|false;
 
-    public function zScore(string $key, mixed $member): float;
+    public function zScore(string $key, mixed $member): Redis|float|false;
 
     public function zdiff(array $keys, array $options = null): array;
 
     public function zdiffstore(string $dst, array $keys, array $options = null): int;
 
-    public function zinter(array $keys, array $weights = null, array $options = null): array;
+    public function zinter(array $keys, ?array $weights = null, ?array $options = null): Redis|array|false;
 
     public function zintercard(array $keys, int $limit = -1): Redis|int|false;
 
-    public function zinterstore(string $dst, array $keys, array $weights = null, string $aggregate = null): int;
+    public function zinterstore(string $dst, array $keys, ?array $weights = null, ?string $aggregate = null): Redis|int|false;
 
     public function zscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): bool|array;
 
-    public function zunion(array $keys, array $weights = null, array $options = null): array;
+    public function zunion(array $keys, ?array $weights = null, ?array $options = null): Redis|array|false;
 
-    public function zunionstore(string $dst, array $keys, array $weights = null, string $aggregate = null): int;
+    public function zunionstore(string $dst, array $keys, ?array $weights = NULL, ?string $aggregate = NULL): Redis|int|false;
 }
 
 class RedisException extends RuntimeException {}

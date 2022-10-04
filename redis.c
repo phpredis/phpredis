@@ -3434,7 +3434,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     if(type != TYPE_SCAN) {
         // Requires a key
         if(zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                        "Osz/|s!l", &object, redis_ce, &key,
+                                        "Os!z/|s!l", &object, redis_ce, &key,
                                         &key_len, &z_iter, &pattern,
                                         &pattern_len, &count)==FAILURE)
         {

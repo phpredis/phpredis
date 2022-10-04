@@ -4777,9 +4777,6 @@ class Redis_Test extends TestSuite
         $this->assertTrue(0 === $this->redis->zRem('key', $z[3]));
         unset($z[3]);
 
-        // check that zRem doesn't crash with a missing parameter (GitHub issue #102):
-        $this->assertTrue(FALSE === @$this->redis->zRem('key'));
-
         // variadic
         $this->redis->del('k');
         $this->redis->zAdd('k', 0, 'a');

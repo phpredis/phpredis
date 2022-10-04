@@ -1415,6 +1415,7 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // We at least need a key and one value
     if (argc < 2) {
+        zend_wrong_param_count();
         return FAILURE;
     }
 
