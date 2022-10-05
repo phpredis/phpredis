@@ -224,7 +224,7 @@ _**Description**_: Connects to a Redis instance.
 *host*: string. can be a host, or the path to a unix domain socket. Starting from version 5.0.0 it is possible to specify schema 
 *port*: int, optional  
 *timeout*: float, value in seconds (optional, default is 0 meaning unlimited)  
-*reserved*: should be NULL if retry_interval is specified  
+*reserved*: should be '' if retry_interval is specified  
 *retry_interval*: int, value in milliseconds (optional)  
 *read_timeout*: float, value in seconds (optional, default is 0 meaning unlimited)
 *others*: array, with PhpRedis >= 5.3.0, it allows setting _auth_ and [_stream_](https://www.php.net/manual/en/context.ssl.php) configuration.
@@ -242,11 +242,11 @@ $redis->connect('tls://127.0.0.1', 6379); // enable transport level security.
 $redis->connect('tls://127.0.0.1'); // enable transport level security, port 6379 by default.
 $redis->connect('127.0.0.1', 6379, 2.5); // 2.5 sec timeout.
 $redis->connect('/tmp/redis.sock'); // unix domain socket.
-$redis->connect('127.0.0.1', 6379, 1, NULL, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
+$redis->connect('127.0.0.1', 6379, 1, '', 100); // 1 sec timeout, 100ms delay between reconnection attempts.
 $redis->connect('/tmp/redis.sock', 0, 1.5, NULL, 0, 1.5); // Unix socket with 1.5s timeouts (connect and read)
 
 /* With PhpRedis >= 5.3.0 you can specify authentication and stream information on connect */
-$redis->connect('127.0.0.1', 6379, 1, NULL, 0, 0, ['auth' => ['phpredis', 'phpredis']]);
+$redis->connect('127.0.0.1', 6379, 1, '', 0, 0, ['auth' => ['phpredis', 'phpredis']]);
 ~~~
 
 **Note:** `open` is an alias for `connect` and will be removed in future versions of phpredis.
