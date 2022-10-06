@@ -501,7 +501,6 @@ $redis->setOption(Redis::OPT_BACKOFF_CAP, 750); // backoff time capped at 750ms
 1. [flushDb](#flushdb) - Remove all keys from the current database
 1. [info](#info) - Get information and statistics about the server
 1. [lastSave](#lastsave) - Get the timestamp of the last disk save
-1. [resetStat](#resetstat) - Reset the stats returned by [info](#info) method.
 1. [save](#save) - Synchronously save the dataset to disk (wait to complete)
 1. [slaveOf](#slaveof) - Make the server a slave of another instance, or promote it to master
 1. [time](#time) - Return the current server time
@@ -558,19 +557,20 @@ $redis->bgSave();
 -----
 _**Description**_: Get or Set the Redis server configuration parameters.
 
-##### *Parameters*
-*operation* (string) either `GET` or `SET`  
-*key* string for `SET`, glob-pattern for `GET`. See http://redis.io/commands/config-get for examples.  
-*value* optional string (only for `SET`)
+##### *Prototype*
+~~~php
+$redis->config($operation, ?string $key = NULL, ?string $value = NULL): mixed;
+~~~
 
 ##### *Return value*
 *Associative array* for `GET`, key -> value  
-*bool* for `SET`
+*bool* for `SET`, and `RESETSTAT`
 
 ##### *Examples*
 ~~~php
 $redis->config("GET", "*max-*-entries*");
 $redis->config("SET", "dir", "/var/run/redis/dumps/");
+$redis->config('RESETSTAT');
 ~~~
 
 ### dbSize
@@ -666,30 +666,6 @@ None.
 ##### *Example*
 ~~~php
 $redis->lastSave();
-~~~
-
-### resetStat
------
-_**Description**_: Reset the stats returned by [info](#info) method.
-
-These are the counters that are reset:
-
-* Keyspace hits
-* Keyspace misses
-* Number of commands processed
-* Number of connections received
-* Number of expired keys
-
-
-##### *Parameters*
-None.
-
-##### *Return value*
-*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
-
-##### *Example*
-~~~php
-$redis->resetStat();
 ~~~
 
 ### save
