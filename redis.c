@@ -129,7 +129,6 @@ static const zend_module_dep redis_deps[] = {
 };
 
 ZEND_DECLARE_MODULE_GLOBALS(redis)
-static PHP_GINIT_FUNCTION(redis);
 
 zend_module_entry redis_module_entry = {
      STANDARD_MODULE_HEADER_EX,
@@ -144,7 +143,7 @@ zend_module_entry redis_module_entry = {
      PHP_MINFO(redis),
      PHP_REDIS_VERSION,
      PHP_MODULE_GLOBALS(redis),
-     PHP_GINIT(redis),
+     NULL,
      NULL,
      NULL,
      STANDARD_MODULE_PROPERTIES_EX
@@ -425,12 +424,6 @@ static void redis_random_hex_bytes(char *dst, size_t dstsize) {
     zend_string_release(s);
 }
 
-static PHP_GINIT_FUNCTION(redis)
-{
-    redis_random_hex_bytes(redis_globals->salt, sizeof(redis_globals->salt) - 1);
-    redis_globals->salt[sizeof(redis_globals->salt)-1] = '\0';
-}
-
 /**
  * PHP_MINIT_FUNCTION
  */
@@ -441,6 +434,10 @@ PHP_MINIT_FUNCTION(redis)
     /* Seed random generator (for RedisCluster failover) */
     gettimeofday(&tv, NULL);
     srand(tv.tv_usec * tv.tv_sec);
+
+    /* Generate our random salt */
+    redis_random_hex_bytes(REDIS_G(salt), sizeof(REDIS_G(salt)) - 1);
+    REDIS_G(salt)[sizeof(REDIS_G(salt)) - 1] = '\0';
 
     REGISTER_INI_ENTRIES();
 
