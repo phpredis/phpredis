@@ -718,12 +718,12 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
         persistent_id = NULL;
     }
 
-    if (timeout < 0L || timeout > INT_MAX) {
+    if (timeout > INT_MAX) {
         REDIS_VALUE_EXCEPTION("Invalid connect timeout");
         return FAILURE;
     }
 
-    if (read_timeout < 0L || read_timeout > INT_MAX) {
+    if (read_timeout > INT_MAX) {
         REDIS_VALUE_EXCEPTION("Invalid read timeout");
         return FAILURE;
     }
