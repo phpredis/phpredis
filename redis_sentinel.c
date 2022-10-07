@@ -61,12 +61,12 @@ PHP_METHOD(RedisSentinel, __construct)
         RETURN_THROWS();
     }
 
-    if (timeout < 0L || timeout > INT_MAX) {
+    if (timeout > INT_MAX) {
         REDIS_VALUE_EXCEPTION("Invalid connect timeout");
         RETURN_THROWS();
     }
 
-    if (read_timeout < 0L || read_timeout > INT_MAX) {
+    if (read_timeout > INT_MAX) {
         REDIS_VALUE_EXCEPTION("Invalid read timeout");
         RETURN_THROWS();
     }
