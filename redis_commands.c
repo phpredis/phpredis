@@ -5650,29 +5650,55 @@ int redis_xinfo_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
-/* XTRIM MAXLEN [~] count */
+// XTRIM key <MAXLEN | MINID> [= | ~] threshold [LIMIT count]
 int redis_xtrim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *key;
-    size_t keylen;
-    zend_long maxlen;
-    zend_bool approx = 0;
+    zend_long threshold = 0, limit = -1;
+    zend_bool approx = 0, minid = 0;
+    smart_string cmdstr = {0};
+    zend_string *key = NULL;
+    int argc;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sl|b", &key, &keylen,
-                              &maxlen, &approx) == FAILURE)
-    {
-        return FAILURE;
+    ZEND_PARSE_PARAMETERS_START(2, 5)
+        Z_PARAM_STR(key)
+        Z_PARAM_LONG(threshold)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_BOOL(approx)
+        Z_PARAM_BOOL(minid)
+        Z_PARAM_LONG(limit)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    argc = 4 + (approx && limit > -1 ? 2 : 0);
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "XTRIM");
+
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+
+    if (minid) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "MINID");
+    } else {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "MAXLEN");
     }
 
     if (approx) {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XTRIM", "kssl", key, keylen,
-                                      "MAXLEN", 6, "~", 1, maxlen);
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "~");
     } else {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XTRIM", "ksl", key, keylen,
-                                      "MAXLEN", 6, maxlen);
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "=");
     }
 
+    redis_cmd_append_sstr_long(&cmdstr, threshold);
+
+    if (limit > -1 && approx) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "LIMIT");
+        redis_cmd_append_sstr_long(&cmdstr, limit);
+    } else if (limit > -1) {
+        php_error_docref(NULL, E_WARNING, "Cannot use LIMIT without an approximate match, ignoring");
+    } else if (ZEND_NUM_ARGS() == 5) {
+        php_error_docref(NULL, E_WARNING, "Limit must be >= 0");
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
     return SUCCESS;
 }
 

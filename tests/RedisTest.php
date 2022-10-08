@@ -6625,6 +6625,27 @@ class Redis_Test extends TestSuite
            can call it with the flag */
         $this->addStreamEntries('stream', 100);
         $this->assertFalse($this->redis->xTrim('stream', 1, true) === false);
+
+        /* We need Redis >= 6.2.0 for MINID and LIMIT options */
+        if (!$this->minVersionCheck("6.2.0"))
+            return;
+
+        $this->assertEquals(1, $this->redis->del('stream'));
+
+        /* Test minid by generating a stream with more than one */
+        for ($i = 1; $i < 3; $i++) {
+            for ($j = 0; $j < 3; $j++) {
+                $this->redis->xadd('stream', "$i-$j", ['foo' => 'bar']);
+            }
+        }
+
+        /* MINID of 2-0 */
+        $this->assertEquals(3, $this->redis->xtrim('stream', 2, false, true));
+        $this->assertEquals(['2-0', '2-1', '2-2'], array_keys($this->redis->xrange('stream', '0', '+')));
+
+        /* TODO:  Figure oiut how to test LIMIT deterministically.  For now just
+                  send a LIMIT and verify we don't get a failure from Redis. */
+        $this->assertTrue(is_int($this->redis->xtrim('stream', 2, true, false, 3)));
     }
 
     /* XCLAIM is one of the most complicated commands, with a great deal of different options

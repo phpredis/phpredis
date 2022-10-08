@@ -358,7 +358,7 @@ class RedisCluster {
 
     public function xrevrange(string $key, string $start, string $end, int $count = -1): bool|array;
 
-    public function xtrim(string $key, int $maxlen, bool $approx = false): int;
+    public function xtrim(string $key, int $maxlen, bool $approx = false, bool $minid = false, int $limit = -1): RedisCluster|int|false;
 
     public function zadd(string $key, float $score, string $member, mixed ...$extra_args): int;
 
