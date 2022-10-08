@@ -65,6 +65,13 @@ typedef struct redisLcsOptions {
     zend_bool withmatchlen;
 } redisLcsOptions;
 
+typedef struct redisRestoreOptions {
+    zend_bool replace;
+    zend_bool absttl;
+    zend_long idletime;
+    zend_long freq;
+} redisRestoreOptions;
+
 /* Local passthrough macro for command construction.  Given that these methods
  * are generic (so they work whether the caller is Redis or RedisCluster) we
  * will always have redis_sock, slot*, and */
@@ -2411,6 +2418,100 @@ int redis_lcs_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+void redis_get_restore_options(redisRestoreOptions *dst, HashTable *ht) {
+    zend_string *key;
+    zend_long lval;
+    zval *zv;
+
+    ZEND_ASSERT(dst != NULL);
+
+    memset(dst, 0, sizeof(*dst));
+    dst->idletime = dst->freq = -1;
+
+    if (ht == NULL)
+        return;
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(ht, key, zv) {
+        ZVAL_DEREF(zv);
+
+        if (key) {
+            if (zend_string_equals_literal_ci(key, "IDLETIME")) {
+                lval = zval_get_long(zv);
+                if (lval < 0) {
+                    php_error_docref(NULL, E_WARNING, "IDLETIME must be >= 0");
+                } else {
+                    dst->idletime = lval;
+                    dst->freq = -1;
+                }
+            } else if (zend_string_equals_literal_ci(key, "FREQ")) {
+                lval = zval_get_long(zv);
+                if (lval < 0 || lval > 255) {
+                    php_error_docref(NULL, E_WARNING, "FREQ must be >= 0 and <= 255");
+                } else {
+                    dst->freq = lval;
+                    dst->idletime = -1;
+                }
+            } else {
+                php_error_docref(NULL, E_WARNING, "Unknown RESTORE option '%s'", ZSTR_VAL(key));
+            }
+        } else if (Z_TYPE_P(zv) == IS_STRING) {
+            if (zend_string_equals_literal_ci(Z_STR_P(zv), "REPLACE")) {
+                dst->replace = 1;
+            } else if (zend_string_equals_literal_ci(Z_STR_P(zv), "ABSTTL")) {
+                dst->absttl = 1;
+            } else {
+                php_error_docref(NULL, E_WARNING, "Unknown RESTORE option '%s'", Z_STRVAL_P(zv));
+            }
+        }
+    } ZEND_HASH_FOREACH_END();
+}
+
+/* RESTORE */
+int redis_restore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    zend_string *key, *value = NULL;
+    smart_string cmdstr = {0};
+    HashTable *options = NULL;
+    redisRestoreOptions opt;
+    zend_long timeout = 0;
+    int argc;
+
+    ZEND_PARSE_PARAMETERS_START(3, 4) {
+        Z_PARAM_STR(key)
+        Z_PARAM_LONG(timeout)
+        Z_PARAM_STR(value)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT_OR_NULL(options)
+    } ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    redis_get_restore_options(&opt, options);
+
+    argc = 3 + (opt.idletime>-1?2:0) + (opt.freq>-1?2:0) + !!opt.absttl + !!opt.replace;
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "RESTORE");
+
+    redis_cmd_append_sstr_key(&cmdstr, ZSTR_VAL(key), ZSTR_LEN(key), redis_sock, slot);
+    redis_cmd_append_sstr_long(&cmdstr, timeout);
+    redis_cmd_append_sstr_zstr(&cmdstr, value);
+
+    REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, opt.replace, "REPLACE");
+    REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, opt.absttl, "ABSTTL");
+
+    if (opt.idletime > -1) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "IDLETIME");
+        redis_cmd_append_sstr_long(&cmdstr, opt.idletime);
+    }
+
+    if (opt.freq > -1) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FREQ");
+        redis_cmd_append_sstr_long(&cmdstr, opt.freq);
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
 
 /* BITPOS */
 int redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,

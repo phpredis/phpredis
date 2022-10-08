@@ -364,7 +364,7 @@ public function persist(string $key): bool;
 
     public function reset(): bool;
 
-    public function restore(string $key, int $timeout, string $value): bool;
+    public function restore(string $key, int $timeout, string $value, ?array $options = NULL): bool;
 
     public function role(): mixed;
 

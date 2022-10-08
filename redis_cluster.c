@@ -1418,8 +1418,7 @@ PHP_METHOD(RedisCluster, pfmerge) {
 
 /* {{{ proto boolean RedisCluster::restore(string key, long ttl, string val) */
 PHP_METHOD(RedisCluster, restore) {
-    CLUSTER_PROCESS_KW_CMD("RESTORE", redis_key_long_str_cmd,
-        cluster_bool_resp, 0);
+    CLUSTER_PROCESS_CMD(restore, cluster_bool_resp, 0);
 }
 /* }}} */
 

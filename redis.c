@@ -3025,8 +3025,7 @@ PHP_METHOD(Redis, dump) {
 
 /* {{{ proto Redis::restore(ttl, key, value) */
 PHP_METHOD(Redis, restore) {
-    REDIS_PROCESS_KW_CMD("RESTORE", redis_key_long_str_cmd,
-        redis_boolean_response);
+    REDIS_PROCESS_CMD(restore, redis_boolean_response);
 }
 /* }}} */
 

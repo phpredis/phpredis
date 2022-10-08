@@ -248,7 +248,7 @@ class RedisCluster {
 
     public function renamenx(string $key, string $newkey): bool;
 
-    public function restore(string $key, int $timeout, string $value): bool;
+    public function restore(string $key, int $timeout, string $value, ?array $options = NULL): bool;
 
     public function role(string|array $key_or_address): mixed;
 
