@@ -515,7 +515,7 @@ public function persist(string $key): bool;
 
     public function xrevrange(string $key, string $start, string $end, int $count = -1): bool|array;
 
-    public function xtrim(string $key, int $maxlen, bool $approx = false): int;
+    public function xtrim(string $key, int $maxlen, bool $approx = false, bool $minid = false, int $limit = -1): Redis|int|false;
 
     public function zAdd(string $key, array|float $score_or_options, mixed ...$more_scores_and_mems): Redis|int|false;
 
