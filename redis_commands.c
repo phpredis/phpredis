@@ -4257,61 +4257,70 @@ redis_geosearchstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/*  MIGRATE host port <key | ""> destination-db timeout [COPY] [REPLACE]
+            [[AUTH password] | [AUTH2 username password]] [KEYS key [key ...]]
+
+    Starting with Redis version 3.0.0: Added the COPY and REPLACE options.
+    Starting with Redis version 3.0.6: Added the KEYS option.
+    Starting with Redis version 4.0.7: Added the AUTH option.
+    Starting with Redis version 6.0.0: Added the AUTH2 option.
+*/
+
 /* MIGRATE */
 int redis_migrate_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    smart_string cmdstr = {0};
-    char *host, *key;
-    int argc, keyfree;
-    zval *z_keys, *z_key;
-    size_t hostlen, keylen;
-    zend_long destdb, port, timeout;
+    zend_string *host = NULL, *key = NULL, *user = NULL, *pass = NULL;
+    zend_long destdb = 0, port = 0, timeout = 0;
+    zval *zkeys = NULL, *zkey, *zauth = NULL;
     zend_bool copy = 0, replace = 0;
-    zend_string *zstr;
+    smart_string cmdstr = {0};
+    int argc;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "slzll|bb", &host, &hostlen, &port,
-                              &z_keys, &destdb, &timeout, &copy, &replace) == FAILURE)
-    {
-        return FAILURE;
+    ZEND_PARSE_PARAMETERS_START(5, 8)
+        Z_PARAM_STR(host)
+        Z_PARAM_LONG(port)
+        Z_PARAM_ZVAL(zkeys)
+        Z_PARAM_LONG(destdb)
+        Z_PARAM_LONG(timeout)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_BOOL(copy)
+        Z_PARAM_BOOL(replace)
+        Z_PARAM_ZVAL_OR_NULL(zauth)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    /* Sanity check on our optional AUTH argument */
+    if (zauth && redis_extract_auth_info(zauth, &user, &pass) == FAILURE) {
+        php_error_docref(NULL, E_WARNING, "AUTH must be a string or an array with one or two strings");
+        user = pass = NULL;
     }
 
     /* Protect against being passed an array with zero elements */
-    if (Z_TYPE_P(z_keys) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(z_keys)) == 0) {
+    if (Z_TYPE_P(zkeys) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(zkeys)) == 0) {
         php_error_docref(NULL, E_WARNING, "Keys array cannot be empty");
         return FAILURE;
     }
 
     /* host, port, key|"", dest-db, timeout, [copy, replace] [KEYS key1..keyN] */
-    argc = 5 + copy + replace;
-    if (Z_TYPE_P(z_keys) == IS_ARRAY) {
+    argc = 5 + copy + replace + (user||pass ? 1 : 0) + (user != NULL) + (pass != NULL);
+    if (Z_TYPE_P(zkeys) == IS_ARRAY) {
         /* +1 for the "KEYS" argument itself */
-        argc += 1 + zend_hash_num_elements(Z_ARRVAL_P(z_keys));
+        argc += 1 + zend_hash_num_elements(Z_ARRVAL_P(zkeys));
     }
 
     /* Initialize MIGRATE command with host and port */
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "MIGRATE");
-    redis_cmd_append_sstr(&cmdstr, host, hostlen);
+    redis_cmd_append_sstr_zstr(&cmdstr, host);
     redis_cmd_append_sstr_long(&cmdstr, port);
 
     /* If passed a keys array the keys come later, otherwise pass the key to
      * migrate here */
-    if (Z_TYPE_P(z_keys) == IS_ARRAY) {
+    if (Z_TYPE_P(zkeys) == IS_ARRAY) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "");
     } else {
-        /* Grab passed value as a string */
-        zstr = zval_get_string(z_keys);
-
-        /* We may need to prefix our string */
-        key = ZSTR_VAL(zstr);
-        keylen = ZSTR_LEN(zstr);
-        keyfree = redis_key_prefix(redis_sock, &key, &keylen);
-
-        /* Add key to migrate */
-        redis_cmd_append_sstr(&cmdstr, key, keylen);
-
-        zend_string_release(zstr);
-        if (keyfree) efree(key);
+        key = redis_key_prefix_zval(redis_sock, zkeys);
+        redis_cmd_append_sstr_zstr(&cmdstr, key);
+        zend_string_release(key);
     }
 
     redis_cmd_append_sstr_long(&cmdstr, destdb);
@@ -4319,24 +4328,28 @@ int redis_migrate_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, copy, "COPY");
     REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, replace, "REPLACE");
 
+    if (user && pass) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "AUTH2");
+        redis_cmd_append_sstr_zstr(&cmdstr, user);
+        redis_cmd_append_sstr_zstr(&cmdstr, pass);
+    } else if (pass) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "AUTH");
+        redis_cmd_append_sstr_zstr(&cmdstr, pass);
+    }
+
     /* Append actual keys if we've got a keys array */
-    if (Z_TYPE_P(z_keys) == IS_ARRAY) {
+    if (Z_TYPE_P(zkeys) == IS_ARRAY) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "KEYS");
 
-        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_keys), z_key) {
-            zstr = zval_get_string(z_key);
-
-            key = ZSTR_VAL(zstr);
-            keylen = ZSTR_LEN(zstr);
-            keyfree = redis_key_prefix(redis_sock, &key, &keylen);
-
-            /* Append the key */
-            redis_cmd_append_sstr(&cmdstr, key, keylen);
-
-            zend_string_release(zstr);
-            if (keyfree) efree(key);
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(zkeys), zkey) {
+            key = redis_key_prefix_zval(redis_sock, zkey);
+            redis_cmd_append_sstr_zstr(&cmdstr, key);
+            zend_string_release(key);
         } ZEND_HASH_FOREACH_END();
     }
+
+    if (user) zend_string_release(user);
+    if (pass) zend_string_release(pass);
 
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;

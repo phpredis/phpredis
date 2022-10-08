@@ -293,7 +293,9 @@ class Redis {
 	/** @return array|Redis */
     public function mget(array $keys);
 
-    public function migrate(string $host, int $port, string $key, string $dst, int $timeout, bool $copy = false, bool $replace = false): bool;
+    public function migrate(string $host, int $port, string|array $key, int $dstdb, int $timeout,
+                            bool $copy = false, bool $replace = false,
+                            #[\SensitiveParameter] ?mixed $credentials = NULL): Redis|bool;
 
     public function move(string $key, int $index): bool;
 
