@@ -52,6 +52,14 @@ class RedisCluster {
 
     public function bzpopmin(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array;
 
+    public function bzmpop(float $timeout, array $keys, string $from, int $count = 1): Redis|array|null|false;
+
+    public function zmpop(array $keys, string $from, int $count = 1): Redis|array|null|false;
+
+    public function blmpop(float $timeout, array $keys, string $from, int $count = 1): Redis|array|null|false;
+
+    public function lmpop(array $keys, string $from, int $count = 1): Redis|array|null|false;
+
     public function clearlasterror(): bool;
 
     public function client(string|array $node, string $subcommand, string|null $arg): array|string|bool;

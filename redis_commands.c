@@ -1660,6 +1660,92 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int redis_mpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    zend_string *from = NULL, *key;
+    int argc, blocking, is_zmpop;
+    smart_string cmdstr = {0};
+    HashTable *keys = NULL;
+    double timeout = 0.0;
+    zend_long count = 1;
+    zval *zv;
+
+    /* Sanity check on our keyword */
+    ZEND_ASSERT(kw != NULL && *kw != '\0' && *(kw+1) != '\0');
+
+    blocking = tolower(*kw) == 'b';
+    is_zmpop = tolower(kw[blocking]) == 'z';
+
+    ZEND_PARSE_PARAMETERS_START(2 + blocking, 3 + blocking) {
+        if (blocking) {
+            Z_PARAM_DOUBLE(timeout)
+        }
+        Z_PARAM_ARRAY_HT(keys)
+        Z_PARAM_STR(from);
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(count);
+    } ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(keys) == 0) {
+        php_error_docref(NULL, E_WARNING, "Must pass at least one key");
+        return FAILURE;
+    } else if (count < 1) {
+        php_error_docref(NULL, E_WARNING, "Count must be > 0");
+        return FAILURE;
+    } else if (!is_zmpop && !(zend_string_equals_literal_ci(from, "LEFT") ||
+                              zend_string_equals_literal_ci(from, "RIGHT")))
+    {
+        php_error_docref(NULL, E_WARNING, "from must be either 'LEFT' or 'RIGHT'");
+        return FAILURE;
+    } else if (is_zmpop && !(zend_string_equals_literal_ci(from, "MIN") ||
+                             zend_string_equals_literal_ci(from, "MAX")))
+    {
+        php_error_docref(NULL, E_WARNING, "from must be either 'MIN' or 'MAX'");
+        return FAILURE;
+    }
+
+    argc = 2 + !!blocking + zend_hash_num_elements(keys) + (count != 1 ? 2 : 0);
+    redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
+
+    if (blocking) redis_cmd_append_sstr_dbl(&cmdstr, timeout);
+    redis_cmd_append_sstr_long(&cmdstr, zend_hash_num_elements(keys));
+
+    if (slot) *slot = -1;
+
+    ZEND_HASH_FOREACH_VAL(keys, zv) {
+        key = redis_key_prefix_zval(redis_sock, zv);
+
+        if (slot) {
+            if (*slot == -1) {
+                *slot = cluster_hash_key_zstr(key);
+            } else if (*slot != cluster_hash_key_zstr(key)) {
+                php_error_docref(NULL, E_WARNING, "All keys don't hash to the same slot");
+                zend_string_release(key);
+                efree(cmdstr.c);
+                return FAILURE;
+            }
+        }
+
+        redis_cmd_append_sstr_zstr(&cmdstr, key);
+
+        zend_string_release(key);
+    } ZEND_HASH_FOREACH_END();
+
+    redis_cmd_append_sstr_zstr(&cmdstr, from);
+
+    if (count != 1) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "COUNT");
+        redis_cmd_append_sstr_long(&cmdstr, count);
+    }
+
+    *ctx = is_zmpop ? PHPREDIS_CTX_PTR : NULL;
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 /* Generic handling of every blocking pop command (BLPOP, BZPOP[MIN/MAX], etc */
 int redis_blocking_pop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                            char *kw, char **cmd, int *cmd_len, short *slot,
@@ -2230,7 +2316,7 @@ redis_hstrlen_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
-void redis_get_lcs_options(redisLcsOptions *dst, HashTable *ht) {
+static void redis_get_lcs_options(redisLcsOptions *dst, HashTable *ht) {
     zend_string *key;
     zval *zv;
 

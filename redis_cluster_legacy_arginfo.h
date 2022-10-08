@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d6e8120d2edd3cb4a18baa99c6013ac428049448 */
+ * Stub hash: 75e03c96590793af52efbea1d6440d3daa57a5d8 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -88,6 +88,23 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_RedisCluster_bzpopmax arginfo_class_RedisCluster_blpop
 
 #define arginfo_class_RedisCluster_bzpopmin arginfo_class_RedisCluster_blpop
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_bzmpop, 0, 0, 3)
+	ZEND_ARG_INFO(0, timeout)
+	ZEND_ARG_INFO(0, keys)
+	ZEND_ARG_INFO(0, from)
+	ZEND_ARG_INFO(0, count)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_zmpop, 0, 0, 2)
+	ZEND_ARG_INFO(0, keys)
+	ZEND_ARG_INFO(0, from)
+	ZEND_ARG_INFO(0, count)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_blmpop arginfo_class_RedisCluster_bzmpop
+
+#define arginfo_class_RedisCluster_lmpop arginfo_class_RedisCluster_zmpop
 
 #define arginfo_class_RedisCluster_clearlasterror arginfo_class_RedisCluster__masters
 
@@ -766,6 +783,10 @@ ZEND_METHOD(RedisCluster, brpop);
 ZEND_METHOD(RedisCluster, brpoplpush);
 ZEND_METHOD(RedisCluster, bzpopmax);
 ZEND_METHOD(RedisCluster, bzpopmin);
+ZEND_METHOD(RedisCluster, bzmpop);
+ZEND_METHOD(RedisCluster, zmpop);
+ZEND_METHOD(RedisCluster, blmpop);
+ZEND_METHOD(RedisCluster, lmpop);
 ZEND_METHOD(RedisCluster, clearlasterror);
 ZEND_METHOD(RedisCluster, client);
 ZEND_METHOD(RedisCluster, close);
@@ -965,6 +986,10 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, brpoplpush, arginfo_class_RedisCluster_brpoplpush, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, bzpopmax, arginfo_class_RedisCluster_bzpopmax, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, bzpopmin, arginfo_class_RedisCluster_bzpopmin, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, bzmpop, arginfo_class_RedisCluster_bzmpop, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, zmpop, arginfo_class_RedisCluster_zmpop, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, blmpop, arginfo_class_RedisCluster_blmpop, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, lmpop, arginfo_class_RedisCluster_lmpop, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, clearlasterror, arginfo_class_RedisCluster_clearlasterror, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, client, arginfo_class_RedisCluster_client, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, close, arginfo_class_RedisCluster_close, ZEND_ACC_PUBLIC)

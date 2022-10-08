@@ -68,6 +68,17 @@
 #define SCORE_DECODE_INT  1
 #define SCORE_DECODE_DOUBLE 2
 
+/* PhpRedis often returns either FALSE or NULL depending on whether we have
+ * an option set, so this macro just wraps that often repeated logic */
+#define REDIS_ZVAL_NULL(sock_, zv_) \
+    do { \
+        if ((sock_)->null_mbulk_as_null) { \
+            ZVAL_NULL((zv_)); \
+        } else { \
+            ZVAL_FALSE((zv_)); \
+        } \
+    } while (0)
+
 #ifndef PHP_WIN32
     #include <netinet/tcp.h> /* TCP_NODELAY */
     #include <sys/socket.h>  /* SO_KEEPALIVE */
@@ -464,9 +475,7 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
     // Consume response(s) from subscribe, which will vary on argc
     while(sctx->argc--) {
         ZVAL_NULL(&z_resp);
-        if (!redis_sock_read_multibulk_reply_zval(
-            INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_resp)
-        ) {
+        if (!redis_sock_read_multibulk_reply_zval(redis_sock, &z_resp)) {
             goto error;
         }
 
@@ -513,9 +522,7 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
         int tab_idx = 1, is_pmsg = 0;
 
         ZVAL_NULL(&z_resp);
-        if (!redis_sock_read_multibulk_reply_zval(
-            INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_resp)
-        ) {
+        if (!redis_sock_read_multibulk_reply_zval(redis_sock, &z_resp)) {
             goto failure;
         }
 
@@ -606,8 +613,7 @@ PHP_REDIS_API int redis_unsubscribe_response(INTERNAL_FUNCTION_PARAMETERS,
 
     while (sctx->argc--) {
         ZVAL_NULL(&z_resp);
-        if (!redis_sock_read_multibulk_reply_zval(
-            INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_resp) ||
+        if (!redis_sock_read_multibulk_reply_zval(redis_sock, &z_resp) ||
             (z_chan = zend_hash_index_find(Z_ARRVAL(z_resp), 1)) == NULL
         ) {
             efree(sctx);
@@ -642,8 +648,7 @@ PHP_REDIS_API int redis_unsubscribe_response(INTERNAL_FUNCTION_PARAMETERS,
 }
 
 PHP_REDIS_API zval *
-redis_sock_read_multibulk_reply_zval(INTERNAL_FUNCTION_PARAMETERS,
-                                     RedisSock *redis_sock, zval *z_tab)
+redis_sock_read_multibulk_reply_zval(RedisSock *redis_sock, zval *z_tab)
 {
     int numElems;
 
@@ -1615,6 +1620,87 @@ geosearch_cast(zval *zv)
         convert_to_double(zv);
     }
     return SUCCESS;
+}
+
+PHP_REDIS_API int
+redis_read_mpop_response(RedisSock *redis_sock, zval *zdst, int elements,
+                         void *ctx)
+{
+    int subele, keylen;
+    zval zele = {0};
+    char *key;
+
+    ZEND_ASSERT(ctx == NULL || ctx == PHPREDIS_CTX_PTR);
+
+    if (elements < 0) {
+        REDIS_ZVAL_NULL(redis_sock, zdst);
+        return SUCCESS;
+    }
+
+    /* Invariant:  We should have two elements */
+    ZEND_ASSERT(elements == 2);
+
+    array_init(zdst);
+
+    /* Key name and number of entries */
+    if ((key = redis_sock_read(redis_sock, &keylen)) == NULL ||
+        read_mbulk_header(redis_sock, &elements) < 0 || elements < 0)
+    {
+        if (key) efree(key);
+        goto fail;
+    }
+
+    add_next_index_stringl(zdst, key, keylen);
+    efree(key);
+
+    array_init_size(&zele, elements);
+
+    if (ctx == PHPREDIS_CTX_PTR) {
+        for (int i = 0; i < elements; i++) {
+            if (read_mbulk_header(redis_sock, &subele) < 0 || subele != 2) {
+                zval_dtor(&zele);
+                goto fail;
+            }
+            redis_mbulk_reply_loop(redis_sock, &zele, subele, UNSERIALIZE_KEYS);
+        }
+
+        array_zip_values_and_scores(redis_sock, &zele, SCORE_DECODE_DOUBLE);
+    } else {
+        redis_mbulk_reply_loop(redis_sock, &zele, elements, UNSERIALIZE_ALL);
+    }
+
+    add_next_index_zval(zdst, &zele);
+
+    return SUCCESS;
+
+fail:
+    zval_dtor(zdst);
+    ZVAL_FALSE(zdst);
+
+    return FAILURE;
+}
+
+PHP_REDIS_API int
+redis_mpop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    zval *z_tab, void *ctx)
+{
+    int elements, res = SUCCESS;
+    zval zret = {0};
+
+    if (read_mbulk_header(redis_sock, &elements) == FAILURE ||
+        redis_read_mpop_response(redis_sock, &zret, elements, ctx) == FAILURE)
+    {
+        res = FAILURE;
+        ZVAL_FALSE(&zret);
+    }
+
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_ZVAL(&zret, 0, 0);
+    } else {
+        add_next_index_zval(z_tab, &zret);
+    }
+
+    return res;
 }
 
 PHP_REDIS_API int

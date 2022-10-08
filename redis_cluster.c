@@ -1336,7 +1336,30 @@ PHP_METHOD(RedisCluster, lcs) {
     CLUSTER_PROCESS_CMD(lcs, cluster_variant_resp, 1);
 }
 
+/* {{{ proto Redis|array|false Redis::lmpop(array $keys, string $from, int $count = 1) */
+PHP_METHOD(RedisCluster, lmpop) {
+    CLUSTER_PROCESS_KW_CMD("LMPOP", redis_mpop_cmd, cluster_mpop_resp, 0);
+}
 /* }}} */
+
+/* {{{ proto Redis|array|false Redis::blmpop(double $timeout, array $keys, string $from, int $count = 1) */
+PHP_METHOD(RedisCluster, blmpop) {
+    CLUSTER_PROCESS_KW_CMD("BLMPOP", redis_mpop_cmd, cluster_mpop_resp, 0);
+}
+/* }}} */
+
+/* {{{ proto Redis|array|false Redis::zmpop(array $keys, string $from, int $count = 1) */
+PHP_METHOD(RedisCluster, zmpop) {
+    CLUSTER_PROCESS_KW_CMD("ZMPOP", redis_mpop_cmd, cluster_mpop_resp, 0);
+}
+/* }}} */
+
+/* {{{ proto Redis|array|false Redis::bzmpop(double $timeout, array $keys, sring $from, int $count = 1) */
+PHP_METHOD(RedisCluster, bzmpop) {
+    CLUSTER_PROCESS_KW_CMD("BZMPOP", redis_mpop_cmd, cluster_mpop_resp, 0);
+}
+/* }}} */
+
 /* {{{ proto string RedisCluster::ltrim(string key, long start, long end) */
 PHP_METHOD(RedisCluster, ltrim) {
     CLUSTER_PROCESS_KW_CMD("LTRIM", redis_key_long_long_cmd, cluster_bool_resp, 0);

@@ -62,6 +62,14 @@ class Redis {
 
     public function bzPopMin(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array;
 
+    public function bzmpop(float $timeout, array $keys, string $from, int $count = 1): Redis|array|null|false;
+
+    public function zmpop(array $keys, string $from, int $count = 1): Redis|array|null|false;
+
+    public function blmpop(float $timeout, array $keys, string $from, int $count = 1): Redis|array|null|false;
+
+    public function lmpop(array $keys, string $from, int $count = 1): Redis|array|null|false;
+
     public function clearLastError(): bool;
 
     public function client(string $opt, mixed ...$args): mixed;

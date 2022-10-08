@@ -2362,6 +2362,23 @@ cluster_xinfo_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
     add_next_index_zval(&c->multi_resp, &z_ret);
 }
 
+/* LMPOP, ZMPOP, BLMPOP, BZMPOP */
+PHP_REDIS_API void
+cluster_mpop_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
+{
+    zval z_ret;
+
+    c->cmd_sock->null_mbulk_as_null = c->flags->null_mbulk_as_null;
+    if (redis_read_mpop_response(c->cmd_sock, &z_ret, c->reply_len, ctx) == FAILURE) {
+        CLUSTER_RETURN_FALSE(c);
+    }
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        RETURN_ZVAL(&z_ret, 0, 0);
+    }
+    add_next_index_zval(&c->multi_resp, &z_ret);
+}
+
 static void
 cluster_acl_custom_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx,
                         int (*cb)(RedisSock*, zval*, long))
