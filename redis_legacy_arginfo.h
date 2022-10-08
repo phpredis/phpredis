@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 0ace014dc4f3f94eedd835f1d6895703aea3e607 */
+ * Stub hash: a39dd09e86258566f2eae441d920ef280f8a3e72 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -450,10 +450,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_migrate, 0, 0, 5)
 	ZEND_ARG_INFO(0, host)
 	ZEND_ARG_INFO(0, port)
 	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, dst)
+	ZEND_ARG_INFO(0, dstdb)
 	ZEND_ARG_INFO(0, timeout)
 	ZEND_ARG_INFO(0, copy)
 	ZEND_ARG_INFO(0, replace)
+	ZEND_ARG_INFO(0, credentials)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_move arginfo_class_Redis_lindex
