@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 75e03c96590793af52efbea1d6440d3daa57a5d8 */
+ * Stub hash: 956f295e74025def86150d0acdf7a11594c72d47 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -459,7 +459,12 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_renamenx arginfo_class_RedisCluster_rename
 
-#define arginfo_class_RedisCluster_restore arginfo_class_RedisCluster_psetex
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_restore, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, timeout)
+	ZEND_ARG_INFO(0, value)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_role arginfo_class_RedisCluster_bgrewriteaof
 

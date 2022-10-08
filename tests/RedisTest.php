@@ -5096,6 +5096,22 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->get('foo') === 'this-is-bar');
         $this->assertTrue($this->redis->get('bar') === 'this-is-foo');
 
+        /* Test that we can REPLACE a key */
+        $this->assertTrue($this->redis->set('foo', 'some-value'));
+        $this->assertTrue($this->redis->restore('foo', 0, $d_bar, ['REPLACE']));
+
+        /* Ensure we can set an absolute TTL */
+        $this->assertTrue($this->redis->restore('foo', time() + 10, $d_bar, ['REPLACE', 'ABSTTL']));
+        $this->assertTrue($this->redis->ttl('foo') <= 10);
+
+        /* Ensure we can set an IDLETIME */
+        $this->assertTrue($this->redis->restore('foo', 0, $d_bar, ['REPLACE', 'IDLETIME' => 200]));
+        $this->assertTrue($this->redis->object('idletime', 'foo') > 100);
+
+        /* We can't neccissarily check this depending on LRU policy, but at least attempt to use
+           the FREQ option */
+        $this->assertTrue($this->redis->restore('foo', 0, $d_bar, ['REPLACE', 'FREQ' => 200]));
+
         $this->redis->del('foo');
         $this->redis->del('bar');
     }
