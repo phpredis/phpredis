@@ -368,8 +368,8 @@ static void add_class_constants(zend_class_entry *ce, int is_cluster) {
         /* Cluster doesn't support pipelining at this time */
         zend_declare_class_constant_long(ce, ZEND_STRL("PIPELINE"), PIPELINE);
 
-        zend_declare_class_constant_stringl(ce, "LEFT", 4, "left", 4);
-        zend_declare_class_constant_stringl(ce, "RIGHT", 5, "right", 5);
+        zend_declare_class_constant_stringl(ce, ZEND_STRL("LEFT"), ZEND_STRL("left"));
+        zend_declare_class_constant_stringl(ce, ZEND_STRL("RIGHT"), ZEND_STRL("right"));
     }
 
     /* retry/backoff options*/
@@ -2157,6 +2157,29 @@ PHP_METHOD(Redis, bzPopMin) {
 }
 /* }}} */
 
+/* {{{ proto Redis|array|false Redis::lmpop(array $keys, string $from, int $count = 1) */
+PHP_METHOD(Redis, lmpop) {
+    REDIS_PROCESS_KW_CMD("LMPOP", redis_mpop_cmd, redis_mpop_response);
+}
+/* }}} */
+
+/* {{{ proto Redis|array|false Redis::blmpop(double $timeout, array $keys, string $from, int $count = 1) */
+PHP_METHOD(Redis, blmpop) {
+    REDIS_PROCESS_KW_CMD("BLMPOP", redis_mpop_cmd, redis_mpop_response);
+}
+/* }}} */
+
+/* {{{ proto Redis|array|false Redis::zmpop(array $keys, string $from, int $count = 1) */
+PHP_METHOD(Redis, zmpop) {
+    REDIS_PROCESS_KW_CMD("ZMPOP", redis_mpop_cmd, redis_mpop_response);
+}
+
+/* {{{ proto Redis|array|false Redis::bzmpop(double $timeout, array $keys, string $from, int $count = 1) */
+PHP_METHOD(Redis, bzmpop) {
+    REDIS_PROCESS_KW_CMD("BZMPOP", redis_mpop_cmd, redis_mpop_response);
+}
+
+/* }}} */
 /* hashes */
 
 /* {{{ proto long Redis::hset(string key, string mem, string val) */

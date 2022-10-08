@@ -273,6 +273,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testLcs() {
+
         $key1 = '{lcs}1'; $key2 = '{lcs}2';
         $this->assertTrue($this->redis->set($key1, '12244447777777'));
         $this->assertTrue($this->redis->set($key2, '6666662244441'));
@@ -291,6 +292,104 @@ class Redis_Test extends TestSuite
         $this->assertEquals(6, $this->redis->lcs($key1, $key2, ['len']));
 
         $this->redis->del([$key1, $key2]);
+    }
+
+    public function testLmpop() {
+        if(version_compare($this->version, "7.0.0") < 0) {
+            $this->markTestSkipped();
+        }
+
+        $key1 = '{l}1';
+        $key2 = '{l}2';
+
+        $this->assertTrue($this->redis->del($key1, $key2) !== false);
+
+        $this->assertEquals(6, $this->redis->rpush($key1, 'A', 'B', 'C', 'D', 'E', 'F'));
+        $this->assertEquals(6, $this->redis->rpush($key2, 'F', 'E', 'D', 'C', 'B', 'A'));
+
+        $this->assertEquals([$key1, ['A']], $this->redis->lmpop([$key1, $key2], 'LEFT'));
+        $this->assertEquals([$key1, ['F']], $this->redis->lmpop([$key1, $key2], 'RIGHT'));
+        $this->assertEquals([$key1, ['B', 'C', 'D']], $this->redis->lmpop([$key1, $key2], 'LEFT',  3));
+
+        $this->assertEquals(2, $this->redis->del($key1, $key2));
+    }
+
+    public function testBLmpop() {
+        if(version_compare($this->version, "7.0.0") < 0) {
+            $this->markTestSkipped();
+        }
+
+        $key1 = '{bl}1';
+        $key2 = '{bl}2';
+
+        $this->assertTrue($this->redis->del($key1, $key2) !== false);
+        $this->assertEquals(2, $this->redis->rpush($key1, 'A', 'B'));
+        $this->assertEquals(2, $this->redis->rpush($key2, 'C', 'D'));
+
+        $this->assertEquals([$key1, ['B', 'A']], $this->redis->blmpop(.2, [$key1, $key2], 'RIGHT', 2));
+        $this->assertEquals([$key2, ['C']], $this->redis->blmpop(.2, [$key1, $key2], 'LEFT'));
+        $this->assertEquals([$key2, ['D']], $this->redis->blmpop(.2, [$key1, $key2], 'LEFT'));
+
+        $st = microtime(true);
+        $this->assertFalse($this->redis->blmpop(.2, [$key1, $key2], 'LEFT'));
+        $et = microtime(true);
+        $this->assertTrue($et - $st >= .2);
+    }
+
+    function testZmpop() {
+        if(version_compare($this->version, "7.0.0") < 0) {
+            $this->markTestSkipped();
+        }
+
+        $key1 = '{z}1';
+        $key2 = '{z}2';
+
+        $this->assertTrue($this->redis->del($key1, $key2) !== false);
+
+        $this->assertEquals(4, $this->redis->zadd($key1, 0, 'zero', 2, 'two', 4, 'four', 6, 'six'));
+        $this->assertEquals(4, $this->redis->zadd($key2, 1, 'one', 3, 'three', 5, 'five', 7, 'seven'));
+
+        $this->assertEquals([$key1, ['zero' => 0.0]], $this->redis->zmpop([$key1, $key2], 'MIN'));
+        $this->assertEquals([$key1, ['six' => 6.0]], $this->redis->zmpop([$key1, $key2], 'MAX'));
+        $this->assertEquals([$key1, ['two' => 2.0, 'four' => 4.0]], $this->redis->zmpop([$key1, $key2], 'MIN', 3));
+
+        $this->assertEquals(
+            [$key2, ['one' => 1.0, 'three' => 3.0, 'five' => 5.0, 'seven' => 7.0]],
+            $this->redis->zmpop([$key1, $key2], 'MIN', 128)
+        );
+
+        $this->assertFalse($this->redis->zmpop([$key1, $key2], 'MIN'));
+
+        $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, true);
+        $this->assertEquals(NULL, $this->redis->zmpop([$key1, $key2], 'MIN'));
+        $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, false);
+    }
+
+    function testBZmpop() {
+        if(version_compare($this->version, "7.0.0") < 0) {
+            $this->markTestSkipped();
+        }
+
+        $key1 = '{z}1';
+        $key2 = '{z}2';
+
+        $this->assertTrue($this->redis->del($key1, $key2) !== false);
+
+        $this->assertEquals(2, $this->redis->zadd($key1, 0, 'zero', 2, 'two'));
+        $this->assertEquals(2, $this->redis->zadd($key2, 1, 'one', 3, 'three'));
+
+        $this->assertEquals(
+            [$key1, ['zero' => 0.0, 'two' => 2.0]],
+            $this->redis->bzmpop(.1, [$key1, $key2], 'MIN', 2)
+        );
+
+        $this->assertEquals([$key2, ['three' => 3.0]], $this->redis->bzmpop(.1, [$key1, $key2], 'MAX'));
+        $this->assertEquals([$key2, ['one' => 1.0]], $this->redis->bzmpop(.1, [$key1, $key2], 'MAX'));
+
+        $st = microtime(true);
+        $this->assertFalse($this->redis->bzmpop(.2, [$key1, $key2], 'MIN'));
+        $et = microtime(true);
+        $this->assertTrue($et - $st >= .2);
     }
 
     public function testBitPos() {
@@ -577,7 +676,6 @@ class Redis_Test extends TestSuite
 
         $this->assertEquals([gzcompress('v1'), gzcompress('v2'), gzcompress('v3')], $this->redis->mget(['k1', 'k2', 'k3']));
         $this->assertEquals([gzcompress('v1'), gzcompress('v2'), gzcompress('v3')], $this->redis->mget(['k1', 'k2', 'k3']));
-
     }
 
     public function testSetTimeout() {

@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d7e7c4d63f53a7eeeb17a5d54ce3ee1173eb18e6 */
+ * Stub hash: f547b5f24c4d373043c89dab57d450d27f959b08 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -91,6 +91,23 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_bzPopMax, 0, 2, IS_A
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_bzPopMin arginfo_class_Redis_bzPopMax
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_bzmpop, 0, 3, Redis, MAY_BE_ARRAY|MAY_BE_NULL|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, timeout, IS_DOUBLE, 0)
+	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, from, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "1")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_zmpop, 0, 2, Redis, MAY_BE_ARRAY|MAY_BE_NULL|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, from, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "1")
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_blmpop arginfo_class_Redis_bzmpop
+
+#define arginfo_class_Redis_lmpop arginfo_class_Redis_zmpop
 
 #define arginfo_class_Redis_clearLastError arginfo_class_Redis_bgSave
 
@@ -1073,6 +1090,10 @@ ZEND_METHOD(Redis, brPop);
 ZEND_METHOD(Redis, brpoplpush);
 ZEND_METHOD(Redis, bzPopMax);
 ZEND_METHOD(Redis, bzPopMin);
+ZEND_METHOD(Redis, bzmpop);
+ZEND_METHOD(Redis, zmpop);
+ZEND_METHOD(Redis, blmpop);
+ZEND_METHOD(Redis, lmpop);
 ZEND_METHOD(Redis, clearLastError);
 ZEND_METHOD(Redis, client);
 ZEND_METHOD(Redis, close);
@@ -1309,6 +1330,10 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, brpoplpush, arginfo_class_Redis_brpoplpush, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bzPopMax, arginfo_class_Redis_bzPopMax, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bzPopMin, arginfo_class_Redis_bzPopMin, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, bzmpop, arginfo_class_Redis_bzmpop, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zmpop, arginfo_class_Redis_zmpop, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, blmpop, arginfo_class_Redis_blmpop, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, lmpop, arginfo_class_Redis_lmpop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, clearLastError, arginfo_class_Redis_clearLastError, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, client, arginfo_class_Redis_client, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, close, arginfo_class_Redis_close, ZEND_ACC_PUBLIC)
