@@ -71,10 +71,10 @@ jobs:
       - name: Run tests using valgrind
         continue-on-error: true
         run: |
-          valgrind --error-exitcode=1 php tests/TestRedis.php --class Redis --user phpredis --auth phpredis
-          valgrind --error-exitcode=1 php tests/TestRedis.php --class RedisArray --user phpredis --auth phpredis
-          valgrind --error-exitcode=1 php tests/TestRedis.php --class RedisCluster --user phpredis --auth phpredis
-          valgrind --error-exitcode=1 php tests/TestRedis.php --class RedisSentinel --auth phpredis
+          valgrind --suppressions=tests/vg.supp --error-exitcode=1 php tests/TestRedis.php --class Redis --user phpredis --auth phpredis
+          valgrind --suppressions=tests/vg.supp --error-exitcode=1 php tests/TestRedis.php --class RedisArray --user phpredis --auth phpredis
+          valgrind --suppressions=tests/vg.supp --error-exitcode=1 php tests/TestRedis.php --class RedisCluster --user phpredis --auth phpredis
+          valgrind --suppressions=tests/vg.supp --error-exitcode=1 php tests/TestRedis.php --class RedisSentinel --auth phpredis
         env:
           TEST_PHP_ARGS: -e
           USE_ZEND_ALLOC: 0
