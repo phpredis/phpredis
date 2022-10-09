@@ -2729,8 +2729,10 @@ PHP_METHOD(Redis, config)
     if (zend_string_equals_literal_ci(op, "GET") && key != NULL) {
         cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "SS", op, key);
         cb = redis_mbulk_reply_zipped_raw;
-    } else if (zend_string_equals_literal_ci(op, "RESETSTAT")) {
-        cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "s", ZEND_STRL("RESETSTAT"));
+    } else if (zend_string_equals_literal_ci(op, "RESETSTAT") ||
+               zend_string_equals_literal_ci(op, "REWRITE"))
+    {
+        cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "s", ZSTR_VAL(op), ZSTR_LEN(op));
         cb = redis_boolean_response;
     } else if (zend_string_equals_literal_ci(op, "SET") && key != NULL && val != NULL) {
         cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "SSS", op, key, val);
@@ -2744,8 +2746,6 @@ PHP_METHOD(Redis, config)
         cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
     REDIS_PROCESS_RESPONSE(redis_boolean_response);
-
-    return;
 }
 /* }}} */
 
