@@ -5561,6 +5561,15 @@ class Redis_Test extends TestSuite
             $this->assertFalse($this->redis->config($cmd));
         }
         $this->assertFalse($this->redis->config('set', 'foo'));
+
+        /* REWRITE.  We don't care if it actually works, just that the
+           command be attempted */
+        $res = $this->redis->config('rewrite');
+        $this->assertTrue(is_bool($res));
+        if ($res == false) {
+            $this->assertPatternMatch($this->redis->getLastError(), '/.*config.*/');
+            $this->redis->clearLastError();
+        }
     }
 
     public function testReconnectSelect() {
