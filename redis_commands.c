@@ -5624,42 +5624,38 @@ int redis_xgroup_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_xinfo_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *op, *key, *arg = NULL;
-    size_t oplen, keylen, arglen;
+    zend_string *op = NULL, *key = NULL, *arg = NULL;
+    smart_string cmdstr = {0};
     zend_long count = -1;
-    int argc = ZEND_NUM_ARGS();
-    char fmt[] = "skssl";
 
-    if (argc > 4 || zend_parse_parameters(ZEND_NUM_ARGS(), "s|ssl",
-                                          &op, &oplen, &key, &keylen, &arg,
-                                          &arglen, &count) == FAILURE)
-    {
+    ZEND_PARSE_PARAMETERS_START(1, 4)
+        Z_PARAM_STR(op)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR_OR_NULL(key)
+        Z_PARAM_STR_OR_NULL(arg)
+        Z_PARAM_LONG(count)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if ((arg != NULL && key == NULL) || (count != -1 && (key == NULL || arg == NULL))) {
+        php_error_docref(NULL, E_WARNING, "Cannot pass a non-null optional argument after a NULL one.");
         return FAILURE;
     }
 
-    /* Handle everything except XINFO STREAM */
-    if (strncasecmp(op, "STREAM", 6) != 0) {
-        fmt[argc] = '\0';
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XINFO", fmt, op, oplen, key, keylen,
-                                      arg, arglen);
-        return SUCCESS;
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + (key != NULL) + (arg != NULL) + (count > -1 ? 2 : 0), "XINFO");
+    redis_cmd_append_sstr_zstr(&cmdstr, op);
+
+    if (key != NULL)
+        redis_cmd_append_sstr_key(&cmdstr, ZSTR_VAL(key), ZSTR_LEN(key), redis_sock, slot);
+    if (arg != NULL)
+        redis_cmd_append_sstr_zstr(&cmdstr, arg);
+
+    if (count > -1) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "COUNT");
+        redis_cmd_append_sstr_long(&cmdstr, count);
     }
 
-    /* 'FULL' is the only legal option to XINFO STREAM */
-    if (argc > 2 && strncasecmp(arg, "FULL", 4) != 0) {
-        php_error_docref(NULL, E_WARNING, "'%s' is not a valid option for XINFO STREAM", arg);
-        return FAILURE;
-    }
-
-    /* If we have a COUNT bump the argument count to account for the 'COUNT' literal */
-    if (argc == 4) argc++;
-
-    fmt[argc] = '\0';
-
-    /* Build our XINFO STREAM variant */
-    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XINFO", fmt, "STREAM", 6, key, keylen,
-                                  "FULL", 4, "COUNT", 5, count);
-
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
     return SUCCESS;
 }
 
