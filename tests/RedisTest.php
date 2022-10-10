@@ -6742,9 +6742,9 @@ class Redis_Test extends TestSuite
 
     public function testXInfo()
     {
-        if (!$this->minVersionCheck("5.0")) {
-            return $this->markTestSkipped();
-        }
+        if (!$this->minVersionCheck("5.0"))
+            $this->markTestSkipped();
+
         /* Create some streams and groups */
         $stream = 's';
         $groups = ['g1' => 0, 'g2' => 0];
@@ -6766,6 +6766,12 @@ class Redis_Test extends TestSuite
             $this->assertTrue(array_key_exists($key, $info));
             $this->assertTrue(is_array($info[$key]));
         }
+
+        /* Ensure that default/NULL arguments are ignored */
+        $info = $this->redis->xInfo('STREAM', $stream, NULL);
+        $this->assertTrue(is_array($info));
+        $info = $this->redis->xInfo('STREAM', $stream, NULL, -1);
+        $this->assertTrue(is_array($info));
 
         /* XINFO STREAM FULL [COUNT N] Requires >= 6.0.0 */
         if (!$this->minVersionCheck("6.0"))
@@ -6791,6 +6797,13 @@ class Redis_Test extends TestSuite
             $n = isset($info['entries']) ? count($info['entries']) : 0;
             $this->assertEquals($n, $this->redis->xLen($stream));
         }
+
+        /* Make sure we can't erroneously send non-null args after null ones */
+        $this->redis->clearLastError();
+        $this->assertFalse(@$this->redis->xInfo('FOO', NULL, 'fail', 25));
+        $this->assertEquals(NULL, $this->redis->getLastError());
+        $this->assertFalse(@$this->redis->xInfo('FOO', NULL, NULL, -2));
+        $this->assertEquals(NULL, $this->redis->getLastError());
     }
 
     /* Regression test for issue-1831 (XINFO STREAM on an empty stream) */
