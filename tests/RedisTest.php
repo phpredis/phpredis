@@ -5704,7 +5704,7 @@ class Redis_Test extends TestSuite
 
             // Make sure we can scan for specific types
             foreach ($arr_keys as $str_type => $arr_vals) {
-                foreach ([NULL, 10] as $i_count) {
+                foreach ([0, 10] as $i_count) {
                     $arr_resp = [];
 
                     $it = NULL;
@@ -5727,7 +5727,7 @@ class Redis_Test extends TestSuite
         foreach ($arr_prefixes as $str_prefix) {
             $this->redis->setOption(Redis::OPT_PREFIX, $str_prefix);
             $this->redis->set("$keyid", "LOLWUT");
-            $arr_all_keys["${str_prefix}${keyid}"] = true;
+            $arr_all_keys["{$str_prefix}{$keyid}"] = true;
         }
 
         $this->redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
@@ -5737,7 +5737,7 @@ class Redis_Test extends TestSuite
             $this->redis->setOption(Redis::OPT_PREFIX, $str_prefix);
             $it = NULL;
             $arr_keys = $this->redis->scan($it, "*$keyid*");
-            $this->assertEquals($arr_keys, ["${str_prefix}${keyid}"]);
+            $this->assertEquals($arr_keys, ["{$str_prefix}{$keyid}"]);
         }
 
         /* Unset the prefix option */
