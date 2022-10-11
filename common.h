@@ -153,6 +153,8 @@ typedef enum {
         Z_PARAM_STR_EX(dest, 1, 0)
 #define Z_PARAM_ZVAL_OR_NULL(dest) \
 	Z_PARAM_ZVAL_EX(dest, 1, 0)
+#define Z_PARAM_BOOL_OR_NULL(dest, is_null) \
+	Z_PARAM_BOOL_EX(dest, is_null, 1, 0)
 #endif
 
 #if PHPREDIS_DEBUG_LOGGING == 1

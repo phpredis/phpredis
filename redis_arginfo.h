@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 73e34ca5d2f49dd1dbcbf901d3dd48019e1ba5dc */
+ * Stub hash: c9de2943a9517d8007381f36a47ab45ef911ae67 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -217,7 +217,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_pexpiretime arginfo_class_Redis_expiretime
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_flushAll, 0, 0, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_flushAll, 0, 0, Redis, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, sync, _IS_BOOL, 1, "null")
 ZEND_END_ARG_INFO()
 
