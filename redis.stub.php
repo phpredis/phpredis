@@ -164,13 +164,13 @@ class Redis {
 
     public function geopos(string $key, string $member, string ...$other_members): Redis|array|false;
 
-    public function georadius(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): Redis|mixed|false;
+    public function georadius(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): mixed;
 
-    public function georadius_ro(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): Redis|mixed|false;
+    public function georadius_ro(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): mixed;
 
-    public function georadiusbymember(string $key, string $member, float $radius, string $unit, array $options = []): Redis|mixed|false;
+    public function georadiusbymember(string $key, string $member, float $radius, string $unit, array $options = []): mixed;
 
-    public function georadiusbymember_ro(string $key, string $member, float $radius, string $unit, array $options = []): Redis|mixed|false;
+    public function georadiusbymember_ro(string $key, string $member, float $radius, string $unit, array $options = []): mixed;
 
     public function geosearch(string $key, array|string $position, array|int|float $shape, string $unit, array $options = []): array;
 
@@ -218,7 +218,7 @@ class Redis {
 
     public function hExists(string $key, string $member): Redis|bool;
 
-    public function hGet(string $key, string $member): Redis|mixed|false;
+    public function hGet(string $key, string $member): mixed;
 
     public function hGetAll(string $key): Redis|array|false;
 
@@ -299,7 +299,7 @@ class Redis {
 
     public function lastSave(): int;
 
-    public function lindex(string $key, int $index): Redis|mixed|false;
+    public function lindex(string $key, int $index): mixed;
 
     public function lrange(string $key, int $start , int $end): Redis|array|false;
 
@@ -315,7 +315,7 @@ class Redis {
 
     public function migrate(string $host, int $port, string|array $key, int $dstdb, int $timeout,
                             bool $copy = false, bool $replace = false,
-                            #[\SensitiveParameter] ?mixed $credentials = NULL): Redis|bool;
+                            #[\SensitiveParameter] mixed $credentials = NULL): Redis|bool;
 
     public function move(string $key, int $index): bool;
 
