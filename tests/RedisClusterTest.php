@@ -287,7 +287,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         /* We should now have both prefixs' keys */
         foreach ($arr_keys as $str_prefix => $str_id) {
-            $this->assertTrue(in_array("${str_prefix}${str_id}", $arr_scan_keys));
+            $this->assertTrue(in_array("{$str_prefix}{$str_id}", $arr_scan_keys));
         }
     }
 
