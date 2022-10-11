@@ -5037,23 +5037,26 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_xpending_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                        char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    smart_string cmdstr = {0};
-    char *key, *group, *start = NULL, *end = NULL, *consumer = NULL;
-    size_t keylen, grouplen, startlen, endlen, consumerlen;
-    int argc;
+    zend_string *key = NULL, *group = NULL, *start = NULL, *end = NULL,
+                *consumer = NULL;
     zend_long count = -1, idle = 0;
+    smart_string cmdstr = {0};
+    int argc;
 
-    // XPENDING mystream group55 - + 10 consumer-123
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss|sslsl", &key,
-                              &keylen, &group, &grouplen, &start, &startlen,
-                              &end, &endlen, &count, &consumer, &consumerlen,
-                              &idle) == FAILURE)
-    {
-        return FAILURE;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 7)
+        Z_PARAM_STR(key)
+        Z_PARAM_STR(group)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR_OR_NULL(start)
+        Z_PARAM_STR_OR_NULL(end)
+        Z_PARAM_LONG(count)
+        Z_PARAM_STR_OR_NULL(consumer)
+        Z_PARAM_LONG(idle)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
     /* If we've been passed a start argument, we also need end and count */
     if (start != NULL && (end == NULL || count < 0)) {
+        php_error_docref(NULL, E_WARNING, "'$start' must be accompanied by '$end' and '$count' arguments");
         return FAILURE;
     }
 
@@ -5062,8 +5065,8 @@ int redis_xpending_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Construct command and add required arguments */
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "XPENDING");
-    redis_cmd_append_sstr_key(&cmdstr, key, keylen, redis_sock, slot);
-    redis_cmd_append_sstr(&cmdstr, group, grouplen);
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    redis_cmd_append_sstr_zstr(&cmdstr, group);
 
     /* Add optional argumentst */
     if (start) {
@@ -5071,12 +5074,12 @@ int redis_xpending_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "IDLE");
             redis_cmd_append_sstr_long(&cmdstr, (long)idle);
         }
-        redis_cmd_append_sstr(&cmdstr, start, startlen);
-        redis_cmd_append_sstr(&cmdstr, end, endlen);
+        redis_cmd_append_sstr_zstr(&cmdstr, start);
+        redis_cmd_append_sstr_zstr(&cmdstr, end);
         redis_cmd_append_sstr_long(&cmdstr, (long)count);
 
         /* Finally add consumer if we have it */
-        if (consumer) redis_cmd_append_sstr(&cmdstr, consumer, consumerlen);
+        if (consumer) redis_cmd_append_sstr_zstr(&cmdstr, consumer);
     }
 
     *cmd = cmdstr.c;

@@ -6604,6 +6604,10 @@ class Redis_Test extends TestSuite
                 $this->redis->xAck('s', 'group', [$id]);
             }
         }
+
+        /* Ensure we can have NULL trailing arguments */
+        $this->assertTrue(is_array($this->redis->xpending('s', 'group', '-', '+', 1, null)));
+        $this->assertTrue(is_array($this->redis->xpending('s', 'group', NULL, NULL, -1, NULL)));
     }
 
     public function testXDel() {
