@@ -507,7 +507,7 @@ public function persist(string $key): bool;
 
     public function xlen(string $key): int;
 
-    public function xpending(string $key, string $group, string $start = null, string $end = null, int $count = -1, string $consumer = null): Redis|array|false;
+    public function xpending(string $key, string $group, ?string $start = null, ?string $end = null, int $count = -1, ?string $consumer = null): Redis|array|false;
 
     public function xrange(string $key, string $start, string $end, int $count = -1): bool|array;
 
