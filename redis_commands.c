@@ -529,19 +529,27 @@ redis_failover_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_flush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    int sync = -1;
+    smart_string cmdstr = {0};
+    zend_bool sync = 0;
+    zend_bool is_null = 1;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "|b", &sync) == FAILURE) {
-        return FAILURE;
+    ZEND_PARSE_PARAMETERS_START(0, 1)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_BOOL_OR_NULL(sync, is_null)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    redis_cmd_init_sstr(&cmdstr, !is_null, kw, strlen(kw));
+    if (!is_null) {
+        ZEND_ASSERT(sync == 0 || sync == 1);
+        if (sync == 0) {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "ASYNC");
+        } else {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "SYNC");
+        }
     }
 
-    if (sync < 0) {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "");
-    } else if (sync > 0) {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "s", "SYNC", sizeof("SYNC") - 1);
-    } else {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "s", "ASYNC", sizeof("ASYNC") - 1);
-    }
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
 
     return SUCCESS;
 }

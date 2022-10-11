@@ -2160,6 +2160,13 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->dbSize() === 1);
     }
 
+    public function testFlushDB() {
+        $this->assertTrue($this->redis->flushdb());
+        $this->assertTrue($this->redis->flushdb(NULL));
+        $this->assertTrue($this->redis->flushdb(false));
+        $this->assertTrue($this->redis->flushdb(true));
+    }
+
     public function testttl() {
         $this->redis->set('x', 'y');
         $this->redis->expire('x', 5);

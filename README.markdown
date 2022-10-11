@@ -608,11 +608,13 @@ $redis->flushAll();
 -----
 _**Description**_: Remove all keys from the current database.
 
-##### *Parameters*
-*async* (bool) requires server version 4.0.0 or greater
+##### *Prototype*
+~~~php
+$redis->flushdb(?bool $sync = NULL): Redis|bool;
+~~~
 
 ##### *Return value*
-*BOOL*: Always `TRUE`.
+*BOOL*:  This command returns true on success and false on failure.
 
 ##### *Example*
 ~~~php

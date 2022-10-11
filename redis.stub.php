@@ -132,9 +132,29 @@ class Redis {
 
     public function pexpiretime(string $key): Redis|int|false;
 
-    public function flushAll(?bool $sync = null): bool;
+    /**
+     * Deletes every key in all Redis databases
+     *
+     * @param  bool  $sync Whether to perform the task in a blocking or non-blocking way.
+     *               when TRUE, PhpRedis will execute `FLUSHALL SYNC`, and when FALSE we
+     *               will execute `FLUSHALL ASYNC`.  If the argument is omitted, we
+     *               simply execute `FLUSHALL` and whether it is SYNC or ASYNC depends
+     *               on Redis' `lazyfree-lazy-user-flush` config setting.
+     * @return bool
+     */
+    public function flushAll(?bool $sync = null): Redis|bool;
 
-    public function flushDB(?bool $sync = null): bool;
+    /**
+     * Deletes all the keys of the currently selected database.
+     *
+     * @param  bool  $sync Whether to perform the task in a blocking or non-blocking way.
+     *               when TRUE, PhpRedis will execute `FLUSHDB SYNC`, and when FALSE we
+     *               will execute `FLUSHDB ASYNC`.  If the argument is omitted, we
+     *               simply execute `FLUSHDB` and whether it is SYNC or ASYNC depends
+     *               on Redis' `lazyfree-lazy-user-flush` config setting.
+     * @return bool
+     */
+    public function flushDB(?bool $sync = null): Redis|bool;
 
     public function geoadd(string $key, float $lng, float $lat, string $member, mixed ...$other_triples): int;
 
