@@ -1844,6 +1844,16 @@ PHP_METHOD(RedisCluster, _redir) {
 /* {{{ proto bool RedisCluster::multi() */
 PHP_METHOD(RedisCluster, multi) {
     redisCluster *c = GET_CONTEXT();
+    zend_long value = MULTI;
+
+    ZEND_PARSE_PARAMETERS_START(0, 1)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(value)
+    ZEND_PARSE_PARAMETERS_END();
+
+    if (value != MULTI) {
+        php_error_docref(NULL, E_WARNING, "RedisCluster does not support PIPELINING");
+    }
 
     if (c->flags->mode == MULTI) {
         php_error_docref(NULL, E_WARNING,

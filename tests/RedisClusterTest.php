@@ -390,7 +390,7 @@ class Redis_Cluster_Test extends Redis_Test {
         // watch and unwatch
         $this->redis->watch('x');
         $r->incr('x'); // other instance
-        $this->redis->unwatch('x'); // cancel transaction watch
+        $this->redis->unwatch(); // cancel transaction watch
 
         // This should succeed as the watch has been cancelled
         $ret = $this->redis->multi()->get('x')->exec();
