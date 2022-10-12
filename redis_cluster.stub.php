@@ -109,7 +109,7 @@ class RedisCluster {
 
     public function geoadd(string $key, float $lng, float $lat, string $member, mixed ...$other_triples): RedisCluster|int;
 
-    public function geodist(string $key, string $src, string $dest, ?string $unit = null): RedisClusster|float|false;
+    public function geodist(string $key, string $src, string $dest, ?string $unit = null): RedisCluster|float|false;
 
     public function geohash(string $key, string $member, string ...$other_members): RedisCluster|array|false;
 
@@ -278,7 +278,7 @@ class RedisCluster {
 
     public function sdiffstore(string $dst, string $key, string ...$other_keys): RedisCluster|int|false;
 
-    public function set(string $key, mixed $value, ?mixed $options = NULL): RedisCluster|string|bool;
+    public function set(string $key, mixed $value, mixed $options = NULL): RedisCluster|string|bool;
 
     public function setbit(string $key, int $offset, bool $onoff): RedisCluster|int|false;
 
@@ -380,7 +380,7 @@ class RedisCluster {
 
     public function zpopmin(string $key, int $value = null): RedisCluster|bool|array;
 
-    public function zrange(string $key, int $start, int $end, ?mixed $options_withscores = null): RedisCluster|array|bool;
+    public function zrange(string $key, int $start, int $end, mixed $options_withscores = null): RedisCluster|array|bool;
 
     public function zrangebylex(string $key, string $min, string $max, int $offset = -1, int $count = -1): RedisCluster|array|false;
 

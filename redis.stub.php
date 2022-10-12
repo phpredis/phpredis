@@ -408,7 +408,7 @@ public function persist(string $key): bool;
 
     public function select(int $db): Redis|bool;
 
-    public function set(string $key, mixed $value, ?mixed $opt = NULL): Redis|string|bool;
+    public function set(string $key, mixed $value, mixed $opt = NULL): Redis|string|bool;
 
     /** @return Redis|int|false*/
     public function setBit(string $key, int $idx, bool $value);
