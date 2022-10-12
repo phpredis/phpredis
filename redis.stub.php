@@ -159,7 +159,7 @@ class Redis {
 
     public function geosearchstore(string $dst, string $src, array|string $position, array|int|float $shape, string $unit, array $options = []): Redis|array|int|false;
 
-    public function get(string $key): Redis|mixed|false;
+    public function get(string $key): mixed;
 
     public function getAuth(): mixed;
 
