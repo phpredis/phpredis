@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 59682d20ee8ebad4f8a5c914432f41dac0860770 */
+ * Stub hash: 07c73c00d91c89aec0b2e229e281bf1c2e388b3e */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -47,40 +47,41 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_acl, 0, 2, IS
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, args, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_append, 0, 2, MAY_BE_BOOL|MAY_BE_LONG)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_append, 0, 2, RedisCluster, MAY_BE_BOOL|MAY_BE_LONG)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_bgrewriteaof, 0, 1, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_bgrewriteaof, 0, 1, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_MASK(0, key_or_address, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_bgsave arginfo_class_RedisCluster_bgrewriteaof
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_bitcount, 0, 1, MAY_BE_BOOL|MAY_BE_LONG)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_bitcount, 0, 1, RedisCluster, MAY_BE_BOOL|MAY_BE_LONG)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, start, IS_LONG, 0, "0")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, end, IS_LONG, 0, "-1")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, bybit, _IS_BOOL, 0, "false")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_bitop, 0, 3, MAY_BE_BOOL|MAY_BE_LONG)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_bitop, 0, 3, RedisCluster, MAY_BE_BOOL|MAY_BE_LONG)
 	ZEND_ARG_TYPE_INFO(0, operation, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, deskey, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, srckey, IS_STRING, 0)
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, otherkeys, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_bitpos, 0, 2, MAY_BE_BOOL|MAY_BE_LONG)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_bitpos, 0, 2, RedisCluster, MAY_BE_BOOL|MAY_BE_LONG)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, bit, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, start, IS_LONG, 0, "NULL")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, end, IS_LONG, 0, "NULL")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_blpop, 0, 2, IS_ARRAY, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_blpop, 0, 2, RedisCluster, MAY_BE_ARRAY|MAY_BE_NULL|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_MASK(0, key, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
-	ZEND_ARG_TYPE_MASK(0, timeout_or_key, MAY_BE_STRING|MAY_BE_LONG, NULL)
+	ZEND_ARG_TYPE_MASK(0, timeout_or_key, MAY_BE_STRING|MAY_BE_DOUBLE|MAY_BE_LONG, NULL)
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, extra_args, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
@@ -92,18 +93,22 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_brpoplpush, 0
 	ZEND_ARG_TYPE_INFO(0, timeout, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_bzpopmax arginfo_class_RedisCluster_blpop
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_bzpopmax, 0, 2, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_MASK(0, key, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
+	ZEND_ARG_TYPE_MASK(0, timeout_or_key, MAY_BE_STRING|MAY_BE_LONG, NULL)
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, extra_args, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_bzpopmin arginfo_class_RedisCluster_blpop
+#define arginfo_class_RedisCluster_bzpopmin arginfo_class_RedisCluster_bzpopmax
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_bzmpop, 0, 3, Redis, MAY_BE_ARRAY|MAY_BE_NULL|MAY_BE_FALSE)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_bzmpop, 0, 3, RedisCluster, MAY_BE_ARRAY|MAY_BE_NULL|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, timeout, IS_DOUBLE, 0)
 	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
 	ZEND_ARG_TYPE_INFO(0, from, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "1")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zmpop, 0, 2, Redis, MAY_BE_ARRAY|MAY_BE_NULL|MAY_BE_FALSE)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zmpop, 0, 2, RedisCluster, MAY_BE_ARRAY|MAY_BE_NULL|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
 	ZEND_ARG_TYPE_INFO(0, from, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "1")
@@ -116,10 +121,10 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_clearlasterror, 0, 0, _IS_BOOL, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_client, 0, 3, MAY_BE_ARRAY|MAY_BE_STRING|MAY_BE_BOOL)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_client, 0, 2, MAY_BE_ARRAY|MAY_BE_STRING|MAY_BE_BOOL)
 	ZEND_ARG_TYPE_MASK(0, node, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
 	ZEND_ARG_TYPE_INFO(0, subcommand, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, arg, IS_STRING, 1)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg, IS_STRING, 1, "NULL")
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_close arginfo_class_RedisCluster_clearlasterror
@@ -140,15 +145,16 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_config, 0, 2,
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, extra_args, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_dbsize, 0, 1, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_dbsize, 0, 1, RedisCluster, MAY_BE_LONG)
 	ZEND_ARG_TYPE_MASK(0, key_or_address, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_decr, 0, 1, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_decr, 0, 1, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, by, IS_LONG, 0, "1")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_decrby, 0, 2, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_decrby, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_LONG, 0)
 ZEND_END_ARG_INFO()
@@ -158,18 +164,18 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_decrbyfloat, 
 	ZEND_ARG_TYPE_INFO(0, value, IS_DOUBLE, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_del, 0, 1, IS_ARRAY, 0)
-	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_del, 0, 1, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_MASK(0, key, MAY_BE_ARRAY|MAY_BE_STRING, NULL)
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_keys, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_discard arginfo_class_RedisCluster_clearlasterror
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_dump, 0, 1, IS_STRING, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_dump, 0, 1, RedisCluster, MAY_BE_STRING|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_echo, 0, 2, IS_STRING, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_echo, 0, 2, RedisCluster, MAY_BE_STRING|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_MASK(0, node, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
 	ZEND_ARG_TYPE_INFO(0, msg, IS_STRING, 0)
 ZEND_END_ARG_INFO()
@@ -186,34 +192,38 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_evalsha, 0, 1
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, num_keys, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_exec arginfo_class_RedisCluster__masters
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_exec, 0, 0, MAY_BE_ARRAY|MAY_BE_FALSE)
+ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_exists arginfo_class_RedisCluster_decr
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_exists, 0, 1, RedisCluster, MAY_BE_LONG|MAY_BE_BOOL)
+	ZEND_ARG_TYPE_INFO(0, key, IS_MIXED, 0)
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_keys, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_expire, 0, 2, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_expire, 0, 2, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, timeout, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_expireat, 0, 2, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_expireat, 0, 2, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, timestamp, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_expiretime, 0, 1, Redis, MAY_BE_LONG|MAY_BE_FALSE)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_expiretime, 0, 1, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_pexpiretime arginfo_class_RedisCluster_expiretime
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_flushall, 0, 1, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_flushall, 0, 1, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_MASK(0, node, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, async, _IS_BOOL, 0, "false")
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_flushdb arginfo_class_RedisCluster_flushall
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_geoadd, 0, 4, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_geoadd, 0, 4, RedisCluster, MAY_BE_LONG)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, lng, IS_DOUBLE, 0)
 	ZEND_ARG_TYPE_INFO(0, lat, IS_DOUBLE, 0)
@@ -221,14 +231,14 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_geoadd, 0, 4,
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_triples, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_geodist, 0, 3, IS_ARRAY, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_geodist, 0, 3, RedisClusster, MAY_BE_DOUBLE|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, src, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, dest, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, unit, IS_STRING, 1, "null")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_geohash, 0, 2, IS_ARRAY, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_geohash, 0, 2, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_members, IS_STRING, 0)
@@ -236,7 +246,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_geopos arginfo_class_RedisCluster_geohash
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_georadius, 0, 5, IS_ARRAY, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_georadius, 0, 5, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, lng, IS_DOUBLE, 0)
 	ZEND_ARG_TYPE_INFO(0, lat, IS_DOUBLE, 0)
@@ -247,7 +257,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_georadius_ro arginfo_class_RedisCluster_georadius
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_georadiusbymember, 0, 4, IS_ARRAY, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_georadiusbymember, 0, 4, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, radius, IS_DOUBLE, 0)
@@ -257,7 +267,9 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_georadiusbymember_ro arginfo_class_RedisCluster_georadiusbymember
 
-#define arginfo_class_RedisCluster_get arginfo_class_RedisCluster_dump
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_get, 0, 1, IS_MIXED, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_getbit arginfo_class_RedisCluster_decrby
 
@@ -270,50 +282,50 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_getoption, 0,
 	ZEND_ARG_TYPE_INFO(0, option, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_getrange, 0, 3, IS_STRING, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_getrange, 0, 3, RedisCluster, MAY_BE_STRING|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_lcs, 0, 2, Redis, MAY_BE_STRING|MAY_BE_ARRAY|MAY_BE_LONG|MAY_BE_FALSE)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_lcs, 0, 2, RedisCluster, MAY_BE_STRING|MAY_BE_ARRAY|MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key1, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, key2, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "NULL")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_getset, 0, 2, IS_STRING, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_getset, 0, 2, RedisCluster, MAY_BE_STRING|MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_hdel, 0, 2, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hdel, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_members, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_hexists, 0, 2, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hexists, 0, 2, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_hget, 0, 2, IS_STRING, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_hget, 0, 2, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_hgetall, 0, 1, IS_ARRAY, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hgetall, 0, 1, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_hincrby, 0, 3, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hincrby, 0, 3, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_hincrbyfloat, 0, 3, IS_DOUBLE, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hincrbyfloat, 0, 3, RedisCluster, MAY_BE_DOUBLE|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_DOUBLE, 0)
@@ -321,14 +333,14 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_hkeys arginfo_class_RedisCluster_hgetall
 
-#define arginfo_class_RedisCluster_hlen arginfo_class_RedisCluster_decr
+#define arginfo_class_RedisCluster_hlen arginfo_class_RedisCluster_expiretime
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_hmget, 0, 2, IS_ARRAY, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hmget, 0, 2, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, members, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_hmset, 0, 2, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hmset, 0, 2, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, key_values, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
@@ -340,19 +352,19 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_hscan, 0, 2, 
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_hset, 0, 3, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hset, 0, 3, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_hsetnx, 0, 3, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hsetnx, 0, 3, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_hstrlen, 0, 2, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hstrlen, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, field, IS_STRING, 0)
 ZEND_END_ARG_INFO()
@@ -363,100 +375,107 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_incrby arginfo_class_RedisCluster_decrby
 
-#define arginfo_class_RedisCluster_incrbyfloat arginfo_class_RedisCluster_decrbyfloat
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_incrbyfloat, 0, 2, RedisCluster, MAY_BE_DOUBLE|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_DOUBLE, 0)
+ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_info, 0, 1, IS_ARRAY, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_info, 0, 1, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_MASK(0, node, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, section, IS_STRING, 1, "null")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_keys, 0, 1, IS_ARRAY, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_keys, 0, 1, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, pattern, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_lastsave, 0, 1, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_lastsave, 0, 1, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_MASK(0, node, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_lget, 0, 2, MAY_BE_STRING|MAY_BE_BOOL)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_lget, 0, 2, RedisCluster, MAY_BE_STRING|MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_lindex arginfo_class_RedisCluster_lget
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_lindex, 0, 2, IS_MIXED, 0)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
+ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_linsert, 0, 4, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_linsert, 0, 4, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, pos, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, pivot, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_llen, 0, 1, MAY_BE_LONG|MAY_BE_BOOL)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_llen, 0, 1, RedisCluster, MAY_BE_LONG|MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_lpop, 0, 1, MAY_BE_BOOL|MAY_BE_STRING|MAY_BE_ARRAY)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_lpop, 0, 1, RedisCluster, MAY_BE_BOOL|MAY_BE_STRING|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_lpush, 0, 2, MAY_BE_LONG|MAY_BE_BOOL)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_lpush, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_values, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_lpushx, 0, 2, MAY_BE_LONG|MAY_BE_BOOL)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_lpushx, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_lrange, 0, 3, IS_ARRAY, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_lrange, 0, 3, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_lrem, 0, 3, MAY_BE_LONG|MAY_BE_BOOL)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_lrem, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, count, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_lset, 0, 3, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_lset, 0, 3, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_ltrim, 0, 3, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_ltrim, 0, 3, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_mget, 0, 1, IS_ARRAY, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_mget, 0, 1, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_mset, 0, 1, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_mset, 0, 1, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key_values, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_msetnx, 0, 1, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_msetnx, 0, 1, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key_values, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_multi, 0, 0, RedisCluster, MAY_BE_BOOL)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, value, IS_LONG, 0, "Redis::MULTI")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_object, 0, 2, MAY_BE_LONG|MAY_BE_STRING)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_object, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_STRING|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, subcommand, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_persist, 0, 1, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_persist, 0, 1, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
@@ -464,24 +483,24 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_pexpireat arginfo_class_RedisCluster_expireat
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_pfadd, 0, 2, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_pfadd, 0, 2, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, elements, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_pfcount arginfo_class_RedisCluster_decr
+#define arginfo_class_RedisCluster_pfcount arginfo_class_RedisCluster_expiretime
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_pfmerge, 0, 2, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_pfmerge, 0, 2, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_ping, 0, 2, IS_MIXED, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_ping, 0, 1, IS_MIXED, 0)
 	ZEND_ARG_TYPE_MASK(0, key_or_address, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
-	ZEND_ARG_TYPE_INFO(0, message, IS_STRING, 1)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, message, IS_STRING, 1, "NULL")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_psetex, 0, 3, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_psetex, 0, 3, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, timeout, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
@@ -492,9 +511,9 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_psubscribe, 0
 	ZEND_ARG_TYPE_INFO(0, callback, IS_CALLABLE, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_pttl arginfo_class_RedisCluster_decr
+#define arginfo_class_RedisCluster_pttl arginfo_class_RedisCluster_expiretime
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_publish, 0, 2, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_publish, 0, 2, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, channel, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, message, IS_STRING, 0)
 ZEND_END_ARG_INFO()
@@ -509,7 +528,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_punsubscribe,
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_patterns, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_randomkey, 0, 1, MAY_BE_BOOL|MAY_BE_STRING)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_randomkey, 0, 1, RedisCluster, MAY_BE_BOOL|MAY_BE_STRING)
 	ZEND_ARG_TYPE_MASK(0, key_or_address, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
 ZEND_END_ARG_INFO()
 
@@ -519,14 +538,17 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_rawcommand, 0
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, args, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_rename, 0, 2, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_rename, 0, 2, RedisCluster, MAY_BE_BOOL)
+	ZEND_ARG_TYPE_INFO(0, key_src, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, key_dst, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_renamenx, 0, 2, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, newkey, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_renamenx arginfo_class_RedisCluster_rename
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_restore, 0, 3, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_restore, 0, 3, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, timeout, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
@@ -539,25 +561,28 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_rpop arginfo_class_RedisCluster_lpop
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_rpoplpush, 0, 2, MAY_BE_BOOL|MAY_BE_STRING)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_rpoplpush, 0, 2, RedisCluster, MAY_BE_BOOL|MAY_BE_STRING)
 	ZEND_ARG_TYPE_INFO(0, src, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, dst, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_rpush, 0, 2, MAY_BE_BOOL|MAY_BE_LONG)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_rpush, 0, 1, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
-	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_values, IS_STRING, 0)
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, elements, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_rpushx, 0, 2, MAY_BE_BOOL|MAY_BE_LONG)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_rpushx, 0, 2, RedisCluster, MAY_BE_BOOL|MAY_BE_LONG)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_sadd arginfo_class_RedisCluster_rpush
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_sadd, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_values, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_saddarray, 0, 2, MAY_BE_BOOL|MAY_BE_LONG)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_saddarray, 0, 2, RedisCluster, MAY_BE_BOOL|MAY_BE_LONG)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, values, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
@@ -571,125 +596,124 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_scan, 0, 2, M
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_scard arginfo_class_RedisCluster_decr
+#define arginfo_class_RedisCluster_scard arginfo_class_RedisCluster_expiretime
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_script, 0, 1, IS_MIXED, 0)
 	ZEND_ARG_TYPE_MASK(0, key_or_address, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, args, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_sdiff arginfo_class_RedisCluster_del
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_sdiff, 0, 1, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_keys, IS_STRING, 0)
+ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_sdiffstore, 0, 2, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_sdiffstore, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, dst, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_keys, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_set, 0, 2, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_set, 0, 2, RedisCluster, MAY_BE_STRING|MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_MIXED, 1, "NULL")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_setbit, 0, 3, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_setbit, 0, 3, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, offset, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, onoff, _IS_BOOL, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_setex, 0, 3, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_setex, 0, 3, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, timeout, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, expire, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_setnx arginfo_class_RedisCluster_setex
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_setnx, 0, 2, RedisCluster, MAY_BE_BOOL)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_setoption, 0, 2, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_INFO(0, option, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_setrange, 0, 3, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_setrange, 0, 3, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, offset, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_sinter arginfo_class_RedisCluster_del
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_sinter, 0, 1, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_MASK(0, key, MAY_BE_ARRAY|MAY_BE_STRING, NULL)
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_keys, IS_STRING, 0)
+ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_sintercard, 0, 1, Redis, MAY_BE_LONG|MAY_BE_FALSE)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_sintercard, 0, 1, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, limit, IS_LONG, 0, "-1")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_sinterstore, 0, 2, _IS_BOOL, 0)
-	ZEND_ARG_TYPE_INFO(0, dst, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_keys, IS_STRING, 0)
-ZEND_END_ARG_INFO()
+#define arginfo_class_RedisCluster_sinterstore arginfo_class_RedisCluster_del
 
-#define arginfo_class_RedisCluster_sismember arginfo_class_RedisCluster_decr
+#define arginfo_class_RedisCluster_sismember arginfo_class_RedisCluster_setnx
 
 #define arginfo_class_RedisCluster_slowlog arginfo_class_RedisCluster_script
 
 #define arginfo_class_RedisCluster_smembers arginfo_class_RedisCluster_hgetall
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_smove, 0, 3, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_smove, 0, 3, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, src, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, dst, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_sort, 0, 2, MAY_BE_BOOL|MAY_BE_LONG|MAY_BE_STRING)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_sort, 0, 1, RedisCluster, MAY_BE_ARRAY|MAY_BE_BOOL|MAY_BE_LONG|MAY_BE_STRING)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, options, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "NULL")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_spop, 0, 1, MAY_BE_STRING|MAY_BE_ARRAY)
-	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_srandmember, 0, 1, MAY_BE_STRING|MAY_BE_ARRAY)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_spop, 0, 1, RedisCluster, MAY_BE_STRING|MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_srem, 0, 2, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
-	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_values, IS_STRING, 0)
-ZEND_END_ARG_INFO()
+#define arginfo_class_RedisCluster_srandmember arginfo_class_RedisCluster_spop
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_sscan, 0, 3, MAY_BE_BOOL|MAY_BE_ARRAY)
+#define arginfo_class_RedisCluster_srem arginfo_class_RedisCluster_sadd
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_sscan, 0, 2, MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(1, iterator, IS_LONG, 1)
-	ZEND_ARG_TYPE_INFO(0, node, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, pattern, IS_STRING, 1, "null")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_strlen arginfo_class_RedisCluster_decr
+#define arginfo_class_RedisCluster_strlen arginfo_class_RedisCluster_expiretime
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_subscribe, 0, 2, IS_VOID, 0)
 	ZEND_ARG_TYPE_INFO(0, channels, IS_ARRAY, 0)
 	ZEND_ARG_TYPE_INFO(0, cb, IS_CALLABLE, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_sunion, 0, 1, MAY_BE_BOOL|MAY_BE_ARRAY)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_sunion, 0, 1, RedisCluster, MAY_BE_BOOL|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_keys, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_sunionstore arginfo_class_RedisCluster_sdiffstore
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_time, 0, 1, MAY_BE_BOOL|MAY_BE_ARRAY)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_time, 0, 1, RedisCluster, MAY_BE_BOOL|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_MASK(0, key_or_address, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_ttl arginfo_class_RedisCluster_decr
+#define arginfo_class_RedisCluster_ttl arginfo_class_RedisCluster_expiretime
 
-#define arginfo_class_RedisCluster_type arginfo_class_RedisCluster_decr
+#define arginfo_class_RedisCluster_type arginfo_class_RedisCluster_expiretime
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_unsubscribe, 0, 1, MAY_BE_BOOL|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_INFO(0, channels, IS_ARRAY, 0)
@@ -699,18 +723,18 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_unwatch arginfo_class_RedisCluster_clearlasterror
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_watch, 0, 1, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_watch, 0, 1, RedisCluster, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_keys, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_xack, 0, 3, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xack, 0, 3, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, group, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, ids, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_xadd, 0, 3, IS_STRING, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xadd, 0, 3, RedisCluster, MAY_BE_STRING|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, id, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, values, IS_ARRAY, 0)
@@ -718,7 +742,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_xadd, 0, 3, I
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, approx, _IS_BOOL, 0, "false")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_xclaim, 0, 6, MAY_BE_STRING|MAY_BE_ARRAY)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xclaim, 0, 6, RedisCluster, MAY_BE_STRING|MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, group, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, consumer, IS_STRING, 0)
@@ -727,7 +751,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_xclaim, 0, 6,
 	ZEND_ARG_TYPE_INFO(0, options, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_xdel, 0, 2, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xdel, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, ids, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
@@ -747,9 +771,9 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_xinfo, 0, 1, 
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "-1")
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_xlen arginfo_class_RedisCluster_decr
+#define arginfo_class_RedisCluster_xlen arginfo_class_RedisCluster_expiretime
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xpending, 0, 2, Redis, MAY_BE_ARRAY|MAY_BE_FALSE)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xpending, 0, 2, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, group, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, start, IS_STRING, 1, "null")
@@ -758,20 +782,20 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xpending,
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, consumer, IS_STRING, 1, "null")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_xrange, 0, 3, MAY_BE_BOOL|MAY_BE_ARRAY)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xrange, 0, 3, RedisCluster, MAY_BE_BOOL|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, start, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, end, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "-1")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_xread, 0, 1, MAY_BE_BOOL|MAY_BE_ARRAY)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xread, 0, 1, RedisCluster, MAY_BE_BOOL|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_INFO(0, streams, IS_ARRAY, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "-1")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, block, IS_LONG, 0, "-1")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_xreadgroup, 0, 3, MAY_BE_BOOL|MAY_BE_ARRAY)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xreadgroup, 0, 3, RedisCluster, MAY_BE_BOOL|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_INFO(0, group, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, consumer, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, streams, IS_ARRAY, 0)
@@ -789,66 +813,80 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xtrim, 0,
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, limit, IS_LONG, 0, "-1")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_zadd, 0, 3, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zadd, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, score, IS_DOUBLE, 0)
-	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
-	ZEND_ARG_VARIADIC_TYPE_INFO(0, extra_args, IS_MIXED, 0)
+	ZEND_ARG_TYPE_MASK(0, score_or_options, MAY_BE_ARRAY|MAY_BE_DOUBLE, NULL)
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, more_scores_and_mems, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_zcard arginfo_class_RedisCluster_decr
+#define arginfo_class_RedisCluster_zcard arginfo_class_RedisCluster_expiretime
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_zcount, 0, 3, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zcount, 0, 3, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, start, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, end, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_zincrby, 0, 3, IS_DOUBLE, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zincrby, 0, 3, RedisCluster, MAY_BE_DOUBLE|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, value, IS_DOUBLE, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_zinterstore, 0, 2, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zinterstore, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, dst, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, weights, IS_ARRAY, 0, "null")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, aggregate, IS_STRING, 0, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, weights, IS_ARRAY, 1, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, aggregate, IS_STRING, 1, "null")
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_zintercard arginfo_class_RedisCluster_sintercard
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_zlexcount, 0, 3, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zlexcount, 0, 3, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, min, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, max, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_zpopmax, 0, 1, MAY_BE_BOOL|MAY_BE_ARRAY)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zpopmax, 0, 1, RedisCluster, MAY_BE_BOOL|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, value, IS_LONG, 0, "null")
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_zpopmin arginfo_class_RedisCluster_zpopmax
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_zrange, 0, 3, MAY_BE_BOOL|MAY_BE_ARRAY)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zrange, 0, 3, RedisCluster, MAY_BE_ARRAY|MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options_withscores, IS_MIXED, 1, "null")
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_zrangebylex arginfo_class_RedisCluster_zrange
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zrangebylex, 0, 3, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, min, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, max, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, offset, IS_LONG, 0, "-1")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "-1")
+ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_zrangebyscore arginfo_class_RedisCluster_zrange
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zrangebyscore, 0, 3, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, start, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, end, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "[]")
+ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_zrank, 0, 2, IS_LONG, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zrank, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_zrem arginfo_class_RedisCluster_srem
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zrem, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, value, IS_STRING, 0)
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_values, IS_STRING, 0)
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_zremrangebylex arginfo_class_RedisCluster_zlexcount
 
@@ -856,7 +894,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_zremrangebyscore arginfo_class_RedisCluster_zlexcount
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_zrevrange, 0, 3, MAY_BE_BOOL|MAY_BE_ARRAY)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zrevrange, 0, 3, RedisCluster, MAY_BE_BOOL|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, min, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, max, IS_STRING, 0)
@@ -869,18 +907,24 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_zrevrank arginfo_class_RedisCluster_zrank
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_zscan, 0, 2, MAY_BE_BOOL|MAY_BE_ARRAY)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zscan, 0, 2, RedisCluster, MAY_BE_BOOL|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(1, iterator, IS_LONG, 1)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, pattern, IS_STRING, 1, "null")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_zscore, 0, 1, IS_DOUBLE, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zscore, 0, 2, RedisCluster, MAY_BE_DOUBLE|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, member, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisCluster_zunionstore arginfo_class_RedisCluster_zinterstore
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zunionstore, 0, 2, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, dst, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, weights, IS_ARRAY, 1, "NULL")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, aggregate, IS_STRING, 1, "NULL")
+ZEND_END_ARG_INFO()
 
 
 ZEND_METHOD(RedisCluster, __construct);

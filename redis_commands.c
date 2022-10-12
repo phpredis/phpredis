@@ -623,7 +623,7 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zend_string *zkey;
     zval *z_ws = NULL, *z_ele;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sll|z", &key, &key_len,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sll|z!", &key, &key_len,
                              &start, &end, &z_ws) == FAILURE)
     {
         return FAILURE;
@@ -1861,10 +1861,10 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ZEND_HASH_FOREACH_STR_KEY_VAL(kt, zkey, v) {
             ZVAL_DEREF(v);
             /* Detect PX or EX argument and validate timeout */
-            if (zkey && (ZSTR_STRICMP_STATIC(zkey, "EX") ||
-                         ZSTR_STRICMP_STATIC(zkey, "PX") ||
-                         ZSTR_STRICMP_STATIC(zkey, "EXAT") ||
-                         ZSTR_STRICMP_STATIC(zkey, "PXAT"))
+            if (zkey && (zend_string_equals_literal_ci(zkey, "EX") ||
+                         zend_string_equals_literal_ci(zkey, "PX") ||
+                         zend_string_equals_literal_ci(zkey, "EXAT") ||
+                         zend_string_equals_literal_ci(zkey, "PXAT"))
             ) {
                 exp_set = 1;
 
@@ -1878,11 +1878,13 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     expire = atol(Z_STRVAL_P(v));
                 }
             } else if (Z_TYPE_P(v) == IS_STRING) {
-                if (ZVAL_STRICMP_STATIC(v, "KEEPTTL")) {
+                if (zend_string_equals_literal_ci(Z_STR_P(v), "KEEPTTL")) {
                     keep_ttl  = 1;
-                } else if (ZVAL_STRICMP_STATIC((v), "GET")) {
+                } else if (zend_string_equals_literal_ci(Z_STR_P(v), "GET")) {
                     get = 1;
-                } else if (ZVAL_STRICMP_STATIC(v, "NX") || ZVAL_STRICMP_STATIC(v, "XX")) {
+                } else if (zend_string_equals_literal_ci(Z_STR_P(v), "NX") ||
+                           zend_string_equals_literal_ci(Z_STR_P(v), "XX"))
+                {
                     set_type = Z_STRVAL_P(v);
                 }
             }

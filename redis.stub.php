@@ -408,8 +408,7 @@ public function persist(string $key): bool;
 
     public function select(int $db): Redis|bool;
 
-    /** @return bool|Redis */
-    public function set(string $key, mixed $value, mixed $opt = NULL);
+    public function set(string $key, mixed $value, ?mixed $opt = NULL): Redis|string|bool;
 
     /** @return Redis|int|false*/
     public function setBit(string $key, int $idx, bool $value);
@@ -432,7 +431,7 @@ public function persist(string $key): bool;
 
     public function slowlog(string $mode, int $option = 0): mixed;
 
-    public function sort(string $key, array $options = null): mixed;
+    public function sort(string $key, ?array $options = null): mixed;
 
     /**
      * @deprecated
