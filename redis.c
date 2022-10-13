@@ -694,6 +694,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
     size_t host_len, persistent_id_len;
     double timeout = 0.0, read_timeout = 0.0;
     redis_object *redis;
+    int af_unix;
 
 #ifdef ZTS
     /* not sure how in threaded mode this works so disabled persistence at
@@ -730,8 +731,13 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
         return FAILURE;
     }
 
+    /* Does the host look like a unix socket */
+    af_unix = (host_len > 0 && host[0] == '/') ||
+              (host_len > 6 && !strncasecmp(host, "unix://", sizeof("unix://") - 1)) ||
+              (host_len > 6 && !strncasecmp(host, "file://", sizeof("file://") - 1));
+
     /* If it's not a unix socket, set to default */
-    if(port == -1 && host_len && host[0] != '/') {
+    if (port == -1 && !af_unix) {
         port = 6379;
     }
 
