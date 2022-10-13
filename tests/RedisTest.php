@@ -703,6 +703,39 @@ class Redis_Test extends TestSuite
         $this->assertTrue($success);
     }
 
+    function testExpireOptions() {
+        if (!$this->minVersionCheck('7.0.0'))
+            return;
+
+        $this->redis->set('eopts', 'value');
+
+        /* NX -- Only if expiry isn't set so success, then failure */
+        $this->assertTrue($this->redis->expire('eopts', 1000, 'NX'));
+        $this->assertFalse($this->redis->expire('eopts', 1000, 'NX'));
+
+        /* XX -- Only set if the key has an existing expiry */
+        $this->assertTrue($this->redis->expire('eopts', 1000, 'XX'));
+        $this->assertTrue($this->redis->persist('eopts'));
+        $this->assertFalse($this->redis->expire('eopts', 1000, 'XX'));
+
+        /* GT -- Only set when new expiry > current expiry */
+        $this->assertTrue($this->redis->expire('eopts', 200));
+        $this->assertTrue($this->redis->expire('eopts', 300, 'GT'));
+        $this->assertFalse($this->redis->expire('eopts', 100, 'GT'));
+
+        /* LT -- Only set when expiry < current expiry */
+        $this->assertTrue($this->redis->expire('eopts', 200));
+        $this->assertTrue($this->redis->expire('eopts', 100, 'LT'));
+        $this->assertFalse($this->redis->expire('eopts', 300, 'LT'));
+
+        /* Sending a nonsensical mode fails without sending a command */
+        $this->redis->clearLastError();
+        $this->assertFalse(@$this->redis->expire('eopts', 999, 'nonsense'));
+        $this->assertEquals(NULL, $this->redis->getLastError());
+
+        $this->redis->del('eopts');
+    }
+
     public function testExpiretime() {
         if(version_compare($this->version, "7.0.0") < 0) {
             $this->markTestSkipped();

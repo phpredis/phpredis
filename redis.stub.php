@@ -105,9 +105,32 @@ class Redis {
 
     public function exists(mixed $key, mixed ...$other_keys): Redis|int|bool;
 
-    public function expire(string $key, int $timeout): Redis|bool;
+    /**
+       Sets an expiration in seconds on the key in question.  If connected to
+       redis-server >= 7.0.0 you may send an additional "mode" argument which
+       modifies how the command will execute.
 
-    public function expireAt(string $key, int $timestamp): Redis|bool;
+       @param string  $key  The key to set an expiration on.
+       @param ?string $mode A two character modifier that changes how the
+                            command works.
+                            NX - Set expiry only if key has no expiry
+                            XX - Set expiry only if key has an expiry
+                            LT - Set expiry only when new expiry is < current expiry
+                            GT - Set expiry only when new expiry is > current expiry
+     */
+    public function expire(string $key, int $timeout, ?string $mode = NULL): Redis|bool;
+
+    /**
+      Set a key's expiration to a specific unix timestamp in seconds.  If
+      connected to Redis >= 7.0.0 you can pass an optional 'mode' argument.
+
+      @see Redis::expire() For a description of the mode argument.
+
+       @param string  $key  The key to set an expiration on.
+       @param ?string $mode A two character modifier that changes how the
+                            command works.
+     */
+    public function expireAt(string $key, int $timestamp, ?string $mode = NULL): Redis|bool;
 
     public function failover(?array $to = null, bool $abort = false, int $timeout = 0): Redis|bool;
 
@@ -313,11 +336,32 @@ class Redis {
 
     public function pconnect(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
 
-public function persist(string $key): bool;
+    public function persist(string $key): bool;
 
-    public function pexpire(string $key, int $timeout): bool;
+    /**
+       Sets an expiration in milliseconds on a given key.  If connected to
+       Redis >= 7.0.0 you can pass an optional mode argument that modifies
+       how the command will execute.
 
-    public function pexpireAt(string $key, int $timestamp): bool;
+       @see Redis::expire() for a description of the mode argument.
+
+       @param string  $key  The key to set an expiration on.
+       @param ?string $mode A two character modifier that changes how the
+                            command works.
+     */
+    public function pexpire(string $key, int $timeout, ?string $mode = NULL): bool;
+
+    /**
+      Set a key's expiration to a specific unix timestamp in milliseconds.  If
+      connected to Redis >= 7.0.0 you can pass an optional 'mode' argument.
+
+      @see Redis::expire() For a description of the mode argument.
+
+       @param string  $key  The key to set an expiration on.
+       @param ?string $mode A two character modifier that changes how the
+                            command works.
+     */
+    public function pexpireAt(string $key, int $timestamp, ?string $mode = NULL): bool;
 
     public function pfadd(string $key, array $elements): int;
 

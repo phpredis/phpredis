@@ -5724,6 +5724,42 @@ int redis_xtrim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+// [P]EXPIRE[AT] [NX | XX | GT | LT]
+int redis_expire_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char *kw, char **cmd, int *cmd_len, short *slot,
+                     void **ctx)
+{
+    zend_string *key = NULL, *mode = NULL;
+    smart_string cmdstr = {0};
+    zend_long timeout = 0;
+
+    ZEND_PARSE_PARAMETERS_START(2, 3)
+        Z_PARAM_STR(key)
+        Z_PARAM_LONG(timeout)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR(mode)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (mode != NULL && !(zend_string_equals_literal_ci(mode, "NX") ||
+                          zend_string_equals_literal_ci(mode, "XX") ||
+                          zend_string_equals_literal_ci(mode, "LT") ||
+                          zend_string_equals_literal_ci(mode, "GT")))
+    {
+        php_error_docref(NULL, E_WARNING, "Unknown expiration modifier '%s'", ZSTR_VAL(mode));
+        return FAILURE;
+    }
+
+    redis_cmd_init_sstr(&cmdstr, 2 + (mode != NULL), kw, strlen(kw));
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    redis_cmd_append_sstr_long(&cmdstr, timeout);
+    if (mode != NULL) redis_cmd_append_sstr_zstr(&cmdstr, mode);
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 int
 redis_sentinel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
