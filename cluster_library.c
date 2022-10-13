@@ -299,9 +299,8 @@ static int cluster_send_readonly(RedisSock *redis_sock) {
 
 /* Send MULTI to a specific ReidsSock */
 static int cluster_send_multi(redisCluster *c, short slot) {
-    if (cluster_send_direct(SLOT_SOCK(c,slot), RESP_MULTI_CMD,
-        sizeof(RESP_MULTI_CMD) - 1, TYPE_LINE) == 0)
-    {
+    if (cluster_send_direct(SLOT_SOCK(c,slot), ZEND_STRL(RESP_MULTI_CMD), TYPE_LINE) == 0) {
+        c->flags->txBytes += sizeof(RESP_MULTI_CMD) - 1;
         c->cmd_sock->mode = MULTI;
         return 0;
     }
@@ -1513,6 +1512,9 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
     /* Point our cluster to this slot and it's socket */
     c->cmd_slot = slot;
     c->cmd_sock = SLOT_SOCK(c, slot);
+    if (c->flags->mode != MULTI) {
+        c->flags->txBytes = 0;
+    }
 
     /* Enable multi mode on this slot if we've been directed to but haven't
      * send it to this node yet */
@@ -1527,6 +1529,7 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
     if (cluster_sock_write(c, cmd, cmd_len, 1) == -1) {
         return -1;
     }
+    c->flags->txBytes += cmd_len;
 
     /* Check our response */
     if (cluster_check_response(c, &c->reply_type) != 0 ||

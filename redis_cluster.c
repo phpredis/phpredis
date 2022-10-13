@@ -1712,7 +1712,8 @@ PHP_METHOD(RedisCluster, clearlasterror) {
 }
 
 PHP_METHOD(RedisCluster, gettransferredbytes) {
-    CLUSTER_THROW_EXCEPTION("Not implemented", 0);
+    redisCluster *c = GET_CONTEXT();
+    RETURN_LONG(c->flags->txBytes);
 }
 /* }}} */
 
@@ -1832,6 +1833,8 @@ PHP_METHOD(RedisCluster, multi) {
 
     /* Flag that we're in MULTI mode */
     c->flags->mode = MULTI;
+
+    c->flags->txBytes = 0;
 
     /* Return our object so we can chain MULTI calls */
     RETVAL_ZVAL(getThis(), 1, 0);

@@ -5757,6 +5757,8 @@ class Redis_Test extends TestSuite
         $this->assertEquals(strlen("*1\r\n$4\r\nPING\r\n"), $this->redis->getTransferredBytes());
         $this->assertEquals(['cluster_enabled' => 0], $this->redis->info('cluster'));
         $this->assertEquals(strlen("*2\r\n$4\r\nINFO\r\n$7\r\ncluster\r\n"), $this->redis->getTransferredBytes());
+        $this->assertEquals([true, true], $this->redis->multi()->ping()->ping()->exec());
+        $this->assertEquals(strlen("*1\r\n$5\r\nMULTI\r\n*1\r\n$4\r\nEXEC\r\n") + 2 * strlen("*2\r\n$4\r\nPING\r\n"), $this->redis->getTransferredBytes());
     }
 
     /**

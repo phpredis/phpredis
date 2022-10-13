@@ -50,7 +50,6 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testReset() { return $this->markTestSkipped(); }
     public function testInvalidAuthArgs() { return $this->markTestSkipped(); }
     public function testScanErrors() { return $this->markTestSkipped(); }
-    public function testTransferredBytes() { return $this->markTestSkipped(); }
 
     public function testlMove() { return $this->markTestSkipped(); }
     public function testlPos() { return $this->marktestSkipped(); }
@@ -757,6 +756,15 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $this->assertEquals($pong, $i);
         ini_set('redis.pconnect.pooling_enabled', $prev_value);
+    }
+
+    public function testTransferredBytes() {
+        $this->assertTrue($this->redis->ping(''));
+        $this->assertEquals(strlen("*1\r\n$4\r\nPING\r\n"), $this->redis->getTransferredBytes());
+        $this->assertEquals(['cluster_enabled' => 1], $this->redis->info('', 'cluster'));
+        $this->assertEquals(strlen("*2\r\n$4\r\nINFO\r\n$7\r\ncluster\r\n"), $this->redis->getTransferredBytes());
+        $this->assertEquals([true, true], $this->redis->multi()->ping('')->ping('')->exec());
+        $this->assertEquals(strlen("*1\r\n$5\r\nMULTI\r\n*1\r\n$4\r\nEXEC\r\n") + 2 * strlen("*2\r\n$4\r\nPING\r\n"), $this->redis->getTransferredBytes());
     }
 
     /**
