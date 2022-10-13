@@ -41,7 +41,19 @@ class Redis {
 
     public function bitop(string $operation, string $deskey, string $srckey, string ...$other_keys): Redis|int|false;
 
-    public function bitpos(string $key, int $bit, int $start = 0, int $end = -1): Redis|int|false;
+    /**
+      Return the position of the first bit set to 0 or 1 in a string.
+
+      @see https://https://redis.io/commands/bitpos/
+
+      @param string $key   The key to check (must be a string)
+      @param bool   $bit   Whether to look for an unset (0) or set (1) bit.
+      @param int    $start Where in the string to start looking.
+      @param int    $end   Where in the string to stop looking.
+      @param bool   $bybit If true, Redis will treat $start and $end as BIT values and not bytes, so if start
+                           was 0 and end was 2, Redis would only search the first two bits.
+     */
+    public function bitpos(string $key, bool $bit, int $start = 0, int $end = -1, bool $bybit = false): Redis|int|false;
 
     public function blPop(string|array $key, string|float|int $timeout_or_key, mixed ...$extra_args): Redis|array|null|false;
 

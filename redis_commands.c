@@ -2523,37 +2523,40 @@ int redis_restore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
-/* BITPOS */
+/* BITPOS key bit [start [end [BYTE | BIT]]] */
 int redis_bitpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *key;
-    int argc;
-    zend_long bit, start, end;
-    size_t key_len;
+    zend_long start = 0, end = -1;
+    zend_bool bit = 0, bybit = 0;
+    smart_string cmdstr = {0};
+    zend_string *key = NULL;
 
-    argc = ZEND_NUM_ARGS();
-    if (zend_parse_parameters(argc, "sl|ll", &key, &key_len, &bit,
-                             &start, &end) == FAILURE)
-    {
-        return FAILURE;
+    ZEND_PARSE_PARAMETERS_START(2, 5)
+        Z_PARAM_STR(key)
+        Z_PARAM_BOOL(bit)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(start)
+        Z_PARAM_LONG(end)
+        Z_PARAM_BOOL(bybit)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2 + (ZEND_NUM_ARGS() > 2 ? 2 : 0) + !!bybit, "BITPOS");
+
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    redis_cmd_append_sstr_long(&cmdstr, bit);
+
+    /* Start and length if we were passed either */
+    if (ZEND_NUM_ARGS() > 2) {
+        redis_cmd_append_sstr_long(&cmdstr, start);
+        redis_cmd_append_sstr_long(&cmdstr, end);
     }
 
-    // Prevalidate bit
-    if (bit != 0 && bit != 1) {
-        return FAILURE;
-    }
+    /* Finally, BIT or BYTE if we were passed that argument */
+    REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, !!bybit, "BIT");
 
-    // Construct command based on arg count
-    if (argc == 2) {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "BITPOS", "kd", key, key_len, bit);
-    } else if (argc == 3) {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "BITPOS", "kdd", key, key_len, bit,
-                                     start);
-    } else {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "BITPOS", "kddd", key, key_len, bit,
-                                     start, end);
-    }
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
 
     return SUCCESS;
 }
