@@ -145,22 +145,28 @@ foreach ($obj_cluster->_masters() as $arr_master) {
 
 In the case of all commands which need to be directed at a node, the calling convention is identical to the Redis call, except that they require an additional (first) argument in order to deliver the command.  Following is a list of each of these commands:
 
-1.  SAVE
-2.  BGSAVE
-3.  FLUSHDB
-4.  FLUSHALL
-5.  DBSIZE
-6.  BGREWRITEAOF
-7.  LASTSAVE
-8.  INFO
-9.  CLIENT
-10.  CLUSTER
-11.  CONFIG
-12.  PUBSUB
-13.  SLOWLOG
-14.  RANDOMKEY
-15.  PING
-16.  SCAN
+1. ACL
+1. BGREWRITEAOF
+1. BGSAVE
+1. CLIENT
+1. CLUSTER
+1. CONFIG
+1. DBSIZE
+1. ECHO
+1. FLUSHALL
+1. FLUSHDB
+1. INFO
+1. LASTSAVE
+1. PING
+1. PUBSUB
+1. RANDOMKEY
+1. RAWCOMMAND
+1. ROLE
+1. SAVE
+1. SCAN
+1. SCRIPT
+1. SLOWLOG
+1. TIME
 
 ## Session Handler
 You can use the cluster functionality of phpredis to store PHP session information in a Redis cluster as you can with a non cluster-enabled Redis instance.
