@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 280323a9e3fc028641ad1d8bcba2514dfa90fac9 */
+ * Stub hash: c6326ac0f4a1dc7b6fe920a7358010f1a570832a */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -110,7 +110,7 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_RedisCluster_clearlasterror arginfo_class_RedisCluster__masters
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_client, 0, 0, 2)
-	ZEND_ARG_INFO(0, node)
+	ZEND_ARG_INFO(0, key_or_address)
 	ZEND_ARG_INFO(0, subcommand)
 	ZEND_ARG_INFO(0, arg)
 ZEND_END_ARG_INFO()
@@ -118,7 +118,7 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_RedisCluster_close arginfo_class_RedisCluster__masters
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_cluster, 0, 0, 2)
-	ZEND_ARG_INFO(0, node)
+	ZEND_ARG_INFO(0, key_or_address)
 	ZEND_ARG_INFO(0, command)
 	ZEND_ARG_VARIADIC_INFO(0, extra_args)
 ZEND_END_ARG_INFO()
@@ -128,7 +128,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_command, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_config, 0, 0, 2)
-	ZEND_ARG_INFO(0, node)
+	ZEND_ARG_INFO(0, key_or_address)
 	ZEND_ARG_INFO(0, subcommand)
 	ZEND_ARG_VARIADIC_INFO(0, extra_args)
 ZEND_END_ARG_INFO()
@@ -154,7 +154,7 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_RedisCluster_dump arginfo_class_RedisCluster__prefix
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_echo, 0, 0, 2)
-	ZEND_ARG_INFO(0, node)
+	ZEND_ARG_INFO(0, key_or_address)
 	ZEND_ARG_INFO(0, msg)
 ZEND_END_ARG_INFO()
 
@@ -189,7 +189,7 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_RedisCluster_pexpiretime arginfo_class_RedisCluster__prefix
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_flushall, 0, 0, 1)
-	ZEND_ARG_INFO(0, node)
+	ZEND_ARG_INFO(0, key_or_address)
 	ZEND_ARG_INFO(0, async)
 ZEND_END_ARG_INFO()
 
@@ -323,7 +323,7 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_RedisCluster_incrbyfloat arginfo_class_RedisCluster_append
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_info, 0, 0, 1)
-	ZEND_ARG_INFO(0, node)
+	ZEND_ARG_INFO(0, key_or_address)
 	ZEND_ARG_INFO(0, section)
 ZEND_END_ARG_INFO()
 
@@ -331,9 +331,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_keys, 0, 0, 1)
 	ZEND_ARG_INFO(0, pattern)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_lastsave, 0, 0, 1)
-	ZEND_ARG_INFO(0, node)
-ZEND_END_ARG_INFO()
+#define arginfo_class_RedisCluster_lastsave arginfo_class_RedisCluster_bgrewriteaof
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_lget, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
@@ -499,7 +497,7 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_scan, 0, 0, 2)
 	ZEND_ARG_INFO(1, iterator)
-	ZEND_ARG_INFO(0, node)
+	ZEND_ARG_INFO(0, key_or_address)
 	ZEND_ARG_INFO(0, pattern)
 	ZEND_ARG_INFO(0, count)
 ZEND_END_ARG_INFO()

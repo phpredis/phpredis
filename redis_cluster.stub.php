@@ -61,15 +61,15 @@ class RedisCluster {
 
     public function clearlasterror(): bool;
 
-    public function client(string|array $node, string $subcommand, ?string $arg = NULL): array|string|bool;
+    public function client(string|array $key_or_address, string $subcommand, ?string $arg = NULL): array|string|bool;
 
     public function close(): bool;
 
-    public function cluster(string|array $node, string $command, mixed ...$extra_args): mixed;
+    public function cluster(string|array $key_or_address, string $command, mixed ...$extra_args): mixed;
 
     public function command(mixed ...$extra_args): mixed;
 
-    public function config(string|array $node, string $subcommand, mixed ...$extra_args): mixed;
+    public function config(string|array $key_or_address, string $subcommand, mixed ...$extra_args): mixed;
 
     public function dbsize(string|array $key_or_address): RedisCluster|int;
 
@@ -85,7 +85,7 @@ class RedisCluster {
 
     public function dump(string $key): RedisCluster|string|false;
 
-    public function echo(string|array $node, string $msg): RedisCluster|string|false;
+    public function echo(string|array $key_or_address, string $msg): RedisCluster|string|false;
 
     public function eval(string $script, array $args = [], int $num_keys = 0): mixed;
 
@@ -103,9 +103,9 @@ class RedisCluster {
 
     public function pexpiretime(string $key): RedisCluster|int|false;
 
-    public function flushall(string|array $node, bool $async = false): RedisCluster|bool;
+    public function flushall(string|array $key_or_address, bool $async = false): RedisCluster|bool;
 
-    public function flushdb(string|array $node, bool $async = false): RedisCluster|bool;
+    public function flushdb(string|array $key_or_address, bool $async = false): RedisCluster|bool;
 
     public function geoadd(string $key, float $lng, float $lat, string $member, mixed ...$other_triples): RedisCluster|int;
 
@@ -175,11 +175,11 @@ class RedisCluster {
 
     public function incrbyfloat(string $key, float $value): RedisCluster|float|false;
 
-    public function info(string|array $node, ?string $section = null): RedisCluster|array|false;
+    public function info(string|array $key_or_address, ?string $section = null): RedisCluster|array|false;
 
     public function keys(string $pattern): RedisCluster|array|false;
 
-    public function lastsave(string|array $node): RedisCluster|int|false;
+    public function lastsave(string|array $key_or_address): RedisCluster|int|false;
 
     public function lget(string $key, int $index): RedisCluster|string|bool;
 
@@ -268,7 +268,7 @@ class RedisCluster {
 
     public function save(string|array $key_or_address): RedisCluster|bool;
 
-    public function scan(?int &$iterator, mixed $node, ?string $pattern = null, int $count = 0): bool|array;
+    public function scan(?int &$iterator, string|array $key_or_address, ?string $pattern = null, int $count = 0): bool|array;
 
     public function scard(string $key): RedisCluster|int|false;
 
