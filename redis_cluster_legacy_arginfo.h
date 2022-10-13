@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 6b41f3c801e587509bc5c7cab302dc6c1e0f7d56 */
+ * Stub hash: ccb418a312ff22f03e2354de508ff8bd9e4d266e */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -70,6 +70,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_bitpos, 0, 0, 2)
 	ZEND_ARG_INFO(0, bit)
 	ZEND_ARG_INFO(0, start)
 	ZEND_ARG_INFO(0, end)
+	ZEND_ARG_INFO(0, bybit)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_blpop, 0, 0, 2)

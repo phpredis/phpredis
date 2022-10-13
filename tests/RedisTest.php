@@ -409,6 +409,14 @@ class Redis_Test extends TestSuite
 
         $this->redis->set('bpkey', "\x00\x00\x00");
         $this->assertEquals($this->redis->bitpos('bpkey', 1), -1);
+
+        if (!$this->minVersionCheck("7.0.0"))
+            return;
+
+        $this->redis->set('bpkey', "\xF");
+        $this->assertEquals(4, $this->redis->bitpos('bpkey', 1, 0, -1, true));
+        $this->assertEquals(-1,  $this->redis->bitpos('bpkey', 1, 1, -1));
+        $this->assertEquals(-1,  $this->redis->bitpos('bpkey', 1, 1, -1, false));
     }
 
     public function test1000() {
