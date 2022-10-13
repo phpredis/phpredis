@@ -1252,24 +1252,24 @@ PHP_METHOD(RedisCluster, decrbyfloat) {
 
 /* {{{ proto bool RedisCluster::expire(string key, long sec) */
 PHP_METHOD(RedisCluster, expire) {
-    CLUSTER_PROCESS_KW_CMD("EXPIRE", redis_key_long_cmd, cluster_1_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("EXPIRE", redis_expire_cmd, cluster_1_resp, 0);
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::expireat(string key, long ts) */
 PHP_METHOD(RedisCluster, expireat) {
-    CLUSTER_PROCESS_KW_CMD("EXPIREAT", redis_key_long_cmd, cluster_1_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("EXPIREAT", redis_expire_cmd, cluster_1_resp, 0);
 }
 
 /* {{{ proto bool RedisCluster::pexpire(string key, long ms) */
 PHP_METHOD(RedisCluster, pexpire) {
-    CLUSTER_PROCESS_KW_CMD("PEXPIRE", redis_key_long_cmd, cluster_1_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("PEXPIRE", redis_expire_cmd, cluster_1_resp, 0);
 }
 /* }}} */
 
 /* {{{ proto bool RedisCluster::pexpireat(string key, long ts) */
 PHP_METHOD(RedisCluster, pexpireat) {
-    CLUSTER_PROCESS_KW_CMD("PEXPIREAT", redis_key_long_cmd, cluster_1_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("PEXPIREAT", redis_expire_cmd, cluster_1_resp, 0);
 }
 /* }}} */
 

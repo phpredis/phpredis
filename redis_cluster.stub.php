@@ -95,9 +95,9 @@ class RedisCluster {
 
     public function exists(mixed $key, mixed ...$other_keys): RedisCluster|int|bool;
 
-    public function expire(string $key, int $timeout): RedisCluster|bool;
+    public function expire(string $key, int $timeout, ?string $mode = NULL): RedisCluster|bool;
 
-    public function expireat(string $key, int $timestamp): RedisCluster|bool;
+    public function expireat(string $key, int $timestamp, ?string $mode = NULL): RedisCluster|bool;
 
     public function expiretime(string $key): RedisCluster|int|false;
 
@@ -218,9 +218,9 @@ class RedisCluster {
 
     public function persist(string $key): RedisCluster|bool;
 
-    public function pexpire(string $key, int $timeout): RedisCluster|bool;
+    public function pexpire(string $key, int $timeout, ?string $mode = NULL): RedisCluster|bool;
 
-    public function pexpireat(string $key, int $timestamp): RedisCluster|bool;
+    public function pexpireat(string $key, int $timestamp, ?string $mode = NULL): RedisCluster|bool;
 
     public function pfadd(string $key, array $elements): RedisCluster|bool;
 

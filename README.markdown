@@ -1098,17 +1098,18 @@ $redis->get('x'); 	// → `FALSE`
 -----
 _**Description**_: Same as rename, but will not replace a key if the destination already exists. This is the same behaviour as setNx.
 
-### expire, setTimeout, pexpire
+### expire, pexpire
 -----
-_**Description**_: Sets an expiration date (a timeout) on an item. pexpire requires a TTL in milliseconds.
+_**Description**_: Sets an expiration on a key in either seconds or milliseconds.
 
-##### *Parameters*
-*Key*: key. The key that will disappear.
-
-*Integer*: ttl. The key's remaining Time To Live, in seconds.
+##### *Prototype*
+~~~php
+public function expire(string $key, int $seconds, ?string $mode = NULL): Redis|bool;
+public function pexpire(string $key, int $milliseconds, ?string $mode = NULL): Redis|bool;
+~~~
 
 ##### *Return value*
-*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
+*BOOL*: `TRUE` if an expiration was set, and `FALSE` on failure or if one was not set.  You can distinguish between an error and an expiration not being set by checking `getLastError()`.
 ##### *Example*
 ~~~php
 $redis->set('x', '42');
@@ -1121,22 +1122,23 @@ $redis->get('x'); 		// will return `FALSE`, as 'x' has expired.
 
 ### expireAt, pexpireAt
 -----
-_**Description**_: Sets an expiration date (a timestamp) on an item. pexpireAt requires a timestamp in milliseconds.
+_**Description**_: Seta specific timestamp for a key to expire in seconds or milliseconds.
 
-##### *Parameters*
-*Key*: key. The key that will disappear.
-
-*Integer*: Unix timestamp. The key's date of death, in seconds from Epoch time.
+##### *Prototype*
+~~~php
+public function expireat(string $key, int $unix_timestamp, ?string $mode = NULL): Redis|bool;
+public function pexpireat(string $key, int $unix_timestamp_millis, ?string $mode = NULL): Redis|bool;
+~~~
 
 ##### *Return value*
-*BOOL*: `TRUE` in case of success, `FALSE` in case of failure.
+*BOOL*: `TRUE` if an expiration was set and `FALSE` if one was not set or in the event on an error.  You can detect an actual error by checking `getLastError()`.
+
 ##### *Example*
 ~~~php
 $redis->set('x', '42');
-$now = time(NULL); // current timestamp
-$redis->expireAt('x', $now + 3);	// x will disappear in 3 seconds.
+$redis->expireAt('x', time(NULL) + 3); // x will disappear in 3 seconds.
 sleep(5);				// wait 5 seconds
-$redis->get('x'); 		// will return `FALSE`, as 'x' has expired.
+$redis->get('x'); 	// will return `FALSE`, as 'x' has expired.
 ~~~
 
 ### keys, getKeys
