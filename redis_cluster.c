@@ -2578,39 +2578,38 @@ PHP_METHOD(RedisCluster, lastsave) {
  *     proto array RedisCluster::info(array host_port, [string $arg]) */
 PHP_METHOD(RedisCluster, info) {
     redisCluster *c = GET_CONTEXT();
+    zval *node = NULL, *args = NULL;
+    smart_string cmdstr = {0};
     REDIS_REPLY_TYPE rtype;
-    char *cmd, *opt = NULL;
-    int cmd_len;
-    size_t opt_len = 0;
+    zend_string *section;
     void *ctx = NULL;
-
-    zval *z_arg;
+    int i, argc;
     short slot;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z|s", &z_arg, &opt,
-                             &opt_len) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, -1)
+        Z_PARAM_ZVAL(node)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_VARIADIC('*', args, argc)
+    ZEND_PARSE_PARAMETERS_END();
 
-    /* Treat INFO as non read-only, as we probably want the master */
+    if ((slot = cluster_cmd_get_slot(c, node)) < 0)
+        RETURN_FALSE;
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "INFO");
+
+    /* Direct this command at the master */
     c->readonly = 0;
 
-    slot = cluster_cmd_get_slot(c, z_arg);
-    if (slot < 0) {
-        RETURN_FALSE;
-    }
-
-    if (opt != NULL) {
-        cmd_len = redis_spprintf(NULL, NULL, &cmd, "INFO", "s", opt, opt_len);
-    } else {
-        cmd_len = redis_spprintf(NULL, NULL, &cmd, "INFO", "");
+    for (i = 0; i < argc; i++) {
+        section = zval_get_string(&args[i]);
+        redis_cmd_append_sstr_zstr(&cmdstr, section);
+        zend_string_release(section);
     }
 
     rtype = CLUSTER_IS_ATOMIC(c) ? TYPE_BULK : TYPE_LINE;
-    if (cluster_send_slot(c, slot, cmd, cmd_len, rtype) < 0) {
+    if (cluster_send_slot(c, slot, cmdstr.c, cmdstr.len, rtype) < 0) {
         CLUSTER_THROW_EXCEPTION("Unable to send INFO command to specific node", 0);
-        efree(cmd);
+        efree(cmdstr.c);
         RETURN_FALSE;
     }
 
@@ -2620,7 +2619,7 @@ PHP_METHOD(RedisCluster, info) {
         CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_info_resp, ctx);
     }
 
-    efree(cmd);
+    efree(cmdstr.c);
 }
 /* }}} */
 

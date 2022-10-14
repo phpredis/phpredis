@@ -3414,6 +3414,7 @@ redis_unpack(RedisSock *redis_sock, const char *src, int srclen, zval *zdst) {
 }
 
 PHP_REDIS_API int
+
 redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
 {
     php_serialize_data_t ht;

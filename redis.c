@@ -1752,38 +1752,32 @@ PHP_METHOD(Redis, pttl) {
 
 /* {{{ proto array Redis::info() */
 PHP_METHOD(Redis, info) {
-
-    zval *object;
+    smart_string cmdstr = {0};
     RedisSock *redis_sock;
-    char *cmd, *opt = NULL;
-    size_t opt_len;
-    int cmd_len;
+    zend_string *section;
+    zval *args = NULL;
+    int i, argc = 0;
 
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                     "O|s", &object, redis_ce, &opt, &opt_len)
-                                     == FAILURE)
-    {
+    ZEND_PARSE_PARAMETERS_START(0, -1)
+        Z_PARAM_VARIADIC('+', args, argc)
+    ZEND_PARSE_PARAMETERS_END();
+
+    if ((redis_sock = redis_sock_get(getThis(), 0)) == NULL)
         RETURN_FALSE;
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "INFO");
+    for (i = 0; i < argc; i++) {
+        section = zval_get_string(&args[i]);
+        redis_cmd_append_sstr_zstr(&cmdstr, section);
+        zend_string_release(section);
     }
 
-    if ((redis_sock = redis_sock_get(object, 0)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    /* Build a standalone INFO command or one with an option */
-    if (opt != NULL) {
-        cmd_len = REDIS_SPPRINTF(&cmd, "INFO", "s", opt, opt_len);
-    } else {
-        cmd_len = REDIS_SPPRINTF(&cmd, "INFO", "");
-    }
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    REDIS_PROCESS_REQUEST(redis_sock, cmdstr.c, cmdstr.len);
     if (IS_ATOMIC(redis_sock)) {
         redis_info_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL,
             NULL);
     }
     REDIS_PROCESS_RESPONSE(redis_info_response);
-
 }
 /* }}} */
 

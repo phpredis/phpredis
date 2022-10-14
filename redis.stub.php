@@ -269,7 +269,21 @@ class Redis {
     /** @return Redis|int|false */
     public function incrByFloat(string $key, float $value);
 
-    public function info(string $opt = null): Redis|array|false;
+    /**
+      Retreive information about the connected redis-server.  If no arguments are passed to
+      this function, redis will return every info field.  Alternatively you may pass a specific
+      section you want returned (e.g. 'server', or 'memory') to receive only information pertaining
+      to that section.
+
+      If connected to Redis server >= 7.0.0 you may pass multiple optional sections.
+
+      @see https://redis.io/commands/info/
+
+      @param string ...$sections Optional section(s) you wish Redis server to return.
+
+      @return Redis|array|false
+     */
+    public function info(string ...$sections): Redis|array|false;
 
     public function isConnected(): bool;
 

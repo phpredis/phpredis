@@ -2363,6 +2363,12 @@ class Redis_Test extends TestSuite
                 $this->assertTrue(in_array($k, array_keys($info)));
             }
         }
+
+        if (!$this->minVersionCheck("7.0.0"))
+            return;
+
+        $res = $this->redis->info('server', 'memory');
+        $this->assertTrue(is_array($res) && isset($res['redis_version']) && isset($res['used_memory']));
     }
 
     public function testInfoCommandStats() {
