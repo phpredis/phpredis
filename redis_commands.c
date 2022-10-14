@@ -32,6 +32,14 @@
 
 #include <zend_exceptions.h>
 
+/* Config operations */
+typedef enum redisConfigOp {
+    REDIS_CFG_RESETSTAT,
+    REDIS_CFG_REWRITE,
+    REDIS_CFG_GET,
+    REDIS_CFG_SET,
+} redisConfigOp;
+
 /* Georadius sort type */
 typedef enum geoSortType {
     SORT_NONE,
@@ -726,6 +734,148 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     return SUCCESS;
+}
+
+static int redis_get_config_op(enum redisConfigOp *dst, zend_string *op) {
+    if (zend_string_equals_literal_ci(op, "RESETSTAT"))
+        *dst = REDIS_CFG_RESETSTAT;
+    else if (zend_string_equals_literal_ci(op, "REWRITE"))
+        *dst = REDIS_CFG_REWRITE;
+    else if (zend_string_equals_literal_ci(op, "GET"))
+        *dst = REDIS_CFG_GET;
+    else if (zend_string_equals_literal_ci(op, "SET"))
+        *dst = REDIS_CFG_SET;
+    else
+        return FAILURE;
+
+    return SUCCESS;
+}
+
+static int redis_build_config_get_cmd(smart_string *dst, zval *val) {
+    zend_string *zstr;
+    int ncfg;
+    zval *zv;
+
+    if (val == NULL || (Z_TYPE_P(val) != IS_STRING && Z_TYPE_P(val) != IS_ARRAY)) {
+        php_error_docref(NULL, E_WARNING, "Must pass a string or array of values to CONFIG GET");
+        return FAILURE;
+    } else if (Z_TYPE_P(val) == IS_ARRAY && zend_hash_num_elements(Z_ARRVAL_P(val)) == 0) {
+        php_error_docref(NULL, E_WARNING, "Cannot pass an empty array to CONFIG GET");
+        return FAILURE;
+    }
+
+    ncfg = Z_TYPE_P(val) == IS_STRING ? 1 : zend_hash_num_elements(Z_ARRVAL_P(val));
+
+    REDIS_CMD_INIT_SSTR_STATIC(dst, 1 + ncfg, "CONFIG");
+    REDIS_CMD_APPEND_SSTR_STATIC(dst, "GET");
+
+    if (Z_TYPE_P(val) == IS_STRING) {
+        redis_cmd_append_sstr_zstr(dst, Z_STR_P(val));
+    } else {
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(val), zv) {
+            ZVAL_DEREF(zv);
+
+            zstr = zval_get_string(zv);
+            redis_cmd_append_sstr_zstr(dst, zstr);
+            zend_string_release(zstr);
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    return SUCCESS;
+}
+
+static int redis_build_config_set_cmd(smart_string *dst, zval *key, zend_string *val) {
+    zend_string *zkey, *zstr;
+    zval *zv;
+
+    /* Legacy case:  CONFIG SET <string> <string> */
+    if (key != NULL && val != NULL) {
+        REDIS_CMD_INIT_SSTR_STATIC(dst, 3, "CONFIG");
+        REDIS_CMD_APPEND_SSTR_STATIC(dst, "SET");
+
+        zstr = zval_get_string(key);
+        redis_cmd_append_sstr_zstr(dst, zstr);
+        zend_string_release(zstr);
+
+        redis_cmd_append_sstr_zstr(dst, val);
+
+        return SUCCESS;
+    }
+
+    /* Now we must have an array with at least one element */
+    if (key == NULL || Z_TYPE_P(key) != IS_ARRAY || zend_hash_num_elements(Z_ARRVAL_P(key)) == 0) {
+        php_error_docref(NULL, E_WARNING, "Must either pass two strings to CONFIG SET or a non-empty array of values");
+        return FAILURE;
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(dst, 1 + (2 * zend_hash_num_elements(Z_ARRVAL_P(key))), "CONFIG");
+    REDIS_CMD_APPEND_SSTR_STATIC(dst, "SET");
+
+    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(key), zkey, zv) {
+        if (zkey == NULL)
+            goto fail;
+
+        ZVAL_DEREF(zv);
+
+        redis_cmd_append_sstr_zstr(dst, zkey);
+
+        zstr = zval_get_string(zv);
+        redis_cmd_append_sstr_zstr(dst, zstr);
+        zend_string_release(zstr);
+    } ZEND_HASH_FOREACH_END();
+
+    return SUCCESS;
+
+fail:
+    php_error_docref(NULL, E_WARNING, "Must pass an associate array of config keys and values");
+    efree(dst->c);
+    memset(dst, 0, sizeof(*dst));
+    return FAILURE;
+}
+
+int
+redis_config_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                 char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    zend_string *op = NULL, *arg = NULL;
+    smart_string cmdstr = {0};
+    enum redisConfigOp cfg_op;
+    int res = FAILURE;
+    zval *key = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(1, 3)
+        Z_PARAM_STR(op)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL_OR_NULL(key)
+        Z_PARAM_STR_OR_NULL(arg)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (redis_get_config_op(&cfg_op, op) != SUCCESS) {
+        php_error_docref(NULL, E_WARNING, "Unknown operation '%s'", ZSTR_VAL(op));
+        return FAILURE;
+    }
+
+    switch (cfg_op) {
+        case REDIS_CFG_RESETSTAT: /* fallthrough */
+        case REDIS_CFG_REWRITE:
+            REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1, "CONFIG");
+            redis_cmd_append_sstr_zstr(&cmdstr, op);
+            *ctx = redis_boolean_response;
+            res  = SUCCESS;
+            break;
+        case REDIS_CFG_GET:
+            res  = redis_build_config_get_cmd(&cmdstr, key);
+            *ctx = redis_mbulk_reply_zipped_raw;
+            break;
+        case REDIS_CFG_SET:
+            res  = redis_build_config_set_cmd(&cmdstr, key, arg);
+            *ctx = redis_boolean_response;
+            break;
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    return res;
 }
 
 int

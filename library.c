@@ -1151,6 +1151,15 @@ PHP_REDIS_API int redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *r
     return SUCCESS;
 }
 
+PHP_REDIS_API int
+redis_config_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
+    FailableResultCallback cb = ctx;
+
+    ZEND_ASSERT(cb == redis_boolean_response || cb == redis_mbulk_reply_zipped_raw);
+
+    return cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, ctx);
+}
+
 PHP_REDIS_API int redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
     char *response;
     int response_len;
