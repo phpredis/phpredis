@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: ccb418a312ff22f03e2354de508ff8bd9e4d266e */
+ * Stub hash: d3d58cb90bf0884a4153cd01f3d0850b42fcd910 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -385,7 +385,7 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_info, 0, 1, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_MASK(0, key_or_address, MAY_BE_STRING|MAY_BE_ARRAY, NULL)
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, section, IS_STRING, 1, "null")
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, sections, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_keys, 0, 1, RedisCluster, MAY_BE_ARRAY|MAY_BE_FALSE)

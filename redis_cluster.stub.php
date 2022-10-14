@@ -187,7 +187,23 @@ class RedisCluster {
 
     public function incrbyfloat(string $key, float $value): RedisCluster|float|false;
 
-    public function info(string|array $key_or_address, ?string $section = null): RedisCluster|array|false;
+    /**
+      Retreive information about the connected redis-server.  If no arguments are passed to
+      this function, redis will return every info field.  Alternatively you may pass a specific
+      section you want returned (e.g. 'server', or 'memory') to receive only information pertaining
+      to that section.
+
+      If connected to Redis server >= 7.0.0 you may pass multiple optional sections.
+
+      @see https://redis.io/commands/info/
+
+      @param string|array $key_or_address Either a key name or array with host and port indicating
+                                          which cluster node we want to send the command to.
+      @param string       ...$sections    Optional section(s) you wish Redis server to return.
+
+      @return Redis|array|false
+     */
+    public function info(string|array $key_or_address, string ...$sections): RedisCluster|array|false;
 
     public function keys(string $pattern): RedisCluster|array|false;
 
