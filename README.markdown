@@ -221,13 +221,13 @@ _**Description**_: Connects to a Redis instance.
 
 ##### *Parameters*
 
-*host*: string. can be a host, or the path to a unix domain socket. Starting from version 5.0.0 it is possible to specify schema 
+*host*: string. can be a host, or the path to a unix domain socket. Starting from version 5.0.0 it is possible to specify schema  
 *port*: int, optional  
-*timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)
+*timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)  
 *reserved*: should be '' if retry_interval is specified  
 *retry_interval*: int, value in milliseconds (optional)  
-*read_timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)
-*others*: array, with PhpRedis >= 5.3.0, it allows setting _auth_ and [_stream_](https://www.php.net/manual/en/context.ssl.php) configuration.
+*read_timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)  
+*others*: array, with PhpRedis >= 5.3.0, it allows setting _auth_ and [_stream_](https://www.php.net/manual/en/context.ssl.php) configuration.  
 
 ##### *Return value*
 
@@ -269,12 +269,12 @@ persistent equivalents.
 
 ##### *Parameters*
 
-*host*: string. can be a host, or the path to a unix domain socket. Starting from version 5.0.0 it is possible to specify schema 
+*host*: string. can be a host, or the path to a unix domain socket. Starting from version 5.0.0 it is possible to specify schema  
 *port*: int, optional  
-*timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)
+*timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)  
 *persistent_id*: string. identity for the requested persistent connection  
 *retry_interval*: int, value in milliseconds (optional)  
-*read_timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)
+*read_timeout*: float, value in seconds (optional, default is 0 meaning it will use default_socket_timeout)  
 
 ##### *Return value*
 
