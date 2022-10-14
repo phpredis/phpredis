@@ -5612,9 +5612,9 @@ class Redis_Test extends TestSuite
 
         /* Ensure invalid calls are handled by PhpRedis */
         foreach (['notacommand', 'get', 'set'] as $cmd) {
-            $this->assertFalse($this->redis->config($cmd));
+            $this->assertFalse(@$this->redis->config($cmd));
         }
-        $this->assertFalse($this->redis->config('set', 'foo'));
+        $this->assertFalse(@$this->redis->config('set', 'foo'));
 
         /* REWRITE.  We don't care if it actually works, just that the
            command be attempted */
@@ -5624,6 +5624,38 @@ class Redis_Test extends TestSuite
             $this->assertPatternMatch($this->redis->getLastError(), '/.*config.*/');
             $this->redis->clearLastError();
         }
+
+        if (!$this->minVersionCheck("7.0.0"))
+            return;
+
+        /* Test getting multiple values */
+        $settings = $this->redis->config('get', ['timeout', 'databases', 'set-max-intset-entries']);
+        $this->assertTrue(is_array($settings) && isset($settings['timeout']) &&
+                          isset($settings['databases']) && isset($settings['set-max-intset-entries']));
+
+        /* Short circuit if the above assertion would have failed */
+        if ( ! is_array($settings) || ! isset($settings['timeout']) || ! isset($settings['set-max-intset-entries']))
+            return;
+
+        list($timeout, $max_intset) = [$settings['timeout'], $settings['set-max-intset-entries']];
+
+        $updates = [
+            ['timeout' => (string)($timeout + 30), 'set-max-intset-entries' => (string)($max_intset + 128)],
+            ['timeout' => (string)($timeout), 'set-max-intset-entries' => (string)$max_intset],
+        ];
+
+        foreach ($updates as $update) {
+            $this->assertTrue($this->redis->config('set', $update));
+            $vals = $this->redis->config('get', array_keys($update));
+            ksort($vals);
+            ksort($update);
+            $this->assertEquals($vals, $update);
+        }
+
+        /* Make sure PhpRedis catches malformed multiple get/set calls */
+        $this->assertFalse(@$this->redis->config('get', []));
+        $this->assertFalse(@$this->redis->config('set', []));
+        $this->assertFalse(@$this->redis->config('set', [0, 1, 2]));
     }
 
     public function testReconnectSelect() {

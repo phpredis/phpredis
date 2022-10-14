@@ -81,7 +81,29 @@ class Redis {
 
     public function command(string $opt = null, string|array $arg): mixed;
 
-    public function config(string $operation, ?string $key = NULL, mixed $value = null): mixed;
+    /**
+      Execute the Redis CONFIG command in a variety of ways.  What the command does in particular depends
+      on the `$operation` qualifier.
+
+      Operations that PhpRedis supports are: RESETSTAT, REWRITE, GET, and SET.
+
+      @param string            $operation      The CONFIG subcommand to execute
+      @param array|string|null $key_or_setting Can either be a setting string for the GET/SET operation or
+                                               an array of settings or settings and values.
+                                               Note:  Redis 7.0.0 is required to send an array of settings.
+      @param ?string           $value          The setting value when the operation is SET.
+
+      <code>
+      <?php
+      $redis->config('GET', 'timeout');
+      $redis->config('GET', ['timeout', 'databases']);
+
+      $redis->config('SET', 'timeout', 30);
+      $redis->config('SET', ['timeout' => 30, 'loglevel' => 'warning']);
+      ?>
+      </code>
+     */
+    public function config(string $operation, array|string|null $key_or_settings = NULL, ?string $value = NULL): mixed;
 
     public function connect(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, array $context = null): bool;
 

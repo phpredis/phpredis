@@ -559,17 +559,19 @@ _**Description**_: Get or Set the Redis server configuration parameters.
 
 ##### *Prototype*
 ~~~php
-$redis->config($operation, ?string $key = NULL, ?string $value = NULL): mixed;
+$redis->config(string $operation, string|array|null $key = NULL, ?string $value = NULL): mixed;
 ~~~
 
 ##### *Return value*
-*Associative array* for `GET`, key -> value  
-*bool* for `SET`, and `RESETSTAT`
+*Associative array* for `GET`, key(s) -> value(s)  
+*bool* for `SET`, `RESETSTAT`, and `REWRITE`
 
 ##### *Examples*
 ~~~php
 $redis->config("GET", "*max-*-entries*");
+$redis->config("SET", ['timeout', 'loglevel']);
 $redis->config("SET", "dir", "/var/run/redis/dumps/");
+$redis->config("SET", ['timeout' => 128, 'loglevel' => 'warning']);
 $redis->config('RESETSTAT');
 ~~~
 

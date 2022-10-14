@@ -2707,45 +2707,10 @@ PHP_METHOD(Redis, setOption)
 /* }}} */
 
 /* {{{ proto boolean Redis::config(string op, string key [, mixed value]) */
-PHP_METHOD(Redis, config)
-{
-    zend_string *op, *key = NULL, *val = NULL;
-    FailableResultCallback cb;
-    RedisSock *redis_sock;
-    zval *object;
-    int cmd_len;
-    char *cmd;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "OS|SS", &object,
-                                     redis_ce, &op, &key, &val) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-    if ((redis_sock = redis_sock_get(object, 0)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    if (zend_string_equals_literal_ci(op, "GET") && key != NULL) {
-        cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "SS", op, key);
-        cb = redis_mbulk_reply_zipped_raw;
-    } else if (zend_string_equals_literal_ci(op, "RESETSTAT") ||
-               zend_string_equals_literal_ci(op, "REWRITE"))
-    {
-        cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "s", ZSTR_VAL(op), ZSTR_LEN(op));
-        cb = redis_boolean_response;
-    } else if (zend_string_equals_literal_ci(op, "SET") && key != NULL && val != NULL) {
-        cmd_len = REDIS_SPPRINTF(&cmd, "CONFIG", "SSS", op, key, val);
-        cb = redis_boolean_response;
-    } else {
-        RETURN_FALSE;
-    }
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len)
-    if (IS_ATOMIC(redis_sock)) {
-        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-    }
-    REDIS_PROCESS_RESPONSE(redis_boolean_response);
+/* {{{ proto public function config(string $op, string ...$args) }}} */
+// CONFIG SET/GET
+PHP_METHOD(Redis, config) {
+    REDIS_PROCESS_CMD(config, redis_config_response);
 }
 /* }}} */
 
