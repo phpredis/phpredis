@@ -246,7 +246,7 @@ class Redis {
 
     public function hMget(string $key, array $keys): Redis|array|false;
 
-    public function hMset(string $key, array $keyvals): Redis|bool|false;
+    public function hMset(string $key, array $keyvals): Redis|bool;
 
     public function hRandField(string $key, array $options = null): Redis|string|array;
 
