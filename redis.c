@@ -2717,57 +2717,7 @@ PHP_METHOD(Redis, config) {
 
 /* {{{ proto boolean Redis::slowlog(string arg, [int option]) */
 PHP_METHOD(Redis, slowlog) {
-    zval *object;
-    RedisSock *redis_sock;
-    char *arg, *cmd;
-    int cmd_len;
-    size_t arg_len;
-    zend_long option = 0;
-    enum {SLOWLOG_GET, SLOWLOG_LEN, SLOWLOG_RESET} mode;
-
-    // Make sure we can get parameters
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                    "Os|l", &object, redis_ce, &arg, &arg_len,
-                                    &option) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-    /* Figure out what kind of slowlog command we're executing */
-    if(!strncasecmp(arg, "GET", 3)) {
-        mode = SLOWLOG_GET;
-    } else if(!strncasecmp(arg, "LEN", 3)) {
-        mode = SLOWLOG_LEN;
-    } else if(!strncasecmp(arg, "RESET", 5)) {
-        mode = SLOWLOG_RESET;
-    } else {
-        /* This command is not valid */
-        RETURN_FALSE;
-    }
-
-    /* Make sure we can grab our redis socket */
-    if ((redis_sock = redis_sock_get(object, 0)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    // Create our command.  For everything except SLOWLOG GET (with an arg) it's
-    // just two parts
-    if (mode == SLOWLOG_GET && ZEND_NUM_ARGS() == 2) {
-        cmd_len = REDIS_SPPRINTF(&cmd, "SLOWLOG", "sl", arg, arg_len, option);
-    } else {
-        cmd_len = REDIS_SPPRINTF(&cmd, "SLOWLOG", "s", arg, arg_len);
-    }
-
-    /* Kick off our command */
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    if (IS_ATOMIC(redis_sock)) {
-        if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                    redis_sock, NULL, NULL) < 0)
-        {
-            RETURN_FALSE;
-        }
-    }
-    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+    REDIS_PROCESS_CMD(slowlog, redis_read_variant_reply);
 }
 
 /* {{{ proto Redis::wait(int num_slaves, int ms) }}} */

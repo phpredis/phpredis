@@ -132,6 +132,9 @@ int redis_intercard_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                         char *kw, char **cmd, int *cmd_len, short *slot,
                         void **ctx);
 
+int redis_slowlog_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot, void **ctx);
+
 int redis_lcs_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   char **cmd, int *cmd_len, short *slot, void **ctx);
 
