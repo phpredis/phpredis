@@ -2549,6 +2549,43 @@ int redis_lcs_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int redis_slowlog_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    enum {SLOWLOG_GET, SLOWLOG_LEN, SLOWLOG_RESET} mode;
+    smart_string cmdstr = {0};
+    zend_string *op = NULL;
+    zend_long arg = 0;
+
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_STR(op)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(arg)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_string_equals_literal_ci(op, "GET")) {
+        mode = SLOWLOG_GET;
+    } else if (zend_string_equals_literal_ci(op, "LEN")) {
+        mode = SLOWLOG_LEN;
+    } else if (zend_string_equals_literal_ci(op, "RESET")) {
+        mode = SLOWLOG_RESET;
+    } else {
+        php_error_docref(NULL, E_WARNING, "Unknown SLOWLOG operation '%s'", ZSTR_VAL(op));
+        return FAILURE;
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + (mode == SLOWLOG_GET && ZEND_NUM_ARGS() == 2), "SLOWLOG");
+    redis_cmd_append_sstr_zstr(&cmdstr, op);
+
+    if (mode == SLOWLOG_GET && ZEND_NUM_ARGS() == 2)
+        redis_cmd_append_sstr_long(&cmdstr, arg);
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 void redis_get_restore_options(redisRestoreOptions *dst, HashTable *ht) {
     zend_string *key;
     zend_long lval;

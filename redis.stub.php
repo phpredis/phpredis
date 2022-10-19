@@ -521,7 +521,33 @@ class Redis {
 
     public function slaveof(string $host = null, int $port = 6379): bool;
 
-    public function slowlog(string $mode, int $option = 0): mixed;
+    /**
+      Interact with Redis' slowlog functionality in variousu ways, depending
+      on the value of 'operations'.
+
+      @param string $operation  The operation you wish to perform.  This can
+                                be one of the following values:
+                                'get'   - Retreive the Redis slowlog as an array.
+                                'len'   - Retreive the length of the slowlog.
+                                'reset' - Remove all slowlog entries.
+      <code>
+      <?php
+      $redis->slowllog('get', -1);  // Retreive all slowlog entries.
+      $redis->slowlog('len');       // Retreive slowlog length.
+      $redis->slowlog('reset');     // Reset the slowlog.
+      ?>
+      </code>
+
+      @param int    $length     This optional argument can be passed when operation
+                                is 'get' and will specify how many elements to retreive.
+                                If omitted Redis will send up to a default number of
+                                entries, which is configurable.
+
+                                Note:  With Redis >= 7.0.0 you can send -1 to mean "all".
+
+      @return mixed
+     */
+    public function slowlog(string $operation, int $length = 0): mixed;
 
     public function sort(string $key, ?array $options = null): mixed;
 

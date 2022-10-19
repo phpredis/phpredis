@@ -2291,7 +2291,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue(is_array($this->redis->slowlog('get', 10)));
         $this->assertTrue(is_int($this->redis->slowlog('len')));
         $this->assertTrue($this->redis->slowlog('reset'));
-        $this->assertFalse($this->redis->slowlog('notvalid'));
+        $this->assertFalse(@$this->redis->slowlog('notvalid'));
     }
 
     public function testWait() {
