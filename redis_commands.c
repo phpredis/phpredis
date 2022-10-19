@@ -32,14 +32,6 @@
 
 #include <zend_exceptions.h>
 
-/* Config operations */
-typedef enum redisConfigOp {
-    REDIS_CFG_RESETSTAT,
-    REDIS_CFG_REWRITE,
-    REDIS_CFG_GET,
-    REDIS_CFG_SET,
-} redisConfigOp;
-
 /* Georadius sort type */
 typedef enum geoSortType {
     SORT_NONE,
@@ -736,21 +728,6 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
-static int redis_get_config_op(enum redisConfigOp *dst, zend_string *op) {
-    if (zend_string_equals_literal_ci(op, "RESETSTAT"))
-        *dst = REDIS_CFG_RESETSTAT;
-    else if (zend_string_equals_literal_ci(op, "REWRITE"))
-        *dst = REDIS_CFG_REWRITE;
-    else if (zend_string_equals_literal_ci(op, "GET"))
-        *dst = REDIS_CFG_GET;
-    else if (zend_string_equals_literal_ci(op, "SET"))
-        *dst = REDIS_CFG_SET;
-    else
-        return FAILURE;
-
-    return SUCCESS;
-}
-
 static int redis_build_config_get_cmd(smart_string *dst, zval *val) {
     zend_string *zstr;
     int ncfg;
@@ -839,7 +816,6 @@ redis_config_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     zend_string *op = NULL, *arg = NULL;
     smart_string cmdstr = {0};
-    enum redisConfigOp cfg_op;
     int res = FAILURE;
     zval *key = NULL;
 
@@ -850,27 +826,22 @@ redis_config_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         Z_PARAM_STR_OR_NULL(arg)
     ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    if (redis_get_config_op(&cfg_op, op) != SUCCESS) {
+    if (zend_string_equals_literal_ci(op, "RESETSTAT") ||
+        zend_string_equals_literal_ci(op, "REWRITE"))
+    {
+        REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1, "CONFIG");
+        redis_cmd_append_sstr_zstr(&cmdstr, op);
+        *ctx = redis_boolean_response;
+        res  = SUCCESS;
+    } else if (zend_string_equals_literal_ci(op, "GET")) {
+        res  = redis_build_config_get_cmd(&cmdstr, key);
+        *ctx = redis_mbulk_reply_zipped_raw;
+    } else if (zend_string_equals_literal_ci(op, "SET")) {
+        res  = redis_build_config_set_cmd(&cmdstr, key, arg);
+        *ctx = redis_boolean_response;
+    } else {
         php_error_docref(NULL, E_WARNING, "Unknown operation '%s'", ZSTR_VAL(op));
         return FAILURE;
-    }
-
-    switch (cfg_op) {
-        case REDIS_CFG_RESETSTAT: /* fallthrough */
-        case REDIS_CFG_REWRITE:
-            REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1, "CONFIG");
-            redis_cmd_append_sstr_zstr(&cmdstr, op);
-            *ctx = redis_boolean_response;
-            res  = SUCCESS;
-            break;
-        case REDIS_CFG_GET:
-            res  = redis_build_config_get_cmd(&cmdstr, key);
-            *ctx = redis_mbulk_reply_zipped_raw;
-            break;
-        case REDIS_CFG_SET:
-            res  = redis_build_config_set_cmd(&cmdstr, key, arg);
-            *ctx = redis_boolean_response;
-            break;
     }
 
     *cmd = cmdstr.c;
