@@ -5675,10 +5675,10 @@ class Redis_Test extends TestSuite
         // Time out after 1 second.
         $this->redis->config('SET', 'timeout', '1');
 
-        // Wait for the timeout. With Redis 2.4, we have to wait up to 10 s
-        // for the server to close the connection, regardless of the timeout
-        // setting.
-        sleep(11);
+        // Wait for the connection to time out.  On very old versions
+        // of Redis we need to wait much longer (TODO:  Investigate
+        // which version exactly)
+        sleep($this->minVersionCheck('3.0.0') ? 2 : 11);
 
         // Make sure we're still using the same DB.
         $this->assertEquals($value, $this->redis->get($key));
