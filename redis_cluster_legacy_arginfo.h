@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d3d58cb90bf0884a4153cd01f3d0850b42fcd910 */
+ * Stub hash: 7a2f14794870618a17273a2ed9f60d81449c82af */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -165,11 +165,15 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_eval, 0, 0, 1)
 	ZEND_ARG_INFO(0, num_keys)
 ZEND_END_ARG_INFO()
 
+#define arginfo_class_RedisCluster_eval_ro arginfo_class_RedisCluster_eval
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_evalsha, 0, 0, 1)
 	ZEND_ARG_INFO(0, script_sha)
 	ZEND_ARG_INFO(0, args)
 	ZEND_ARG_INFO(0, num_keys)
 ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_evalsha_ro arginfo_class_RedisCluster_evalsha
 
 #define arginfo_class_RedisCluster_exec arginfo_class_RedisCluster__masters
 
@@ -828,7 +832,9 @@ ZEND_METHOD(RedisCluster, discard);
 ZEND_METHOD(RedisCluster, dump);
 ZEND_METHOD(RedisCluster, echo);
 ZEND_METHOD(RedisCluster, eval);
+ZEND_METHOD(RedisCluster, eval_ro);
 ZEND_METHOD(RedisCluster, evalsha);
+ZEND_METHOD(RedisCluster, evalsha_ro);
 ZEND_METHOD(RedisCluster, exec);
 ZEND_METHOD(RedisCluster, exists);
 ZEND_METHOD(RedisCluster, expire);
@@ -1031,7 +1037,9 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, dump, arginfo_class_RedisCluster_dump, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, echo, arginfo_class_RedisCluster_echo, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, eval, arginfo_class_RedisCluster_eval, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, eval_ro, arginfo_class_RedisCluster_eval_ro, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, evalsha, arginfo_class_RedisCluster_evalsha, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, evalsha_ro, arginfo_class_RedisCluster_evalsha_ro, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, exec, arginfo_class_RedisCluster_exec, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, exists, arginfo_class_RedisCluster_exists, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, expire, arginfo_class_RedisCluster_expire, ZEND_ACC_PUBLIC)

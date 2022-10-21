@@ -101,7 +101,11 @@ class RedisCluster {
 
     public function eval(string $script, array $args = [], int $num_keys = 0): mixed;
 
+    public function eval_ro(string $script, array $args = [], int $num_keys = 0): mixed;
+
     public function evalsha(string $script_sha, array $args = [], int $num_keys = 0): mixed;
+
+    public function evalsha_ro(string $script_sha, array $args = [], int $num_keys = 0): mixed;
 
     public function exec(): array|false;
 

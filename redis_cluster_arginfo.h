@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: d3d58cb90bf0884a4153cd01f3d0850b42fcd910 */
+ * Stub hash: 7a2f14794870618a17273a2ed9f60d81449c82af */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -187,11 +187,15 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_eval, 0, 1, I
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, num_keys, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
+#define arginfo_class_RedisCluster_eval_ro arginfo_class_RedisCluster_eval
+
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_evalsha, 0, 1, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, script_sha, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, args, IS_ARRAY, 0, "[]")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, num_keys, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
+
+#define arginfo_class_RedisCluster_evalsha_ro arginfo_class_RedisCluster_evalsha
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_exec, 0, 0, MAY_BE_ARRAY|MAY_BE_FALSE)
 ZEND_END_ARG_INFO()
@@ -971,7 +975,9 @@ ZEND_METHOD(RedisCluster, discard);
 ZEND_METHOD(RedisCluster, dump);
 ZEND_METHOD(RedisCluster, echo);
 ZEND_METHOD(RedisCluster, eval);
+ZEND_METHOD(RedisCluster, eval_ro);
 ZEND_METHOD(RedisCluster, evalsha);
+ZEND_METHOD(RedisCluster, evalsha_ro);
 ZEND_METHOD(RedisCluster, exec);
 ZEND_METHOD(RedisCluster, exists);
 ZEND_METHOD(RedisCluster, expire);
@@ -1174,7 +1180,9 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, dump, arginfo_class_RedisCluster_dump, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, echo, arginfo_class_RedisCluster_echo, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, eval, arginfo_class_RedisCluster_eval, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, eval_ro, arginfo_class_RedisCluster_eval_ro, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, evalsha, arginfo_class_RedisCluster_evalsha, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, evalsha_ro, arginfo_class_RedisCluster_evalsha_ro, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, exec, arginfo_class_RedisCluster_exec, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, exists, arginfo_class_RedisCluster_exists, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, expire, arginfo_class_RedisCluster_expire, ZEND_ACC_PUBLIC)

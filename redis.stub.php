@@ -131,9 +131,53 @@ class Redis {
 
     public function echo(string $str): Redis|string|false;
 
-    public function eval(string $script, array $keys = null, int $num_keys = 0): mixed;
+    /**
+     * Execute a LUA script on the redis server.
+     *
+     * @see https://redis.io/commands/eval/
+     *
+     * @param string $script   A string containing the lua script
+     * @param array  $args     An array of arguments to pass to this script
+     * @param int    $num_keys How many of the arguments are keys.  This is needed
+     *                         as redis distinguishes between key name arguments
+     *                         and other data.
+     *
+     * @return mixed LUA scripts may return arbitrary data so this method can return
+     *               strings, arrays, nested arrays, etc.
+     */
+    public function eval(string $script, array $args = [], int $num_keys = 0): mixed;
 
-    public function evalsha(string $sha1, array $keys = null, int $num_keys = 0): mixed;
+    /**
+     * This is simply the read-only variant of eval, meaning the unerlying script
+     * may not modify data in redis.
+     *
+     * @see Redis::eval()
+     */
+    public function eval_ro(string $script_sha, array $args = [], int $num_keys = 0): mixed;
+
+    /**
+     * Execute a LUA script on the server but instead of sending the script, send
+     * the sha1 hash of the script.
+     *
+     * @see https://redis.io/commands/evalsha/
+     * @see Redis::eval();
+     *
+     * @param string $script_sha The sha1() hash of the lua code.  Note that the script
+     *                           must already exist on the server, either having been
+     *                           loaded with `SCRIPT LOAD` or having been executed directly
+     *                           with `EVAL` first.
+     * @param array  $args       Arguments to send to the script.
+     * @param int    $num_keys   The number of arguments that are keys
+     */
+    public function evalsha(string $sha1, array $args = [], int $num_keys = 0): mixed;
+
+    /**
+     * This is simply the read-only variant of evalsha, meaning the unerlying script
+     * may not modify data in redis.
+     *
+     * @see Redis::evalsha()
+     */
+    public function evalsha_ro(string $sha1, array $args = [], int $num_keys = 0): mixed;
 
     public function exec(): Redis|array|false;
 
