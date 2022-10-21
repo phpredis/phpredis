@@ -2877,14 +2877,23 @@ PHP_METHOD(Redis, pubsub) {
 }
 
 /* {{{ proto variant Redis::eval(string script, [array keys, long num_keys]) */
-PHP_METHOD(Redis, eval)
-{
+PHP_METHOD(Redis, eval) {
     REDIS_PROCESS_KW_CMD("EVAL", redis_eval_cmd, redis_read_raw_variant_reply);
+}
+
+/* {{{ proto variant Redis::eval_ro(string script, [array keys, long num_keys]) */
+PHP_METHOD(Redis, eval_ro) {
+    REDIS_PROCESS_KW_CMD("EVAL_RO", redis_eval_cmd, redis_read_raw_variant_reply);
 }
 
 /* {{{ proto variant Redis::evalsha(string sha1, [array keys, long num_keys]) */
 PHP_METHOD(Redis, evalsha) {
     REDIS_PROCESS_KW_CMD("EVALSHA", redis_eval_cmd, redis_read_raw_variant_reply);
+}
+
+/* {{{ proto variant Redis::evalsha_ro(string sha1, [array keys, long num_keys]) */
+PHP_METHOD(Redis, evalsha_ro) {
+    REDIS_PROCESS_KW_CMD("EVALSHA_RO", redis_eval_cmd, redis_read_raw_variant_reply);
 }
 
 /* {{{ proto status Redis::script('flush')

@@ -1707,12 +1707,24 @@ PHP_METHOD(RedisCluster, eval) {
 }
 /* }}} */
 
+/* {{{ proto mixed RedisCluster::eval_ro(string script, [array args, int numkeys) */
+PHP_METHOD(RedisCluster, eval_ro) {
+    CLUSTER_PROCESS_KW_CMD("EVAL_RO", redis_eval_cmd, cluster_variant_raw_resp, 1);
+}
+/* }}} */
+
 /* {{{ proto mixed RedisCluster::evalsha(string sha, [array args, int numkeys]) */
 PHP_METHOD(RedisCluster, evalsha) {
     CLUSTER_PROCESS_KW_CMD("EVALSHA", redis_eval_cmd, cluster_variant_raw_resp, 0);
 }
 /* }}} */
 
+/* {{{ proto mixed RedisCluster::evalsha_ro(string sha, [array args, int numkeys]) */
+PHP_METHOD(RedisCluster, evalsha_ro) {
+    CLUSTER_PROCESS_KW_CMD("EVALSHA_RO", redis_eval_cmd, cluster_variant_raw_resp, 1);
+}
+
+/* }}} */
 /* Commands that do not interact with Redis, but just report stuff about
  * various options, etc */
 

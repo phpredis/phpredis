@@ -5247,6 +5247,11 @@ class Redis_Test extends TestSuite
             $this->markTestSkipped();
         }
 
+        /* The eval_ro method uses the same underlying handlers as eval so we
+           only need to verify we can call it. */
+        if ($this->minVersionCheck('7.0.0'))
+            $this->assertEquals('1.55', $this->redis->eval_ro("return '1.55'"));
+
         // Basic single line response tests
         $this->assertTrue(1 == $this->redis->eval('return 1'));
         $this->assertTrue(1.55 == $this->redis->eval("return '1.55'"));
@@ -5383,6 +5388,11 @@ class Redis_Test extends TestSuite
         $this->assertTrue(false === $this->redis->evalsha($scr));
         $this->assertTrue(1 === $this->redis->eval($scr));
         $this->assertTrue(1 === $this->redis->evalsha($sha));
+
+        /* Our evalsha_ro handler is the same as evalsha so just make sure
+           we can invoke the command */
+        if ($this->minVersionCheck('7.0.0'))
+            $this->assertEquals(1, $this->redis->evalsha_ro($sha));
     }
 
     public function testSerialize() {

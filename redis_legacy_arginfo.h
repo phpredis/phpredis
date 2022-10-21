@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 3ffe58fd2c74dcb474adf0b983f503d798c975d8 */
+ * Stub hash: a27d28648f2d1a77237305083f36abc5e071f5b1 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -165,15 +165,23 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_eval, 0, 0, 1)
 	ZEND_ARG_INFO(0, script)
-	ZEND_ARG_INFO(0, keys)
+	ZEND_ARG_INFO(0, args)
+	ZEND_ARG_INFO(0, num_keys)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_eval_ro, 0, 0, 1)
+	ZEND_ARG_INFO(0, script_sha)
+	ZEND_ARG_INFO(0, args)
 	ZEND_ARG_INFO(0, num_keys)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_evalsha, 0, 0, 1)
 	ZEND_ARG_INFO(0, sha1)
-	ZEND_ARG_INFO(0, keys)
+	ZEND_ARG_INFO(0, args)
 	ZEND_ARG_INFO(0, num_keys)
 ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_evalsha_ro arginfo_class_Redis_evalsha
 
 #define arginfo_class_Redis_exec arginfo_class_Redis___destruct
 
@@ -965,7 +973,9 @@ ZEND_METHOD(Redis, discard);
 ZEND_METHOD(Redis, dump);
 ZEND_METHOD(Redis, echo);
 ZEND_METHOD(Redis, eval);
+ZEND_METHOD(Redis, eval_ro);
 ZEND_METHOD(Redis, evalsha);
+ZEND_METHOD(Redis, evalsha_ro);
 ZEND_METHOD(Redis, exec);
 ZEND_METHOD(Redis, exists);
 ZEND_METHOD(Redis, expire);
@@ -1206,7 +1216,9 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, dump, arginfo_class_Redis_dump, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, echo, arginfo_class_Redis_echo, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, eval, arginfo_class_Redis_eval, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, eval_ro, arginfo_class_Redis_eval_ro, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, evalsha, arginfo_class_Redis_evalsha, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, evalsha_ro, arginfo_class_Redis_evalsha_ro, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, exec, arginfo_class_Redis_exec, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, exists, arginfo_class_Redis_exists, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, expire, arginfo_class_Redis_expire, ZEND_ACC_PUBLIC)
