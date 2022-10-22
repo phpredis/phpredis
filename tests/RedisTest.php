@@ -6521,6 +6521,40 @@ class Redis_Test extends TestSuite
         $this->assertFalse($this->redis->xGroup('SETID', 's', 'mygroup', 'BAD_ID'));
 
         $this->assertEquals($this->redis->xGroup('DELCONSUMER', 's', 'mygroup', 'myconsumer'),0);
+
+        if (!$this->minVersionCheck('6.2.0'))
+            return;
+
+        /* CREATECONSUMER */
+        $this->assertTrue($this->redis->del('s'));
+        $this->assertTrue($this->redis->xgroup('create', 's', 'mygroup', '$', true));
+        for ($i = 0; $i < 3; $i++) {
+            $this->assertTrue($this->redis->xgroup('createconsumer', 's', 'mygroup', "c:$i"));
+            $info = $this->redis->xinfo('consumers', 's', 'mygroup');
+            $this->assertTrue(is_array($info) && count($info) == $i + 1);
+            for ($j = 0; $j <= $i; $j++) {
+                $this->assertTrue(isset($info[$j]) && isset($info[$j]['name']) && $info[$j]['name'] == "c:$j");
+            }
+        }
+
+        /* Make sure we don't erroneously send options that don't belong to the operation */
+        $this->assertTrue($this->redis->xGroup('CREATECONSUMER', 's', 'mygroup', 'fake-consumer', true, 1337));
+
+        /* Make sure we handle the case where the user doesn't send enough arguments */
+        $this->redis->clearLastError();
+        $this->assertFalse(@$this->redis->xGroup('CREATECONSUMER'));
+        $this->assertEquals(NULL, $this->redis->getLastError());
+        $this->assertFalse(@$this->redis->xGroup('create'));
+        $this->assertEquals(NULL, $this->redis->getLastError());
+
+        if (!$this->minVersionCheck('7.0.0'))
+            return;
+
+        /* ENTRIESREAD */
+        $this->assertTrue($this->redis->del('s'));
+        $this->assertTrue($this->redis->xGroup('create', 's', 'mygroup', '$', true, 1337));
+        $info = $this->redis->xinfo('groups', 's');
+        $this->assertTrue(isset($info[0]['entries-read']) && 1337 == (int)$info[0]['entries-read']);
     }
 
     public function testXAck() {

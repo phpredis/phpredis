@@ -660,7 +660,44 @@ class Redis {
 
     public function xdel(string $key, array $ids): Redis|int|false;
 
-    public function xgroup(string $operation, string $key = null, string $arg1 = null, string $arg2 = null, bool $arg3 = false): mixed;
+    /**
+     * XGROUP
+     *
+     * Perform various operation on consumer groups for a particular Redis STREAM.
+     * What the command does is primarily based on which operation is passed.
+     *
+     * @see https://redis.io/commands/xgroup/
+     *
+     * @param string $operation      The subcommand you intend to execute.  Valid options are as follows
+     *                               'HELP'          - Redis will return information about the command
+     *                                                 Requires: none
+     *                               'CREATE'        - Create a consumer group.
+     *                                                 Requires:  Key, group, consumer.
+     *                               'SETID'         - Set the ID of an existing consumer group for the stream.
+     *                                                 Requires:  Key, group, id.
+     *                               'CREATECONSUMER - Create a new consumer group for the stream.  You must
+     *                                                 also pass key, group, and the consumer name you wish to
+     *                                                 create.
+     *                                                 Requires:  Key, group, consumer.
+     *                               'DELCONSUMER'   - Delete a consumer from group attached to the stream.
+     *                                                 Requires:  Key, group, consumer.
+     *                               'DESTROY'       - Delete a consumer group from a stream.
+     *                                                  Requires:  Key, group.
+     * @param string $key            The STREAM we're operating on.
+     * @param string $group          The consumer group wse want to create/modify/delete.
+     * @param string $id_or_consumer The STREAM id (e.g. '$') or consumer group.  See the operation section
+     *                               for information about which to send.
+     * @param bool   $mkstream       This flag may be sent in combination with the 'CREATE' operation, and
+     *                               cause Redis to also create the STREAM if it doesn't currently exist.
+     *
+     * @param bool   $entriesread    Allows you to set Redis's 'entries-read' STREAM value.  This argument is
+     *                               only relevant to the 'CREATE' and 'SETID' operations.
+     *                               Note:  Requires Redis >= 7.0.0.
+     *
+     * @return mixed                 This command return various results depending on the operation performed.
+     */
+    public function xgroup(string $operation, string $key = null, string $group = null, string $id_or_consumer = null,
+                           bool $mkstream = false, int $entries_read = -2): mixed;
 
     public function xinfo(string $operation, ?string $arg1 = null, ?string $arg2 = null, int $count = -1): mixed;
 

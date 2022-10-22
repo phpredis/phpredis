@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 73bbd79b67c155a90acfa2b5ca1be49effdaf8ba */
+ * Stub hash: c04531e86379ab5c0de12e8e82868b7c7f024068 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -909,9 +909,10 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_xgroup, 0, 1, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, operation, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, key, IS_STRING, 0, "null")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg1, IS_STRING, 0, "null")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg2, IS_STRING, 0, "null")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg3, _IS_BOOL, 0, "false")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, group, IS_STRING, 0, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, id_or_consumer, IS_STRING, 0, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, mkstream, _IS_BOOL, 0, "false")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, entries_read, IS_LONG, 0, "-2")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_xinfo, 0, 1, IS_MIXED, 0)
