@@ -2115,6 +2115,17 @@ cluster_variant_resp_generic(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     cluster_free_reply(r, 1);
 }
 
+PHP_REDIS_API void
+cluster_zrange_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
+    cluster_cb cb;
+
+    ZEND_ASSERT(ctx == NULL || ctx == PHPREDIS_CTX_PTR);
+
+    cb = ctx ? cluster_mbulk_zipdbl_resp : cluster_mbulk_resp;
+
+    cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, ctx);
+}
+
 PHP_REDIS_API void cluster_variant_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
                                         void *ctx)
 {

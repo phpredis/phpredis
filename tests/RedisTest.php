@@ -2566,6 +2566,9 @@ class Redis_Test extends TestSuite
         $this->assertTrue(['val1', 'val2'] === $this->redis->zRangeByScore('key', 0, 3, ['limit' => [1, 2]]));
         $this->assertTrue(['val0', 'val1'] === $this->redis->zRangeByScore('key', 0, 1, ['limit' => [0, 100]]));
 
+        if ($this->minVersionCheck('6.2.0'))
+            $this->assertEquals(['val0', 'val1'], $this->redis->zrange('key', 0, 1, ['byscore', 'limit' => [0, 100]]));
+
         // limits as references
         $limit = [0, 100];
         foreach ($limit as &$val) {}
@@ -2575,6 +2578,17 @@ class Redis_Test extends TestSuite
         $this->assertTrue(['val3', 'val2'] === $this->redis->zRevRangeByScore('key', 3, 0, ['limit' => [0, 2]]));
         $this->assertTrue(['val2', 'val1'] === $this->redis->zRevRangeByScore('key', 3, 0, ['limit' => [1, 2]]));
         $this->assertTrue(['val1', 'val0'] === $this->redis->zRevRangeByScore('key', 1, 0, ['limit' => [0, 100]]));
+
+        if ($this->minVersionCheck('6.2.0')) {
+            $this->assertEquals(['val1', 'val0'], $this->redis->zrange('key', 1, 0, ['byscore', 'rev', 'limit' => [0, 100]]));
+            $this->assertEquals(2, $this->redis->zrangestore('dst{key}', 'key', 1, 0,
+                                ['byscore', 'rev', 'limit' => [0, 100]]));
+            $this->assertEquals(['val0', 'val1'], $this->redis->zRange('dst{key}', 0, -1));
+
+            $this->assertEquals(1, $this->redis->zrangestore('dst{key}', 'key', 1, 0,
+                                ['byscore', 'rev', 'limit' => [0, 1]]));
+            $this->assertEquals(['val1'], $this->redis->zrange('dst{key}', 0, -1));
+        }
 
         $this->assertTrue(4 === $this->redis->zCard('key'));
         $this->assertTrue(1.0 === $this->redis->zScore('key', 'val1'));
@@ -2596,7 +2610,6 @@ class Redis_Test extends TestSuite
         $this->assertTrue(2 == $this->redis->zCount('zset', 1, 2));
         $this->assertTrue(1 == $this->redis->zCount('zset', '(1', 2));
         $this->assertTrue(0 == $this->redis->zCount('zset', '(1', '(2'));
-
 
         // zincrby
         $this->redis->del('key');
@@ -2817,12 +2830,22 @@ class Redis_Test extends TestSuite
             $this->redis->zAdd('key', 0, $c);
         }
 
-        $this->assertEquals($this->redis->zRangeByLex('key', '-', '[c'), ['a', 'b', 'c']);
-        $this->assertEquals($this->redis->zRangeByLex('key', '(e', '+'), ['f', 'g']);
+        $this->assertEquals(['a', 'b', 'c'], $this->redis->zRangeByLex('key', '-', '[c'));
+        $this->assertEquals(['f', 'g'], $this->redis->zRangeByLex('key', '(e', '+'));
+
 
         // with limit offset
-        $this->assertEquals($this->redis->zRangeByLex('key', '-', '[c', 1, 2), ['b', 'c'] );
-        $this->assertEquals($this->redis->zRangeByLex('key', '-', '(c', 1, 2), ['b']);
+        $this->assertEquals(['b', 'c'], $this->redis->zRangeByLex('key', '-', '[c', 1, 2) );
+        $this->assertEquals(['b'], $this->redis->zRangeByLex('key', '-', '(c', 1, 2));
+
+        /* Test getting the same functionality via ZRANGE and options */
+        if ($this->minVersionCheck("6.2.0")) {
+            $this->assertEquals(['a','b','c'], $this->redis->zRange('key', '-', '[c', ['BYLEX']));
+            $this->assertEquals(['b', 'c'], $this->redis->zRange('key', '-', '[c', ['BYLEX', 'LIMIT' => [1, 2]]));
+            $this->assertEquals(['b'], $this->redis->zRange('key', '-', '(c', ['BYLEX', 'LIMIT' => [1, 2]]));
+
+            $this->assertEquals(['b', 'a'], $this->redis->zRange('key', '[c', '-', ['BYLEX', 'REV', 'LIMIT' => [1, 2]]));
+        }
     }
 
     public function testZLexCount() {

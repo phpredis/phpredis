@@ -412,7 +412,16 @@ class RedisCluster {
 
     public function zpopmin(string $key, int $value = null): RedisCluster|bool|array;
 
-    public function zrange(string $key, int $start, int $end, mixed $options_withscores = null): RedisCluster|array|bool;
+    /**
+     * @see Redis::zrange
+     */
+    public function zrange(string $key, mixed $start, mixed $end, array|bool|null $options = null): RedisCluster|array|bool;
+
+    /**
+     * @see Redis::zrangestore
+     */
+    public function zrangestore(string $dstkey, string $srckey, int $start, int $end,
+                                array|bool|null $options = null): RedisCluster|int|false;
 
     public function zrangebylex(string $key, string $min, string $max, int $offset = -1, int $count = -1): RedisCluster|array|false;
 

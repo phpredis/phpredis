@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: a27d28648f2d1a77237305083f36abc5e071f5b1 */
+ * Stub hash: 73bbd79b67c155a90acfa2b5ca1be49effdaf8ba */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -1000,9 +1000,9 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_zRange, 0, 3, Redis, MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, scores, IS_MIXED, 0, "null")
+	ZEND_ARG_TYPE_INFO(0, start, IS_MIXED, 0)
+	ZEND_ARG_TYPE_INFO(0, end, IS_MIXED, 0)
+	ZEND_ARG_TYPE_MASK(0, options, MAY_BE_ARRAY|MAY_BE_BOOL|MAY_BE_NULL, "null")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_zRangeByLex, 0, 3, Redis, MAY_BE_ARRAY|MAY_BE_FALSE)
@@ -1018,6 +1018,14 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_zRangeByScore, 0
 	ZEND_ARG_TYPE_INFO(0, start, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, end, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "[]")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_zrangestore, 0, 4, Redis, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, dstkey, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, srckey, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, start, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, end, IS_STRING, 0)
+	ZEND_ARG_TYPE_MASK(0, options, MAY_BE_ARRAY|MAY_BE_BOOL|MAY_BE_NULL, "NULL")
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_zRandMember arginfo_class_Redis_hRandField
@@ -1043,7 +1051,12 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_zRemRangeByScore arginfo_class_Redis_zCount
 
-#define arginfo_class_Redis_zRevRange arginfo_class_Redis_zRange
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_zRevRange, 0, 3, Redis, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, end, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, scores, IS_MIXED, 0, "null")
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_zRevRangeByLex arginfo_class_Redis_zRangeByLex
 
@@ -1314,6 +1327,7 @@ ZEND_METHOD(Redis, zPopMin);
 ZEND_METHOD(Redis, zRange);
 ZEND_METHOD(Redis, zRangeByLex);
 ZEND_METHOD(Redis, zRangeByScore);
+ZEND_METHOD(Redis, zrangestore);
 ZEND_METHOD(Redis, zRandMember);
 ZEND_METHOD(Redis, zRank);
 ZEND_METHOD(Redis, zRem);
@@ -1559,6 +1573,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, zRange, arginfo_class_Redis_zRange, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zRangeByLex, arginfo_class_Redis_zRangeByLex, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zRangeByScore, arginfo_class_Redis_zRangeByScore, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, zrangestore, arginfo_class_Redis_zrangestore, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zRandMember, arginfo_class_Redis_zRandMember, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zRank, arginfo_class_Redis_zRank, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, zRem, arginfo_class_Redis_zRem, ZEND_ACC_PUBLIC)
