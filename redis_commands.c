@@ -5817,52 +5817,72 @@ int redis_xclaim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 /* XGROUP HELP
- * XGROUP CREATE key groupname id [MKSTREAM]
- * XGROUP SETID key group id
- * XGROUP DESTROY key groupname
- * XGROUP DELCONSUMER key groupname consumername */
+ * XGROUP CREATE          key group id       [MKSTREAM] [ENTRIESREAD <n>]
+ * XGROUP SETID           key group id                  [ENTRIESREAD <n>]
+ * XGROUP CREATECONSUMER  key group consumer
+ * XGROUP DELCONSUMER     key group consumer
+ * XGROUP DESTROY         key group
+ */
 int redis_xgroup_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *op, *key = NULL, *arg1 = NULL, *arg2 = NULL;
-    size_t oplen, keylen, arg1len, arg2len;
+    zend_string *op = NULL, *key = NULL, *group = NULL, *id_or_consumer = NULL;
+    int nargs, is_create = 0, is_setid = 0;
+    zend_long entries_read = -2;
+    smart_string cmdstr = {0};
     zend_bool mkstream = 0;
-    int argc = ZEND_NUM_ARGS();
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|sssb", &op, &oplen,
-                              &key, &keylen, &arg1, &arg1len, &arg2, &arg2len,
-                              &mkstream) == FAILURE)
+    ZEND_PARSE_PARAMETERS_START(1, 6)
+        Z_PARAM_STR(op)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR(key)
+        Z_PARAM_STR(group)
+        Z_PARAM_STR(id_or_consumer)
+        Z_PARAM_BOOL(mkstream)
+        Z_PARAM_LONG(entries_read)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_string_equals_literal_ci(op, "HELP")) {
+        nargs = 0;
+    } else if ((is_create = zend_string_equals_literal_ci(op, "CREATE")) ||
+               (is_setid  = zend_string_equals_literal_ci(op, "SETID")) ||
+                            zend_string_equals_literal_ci(op, "CREATECONSUMER") ||
+                            zend_string_equals_literal_ci(op, "DELCONSUMER"))
     {
+        nargs = 3;
+    } else if (zend_string_equals_literal_ci(op, "DESTROY")) {
+        nargs = 2;
+    } else {
+        php_error_docref(NULL, E_WARNING, "Unknown XGROUP operation '%s'", ZSTR_VAL(op));
         return FAILURE;
     }
 
-    if (argc == 1 && oplen == 4 && !strncasecmp(op, "HELP", 4)) {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XGROUP", "s", "HELP", 4);
-        return SUCCESS;
-    } else if (argc >= 4 && (oplen == 6 && !strncasecmp(op, "CREATE", 6))) {
-        if (mkstream) {
-            *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XGROUP", "sksss", op, oplen, key, keylen,
-                                          arg1, arg1len, arg2, arg2len, "MKSTREAM",
-                                          sizeof("MKSTREAM") - 1);
-        } else {
-            *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XGROUP", "skss", op, oplen, key, keylen,
-                                          arg1, arg1len, arg2, arg2len);
-        }
-        return SUCCESS;
-    } else if (argc == 4 && ((oplen == 5 && !strncasecmp(op, "SETID", 5)) ||
-                             (oplen == 11 && !strncasecmp(op, "DELCONSUMER", 11))))
-    {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XGROUP", "skss", op, oplen, key, keylen,
-                                      arg1, arg1len, arg2, arg2len);
-        return SUCCESS;
-    } else if (argc == 3 && ((oplen == 7 && !strncasecmp(op, "DESTROY", 7)))) {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "XGROUP", "sks", op, oplen, key,
-                                      keylen, arg1, arg1len);
-        return SUCCESS;
+    if (ZEND_NUM_ARGS() < nargs) {
+        php_error_docref(NULL, E_WARNING, "Operation '%s' requires %d arguments", ZSTR_VAL(op), nargs);
+        return FAILURE;
     }
 
-    /* Didn't detect any valid XGROUP command pattern */
-    return FAILURE;
+    mkstream &= is_create;
+    if (!(is_create || is_setid))
+        entries_read = -2;
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + nargs + !!mkstream + (entries_read != -2 ? 2 : 0), "XGROUP");
+    redis_cmd_append_sstr_zstr(&cmdstr, op);
+
+    if (nargs-- > 0) redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    if (nargs-- > 0) redis_cmd_append_sstr_zstr(&cmdstr, group);
+    if (nargs-- > 0) redis_cmd_append_sstr_zstr(&cmdstr, id_or_consumer);
+
+    REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, !!mkstream, "MKSTREAM");
+    if (entries_read != -2) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "ENTRIESREAD");
+        redis_cmd_append_sstr_long(&cmdstr, entries_read);
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
 }
 
 /* XINFO CONSUMERS key group
