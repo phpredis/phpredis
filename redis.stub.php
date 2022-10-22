@@ -694,11 +694,67 @@ class Redis {
 
     public function zPopMin(string $key, int $value = null): Redis|array|false;
 
-    public function zRange(string $key, int $start, int $end, mixed $scores = null): Redis|array|false;
+    /**
+     * Retreive a range of elements of a sorted set between a start and end point.
+     * How the command works in particular is greatly affected by the options that
+     * are passed in.
+     *
+     * @see https://https://redis.io/commands/zrange/
+     * @category zset
+     *
+     * @param string          $key     The sorted set in question.
+     * @param mixed           $start   The starting index we want to return.
+     * @param mixed           $end     The final index we want to return.
+     *
+     * @param array|bool|null $options This value may either be an array of options to pass to
+     *                                 the command, or for historical purposes a boolean which
+     *                                 controls just the 'WITHSCORES' option.
+     *
+     * @return Redis|array|false  An array with matching elements or false on failure.
+     *
+     * Detailed description of options array:
+     *
+     * <code>
+     * <?php
+     * $options = [
+     *     'WITHSCORES' => true,     // Return both scores and members.
+     *     'LIMIT'      => [10, 10], // Start at offset 10 and return 10 elements.
+     *     'REV'                     // Return the elements in reverse order
+     *     'BYSCORE',                // Treat `start` and `end` as scores instead
+     *     'BYLEX'                   // Treat `start` and `end` as lexographical values.
+     * ];
+     * ?>
+     * </code>
+     *
+     * Note:  'BYLEX' and 'BYSCORE' are mutually exclusive.
+     *
+     */
+    public function zRange(string $key, mixed $start, mixed $end, array|bool|null $options = null): Redis|array|false;
 
     public function zRangeByLex(string $key, string $min, string $max, int $offset = -1, int $count = -1): Redis|array|false;
 
     public function zRangeByScore(string $key, string $start, string $end, array $options = []): Redis|array|false;
+
+    /**
+     * This command is similar to ZRANGE except that instead of returning the values directly
+     * it will store them in a destination key provided by the user
+     *
+     * @see https://https://redis.io/commands/zrange/
+     * @see Redis::zRange
+     * @category zset
+     *
+     * @param string           $dstkey  The key to store the resulting element(s)
+     * @param string           $srckey  The source key with element(s) to retreive
+     * @param string           $start   The starting index to store
+     * @param string           $end     The ending index to store
+     * @param array|bool|null  $options Our options array that controls how the command will function.
+     *
+     * @return Redis|int|false The number of elements stored in dstkey or false on failure.
+     *
+     * See Redis::zRange for a full description of the possible options.
+     */
+    public function zrangestore(string $dstkey, string $srckey, string $start, string $end,
+                                array|bool|null $options = NULL): Redis|int|false;
 
     public function zRandMember(string $key, array $options = null): Redis|string|array;
 

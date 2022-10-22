@@ -1906,77 +1906,38 @@ PHP_METHOD(Redis, zAdd) {
 }
 /* }}} */
 
-/* Handle ZRANGE and ZREVRANGE as they're the same except for keyword */
-static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
-                               zrange_cb fun)
-{
-    char *cmd;
-    int cmd_len;
-    RedisSock *redis_sock;
-    int withscores = 0;
-
-    if ((redis_sock = redis_sock_get(getThis(), 0)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    if(fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw, &cmd,
-           &cmd_len, &withscores, NULL, NULL) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    if(withscores) {
-        if (IS_ATOMIC(redis_sock)) {
-            redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-        }
-        REDIS_PROCESS_RESPONSE(redis_mbulk_reply_zipped_keys_dbl);
-    } else {
-        if (IS_ATOMIC(redis_sock)) {
-            if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                               redis_sock, NULL, NULL) < 0)
-            {
-                RETURN_FALSE;
-            }
-        }
-        REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
-    }
-}
-
 /* {{{ proto array Redis::zRandMember(string key, array options) */
-PHP_METHOD(Redis, zRandMember)
-{
+PHP_METHOD(Redis, zRandMember) {
     REDIS_PROCESS_CMD(zrandmember, redis_zrandmember_response);
 }
 /* }}} */
 
 /* {{{ proto array Redis::zRange(string key,int start,int end,bool scores = 0) */
-PHP_METHOD(Redis, zRange)
-{
-    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGE",
-        redis_zrange_cmd);
+PHP_METHOD(Redis, zRange) {
+    REDIS_PROCESS_KW_CMD("ZRANGE", redis_zrange_cmd, redis_zrange_response);
 }
 /* }}} */
 
+PHP_METHOD(Redis, zrangestore) {
+    REDIS_PROCESS_KW_CMD("ZRANGESTORE", redis_zrange_cmd, redis_long_response);
+}
+
 /* {{{ proto array Redis::zRevRange(string k, long s, long e, bool scores = 0) */
 PHP_METHOD(Redis, zRevRange) {
-    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGE",
-        redis_zrange_cmd);
+    REDIS_PROCESS_KW_CMD("ZREVRANGE", redis_zrange_cmd, redis_zrange_response);
 }
 /* }}} */
 
 /* {{{ proto array Redis::zRangeByScore(string k,string s,string e,array opt) */
 PHP_METHOD(Redis, zRangeByScore) {
-    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGEBYSCORE",
-        redis_zrangebyscore_cmd);
+    REDIS_PROCESS_KW_CMD("ZRANGEBYSCORE", redis_zrange_cmd, redis_zrange_response);
 }
 /* }}} */
 
 /* {{{ proto array Redis::zRevRangeByScore(string key, string start, string end,
  *                                         array options) */
 PHP_METHOD(Redis, zRevRangeByScore) {
-    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGEBYSCORE",
-        redis_zrangebyscore_cmd);
+    REDIS_PROCESS_KW_CMD("ZREVRANGEBYSCORE", redis_zrange_cmd, redis_zrange_response);
 }
 /* }}} */
 

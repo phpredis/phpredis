@@ -72,6 +72,26 @@ typedef struct redisRestoreOptions {
     zend_long freq;
 } redisRestoreOptions;
 
+#define REDIS_ZRANGE_HAS_DST_KEY      (1 << 0)
+#define REDIS_ZRANGE_HAS_WITHSCORES   (1 << 1)
+#define REDIS_ZRANGE_HAS_BY_LEX_SCORE (1 << 2)
+#define REDIS_ZRANGE_HAS_REV          (1 << 3)
+#define REDIS_ZRANGE_HAS_LIMIT        (1 << 4)
+#define REDIS_ZRANGE_INT_RANGE        (1 << 5)
+
+/* ZRANGE, ZRANGEBYSCORE, ZRANGESTORE options */
+typedef struct redisZrangeOptions {
+    zend_bool withscores;
+    zend_bool byscore;
+    zend_bool bylex;
+    zend_bool rev;
+    struct {
+        zend_bool enabled;
+        zend_long offset;
+        zend_long count;
+    } limit;
+} redisZrangeOptions;
+
 /* Local passthrough macro for command construction.  Given that these methods
  * are generic (so they work whether the caller is Redis or RedisCluster) we
  * will always have redis_sock, slot*, and */
@@ -612,118 +632,183 @@ int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     return cmdstr.len;
 }
 
-/* ZRANGE/ZREVRANGE */
-int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     char *kw, char **cmd, int *cmd_len, int *withscores,
-                     short *slot, void **ctx)
-{
-    char *key;
-    size_t key_len;
-    zend_long start, end;
-    zend_string *zkey;
-    zval *z_ws = NULL, *z_ele;
+void redis_get_zrange_options(redisZrangeOptions *dst, zval *src, int flags) {
+    zval *zv, *zoff, *zcnt;
+    zend_string *key;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sll|z!", &key, &key_len,
-                             &start, &end, &z_ws) == FAILURE)
-    {
-        return FAILURE;
+    ZEND_ASSERT(dst != NULL);
+
+    memset(dst, 0, sizeof(*dst));
+
+    if (src == NULL)
+        return;
+
+    if (Z_TYPE_P(src) != IS_ARRAY) {
+        if (Z_TYPE_P(src) == IS_TRUE && (flags & REDIS_ZRANGE_HAS_WITHSCORES))
+            dst->withscores = 1;
+        return;
     }
 
-    // Clear withscores arg
-    *withscores = 0;
+    ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(src), key, zv) {
+        ZVAL_DEREF(zv);
 
-    /* Accept ['withscores' => true], or the legacy `true` value */
-    if (z_ws) {
-        if (Z_TYPE_P(z_ws) == IS_ARRAY) {
-            ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_ws), zkey, z_ele) {
-                if (zkey != NULL) {
-                    ZVAL_DEREF(z_ele);
-                    if (zend_string_equals_literal_ci(zkey, "withscores")) {
-                        *withscores = zval_is_true(z_ele);
-                        break;
-                    }
+        if (key) {
+            if ((flags & REDIS_ZRANGE_HAS_WITHSCORES) && zend_string_equals_literal_ci(key, "WITHSCORES"))
+                dst->withscores = zval_is_true(zv);
+            else if ((flags & REDIS_ZRANGE_HAS_LIMIT) && zend_string_equals_literal_ci(key, "LIMIT") &&
+                     Z_TYPE_P(zv) == IS_ARRAY)
+            {
+                if ((zoff = zend_hash_index_find(Z_ARRVAL_P(zv), 0)) != NULL &&
+                    (zcnt = zend_hash_index_find(Z_ARRVAL_P(zv), 1)) != NULL)
+                {
+                    dst->limit.enabled = 1;
+                    dst->limit.offset = zval_get_long(zoff);
+                    dst->limit.count = zval_get_long(zcnt);
+                } else {
+                    php_error_docref(NULL, E_WARNING, "LIMIT offset and count must be an array with twe elements");
                 }
-            } ZEND_HASH_FOREACH_END();
-        } else if (Z_TYPE_P(z_ws) == IS_TRUE) {
-            *withscores = Z_TYPE_P(z_ws) == IS_TRUE;
+            }
+        } else if (Z_TYPE_P(zv) == IS_STRING) {
+            key = Z_STR_P(zv);
+
+            if ((flags & REDIS_ZRANGE_HAS_BY_LEX_SCORE) && zend_string_equals_literal_ci(key, "BYSCORE"))
+                dst->byscore = 1, dst->bylex = 0;
+            else if ((flags & REDIS_ZRANGE_HAS_BY_LEX_SCORE) && zend_string_equals_literal_ci(key, "BYLEX"))
+                dst->bylex = 1, dst->byscore = 0;
+            else if ((flags & REDIS_ZRANGE_HAS_REV) && zend_string_equals_literal_ci(key, "REV"))
+                dst->rev = 1;
+            else if ((flags & REDIS_ZRANGE_HAS_WITHSCORES && zend_string_equals_literal_ci(key, "WITHSCORES")))
+                dst->withscores = 1;
         }
-    }
-
-    if (*withscores) {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kdds", key, key_len, start, end,
-            "WITHSCORES", sizeof("WITHSCORES") - 1);
-    } else {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kdd", key, key_len, start, end);
-    }
-
-    return SUCCESS;
+    } ZEND_HASH_FOREACH_END();
 }
 
-int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                            char *kw, char **cmd, int *cmd_len, int *withscores,
-                            short *slot, void **ctx)
-{
-    char *key, *start, *end;
-    int has_limit = 0;
-    long offset, count;
-    size_t key_len, start_len, end_len;
-    zval *z_opt=NULL, *z_ele;
-    zend_string *zkey;
-    HashTable *ht_opt;
+// + ZRANGE               key start stop [BYSCORE | BYLEX] [REV] [LIMIT offset count] [WITHSCORES]
+// + ZRANGESTORE      dst src   min  max [BYSCORE | BYLEX] [REV] [LIMIT offset count]
+// + ZREVRANGE            key start stop                                              [WITHSCORES]
+// + ZRANGEBYSCORE        key   min  max                         [LIMIT offset count] [WITHSCORES]
+// + ZREVRANGEBYSCORE     key   max  min                         [LIMIT offset count] [WITHSCORES]
+// - ZRANGEBYLEX          key   min  max                         [LIMIT offset count]
+// - ZREVRANGEBYLEX       key   max  min                         [LIMIT offset count]
+static int redis_get_zrange_cmd_flags(const char *kw) {
+    size_t len = strlen(kw);
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sss|a", &key, &key_len,
-                             &start, &start_len, &end, &end_len, &z_opt)
-                             ==FAILURE)
+    if (REDIS_STRICMP_STATIC(kw, len, "ZRANGESTORE")) {
+        return REDIS_ZRANGE_HAS_DST_KEY |
+               REDIS_ZRANGE_HAS_WITHSCORES |
+               REDIS_ZRANGE_HAS_BY_LEX_SCORE |
+               REDIS_ZRANGE_HAS_REV |
+               REDIS_ZRANGE_HAS_LIMIT;
+    } else if (REDIS_STRICMP_STATIC(kw, len, "ZRANGE")) {
+        return REDIS_ZRANGE_HAS_WITHSCORES |
+               REDIS_ZRANGE_HAS_BY_LEX_SCORE |
+               REDIS_ZRANGE_HAS_REV |
+               REDIS_ZRANGE_HAS_LIMIT;
+    } else if (REDIS_STRICMP_STATIC(kw, len, "ZREVRANGE")) {
+        return REDIS_ZRANGE_HAS_WITHSCORES |
+               REDIS_ZRANGE_INT_RANGE;
+    } else if (REDIS_STRICMP_STATIC(kw, len, "ZRANGEBYSCORE") ||
+               REDIS_STRICMP_STATIC(kw, len, "ZREVRANGEBYSCORE"))
     {
+        return REDIS_ZRANGE_HAS_LIMIT |
+               REDIS_ZRANGE_HAS_WITHSCORES;
+    } else if (REDIS_STRICMP_STATIC(kw, len, "ZRANGEBYLEX") ||
+               REDIS_STRICMP_STATIC(kw, len, "ZREVRANGEBYLEX"))
+    {
+        return REDIS_ZRANGE_HAS_LIMIT;
+    }
+
+    /* Reaching this line means a compile-time error */
+    ZEND_ASSERT(0);
+}
+
+/* Validate ZLEX* min/max argument strings */
+#define validate_zlex_arg_zstr(zs_) validate_zlex_arg(ZSTR_VAL((zs_)), ZSTR_LEN((zs_)))
+static int validate_zlex_arg(const char *arg, size_t len) {
+    return (len  > 1 && (*arg == '[' || *arg == '(')) ||
+           (len == 1 && (*arg == '+' || *arg == '-'));
+}
+
+int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char *kw, char **cmd, int *cmd_len, short *slot,
+                     void **ctx)
+{
+    zend_string *dst = NULL, *src = NULL, *sstart = NULL, *send = NULL;
+    struct redisZrangeOptions opt;
+    zend_long start = 0, end = 0;
+    smart_string cmdstr = {0};
+    zval *zoptions = NULL;
+    int min_argc, flags;
+    short slot2;
+
+    flags = redis_get_zrange_cmd_flags(kw);
+
+    min_argc = 3 + (flags & REDIS_ZRANGE_HAS_DST_KEY);
+    ZEND_PARSE_PARAMETERS_START(min_argc, min_argc + 1)
+        if (flags & REDIS_ZRANGE_HAS_DST_KEY) {
+            Z_PARAM_STR(dst)
+        }
+        Z_PARAM_STR(src)
+        if (flags & REDIS_ZRANGE_INT_RANGE) {
+            Z_PARAM_LONG(start)
+            Z_PARAM_LONG(end)
+        } else {
+            Z_PARAM_STR(sstart)
+            Z_PARAM_STR(send)
+        }
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL_OR_NULL(zoptions)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    redis_get_zrange_options(&opt, zoptions, flags);
+
+    if (opt.bylex) {
+        ZEND_ASSERT(!(flags & REDIS_ZRANGE_INT_RANGE));
+        if (!validate_zlex_arg_zstr(sstart) || !validate_zlex_arg_zstr(send)) {
+            php_error_docref(NULL, E_WARNING, "Legographical args must start with '[' or '(' or be '+' or '-'");
+            return FAILURE;
+        }
+    }
+
+    redis_cmd_init_sstr(&cmdstr, min_argc + !!opt.bylex + !!opt.byscore +
+                                 !!opt.rev + !!opt.withscores +
+                                 (opt.limit.enabled ? 3 : 0), kw, strlen(kw));
+
+    if (flags & REDIS_ZRANGE_HAS_DST_KEY)
+        redis_cmd_append_sstr_key_zstr(&cmdstr, dst, redis_sock, slot);
+    redis_cmd_append_sstr_key_zstr(&cmdstr, src, redis_sock, &slot2);
+
+    /* Protect the user from crossslot errors */
+    if ((flags & REDIS_ZRANGE_HAS_DST_KEY) && slot && *slot != slot2) {
+        php_error_docref(NULL, E_WARNING, "destination and source keys must map to the same slot");
+        efree(cmdstr.c);
         return FAILURE;
     }
 
-    // Check for an options array
-    if (z_opt && Z_TYPE_P(z_opt) == IS_ARRAY) {
-        ht_opt = Z_ARRVAL_P(z_opt);
-        ZEND_HASH_FOREACH_STR_KEY_VAL(ht_opt, zkey, z_ele) {
-           /* All options require a string key type */
-           if (!zkey) continue;
-           ZVAL_DEREF(z_ele);
-           /* Check for withscores and limit */
-           if (zend_string_equals_literal_ci(zkey, "withscores")) {
-               *withscores = zval_is_true(z_ele);
-           } else if (zend_string_equals_literal_ci(zkey, "limit") && Z_TYPE_P(z_ele) == IS_ARRAY) {
-                HashTable *htlimit = Z_ARRVAL_P(z_ele);
-                zval *zoff, *zcnt;
-
-                /* We need two arguments (offset and count) */
-                if ((zoff = zend_hash_index_find(htlimit, 0)) != NULL &&
-                    (zcnt = zend_hash_index_find(htlimit, 1)) != NULL
-                ) {
-                    /* Set our limit if we can get valid longs from both args */
-                    offset = zval_get_long(zoff);
-                    count = zval_get_long(zcnt);
-                    has_limit = 1;
-                }
-           }
-        } ZEND_HASH_FOREACH_END();
-    }
-
-    // Construct our command
-    if (*withscores) {
-        if (has_limit) {
-            *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ksssdds", key, key_len,
-                start, start_len, end, end_len, "LIMIT", 5, offset, count,
-                "WITHSCORES", 10);
-        } else {
-            *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ksss", key, key_len, start,
-                start_len, end, end_len, "WITHSCORES", 10);
-        }
+    if (flags & REDIS_ZRANGE_INT_RANGE) {
+        redis_cmd_append_sstr_long(&cmdstr, start);
+        redis_cmd_append_sstr_long(&cmdstr, end);
     } else {
-        if (has_limit) {
-            *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ksssdd", key, key_len, start,
-                start_len, end, end_len, "LIMIT", 5, offset, count);
-        } else {
-            *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kss", key, key_len, start,
-                start_len, end, end_len);
-        }
+        redis_cmd_append_sstr_zstr(&cmdstr, sstart);
+        redis_cmd_append_sstr_zstr(&cmdstr, send);
     }
+
+    REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, opt.byscore, "BYSCORE");
+    REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, opt.bylex, "BYLEX");
+    REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, opt.rev, "REV");
+
+    if (opt.limit.enabled) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "LIMIT");
+        redis_cmd_append_sstr_long(&cmdstr, opt.limit.offset);
+        redis_cmd_append_sstr_long(&cmdstr, opt.limit.count);
+    }
+
+    REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, opt.withscores, "WITHSCORES");
+
+    if (slot) *slot = slot2;
+    *ctx = opt.withscores ? PHPREDIS_CTX_PTR : NULL;
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
 
     return SUCCESS;
 }
@@ -1414,14 +1499,9 @@ int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* min and max must start with '(' or '[', or be either '-' or '+' */
-    if (min_len < 1 || max_len < 1 ||
-       (min[0] != '(' && min[0] != '[' &&
-       (min[0] != '-' || min_len > 1) && (min[0] != '+' || min_len > 1)) ||
-       (max[0] != '(' && max[0] != '[' &&
-       (max[0] != '-' || max_len > 1) && (max[0] != '+' || max_len > 1)))
-    {
-        php_error_docref(0, E_WARNING,
-            "min and max arguments must start with '[' or '('");
+    if (!validate_zlex_arg(min, min_len) || !validate_zlex_arg(max, max_len)) {
+        php_error_docref(NULL, E_WARNING,
+            "Min/Max args can be '-' or '+', or start with '[' or '('");
         return FAILURE;
     }
 
@@ -1435,12 +1515,6 @@ int redis_zrangebylex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     return SUCCESS;
-}
-
-/* Validate ZLEX* min/max argument strings */
-static int validate_zlex_arg(const char *arg, size_t len) {
-    return (len  > 1 && (*arg == '[' || *arg == '(')) ||
-           (len == 1 && (*arg == '+' || *arg == '-'));
 }
 
 /* ZLEXCOUNT/ZREMRANGEBYLEX */

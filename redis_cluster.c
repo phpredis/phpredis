@@ -1429,61 +1429,31 @@ PHP_METHOD(RedisCluster, setrange) {
 }
 /* }}} */
 
-/* Generic implementation for ZRANGE, ZREVRANGE, ZRANGEBYSCORE, ZREVRANGEBYSCORE */
-static void generic_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw,
-                               zrange_cb fun)
-{
-    redisCluster *c = GET_CONTEXT();
-    c->readonly = CLUSTER_IS_ATOMIC(c);
-    cluster_cb cb;
-    char *cmd; int cmd_len; short slot;
-    int withscores = 0;
-
-    if (fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, kw, &cmd, &cmd_len,
-           &withscores, &slot, NULL) == FAILURE)
-    {
-        efree(cmd);
-        RETURN_FALSE;
-    }
-
-    if (cluster_send_command(c,slot,cmd,cmd_len) < 0 || c->err != NULL) {
-        efree(cmd);
-        RETURN_FALSE;
-    }
-
-    efree(cmd);
-
-    cb = withscores ? cluster_mbulk_zipdbl_resp : cluster_mbulk_resp;
-    if (CLUSTER_IS_ATOMIC(c)) {
-        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
-    } else {
-        void *ctx = NULL;
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
-        RETURN_ZVAL(getThis(), 1, 0);
-    }
-}
-
 /* {{{ proto
  *     array RedisCluster::zrange(string k, long s, long e, bool score = 0) */
 PHP_METHOD(RedisCluster, zrange) {
-    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGE",
-        redis_zrange_cmd);
+    CLUSTER_PROCESS_KW_CMD("ZRANGE", redis_zrange_cmd, cluster_zrange_resp, 1);
 }
 /* }}} */
 
 /* {{{ proto
+ *     array RedisCluster::zrange(string $dstkey, string $srckey, long s, long e, array|bool $options = false) */
+PHP_METHOD(RedisCluster, zrangestore) {
+    CLUSTER_PROCESS_KW_CMD("ZRANGESTORE", redis_zrange_cmd, cluster_long_resp, 0);
+}
+
+/* }}} */
+/* {{{ proto
  *     array RedisCluster::zrevrange(string k,long s,long e,bool scores = 0) */
 PHP_METHOD(RedisCluster, zrevrange) {
-    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGE",
-        redis_zrange_cmd);
+    CLUSTER_PROCESS_KW_CMD("ZREVRANGE", redis_zrange_cmd, cluster_zrange_resp, 1);
 }
 /* }}} */
 
 /* {{{ proto array
  *     RedisCluster::zrangebyscore(string k, long s, long e, array opts) */
 PHP_METHOD(RedisCluster, zrangebyscore) {
-    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZRANGEBYSCORE",
-        redis_zrangebyscore_cmd);
+    CLUSTER_PROCESS_KW_CMD("ZRANGEBYSCORE", redis_zrange_cmd, cluster_zrange_resp, 1);
 }
 /* }}} */
 
@@ -1516,8 +1486,7 @@ PHP_METHOD(RedisCluster, zrem) {
 /* {{{ proto array
  *     RedisCluster::zrevrangebyscore(string k, long s, long e, array opts) */
 PHP_METHOD(RedisCluster, zrevrangebyscore) {
-    generic_zrange_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, "ZREVRANGEBYSCORE",
-        redis_zrangebyscore_cmd);
+    CLUSTER_PROCESS_KW_CMD("ZREVRANGEBYSCORE", redis_zrange_cmd, cluster_zrange_resp, 1);
 }
 /* }}} */
 
