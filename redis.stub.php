@@ -566,34 +566,75 @@ class Redis {
     public function slaveof(string $host = null, int $port = 6379): bool;
 
     /**
-      Interact with Redis' slowlog functionality in variousu ways, depending
-      on the value of 'operations'.
-
-      @param string $operation  The operation you wish to perform.  This can
-                                be one of the following values:
-                                'get'   - Retreive the Redis slowlog as an array.
-                                'len'   - Retreive the length of the slowlog.
-                                'reset' - Remove all slowlog entries.
-      <code>
-      <?php
-      $redis->slowllog('get', -1);  // Retreive all slowlog entries.
-      $redis->slowlog('len');       // Retreive slowlog length.
-      $redis->slowlog('reset');     // Reset the slowlog.
-      ?>
-      </code>
-
-      @param int    $length     This optional argument can be passed when operation
-                                is 'get' and will specify how many elements to retreive.
-                                If omitted Redis will send up to a default number of
-                                entries, which is configurable.
-
-                                Note:  With Redis >= 7.0.0 you can send -1 to mean "all".
-
-      @return mixed
+     * Interact with Redis' slowlog functionality in variousu ways, depending
+     * on the value of 'operations'.
+     *
+     * @see https://https://redis.io/commands/slowlog/
+     * @category administration
+     *
+     * @param string $operation  The operation you wish to perform.  This can
+     *                           be one of the following values:
+     *                           'get'   - Retreive the Redis slowlog as an array.
+     *                           'len'   - Retreive the length of the slowlog.
+     *                           'reset' - Remove all slowlog entries.
+     * <code>
+     * <?php
+     * $redis->slowllog('get', -1);  // Retreive all slowlog entries.
+     * $redis->slowlog('len');       // Retreive slowlog length.
+     * $redis->slowlog('reset');     // Reset the slowlog.
+     * ?>
+     * </code>
+     *
+     * @param int    $length     This optional argument can be passed when operation
+     *                           is 'get' and will specify how many elements to retreive.
+     *                           If omitted Redis will send up to a default number of
+     *                           entries, which is configurable.
+     *
+     *                           Note:  With Redis >= 7.0.0 you can send -1 to mean "all".
+     *
+     * @return mixed
      */
     public function slowlog(string $operation, int $length = 0): mixed;
 
+    /**
+     * Sort the contents of a Redis key in various ways.
+     *
+     * @see https://https://redis.io/commands/sort/
+     *
+     * @param string $key     The key you wish to sort
+     * @param array  $options Various options controlling how you would like the
+     *                        data sorted.  See blow for a detailed description
+     *                        of this options array.
+     *
+     * @return mixed This command can either return an array with the sorted data
+     *               or the number of elements placed in a destination set when
+     *               using the STORE option.
+     *
+     * <code>
+     * <?php
+     * $options = [
+     *     'SORT'  => 'ASC'|| 'DESC' // Sort in descending or descending order.
+     *     'ALPHA' => true || false  // Whether to sort alphanumerically.
+     *     'LIMIT' => [0, 10]        // Return a subset of the data at offset, count
+     *     'BY'    => 'weight_*'     // For each element in the key, read data from the
+     *                                  external key weight_* and sort based on that value.
+     *     'GET'   => 'weight_*'     // For each element in the source key, retreive the
+     *                                  data from key weight_* and return that in the result
+     *                                  rather than the source keys' element.  This can
+     *                                  be used in combination with 'BY'
+     * ];
+     * ?>
+     * </code>
+     *
+     */
     public function sort(string $key, ?array $options = null): mixed;
+
+    /**
+     * This is simply a read-only variant of the sort command
+     *
+     * @see Redis::sort()
+     */
+    public function sort_ro(string $key, ?array $options = null): mixed;
 
     /**
      * @deprecated

@@ -1555,28 +1555,12 @@ PHP_METHOD(RedisCluster, bzpopmin) {
 
 /* {{{ proto RedisCluster::sort(string key, array options) */
 PHP_METHOD(RedisCluster, sort) {
-    redisCluster *c = GET_CONTEXT();
-    char *cmd; int cmd_len, have_store; short slot;
+    CLUSTER_PROCESS_KW_CMD("SORT", redis_sort_cmd, cluster_variant_resp, 0);
+}
 
-    if (redis_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &have_store,
-                      &cmd, &cmd_len, &slot, NULL) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-    if (cluster_send_command(c,slot,cmd,cmd_len) < 0 || c->err != NULL) {
-        efree(cmd);
-        RETURN_FALSE;
-    }
-
-    efree(cmd);
-
-    // Response type differs based on presence of STORE argument
-    if (!have_store) {
-        cluster_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
-    } else {
-        cluster_long_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
-    }
+/* {{{ proto RedisCluster::sort_ro(string key, array options) */
+PHP_METHOD(RedisCluster, sort_ro) {
+    CLUSTER_PROCESS_KW_CMD("SORT_RO", redis_sort_cmd, cluster_variant_resp, 1);
 }
 
 /* {{{ proto RedisCluster::object(string subcmd, string key) */
