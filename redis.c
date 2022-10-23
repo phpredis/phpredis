@@ -1481,27 +1481,12 @@ PHP_METHOD(Redis, sDiffStore) {
 
 /* {{{ proto array Redis::sort(string key, array options) */
 PHP_METHOD(Redis, sort) {
-    char *cmd;
-    int cmd_len, have_store;
-    RedisSock *redis_sock;
+    REDIS_PROCESS_KW_CMD("SORT", redis_sort_cmd, redis_read_variant_reply);
+}
 
-    // Grab socket, handle command construction
-    if ((redis_sock = redis_sock_get(getThis(), 0)) == NULL ||
-       redis_sort_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &have_store,
-                      &cmd, &cmd_len, NULL, NULL) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    if (IS_ATOMIC(redis_sock)) {
-        if (redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                     redis_sock, NULL, NULL) < 0)
-        {
-            RETURN_FALSE;
-        }
-    }
-    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+/* {{{ proto array Redis::sort(string key, array options) */
+PHP_METHOD(Redis, sort_ro) {
+    REDIS_PROCESS_KW_CMD("SORT_RO", redis_sort_cmd, redis_read_variant_reply);
 }
 
 static void

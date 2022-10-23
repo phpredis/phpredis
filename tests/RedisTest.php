@@ -1364,41 +1364,46 @@ class Redis_Test extends TestSuite
 
     public function testSortDesc() {
 
-    $this->setupSort();
+        $this->setupSort();
 
-    // sort by age and get IDs
-    $byAgeDesc = ['4','2','1','3'];
-    $this->assertEquals($byAgeDesc, $this->redis->sort('person:id', ['by' => 'person:age_*', 'sort' => 'desc']));
+        // sort by age and get IDs
+        $byAgeDesc = ['4','2','1','3'];
+        $this->assertEquals($byAgeDesc, $this->redis->sort('person:id', ['by' => 'person:age_*', 'sort' => 'desc']));
 
-    // sort by age and get names
-    $byAgeDesc = ['Dave', 'Bob', 'Alice', 'Carol'];
-    $this->assertEquals($byAgeDesc, $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'sort' => 'desc']));
+        // sort by age and get names
+        $byAgeDesc = ['Dave', 'Bob', 'Alice', 'Carol'];
+        $this->assertEquals($byAgeDesc, $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'sort' => 'desc']));
 
-    $this->assertEquals(array_slice($byAgeDesc, 0, 2), $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => [0, 2], 'sort' => 'desc']));
-    $this->assertEquals(array_slice($byAgeDesc, 1, 2), $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => [1, 2], 'sort' => 'desc']));
+        $this->assertEquals(array_slice($byAgeDesc, 0, 2), $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => [0, 2], 'sort' => 'desc']));
+        $this->assertEquals(array_slice($byAgeDesc, 1, 2), $this->redis->sort('person:id', ['by' => 'person:age_*', 'get' => 'person:name_*', 'limit' => [1, 2], 'sort' => 'desc']));
 
-    // sort by salary and get ages
-    $agesBySalaryDesc = ['41', '25', '27', '34'];
-    $this->assertEquals($agesBySalaryDesc, $this->redis->sort('person:id', ['by' => 'person:salary_*', 'get' => 'person:age_*', 'sort' => 'desc']));
+        // sort by salary and get ages
+        $agesBySalaryDesc = ['41', '25', '27', '34'];
+        $this->assertEquals($agesBySalaryDesc, $this->redis->sort('person:id', ['by' => 'person:salary_*', 'get' => 'person:age_*', 'sort' => 'desc']));
 
-    // sort non-alpha doesn't change all-string lists
-    $list = ['def', 'abc', 'ghi'];
-    $this->redis->del('list');
-    foreach($list as $i) {
-        $this->redis->lPush('list', $i);
+        // sort non-alpha doesn't change all-string lists
+        $list = ['def', 'abc', 'ghi'];
+        $this->redis->del('list');
+        foreach($list as $i) {
+            $this->redis->lPush('list', $i);
+        }
+
+        // SORT list ALPHA → [abc, def, ghi]
+        $this->assertEquals(['ghi', 'def', 'abc'], $this->redis->sort('list', ['sort' => 'desc', 'alpha' => TRUE]));
     }
 
-    // SORT list → [ghi, abc, def]
-    if (version_compare($this->version, "2.5.0") < 0) {
-        $this->assertEquals(array_reverse($list), $this->redis->sort('list', ['sort' => 'desc']));
-    } else {
-        // TODO rewrite, from 2.6.0 release notes:
-        // SORT now will refuse to sort in numerical mode elements that can't be parsed
-        // as numbers
-    }
+    /* This test is just to make sure SORT and SORT_RO are both callable */
+    public function testSortHandler() {
+        $this->redis->del('list');
 
-    // SORT list ALPHA → [abc, def, ghi]
-    $this->assertEquals(['ghi', 'def', 'abc'], $this->redis->sort('list', ['sort' => 'desc', 'alpha' => TRUE]));
+        $this->redis->rpush('list', 'c', 'b', 'a');
+
+        $methods = ['sort'];
+        if ($this->minVersionCheck('7.0.0')) $methods[] = 'sort_ro';
+
+        foreach ($methods as $method) {
+            $this->assertEquals(['a', 'b', 'c'], $this->redis->$method('list', ['sort' => 'asc', 'alpha' => true]));
+        }
     }
 
     // LINDEX

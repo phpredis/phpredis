@@ -336,7 +336,15 @@ class RedisCluster {
 
     public function smove(string $src, string $dst, string $member): RedisCluster|bool;
 
+    /**
+     * @see Redis::sort()
+     */
     public function sort(string $key, ?array $options = NULL): RedisCluster|array|bool|int|string;
+
+    /**
+     * @see Redis::sort_ro()
+     */
+    public function sort_ro(string $key, ?array $options = NULL): RedisCluster|array|bool|int|string;
 
     public function spop(string $key, int $count = 0): RedisCluster|string|array|false;
 

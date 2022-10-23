@@ -3535,8 +3535,7 @@ int redis_zincrby_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* SORT */
 int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                   int *using_store, char **cmd, int *cmd_len, short *slot,
-                   void **ctx)
+                   char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     zval *z_opts=NULL, *z_ele, z_argv;
     char *key;
@@ -3551,16 +3550,10 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    // Default that we're not using store
-    *using_store = 0;
-
     // If we don't have an options array, the command is quite simple
     if (!z_opts || zend_hash_num_elements(Z_ARRVAL_P(z_opts)) == 0) {
         // Construct command
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SORT", "k", key, key_len);
-
-        /* Not storing */
-        *using_store = 0;
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "k", key, key_len);
 
         return SUCCESS;
     }
@@ -3627,7 +3620,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         add_next_index_stringl(&z_argv, Z_STRVAL_P(z_ele), Z_STRLEN_P(z_ele));
 
         // We are using STORE
-        *using_store = 1;
+        *ctx = PHPREDIS_CTX_PTR;
     }
 
     // GET option
@@ -3725,8 +3718,7 @@ int redis_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Start constructing our command
     HashTable *ht_argv = Z_ARRVAL_P(&z_argv);
-    redis_cmd_init_sstr(&cmdstr, zend_hash_num_elements(ht_argv), "SORT",
-        sizeof("SORT")-1);
+    redis_cmd_init_sstr(&cmdstr, zend_hash_num_elements(ht_argv), kw, strlen(kw));
 
     // Iterate through our arguments
     ZEND_HASH_FOREACH_VAL(ht_argv, z_ele) {
