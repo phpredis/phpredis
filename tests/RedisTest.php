@@ -4838,6 +4838,27 @@ class Redis_Test extends TestSuite
             $this->redis->setOption(Redis::OPT_PREFIX, "test:");
             $this->checkSerializer(Redis::SERIALIZER_IGBINARY);
             $this->redis->setOption(Redis::OPT_PREFIX, "");
+
+            /* Test our igbinary header check logic.  The check allows us to do
+               simple INCR type operations even with the serializer enabled, and
+               should also protect against igbinary-like data from being erroneously
+               deserialized */
+            $this->redis->del('incrkey');
+
+            $this->redis->set('spoof-1', "\x00\x00\x00\x00");
+            $this->redis->set('spoof-2', "\x00\x00\x00\x00bad-version1");
+            $this->redis->set('spoof-3', "\x00\x00\x00\x05bad-version2");
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_IGBINARY);
+
+            $this->assertEquals(16, $this->redis->incrby('incrkey', 16));
+            $this->assertEquals('16', $this->redis->get('incrkey'));
+
+            $this->assertEquals("\x00\x00\x00\x00", $this->redis->get('spoof-1'));
+            $this->assertEquals("\x00\x00\x00\x00bad-version1", $this->redis->get('spoof-2'));
+            $this->assertEquals("\x00\x00\x00\x05bad-version2", $this->redis->get('spoof-3'));
+            $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+
+            $this->redis->del('incrkey', 'spoof-1', 'spoof-2', 'spoof-3');
         }
     }
 

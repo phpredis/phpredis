@@ -3565,15 +3565,14 @@ redis_unserialize(RedisSock* redis_sock, const char *val, int val_len,
              * | header (4) | type (1) | ... (n) |  NUL (1) |
              * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
              *
-             * With header being either 0x00000001 or 0x00000002
-             * (encoded as big endian).
+             * With header being three zero bytes and one non-zero version
+             * specifier.  At the time of this comment, there is only version
+             * 0x01 and 0x02, but newer versions will use subsequent
+             * values.
              *
-             * Not all versions contain the trailing NULL byte though, so
-             * do not check for that.
+             * Not all versions contain a trailing \x00 so don't check for that.
              */
-            if (val_len < 5
-                    || (memcmp(val, "\x00\x00\x00\x01", 4) != 0
-                    && memcmp(val, "\x00\x00\x00\x02", 4) != 0))
+            if (val_len < 5 || memcmp(val, "\x00\x00\x00", 3) || val[3] < '\x01' || val[3] > '\x04')
             {
                 /* This is most definitely not an igbinary string, so do
                    not try to unserialize this as one. */
