@@ -1710,6 +1710,11 @@ PHP_METHOD(RedisCluster, clearlasterror) {
 
     RETURN_TRUE;
 }
+
+PHP_METHOD(RedisCluster, gettransferredbytes) {
+    redisCluster *c = GET_CONTEXT();
+    RETURN_LONG(c->flags->txBytes);
+}
 /* }}} */
 
 /* {{{ proto long RedisCluster::getOption(long option */
@@ -1828,6 +1833,8 @@ PHP_METHOD(RedisCluster, multi) {
 
     /* Flag that we're in MULTI mode */
     c->flags->mode = MULTI;
+
+    c->flags->txBytes = 0;
 
     /* Return our object so we can chain MULTI calls */
     RETVAL_ZVAL(getThis(), 1, 0);

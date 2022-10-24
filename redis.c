@@ -3131,6 +3131,15 @@ PHP_METHOD(Redis, getDBNum) {
     }
 }
 
+PHP_METHOD(Redis, getTransferredBytes) {
+    RedisSock *redis_sock;
+
+    if ((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU)) == NULL) {
+        RETURN_FALSE;
+    }
+    RETURN_LONG(redis_sock->txBytes);
+}
+
 /* {{{ proto Redis::getTimeout */
 PHP_METHOD(Redis, getTimeout) {
     RedisSock *redis_sock;
