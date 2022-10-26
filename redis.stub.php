@@ -158,23 +158,41 @@ class Redis {
 
     public function bgrewriteaof(): Redis|bool;
 
-
+    /**
+     * Count the number of set bits in a Redis string.
+     *
+     * @see https://https://redis.io/commands/bitcount/
+     *
+     * @param string $key     The key in question (must be a string key)
+     * @param int    $start   The index where Redis should start counting.  If ommitted it
+     *                        defaults to zero, which means the start of the string.
+     * @param int    $end     The index where Redis should stop counting.  If ommitted it
+     *                        defaults to -1, meaning the very end of the string.
+     *
+     * @param bool   $bybit   Whether or not Redis should treat $start and $end as bit
+     *                        positions, rather than bytes.
+     *
+     * @return Redis|int|false The number of bits set in the requested range.
+     *
+     */
     public function bitcount(string $key, int $start = 0, int $end = -1, bool $bybit = false): Redis|int|false;
 
     public function bitop(string $operation, string $deskey, string $srckey, string ...$other_keys): Redis|int|false;
 
     /**
-      Return the position of the first bit set to 0 or 1 in a string.
-
-      @see https://https://redis.io/commands/bitpos/
-
-      @param string $key   The key to check (must be a string)
-      @param bool   $bit   Whether to look for an unset (0) or set (1) bit.
-      @param int    $start Where in the string to start looking.
-      @param int    $end   Where in the string to stop looking.
-      @param bool   $bybit If true, Redis will treat $start and $end as BIT values and not bytes, so if start
-                           was 0 and end was 2, Redis would only search the first two bits.
-     */
+     * Return the position of the first bit set to 0 or 1 in a string.
+     *
+     * @see https://https://redis.io/commands/bitpos/
+     *
+     * @param string $key   The key to check (must be a string)
+     * @param bool   $bit   Whether to look for an unset (0) or set (1) bit.
+     * @param int    $start Where in the string to start looking.
+     * @param int    $end   Where in the string to stop looking.
+     * @param bool   $bybit If true, Redis will treat $start and $end as BIT values and not bytes, so if start
+     *                      was 0 and end was 2, Redis would only search the first two bits.
+     *
+     * @return Redis|int|false The position of the first set or unset bit.
+     **/
     public function bitpos(string $key, bool $bit, int $start = 0, int $end = -1, bool $bybit = false): Redis|int|false;
 
     public function blPop(string|array $key, string|float|int $timeout_or_key, mixed ...$extra_args): Redis|array|null|false;
