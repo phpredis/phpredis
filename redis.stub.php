@@ -8,6 +8,64 @@
 
 class Redis {
 
+    /**
+     * Create a new Redis instance.  If passed sufficient information in the
+     * options array it is also possible to connect to an instance at the same
+     * time.
+     *
+     * @see Redis::connect()
+     * @see https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
+     *
+     * Following is an example of an options array with the supported
+     * configuration values. Note that all of these values are optional, and you
+     * can instead connect to Redis via PhpRedis' connect() method.
+     *
+     * <code>
+     * <?php
+     * $options = [
+     *     'host'           => 'localhost',
+     *     'port'           => 6379,
+     *     'readTimeout'    => 2.5,
+     *     'connectTimeout' => 2.5,
+     *     'persistent'     => true,
+     *
+     *     // Valid formats: NULL, ['user', 'pass'], 'pass', or ['pass']
+     *     'auth' => ['phpredis', 'phpredis'],
+     *
+     *     // See PHP stream options for valid SSL configuration settings.
+     *     'ssl' => ['verify_peer' => false],
+     *
+     *     // How quickly to retry a connection after we time out or it  closes.
+     *     // Note that this setting is overridden by 'backoff' strategies.
+     *     'retryInterval'  => 100,
+     *
+     *      // Which backoff algorithm to use.  'decorrelated jitter' is
+     *      // likely the best one for most solutiona, but there are many
+     *      // to choose from:
+     *      //     REDIS_BACKOFF_ALGORITHM_DEFAULT
+     *      //     REDIS_BACKOFF_ALGORITHM_CONSTANT
+     *      //     REDIS_BACKOFF_ALGORITHM_UNIFORM
+     *      //     REDIS_BACKOFF_ALGORITHM_EXPONENTIAL
+     *      //     REDIS_BACKOFF_ALGORITHM_FULL_JITTER
+     *      //     REDIS_BACKOFF_ALGORITHM_EQUAL_JITTER
+     *      //     REDIS_BACKOFF_ALGORITHM_DECORRELATED_JITTER
+     *      //
+     *      // 'base', and 'cap' are in milliseconds and represent the first
+     *      // delay redis will use when reconnecting, and the maximum delay
+     *      // we will reach while retrying.
+     *     'backoff' => [
+     *         'algorithm' => Redis::BACKOFF_ALGORITHM_DECORRELATED_JITTER,
+     *         'base'      => 500,
+     *         'cap'       => 750,
+     *     ]
+     * ];
+     * ?>
+     * </code>
+     *
+     * Note: If you do wish to connect via the constructor, only 'host' is
+     *       strictly required, which will cause PhpRedis to connect to that
+     *       host on Redis' default port (6379).
+     */
     public function __construct(array $options = null);
 
     public function __destruct();
