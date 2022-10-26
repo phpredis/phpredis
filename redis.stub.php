@@ -70,19 +70,83 @@ class Redis {
 
     public function __destruct();
 
+    /**
+     * Compress a value with the currently configured compressor as set with
+     * Redis::setOption().
+     *
+     * @see Redis::setOption()
+     *
+     * @param  string $value The value to be compressed
+     * @return string        The compressed result
+     *
+     */
     public function _compress(string $value): string;
 
-    public function _pack(mixed $value): string;
-
-    public function _prefix(string $key): string;
-
-    public function _serialize(mixed $value): string;
-
+    /**
+     * Uncompress the provided argument that has been compressed with the
+     * currently configured compressor as set with Redis::setOption().
+     *
+     * @see Redis::setOption()
+     *
+     * @param  string $value  The compressed value to uncompress.
+     * @return string         The uncompressed result.
+     *
+     */
     public function _uncompress(string $value): string;
 
-    public function _unpack(string $value): mixed;
+    /**
+     * Prefix the passed argument with the currently set key prefix as set
+     * with Redis::setOption().
+     *
+     * @param string  $key The key/string to prefix
+     * @return string      The prefixed string
+     *
+     */
+    public function _prefix(string $key): string;
 
+    /**
+     * Serialize the provided value with the currently set serializer as set
+     * with Redis::setOption().
+     *
+     * @see Redis::setOption()
+     *
+     * @param mixed $value The value to serialize
+     * @return string      The serialized result
+     *
+     */
+    public function _serialize(mixed $value): string;
+
+    /**
+     * Unserialize the passed argument with the currently set serializer as set
+     * with Redis::setOption().
+     *
+     * @see Redis::setOption()
+     *
+     * @param string $value The value to unserialize
+     * @return mixed        The unserialized result
+     *
+     */
     public function _unserialize(string $value): mixed;
+
+    /**
+     * Pack the provided value with the configured serializer and compressor
+     * as set with Redis::setOption().
+     *
+     * @param  mixed $value  The value to pack
+     * @return string        The packed result having been serialized and
+     *                       compressed.
+     */
+    public function _pack(mixed $value): string;
+
+    /**
+     * Unpack the provided value with the configured compressor and serializer
+     * as set with Redis::setOption().
+     *
+     * @param  string $value  The value which has been serialized and compressed.
+     * @return mixed          The uncompressed and deserialized value.
+     *
+     */
+    public function _unpack(string $value): mixed;
 
     public function acl(string $subcmd, string ...$args): mixed;
 

@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 895f61badfcc6198d72788d80d517144fc1e8daf */
+ * Stub hash: aed47186facc916ab9732d986c0fde1b86e2dede */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -15,24 +15,24 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster__compress, 0, 0, 1)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster__masters, 0, 0, 0)
-ZEND_END_ARG_INFO()
+#define arginfo_class_RedisCluster__uncompress arginfo_class_RedisCluster__compress
+
+#define arginfo_class_RedisCluster__serialize arginfo_class_RedisCluster__compress
+
+#define arginfo_class_RedisCluster__unserialize arginfo_class_RedisCluster__compress
 
 #define arginfo_class_RedisCluster__pack arginfo_class_RedisCluster__compress
+
+#define arginfo_class_RedisCluster__unpack arginfo_class_RedisCluster__compress
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster__prefix, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster__masters, 0, 0, 0)
+ZEND_END_ARG_INFO()
+
 #define arginfo_class_RedisCluster__redir arginfo_class_RedisCluster__masters
-
-#define arginfo_class_RedisCluster__serialize arginfo_class_RedisCluster__compress
-
-#define arginfo_class_RedisCluster__uncompress arginfo_class_RedisCluster__compress
-
-#define arginfo_class_RedisCluster__unpack arginfo_class_RedisCluster__compress
-
-#define arginfo_class_RedisCluster__unserialize arginfo_class_RedisCluster__compress
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_acl, 0, 0, 2)
 	ZEND_ARG_INFO(0, key_or_address)
@@ -802,14 +802,14 @@ ZEND_END_ARG_INFO()
 
 ZEND_METHOD(RedisCluster, __construct);
 ZEND_METHOD(RedisCluster, _compress);
-ZEND_METHOD(RedisCluster, _masters);
-ZEND_METHOD(RedisCluster, _pack);
-ZEND_METHOD(RedisCluster, _prefix);
-ZEND_METHOD(RedisCluster, _redir);
-ZEND_METHOD(RedisCluster, _serialize);
 ZEND_METHOD(RedisCluster, _uncompress);
-ZEND_METHOD(RedisCluster, _unpack);
+ZEND_METHOD(RedisCluster, _serialize);
 ZEND_METHOD(RedisCluster, _unserialize);
+ZEND_METHOD(RedisCluster, _pack);
+ZEND_METHOD(RedisCluster, _unpack);
+ZEND_METHOD(RedisCluster, _prefix);
+ZEND_METHOD(RedisCluster, _masters);
+ZEND_METHOD(RedisCluster, _redir);
 ZEND_METHOD(RedisCluster, acl);
 ZEND_METHOD(RedisCluster, append);
 ZEND_METHOD(RedisCluster, bgrewriteaof);
@@ -1011,14 +1011,14 @@ ZEND_METHOD(RedisCluster, zunionstore);
 static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, __construct, arginfo_class_RedisCluster___construct, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _compress, arginfo_class_RedisCluster__compress, ZEND_ACC_PUBLIC)
-	ZEND_ME(RedisCluster, _masters, arginfo_class_RedisCluster__masters, ZEND_ACC_PUBLIC)
-	ZEND_ME(RedisCluster, _pack, arginfo_class_RedisCluster__pack, ZEND_ACC_PUBLIC)
-	ZEND_ME(RedisCluster, _prefix, arginfo_class_RedisCluster__prefix, ZEND_ACC_PUBLIC)
-	ZEND_ME(RedisCluster, _redir, arginfo_class_RedisCluster__redir, ZEND_ACC_PUBLIC)
-	ZEND_ME(RedisCluster, _serialize, arginfo_class_RedisCluster__serialize, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _uncompress, arginfo_class_RedisCluster__uncompress, ZEND_ACC_PUBLIC)
-	ZEND_ME(RedisCluster, _unpack, arginfo_class_RedisCluster__unpack, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, _serialize, arginfo_class_RedisCluster__serialize, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, _unserialize, arginfo_class_RedisCluster__unserialize, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, _pack, arginfo_class_RedisCluster__pack, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, _unpack, arginfo_class_RedisCluster__unpack, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, _prefix, arginfo_class_RedisCluster__prefix, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, _masters, arginfo_class_RedisCluster__masters, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, _redir, arginfo_class_RedisCluster__redir, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, acl, arginfo_class_RedisCluster_acl, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, append, arginfo_class_RedisCluster_append, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, bgrewriteaof, arginfo_class_RedisCluster_bgrewriteaof, ZEND_ACC_PUBLIC)

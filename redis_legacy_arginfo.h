@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 758f508fa69bda30d2af32ce83d19b5645f16263 */
+ * Stub hash: 4e21096b9ab449cbf12dd9c8a85a875786a9836a */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -12,7 +12,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis__compress, 0, 0, 1)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis__pack arginfo_class_Redis__compress
+#define arginfo_class_Redis__uncompress arginfo_class_Redis__compress
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis__prefix, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
@@ -20,11 +20,11 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis__serialize arginfo_class_Redis__compress
 
-#define arginfo_class_Redis__uncompress arginfo_class_Redis__compress
+#define arginfo_class_Redis__unserialize arginfo_class_Redis__compress
+
+#define arginfo_class_Redis__pack arginfo_class_Redis__compress
 
 #define arginfo_class_Redis__unpack arginfo_class_Redis__compress
-
-#define arginfo_class_Redis__unserialize arginfo_class_Redis__compress
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_acl, 0, 0, 1)
 	ZEND_ARG_INFO(0, subcmd)
@@ -952,12 +952,12 @@ ZEND_END_ARG_INFO()
 ZEND_METHOD(Redis, __construct);
 ZEND_METHOD(Redis, __destruct);
 ZEND_METHOD(Redis, _compress);
-ZEND_METHOD(Redis, _pack);
+ZEND_METHOD(Redis, _uncompress);
 ZEND_METHOD(Redis, _prefix);
 ZEND_METHOD(Redis, _serialize);
-ZEND_METHOD(Redis, _uncompress);
-ZEND_METHOD(Redis, _unpack);
 ZEND_METHOD(Redis, _unserialize);
+ZEND_METHOD(Redis, _pack);
+ZEND_METHOD(Redis, _unpack);
 ZEND_METHOD(Redis, acl);
 ZEND_METHOD(Redis, append);
 ZEND_METHOD(Redis, auth);
@@ -1198,12 +1198,12 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, __construct, arginfo_class_Redis___construct, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, __destruct, arginfo_class_Redis___destruct, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, _compress, arginfo_class_Redis__compress, ZEND_ACC_PUBLIC)
-	ZEND_ME(Redis, _pack, arginfo_class_Redis__pack, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, _uncompress, arginfo_class_Redis__uncompress, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, _prefix, arginfo_class_Redis__prefix, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, _serialize, arginfo_class_Redis__serialize, ZEND_ACC_PUBLIC)
-	ZEND_ME(Redis, _uncompress, arginfo_class_Redis__uncompress, ZEND_ACC_PUBLIC)
-	ZEND_ME(Redis, _unpack, arginfo_class_Redis__unpack, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, _unserialize, arginfo_class_Redis__unserialize, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, _pack, arginfo_class_Redis__pack, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, _unpack, arginfo_class_Redis__unpack, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, acl, arginfo_class_Redis_acl, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, append, arginfo_class_Redis_append, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, auth, arginfo_class_Redis_auth, ZEND_ACC_PUBLIC)
