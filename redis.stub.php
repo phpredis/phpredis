@@ -568,10 +568,24 @@ class Redis {
     public function slaveof(string $host = null, int $port = 6379): bool;
 
     /**
+     * Update one or more keys last modified metadata.
+     *
+     * @see https://redis.io/commands/touch/
+     *
+     * @param array|string $key    Either the first key or if passed as the only argument
+     *                             an array of keys.
+     * @param string $more_keys    One or more keys to send to the command.
+     *
+     * @return Redis|int|false     This command returns the number of keys that exist and
+     *                             had their last modified time reset
+     */
+    public function touch(array|string $key_or_array, string ...$more_keys): Redis|int|false;
+
+    /**
      * Interact with Redis' slowlog functionality in variousu ways, depending
      * on the value of 'operations'.
      *
-     * @see https://https://redis.io/commands/slowlog/
+     * @see https://redis.io/commands/slowlog/
      * @category administration
      *
      * @param string $operation  The operation you wish to perform.  This can

@@ -894,8 +894,7 @@ class Redis_Test extends TestSuite
     }
 
 
-    public function testExists()
-    {
+    public function testExists() {
         /* Single key */
         $this->redis->del('key');
         $this->assertEquals(0, $this->redis->exists('key'));
@@ -915,6 +914,22 @@ class Redis_Test extends TestSuite
         /* Test passing an array as well as the keys variadic */
         $this->assertEquals(count($mkeys), $this->redis->exists($mkeys));
         $this->assertEquals(count($mkeys), call_user_func_array([$this->redis, 'exists'], $mkeys));
+    }
+
+    public function testTouch() {
+        if (!$this->minVersionCheck('3.2.1'))
+            $this->markTestSkipped();
+
+        $this->redis->del('notakey');
+
+        $this->assertTrue($this->redis->mset(['{idle}1' => 'beep', '{idle}2' => 'boop']));
+        usleep(1100000);
+        $this->assertTrue($this->redis->object('idletime', '{idle}1') >= 1);
+        $this->assertTrue($this->redis->object('idletime', '{idle}2') >= 1);
+
+        $this->assertEquals(2, $this->redis->touch('{idle}1', '{idle}2', '{idle}notakey'));
+        $this->assertTrue($this->redis->object('idletime', '{idle}1') == 0);
+        $this->assertTrue($this->redis->object('idletime', '{idle}2') == 0);
     }
 
     public function testKeys()

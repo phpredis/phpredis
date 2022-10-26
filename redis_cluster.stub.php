@@ -111,6 +111,11 @@ class RedisCluster {
 
     public function exists(mixed $key, mixed ...$other_keys): RedisCluster|int|bool;
 
+    /**
+     * @see Redis::touch()
+     */
+    public function touch(mixed $key, mixed ...$other_keys): RedisCluster|int|bool;
+
     public function expire(string $key, int $timeout, ?string $mode = NULL): RedisCluster|bool;
 
     public function expireat(string $key, int $timestamp, ?string $mode = NULL): RedisCluster|bool;

@@ -1043,19 +1043,24 @@ PHP_METHOD(Redis, mget)
     REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 }
 
-/* {{{ proto boolean Redis::exists(string key)
+/* {{{ proto boolean Redis::exists(string $key, string ...$more_keys)
  */
-PHP_METHOD(Redis, exists)
-{
-    REDIS_PROCESS_CMD(exists, redis_long_response);
+PHP_METHOD(Redis, exists) {
+    REDIS_PROCESS_KW_CMD("EXISTS", redis_varkey_cmd, redis_long_response);
 }
 /* }}} */
 
+/* {{{ proto boolean Redis::touch(string $key, string ...$more_keys)
+ */
+PHP_METHOD(Redis, touch) {
+    REDIS_PROCESS_KW_CMD("TOUCH", redis_varkey_cmd, redis_long_response);
+}
+
+/* }}} */
 /* {{{ proto boolean Redis::del(string key)
  */
-PHP_METHOD(Redis, del)
-{
-    REDIS_PROCESS_CMD(del, redis_long_response);
+PHP_METHOD(Redis, del) {
+    REDIS_PROCESS_KW_CMD("DEL", redis_varkey_cmd, redis_long_response);
 }
 /* }}} */
 
@@ -1063,7 +1068,7 @@ PHP_METHOD(Redis, del)
  * {{{ proto long Redis::unlink(array $keys) */
 PHP_METHOD(Redis, unlink)
 {
-    REDIS_PROCESS_CMD(unlink, redis_long_response);
+    REDIS_PROCESS_KW_CMD("UNLINK", redis_varkey_cmd, redis_long_response);
 }
 
 PHP_REDIS_API void redis_set_watch(RedisSock *redis_sock)
@@ -1080,9 +1085,8 @@ PHP_REDIS_API int redis_watch_response(INTERNAL_FUNCTION_PARAMETERS,
 
 /* {{{ proto boolean Redis::watch(string key1, string key2...)
  */
-PHP_METHOD(Redis, watch)
-{
-    REDIS_PROCESS_CMD(watch, redis_watch_response);
+PHP_METHOD(Redis, watch) {
+    REDIS_PROCESS_KW_CMD("WATCH", redis_varkey_cmd, redis_watch_response);
 }
 /* }}} */
 
@@ -1440,7 +1444,7 @@ PHP_METHOD(Redis, sMisMember)
 
 /* {{{ proto array Redis::sInter(string key0, ... string keyN) */
 PHP_METHOD(Redis, sInter) {
-    REDIS_PROCESS_CMD(sinter, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_KW_CMD("SINTER", redis_varkey_cmd, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
@@ -1450,34 +1454,33 @@ PHP_METHOD(Redis, sintercard) {
 
 /* {{{ proto array Redis::sInterStore(string dst, string key0,...string keyN) */
 PHP_METHOD(Redis, sInterStore) {
-    REDIS_PROCESS_CMD(sinterstore, redis_long_response);
+    REDIS_PROCESS_KW_CMD("SINTERSTORE", redis_varkey_cmd, redis_long_response);
 }
 /* }}} */
 
 /* {{{ proto array Redis::sUnion(string key0, ... string keyN) */
 PHP_METHOD(Redis, sUnion) {
-    REDIS_PROCESS_CMD(sunion, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_KW_CMD("SUNION", redis_varkey_cmd, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
-/* {{{ proto array Redis::sUnionStore(string dst, string key0, ... keyN) */
+/* {{{ proto array Redis::sUnionStore(array|string $key, string ...$srckeys) */
 PHP_METHOD(Redis, sUnionStore) {
-    REDIS_PROCESS_CMD(sunionstore, redis_long_response);
+    REDIS_PROCESS_KW_CMD("SUNIONSTORE", redis_varkey_cmd, redis_long_response);
 }
 /* }}} */
 
 /* {{{ proto array Redis::sDiff(string key0, ... string keyN) */
 PHP_METHOD(Redis, sDiff) {
-    REDIS_PROCESS_CMD(sdiff, redis_sock_read_multibulk_reply);
+    REDIS_PROCESS_KW_CMD("SDIFF", redis_varkey_cmd, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
 /* {{{ proto array Redis::sDiffStore(string dst, string key0, ... keyN) */
 PHP_METHOD(Redis, sDiffStore) {
-    REDIS_PROCESS_CMD(sdiffstore, redis_long_response);
+    REDIS_PROCESS_KW_CMD("SDIFFSTORE", redis_varkey_cmd, redis_long_response);
 }
 /* }}} */
-
 
 /* {{{ proto array Redis::sort(string key, array options) */
 PHP_METHOD(Redis, sort) {
