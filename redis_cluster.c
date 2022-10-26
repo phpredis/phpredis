@@ -751,12 +751,18 @@ PHP_METHOD(RedisCluster, getset) {
 }
 /* }}} */
 
-/* {{{ proto int RedisCluster::exists(string key) */
+/* {{{ proto int RedisCluster::exists(string $key, string ...$more_keys) */
 PHP_METHOD(RedisCluster, exists) {
-    CLUSTER_PROCESS_CMD(exists, cluster_long_resp, 1);
+    CLUSTER_PROCESS_KW_CMD("EXISTS", redis_varkey_cmd, cluster_long_resp, 1);
 }
 /* }}} */
 
+/* {{{ proto int RedisCluster::exists(string $key, string ...$more_keys) */
+PHP_METHOD(RedisCluster, touch) {
+    CLUSTER_PROCESS_KW_CMD("TOUCH", redis_varkey_cmd, cluster_long_resp, 0);
+}
+
+/* }}} */
 /* {{{ proto array Redis::keys(string pattern) */
 PHP_METHOD(RedisCluster, keys) {
     redisCluster *c = GET_CONTEXT();
@@ -1007,19 +1013,19 @@ PHP_METHOD(RedisCluster, srem) {
 
 /* {{{ proto array RedisCluster::sunion(string key1, ... keyN) */
 PHP_METHOD(RedisCluster, sunion) {
-    CLUSTER_PROCESS_CMD(sunion, cluster_mbulk_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("SUNION", redis_varkey_cmd, cluster_mbulk_resp, 0);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::sunionstore(string dst, string k1, ... kN) */
 PHP_METHOD(RedisCluster, sunionstore) {
-    CLUSTER_PROCESS_CMD(sunionstore, cluster_long_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("SUNIONSTORE", redis_varkey_cmd, cluster_long_resp, 0);
 }
 /* }}} */
 
 /* {{{ ptoto array RedisCluster::sinter(string k1, ... kN) */
 PHP_METHOD(RedisCluster, sinter) {
-    CLUSTER_PROCESS_CMD(sinter, cluster_mbulk_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("SINTER", redis_varkey_cmd, cluster_mbulk_resp, 0);
 }
 
 /* {{{ proto RedisCluster::sintercard(array $keys, int $count = -1) */
@@ -1032,19 +1038,19 @@ PHP_METHOD(RedisCluster, sintercard) {
 
 /* {{{ ptoto long RedisCluster::sinterstore(string dst, string k1, ... kN) */
 PHP_METHOD(RedisCluster, sinterstore) {
-    CLUSTER_PROCESS_CMD(sinterstore, cluster_long_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("SINTERSTORE", redis_varkey_cmd, cluster_long_resp, 0);
 }
 /* }}} */
 
 /* {{{ proto array RedisCluster::sdiff(string k1, ... kN) */
 PHP_METHOD(RedisCluster, sdiff) {
-    CLUSTER_PROCESS_CMD(sdiff, cluster_mbulk_resp, 1);
+    CLUSTER_PROCESS_KW_CMD("SDIFF", redis_varkey_cmd, cluster_mbulk_resp, 1);
 }
 /* }}} */
 
 /* {{{ proto long RedisCluster::sdiffstore(string dst, string k1, ... kN) */
 PHP_METHOD(RedisCluster, sdiffstore) {
-    CLUSTER_PROCESS_CMD(sdiffstore, cluster_long_resp, 0);
+    CLUSTER_PROCESS_KW_CMD("SDIFFSTORE", redis_varkey_cmd, cluster_long_resp, 0);
 }
 /* }}} */
 

@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 894a03b9e9db1e8ded0f016a00e7e7150dc26f31 */
+ * Stub hash: 7c2ec068711e216a4308a2c405c32204edf60d23 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -673,6 +673,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_slaveof, 0, 0, 0)
 	ZEND_ARG_INFO(0, port)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_touch, 0, 0, 1)
+	ZEND_ARG_INFO(0, key_or_array)
+	ZEND_ARG_VARIADIC_INFO(0, more_keys)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_slowlog, 0, 0, 1)
 	ZEND_ARG_INFO(0, operation)
 	ZEND_ARG_INFO(0, length)
@@ -1121,6 +1126,7 @@ ZEND_METHOD(Redis, setex);
 ZEND_METHOD(Redis, setnx);
 ZEND_METHOD(Redis, sismember);
 ZEND_METHOD(Redis, slaveof);
+ZEND_METHOD(Redis, touch);
 ZEND_METHOD(Redis, slowlog);
 ZEND_METHOD(Redis, sort);
 ZEND_METHOD(Redis, sort_ro);
@@ -1369,6 +1375,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, setnx, arginfo_class_Redis_setnx, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, sismember, arginfo_class_Redis_sismember, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, slaveof, arginfo_class_Redis_slaveof, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, touch, arginfo_class_Redis_touch, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, slowlog, arginfo_class_Redis_slowlog, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, sort, arginfo_class_Redis_sort, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, sort_ro, arginfo_class_Redis_sort_ro, ZEND_ACC_PUBLIC)
