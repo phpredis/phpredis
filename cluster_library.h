@@ -41,10 +41,6 @@
 #define SLOT_STREAM(c,s) (SLOT_SOCK(c,s)->stream)
 #define SLOT_SLAVES(c,s) (c->master[s]->slaves)
 
-/* Macros to access socket and stream for the node we're communicating with */
-#define CMD_SOCK(c) (c->cmd_sock)
-#define CMD_STREAM(c) (c->cmd_sock->stream)
-
 /* Compare redirection slot information with the passed node */
 #define CLUSTER_REDIR_CMP(c, sock) \
     (sock->port != c->redir_port || \
@@ -374,7 +370,6 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force);
 PHP_REDIS_API int cluster_send_exec(redisCluster *c, short slot);
 PHP_REDIS_API int cluster_send_discard(redisCluster *c, short slot);
 PHP_REDIS_API int cluster_abort_exec(redisCluster *c);
-PHP_REDIS_API int cluster_reset_multi(redisCluster *c);
 
 PHP_REDIS_API short cluster_find_slot(redisCluster *c, const char *host,
     unsigned short port);
@@ -397,7 +392,7 @@ PHP_REDIS_API void cluster_init_cache(redisCluster *c, redisCachedCluster *rcc);
 
 PHP_REDIS_API char **cluster_sock_read_multibulk_reply(RedisSock *redis_sock, int *len);
 
-PHP_REDIS_API int cluster_cache_store(zend_string *hash, HashTable *nodes);
+PHP_REDIS_API void cluster_cache_store(zend_string *hash, HashTable *nodes);
 PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash);
 
 /*

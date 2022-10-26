@@ -273,8 +273,7 @@ static int cluster_send_direct(RedisSock *redis_sock, char *cmd, int cmd_len,
 }
 
 static int cluster_send_asking(RedisSock *redis_sock) {
-    return cluster_send_direct(redis_sock, RESP_ASKING_CMD,
-        sizeof(RESP_ASKING_CMD)-1, TYPE_LINE);
+    return cluster_send_direct(redis_sock, ZEND_STRL(RESP_ASKING_CMD), TYPE_LINE);
 }
 
 /* Send READONLY to a specific RedisSock unless it's already flagged as being
@@ -287,8 +286,7 @@ static int cluster_send_readonly(RedisSock *redis_sock) {
     if (redis_sock->readonly) return 0;
 
     /* Return success if we can send it */
-    ret = cluster_send_direct(redis_sock, RESP_READONLY_CMD,
-        sizeof(RESP_READONLY_CMD) - 1, TYPE_LINE);
+    ret = cluster_send_direct(redis_sock, ZEND_STRL(RESP_READONLY_CMD), TYPE_LINE);
 
     /* Flag this socket as READONLY if our command worked */
     redis_sock->readonly = !ret;
@@ -315,8 +313,7 @@ PHP_REDIS_API int cluster_send_exec(redisCluster *c, short slot) {
     int retval;
 
     /* Send exec */
-    retval = cluster_send_slot(c, slot, RESP_EXEC_CMD, sizeof(RESP_EXEC_CMD)-1,
-        TYPE_MULTIBULK);
+    retval = cluster_send_slot(c, slot, ZEND_STRL(RESP_EXEC_CMD), TYPE_MULTIBULK);
 
     /* We'll either get a length corresponding to the number of commands sent to
      * this node, or -1 in the case of EXECABORT or WATCH failure. */
@@ -327,8 +324,7 @@ PHP_REDIS_API int cluster_send_exec(redisCluster *c, short slot) {
 }
 
 PHP_REDIS_API int cluster_send_discard(redisCluster *c, short slot) {
-    if (cluster_send_direct(SLOT_SOCK(c,slot), RESP_DISCARD_CMD,
-        sizeof(RESP_DISCARD_CMD)-1, TYPE_LINE))
+    if (cluster_send_direct(SLOT_SOCK(c,slot), ZEND_STRL(RESP_DISCARD_CMD), TYPE_LINE))
     {
         return 0;
     }
@@ -1124,6 +1120,10 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
 {
     char *host, *port;
 
+    /* The Redis Cluster specification suggests clients do not update
+     * their slot mapping for an ASK redirection, only for MOVED */
+    if (moved) c->redirections++;
+
     /* Move past "MOVED" or "ASK */
     msg += moved ? MOVED_LEN : ASK_LEN;
 
@@ -1182,22 +1182,12 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
 
         // Check for MOVED or ASK redirection
         if ((moved = IS_MOVED(inbuf)) || IS_ASK(inbuf)) {
-            /* The Redis Cluster specification suggests clients do not update
-             * their slot mapping for an ASK redirection, only for MOVED */
-            if (moved) c->redirections++;
-
             /* Make sure we can parse the redirection host and port */
-            if (cluster_set_redirection(c,inbuf,moved) < 0) {
-                return -1;
-            }
-
-            /* We've been redirected */
-            return 1;
-        } else {
-            // Capture the error string Redis returned
-            cluster_set_err(c, inbuf, strlen(inbuf)-2);
-            return 0;
+            return !cluster_set_redirection(c, inbuf, moved) ? 1 : -1;
         }
+        // Capture the error string Redis returned
+        cluster_set_err(c, inbuf, strlen(inbuf)-2);
+        return 0;
     }
 
     // Fetch the first line of our response from Redis.
@@ -1272,9 +1262,7 @@ static int cluster_dist_write(redisCluster *c, const char *cmd, size_t sz,
 
         /* If we're not on the master, attempt to send the READONLY command to
          * this slave, and skip it if that fails */
-        if (nodes[i] == 0 || redis_sock->readonly ||
-            cluster_send_readonly(redis_sock) == 0)
-        {
+        if (nodes[i] == 0 || cluster_send_readonly(redis_sock) == 0) {
             /* Attempt to send the command */
             if (CLUSTER_SEND_PAYLOAD(redis_sock, cmd, sz)) {
                 c->cmd_sock = redis_sock;
@@ -1567,7 +1555,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
      * CLUSTERDOWN state from Redis Cluster. */
     do {
         /* Send MULTI to the socket if we're in MULTI mode but haven't yet */
-        if (c->flags->mode == MULTI && CMD_SOCK(c)->mode != MULTI) {
+        if (c->flags->mode == MULTI && c->cmd_sock->mode != MULTI) {
             /* We have to fail if we can't send MULTI to the node */
             if (cluster_send_multi(c, slot) == -1) {
                 CLUSTER_THROW_EXCEPTION("Unable to enter MULTI mode on requested slot", 0);
@@ -2975,13 +2963,11 @@ PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash) {
 
     if (le != NULL) {
         /* Sanity check on our list type */
-        if (le->type != le_cluster_slot_cache) {
-            php_error_docref(0, E_WARNING, "Invalid slot cache resource");
-            return NULL;
+        if (le->type == le_cluster_slot_cache) {
+            /* Success, return the cached entry */
+            return le->ptr;
         }
-
-        /* Success, return the cached entry */
-        return le->ptr;
+        php_error_docref(0, E_WARNING, "Invalid slot cache resource");
     }
 
     /* Not found */
@@ -2989,12 +2975,10 @@ PHP_REDIS_API redisCachedCluster *cluster_cache_load(zend_string *hash) {
 }
 
 /* Cache a cluster's slot information in persistent_list if it's enabled */
-PHP_REDIS_API int cluster_cache_store(zend_string *hash, HashTable *nodes) {
+PHP_REDIS_API void cluster_cache_store(zend_string *hash, HashTable *nodes) {
     redisCachedCluster *cc = cluster_cache_create(hash, nodes);
 
     redis_register_persistent_resource(cc->hash, cc, le_cluster_slot_cache);
-
-    return SUCCESS;
 }
 
 
