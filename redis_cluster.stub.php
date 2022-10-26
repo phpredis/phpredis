@@ -10,23 +10,44 @@ class RedisCluster {
 
     public function __construct(string|null $name, array $seeds = NULL, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistent = false, #[\SensitiveParameter] mixed $auth = NULL, array $context = NULL);
 
+    /**
+     * @see Redis::_compress()
+     */
     public function _compress(string $value): string;
+
+    /**
+     * @see Redis::_uncompress()
+     */
+    public function _uncompress(string $value): string;
+
+    /**
+     * @see Redis::_serialize()
+     */
+    public function _serialize(mixed $value): bool|string;
+
+    /**
+     * @see Redis::_unserialize()
+     */
+    public function _unserialize(string $value): mixed;
+
+    /**
+     * @see Redis::_pack()
+     */
+    public function _pack(mixed $value): string;
+
+    /**
+     * @see Redis::_unpack()
+     */
+    public function _unpack(string $value): mixed;
+
+    /**
+     * @see Redis::_prefix()
+     */
+    public function _prefix(string $key): bool|string;
 
     public function _masters(): array;
 
-    public function _pack(mixed $value): string;
-
-    public function _prefix(string $key): bool|string;
-
     public function _redir(): string|null;
-
-    public function _serialize(mixed $value): bool|string;
-
-    public function _uncompress(string $value): string;
-
-    public function _unpack(string $value): mixed;
-
-    public function _unserialize(string $value): mixed;
 
     public function acl(string|array $key_or_address, string $subcmd, string ...$args): mixed;
 
