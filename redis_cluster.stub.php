@@ -62,16 +62,16 @@ class RedisCluster {
     public function bitop(string $operation, string $deskey, string $srckey, string ...$otherkeys): RedisCluster|bool|int;
 
     /**
-      Return the position of the first bit set to 0 or 1 in a string.
-
-      @see https://https://redis.io/commands/bitpos/
-
-      @param string $key   The key to check (must be a string)
-      @param bool   $bit   Whether to look for an unset (0) or set (1) bit.
-      @param int    $start Where in the string to start looking.
-      @param int    $end   Where in the string to stop looking.
-      @param bool   $bybit If true, Redis will treat $start and $end as BIT values and not bytes, so if start
-                           was 0 and end was 2, Redis would only search the first two bits.
+     * Return the position of the first bit set to 0 or 1 in a string.
+     *
+     * @see https://https://redis.io/commands/bitpos/
+     *
+     * @param string $key   The key to check (must be a string)
+     * @param bool   $bit   Whether to look for an unset (0) or set (1) bit.
+     * @param int    $start Where in the string to start looking.
+     * @param int    $end   Where in the string to stop looking.
+     * @param bool   $bybit If true, Redis will treat $start and $end as BIT values and not bytes, so if start
+     *                      was 0 and end was 2, Redis would only search the first two bits.
      */
     public function bitpos(string $key, bool $bit, int $start = 0, int $end = -1, bool $bybit = false): RedisCluster|int|false;
 
@@ -230,20 +230,20 @@ class RedisCluster {
     public function incrbyfloat(string $key, float $value): RedisCluster|float|false;
 
     /**
-      Retreive information about the connected redis-server.  If no arguments are passed to
-      this function, redis will return every info field.  Alternatively you may pass a specific
-      section you want returned (e.g. 'server', or 'memory') to receive only information pertaining
-      to that section.
-
-      If connected to Redis server >= 7.0.0 you may pass multiple optional sections.
-
-      @see https://redis.io/commands/info/
-
-      @param string|array $key_or_address Either a key name or array with host and port indicating
-                                          which cluster node we want to send the command to.
-      @param string       ...$sections    Optional section(s) you wish Redis server to return.
-
-      @return Redis|array|false
+     * Retrieve information about the connected redis-server.  If no arguments are passed to
+     * this function, redis will return every info field.  Alternatively you may pass a specific
+     * section you want returned (e.g. 'server', or 'memory') to receive only information pertaining
+     * to that section.
+     *
+     * If connected to Redis server >= 7.0.0 you may pass multiple optional sections.
+     *
+     * @see https://redis.io/commands/info/
+     *
+     * @param string|array $key_or_address Either a key name or array with host and port indicating
+     *                                     which cluster node we want to send the command to.
+     * @param string       $sections       Optional section(s) you wish Redis server to return.
+     *
+     * @return Redis|array|false
      */
     public function info(string|array $key_or_address, string ...$sections): RedisCluster|array|false;
 

@@ -152,10 +152,44 @@ class Redis {
 
     public function append(string $key, mixed $value): Redis|int|false;
 
+    /**
+     * Authenticate a Redis connection after its been established.
+     *
+     * @see https://redis.io/commands/auth
+     *
+     * @param mixed $credentials A string password, or an array with one or two string elements.
+     *
+     * @return Redis|bool Whether the AUTH was successful.
+     *
+     * See below for various examples about how this method may be called.
+     *
+     * <code>
+     * <?php>
+     * $redis->auth('password');
+     * $redis->auth(['password']);
+     * $redis->auth(['username', 'password']);
+     * ?>
+     * </code>
+     *
+     */
     public function auth(#[\SensitiveParameter] mixed $credentials): Redis|bool;
 
+    /**
+     * Execute a save of the Redis database in the background.
+     *
+     * @see https://redis.io/commands/bgsave
+     *
+     * @return Redis|bool Whether the command was successful.
+     */
     public function bgSave(): Redis|bool;
 
+    /**
+     * Asynchronously rewrite Redis' append-only file
+     *
+     * @see https://redis.io/commands/bgrewriteaof
+     *
+     * @return Redis|bool Whether the command was successful.
+     */
     public function bgrewriteaof(): Redis|bool;
 
     /**
@@ -164,9 +198,9 @@ class Redis {
      * @see https://redis.io/commands/bitcount/
      *
      * @param string $key     The key in question (must be a string key)
-     * @param int    $start   The index where Redis should start counting.  If ommitted it
+     * @param int    $start   The index where Redis should start counting.  If omitted it
      *                        defaults to zero, which means the start of the string.
-     * @param int    $end     The index where Redis should stop counting.  If ommitted it
+     * @param int    $end     The index where Redis should stop counting.  If omitted it
      *                        defaults to -1, meaning the very end of the string.
      *
      * @param bool   $bybit   Whether or not Redis should treat $start and $end as bit
@@ -256,7 +290,13 @@ class Redis {
 
     public function lmpop(array $keys, string $from, int $count = 1): Redis|array|null|false;
 
-    public function clearLastError(): Redis|bool;
+    /**
+     * Reset any last error on the connection to NULL
+     *
+     * @return bool This should always return true or throw an exception if we're not connected.
+     *
+     */
+    public function clearLastError(): bool;
 
     public function client(string $opt, mixed ...$args): mixed;
 
@@ -319,7 +359,7 @@ class Redis {
      *
      * @see https://redis.io/commands/eval/
      *
-     * @param string $script   A string containing the lua script
+     * @param string $script   A string containing the LUA script
      * @param array  $args     An array of arguments to pass to this script
      * @param int    $num_keys How many of the arguments are keys.  This is needed
      *                         as redis distinguishes between key name arguments
@@ -331,7 +371,7 @@ class Redis {
     public function eval(string $script, array $args = [], int $num_keys = 0): mixed;
 
     /**
-     * This is simply the read-only variant of eval, meaning the unerlying script
+     * This is simply the read-only variant of eval, meaning the underlying script
      * may not modify data in redis.
      *
      * @see Redis::eval()
@@ -340,12 +380,12 @@ class Redis {
 
     /**
      * Execute a LUA script on the server but instead of sending the script, send
-     * the sha1 hash of the script.
+     * the SHA1 hash of the script.
      *
      * @see https://redis.io/commands/evalsha/
      * @see Redis::eval();
      *
-     * @param string $script_sha The sha1() hash of the lua code.  Note that the script
+     * @param string $script_sha The SHA1 hash of the lua code.  Note that the script
      *                           must already exist on the server, either having been
      *                           loaded with `SCRIPT LOAD` or having been executed directly
      *                           with `EVAL` first.
@@ -355,7 +395,7 @@ class Redis {
     public function evalsha(string $sha1, array $args = [], int $num_keys = 0): mixed;
 
     /**
-     * This is simply the read-only variant of evalsha, meaning the unerlying script
+     * This is simply the read-only variant of evalsha, meaning the underlying script
      * may not modify data in redis.
      *
      * @see Redis::evalsha()
@@ -382,7 +422,7 @@ class Redis {
     public function expire(string $key, int $timeout, ?string $mode = NULL): Redis|bool;
 
     /**
-      Set a key's expiration to a specific unix timestamp in seconds.  If
+      Set a key's expiration to a specific Unix timestamp in seconds.  If
       connected to Redis >= 7.0.0 you can pass an optional 'mode' argument.
 
       @see Redis::expire() For a description of the mode argument.
@@ -445,6 +485,13 @@ class Redis {
 
     public function get(string $key): mixed;
 
+    /**
+     * Get the authentication information on the connection, if any.
+     *
+     * @see Redis::auth()
+     *
+     * @return mixed The authentication information used to authenticate the connection.
+     */
     public function getAuth(): mixed;
 
     public function getBit(string $key, int $idx): Redis|int|false;
@@ -455,12 +502,35 @@ class Redis {
 
     public function getDel(string $key): Redis|string|bool;
 
+    /**
+     * Return the host or Unix socket we are connected to.
+     *
+     * @return string The host or Unix socket.
+     */
     public function getHost(): string;
 
+    /**
+     * Get the last error returned to us from Redis, if any.
+     *
+     * @return string The error string or NULL if there is none.
+     */
     public function getLastError(): ?string;
 
+    /**
+     * Returns whether the connection is in ATOMIC, MULTI, or PIPELINE mode
+     *
+     * @return int The mode we're in.
+     *
+     */
     public function getMode(): int;
 
+    /**
+     * Retrieve the value of a configuration setting as set by Redis::setOption()
+     *
+     * @see Redis::setOption() for a detailed list of options and their values.
+     *
+     * @return mixed The setting itself or false on failure
+     */
     public function getOption(int $option): mixed;
 
     public function getPersistentID(): ?string;
@@ -521,18 +591,18 @@ class Redis {
     public function incrByFloat(string $key, float $value);
 
     /**
-      Retreive information about the connected redis-server.  If no arguments are passed to
-      this function, redis will return every info field.  Alternatively you may pass a specific
-      section you want returned (e.g. 'server', or 'memory') to receive only information pertaining
-      to that section.
-
-      If connected to Redis server >= 7.0.0 you may pass multiple optional sections.
-
-      @see https://redis.io/commands/info/
-
-      @param string ...$sections Optional section(s) you wish Redis server to return.
-
-      @return Redis|array|false
+     * Retrieve information about the connected redis-server.  If no arguments are passed to
+     * this function, redis will return every info field.  Alternatively you may pass a specific
+     * section you want returned (e.g. 'server', or 'memory') to receive only information pertaining
+     * to that section.
+     *
+     * If connected to Redis server >= 7.0.0 you may pass multiple optional sections.
+     *
+     * @see https://redis.io/commands/info/
+     *
+     * @param string $sections Optional section(s) you wish Redis server to return.
+     *
+     * @return Redis|array|false
      */
     public function info(string ...$sections): Redis|array|false;
 
@@ -616,29 +686,32 @@ class Redis {
     public function persist(string $key): bool;
 
     /**
-       Sets an expiration in milliseconds on a given key.  If connected to
-       Redis >= 7.0.0 you can pass an optional mode argument that modifies
-       how the command will execute.
-
-       @see Redis::expire() for a description of the mode argument.
-
-       @param string  $key  The key to set an expiration on.
-       @param ?string $mode A two character modifier that changes how the
-                            command works.
+     *  Sets an expiration in milliseconds on a given key.  If connected to Redis >= 7.0.0
+     *  you can pass an optional mode argument that modifies how the command will execute.
+     *
+     *  @see Redis::expire() for a description of the mode argument.
+     *
+     *  @param string  $key  The key to set an expiration on.
+     *  @param string $mode  A two character modifier that changes how the
+     *                       command works.
+     *
+     *  @return Redis|bool   True if an expiry was set on the key, and false otherwise.
      */
     public function pexpire(string $key, int $timeout, ?string $mode = NULL): bool;
 
     /**
-      Set a key's expiration to a specific unix timestamp in milliseconds.  If
-      connected to Redis >= 7.0.0 you can pass an optional 'mode' argument.
-
-      @see Redis::expire() For a description of the mode argument.
-
-       @param string  $key  The key to set an expiration on.
-       @param ?string $mode A two character modifier that changes how the
-                            command works.
+     * Set a key's expiration to a specific Unix timestamp in milliseconds.  If connected to
+     * Redis >= 7.0.0 you can pass an optional 'mode' argument.
+     *
+     * @see Redis::expire() For a description of the mode argument.
+     *
+     *  @param string  $key  The key to set an expiration on.
+     *  @param string  $mode A two character modifier that changes how the
+     *                       command works.
+     *
+     *  @return Redis|bool   True if an expiration was set on the key, false otherwise.
      */
-    public function pexpireAt(string $key, int $timestamp, ?string $mode = NULL): bool;
+    public function pexpireAt(string $key, int $timestamp, ?string $mode = NULL): Redis|bool;
 
     public function pfadd(string $key, array $elements): int;
 
@@ -738,6 +811,68 @@ class Redis {
     public function setRange(string $key, int $start, string $value);
 
 
+    /**
+     * Set a configurable option on the Redis object.
+     *
+     * Following are a list of options you can set:
+     *
+     *  OPTION                     TYPE     DESCRIPTION
+     *  OPT_MAX_RETRIES            int      The maximum number of times Redis will attempt to reconnect
+     *                                      if it gets disconnected, before throwing an exception.
+     *
+     *  OPT_SCAN                   enum     Redis::OPT_SCAN_RETRY, or Redis::OPT_SCAN_NORETRY
+     *
+     *  OPT_SERIALIZER             int      One of the installed serializers, which can vary depending
+     *                                      on how PhpRedis was compiled.  All of the supported serializers
+     *                                      are as follows:
+     *
+     *                                      Redis::SERIALIZER_NONE
+     *                                      Redis::SERIALIZER_PHP
+     *                                      Redis::SERIALIZER_IGBINARY
+     *                                      Redis::SERIALIZER_MSGPACK
+     *                                      Redis::SERIALIZER_JSON
+     *
+     *                                      Note:  The PHP and JSON serializers are always available.
+     *
+     *  OPT_PREFIX                  string  A string PhpRedis will use to prefix every key we read or write.
+     *                                      To disable the prefix, you may pass an empty string or NULL.
+     *
+     *  OPT_READ_TIMEOUT            double  How long PhpRedis will block for a response from Redis before
+     *                                      throwing a 'read error on connection' exception.
+     *
+     *  OPT_TCP_KEEPALIVE           bool    Set or disable TCP_KEEPALIVE on the connection.
+     *
+     *  OPT_COMPRESSION             enum    Set an automatic compression algorithm to use when reading/writing
+     *                                      data to Redis.  All of the supported compressors are as follows:
+     *
+     *                                      Redis::COMPRESSION_NONE
+     *                                      Redis::COMPRESSION_LZF
+     *                                      Redis::COMPRESSION_LZ4
+     *                                      Redis::COMPRESSION_ZSTD
+     *
+     *                                      Note:  Some of these may not be available depending on how Redis
+     *                                             was compiled.
+     *
+     *  OPT_REPLY_LITERAL           bool    If set to true, PhpRedis will return the literal string Redis returns
+     *                                      for LINE replies (e.g. '+OK'), rather than `true`.
+     *
+     *  OPT_COMPRESSION_LEVEL       int     Set a specific compression level if Redis is compressing data.
+     *
+     *  OPT_NULL_MULTIBULK_AS_NULL  bool    Causes PhpRedis to return `NULL` rather than `false` for NULL MULTIBULK
+     *                                      RESP replies (i.e. `*-1`).
+     *
+     *  OPT_BACKOFF_ALGORITHM       enum    The exponential backoff strategy to use.
+     *  OPT_BACKOFF_BASE            int     The minimum delay between retries when backing off.
+     *  OPT_BACKOFF_CAP             int     The maximum delay between replies when backing off.
+     *
+     * @see Redis::__construct() for details about backoff strategies.
+     *
+     * @param int    $option The option constant.
+     * @param mixed  $value  The option value.
+     *
+     * @return bool  True if the setting was updated, false if not.
+     *
+     */
     public function setOption(int $option, mixed $value): bool;
 
     /** @return bool|Redis */
@@ -765,20 +900,20 @@ class Redis {
     public function touch(array|string $key_or_array, string ...$more_keys): Redis|int|false;
 
     /**
-     * Interact with Redis' slowlog functionality in variousu ways, depending
-     * on the value of 'operations'.
+     * Interact with Redis' slowlog functionality in various ways, depending
+     * on the value of 'operation'.
      *
      * @see https://redis.io/commands/slowlog/
      * @category administration
      *
      * @param string $operation  The operation you wish to perform.  This can
      *                           be one of the following values:
-     *                           'get'   - Retreive the Redis slowlog as an array.
-     *                           'len'   - Retreive the length of the slowlog.
-     *                           'reset' - Remove all slowlog entries.
+     *                           'GET'   - Retreive the Redis slowlog as an array.
+     *                           'LEN'   - Retreive the length of the slowlog.
+     *                           'RESET' - Remove all slowlog entries.
      * <code>
      * <?php
-     * $redis->slowllog('get', -1);  // Retreive all slowlog entries.
+     * $redis->slowlog('get', -1);  // Retreive all slowlog entries.
      * $redis->slowlog('len');       // Retreive slowlog length.
      * $redis->slowlog('reset');     // Reset the slowlog.
      * ?>
@@ -817,7 +952,7 @@ class Redis {
      *     'LIMIT' => [0, 10]        // Return a subset of the data at offset, count
      *     'BY'    => 'weight_*'     // For each element in the key, read data from the
      *                                  external key weight_* and sort based on that value.
-     *     'GET'   => 'weight_*'     // For each element in the source key, retreive the
+     *     'GET'   => 'weight_*'     // For each element in the source key, retrieve the
      *                                  data from key weight_* and return that in the result
      *                                  rather than the source keys' element.  This can
      *                                  be used in combination with 'BY'
@@ -903,8 +1038,8 @@ class Redis {
     /**
      * XGROUP
      *
-     * Perform various operation on consumer groups for a particular Redis STREAM.
-     * What the command does is primarily based on which operation is passed.
+     * Perform various operation on consumer groups for a particular Redis STREAM.  What the command does
+     * is primarily based on which operation is passed.
      *
      * @see https://redis.io/commands/xgroup/
      *
@@ -924,13 +1059,13 @@ class Redis {
      *                               'DESTROY'       - Delete a consumer group from a stream.
      *                                                  Requires:  Key, group.
      * @param string $key            The STREAM we're operating on.
-     * @param string $group          The consumer group wse want to create/modify/delete.
+     * @param string $group          The consumer group we want to create/modify/delete.
      * @param string $id_or_consumer The STREAM id (e.g. '$') or consumer group.  See the operation section
      *                               for information about which to send.
      * @param bool   $mkstream       This flag may be sent in combination with the 'CREATE' operation, and
      *                               cause Redis to also create the STREAM if it doesn't currently exist.
      *
-     * @param bool   $entriesread    Allows you to set Redis's 'entries-read' STREAM value.  This argument is
+     * @param bool   $entriesread    Allows you to set Redis' 'entries-read' STREAM value.  This argument is
      *                               only relevant to the 'CREATE' and 'SETID' operations.
      *                               Note:  Requires Redis >= 7.0.0.
      *
@@ -998,7 +1133,7 @@ class Redis {
      *     'LIMIT'      => [10, 10], // Start at offset 10 and return 10 elements.
      *     'REV'                     // Return the elements in reverse order
      *     'BYSCORE',                // Treat `start` and `end` as scores instead
-     *     'BYLEX'                   // Treat `start` and `end` as lexographical values.
+     *     'BYLEX'                   // Treat `start` and `end` as lexicographical values.
      * ];
      * ?>
      * </code>
@@ -1021,7 +1156,7 @@ class Redis {
      * @category zset
      *
      * @param string           $dstkey  The key to store the resulting element(s)
-     * @param string           $srckey  The source key with element(s) to retreive
+     * @param string           $srckey  The source key with element(s) to retrieve
      * @param string           $start   The starting index to store
      * @param string           $end     The ending index to store
      * @param array|bool|null  $options Our options array that controls how the command will function.

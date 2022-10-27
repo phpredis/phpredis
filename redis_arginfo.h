@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: b42e3cb1c1b50ae6cac12314b83116657365c7c4 */
+ * Stub hash: 823ee9deddd36d3783eb469ce504984b11ac9a50 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -110,15 +110,15 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_lmpop arginfo_class_Redis_zmpop
 
-#define arginfo_class_Redis_clearLastError arginfo_class_Redis_bgSave
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_clearLastError, 0, 0, _IS_BOOL, 0)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_client, 0, 1, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, opt, IS_STRING, 0)
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, args, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_close, 0, 0, _IS_BOOL, 0)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_close arginfo_class_Redis_clearLastError
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_command, 0, 2, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, opt, IS_STRING, 0, "null")
@@ -458,7 +458,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_info, 0, 0, Redi
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, sections, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_isConnected arginfo_class_Redis_close
+#define arginfo_class_Redis_isConnected arginfo_class_Redis_clearLastError
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_keys, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, pattern, IS_STRING, 0)
@@ -593,11 +593,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_pexpire, 0, 2, _IS_B
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, mode, IS_STRING, 1, "NULL")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_pexpireAt, 0, 2, _IS_BOOL, 0)
-	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, timestamp, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, mode, IS_STRING, 1, "NULL")
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_pexpireAt arginfo_class_Redis_expireAt
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_pfadd, 0, 2, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
@@ -668,7 +664,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_renameNx arginfo_class_Redis_rename
 
-#define arginfo_class_Redis_reset arginfo_class_Redis_close
+#define arginfo_class_Redis_reset arginfo_class_Redis_clearLastError
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_restore, 0, 3, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
@@ -743,7 +739,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_sUnionStore arginfo_class_Redis_sDiffStore
 
-#define arginfo_class_Redis_save arginfo_class_Redis_close
+#define arginfo_class_Redis_save arginfo_class_Redis_clearLastError
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_scan, 0, 1, MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(1, iterator, IS_LONG, 1)
