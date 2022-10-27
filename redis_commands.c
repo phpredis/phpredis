@@ -2825,12 +2825,12 @@ int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         // Verify slot if this is a Cluster request
         if (slot) {
             kslot = cluster_hash_key(key, key_len);
-            if (*slot == -1 || kslot != *slot) {
-                php_error_docref(NULL, E_WARNING,
-                    "Warning, not all keys hash to the same slot!");
+            if (*slot != -1 && kslot != *slot) {
+                php_error_docref(NULL, E_WARNING, "Warning, not all keys hash to the same slot!");
                 zend_string_release(zstr);
                 if (key_free) efree(key);
                 efree(z_args);
+                efree(cmdstr.c);
                 return FAILURE;
             }
             *slot = kslot;

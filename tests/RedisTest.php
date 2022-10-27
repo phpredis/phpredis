@@ -230,6 +230,24 @@ class Redis_Test extends TestSuite
         $this->assertEquals(5, $this->redis->bitcount('bitcountkey', 0, 9, true));
     }
 
+    public function testBitop() {
+        if (!$this->minVersionCheck('2.6.0'))
+            $this->markTestSkipped();
+
+        $this->redis->set("{key}1", "foobar");
+        $this->redis->set("{key}2", "abcdef");
+
+        // Regression test for GitHub issue #2210
+        $this->assertEquals(6, $this->redis->bitop('AND', '{key}1', '{key}2'));
+
+        // Make sure RedisCluster doesn't even send the command.  We don't care
+        // about what Redis returns
+        @$this->redis->bitop('AND', 'key1', 'key2', 'key3');
+        $this->assertEquals(NULL, $this->redis->getLastError());
+
+        $this->redis->del('{key}1', '{key}2');
+    }
+
     public function testBitsets() {
 
         $this->redis->del('key');
