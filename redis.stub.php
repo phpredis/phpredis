@@ -278,12 +278,78 @@ class Redis {
      */
     public function brpoplpush(string $src, string $dst, int|float $timeout): Redis|string|false;
 
+    /**
+     * POP the maximum scoring element off of one or more sorted sets, blocking up to a specified
+     * timeout if no elements are available.
+     *
+     * @see https://redis.io/commands/bzpopmax
+     *
+     * @param string|array $key_or_keys    Either a string key or an array of one or more keys.
+     * @param string|int  $timeout_or_key  If the previous argument was an array, this argument
+     *                                     must be a timeout value.  Otherwise it could also be
+     *                                     another key.
+     * @param mixed       $extra_args      Can consist of additional keys, until the last argument
+     *                                     which needs to be a timeout.
+     *
+     * Following are examples of the two main ways to call this method.
+     *
+     * <code>
+     * // Method 1 - Variadic, with the last argument being our timeout
+     * $redis->bzPopMax('key1', 'key2', 'key3', 1.5);
+     *
+     * // Method 2 - A single array of keys, followed by the timeout
+     * $redis->bzPopMax(['key1', 'key2', 'key3'], 1.5);
+     * <?php>
+     *
+     * NOTE:  We reccomend calling this function with an array and a timeout as the other strategy
+     *        may be deprecated in future versions of PhpRedis
+     * ?>
+     */
     public function bzPopMax(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): Redis|array|false;
 
+    /**
+     * POP the minimum scoring element off of one or more sorted sets, blocking up to a specified timeout
+     * if no elements are available
+     *
+     * This command is identical in semantics to bzPopMax so please see that method for more information.
+     *
+     * @see https://redis.io/commands/bzpopmin
+     * @see Redis::bzPopMax()
+     *
+     */
     public function bzPopMin(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): Redis|array|false;
 
+    /**
+     * POP one or more elements from one or more sorted sets, blocking up to a specified amount of time
+     * when no elements are available.
+     *
+     * @param float  $timeout How long to block if there are no element available
+     * @param array  $keys    The sorted sets to pop from
+     * @param string $from    The string 'MIN' or 'MAX' (case insensitive) telling Redis whether you wish to
+     *                        pop the lowest or highest scoring members from the set(s).
+     * @param int    $count   Pop up to how many elements.
+     *
+     * @return Redis|array|null|false This function will return an array of popped elements, or false
+     *                                depending on whether any elements could be popped within the
+     *                                specified timeout.
+     *
+     * NOTE:  If Redis::OPT_NULL_MULTIBULK_AS_NULL is set to true via Redis::setOption(), this method will
+     *        instead return NULL when Redis doesn't pop any elements.
+     */
     public function bzmpop(float $timeout, array $keys, string $from, int $count = 1): Redis|array|null|false;
 
+    /**
+     * POP one or more of the highest or lowest scoring elements from one or more sorted sets.
+     *
+     * @see https://redis.io/commands/zmpop
+     *
+     * @param array  $keys  One or more sorted sets
+     * @param string $from  The string 'MIN' or 'MAX' (case insensitive) telling Redis whether you want to
+     *                      pop the lowest or highest scoring elements.
+     * @param int    $count Pop up to how many elements at once.
+     *
+     * @return Redis|array|null|false An array of popped elements or false if none could be popped.
+     */
     public function zmpop(array $keys, string $from, int $count = 1): Redis|array|null|false;
 
     public function blmpop(float $timeout, array $keys, string $from, int $count = 1): Redis|array|null|false;
