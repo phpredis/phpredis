@@ -700,7 +700,7 @@ class Redis {
     public function pexpire(string $key, int $timeout, ?string $mode = NULL): bool;
 
     /**
-     * Set a key's expiration to a specific Unix timestamp in milliseconds.  If connected to
+     * Set a key's expiration to a specific Unix Timestamp in milliseconds.  If connected to
      * Redis >= 7.0.0 you can pass an optional 'mode' argument.
      *
      * @see Redis::expire() For a description of the mode argument.
@@ -713,14 +713,54 @@ class Redis {
      */
     public function pexpireAt(string $key, int $timestamp, ?string $mode = NULL): Redis|bool;
 
-    public function pfadd(string $key, array $elements): int;
+    /**
+     * Add one or more elements to a Redis HyperLogLog key
+     *
+     * @see https://redis.io/commands/pfadd
+     *
+     * @param string $key      The key in question.
+     *
+     * @param array  $elements One or more elements to add.
+     *
+     * @return Redis|int Returns 1 if the set was altered, and zero if not.
+     */
+    public function pfadd(string $key, array $elements): Redis|int;
 
-    public function pfcount(string $key): int;
+    /**
+     * Retrieve the cardinality of a Redis HyperLogLog key.
+     *
+     * @see https://redis.io/commands/pfcount
+     *
+     * @param string $key The key name we wish to query.
+     *
+     * @return Redis|int The estimated cardinality of the set.
+     */
+    public function pfcount(string $key): Redis|int;
 
-    public function pfmerge(string $dst, array $keys): bool;
+    /**
+     * Merge one or more source HyperLogLog sets into a destination set.
+     *
+     * @see https://redis.io/commands/pfmerge
+     *
+     * @param string $dst     The destination key.
+     * @param array  $srckeys One or more source keys.
+     *
+     * @return Redis|bool Always returns true.
+     */
+    public function pfmerge(string $dst, array $srckeys): Redis|bool;
 
-    /** @return string|Redis */
-    public function ping(string $key = NULL);
+    /**
+     * PING the redis server with an optional string argument.
+     *
+     * @see https://redis.io/commands/ping
+     *
+     * @param string $message An optional string message that Redis will reply with, if passed.
+     *
+     * @return Redis|string|false If passed no message, this command will simply return `true`.
+     *                            If a message is passed, it will return the message.
+     *
+     */
+    public function ping(string $message = NULL): Redis|string|bool;
 
     public function pipeline(): bool|Redis;
 

@@ -292,12 +292,35 @@ class RedisCluster {
 
     public function pexpireat(string $key, int $timestamp, ?string $mode = NULL): RedisCluster|bool;
 
+
+    /**
+     * @see Redis::pfadd()
+     */
     public function pfadd(string $key, array $elements): RedisCluster|bool;
 
+    /**
+     * @see Redis::pfcount()
+     */
     public function pfcount(string $key): RedisCluster|int|false;
 
+    /**
+     * @see Redis::pfmerge()
+     */
     public function pfmerge(string $key, array $keys): RedisCluster|bool;
 
+    /**
+     * PING an instance in the redis cluster.
+     *
+     * @see Redis::ping()
+     *
+     * @param string|array $key_or_address Either a key name or a two element array with host and
+     *                                     address, informing RedisCluster which node to ping.
+     *
+     * @param string       $message        An optional message to send.
+     *
+     * @return mixed This method always returns `true` if no message was sent, and the message itself
+     *               if one was.
+     */
     public function ping(string|array $key_or_address, ?string $message = NULL): mixed;
 
     public function psetex(string $key, int $timeout, string $value): RedisCluster|bool;

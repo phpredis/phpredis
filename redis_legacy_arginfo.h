@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 823ee9deddd36d3783eb469ce504984b11ac9a50 */
+ * Stub hash: 891f2eb4099e73c6d7d47f8d673bfa8800db6994 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -510,11 +510,11 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_pfmerge, 0, 0, 2)
 	ZEND_ARG_INFO(0, dst)
-	ZEND_ARG_INFO(0, keys)
+	ZEND_ARG_INFO(0, srckeys)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_ping, 0, 0, 0)
-	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, message)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_pipeline arginfo_class_Redis___destruct
