@@ -2201,49 +2201,37 @@ redis_getex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_brpoplpush_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                          char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *key1, *key2;
-    size_t key1_len, key2_len;
-    int key1_free, key2_free;
-    short slot1, slot2;
-    zend_long timeout;
+    zend_string *src = NULL, *dst = NULL;
+    double timeout = 0;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssl", &key1, &key1_len,
-                             &key2, &key2_len, &timeout) == FAILURE)
-    {
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_STR(src)
+        Z_PARAM_STR(dst)
+        Z_PARAM_DOUBLE(timeout)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    src = redis_key_prefix_zstr(redis_sock, src);
+    dst = redis_key_prefix_zstr(redis_sock, dst);
+
+    if (slot && (*slot = cluster_hash_key_zstr(src)) != cluster_hash_key_zstr(dst)) {
+        php_error_docref(NULL, E_WARNING, "Keys must hash to the same slot");
+        zend_string_release(src);
+        zend_string_release(dst);
         return FAILURE;
     }
 
-    // Key prefixing
-    key1_free = redis_key_prefix(redis_sock, &key1, &key1_len);
-    key2_free = redis_key_prefix(redis_sock, &key2, &key2_len);
-
-    // In cluster mode, verify the slots match
-    if (slot) {
-        slot1 = cluster_hash_key(key1, key1_len);
-        slot2 = cluster_hash_key(key2, key2_len);
-        if (slot1 != slot2) {
-            php_error_docref(NULL, E_WARNING,
-               "Keys hash to different slots!");
-            if (key1_free) efree(key1);
-            if (key2_free) efree(key2);
-            return FAILURE;
-        }
-
-        // Both slots are the same
-        *slot = slot1;
-    }
-
-    // Consistency with Redis, if timeout < 0 use RPOPLPUSH
+    /* Consistency with Redis.  If timeout < 0 use RPOPLPUSH */
     if (timeout < 0) {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "RPOPLPUSH", "ss", key1, key1_len,
-                                     key2, key2_len);
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "RPOPLPUSH", "SS", src, dst);
+    } else if (fabs(timeout - (long)timeout) < .0001) {
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "BRPOPLPUSH", "SSd", src, dst, (long)timeout);
     } else {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "BRPOPLPUSH", "ssd", key1, key1_len,
-                                     key2, key2_len, timeout);
+        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "BRPOPLPUSH", "SSf", src, dst, timeout);
     }
 
-    if (key1_free) efree(key1);
-    if (key2_free) efree(key2);
+    zend_string_release(src);
+    zend_string_release(dst);
+
     return SUCCESS;
 }
 

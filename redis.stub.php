@@ -161,7 +161,7 @@ class Redis {
     /**
      * Count the number of set bits in a Redis string.
      *
-     * @see https://https://redis.io/commands/bitcount/
+     * @see https://redis.io/commands/bitcount/
      *
      * @param string $key     The key in question (must be a string key)
      * @param int    $start   The index where Redis should start counting.  If ommitted it
@@ -182,7 +182,7 @@ class Redis {
     /**
      * Return the position of the first bit set to 0 or 1 in a string.
      *
-     * @see https://https://redis.io/commands/bitpos/
+     * @see https://redis.io/commands/bitpos/
      *
      * @param string $key   The key to check (must be a string)
      * @param bool   $bit   Whether to look for an unset (0) or set (1) bit.
@@ -195,11 +195,54 @@ class Redis {
      **/
     public function bitpos(string $key, bool $bit, int $start = 0, int $end = -1, bool $bybit = false): Redis|int|false;
 
-    public function blPop(string|array $key, string|float|int $timeout_or_key, mixed ...$extra_args): Redis|array|null|false;
+    /**
+     * Pop an element off the beginning of a Redis list or lists, potentially blocking up to a specified
+     * timeout.  This method may be called in two distinct ways, of which examples are provided below.
+     *
+     * @see https://redis.io/commands/blpop/
+     *
+     * @param string|array     $key_or_keys    This can either be a string key or an array of one or more
+     *                                         keys.
+     * @param string|float|int $timeout_or_key If the previous argument was a string key, this can either
+     *                                         be an additional key, or the timeout you wish to send to
+     *                                         the command.
+     *
+     * <code>
+     * <?php>
+     * // One way to call this method is in a variadic way, with the final argument being
+     * // the intended timeout.
+     * $redis->blPop('list1', 'list2', 'list3', 1.5);
+     *
+     * // Alternatively, you can send an array of keys
+     * $relay->blPop(['list1', 'list2', 'list3'], 1.5);
+     * ?>
+     * </code>
+     */
+    public function blPop(string|array $key_or_keys, string|float|int $timeout_or_key, mixed ...$extra_args): Redis|array|null|false;
 
-    public function brPop(string|array $key, string|float|int $timeout_or_key, mixed ...$extra_args): Redis|array|null|false;
+    /**
+     * Pop an element off of the end of a Redis list or lists, potentially blocking up to a specified timeout.
+     * The calling convention is identical to Redis::blPop() so see that documentation for more details.
+     *
+     * @see https://redis.io/commands/brpop/
+     * @see Redis::blPop()
+     *
+     */
+    public function brPop(string|array $key_or_keys, string|float|int $timeout_or_key, mixed ...$extra_args): Redis|array|null|false;
 
-    public function brpoplpush(string $src, string $dst, int $timeout): Redis|string|false;
+    /**
+     * Pop an element from the end of a Redis list, pushing it to the beginning of another Redis list,
+     * optionally blocking up to a specified timeout.
+     *
+     * @see https://redis.io/commands/brpoplpush/
+     *
+     * @param string    $src     The source list
+     * @param string    $dst     The destination list
+     * @param int|float $timeout The number of seconds to wait.  Note that you must be connected
+     *                           to Redis >= 6.0.0 to send a floating point timeout.
+     *
+     */
+    public function brpoplpush(string $src, string $dst, int|float $timeout): Redis|string|false;
 
     public function bzPopMax(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): Redis|array|false;
 
@@ -755,7 +798,7 @@ class Redis {
     /**
      * Sort the contents of a Redis key in various ways.
      *
-     * @see https://https://redis.io/commands/sort/
+     * @see https://redis.io/commands/sort/
      *
      * @param string $key     The key you wish to sort
      * @param array  $options Various options controlling how you would like the
@@ -933,7 +976,7 @@ class Redis {
      * How the command works in particular is greatly affected by the options that
      * are passed in.
      *
-     * @see https://https://redis.io/commands/zrange/
+     * @see https://redis.io/commands/zrange/
      * @category zset
      *
      * @param string          $key     The sorted set in question.
@@ -973,7 +1016,7 @@ class Redis {
      * This command is similar to ZRANGE except that instead of returning the values directly
      * it will store them in a destination key provided by the user
      *
-     * @see https://https://redis.io/commands/zrange/
+     * @see https://redis.io/commands/zrange/
      * @see Redis::zRange
      * @category zset
      *

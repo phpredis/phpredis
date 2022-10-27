@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 21ca57fa960dd8afd88a830b1628e229e831476d */
+ * Stub hash: b42e3cb1c1b50ae6cac12314b83116657365c7c4 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -67,7 +67,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_bitpos, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_blPop, 0, 0, 2)
-	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, key_or_keys)
 	ZEND_ARG_INFO(0, timeout_or_key)
 	ZEND_ARG_VARIADIC_INFO(0, extra_args)
 ZEND_END_ARG_INFO()
@@ -80,9 +80,13 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_brpoplpush, 0, 0, 3)
 	ZEND_ARG_INFO(0, timeout)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_bzPopMax arginfo_class_Redis_blPop
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_bzPopMax, 0, 0, 2)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, timeout_or_key)
+	ZEND_ARG_VARIADIC_INFO(0, extra_args)
+ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_bzPopMin arginfo_class_Redis_blPop
+#define arginfo_class_Redis_bzPopMin arginfo_class_Redis_bzPopMax
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_bzmpop, 0, 0, 3)
 	ZEND_ARG_INFO(0, timeout)

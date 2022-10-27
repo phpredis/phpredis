@@ -2498,6 +2498,7 @@ class Redis_Test extends TestSuite
         $this->redis->lpush('{list}y', '456');    // y = [456, 123]
 
         $this->assertEquals($this->redis->brpoplpush('{list}x', '{list}y', 1), 'abc');  // we RPOP x, yielding abc.
+
         $this->assertEquals($this->redis->lrange('{list}x', 0, -1), ['def']); // only def remains in x.
         $this->assertEquals($this->redis->lrange('{list}y', 0, -1), ['abc', '456', '123']);   // abc has been lpushed to y.
 
@@ -2506,6 +2507,15 @@ class Redis_Test extends TestSuite
         $this->assertTrue(FALSE === $this->redis->brpoplpush('{list}x', '{list}y', 1));
         $this->assertTrue([] === $this->redis->lrange('{list}x', 0, -1));
         $this->assertTrue([] === $this->redis->lrange('{list}y', 0, -1));
+
+        if (!$this->minVersionCheck('6.0.0'))
+            return;
+
+        // Redis >= 6.0.0 allows floating point timeouts
+        $st = microtime(true);
+        $this->assertEquals(FALSE, $this->redis->brpoplpush('{list}x', '{list}y', .1));
+        $et = microtime(true);
+        $this->assertTrue($et - $st < 1.0);
     }
 
     public function testZAddFirstArg() {
