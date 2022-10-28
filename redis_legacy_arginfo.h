@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 76d56f0a612ec76a5e5f59c90fe09b223f846de6 */
+ * Stub hash: 3c2e612a6892a8ae2ac363336c462e24a1333050 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -576,8 +576,8 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_Redis_role arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_rpoplpush, 0, 0, 2)
-	ZEND_ARG_INFO(0, src)
-	ZEND_ARG_INFO(0, dst)
+	ZEND_ARG_INFO(0, srckey)
+	ZEND_ARG_INFO(0, dstkey)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_sAdd, 0, 0, 2)
@@ -717,7 +717,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_subscribe, 0, 0, 2)
 	ZEND_ARG_INFO(0, cb)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_swapdb arginfo_class_Redis_rpoplpush
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_swapdb, 0, 0, 2)
+	ZEND_ARG_INFO(0, src)
+	ZEND_ARG_INFO(0, dst)
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_time arginfo_class_Redis___destruct
 
