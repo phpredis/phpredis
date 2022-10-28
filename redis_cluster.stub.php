@@ -98,8 +98,14 @@ class RedisCluster {
 
     public function zmpop(array $keys, string $from, int $count = 1): RedisCluster|array|null|false;
 
+    /**
+     * @see Redis::blmpop()
+     */
     public function blmpop(float $timeout, array $keys, string $from, int $count = 1): RedisCluster|array|null|false;
 
+    /**
+     * @see Redis::lmpop()
+     */
     public function lmpop(array $keys, string $from, int $count = 1): RedisCluster|array|null|false;
 
     public function clearlasterror(): bool;
@@ -347,8 +353,14 @@ class RedisCluster {
 
     public function role(string|array $key_or_address): mixed;
 
+    /**
+     * @see Redis::rpop()
+     */
     public function rpop(string $key, int $count = 0): RedisCluster|bool|string|array;
 
+    /**
+     * @see Redis::rpoplpush()
+     */
     public function rpoplpush(string $src, string $dst): RedisCluster|bool|string;
 
     public function rpush(string $key, mixed ...$elements): RedisCluster|int|false;

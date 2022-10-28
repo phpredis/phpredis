@@ -352,8 +352,37 @@ class Redis {
      */
     public function zmpop(array $keys, string $from, int $count = 1): Redis|array|null|false;
 
+    /**
+     * Pop one or more elements from one or more Redis LISTs, blocking up to a specified timeout when
+     * no elements are available.
+     *
+     * @see https://redis.io/commands/blmpop
+     *
+     * @param float  $timeout The number of seconds Redis will block when no elements are available.
+     * @param array  $keys    One or more Redis LISTs to pop from.
+     * @param string $from    The string 'LEFT' or 'RIGHT' (case insensitive), telling Redis whether
+     *                        to pop elements from the beginning or end of the LISTs.
+     * @param int    $count   Pop up to how many elements at once.
+     *
+     * @return Redis|array|null|false One or more elements popped from the list(s) or false if all LISTs
+     *                                were empty.
+     */
     public function blmpop(float $timeout, array $keys, string $from, int $count = 1): Redis|array|null|false;
 
+    /**
+     * Pop one or more elements off of one or more Redis LISTs.
+     *
+     * @see https://redis.io/commands/lmpop
+     *
+     * @param array  $keys  An array with one or more Redis LIST key names.
+     * @param string $from  The string 'LEFT' or 'RIGHT' (case insensitive), telling Redis whether to pop\
+     *                      elements from the beginning or end of the LISTs.
+     * @param int    $count The maximum number of elements to pop at once.
+     *
+     * @return Redis|array|null|false One or more elements popped from the LIST(s) or false if all the LISTs
+     *                                were empty.
+     *
+     */
     public function lmpop(array $keys, string $from, int $count = 1): Redis|array|null|false;
 
     /**
@@ -849,6 +878,18 @@ class Redis {
 
     public function punsubscribe(array $patterns): Redis|array|bool;
 
+    /**
+     * Pop one or more elements from the end of a Redis LIST.
+     *
+     * @see https://redis.io/commands/rpop
+     *
+     * @param string $key   A redis LIST key name.
+     * @param int    $count The maximum number of elements to pop at once.
+     *
+     * NOTE:  The `count` argument requires Redis >= 6.2.0
+     *
+     * @return Redis|array|string|bool One ore more popped elements or false if all were empty.
+     */
     public function rPop(string $key, int $count = 0): Redis|array|string|bool;
 
     /** @return string|Redis */
@@ -868,7 +909,19 @@ class Redis {
 
     public function role(): mixed;
 
-    public function rpoplpush(string $src, string $dst): Redis|string|false;
+    /**
+     * Atomically pop an element off the end of a Redis LIST and push it to the beginning of
+     * another.
+     *
+     * @see https://redis.io/commands/rpoplpush
+     *
+     * @param string $srckey The source key to pop from.
+     * @param string $dstkey The destination key to push to.
+     *
+     * @return Redis|string|false The popped element or false if the source key was empty.
+     *
+     */
+    public function rpoplpush(string $srckey, string $dstkey): Redis|string|false;
 
     public function sAdd(string $key, mixed $value, mixed ...$other_values): Redis|int|false;
 
