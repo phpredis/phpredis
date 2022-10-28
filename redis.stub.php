@@ -920,6 +920,32 @@ class Redis {
      *
      * @return Redis|string|false The popped element or false if the source key was empty.
      *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->pipeline()
+     *       ->del('list1', 'list2')
+     *       ->rpush('list1', 'list1-1', 'list1-2')
+     *       ->rpush('list2', 'list2-1', 'list2-2')
+     *       ->exec();
+     *
+     * var_dump($redis->rpoplpush('list2', 'list1'));
+     * var_dump($redis->lrange('list1', 0, -1));
+     *
+     * // --- OUTPUT ---
+     * // string(7) "list2-2"
+     * //
+     * // array(3) {
+     * //   [0]=>
+     * //   string(7) "list2-2"
+     * //   [1]=>
+     * //   string(7) "list1-1"
+     * //   [2]=>
+     * //   string(7) "list1-2"
+     * // }
+     * ?>
+     * </code>
      */
     public function rpoplpush(string $srckey, string $dstkey): Redis|string|false;
 
