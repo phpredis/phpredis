@@ -169,7 +169,7 @@ redis_build_script_cmd(smart_string *cmd, int argc, zval *z_args)
     if (!strcasecmp(Z_STRVAL(z_args[0]), "kill")) {
         // Simple SCRIPT_KILL command
         REDIS_CMD_INIT_SSTR_STATIC(cmd, argc, "SCRIPT");
-        redis_cmd_append_sstr(cmd, "KILL", sizeof("KILL") - 1);
+        redis_cmd_append_sstr(cmd, ZEND_STRL("KILL"));
     } else if (!strcasecmp(Z_STRVAL(z_args[0]), "flush")) {
         // Simple SCRIPT FLUSH [ASYNC | SYNC]
         if (argc > 1 && (
@@ -180,7 +180,7 @@ redis_build_script_cmd(smart_string *cmd, int argc, zval *z_args)
             return NULL;
         }
         REDIS_CMD_INIT_SSTR_STATIC(cmd, argc, "SCRIPT");
-        redis_cmd_append_sstr(cmd, "FLUSH", sizeof("FLUSH") - 1);
+        redis_cmd_append_sstr(cmd, ZEND_STRL("FLUSH"));
         if (argc > 1) {
             redis_cmd_append_sstr(cmd, Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1]));
         }
@@ -192,7 +192,7 @@ redis_build_script_cmd(smart_string *cmd, int argc, zval *z_args)
         }
         // Format our SCRIPT LOAD command
         REDIS_CMD_INIT_SSTR_STATIC(cmd, argc, "SCRIPT");
-        redis_cmd_append_sstr(cmd, "LOAD", sizeof("LOAD") - 1);
+        redis_cmd_append_sstr(cmd, ZEND_STRL("LOAD"));
         redis_cmd_append_sstr(cmd, Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1]));
     } else if (!strcasecmp(Z_STRVAL(z_args[0]), "exists")) {
         // Make sure we have a second argument
@@ -201,7 +201,7 @@ redis_build_script_cmd(smart_string *cmd, int argc, zval *z_args)
         }
         /* Construct our SCRIPT EXISTS command */
         REDIS_CMD_INIT_SSTR_STATIC(cmd, argc, "SCRIPT");
-        redis_cmd_append_sstr(cmd, "EXISTS", sizeof("EXISTS") - 1);
+        redis_cmd_append_sstr(cmd, ZEND_STRL("EXISTS"));
 
         for (i = 1; i < argc; ++i) {
             zstr = zval_get_string(&z_args[i]);
@@ -617,13 +617,13 @@ int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
 
     // Append count if we've got one
     if (count) {
-        redis_cmd_append_sstr(&cmdstr,"COUNT",sizeof("COUNT")-1);
+        redis_cmd_append_sstr(&cmdstr, ZEND_STRL("COUNT"));
         redis_cmd_append_sstr_long(&cmdstr, count);
     }
 
     // Append pattern if we've got one
     if (pat_len) {
-        redis_cmd_append_sstr(&cmdstr,"MATCH",sizeof("MATCH")-1);
+        redis_cmd_append_sstr(&cmdstr, ZEND_STRL("MATCH"));
         redis_cmd_append_sstr(&cmdstr,pat,pat_len);
     }
 
@@ -1348,7 +1348,7 @@ redis_zinterunionstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Weights
     if (ht_weights != NULL) {
-        redis_cmd_append_sstr(&cmdstr, "WEIGHTS", sizeof("WEIGHTS")-1);
+        redis_cmd_append_sstr(&cmdstr, ZEND_STRL("WEIGHTS"));
 
         // Process our weights
         ZEND_HASH_FOREACH_VAL(ht_weights, z_ele) {
@@ -1362,7 +1362,7 @@ redis_zinterunionstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // AGGREGATE
     if (agg_op_len != 0) {
-        redis_cmd_append_sstr(&cmdstr, "AGGREGATE", sizeof("AGGREGATE")-1);
+        redis_cmd_append_sstr(&cmdstr, ZEND_STRL("AGGREGATE"));
         redis_cmd_append_sstr(&cmdstr, agg_op, agg_op_len);
     }
 
@@ -2391,7 +2391,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     ZVAL_NULL(&z_mems[valid]);
 
     // Start command construction
-    redis_cmd_init_sstr(&cmdstr, valid+1, "HMGET", sizeof("HMGET")-1);
+    redis_cmd_init_sstr(&cmdstr, valid+1, ZEND_STRL("HMGET"));
 
     // Prefix our key
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
@@ -2453,7 +2453,7 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     ht_vals = Z_ARRVAL_P(z_arr);
 
     // Initialize our HMSET command (key + 2x each array entry), add key
-    redis_cmd_init_sstr(&cmdstr, 1+(count*2), "HMSET", sizeof("HMSET")-1);
+    redis_cmd_init_sstr(&cmdstr, 1+(count*2), ZEND_STRL("HMSET"));
     redis_cmd_append_sstr(&cmdstr, key, key_len);
 
     // Start traversing our key => value array
@@ -2806,7 +2806,7 @@ int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (slot) *slot = -1;
 
     // Initialize command construction, add our operation argument
-    redis_cmd_init_sstr(&cmdstr, argc, "BITOP", sizeof("BITOP")-1);
+    redis_cmd_init_sstr(&cmdstr, argc, ZEND_STRL("BITOP"));
     redis_cmd_append_sstr(&cmdstr, Z_STRVAL(z_args[0]), Z_STRLEN(z_args[0]));
 
     // Now iterate over our keys argument
@@ -2967,7 +2967,7 @@ int redis_pfadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     return redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-        "PFADD", sizeof("PFADD")-1, 0, cmd, cmd_len, slot);
+        ZEND_STRL("PFADD"), 0, cmd, cmd_len, slot);
 }
 
 /* PFMERGE */
@@ -2975,7 +2975,7 @@ int redis_pfmerge_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     return redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-        "PFMERGE", sizeof("PFMERGE")-1, 1, cmd, cmd_len, slot);
+        ZEND_STRL("PFMERGE"), 1, cmd, cmd_len, slot);
 }
 
 /* PFCOUNT */
@@ -3009,7 +3009,7 @@ int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         }
 
         /* Initialize the command with our number of arguments */
-        redis_cmd_init_sstr(&cmdstr, num_keys, "PFCOUNT", sizeof("PFCOUNT")-1);
+        redis_cmd_init_sstr(&cmdstr, num_keys, ZEND_STRL("PFCOUNT"));
 
         /* Append our key(s) */
         ZEND_HASH_FOREACH_VAL(ht_keys, z_key) {
@@ -3043,7 +3043,7 @@ int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         } ZEND_HASH_FOREACH_END();
     } else {
         /* Construct our whole command */
-        redis_cmd_init_sstr(&cmdstr, 1, "PFCOUNT", sizeof("PFCOUNT")-1);
+        redis_cmd_init_sstr(&cmdstr, 1, ZEND_STRL("PFCOUNT"));
 
         /* Turn our key into a string if it's a different type */
         zstr = zval_get_string(z_keys);
@@ -3764,7 +3764,7 @@ int redis_hdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     arg_free = redis_key_prefix(redis_sock, &arg, &arg_len);
 
     // Start command construction
-    redis_cmd_init_sstr(&cmdstr, argc, "HDEL", sizeof("HDEL")-1);
+    redis_cmd_init_sstr(&cmdstr, argc, ZEND_STRL("HDEL"));
     redis_cmd_append_sstr(&cmdstr, arg, arg_len);
 
     // Set our slot, free key if we prefixed it
@@ -3852,7 +3852,7 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
     // Start command construction
-    redis_cmd_init_sstr(&cmdstr, argc, "ZADD", sizeof("ZADD")-1);
+    redis_cmd_init_sstr(&cmdstr, argc, ZEND_STRL("ZADD"));
     redis_cmd_append_sstr(&cmdstr, key, key_len);
 
     // Set our slot, free key if we prefixed it
@@ -5054,8 +5054,8 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         HashTable *ht_arr = Z_ARRVAL_P(z_arg);
         smart_string cmdstr = {0};
 
-        redis_cmd_init_sstr(&cmdstr, 1 + arr_len, "COMMAND", sizeof("COMMAND")-1);
-        redis_cmd_append_sstr(&cmdstr, "GETKEYS", sizeof("GETKEYS")-1);
+        redis_cmd_init_sstr(&cmdstr, 1 + arr_len, ZEND_STRL("COMMAND"));
+        redis_cmd_append_sstr(&cmdstr, ZEND_STRL("GETKEYS"));
 
         ZEND_HASH_FOREACH_VAL(ht_arr, z_ele) {
             zend_string *zstr = zval_get_string(z_ele);
@@ -5264,7 +5264,7 @@ int redis_xrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     redis_cmd_append_sstr(&cmdstr, end, endlen);
 
     if (count > -1) {
-        redis_cmd_append_sstr(&cmdstr, "COUNT", sizeof("COUNT")-1);
+        redis_cmd_append_sstr(&cmdstr, ZEND_STRL("COUNT"));
         redis_cmd_append_sstr_long(&cmdstr, count);
     }
 
