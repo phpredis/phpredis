@@ -367,8 +367,14 @@ class RedisCluster {
 
     public function rpushx(string $key, string $value): RedisCluster|bool|int;
 
+    /**
+     * @see Redis::sadd()
+     */
     public function sadd(string $key, mixed $value, mixed ...$other_values): RedisCluster|int|false;
 
+    /**
+     * @see Redis::saddarray()
+     */
     public function saddarray(string $key, array $values): RedisCluster|bool|int;
 
     public function save(string|array $key_or_address): RedisCluster|bool;
@@ -379,8 +385,14 @@ class RedisCluster {
 
     public function script(string|array $key_or_address, mixed ...$args): mixed;
 
+    /**
+     * @see Redis::sdiff()
+     */
     public function sdiff(string $key, string ...$other_keys): RedisCluster|array|false;
 
+    /**
+     * @see Redis::sdiffstore()
+     */
     public function sdiffstore(string $dst, string $key, string ...$other_keys): RedisCluster|int|false;
 
     public function set(string $key, mixed $value, mixed $options = NULL): RedisCluster|string|bool;
@@ -395,10 +407,16 @@ class RedisCluster {
 
     public function setrange(string $key, int $offset, string $value): RedisCluster|int|false;
 
+    /**
+     * @see Redis::sinter()
+     */
     public function sinter(array|string $key, string ...$other_keys): RedisCluster|array|false;
 
     public function sintercard(array $keys, int $limit = -1): RedisCluster|int|false;
 
+    /**
+     * @see Redis::sinterstore()
+     */
     public function sinterstore(array|string $key, string ...$other_keys): RedisCluster|int|false;
 
     public function sismember(string $key, mixed $value): RedisCluster|bool;
@@ -431,8 +449,14 @@ class RedisCluster {
 
     public function subscribe(array $channels, callable $cb): void;
 
+    /**
+     * @see Redis::sunion()
+     */
     public function sunion(string $key, string ...$other_keys): RedisCluster|bool|array;
 
+    /**
+     * @see Redis::sunionstore()
+     */
     public function sunionstore(string $dst, string $key, string ...$other_keys): RedisCluster|int|false;
 
     public function time(string|array $key_or_address): RedisCluster|bool|array;

@@ -949,18 +949,177 @@ class Redis {
      */
     public function rpoplpush(string $srckey, string $dstkey): Redis|string|false;
 
+    /**
+     * Add one or more values to a Redis SET key.
+     *
+     * @see https://redis.io/commands/sadd
+
+     * @param string $key           The key name
+     * @param mixed  $member        A value to add to the set.
+     * @param mixed  $other_members One or more additional values to add
+     *
+     * @return Redis|int|false The number of values added to the set.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('myset');
+     *
+     * var_dump($redis->sadd('myset', 'foo', 'bar', 'baz'));
+     * var_dump($redis->sadd('myset', 'foo', 'new'));
+     *
+     * // --- OUTPUT ---
+     * // int(3)
+     * // int(1)
+     * ?>
+     * </code>
+     */
     public function sAdd(string $key, mixed $value, mixed ...$other_values): Redis|int|false;
 
+    /**
+     * Add one ore more values to a Redis SET key.  This is an alternative to Redis::sadd() but
+     * instead of being variadic, takes a single array of values.
+     *
+     * @see https://redis.io/commands/sadd
+     * @see Redis::sadd()
+     *
+     * @param string $key       The set to add values to.
+     * @param array  $values    One or more members to add to the set.
+     * @return Redis|int|false  The number of members added to the set.
+     *
+     * </code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('myset');
+     *
+     * var_dump($redis->sAddArray('myset', ['foo', 'bar', 'baz']));
+     * var_dump($redis->sAddArray('myset', ['foo', 'new']));
+     *
+     * // --- OUTPUT ---
+     * // int(3)
+     * // int(1)
+     * ?>
+     * </code>
+     */
     public function sAddArray(string $key, array $values): int;
 
+    /**
+     * Given one or more Redis SETS, this command returns all of the members from the first
+     * set that are not in any subsequent set.
+     *
+     * @see https://redis.io/commands/sdiff
+     *
+     * @param string $key        The first set
+     * @param string $other_keys One or more additional sets
+     *
+     * @return Redis|array|false Returns the elements from keys 2..N that don't exist in the
+     *                           first sorted set, or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->pipeline()
+     *       ->del('set1', 'set2', 'set3')
+     *       ->sadd('set1', 'apple', 'banana', 'carrot', 'date')
+     *       ->sadd('set2', 'carrot')
+     *       ->sadd('set3', 'apple', 'carrot', 'eggplant')
+     *       ->exec();
+     *
+     * // NOTE:  'banana' and 'date' are in set1 but none of the subsequent sets.
+     * var_dump($redis->sdiff('set1', 'set2', 'set3'));
+     *
+     * // --- OUTPUT ---
+     * array(2) {
+     *   [0]=>
+     *   string(6) "banana"
+     *   [1]=>
+     *   string(4) "date"
+     * }
+     * ?>
+     */
     public function sDiff(string $key, string ...$other_keys): Redis|array|false;
 
+    /**
+     * This method performs the same operation as SDIFF except it stores the resulting diff
+     * values in a specified destination key.
+     *
+     * @see https://redis.io/commands/sdiffstore
+     * @see Redis::sdiff()
+     *
+     * @param string $dst The key where to store the result
+     * @param string $key The first key to perform the DIFF on
+     * @param string $other_keys One or more additional keys.
+     *
+     * @return Redis|int|false The number of values stored in the destination set or false on failure.
+     */
     public function sDiffStore(string $dst, string $key, string ...$other_keys): Redis|int|false;
 
+    /**
+     * Given one or more Redis SET keys, this command will return all of the elements that are
+     * in every one.
+     *
+     * @see https://redis.io/commands/sinter
+     *
+     * @param string $key        The first SET key to intersect.
+     * @param string $other_keys One or more Redis SET keys.
+     *
+     * <code>
+     * <?php
+     *
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->pipeline()
+     *       ->del('alice_likes', 'bob_likes', 'bill_likes')
+     *       ->sadd('alice_likes', 'asparagus', 'broccoli', 'carrot', 'potato')
+     *       ->sadd('bob_likes', 'asparagus', 'carrot', 'potato')
+     *       ->sadd('bill_likes', 'broccoli', 'potato')
+     *       ->exec();
+     *
+     * // NOTE:  'potato' is the only value in all three sets
+     * var_dump($redis->sinter('alice_likes', 'bob_likes', 'bill_likes'));
+     *
+     * // --- OUTPUT ---
+     * // array(1) {
+     * //   [0]=>
+     * //   string(6) "potato"
+     * // }
+     * ?>
+     * </code>
+     */
     public function sInter(array|string $key, string ...$other_keys): Redis|array|false;
 
     public function sintercard(array $keys, int $limit = -1): Redis|int|false;
 
+    /**
+     * Perform the intersection of one or more Redis SETs, storing the result in a destination
+     * key, rather than returning them.
+     *
+     * @see https://redis.io/commands/sinterstore
+     * @see Redis::sinter()
+     *
+     * @param array|string $key_or_keys Either a string key, or an array of keys (with at least two
+     *                                  elements, consisting of the destination key name and one
+     *                                  or more source keys names.
+     * @param string       $other_keys  If the first argument was a string, subsequent arguments should
+     *                                  be source key names.
+     *
+     * @return Redis|int|false          The number of values stored in the destination key or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * // OPTION 1:  A single array
+     * $redis->sInterStore(['dst', 'src1', 'src2', 'src3']);
+     *
+     * // OPTION 2:  Variadic
+     * $redis->sInterStore('dst', 'src1', 'src'2', 'src3');
+     * ?>
+     * </code>
+     */
     public function sInterStore(array|string $key, string ...$other_keys): Redis|int|false;
 
     public function sMembers(string $key): Redis|array|false;
@@ -973,8 +1132,59 @@ class Redis {
 
     public function sRandMember(string $key, int $count = 0): Redis|string|array|false;
 
+    /**
+     * Returns the union of one or more Redis SET keys.
+     *
+     * @see https://redis.io/commands/sunion
+     *
+     * @param string $key         The first SET to do a union with
+     * @param string $other_keys  One or more subsequent keys
+     *
+     * @return Redis|array|false  The union of the one or more input sets or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->pipeline()
+     *       ->del('set1', 'set2', 'set3')
+     *       ->sadd('set1', 'apple', 'banana', 'carrot')
+     *       ->sadd('set2', 'apple', 'carrot', 'fish')
+     *       ->sadd('set3', 'carrot', 'fig', 'eggplant');
+     *
+     * var_dump($redis->sunion('set1', 'set2', 'set3'));
+     *
+     * // --- OPUTPUT ---
+     * // array(5) {
+     * //   [0]=>
+     * //   string(6) "banana"
+     * //   [1]=>
+     * //   string(5) "apple"
+     * //   [2]=>
+     * //   string(4) "fish"
+     * //   [3]=>
+     * //   string(6) "carrot"
+     * //   [4]=>
+     * //   string(8) "eggplant"
+     * // }
+     * ?>
+     * </code>
+     */
     public function sUnion(string $key, string ...$other_keys): Redis|array|false;
 
+    /**
+     * Perform a union of one or more Redis SET keys and store the result in a new set
+     *
+     * @see https://redis.io/commands/sunionstore
+     * @see Redis::sunion()
+     *
+     * @param string $dst        The destination key
+     * @param string $key        The first source key
+     * @param string $other_keys One or more additional source keys
+     *
+     * @return Redis|int|false   The number of elements stored in the destination SET or
+     *                           false on failure.
+     */
     public function sUnionStore(string $dst, string $key, string ...$other_keys): Redis|int|false;
 
     public function save(): bool;
