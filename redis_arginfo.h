@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 8e423eab8d5b732655e7fcaab4d0800aadc38747 */
+ * Stub hash: ed7bf573247cb4bd4ead254d75ad5b60a97313be */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -739,7 +739,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_sUnionStore arginfo_class_Redis_sDiffStore
 
-#define arginfo_class_Redis_save arginfo_class_Redis_clearLastError
+#define arginfo_class_Redis_save arginfo_class_Redis_bgSave
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_scan, 0, 1, MAY_BE_ARRAY|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(1, iterator, IS_LONG, 1)
