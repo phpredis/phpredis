@@ -441,6 +441,9 @@ class RedisCluster {
 
     public function srandmember(string $key, int $count = 0): RedisCluster|string|array|false;
 
+    /**
+     * @see Redis::srem
+     */
     public function srem(string $key, mixed $value, mixed ...$other_values): RedisCluster|int|false;
 
     public function sscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): array|false;

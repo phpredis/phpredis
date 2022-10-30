@@ -40,7 +40,7 @@ class Redis {
      *     'retryInterval'  => 100,
      *
      *      // Which backoff algorithm to use.  'decorrelated jitter' is
-     *      // likely the best one for most solutiona, but there are many
+     *      // likely the best one for most solution, but there are many
      *      // to choose from:
      *      //     REDIS_BACKOFF_ALGORITHM_DEFAULT
      *      //     REDIS_BACKOFF_ALGORITHM_CONSTANT
@@ -143,7 +143,7 @@ class Redis {
      * as set with Redis::setOption().
      *
      * @param  string $value  The value which has been serialized and compressed.
-     * @return mixed          The uncompressed and deserialized value.
+     * @return mixed          The uncompressed and eserialized value.
      *
      */
     public function _unpack(string $value): mixed;
@@ -294,6 +294,7 @@ class Redis {
      * Following are examples of the two main ways to call this method.
      *
      * <code>
+     * <?php
      * // Method 1 - Variadic, with the last argument being our timeout
      * $redis->bzPopMax('key1', 'key2', 'key3', 1.5);
      *
@@ -1187,14 +1188,114 @@ class Redis {
      */
     public function sUnionStore(string $dst, string $key, string ...$other_keys): Redis|int|false;
 
-    public function save(): bool;
+    /**
+     * Persist the Redis database to disk.  This command will block the server until the save is
+     * completed.  For a nonblocking alternative, see Redis::bgsave().
+     *
+     * @see https://redis.io/commands/save
+     * @see Redis::bgsave()
+     *
+     * @return Redis|bool Returns true unless an error occurs.
+     */
+    public function save(): Redis|bool;
 
+    /**
+     * Incrementally scan the Redis keyspace, with optional pattern and type matching.
+     *
+     * @see https://redis.io/commands/scan
+     * @see Redis::setOption()
+     *
+     * @param int    $iterator The cursor returned by Redis for every subsequent call to SCAN.  On
+     *                         the initial invocation of the call, it should be initialized by the
+     *                         caller to NULL.  Each time SCAN is invoked, the iterator will be
+     *                         updated to a new number, until finally Redis will set the value to
+     *                         zero, indicating that the scan is complete.
+     *
+     * @param string $pattern  An optional glob-style pattern for matching key names.  If passed as
+     *                         NULL, it is the equivalent of sending '*' (match every key).
+     *
+     * @param int    $count    A hint to redis that tells it how many keys to return in a single
+     *                         call to SCAN.  The larger the number, the longer Redis may block
+     *                         clients while iterating the key space.
+     *
+     * @param string $type     An optional argument to specify which key types to scan (e.g.
+     *                         'STRING', 'LIST', 'SET')
+     *
+     * @return array|false     An array of keys, or false if no keys were returned for this
+     *                         invocation of scan.  Note that it is possible for Redis to return
+     *                         zero keys before having scanned the entire key space, so the caller
+     *                         should instead continue to SCAN until the iterator reference is
+     *                         returned to zero.
+     *
+     * A note about Redis::SCAN_NORETRY and Redis::SCAN_RETRY.
+     *
+     * For convenience, PhpRedis can retry SCAN commands itself when Redis returns an empty array of
+     * keys with a nonzero iterator.  This can happen when matching against a pattern that very few
+     * keys match inside a key space with a great many keys.  The following example demonstrates how
+     * to use Redis::scan() with the option disabled and enabled.
+     *
+     * <code>
+     * <?php
+     *
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
+     *
+     * $it = NULL;
+     *
+     * do {
+     *     $keys = $redis->scan($it, '*zorg*');
+     *     foreach ($keys as $key) {
+     *         echo "KEY: $key\n";
+     *     }
+     * } while ($it != 0);
+     *
+     * $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+     *
+     * $it = NULL;
+     *
+     * // When Redis::SCAN_RETRY is enabled, we can use simpler logic, as we will never receive an
+     * // empty array of keys when the iterator is nonzero.
+     * while ($keys = $redis->scan($it, '*zorg*')) {
+     *     foreach ($keys as $key) {
+     *         echo "KEY: $key\n";
+     *     }
+     * }
+     * ?>
+     * </code>
+     */
     public function scan(?int &$iterator, ?string $pattern = null, int $count = 0, string $type = NULL): array|false;
 
     public function scard(string $key): Redis|int|false;
 
     public function script(string $command, mixed ...$args): mixed;
 
+    /**
+     * Select a specific Redis database.
+     *
+     * @param int $db The database to select.  Note that by default Redis has 16 databases (0-15).
+     *
+     * @return Redis|bool true on success and false on failure
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->select(1);
+     * $redis->set('this_is_db_1', 'test');
+     *
+     * $redis->select(0);
+     * var_dump($redis->exists('this_is_db_1'));
+     *
+     * $redis->select(1);
+     * var_dump($redis->exists('this_is_db_1'));
+     *
+     * // --- OUTPUT ---
+     * // int(0)
+     * // int(1)
+     * ?>
+     * </code>
+     */
     public function select(int $db): Redis|bool;
 
     public function set(string $key, mixed $value, mixed $opt = NULL): Redis|string|bool;
@@ -1216,6 +1317,21 @@ class Redis {
      *                                      if it gets disconnected, before throwing an exception.
      *
      *  OPT_SCAN                   enum     Redis::OPT_SCAN_RETRY, or Redis::OPT_SCAN_NORETRY
+     *
+     *                                      Redis::SCAN_NORETRY (default)
+     *                                      --------------------------------------------------------
+     *                                      PhpRedis will only call `SCAN` once for every time the
+     *                                      user calls Redis::scan().  This means it is possible for
+     *                                      an empty array of keys to be returned while there are
+     *                                      still more keys to be processed.
+     *
+     *                                      Redis::SCAN_RETRY
+     *                                      --------------------------------------------------------
+     *                                      PhpRedis may make multiple calls to `SCAN` for every
+     *                                      time the user calls Redis::scan(), and will never return
+     *                                      an empty array of keys unless Redis returns the iterator
+     *                                      to zero (meaning the `SCAN` is complete).
+     *
      *
      *  OPT_SERIALIZER             int      One of the installed serializers, which can vary depending
      *                                      on how PhpRedis was compiled.  All of the supported serializers
@@ -1303,8 +1419,8 @@ class Redis {
      *
      * @param string $operation  The operation you wish to perform.  This can
      *                           be one of the following values:
-     *                           'GET'   - Retreive the Redis slowlog as an array.
-     *                           'LEN'   - Retreive the length of the slowlog.
+     *                           'GET'   - Retrieve the Redis slowlog as an array.
+     *                           'LEN'   - Retrieve the length of the slowlog.
      *                           'RESET' - Remove all slowlog entries.
      * <code>
      * <?php
@@ -1315,7 +1431,7 @@ class Redis {
      * </code>
      *
      * @param int    $length     This optional argument can be passed when operation
-     *                           is 'get' and will specify how many elements to retreive.
+     *                           is 'get' and will specify how many elements to retrieve.
      *                           If omitted Redis will send up to a default number of
      *                           entries, which is configurable.
      *
@@ -1385,6 +1501,32 @@ class Redis {
      */
     public function sortDescAlpha(string $key, ?string $pattern = null, mixed $get = null, int $offset = -1, int $count = -1, ?string $store = null): array;
 
+    /**
+     * Remove one or more values from a Redis SET key.
+     *
+     * @see https://redis.io/commands/srem
+     *
+     * @param string $key         The Redis SET key in question.
+     * @param mixed  $value       The first value to remove.
+     * @param mixed  $more_values One or more additional values to remove.
+     *
+     * @return Redis|int|false    The number of values removed from the set or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->pipeline()->del('set1')
+     *                   ->sadd('set1', 'foo', 'bar', 'baz')
+     *                   ->exec();
+     *
+     * var_dump($redis->sRem('set1', 'foo', 'bar', 'not-in-the-set'));
+     *
+     * // --- OUTPUT ---
+     * // int(2)
+     * ?>
+     * </code>
+     */
     public function srem(string $key, mixed $value, mixed ...$other_values): Redis|int|false;
 
     public function sscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): array|false;
@@ -1502,7 +1644,7 @@ class Redis {
     public function zPopMin(string $key, int $value = null): Redis|array|false;
 
     /**
-     * Retreive a range of elements of a sorted set between a start and end point.
+     * Retrieve a range of elements of a sorted set between a start and end point.
      * How the command works in particular is greatly affected by the options that
      * are passed in.
      *
@@ -1556,7 +1698,7 @@ class Redis {
      * @param string           $end     The ending index to store
      * @param array|bool|null  $options Our options array that controls how the command will function.
      *
-     * @return Redis|int|false The number of elements stored in dstkey or false on failure.
+     * @return Redis|int|false The number of elements stored in $dstkey or false on failure.
      *
      * See Redis::zRange for a full description of the possible options.
      */
