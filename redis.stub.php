@@ -150,6 +150,26 @@ class Redis {
 
     public function acl(string $subcmd, string ...$args): mixed;
 
+    /**
+     * Append data to a Redis STRING key.
+     *
+     * @param string $key   The key in question
+     * @param mixed $value  The data to append to the key.
+     *
+     * @return Redis|int|false The new string length of the key or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->set('foo', 'hello);
+     * var_dump($redis->append('foo', 'world'));
+     *
+     * // --- OUTPUT ---
+     * // int(10)
+     * ?>
+     * </code>
+     */
     public function append(string $key, mixed $value): Redis|int|false;
 
     /**
@@ -391,6 +411,22 @@ class Redis {
      *
      * @return bool This should always return true or throw an exception if we're not connected.
      *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->set('string', 'this_is_a_string');
+     * $redis->smembers('string');
+     *
+     * var_dump($redis->getLastError());
+     * $redis->clearLastError();
+     * var_dump($redis->getLastError());
+     *
+     * // --- OUTPUT ---
+     * // string(65) "WRONGTYPE Operation against a key holding the wrong kind of value"
+     * // NULL
+     * ?>
+     * </code>
      */
     public function clearLastError(): bool;
 
@@ -428,14 +464,116 @@ class Redis {
 
     public function copy(string $src, string $dst, array $options = null): Redis|bool;
 
-    public function dbSize(): Redis|int;
+    /**
+     * Return the number of keys in the currently selected Redis database.
+     *
+     * @see https://redis.io/commands/dbsize
+     *
+     * @return Redis|int The number of keys or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->flushdb();
+     *
+     * $redis->set('foo', 'bar');
+     * var_dump($redis->dbsize());
+     *
+     * $redis->mset(['a' => 'a', 'b' => 'b', 'c' => 'c', 'd' => 'd']);
+     * var_dump($redis->dbsize());
+     *
+     * // --- OUTPUT
+     * // int(1)
+     * // int(5)
+     * ?>
+     */
+    public function dbSize(): Redis|int|false;
 
     public function debug(string $key): Redis|string;
 
+    /**
+     * Decrement a Redis integer by 1 or a provided value.
+     *
+     * @param string $key The key to decrement
+     * @param int    $by  How much to decrement the key.  Note that if this value is
+     *                    not sent or is set to `1`, PhpRedis will actually invoke
+     *                    the 'DECR' command.  If it is any value other than `1`
+     *                    PhpRedis will actually send the `DECRBY` command.
+     *
+     * @return Redis|int|false The new value of the key or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->set('counter', 3);
+     *
+     * var_dump($redis->decr('counter'));
+     * var_dump($redis->decr('counter', 2));
+     *
+     * // --- OUTPUT ---
+     * // int(2)
+     * // int(0)
+     * ?>
+     * </code>
+     */
     public function decr(string $key, int $by = 1): Redis|int|false;
 
+    /**
+     * Decrement a redis integer by a value
+     *
+     * @param string $key   The integer key to decrement.
+     * @param int    $value How much to decrement the key.
+     *
+     * @return Redis|int|false The new value of the key or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost');
+     *
+     * $redis->set('counter', 3);
+     * var_dump($redis->decrby('counter', 1));
+     * var_dump($redis->decrby('counter', 2));
+     *
+     * // --- OUTPUT ---
+     * // int(2)
+     * // int(0)
+     * ?>
+     * </code>
+     */
     public function decrBy(string $key, int $value): Redis|int|false;
 
+    /**
+     * Delete one or more keys from Redis.
+     *
+     * @see https://redis.io/commands/del
+     *
+     * @param array|string $key_or_keys Either an array with one or more key names or a string with
+     *                                  the name of a key.
+     * @param string       $other_keys  One or more additional keys passed in a variadic fashion.
+     *
+     * This method can be called in two distinct ways.  The first is to pass a single array
+     * of keys to delete, and the second is to pass N arguments, all names of keys.  See
+     * below for an example of both strategies.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * for ($i = 0; $i < 5; $i++) {
+     *     $redis->set("key:$i", "val:$i");
+     * }
+     *
+     * var_dump($redis->del('key:0', 'key:1'));
+     * var_dump($redis->del(['key:2', 'key:3', 'key:4']));
+     *
+     * // --- OUTPUT ---
+     * // int(2)
+     * // int(3)
+     * ?>
+     * </code>
+     */
     public function del(array|string $key, string ...$other_keys): Redis|int|false;
 
     /**

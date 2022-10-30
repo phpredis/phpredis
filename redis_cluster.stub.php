@@ -51,6 +51,9 @@ class RedisCluster {
 
     public function acl(string|array $key_or_address, string $subcmd, string ...$args): mixed;
 
+    /**
+     * @see Redis::append()
+     */
     public function append(string $key, mixed $value): RedisCluster|bool|int;
 
     public function bgrewriteaof(string|array $key_or_address): RedisCluster|bool;
@@ -108,6 +111,9 @@ class RedisCluster {
      */
     public function lmpop(array $keys, string $from, int $count = 1): RedisCluster|array|null|false;
 
+    /**
+     * @see Redis::clearlasterror()
+     */
     public function clearlasterror(): bool;
 
     public function client(string|array $key_or_address, string $subcommand, ?string $arg = NULL): array|string|bool;
@@ -120,14 +126,26 @@ class RedisCluster {
 
     public function config(string|array $key_or_address, string $subcommand, mixed ...$extra_args): mixed;
 
+    /**
+     * @see Redis::dbsize()
+     */
     public function dbsize(string|array $key_or_address): RedisCluster|int;
 
+    /**
+     * @see Redis::decr()
+     */
     public function decr(string $key, int $by = 1): RedisCluster|int|false;
 
+    /**
+     * @see Redis::decrby()
+     */
     public function decrby(string $key, int $value): RedisCluster|int|false;
 
     public function decrbyfloat(string $key, float $value): float;
 
+    /**
+     * @see Redis::del()
+     */
     public function del(array|string $key, string ...$other_keys): RedisCluster|int|false;
 
     public function discard(): bool;
