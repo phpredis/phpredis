@@ -3470,7 +3470,7 @@ PHP_METHOD(Redis, pfmerge) {
  */
 
 PHP_METHOD(Redis, geoadd) {
-    REDIS_PROCESS_KW_CMD("GEOADD", redis_key_varval_cmd, redis_long_response);
+    REDIS_PROCESS_CMD(geoadd, redis_long_response);
 }
 
 PHP_METHOD(Redis, geohash) {

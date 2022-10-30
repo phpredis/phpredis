@@ -2759,9 +2759,9 @@ PHP_METHOD(RedisCluster, slowlog) {
 }
 /* }}} */
 
-/* {{{ proto int RedisCluster::geoadd(string key, float long float lat string mem, ...) */
+/* {{{ proto int RedisCluster::geoadd(string key, ?array options, float long float lat string mem, ...) */
 PHP_METHOD(RedisCluster, geoadd) {
-    CLUSTER_PROCESS_KW_CMD("GEOADD", redis_key_varval_cmd, cluster_long_resp, 0);
+    CLUSTER_PROCESS_CMD(geoadd, cluster_long_resp, 0);
 }
 
 /* {{{ proto array RedisCluster::geohash(string key, string mem1, [string mem2...]) */
