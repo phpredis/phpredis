@@ -462,6 +462,56 @@ class Redis {
 
     public function connect(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, array $context = null): bool;
 
+    /**
+     * Make a copy of a redis key.
+     *
+     * @see https://redis.io/commands/copy
+     *
+     * @param string $src     The key to copy
+     * @param string $dst     The name of the new key created from the source key.
+     * @param array  $options An array with modifiers on how COPY should operate.
+     *
+     * Available Options:
+     *
+     * $options = [
+     *     'REPLACE' => true|false // Whether Redis should replace an existing key.
+     *     'DB' => int             // Copy the key to a specific DB.
+     * ];
+     *
+     * @return Redis|bool True if the copy was completed and false if not.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->pipeline()
+     *       ->select(1)
+     *       ->del('newkey')
+     *       ->select(0)
+     *       ->del('newkey')
+     *       ->mset(['source1' => 'value1', 'exists' => 'old_value'])
+     *       ->exec();
+     *
+     * // Will succeed, as 'newkey' doesn't exist
+     * var_dump($redis->copy('source1', 'newkey'));
+     *
+     * // Will succeed, because 'newkey' doesn't exist in DB 1
+     * var_dump($redis->copy('source1', 'newkey', ['db' => 1]));
+     *
+     * // Will fail, because 'exists' does exist
+     * var_dump($redis->copy('source1', 'exists'));
+     *
+     * // Will succeed, because even though 'exists' is a key, we sent the REPLACE option.
+     * var_dump($redis->copy('source1', 'exists', ['REPLACE' => true]));
+     *
+     * // --- OUTPUT ---
+     * // bool(true)
+     * // bool(true)
+     * // bool(false)
+     * // bool(true)
+     * ?>
+     * </code>
+     */
     public function copy(string $src, string $dst, array $options = null): Redis|bool;
 
     /**
