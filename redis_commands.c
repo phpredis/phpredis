@@ -3938,8 +3938,8 @@ redis_geoadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *mode = NULL;
     int argc, i;
 
-    // We at least need a key and one value
-    if ((argc = ZEND_NUM_ARGS()) < 5 || argc % 3 != 2) {
+    // We at least need a key and three values
+    if ((argc = ZEND_NUM_ARGS()) < 4 || (argc % 3 != 1 && argc % 3 != 2)) {
         zend_wrong_param_count();
         return FAILURE;
     }
@@ -3951,13 +3951,14 @@ redis_geoadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    if (Z_TYPE(z_args[1]) != IS_NULL) {
-        if (Z_TYPE(z_args[1]) != IS_ARRAY) {
+    if (argc % 3 == 2) {
+        argc--;
+        if (Z_TYPE(z_args[argc]) != IS_ARRAY) {
             php_error_docref(NULL, E_WARNING, "Invalid options value");
             efree(z_args);
             return FAILURE;
         }
-        ZEND_HASH_FOREACH_VAL(Z_ARRVAL(z_args[1]), z_ele) {
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL(z_args[argc]), z_ele) {
             ZVAL_DEREF(z_ele);
             if (Z_TYPE_P(z_ele) == IS_STRING) {
                 if (zend_string_equals_literal_ci(Z_STR_P(z_ele), "NX") ||
@@ -3972,7 +3973,7 @@ redis_geoadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Initialize our command */
-    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc - 1 + (mode != NULL) + ch, "GEOADD");
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc + (mode != NULL) + ch, "GEOADD");
 
     /* Append key */
     zstr = zval_get_string(&z_args[0]);
@@ -3986,7 +3987,7 @@ redis_geoadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, ch, "CH");
 
     /* Append members */
-    for (i = 2; i < argc; ++i) {
+    for (i = 1; i < argc; ++i) {
         redis_cmd_append_sstr_zval(&cmdstr, &z_args[i], redis_sock);
     }
 

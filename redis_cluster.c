@@ -2759,7 +2759,7 @@ PHP_METHOD(RedisCluster, slowlog) {
 }
 /* }}} */
 
-/* {{{ proto int RedisCluster::geoadd(string key, ?array options, float long float lat string mem, ...) */
+/* {{{ proto int RedisCluster::geoadd(string key, float long float lat string mem, ...) */
 PHP_METHOD(RedisCluster, geoadd) {
     CLUSTER_PROCESS_CMD(geoadd, cluster_long_resp, 0);
 }
