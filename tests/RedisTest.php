@@ -6230,7 +6230,7 @@ class Redis_Test extends TestSuite
     protected function addCities($key) {
         $this->redis->del($key);
         foreach ($this->cities as $city => $longlat) {
-            $this->redis->geoadd($key, null, $longlat[0], $longlat[1], $city);
+            $this->redis->geoadd($key, $longlat[0], $longlat[1], $city);
         }
     }
 
@@ -6244,11 +6244,11 @@ class Redis_Test extends TestSuite
 
         /* Add them one at a time */
         foreach ($this->cities as $city => $longlat) {
-            $this->assertEquals($this->redis->geoadd('geokey', null, $longlat[0], $longlat[1], $city), 1);
+            $this->assertEquals($this->redis->geoadd('geokey', $longlat[0], $longlat[1], $city), 1);
         }
 
         /* Add them again, all at once */
-        $args = ['geokey', null];
+        $args = ['geokey'];
         foreach ($this->cities as $city => $longlat) {
             $args = array_merge($args, [$longlat[0], $longlat[1], $city]);
         }

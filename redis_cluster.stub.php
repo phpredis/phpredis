@@ -165,7 +165,7 @@ class RedisCluster {
 
     public function flushdb(string|array $key_or_address, bool $async = false): RedisCluster|bool;
 
-    public function geoadd(string $key, ?array $options = null, float $lng, float $lat, string $member, mixed ...$other_triples): RedisCluster|int|false;
+    public function geoadd(string $key, float $lng, float $lat, string $member, mixed ...$other_triples_and_options): RedisCluster|int|false;
 
     public function geodist(string $key, string $src, string $dest, ?string $unit = null): RedisCluster|float|false;
 
