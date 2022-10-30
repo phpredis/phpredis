@@ -5178,7 +5178,7 @@ redis_copy_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         } ZEND_HASH_FOREACH_END();
     }
 
-    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2 + (db > -1) + replace, "COPY");
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2 + (db > -1 ? 2 : 0) + replace, "COPY");
     redis_cmd_append_sstr(&cmdstr, src, src_len);
     redis_cmd_append_sstr(&cmdstr, dst, dst_len);
 
