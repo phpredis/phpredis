@@ -559,7 +559,7 @@ class Redis {
      */
     public function flushDB(?bool $sync = null): Redis|bool;
 
-    public function geoadd(string $key, float $lng, float $lat, string $member, mixed ...$other_triples): Redis|int|false;
+    public function geoadd(string $key, ?array $options = null, float $lng, float $lat, string $member, mixed ...$other_triples): Redis|int|false;
 
     public function geodist(string $key, string $src, string $dst, ?string $unit = null): Redis|float|false;
 

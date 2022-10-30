@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: ed7bf573247cb4bd4ead254d75ad5b60a97313be */
+ * Stub hash: 0ff87f3b3f10dacbef8455ba09b17fa4107c7999 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -219,8 +219,9 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_flushDB arginfo_class_Redis_flushAll
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_geoadd, 0, 0, 4)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_geoadd, 0, 0, 5)
 	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, options)
 	ZEND_ARG_INFO(0, lng)
 	ZEND_ARG_INFO(0, lat)
 	ZEND_ARG_INFO(0, member)

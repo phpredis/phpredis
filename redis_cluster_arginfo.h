@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 37a25fa4537a2d10a2c2a8b09292e77e5cc35d59 */
+ * Stub hash: ae14a0f53c3ee46b132ef5db70e539c52a1388bd */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -232,8 +232,9 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_flushdb arginfo_class_RedisCluster_flushall
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_geoadd, 0, 4, RedisCluster, MAY_BE_LONG)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_geoadd, 0, 5, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
 	ZEND_ARG_TYPE_INFO(0, lng, IS_DOUBLE, 0)
 	ZEND_ARG_TYPE_INFO(0, lat, IS_DOUBLE, 0)
 	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
