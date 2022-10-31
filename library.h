@@ -109,6 +109,8 @@ PHP_REDIS_API int redis_xclaim_reply(INTERNAL_FUNCTION_PARAMETERS,
 PHP_REDIS_API int redis_xinfo_reply(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
 
+PHP_REDIS_API int redis_pubsub_response(INTERNAL_FUNCTION_PARAMETERS,
+    RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API int redis_unsubscribe_response(INTERNAL_FUNCTION_PARAMETERS,

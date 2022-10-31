@@ -202,8 +202,8 @@ class Redis_Test extends TestSuite
         $this->assertTrue(is_int($result));
 
         // Invalid calls
-        $this->assertFalse($this->redis->pubsub("notacommand"));
-        $this->assertFalse($this->redis->pubsub("numsub", "not-an-array"));
+        $this->assertFalse(@$this->redis->pubsub("notacommand"));
+        $this->assertFalse(@$this->redis->pubsub("numsub", "not-an-array"));
     }
 
     /* These test cases were generated randomly.  We're just trying to test
