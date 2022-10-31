@@ -455,6 +455,22 @@ redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 }
 
+PHP_REDIS_API int
+redis_pubsub_response(INTERNAL_FUNCTION_PARAMETERS,
+                      RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    if (ctx == NULL) {
+        return redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR) {
+        return redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR + 1) {
+        return redis_mbulk_reply_zipped_keys_int(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else {
+        ZEND_ASSERT(!"memory corruption?");
+        return FAILURE;
+    }
+}
+
 static void
 ht_free_subs(zval *data)
 {
@@ -1354,6 +1370,7 @@ redis_zrandmember_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, 
         return redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
     } else {
         ZEND_ASSERT(!"memory corruption?");
+        return FAILURE;
     }
 }
 
@@ -1366,6 +1383,7 @@ redis_zdiff_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *
         return redis_mbulk_reply_zipped_keys_dbl(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
     } else {
         ZEND_ASSERT(!"memory corruption?");
+        return FAILURE;
     }
 }
 
@@ -1378,6 +1396,7 @@ redis_set_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_
         return redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
     } else {
         ZEND_ASSERT(!"memory corruption?");
+        return FAILURE;
     }
 }
 
@@ -1392,6 +1411,7 @@ redis_hrandfield_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, z
         return redis_mbulk_reply_zipped_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
     } else {
         ZEND_ASSERT(!"memory corruption?");
+        return FAILURE;
     }
 }
 
@@ -1404,6 +1424,7 @@ redis_pop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_
         return redis_mbulk_reply_raw(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
     } else {
         ZEND_ASSERT(!"memory corruption?");
+        return FAILURE;
     }
 }
 
@@ -1447,6 +1468,7 @@ redis_lpos_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z
         }
     } else {
         ZEND_ASSERT(!"memory corruption?");
+        return FAILURE;
     }
 
     if (IS_ATOMIC(redis_sock)) {

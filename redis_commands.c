@@ -1373,7 +1373,81 @@ redis_zinterunionstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
-/* SUBSCRIBE/PSUBSCRIBE */
+int redis_pubsub_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    HashTable *channels = NULL;
+    smart_string cmdstr = {0};
+    zend_string *op, *pattern = NULL;
+    zval *arg = NULL, *z_chan;
+
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_STR(op)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ZVAL(arg)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_string_equals_literal_ci(op, "NUMPAT")) {
+        *ctx = NULL;
+    } else if (zend_string_equals_literal_ci(op, "CHANNELS") ||
+        zend_string_equals_literal_ci(op, "SHARDCHANNELS")
+    ) {
+        if (arg != NULL) {
+            if (Z_TYPE_P(arg) != IS_STRING) {
+                php_error_docref(NULL, E_WARNING, "Invalid patern value");
+                return FAILURE;
+            }
+            pattern = zval_get_string(arg);
+        }
+        *ctx = PHPREDIS_CTX_PTR;
+    } else if (zend_string_equals_literal_ci(op, "NUMSUB") ||
+        zend_string_equals_literal_ci(op, "SHARDNUMSUB")
+    ) {
+        if (arg != NULL) {
+            if (Z_TYPE_P(arg) != IS_ARRAY) {
+                php_error_docref(NULL, E_WARNING, "Invalid channels value");
+                return FAILURE;
+            }
+            channels = Z_ARRVAL_P(arg);
+        }
+        *ctx = PHPREDIS_CTX_PTR + 1;
+    } else {
+        php_error_docref(NULL, E_WARNING, "Unknown PUBSUB operation '%s'", ZSTR_VAL(op));
+        return FAILURE;
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + !!pattern + (channels ? zend_hash_num_elements(channels) : 0), "PUBSUB");
+    redis_cmd_append_sstr_zstr(&cmdstr, op);
+
+    if (pattern != NULL) {
+        redis_cmd_append_sstr_zstr(&cmdstr, pattern);
+        zend_string_release(pattern);
+    } else if (channels != NULL) {
+        ZEND_HASH_FOREACH_VAL(channels, z_chan) {
+            // We want to deal with strings here
+            zend_string *zstr = zval_get_string(z_chan);
+
+            // Grab channel name, prefix if required
+            char *key = ZSTR_VAL(zstr);
+            size_t key_len = ZSTR_LEN(zstr);
+            int key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+            // Add this channel
+            redis_cmd_append_sstr(&cmdstr, key, key_len);
+
+            zend_string_release(zstr);
+            // Free our key if it was prefixed
+            if (key_free) efree(key);
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+/* SUBSCRIBE/PSUBSCRIBE/SSUBSCRIBE */
 int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                         char *kw, char **cmd, int *cmd_len, short *slot,
                         void **ctx)
