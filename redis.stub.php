@@ -437,27 +437,29 @@ class Redis {
     public function command(string $opt = null, string|array $arg): mixed;
 
     /**
-      Execute the Redis CONFIG command in a variety of ways.  What the command does in particular depends
-      on the `$operation` qualifier.
-
-      Operations that PhpRedis supports are: RESETSTAT, REWRITE, GET, and SET.
-
-      @param string            $operation      The CONFIG subcommand to execute
-      @param array|string|null $key_or_setting Can either be a setting string for the GET/SET operation or
-                                               an array of settings or settings and values.
-                                               Note:  Redis 7.0.0 is required to send an array of settings.
-      @param ?string           $value          The setting value when the operation is SET.
-
-      <code>
-      <?php
-      $redis->config('GET', 'timeout');
-      $redis->config('GET', ['timeout', 'databases']);
-
-      $redis->config('SET', 'timeout', 30);
-      $redis->config('SET', ['timeout' => 30, 'loglevel' => 'warning']);
-      ?>
-      </code>
-     */
+     *  Execute the Redis CONFIG command in a variety of ways.  What the command does in particular depends
+     *  on the `$operation` qualifier.
+     *
+     *  Operations that PhpRedis supports are: RESETSTAT, REWRITE, GET, and SET.
+     *
+     *  @see https://redis.io/commands/config
+     *
+     *  @param string            $operation      The CONFIG subcommand to execute
+     *  @param array|string|null $key_or_setting Can either be a setting string for the GET/SET operation or
+     *                                           an array of settings or settings and values.
+     *                                           Note:  Redis 7.0.0 is required to send an array of settings.
+     *  @param string            $value          The setting value when the operation is SET.
+     *
+     *  <code>
+     *  <?php
+     *  $redis->config('GET', 'timeout');
+     *  $redis->config('GET', ['timeout', 'databases']);
+     *
+     *  $redis->config('SET', 'timeout', 30);
+     *  $redis->config('SET', ['timeout' => 30, 'loglevel' => 'warning']);
+     *  ?>
+     *  </code>
+     * */
     public function config(string $operation, array|string|null $key_or_settings = NULL, ?string $value = NULL): mixed;
 
     public function connect(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, array $context = null): bool;
@@ -545,6 +547,9 @@ class Redis {
     /**
      * Decrement a Redis integer by 1 or a provided value.
      *
+     * @see https://redis.io/commands/decr
+     * @see https://redis.io/commands/decrby
+     *
      * @param string $key The key to decrement
      * @param int    $by  How much to decrement the key.  Note that if this value is
      *                    not sent or is set to `1`, PhpRedis will actually invoke
@@ -572,6 +577,8 @@ class Redis {
 
     /**
      * Decrement a redis integer by a value
+     *
+     * @see https://redis.io/commands/decrby
      *
      * @param string $key   The integer key to decrement.
      * @param int    $value How much to decrement the key.
@@ -636,6 +643,27 @@ class Redis {
 
     public function dump(string $key): Redis|string;
 
+    /**
+     * Have Redis repeat back an arbitrary string to the client.
+     *
+     * @see https://redis.io/commands/echo
+     *
+     * @param string $str The string to echo
+     *
+     * @return Redis|string|false The string sent to Redis or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * var_dump($redis->echo('Hello, World'));
+     *
+     * // --- OUTPUT ---
+     * // string(12) "Hello, World"
+     *
+     * ?>
+     * </code>
+     */
     public function echo(string $str): Redis|string|false;
 
     /**
@@ -686,41 +714,148 @@ class Redis {
      */
     public function evalsha_ro(string $sha1, array $args = [], int $num_keys = 0): mixed;
 
+    /**
+     * Execute either a MULTI or PIPELINE block and return the array of replies.
+     *
+     * @see https://redis.io/commands/exec
+     * @see https://redis.io/commands/multi
+     * @see Redis::pipeline()
+     * @see Redis::multi()
+     *
+     * @return Redis|array|false The array of pipeline'd or multi replies or false on failure.
+     *
+     * <code>
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $res = $redis->multi()
+     *              ->set('foo', 'bar')
+     *              ->get('foo')
+     *              ->del('list')
+     *              ->rpush('list', 'one', 'two', 'three')
+     *              ->exec();
+     *
+     * var_dump($res);
+     *
+     * // --- OUTPUT ---
+     * // array(4) {
+     * //   [0]=>
+     * //   bool(true)           // set('foo', 'bar')
+     * //   [1]=>
+     * //   string(3) "bar"      // get('foo')
+     * //   [2]=>
+     * //   int(1)               // del('list')
+     * //   [3]=>
+     * //   int(3)               // rpush('list', 'one', 'two', 'three')
+     * // }
+     * ?>
+     * </code>
+     */
     public function exec(): Redis|array|false;
 
+    /**
+     * Test if one or more keys exist.
+     *
+     * @see https://redis.io/commands/exists
+     *
+     * @param mixed $key         Either an array of keys or a string key
+     * @param mixed $other_keys  If the previous argument was a string, you may send any number of
+     *                           additional keys to test.
+     *
+     * @return Redis|int|bool    The number of keys that do exist and false on failure
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->multi()
+     *       ->mset(['k1' => 'v1', 'k2' => 'v2', 'k3' => 'v3', 'k4' => 'v4'])
+     *       ->exec();
+     *
+     * // Using a single array of keys
+     * var_dump($redis->exists(['k1', 'k2', 'k3']));
+     *
+     * // Calling via variadic arguments
+     * var_dump($redis->exists('k4', 'k5', 'notakey'));
+     *
+     * // --- OUTPUT ---
+     * // int(3)
+     * // int(1)
+     * ?>
+     * </code>
+     */
     public function exists(mixed $key, mixed ...$other_keys): Redis|int|bool;
 
     /**
-       Sets an expiration in seconds on the key in question.  If connected to
-       redis-server >= 7.0.0 you may send an additional "mode" argument which
-       modifies how the command will execute.
-
-       @param string  $key  The key to set an expiration on.
-       @param ?string $mode A two character modifier that changes how the
-                            command works.
-                            NX - Set expiry only if key has no expiry
-                            XX - Set expiry only if key has an expiry
-                            LT - Set expiry only when new expiry is < current expiry
-                            GT - Set expiry only when new expiry is > current expiry
+     * Sets an expiration in seconds on the key in question.  If connected to
+     * redis-server >= 7.0.0 you may send an additional "mode" argument which
+     * modifies how the command will execute.
+     *
+     * @see https://redis.io/commands/expire
+     *
+     * @param string  $key  The key to set an expiration on.
+     * @param string  $mode A two character modifier that changes how the
+     *                      command works.
+     *                      NX - Set expiry only if key has no expiry
+     *                      XX - Set expiry only if key has an expiry
+     *                      LT - Set expiry only when new expiry is < current expiry
+     *                      GT - Set expiry only when new expiry is > current expiry
      */
     public function expire(string $key, int $timeout, ?string $mode = NULL): Redis|bool;
 
     /**
-      Set a key's expiration to a specific Unix timestamp in seconds.  If
-      connected to Redis >= 7.0.0 you can pass an optional 'mode' argument.
-
-      @see Redis::expire() For a description of the mode argument.
-
-       @param string  $key  The key to set an expiration on.
-       @param ?string $mode A two character modifier that changes how the
-                            command works.
+     * Set a key's expiration to a specific Unix timestamp in seconds.  If
+     * connected to Redis >= 7.0.0 you can pass an optional 'mode' argument.
+     *
+     * @see Redis::expire() For a description of the mode argument.
+     *
+     *  @param string  $key  The key to set an expiration on.
+     *  @param string  $mode A two character modifier that changes how the
+     *                       command works.
      */
     public function expireAt(string $key, int $timestamp, ?string $mode = NULL): Redis|bool;
 
     public function failover(?array $to = null, bool $abort = false, int $timeout = 0): Redis|bool;
 
+    /**
+     * Get the expiration of a given key as a unix timestamp
+     *
+     * @see https://redis.io/commands/expiretime
+     *
+     * @param string $key      The key to check.
+     *
+     * @return Redis|int|false The timestamp when the key expires, or -1 if the key has no expiry
+     *                         and -2 if the key doesn't exist.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->set('expiry-key', 'this will last a very long time');
+     *
+     * // Expire this key at 2222/02/22 02:22:22 GMT
+     * $redis->expireAt('expiry-key', 7955144542);
+     *
+     * var_dump($redis->expiretime('expiry-key'));
+     *
+     * // --- OUTPUT ---
+     * // int(7955144542)
+     *
+     * ?>php
+     * </code>
+     */
     public function expiretime(string $key): Redis|int|false;
 
+    /**
+     * Get the expriation timestamp of a given Redis key but in milliseconds.
+     *
+     * @see https://redis.io/commands/pexpiretime
+     * @see Redis::expiretime()
+     *
+     * @param string $key      The key to check
+     *
+     * @return Redis|int|false The expiration timestamp of this key (in milliseconds) or -1 if the
+     *                         key has no expiration, and -2 if it does not exist.
+     */
     public function pexpiretime(string $key): Redis|int|false;
 
     /**
