@@ -124,6 +124,9 @@ class RedisCluster {
 
     public function command(mixed ...$extra_args): mixed;
 
+    /**
+     * @see Redis::config()
+     */
     public function config(string|array $key_or_address, string $subcommand, mixed ...$extra_args): mixed;
 
     /**
@@ -152,6 +155,9 @@ class RedisCluster {
 
     public function dump(string $key): RedisCluster|string|false;
 
+    /**
+     * @see Redis::echo()
+     */
     public function echo(string|array $key_or_address, string $msg): RedisCluster|string|false;
 
     public function eval(string $script, array $args = [], int $num_keys = 0): mixed;
@@ -162,6 +168,9 @@ class RedisCluster {
 
     public function evalsha_ro(string $script_sha, array $args = [], int $num_keys = 0): mixed;
 
+    /**
+     * @see Redis::exec()
+     */
     public function exec(): array|false;
 
     public function exists(mixed $key, mixed ...$other_keys): RedisCluster|int|bool;
@@ -175,8 +184,14 @@ class RedisCluster {
 
     public function expireat(string $key, int $timestamp, ?string $mode = NULL): RedisCluster|bool;
 
+    /**
+     * @see Redis::expiretime()
+     */
     public function expiretime(string $key): RedisCluster|int|false;
 
+    /**
+     * @see Redis::pexpiretime()
+     */
     public function pexpiretime(string $key): RedisCluster|int|false;
 
     public function flushall(string|array $key_or_address, bool $async = false): RedisCluster|bool;
