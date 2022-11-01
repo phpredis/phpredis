@@ -1751,14 +1751,102 @@ class Redis {
     public function setOption(int $option, mixed $value): bool;
 
     /** @return bool|Redis */
+
+    /**
+     * Set a Redis STRING key with a specific expiration in seconds.
+     *
+     * @param string $key     The name of the key to set.
+     * @param int    $expire  The key's expiration in seconds.
+     * @param mixed  $value   The value to set the key.
+     *
+     * @return Redis|bool True on success or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * // Set a key with a 60 second expiration
+     * $redis->set('some_key', 60, 'some_value');
+     *
+     * ?>php
+     * </code>
+     */
     public function setex(string $key, int $expire, mixed $value);
 
     /** @return bool|array|Redis */
     public function setnx(string $key, mixed $value);
 
+    /**
+     * Check whether a given value is the member of a Redis SET.
+     *
+     * @param string $key   The redis set to check.
+     * @param mixed  $value The value to test.
+     *
+     * @return Redis|bool True if the member exists and false if not.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->multi()
+     *       ->del('myset')
+     *       ->sadd('myset', 'foo', 'bar', 'baz')
+     *       ->exec();
+     *
+     * // Will return true, as 'foo' is in the set
+     * $redis->sismember('myset', 'foo');
+     *
+     * // Will return false, as 'not-in-set' is not in the set
+     * $redis->sismember('myset', 'not-in-set');
+     * ?>
+     * </code>
+     */
     public function sismember(string $key, mixed $value): Redis|bool;
 
-    public function slaveof(string $host = null, int $port = 6379): bool;
+    /**
+     * Turn a redis instance into a replica of another or promote a replica
+     * to a primary.
+     *
+     * This method and the corresponding command in Redis has been marked deprecated
+     * and users should instead use Redis::replicaof() if connecting to redis-server
+     * >= 5.0.0.
+     *
+     * @deprecated
+     *
+     * @see https://redis.io/commands/slaveof
+     * @see https://redis.io/commands/replicaof
+     * @see Redis::slaveof()
+     */
+    public function slaveof(string $host = NULL, int $port = 6379): Redis|bool;
+
+    /**
+     * Used to turn a Redis instance into a replica of another, or to remove
+     * replica status promoting the instance to a primary.
+     *
+     * @see https://redis.io/commands/replicaof
+     * @see https://redis.io/commands/slaveof
+     * @see Redis::slaveof()
+     *
+     * @param string $host The host of the primary to start replicating.
+     * @param string $port The port of the primary to start replicating.
+     *
+     * @return Redis|bool Success if we were successfully able to start replicating a primary or
+     *                    were able to promote teh replicat to a primary.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * // Attempt to become a replica of a Redis instance at 127.0.0.1:9999
+     * $redis->slaveof('127.0.0.1', 9999);
+     *
+     * // When passed no arguments, PhpRedis will deliver the command `SLAVEOF NO ONE`
+     * // attempting to promote the instance to a primary.
+     * $redis->slaveof();
+     * ?>
+     * </code>
+     */
+    public function replicaof(string $host = NULL, int $port = 6379): Redis|bool;
 
     /**
      * Update one or more keys last modified metadata.

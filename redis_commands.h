@@ -37,6 +37,10 @@ char *redis_variadic_str_cmd(char *kw, zval *argv, int argc, int *cmd_len);
  * we can write one function to handle all of them.  For example, there are
  * many COMMAND key value commands, or COMMAND key commands. */
 
+int redis_replicaof_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                        char *kw, char **cmd, int *cmd_len, short *slot,
+                        void **ctx);
+
 int redis_empty_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx);
 
