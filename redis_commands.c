@@ -2105,93 +2105,77 @@ redis_acl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
               char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     smart_string cmdstr = {0};
-    zend_string *zstr;
-    zval *z_args;
-    int argc, i;
+    zend_string *op, *zstr;
+    zval *z_args = NULL;
+    int argc = 0, i;
 
-    if ((argc = ZEND_NUM_ARGS()) < 1) {
-        php_error_docref(NULL, E_WARNING, "ACL command requires at least one argument");
-        return FAILURE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, -1)
+        Z_PARAM_STR(op)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_VARIADIC('*', z_args, argc)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    z_args = ecalloc(argc, sizeof(*z_args));
-    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
-        goto failure;
-    }
-
-    zstr = zval_get_string(&z_args[0]);
-    if (zend_string_equals_literal_ci(zstr, "CAT") ||
-        zend_string_equals_literal_ci(zstr, "LIST") ||
-        zend_string_equals_literal_ci(zstr, "USERS")
+    if (zend_string_equals_literal_ci(op, "CAT") ||
+        zend_string_equals_literal_ci(op, "LIST") ||
+        zend_string_equals_literal_ci(op, "USERS")
     ) {
         *ctx = NULL;
-    } else if (zend_string_equals_literal_ci(zstr, "LOAD") ||
-        zend_string_equals_literal_ci(zstr, "SAVE")
+    } else if (zend_string_equals_literal_ci(op, "LOAD") ||
+        zend_string_equals_literal_ci(op, "SAVE")
     ) {
         *ctx = PHPREDIS_CTX_PTR;
-    } else if (zend_string_equals_literal_ci(zstr, "GENPASS") ||
-        zend_string_equals_literal_ci(zstr, "WHOAMI")
+    } else if (zend_string_equals_literal_ci(op, "GENPASS") ||
+        zend_string_equals_literal_ci(op, "WHOAMI")
     ) {
         *ctx = PHPREDIS_CTX_PTR + 1;
-    } else if (zend_string_equals_literal_ci(zstr, "SETUSER")) {
-        if (argc < 2) {
+    } else if (zend_string_equals_literal_ci(op, "SETUSER")) {
+        if (argc < 1) {
             php_error_docref(NULL, E_WARNING, "ACL SETUSER requires at least one argument");
-            zend_string_release(zstr);
-            goto failure;
+            return FAILURE;
         }
         *ctx = PHPREDIS_CTX_PTR;
-    } else if (zend_string_equals_literal_ci(zstr, "DELUSER")) {
-        if (argc < 2) {
+    } else if (zend_string_equals_literal_ci(op, "DELUSER")) {
+        if (argc < 1) {
             php_error_docref(NULL, E_WARNING, "ACL DELUSER requires at least one argument");
-            zend_string_release(zstr);
-            goto failure;
+            return FAILURE;
         }
         *ctx = PHPREDIS_CTX_PTR + 2;
-    } else if (zend_string_equals_literal_ci(zstr, "GETUSER")) {
-        if (argc < 2) {
+    } else if (zend_string_equals_literal_ci(op, "GETUSER")) {
+        if (argc < 1) {
             php_error_docref(NULL, E_WARNING, "ACL GETUSER requires at least one argument");
-            zend_string_release(zstr);
-            goto failure;
+            return FAILURE;
         }
         *ctx = PHPREDIS_CTX_PTR + 3;
-    } else if (zend_string_equals_literal_ci(zstr, "DRYRUN")) {
-        if (argc < 3) {
+    } else if (zend_string_equals_literal_ci(op, "DRYRUN")) {
+        if (argc < 2) {
             php_error_docref(NULL, E_WARNING, "ACL DRYRUN requires at least two arguments");
-            zend_string_release(zstr);
-            goto failure;
+            return FAILURE;
         }
         *ctx = PHPREDIS_CTX_PTR;
-    } else if (zend_string_equals_literal_ci(zstr, "LOG")) {
-        if (argc > 1 && Z_TYPE(z_args[1]) == IS_STRING && ZVAL_STRICMP_STATIC(&z_args[1], "RESET")) {
+    } else if (zend_string_equals_literal_ci(op, "LOG")) {
+        if (argc > 0 && Z_TYPE(z_args[0]) == IS_STRING && ZVAL_STRICMP_STATIC(&z_args[0], "RESET")) {
             *ctx = PHPREDIS_CTX_PTR;
         } else {
             *ctx = PHPREDIS_CTX_PTR + 4;
         }
     } else {
-        php_error_docref(NULL, E_WARNING, "Unknown ACL operation '%s'", ZSTR_VAL(zstr));
-        zend_string_release(zstr);
-        goto failure;
+        php_error_docref(NULL, E_WARNING, "Unknown ACL operation '%s'", ZSTR_VAL(op));
+        return FAILURE;
     }
 
-    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "ACL");
-    redis_cmd_append_sstr_zstr(&cmdstr, zstr);
-    zend_string_release(zstr);
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + argc, "ACL");
+    redis_cmd_append_sstr_zstr(&cmdstr, op);
 
-    for (i = 1; i < argc; ++i) {
+    for (i = 0; i < argc; ++i) {
         zstr = zval_get_string(&z_args[i]);
         redis_cmd_append_sstr_zstr(&cmdstr, zstr);
         zend_string_release(zstr);
     }
-    efree(z_args);
 
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;
 
     return SUCCESS;
-
-failure:
-    efree(z_args);
-    return FAILURE;
 }
 
 /* Attempt to pull a long expiry from a zval.  We're more restrictave than zval_get_long
