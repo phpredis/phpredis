@@ -2049,9 +2049,83 @@ class Redis {
 
     public function subscribe(array $channels, callable $cb): bool;
 
-    public function swapdb(string $src, string $dst): bool;
+    /**
+     * Atomically swap two Redis databases so that all of the keys in the source database will
+     * now be in the destination database and vice-versa.
+     *
+     * Note: This command simply swaps Redis' internal pointer to the database and is therefore
+     * very fast, regardless of the size of the underlying databases.
+     *
+     * @see https://redis.io/commands/swapdb
+     * @see Redis::del()
+     *
+     * @param int $src The source database number
+     * @param int $dst The destination database number
+     *
+     * @return Redis|bool Success if the databases could be swapped and false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->multi()->select(0)
+     *                ->set('db0-key1', 'value1')->set('db0-key2', 'value2')
+     *                ->select(1)
+     *                ->set('db1-key1', 'value1')->set('db1-key2', 'value2')
+     *                ->select(0)
+     *                ->exec();
+     *
+     * // Array
+     * // (
+     * //     [0] => db0-key1
+     * //     [1] => db0-key2
+     * // )
+     * print_r($redis->keys('*'));
+     *
+     * // Swap db0 and db1
+     * $redis->swapdb(0, 1);
+     *
+     * // Array
+     * // (
+     * //     [0] => db1-key2
+     * //     [1] => db1-key1
+     * // )
+     * print_r($redis->keys('*'));
+     *
+     * // Swap them back
+     * $redis->swapdb(0, 1);
+     *
+     * // Array
+     * // (
+     * //     [0] => db0-key1
+     * //     [1] => db0-key2
+     * // )
+     * print_r($redis->keys('*'));
+     * ?>
+     * </code>
+     */
+    public function swapdb(int $src, int $dst): Redis|bool;
 
-    public function time(): array;
+    /**
+     * Retrieve the server time from the connected Redis instance.
+     *
+     * @see https://redis.io/commands/time
+     *
+     * @return A two element array consisting of a Unix Timestamp and the number of microseconds
+     *         elapsed since the second.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * // Array
+     * // (
+     * //     [0] => 1667271026
+     * //     [1] => 355678
+     * // )
+     * print_r($redis->time());
+     */
+    public function time(): Redis|array;
 
     public function ttl(string $key): Redis|int|false;
 
@@ -2059,9 +2133,30 @@ class Redis {
     public function type(string $key);
 
     /**
-     * @return Redis|int|false
+     * Delete one or more keys from the Redis database.  Unlike this operation, the actual
+     * deletion is asynchronous, meaning it is safe to delete large keys without fear of
+     * Redis blocking for a long period of time.
+     *
+     * @param array|string $key_or_keys Either an array with one or more keys or a string with
+     *                                  the first key to delete.
+     * @param string       $other_keys  If the first argument passed to this method was a string
+     *                                  you may pass any number of additional key names.
+     *
+     * @return Redis|int|false The number of keys deleted or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * // OPTION 1:  Called with a single array of keys
+     * $redis->unlink(['key1', 'key2', 'key3']);
+     *
+     * // OPTION 2:  Called with a variadic number of arguments
+     * $redis->unlink('key1', 'key2', 'key3');
+     * ?>
+     * </code>
      */
-    public function unlink(array|string $key, string ...$other_keys);
+    public function unlink(array|string $key, string ...$other_keys): Redis|int|false;
 
     public function unsubscribe(array $channels): Redis|array|bool;
 
@@ -2094,19 +2189,19 @@ class Redis {
      * @see https://redis.io/commands/xgroup/
      *
      * @param string $operation      The subcommand you intend to execute.  Valid options are as follows
-     *                               'HELP'          - Redis will return information about the command
-     *                                                 Requires: none
-     *                               'CREATE'        - Create a consumer group.
-     *                                                 Requires:  Key, group, consumer.
-     *                               'SETID'         - Set the ID of an existing consumer group for the stream.
-     *                                                 Requires:  Key, group, id.
-     *                               'CREATECONSUMER - Create a new consumer group for the stream.  You must
-     *                                                 also pass key, group, and the consumer name you wish to
-     *                                                 create.
-     *                                                 Requires:  Key, group, consumer.
-     *                               'DELCONSUMER'   - Delete a consumer from group attached to the stream.
-     *                                                 Requires:  Key, group, consumer.
-     *                               'DESTROY'       - Delete a consumer group from a stream.
+     *                               'HELP'           - Redis will return information about the command
+     *                                                  Requires: none
+     *                               'CREATE'         - Create a consumer group.
+     *                                                  Requires:  Key, group, consumer.
+     *                               'SETID'          - Set the ID of an existing consumer group for the stream.
+     *                                                  Requires:  Key, group, id.
+     *                               'CREATECONSUMER' - Create a new consumer group for the stream.  You must
+     *                                                  also pass key, group, and the consumer name you wish to
+     *                                                  create.
+     *                                                  Requires:  Key, group, consumer.
+     *                               'DELCONSUMER'    - Delete a consumer from group attached to the stream.
+     *                                                  Requires:  Key, group, consumer.
+     *                               'DESTROY'        - Delete a consumer group from a stream.
      *                                                  Requires:  Key, group.
      * @param string $key            The STREAM we're operating on.
      * @param string $group          The consumer group we want to create/modify/delete.

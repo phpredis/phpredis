@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 8c51e9b0082cb7939c7bc8dc226132eede02f420 */
+ * Stub hash: 3cd40e39fce29d74a80c4c7627e52a2b2499a1f4 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -845,22 +845,19 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_subscribe, 0, 2, _IS
 	ZEND_ARG_TYPE_INFO(0, cb, IS_CALLABLE, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_swapdb, 0, 2, _IS_BOOL, 0)
-	ZEND_ARG_TYPE_INFO(0, src, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, dst, IS_STRING, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_swapdb, 0, 2, Redis, MAY_BE_BOOL)
+	ZEND_ARG_TYPE_INFO(0, src, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, dst, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_time, 0, 0, IS_ARRAY, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_time, 0, 0, Redis, MAY_BE_ARRAY)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_ttl arginfo_class_Redis_expiretime
 
 #define arginfo_class_Redis_type arginfo_class_Redis_strlen
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_unlink, 0, 0, 1)
-	ZEND_ARG_TYPE_MASK(0, key, MAY_BE_ARRAY|MAY_BE_STRING, NULL)
-	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_keys, IS_STRING, 0)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_unlink arginfo_class_Redis_del
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_unsubscribe, 0, 1, Redis, MAY_BE_ARRAY|MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, channels, IS_ARRAY, 0)
@@ -868,7 +865,10 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_unwatch arginfo_class_Redis___destruct
 
-#define arginfo_class_Redis_watch arginfo_class_Redis_unlink
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_watch, 0, 0, 1)
+	ZEND_ARG_TYPE_MASK(0, key, MAY_BE_ARRAY|MAY_BE_STRING, NULL)
+	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_keys, IS_STRING, 0)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_wait, 0, 2, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, count, IS_LONG, 0)
