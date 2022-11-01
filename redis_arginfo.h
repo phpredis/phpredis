@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 5554480fcf6749dcfd69f371ad8dbd07fd8ed4c4 */
+ * Stub hash: 8c51e9b0082cb7939c7bc8dc226132eede02f420 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -788,10 +788,12 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_sismember, 0, 2,
 	ZEND_ARG_TYPE_INFO(0, value, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_slaveof, 0, 0, _IS_BOOL, 0)
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, host, IS_STRING, 0, "null")
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_slaveof, 0, 0, Redis, MAY_BE_BOOL)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, host, IS_STRING, 0, "NULL")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, port, IS_LONG, 0, "6379")
 ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_replicaof arginfo_class_Redis_slaveof
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_touch, 0, 1, Redis, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_MASK(0, key_or_array, MAY_BE_ARRAY|MAY_BE_STRING, NULL)
@@ -1291,6 +1293,7 @@ ZEND_METHOD(Redis, setex);
 ZEND_METHOD(Redis, setnx);
 ZEND_METHOD(Redis, sismember);
 ZEND_METHOD(Redis, slaveof);
+ZEND_METHOD(Redis, replicaof);
 ZEND_METHOD(Redis, touch);
 ZEND_METHOD(Redis, slowlog);
 ZEND_METHOD(Redis, sort);
@@ -1539,7 +1542,8 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, setex, arginfo_class_Redis_setex, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, setnx, arginfo_class_Redis_setnx, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, sismember, arginfo_class_Redis_sismember, ZEND_ACC_PUBLIC)
-	ZEND_ME(Redis, slaveof, arginfo_class_Redis_slaveof, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, slaveof, arginfo_class_Redis_slaveof, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
+	ZEND_ME(Redis, replicaof, arginfo_class_Redis_replicaof, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, touch, arginfo_class_Redis_touch, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, slowlog, arginfo_class_Redis_slowlog, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, sort, arginfo_class_Redis_sort, ZEND_ACC_PUBLIC)

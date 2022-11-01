@@ -1126,6 +1126,33 @@ int redis_intercard_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int redis_replicaof_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                        char *kw, char **cmd, int *cmd_len, short *slot,
+                        void **ctx)
+{
+    zend_string *host = NULL;
+    zend_long port = 6379;
+
+    ZEND_PARSE_PARAMETERS_START(0, 2)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_STR(host)
+        Z_PARAM_LONG(port)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (port < 0 || port > UINT16_MAX) {
+        php_error_docref(NULL, E_WARNING, "Invalid port %ld", (long)port);
+        return FAILURE;
+    }
+
+    if (ZEND_NUM_ARGS() == 2) {
+        *cmd_len = REDIS_SPPRINTF(cmd, kw, "Sd", host, (int)port);
+    } else {
+        *cmd_len = REDIS_SPPRINTF(cmd, kw, "ss", ZEND_STRL("NO"), ZEND_STRL("ONE"));
+    }
+
+    return SUCCESS;
+}
+
 int
 redis_zinterunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char *kw, char **cmd, int *cmd_len, short *slot,

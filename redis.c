@@ -2559,41 +2559,18 @@ PHP_METHOD(Redis, bgrewriteaof)
 }
 /* }}} */
 
-/* {{{ proto string Redis::slaveof([host, port]) */
-PHP_METHOD(Redis, slaveof)
-{
-    zval *object;
-    RedisSock *redis_sock;
-    char *cmd = "", *host = NULL;
-    size_t host_len;
-    zend_long port = 6379;
-    int cmd_len;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                     "O|sl", &object, redis_ce, &host,
-                                     &host_len, &port) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-    if (port < 0 || (redis_sock = redis_sock_get(object, 0)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    if (host && host_len) {
-        cmd_len = REDIS_SPPRINTF(&cmd, "SLAVEOF", "sd", host, host_len, (int)port);
-    } else {
-        cmd_len = REDIS_SPPRINTF(&cmd, "SLAVEOF", "ss", "NO", 2, "ONE", 3);
-    }
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    if (IS_ATOMIC(redis_sock)) {
-      redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-          NULL, NULL);
-    }
-    REDIS_PROCESS_RESPONSE(redis_boolean_response);
+/* {{{ public function slaveof(string $host = NULL, int $port = NULL): Redis|bool }}} */
+PHP_METHOD(Redis, slaveof) {
+    REDIS_PROCESS_KW_CMD("SLAVEOF", redis_replicaof_cmd, redis_boolean_response);
 }
 /* }}} */
 
+/* {{{ public function replicaof(string $host = NULL, int $port = NULL): Redis|bool }}} */
+PHP_METHOD(Redis, replicaof) {
+    REDIS_PROCESS_KW_CMD("REPLICAOF", redis_replicaof_cmd, redis_boolean_response);
+}
+
+/* }}} */
 /* {{{ proto string Redis::object(key) */
 PHP_METHOD(Redis, object)
 {
