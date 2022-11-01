@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 08c0be22623f22153c7df080cfb93388b73fa259 */
+ * Stub hash: 55e15f9e5c33b941552643c0302becdc3241212e */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -862,12 +862,9 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_zMscore arginfo_class_Redis_geohash
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zPopMax, 0, 0, 1)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, value)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_zPopMax arginfo_class_Redis_lPop
 
-#define arginfo_class_Redis_zPopMin arginfo_class_Redis_zPopMax
+#define arginfo_class_Redis_zPopMin arginfo_class_Redis_lPop
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zRange, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)

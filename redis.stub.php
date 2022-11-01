@@ -2351,19 +2351,224 @@ class Redis {
 
     public function zAdd(string $key, array|float $score_or_options, mixed ...$more_scores_and_mems): Redis|int|false;
 
+    /**
+     * Return the number of elements in a sorted set.
+     *
+     * @see https://redis.io/commands/zcard
+     *
+     * @param string $key The sorted set to retreive cardinality from.
+     *
+     * @return Redis|int|false The number of elements in the set or false on failure
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zs');
+     * $redis->zAdd('zs', 0, 'a', 1, 'b', 2, 'c');
+     *
+     * // count(['a', 'b', 'c']) == 3
+     * $redis->zCard('zs');
+     * ?>
+     * </code>
+     */
     public function zCard(string $key): Redis|int|false;
 
-    public function zCount(string $key, string $start , string $end): Redis|int|false;
+    /**
+     * Count the number of members in a sorted set with scores inside a provided range.
+     *
+     * @see https://redis.io/commands/zcount
+     *
+     * @param string $key The sorted set to check.
+     * @param string $min The minimum score to include in the count
+     * @param string $max The maximum score to include in the count
+     *
+     * NOTE:  In addition to a floating point score you may pass the special values of '-inf' and
+     *        '+inf' meaning negative and positive infinity, respectively.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('fruit-rankings');
+     * $redis->zadd('fruit-rankings', -99, 'tomato', 50, 'apple', 60, 'pear', 85, 'mango');
+     *
+     * // count(['apple', 'oear', 'mango']) == 3
+     * $redis->zCount('fruit-rankings', '0', '+inf');
+     *
+     * // count(['apple', 'pear']) == 2
+     * $redis->zCount('fruit-rankings', 50, 60);
+     *
+     * // count(['tomato']) == 1
+     * $redis->zCount('fruit-rankings', '-inf', 0);
+     * ?>
+     * </code>
+     */
+    public function zCount(string $key, string $start, string $end): Redis|int|false;
 
+    /**
+     * Create or increment the score of a member in a Redis sorted set
+     *
+     * @see https://redis.io/commands/zincrby
+     *
+     * @param string $key   The sorted set in question.
+     * @param float  $value How much to increment the score.
+     *
+     * @return Redis|float|false The new score of the member or false on failure.
+
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zs');
+     * $redis->zAdd('zs', 0, 'apples', 2, 'bananas');
+     *
+     * // 2 + 5.0 == 7
+     * print_r($redis->zIncrBy('zs', 5.0, 'bananas'));
+     *
+     * // new element so 0 + 2.0 == 2
+     * print_r($redis->zIncrBy('zs', 2.0, 'eggplants'));
+     * ?>
+     * </code>
+     */
     public function zIncrBy(string $key, float $value, mixed $member): Redis|float|false;
 
+    /**
+     * Count the number of elements in a sorted set whos members fall within the provided
+     * lexographical range.
+     *
+     * @see https://redis.io/commands/zlexcount
+     *
+     * @param string $key The sorted set to check.
+     * @param string $min The minimum matching lexographical string
+     * @param string $max The maximum matching lexographical string
+     *
+     * @return Redis|int|false The number of members that fall within the range or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('captains');
+     * $redis->zAdd('captains', 0, 'Janeway', 0, 'Kirk', 0, 'Picard', 0, 'Sisko', 0, 'Archer');
+     *
+     * count(['Archer', 'Janeway', 'Kirk', 'Picard']) == 4
+     * $redis->zLexCount('captains', '[A', '[S');
+     *
+     * count(['Kirk', 'Picard']) == 2
+     * $redis->zRangeByLex('captains', '[A', '[S', 2, 2);
+     * ?>
+     * </code>
+     *
+     */
     public function zLexCount(string $key, string $min, string $max): Redis|int|false;
 
-    public function zMscore(string $key, string $member, string ...$other_members): Redis|array|false;
+    /**
+     * Retreive the score of one or more members in a sorted set.
+     *
+     * @see https://redis.io/commands/zmscore
+     *
+     * @param string $key           The sorted set
+     * @param mixed  $member        The first member to return the score from
+     * @param mixed  $other_members One or more additional members to return the scores of.
+     *
+     * @return Redis|array|false An array of the scores of the requested elements.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zs');
+     *
+     * $redis->zAdd('zs', 0, 'zero', 1, 'one', 2, 'two', 3, 'three');
+     *
+     * // array(2) {
+     * //   [0]=>
+     * //   float(0)
+     * //   [1]=>
+     * //   float(2)
+     * // }
+     * $redis->zMScore('zs', 'zero', 'two');
+     *
+     * // array(2) {
+     * //   [0]=>
+     * //   float(1)
+     * //   [1]=>
+     * //   bool(false)
+     * // }
+     * $redis->zMScore('zs', 'one', 'not-a-member');
+     * ?>
+     * </code>
+     */
+    public function zMscore(string $key, mixed $member, mixed ...$other_members): Redis|array|false;
 
-    public function zPopMax(string $key, int $value = null): Redis|array|false;
+    /**
+     * Pop one or more of the highest scoring elements from a sorted set.
+     *
+     * @see https://redis.io/commands/zpopmax
+     *
+     * @param string $key   The sorted set to pop elements from.
+     * @param int    $count An optional count of elements to pop.
+     *
+     * @return Redis|array|false All of the popped elements with scores or false on fialure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zs');
+     * $redis->zAdd('zs', 0, 'zero', 1, 'one', 2, 'two', 3, 'three');
+     *
+     * // Array
+     * // (
+     * //     [three] => 3
+     * // )
+     * print_r($redis->zPopMax('zs'));
+     *
+     * // Array
+     * // (
+     * //     [two] => 2
+     * //     [one] => 1
+     * // )
+     * print_r($redis->zPopMax('zs', 2));
+     * ?>
+     * </code>
+     */
+    public function zPopMax(string $key, int $count = null): Redis|array|false;
 
-    public function zPopMin(string $key, int $value = null): Redis|array|false;
+    /**
+     * Pop one or more of the lowest scoring elements from a sorted set.
+     *
+     * @see https://redis.io/commands/zpopmin
+     *
+     * @param string $key   The sorted set to pop elements from.
+     * @param int    $count An optional count of elements to pop.
+     *
+     * @return Redis|array|false The popped elements with their scores or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zs');
+     * $redis->zAdd('zs', 0, 'zero', 1, 'one', 2, 'two', 3, 'three');
+     *
+     * // Array
+     * // (
+     * //     [zero] => 0
+     * // )
+     * $redis->zPopMin('zs');
+     *
+     * // Array
+     * // (
+     * //     [one] => 1
+     * //     [two] => 2
+     * // )
+     * $redis->zPopMin('zs', 2);
+     * ?>
+     * </code>
+     */
+    public function zPopMin(string $key, int $count = null): Redis|array|false;
 
     /**
      * Retrieve a range of elements of a sorted set between a start and end point.
@@ -2402,6 +2607,44 @@ class Redis {
      */
     public function zRange(string $key, mixed $start, mixed $end, array|bool|null $options = null): Redis|array|false;
 
+    /**
+     * Retrieve a range of elements from a sorted set by legographical range.
+     *
+     * @see https://redis.io/commands/zrangebylex
+     *
+     * @param string $key    The sorted set to retreive elements from
+     * @param string $min    The minimum legographical value to return
+     * @param string $max    The maximum legographical value to return
+     * @param int    $offset An optional offset within the matching values to return
+     * @param int    $count  An optional count to limit the replies to (used in conjunction with offset)
+     *
+     * @return Redis|array|false An array of matching elements or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('captains');
+     * $redis->zAdd('captains', 0, 'Janeway', 0, 'Kirk', 0, 'Picard', 0, 'Sisko', 0, 'Archer');
+     *
+     * // Array
+     * // (
+     * //     [0] => Archer
+     * //     [1] => Janeway
+     * //     [2] => Kirk
+     * //     [3] => Picard
+     * // )
+     * $redis->zRangeByLex('captains', '[A', '[S');
+     *
+     * // Array
+     * // (
+     * //     [0] => Kirk
+     * //     [1] => Picard
+     * // )
+     * $redis->zRangeByLex('captains', '[A', '[S', 2, 2);
+     * ?>
+     * </code>
+     */
     public function zRangeByLex(string $key, string $min, string $max, int $offset = -1, int $count = -1): Redis|array|false;
 
     /**
