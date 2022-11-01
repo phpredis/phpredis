@@ -2044,9 +2044,65 @@ class Redis {
      */
     public function sscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): array|false;
 
-    /** @return Redis|int|false*/
-    public function strlen(string $key);
+    /**
+     * Retrieve the length of a Redis STRING key.
+     *
+     * @param string $key The key we want the length of.
+     *
+     * @return Redis|int|false The length of the string key if it exists, zero if it does not, and
+     *                         false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('string');
+     *
+     * $redis->set('string', 'foo');
+     *
+     * // strlen('foo') == 3
+     * $redis->strlen('string');
+     *
+     * $redis->append('string', 'bar');
+     *
+     * // strlen('foobar') == 6
+     * $redis->strlen('string');
+     *
+     * ?>
+     * </code>
+     */
+    public function strlen(string $key): Redis|int|false;
 
+    /**
+     * Subscribe to one or more Redis pubsub channels.
+     *
+     * @param array    $channels One or more channel names.
+     * @param callable $cb       The callback PhpRedis will invoke when we receive a message
+     *                           from one of the subscribed channels.
+     *
+     * @return bool True on success, false on faiilure.  Note that this command will block the
+     *              client in a subscribe loop, waiting for messages to arrive.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->subscribe(['channel-1', 'channel-2'], function ($redis, $channel, $message) {
+     *     echo "[$channel]: $message\n";
+     *
+     *     // Unsubscribe from the message channel when we read 'quit'
+     *     if ($message == 'quit') {
+     *         echo "Unsubscribing from '$channel'\n";
+     *         $redis->unsubscribe([$channel]);
+     *     }
+     * });
+     *
+     * // Once we read 'quit' from both channel-1 and channel-2 the subscribe loop will be
+     * // broken and this command will execute.
+     * echo "Subscribe loop ended\n";
+     * ?>
+     * </code>
+     */
     public function subscribe(array $channels, callable $cb): bool;
 
     /**
@@ -2127,15 +2183,66 @@ class Redis {
      */
     public function time(): Redis|array;
 
+    /**
+     * Get the amount of time a Redis key has before it will expire, in seconds.
+     *
+     * @param string $key      The Key we want the TTL for.
+     * @return Redis|int|false (a) The number of seconds until the key expires, or -1 if the key has
+     *                         no expiration, and -2 if the key does not exist.  In the event of an
+     *                         error, this command will return false.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->multi()
+     *       ->setex('expires_in_60s', 60, 'test')
+     *       ->set('doesnt_expire', 'persistent')
+     *       ->del('not_a_key')
+     *       ->exec();
+     *
+     * // Returns <= 60
+     * $redis->ttl('expires_in_60s');
+     *
+     * // Returns -1
+     * $redis->ttl('doesnt_expire');
+     *
+     * // Returns -2 (key doesn't exist)
+     * $redis->ttl('not_a_key');
+     *
+     * ?>
+     * </code>
+     */
     public function ttl(string $key): Redis|int|false;
 
-    /** @return Redis|int|false*/
-    public function type(string $key);
+    /**
+     * Get the type of a given Redis key.
+     *
+     * @see https://redis.io/commands/type
+     *
+     * @param  string $key     The key to check
+     * @return Redis|int|false The Redis type constant or false on failure.
+     *
+     * The Redis class defines several type constants that correspond with Redis key types.
+     *
+     *     Redis::REDIS_NOT_FOUND
+     *     Redis::REDIS_STRING
+     *     Redis::REDIS_SET
+     *     Redis::REDIS_LIST
+     *     Redis::REDIS_ZSET
+     *     Redis::REDIS_HASH
+     *     Redis::REDIS_STREAM
+     */
+    public function type(string $key): Redis|int|false;
 
     /**
      * Delete one or more keys from the Redis database.  Unlike this operation, the actual
      * deletion is asynchronous, meaning it is safe to delete large keys without fear of
      * Redis blocking for a long period of time.
+     *
+     * @see https://redis.io/commands/unlink
+     * @see https://redis.io/commands/del
+     * @see Redis::del()
      *
      * @param array|string $key_or_keys Either an array with one or more keys or a string with
      *                                  the first key to delete.
@@ -2158,6 +2265,13 @@ class Redis {
      */
     public function unlink(array|string $key, string ...$other_keys): Redis|int|false;
 
+    /**
+     * Unsubscribe from one or more subscribed channels.
+     *
+     * @see https://redis.io/commands/unsubscribe
+     * @see Redis::subscribe()
+     *
+     */
     public function unsubscribe(array $channels): Redis|array|bool;
 
     /** @return bool|Redis */

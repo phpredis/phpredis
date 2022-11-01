@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 3cd40e39fce29d74a80c4c7627e52a2b2499a1f4 */
+ * Stub hash: 7baf9e08800a4280ebbf346f397b3b833d4f03e2 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -836,9 +836,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_sscan, 0, 2, MAY_BE_
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_strlen, 0, 0, 1)
-	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_strlen arginfo_class_Redis_expiretime
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_subscribe, 0, 2, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_INFO(0, channels, IS_ARRAY, 0)
@@ -855,7 +853,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_ttl arginfo_class_Redis_expiretime
 
-#define arginfo_class_Redis_type arginfo_class_Redis_strlen
+#define arginfo_class_Redis_type arginfo_class_Redis_expiretime
 
 #define arginfo_class_Redis_unlink arginfo_class_Redis_del
 
