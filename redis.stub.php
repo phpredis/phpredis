@@ -1621,7 +1621,48 @@ class Redis {
      */
     public function select(int $db): Redis|bool;
 
-    public function set(string $key, mixed $value, mixed $opt = NULL): Redis|string|bool;
+    /**
+     * Create or set a Redis STRING key to a value.
+     *
+     * @see https://redis.io/commands/set
+     * @see https://redis.io/commands/setex
+     *
+     * @param string    $key     The key name to set.
+     * @param mixed     $value   The value to set the key to.
+     * @param array|int $options Either an array with options for how to perform the set or an
+     *                           integer with an expiration.  If an expiration is set PhpRedis
+     *                           will actually send the `SETEX` command.
+     *
+     * OPTION                         DESCRIPTION
+     * ------------                   --------------------------------------------------------------
+     * ['EX' => 60]                   expire 60 seconds.
+     * ['PX' => 6000]                 expire in 6000 milliseconds.
+     * ['EXAT' => time() + 10]        expire in 10 seconds.
+     * ['PXAT' => time()*1000 + 1000] expire in 1 second.
+     * ['KEEPTTL' => true]            Redis will not update the key's current TTL.
+     * ['XX']                         Only set the key if it already exists.
+     * ['NX']                         Only set the key if it doesn't exist.
+     * ['GET']                        Instead of returning `+OK` return the previous value of the
+     *                                key or NULL if the key didn't exist.
+     *
+     * @return Redis|string|bool True if the key was set or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->set('key', 'value');
+     *
+     * // Will actually send `SETEX 60 key value` to Redis.
+     * $redis->set('key', 'expires_in_60_seconds', 60);
+     *
+     * // Only have Redis set the key if it already exists.
+     * $redis->set('key', 'options_set', ['XX']);
+     *
+     * ?>
+     * </code>
+     */
+    public function set(string $key, mixed $value, mixed $options = NULL): Redis|string|bool;
 
     /** @return Redis|int|false*/
     public function setBit(string $key, int $idx, bool $value);
