@@ -2169,6 +2169,27 @@ redis_xinfo_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_t
 }
 
 PHP_REDIS_API int
+redis_acl_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    if (ctx == NULL) {
+        return redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR) {
+        return redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR + 1) {
+        return redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR + 2) {
+        return redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR + 3) {
+        return redis_acl_getuser_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR + 4) {
+        return redis_acl_log_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else {
+        ZEND_ASSERT(!"memory corruption?");
+        return FAILURE;
+    }
+}
+
+PHP_REDIS_API int
 redis_read_acl_log_reply(RedisSock *redis_sock, zval *zret, long count) {
     zval zsub;
     int i, nsub;

@@ -1129,49 +1129,7 @@ PHP_METHOD(Redis, type)
 
 /* {{{ proto mixed Redis::acl(string $op, ...) }}} */
 PHP_METHOD(Redis, acl) {
-    RedisSock *redis_sock;
-    FailableResultCallback cb;
-    zval *zargs;
-    zend_string *op;
-    char *cmd;
-    int cmdlen, argc = ZEND_NUM_ARGS();
-
-    if (argc < 1 || (redis_sock = redis_sock_get(getThis(), 0)) == NULL) {
-        if (argc < 1) {
-            php_error_docref(NULL, E_WARNING, "ACL command requires at least one argument");
-        }
-        RETURN_FALSE;
-    }
-
-    zargs = emalloc(argc * sizeof(*zargs));
-    if (zend_get_parameters_array(ht, argc, zargs) == FAILURE) {
-        efree(zargs);
-        RETURN_FALSE;
-    }
-
-    /* Read the subcommand and set response callback */
-    op = zval_get_string(&zargs[0]);
-    if (zend_string_equals_literal_ci(op, "GETUSER")) {
-        cb = redis_acl_getuser_reply;
-    } else if (zend_string_equals_literal_ci(op, "LOG")) {
-        cb = redis_acl_log_reply;
-    } else {
-        cb = redis_read_variant_reply;
-    }
-
-    /* Make our command and free args */
-    cmd = redis_variadic_str_cmd("ACL", zargs, argc, &cmdlen);
-
-    zend_string_release(op);
-    efree(zargs);
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmdlen);
-    if (IS_ATOMIC(redis_sock)) {
-        if (cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL) < 0) {
-            RETURN_FALSE;
-        }
-    }
-    REDIS_PROCESS_RESPONSE(cb);
+    REDIS_PROCESS_CMD(acl, redis_acl_response);
 }
 
 /* {{{ proto long Redis::append(string key, string val) */
