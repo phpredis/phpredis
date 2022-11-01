@@ -1065,7 +1065,7 @@ static int redis_cmd_append_sstr_score(smart_string *dst, zval *score) {
         return SUCCESS;
 
     /* Nothing appended, failure */
-    php_error_docref(NULL, E_WARNING, "Weights must be numeric or '-inf','inf','+inf'");
+    php_error_docref(NULL, E_WARNING, "scores must be numeric or '-inf', 'inf', '+inf'");
     return FAILURE;
 }
 
