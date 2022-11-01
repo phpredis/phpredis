@@ -428,6 +428,9 @@ class RedisCluster {
      */
     public function sdiffstore(string $dst, string $key, string ...$other_keys): RedisCluster|int|false;
 
+    /**
+     * @see https://redis.io/commands/set
+     */
     public function set(string $key, mixed $value, mixed $options = NULL): RedisCluster|string|bool;
 
     public function setbit(string $key, int $offset, bool $onoff): RedisCluster|int|false;
