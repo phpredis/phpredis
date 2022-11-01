@@ -1893,6 +1893,67 @@ class Redis {
      */
     public function srem(string $key, mixed $value, mixed ...$other_values): Redis|int|false;
 
+    /**
+     * Scan the members of a redis SET key.
+     *
+     * @see https://redis.io/commands/sscan
+     * @see https://redis.io/commands/scan
+     * @see Redis::setOption()
+     *
+     * @param string $key       The Redis SET key in question.
+     * @param int    $iterator  A reference to an iterator which should be initialized to NULL that
+     *                          PhpRedis will update with the value returned from Redis after each
+     *                          subsequent call to SSCAN.  Once this cursor is zero you know all
+     *                          members have been traversed.
+     * @param string $pattern   An optional glob style pattern to match against, so Redis only
+     *                          returns the subset of members matching this pattern.
+     * @param int    $count     A hint to Redis as to how many members it should scan in one command
+     *                          before returning members for that iteration.
+     *
+     * <code>
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('myset');
+     * for ($i = 0; $i < 10000; $i++) {
+     *     $redis->sAdd('myset', "member:$i");
+     * }
+     * $redis->sadd('myset', 'foofoo');
+     *
+     * $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
+     *
+     * $scanned = 0;
+     * $it = NULL;
+     *
+     * // Without Redis::SCAN_RETRY we may receive empty results and
+     * // a nonzero iterator.
+     * do {
+     *     // Scan members containing '5'
+     *     $members = $redis->sscan('myset', $it, '*5*');
+     *     foreach ($members as $member) {
+     *          echo "NORETRY: $member\n";
+     *          $scanned++;
+     *     }
+     * } while ($it != 0);
+     * echo "TOTAL: $scanned\n";
+     *
+     * $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
+     *
+     * $scanned = 0;
+     * $it = NULL;
+     *
+     * // With Redis::SCAN_RETRY PhpRedis will never return an empty array
+     * // when the cursor is non-zero
+     * while (($members = $redis->sscan('myset', $it, '*5*'))) {
+     *     foreach ($members as $member) {
+     *         echo "RETRY: $member\n";
+     *         $scanned++;
+     *     }
+     * }
+     * echo "TOTAL: $scanned\n";
+     * ?>
+     * </code>
+     *
+     */
     public function sscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): array|false;
 
     /** @return Redis|int|false*/
