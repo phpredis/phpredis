@@ -1589,6 +1589,28 @@ class Redis {
      */
     public function scan(?int &$iterator, ?string $pattern = null, int $count = 0, string $type = NULL): array|false;
 
+    /**
+     * Retrieve the number of members in a Redis set.
+     *
+     * @see https://redis.io/commands/scard
+     *
+     * @param string $key The set to get the cardinality of.
+     *
+     * @return Redis|int|false The cardinality of the set or false on failure.
+     *
+     * <code>
+     * <?php
+     *
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('set');
+     * $redis->sadd('set', 'one', 'two', 'three', 'four', 'five');
+     *
+     * // Returns 5
+     * $redis->scard('set');
+     * ?>
+     * </code>
+     */
     public function scard(string $key): Redis|int|false;
 
     public function script(string $command, mixed ...$args): mixed;
@@ -1664,15 +1686,60 @@ class Redis {
      */
     public function set(string $key, mixed $value, mixed $options = NULL): Redis|string|bool;
 
-    /** @return Redis|int|false*/
-    public function setBit(string $key, int $idx, bool $value);
+    /**
+     * Set a specific bit in a Redis string to zero or one
+     *
+     * @see https://redis.io/commands/setbit
+     *
+     * @param string $key    The Redis STRING key to modify
+     * @param bool   $value  Whether to set the bit to zero or one.
+     *
+     * @return Redis|int|false The original value of the bit or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->set('foo', 'bar');
+     *
+     * // Flip the 7th bit to 1
+     * $redis->setbit('foo', 7, 1);
+     *
+     * // The bit flip turned 'bar' -> 'car'
+     * $redis->get('foo');
+     * ?>
+     * </code>
+     */
+    public function setBit(string $key, int $idx, bool $value): Redis|int|false;
 
-    /** @return Redis|int|false*/
-    public function setRange(string $key, int $start, string $value);
+    /**
+     * Update or append to a Redis string at a specific starting index
+     *
+     * @see https://redis.io/commands/setrange
+     *
+     * @param string $key    The key to update
+     * @param int    $index  Where to insert the provided value
+     * @param string $value  The value to copy into the string.
+     *
+     * @return Redis|int|false The new length of the string or false on failure
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
 
+     * $redis->set('message', 'Hello World');
+
+     * // Update 'Hello World' to 'Hello Redis'
+     * $redis->setRange('message', 6, 'Redis');
+     * ?>
+     * </code>
+     */
+    public function setRange(string $key, int $index, string $value): Redis|int|false;
 
     /**
      * Set a configurable option on the Redis object.
+     *
+     * @see Redis::getOption()
      *
      * Following are a list of options you can set:
      *
@@ -1773,8 +1840,33 @@ class Redis {
      */
     public function setex(string $key, int $expire, mixed $value);
 
-    /** @return bool|array|Redis */
-    public function setnx(string $key, mixed $value);
+    /**
+     * Set a key to a value, but only if that key does not already exist.
+     *
+     * @see https://redis.io/commands/setnx
+     *
+     * @param string $key   The key name to set.
+     * @param mixed  $value What to set the key to.
+     *
+     * @return Redis|bool Returns true if the key was set and false otherwise.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('new-key');
+     * $redis->set('existing-key', 'already-exists');
+     *
+     * // Key is new, returns 1
+     * $redis->setnx('key1', 'here-is-a-new-key');
+     *
+     * // Key exists, returns 0
+     * $redis->setnx('existing-key', 'new-value');
+     * ?>
+     * </code>
+     *
+     */
+    public function setnx(string $key, mixed $value): Redis|bool;
 
     /**
      * Check whether a given value is the member of a Redis SET.
@@ -2335,6 +2427,29 @@ class Redis {
 
     public function xinfo(string $operation, ?string $arg1 = null, ?string $arg2 = null, int $count = -1): mixed;
 
+
+    /**
+     * Get the number of messages in a Redis STREAM key.
+     *
+     * @see https://redis.io/commands/xlen
+     *
+     * @param string $key The Stream to check.
+     *
+     * @return Redis|int|false The number of messages or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('stream');
+     * $redis->xadd('stream', '*', ['first' => 'message']);
+     * $redis->xadd('stream', '*', ['second' => 'message']);
+     *
+     * // int(2)
+     * $redis->xLen('stream');
+     * ?>
+     * </code>
+     */
     public function xlen(string $key): Redis|int|false;
 
     public function xpending(string $key, string $group, ?string $start = null, ?string $end = null, int $count = -1, ?string $consumer = null): Redis|array|false;
@@ -2349,6 +2464,67 @@ class Redis {
 
     public function xtrim(string $key, int $maxlen, bool $approx = false, bool $minid = false, int $limit = -1): Redis|int|false;
 
+    /**
+     * Add one or more elements and scores to a Redis sorted set.
+     *
+     * @see https://redis.io/commands/zadd
+     *
+     * @param string       $key                  The sorted set in question.
+     * @param array|float  $score_or_options     Either the score for the first element, or an array
+     *                                           containing one or more options for the operation.
+     * @param mixed        $more_scores_and_mems A variadic number of additional scores and members.
+     *
+     * Following is information about the options that may be passed as the scond argument:
+     *
+     * <code>
+     * $options = [
+     *     'NX',       # Only update elements that already exist
+     *     'NX',       # Only add new elements but don't update existing ones.
+     *
+     *     'LT'        # Only update existing elements if the new score is less than the existing one.
+     *     'GT'        # Only update existing elements if the new score is greater than the existing one.
+     *
+     *     'CH'        # Instead of returning the number of elements added, Redis will return the number
+     *                 # Of elements that were changed in the operation.
+     *
+     *     'INCR'      # Instead of setting each element to the provide score, increment the elemnt by the
+     *                 # provided score, much like ZINCRBY.  When this option is passed, you may only
+     *                 # send a single score and member.
+     * ];
+     *
+     * Note:  'GX', 'LT', and 'NX' cannot be passed together, and PhpRedis will send whichever one is last in
+     *        the options array.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zs');
+     *
+     * // Add three new elements to our zset
+     * $redis->zadd('zs', 1, 'first', 2, 'second', 3, 'third');
+     *
+     * // Array
+     * // (
+     * //     [first] => 1
+     * //     [second] => 2
+     * //     [third] => 3
+     * // )
+     * $redis->zRange('zs', 0, -1, true);
+     *
+     * // Update only existing elements.  Note that 'new-element' isn't added
+     * $redis->zAdd('zs', ['XX'], 8, 'second', 99, 'new-element');
+     *
+     * // Array
+     * // (
+     * //     [first] => 1
+     * //     [third] => 3
+     * //     [second] => 8
+     * // )
+     * print_r($redis->zRange('zs', 0, -1, true));
+     * ?>
+     * </code>
+     */
     public function zAdd(string $key, array|float $score_or_options, mixed ...$more_scores_and_mems): Redis|int|false;
 
     /**
