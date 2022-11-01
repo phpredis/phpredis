@@ -2404,6 +2404,70 @@ class Redis {
 
     public function zRangeByLex(string $key, string $min, string $max, int $offset = -1, int $count = -1): Redis|array|false;
 
+    /**
+     * Retrieve a range of members from a sorted set by their score.
+     *
+     * @see https://redis.io/commands/zrangebyscore
+     *
+     * @param string $key     The sorted set to query.
+     * @param string $start   The minimum score of elements that Redis should return.
+     * @param string $end     The maximum score of elements that Redis should return.
+     * @param array  $options Options that change how Redis will execute the command.
+     *
+     *                        OPTION       TYPE            MEANING
+     *                        'WITHSCORES' bool            Whether to also return scores.
+     *                        'LIMIT'      [offset, count] Limit the reply to a subset of elements.
+     *
+     * @return Redis|array|false The number of matching elements or false on failure.
+     *
+     * <code>
+     * </php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zs');
+     *
+     * for ($i = 0; $i < 50; $i++) {
+     *     $redis->zAdd('zs', $i, "mem:$i");
+     * }
+     *
+     * // Array
+     * // (
+     * //     [0] => mem:0
+     * //     [1] => mem:1
+     * //     [2] => mem:2
+     * //     [3] => mem:3
+     * //     [4] => mem:4
+     * // )
+     * $redis->zRangeByScore('zs', 0, 4);
+     *
+     * // Array
+     * // (
+     * //     [mem:20] => 20
+     * //     [mem:21] => 21
+     * //     [mem:22] => 22
+     * //     [mem:23] => 23
+     * //     [mem:24] => 24
+     * //     [mem:25] => 25
+     * //     [mem:26] => 26
+     * //     [mem:27] => 27
+     * //     [mem:28] => 28
+     * //     [mem:29] => 29
+     * //     [mem:30] => 30
+     * // )
+     * $redis->zRangeByScore('zs', 20, 30, ['WITHSCORES' => true]);
+     *
+     * // Array
+     * // (
+     * //     [mem:25] => 25
+     * //     [mem:26] => 26
+     * //     [mem:27] => 27
+     * //     [mem:28] => 28
+     * //     [mem:29] => 29
+     * // )
+     * $redis->zRangeByScore('zs', 20, 30, ['WITHSCORES' => true, 'LIMIT' => [5, 5]]);
+     * ?>
+     * </code>
+     */
     public function zRangeByScore(string $key, string $start, string $end, array $options = []): Redis|array|false;
 
     /**
@@ -2427,12 +2491,138 @@ class Redis {
     public function zrangestore(string $dstkey, string $srckey, string $start, string $end,
                                 array|bool|null $options = NULL): Redis|int|false;
 
+    /**
+     * Retrieve one or more random members from a Redis sorted set.
+     *
+     * @see https://redis.io/commands/zrandmember
+     *
+     * @param string $key     The sorted set to pull random members from.
+     * @param array  $options One or more options that determine exactly how the command operates.
+     *
+     *                        OPTION       TYPE     MEANING
+     *                        'COUNT'      int      The number of random members to return.
+     *                        'WITHSCORES' bool     Whether to return scores and members instead of
+     *                                              just members.
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->multi()->del('zs')->zadd('zs', 1, 'one', 2, 'two', 3, 'three')->exec();
+     *
+     * // Return two random members from our set, with scores
+     * $redis->zRandMember('zs', ['COUNT' => 2, 'WITHSCORES' => true]);
+     *
+     * ?>
+     * </code>
+     */
     public function zRandMember(string $key, array $options = null): Redis|string|array;
 
+    /**
+     * Get the rank of a member of a sorted set, by score.
+     *
+     * @see https://redis.io/commands/zrank
+     *
+     * @param string $key     The sorted set to check.
+     * @param mixed  $memeber The member to test.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->multi()->del('zs')->zadd('zs', 0, 'zero', 1, 'one', 2, 'two', 3, 'three')->exec();
+     *
+     * // Rank 0
+     * $redis->zRank('zs', 'zero');
+     *
+     * // Rank 3
+     * $redis->zRank('zs', 'three');
+     *
+     * ?>
+     * </code>
+     *
+     */
     public function zRank(string $key, mixed $member): Redis|int|false;
 
+    /**
+     * Remove one or more members from a Redis sorted set.
+     *
+     * @see https://redis.io/commands/zrem
+     *
+     * @param mixed $key           The sorted set in question.
+     * @param mixed $member        The first member to remove.
+     * @param mixed $other_members One or more members to remove passed in a variadic fashion.
+     *
+     * @return Redis|int|false The number of members that were actually removed or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zs');
+     *
+     * for ($i = 0; $i < 10; $i++) {
+     *     $redis->zAdd('zs', $i, "mem:$i");
+     * }
+     *
+     * // Remove a few elements
+     * $redis->zRem('zs', 'mem:0', 'mem:1', 'mem:2', 'mem:6', 'mem:7', 'mem:8', 'mem:9');
+     *
+     * // Array
+     * // (
+     * //     [0] => mem:3
+     * //     [1] => mem:4
+     * //     [2] => mem:5
+     * // )
+     * $redis->zRange('zs', 0, -1);
+     * ?>
+     */
     public function zRem(mixed $key, mixed $member, mixed ...$other_members): Redis|int|false;
 
+    /**
+     * Remove zero or more elements from a Redis sorted set by legographical range.
+     *
+     * @see https://redis.io/commands/zremrangebylex
+     * @see Redis::zrangebylex()
+     *
+     * @param string $key The sorted set to remove elements from.
+     * @param string $min The start of the lexographical range to remove.
+     * @param string $max The end of the lexographical range to remove
+     *
+     * @return Redis|int|false The number of elements removed from the set or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->pipeline()->del('zs')
+     *                ->zAdd('zs', 1, 'apple', 2, 'banana', 3, 'carrot', 4, 'date', 5, 'eggplant')
+     *                ->exec();
+     *
+     *
+     * // Remove a* (inclusive) .. b* (exclusive), meaning 'apple' will be removed, but 'banana' not
+     * $redis->zRemRangeByLex('zs', '[a', '(b');
+     *
+     * // Array
+     * // (
+     * //     [0] => banana
+     * //     [1] => carrot
+     * //     [2] => date
+     * //     [3] => eggplant
+     * // )
+     * print_r($redis->zRange('zs', 0, -1));
+     *
+     * // Remove the elements between 'banana' and 'eggplant'
+     * $redis->zRemRangeByLex('zs', '(banana', '(eggplant');
+     *
+     * // Array
+     * // (
+     * //     [0] => banana
+     * //     [1] => eggplant
+     * // )
+     * print_r($redis->zRange('zs', 0, -1));
+     * ?>
+     * </code>
+     */
     public function zRemRangeByLex(string $key, string $min, string $max): Redis|int|false;
 
     public function zRemRangeByRank(string $key, int $start, int $end): Redis|int|false;
