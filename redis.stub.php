@@ -1968,8 +1968,8 @@ class Redis {
      *                           'RESET' - Remove all slowlog entries.
      * <code>
      * <?php
-     * $redis->slowlog('get', -1);  // Retreive all slowlog entries.
-     * $redis->slowlog('len');       // Retreive slowlog length.
+     * $redis->slowlog('get', -1);  // Retrieve all slowlog entries.
+     * $redis->slowlog('len');       // Retrieve slowlog length.
      * $redis->slowlog('reset');     // Reset the slowlog.
      * ?>
      * </code>
@@ -2640,7 +2640,7 @@ class Redis {
     public function zLexCount(string $key, string $min, string $max): Redis|int|false;
 
     /**
-     * Retreive the score of one or more members in a sorted set.
+     * Retrieve the score of one or more members in a sorted set.
      *
      * @see https://redis.io/commands/zmscore
      *
@@ -3044,34 +3044,498 @@ class Redis {
      */
     public function zRemRangeByLex(string $key, string $min, string $max): Redis|int|false;
 
+    /**
+     * Remove one or more members of a sorted set by their rank.
+     *
+     * @see https://redis.io/commands/zremrangebyrank
+     *
+     * @param string $key    The sorted set where we wnat to remove members.
+     * @param int    $start  The rank when we want to start removing members
+     * @param int    $end    The rank we want to stop removing membersk.
+     *
+     * @return Redis|int|false The number of members removed from the set or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zs');
+     * $redis->zAdd('zs', 0, 'zeroth', 1, 'first', 2, 'second', 3, 'third', 4, 'fourth');
+     *
+     * // Remove ranks 0..3
+     * $redis->zRemRangeByRank('zs', 0, 3);
+     *
+     * // Array
+     * // (
+     * //     [0] => fourth
+     * // )
+     * $redis->zRange('zs', 0, -1);
+     * ?>
+     * </code>
+     */
     public function zRemRangeByRank(string $key, int $start, int $end): Redis|int|false;
 
+    /**
+     * Remove one or more members of a sorted set by their score.
+     *
+     * @see https://redis.io/commands/zremrangebyrank
+     *
+     * @param string $key    The sorted set where we wnat to remove members.
+     * @param int    $start  The lowest score to remove.
+     * @param int    $end    The highest score to remove.
+     *
+     * @return Redis|int|false The number of members removed from the set or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zs');
+     * $redis->zAdd('zs', 3, 'three', 5, 'five', 7, 'seven', 7, 'seven-again', 13, 'thirteen', 22, 'twenty-two');
+     *
+     * // Removes every member with scores >= 7 and scores <= 13.
+     * $redis->zRemRangeByScore('zs', 7, 13);
+     *
+     * // Array
+     * // (
+     * //     [0] => three
+     * //     [1] => five
+     * //     [2] => twenty-two
+     * // )
+     * $redis->zRange('zs', 0, -1);
+     * ?>
+     * </code>
+     */
     public function zRemRangeByScore(string $key, string $start, string $end): Redis|int|false;
 
+    /**
+     * List the members of a Redis sorted set in reverse order
+     *
+     * @param string $key        The sorted set in question.
+     * @param int    $start      The index to start listing elements
+     * @param int    $end        The index to stop listing elements.
+     * @param mixed  $withscores Whether or not Redis should also return each members score.  See
+     *                           the example below demonstrating how it may be used.
+     *
+     * @return Redis|array|false The members (and possibly scores) of the matching elements or false
+     *                           on failure.
+     *
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zs');
+     * $redis->zAdd('zs', 1, 'one', 2, 'two', 5, 'five', 10, 'ten');
+     *
+     * // Array
+     * // (
+     * //     [0] => ten
+     * //     [1] => five
+     * //     [2] => two
+     * //     [3] => one
+     * // )
+     * print_r($redis->zRevRange('zs', 0, -1));
+     *
+     * // Array
+     * // (
+     * //     [0] => two
+     * //     [1] => one
+     * // )
+     * print_r($redis->zRevRange('zs', 2, 3));
+     *
+     * // Additionally, you may pass `true` or `['withscores' => true]` to tell redis to return scores
+     * // as well as members.
+     * $redis->zRevRange('zs', 0, -1, true);
+     * $redis->zRevRange('zs', 0, -1, ['withscores' => true]);
+     * ?>
+     * </code>
+     */
     public function zRevRange(string $key, int $start, int $end, mixed $scores = null): Redis|array|false;
 
-    public function zRevRangeByLex(string $key, string $min, string $max, int $offset = -1, int $count = -1): Redis|array|false;
+    /**
+     * List members of a Redis sorted set within a legographical range, in reverse order.
+     *
+     * @see https://redis.io/commands/zrevrangebylex
+     * @see Redis::zrangebylex()
+     *
+     * @param string $key    The sorted set to list
+     * @param string $min    The maximum legographical element to include in the result.
+     * @param string $min    The minimum lexographical element to include in the result.
+     * @param string $offset An option offset within the matching elements to start at.
+     * @param string $count  An optional count to limit the replies to.
+     *
+     * @return Redis|array|false The matching members or false on failure.
+     *
+     * <code>
+     * <?php
+     *
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('captains');
+     * $redis->zAdd('captains', 0, 'Janeway', 0, 'Picard', 0, 'Kirk', 0, 'Archer');
+     *
+     * // Array
+     * // (
+     * //     [0] => Picard
+     * //     [1] => Kirk
+     * //     [2] => Janeway
+     * // )
+     * $redis->zRevRangeByLex('captains', '[Q', '[J');
+     *
+     * // Array
+     * // (
+     * //     [0] => Kirk
+     * //     [1] => Janeway
+     * // )
+     * $redis->zRevRangeByLex('captains', '[Q', '[J', 1, 2);
+     * ?>
+     * </code>
+     */
+    public function zRevRangeByLex(string $key, string $max, string $min, int $offset = -1, int $count = -1): Redis|array|false;
 
-    public function zRevRangeByScore(string $key, string $start, string $end, array $options = []): Redis|array|false;
+    /**
+     * List elements from a Redis sorted set by score, highest to lowest
+     *
+     * @param string $key     The sorted set to query.
+     * @param string $max     The highest score to include in the results.
+     * @param string $min     The lowest score to include in the results.
+     * @param array  $options An options array that modifies how the command executes.
+     *
+     *                        <code>
+     *                        $options = [
+     *                            'WITHSCORES' => true|false # Whether or not to return scores
+     *                            'LIMIT' => [offset, count] # Return a subset of the matching members
+     *                        ];
+     *                        </code>
+     *
+     *                        NOTE:  For legacy reason, you may also simply pass `true` for the
+     *                               options argument, to mean `WITHSCORES`.
+     *
+     * @return Redis|array|false The matching members in reverse order of score or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('oldest-people');
+     *
+     * $redis->zadd('oldest-people', 122.4493, 'Jeanne Calment', 119.2932, 'Kane Tanaka',
+     *                               119.2658, 'Sarah Knauss',   118.7205, 'Lucile Randon',
+     *                               117.7123, 'Nabi Tajima',    117.6301, 'Marie-Louise Meilleur',
+     *                               117.5178, 'Violet Brown',   117.3753, 'Emma Morano',
+     *                               117.2219, 'Chiyo Miyako',   117.0740, 'Misao Okawa');
+     *
+     * // Array
+     * // (
+     * //     [0] => Kane Tanaka
+     * //     [1] => Sarah Knauss
+     * // )
+     * $redis->zRevRangeByScore('oldest-people', 122, 119);
+     *
+     * //Array
+     * //(
+     * //    [0] => Jeanne Calment
+     * //    [1] => Kane Tanaka
+     * //    [2] => Sarah Knauss
+     * //    [3] => Lucile Randon
+     * //)
+     * $redis->zRevRangeByScore('oldest-people', 'inf', 118);
+     *
+     * // Array
+     * // (
+     * //     [0] => Emma Morano
+     * // )
+     * $redis->zRevRangeByScore('oldest-people', '117.5', '-inf', ['LIMIT' => [0, 1]]);
+     * ?>
+     * </code>
+     *
+     */
+    public function zRevRangeByScore(string $key, string $max, string $min, array|bool $options = []): Redis|array|false;
 
+    /**
+    * Retrieve a member of a sorted set by reverse rank.
+    *
+    * @see https://redis.io/commands/zrevrank
+    *
+    * @param string $key      The sorted set to query.
+    * @param mixed  $member   The member to look up.
+    *
+    * @return Redis|int|false The reverse rank (the rank if counted high to low) of the member or
+    *                         false on failure.
+    *
+    * <code>
+    * <?php
+    * $redis = new Redis(['host' => 'localhost']);
+    *
+    * $redis->del('ds9-characters');
+    *
+    * $redis->zAdd('ds9-characters', 10, 'Sisko', 9, 'Garak', 8, 'Dax', 7, 'Odo');
+    *
+    * // Highest score, reverse rank 0
+    * $redis->zrevrank('ds9-characters', 'Sisko');
+    *
+    * // Second highest score, reverse rank 1
+    * $redis->zrevrank('ds9-characters', 'Garak');
+    * ?>
+    * </code>
+    */
     public function zRevRank(string $key, mixed $member): Redis|int|false;
 
+    /**
+     * Get the score of a member of a sorted set.
+     *
+     * @see https://redis.io/commands/zscore
+     *
+     * @param string $key    The sorted set to query.
+     * @param mixed  $member The member we wish to query.
+     *
+     * @return The score of the requested element or false if it is not found.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('telescopes');
+     *
+     * $redis->zAdd('telescopes', 11.9, 'LBT', 10.4, 'GTC', 10, 'HET');
+     *
+     * foreach ($redis->zRange('telescopes', 0, -1) as $name) {
+     *     // Get the score for this member
+     *     $aperature = $redis->zScore('telescopes', $name);
+     *
+     *     echo "The '$name' telescope has an effective aperature of: $aperature meters\n";
+     * }
+     * ?>
+     * </code>
+     */
     public function zScore(string $key, mixed $member): Redis|float|false;
 
+    /**
+     * Given one or more sorted set key names, return every element that is in the first
+     * set but not any of the others.
+     *
+     * @see https://redis.io/commands/zdiff
+     *
+     * @param array $keys    One ore more sorted sets.
+     * @param array $options An array which can contain ['WITHSCORES' => true] if you want Redis to
+     *                       return members and scores.
+     *
+     * @return Redis|array|false An array of members or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('primes', 'evens', 'mod3');
+     *
+     * $redis->zAdd('primes', 1, 'one', 3, 'three', 5, 'five');
+     * $redis->zAdd('evens', 2, 'two', 4, 'four');
+     * $redis->zAdd('mod3', 3, 'three', 6, 'six');
+     *
+     * // Array
+     * // (
+     * //     [0] => one
+     * //     [1] => five
+     * // )
+     * print_r($redis->zDiff(['primes', 'evens', 'mod3']));
+     * ?>
+     * </code>
+     *
+     */
     public function zdiff(array $keys, array $options = null): Redis|array|false;
 
-    public function zdiffstore(string $dst, array $keys, array $options = null): Redis|int|false;
+    /**
+     * Store the difference of one or more sorted sets in a destination sorted set.
+     *
+     * @see https://redis.io/commands/zdiff
+     * @see Redis::zdiff()
+     *
+     * @param string $key  The destination set name.
+     * @param array  $keys One or more source key names
+     *
+     * @return Redis|int|false The number of elements stored in the destination set or false on
+     *                         failure.
+     *
+     * NOTE:  See Redis::zdiff() for a more detailed description of how the diff operation works.
+     *
+     */
+    public function zdiffstore(string $dst, array $keys): Redis|int|false;
 
+    /**
+     * Compute the intersection of one or more sorted sets and return the members
+     *
+     * @param array $keys    One ore more sorted sets.
+     * @param array $weights An optional array of weights to be applied to each set when performing
+     *                       the intersection.
+     * @param array $options Options for how Redis should combine duplicate elements when performing the
+     *                       intersection.  See Redis::zunion() for details.
+     *
+     * @return Redis|array|false All of the members that exist in every set.
+     *
+     * <code>
+     * <?php
+
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('tng', 'ds9');
+     *
+     * $redis->zAdd('TNG', 2, 'Worf', 2.5, 'Data', 4.0, 'Picard');
+     * $redis->zAdd('DS9', 2.5, 'Worf', 3.0, 'Kira', 4.0, 'Sisko');
+     *
+     * // Array
+     * // (
+     * //     [0] => Worf
+     * // )
+     * $redis->zInter(['TNG', 'DS9']);
+     *
+     * // Array
+     * // (
+     * //     [Worf] => 4.5
+     * // )
+     * $redis->zInter(['TNG', 'DS9'], NULL, ['withscores' => true]);
+     *
+     * // Array
+     * // (
+     * //     [Worf] => 2.5
+     * // )
+     * $redis->zInter(['TNG', 'DS9'], NULL, ['withscores' => true, 'aggregate' => 'max']);
+     *
+     * ?>
+     * </code>
+     *
+     */
     public function zinter(array $keys, ?array $weights = null, ?array $options = null): Redis|array|false;
 
     public function zintercard(array $keys, int $limit = -1): Redis|int|false;
 
     public function zinterstore(string $dst, array $keys, ?array $weights = null, ?string $aggregate = null): Redis|int|false;
 
-    public function zscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): Redis|bool|array;
+    /**
+     * Scan the members of a sorted set incrementally, using a cursor
+     *
+     * @see https://redis.io/commands/zscan
+     * @see https://redis.io/commands/scan
+     * @see Redis::scan()
+     *
+     * @param string $key        The sorted set to scan.
+     * @param int    $iterator   A reference to an iterator that should be initialized to NULL initially, that
+     *                           will be updated after each subsequent call to ZSCAN.  Once the iterator
+     *                           has returned to zero the scan is complete
+     * @param string $pattern    An optional glob-style pattern that limits which members are returned during
+     *                           the scanning process.
+     * @param int    $count      A hint for Redis that tells it how many elements it should test before returning
+     *                           from the call.  The higher the more work Redis may do in any one given call to
+     *                           ZSCAN potentially blocking for longer periods of time.
+     *
+     * @return Redis|array|false An array of elements or false on failure.
+     *
+     * NOTE:  See Redis::scan() for detailed example code on how to call SCAN like commands.
+     *
+     */
+    public function zscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): Redis|array|false;
 
+    /**
+     * Retrieve the union of one or more sorted sets
+     *
+     * @param array $keys     One ore more sorted set key names
+     * @param array $weights  An optional array with floating point weights used when performing the union.
+     *                        Note that if this argument is passed, it must contain the same number of
+     *                        elements as the $keys array.
+     * @param array $options  An array that modifies how this command functions.
+     *
+     *                        <code>
+     *                        $options = [
+     *                            // By default when members exist in more than one set Redis will SUM
+     *                            // total score for each match.  Instead, it can return the AVG, MIN,
+     *                            // or MAX value based on this option.
+     *                            'AGGREGATE' => 'sum' | 'min' | 'max'
+     *
+     *                            // Whether Redis should also return each members aggregated score.
+     *                            'WITHSCORES' => true | false
+     *                        ]
+     *                        </code>
+     *
+     * @return Redis|array|false The union of each sorted set or false on failure
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('store1', 'store2', 'store3');
+     * $redis->zAdd('store1', 1, 'apples', 3, 'pears', 6, 'bananas');
+     * $redis->zAdd('store2', 3, 'apples', 5, 'coconuts', 2, 'bananas');
+     * $redis->zAdd('store3', 2, 'bananas', 6, 'apples', 4, 'figs');
+     *
+     * // Array
+     * // (
+     * //     [pears] => 3
+     * //     [figs] => 4
+     * //     [coconuts] => 5
+     * //     [apples] => 10
+     * //     [bananas] => 10
+     * // )
+     * $redis->zUnion(['store1', 'store2', 'store3'], NULL, ['withscores' => true]);
+     *
+     * // Array
+     * // (
+     * //     [figs] => 2
+     * //     [apples] => 5
+     * //     [pears] => 6
+     * //     [bananas] => 13
+     * // )
+     * $redis->zUnion(['store1', 'store3'], [2, .5], ['withscores' => true]);
+     *
+     * // Array
+     * // (
+     * //     [bananas] => 1
+     * //     [apples] => 2
+     * //     [figs] => 2
+     * //     [pears] => 6
+     * // )
+     * $redis->zUnion(['store1', 'store3'], [2, .5], ['withscores' => true, 'aggregate' => 'MIN']);
+     * ?>
+     * </code>
+     */
     public function zunion(array $keys, ?array $weights = null, ?array $options = null): Redis|array|false;
 
+    /**
+     * Perform a union on one or more Redis sets and store the result in a destination sorted set.
+     *
+     * @see https://redis.io/commands/zunionstore
+     * @see Redis::zunion()
+     *
+     * @param string $dst       The destination set to store the union.
+     * @param array  $keys      One or more input keys on which to perform our union.
+     * @param array  $weights   An optional weights array used to weight each input set.
+     * @param string $aggregate An optional modifier in how Redis will combine duplicate members.
+     *                          Valid:  'MIN', 'MAX', 'SUM'.
+     *
+     * @return Redis|int|false The number of members stored in the destination set or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zs1', 'zs2', 'zs3');
+     *
+     * $redis->zAdd('zs1', 1, 'one', 3, 'three');
+     * $redis->zAdd('zs1', 2, 'two', 4, 'four');
+     * $redis->zadd('zs3', 1, 'one', 7, 'five');
+     *
+     * // count(['one','two','three','four','five']) == 5
+     * $redis->zUnionStore('dst', ['zs1', 'zs2', 'zs3']);
+     *
+     * // Array
+     * // (
+     * //     [0] => one
+     * //     [1] => two
+     * //     [2] => three
+     * //     [3] => four
+     * //     [4] => five
+     * // )
+     * $redis->zRange('dst', 0, -1);
+     * ?>
+     * </code>
+     *
+     */
     public function zunionstore(string $dst, array $keys, ?array $weights = NULL, ?string $aggregate = NULL): Redis|int|false;
 }
 

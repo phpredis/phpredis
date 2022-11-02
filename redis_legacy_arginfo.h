@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 357d950a0dd1960a29c514c47385a0d9a5e422b2 */
+ * Stub hash: 84c333ece3425d10378996ae8b76ec57ced64025 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -906,9 +906,20 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zRevRange, 0, 0, 3)
 	ZEND_ARG_INFO(0, scores)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_zRevRangeByLex arginfo_class_Redis_zRangeByLex
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zRevRangeByLex, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, max)
+	ZEND_ARG_INFO(0, min)
+	ZEND_ARG_INFO(0, offset)
+	ZEND_ARG_INFO(0, count)
+ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_zRevRangeByScore arginfo_class_Redis_zRange
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zRevRangeByScore, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, max)
+	ZEND_ARG_INFO(0, min)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_zRevRank arginfo_class_Redis_hExists
 
@@ -922,7 +933,6 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zdiffstore, 0, 0, 2)
 	ZEND_ARG_INFO(0, dst)
 	ZEND_ARG_INFO(0, keys)
-	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zinter, 0, 0, 1)
