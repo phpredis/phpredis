@@ -2454,15 +2454,229 @@ class Redis {
 
     public function xpending(string $key, string $group, ?string $start = null, ?string $end = null, int $count = -1, ?string $consumer = null): Redis|array|false;
 
+    /**
+     * Get a range of entries from a STREAM key.
+     *
+     * @see https://redis.io/commands/xrange
+     *
+     * @param string $key   The stream key name to list.
+     * @param string $start The minimum ID to return.
+     * @param string $end   The maximum ID to return.
+     * @param int    $count An optional maximum number of entries to return.
+     *
+     * @return Redis|array|bool The entries in the stream within the requested range or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('stream');
+     *
+     * for ($i = 0; $i < 2; $i++) {
+     *     for ($j = 1; $j <= 2; $j++) {
+     *         $redis->xAdd('stream', "$i-$j", ['message' => "$i:$j"]);
+     *     }
+     * }
+     *
+     * //Array
+     * //(
+     * //    [0-1] => Array
+     * //        (
+     * //            [message] => 0:1
+     * //        )
+     * //
+     * //    [0-2] => Array
+     * //        (
+     * //            [message] => 0:2
+     * //        )
+     * //
+     * //)
+     * $redis->xRange('stream', '0-1', '0-2');
+     *
+     * // '-' and '+' are special values which mean 'minimum possible',
+     * // and 'maximum possible' id, respectively.
+     * $redis->xRange('stream', '-', '+');
+     * ?>
+     * </code>
+     */
     public function xrange(string $key, string $start, string $end, int $count = -1): Redis|array|bool;
 
+    /**
+     * Consume one or more unconsumed elements in one or more streams.
+     *
+     * @see https://redis.io/commands/xread
+     *
+     * @param array $streams An associative array with stream name keys and minimum id values.
+     * @param int   $count   An optional limit to how many entries are returnd *per stream*
+     * @param int   $block   An optional maximum number of milliseconds to block the caller if no
+     *                       data is available on any of the provided streams.
+     *
+     * <code>
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('s03', 's03');
+     *
+     * $redis->xAdd('s03', '3-1', ['title' => 'The Search, Part I']);
+     * $redis->xAdd('s03', '3-2', ['title' => 'The Search, Part II']);
+     * $redis->xAdd('s03', '3-3', ['title' => 'The House Of Quark']);
+     *
+     * $redis->xAdd('s04', '4-1', ['title' => 'The Way of the Warrior']);
+     * $redis->xAdd('s04', '4-3', ['title' => 'The Visitor']);
+     * $redis->xAdd('s04', '4-4', ['title' => 'Hippocratic Oath']);
+     *
+     * // Array
+     * // (
+     * //     [s03] => Array
+     * //         (
+     * //             [3-3] => Array
+     * //                 (
+     * //                     [title] => The House Of Quark
+     * //                 )
+     * //
+     * //         )
+     * //
+     * //     [s04] => Array
+     * //         (
+     * //             [4-3] => Array
+     * //                 (
+     * //                     [title] => The Visitor
+     * //                 )
+     * //
+     * //             [4-4] => Array
+     * //                 (
+     * //                     [title] => Hippocratic Oath
+     * //                 )
+     * //
+     * //         )
+     * //
+     * // )
+     * print_r($redis->xRead(['s03' => '3-2', 's04' => '4-1']));
+     * </code>
+     */
     public function xread(array $streams, int $count = -1, int $block = -1): Redis|array|bool;
 
     public function xreadgroup(string $group, string $consumer, array $streams, int $count = 1, int $block = 1): Redis|array|bool;
 
-    public function xrevrange(string $key, string $start, string $end, int $count = -1): Redis|array|bool;
+    /**
+     * Get a range of entries from a STREAM ke in reverse cronological order.
+     *
+     * @see https://redis.io/commands/xrevrange
+     * @see https://redis.io/commands/xrange
+     *
+     * @param string $key   The stream key to query.
+     * @param string $end   The maximum message ID to include.
+     * @param string $start The minimum message ID to include.
+     * @param int    $count An optional maximum number of messages to include.
+     *
+     * @return Redis|array|bool The entries within the requested range, from newest to oldest.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('stream');
+     *
+     * for ($i = 0; $i < 2; $i++) {
+     *     for ($j = 1; $j <= 2; $j++) {
+     *         $redis->xAdd('stream', "$i-$j", ['message' => "$i:$j"]);
+     *     }
+     * }
+     *
+     * // Array
+     * // (
+     * //     [0-2] => Array
+     * //         (
+     * //             [message] => 0:2
+     * //         )
+     * //
+     * //     [0-1] => Array
+     * //         (
+     * //             [message] => 0:1
+     * //         )
+     * //
+     * // )
+     * $redis->xRevRange('stream', '0-2', '0-1');
+     *
+     * // '-' and '+' are special values which mean 'minimum possible',
+     * // and 'maximum possible' id, respectively.
+     * $redis->xRevRange('stream', '+', '-');
+     * ?>
+     * </code>
+     *
+     */
+    public function xrevrange(string $key, string $end, string $start, int $count = -1): Redis|array|bool;
 
-    public function xtrim(string $key, int $maxlen, bool $approx = false, bool $minid = false, int $limit = -1): Redis|int|false;
+    /**
+     * Truncate a STREAM key in various ways.
+     *
+     * @see https://redis.io/commands/xtrim
+     *
+     * @param string $key       The STREAM key to trim.
+     * @param string $threshold This can either be a maximum length, or a minimum id.
+     *                          MAXLEN - An integer describing the maximum desired length of the stream after the command.
+     *                          MINID  - An ID that will become the new minimum ID in the stream, as Redis will trim all
+     *                                   messages older than this ID.
+     * @param bool   $approx    Whether redis is allowed to do an approximate trimming of the stream.  This is
+     *                          more efficient for Redis given how streams are stored internally.
+     * @param int    $count     An optional upper bound on how many entries Redis should attempt to trim before
+     *                          returning to the caller.
+     * @param bool   $minid     When set to `true`, users should pass a minimum ID to the `$threshold` argument.
+     * @param int    $limit     An optional upper bound on how many entries to trim during the command.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('stream');
+     * $redis->xAdd('stream', '1-1', ['one' => 'one']);
+     * $redis->xAdd('stream', '1-2', ['one' => 'two']);
+     * $redis->xAdd('stream', '2-1', ['two' => 'one']);
+     * $redis->xAdd('stream', '2-2', ['two' => 'two']);
+     *
+     * // Trim to three elemn
+     * $redis->xTrim('stream', 3);
+     *
+     * // Array
+     * // (
+     * //     [1-2] => Array
+     * //         (
+     * //             [one] => two
+     * //         )
+     * //
+     * //     [2-1] => Array
+     * //         (
+     * //             [two] => one
+     * //         )
+     * //
+     * //     [2-2] => Array
+     * //         (
+     * //             [two] => two
+     * //         )
+     * //
+     * // )
+     * $redis->xRange('stream', '-', '+');
+     *
+     * // Now let's trim everything older than '2-1'
+     * $redis->xTrim('stream', '2-1', false, true);
+     *
+     * // Array
+     * // (
+     * //     [2-1] => Array
+     * //         (
+     * //             [two] => one
+     * //         )
+     * //
+     * //     [2-2] => Array
+     * //         (
+     * //             [two] => two
+     * //         )
+     * //
+     * // )
+     * print_r($redis->xRange('stream', '-', '+'));
+     * ?>
+     * </code>
+     */
+    public function xtrim(string $key, string $threshold, bool $approx = false, bool $minid = false, int $limit = -1): Redis|int|false;
 
     /**
      * Add one or more elements and scores to a Redis sorted set.
@@ -3362,6 +3576,8 @@ class Redis {
     /**
      * Compute the intersection of one or more sorted sets and return the members
      *
+     * @see https://redis.io/commands/zinter
+     *
      * @param array $keys    One ore more sorted sets.
      * @param array $weights An optional array of weights to be applied to each set when performing
      *                       the intersection.
@@ -3404,8 +3620,81 @@ class Redis {
      */
     public function zinter(array $keys, ?array $weights = null, ?array $options = null): Redis|array|false;
 
+    /**
+     * Similar to ZINTER but instead of returning the intersected values, this command returns the
+     * cardinality of the intersected set.
+     *
+     * @see https://redis.io/commands/zintercard
+     * @see https://redis.io/commands/zinter
+     * @see Redis::zinter()
+     *
+     * @param array $keys   One ore more sorted set key names.
+     * @param int   $limit  An optional upper bound on the returned cardinality.  If set to a value
+     *                      greater than zero, Redis will stop processing the intersection once the
+     *                      resulting cardinality reaches this limit.
+     *
+     * @return Redis|int|false The cardinality of the intersection or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zs1', 'zs2');
+     *
+     * $redis->zAdd('zs1', 1, 'one', 2, 'two', 3, 'three', 4, 'four');
+     * $redis->zAdd('zs2', 2, 'two', 4, 'four');
+     *
+     * // count(['two', 'four']) == 2
+     * $redis->zInterCard(['zs1', 'zs2']);
+     * ?>
+     * </code>
+     */
     public function zintercard(array $keys, int $limit = -1): Redis|int|false;
 
+    /**
+     * Compute the intersection of one ore more sorted sets storing the result in a new sorted set.
+     *
+     * @see https://redis.io/commands/zinterstore
+     * @see https://redis.io/commands/zinter
+     *
+     * @param string $dst       The destination sorted set to store the intersected values.
+     * @param array  $keys      One ore more sorted set key names.
+     * @param array  $weights   An optional array of floats to weight each passed input set.
+     * @param string $aggregate An optional aggregation method to use.
+     *
+     *                          'SUM' - Store sum of all intersected members (this is the default).
+     *                          'MIN' - Store minimum value for each intersected member.
+     *                          'MAX' - Store maximum value for each intersected member.
+     *
+     * @return Redis|int|false  The total number of members writtern to the destination set or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zs', 'zs2', 'zs3');
+     * $redis->zAdd('zs1', 3, 'apples', 2, 'pears');
+     * $redis->zAdd('zs2', 4, 'pears', 3, 'bananas');
+     * $redis->zAdd('zs3', 2, 'figs', 3, 'pears');
+     *
+     * // Returns 1 (only 'pears' is in every set)
+     * $redis->zInterStore('fruit-sum', ['zs1', 'zs2', 'zs3']);
+     *
+     * // Array
+     * // (
+     * //     [pears] => 9
+     * // )
+     * $redis->zRange('fruit-sum', 0, -1, true);
+     *
+     * $redis->zInterStore('fruit-max', ['zs1', 'zs2', 'zs3'], NULL, 'MAX');
+     *
+     * // Array
+     * // (
+     * //     [pears] => 4
+     * // )
+     * print_r($redis->zRange('fruit-max', 0, -1, true));
+     * ?>
+     */
     public function zinterstore(string $dst, array $keys, ?array $weights = null, ?string $aggregate = null): Redis|int|false;
 
     /**

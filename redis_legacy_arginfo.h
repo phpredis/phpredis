@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 84c333ece3425d10378996ae8b76ec57ced64025 */
+ * Stub hash: 52904ef54aa9857103e3bb65c089cf09833c507c */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -824,11 +824,16 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_xreadgroup, 0, 0, 3)
 	ZEND_ARG_INFO(0, block)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_xrevrange arginfo_class_Redis_xrange
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_xrevrange, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, end)
+	ZEND_ARG_INFO(0, start)
+	ZEND_ARG_INFO(0, count)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_xtrim, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, maxlen)
+	ZEND_ARG_INFO(0, threshold)
 	ZEND_ARG_INFO(0, approx)
 	ZEND_ARG_INFO(0, minid)
 	ZEND_ARG_INFO(0, limit)

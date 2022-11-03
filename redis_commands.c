@@ -6076,15 +6076,15 @@ int redis_xinfo_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_xtrim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    zend_long threshold = 0, limit = -1;
+    zend_string *key = NULL, *threshold = NULL;
     zend_bool approx = 0, minid = 0;
     smart_string cmdstr = {0};
-    zend_string *key = NULL;
+    zend_long limit = -1;
     int argc;
 
     ZEND_PARSE_PARAMETERS_START(2, 5)
         Z_PARAM_STR(key)
-        Z_PARAM_LONG(threshold)
+        Z_PARAM_STR(threshold)
         Z_PARAM_OPTIONAL
         Z_PARAM_BOOL(approx)
         Z_PARAM_BOOL(minid)
@@ -6108,7 +6108,7 @@ int redis_xtrim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "=");
     }
 
-    redis_cmd_append_sstr_long(&cmdstr, threshold);
+    redis_cmd_append_sstr_zstr(&cmdstr, threshold);
 
     if (limit > -1 && approx) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "LIMIT");
