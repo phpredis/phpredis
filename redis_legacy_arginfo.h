@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 52904ef54aa9857103e3bb65c089cf09833c507c */
+ * Stub hash: ceb169a872a3df211ded811c1a5ac102832a9158 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -558,11 +558,14 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_rawcommand, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_rename, 0, 0, 2)
+	ZEND_ARG_INFO(0, old_name)
+	ZEND_ARG_INFO(0, new_name)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_renameNx, 0, 0, 2)
 	ZEND_ARG_INFO(0, key_src)
 	ZEND_ARG_INFO(0, key_dst)
 ZEND_END_ARG_INFO()
-
-#define arginfo_class_Redis_renameNx arginfo_class_Redis_rename
 
 #define arginfo_class_Redis_reset arginfo_class_Redis___destruct
 
@@ -733,7 +736,7 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_Redis_watch arginfo_class_Redis_del
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_wait, 0, 0, 2)
-	ZEND_ARG_INFO(0, count)
+	ZEND_ARG_INFO(0, numreplicas)
 	ZEND_ARG_INFO(0, timeout)
 ZEND_END_ARG_INFO()
 
