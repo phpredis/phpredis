@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 52904ef54aa9857103e3bb65c089cf09833c507c */
+ * Stub hash: ceb169a872a3df211ded811c1a5ac102832a9158 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -650,21 +650,25 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_rPop, 0, 1, Redi
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_randomKey arginfo_class_Redis___destruct
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_randomKey, 0, 0, Redis, MAY_BE_STRING|MAY_BE_FALSE)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_rawcommand, 0, 1, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, command, IS_STRING, 0)
 	ZEND_ARG_VARIADIC_TYPE_INFO(0, args, IS_MIXED, 0)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_rename, 0, 0, 2)
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_rename, 0, 2, Redis, MAY_BE_BOOL)
+	ZEND_ARG_TYPE_INFO(0, old_name, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, new_name, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_renameNx, 0, 0, 2)
 	ZEND_ARG_TYPE_INFO(0, key_src, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, key_dst, IS_STRING, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_renameNx arginfo_class_Redis_rename
-
-#define arginfo_class_Redis_reset arginfo_class_Redis_clearLastError
+#define arginfo_class_Redis_reset arginfo_class_Redis_bgSave
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_restore, 0, 3, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
@@ -861,7 +865,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_unsubscribe, 0, 
 	ZEND_ARG_TYPE_INFO(0, channels, IS_ARRAY, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_unwatch arginfo_class_Redis___destruct
+#define arginfo_class_Redis_unwatch arginfo_class_Redis_bgSave
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_watch, 0, 0, 1)
 	ZEND_ARG_TYPE_MASK(0, key, MAY_BE_ARRAY|MAY_BE_STRING, NULL)
@@ -869,7 +873,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_watch, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_wait, 0, 2, MAY_BE_LONG|MAY_BE_FALSE)
-	ZEND_ARG_TYPE_INFO(0, count, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, numreplicas, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, timeout, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 

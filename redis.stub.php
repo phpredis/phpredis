@@ -641,6 +641,40 @@ class Redis {
 
     public function discard(): Redis|bool;
 
+    //public function restore(string $key, int $timeout, string $value, ?array $options = NULL): bool;
+    /**
+     * Dump Redis' internal binary representation of a key.
+     *
+     * @see https://redis.io/commands/dump
+     *
+     * @param string $key The key to dump.
+     *
+     * @return Redis|string A binary string representing the key's value.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('zset');
+     *
+     * $redis->zadd('zset', 0, 'zero', 1, 'one', 2, 'two');
+     *
+     * // Retrieve the binary representation of the zset
+     * $binary = $redis->dump('zset');
+     *
+     * // Retore it to a different name
+     * $redis->restore('new-zset', 0, $binary);
+     *
+     * // Array
+     * // (
+     * //     [zero] => 0
+     * //     [one] => 1
+     * //     [two] => 2
+     * // )
+     * $redis->zRange('new-zset', 0, -1, true);
+     * ?>
+     * </code>
+     */
     public function dump(string $key): Redis|string;
 
     /**
@@ -1216,21 +1250,46 @@ class Redis {
      */
     public function rPop(string $key, int $count = 0): Redis|array|string|bool;
 
-    /** @return string|Redis */
-    public function randomKey();
+    /**
+     * Return a random key from the current database
+     *
+     * @see https://redis.io/commands/randomkey
+     *
+     * @return Redis|string|false A random key name or false if no keys exist
+     *
+     */
+    public function randomKey(): Redis|string|false;
 
     public function rawcommand(string $command, mixed ...$args): mixed;
 
-    /** @return bool|Redis */
-    public function rename(string $key_src, string $key_dst);
+    /**
+     * Rename a key
+     *
+     * @param string $old_name The original name of the key
+     * @param string $new_name The new name for the key
+     *
+     * @return Redis|bool True if the key was renamed or false if not.
+     */
+    public function rename(string $old_name, string $new_name): Redis|bool;
 
     /** @return bool|Redis */
     public function renameNx(string $key_src, string $key_dst);
 
-    public function reset(): bool;
+    /**
+     * Reset the state of the connection.
+     *
+     * @return Redis|bool Should always return true unless there is an error.
+     */
+    public function reset(): Redis|bool;
 
     public function restore(string $key, int $timeout, string $value, ?array $options = NULL): bool;
 
+    /**
+     * Query whether the connected instance is a primary or replica
+     *
+     * @return mixed Will return an array with the role of the connected instance unless there is
+     *               an error.
+     */
     public function role(): mixed;
 
     /**
@@ -1415,6 +1474,32 @@ class Redis {
      */
     public function sInter(array|string $key, string ...$other_keys): Redis|array|false;
 
+    /**
+     * Compute the intersection of one or more sets and return the cardinality of the result.
+     *
+     * @see https://redis.io/commands/sintercard
+     *
+     * @param array $keys  One or more set key names.
+     * @param int   $limit A maximum cardinality to return.  This is useful to put an upper bound
+     *                     on the amount of work Redis will do.
+     *
+     * @return Redis|int|false The
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('set1', 'set2', 'set3');
+     *
+     * $redis->sAdd('set1', 'apple', 'pear', 'banana', 'carrot');
+     * $redis->sAdd('set2', 'apple',         'banana');
+     * $redis->sAdd('set3',          'pear', 'banana');
+     *
+     * // int(1)
+     * var_dump($redis->sInterCard(['set1', 'set2', 'set3']));
+     * ?>
+     * </code>
+     */
     public function sintercard(array $keys, int $limit = -1): Redis|int|false;
 
     /**
@@ -1446,6 +1531,36 @@ class Redis {
      */
     public function sInterStore(array|string $key, string ...$other_keys): Redis|int|false;
 
+    /**
+     * Retrieve every member from a set key.
+     *
+     * @see https://redis.io/commands/smembers
+     *
+     * @param string $key The set name.
+     *
+     * @return Redis|array|false Every element in the set or false on failure.
+     *
+     * <code>
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('tng-crew');
+     *
+     * $redis->sAdd('tng-crew', ...['Picard', 'Riker', 'Data', 'Worf', 'La Forge', 'Troi', 'Crusher', 'Broccoli']);
+     *
+     * // Array
+     * // (
+     * //     [0] => Riker
+     * //     [1] => Crusher
+     * //     [2] => Troi
+     * //     [3] => Worf
+     * //     [4] => LaForge
+     * //     [5] => Picard
+     * //     [6] => Broccoli
+     * //     [7] => Data
+     * // )
+     * $redis->sMembers('tng-crew');
+     * </code>
+     */
     public function sMembers(string $key): Redis|array|false;
 
     public function sMisMember(string $key, string $member, string ...$other_members): array;
@@ -1613,6 +1728,38 @@ class Redis {
      */
     public function scard(string $key): Redis|int|false;
 
+    /**
+     * An administrative command used to interact with LUA scripts stored on the server.
+     *
+     * @see https://redis.io/commands/script
+     *
+     * @param string $command The script suboperation to execute.
+     * @param mixed  $args    One ore more additional argument
+     *
+     * @return mixed This command returns various things depending on the specific operation executed.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $lua = sprintf("return %f", microtime(true));
+     *
+     * // array(1) {
+     * //   [0]=>
+     * //   int(0)
+     * // }
+     * var_dump($redis->script('exists', sha1($lua)));
+     *
+     * $redis->script('load', $lua);
+     *
+     * // array(1) {
+     * //   [0]=>
+     * //   int(1)
+     * // }
+     * var_dump($redis->script('exists', sha1($lua)));
+     * ?>
+     * </code>
+     */
     public function script(string $command, mixed ...$args): mixed;
 
     /**
@@ -2366,15 +2513,35 @@ class Redis {
      */
     public function unsubscribe(array $channels): Redis|array|bool;
 
-    /** @return bool|Redis */
-    public function unwatch();
+    /**
+     * Remove any previously WATCH'ed keys in a transaction.
+     *
+     * @see https://redis.io/commands/unwatch
+     * @see https://redis.io/commands/unwatch
+     * @see Redis::watch()
+     *
+     * @return True on success and false on failure.
+     */
+    public function unwatch(): Redis|bool;
 
     /**
      * @return bool|Redis
      */
     public function watch(array|string $key, string ...$other_keys);
 
-    public function wait(int $count, int $timeout): int|false;
+    /**
+     * Block the client up to the provided timeout until a certain number of replicas have confirmed
+     * recieving them.
+     *
+     * @see https://redis.io/commands/wait
+     *
+     * @param int $numreplicas The number of replicas we want to confirm write operaions
+     * @param int $timeout     How long to wait (zero meaning forever).
+     *
+     * @return Redis|int|false The number of replicas that have confirmed or false on failure.
+     *
+     */
+    public function wait(int $numreplicas, int $timeout): int|false;
 
     public function xack(string $key, string $group, array $ids): int|false;
 
@@ -2425,6 +2592,37 @@ class Redis {
     public function xgroup(string $operation, string $key = null, string $group = null, string $id_or_consumer = null,
                            bool $mkstream = false, int $entries_read = -2): mixed;
 
+    /**
+     * Retrieve information about a stream key.
+     *
+     * @param string $operation The specific info operation to perform.
+     * @param string $arg1      The first argument (depends on operation)
+     * @param string $arg2      The second argument
+     * @param int    $count     The COUNT argument to `XINFO STREAM`
+     *
+     * @return mixed This command can return different things depending on the operation being called.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('stream');
+     *
+     * $redis->xAdd('stream', "0-1", ['payload' => '0-1']);
+     * $redis->xAdd('stream', "0-2", ['payload' => '0-2']);
+     * $redis->xAdd('stream', "0-3", ['payload' => '0-3']);
+     *
+     * // Retrieve any consmers for a given key
+     * $redis->xInfo('CONSUMERS', 'stream');
+     *
+     * // Retrieve any groups for a given key
+     * $redis->xInfo('GROUPS', 'stream');
+     *
+     * // Retrieve general stream information along with messages
+     * $redis->xInfo('STREAM', 'stream');
+     * ?>
+     * </code>
+     */
     public function xinfo(string $operation, ?string $arg1 = null, ?string $arg2 = null, int $count = -1): mixed;
 
 
