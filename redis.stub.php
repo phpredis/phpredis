@@ -1964,8 +1964,6 @@ class Redis {
      */
     public function setOption(int $option, mixed $value): bool;
 
-    /** @return bool|Redis */
-
     /**
      * Set a Redis STRING key with a specific expiration in seconds.
      *
@@ -2545,12 +2543,104 @@ class Redis {
 
     public function xack(string $key, string $group, array $ids): int|false;
 
+    /**
+     * Append a message to a stream.
+     *
+     * @see https://redis.io/commands/xadd
+     *
+     * @param string $key        The stream name.
+     * @param string $id         The ID for the message we want to add.  This can be the special value '*'
+     *                           which means Redis will generate the ID that appends the message to the
+     *                           end of the stream.  It can also be a value in the form <ms>-* which will
+     *                           generate an ID that appends to the end ot entries with the same <ms> value
+     *                           (if any exist).
+     * @param int    $maxlen     If specified Redis will append the new message but trim any number of the
+     *                           oldest messages in the stream until the length is <= $maxlen.
+     * @param bool   $approx     Used in conjunction with `$maxlen`, this flag tells Redis to trim the stream
+     *                           but in a more efficient way, meaning the trimming may not be exactly to
+     *                           `$maxlen` values.
+     * @param bool   $nomkstream If passed as `TRUE`, the stream must exist for Redis to append the message.
+     *
+     * <code>
+     * </php
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('ds9-season-1');
+     *
+     * $redis->xAdd('ds9-season-1', '1-1', ['title' => 'Emissary Part 1']);
+     * $redis->xAdd('ds9-season-1', '1-2', ['title' => 'A Man Alone']);
+     * $redis->xAdd('ds9-season-1', '1-3', ['title' => 'Emissary Part 2']);
+     * $redis->xAdd('ds9-season-1', '1-4', ['title' => 'Past Prologue']);
+     *
+     * // Array
+     * // (
+     * //     [1-1] => Array
+     * //         (
+     * //             [title] => Emissary Part 1
+     * //         )
+     * //
+     * //     [1-2] => Array
+     * //         (
+     * //             [title] => A Man Alone
+     * //         )
+     * //
+     * // )
+     * $redis->xRange('ds9-season-1', '1-1', '1-2');
+     * ?>
+     * ?>
+     * </code>
+     */
     public function xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false, bool $nomkstream = false): Redis|string|false;
 
     public function xautoclaim(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false): Redis|bool|array;
 
     public function xclaim(string $key, string $group, string $consumer, int $min_idle, array $ids, array $options): Redis|bool|array;
 
+    /**
+     * Remove one or more specific IDs from a stream.
+     *
+     * @param string $key The stream to modify.
+     * @param array $ids One or more message IDs to remove.
+     *
+     * @return Redis|int|false The number of messages removed or false on failure.
+     *
+     * <code>
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('stream');
+     *
+     * for ($a = 1; $a <= 3; $a++) {
+     *     for ($b = 1; $b <= 2; $b++) {
+     *         $redis->xAdd('stream', "$a-$b", ['id' => "$a-$b"]);
+     *     }
+     * }
+     *
+     * // Remove some elements
+     * $redis->xDel('stream', ['1-1', '2-1', '3-1']);
+     *
+     * // Array
+     * // (
+     * //     [1-2] => Array
+     * //         (
+     * //             [id] => 1-2
+     * //         )
+     * //
+     * //     [2-2] => Array
+     * //         (
+     * //             [id] => 2-2
+     * //         )
+     * //
+     * //     [3-2] => Array
+     * //         (
+     * //             [id] => 3-2
+     * //         )
+     * //
+     * // )
+     * $redis->xRange('stream', '-', '+');
+     * ?>
+     * </code>
+     */
     public function xdel(string $key, array $ids): Redis|int|false;
 
     /**
@@ -2650,6 +2740,23 @@ class Redis {
      */
     public function xlen(string $key): Redis|int|false;
 
+    /**
+     * Interact with stream messages that have been consumed by a consumer group but not yet
+     * acknowledged with XACK.
+     *
+     * @see https://redis.io/commands/xpending
+     * @see https://redis.io/commands/xreadgroup
+     *
+     * @param string $key      The stream to inspect.
+     * @param string $group    The user group we want to see pending messages from.
+     * @param string $start    The minimum ID to consider.
+     * @param string $string   The maximum ID to consider.
+     * @param string $count    Optional maximum number of messages to return.
+     * @param string $consumer If provided, limit the returned messages to a specific consumer.
+     *
+     * @return Redis|array|false The pending messages belonging to the stream or false on failure.
+     *
+     */
     public function xpending(string $key, string $group, ?string $start = null, ?string $end = null, int $count = -1, ?string $consumer = null): Redis|array|false;
 
     /**
@@ -2753,6 +2860,60 @@ class Redis {
      */
     public function xread(array $streams, int $count = -1, int $block = -1): Redis|array|bool;
 
+    /**
+     * Read one or more messages using a consumer group.
+     *
+     * @param string $group     The consumer group to use.
+     * @param string $consumer  The consumer to use.
+     * @param array  $streams   An array of stream names and message IDs
+     * @param int    $count     Optional maximum number of messages to return
+     * @param int    $block     How long to block if there are no messages available.
+     *
+     * @return Redis|array|bool Zero or more unread messages or false on failure.
+     *
+     * <code>
+     * <?php
+     *
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('episodes');
+     *
+     * // Create a consumer group (and stream)
+     * $redis->xGroup('CREATE', 'episodes', 'ds9', '0-0', true);
+     *
+     * // Add a couple of messages to the stream
+     * $redis->xAdd('episodes', '1-1', ['title' => 'Emissary: Part 1']);
+     * $redis->xAdd('episodes', '1-2', ['title' => 'A Man Alone']);
+     *
+     * // Now read some messages with our consumer group
+     * $messages = $redis->xReadGroup('ds9', 'sisko', ['episodes' => '>']);
+     *
+     * // After having read the two messages, add another
+     * $redis->xAdd('episodes', '1-3', ['title' => 'Emissary: Part 2']);
+     *
+     * // Acknowledge the first two read messages
+     * foreach ($messages as $stream => $stream_messages) {
+     *     $ids = array_keys($stream_messages);
+     *     $redis->xAck('stream', 'ds9', $ids);
+     * }
+     *
+     * // We can now pick up where we left off, and will only get the final message
+     * $msgs = $redis->xReadGroup('ds9', 'sisko', ['episodes' => '>']);
+     *
+     * // array(1) {
+     * //   ["episodes"]=>
+     * //   array(1) {
+     * //     ["1-3"]=>
+     * //     array(1) {
+     * //       ["title"]=>
+     * //       string(16) "Emissary: Part 2"
+     * //     }
+     * //   }
+     * // }
+     * var_dump($msgs);
+     * ?>
+     * </code>
+     */
     public function xreadgroup(string $group, string $consumer, array $streams, int $count = 1, int $block = 1): Redis|array|bool;
 
     /**
