@@ -639,6 +639,29 @@ class Redis {
      */
     public function delete(array|string $key, string ...$other_keys): Redis|int|false;
 
+    /**
+     * Discard a transaction currently in progress.
+     *
+     * @return Redis|bool  True if we could discard the transaction.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->multi()->set('foo', 'bar')->get('foo');
+     *
+     * // Redis::MULTI
+     * $redis->getMode();
+     *
+     * // Discard the in-progress transaction
+     * $redis->discard();
+     *
+     * // Redis::ATOMIC
+     * $redis->getMode();
+     *
+     * ?>
+     * </code>
+     */
     public function discard(): Redis|bool;
 
     //public function restore(string $key, int $timeout, string $value, ?array $options = NULL): bool;
@@ -986,28 +1009,210 @@ class Redis {
      */
     public function getOption(int $option): mixed;
 
+    /**
+     * Get the persistent connection ID, if there is one.
+     *
+     * @return string The ID or NULL if we don't have one.
+     */
     public function getPersistentID(): ?string;
 
+    /**
+     * Get the port we are connected to.  This number will be zero if we are connected to a unix socket.
+     *
+     * @return int The port.
+     */
     public function getPort(): int;
 
+    /**
+     * Retrieve a substring of a string by index.
+     *
+     * @param string $key   The string to query.
+     * @param int    $start The zero-based starting index.
+     * @param int    $end   The zero-based ending index.
+     *
+     * @return Redis|string|false The substring or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $word = 'Supercalifragilisticexpialidocious';
+     * $redis->set('silly-word', $word);
+     *
+     * // string "super"
+     * var_dump($redis->getRange('silly-word', 0, 4));
+     *
+     * // string(7) "docious"
+     * var_dump($redis->getRange('silly-word', -7, -1));
+     * ?>
+     */
     public function getRange(string $key, int $start, int $end): Redis|string|false;
 
+    /**
+     * Get the longest common subsequence between two string keys.
+     *
+     * @param string $key1    The first key to check
+     * @param string $key2    The second key to check
+     * @param array  $options An optional array of modifiers for the comand.
+     *
+     *                        <code>
+     *                        $options = [
+     *                            'MINMATCHLEN'  => int  // Exclude matching substrings that are less than this value
+     *
+     *                            'WITHMATCHLEN' => bool // Whether each match should also include its length.
+     *
+     *                            'LEN'                  // Return the length of the longest subsequence
+     *
+     *                            'IDX'                  // Each returned match will include the indexes where the
+     *                                                   // match occurs in each string.
+     *                        ];
+     *                        </code>
+     *
+     *                        NOTE:  'LEN' cannot be used with 'IDX'.
+     *
+     * @return Redis|string|array|int|false Various reply types depending on options.
+     *
+     *
+     * <code>
+     * <?php
+     * <?php
+     *
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->set('seq1', 'gtaggcccgcacggtctttaatgtatccctgtttaccatgccatacctgagcgcatacgc');
+     * $redis->set('seq2', 'aactcggcgcgagtaccaggccaaggtcgttccagagcaaagactcgtgccccgctgagc');
+     *
+     * // string(37) "acccgcacggcaagtcgttccagcaactggcgctagc"
+     * var_dump($redis->lcs('seq1', 'seq2'));
+     * ?>
+     */
     public function lcs(string $key1, string $key2, ?array $options = NULL): Redis|string|array|int|false;
 
-    public function getReadTimeout(): int;
+    /**
+     * Get the currently set read timeout on the connection.
+     *
+     * @return float The timeout.
+     */
+    public function getReadTimeout(): float;
 
+    /**
+     * Sets a key and returns any previously set value, if the key already existed.
+     *
+     * @param string $key The key to set.
+     * @param mixed $value The value to set the key to.
+     *
+     * @return Redis|string|false The old value of the key or false if it didn't exist.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('captain');
+     *
+     * // bool(false)
+     * var_dump($redis->getset('captain', 'Pike'));
+     *
+     * // string(4) "Pike"
+     * var_dump($redis->getset('captain', 'Kirk'));
+     * ?>
+     * </code>
+     */
     public function getset(string $key, mixed $value): Redis|string|false;
 
-    public function getTimeout(): int;
+    /**
+     * Retrieve any set connection timeout
+     *
+     * @return float The currently set timeout or false on failure (e.g. we aren't connected).
+     */
+    public function getTimeout(): float|false;
 
     public function getTransferredBytes(): int|false;
 
-    public function hDel(string $key, string $member, string ...$other_members): Redis|int|false;
+    /**
+     * Remove one or more fields from a hash.
+     *
+     * @see https://redis.io/commands/hdel
+     *
+     * @param string $key          The hash key in question.
+     * @param string $field        The first field to remove
+     * @param string $other_fields One or more additional fields to remove.
+     *
+     * @return Redis|int|false     The number of fields actually removed.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('people');
+     *
+     * $redis->hmset('comms', ['Alice' => 'ecc', 'Bob' => 'rsa', 'Mallory' => 'haxx00r']);
+     *
+     * // int(1)
+     * $redis->hDel('comms', 'Mallory', 'Archibald');
+     * ?>
+     * </code>
+     */
+    public function hDel(string $key, string $field, string ...$other_fields): Redis|int|false;
 
-    public function hExists(string $key, string $member): Redis|bool;
+    /**
+     * Checks whether a field exists in a hash.
+     *
+     * @see https://redis.io/commands/hexists
+     *
+     * @param string $key   The hash to query.
+     * @param string $field The field to check
+     *
+     * @return Redis|bool   True if it exists, false if not.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('captains');
+     *
+     * $redis->hmset('captains', ['Kirk' => 'Enterprise', 'Picard' => 'Enterprise-D', 'Sisko' => 'Defiant']);
+     *
+     * bool(false)
+     * $redis->hExists('captains', 'Pike');
+     *
+     * bool(true)
+     * $redis->hExists('captains', 'Picard');
+     * ?>
+     * </code>
+     */
+    public function hExists(string $key, string $field): Redis|bool;
 
     public function hGet(string $key, string $member): mixed;
 
+    /**
+     * Read every field and value from a hash.
+     *
+     * @see https://redis.io/commands/hgetall
+     *
+     * @param string $key The hash to query.
+     *
+     * @return Redis|array|false All fields and values or false if the key didn't exist.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('comms');
+     *
+     * $redis->hmset('comms', ['Alice' => 'ecc', 'Bob' => 'rsa', 'Mallory' => 'haxx00r']);
+     *
+     * // array(3) {
+     * //   ["Alice"]=>
+     * //   string(3) "ecc"
+     * //   ["Bob"]=>
+     * //   string(3) "rsa"
+     * //   ["Mallory"]=>
+     * //   string(7) "haxx00r"
+     * // }
+     * $redis->hGetAll('comms');
+     * ?>
+     * </code>
+     */
     public function hGetAll(string $key): Redis|array|false;
 
     public function hIncrBy(string $key, string $member, int $value): Redis|int|false;
@@ -1034,14 +1239,87 @@ class Redis {
 
     public function hscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): Redis|bool|array;
 
-    /** @return Redis|int|false */
-    public function incr(string $key, int $by = 1);
+    /**
+     * Increment a key's value, optionally by a specifc amount.
+     *
+     * @see https://redis.io/commands/incr
+     * @see https://redis.io/commands/incrby
+     *
+     * @param string $key The key to increment
+     * @param int    $by  An optional amount to increment by.
+     *
+     * @return Redis|int|false  The new value of the key after incremented.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->set('counter', 1);
+     *
+     * // int(2);
+     * $redis->incr('counter');
+     *
+     * // int(4);
+     * $redis->incr('counter', 2);
+     * ?>
+     * </code>
+     */
+    public function incr(string $key, int $by = 1): Redis|int|false;
 
-    /** @return Redis|int|false */
-    public function incrBy(string $key, int $value);
+    /**
+     * Increment a key by a specific integer value
+     *
+     * @see https://redis.io/commands/incrby
+     *
+     * @param string $key   The key to increment.
+     * @param int    $value The amount to increment.
+     *
+     * <code>
+     * <?php
+     *
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->set('primes', 2);
+     *
+     * // int(3)
+     * $redis->incrby('primes', 1);
+     *
+     * // int(5)
+     * $redis->incrby('primes', 2);
+     *
+     * // int(7)
+     * $redis->incrby('primes', 2);
+     *
+     * // int(11)
+     * $redis->incrby('primes', 4);
+     * ?>
+     * </code>
+     */
+    public function incrBy(string $key, int $value): Redis|int|false;
 
-    /** @return Redis|int|false */
-    public function incrByFloat(string $key, float $value);
+    /**
+     * Increment a numeric key by a floating point value.
+     *
+     * @param string $key The key to increment
+     * @param floag $value How much to increment (or decrement) the value.
+     *
+     * @return Redis|float|false The new value of the key or false if the key didn't contain a string.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('tau');
+     *
+     * // float(3.1415926)
+     * var_dump($redis->incrByFloat('tau', 3.1415926));
+     *
+     * // float(6.2831852)
+     * var_dump($redis->incrByFloat('tau', 3.1415926));
+     * ?>
+     * </code>
+     */
+    public function incrByFloat(string $key, float $value): Redis|float|false;
 
     /**
      * Retrieve information about the connected redis-server.  If no arguments are passed to
@@ -1059,6 +1337,11 @@ class Redis {
      */
     public function info(string ...$sections): Redis|array|false;
 
+    /**
+     * Check if we are currently connected to a Redis instance.
+     *
+     * @return bool True if we are, false if not
+     */
     public function isConnected(): bool;
 
     /** @return Redis|array|false */
@@ -1212,9 +1495,52 @@ class Redis {
      * @return Redis|string|false If passed no message, this command will simply return `true`.
      *                            If a message is passed, it will return the message.
      *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * // bool(true)
+     * $redis->ping();
+     *
+     * // string(9) "beep boop"
+     * $redis->ping('beep boop');
+     * ?>
+     * </code>
      */
     public function ping(string $message = NULL): Redis|string|bool;
 
+    /**
+     * Enter into pipeline mode.
+     *
+     * Pipeline mode is the highest performance way to send many commands to Redis
+     * as they are aggregated into one stream of commands and then all sent at once
+     * when the user calls Redis::exec().
+     *
+     * NOTE:  That this is shorthand for Redis::multi(Redis::PIPELINE)
+     *
+     * @return Redis The redis object is returned, to facilitate method chaining.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * // array(3) {
+     * //   [0]=>
+     * //   bool(true)
+     * //   [1]=>
+     * //   int(0)
+     * //   [2]=>
+     * //   int(3)
+     * // }
+     * $redis->pipeline()
+     *       ->set('foo', 'bar')
+     *       ->del('mylist')
+     *       ->rpush('mylist', 'a', 'b', 'c')
+     *       ->exec();
+     * ?>
+     * </code>
+     *
+     */
     public function pipeline(): bool|Redis;
 
     /**
@@ -1226,18 +1552,76 @@ class Redis {
     /** @return bool|Redis */
     public function psetex(string $key, int $expire, mixed $value);
 
+    /**
+     * Subscribe to one or more glob-style patterns
+     *
+     * @see https://redis.io/commands/psubscribe
+     *
+     * @param array     $patterns One or more patterns to subscribe to.
+     * @param callable  $cb       A callback with the following prototype:
+     *
+     *                            <code>
+     *                            function ($redis, $channel, $message) { }
+     *                            </code>
+     *
+     * @return bool True if we were subscribed.
+     */
     public function psubscribe(array $patterns, callable $cb): bool;
 
+    /**
+     * Get a keys time to live in milliseconds.
+     *
+     * @see https://redis.io/commands/pttl
+     *
+     * @param string $key The key to check.
+     *
+     * @return Redis|int|false The keys TTL or false on failure.
+     *
+     * NOTE:  -1 means a key has no TTL and -2 means the key doesn't exist.
+     *
+     * <code>
+     * <?php
+     *
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->setex('ttl-key', 60, 'ttl-value');
+     *
+     * // int(60000)
+     * var_dump($redis->pttl('ttl-key'));
+     * ?>
+     * </code>
+     */
     public function pttl(string $key): Redis|int|false;
 
-    public function publish(string $channel, string $message): mixed;
+    /**
+     * Publish a message to a pubsub channel
+     *
+     * @see https://redis.io/commands/publish
+     *
+     * @param string $channel The channel to publish to.
+     * @param string $message The message itself.
+     *
+     * @return Redis|int The number of subscribed clients to the given channel.
+     */
+    public function publish(string $channel, string $message): Redis|int|false;
 
     public function pubsub(string $command, mixed $arg = null): mixed;
 
+    /**
+     * Unsubscribe from one or more channels by pattern
+     *
+     * @see https://redis.io/commands/punsubscribe
+     * @see https://redis.io/commands/subscribe
+     * @see Redis::subscribe()
+     *
+     * @param array $patterns One or more glob-style patterns of channel names.
+     *
+     * @return Redis|array|bool  The array of subscribed patterns or false on failure.
+     */
     public function punsubscribe(array $patterns): Redis|array|bool;
 
     /**
-     * Pop one or more elements from the end of a Redis LIST.
+     * Pop one or more elements from the end of a list.
      *
      * @see https://redis.io/commands/rpop
      *
@@ -1247,6 +1631,25 @@ class Redis {
      * NOTE:  The `count` argument requires Redis >= 6.2.0
      *
      * @return Redis|array|string|bool One ore more popped elements or false if all were empty.
+     *
+     * <code>
+     * <?php
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('mylist');
+     * $redis->rPush('mylist', 'one', 'two', 'three');
+     *
+     * // string(5) "three"
+     * $redis->rPop('mylist');
+     *
+     * // string(3) "two"
+     * $redis->rPop('mylist');
+     *
+     * // string(3) "one"
+     * $redis->rPop('mylist');
+     * ?>
+     * </code>
      */
     public function rPop(string $key, int $count = 0): Redis|array|string|bool;
 
@@ -1260,10 +1663,42 @@ class Redis {
      */
     public function randomKey(): Redis|string|false;
 
+    /**
+     * Execute any arbitrary Redis command by name.
+     *
+     * @param string $command The command to execute
+     * @param mixed  $args    One or more arguments to pass to the command.
+     *
+     * <code>
+     * <?php
+     *
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->rawCommand('del', 'mystring', 'mylist');
+     * $redis->rawCommand('set', 'mystring', 'myvalue');
+     * $redis->rawCommand('rpush', 'mylist', 'one', 'two', 'three');
+     *
+     * // string(7) "myvalue"
+     * $redis->rawCommand('get', 'mystring');
+     *
+     * // array(3) {
+     * //   [0]=>
+     * //   string(3) "one"
+     * //   [1]=>
+     * //   string(3) "two"
+     * //   [2]=>
+     * //   string(5) "three"
+     * // }
+     * $redis->rawCommand('lrange', 'mylist', 0, -1);
+     * ?>
+     * </code>
+     */
     public function rawcommand(string $command, mixed ...$args): mixed;
 
     /**
-     * Rename a key
+     * Unconditionally rename a key from $old_name to $new_name
+     *
+     * @see https://redis.io/commands/rename
      *
      * @param string $old_name The original name of the key
      * @param string $new_name The new name for the key
@@ -1272,8 +1707,34 @@ class Redis {
      */
     public function rename(string $old_name, string $new_name): Redis|bool;
 
-    /** @return bool|Redis */
-    public function renameNx(string $key_src, string $key_dst);
+    /**
+     * Renames $key_src to $key_dst but only if newkey does not exist.
+     *
+     * @see https://redis.io/commands/renamenx
+     *
+     * @param string $key_src The source key name
+     * @param string $key_dst The destination key name.
+     *
+     * @return Redis|bool True if the key was renamed, false if not.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('src', 'dst', 'existing-dst');
+     *
+     * $redis->set('src', 'src_key');
+     * $redis->set('existing-dst', 'i_exist');
+     *
+     * // bool(true)
+     * $redis->renamenx('src', 'dst');
+     *
+     * // bool(false)
+     * $redis->renamenx('dst', 'existing-dst');
+     * ?>
+     * </code>
+     */
+    public function renameNx(string $key_src, string $key_dst): Redis|bool;
 
     /**
      * Reset the state of the connection.
@@ -1282,7 +1743,66 @@ class Redis {
      */
     public function reset(): Redis|bool;
 
-    public function restore(string $key, int $timeout, string $value, ?array $options = NULL): bool;
+    /**
+     * Restore a key by the binary payload generated by the DUMP command.
+     *
+     * @see https://redis.io/commands/restore
+     * @see https://redis.io/commands/dump
+     * @see Redis::dump()
+     *
+     * @param string $key     The name of the key you wish to create.
+     * @param int    $ttl     What Redis should set the key's TTL (in milliseconds) to once it is created.
+     *                        Zero means no TTL at all.
+     * @param string $value   The serialized binary value of the string (generated by DUMP).
+     * @param array  $options An array of additional options that modifies how the command operates.
+     *
+     *                        <code>
+     *                        $options = [
+     *                            'ABSTTL'          // If this is present, the `$ttl` provided by the user should
+     *                                              // be an absolute timestamp, in milliseconds()
+     *
+     *                            'REPLACE'         // This flag instructs Redis to store the key even if a key with
+     *                                              // that name already exists.
+     *
+     *                            'IDLETIME' => int // Tells Redis to set the keys internal 'idletime' value to a
+     *                                              // specific number (see the Redis command OBJECT for more info).
+     *                            'FREQ'     => int // Tells Redis to set the keys internal 'FREQ' value to a specific
+     *                                              // number (this relates to Redis' LFU eviction algorithm).
+     *                        ];
+     *                        </code>
+     *
+     * @return Redis|bool     True if the key was stored, false if not.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('captains');
+     *
+     * $redis->sAdd('captains', 'Janeway', 'Picard', 'Sisko', 'Kirk', 'Archer');
+     *
+     * $serialized = $redis->dump('captains');
+     *
+     * $redis->select(1);
+     * $redis->restore('captains-backup', 0, $serialized);
+     *
+     * //array(5) {
+     * //  [0]=>
+     * //  string(6) "Archer"
+     * //  [1]=>
+     * //  string(4) "Kirk"
+     * //  [2]=>
+     * //  string(5) "Sisko"
+     * //  [3]=>
+     * //  string(6) "Picard"
+     * //  [4]=>
+     * //  string(7) "Janeway"
+     * //}
+     * var_dump($redis->sMembers('captains-backup'));
+     * ?>
+     * </code>
+     */
+    public function restore(string $key, int $ttl, string $value, ?array $options = NULL): Redis|bool;
 
     /**
      * Query whether the connected instance is a primary or replica
