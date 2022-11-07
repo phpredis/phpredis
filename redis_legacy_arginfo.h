@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 4c4d58bf2ce686c82287a69fef109267828a2d9b */
+ * Stub hash: 35a49b804f7cb67b7cd0a9a1094125855addaf1e */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -332,14 +332,21 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_getTransferredBytes arginfo_class_Redis___destruct
 
-#define arginfo_class_Redis_hDel arginfo_class_Redis_geohash
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hDel, 0, 0, 2)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, field)
+	ZEND_ARG_VARIADIC_INFO(0, other_fields)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hExists, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, member)
+	ZEND_ARG_INFO(0, field)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_hGet arginfo_class_Redis_hExists
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hGet, 0, 0, 2)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, member)
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_hGetAll arginfo_class_Redis__prefix
 
@@ -371,7 +378,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_hSetNx arginfo_class_Redis_hIncrBy
 
-#define arginfo_class_Redis_hStrLen arginfo_class_Redis_hExists
+#define arginfo_class_Redis_hStrLen arginfo_class_Redis_hGet
 
 #define arginfo_class_Redis_hVals arginfo_class_Redis__prefix
 
@@ -571,7 +578,7 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_restore, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, timeout)
+	ZEND_ARG_INFO(0, ttl)
 	ZEND_ARG_INFO(0, value)
 	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
@@ -897,7 +904,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_zRandMember arginfo_class_Redis_getEx
 
-#define arginfo_class_Redis_zRank arginfo_class_Redis_hExists
+#define arginfo_class_Redis_zRank arginfo_class_Redis_hGet
 
 #define arginfo_class_Redis_zRem arginfo_class_Redis_geohash
 
@@ -929,9 +936,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zRevRangeByScore, 0, 0, 3)
 	ZEND_ARG_INFO(0, options)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_zRevRank arginfo_class_Redis_hExists
+#define arginfo_class_Redis_zRevRank arginfo_class_Redis_hGet
 
-#define arginfo_class_Redis_zScore arginfo_class_Redis_hExists
+#define arginfo_class_Redis_zScore arginfo_class_Redis_hGet
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_zdiff, 0, 0, 1)
 	ZEND_ARG_INFO(0, keys)
