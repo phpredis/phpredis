@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 42952974e3686f29934dfff1ebba07150942a405 */
+ * Stub hash: 4c4d58bf2ce686c82287a69fef109267828a2d9b */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -720,11 +720,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_sMembers arginfo_class_Redis_hGetAll
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_sMisMember, 0, 2, IS_ARRAY, 0)
-	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, member, IS_STRING, 0)
-	ZEND_ARG_VARIADIC_TYPE_INFO(0, other_members, IS_STRING, 0)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_sMisMember arginfo_class_Redis_geohash
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_sMove, 0, 3, Redis, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO(0, src, IS_STRING, 0)
