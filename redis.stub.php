@@ -1563,12 +1563,173 @@ class Redis {
      */
     public function sMembers(string $key): Redis|array|false;
 
-    public function sMisMember(string $key, string $member, string ...$other_members): array;
+    /**
+     * Check if one or more values are members of a set.
+     *
+     * @see https://redis.io/commands/smismember
+     * @see https://redis.io/commands/smember
+     * @see Redis::smember()
+     *
+     * @param string $key           The set to query.
+     * @param string $member        The first value to test if exists in the set.
+     * @param string $other_members Any number of additional values to check.
+     *
+     * @return Redis|array|false An array of integers representing whether each passed value
+     *                           was a member of the set.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('ds9-crew');
+     * $redis->sAdd('ds9-crew', ...["Sisko", "Kira", "Dax", "Worf", "Bashir", "O'Brien"]);
+     *
+     * $names = ['Sisko', 'Picard', 'Data', 'Worf'];
+     * $members = $redis->sMIsMember('ds9-crew', ...$names);
+     *
+     * // array(4) {
+     * //   ["Sisko"]=>
+     * //   int(1)
+     * //   ["Picard"]=>
+     * //   int(0)
+     * //   ["Data"]=>
+     * //   int(0)
+     * //   ["Worf"]=>
+     * //   int(1)
+     * // }
+     * var_dump(array_combine($names, $members));
+     * ?>
+     * </code>
+     */
+    public function sMisMember(string $key, string $member, string ...$other_members): Redis|array|false;
 
+    /**
+     * Pop a member from one set and push it onto another.  This command will create the
+     * destination set if it does not currently exist.
+     *
+     * @see https://redis.io/commands/smove
+     *
+     * @param string $src   The source set.
+     * @param string $dst   The destination set.
+     * @param mixed  $value The member you wish to move.
+     *
+     * @return Redis|bool   True if the member was moved, and false if it wasn't in the set.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('numbers', 'evens');
+     * $redis->sAdd('numbers', 'zero', 'one', 'two', 'three', 'four');
+     *
+     * $redis->sMove('numbers', 'evens', 'zero');
+     * $redis->sMove('numbers', 'evens', 'two');
+     * $redis->sMove('numbers', 'evens', 'four');
+     *
+     * // array(2) {
+     * //   [0]=>
+     * //   string(5) "three"
+     * //   [1]=>
+     * //   string(3) "one"
+     * // }
+     * var_dump($redis->sMembers('numbers'));
+     *
+     * // array(3) {
+     * //   [0]=>
+     * //   string(4) "zero"
+     * //   [1]=>
+     * //   string(3) "two"
+     * //   [2]=>
+     * //   string(4) "four"
+     * // }
+     * var_dump($redis->sMembers('evens'));
+     *
+     * ?>
+     * </code>
+     */
     public function sMove(string $src, string $dst, mixed $value): Redis|bool;
 
+    /**
+     * Remove one or more elements from a set.
+     *
+     * @see https://redis.io/commands/spop
+     *
+     * @param string $key    The set in question.
+     * @param int    $count  An optional number of members to pop.   This defaults to
+     *                       removing one element.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * <?php
+     *
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('numbers', 'evens');
+     * $redis->sAdd('numbers', 'zero', 'one', 'two', 'three', 'four');
+     *
+     * $redis->sMove('numbers', 'evens', 'zero');
+     * $redis->sMove('numbers', 'evens', 'two');
+     * $redis->sMove('numbers', 'evens', 'four');
+     *
+     * // array(2) {
+     * //   [0]=>
+     * //   string(5) "three"
+     * //   [1]=>
+     * //   string(3) "one"
+     * // }
+     * var_dump($redis->sMembers('numbers'));
+     *
+     * // array(3) {
+     * //   [0]=>
+     * //   string(4) "zero"
+     * //   [1]=>
+     * //   string(3) "two"
+     * //   [2]=>
+     * //   string(4) "four"
+     * // }
+     * var_dump($redis->sMembers('evens'));
+     * ?>
+     * </code>
+     */
     public function sPop(string $key, int $count = 0): Redis|string|array|false;
 
+    /**
+     * Retrieve one or more random members of a set.
+     *
+     * @param string $key   The set to query.
+     * @param int    $count An optional count of members to return.
+     *
+     *                      If this value is positive, Redis will return *up to* the requested
+     *                      number but with unique elements that will never repeat.  This means
+     *                      you may recieve fewer then `$count` replies.
+     *
+     *                      If the number is negative, Redis will return the exact number requested
+     *                      but the result may contain duplicate elements.
+     *
+     * @return Redis|array|string|false One or more random members or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('elder-gods');
+     *
+     * $redis->sAdd('elder-gods', ["Cthulhu", "Azathoth", "Daoloth", "D'endrrah"]);
+     *
+     * // A single random member returned.
+     * $rng1 = $redis->sRandMember('elder-gods');
+     *
+     * // Up to SCARD `elder-gods` random members returned
+     * $rng2 = $redis->sRandMember('elder-gods', 9999);
+     *
+     * // 9999 elements from the set returned with duplicates
+     * $rng3 = $redis->sRandMember('elder-gods', -9999);
+     * ?>
+     * </code>
+     *
+     */
     public function sRandMember(string $key, int $count = 0): Redis|string|array|false;
 
     /**
