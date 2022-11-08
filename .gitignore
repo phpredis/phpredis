@@ -1,6 +1,7 @@
 /.github
 /.idea
 /.vscode
+/docs/cache
 .cquery
 *.deps
 *.libs
@@ -19,4 +20,5 @@ autom4te.cache
 mkinstalldirs
 tags
 compile_commands.json
+doctum.phar
 run-tests.php
