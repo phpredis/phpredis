@@ -31,9 +31,9 @@ You can also make a one-time contribution with one of the links below.
 1. [Installing/Configuring](#installingconfiguring)
    * [Installation](#installation)
    * [PHP Session handler](#php-session-handler)
-   * [Distributed Redis Array](./arrays.markdown#readme)
-   * [Redis Cluster support](./cluster.markdown#readme)
-   * [Redis Sentinel support](./sentinel.markdown#readme)
+   * [Distributed Redis Array](./array.md#readme)
+   * [Redis Cluster support](./cluster.md#readme)
+   * [Redis Sentinel support](./sentinel.md#readme)
    * [Running the unit tests](#running-the-unit-tests)
 1. [Classes and methods](#classes-and-methods)
    * [Usage](#usage)
@@ -61,7 +61,7 @@ You can also make a one-time contribution with one of the links below.
 ## Installation
 
 For everything you should need to install PhpRedis on your system,
-see the [INSTALL.markdown](./INSTALL.markdown) page.
+see the [INSTALL.md](./INSTALL.md) page.
 
 ## PHP Session handler
 
@@ -1173,7 +1173,7 @@ _**Description**_:  Scan the keyspace for keys
 ##### *Return value*
 *Array, boolean*:  This function will return an array of keys or FALSE if Redis returned zero keys
 
-*Note*: SCAN is a "directed node" command in [RedisCluster](cluster.markdown#directed-node-commands)
+*Note*: SCAN is a "directed node" command in [RedisCluster](cluster.md#directed-node-commands)
 
 ##### *Example*
 ~~~php

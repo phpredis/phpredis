@@ -28,7 +28,7 @@ The extension also may compress data before sending it to Redis server, if you r
 
 You can generate a debian package for PHP5, accessible from Apache 2 by running `./mkdeb-apache2.sh` or with `dpkg-buildpackage` or `svn-buildpackage`.
 
-This extension exports a single class, [Redis](./README.markdown#class-redis) (and [RedisException](./README.markdown#class-redisexception) used in case of errors). Check out https://github.com/ukko/phpredis-phpdoc for a PHP stub that you can use in your IDE for code completion.
+This extension exports a single class, [Redis](./README.md#class-redis) (and [RedisException](./README.md#class-redisexception) used in case of errors). Check out https://github.com/ukko/phpredis-phpdoc for a PHP stub that you can use in your IDE for code completion.
 
 
 # Binary packages
