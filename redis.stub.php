@@ -302,18 +302,9 @@ class Redis {
      * POP the maximum scoring element off of one or more sorted sets, blocking up to a specified
      * timeout if no elements are available.
      *
-     * @see https://redis.io/commands/bzpopmax
-     *
-     * @param string|array $key_or_keys    Either a string key or an array of one or more keys.
-     * @param string|int  $timeout_or_key  If the previous argument was an array, this argument
-     *                                     must be a timeout value.  Otherwise it could also be
-     *                                     another key.
-     * @param mixed       $extra_args      Can consist of additional keys, until the last argument
-     *                                     which needs to be a timeout.
-     *
      * Following are examples of the two main ways to call this method.
      *
-     * <code>
+     * ```php
      * <?php
      * // Method 1 - Variadic, with the last argument being our timeout
      * $redis->bzPopMax('key1', 'key2', 'key3', 1.5);
@@ -325,6 +316,18 @@ class Redis {
      * NOTE:  We reccomend calling this function with an array and a timeout as the other strategy
      *        may be deprecated in future versions of PhpRedis
      * ?>
+     * ```
+     *
+     * @see https://redis.io/commands/bzpopmax
+     *
+     * @param string|array $key_or_keys    Either a string key or an array of one or more keys.
+     * @param string|int  $timeout_or_key  If the previous argument was an array, this argument
+     *                                     must be a timeout value.  Otherwise it could also be
+     *                                     another key.
+     * @param mixed       $extra_args      Can consist of additional keys, until the last argument
+     *                                     which needs to be a timeout.
+     *
+     * @return Redis|array|false The popped elements.
      */
     public function bzPopMax(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): Redis|array|false;
 
@@ -2613,31 +2616,6 @@ class Redis {
     /**
      * Incrementally scan the Redis keyspace, with optional pattern and type matching.
      *
-     * @see https://redis.io/commands/scan
-     * @see Redis::setOption()
-     *
-     * @param int    $iterator The cursor returned by Redis for every subsequent call to SCAN.  On
-     *                         the initial invocation of the call, it should be initialized by the
-     *                         caller to NULL.  Each time SCAN is invoked, the iterator will be
-     *                         updated to a new number, until finally Redis will set the value to
-     *                         zero, indicating that the scan is complete.
-     *
-     * @param string $pattern  An optional glob-style pattern for matching key names.  If passed as
-     *                         NULL, it is the equivalent of sending '*' (match every key).
-     *
-     * @param int    $count    A hint to redis that tells it how many keys to return in a single
-     *                         call to SCAN.  The larger the number, the longer Redis may block
-     *                         clients while iterating the key space.
-     *
-     * @param string $type     An optional argument to specify which key types to scan (e.g.
-     *                         'STRING', 'LIST', 'SET')
-     *
-     * @return array|false     An array of keys, or false if no keys were returned for this
-     *                         invocation of scan.  Note that it is possible for Redis to return
-     *                         zero keys before having scanned the entire key space, so the caller
-     *                         should instead continue to SCAN until the iterator reference is
-     *                         returned to zero.
-     *
      * A note about Redis::SCAN_NORETRY and Redis::SCAN_RETRY.
      *
      * For convenience, PhpRedis can retry SCAN commands itself when Redis returns an empty array of
@@ -2674,6 +2652,30 @@ class Redis {
      * }
      * ?>
      * </code>
+     * @see https://redis.io/commands/scan
+     * @see Redis::setOption()
+     *
+     * @param int    $iterator The cursor returned by Redis for every subsequent call to SCAN.  On
+     *                         the initial invocation of the call, it should be initialized by the
+     *                         caller to NULL.  Each time SCAN is invoked, the iterator will be
+     *                         updated to a new number, until finally Redis will set the value to
+     *                         zero, indicating that the scan is complete.
+     *
+     * @param string $pattern  An optional glob-style pattern for matching key names.  If passed as
+     *                         NULL, it is the equivalent of sending '*' (match every key).
+     *
+     * @param int    $count    A hint to redis that tells it how many keys to return in a single
+     *                         call to SCAN.  The larger the number, the longer Redis may block
+     *                         clients while iterating the key space.
+     *
+     * @param string $type     An optional argument to specify which key types to scan (e.g.
+     *                         'STRING', 'LIST', 'SET')
+     *
+     * @return array|false     An array of keys, or false if no keys were returned for this
+     *                         invocation of scan.  Note that it is possible for Redis to return
+     *                         zero keys before having scanned the entire key space, so the caller
+     *                         should instead continue to SCAN until the iterator reference is
+     *                         returned to zero.
      */
     public function scan(?int &$iterator, ?string $pattern = null, int $count = 0, string $type = NULL): array|false;
 
@@ -2859,80 +2861,31 @@ class Redis {
     /**
      * Set a configurable option on the Redis object.
      *
-     * @see Redis::getOption()
-     *
      * Following are a list of options you can set:
      *
-     *  OPTION                     TYPE     DESCRIPTION
-     *  OPT_MAX_RETRIES            int      The maximum number of times Redis will attempt to reconnect
-     *                                      if it gets disconnected, before throwing an exception.
+     * | OPTION          | TYPE | DESCRIPTION |
+     * | --------------- | ---- | ----------- |
+     * | OPT_MAX_RETRIES | int  | The maximum number of times Redis will attempt to reconnect if it gets disconnected, before throwing an exception. |
+     * | OPT_SCAN        | enum | Redis::OPT_SCAN_RETRY, or Redis::OPT_SCAN_NORETRY.  Whether PhpRedis should automatically SCAN again when zero keys but a nonzero iterator are returned. |
+     * | OPT_SERIALIZER  | enum | Set the automatic data serializer.<br>`Redis::SERIALIZER_NONE`<br>`Redis::SERIALIZER_PHP`<br>`Redis::SERIALIZER_IGBINARY`<br>`Redis::SERIALIZER_MSGPACK`, `Redis::SERIALIZER_JSON`|
+     * | OPT_PREFIX | string | A string PhpRedis will use to prefix every key we read or write. |
+     * | OPT_READ_TIMEOUT | float | How long PhpRedis will block for a response from Redis before throwing a 'read error on connection' exception. |
+     * | OPT_TCP_KEEPALIVE | bool |   Set or disable TCP_KEEPALIVE on the connection. |
+     * | OPT_COMPRESSION | enum | Set the compression algorithm<br>`Redis::COMPRESSION_NONE`<br>`Redis::COMPRESSION_LZF`<br>`Redis::COMPRESSION_LZ4`<br> `Redis::COMPRESSION_ZSTD` |
+     * | OPT_REPLY_LITERAL | bool | If set to true, PhpRedis will return the literal string Redis returns for LINE replies (e.g. '+OK'), rather than `true`. |
+     * | OPT_COMPRESSION_LEVEL | int | Set a specific compression level if Redis is compressing data. |
+     * | OPT_NULL_MULTIBULK_AS_NULL | bool | Causes PhpRedis to return `NULL` rather than `false` for NULL MULTIBULK replies |
+     * | OPT_BACKOFF_ALGORITHM | enum | The exponential backoff strategy to use. |
+     * | OPT_BACKOFF_BASE | int | The minimum delay between retries when backing off. |
+     * | OPT_BACKOFF_CAP  | int | The maximum delay between replies when backing off. |
      *
-     *  OPT_SCAN                   enum     Redis::OPT_SCAN_RETRY, or Redis::OPT_SCAN_NORETRY
-     *
-     *                                      Redis::SCAN_NORETRY (default)
-     *                                      --------------------------------------------------------
-     *                                      PhpRedis will only call `SCAN` once for every time the
-     *                                      user calls Redis::scan().  This means it is possible for
-     *                                      an empty array of keys to be returned while there are
-     *                                      still more keys to be processed.
-     *
-     *                                      Redis::SCAN_RETRY
-     *                                      --------------------------------------------------------
-     *                                      PhpRedis may make multiple calls to `SCAN` for every
-     *                                      time the user calls Redis::scan(), and will never return
-     *                                      an empty array of keys unless Redis returns the iterator
-     *                                      to zero (meaning the `SCAN` is complete).
-     *
-     *
-     *  OPT_SERIALIZER             int      One of the installed serializers, which can vary depending
-     *                                      on how PhpRedis was compiled.  All of the supported serializers
-     *                                      are as follows:
-     *
-     *                                      Redis::SERIALIZER_NONE
-     *                                      Redis::SERIALIZER_PHP
-     *                                      Redis::SERIALIZER_IGBINARY
-     *                                      Redis::SERIALIZER_MSGPACK
-     *                                      Redis::SERIALIZER_JSON
-     *
-     *                                      Note:  The PHP and JSON serializers are always available.
-     *
-     *  OPT_PREFIX                  string  A string PhpRedis will use to prefix every key we read or write.
-     *                                      To disable the prefix, you may pass an empty string or NULL.
-     *
-     *  OPT_READ_TIMEOUT            double  How long PhpRedis will block for a response from Redis before
-     *                                      throwing a 'read error on connection' exception.
-     *
-     *  OPT_TCP_KEEPALIVE           bool    Set or disable TCP_KEEPALIVE on the connection.
-     *
-     *  OPT_COMPRESSION             enum    Set an automatic compression algorithm to use when reading/writing
-     *                                      data to Redis.  All of the supported compressors are as follows:
-     *
-     *                                      Redis::COMPRESSION_NONE
-     *                                      Redis::COMPRESSION_LZF
-     *                                      Redis::COMPRESSION_LZ4
-     *                                      Redis::COMPRESSION_ZSTD
-     *
-     *                                      Note:  Some of these may not be available depending on how Redis
-     *                                             was compiled.
-     *
-     *  OPT_REPLY_LITERAL           bool    If set to true, PhpRedis will return the literal string Redis returns
-     *                                      for LINE replies (e.g. '+OK'), rather than `true`.
-     *
-     *  OPT_COMPRESSION_LEVEL       int     Set a specific compression level if Redis is compressing data.
-     *
-     *  OPT_NULL_MULTIBULK_AS_NULL  bool    Causes PhpRedis to return `NULL` rather than `false` for NULL MULTIBULK
-     *                                      RESP replies (i.e. `*-1`).
-     *
-     *  OPT_BACKOFF_ALGORITHM       enum    The exponential backoff strategy to use.
-     *  OPT_BACKOFF_BASE            int     The minimum delay between retries when backing off.
-     *  OPT_BACKOFF_CAP             int     The maximum delay between replies when backing off.
-     *
+     * @see Redis::getOption()
      * @see Redis::__construct() for details about backoff strategies.
      *
      * @param int    $option The option constant.
      * @param mixed  $value  The option value.
      *
-     * @return bool  True if the setting was updated, false if not.
+     * @return bool  true if the setting was updated, false if not.
      *
      */
     public function setOption(int $option, mixed $value): bool;
