@@ -3950,8 +3950,6 @@ class Redis {
      *                                   messages older than this ID.
      * @param bool   $approx    Whether redis is allowed to do an approximate trimming of the stream.  This is
      *                          more efficient for Redis given how streams are stored internally.
-     * @param int    $count     An optional upper bound on how many entries Redis should attempt to trim before
-     *                          returning to the caller.
      * @param bool   $minid     When set to `true`, users should pass a minimum ID to the `$threshold` argument.
      * @param int    $limit     An optional upper bound on how many entries to trim during the command.
      *
