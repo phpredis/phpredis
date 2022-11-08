@@ -1,7 +1,7 @@
 /.github
 /.idea
 /.vscode
-/docs/cache
+/docs/.cache
 .cquery
 *.deps
 *.libs

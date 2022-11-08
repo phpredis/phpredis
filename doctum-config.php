@@ -6,7 +6,7 @@ use Doctum\RemoteRepository\GitHubRemoteRepository;
 
 use Symfony\Component\Finder\Finder;
 
-$root = realpath(__DIR__ . '/..');
+$root = realpath(__DIR__);
 
 $iterator = Finder::create()
     ->files()
@@ -20,8 +20,8 @@ return new Doctum($iterator, [
     'title' => 'PhpRedis API',
     'language' => 'en',
     'source_dir' => $root,
-    'build_dir' => "{$root}/docs/html",
-    'cache_dir' => "{$root}/docs/cache",
+    'build_dir' => "{$root}/docs",
+    'cache_dir' => "{$root}/docs/.cache",
     'base_url' => 'https://phpredis.github.io/',
     'versions' => $versions,
     'remote_repository' => new GitHubRemoteRepository('phpredis/phpredis', $root),
