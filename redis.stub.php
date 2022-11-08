@@ -1215,29 +1215,321 @@ class Redis {
      */
     public function hGetAll(string $key): Redis|array|false;
 
-    public function hIncrBy(string $key, string $member, int $value): Redis|int|false;
+    /**
+     * Increment a hash field's value by an integer
+     *
+     * @see https://redis.io/commands/hincrby
+     *
+     * @param string $key   The hash to modify
+     * @param string $field The field to increment
+     * @param int    $value How much to increment the value.
+     *
+     * @return Redis|int|false The new value of the field.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('player');
+     *
+     * $redis->hmset('player', ['name' => 'Bob', 'level' => 1]);
+     *
+     * // int(2)
+     * $redis->hIncrBy('player', 'level', 1);
+     *
+     * // int(5)
+     * $redis->hIncrBy('player', 'level', 3);
+     * ?>
+     * </code>
+     *
+     */
+    public function hIncrBy(string $key, string $field, int $value): Redis|int|false;
 
-    public function hIncrByFloat(string $key, string $member, float $value): Redis|float|false;
+    /**
+     * Increment a hash field by a floating point value
+     *
+     * @see https://redis.io/commands/hincrbyfloat
+     *
+     * @param string $key The hash with the field to increment.
+     * @param string $field The field to increment.
+     *
+     * @return Redis|float|false The field value after incremented.
+     *
+     * <code>
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('trig-numbers')
+     *
+     * // float(3.1415926)
+     * $pi = $redis->hIncrByFloat('trig-numbers', 'pi', 3.1415926);
+     *
+     * // float(6.2831852)
+     * $redis->hIncrByFloat('trig-numbers', 'tau', 2 * $pi);
+     * ?>
+     * </code>
+     */
+    public function hIncrByFloat(string $key, string $field, float $value): Redis|float|false;
 
+    /**
+     * Retrieve all of the fields of a hash.
+     *
+     * @see https://redis.io/commands/hkeys
+     *
+     * @param string $key The hash to query.
+     *
+     * @return Redis|array|false The fields in the hash or false if the hash doesn't exist.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('ships');
+     *
+     * $redis->hmset('ships', ['Enterprise' => 'NCC-1701D', 'Defiant' => 'NX-74205', 'Voyager' => 'NCC-74656']);
+     *
+     * // array(3) {
+     * //   [0]=>
+     * //   string(10) "Enterprise"
+     * //   [1]=>
+     * //   string(7) "Defiant"
+     * //   [2]=>
+     * //   string(7) "Voyager"
+     * // }
+     * $redis->hKeys('ships');
+     * ?>
+     * </code>
+     */
     public function hKeys(string $key): Redis|array|false;
 
+    /**
+     * Get the number of fields in a hash.
+     *
+     * @see https://redis.io/commands/hlen
+     *
+     * @param string $key The hash to check.
+     *
+     * @return Redis|int|false The number of fields or false if the key didn't exist.
+     */
     public function hLen(string $key): Redis|int|false;
 
-    public function hMget(string $key, array $keys): Redis|array|false;
+    /**
+     * Get one or more fields from a hash.
+     *
+     * @see https://redis.io/commands/hmget
+     *
+     * @param string $key    The hash to query.
+     * @param array  $fields One or more fields to query in the hash.
+     *
+     * @return Redis|array|false The fields and values or false if the key didn't exist.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('player:1');
+     *
+     * $redis->hmset('player:1', ['name' => 'Alice', 'age' => '26', 'score' => '1337']);
+     *
+     * // array(2) {
+     * //   ["name"]=>
+     * //   string(5) "Alice"
+     * //   ["score"]=>
+     * //   string(4) "1337"
+     * // }
+     * $redis->hmget('player:1', ['name', 'score']);
+     * ?>
+     * </code>
+     */
+    public function hMget(string $key, array $fields): Redis|array|false;
 
-    public function hMset(string $key, array $keyvals): Redis|bool;
+    /**
+     * Add or update one or more hash fields and values
+     *
+     * @see https://redis.io/commands/hmset
+     *
+     * @param string $key        The hash to create/update
+     * @param array  $fieldvals  An associative array with fields and their values.
+     *
+     * @return Redis|bool True if the operation was successful
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->hmset('updates', ['status' => 'starting', 'elapsed' => 0]);
+     * ?>
+     * </code>
+     */
+    public function hMset(string $key, array $fieldvals): Redis|bool;
 
+    /**
+     * Get one or more random field from a hash.
+     *
+     * @see https://redis.io/commands/hrandfield
+     *
+     * @param string $key     The hash to query.
+     * @param array  $options An array of options to modify how the command behaves.
+     *
+     *                        <code>
+     *                        $options = [
+     *                            'COUNT'      => int  // An optional number of fields to return.
+     *                            'WITHVALUES' => bool // Also return the field values.
+     *                        ];
+     *                        </code>
+     *
+     * @return Redis|array|string One or more random fields (and possibly values).
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('settings');
+     *
+     * $redis->hmset('settings', ['path' => '/', 'state' => 'active', 'jobs' => 15]);
+     *
+     * $redis->hrandfield('settings');
+     *
+     * $redis->hrandfield('settings', ['count' => 2, 'withvalues' => true]);
+     * ?>
+     * </code>
+     */
     public function hRandField(string $key, array $options = null): Redis|string|array;
 
     public function hSet(string $key, string $member, mixed $value): Redis|int|false;
 
-    public function hSetNx(string $key, string $member, string $value): Redis|bool;
+    /**
+     * Set a hash field and value, but only if that field does not exist
+     *
+     * @see https://redis.io/commands/hsetnx
+     *
+     * @param string $key   The hash to update.
+     * @param string $field The value to set.
+     *
+     * @return Redis|bool True if the field was set and false if not.
+     *
+     * <code>
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('player:1');
+     *
+     * $redis->hmset('player:1', ['name' => 'bob', 'score' => 0]);
+     *
+     * // bool(true)
+     * var_dump($redis->hsetnx('player:1', 'lock', 'enabled'));
+     *
+     * // bool(false)
+     * var_dump($redis->hsetnx('player:1', 'lock', 'enabled'));
+     * </code>
+     */
+    public function hSetNx(string $key, string $field, string $value): Redis|bool;
 
-    public function hStrLen(string $key, string $member): Redis|int|false;
+    /**
+     * Get the string length of a hash field
+     *
+     * @see https://redis.io/commands/hstrlen
+     *
+     * @param string $key   The hash to query.
+     * @param string $field The field to query.
+     *
+     * @return Redis|int|false The string length of the field or false.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('hash');
+     * $redis->hmset('hash', ['50bytes' => str_repeat('a', 50)]);
+     *
+     * // int(50)
+     * $redis->hstrlen('hash', '50bytes');
+     *
+     * </code>
+     */
+    public function hStrLen(string $key, string $field): Redis|int|false;
 
+    /**
+     * Get all of the values from a hash.
+     *
+     * @see https://redis.io/commands/hvals
+     *
+     * @param string $key The hash to query.
+     *
+     * @return Redis|array|false The values from the hash.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('player');
+     *
+     * $redis->hmset('player', ['name' => 'Alice', 'score' => 1337]);
+     *
+     * // array(2) {
+     * //   ["name"]=>
+     * //   string(5) "Alice"
+     * //   ["score"]=>
+     * //   string(4) "1337"
+     * // }
+     * $redis->hgetall('player');
+     * ?>
+     * </code>
+     */
     public function hVals(string $key): Redis|array|false;
 
-    public function hscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): Redis|bool|array;
+
+    /**
+     * Iterate over the fields and values of a hash in an incremental fashion.
+     *
+     * @see https://redis.io/commands/hscan
+     * @see https://redis.io/commands/scan
+     *
+     * @param string $key       The hash to query.
+     * @param int    $iterator  The scan iterator, which should be initialized to NULL before the first call.
+     *                          This value will be updated after every call to hscan, until it reaches zero
+     *                          meaning the scan is complete.
+     * @param string $pattern   An optional glob-style pattern to filter fields with.
+     * @param int    $count     An optional hint to Redis about how many fields and values to return per HSCAN.
+     *
+     * @return Redis|array|bool An array with a subset of fields and values.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('big-hash');
+     *
+     * for ($i = 0; $i < 1000; $i++) {
+     *     $fields["field:$i"] = "value:$i";
+     * }
+     *
+     * $redis->hmset('big-hash', $fields);
+     *
+     * $it = NULL;
+     *
+     * do {
+     *     // Scan the hash but limit it to fields that match '*:1?3'
+     *     $fields = $redis->hscan('big-hash', $it, '*:1?3');
+     *
+     *     foreach ($fields as $field => $value) {
+     *         echo "[$field] => $value\n";
+     *     }
+     * } while ($it != 0);
+     *
+     * // --- OUTPUT ---
+     * // [field:143] => value:143
+     * // [field:133] => value:133
+     * // [field:163] => value:163
+     * // [field:183] => value:183
+     * // [field:153] => value:153
+     * // [field:113] => value:113
+     * // [field:103] => value:103
+     * // [field:193] => value:193
+     * // [field:123] => value:123
+     * // [field:173] => value:173
+     * ?>
+     * </code>
+     */
+    public function hscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): Redis|array|bool;
 
     /**
      * Increment a key's value, optionally by a specifc amount.
