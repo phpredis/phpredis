@@ -44,7 +44,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     support for detecting a dirty connection, as well as many other fixes
     and improvements.
 
-    You can find a detailed list of changes in Changelog.md and package.xml
+    You can find a detailed list of changes in CHANGELOG.md and package.xml
     or by inspecting the git commit logs.
 
     --- Sponsors ---
@@ -116,13 +116,13 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </notes>
  <contents>
   <dir name="/">
-   <file role='doc' name='COPYING'/>
+   <file role='doc' name='LICENSE'/>
    <file role='doc' name='CREDITS'/>
-   <file role='doc' name='README.markdown'/>
-   <file role='src' name='INSTALL.markdown'/>
-   <file role='doc' name='arrays.markdown'/>
-   <file role='doc' name='cluster.markdown'/>
-   <file role='doc' name='sentinel.markdown'/>
+   <file role='doc' name='README.md'/>
+   <file role='src' name='INSTALL.md'/>
+   <file role='doc' name='arrays.md'/>
+   <file role='doc' name='cluster.md'/>
+   <file role='doc' name='sentinel.md'/>
    <file role='src' name='backoff.c'/>
    <file role='src' name='backoff.h'/>
    <file role='src' name='cluster_library.c'/>
@@ -213,7 +213,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     This release fixes a multi/pipeline segfault on apple silicon as well as
     two small compression related bugs.
 
-    You can find a detailed list of changes in Changelog.md and package.xml
+    You can find a detailed list of changes in CHANGELOG.md and package.xml
 
     * Fix multi/pipeline segfault on Apple silicon [e0796d48] (Michael Grunder)
     * Pass compression flag on HMGET in RedisCluster [edc724e6] (Adam Olley)
@@ -240,7 +240,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     This release mostly includes just small PHP 8 Windows compatibility fixes
     such that pecl.php.net can automatically build Windows DLLs.
 
-    You can find a detailed list of changes in Changelog.md and package.xml
+    You can find a detailed list of changes in CHANGELOG.md and package.xml
 
     * Fix PHP8 Windows includes [270b4db8] (Jan-E)
     * Fix hash ops for php 8.0.1 [87297cbb] (defender-11)
@@ -263,7 +263,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <date>2020-10-22</date>
    <notes>
     This release containse some bugfixes and small improvements.
-    You can find a detailed list of changes in Changelog.md and package.xml
+    You can find a detailed list of changes in CHANGELOG.md and package.xml
 
     * Sponsors
       ~ Audiomack - https://audiomack.com
@@ -318,7 +318,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     of if you're having trouble building 5.3.0 because the php_hash_bin2hex
     symbol is missing.
 
-    You can find a detailed list of changes in Changelog.md and package.xml
+    You can find a detailed list of changes in CHANGELOG.md and package.xml
 
     * Sponsors
       ~ Audiomack - https://audiomack.com
@@ -348,7 +348,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     This release contains initial support for Redis 6 ACLs, LZ4 compression,
     and many more fixes and improvements.
 
-    You can find a detailed list of changes in Changelog.md and package.xml
+    You can find a detailed list of changes in CHANGELOG.md and package.xml
 
     A special thanks to BlueHost for sponsoring ACL support \o/
 
