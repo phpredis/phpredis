@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 35a49b804f7cb67b7cd0a9a1094125855addaf1e */
+ * Stub hash: c95a6704d3c51686748694926d6f4b0f55a2f3df */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -352,7 +352,7 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hIncrBy, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, member)
+	ZEND_ARG_INFO(0, field)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
@@ -364,21 +364,25 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hMget, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, keys)
+	ZEND_ARG_INFO(0, fields)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hMset, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, keyvals)
+	ZEND_ARG_INFO(0, fieldvals)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_hRandField arginfo_class_Redis_getEx
 
-#define arginfo_class_Redis_hSet arginfo_class_Redis_hIncrBy
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hSet, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, member)
+	ZEND_ARG_INFO(0, value)
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_hSetNx arginfo_class_Redis_hIncrBy
 
-#define arginfo_class_Redis_hStrLen arginfo_class_Redis_hGet
+#define arginfo_class_Redis_hStrLen arginfo_class_Redis_hExists
 
 #define arginfo_class_Redis_hVals arginfo_class_Redis__prefix
 
