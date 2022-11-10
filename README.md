@@ -9,6 +9,9 @@ This code has been developed and maintained by Owlient from November 2009 to Mar
 
 You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to michael.grunder@gmail.com ([@grumi78](https://twitter.com/grumi78)), p.yatsukhnenko@gmail.com ([@yatsukhnenko](https://twitter.com/yatsukhnenko)), or n.favrefelix@gmail.com ([@yowgi](https://twitter.com/yowgi)).
 
+## [API Documentation](https://phpredis.github.io/phpredis)
+These are a work in progress, but will eventually replace our **ONE README TO RULE THEM ALL** docs.  
+
 ## Supporting the project
 PhpRedis will always be free and open source software, but if you or your company has found it useful please consider supporting the project.  Developing a large, complex, and performant library like PhpRedis takes a great deal of time and effort, and support would be appreciated! :heart:
 
