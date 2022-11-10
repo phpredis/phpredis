@@ -13,58 +13,55 @@ class Redis {
      * options array it is also possible to connect to an instance at the same
      * time.
      *
-     * @see Redis::connect()
-     * @see https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
+     * **NOTE**:  Below is an example options array with various setting
      *
-     * Following is an example of an options array with the supported
-     * configuration values. Note that all of these values are optional, and you
-     * can instead connect to Redis via PhpRedis' connect() method.
+     *     $options = [
+     *         'host'           => 'localhost',
+     *         'port'           => 6379,
+     *         'readTimeout'    => 2.5,
+     *         'connectTimeout' => 2.5,
+     *         'persistent'     => true,
      *
-     * <code>
-     * <?php
-     * $options = [
-     *     'host'           => 'localhost',
-     *     'port'           => 6379,
-     *     'readTimeout'    => 2.5,
-     *     'connectTimeout' => 2.5,
-     *     'persistent'     => true,
+     *         // Valid formats: NULL, ['user', 'pass'], 'pass', or ['pass']
+     *         'auth' => ['phpredis', 'phpredis'],
      *
-     *     // Valid formats: NULL, ['user', 'pass'], 'pass', or ['pass']
-     *     'auth' => ['phpredis', 'phpredis'],
+     *         // See PHP stream options for valid SSL configuration settings.
+     *         'ssl' => ['verify_peer' => false],
      *
-     *     // See PHP stream options for valid SSL configuration settings.
-     *     'ssl' => ['verify_peer' => false],
+     *         // How quickly to retry a connection after we time out or it  closes.
+     *         // Note that this setting is overridden by 'backoff' strategies.
+     *         'retryInterval'  => 100,
      *
-     *     // How quickly to retry a connection after we time out or it  closes.
-     *     // Note that this setting is overridden by 'backoff' strategies.
-     *     'retryInterval'  => 100,
-     *
-     *      // Which backoff algorithm to use.  'decorrelated jitter' is
-     *      // likely the best one for most solution, but there are many
-     *      // to choose from:
-     *      //     REDIS_BACKOFF_ALGORITHM_DEFAULT
-     *      //     REDIS_BACKOFF_ALGORITHM_CONSTANT
-     *      //     REDIS_BACKOFF_ALGORITHM_UNIFORM
-     *      //     REDIS_BACKOFF_ALGORITHM_EXPONENTIAL
-     *      //     REDIS_BACKOFF_ALGORITHM_FULL_JITTER
-     *      //     REDIS_BACKOFF_ALGORITHM_EQUAL_JITTER
-     *      //     REDIS_BACKOFF_ALGORITHM_DECORRELATED_JITTER
-     *      //
-     *      // 'base', and 'cap' are in milliseconds and represent the first
-     *      // delay redis will use when reconnecting, and the maximum delay
-     *      // we will reach while retrying.
-     *     'backoff' => [
-     *         'algorithm' => Redis::BACKOFF_ALGORITHM_DECORRELATED_JITTER,
-     *         'base'      => 500,
-     *         'cap'       => 750,
-     *     ]
-     * ];
-     * ?>
-     * </code>
+     *          // Which backoff algorithm to use.  'decorrelated jitter' is
+     *          // likely the best one for most solution, but there are many
+     *          // to choose from:
+     *          //     REDIS_BACKOFF_ALGORITHM_DEFAULT
+     *          //     REDIS_BACKOFF_ALGORITHM_CONSTANT
+     *          //     REDIS_BACKOFF_ALGORITHM_UNIFORM
+     *          //     REDIS_BACKOFF_ALGORITHM_EXPONENTIAL
+     *          //     REDIS_BACKOFF_ALGORITHM_FULL_JITTER
+     *          //     REDIS_BACKOFF_ALGORITHM_EQUAL_JITTER
+     *          //     REDIS_BACKOFF_ALGORITHM_DECORRELATED_JITTER
+     *          // 'base', and 'cap' are in milliseconds and represent the first
+     *          // delay redis will use when reconnecting, and the maximum delay
+     *          // we will reach while retrying.
+     *         'backoff' => [
+     *             'algorithm' => Redis::BACKOFF_ALGORITHM_DECORRELATED_JITTER,
+     *             'base'      => 500,
+     *             'cap'       => 750,
+     *         ]
+     *     ];
      *
      * Note: If you do wish to connect via the constructor, only 'host' is
      *       strictly required, which will cause PhpRedis to connect to that
      *       host on Redis' default port (6379).
+     *
+     *
+     * @see Redis::connect()
+     * @see https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
+     * @param array $options
+     *
+     * @return Redis
      */
     public function __construct(array $options = null);
 
@@ -153,43 +150,31 @@ class Redis {
     /**
      * Append data to a Redis STRING key.
      *
+     * <code>
+     * $redis = new Redis(['host' => 'localhost']);
+     * $redis->set('foo', 'hello);
+     * var_dump($redis->append('foo', 'world'));
+     * </code>
+     *
      * @param string $key   The key in question
      * @param mixed $value  The data to append to the key.
      *
      * @return Redis|int|false The new string length of the key or false on failure.
      *
-     * <code>
-     * <?php
-     * $redis = new Redis(['host' => 'localhost']);
-     *
-     * $redis->set('foo', 'hello);
-     * var_dump($redis->append('foo', 'world'));
-     *
-     * // --- OUTPUT ---
-     * // int(10)
-     * ?>
-     * </code>
      */
     public function append(string $key, mixed $value): Redis|int|false;
 
     /**
      * Authenticate a Redis connection after its been established.
      *
+     *     $redis->auth('password');
+     *     $redis->auth(['password']);
+     *     $redis->auth(['username', 'password']);
+     *
      * @see https://redis.io/commands/auth
      *
      * @param mixed $credentials A string password, or an array with one or two string elements.
-     *
      * @return Redis|bool Whether the AUTH was successful.
-     *
-     * See below for various examples about how this method may be called.
-     *
-     * <code>
-     * <?php>
-     * $redis->auth('password');
-     * $redis->auth(['password']);
-     * $redis->auth(['username', 'password']);
-     * ?>
-     * </code>
      *
      */
     public function auth(#[\SensitiveParameter] mixed $credentials): Redis|bool;
@@ -253,6 +238,14 @@ class Redis {
      * Pop an element off the beginning of a Redis list or lists, potentially blocking up to a specified
      * timeout.  This method may be called in two distinct ways, of which examples are provided below.
      *
+     * <code>
+     * // Variadic, with the final argument a timeout.
+     * $redis->blPop('list1', 'list2', 'list3', 1.5);
+     *
+     * // Alternatively, you can send an array of keys
+     * $relay->blPop(['list1', 'list2', 'list3'], 1.5);
+     * </code>
+     *
      * @see https://redis.io/commands/blpop/
      *
      * @param string|array     $key_or_keys    This can either be a string key or an array of one or more
@@ -261,16 +254,7 @@ class Redis {
      *                                         be an additional key, or the timeout you wish to send to
      *                                         the command.
      *
-     * <code>
-     * <?php>
-     * // One way to call this method is in a variadic way, with the final argument being
-     * // the intended timeout.
-     * $redis->blPop('list1', 'list2', 'list3', 1.5);
-     *
-     * // Alternatively, you can send an array of keys
-     * $relay->blPop(['list1', 'list2', 'list3'], 1.5);
-     * ?>
-     * </code>
+     * @return Redis|array|null|false Can return various things depending on command and data in Redis.
      */
     public function blPop(string|array $key_or_keys, string|float|int $timeout_or_key, mixed ...$extra_args): Redis|array|null|false;
 
@@ -304,19 +288,16 @@ class Redis {
      *
      * Following are examples of the two main ways to call this method.
      *
-     * ```php
-     * <?php
+     * <code>
      * // Method 1 - Variadic, with the last argument being our timeout
      * $redis->bzPopMax('key1', 'key2', 'key3', 1.5);
      *
      * // Method 2 - A single array of keys, followed by the timeout
      * $redis->bzPopMax(['key1', 'key2', 'key3'], 1.5);
-     * <?php>
+     * </code>
      *
-     * NOTE:  We reccomend calling this function with an array and a timeout as the other strategy
-     *        may be deprecated in future versions of PhpRedis
-     * ?>
-     * ```
+     * **NOTE**:  We reccomend calling this function with an array and a timeout as the other strategy
+     *            may be deprecated in future versions of PhpRedis
      *
      * @see https://redis.io/commands/bzpopmax
      *
@@ -412,10 +393,7 @@ class Redis {
     /**
      * Reset any last error on the connection to NULL
      *
-     * @return bool This should always return true or throw an exception if we're not connected.
-     *
      * <code>
-     * <?php
      * $redis = new Redis(['host' => 'localhost']);
      *
      * $redis->set('string', 'this_is_a_string');
@@ -424,12 +402,10 @@ class Redis {
      * var_dump($redis->getLastError());
      * $redis->clearLastError();
      * var_dump($redis->getLastError());
-     *
-     * // --- OUTPUT ---
-     * // string(65) "WRONGTYPE Operation against a key holding the wrong kind of value"
-     * // NULL
-     * ?>
      * </code>
+     *
+     * @see Redis::getLastError()
+     * @return bool This should always return true or throw an exception if we're not connected.
      */
     public function clearLastError(): bool;
 
@@ -445,7 +421,13 @@ class Redis {
      *
      *  Operations that PhpRedis supports are: RESETSTAT, REWRITE, GET, and SET.
      *
-     *  @see https://redis.io/commands/config
+     *  <code>
+     *  $redis->config('GET', 'timeout');
+     *  $redis->config('GET', ['timeout', 'databases']);
+     *
+     *  $redis->config('SET', 'timeout', 30);
+     *  $redis->config('SET', ['timeout' => 30, 'loglevel' => 'warning']);
+     *  </code>
      *
      *  @param string            $operation      The CONFIG subcommand to execute
      *  @param array|string|null $key_or_setting Can either be a setting string for the GET/SET operation or
@@ -453,40 +435,20 @@ class Redis {
      *                                           Note:  Redis 7.0.0 is required to send an array of settings.
      *  @param string            $value          The setting value when the operation is SET.
      *
-     *  <code>
-     *  <?php
-     *  $redis->config('GET', 'timeout');
-     *  $redis->config('GET', ['timeout', 'databases']);
+     *  @return mixed Can return various things depending on arguments sent.
      *
-     *  $redis->config('SET', 'timeout', 30);
-     *  $redis->config('SET', ['timeout' => 30, 'loglevel' => 'warning']);
-     *  ?>
-     *  </code>
+     *  @see https://redis.io/commands/config
+     *
      * */
     public function config(string $operation, array|string|null $key_or_settings = NULL, ?string $value = NULL): mixed;
 
-    public function connect(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, array $context = null): bool;
+    public function connect(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = null,
+                            int $retry_interval = 0, float $read_timeout = 0, array $context = null): bool;
 
     /**
-     * Make a copy of a redis key.
-     *
-     * @see https://redis.io/commands/copy
-     *
-     * @param string $src     The key to copy
-     * @param string $dst     The name of the new key created from the source key.
-     * @param array  $options An array with modifiers on how COPY should operate.
-     *
-     * Available Options:
-     *
-     * $options = [
-     *     'REPLACE' => true|false // Whether Redis should replace an existing key.
-     *     'DB' => int             // Copy the key to a specific DB.
-     * ];
-     *
-     * @return Redis|bool True if the copy was completed and false if not.
+     * Make a copy of a key.
      *
      * <code>
-     * <?php
      * $redis = new Redis(['host' => 'localhost']);
      *
      * $redis->pipeline()
@@ -508,26 +470,34 @@ class Redis {
      *
      * // Will succeed, because even though 'exists' is a key, we sent the REPLACE option.
      * var_dump($redis->copy('source1', 'exists', ['REPLACE' => true]));
-     *
-     * // --- OUTPUT ---
-     * // bool(true)
-     * // bool(true)
-     * // bool(false)
-     * // bool(true)
-     * ?>
      * </code>
+     *
+     * **Available Options**
+     *
+     * | OPTION          | TYPE | DESCRIPTION |
+     * | --------------- | ---- | ----------- |
+     * | OPT_MAX_RETRIES | int  | foo |
+     *
+     * @param string $src     The key to copy
+     * @param string $dst     The name of the new key created from the source key.
+     * @param array  $options An array with modifiers on how COPY should operate.
+     *                        <code>
+     *                        $options = [
+     *                            'REPLACE' => true|false // Whether to replace an existing key.
+     *                            'DB' => int             // Copy key to specific db.
+     *                        ];
+     *                        </code>
+     *
+     * @return Redis|bool True if the copy was completed and false if not.
+     *
+     * @see https://redis.io/commands/copy
      */
     public function copy(string $src, string $dst, array $options = null): Redis|bool;
 
     /**
      * Return the number of keys in the currently selected Redis database.
      *
-     * @see https://redis.io/commands/dbsize
-     *
-     * @return Redis|int The number of keys or false on failure.
-     *
      * <code>
-     * <?php
      * $redis = new Redis(['host' => 'localhost']);
      *
      * $redis->flushdb();
@@ -537,11 +507,11 @@ class Redis {
      *
      * $redis->mset(['a' => 'a', 'b' => 'b', 'c' => 'c', 'd' => 'd']);
      * var_dump($redis->dbsize());
+     * </code>
      *
-     * // --- OUTPUT
-     * // int(1)
-     * // int(5)
-     * ?>
+     * @see https://redis.io/commands/dbsize
+     *
+     * @return Redis|int The number of keys or false on failure.
      */
     public function dbSize(): Redis|int|false;
 
@@ -550,8 +520,14 @@ class Redis {
     /**
      * Decrement a Redis integer by 1 or a provided value.
      *
-     * @see https://redis.io/commands/decr
-     * @see https://redis.io/commands/decrby
+     * <code>
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->set('counter', 3);
+     *
+     * var_dump($redis->decr('counter'));
+     * var_dump($redis->decr('counter', 2));
+     * </code>
      *
      * @param string $key The key to decrement
      * @param int    $by  How much to decrement the key.  Note that if this value is
@@ -561,20 +537,9 @@ class Redis {
      *
      * @return Redis|int|false The new value of the key or false on failure.
      *
-     * <code>
-     * <?php
-     * $redis = new Redis(['host' => 'localhost']);
+     * @see https://redis.io/commands/decr
+     * @see https://redis.io/commands/decrby
      *
-     * $redis->set('counter', 3);
-     *
-     * var_dump($redis->decr('counter'));
-     * var_dump($redis->decr('counter', 2));
-     *
-     * // --- OUTPUT ---
-     * // int(2)
-     * // int(0)
-     * ?>
-     * </code>
      */
     public function decr(string $key, int $by = 1): Redis|int|false;
 
