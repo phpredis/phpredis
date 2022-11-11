@@ -425,8 +425,7 @@ no elements are available.</p></p>                </div>
                 <div class="col-md-8">
                     <a href="#method_config">config</a>(string $operation, array|string|null $key_or_settings = NULL, string|null $value = NULL)
         
-                                            <p><p>Execute the Redis CONFIG command in a variety of ways.  What the command does in particular depends
-on the <code>$operation</code> qualifier.</p></p>                </div>
+                                            <p><p>Execute the Redis CONFIG command in a variety of ways.</p></p>                </div>
                 <div class="col-md-2"></div>
             </div>
                     <div class="row">
@@ -624,8 +623,7 @@ modifies how the command will execute.</p></p>                </div>
                 <div class="col-md-8">
                     <a href="#method_expireAt">expireAt</a>(string $key, int $timestamp, string|null $mode = NULL)
         
-                                            <p><p>Set a key's expiration to a specific Unix timestamp in seconds.  If
-connected to Redis &gt;= 7.0.0 you can pass an optional 'mode' argument.</p></p>                </div>
+                                            <p><p>Set a key to expire at an exact unix timestamp.</p></p>                </div>
                 <div class="col-md-2"></div>
             </div>
                     <div class="row">
@@ -839,8 +837,7 @@ connected to Redis &gt;= 7.0.0 you can pass an optional 'mode' argument.</p></p>
                 <div class="col-md-8">
                     <a href="#method_getDBNum">getDBNum</a>()
         
-                                            <p class="no-description">No description</p>
-                                    </div>
+                                            <p><p>Get the database number PhpRedis thinks we're connected to.</p></p>                </div>
                 <div class="col-md-2"></div>
             </div>
                     <div class="row">
@@ -3603,7 +3600,7 @@ was 0 and end was 2, Redis would only search the first two bits.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_blPop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L259">at line 259</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L255">at line 255</a></div>
         <code>                    Redis|array|null|false
     <strong>blPop</strong>(string|array $key_or_keys, string|float|int $timeout_or_key, mixed ...$extra_args)
         </code>
@@ -3614,11 +3611,7 @@ was 0 and end was 2, Redis would only search the first two bits.</p></td>
 
         <div class="method-description">
                             <p><p>Pop an element off the beginning of a Redis list or lists, potentially blocking up to a specified
-timeout.  This method may be called in two distinct ways, of which examples are provided below.</p></p>                <p><pre><code>// Variadic, with the final argument a timeout.
-$redis-&gt;blPop('list1', 'list2', 'list3', 1.5);
-
-// Alternatively, you can send an array of keys
-$relay-&gt;blPop(['list1', 'list2', 'list3'], 1.5);</code></pre></p>        
+timeout.  This method may be called in two distinct ways, of which examples are provided below.</p></p>                        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -3668,13 +3661,22 @@ the command.</p></td>
             </table>
 
             
+                            <h4>Examples</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><pre class="examples">$redis-&gt;blPop(&#039;list1&#039;, &#039;list2&#039;, &#039;list3&#039;, 1.5);<br />
+$relay-&gt;blPop([&#039;list1&#039;, &#039;list2&#039;, &#039;list3&#039;], 1.5);</pre></td>
+            </tr>
+            </table>
+
                     </div>
     </div>
 
             </div>
                     <div class="method-item">
                     <h3 id="method_brPop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L269">at line 269</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L265">at line 265</a></div>
         <code>                    Redis|array|null|false
     <strong>brPop</strong>(string|array $key_or_keys, string|float|int $timeout_or_key, mixed ...$extra_args)
         </code>
@@ -3744,7 +3746,7 @@ Redis::blPop</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_brpoplpush">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L283">at line 283</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L279">at line 279</a></div>
         <code>                    Redis|string|false
     <strong>brpoplpush</strong>(string $src, string $dst, int|float $timeout)
         </code>
@@ -3809,7 +3811,7 @@ to Redis &gt;= 6.0.0 to send a floating point timeout.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_bzPopMax">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L313">at line 313</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L305">at line 305</a></div>
         <code>                    Redis|array|false
     <strong>bzPopMax</strong>(string|array $key, string|int $timeout_or_key, mixed ...$extra_args)
         </code>
@@ -3821,11 +3823,6 @@ to Redis &gt;= 6.0.0 to send a floating point timeout.</p></td>
         <div class="method-description">
                             <p><p>POP the maximum scoring element off of one or more sorted sets, blocking up to a specified
 timeout if no elements are available.</p></p>                <p><p>Following are examples of the two main ways to call this method.</p>
-<pre><code>// Method 1 - Variadic, with the last argument being our timeout
-$redis-&gt;bzPopMax('key1', 'key2', 'key3', 1.5);
-
-// Method 2 - A single array of keys, followed by the timeout
-$redis-&gt;bzPopMax(['key1', 'key2', 'key3'], 1.5);</code></pre>
 <p><strong>NOTE</strong>:  We reccomend calling this function with an array and a timeout as the other strategy
 may be deprecated in future versions of PhpRedis</p></p>        
         </div>
@@ -3877,13 +3874,22 @@ which needs to be a timeout.</p></td>
             </table>
 
             
+                            <h4>Examples</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><pre class="examples">$redis-&gt;bzPopMax(&#039;key1&#039;, &#039;key2&#039;, &#039;key3&#039;, 1.5);<br />
+$redis-&gt;bzPopMax([&#039;key1&#039;, &#039;key2&#039;, &#039;key3&#039;], 1.5);</pre></td>
+            </tr>
+            </table>
+
                     </div>
     </div>
 
             </div>
                     <div class="method-item">
                     <h3 id="method_bzPopMin">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L325">at line 325</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L317">at line 317</a></div>
         <code>                    Redis|array|false
     <strong>bzPopMin</strong>(string|array $key, string|int $timeout_or_key, mixed ...$extra_args)
         </code>
@@ -3954,7 +3960,7 @@ Redis::bzPopMax</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_bzmpop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L344">at line 344</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L336">at line 336</a></div>
         <code>                    Redis|array|null|false
     <strong>bzmpop</strong>(float $timeout, array $keys, string $from, int $count = 1)
         </code>
@@ -4017,7 +4023,7 @@ instead return NULL when Redis doesn't pop any elements.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_zmpop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L358">at line 358</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L350">at line 350</a></div>
         <code>                    Redis|array|null|false
     <strong>zmpop</strong>(array $keys, string $from, int $count = 1)
         </code>
@@ -4081,7 +4087,7 @@ pop the lowest or highest scoring elements.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_blmpop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L375">at line 375</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L367">at line 367</a></div>
         <code>                    Redis|array|null|false
     <strong>blmpop</strong>(float $timeout, array $keys, string $from, int $count = 1)
         </code>
@@ -4152,7 +4158,7 @@ were empty.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_lmpop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L391">at line 391</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L383">at line 383</a></div>
         <code>                    Redis|array|null|false
     <strong>lmpop</strong>(array $keys, string $from, int $count = 1)
         </code>
@@ -4217,7 +4223,7 @@ were empty.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_clearLastError">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L410">at line 410</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L399">at line 399</a></div>
         <code>                    bool
     <strong>clearLastError</strong>()
         </code>
@@ -4227,14 +4233,7 @@ were empty.</p></td>
             
 
         <div class="method-description">
-                            <p><p>Reset any last error on the connection to NULL</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;set('string', 'this_is_a_string');
-$redis-&gt;smembers('string');
-
-var_dump($redis-&gt;getLastError());
-$redis-&gt;clearLastError();
-var_dump($redis-&gt;getLastError());</code></pre></p>        
+                            <p><p>Reset any last error on the connection to NULL</p></p>                        
         </div>
         <div class="tags">
             
@@ -4262,13 +4261,26 @@ Redis::getLastError</a>
             </table>
 
             
+                            <h4>Examples</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><pre class="examples">$redis = new Redis([&#039;host&#039; =&gt; &#039;localhost&#039;]);<br />
+$redis-&gt;set(&#039;string&#039;, &#039;this_is_a_string&#039;);<br />
+$redis-&gt;smembers(&#039;string&#039;);<br />
+var_dump($redis-&gt;getLastError());<br />
+$redis-&gt;clearLastError();<br />
+var_dump($redis-&gt;getLastError());</pre></td>
+            </tr>
+            </table>
+
                     </div>
     </div>
 
             </div>
                     <div class="method-item">
                     <h3 id="method_client">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L412">at line 412</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L401">at line 401</a></div>
         <code>                    mixed
     <strong>client</strong>(string $opt, mixed ...$args)
         </code>
@@ -4316,7 +4328,7 @@ Redis::getLastError</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_close">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L414">at line 414</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L403">at line 403</a></div>
         <code>                    bool
     <strong>close</strong>()
         </code>
@@ -4349,7 +4361,7 @@ Redis::getLastError</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_command">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L416">at line 416</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L405">at line 405</a></div>
         <code>                    mixed
     <strong>command</strong>(string $opt = null, string|array $arg)
         </code>
@@ -4397,7 +4409,7 @@ Redis::getLastError</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_config">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L443">at line 443</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L424">at line 424</a></div>
         <code>                    mixed
     <strong>config</strong>(string $operation, array|string|null $key_or_settings = NULL, string|null $value = NULL)
         </code>
@@ -4407,13 +4419,8 @@ Redis::getLastError</a>
             
 
         <div class="method-description">
-                            <p><p>Execute the Redis CONFIG command in a variety of ways.  What the command does in particular depends
-on the <code>$operation</code> qualifier.</p></p>                <p><p>Operations that PhpRedis supports are: RESETSTAT, REWRITE, GET, and SET.</p>
-<pre><code>$redis-&gt;config('GET', 'timeout');
-$redis-&gt;config('GET', ['timeout', 'databases']);
-
-$redis-&gt;config('SET', 'timeout', 30);
-$redis-&gt;config('SET', ['timeout' =&gt; 30, 'loglevel' =&gt; 'warning']);</code></pre></p>        
+                            <p><p>Execute the Redis CONFIG command in a variety of ways.</p></p>                <p><p>What the command does in particular depends on the <code>$operation</code> qualifier.
+Operations that PhpRedis supports are: RESETSTAT, REWRITE, GET, and SET.</p></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -4422,23 +4429,17 @@ $redis-&gt;config('SET', ['timeout' =&gt; 30, 'loglevel' =&gt; 'warning']);</cod
                     <tr>
                 <td>string</td>
                 <td>$operation</td>
-                <td><p>The CONFIG subcommand to execute
-@param array|string|null $key_or_setting Can either be a setting string for the GET/SET operation or
-an array of settings or settings and values.
-Note:  Redis 7.0.0 is required to send an array of settings.
-@param string            $value          The setting value when the operation is SET.</p>
-<p>@return mixed Can return various things depending on arguments sent.</p>
-<p><a href="https://redis.io/commands/config">https://redis.io/commands/config</a></p></td>
+                <td><p>The CONFIG operation to execute (e.g. GET, SET, REWRITE).</p></td>
             </tr>
                     <tr>
                 <td>array|string|null</td>
                 <td>$key_or_settings</td>
-                <td></td>
+                <td><p>One or more keys or values.</p></td>
             </tr>
                     <tr>
                 <td>string|null</td>
                 <td>$value</td>
-                <td></td>
+                <td><p>The value if this is a <code>CONFIG SET</code> operation.</p></td>
             </tr>
             </table>
 
@@ -4454,14 +4455,36 @@ Note:  Redis 7.0.0 is required to send an array of settings.
 
             
             
+                            <h4>See also</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>
+                                            <a href="https://redis.io/commands/config">https://redis.io/commands/config</a>
+                                    </td>
+                <td></td>
+            </tr>
+            </table>
+
             
+                            <h4>Examples</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><pre class="examples">$redis-&gt;config(&#039;GET&#039;, &#039;timeout&#039;);<br />
+$redis-&gt;config(&#039;GET&#039;, [&#039;timeout&#039;, &#039;databases&#039;]);<br />
+$redis-&gt;config(&#039;SET&#039;, &#039;timeout&#039;, 30);<br />
+$redis-&gt;config(&#039;SET&#039;, [&#039;timeout&#039; =&gt; 30, &#039;loglevel&#039; =&gt; &#039;warning&#039;]);</pre></td>
+            </tr>
+            </table>
+
                     </div>
     </div>
 
             </div>
                     <div class="method-item">
                     <h3 id="method_connect">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L445">at line 445</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L426">at line 426</a></div>
         <code>                    bool
     <strong>connect</strong>(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, array $context = null)
         </code>
@@ -4534,7 +4557,7 @@ Note:  Redis 7.0.0 is required to send an array of settings.
             </div>
                     <div class="method-item">
                     <h3 id="method_copy">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L495">at line 495</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L462">at line 462</a></div>
         <code>                    Redis|bool
     <strong>copy</strong>(string $src, string $dst, array $options = null)
         </code>
@@ -4544,44 +4567,7 @@ Note:  Redis 7.0.0 is required to send an array of settings.
             
 
         <div class="method-description">
-                            <p><p>Make a copy of a key.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;pipeline()
-      -&gt;select(1)
-      -&gt;del('newkey')
-      -&gt;select(0)
-      -&gt;del('newkey')
-      -&gt;mset(['source1' =&gt; 'value1', 'exists' =&gt; 'old_value'])
-      -&gt;exec();
-
-// Will succeed, as 'newkey' doesn't exist
-var_dump($redis-&gt;copy('source1', 'newkey'));
-
-// Will succeed, because 'newkey' doesn't exist in DB 1
-var_dump($redis-&gt;copy('source1', 'newkey', ['db' =&gt; 1]));
-
-// Will fail, because 'exists' does exist
-var_dump($redis-&gt;copy('source1', 'exists'));
-
-// Will succeed, because even though 'exists' is a key, we sent the REPLACE option.
-var_dump($redis-&gt;copy('source1', 'exists', ['REPLACE' =&gt; true]));</code></pre>
-<p><strong>Available Options</strong></p>
-<table>
-<thead>
-<tr>
-<th>OPTION</th>
-<th>TYPE</th>
-<th>DESCRIPTION</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>OPT_MAX_RETRIES</td>
-<td>int</td>
-<td>foo</td>
-</tr>
-</tbody>
-</table></p>        
+                            <p><p>Make a copy of a key.</p></p>                <p><p>$redis = new Redis(['host' =&gt; 'localhost']);</p></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -4632,13 +4618,32 @@ var_dump($redis-&gt;copy('source1', 'exists', ['REPLACE' =&gt; true]));</code></
             </table>
 
             
+                            <h4>Examples</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><pre class="examples">$redis-&gt;pipeline()<br />
+      -&gt;select(1)<br />
+      -&gt;del(&#039;newkey&#039;)<br />
+      -&gt;select(0)<br />
+      -&gt;del(&#039;newkey&#039;)<br />
+      -&gt;mset([&#039;source1&#039; =&gt; &#039;value1&#039;, &#039;exists&#039; =&gt; &#039;old_value&#039;])<br />
+      -&gt;exec();<br />
+<br />
+var_dump($redis-&gt;copy(&#039;source1&#039;, &#039;newkey&#039;));<br />
+var_dump($redis-&gt;copy(&#039;source1&#039;, &#039;newkey&#039;, [&#039;db&#039; =&gt; 1]));<br />
+var_dump($redis-&gt;copy(&#039;source1&#039;, &#039;exists&#039;));<br />
+var_dump($redis-&gt;copy(&#039;source1&#039;, &#039;exists&#039;, [&#039;REPLACE&#039; =&gt; true]));</pre></td>
+            </tr>
+            </table>
+
                     </div>
     </div>
 
             </div>
                     <div class="method-item">
                     <h3 id="method_dbSize">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L516">at line 516</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L479">at line 479</a></div>
         <code>                    Redis|int|false
     <strong>dbSize</strong>()
         </code>
@@ -4648,15 +4653,7 @@ var_dump($redis-&gt;copy('source1', 'exists', ['REPLACE' =&gt; true]));</code></
             
 
         <div class="method-description">
-                            <p><p>Return the number of keys in the currently selected Redis database.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;flushdb();
-
-$redis-&gt;set('foo', 'bar');
-var_dump($redis-&gt;dbsize());
-
-$redis-&gt;mset(['a' =&gt; 'a', 'b' =&gt; 'b', 'c' =&gt; 'c', 'd' =&gt; 'd']);
-var_dump($redis-&gt;dbsize());</code></pre></p>        
+                            <p><p>Return the number of keys in the currently selected Redis database.</p></p>                        
         </div>
         <div class="tags">
             
@@ -4683,13 +4680,26 @@ var_dump($redis-&gt;dbsize());</code></pre></p>
             </table>
 
             
+                            <h4>Examples</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><pre class="examples">$redis = new Redis([&#039;host&#039; =&gt; &#039;localhost&#039;]);<br />
+$redis-&gt;flushdb();<br />
+$redis-&gt;set(&#039;foo&#039;, &#039;bar&#039;);<br />
+var_dump($redis-&gt;dbsize());<br />
+$redis-&gt;mset([&#039;a&#039; =&gt; &#039;a&#039;, &#039;b&#039; =&gt; &#039;b&#039;, &#039;c&#039; =&gt; &#039;c&#039;, &#039;d&#039; =&gt; &#039;d&#039;]);<br />
+var_dump($redis-&gt;dbsize());</pre></td>
+            </tr>
+            </table>
+
                     </div>
     </div>
 
             </div>
                     <div class="method-item">
                     <h3 id="method_debug">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L518">at line 518</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L481">at line 481</a></div>
         <code>                    Redis|string
     <strong>debug</strong>(string $key)
         </code>
@@ -4732,7 +4742,7 @@ var_dump($redis-&gt;dbsize());</code></pre></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_decr">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L544">at line 544</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L507">at line 507</a></div>
         <code>                    Redis|int|false
     <strong>decr</strong>(string $key, int $by = 1)
         </code>
@@ -4804,7 +4814,7 @@ PhpRedis will actually send the <code>DECRBY</code> command.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_decrBy">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L570">at line 570</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L528">at line 528</a></div>
         <code>                    Redis|int|false
     <strong>decrBy</strong>(string $key, int $value)
         </code>
@@ -4814,7 +4824,11 @@ PhpRedis will actually send the <code>DECRBY</code> command.</p></td>
             
 
         <div class="method-description">
-                            <p><p>Decrement a redis integer by a value</p></p>                        
+                            <p><p>Decrement a redis integer by a value</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost');
+
+$redis-&gt;set('counter', 3);
+var_dump($redis-&gt;decrby('counter', 1));
+var_dump($redis-&gt;decrby('counter', 2));</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -4838,18 +4852,7 @@ PhpRedis will actually send the <code>DECRBY</code> command.</p></td>
                     <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
-            <td><p>The new value of the key or false on failure.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost');
-
-$redis-&gt;set('counter', 3);
-var_dump($redis-&gt;decrby('counter', 1));
-var_dump($redis-&gt;decrby('counter', 2));
-
-// --- OUTPUT ---
-// int(2)
-// int(0)
-?&gt;</code></pre></td>
+            <td><p>The new value of the key or false on failure.</p></td>
         </tr>
     </table>
 
@@ -4873,7 +4876,7 @@ var_dump($redis-&gt;decrby('counter', 2));
             </div>
                     <div class="method-item">
                     <h3 id="method_del">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L602">at line 602</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L557">at line 557</a></div>
         <code>                    Redis|int|false
     <strong>del</strong>(array|string $key, string ...$other_keys)
         </code>
@@ -4883,7 +4886,17 @@ var_dump($redis-&gt;decrby('counter', 2));
             
 
         <div class="method-description">
-                            <p><p>Delete one or more keys from Redis.</p></p>                        
+                            <p><p>Delete one or more keys from Redis.</p></p>                <p><p>This method can be called in two distinct ways.  The first is to pass a single array
+of keys to delete, and the second is to pass N arguments, all names of keys.  See
+below for an example of both strategies.</p>
+<pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+for ($i = 0; $i &lt; 5; $i++) {
+    $redis-&gt;set("key:$i", "val:$i");
+}
+
+var_dump($redis-&gt;del('key:0', 'key:1'));
+var_dump($redis-&gt;del(['key:2', 'key:3', 'key:4']));</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -4897,24 +4910,7 @@ var_dump($redis-&gt;decrby('counter', 2));
                     <tr>
                 <td>string</td>
                 <td>...$other_keys</td>
-                <td><p>One or more additional keys passed in a variadic fashion.</p>
-<p>This method can be called in two distinct ways.  The first is to pass a single array
-of keys to delete, and the second is to pass N arguments, all names of keys.  See
-below for an example of both strategies.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-for ($i = 0; $i &lt; 5; $i++) {
-    $redis-&gt;set("key:$i", "val:$i");
-}
-
-var_dump($redis-&gt;del('key:0', 'key:1'));
-var_dump($redis-&gt;del(['key:2', 'key:3', 'key:4']));
-
-// --- OUTPUT ---
-// int(2)
-// int(3)
-?&gt;</code></pre></td>
+                <td><p>One or more additional keys passed in a variadic fashion.</p></td>
             </tr>
             </table>
 
@@ -4924,7 +4920,7 @@ var_dump($redis-&gt;del(['key:2', 'key:3', 'key:4']));
                     <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
-            <td></td>
+            <td><p>The number of keys that were deleted</p></td>
         </tr>
     </table>
 
@@ -4948,7 +4944,7 @@ var_dump($redis-&gt;del(['key:2', 'key:3', 'key:4']));
             </div>
                     <div class="method-item">
                     <h3 id="method_delete">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L608">at line 608</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L563">at line 563</a></div>
         <code>                    Redis|int|false
     <strong>delete</strong>(array|string $key, string ...$other_keys)
         <small><span class="label label-danger">deprecated</span></small></code>
@@ -5003,7 +4999,7 @@ var_dump($redis-&gt;del(['key:2', 'key:3', 'key:4']));
             </div>
                     <div class="method-item">
                     <h3 id="method_discard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L633">at line 633</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L586">at line 586</a></div>
         <code>                    Redis|bool
     <strong>discard</strong>()
         </code>
@@ -5013,18 +5009,7 @@ var_dump($redis-&gt;del(['key:2', 'key:3', 'key:4']));
             
 
         <div class="method-description">
-                            <p><p>Discard a transaction currently in progress.</p></p>                        
-        </div>
-        <div class="tags">
-            
-                            <h4>Return Value</h4>
-
-                    <table class="table table-condensed">
-        <tr>
-            <td>Redis|bool</td>
-            <td><p>True if we could discard the transaction.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
+                            <p><p>Discard a transaction currently in progress.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
 
 $redis-&gt;multi()-&gt;set('foo', 'bar')-&gt;get('foo');
 
@@ -5035,9 +5020,16 @@ $redis-&gt;getMode();
 $redis-&gt;discard();
 
 // Redis::ATOMIC
-$redis-&gt;getMode();
+$redis-&gt;getMode();</code></pre></p>        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
 
-?&gt;</code></pre></td>
+                    <table class="table table-condensed">
+        <tr>
+            <td>Redis|bool</td>
+            <td><p>True if we could discard the transaction.</p></td>
         </tr>
     </table>
 
@@ -5050,7 +5042,7 @@ $redis-&gt;getMode();
             </div>
                     <div class="method-item">
                     <h3 id="method_dump">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L669">at line 669</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L614">at line 614</a></div>
         <code>                    Redis|string
     <strong>dump</strong>(string $key)
         </code>
@@ -5060,7 +5052,19 @@ $redis-&gt;getMode();
             
 
         <div class="method-description">
-                            <p><p>Dump Redis' internal binary representation of a key.</p></p>                        
+                            <p><p>Dump Redis' internal binary representation of a key.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;del('zset');
+
+$redis-&gt;zadd('zset', 0, 'zero', 1, 'one', 2, 'two');
+
+// Retrieve the binary representation of the zset
+$binary = $redis-&gt;dump('zset');
+
+// Retore it to a different name
+$redis-&gt;restore('new-zset', 0, $binary);
+
+$redis-&gt;zRange('new-zset', 0, -1, true);</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -5079,28 +5083,7 @@ $redis-&gt;getMode();
                     <table class="table table-condensed">
         <tr>
             <td>Redis|string</td>
-            <td><p>A binary string representing the key's value.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;del('zset');
-
-$redis-&gt;zadd('zset', 0, 'zero', 1, 'one', 2, 'two');
-
-// Retrieve the binary representation of the zset
-$binary = $redis-&gt;dump('zset');
-
-// Retore it to a different name
-$redis-&gt;restore('new-zset', 0, $binary);
-
-// Array
-// (
-//     [zero] =&gt; 0
-//     [one] =&gt; 1
-//     [two] =&gt; 2
-// )
-$redis-&gt;zRange('new-zset', 0, -1, true);
-?&gt;</code></pre></td>
+            <td><p>A binary string representing the key's value.</p></td>
         </tr>
     </table>
 
@@ -5124,7 +5107,7 @@ $redis-&gt;zRange('new-zset', 0, -1, true);
             </div>
                     <div class="method-item">
                     <h3 id="method_echo">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L692">at line 692</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L631">at line 631</a></div>
         <code>                    Redis|string|false
     <strong>echo</strong>(string $str)
         </code>
@@ -5134,7 +5117,9 @@ $redis-&gt;zRange('new-zset', 0, -1, true);
             
 
         <div class="method-description">
-                            <p><p>Have Redis repeat back an arbitrary string to the client.</p></p>                        
+                            <p><p>Have Redis repeat back an arbitrary string to the client.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+var_dump($redis-&gt;echo('Hello, World'));</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -5153,16 +5138,7 @@ $redis-&gt;zRange('new-zset', 0, -1, true);
                     <table class="table table-condensed">
         <tr>
             <td>Redis|string|false</td>
-            <td><p>The string sent to Redis or false on failure.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-var_dump($redis-&gt;echo('Hello, World'));
-
-// --- OUTPUT ---
-// string(12) "Hello, World"
-
-?&gt;</code></pre></td>
+            <td><p>The string sent to Redis or false on failure.</p></td>
         </tr>
     </table>
 
@@ -5186,7 +5162,7 @@ var_dump($redis-&gt;echo('Hello, World'));
             </div>
                     <div class="method-item">
                     <h3 id="method_eval">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L708">at line 708</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L647">at line 647</a></div>
         <code>                    mixed
     <strong>eval</strong>(string $script, array $args = [], int $num_keys = 0)
         </code>
@@ -5252,7 +5228,7 @@ strings, arrays, nested arrays, etc.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_eval_ro">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L716">at line 716</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L655">at line 655</a></div>
         <code>                    mixed
     <strong>eval_ro</strong>(string $script_sha, array $args = [], int $num_keys = 0)
         </code>
@@ -5317,7 +5293,7 @@ Redis::eval</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_evalsha">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L732">at line 732</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L674">at line 674</a></div>
         <code>                    mixed
     <strong>evalsha</strong>(string $sha1, array $args = [], int $num_keys = 0)
         </code>
@@ -5357,7 +5333,7 @@ the SHA1 hash of the script.</p></p>
                     <table class="table table-condensed">
         <tr>
             <td>mixed</td>
-            <td></td>
+            <td><p>Returns whatever the specific script does.</p></td>
         </tr>
     </table>
 
@@ -5388,7 +5364,7 @@ Redis::eval</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_evalsha_ro">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L740">at line 740</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L682">at line 682</a></div>
         <code>                    mixed
     <strong>evalsha_ro</strong>(string $sha1, array $args = [], int $num_keys = 0)
         </code>
@@ -5453,7 +5429,7 @@ Redis::evalsha</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_exec">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L778">at line 778</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L708">at line 708</a></div>
         <code>                    Redis|array|false
     <strong>exec</strong>()
         </code>
@@ -5463,17 +5439,7 @@ Redis::evalsha</a>
             
 
         <div class="method-description">
-                            <p><p>Execute either a MULTI or PIPELINE block and return the array of replies.</p></p>                        
-        </div>
-        <div class="tags">
-            
-                            <h4>Return Value</h4>
-
-                    <table class="table table-condensed">
-        <tr>
-            <td>Redis|array|false</td>
-            <td><p>The array of pipeline'd or multi replies or false on failure.</p>
-<pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+                            <p><p>Execute either a MULTI or PIPELINE block and return the array of replies.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
 
 $res = $redis-&gt;multi()
              -&gt;set('foo', 'bar')
@@ -5482,20 +5448,16 @@ $res = $redis-&gt;multi()
              -&gt;rpush('list', 'one', 'two', 'three')
              -&gt;exec();
 
-var_dump($res);
+var_dump($res);</code></pre></p>        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
 
-// --- OUTPUT ---
-// array(4) {
-//   [0]=&gt;
-//   bool(true)           // set('foo', 'bar')
-//   [1]=&gt;
-//   string(3) "bar"      // get('foo')
-//   [2]=&gt;
-//   int(1)               // del('list')
-//   [3]=&gt;
-//   int(3)               // rpush('list', 'one', 'two', 'three')
-// }
-?&gt;</code></pre></td>
+                    <table class="table table-condensed">
+        <tr>
+            <td>Redis|array|false</td>
+            <td><p>The array of pipeline'd or multi replies or false on failure.</p></td>
         </tr>
     </table>
 
@@ -5539,7 +5501,7 @@ Redis::multi</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_exists">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L811">at line 811</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L739">at line 739</a></div>
         <code>                    Redis|int|bool
     <strong>exists</strong>(mixed $key, mixed ...$other_keys)
         </code>
@@ -5549,7 +5511,21 @@ Redis::multi</a>
             
 
         <div class="method-description">
-                            <p><p>Test if one or more keys exist.</p></p>                        
+                            <p><p>Test if one or more keys exist.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;multi()
+      -&gt;mset(['k1' =&gt; 'v1', 'k2' =&gt; 'v2', 'k3' =&gt; 'v3', 'k4' =&gt; 'v4'])
+      -&gt;exec();
+
+// Using a single array of keys
+var_dump($redis-&gt;exists(['k1', 'k2', 'k3']));
+
+// Calling via variadic arguments
+var_dump($redis-&gt;exists('k4', 'k5', 'notakey'));
+
+// --- OUTPUT ---
+// int(3)
+// int(1)</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -5574,24 +5550,7 @@ additional keys to test.</p></td>
                     <table class="table table-condensed">
         <tr>
             <td>Redis|int|bool</td>
-            <td><p>The number of keys that do exist and false on failure</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;multi()
-      -&gt;mset(['k1' =&gt; 'v1', 'k2' =&gt; 'v2', 'k3' =&gt; 'v3', 'k4' =&gt; 'v4'])
-      -&gt;exec();
-
-// Using a single array of keys
-var_dump($redis-&gt;exists(['k1', 'k2', 'k3']));
-
-// Calling via variadic arguments
-var_dump($redis-&gt;exists('k4', 'k5', 'notakey'));
-
-// --- OUTPUT ---
-// int(3)
-// int(1)
-?&gt;</code></pre></td>
+            <td><p>The number of keys that do exist and false on failure</p></td>
         </tr>
     </table>
 
@@ -5615,7 +5574,7 @@ var_dump($redis-&gt;exists('k4', 'k5', 'notakey'));
             </div>
                     <div class="method-item">
                     <h3 id="method_expire">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L828">at line 828</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L760">at line 760</a></div>
         <code>                    Redis|bool
     <strong>expire</strong>(string $key, int $timeout, string|null $mode = NULL)
         </code>
@@ -5647,11 +5606,11 @@ modifies how the command will execute.</p></p>
                 <td>string|null</td>
                 <td>$mode</td>
                 <td><p>A two character modifier that changes how the
-command works.
-NX - Set expiry only if key has no expiry
+command works.</p>
+<pre><code>NX - Set expiry only if key has no expiry
 XX - Set expiry only if key has an expiry
 LT - Set expiry only when new expiry is &lt; current expiry
-GT - Set expiry only when new expiry is &gt; current expiry</p></td>
+GT - Set expiry only when new expiry is &gt; current expiry</code></pre></td>
             </tr>
             </table>
 
@@ -5661,7 +5620,7 @@ GT - Set expiry only when new expiry is &gt; current expiry</p></td>
                     <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
-            <td></td>
+            <td><p>True if an expiration was set and false otherwise.</p></td>
         </tr>
     </table>
 
@@ -5685,7 +5644,7 @@ GT - Set expiry only when new expiry is &gt; current expiry</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_expireAt">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L840">at line 840</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L786">at line 786</a></div>
         <code>                    Redis|bool
     <strong>expireAt</strong>(string $key, int $timestamp, string|null $mode = NULL)
         </code>
@@ -5695,8 +5654,7 @@ GT - Set expiry only when new expiry is &gt; current expiry</p></td>
             
 
         <div class="method-description">
-                            <p><p>Set a key's expiration to a specific Unix timestamp in seconds.  If
-connected to Redis &gt;= 7.0.0 you can pass an optional 'mode' argument.</p></p>                        
+                            <p><p>Set a key to expire at an exact unix timestamp.</p></p>                        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -5705,17 +5663,17 @@ connected to Redis &gt;= 7.0.0 you can pass an optional 'mode' argument.</p></p>
                     <tr>
                 <td>string</td>
                 <td>$key</td>
-                <td></td>
+                <td><p>The key to set an expiration on.</p></td>
             </tr>
                     <tr>
                 <td>int</td>
                 <td>$timestamp</td>
-                <td></td>
+                <td><p>The unix timestamp to expire at.</p></td>
             </tr>
                     <tr>
                 <td>string|null</td>
                 <td>$mode</td>
-                <td></td>
+                <td><p>An option 'mode' that modifies how the command acts (see <a href="Redis.html#method_expire">Redis::expire</a>).</p></td>
             </tr>
             </table>
 
@@ -5725,7 +5683,7 @@ connected to Redis &gt;= 7.0.0 you can pass an optional 'mode' argument.</p></p>
                     <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
-            <td></td>
+            <td><p>True if an expiration was set, false if not.</p></td>
         </tr>
     </table>
 
@@ -5736,14 +5694,22 @@ connected to Redis &gt;= 7.0.0 you can pass an optional 'mode' argument.</p></p>
                     <table class="table table-condensed">
                     <tr>
                 <td>
+                                            <a href="https://redis.io/commands/expireat">https://redis.io/commands/expireat</a>
+                                    </td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>
+                                            <a href="https://redis.io/commands/expire">https://redis.io/commands/expire</a>
+                                    </td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>
                                             <a href="Redis.html#method_expire">
 Redis::expire</a>
                                     </td>
-                <td>For a description of the mode argument.
-
-@param string  $key  The key to set an expiration on.
-@param string  $mode A two character modifier that changes how the
-                     command works.</td>
+                <td></td>
             </tr>
             </table>
 
@@ -5754,7 +5720,7 @@ Redis::expire</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_failover">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L842">at line 842</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L788">at line 788</a></div>
         <code>                    Redis|bool
     <strong>failover</strong>(array|null $to = null, bool $abort = false, int $timeout = 0)
         </code>
@@ -5807,7 +5773,7 @@ Redis::expire</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_expiretime">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L871">at line 871</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L812">at line 812</a></div>
         <code>                    Redis|int|false
     <strong>expiretime</strong>(string $key)
         </code>
@@ -5817,7 +5783,14 @@ Redis::expire</a>
             
 
         <div class="method-description">
-                            <p><p>Get the expiration of a given key as a unix timestamp</p></p>                        
+                            <p><p>Get the expiration of a given key as a unix timestamp</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;set('expiry-key', 'this will last a very long time');
+
+// Expire this key at 2222/02/22 02:22:22 GMT
+$redis-&gt;expireAt('expiry-key', 7955144542);
+
+var_dump($redis-&gt;expiretime('expiry-key'));</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -5837,21 +5810,7 @@ Redis::expire</a>
         <tr>
             <td>Redis|int|false</td>
             <td><p>The timestamp when the key expires, or -1 if the key has no expiry
-and -2 if the key doesn't exist.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;set('expiry-key', 'this will last a very long time');
-
-// Expire this key at 2222/02/22 02:22:22 GMT
-$redis-&gt;expireAt('expiry-key', 7955144542);
-
-var_dump($redis-&gt;expiretime('expiry-key'));
-
-// --- OUTPUT ---
-// int(7955144542)
-
-?&gt;php</code></pre></td>
+and -2 if the key doesn't exist.</p></td>
         </tr>
     </table>
 
@@ -5875,7 +5834,7 @@ var_dump($redis-&gt;expiretime('expiry-key'));
             </div>
                     <div class="method-item">
                     <h3 id="method_pexpiretime">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L884">at line 884</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L825">at line 825</a></div>
         <code>                    Redis|int|false
     <strong>pexpiretime</strong>(string $key)
         </code>
@@ -5936,7 +5895,7 @@ Redis::expiretime</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_flushAll">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L896">at line 896</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L835">at line 835</a></div>
         <code>                    Redis|bool
     <strong>flushAll</strong>(bool|null $sync = null)
         </code>
@@ -5955,11 +5914,7 @@ Redis::expiretime</a>
                     <tr>
                 <td>bool|null</td>
                 <td>$sync</td>
-                <td><p>Whether to perform the task in a blocking or non-blocking way.
-when TRUE, PhpRedis will execute <code>FLUSHALL SYNC</code>, and when FALSE we
-will execute <code>FLUSHALL ASYNC</code>.  If the argument is omitted, we
-simply execute <code>FLUSHALL</code> and whether it is SYNC or ASYNC depends
-on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
+                <td><p>Whether to perform the task in a blocking or non-blocking way.</p></td>
             </tr>
             </table>
 
@@ -5975,6 +5930,17 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
 
             
             
+                            <h4>See also</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>
+                                            <a href="https://redis.io/commands/flushall">https://redis.io/commands/flushall</a>
+                                    </td>
+                <td></td>
+            </tr>
+            </table>
+
             
                     </div>
     </div>
@@ -5982,7 +5948,7 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_flushDB">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L908">at line 908</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L845">at line 845</a></div>
         <code>                    Redis|bool
     <strong>flushDB</strong>(bool|null $sync = null)
         </code>
@@ -6001,11 +5967,7 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
                     <tr>
                 <td>bool|null</td>
                 <td>$sync</td>
-                <td><p>Whether to perform the task in a blocking or non-blocking way.
-when TRUE, PhpRedis will execute <code>FLUSHDB SYNC</code>, and when FALSE we
-will execute <code>FLUSHDB ASYNC</code>.  If the argument is omitted, we
-simply execute <code>FLUSHDB</code> and whether it is SYNC or ASYNC depends
-on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
+                <td><p>Whether to perform the task in a blocking or non-blocking way.</p></td>
             </tr>
             </table>
 
@@ -6021,6 +5983,17 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
 
             
             
+                            <h4>See also</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>
+                                            <a href="https://redis.io/commands/flush">https://redis.io/commands/flush</a>
+                                    </td>
+                <td></td>
+            </tr>
+            </table>
+
             
                     </div>
     </div>
@@ -6028,7 +6001,7 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_geoadd">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L910">at line 910</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L847">at line 847</a></div>
         <code>                    Redis|int|false
     <strong>geoadd</strong>(string $key, float $lng, float $lat, string $member, mixed ...$other_triples_and_options)
         </code>
@@ -6091,7 +6064,7 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_geodist">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L912">at line 912</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L849">at line 849</a></div>
         <code>                    Redis|float|false
     <strong>geodist</strong>(string $key, string $src, string $dst, string|null $unit = null)
         </code>
@@ -6149,7 +6122,7 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_geohash">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L914">at line 914</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L851">at line 851</a></div>
         <code>                    Redis|array|false
     <strong>geohash</strong>(string $key, string $member, string ...$other_members)
         </code>
@@ -6202,7 +6175,7 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_geopos">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L916">at line 916</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L853">at line 853</a></div>
         <code>                    Redis|array|false
     <strong>geopos</strong>(string $key, string $member, string ...$other_members)
         </code>
@@ -6255,7 +6228,7 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_georadius">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L918">at line 918</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L855">at line 855</a></div>
         <code>                    mixed
     <strong>georadius</strong>(string $key, float $lng, float $lat, float $radius, string $unit, array $options = [])
         </code>
@@ -6323,7 +6296,7 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_georadius_ro">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L920">at line 920</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L857">at line 857</a></div>
         <code>                    mixed
     <strong>georadius_ro</strong>(string $key, float $lng, float $lat, float $radius, string $unit, array $options = [])
         </code>
@@ -6391,7 +6364,7 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_georadiusbymember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L922">at line 922</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L859">at line 859</a></div>
         <code>                    mixed
     <strong>georadiusbymember</strong>(string $key, string $member, float $radius, string $unit, array $options = [])
         </code>
@@ -6454,7 +6427,7 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_georadiusbymember_ro">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L924">at line 924</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L861">at line 861</a></div>
         <code>                    mixed
     <strong>georadiusbymember_ro</strong>(string $key, string $member, float $radius, string $unit, array $options = [])
         </code>
@@ -6517,7 +6490,7 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_geosearch">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L926">at line 926</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L863">at line 863</a></div>
         <code>                    array
     <strong>geosearch</strong>(string $key, array|string $position, array|int|float $shape, string $unit, array $options = [])
         </code>
@@ -6580,7 +6553,7 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_geosearchstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L928">at line 928</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L865">at line 865</a></div>
         <code>                    Redis|array|int|false
     <strong>geosearchstore</strong>(string $dst, string $src, array|string $position, array|int|float $shape, string $unit, array $options = [])
         </code>
@@ -6648,7 +6621,7 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_get">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L930">at line 930</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L867">at line 867</a></div>
         <code>                    mixed
     <strong>get</strong>(string $key)
         </code>
@@ -6691,7 +6664,7 @@ on Redis' <code>lazyfree-lazy-user-flush</code> config setting.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_getAuth">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L939">at line 939</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L876">at line 876</a></div>
         <code>                    mixed
     <strong>getAuth</strong>()
         </code>
@@ -6735,7 +6708,7 @@ Redis::auth</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_getBit">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L941">at line 941</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L878">at line 878</a></div>
         <code>                    Redis|int|false
     <strong>getBit</strong>(string $key, int $idx)
         </code>
@@ -6783,7 +6756,7 @@ Redis::auth</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_getEx">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L943">at line 943</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L880">at line 880</a></div>
         <code>                    Redis|string|bool
     <strong>getEx</strong>(string $key, array $options = [])
         </code>
@@ -6831,7 +6804,7 @@ Redis::auth</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_getDBNum">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L945">at line 945</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L892">at line 892</a></div>
         <code>                    int
     <strong>getDBNum</strong>()
         </code>
@@ -6841,8 +6814,7 @@ Redis::auth</a>
             
 
         <div class="method-description">
-                            <p class="no-description">No description</p>
-                    
+                            <p><p>Get the database number PhpRedis thinks we're connected to.</p></p>                <p><p>This value is updated internally in PhpRedis each time <a href="Redis.html#method_select">Redis::select</a> is called.</p></p>        
         </div>
         <div class="tags">
             
@@ -6851,12 +6823,30 @@ Redis::auth</a>
                     <table class="table table-condensed">
         <tr>
             <td>int</td>
-            <td></td>
+            <td><p>database we're connected to.</p></td>
         </tr>
     </table>
 
             
             
+                            <h4>See also</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>
+                                            <a href="Redis.html#method_select">
+Redis::select</a>
+                                    </td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>
+                                            <a href="https://redis.io/commands/select">https://redis.io/commands/select</a>
+                                    </td>
+                <td></td>
+            </tr>
+            </table>
+
             
                     </div>
     </div>
@@ -6864,7 +6854,7 @@ Redis::auth</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_getDel">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L947">at line 947</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L894">at line 894</a></div>
         <code>                    Redis|string|bool
     <strong>getDel</strong>(string $key)
         </code>
@@ -6907,7 +6897,7 @@ Redis::auth</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_getHost">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L954">at line 954</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L901">at line 901</a></div>
         <code>                    string
     <strong>getHost</strong>()
         </code>
@@ -6939,7 +6929,7 @@ Redis::auth</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_getLastError">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L961">at line 961</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L908">at line 908</a></div>
         <code>                    string|null
     <strong>getLastError</strong>()
         </code>
@@ -6971,7 +6961,7 @@ Redis::auth</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_getMode">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L969">at line 969</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L916">at line 916</a></div>
         <code>                    int
     <strong>getMode</strong>()
         </code>
@@ -7003,7 +6993,7 @@ Redis::auth</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_getOption">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L978">at line 978</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L925">at line 925</a></div>
         <code>                    mixed
     <strong>getOption</strong>(int $option)
         </code>
@@ -7057,7 +7047,7 @@ Redis::setOption</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_getPersistentID">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L985">at line 985</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L932">at line 932</a></div>
         <code>                    string|null
     <strong>getPersistentID</strong>()
         </code>
@@ -7089,7 +7079,7 @@ Redis::setOption</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_getPort">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L992">at line 992</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L939">at line 939</a></div>
         <code>                    int
     <strong>getPort</strong>()
         </code>
@@ -7121,7 +7111,7 @@ Redis::setOption</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_getRange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1017">at line 1017</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L965">at line 965</a></div>
         <code>                    Redis|string|false
     <strong>getRange</strong>(string $key, int $start, int $end)
         </code>
@@ -7131,7 +7121,16 @@ Redis::setOption</a>
             
 
         <div class="method-description">
-                            <p><p>Retrieve a substring of a string by index.</p></p>                        
+                            <p><p>Retrieve a substring of a string by index.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$word = 'Supercalifragilisticexpialidocious';
+$redis-&gt;set('silly-word', $word);
+
+// string "super"
+var_dump($redis-&gt;getRange('silly-word', 0, 4));
+
+// string(7) "docious"
+var_dump($redis-&gt;getRange('silly-word', -7, -1));</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -7160,25 +7159,23 @@ Redis::setOption</a>
                     <table class="table table-condensed">
         <tr>
             <td>Redis|string|false</td>
-            <td><p>The substring or false on failure.</p>
-<pre><code>
-&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$word = 'Supercalifragilisticexpialidocious';
-$redis-&gt;set('silly-word', $word);
-
-// string "super"
-var_dump($redis-&gt;getRange('silly-word', 0, 4));
-
-// string(7) "docious"
-var_dump($redis-&gt;getRange('silly-word', -7, -1));
-?&gt;</code></pre></td>
+            <td><p>The substring or false on failure.</p></td>
         </tr>
     </table>
 
             
             
+                            <h4>See also</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>
+                                            <a href="https://redis.io/commands/getrange">https://redis.io/commands/getrange</a>
+                                    </td>
+                <td></td>
+            </tr>
+            </table>
+
             
                     </div>
     </div>
@@ -7186,7 +7183,7 @@ var_dump($redis-&gt;getRange('silly-word', -7, -1));
             </div>
                     <div class="method-item">
                     <h3 id="method_lcs">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1057">at line 1057</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1003">at line 1003</a></div>
         <code>                    Redis|string|array|int|false
     <strong>lcs</strong>(string $key1, string $key2, array|null $options = NULL)
         </code>
@@ -7196,7 +7193,13 @@ var_dump($redis-&gt;getRange('silly-word', -7, -1));
             
 
         <div class="method-description">
-                            <p><p>Get the longest common subsequence between two string keys.</p></p>                        
+                            <p><p>Get the longest common subsequence between two string keys.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;set('seq1', 'gtaggcccgcacggtctttaatgtatccctgtttaccatgccatacctgagcgcatacgc');
+$redis-&gt;set('seq2', 'aactcggcgcgagtaccaggccaaggtcgttccagagcaaagactcgtgccccgctgagc');
+
+// string(37) "acccgcacggcaagtcgttccagcaactggcgctagc"
+var_dump($redis-&gt;lcs('seq1', 'seq2'));</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -7236,24 +7239,23 @@ var_dump($redis-&gt;getRange('silly-word', -7, -1));
                     <table class="table table-condensed">
         <tr>
             <td>Redis|string|array|int|false</td>
-            <td><p>Various reply types depending on options.</p>
-<pre><code>
-&lt;?php
-&lt;?php
-
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;set('seq1', 'gtaggcccgcacggtctttaatgtatccctgtttaccatgccatacctgagcgcatacgc');
-$redis-&gt;set('seq2', 'aactcggcgcgagtaccaggccaaggtcgttccagagcaaagactcgtgccccgctgagc');
-
-// string(37) "acccgcacggcaagtcgttccagcaactggcgctagc"
-var_dump($redis-&gt;lcs('seq1', 'seq2'));
-?&gt;</code></pre></td>
+            <td><p>Various reply types depending on options.</p></td>
         </tr>
     </table>
 
             
             
+                            <h4>See also</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>
+                                            <a href="https://redis.io/commands/lcs">https://redis.io/commands/lcs</a>
+                                    </td>
+                <td></td>
+            </tr>
+            </table>
+
             
                     </div>
     </div>
@@ -7261,7 +7263,7 @@ var_dump($redis-&gt;lcs('seq1', 'seq2'));
             </div>
                     <div class="method-item">
                     <h3 id="method_getReadTimeout">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1064">at line 1064</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1010">at line 1010</a></div>
         <code>                    float
     <strong>getReadTimeout</strong>()
         </code>
@@ -7293,7 +7295,7 @@ var_dump($redis-&gt;lcs('seq1', 'seq2'));
             </div>
                     <div class="method-item">
                     <h3 id="method_getset">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1088">at line 1088</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1034">at line 1034</a></div>
         <code>                    Redis|string|false
     <strong>getset</strong>(string $key, mixed $value)
         </code>
@@ -7303,7 +7305,15 @@ var_dump($redis-&gt;lcs('seq1', 'seq2'));
             
 
         <div class="method-description">
-                            <p><p>Sets a key and returns any previously set value, if the key already existed.</p></p>                        
+                            <p><p>Sets a key and returns any previously set value, if the key already existed.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;del('captain');
+
+// bool(false)
+var_dump($redis-&gt;getset('captain', 'Pike'));
+
+// string(4) "Pike"
+var_dump($redis-&gt;getset('captain', 'Kirk'));</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -7327,23 +7337,23 @@ var_dump($redis-&gt;lcs('seq1', 'seq2'));
                     <table class="table table-condensed">
         <tr>
             <td>Redis|string|false</td>
-            <td><p>The old value of the key or false if it didn't exist.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;del('captain');
-
-// bool(false)
-var_dump($redis-&gt;getset('captain', 'Pike'));
-
-// string(4) "Pike"
-var_dump($redis-&gt;getset('captain', 'Kirk'));
-?&gt;</code></pre></td>
+            <td><p>The old value of the key or false if it didn't exist.</p></td>
         </tr>
     </table>
 
             
             
+                            <h4>See also</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>
+                                            <a href="https://redis.io/commands/getset">https://redis.io/commands/getset</a>
+                                    </td>
+                <td></td>
+            </tr>
+            </table>
+
             
                     </div>
     </div>
@@ -7351,7 +7361,7 @@ var_dump($redis-&gt;getset('captain', 'Kirk'));
             </div>
                     <div class="method-item">
                     <h3 id="method_getTimeout">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1095">at line 1095</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1041">at line 1041</a></div>
         <code>                    float|false
     <strong>getTimeout</strong>()
         </code>
@@ -7383,7 +7393,7 @@ var_dump($redis-&gt;getset('captain', 'Kirk'));
             </div>
                     <div class="method-item">
                     <h3 id="method_getTransferredBytes">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1097">at line 1097</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1043">at line 1043</a></div>
         <code>                    int|false
     <strong>getTransferredBytes</strong>()
         </code>
@@ -7416,7 +7426,7 @@ var_dump($redis-&gt;getset('captain', 'Kirk'));
             </div>
                     <div class="method-item">
                     <h3 id="method_hDel">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1123">at line 1123</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1067">at line 1067</a></div>
         <code>                    Redis|int|false
     <strong>hDel</strong>(string $key, string $field, string ...$other_fields)
         </code>
@@ -7426,7 +7436,14 @@ var_dump($redis-&gt;getset('captain', 'Kirk'));
             
 
         <div class="method-description">
-                            <p><p>Remove one or more fields from a hash.</p></p>                        
+                            <p><p>Remove one or more fields from a hash.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;del('people');
+
+$redis-&gt;hmset('comms', ['Alice' =&gt; 'ecc', 'Bob' =&gt; 'rsa', 'Mallory' =&gt; 'haxx00r']);
+
+// int(1)
+$redis-&gt;hDel('comms', 'Mallory', 'Archibald');</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -7455,17 +7472,7 @@ var_dump($redis-&gt;getset('captain', 'Kirk'));
                     <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
-            <td><p>The number of fields actually removed.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;del('people');
-
-$redis-&gt;hmset('comms', ['Alice' =&gt; 'ecc', 'Bob' =&gt; 'rsa', 'Mallory' =&gt; 'haxx00r']);
-
-// int(1)
-$redis-&gt;hDel('comms', 'Mallory', 'Archibald');
-?&gt;</code></pre></td>
+            <td><p>The number of fields actually removed.</p></td>
         </tr>
     </table>
 
@@ -7489,7 +7496,7 @@ $redis-&gt;hDel('comms', 'Mallory', 'Archibald');
             </div>
                     <div class="method-item">
                     <h3 id="method_hExists">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1151">at line 1151</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1091">at line 1091</a></div>
         <code>                    Redis|bool
     <strong>hExists</strong>(string $key, string $field)
         </code>
@@ -7499,7 +7506,14 @@ $redis-&gt;hDel('comms', 'Mallory', 'Archibald');
             
 
         <div class="method-description">
-                            <p><p>Checks whether a field exists in a hash.</p></p>                        
+                            <p><p>Checks whether a field exists in a hash.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;del('captains');
+
+$redis-&gt;hmset('captains', ['Kirk' =&gt; 'Enterprise', 'Picard' =&gt; 'Enterprise-D', 'Sisko' =&gt; 'Defiant']);
+
+$redis-&gt;hExists('captains', 'Pike');
+$redis-&gt;hExists('captains', 'Picard');</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -7523,20 +7537,7 @@ $redis-&gt;hDel('comms', 'Mallory', 'Archibald');
                     <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
-            <td><p>True if it exists, false if not.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;del('captains');
-
-$redis-&gt;hmset('captains', ['Kirk' =&gt; 'Enterprise', 'Picard' =&gt; 'Enterprise-D', 'Sisko' =&gt; 'Defiant']);
-
-bool(false)
-$redis-&gt;hExists('captains', 'Pike');
-
-bool(true)
-$redis-&gt;hExists('captains', 'Picard');
-?&gt;</code></pre></td>
+            <td><p>True if it exists, false if not.</p></td>
         </tr>
     </table>
 
@@ -7560,7 +7561,7 @@ $redis-&gt;hExists('captains', 'Picard');
             </div>
                     <div class="method-item">
                     <h3 id="method_hGet">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1153">at line 1153</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1093">at line 1093</a></div>
         <code>                    mixed
     <strong>hGet</strong>(string $key, string $member)
         </code>
@@ -7608,7 +7609,7 @@ $redis-&gt;hExists('captains', 'Picard');
             </div>
                     <div class="method-item">
                     <h3 id="method_hGetAll">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1184">at line 1184</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1122">at line 1122</a></div>
         <code>                    Redis|array|false
     <strong>hGetAll</strong>(string $key)
         </code>
@@ -7618,7 +7619,21 @@ $redis-&gt;hExists('captains', 'Picard');
             
 
         <div class="method-description">
-                            <p><p>Read every field and value from a hash.</p></p>                        
+                            <p><p>Read every field and value from a hash.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;del('comms');
+
+$redis-&gt;hmset('comms', ['Alice' =&gt; 'ecc', 'Bob' =&gt; 'rsa', 'Mallory' =&gt; 'haxx00r']);
+
+// array(3) {
+//   ["Alice"]=&gt;
+//   string(3) "ecc"
+//   ["Bob"]=&gt;
+//   string(3) "rsa"
+//   ["Mallory"]=&gt;
+//   string(7) "haxx00r"
+// }
+$redis-&gt;hGetAll('comms');</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -7637,24 +7652,7 @@ $redis-&gt;hExists('captains', 'Picard');
                     <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
-            <td><p>All fields and values or false if the key didn't exist.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;del('comms');
-
-$redis-&gt;hmset('comms', ['Alice' =&gt; 'ecc', 'Bob' =&gt; 'rsa', 'Mallory' =&gt; 'haxx00r']);
-
-// array(3) {
-//   ["Alice"]=&gt;
-//   string(3) "ecc"
-//   ["Bob"]=&gt;
-//   string(3) "rsa"
-//   ["Mallory"]=&gt;
-//   string(7) "haxx00r"
-// }
-$redis-&gt;hGetAll('comms');
-?&gt;</code></pre></td>
+            <td><p>All fields and values or false if the key didn't exist.</p></td>
         </tr>
     </table>
 
@@ -7678,7 +7676,7 @@ $redis-&gt;hGetAll('comms');
             </div>
                     <div class="method-item">
                     <h3 id="method_hIncrBy">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1214">at line 1214</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1150">at line 1150</a></div>
         <code>                    Redis|int|false
     <strong>hIncrBy</strong>(string $key, string $field, int $value)
         </code>
@@ -7688,7 +7686,17 @@ $redis-&gt;hGetAll('comms');
             
 
         <div class="method-description">
-                            <p><p>Increment a hash field's value by an integer</p></p>                        
+                            <p><p>Increment a hash field's value by an integer</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;del('player');
+
+$redis-&gt;hmset('player', ['name' =&gt; 'Bob', 'level' =&gt; 1]);
+
+// int(2)
+$redis-&gt;hIncrBy('player', 'level', 1);
+
+// int(5)
+$redis-&gt;hIncrBy('player', 'level', 3);</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -7717,20 +7725,7 @@ $redis-&gt;hGetAll('comms');
                     <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
-            <td><p>The new value of the field.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;del('player');
-
-$redis-&gt;hmset('player', ['name' =&gt; 'Bob', 'level' =&gt; 1]);
-
-// int(2)
-$redis-&gt;hIncrBy('player', 'level', 1);
-
-// int(5)
-$redis-&gt;hIncrBy('player', 'level', 3);
-?&gt;</code></pre></td>
+            <td><p>The new value of the field.</p></td>
         </tr>
     </table>
 
@@ -7754,7 +7749,7 @@ $redis-&gt;hIncrBy('player', 'level', 3);
             </div>
                     <div class="method-item">
                     <h3 id="method_hIncrByFloat">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1239">at line 1239</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1175">at line 1175</a></div>
         <code>                    Redis|float|false
     <strong>hIncrByFloat</strong>(string $key, string $field, float $value)
         </code>
@@ -7764,7 +7759,15 @@ $redis-&gt;hIncrBy('player', 'level', 3);
             
 
         <div class="method-description">
-                            <p><p>Increment a hash field by a floating point value</p></p>                        
+                            <p><p>Increment a hash field by a floating point value</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;del('trig-numbers')
+
+// float(3.1415926)
+$pi = $redis-&gt;hIncrByFloat('trig-numbers', 'pi', 3.1415926);
+
+// float(6.2831852)
+$redis-&gt;hIncrByFloat('trig-numbers', 'tau', 2 * $pi);</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -7793,17 +7796,7 @@ $redis-&gt;hIncrBy('player', 'level', 3);
                     <table class="table table-condensed">
         <tr>
             <td>Redis|float|false</td>
-            <td><p>The field value after incremented.</p>
-<pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;del('trig-numbers')
-
-// float(3.1415926)
-$pi = $redis-&gt;hIncrByFloat('trig-numbers', 'pi', 3.1415926);
-
-// float(6.2831852)
-$redis-&gt;hIncrByFloat('trig-numbers', 'tau', 2 * $pi);
-?&gt;</code></pre></td>
+            <td><p>The field value after incremented.</p></td>
         </tr>
     </table>
 
@@ -7827,7 +7820,7 @@ $redis-&gt;hIncrByFloat('trig-numbers', 'tau', 2 * $pi);
             </div>
                     <div class="method-item">
                     <h3 id="method_hKeys">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1270">at line 1270</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1204">at line 1204</a></div>
         <code>                    Redis|array|false
     <strong>hKeys</strong>(string $key)
         </code>
@@ -7837,7 +7830,21 @@ $redis-&gt;hIncrByFloat('trig-numbers', 'tau', 2 * $pi);
             
 
         <div class="method-description">
-                            <p><p>Retrieve all of the fields of a hash.</p></p>                        
+                            <p><p>Retrieve all of the fields of a hash.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;del('ships');
+
+$redis-&gt;hmset('ships', ['Enterprise' =&gt; 'NCC-1701D', 'Defiant' =&gt; 'NX-74205', 'Voyager' =&gt; 'NCC-74656']);
+
+// array(3) {
+//   [0]=&gt;
+//   string(10) "Enterprise"
+//   [1]=&gt;
+//   string(7) "Defiant"
+//   [2]=&gt;
+//   string(7) "Voyager"
+// }
+$redis-&gt;hKeys('ships');</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -7856,24 +7863,7 @@ $redis-&gt;hIncrByFloat('trig-numbers', 'tau', 2 * $pi);
                     <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
-            <td><p>The fields in the hash or false if the hash doesn't exist.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;del('ships');
-
-$redis-&gt;hmset('ships', ['Enterprise' =&gt; 'NCC-1701D', 'Defiant' =&gt; 'NX-74205', 'Voyager' =&gt; 'NCC-74656']);
-
-// array(3) {
-//   [0]=&gt;
-//   string(10) "Enterprise"
-//   [1]=&gt;
-//   string(7) "Defiant"
-//   [2]=&gt;
-//   string(7) "Voyager"
-// }
-$redis-&gt;hKeys('ships');
-?&gt;</code></pre></td>
+            <td><p>The fields in the hash or false if the hash doesn't exist.</p></td>
         </tr>
     </table>
 
@@ -7897,7 +7887,7 @@ $redis-&gt;hKeys('ships');
             </div>
                     <div class="method-item">
                     <h3 id="method_hLen">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1281">at line 1281</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1215">at line 1215</a></div>
         <code>                    Redis|int|false
     <strong>hLen</strong>(string $key)
         </code>
@@ -7950,7 +7940,7 @@ $redis-&gt;hKeys('ships');
             </div>
                     <div class="method-item">
                     <h3 id="method_hMget">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1311">at line 1311</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1244">at line 1244</a></div>
         <code>                    Redis|array|false
     <strong>hMget</strong>(string $key, array $fields)
         </code>
@@ -7960,7 +7950,19 @@ $redis-&gt;hKeys('ships');
             
 
         <div class="method-description">
-                            <p><p>Get one or more fields from a hash.</p></p>                        
+                            <p><p>Get one or more fields from a hash.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;del('player:1');
+
+$redis-&gt;hmset('player:1', ['name' =&gt; 'Alice', 'age' =&gt; '26', 'score' =&gt; '1337']);
+
+// array(2) {
+//   ["name"]=&gt;
+//   string(5) "Alice"
+//   ["score"]=&gt;
+//   string(4) "1337"
+// }
+$redis-&gt;hmget('player:1', ['name', 'score']);</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -7984,22 +7986,7 @@ $redis-&gt;hKeys('ships');
                     <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
-            <td><p>The fields and values or false if the key didn't exist.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;del('player:1');
-
-$redis-&gt;hmset('player:1', ['name' =&gt; 'Alice', 'age' =&gt; '26', 'score' =&gt; '1337']);
-
-// array(2) {
-//   ["name"]=&gt;
-//   string(5) "Alice"
-//   ["score"]=&gt;
-//   string(4) "1337"
-// }
-$redis-&gt;hmget('player:1', ['name', 'score']);
-?&gt;</code></pre></td>
+            <td><p>The fields and values or false if the key didn't exist.</p></td>
         </tr>
     </table>
 
@@ -8023,7 +8010,7 @@ $redis-&gt;hmget('player:1', ['name', 'score']);
             </div>
                     <div class="method-item">
                     <h3 id="method_hMset">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1331">at line 1331</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1263">at line 1263</a></div>
         <code>                    Redis|bool
     <strong>hMset</strong>(string $key, array $fieldvals)
         </code>
@@ -8033,7 +8020,9 @@ $redis-&gt;hmget('player:1', ['name', 'score']);
             
 
         <div class="method-description">
-                            <p><p>Add or update one or more hash fields and values</p></p>                        
+                            <p><p>Add or update one or more hash fields and values</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;hmset('updates', ['status' =&gt; 'starting', 'elapsed' =&gt; 0]);</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -8057,12 +8046,7 @@ $redis-&gt;hmget('player:1', ['name', 'score']);
                     <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
-            <td><p>True if the operation was successful</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;hmset('updates', ['status' =&gt; 'starting', 'elapsed' =&gt; 0]);
-?&gt;</code></pre></td>
+            <td><p>True if the operation was successful</p></td>
         </tr>
     </table>
 
@@ -8086,7 +8070,7 @@ $redis-&gt;hmset('updates', ['status' =&gt; 'starting', 'elapsed' =&gt; 0]);
             </div>
                     <div class="method-item">
                     <h3 id="method_hRandField">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1364">at line 1364</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1294">at line 1294</a></div>
         <code>                    Redis|string|array
     <strong>hRandField</strong>(string $key, array $options = null)
         </code>
@@ -8096,7 +8080,14 @@ $redis-&gt;hmset('updates', ['status' =&gt; 'starting', 'elapsed' =&gt; 0]);
             
 
         <div class="method-description">
-                            <p><p>Get one or more random field from a hash.</p></p>                        
+                            <p><p>Get one or more random field from a hash.</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;del('settings');
+
+$redis-&gt;hmset('settings', ['path' =&gt; '/', 'state' =&gt; 'active', 'jobs' =&gt; 15]);
+
+$redis-&gt;hrandfield('settings');
+$redis-&gt;hrandfield('settings', ['count' =&gt; 2, 'withvalues' =&gt; true]);</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -8124,18 +8115,7 @@ $redis-&gt;hmset('updates', ['status' =&gt; 'starting', 'elapsed' =&gt; 0]);
                     <table class="table table-condensed">
         <tr>
             <td>Redis|string|array</td>
-            <td><p>One or more random fields (and possibly values).</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;del('settings');
-
-$redis-&gt;hmset('settings', ['path' =&gt; '/', 'state' =&gt; 'active', 'jobs' =&gt; 15]);
-
-$redis-&gt;hrandfield('settings');
-
-$redis-&gt;hrandfield('settings', ['count' =&gt; 2, 'withvalues' =&gt; true]);
-?&gt;</code></pre></td>
+            <td><p>One or more random fields (and possibly values).</p></td>
         </tr>
     </table>
 
@@ -8159,7 +8139,7 @@ $redis-&gt;hrandfield('settings', ['count' =&gt; 2, 'withvalues' =&gt; true]);
             </div>
                     <div class="method-item">
                     <h3 id="method_hSet">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1366">at line 1366</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1296">at line 1296</a></div>
         <code>                    Redis|int|false
     <strong>hSet</strong>(string $key, string $member, mixed $value)
         </code>
@@ -8212,7 +8192,7 @@ $redis-&gt;hrandfield('settings', ['count' =&gt; 2, 'withvalues' =&gt; true]);
             </div>
                     <div class="method-item">
                     <h3 id="method_hSetNx">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1392">at line 1392</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1322">at line 1322</a></div>
         <code>                    Redis|bool
     <strong>hSetNx</strong>(string $key, string $field, string $value)
         </code>
@@ -8222,7 +8202,17 @@ $redis-&gt;hrandfield('settings', ['count' =&gt; 2, 'withvalues' =&gt; true]);
             
 
         <div class="method-description">
-                            <p><p>Set a hash field and value, but only if that field does not exist</p></p>                        
+                            <p><p>Set a hash field and value, but only if that field does not exist</p></p>                <p><pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
+
+$redis-&gt;del('player:1');
+
+$redis-&gt;hmset('player:1', ['name' =&gt; 'bob', 'score' =&gt; 0]);
+
+// bool(true)
+var_dump($redis-&gt;hsetnx('player:1', 'lock', 'enabled'));
+
+// bool(false)
+var_dump($redis-&gt;hsetnx('player:1', 'lock', 'enabled'));</code></pre></p>        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -8251,18 +8241,7 @@ $redis-&gt;hrandfield('settings', ['count' =&gt; 2, 'withvalues' =&gt; true]);
                     <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
-            <td><p>True if the field was set and false if not.</p>
-<pre><code>$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;del('player:1');
-
-$redis-&gt;hmset('player:1', ['name' =&gt; 'bob', 'score' =&gt; 0]);
-
-// bool(true)
-var_dump($redis-&gt;hsetnx('player:1', 'lock', 'enabled'));
-
-// bool(false)
-var_dump($redis-&gt;hsetnx('player:1', 'lock', 'enabled'));</code></pre></td>
+            <td><p>True if the field was set and false if not.</p></td>
         </tr>
     </table>
 
@@ -8286,7 +8265,7 @@ var_dump($redis-&gt;hsetnx('player:1', 'lock', 'enabled'));</code></pre></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_hStrLen">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1416">at line 1416</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1340">at line 1340</a></div>
         <code>                    Redis|int|false
     <strong>hStrLen</strong>(string $key, string $field)
         </code>
@@ -8320,16 +8299,7 @@ var_dump($redis-&gt;hsetnx('player:1', 'lock', 'enabled'));</code></pre></td>
                     <table class="table table-condensed">
         <tr>
             <td>Redis|int|false</td>
-            <td><p>The string length of the field or false.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;del('hash');
-$redis-&gt;hmset('hash', ['50bytes' =&gt; str_repeat('a', 50)]);
-
-// int(50)
-$redis-&gt;hstrlen('hash', '50bytes');
-</code></pre></td>
+            <td><p>The string length of the field or false.</p></td>
         </tr>
     </table>
 
@@ -8347,13 +8317,24 @@ $redis-&gt;hstrlen('hash', '50bytes');
             </table>
 
             
+                            <h4>Examples</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><pre class="examples">$redis = new Redis([&#039;host&#039; =&gt; &#039;localhost&#039;]);<br />
+$redis-&gt;del(&#039;hash&#039;);<br />
+$redis-&gt;hmset(&#039;hash&#039;, [&#039;50bytes&#039; =&gt; str_repeat(&#039;a&#039;, 50)]);<br />
+$redis-&gt;hstrlen(&#039;hash&#039;, &#039;50bytes&#039;);</pre></td>
+            </tr>
+            </table>
+
                     </div>
     </div>
 
             </div>
                     <div class="method-item">
                     <h3 id="method_hVals">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1445">at line 1445</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1369">at line 1369</a></div>
         <code>                    Redis|array|false
     <strong>hVals</strong>(string $key)
         </code>
@@ -8421,7 +8402,7 @@ $redis-&gt;hgetall('player');
             </div>
                     <div class="method-item">
                     <h3 id="method_hscan">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1500">at line 1500</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1424">at line 1424</a></div>
         <code>                    Redis|array|bool
     <strong>hscan</strong>(string $key, int|null $iterator, string|null $pattern = null, int $count = 0)
         </code>
@@ -8531,7 +8512,7 @@ do {
             </div>
                     <div class="method-item">
                     <h3 id="method_incr">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1527">at line 1527</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1451">at line 1451</a></div>
         <code>                    Redis|int|false
     <strong>incr</strong>(string $key, int $by = 1)
         </code>
@@ -8606,7 +8587,7 @@ $redis-&gt;incr('counter', 2);
             </div>
                     <div class="method-item">
                     <h3 id="method_incrBy">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1558">at line 1558</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1482">at line 1482</a></div>
         <code>                    Redis|int|false
     <strong>incrBy</strong>(string $key, int $value)
         </code>
@@ -8682,7 +8663,7 @@ $redis-&gt;incrby('primes', 4);
             </div>
                     <div class="method-item">
                     <h3 id="method_incrByFloat">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1582">at line 1582</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1506">at line 1506</a></div>
         <code>                    Redis|float|false
     <strong>incrByFloat</strong>(string $key, float $value)
         </code>
@@ -8740,7 +8721,7 @@ var_dump($redis-&gt;incrByFloat('tau', 3.1415926));
             </div>
                     <div class="method-item">
                     <h3 id="method_info">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1598">at line 1598</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1522">at line 1522</a></div>
         <code>                    Redis|array|false
     <strong>info</strong>(string ...$sections)
         </code>
@@ -8796,7 +8777,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_isConnected">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1605">at line 1605</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1529">at line 1529</a></div>
         <code>                    bool
     <strong>isConnected</strong>()
         </code>
@@ -8828,7 +8809,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_keys">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1608">at line 1608</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1532">at line 1532</a></div>
         <code>                    <a href="Redis.html">Redis</a>|array|false
     <strong>keys</strong>(string $pattern)
         </code>
@@ -8871,7 +8852,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_lInsert">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1614">at line 1614</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1538">at line 1538</a></div>
         <code>                    <a href="Redis.html">Redis</a>|int|false
     <strong>lInsert</strong>(string $key, string $pos, mixed $pivot, mixed $value)
         </code>
@@ -8929,7 +8910,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_lLen">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1616">at line 1616</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1540">at line 1540</a></div>
         <code>                    Redis|int|false
     <strong>lLen</strong>(string $key)
         </code>
@@ -8972,7 +8953,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_lMove">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1618">at line 1618</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1542">at line 1542</a></div>
         <code>                    Redis|string|false
     <strong>lMove</strong>(string $src, string $dst, string $wherefrom, string $whereto)
         </code>
@@ -9030,7 +9011,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_lPop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1620">at line 1620</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1544">at line 1544</a></div>
         <code>                    Redis|bool|string|array
     <strong>lPop</strong>(string $key, int $count = 0)
         </code>
@@ -9078,7 +9059,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_lPos">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1622">at line 1622</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1546">at line 1546</a></div>
         <code>                    Redis|null|bool|int|array
     <strong>lPos</strong>(string $key, mixed $value, array $options = null)
         </code>
@@ -9131,7 +9112,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_lPush">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1628">at line 1628</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1552">at line 1552</a></div>
         <code>                    int|<a href="Redis.html">Redis</a>
     <strong>lPush</strong>(string $key, mixed ...$elements)
         </code>
@@ -9179,7 +9160,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_rPush">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1634">at line 1634</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1558">at line 1558</a></div>
         <code>                    <a href="Redis.html">Redis</a>|int|false
     <strong>rPush</strong>(string $key, mixed ...$elements)
         </code>
@@ -9227,7 +9208,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_lPushx">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1637">at line 1637</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1561">at line 1561</a></div>
         <code>                    <a href="Redis.html">Redis</a>|int|false
     <strong>lPushx</strong>(string $key, mixed $value)
         </code>
@@ -9275,7 +9256,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_rPushx">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1640">at line 1640</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1564">at line 1564</a></div>
         <code>                    <a href="Redis.html">Redis</a>|int|false
     <strong>rPushx</strong>(string $key, mixed $value)
         </code>
@@ -9323,7 +9304,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_lSet">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1642">at line 1642</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1566">at line 1566</a></div>
         <code>                    Redis|bool
     <strong>lSet</strong>(string $key, int $index, mixed $value)
         </code>
@@ -9376,7 +9357,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_lastSave">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1644">at line 1644</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1568">at line 1568</a></div>
         <code>                    int
     <strong>lastSave</strong>()
         </code>
@@ -9409,7 +9390,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_lindex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1646">at line 1646</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1570">at line 1570</a></div>
         <code>                    mixed
     <strong>lindex</strong>(string $key, int $index)
         </code>
@@ -9457,7 +9438,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_lrange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1648">at line 1648</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1572">at line 1572</a></div>
         <code>                    Redis|array|false
     <strong>lrange</strong>(string $key, int $start, int $end)
         </code>
@@ -9510,7 +9491,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_lrem">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1653">at line 1653</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1577">at line 1577</a></div>
         <code>                    int|<a href="Redis.html">Redis</a>|false
     <strong>lrem</strong>(string $key, mixed $value, int $count = 0)
         </code>
@@ -9563,7 +9544,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_ltrim">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1655">at line 1655</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1579">at line 1579</a></div>
         <code>                    Redis|bool
     <strong>ltrim</strong>(string $key, int $start, int $end)
         </code>
@@ -9616,7 +9597,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_mget">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1658">at line 1658</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1582">at line 1582</a></div>
         <code>                    array|<a href="Redis.html">Redis</a>
     <strong>mget</strong>(array $keys)
         </code>
@@ -9659,7 +9640,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_migrate">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1660">at line 1660</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1584">at line 1584</a></div>
         <code>                    Redis|bool
     <strong>migrate</strong>(string $host, int $port, string|array $key, int $dstdb, int $timeout, bool $copy = false, bool $replace = false, mixed $credentials = NULL)
         </code>
@@ -9737,7 +9718,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_move">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1664">at line 1664</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1588">at line 1588</a></div>
         <code>                    bool
     <strong>move</strong>(string $key, int $index)
         </code>
@@ -9785,7 +9766,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_mset">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1666">at line 1666</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1590">at line 1590</a></div>
         <code>                    Redis|bool
     <strong>mset</strong>(array $key_values)
         </code>
@@ -9828,7 +9809,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_msetnx">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1668">at line 1668</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1592">at line 1592</a></div>
         <code>                    Redis|bool
     <strong>msetnx</strong>(array $key_values)
         </code>
@@ -9871,7 +9852,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_multi">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1670">at line 1670</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1594">at line 1594</a></div>
         <code>                    bool|Redis
     <strong>multi</strong>(int $value = Redis::MULTI)
         </code>
@@ -9914,7 +9895,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_object">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1672">at line 1672</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1596">at line 1596</a></div>
         <code>                    Redis|int|string|false
     <strong>object</strong>(string $subcommand, string $key)
         </code>
@@ -9962,7 +9943,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_open">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1678">at line 1678</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1602">at line 1602</a></div>
         <code>                    bool
     <strong>open</strong>(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL)
         <small><span class="label label-danger">deprecated</span></small></code>
@@ -10042,7 +10023,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_pconnect">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1680">at line 1680</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1604">at line 1604</a></div>
         <code>                    bool
     <strong>pconnect</strong>(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL)
         </code>
@@ -10115,7 +10096,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_persist">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1682">at line 1682</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1606">at line 1606</a></div>
         <code>                    bool
     <strong>persist</strong>(string $key)
         </code>
@@ -10158,7 +10139,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             </div>
                     <div class="method-item">
                     <h3 id="method_pexpire">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1696">at line 1696</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1620">at line 1620</a></div>
         <code>                    bool
     <strong>pexpire</strong>(string $key, int $timeout, string|null $mode = NULL)
         </code>
@@ -10214,7 +10195,7 @@ command works.</p>
             </div>
                     <div class="method-item">
                     <h3 id="method_pexpireAt">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1710">at line 1710</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1634">at line 1634</a></div>
         <code>                    Redis|bool
     <strong>pexpireAt</strong>(string $key, int $timestamp, string|null $mode = NULL)
         </code>
@@ -10285,7 +10266,7 @@ Redis::expire</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_pfadd">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1723">at line 1723</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1647">at line 1647</a></div>
         <code>                    Redis|int
     <strong>pfadd</strong>(string $key, array $elements)
         </code>
@@ -10343,7 +10324,7 @@ Redis::expire</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_pfcount">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1734">at line 1734</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1658">at line 1658</a></div>
         <code>                    Redis|int
     <strong>pfcount</strong>(string $key)
         </code>
@@ -10396,7 +10377,7 @@ Redis::expire</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_pfmerge">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1746">at line 1746</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1670">at line 1670</a></div>
         <code>                    Redis|bool
     <strong>pfmerge</strong>(string $dst, array $srckeys)
         </code>
@@ -10454,7 +10435,7 @@ Redis::expire</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_ping">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1770">at line 1770</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1694">at line 1694</a></div>
         <code>                    Redis|string|bool
     <strong>ping</strong>(string $message = NULL)
         </code>
@@ -10517,7 +10498,7 @@ $redis-&gt;ping('beep boop');
             </div>
                     <div class="method-item">
                     <h3 id="method_pipeline">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1804">at line 1804</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1728">at line 1728</a></div>
         <code>                    bool|Redis
     <strong>pipeline</strong>()
         </code>
@@ -10569,7 +10550,7 @@ $redis-&gt;pipeline()
             </div>
                     <div class="method-item">
                     <h3 id="method_popen">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1810">at line 1810</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1734">at line 1734</a></div>
         <code>                    bool
     <strong>popen</strong>(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL)
         <small><span class="label label-danger">deprecated</span></small></code>
@@ -10649,7 +10630,7 @@ $redis-&gt;pipeline()
             </div>
                     <div class="method-item">
                     <h3 id="method_psetex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1813">at line 1813</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1737">at line 1737</a></div>
         <code>                    bool|<a href="Redis.html">Redis</a>
     <strong>psetex</strong>(string $key, int $expire, mixed $value)
         </code>
@@ -10702,7 +10683,7 @@ $redis-&gt;pipeline()
             </div>
                     <div class="method-item">
                     <h3 id="method_psubscribe">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1829">at line 1829</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1753">at line 1753</a></div>
         <code>                    bool
     <strong>psubscribe</strong>(array $patterns, callable $cb)
         </code>
@@ -10761,7 +10742,7 @@ $redis-&gt;pipeline()
             </div>
                     <div class="method-item">
                     <h3 id="method_pttl">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1854">at line 1854</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1778">at line 1778</a></div>
         <code>                    Redis|int|false
     <strong>pttl</strong>(string $key)
         </code>
@@ -10824,7 +10805,7 @@ var_dump($redis-&gt;pttl('ttl-key'));
             </div>
                     <div class="method-item">
                     <h3 id="method_publish">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1866">at line 1866</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1790">at line 1790</a></div>
         <code>                    Redis|int|false
     <strong>publish</strong>(string $channel, string $message)
         </code>
@@ -10882,7 +10863,7 @@ var_dump($redis-&gt;pttl('ttl-key'));
             </div>
                     <div class="method-item">
                     <h3 id="method_pubsub">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1868">at line 1868</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1792">at line 1792</a></div>
         <code>                    mixed
     <strong>pubsub</strong>(string $command, mixed $arg = null)
         </code>
@@ -10930,7 +10911,7 @@ var_dump($redis-&gt;pttl('ttl-key'));
             </div>
                     <div class="method-item">
                     <h3 id="method_punsubscribe">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1881">at line 1881</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1805">at line 1805</a></div>
         <code>                    Redis|array|bool
     <strong>punsubscribe</strong>(array $patterns)
         </code>
@@ -10996,7 +10977,7 @@ Redis::subscribe</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_rPop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1914">at line 1914</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1838">at line 1838</a></div>
         <code>                    Redis|array|string|bool
     <strong>rPop</strong>(string $key, int $count = 0)
         </code>
@@ -11071,7 +11052,7 @@ $redis-&gt;rPop('mylist');
             </div>
                     <div class="method-item">
                     <h3 id="method_randomKey">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1924">at line 1924</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1848">at line 1848</a></div>
         <code>                    Redis|string|false
     <strong>randomKey</strong>()
         </code>
@@ -11114,7 +11095,7 @@ $redis-&gt;rPop('mylist');
             </div>
                     <div class="method-item">
                     <h3 id="method_rawcommand">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1956">at line 1956</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1880">at line 1880</a></div>
         <code>                    mixed
     <strong>rawcommand</strong>(string $command, mixed ...$args)
         </code>
@@ -11182,7 +11163,7 @@ $redis-&gt;rawCommand('lrange', 'mylist', 0, -1);
             </div>
                     <div class="method-item">
                     <h3 id="method_rename">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1968">at line 1968</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1892">at line 1892</a></div>
         <code>                    Redis|bool
     <strong>rename</strong>(string $old_name, string $new_name)
         </code>
@@ -11240,7 +11221,7 @@ $redis-&gt;rawCommand('lrange', 'mylist', 0, -1);
             </div>
                     <div class="method-item">
                     <h3 id="method_renameNx">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1997">at line 1997</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1921">at line 1921</a></div>
         <code>                    Redis|bool
     <strong>renameNx</strong>(string $key_src, string $key_dst)
         </code>
@@ -11312,7 +11293,7 @@ $redis-&gt;renamenx('dst', 'existing-dst');
             </div>
                     <div class="method-item">
                     <h3 id="method_reset">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2004">at line 2004</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1928">at line 1928</a></div>
         <code>                    Redis|bool
     <strong>reset</strong>()
         </code>
@@ -11344,7 +11325,7 @@ $redis-&gt;renamenx('dst', 'existing-dst');
             </div>
                     <div class="method-item">
                     <h3 id="method_restore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2065">at line 2065</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1989">at line 1989</a></div>
         <code>                    Redis|bool
     <strong>restore</strong>(string $key, int $ttl, string $value, array|null $options = NULL)
         </code>
@@ -11464,7 +11445,7 @@ Redis::dump</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_role">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2073">at line 2073</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L1997">at line 1997</a></div>
         <code>                    mixed
     <strong>role</strong>()
         </code>
@@ -11497,7 +11478,7 @@ an error.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_rpoplpush">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2113">at line 2113</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2037">at line 2037</a></div>
         <code>                    Redis|string|false
     <strong>rpoplpush</strong>(string $srckey, string $dstkey)
         </code>
@@ -11580,7 +11561,7 @@ var_dump($redis-&gt;lrange('list1', 0, -1));
             </div>
                     <div class="method-item">
                     <h3 id="method_sAdd">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2141">at line 2141</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2065">at line 2065</a></div>
         <code>                    Redis|int|false
     <strong>sAdd</strong>(string $key, mixed $value, mixed ...$other_values)
         </code>
@@ -11655,7 +11636,7 @@ var_dump($redis-&gt;sadd('myset', 'foo', 'new'));
             </div>
                     <div class="method-item">
                     <h3 id="method_sAddArray">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2169">at line 2169</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2093">at line 2093</a></div>
         <code>                    int
     <strong>sAddArray</strong>(string $key, array $values)
         </code>
@@ -11732,7 +11713,7 @@ var_dump($redis-&gt;sAddArray('myset', ['foo', 'new']));
             </div>
                     <div class="method-item">
                     <h3 id="method_sDiff">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2206">at line 2206</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2130">at line 2130</a></div>
         <code>                    Redis|array|false
     <strong>sDiff</strong>(string $key, string ...$other_keys)
         </code>
@@ -11814,7 +11795,7 @@ array(2) {
             </div>
                     <div class="method-item">
                     <h3 id="method_sDiffStore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2221">at line 2221</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2145">at line 2145</a></div>
         <code>                    Redis|int|false
     <strong>sDiffStore</strong>(string $dst, string $key, string ...$other_keys)
         </code>
@@ -11884,7 +11865,7 @@ values in a specified destination key.</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_sInter">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2255">at line 2255</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2179">at line 2179</a></div>
         <code>                    Redis|array|false
     <strong>sInter</strong>(array|string $key, string ...$other_keys)
         </code>
@@ -11963,7 +11944,7 @@ var_dump($redis-&gt;sinter('alice_likes', 'bob_likes', 'bill_likes'));
             </div>
                     <div class="method-item">
                     <h3 id="method_sintercard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2283">at line 2283</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2207">at line 2207</a></div>
         <code>                    Redis|int|false
     <strong>sintercard</strong>(array $keys, int $limit = -1)
         </code>
@@ -12034,7 +12015,7 @@ var_dump($redis-&gt;sInterCard(['set1', 'set2', 'set3']));
             </div>
                     <div class="method-item">
                     <h3 id="method_sInterStore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2312">at line 2312</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2236">at line 2236</a></div>
         <code>                    Redis|int|false
     <strong>sInterStore</strong>(array|string $key, string ...$other_keys)
         </code>
@@ -12109,7 +12090,7 @@ $redis-&gt;sInterStore('dst', 'src1', 'src'2', 'src3');
             </div>
                     <div class="method-item">
                     <h3 id="method_sMembers">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2344">at line 2344</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2268">at line 2268</a></div>
         <code>                    Redis|array|false
     <strong>sMembers</strong>(string $key)
         </code>
@@ -12180,7 +12161,7 @@ $redis-&gt;sMembers('tng-crew');</code></pre></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_sMisMember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2384">at line 2384</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2308">at line 2308</a></div>
         <code>                    Redis|array|false
     <strong>sMisMember</strong>(string $key, string $member, string ...$other_members)
         </code>
@@ -12277,7 +12258,7 @@ var_dump(array_combine($names, $members));
             </div>
                     <div class="method-item">
                     <h3 id="method_sMove">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2430">at line 2430</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2354">at line 2354</a></div>
         <code>                    Redis|bool
     <strong>sMove</strong>(string $src, string $dst, mixed $value)
         </code>
@@ -12370,7 +12351,7 @@ var_dump($redis-&gt;sMembers('evens'));
             </div>
                     <div class="method-item">
                     <h3 id="method_sPop">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2476">at line 2476</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2400">at line 2400</a></div>
         <code>                    Redis|string|array|false
     <strong>sPop</strong>(string $key, int $count = 0)
         </code>
@@ -12461,7 +12442,7 @@ var_dump($redis-&gt;sMembers('evens'));
             </div>
                     <div class="method-item">
                     <h3 id="method_sRandMember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2513">at line 2513</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2437">at line 2437</a></div>
         <code>                    Redis|string|array|false
     <strong>sRandMember</strong>(string $key, int $count = 0)
         </code>
@@ -12529,7 +12510,7 @@ $rng3 = $redis-&gt;sRandMember('elder-gods', -9999);
             </div>
                     <div class="method-item">
                     <h3 id="method_sUnion">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2553">at line 2553</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2477">at line 2477</a></div>
         <code>                    Redis|array|false
     <strong>sUnion</strong>(string $key, string ...$other_keys)
         </code>
@@ -12612,7 +12593,7 @@ var_dump($redis-&gt;sunion('set1', 'set2', 'set3'));
             </div>
                     <div class="method-item">
                     <h3 id="method_sUnionStore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2568">at line 2568</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2492">at line 2492</a></div>
         <code>                    Redis|int|false
     <strong>sUnionStore</strong>(string $dst, string $key, string ...$other_keys)
         </code>
@@ -12682,7 +12663,7 @@ false on failure.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_save">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2579">at line 2579</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2503">at line 2503</a></div>
         <code>                    Redis|bool
     <strong>save</strong>()
         </code>
@@ -12732,7 +12713,7 @@ completed.  For a nonblocking alternative, see Redis::bgsave().</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_scan">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2645">at line 2645</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2569">at line 2569</a></div>
         <code>                    array|false
     <strong>scan</strong>(int|null $iterator, string|null $pattern = null, int $count = 0, string $type = NULL)
         </code>
@@ -12850,7 +12831,7 @@ Redis::setOption</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_scard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2669">at line 2669</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2593">at line 2593</a></div>
         <code>                    Redis|int|false
     <strong>scard</strong>(string $key)
         </code>
@@ -12913,7 +12894,7 @@ $redis-&gt;scard('set');
             </div>
                     <div class="method-item">
                     <h3 id="method_script">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2703">at line 2703</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2627">at line 2627</a></div>
         <code>                    mixed
     <strong>script</strong>(string $command, mixed ...$args)
         </code>
@@ -12990,7 +12971,7 @@ var_dump($redis-&gt;script('exists', sha1($lua)));
             </div>
                     <div class="method-item">
                     <h3 id="method_select">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2731">at line 2731</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2655">at line 2655</a></div>
         <code>                    Redis|bool
     <strong>select</strong>(int $db)
         </code>
@@ -13048,7 +13029,7 @@ var_dump($redis-&gt;exists('this_is_db_1'));
             </div>
                     <div class="method-item">
                     <h3 id="method_set">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2774">at line 2774</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2698">at line 2698</a></div>
         <code>                    Redis|string|bool
     <strong>set</strong>(string $key, mixed $value, mixed $options = NULL)
         </code>
@@ -13142,7 +13123,7 @@ $redis-&gt;set('key', 'options_set', ['XX']);
             </div>
                     <div class="method-item">
                     <h3 id="method_setBit">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2800">at line 2800</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2724">at line 2724</a></div>
         <code>                    Redis|int|false
     <strong>setBit</strong>(string $key, int $idx, bool $value)
         </code>
@@ -13216,7 +13197,7 @@ $redis-&gt;get('foo');
             </div>
                     <div class="method-item">
                     <h3 id="method_setRange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2824">at line 2824</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2748">at line 2748</a></div>
         <code>                    Redis|int|false
     <strong>setRange</strong>(string $key, int $index, string $value)
         </code>
@@ -13287,7 +13268,7 @@ $redis-&gt;setRange('message', 6, 'Redis');
             </div>
                     <div class="method-item">
                     <h3 id="method_setOption">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2856">at line 2856</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2780">at line 2780</a></div>
         <code>                    bool
     <strong>setOption</strong>(int $option, mixed $value)
         </code>
@@ -13429,7 +13410,7 @@ Redis::__construct</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_setex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2877">at line 2877</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2801">at line 2801</a></div>
         <code>                    <a href="Redis.html">Redis</a>|bool
     <strong>setex</strong>(string $key, int $expire, mixed $value)
         </code>
@@ -13488,7 +13469,7 @@ $redis-&gt;set('some_key', 60, 'some_value');
             </div>
                     <div class="method-item">
                     <h3 id="method_setnx">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2905">at line 2905</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2829">at line 2829</a></div>
         <code>                    Redis|bool
     <strong>setnx</strong>(string $key, mixed $value)
         </code>
@@ -13558,7 +13539,7 @@ $redis-&gt;setnx('existing-key', 'new-value');
             </div>
                     <div class="method-item">
                     <h3 id="method_sismember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2932">at line 2932</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2856">at line 2856</a></div>
         <code>                    Redis|bool
     <strong>sismember</strong>(string $key, mixed $value)
         </code>
@@ -13619,7 +13600,7 @@ $redis-&gt;sismember('myset', 'not-in-set');
             </div>
                     <div class="method-item">
                     <h3 id="method_slaveof">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2948">at line 2948</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2872">at line 2872</a></div>
         <code>                    Redis|bool
     <strong>slaveof</strong>(string $host = NULL, int $port = 6379)
         <small><span class="label label-danger">deprecated</span></small></code>
@@ -13702,7 +13683,7 @@ Redis::slaveof</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_replicaof">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2977">at line 2977</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2901">at line 2901</a></div>
         <code>                    Redis|bool
     <strong>replicaof</strong>(string $host = NULL, int $port = 6379)
         </code>
@@ -13785,7 +13766,7 @@ Redis::slaveof</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_touch">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2991">at line 2991</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2915">at line 2915</a></div>
         <code>                    Redis|int|false
     <strong>touch</strong>(array|string $key_or_array, string ...$more_keys)
         </code>
@@ -13844,7 +13825,7 @@ had their last modified time reset</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_slowlog">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3022">at line 3022</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2946">at line 2946</a></div>
         <code>                    mixed
     <strong>slowlog</strong>(string $operation, int $length = 0)
         </code>
@@ -13916,7 +13897,7 @@ entries, which is configurable.</p>
             </div>
                     <div class="method-item">
                     <h3 id="method_sort">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3055">at line 3055</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2979">at line 2979</a></div>
         <code>                    mixed
     <strong>sort</strong>(string $key, array|null $options = null)
         </code>
@@ -13991,7 +13972,7 @@ $options = [
             </div>
                     <div class="method-item">
                     <h3 id="method_sort_ro">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3062">at line 3062</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2986">at line 2986</a></div>
         <code>                    mixed
     <strong>sort_ro</strong>(string $key, array|null $options = null)
         </code>
@@ -14050,7 +14031,7 @@ Redis::sort</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_sortAsc">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3067">at line 3067</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2991">at line 2991</a></div>
         <code>                    array
     <strong>sortAsc</strong>(string $key, string|null $pattern = null, mixed $get = null, int $offset = -1, int $count = -1, string|null $store = null)
         <small><span class="label label-danger">deprecated</span></small></code>
@@ -14125,7 +14106,7 @@ Redis::sort</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_sortAscAlpha">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3072">at line 3072</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L2996">at line 2996</a></div>
         <code>                    array
     <strong>sortAscAlpha</strong>(string $key, string|null $pattern = null, mixed $get = null, int $offset = -1, int $count = -1, string|null $store = null)
         <small><span class="label label-danger">deprecated</span></small></code>
@@ -14200,7 +14181,7 @@ Redis::sort</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_sortDesc">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3077">at line 3077</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3001">at line 3001</a></div>
         <code>                    array
     <strong>sortDesc</strong>(string $key, string|null $pattern = null, mixed $get = null, int $offset = -1, int $count = -1, string|null $store = null)
         <small><span class="label label-danger">deprecated</span></small></code>
@@ -14275,7 +14256,7 @@ Redis::sort</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_sortDescAlpha">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3082">at line 3082</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3006">at line 3006</a></div>
         <code>                    array
     <strong>sortDescAlpha</strong>(string $key, string|null $pattern = null, mixed $get = null, int $offset = -1, int $count = -1, string|null $store = null)
         <small><span class="label label-danger">deprecated</span></small></code>
@@ -14350,7 +14331,7 @@ Redis::sort</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_srem">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3110">at line 3110</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3034">at line 3034</a></div>
         <code>                    Redis|int|false
     <strong>srem</strong>(string $key, mixed $value, mixed ...$other_values)
         </code>
@@ -14425,7 +14406,7 @@ var_dump($redis-&gt;sRem('set1', 'foo', 'bar', 'not-in-the-set'));
             </div>
                     <div class="method-item">
                     <h3 id="method_sscan">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3173">at line 3173</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3097">at line 3097</a></div>
         <code>                    array|false
     <strong>sscan</strong>(string $key, int|null $iterator, string|null $pattern = null, int $count = 0)
         </code>
@@ -14551,7 +14532,7 @@ Redis::setOption</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_strlen">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3202">at line 3202</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3126">at line 3126</a></div>
         <code>                    Redis|int|false
     <strong>strlen</strong>(string $key)
         </code>
@@ -14610,7 +14591,7 @@ $redis-&gt;strlen('string');
             </div>
                     <div class="method-item">
                     <h3 id="method_subscribe">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3234">at line 3234</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3158">at line 3158</a></div>
         <code>                    bool
     <strong>subscribe</strong>(array $channels, callable $cb)
         </code>
@@ -14676,7 +14657,7 @@ echo "Subscribe loop ended\n";
             </div>
                     <div class="method-item">
                     <h3 id="method_swapdb">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3291">at line 3291</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3215">at line 3215</a></div>
         <code>                    Redis|bool
     <strong>swapdb</strong>(int $src, int $dst)
         </code>
@@ -14780,7 +14761,7 @@ Redis::del</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_time">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3312">at line 3312</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3236">at line 3236</a></div>
         <code>                    Redis|array
     <strong>time</strong>()
         </code>
@@ -14834,7 +14815,7 @@ print_r($redis-&gt;time());</code></pre></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_ttl">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3344">at line 3344</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3268">at line 3268</a></div>
         <code>                    Redis|int|false
     <strong>ttl</strong>(string $key)
         </code>
@@ -14897,7 +14878,7 @@ $redis-&gt;ttl('not_a_key');
             </div>
                     <div class="method-item">
                     <h3 id="method_type">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3364">at line 3364</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3288">at line 3288</a></div>
         <code>                    Redis|int|false
     <strong>type</strong>(string $key)
         </code>
@@ -14958,7 +14939,7 @@ Redis::REDIS_STREAM</code></pre></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_unlink">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3394">at line 3394</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3318">at line 3318</a></div>
         <code>                    Redis|int|false
     <strong>unlink</strong>(array|string $key, string ...$other_keys)
         </code>
@@ -15041,7 +15022,7 @@ Redis::del</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_unsubscribe">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3403">at line 3403</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3327">at line 3327</a></div>
         <code>                    Redis|array|bool
     <strong>unsubscribe</strong>(array $channels)
         </code>
@@ -15101,7 +15082,7 @@ Redis::subscribe</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_unwatch">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3414">at line 3414</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3338">at line 3338</a></div>
         <code>                    Redis|bool
     <strong>unwatch</strong>()
         </code>
@@ -15157,7 +15138,7 @@ Redis::watch</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_watch">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3419">at line 3419</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3343">at line 3343</a></div>
         <code>                    bool|<a href="Redis.html">Redis</a>
     <strong>watch</strong>(array|string $key, string ...$other_keys)
         </code>
@@ -15205,7 +15186,7 @@ Redis::watch</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_wait">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3433">at line 3433</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3357">at line 3357</a></div>
         <code>                    int|false
     <strong>wait</strong>(int $numreplicas, int $timeout)
         </code>
@@ -15264,7 +15245,7 @@ recieving them.</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_xack">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3435">at line 3435</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3359">at line 3359</a></div>
         <code>                    int|false
     <strong>xack</strong>(string $key, string $group, array $ids)
         </code>
@@ -15317,7 +15298,7 @@ recieving them.</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_xadd">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3485">at line 3485</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3409">at line 3409</a></div>
         <code>                    Redis|string|false
     <strong>xadd</strong>(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false, bool $nomkstream = false)
         </code>
@@ -15429,7 +15410,7 @@ $redis-&gt;xRange('ds9-season-1', '1-1', '1-2');
             </div>
                     <div class="method-item">
                     <h3 id="method_xautoclaim">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3487">at line 3487</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3411">at line 3411</a></div>
         <code>                    Redis|bool|array
     <strong>xautoclaim</strong>(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false)
         </code>
@@ -15502,7 +15483,7 @@ $redis-&gt;xRange('ds9-season-1', '1-1', '1-2');
             </div>
                     <div class="method-item">
                     <h3 id="method_xclaim">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3489">at line 3489</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3413">at line 3413</a></div>
         <code>                    Redis|bool|array
     <strong>xclaim</strong>(string $key, string $group, string $consumer, int $min_idle, array $ids, array $options)
         </code>
@@ -15570,7 +15551,7 @@ $redis-&gt;xRange('ds9-season-1', '1-1', '1-2');
             </div>
                     <div class="method-item">
                     <h3 id="method_xdel">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3535">at line 3535</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3459">at line 3459</a></div>
         <code>                    Redis|int|false
     <strong>xdel</strong>(string $key, array $ids)
         </code>
@@ -15650,7 +15631,7 @@ $redis-&gt;xRange('stream', '-', '+');
             </div>
                     <div class="method-item">
                     <h3 id="method_xgroup">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3573">at line 3573</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3497">at line 3497</a></div>
         <code>                    mixed
     <strong>xgroup</strong>(string $operation, string $key = null, string $group = null, string $id_or_consumer = null, bool $mkstream = false, int $entries_read = -2)
         </code>
@@ -15745,7 +15726,7 @@ cause Redis to also create the STREAM if it doesn't currently exist.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_xinfo">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3607">at line 3607</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3531">at line 3531</a></div>
         <code>                    mixed
     <strong>xinfo</strong>(string $operation, string|null $arg1 = null, string|null $arg2 = null, int $count = -1)
         </code>
@@ -15820,7 +15801,7 @@ $redis-&gt;xInfo('STREAM', 'stream');
             </div>
                     <div class="method-item">
                     <h3 id="method_xlen">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3632">at line 3632</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3556">at line 3556</a></div>
         <code>                    Redis|int|false
     <strong>xlen</strong>(string $key)
         </code>
@@ -15883,7 +15864,7 @@ $redis-&gt;xLen('stream');
             </div>
                     <div class="method-item">
                     <h3 id="method_xpending">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3651">at line 3651</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3575">at line 3575</a></div>
         <code>                    Redis|array|false
     <strong>xpending</strong>(string $key, string $group, string|null $start = null, string|null $end = null, int $count = -1, string|null $consumer = null)
         </code>
@@ -15968,7 +15949,7 @@ acknowledged with XACK.</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_xrange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3698">at line 3698</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3622">at line 3622</a></div>
         <code>                    Redis|array|bool
     <strong>xrange</strong>(string $key, string $start, string $end, int $count = -1)
         </code>
@@ -16066,7 +16047,7 @@ $redis-&gt;xRange('stream', '-', '+');
             </div>
                     <div class="method-item">
                     <h3 id="method_xread">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3752">at line 3752</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3676">at line 3676</a></div>
         <code>                    Redis|array|bool
     <strong>xread</strong>(array $streams, int $count = -1, int $block = -1)
         </code>
@@ -16169,7 +16150,7 @@ print_r($redis-&gt;xRead(['s03' =&gt; '3-2', 's04' =&gt; '4-1']));</code></pre><
             </div>
                     <div class="method-item">
                     <h3 id="method_xreadgroup">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3808">at line 3808</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3732">at line 3732</a></div>
         <code>                    Redis|array|bool
     <strong>xreadgroup</strong>(string $group, string $consumer, array $streams, int $count = 1, int $block = 1)
         </code>
@@ -16271,7 +16252,7 @@ var_dump($msgs);
             </div>
                     <div class="method-item">
                     <h3 id="method_xrevrange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3857">at line 3857</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3781">at line 3781</a></div>
         <code>                    Redis|array|bool
     <strong>xrevrange</strong>(string $key, string $end, string $start, int $count = -1)
         </code>
@@ -16375,7 +16356,7 @@ $redis-&gt;xRevRange('stream', '+', '-');
             </div>
                     <div class="method-item">
                     <h3 id="method_xtrim">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3927">at line 3927</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3851">at line 3851</a></div>
         <code>                    Redis|int|false
     <strong>xtrim</strong>(string $key, string $threshold, bool $approx = false, bool $minid = false, int $limit = -1)
         </code>
@@ -16502,7 +16483,7 @@ print_r($redis-&gt;xRange('stream', '-', '+'));
             </div>
                     <div class="method-item">
                     <h3 id="method_zAdd">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3990">at line 3990</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3914">at line 3914</a></div>
         <code>                    Redis|int|false
     <strong>zAdd</strong>(string $key, array|float $score_or_options, mixed ...$more_scores_and_mems)
         </code>
@@ -16608,7 +16589,7 @@ print_r($redis-&gt;zRange('zs', 0, -1, true));
             </div>
                     <div class="method-item">
                     <h3 id="method_zCard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4013">at line 4013</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3937">at line 3937</a></div>
         <code>                    Redis|int|false
     <strong>zCard</strong>(string $key)
         </code>
@@ -16670,7 +16651,7 @@ $redis-&gt;zCard('zs');
             </div>
                     <div class="method-item">
                     <h3 id="method_zCount">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4045">at line 4045</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3969">at line 3969</a></div>
         <code>                    Redis|int|false
     <strong>zCount</strong>(string $key, string $start, string $end)
         </code>
@@ -16733,7 +16714,7 @@ $redis-&gt;zCard('zs');
             </div>
                     <div class="method-item">
                     <h3 id="method_zIncrBy">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4072">at line 4072</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L3996">at line 3996</a></div>
         <code>                    Redis|float|false
     <strong>zIncrBy</strong>(string $key, float $value, mixed $member)
         </code>
@@ -16808,7 +16789,7 @@ print_r($redis-&gt;zIncrBy('zs', 2.0, 'eggplants'));
             </div>
                     <div class="method-item">
                     <h3 id="method_zLexCount">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4102">at line 4102</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4026">at line 4026</a></div>
         <code>                    Redis|int|false
     <strong>zLexCount</strong>(string $key, string $min, string $max)
         </code>
@@ -16884,7 +16865,7 @@ $redis-&gt;zRangeByLex('captains', '[A', '[S', 2, 2);
             </div>
                     <div class="method-item">
                     <h3 id="method_zMscore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4141">at line 4141</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4065">at line 4065</a></div>
         <code>                    Redis|array|false
     <strong>zMscore</strong>(string $key, mixed $member, mixed ...$other_members)
         </code>
@@ -16970,7 +16951,7 @@ $redis-&gt;zMScore('zs', 'one', 'not-a-member');
             </div>
                     <div class="method-item">
                     <h3 id="method_zPopMax">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4175">at line 4175</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4099">at line 4099</a></div>
         <code>                    Redis|array|false
     <strong>zPopMax</strong>(string $key, int $count = null)
         </code>
@@ -17047,7 +17028,7 @@ print_r($redis-&gt;zPopMax('zs', 2));
             </div>
                     <div class="method-item">
                     <h3 id="method_zPopMin">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4209">at line 4209</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4133">at line 4133</a></div>
         <code>                    Redis|array|false
     <strong>zPopMin</strong>(string $key, int $count = null)
         </code>
@@ -17124,7 +17105,7 @@ $redis-&gt;zPopMin('zs', 2);
             </div>
                     <div class="method-item">
                     <h3 id="method_zRange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4246">at line 4246</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4170">at line 4170</a></div>
         <code>                    Redis|array|false
     <strong>zRange</strong>(string $key, mixed $start, mixed $end, array|bool|null $options = null)
         </code>
@@ -17206,7 +17187,7 @@ $options = [
             </div>
                     <div class="method-item">
                     <h3 id="method_zRangeByLex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4286">at line 4286</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4210">at line 4210</a></div>
         <code>                    Redis|array|false
     <strong>zRangeByLex</strong>(string $key, string $min, string $max, int $offset = -1, int $count = -1)
         </code>
@@ -17301,7 +17282,7 @@ $redis-&gt;zRangeByLex('captains', '[A', '[S', 2, 2);
             </div>
                     <div class="method-item">
                     <h3 id="method_zRangeByScore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4352">at line 4352</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4276">at line 4276</a></div>
         <code>                    Redis|array|false
     <strong>zRangeByScore</strong>(string $key, string $start, string $end, array $options = [])
         </code>
@@ -17417,7 +17398,7 @@ $redis-&gt;zRangeByScore('zs', 20, 30, ['WITHSCORES' =&gt; true, 'LIMIT' =&gt; [
             </div>
                     <div class="method-item">
                     <h3 id="method_zrangestore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4372">at line 4372</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4296">at line 4296</a></div>
         <code>                    Redis|int|false
     <strong>zrangestore</strong>(string $dstkey, string $srckey, string $start, string $end, array|bool|null $options = NULL)
         </code>
@@ -17498,7 +17479,7 @@ it will store them in a destination key provided by the user</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_zRandMember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4399">at line 4399</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4323">at line 4323</a></div>
         <code>                    Redis|string|array
     <strong>zRandMember</strong>(string $key, array $options = null)
         </code>
@@ -17569,7 +17550,7 @@ $redis-&gt;zRandMember('zs', ['COUNT' =&gt; 2, 'WITHSCORES' =&gt; true]);
             </div>
                     <div class="method-item">
                     <h3 id="method_zRank">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4425">at line 4425</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4349">at line 4349</a></div>
         <code>                    Redis|int|false
     <strong>zRank</strong>(string $key, mixed $member)
         </code>
@@ -17627,7 +17608,7 @@ $redis-&gt;zRandMember('zs', ['COUNT' =&gt; 2, 'WITHSCORES' =&gt; true]);
             </div>
                     <div class="method-item">
                     <h3 id="method_zRem">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4460">at line 4460</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4384">at line 4384</a></div>
         <code>                    Redis|int|false
     <strong>zRem</strong>(mixed $key, mixed $member, mixed ...$other_members)
         </code>
@@ -17711,7 +17692,7 @@ $redis-&gt;zRange('zs', 0, -1);
             </div>
                     <div class="method-item">
                     <h3 id="method_zRemRangeByLex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4507">at line 4507</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4431">at line 4431</a></div>
         <code>                    Redis|int|false
     <strong>zRemRangeByLex</strong>(string $key, string $min, string $max)
         </code>
@@ -17809,7 +17790,7 @@ print_r($redis-&gt;zRange('zs', 0, -1));
             </div>
                     <div class="method-item">
                     <h3 id="method_zRemRangeByRank">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4538">at line 4538</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4462">at line 4462</a></div>
         <code>                    Redis|int|false
     <strong>zRemRangeByRank</strong>(string $key, int $start, int $end)
         </code>
@@ -17887,7 +17868,7 @@ $redis-&gt;zRange('zs', 0, -1);
             </div>
                     <div class="method-item">
                     <h3 id="method_zRemRangeByScore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4571">at line 4571</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4495">at line 4495</a></div>
         <code>                    Redis|int|false
     <strong>zRemRangeByScore</strong>(string $key, string $start, string $end)
         </code>
@@ -17967,7 +17948,7 @@ $redis-&gt;zRange('zs', 0, -1);
             </div>
                     <div class="method-item">
                     <h3 id="method_zRevRange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4613">at line 4613</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4537">at line 4537</a></div>
         <code>                    Redis|array|false
     <strong>zRevRange</strong>(string $key, int $start, int $end, mixed $scores = null)
         </code>
@@ -18048,7 +18029,7 @@ $redis-&gt;zRevRange('zs', 0, -1, ['withscores' =&gt; true]);
             </div>
                     <div class="method-item">
                     <h3 id="method_zRevRangeByLex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4654">at line 4654</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4578">at line 4578</a></div>
         <code>                    Redis|array|false
     <strong>zRevRangeByLex</strong>(string $key, string $max, string $min, int $offset = -1, int $count = -1)
         </code>
@@ -18149,7 +18130,7 @@ $redis-&gt;zRevRangeByLex('captains', '[Q', '[J', 1, 2);
             </div>
                     <div class="method-item">
                     <h3 id="method_zRevRangeByScore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4713">at line 4713</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4637">at line 4637</a></div>
         <code>                    Redis|array|false
     <strong>zRevRangeByScore</strong>(string $key, string $max, string $min, array|bool $options = [])
         </code>
@@ -18245,7 +18226,7 @@ $redis-&gt;zRevRangeByScore('oldest-people', '117.5', '-inf', ['LIMIT' =&gt; [0,
             </div>
                     <div class="method-item">
                     <h3 id="method_zRevRank">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4742">at line 4742</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4666">at line 4666</a></div>
         <code>                    Redis|int|false
     <strong>zRevRank</strong>(string $key, mixed $member)
         </code>
@@ -18317,7 +18298,7 @@ $redis-&gt;zrevrank('ds9-characters', 'Garak');
             </div>
                     <div class="method-item">
                     <h3 id="method_zScore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4771">at line 4771</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4695">at line 4695</a></div>
         <code>                    Redis|float|false
     <strong>zScore</strong>(string $key, mixed $member)
         </code>
@@ -18389,7 +18370,7 @@ foreach ($redis-&gt;zRange('telescopes', 0, -1) as $name) {
             </div>
                     <div class="method-item">
                     <h3 id="method_zdiff">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4805">at line 4805</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4729">at line 4729</a></div>
         <code>                    Redis|array|false
     <strong>zdiff</strong>(array $keys, array $options = null)
         </code>
@@ -18465,7 +18446,7 @@ print_r($redis-&gt;zDiff(['primes', 'evens', 'mod3']));
             </div>
                     <div class="method-item">
                     <h3 id="method_zdiffstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4822">at line 4822</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4746">at line 4746</a></div>
         <code>                    Redis|int|false
     <strong>zdiffstore</strong>(string $dst, array $keys)
         </code>
@@ -18532,7 +18513,7 @@ Redis::zdiff</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_zinter">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4869">at line 4869</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4793">at line 4793</a></div>
         <code>                    Redis|array|false
     <strong>zinter</strong>(array $keys, array|null $weights = null, array|null $options = null)
         </code>
@@ -18625,7 +18606,7 @@ $redis-&gt;zInter(['TNG', 'DS9'], NULL, ['withscores' =&gt; true, 'aggregate' =&
             </div>
                     <div class="method-item">
                     <h3 id="method_zintercard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4900">at line 4900</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4824">at line 4824</a></div>
         <code>                    Redis|int|false
     <strong>zintercard</strong>(array $keys, int $limit = -1)
         </code>
@@ -18710,7 +18691,7 @@ Redis::zinter</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_zinterstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4946">at line 4946</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4870">at line 4870</a></div>
         <code>                    Redis|int|false
     <strong>zinterstore</strong>(string $dst, array $keys, array|null $weights = null, string|null $aggregate = null)
         </code>
@@ -18813,7 +18794,7 @@ print_r($redis-&gt;zRange('fruit-max', 0, -1, true));
             </div>
                     <div class="method-item">
                     <h3 id="method_zscan">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4970">at line 4970</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4894">at line 4894</a></div>
         <code>                    Redis|array|false
     <strong>zscan</strong>(string $key, int|null $iterator, string|null $pattern = null, int $count = 0)
         </code>
@@ -18900,7 +18881,7 @@ Redis::scan</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_zunion">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5034">at line 5034</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L4958">at line 4958</a></div>
         <code>                    Redis|array|false
     <strong>zunion</strong>(array $keys, array|null $weights = null, array|null $options = null)
         </code>
@@ -18999,7 +18980,7 @@ $redis-&gt;zUnion(['store1', 'store3'], [2, .5], ['withscores' =&gt; true, 'aggr
             </div>
                     <div class="method-item">
                     <h3 id="method_zunionstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5076">at line 5076</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/develop/redis.stub.php#L5000">at line 5000</a></div>
         <code>                    Redis|int|false
     <strong>zunionstore</strong>(string $dst, array $keys, array|null $weights = NULL, string|null $aggregate = NULL)
         </code>
