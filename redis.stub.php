@@ -401,7 +401,7 @@ class Redis {
 
     public function close(): bool;
 
-    public function command(string $opt = null, string|array $arg): mixed;
+    public function command(string $opt = null, mixed ...$args): mixed;
 
     /**
      *  Execute the Redis CONFIG command in a variety of ways.

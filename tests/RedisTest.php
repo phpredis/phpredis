@@ -7515,6 +7515,26 @@ class Redis_Test extends TestSuite
         $this->assertEquals('bar', $this->redis->get('key2'));
     }
 
+    public function testCommand()
+    {
+        $commands = $this->redis->command();
+        $this->assertTrue(is_array($commands));
+        $this->assertEquals(count($commands), $this->redis->command('count'));
+        $infos = $this->redis->command('info');
+        $this->assertTrue(is_array($infos));
+        $this->assertEquals(count($infos), count($commands));
+
+        if (version_compare($this->version, '7.0') >= 0) {
+            $docs = $this->redis->command('docs');
+            $this->assertTrue(is_array($docs));
+            $this->assertEquals(count($docs), 2 * count($commands));
+
+            $list = $this->redis->command('list', 'filterby', 'pattern', 'lol*');
+            $this->assertTrue(is_array($list));
+            $this->assertEquals($list, ['lolwut']);
+        }
+    }
+
     /* Make sure we handle a bad option value gracefully */
     public function testBadOptionValue() {
         $this->assertFalse(@$this->redis->setOption(pow(2, 32), false));
