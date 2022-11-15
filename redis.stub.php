@@ -483,15 +483,6 @@ class Redis {
     /**
      * Decrement a Redis integer by 1 or a provided value.
      *
-     * <code>
-     * $redis = new Redis(['host' => 'localhost']);
-     *
-     * $redis->set('counter', 3);
-     *
-     * var_dump($redis->decr('counter'));
-     * var_dump($redis->decr('counter', 2));
-     * </code>
-     *
      * @param string $key The key to decrement
      * @param int    $by  How much to decrement the key.  Note that if this value is
      *                    not sent or is set to `1`, PhpRedis will actually invoke
@@ -503,19 +494,13 @@ class Redis {
      * @see https://redis.io/commands/decr
      * @see https://redis.io/commands/decrby
      *
+     * @example $redis->decr('counter');
+     * @example $redis->decr('counter', 2);
      */
     public function decr(string $key, int $by = 1): Redis|int|false;
 
     /**
      * Decrement a redis integer by a value
-     *
-     * <code>
-     * $redis = new Redis(['host' => 'localhost');
-     *
-     * $redis->set('counter', 3);
-     * var_dump($redis->decrby('counter', 1));
-     * var_dump($redis->decrby('counter', 2));
-     * </code>
      *
      * @param string $key   The integer key to decrement.
      * @param int    $value How much to decrement the key.
@@ -524,6 +509,8 @@ class Redis {
      *
      * @see https://redis.io/commands/decrby
      *
+     * @example $redis->decrby('counter', 1);
+     * @example $redis->decrby('counter', 2);
      */
     public function decrBy(string $key, int $value): Redis|int|false;
 
@@ -534,17 +521,6 @@ class Redis {
      * of keys to delete, and the second is to pass N arguments, all names of keys.  See
      * below for an example of both strategies.
      *
-     * <code>
-     * $redis = new Redis(['host' => 'localhost']);
-     *
-     * for ($i = 0; $i < 5; $i++) {
-     *     $redis->set("key:$i", "val:$i");
-     * }
-     *
-     * var_dump($redis->del('key:0', 'key:1'));
-     * var_dump($redis->del(['key:2', 'key:3', 'key:4']));
-     * </code>
-     *
      * @param array|string $key_or_keys Either an array with one or more key names or a string with
      *                                  the name of a key.
      * @param string       $other_keys  One or more additional keys passed in a variadic fashion.
@@ -553,6 +529,8 @@ class Redis {
      *
      * @see https://redis.io/commands/del
      *
+     * @example $redis->del('key:0', 'key:1');
+     * @example $redis->del(['key:2', 'key:3', 'key:4']);
      */
     public function del(array|string $key, string ...$other_keys): Redis|int|false;
 
@@ -570,36 +548,20 @@ class Redis {
      *
      * $redis->multi()->set('foo', 'bar')->get('foo');
      *
-     * // Redis::MULTI
-     * $redis->getMode();
-     *
-     * // Discard the in-progress transaction
-     * $redis->discard();
-     *
-     * // Redis::ATOMIC
-     * $redis->getMode();
      * </code>
      *
      * @return Redis|bool  True if we could discard the transaction.
      *
+     * @example
+     * $redis->getMode();
+     * $redis->set('foo', 'bar');
+     * $redis->discard();
+     * $redis->getMode();
      */
     public function discard(): Redis|bool;
 
     /**
      * Dump Redis' internal binary representation of a key.
-     *
-     * <code>
-     * $redis = new Redis(['host' => 'localhost']);
-     *
-     * $redis->del('zset');
-     *
-     * $redis->zadd('zset', 0, 'zero', 1, 'one', 2, 'two');
-     *
-     * // Retrieve the binary representation of the zset
-     * $binary = $redis->dump('zset');
-     *
-     * // Retore it to a different name
-     * $redis->restore('new-zset', 0, $binary);
      *
      * $redis->zRange('new-zset', 0, -1, true);
      * </code>
@@ -610,23 +572,23 @@ class Redis {
      *
      * @see https://redis.io/commands/dump
      *
+     * @example
+     * $redis->zadd('zset', 0, 'zero', 1, 'one', 2, 'two');
+     * $binary = $redis->dump('zset');
+     * $redis->restore('new-zset', 0, $binary);
      */
     public function dump(string $key): Redis|string;
 
     /**
      * Have Redis repeat back an arbitrary string to the client.
      *
-     * <code>
-     * $redis = new Redis(['host' => 'localhost']);
-     *
-     * var_dump($redis->echo('Hello, World'));
-     * </code>
-     *
      * @param string $str The string to echo
      *
      * @return Redis|string|false The string sent to Redis or false on failure.
      *
      * @see https://redis.io/commands/echo
+     *
+     * @example $redis->echo('Hello, World');
      */
     public function echo(string $str): Redis|string|false;
 
@@ -650,7 +612,7 @@ class Redis {
      * This is simply the read-only variant of eval, meaning the underlying script
      * may not modify data in redis.
      *
-     * @see Redis::eval()
+     * @see Redis::eval_ro()
      */
     public function eval_ro(string $script_sha, array $args = [], int $num_keys = 0): mixed;
 
@@ -684,19 +646,6 @@ class Redis {
     /**
      * Execute either a MULTI or PIPELINE block and return the array of replies.
      *
-     * <code>
-     * $redis = new Redis(['host' => 'localhost']);
-     *
-     * $res = $redis->multi()
-     *              ->set('foo', 'bar')
-     *              ->get('foo')
-     *              ->del('list')
-     *              ->rpush('list', 'one', 'two', 'three')
-     *              ->exec();
-     *
-     * var_dump($res);
-     * </code>
-     *
      * @return Redis|array|false The array of pipeline'd or multi replies or false on failure.
      *
      * @see https://redis.io/commands/exec
@@ -704,29 +653,18 @@ class Redis {
      * @see Redis::pipeline()
      * @see Redis::multi()
      *
+     * @example
+     * $res = $redis->multi()
+     *              ->set('foo', 'bar')
+     *              ->get('foo')
+     *              ->del('list')
+     *              ->rpush('list', 'one', 'two', 'three')
+     *              ->exec();
      */
     public function exec(): Redis|array|false;
 
     /**
      * Test if one or more keys exist.
-     *
-     * <code>
-     * $redis = new Redis(['host' => 'localhost']);
-     *
-     * $redis->multi()
-     *       ->mset(['k1' => 'v1', 'k2' => 'v2', 'k3' => 'v3', 'k4' => 'v4'])
-     *       ->exec();
-     *
-     * // Using a single array of keys
-     * var_dump($redis->exists(['k1', 'k2', 'k3']));
-     *
-     * // Calling via variadic arguments
-     * var_dump($redis->exists('k4', 'k5', 'notakey'));
-     *
-     * // --- OUTPUT ---
-     * // int(3)
-     * // int(1)
-     * </code>
      *
      * @param mixed $key         Either an array of keys or a string key
      * @param mixed $other_keys  If the previous argument was a string, you may send any number of
@@ -735,6 +673,9 @@ class Redis {
      * @return Redis|int|bool    The number of keys that do exist and false on failure
      *
      * @see https://redis.io/commands/exists
+     *
+     * @example $redis->exists(['k1', 'k2', 'k3']);
+     * @example $redis->exists('k4', 'k5', 'notakey');
      */
     public function exists(mixed $key, mixed ...$other_keys): Redis|int|bool;
 
@@ -790,17 +731,6 @@ class Redis {
     /**
      * Get the expiration of a given key as a unix timestamp
      *
-     * <code>
-     * $redis = new Redis(['host' => 'localhost']);
-     *
-     * $redis->set('expiry-key', 'this will last a very long time');
-     *
-     * // Expire this key at 2222/02/22 02:22:22 GMT
-     * $redis->expireAt('expiry-key', 7955144542);
-     *
-     * var_dump($redis->expiretime('expiry-key'));
-     * </code>
-     *
      * @param string $key      The key to check.
      *
      * @return Redis|int|false The timestamp when the key expires, or -1 if the key has no expiry
@@ -808,6 +738,9 @@ class Redis {
      *
      * @see https://redis.io/commands/expiretime
      *
+     * @example
+     * $redis->setEx('mykey', 60, 'myval');
+     * $redis->expiretime('mykey');
      */
     public function expiretime(string $key): Redis|int|false;
 
@@ -840,30 +773,202 @@ class Redis {
      * @param  bool  $sync Whether to perform the task in a blocking or non-blocking way.
      * @return bool
      *
-     * @see https://redis.io/commands/flush
+     * @see https://redis.io/commands/flushdb
      */
     public function flushDB(?bool $sync = null): Redis|bool;
 
+    /**
+     * Add one or more members to a geospacial sorted set
+     *
+     * @param string $key The sorted set to add data to.
+     * @param float  $lng The longitude of the first member
+     * @param float  $lat The lattitude of the first member.
+     * @param member $other_triples_and_options You can continue to pass longitude, lattitude, and member
+     *               arguments to add as many members as you wish.  Optionally, the final argument may be
+     *               a string with options for the command @see Redis documentation for the options.
+     *
+     * @return Redis|int|false The number of added elements is returned.  If the 'CH' option is specified,
+     *                         the return value is the number of members *changed*.
+     *
+     * @example $redis->geoAdd('cities', -121.8374, 39.7284, 'Chico', -122.03218, 37.322, 'Cupertino');
+     * @example $redis->geoadd('cities', -121.837478, 39.728494, 'Chico', ['XX', 'CH']);
+     *
+     * @see https://redis.io/commands/geoadd
+     */
+
     public function geoadd(string $key, float $lng, float $lat, string $member, mixed ...$other_triples_and_options): Redis|int|false;
 
+    /**
+     * Get the distance between two members of a geospacially encoded sorted set.
+     *
+     * @param string $key  The Sorted set to query.
+     * @param string $src  The first member.
+     * @param string $dst  The second member.
+     * @param string $unit Which unit to use when computing distance, defaulting to meters.
+     *                     <code>
+     *                     M  - meters
+     *                     KM - kilometers
+     *                     FT - feet
+     *                     MI - miles
+     *                     </code>
+     *
+     * @return Redis|float|false The calculated distance in whichever units were specified or false
+     *                           if one or both members did not exist.
+     *
+     * @example $redis->geodist('cities', 'Chico', 'Cupertino', 'mi');
+     *
+     * @see https://redis.io/commands/geodist
+     */
     public function geodist(string $key, string $src, string $dst, ?string $unit = null): Redis|float|false;
 
+    /**
+     * Retrieve one or more GeoHash encoded strings for members of the set.
+     *
+     * @param string $key           The key to query
+     * @param string $member        The first member to request
+     * @param string $other_members One or more additional members to request.
+     *
+     * @return Redis|array|false    An array of GeoHash encoded values.
+     *
+     * @see https://redis.io/commands/geohash
+     * @see https://en.wikipedia.org/wiki/Geohash
+     *
+     * @example $redis->geohash('cities', 'Chico', 'Cupertino');
+     */
     public function geohash(string $key, string $member, string ...$other_members): Redis|array|false;
 
+    /**
+     * Return the longitude and lattitude for one or more members of a geospacially encoded sorted set.
+     *
+     * @param string $key           The set to query.
+     * @param string $member        The first member to query.
+     * @param string $other_members One or more members to query.
+     *
+     * @return An array of longitude and lattitude pairs.
+     *
+     * @see https://redis.io/commands/geopos
+     *
+     * @example $redis->geopos('cities', 'Seattle', 'New York');
+     */
     public function geopos(string $key, string $member, string ...$other_members): Redis|array|false;
 
+    /**
+     * Retrieve members of a geospacially sorted set that are within a certain radius of a location.
+     *
+     * @param string $key     The set to query
+     * @param float  $lng     The longitude of the location to query.
+     * @param float  $lat     The latitude of the location to query.
+     * @param float  $radius  The radius of the area to include.
+     * @param string $unit    The unit of the provided radius (defaults to 'meters).
+     *                        See {@link Redis::geodist} for possible units.
+     * @param array  $options An array of options that modifies how the command behaves.
+     *                        <code>
+     *                        $options = [
+     *                            'WITHCOORD',     // Return members and their coordinates.
+     *                            'WITHDIST',      // Return members and their distances from the center.
+     *                            'WITHHASH',      // Return members GeoHash string.
+     *                            'ASC' | 'DESC',  // The sort order of returned members
+     *
+     *                            // Limit to N returned members.  Optionally a two element array may be
+     *                            // passed as the `LIMIT` argument, and the `ANY` argument.
+     *                            'COUNT' => [<int>], or [<int>, <bool>]
+     *
+     *                            // Instead of returning members, store them in the specified key.
+     *                            'STORE' => <string>
+     *
+     *                            // Store the distances in the specified key
+     *                            'STOREDIST' => <string>
+     *                        ];
+     *                        </code>
+     *
+     * @return mixed This command can return various things, depending on the options passed.
+     *
+     * @see https://redis.io/commands/georadius
+     *
+     * @example $redis->georadius('cities', 47.608013, -122.335167, 1000, 'km');
+     */
     public function georadius(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): mixed;
 
+    /**
+     * A readonly variant of `GEORADIUS` that may be executed on replicas.
+     *
+     * @see Redis::georadius
+     */
     public function georadius_ro(string $key, float $lng, float $lat, float $radius, string $unit, array $options = []): mixed;
 
+    /**
+     * Similar to `GEORADIUS` except it uses a member as the center of the query.
+     *
+     * @param string $key     The key to query.
+     * @param string $member  The member to treat as the center of the query.
+     * @param float  $radius  The radius from the member to include.
+     * @param string $unit    The unit of the provided radius
+     *                        See {@link Redis::geodist} for possible units.
+     * @param array  $options An array with various options to modify the command's behavior.
+     *                        See {@link Redis::georadius} for options.
+     *
+     * @return mixed This command can return various things depending on options.
+     *
+     * @example $redis->georadiusbymember('cities', 'Seattle', 200, 'mi');
+     */
     public function georadiusbymember(string $key, string $member, float $radius, string $unit, array $options = []): mixed;
 
+    /**
+     * This is the read-only variant of `GEORADIUSBYMEMBER` that can be run on replicas.
+     */
     public function georadiusbymember_ro(string $key, string $member, float $radius, string $unit, array $options = []): mixed;
 
+    /**
+     * Search a geospacial sorted set for members in various ways.
+     *
+     * @param string          $key      The set to query.
+     * @param array|string    $position Either a two element array with longitude and lattitude, or
+     *                                  a string representing a member of the set.
+     * @param array|int|float $shape    Either a number representine the radius of a circle to search, or
+     *                                  a two element array representing the width and height of a box
+     *                                  to search.
+     * @param string          $unit     The unit of our shape.  See {@link Redis::geodist} for possible units.
+     * @param array           $options  @see {@link Redis::georadius} for options.  Note that the `STORE`
+     *                                  options are not allowed for this command.
+     */
     public function geosearch(string $key, array|string $position, array|int|float $shape, string $unit, array $options = []): array;
 
+    /**
+     * Search a geospacial sorted set for members within a given area or range, storing the results into
+     * a new set.
+     *
+     * @param string $dst The destination where results will be stored.
+     * @param string $src The key to query.
+     * @param array|string    $position Either a two element array with longitude and lattitude, or
+     *                                  a string representing a member of the set.
+     * @param array|int|float $shape    Either a number representine the radius of a circle to search, or
+     *                                  a two element array representing the width and height of a box
+     *                                  to search.
+     * @param string          $unit     The unit of our shape.  See {@link Redis::geodist} for possible units.
+     * @param array           $options
+     *                        <code>
+     *                        $options = [
+     *                            'ASC' | 'DESC',  // The sort order of returned members
+     *                            'WITHDIST'       // Also store distances.
+     *
+     *                            // Limit to N returned members.  Optionally a two element array may be
+     *                            // passed as the `LIMIT` argument, and the `ANY` argument.
+     *                            'COUNT' => [<int>], or [<int>, <bool>]
+     *                        ];
+     *                        </code>
+     */
     public function geosearchstore(string $dst, string $src, array|string $position, array|int|float $shape, string $unit, array $options = []): Redis|array|int|false;
 
+    /**
+     * Retrieve a string keys value.
+     *
+     * @param  string  $key The key to query
+     * @return mixed   The keys value or false if it did not exist.
+     *
+     * @see https://redis.io/commands/get
+     *
+     * @example $redis->get('foo');
+     */
     public function get(string $key): mixed;
 
     /**

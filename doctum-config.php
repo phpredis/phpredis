@@ -13,8 +13,8 @@ $iterator = Finder::create()
     ->name('*.stub.php')
     ->in($root);
 
-$versions = GitVersionCollection::create($root)
-    ->add('develop', 'develop');
+//$versions = GitVersionCollection::create($root)
+//    ->add('develop', 'develop');
 
 return new Doctum($iterator, [
     'title' => 'PhpRedis API',
@@ -23,6 +23,6 @@ return new Doctum($iterator, [
     'build_dir' => "{$root}/docs",
     'cache_dir' => "{$root}/docs/.cache",
     'base_url' => 'https://phpredis.github.io/',
-    'versions' => $versions,
+//    'versions' => $versions,
     'remote_repository' => new GitHubRemoteRepository('phpredis/phpredis', $root),
 ]);
