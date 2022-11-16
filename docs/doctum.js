@@ -1,5 +1,5 @@
 var Doctum = {
-    treeJson: {"tree":{"l":0,"n":"","p":"","c":[{"l":1,"n":"[Global Namespace]","p":"[Global_Namespace]","c":[{"l":2,"n":"RedisArray","p":"RedisArray"},{"l":2,"n":"RedisCluster","p":"RedisCluster"},{"l":2,"n":"RedisClusterException","p":"RedisClusterException"},{"l":2,"n":"RedisSentinel","p":"RedisSentinel"}]}]},"treeOpenLevel":2},
+    treeJson: {"tree":{"l":0,"n":"","p":"","c":[{"l":1,"n":"[Global Namespace]","p":"[Global_Namespace]","c":[{"l":2,"n":"Redis","p":"Redis"},{"l":2,"n":"RedisArray","p":"RedisArray"},{"l":2,"n":"RedisCluster","p":"RedisCluster"},{"l":2,"n":"RedisClusterException","p":"RedisClusterException"},{"l":2,"n":"RedisException","p":"RedisException"},{"l":2,"n":"RedisSentinel","p":"RedisSentinel"}]}]},"treeOpenLevel":2},
     /** @var boolean */
     treeLoaded: false,
     /** @var boolean */
