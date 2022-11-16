@@ -2333,7 +2333,9 @@ cluster_xclaim_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
 
     array_init(&z_msg);
 
-    if (redis_read_xclaim_response(c->cmd_sock, c->reply_len, &z_msg) < 0) {
+    ZEND_ASSERT(ctx == NULL || ctx == PHPREDIS_CTX_PTR);
+
+    if (redis_read_xclaim_reply(c->cmd_sock, c->reply_len, ctx == PHPREDIS_CTX_PTR, &z_msg) < 0) {
         zval_dtor(&z_msg);
         CLUSTER_RETURN_FALSE(c);
     }

@@ -2904,6 +2904,10 @@ PHP_METHOD(RedisCluster, xclaim) {
     CLUSTER_PROCESS_CMD(xclaim, cluster_xclaim_resp, 0);
 }
 
+PHP_METHOD(RedisCluster, xautoclaim) {
+    CLUSTER_PROCESS_CMD(xautoclaim, cluster_xclaim_resp, 0);
+}
+
 PHP_METHOD(RedisCluster, xdel) {
     CLUSTER_PROCESS_KW_CMD("XDEL", redis_key_str_arr_cmd, cluster_long_resp, 0);
 }

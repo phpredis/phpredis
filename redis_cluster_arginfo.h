@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 1783d14c476f95598062edb44dab7284b9b2680d */
+ * Stub hash: 2f2132e45b1d60011f8ef9298cb35b7ba2b247d5 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -773,9 +773,20 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_xgroup, 0, 1, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, operation, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, key, IS_STRING, 0, "null")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg1, IS_STRING, 0, "null")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg2, IS_STRING, 0, "null")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg3, _IS_BOOL, 0, "false")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, group, IS_STRING, 0, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, id_or_consumer, IS_STRING, 0, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, mkstream, _IS_BOOL, 0, "false")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, entries_read, IS_LONG, 0, "-2")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_xautoclaim, 0, 5, Redis, MAY_BE_BOOL|MAY_BE_ARRAY)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, group, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, consumer, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, min_idle, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, start, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "-1")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, justid, _IS_BOOL, 0, "false")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_xinfo, 0, 1, IS_MIXED, 0)
@@ -1122,6 +1133,7 @@ ZEND_METHOD(RedisCluster, xadd);
 ZEND_METHOD(RedisCluster, xclaim);
 ZEND_METHOD(RedisCluster, xdel);
 ZEND_METHOD(RedisCluster, xgroup);
+ZEND_METHOD(RedisCluster, xautoclaim);
 ZEND_METHOD(RedisCluster, xinfo);
 ZEND_METHOD(RedisCluster, xlen);
 ZEND_METHOD(RedisCluster, xpending);
@@ -1331,6 +1343,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, xclaim, arginfo_class_RedisCluster_xclaim, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, xdel, arginfo_class_RedisCluster_xdel, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, xgroup, arginfo_class_RedisCluster_xgroup, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, xautoclaim, arginfo_class_RedisCluster_xautoclaim, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, xinfo, arginfo_class_RedisCluster_xinfo, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, xlen, arginfo_class_RedisCluster_xlen, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, xpending, arginfo_class_RedisCluster_xpending, ZEND_ACC_PUBLIC)

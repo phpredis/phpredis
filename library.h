@@ -104,8 +104,12 @@ PHP_REDIS_API int redis_xrange_reply(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API int redis_xread_reply(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
+
 PHP_REDIS_API int redis_xclaim_reply(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
+PHP_REDIS_API int redis_read_xclaim_reply(
+    RedisSock *redis_sock, int count, int is_xautoclaim, zval *rv);
+
 PHP_REDIS_API int redis_xinfo_reply(INTERNAL_FUNCTION_PARAMETERS,
     RedisSock *redis_sock, zval *z_tab, void *ctx);
 
@@ -148,8 +152,6 @@ PHP_REDIS_API int
 redis_read_stream_messages(RedisSock *redis_sock, int count, zval *z_ret);
 PHP_REDIS_API int
 redis_read_stream_messages_multi(RedisSock *redis_sock, int count, zval *z_ret);
-PHP_REDIS_API int
-redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv);
 PHP_REDIS_API int
 redis_read_xinfo_response(RedisSock *redis_sock, zval *z_ret, int elements);
 
