@@ -6821,6 +6821,7 @@ class Redis_Test extends TestSuite
 
         for ($n = count($ids); $n >= 0; $n--) {
             $xp = $this->redis->xPending('s', 'group');
+
             $this->assertEquals($xp[0], count($ids));
 
             /* Verify we're seeing the IDs themselves */
@@ -6973,6 +6974,36 @@ class Redis_Test extends TestSuite
                 }
             }
         }
+    }
+
+    /* Make sure our XAUTOCLAIM handler works */
+    public function testXAutoClaim() {
+        $this->redis->del('ships');
+        $this->redis->xGroup('CREATE', 'ships', 'combatants', '0-0', true);
+
+        // Test an empty xautoclaim reply
+        $res = $this->redis->xAutoClaim('ships', 'combatants', 'Sisko', 0, '0-0');
+        $this->assertEquals(['0-0', [], []], $res);
+
+        $this->redis->xAdd('ships', '1424-74205', ['name' => 'Defiant']);
+
+        // Consume the ['name' => 'Defiant'] message
+        $this->redis->xReadGroup('combatants', "Jem'Hadar", ['ships' => '>'], 1);
+
+        // The "Jem'Hadar" consumer has the message presently
+        $pending = $this->redis->xPending('ships', 'combatants');
+        $this->assertTrue($pending && isset($pending[3][0][0]) && $pending[3][0][0] == "Jem'Hadar");
+
+        // Asssume control of the pending message with a different consumer.
+        $res = $this->redis->xAutoClaim('ships', 'combatants', 'Sisko', 0, '0-0');
+
+        $this->assertTrue($res && count($res) == 3 && $res[0] == '0-0' &&
+                          isset($res[1]['1424-74205']['name']) &&
+                                $res[1]['1424-74205']['name'] == 'Defiant');
+
+        // Now the 'Sisko' consumer should own the message
+        $pending = $this->redis->xPending('ships', 'combatants');
+        $this->assertTrue(isset($pending[3][0][0]) && $pending[3][0][0] == 'Sisko');
     }
 
     public function testXInfo()

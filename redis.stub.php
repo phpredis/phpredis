@@ -2919,6 +2919,25 @@ class Redis {
      *     Redis::REDIS_ZSET
      *     Redis::REDIS_HASH
      *     Redis::REDIS_STREAM
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * // NOTE:  Never use 'KEYS' in production!
+     * $keys = $redis->keys('*');
+     *
+     * $redis->pipeline();
+     * foreach ($keys as $key) {
+     *     $redis->type($key);
+     * }
+     *
+     * $ktypes = array_combine($keys, $redis->exec());
+     *
+     * // Print each key with its corresponding type
+     * print_r($ktypes);
+     * ?>
+     * </code>
      */
     public function type(string $key): Redis|int|false;
 
@@ -2949,6 +2968,22 @@ class Redis {
      * @see https://redis.io/commands/unsubscribe
      * @see Redis::subscribe()
      *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->subscribe(['channel-1', 'channel-2'], function ($redis, $channel, $message) {
+     *     if ($message == 'quit') {
+     *         echo "$channel => 'quit' detected, unsubscribing!\n";
+     *         $redis->unsubscribe([$channel]);
+     *     } else {
+     *         echo "$channel => $message\n";
+     *     }
+     * });
+     *
+     * echo "We've unsubscribed from both channels, exiting\n";
+     * ?>
+     * </code>
      */
     public function unsubscribe(array $channels): Redis|array|bool;
 
@@ -2964,9 +2999,48 @@ class Redis {
     public function unwatch(): Redis|bool;
 
     /**
-     * @return bool|Redis
+     * Watch one or more keys for conditional execution of a transaction.
+     *
+     * @see https://redis.io/commands/watch
+     * @see https://redis.io/commands/unwatch
+     *
+     * @param array|string $key_or_keys  Either an array with one or more key names, or a string key name
+     * @param string       $other_keys   If the first argument was passed as a string, any number of additional
+     *                                   string key names may be passed variadically.
+     *
+     * @return Redis|bool
+     *
+     * <code>
+     * <?php
+     *
+     * $redis1 = new Redis(['host' => 'localhost']);
+     * $redis2 = new Redis(['host' => 'localhost']);
+     *
+     * // Start watching 'incr-key'
+     * $redis1->watch('incr-key');
+     *
+     * // Retrieve its value.
+     * $val = $redis1->get('incr-key');
+     *
+     * // A second client modifies 'incr-key' after we read it.
+     * $redis2->set('incr-key', 0);
+     *
+     * // Because another client changed the value of 'incr-key' after we read it, this
+     * // is no longer a proper increment operation, but because we are `WATCH`ing the
+     * // key, this transaction will fail and we can try again.
+     * //
+     * // If were to comment out the above `$redis2->set('incr-key', 0)` line the
+     * // transaction would succeed.
+     * $redis1->multi();
+     * $redis1->set('incr-key', $val + 1);
+     * $res = $redis1->exec();
+     *
+     * // bool(false)
+     * var_dump($res);
+     * </code>
+     *
      */
-    public function watch(array|string $key, string ...$other_keys);
+    public function watch(array|string $key, string ...$other_keys): Redis|bool;
 
     /**
      * Block the client up to the provided timeout until a certain number of replicas have confirmed
@@ -2982,6 +3056,46 @@ class Redis {
      */
     public function wait(int $numreplicas, int $timeout): int|false;
 
+    /**
+     * Acknowledge one ore more messages that are pending (have been consumed using XREADGROUP but
+     * not yet acknowledged by XACK.)
+     *
+     * @see https://redis.io/commands/xack
+     * @see https://redis.io/commands/xreadgroup
+     * @see Redis::xack()
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('ships');
+     *
+     * $redis->xAdd('ships', '*', ['name' => 'Enterprise']);
+     * $redis->xAdd('ships', '*', ['name' => 'Defiant']);
+     *
+     * $redis->xGroup('CREATE', 'ships', 'Federation', '0-0');
+     *
+     * // Consume a single message with the consumer group 'Federation'
+     * $ship = $redis->xReadGroup('Federation', 'Picard', ['ships' => '>'], 1);
+     *
+     * /* Retrieve the ID of the message we read.
+     * assert(isset($ship['ships']));
+     * $id = key($ship['ships']);
+     *
+     * // The message we just read is now pending.
+     * $res = $redis->xPending('ships', 'Federation'));
+     * var_dump($res);
+     *
+     * // We can tell Redis we were able to process the message by using XACK
+     * $res = $redis->xAck('ships', 'Federation', [$id]);
+     * assert($res === 1);
+     *
+     * // The message should no longer be pending.
+     * $res = $redis->xPending('ships', 'Federation');
+     * var_dump($res);
+     * ?>
+     * </code>
+     */
     public function xack(string $key, string $group, array $ids): int|false;
 
     /**
@@ -3007,9 +3121,193 @@ class Redis {
      */
     public function xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false, bool $nomkstream = false): Redis|string|false;
 
+    /**
+     * This command allows a consumer to claim pending messages that have been idle for a specified period of time.
+     * Its purpose is to provide a mechanism for picking up messages that may have had a failed consumer.
+     *
+     * @see https://redis.io/commands/xautoclaim
+     * @see https://redis.io/commands/xclaim
+     * @see https://redis.io/docs/data-types/streams-tutorial/
+     *
+     * @param string $key      The stream to check.
+     * @param string $group    The consumer group to query.
+     * @param string $consumer Which consumer to check.
+     * @param int    $min_idle The minimum time in milliseconds for the message to have been pending.
+     * @param string $start    The minimum message id to check.
+     * @param int    $count    An optional limit on how many messages are returned.
+     * @param bool   $justid   If the client only wants message IDs and not all of their data.
+     *
+     * @return Redis|array|bool An array of pending IDs or false if there are none, or on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('ships');
+     *
+     * $redis->xGroup('CREATE', 'ships', 'combatants', '0-0', true);
+     *
+     * $redis->xAdd('ships', '1424-74205', ['name' => 'Defiant']);
+     *
+     * // Consume the ['name' => 'Defiant'] message
+     * $msgs = $redis->xReadGroup('combatants', "Jem'Hadar", ['ships' => '>'], 1);
+     *
+     * // The "Jem'Hadar" consumer has the message presently
+     * $pending = $redis->xPending('ships', 'combatants');
+     *
+     * //array(4) {
+     * //  [0]=>
+     * //  int(1)
+     * //  [1]=>
+     * //  string(10) "1424-74205"
+     * //  [2]=>
+     * //  string(10) "1424-74205"
+     * //  [3]=>
+     * //  array(1) {
+     * //    [0]=>
+     * //    array(2) {
+     * //      [0]=>
+     * //      string(9) "Jem'Hadar"
+     * //      [1]=>
+     * //      string(1) "1"
+     * //    }
+     * //  }
+     * //}
+     * var_dump($pending);
+     *
+     * // Asssume control of the pending message with a different consumer.
+     * $res = $redis->xAutoClaim('ships', 'combatants', 'Sisko', 0, '0-0');
+     *
+     * // Now the 'Sisko' consumer owns the message
+     * $pending = $redis->xPending('ships', 'combatants');
+     *
+     * // array(4) {
+     * //   [0]=>
+     * //   int(1)
+     * //   [1]=>
+     * //   string(10) "1424-74205"
+     * //   [2]=>
+     * //   string(10) "1424-74205"
+     * //   [3]=>
+     * //   array(1) {
+     * //     [0]=>
+     * //     array(2) {
+     * //       [0]=>
+     * //       string(5) "Sisko"
+     * //       [1]=>
+     * //       string(1) "1"
+     * //     }
+     * //   }
+     * // }
+     * var_dump($pending);
+     * ?>
+     * </code>
+     */
     public function xautoclaim(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false): Redis|bool|array;
 
-    public function xclaim(string $key, string $group, string $consumer, int $min_idle, array $ids, array $options): Redis|bool|array;
+    /**
+     * This method allows a consumer to take ownership of pending stream entries, by ID.  Another
+     * command that does much the same thing but does not require passing specific IDs is `Redis::xAutoClaim`.
+     *
+     * @see https://redis.io/commands/xclaim
+     * @see https://redis.io/commands/xautoclaim.
+     *
+     * @param string $key            The stream we wish to claim messages for.
+     * @param string $group          Our consumer group.
+     * @param string $consumer       Our consumer.
+     * @param int    $min_idle_time  The minimum idle-time in milliseconds a message must have for ownership to be transferred.
+     * @param array  $options        An options array that modifies how the command operates.
+     *
+     *                               <code>
+     *                               // Following is an options array describing every option you can pass.  Note that
+     *                               // 'IDLE', and 'TIME' are mutually exclusive.
+     *                               $options = [
+     *                                   'IDLE'       => 3            // Set the idle time of the message to a 3.  By default the
+     *                                                                // idle time is set to zero.
+     *                                   'TIME'       => 1000*time()  // Same as IDLE except it takes a unix timestamp in milliseconds.
+     *                                   'RETRYCOUNT' => 0            // Set the retry counter to zero.  By default XCLAIM doesn't modify
+     *                                                                // the counter.
+     *                                   'FORCE'                      // Creates the pending message entry even if IDs are not already
+     *                                                                // in the PEL with another client.
+     *                                   'JUSTID'                     // Return only an array of IDs rather than the messages themselves.
+     *                               ];
+     *                               </code>
+     *
+     * @return Redis|array|bool      An array of claimed messags or false on failure.
+     *
+     * <code>
+     * <?php
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->del('ships');
+     *
+     * $redis->xGroup('CREATE', 'ships', 'combatants', '0-0', true);
+     *
+     * $redis->xAdd('ships', '1424-74205', ['name' => 'Defiant']);
+     *
+     * // Consume the ['name' => 'Defiant'] message
+     * $msgs = $redis->xReadGroup('combatants', "Jem'Hadar", ['ships' => '>'], 1);
+     *
+     * // The "Jem'Hadar" consumer has the message presently
+     * $pending = $redis->xPending('ships', 'combatants');
+     *
+     * //array(4) {
+     * //  [0]=>
+     * //  int(1)
+     * //  [1]=>
+     * //  string(10) "1424-74205"
+     * //  [2]=>
+     * //  string(10) "1424-74205"
+     * //  [3]=>
+     * //  array(1) {
+     * //    [0]=>
+     * //    array(2) {
+     * //      [0]=>
+     * //      string(9) "Jem'Hadar"
+     * //      [1]=>
+     * //      string(1) "1"
+     * //    }
+     * //  }
+     * //}
+     * var_dump($pending);
+     *
+     * assert($pending && isset($pending[1]));
+     *
+     * // Claim the message by ID.
+     * $claimed = $redis->xClaim('ships', 'combatants', 'Sisko', 0, [$pending[1]], ['JUSTID']);
+     *
+     * // array(1) {
+     * //   [0]=>
+     * //   string(10) "1424-74205"
+     * // }
+     * var_dump($claimed);
+     *
+     * // Now the 'Sisko' consumer owns the message
+     * $pending = $redis->xPending('ships', 'combatants');
+     *
+     * // array(4) {
+     * //   [0]=>
+     * //   int(1)
+     * //   [1]=>
+     * //   string(10) "1424-74205"
+     * //   [2]=>
+     * //   string(10) "1424-74205"
+     * //   [3]=>
+     * //   array(1) {
+     * //     [0]=>
+     * //     array(2) {
+     * //       [0]=>
+     * //       string(5) "Sisko"
+     * //       [1]=>
+     * //       string(1) "1"
+     * //     }
+     * //   }
+     * // }
+     * var_dump($pending);
+     * ?>
+     * </code>
+     */
+    public function xclaim(string $key, string $group, string $consumer, int $min_idle, array $ids, array $options): Redis|array|bool;
 
     /**
      * Remove one or more specific IDs from a stream.

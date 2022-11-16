@@ -1999,11 +1999,9 @@ failure:
     return -1;
 }
 
-/* This helper function does that actual XCLAIM response handling, which can be used by both
- * Redis and RedisCluster.  Note that XCLAIM is somewhat unique in that its reply type depends
- * on whether or not it was called with the JUSTID option */
-PHP_REDIS_API int
-redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv) {
+/* A helper method to read X[AUTO]CLAIM messages into an array.  */
+static int
+redis_read_xclaim_ids(RedisSock *redis_sock, int count, zval *rv) {
     zval z_msg;
     REDIS_REPLY_TYPE type;
     char *id = NULL;
@@ -2011,6 +2009,8 @@ redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv) {
     long li;
 
     for (i = 0; i < count; i++) {
+        id = NULL;
+
         /* Consume inner reply type */
         if (redis_read_reply_type(redis_sock, &type, &li) < 0 ||
             (type != TYPE_BULK && type != TYPE_MULTIBULK) ||
@@ -2043,29 +2043,88 @@ redis_read_xclaim_response(RedisSock *redis_sock, int count, zval *rv) {
     return 0;
 }
 
+/* Read an X[AUTO]CLAIM reply having already consumed the reply-type byte. */
+PHP_REDIS_API int
+redis_read_xclaim_reply(RedisSock *redis_sock, int count, int is_xautoclaim, zval *rv) {
+    REDIS_REPLY_TYPE type;
+    zval z_msgs = {0};
+    char *id = NULL;
+    long id_len = 0;
+    int messages;
+
+    ZEND_ASSERT(!is_xautoclaim || count == 3);
+
+    ZVAL_UNDEF(rv);
+
+    /* If this is XAUTOCLAIM consume the BULK ID and then the actual number of IDs.
+     * Otherwise, our 'count' argument is the number of IDs. */
+    if (is_xautoclaim) {
+        if (redis_read_reply_type(redis_sock, &type, &id_len) < 0 || type != TYPE_BULK)
+            goto failure;
+        if ((id = redis_sock_read_bulk_reply(redis_sock, id_len)) == NULL)
+            goto failure;
+        if (read_mbulk_header(redis_sock, &messages) < 0)
+            goto failure;
+    } else {
+        messages = count;
+    }
+
+    array_init(&z_msgs);
+
+    if (redis_read_xclaim_ids(redis_sock, messages, &z_msgs) < 0)
+        goto failure;
+
+    /* If XAUTOCLAIM we now need to consume the final array of message IDs */
+    if (is_xautoclaim) {
+        zval z_deleted = {0};
+
+        if (redis_sock_read_multibulk_reply_zval(redis_sock, &z_deleted) == NULL)
+            goto failure;
+
+        array_init(rv);
+
+        // Package up ID, message, and deleted messages in our reply
+        add_next_index_stringl(rv, id, id_len);
+        add_next_index_zval(rv, &z_msgs);
+        add_next_index_zval(rv, &z_deleted);
+
+        efree(id);
+    } else {
+        // We just want the messages
+        ZVAL_COPY_VALUE(rv, &z_msgs);
+    }
+
+    return 0;
+
+failure:
+    zval_dtor(&z_msgs);
+    zval_dtor(rv);
+    if (id) efree(id);
+
+    return -1;
+}
+
 PHP_REDIS_API int
 redis_xclaim_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    zval *z_tab, void *ctx)
 {
-    zval z_ret;
-    int messages;
+    zval z_ret = {0};
+    int count;
 
-    /* All XCLAIM responses start multibulk */
-    if (read_mbulk_header(redis_sock, &messages) < 0)
+    ZEND_ASSERT(ctx == NULL || ctx == PHPREDIS_CTX_PTR);
+
+    if (read_mbulk_header(redis_sock, &count) < 0)
         goto failure;
 
-    array_init(&z_ret);
-
-    if (redis_read_xclaim_response(redis_sock, messages, &z_ret) < 0) {
-        zval_dtor(&z_ret);
+    if (redis_read_xclaim_reply(redis_sock, count, ctx == PHPREDIS_CTX_PTR, &z_ret) < 0)
         goto failure;
-    }
 
     if (IS_ATOMIC(redis_sock)) {
         RETVAL_ZVAL(&z_ret, 0, 1);
     } else {
         add_next_index_zval(z_tab, &z_ret);
     }
+
     return 0;
 
 failure:

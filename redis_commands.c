@@ -5776,10 +5776,8 @@ static int64_t get_xclaim_i64_arg(const char *key, zval *zv) {
 
 /* Helper to extract XCLAIM options */
 static void get_xclaim_options(zval *z_arr, xclaimOptions *opt) {
-    HashTable *ht;
     zend_string *zkey;
-    char *kval;
-    size_t klen;
+    HashTable *ht;
     zval *zv;
 
     /* Initialize options array to sane defaults */
@@ -5795,29 +5793,20 @@ static void get_xclaim_options(zval *z_arr, xclaimOptions *opt) {
     ht = Z_ARRVAL_P(z_arr);
     ZEND_HASH_FOREACH_STR_KEY_VAL(ht, zkey, zv) {
         if (zkey) {
-            kval = ZSTR_VAL(zkey);
-            klen = ZSTR_LEN(zkey);
-
-            if (klen == 4) {
-                if (!strncasecmp(kval, "TIME", 4)) {
-                    opt->idle.type = "TIME";
-                    opt->idle.time = get_xclaim_i64_arg("TIME", zv);
-                } else if (!strncasecmp(kval, "IDLE", 4)) {
-                    opt->idle.type = "IDLE";
-                    opt->idle.time = get_xclaim_i64_arg("IDLE", zv);
-                }
-            } else if (klen == 10 && !strncasecmp(kval, "RETRYCOUNT", 10)) {
+            if (zend_string_equals_literal_ci(zkey, "TIME")) {
+                opt->idle.type = "TIME";
+                opt->idle.time = get_xclaim_i64_arg("TIME", zv);
+            } else if (zend_string_equals_literal_ci(zkey, "IDLE")) {
+                opt->idle.type = "IDLE";
+                opt->idle.time = get_xclaim_i64_arg("IDLE", zv);
+            } else if (zend_string_equals_literal_ci(zkey, "RETRYCOUNT")) {
                 opt->retrycount = zval_get_long(zv);
             }
-        } else {
-            if (Z_TYPE_P(zv) == IS_STRING) {
-                kval = Z_STRVAL_P(zv);
-                klen = Z_STRLEN_P(zv);
-                if (klen == 5 && !strncasecmp(kval, "FORCE", 5)) {
-                    opt->force = 1;
-                } else if (klen == 6 && !strncasecmp(kval, "JUSTID", 6)) {
-                    opt->justid = 1;
-                }
+        } else if (Z_TYPE_P(zv) == IS_STRING) {
+            if (zend_string_equals_literal_ci(Z_STR_P(zv), "FORCE")) {
+                opt->force = 1;
+            } else if (zend_string_equals_literal_ci(Z_STR_P(zv), "JUSTID")) {
+                opt->justid = 1;
             }
         }
     } ZEND_HASH_FOREACH_END();
@@ -5897,6 +5886,10 @@ redis_xautoclaim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if (justid) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "JUSTID");
     }
+
+    // Set the context to distinguish XCLAIM from XAUTOCLAIM which
+    // have slightly different reply structures.
+    *ctx = PHPREDIS_CTX_PTR;
 
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;

@@ -895,7 +895,13 @@ class RedisCluster {
     /**
      * @see Redis::xgroup
      */
-    public function xgroup(string $operation, string $key = null, string $arg1 = null, string $arg2 = null, bool $arg3 = false): mixed;
+    public function xgroup(string $operation, string $key = null, string $group = null, string $id_or_consumer = null,
+                           bool $mkstream = false, int $entries_read = -2): mixed;
+
+    /**
+     * @see Redis::xautoclaim
+     */
+    public function xautoclaim(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false): Redis|bool|array;
 
     /**
      * @see Redis::xinfo
