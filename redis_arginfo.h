@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 7230a9518fe0e79ae51f6b49d269053535a34199 */
+ * Stub hash: e201e7296984e2750b15d296173946de4002b71d */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -1381,6 +1381,16 @@ ZEND_METHOD(Redis, zunion);
 ZEND_METHOD(Redis, zunionstore);
 
 
+static const zend_function_entry class_RedisMethodType_methods[] = {
+	ZEND_FE_END
+};
+
+
+static const zend_function_entry class_IntrospectionMethod_methods[] = {
+	ZEND_FE_END
+};
+
+
 static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, __construct, arginfo_class_Redis___construct, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, __destruct, arginfo_class_Redis___destruct, ZEND_ACC_PUBLIC)
@@ -1636,6 +1646,36 @@ static const zend_function_entry class_Redis_methods[] = {
 static const zend_function_entry class_RedisException_methods[] = {
 	ZEND_FE_END
 };
+
+static zend_class_entry *register_class_RedisMethodType(void)
+{
+	zend_class_entry ce, *class_entry;
+
+	INIT_CLASS_ENTRY(ce, "RedisMethodType", class_RedisMethodType_methods);
+	class_entry = zend_register_internal_class_ex(&ce, NULL);
+	class_entry->ce_flags |= ZEND_ACC_ABSTRACT;
+
+	return class_entry;
+}
+
+static zend_class_entry *register_class_IntrospectionMethod(zend_class_entry *class_entry_MethodType)
+{
+	zend_class_entry ce, *class_entry;
+
+	INIT_CLASS_ENTRY(ce, "IntrospectionMethod", class_IntrospectionMethod_methods);
+	class_entry = zend_register_internal_class_ex(&ce, class_entry_MethodType);
+
+#if (PHP_VERSION_ID >= 80200)
+	zend_string *attribute_name_Attribute_class_IntrospectionMethod = zend_string_init_interned("Attribute", sizeof("Attribute") - 1, 1);
+	zend_attribute *attribute_Attribute_class_IntrospectionMethod = zend_add_class_attribute(class_entry, attribute_name_Attribute_class_IntrospectionMethod, 1);
+	zend_string_release(attribute_name_Attribute_class_IntrospectionMethod);
+	zval attribute_Attribute_class_IntrospectionMethod_arg0;
+	ZVAL_LONG(&attribute_Attribute_class_IntrospectionMethod_arg0, ZEND_ATTRIBUTE_TARGET_METHOD);
+	ZVAL_COPY_VALUE(&attribute_Attribute_class_IntrospectionMethod->args[0].value, &attribute_Attribute_class_IntrospectionMethod_arg0);
+#endif
+
+	return class_entry;
+}
 
 static zend_class_entry *register_class_Redis(void)
 {

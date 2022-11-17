@@ -6,6 +6,13 @@
  * @generate-class-entries
  */
 
+require "Zend/zend_attributes.stub.php";
+
+abstract class RedisMethodType {}
+
+#[\Attribute(\Attribute::TARGET_METHOD)]
+class IntrospectionMethod extends MethodType {}
+
 class Redis {
 
     /**
@@ -77,6 +84,7 @@ class Redis {
      * @return string        The compressed result
      *
      */
+    #[IntrospectionMethod]
     public function _compress(string $value): string;
 
     /**
