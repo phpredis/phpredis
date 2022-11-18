@@ -4570,8 +4570,8 @@ $redis-&gt;config(&#039;SET&#039;, [&#039;timeout&#039; =&gt; 30, &#039;loglevel
                 <td>$options</td>
                 <td><p>An array with modifiers on how COPY should operate.</p>
 <pre><code>$options = [
-    'REPLACE' =&gt; true|false // Whether to replace an existing key.
-    'DB' =&gt; int             // Copy key to specific db.
+    'REPLACE' =&gt; true|false # Whether to replace an existing key.
+    'DB' =&gt; int             # Copy key to specific db.
 ];</code></pre></td>
             </tr>
             </table>
@@ -6370,19 +6370,19 @@ See <a href="Redis.html#method_geodist">Redis::geodist</a> for possible units.</
                 <td>$options</td>
                 <td><p>An array of options that modifies how the command behaves.</p>
 <pre><code>$options = [
-    'WITHCOORD',     // Return members and their coordinates.
-    'WITHDIST',      // Return members and their distances from the center.
-    'WITHHASH',      // Return members GeoHash string.
-    'ASC' | 'DESC',  // The sort order of returned members
+    'WITHCOORD',     # Return members and their coordinates.
+    'WITHDIST',      # Return members and their distances from the center.
+    'WITHHASH',      # Return members GeoHash string.
+    'ASC' | 'DESC',  # The sort order of returned members
 
-    // Limit to N returned members.  Optionally a two element array may be
-    // passed as the `LIMIT` argument, and the `ANY` argument.
+    # Limit to N returned members.  Optionally a two element array may be
+    # passed as the `LIMIT` argument, and the `ANY` argument.
     'COUNT' =&gt; [&lt;int&gt;], or [&lt;int&gt;, &lt;bool&gt;]
 
-    // Instead of returning members, store them in the specified key.
+    # Instead of returning members, store them in the specified key.
     'STORE' =&gt; &lt;string&gt;
 
-    // Store the distances in the specified key
+    # Store the distances in the specified key
     'STOREDIST' =&gt; &lt;string&gt;
 ];</code></pre></td>
             </tr>
@@ -6753,11 +6753,11 @@ to search.</p></td>
                 <td>array</td>
                 <td>$options</td>
                 <td><pre><code>$options = [
-    'ASC' | 'DESC',  // The sort order of returned members
-    'WITHDIST'       // Also store distances.
+    'ASC' | 'DESC',  # The sort order of returned members
+    'WITHDIST'       # Also store distances.
 
-    // Limit to N returned members.  Optionally a two element array may be
-    // passed as the `LIMIT` argument, and the `ANY` argument.
+    # Limit to N returned members.  Optionally a two element array may be
+    # passed as the `LIMIT` argument, and the `ANY` argument.
     'COUNT' =&gt; [&lt;int&gt;], or [&lt;int&gt;, &lt;bool&gt;]
 ];</code></pre></td>
             </tr>
@@ -6979,11 +6979,11 @@ Redis::auth</a>
                 <td>$options</td>
                 <td><p>Options to modify how the command works.</p>
 <pre><code>$options = [
-    'EX'     =&gt; &lt;seconds&gt;      // Expire in N seconds
-    'PX'     =&gt; &lt;milliseconds&gt; // Expire in N milliseconds
-    'EXAT'   =&gt; &lt;timestamp&gt;    // Expire at a unix timestamp (in seconds)
-    'PXAT'   =&gt; &lt;mstimestamp&gt;  // Expire at a unix timestamp (in milliseconds);
-    'PERSIST'                  // Remove any configured expiration on the key.
+    'EX'     =&gt; &lt;seconds&gt;      # Expire in N seconds
+    'PX'     =&gt; &lt;milliseconds&gt; # Expire in N milliseconds
+    'EXAT'   =&gt; &lt;timestamp&gt;    # Expire at a unix timestamp (in seconds)
+    'PXAT'   =&gt; &lt;mstimestamp&gt;  # Expire at a unix timestamp (in milliseconds);
+    'PERSIST'                  # Remove any configured expiration on the key.
 ];</code></pre></td>
             </tr>
             </table>
@@ -7454,14 +7454,14 @@ echo $redis-&gt;getRange(&#039;silly-word&#039;, 0, 4) . &quot;\n&quot;;</pre></
                 <td>$options</td>
                 <td><p>An optional array of modifiers for the comand.</p>
 <pre><code>$options = [
-    'MINMATCHLEN'  =&gt; int  // Exclude matching substrings that are less than this value
+    'MINMATCHLEN'  =&gt; int  # Exclude matching substrings that are less than this value
 
-    'WITHMATCHLEN' =&gt; bool // Whether each match should also include its length.
+    'WITHMATCHLEN' =&gt; bool # Whether each match should also include its length.
 
-    'LEN'                  // Return the length of the longest subsequence
+    'LEN'                  # Return the length of the longest subsequence
 
-    'IDX'                  // Each returned match will include the indexes where the
-                           // match occurs in each string.
+    'IDX'                  # Each returned match will include the indexes where the
+                           # match occurs in each string.
 ];</code></pre>
 <p>NOTE:  'LEN' cannot be used with 'IDX'.</p></td>
             </tr>
@@ -8340,8 +8340,8 @@ $redis-&gt;hincrby(&#039;player:1&#039;, &#039;score&#039;, 10);</pre></td>
                 <td>$options</td>
                 <td><p>An array of options to modify how the command behaves.</p>
 <pre><code>$options = [
-    'COUNT'      =&gt; int  // An optional number of fields to return.
-    'WITHVALUES' =&gt; bool // Also return the field values.
+    'COUNT'      =&gt; int  # An optional number of fields to return.
+    'WITHVALUES' =&gt; bool # Also return the field values.
 ];</code></pre></td>
             </tr>
             </table>
@@ -9346,18 +9346,18 @@ if none was removed.</p></td>
                 <td>$options</td>
                 <td><p>Options to configure how the command operates</p>
 <pre><code>$options = [
-    // How many matches to return.  By default a single match is returned.
-    // If count is set to zero, it means unlimited.
+    # How many matches to return.  By default a single match is returned.
+    # If count is set to zero, it means unlimited.
     'COUNT' =&gt; &lt;num-matches&gt;
 
-    // Specify which match you want returned.  `RANK` 1 means "the first match"
-    // 2 meaans the second, and so on.  If passed as a negative number the
-    // RANK is computed right to left, so a `RANK` of -1 means "the last match".
+    # Specify which match you want returned.  `RANK` 1 means "the first match"
+    # 2 means the second, and so on.  If passed as a negative number the
+    # RANK is computed right to left, so a `RANK` of -1 means "the last match".
     'RANK'  =&gt; &lt;rank&gt;
 
-    // This argument allows you to limit how many elements Redis will search before
-    // returning.  This is useful to prevent Redis searching very long lists while
-    // blocking the client.
+    # This argument allows you to limit how many elements Redis will search before
+    # returning.  This is useful to prevent Redis searching very long lists while
+    # blocking the client.
     'MAXLEN =&gt; &lt;max-len&gt;
 ];</code></pre></td>
             </tr>
@@ -11767,16 +11767,16 @@ Zero means no TTL at all.</p></td>
                 <td>$options</td>
                 <td><p>An array of additional options that modifies how the command operates.</p>
 <pre><code>$options = [
-    'ABSTTL'          // If this is present, the `$ttl` provided by the user should
-                      // be an absolute timestamp, in milliseconds()
+    'ABSTTL'          # If this is present, the `$ttl` provided by the user should
+                      # be an absolute timestamp, in milliseconds()
 
-    'REPLACE'         // This flag instructs Redis to store the key even if a key with
-                      // that name already exists.
+    'REPLACE'         # This flag instructs Redis to store the key even if a key with
+                      # that name already exists.
 
-    'IDLETIME' =&gt; int // Tells Redis to set the keys internal 'idletime' value to a
-                      // specific number (see the Redis command OBJECT for more info).
-    'FREQ'     =&gt; int // Tells Redis to set the keys internal 'FREQ' value to a specific
-                      // number (this relates to Redis' LFU eviction algorithm).
+    'IDLETIME' =&gt; int # Tells Redis to set the keys internal 'idletime' value to a
+                      # specific number (see the Redis command OBJECT for more info).
+    'FREQ'     =&gt; int # Tells Redis to set the keys internal 'FREQ' value to a specific
+                      # number (this relates to Redis' LFU eviction algorithm).
 ];</code></pre></td>
             </tr>
             </table>
@@ -15181,7 +15181,7 @@ error, this command will return false.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_type">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L2942">at line 2942</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L2928">at line 2928</a></div>
         <code>                    Redis|int|false
     <strong>type</strong>(string $key)
         </code>
@@ -15218,23 +15218,7 @@ Redis::REDIS_SET
 Redis::REDIS_LIST
 Redis::REDIS_ZSET
 Redis::REDIS_HASH
-Redis::REDIS_STREAM</code></pre>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-// NOTE:  Never use 'KEYS' in production!
-$keys = $redis-&gt;keys('*');
-
-$redis-&gt;pipeline();
-foreach ($keys as $key) {
-    $redis-&gt;type($key);
-}
-
-$ktypes = array_combine($keys, $redis-&gt;exec());
-
-// Print each key with its corresponding type
-print_r($ktypes);
-?&gt;</code></pre></td>
+Redis::REDIS_STREAM</code></pre></td>
         </tr>
     </table>
 
@@ -15252,13 +15236,23 @@ print_r($ktypes);
             </table>
 
             
+                            <h4>Examples</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><pre class="examples">foreach ($redis-&gt;keys(&#039;*&#039;) as $key) {<br />
+    echo &quot;$key =&gt; &quot; . $redis-&gt;type($key) . &quot;\n&quot;;<br />
+}</pre></td>
+            </tr>
+            </table>
+
                     </div>
     </div>
 
             </div>
                     <div class="method-item">
                     <h3 id="method_unlink">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L2963">at line 2963</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L2949">at line 2949</a></div>
         <code>                    Redis|int|false
     <strong>unlink</strong>(array|string $key, string ...$other_keys)
         </code>
@@ -15343,7 +15337,7 @@ Redis::del</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_unsubscribe">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L2988">at line 2988</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L2972">at line 2972</a></div>
         <code>                    Redis|array|bool
     <strong>unsubscribe</strong>(array $channels)
         </code>
@@ -15362,7 +15356,7 @@ Redis::del</a>
                     <tr>
                 <td>array</td>
                 <td>$channels</td>
-                <td></td>
+                <td><p>One or more channels to unsubscribe from.</p></td>
             </tr>
             </table>
 
@@ -15372,7 +15366,7 @@ Redis::del</a>
                     <table class="table table-condensed">
         <tr>
             <td>Redis|array|bool</td>
-            <td></td>
+            <td><p>The array of unsubscribed channels.</p></td>
         </tr>
     </table>
 
@@ -15392,33 +15386,35 @@ Redis::del</a>
                                             <a href="Redis.html#method_subscribe">
 Redis::subscribe</a>
                                     </td>
-                <td><code>
-<?php
-$redis = new Redis(['host' => 'localhost']);
-
-$redis->subscribe(['channel-1', 'channel-2'], function ($redis, $channel, $message) {
-    if ($message == 'quit') {
-        echo "$channel => 'quit' detected, unsubscribing!\n";
-        $redis->unsubscribe([$channel]);
-    } else {
-        echo "$channel => $message\n";
-    }
-});
-
-echo "We've unsubscribed from both channels, exiting\n";
-?>
-</code></td>
+                <td></td>
             </tr>
             </table>
 
             
+                            <h4>Examples</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><pre class="examples">$redis-&gt;subscribe([&#039;channel-1&#039;, &#039;channel-2&#039;], function ($redis, $channel, $message) {<br />
+    if ($message == &#039;quit&#039;) {<br />
+        echo &quot;$channel =&gt; &#039;quit&#039; detected, unsubscribing!\n&quot;;<br />
+        $redis-&gt;unsubscribe([$channel]);<br />
+    } else {<br />
+        echo &quot;$channel =&gt; $message\n&quot;;<br />
+    }<br />
+});<br />
+<br />
+echo &quot;We&#039;ve unsubscribed from both channels, exiting\n&quot;;</pre></td>
+            </tr>
+            </table>
+
                     </div>
     </div>
 
             </div>
                     <div class="method-item">
                     <h3 id="method_unwatch">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L2999">at line 2999</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L2983">at line 2983</a></div>
         <code>                    Redis|bool
     <strong>unwatch</strong>()
         </code>
@@ -15474,7 +15470,7 @@ Redis::watch</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_watch">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3043">at line 3043</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3023">at line 3023</a></div>
         <code>                    Redis|bool
     <strong>watch</strong>(array|string $key, string ...$other_keys)
         </code>
@@ -15509,32 +15505,7 @@ string key names may be passed variadically.</p></td>
                     <table class="table table-condensed">
         <tr>
             <td>Redis|bool</td>
-            <td><pre><code>&lt;?php
-
-$redis1 = new Redis(['host' =&gt; 'localhost']);
-$redis2 = new Redis(['host' =&gt; 'localhost']);
-
-// Start watching 'incr-key'
-$redis1-&gt;watch('incr-key');
-
-// Retrieve its value.
-$val = $redis1-&gt;get('incr-key');
-
-// A second client modifies 'incr-key' after we read it.
-$redis2-&gt;set('incr-key', 0);
-
-// Because another client changed the value of 'incr-key' after we read it, this
-// is no longer a proper increment operation, but because we are `WATCH`ing the
-// key, this transaction will fail and we can try again.
-//
-// If were to comment out the above `$redis2-&gt;set('incr-key', 0)` line the
-// transaction would succeed.
-$redis1-&gt;multi();
-$redis1-&gt;set('incr-key', $val + 1);
-$res = $redis1-&gt;exec();
-
-// bool(false)
-var_dump($res);</code></pre></td>
+            <td></td>
         </tr>
     </table>
 
@@ -15558,13 +15529,44 @@ var_dump($res);</code></pre></td>
             </table>
 
             
+                            <h4>Examples</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><pre class="examples">$redis1 = new Redis([&#039;host&#039; =&gt; &#039;localhost&#039;]);<br />
+$redis2 = new Redis([&#039;host&#039; =&gt; &#039;localhost&#039;]);<br />
+<br />
+// Start watching &#039;incr-key&#039;<br />
+$redis1-&gt;watch(&#039;incr-key&#039;);<br />
+<br />
+// Retrieve its value.<br />
+$val = $redis1-&gt;get(&#039;incr-key&#039;);<br />
+<br />
+// A second client modifies &#039;incr-key&#039; after we read it.<br />
+$redis2-&gt;set(&#039;incr-key&#039;, 0);<br />
+<br />
+// Because another client changed the value of &#039;incr-key&#039; after we read it, this<br />
+// is no longer a proper increment operation, but because we are `WATCH`ing the<br />
+// key, this transaction will fail and we can try again.<br />
+//<br />
+// If were to comment out the above `$redis2-&gt;set(&#039;incr-key&#039;, 0)` line the<br />
+// transaction would succeed.<br />
+$redis1-&gt;multi();<br />
+$redis1-&gt;set(&#039;incr-key&#039;, $val + 1);<br />
+$res = $redis1-&gt;exec();<br />
+<br />
+// bool(false)<br />
+var_dump($res);</pre></td>
+            </tr>
+            </table>
+
                     </div>
     </div>
 
             </div>
                     <div class="method-item">
                     <h3 id="method_wait">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3057">at line 3057</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3037">at line 3037</a></div>
         <code>                    int|false
     <strong>wait</strong>(int $numreplicas, int $timeout)
         </code>
@@ -15623,7 +15625,7 @@ recieving them.</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_xack">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3099">at line 3099</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3078">at line 3078</a></div>
         <code>                    int|false
     <strong>xack</strong>(string $key, string $group, array $ids)
         </code>
@@ -15643,17 +15645,17 @@ not yet acknowledged by XACK.)</p></p>
                     <tr>
                 <td>string</td>
                 <td>$key</td>
-                <td></td>
+                <td><p>The stream to query.</p></td>
             </tr>
                     <tr>
                 <td>string</td>
                 <td>$group</td>
-                <td></td>
+                <td><p>The consumer group to use.</p></td>
             </tr>
                     <tr>
                 <td>array</td>
                 <td>$ids</td>
-                <td></td>
+                <td><p>An array of stream entry IDs.</p></td>
             </tr>
             </table>
 
@@ -15663,7 +15665,7 @@ not yet acknowledged by XACK.)</p></p>
                     <table class="table table-condensed">
         <tr>
             <td>int|false</td>
-            <td></td>
+            <td><p>The number of acknowledged messages</p></td>
         </tr>
     </table>
 
@@ -15689,48 +15691,48 @@ not yet acknowledged by XACK.)</p></p>
                                             <a href="Redis.html#method_xack">
 Redis::xack</a>
                                     </td>
-                <td><code>
-<?php
-$redis = new Redis(['host' => 'localhost']);
-
-$redis->del('ships');
-
-$redis->xAdd('ships', '*', ['name' => 'Enterprise']);
-$redis->xAdd('ships', '*', ['name' => 'Defiant']);
-
-$redis->xGroup('CREATE', 'ships', 'Federation', '0-0');
-
-// Consume a single message with the consumer group 'Federation'
-$ship = $redis->xReadGroup('Federation', 'Picard', ['ships' => '>'], 1);
-
-/* Retrieve the ID of the message we read.
-assert(isset($ship['ships']));
-$id = key($ship['ships']);
-
-// The message we just read is now pending.
-$res = $redis->xPending('ships', 'Federation'));
-var_dump($res);
-
-// We can tell Redis we were able to process the message by using XACK
-$res = $redis->xAck('ships', 'Federation', [$id]);
-assert($res === 1);
-
-// The message should no longer be pending.
-$res = $redis->xPending('ships', 'Federation');
-var_dump($res);
-?>
-</code></td>
+                <td></td>
             </tr>
             </table>
 
             
+                            <h4>Examples</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><pre class="examples">$redis-&gt;xAdd(&#039;ships&#039;, &#039;*&#039;, [&#039;name&#039; =&gt; &#039;Enterprise&#039;]);<br />
+$redis-&gt;xAdd(&#039;ships&#039;, &#039;*&#039;, [&#039;name&#039; =&gt; &#039;Defiant&#039;]);<br />
+<br />
+$redis-&gt;xGroup(&#039;CREATE&#039;, &#039;ships&#039;, &#039;Federation&#039;, &#039;0-0&#039;);<br />
+<br />
+// Consume a single message with the consumer group &#039;Federation&#039;<br />
+$ship = $redis-&gt;xReadGroup(&#039;Federation&#039;, &#039;Picard&#039;, [&#039;ships&#039; =&gt; &#039;&gt;&#039;], 1);<br />
+<br />
+/* Retrieve the ID of the message we read.<br />
+assert(isset($ship[&#039;ships&#039;]));<br />
+$id = key($ship[&#039;ships&#039;]);<br />
+<br />
+// The message we just read is now pending.<br />
+$res = $redis-&gt;xPending(&#039;ships&#039;, &#039;Federation&#039;));<br />
+var_dump($res);<br />
+<br />
+// We can tell Redis we were able to process the message by using XACK<br />
+$res = $redis-&gt;xAck(&#039;ships&#039;, &#039;Federation&#039;, [$id]);<br />
+assert($res === 1);<br />
+<br />
+// The message should no longer be pending.<br />
+$res = $redis-&gt;xPending(&#039;ships&#039;, &#039;Federation&#039;);<br />
+var_dump($res);</pre></td>
+            </tr>
+            </table>
+
                     </div>
     </div>
 
             </div>
                     <div class="method-item">
                     <h3 id="method_xadd">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3122">at line 3122</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3101">at line 3101</a></div>
         <code>                    Redis|string|false
     <strong>xadd</strong>(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false, bool $nomkstream = false)
         </code>
@@ -15826,7 +15828,7 @@ but in a more efficient way, meaning the trimming may not be exactly to
             </div>
                     <div class="method-item">
                     <h3 id="method_xautoclaim">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3206">at line 3206</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3140">at line 3140</a></div>
         <code>                    Redis|bool|array
     <strong>xautoclaim</strong>(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false)
         </code>
@@ -15885,68 +15887,7 @@ but in a more efficient way, meaning the trimming may not be exactly to
                     <table class="table table-condensed">
         <tr>
             <td>Redis|bool|array</td>
-            <td><p>An array of pending IDs or false if there are none, or on failure.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;del('ships');
-
-$redis-&gt;xGroup('CREATE', 'ships', 'combatants', '0-0', true);
-
-$redis-&gt;xAdd('ships', '1424-74205', ['name' =&gt; 'Defiant']);
-
-// Consume the ['name' =&gt; 'Defiant'] message
-$msgs = $redis-&gt;xReadGroup('combatants', "Jem'Hadar", ['ships' =&gt; '&gt;'], 1);
-
-// The "Jem'Hadar" consumer has the message presently
-$pending = $redis-&gt;xPending('ships', 'combatants');
-
-//array(4) {
-//  [0]=&gt;
-//  int(1)
-//  [1]=&gt;
-//  string(10) "1424-74205"
-//  [2]=&gt;
-//  string(10) "1424-74205"
-//  [3]=&gt;
-//  array(1) {
-//    [0]=&gt;
-//    array(2) {
-//      [0]=&gt;
-//      string(9) "Jem'Hadar"
-//      [1]=&gt;
-//      string(1) "1"
-//    }
-//  }
-//}
-var_dump($pending);
-
-// Asssume control of the pending message with a different consumer.
-$res = $redis-&gt;xAutoClaim('ships', 'combatants', 'Sisko', 0, '0-0');
-
-// Now the 'Sisko' consumer owns the message
-$pending = $redis-&gt;xPending('ships', 'combatants');
-
-// array(4) {
-//   [0]=&gt;
-//   int(1)
-//   [1]=&gt;
-//   string(10) "1424-74205"
-//   [2]=&gt;
-//   string(10) "1424-74205"
-//   [3]=&gt;
-//   array(1) {
-//     [0]=&gt;
-//     array(2) {
-//       [0]=&gt;
-//       string(5) "Sisko"
-//       [1]=&gt;
-//       string(1) "1"
-//     }
-//   }
-// }
-var_dump($pending);
-?&gt;</code></pre></td>
+            <td><p>An array of pending IDs or false if there are none, or on failure.</p></td>
         </tr>
     </table>
 
@@ -15976,13 +15917,37 @@ var_dump($pending);
             </table>
 
             
+                            <h4>Examples</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><pre class="examples">$redis-&gt;xGroup(&#039;CREATE&#039;, &#039;ships&#039;, &#039;combatants&#039;, &#039;0-0&#039;, true);<br />
+<br />
+$redis-&gt;xAdd(&#039;ships&#039;, &#039;1424-74205&#039;, [&#039;name&#039; =&gt; &#039;Defiant&#039;]);<br />
+<br />
+// Consume the [&#039;name&#039; =&gt; &#039;Defiant&#039;] message<br />
+$msgs = $redis-&gt;xReadGroup(&#039;combatants&#039;, &quot;Jem&#039;Hadar&quot;, [&#039;ships&#039; =&gt; &#039;&gt;&#039;], 1);<br />
+<br />
+// The &quot;Jem&#039;Hadar&quot; consumer has the message presently<br />
+$pending = $redis-&gt;xPending(&#039;ships&#039;, &#039;combatants&#039;);<br />
+var_dump($pending);<br />
+<br />
+// Asssume control of the pending message with a different consumer.<br />
+$res = $redis-&gt;xAutoClaim(&#039;ships&#039;, &#039;combatants&#039;, &#039;Sisko&#039;, 0, &#039;0-0&#039;);<br />
+<br />
+// Now the &#039;Sisko&#039; consumer owns the message<br />
+$pending = $redis-&gt;xPending(&#039;ships&#039;, &#039;combatants&#039;);<br />
+var_dump($pending);</pre></td>
+            </tr>
+            </table>
+
                     </div>
     </div>
 
             </div>
                     <div class="method-item">
                     <h3 id="method_xclaim">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3310">at line 3310</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3197">at line 3197</a></div>
         <code>                    Redis|array|bool
     <strong>xclaim</strong>(string $key, string $group, string $consumer, int $min_idle, array $ids, array $options)
         </code>
@@ -16028,17 +15993,20 @@ command that does much the same thing but does not require passing specific IDs 
                 <td>array</td>
                 <td>$options</td>
                 <td><p>An options array that modifies how the command operates.</p>
-<pre><code>// Following is an options array describing every option you can pass.  Note that
-// 'IDLE', and 'TIME' are mutually exclusive.
+<pre><code># Following is an options array describing every option you can pass.  Note that
+# 'IDLE', and 'TIME' are mutually exclusive.
 $options = [
-    'IDLE'       =&gt; 3            // Set the idle time of the message to a 3.  By default the
-                                 // idle time is set to zero.
-    'TIME'       =&gt; 1000*time()  // Same as IDLE except it takes a unix timestamp in milliseconds.
-    'RETRYCOUNT' =&gt; 0            // Set the retry counter to zero.  By default XCLAIM doesn't modify
-                                 // the counter.
-    'FORCE'                      // Creates the pending message entry even if IDs are not already
-                                 // in the PEL with another client.
-    'JUSTID'                     // Return only an array of IDs rather than the messages themselves.
+    'IDLE'       =&gt; 3            # Set the idle time of the message to a 3.  By default
+                                 # the idle time is set to zero.
+    'TIME'       =&gt; 1000*time()  # Same as IDLE except it takes a unix timestamp in
+                                 # milliseconds.
+    'RETRYCOUNT' =&gt; 0            # Set the retry counter to zero.  By default XCLAIM
+                                 # doesn't modify the counter.
+    'FORCE'                      # Creates the pending message entry even if IDs are
+                                 # not already
+                                 # in the PEL with another client.
+    'JUSTID'                     # Return only an array of IDs rather than the messages
+                                 # themselves.
 ];</code></pre></td>
             </tr>
             </table>
@@ -16049,76 +16017,7 @@ $options = [
                     <table class="table table-condensed">
         <tr>
             <td>Redis|array|bool</td>
-            <td><p>An array of claimed messags or false on failure.</p>
-<pre><code>&lt;?php
-$redis = new Redis(['host' =&gt; 'localhost']);
-
-$redis-&gt;del('ships');
-
-$redis-&gt;xGroup('CREATE', 'ships', 'combatants', '0-0', true);
-
-$redis-&gt;xAdd('ships', '1424-74205', ['name' =&gt; 'Defiant']);
-
-// Consume the ['name' =&gt; 'Defiant'] message
-$msgs = $redis-&gt;xReadGroup('combatants', "Jem'Hadar", ['ships' =&gt; '&gt;'], 1);
-
-// The "Jem'Hadar" consumer has the message presently
-$pending = $redis-&gt;xPending('ships', 'combatants');
-
-//array(4) {
-//  [0]=&gt;
-//  int(1)
-//  [1]=&gt;
-//  string(10) "1424-74205"
-//  [2]=&gt;
-//  string(10) "1424-74205"
-//  [3]=&gt;
-//  array(1) {
-//    [0]=&gt;
-//    array(2) {
-//      [0]=&gt;
-//      string(9) "Jem'Hadar"
-//      [1]=&gt;
-//      string(1) "1"
-//    }
-//  }
-//}
-var_dump($pending);
-
-assert($pending &amp;&amp; isset($pending[1]));
-
-// Claim the message by ID.
-$claimed = $redis-&gt;xClaim('ships', 'combatants', 'Sisko', 0, [$pending[1]], ['JUSTID']);
-
-// array(1) {
-//   [0]=&gt;
-//   string(10) "1424-74205"
-// }
-var_dump($claimed);
-
-// Now the 'Sisko' consumer owns the message
-$pending = $redis-&gt;xPending('ships', 'combatants');
-
-// array(4) {
-//   [0]=&gt;
-//   int(1)
-//   [1]=&gt;
-//   string(10) "1424-74205"
-//   [2]=&gt;
-//   string(10) "1424-74205"
-//   [3]=&gt;
-//   array(1) {
-//     [0]=&gt;
-//     array(2) {
-//       [0]=&gt;
-//       string(5) "Sisko"
-//       [1]=&gt;
-//       string(1) "1"
-//     }
-//   }
-// }
-var_dump($pending);
-?&gt;</code></pre></td>
+            <td><p>An array of claimed messags or false on failure.</p></td>
         </tr>
     </table>
 
@@ -16142,13 +16041,40 @@ var_dump($pending);
             </table>
 
             
+                            <h4>Examples</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><pre class="examples">$redis-&gt;xGroup(&#039;CREATE&#039;, &#039;ships&#039;, &#039;combatants&#039;, &#039;0-0&#039;, true);<br />
+<br />
+$redis-&gt;xAdd(&#039;ships&#039;, &#039;1424-74205&#039;, [&#039;name&#039; =&gt; &#039;Defiant&#039;]);<br />
+<br />
+// Consume the [&#039;name&#039; =&gt; &#039;Defiant&#039;] message<br />
+$msgs = $redis-&gt;xReadGroup(&#039;combatants&#039;, &quot;Jem&#039;Hadar&quot;, [&#039;ships&#039; =&gt; &#039;&gt;&#039;], 1);<br />
+<br />
+// The &quot;Jem&#039;Hadar&quot; consumer has the message presently<br />
+$pending = $redis-&gt;xPending(&#039;ships&#039;, &#039;combatants&#039;);<br />
+var_dump($pending);<br />
+<br />
+assert($pending &amp;&amp; isset($pending[1]));<br />
+<br />
+// Claim the message by ID.<br />
+$claimed = $redis-&gt;xClaim(&#039;ships&#039;, &#039;combatants&#039;, &#039;Sisko&#039;, 0, [$pending[1]], [&#039;JUSTID&#039;]);<br />
+var_dump($claimed);<br />
+<br />
+// Now the &#039;Sisko&#039; consumer owns the message<br />
+$pending = $redis-&gt;xPending(&#039;ships&#039;, &#039;combatants&#039;);<br />
+var_dump($pending);</pre></td>
+            </tr>
+            </table>
+
                     </div>
     </div>
 
             </div>
                     <div class="method-item">
                     <h3 id="method_xdel">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3322">at line 3322</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3209">at line 3209</a></div>
         <code>                    Redis|int|false
     <strong>xdel</strong>(string $key, array $ids)
         </code>
@@ -16203,7 +16129,7 @@ var_dump($pending);
             </div>
                     <div class="method-item">
                     <h3 id="method_xgroup">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3360">at line 3360</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3247">at line 3247</a></div>
         <code>                    mixed
     <strong>xgroup</strong>(string $operation, string $key = null, string $group = null, string $id_or_consumer = null, bool $mkstream = false, int $entries_read = -2)
         </code>
@@ -16298,7 +16224,7 @@ cause Redis to also create the STREAM if it doesn't currently exist.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_xinfo">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3379">at line 3379</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3266">at line 3266</a></div>
         <code>                    mixed
     <strong>xinfo</strong>(string $operation, string|null $arg1 = null, string|null $arg2 = null, int $count = -1)
         </code>
@@ -16380,7 +16306,7 @@ cause Redis to also create the STREAM if it doesn't currently exist.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_xlen">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3393">at line 3393</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3280">at line 3280</a></div>
         <code>                    Redis|int|false
     <strong>xlen</strong>(string $key)
         </code>
@@ -16441,7 +16367,7 @@ cause Redis to also create the STREAM if it doesn't currently exist.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_xpending">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3412">at line 3412</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3299">at line 3299</a></div>
         <code>                    Redis|array|false
     <strong>xpending</strong>(string $key, string $group, string|null $start = null, string|null $end = null, int $count = -1, string|null $consumer = null)
         </code>
@@ -16526,7 +16452,7 @@ acknowledged with XACK.</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_xrange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3429">at line 3429</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3316">at line 3316</a></div>
         <code>                    Redis|array|bool
     <strong>xrange</strong>(string $key, string $start, string $end, int $count = -1)
         </code>
@@ -16605,7 +16531,7 @@ acknowledged with XACK.</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_xread">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3453">at line 3453</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3340">at line 3340</a></div>
         <code>                    Redis|array|bool
     <strong>xread</strong>(array $streams, int $count = -1, int $block = -1)
         </code>
@@ -16684,7 +16610,7 @@ $redis-&gt;xRead([&#039;s03&#039; =&gt; &#039;3-2&#039;, &#039;s04&#039; =&gt; &
             </div>
                     <div class="method-item">
                     <h3 id="method_xreadgroup">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3488">at line 3488</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3375">at line 3375</a></div>
         <code>                    Redis|array|bool
     <strong>xreadgroup</strong>(string $group, string $consumer, array $streams, int $count = 1, int $block = 1)
         </code>
@@ -16782,7 +16708,7 @@ $msgs = $redis-&gt;xReadGroup(&#039;ds9&#039;, &#039;sisko&#039;, [&#039;episode
             </div>
                     <div class="method-item">
                     <h3 id="method_xrevrange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3506">at line 3506</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3393">at line 3393</a></div>
         <code>                    Redis|array|bool
     <strong>xrevrange</strong>(string $key, string $end, string $start, int $count = -1)
         </code>
@@ -16867,7 +16793,7 @@ $msgs = $redis-&gt;xReadGroup(&#039;ds9&#039;, &#039;sisko&#039;, [&#039;episode
             </div>
                     <div class="method-item">
                     <h3 id="method_xtrim">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3528">at line 3528</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3415">at line 3415</a></div>
         <code>                    Redis|int|false
     <strong>xtrim</strong>(string $key, string $threshold, bool $approx = false, bool $minid = false, int $limit = -1)
         </code>
@@ -16955,7 +16881,7 @@ more efficient for Redis given how streams are stored internally.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_zAdd">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3566">at line 3566</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3456">at line 3456</a></div>
         <code>                    Redis|int|false
     <strong>zAdd</strong>(string $key, array|float $score_or_options, mixed ...$more_scores_and_mems)
         </code>
@@ -16979,8 +16905,29 @@ more efficient for Redis given how streams are stored internally.</p></td>
                     <tr>
                 <td>array|float</td>
                 <td>$score_or_options</td>
-                <td><p>Either the score for the first element, or an array
-containing one or more options for the operation.</p></td>
+                <td><p>Either the score for the first element, or an array of options.</p>
+<pre><code>
+ $options = [
+     'NX',       # Only update elements that already exist
+     'NX',       # Only add new elements but don't update existing ones.
+
+     'LT'        # Only update existing elements if the new score is
+                 # less than the existing one.
+     'GT'        # Only update existing elements if the new score is
+                 # greater than the existing one.
+
+     'CH'        # Instead of returning the number of elements added,
+                 # Redis will return the number Of elements that were
+                 # changed in the operation.
+
+     'INCR'      # Instead of setting each element to the provide score,
+                 # increment the element by the
+                 # provided score, much like ZINCRBY.  When this option
+                 # is passed, you may only send a single score and member.
+ ];
+
+ Note:  'GX', 'LT', and 'NX' cannot be passed together, and PhpRedis
+        will send whichever one is last in the options array.</code></pre></td>
             </tr>
                     <tr>
                 <td>mixed</td>
@@ -16996,25 +16943,7 @@ containing one or more options for the operation.</p></td>
         <tr>
             <td>Redis|int|false</td>
             <td><p>The return value varies depending on the options passed.</p>
-<p>Following is information about the options that may be passed as the scond argument:</p>
-<pre><code>
-$options = [
-    'NX',       # Only update elements that already exist
-    'NX',       # Only add new elements but don't update existing ones.
-
-    'LT'        # Only update existing elements if the new score is less than the existing one.
-    'GT'        # Only update existing elements if the new score is greater than the existing one.
-
-    'CH'        # Instead of returning the number of elements added, Redis will return the number
-                # Of elements that were changed in the operation.
-
-    'INCR'      # Instead of setting each element to the provide score, increment the elemnt by the
-                # provided score, much like ZINCRBY.  When this option is passed, you may only
-                # send a single score and member.
-];
-
-Note:  'GX', 'LT', and 'NX' cannot be passed together, and PhpRedis will send whichever one is last in
-       the options array.</code></pre></td>
+<p>Following is information about the options that may be passed as the second argument:</p></td>
         </tr>
     </table>
 
@@ -17049,7 +16978,7 @@ Note:  'GX', 'LT', and 'NX' cannot be passed together, and PhpRedis will send wh
             </div>
                     <div class="method-item">
                     <h3 id="method_zCard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3579">at line 3579</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3469">at line 3469</a></div>
         <code>                    Redis|int|false
     <strong>zCard</strong>(string $key)
         </code>
@@ -17110,7 +17039,7 @@ Note:  'GX', 'LT', and 'NX' cannot be passed together, and PhpRedis will send wh
             </div>
                     <div class="method-item">
                     <h3 id="method_zCount">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3597">at line 3597</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3487">at line 3487</a></div>
         <code>                    Redis|int|false
     <strong>zCount</strong>(string $key, string $start, string $end)
         </code>
@@ -17187,7 +17116,7 @@ Note:  'GX', 'LT', and 'NX' cannot be passed together, and PhpRedis will send wh
             </div>
                     <div class="method-item">
                     <h3 id="method_zIncrBy">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3612">at line 3612</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3502">at line 3502</a></div>
         <code>                    Redis|float|false
     <strong>zIncrBy</strong>(string $key, float $value, mixed $member)
         </code>
@@ -17261,7 +17190,7 @@ Note:  'GX', 'LT', and 'NX' cannot be passed together, and PhpRedis will send wh
             </div>
                     <div class="method-item">
                     <h3 id="method_zLexCount">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3630">at line 3630</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3520">at line 3520</a></div>
         <code>                    Redis|int|false
     <strong>zLexCount</strong>(string $key, string $min, string $max)
         </code>
@@ -17334,7 +17263,7 @@ $redis-&gt;zLexCount(&#039;captains&#039;, &#039;[A&#039;, &#039;[S&#039;);</pre
             </div>
                     <div class="method-item">
                     <h3 id="method_zMscore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3649">at line 3649</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3539">at line 3539</a></div>
         <code>                    Redis|array|false
     <strong>zMscore</strong>(string $key, mixed $member, mixed ...$other_members)
         </code>
@@ -17408,7 +17337,7 @@ $redis-&gt;zMScore(&#039;zs&#039;, &#039;one&#039;, &#039;not-a-member&#039;);</
             </div>
                     <div class="method-item">
                     <h3 id="method_zPopMax">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3667">at line 3667</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3557">at line 3557</a></div>
         <code>                    Redis|array|false
     <strong>zPopMax</strong>(string $key, int $count = null)
         </code>
@@ -17477,7 +17406,7 @@ $redis-&gt;zPopMax(&#039;zs&#039;, 2);.</pre></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_zPopMin">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3685">at line 3685</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3575">at line 3575</a></div>
         <code>                    Redis|array|false
     <strong>zPopMin</strong>(string $key, int $count = null)
         </code>
@@ -17546,7 +17475,7 @@ $redis-&gt;zPopMin(&#039;zs&#039;, 2);</pre></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_zRange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3720">at line 3720</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3610">at line 3610</a></div>
         <code>                    Redis|array|false
     <strong>zRange</strong>(string $key, mixed $start, mixed $end, array|bool|null $options = null)
         </code>
@@ -17585,11 +17514,11 @@ are passed in.</p></p>
 the command, or for historical purposes a boolean which
 controls just the 'WITHSCORES' option.</p>
 <pre><code>$options = [
-    'WITHSCORES' =&gt; true,     // Return both scores and members.
-    'LIMIT'      =&gt; [10, 10], // Start at offset 10 and return 10 elements.
-    'REV'                     // Return the elements in reverse order
-    'BYSCORE',                // Treat `start` and `end` as scores instead
-    'BYLEX'                   // Treat `start` and `end` as lexicographical values.
+    'WITHSCORES' =&gt; true,     # Return both scores and members.
+    'LIMIT'      =&gt; [10, 10], # Start at offset 10 and return 10 elements.
+    'REV'                     # Return the elements in reverse order
+    'BYSCORE',                # Treat `start` and `end` as scores instead
+    'BYLEX'                   # Treat `start` and `end` as lexicographical values.
 ];</code></pre>
 <p>Note:  'BYLEX' and 'BYSCORE' are mutually exclusive.</p></td>
             </tr>
@@ -17636,7 +17565,7 @@ controls just the 'WITHSCORES' option.</p>
             </div>
                     <div class="method-item">
                     <h3 id="method_zRangeByLex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3742">at line 3742</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3632">at line 3632</a></div>
         <code>                    Redis|array|false
     <strong>zRangeByLex</strong>(string $key, string $min, string $max, int $offset = -1, int $count = -1)
         </code>
@@ -17721,7 +17650,7 @@ $redis-&gt;zRangeByLex(&#039;captains&#039;, &#039;[A&#039;, &#039;[S&#039;, 2, 
             </div>
                     <div class="method-item">
                     <h3 id="method_zRangeByScore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3763">at line 3763</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3653">at line 3653</a></div>
         <code>                    Redis|array|false
     <strong>zRangeByScore</strong>(string $key, string $start, string $end, array $options = [])
         </code>
@@ -17803,7 +17732,7 @@ $redis-&gt;zRangeByLex(&#039;captains&#039;, &#039;[A&#039;, &#039;[S&#039;, 2, 
             </div>
                     <div class="method-item">
                     <h3 id="method_zrangestore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3783">at line 3783</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3673">at line 3673</a></div>
         <code>                    Redis|int|false
     <strong>zrangestore</strong>(string $dstkey, string $srckey, string $start, string $end, array|bool|null $options = NULL)
         </code>
@@ -17883,7 +17812,7 @@ it will store them in a destination key provided by the user</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_zRandMember">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3802">at line 3802</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3692">at line 3692</a></div>
         <code>                    Redis|string|array
     <strong>zRandMember</strong>(string $key, array $options = null)
         </code>
@@ -17952,7 +17881,7 @@ it will store them in a destination key provided by the user</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_zRank">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3816">at line 3816</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3706">at line 3706</a></div>
         <code>                    Redis|int|false
     <strong>zRank</strong>(string $key, mixed $member)
         </code>
@@ -18021,7 +17950,7 @@ it will store them in a destination key provided by the user</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_zRem">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3831">at line 3831</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3721">at line 3721</a></div>
         <code>                    Redis|int|false
     <strong>zRem</strong>(mixed $key, mixed $member, mixed ...$other_members)
         </code>
@@ -18092,7 +18021,7 @@ it will store them in a destination key provided by the user</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_zRemRangeByLex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3848">at line 3848</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3738">at line 3738</a></div>
         <code>                    Redis|int|false
     <strong>zRemRangeByLex</strong>(string $key, string $min, string $max)
         </code>
@@ -18172,7 +18101,7 @@ it will store them in a destination key provided by the user</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_zRemRangeByRank">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3863">at line 3863</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3753">at line 3753</a></div>
         <code>                    Redis|int|false
     <strong>zRemRangeByRank</strong>(string $key, int $start, int $end)
         </code>
@@ -18243,7 +18172,7 @@ it will store them in a destination key provided by the user</p></p>
             </div>
                     <div class="method-item">
                     <h3 id="method_zRemRangeByScore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3880">at line 3880</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3770">at line 3770</a></div>
         <code>                    Redis|int|false
     <strong>zRemRangeByScore</strong>(string $key, string $start, string $end)
         </code>
@@ -18315,7 +18244,7 @@ $redis-&gt;zRemRangeByScore(&#039;zs&#039;, 2, 4);</pre></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_zRevRange">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3901">at line 3901</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3791">at line 3791</a></div>
         <code>                    Redis|array|false
     <strong>zRevRange</strong>(string $key, int $start, int $end, mixed $scores = null)
         </code>
@@ -18401,7 +18330,7 @@ on failure.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_zRevRangeByLex">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3920">at line 3920</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3810">at line 3810</a></div>
         <code>                    Redis|array|false
     <strong>zRevRangeByLex</strong>(string $key, string $max, string $min, int $offset = -1, int $count = -1)
         </code>
@@ -18491,7 +18420,7 @@ on failure.</p></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_zRevRangeByScore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3955">at line 3955</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3845">at line 3845</a></div>
         <code>                    Redis|array|false
     <strong>zRevRangeByScore</strong>(string $key, string $max, string $min, array|bool $options = [])
         </code>
@@ -18581,7 +18510,7 @@ $redis-&gt;zRevRangeByScore(&#039;oldest-people&#039;, &#039;117.5&#039;, &#039;
             </div>
                     <div class="method-item">
                     <h3 id="method_zRevRank">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3973">at line 3973</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3863">at line 3863</a></div>
         <code>                    Redis|int|false
     <strong>zRevRank</strong>(string $key, mixed $member)
         </code>
@@ -18651,7 +18580,7 @@ $redis-&gt;zrevrank(&#039;ds9-characters&#039;, &#039;Garak&#039;);</pre></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_zScore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3989">at line 3989</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3879">at line 3879</a></div>
         <code>                    Redis|float|false
     <strong>zScore</strong>(string $key, mixed $member)
         </code>
@@ -18718,7 +18647,7 @@ $redis-&gt;zScore(&#039;telescopes&#039;, &#039;LBT&#039;);</pre></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_zdiff">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L4010">at line 4010</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3900">at line 3900</a></div>
         <code>                    Redis|array|false
     <strong>zdiff</strong>(array $keys, array $options = null)
         </code>
@@ -18790,7 +18719,7 @@ $redis-&gt;zDiff([&#039;primes&#039;, &#039;evens&#039;, &#039;mod3&#039;]);</pr
             </div>
                     <div class="method-item">
                     <h3 id="method_zdiffstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L4026">at line 4026</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3916">at line 3916</a></div>
         <code>                    Redis|int|false
     <strong>zdiffstore</strong>(string $dst, array $keys)
         </code>
@@ -18856,7 +18785,7 @@ Redis::zdiff</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_zinter">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L4049">at line 4049</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3939">at line 3939</a></div>
         <code>                    Redis|array|false
     <strong>zinter</strong>(array $keys, array|null $weights = null, array|null $options = null)
         </code>
@@ -18934,7 +18863,7 @@ $redis-&gt;zInter([&#039;TNG&#039;, &#039;DS9&#039;], NULL, [&#039;withscores&#0
             </div>
                     <div class="method-item">
                     <h3 id="method_zintercard">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L4072">at line 4072</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3962">at line 3962</a></div>
         <code>                    Redis|int|false
     <strong>zintercard</strong>(array $keys, int $limit = -1)
         </code>
@@ -19019,7 +18948,7 @@ $redis-&gt;zInterCard([&#039;zs1&#039;, &#039;zs2&#039;]);</pre></td>
             </div>
                     <div class="method-item">
                     <h3 id="method_zinterstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L4099">at line 4099</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L3989">at line 3989</a></div>
         <code>                    Redis|int|false
     <strong>zinterstore</strong>(string $dst, array $keys, array|null $weights = null, string|null $aggregate = null)
         </code>
@@ -19109,7 +19038,7 @@ $redis-&gt;zInterStore(&#039;fruit-max&#039;, [&#039;zs1&#039;, &#039;zs2&#039;,
             </div>
                     <div class="method-item">
                     <h3 id="method_zscan">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L4123">at line 4123</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L4013">at line 4013</a></div>
         <code>                    Redis|array|false
     <strong>zscan</strong>(string $key, int|null $iterator, string|null $pattern = null, int $count = 0)
         </code>
@@ -19195,7 +19124,7 @@ Redis::scan</a>
             </div>
                     <div class="method-item">
                     <h3 id="method_zunion">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L4158">at line 4158</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L4048">at line 4048</a></div>
         <code>                    Redis|array|false
     <strong>zunion</strong>(array $keys, array|null $weights = null, array|null $options = null)
         </code>
@@ -19228,12 +19157,12 @@ elements as the $keys array.</p></td>
                 <td>$options</td>
                 <td><p>An array that modifies how this command functions.</p>
 <pre><code>$options = [
-    // By default when members exist in more than one set Redis will SUM
-    // total score for each match.  Instead, it can return the AVG, MIN,
-    // or MAX value based on this option.
+    # By default when members exist in more than one set Redis will SUM
+    # total score for each match.  Instead, it can return the AVG, MIN,
+    # or MAX value based on this option.
     'AGGREGATE' =&gt; 'sum' | 'min' | 'max'
 
-    // Whether Redis should also return each members aggregated score.
+    # Whether Redis should also return each members aggregated score.
     'WITHSCORES' =&gt; true | false
 ]</code></pre></td>
             </tr>
@@ -19273,7 +19202,7 @@ $redis-&gt;zUnion([&#039;store1&#039;, &#039;store3&#039;], [2, .5], [&#039;with
             </div>
                     <div class="method-item">
                     <h3 id="method_zunionstore">
-        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L4181">at line 4181</a></div>
+        <div class="location"><a href="https://github.com/phpredis/phpredis/blob/main/redis.stub.php#L4071">at line 4071</a></div>
         <code>                    Redis|int|false
     <strong>zunionstore</strong>(string $dst, array $keys, array|null $weights = NULL, string|null $aggregate = NULL)
         </code>
