@@ -140,7 +140,7 @@ PHP_METHOD(RedisSentinel, ping)
 
 PHP_METHOD(RedisSentinel, reset)
 {
-    REDIS_PROCESS_KW_CMD("reset", redis_sentinel_str_cmd, redis_boolean_response);
+    REDIS_PROCESS_KW_CMD("reset", redis_sentinel_str_cmd, redis_long_response);
 }
 
 PHP_METHOD(RedisSentinel, sentinels)

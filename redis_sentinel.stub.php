@@ -33,7 +33,7 @@ class RedisSentinel {
 	/** @return bool|RedisSentinel */
     public function ping();
 
-	/** @return bool|RedisSentinel */
+	/** @return int|RedisSentinel */
     public function reset(string $pattern);
 
 	/** @return array|bool|RedisSentinel */
