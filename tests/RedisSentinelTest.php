@@ -96,7 +96,7 @@ class Redis_Sentinel_Test extends TestSuite
 
     public function testReset()
     {
-        $this->assertFalse($this->sentinel->reset('*'));
+        $this->assertEquals(1, $this->sentinel->reset('*'));
     }
 
     public function testSentinels()
