@@ -435,8 +435,8 @@ class Redis {
      * @param array  $options An array with modifiers on how COPY should operate.
      *                        <code>
      *                        $options = [
-     *                            'REPLACE' => true|false // Whether to replace an existing key.
-     *                            'DB' => int             // Copy key to specific db.
+     *                            'REPLACE' => true|false # Whether to replace an existing key.
+     *                            'DB' => int             # Copy key to specific db.
      *                        ];
      *                        </code>
      *
@@ -856,19 +856,19 @@ class Redis {
      * @param array  $options An array of options that modifies how the command behaves.
      *                        <code>
      *                        $options = [
-     *                            'WITHCOORD',     // Return members and their coordinates.
-     *                            'WITHDIST',      // Return members and their distances from the center.
-     *                            'WITHHASH',      // Return members GeoHash string.
-     *                            'ASC' | 'DESC',  // The sort order of returned members
+     *                            'WITHCOORD',     # Return members and their coordinates.
+     *                            'WITHDIST',      # Return members and their distances from the center.
+     *                            'WITHHASH',      # Return members GeoHash string.
+     *                            'ASC' | 'DESC',  # The sort order of returned members
      *
-     *                            // Limit to N returned members.  Optionally a two element array may be
-     *                            // passed as the `LIMIT` argument, and the `ANY` argument.
+     *                            # Limit to N returned members.  Optionally a two element array may be
+     *                            # passed as the `LIMIT` argument, and the `ANY` argument.
      *                            'COUNT' => [<int>], or [<int>, <bool>]
      *
-     *                            // Instead of returning members, store them in the specified key.
+     *                            # Instead of returning members, store them in the specified key.
      *                            'STORE' => <string>
      *
-     *                            // Store the distances in the specified key
+     *                            # Store the distances in the specified key
      *                            'STOREDIST' => <string>
      *                        ];
      *                        </code>
@@ -940,11 +940,11 @@ class Redis {
      * @param array           $options
      *                        <code>
      *                        $options = [
-     *                            'ASC' | 'DESC',  // The sort order of returned members
-     *                            'WITHDIST'       // Also store distances.
+     *                            'ASC' | 'DESC',  # The sort order of returned members
+     *                            'WITHDIST'       # Also store distances.
      *
-     *                            // Limit to N returned members.  Optionally a two element array may be
-     *                            // passed as the `LIMIT` argument, and the `ANY` argument.
+     *                            # Limit to N returned members.  Optionally a two element array may be
+     *                            # passed as the `LIMIT` argument, and the `ANY` argument.
      *                            'COUNT' => [<int>], or [<int>, <bool>]
      *                        ];
      *                        </code>
@@ -991,11 +991,11 @@ class Redis {
      * @param array $options Options to modify how the command works.
      *                       <code>
      *                       $options = [
-     *                           'EX'     => <seconds>      // Expire in N seconds
-     *                           'PX'     => <milliseconds> // Expire in N milliseconds
-     *                           'EXAT'   => <timestamp>    // Expire at a unix timestamp (in seconds)
-     *                           'PXAT'   => <mstimestamp>  // Expire at a unix timestamp (in milliseconds);
-     *                           'PERSIST'                  // Remove any configured expiration on the key.
+     *                           'EX'     => <seconds>      # Expire in N seconds
+     *                           'PX'     => <milliseconds> # Expire in N milliseconds
+     *                           'EXAT'   => <timestamp>    # Expire at a unix timestamp (in seconds)
+     *                           'PXAT'   => <mstimestamp>  # Expire at a unix timestamp (in milliseconds);
+     *                           'PERSIST'                  # Remove any configured expiration on the key.
      *                       ];
      *                       </code>
      *
@@ -1102,14 +1102,14 @@ class Redis {
      *
      *                        <code>
      *                        $options = [
-     *                            'MINMATCHLEN'  => int  // Exclude matching substrings that are less than this value
+     *                            'MINMATCHLEN'  => int  # Exclude matching substrings that are less than this value
      *
-     *                            'WITHMATCHLEN' => bool // Whether each match should also include its length.
+     *                            'WITHMATCHLEN' => bool # Whether each match should also include its length.
      *
-     *                            'LEN'                  // Return the length of the longest subsequence
+     *                            'LEN'                  # Return the length of the longest subsequence
      *
-     *                            'IDX'                  // Each returned match will include the indexes where the
-     *                                                   // match occurs in each string.
+     *                            'IDX'                  # Each returned match will include the indexes where the
+     *                                                   # match occurs in each string.
      *                        ];
      *                        </code>
      *
@@ -1296,8 +1296,8 @@ class Redis {
      *
      *                        <code>
      *                        $options = [
-     *                            'COUNT'      => int  // An optional number of fields to return.
-     *                            'WITHVALUES' => bool // Also return the field values.
+     *                            'COUNT'      => int  # An optional number of fields to return.
+     *                            'WITHVALUES' => bool # Also return the field values.
      *                        ];
      *                        </code>
      *
@@ -1527,18 +1527,18 @@ class Redis {
      * @param array  $options Options to configure how the command operates
      *                        <code>
      *                        $options = [
-     *                            // How many matches to return.  By default a single match is returned.
-     *                            // If count is set to zero, it means unlimited.
+     *                            # How many matches to return.  By default a single match is returned.
+     *                            # If count is set to zero, it means unlimited.
      *                            'COUNT' => <num-matches>
      *
-     *                            // Specify which match you want returned.  `RANK` 1 means "the first match"
-     *                            // 2 meaans the second, and so on.  If passed as a negative number the
-     *                            // RANK is computed right to left, so a `RANK` of -1 means "the last match".
+     *                            # Specify which match you want returned.  `RANK` 1 means "the first match"
+     *                            # 2 means the second, and so on.  If passed as a negative number the
+     *                            # RANK is computed right to left, so a `RANK` of -1 means "the last match".
      *                            'RANK'  => <rank>
      *
-     *                            // This argument allows you to limit how many elements Redis will search before
-     *                            // returning.  This is useful to prevent Redis searching very long lists while
-     *                            // blocking the client.
+     *                            # This argument allows you to limit how many elements Redis will search before
+     *                            # returning.  This is useful to prevent Redis searching very long lists while
+     *                            # blocking the client.
      *                            'MAXLEN => <max-len>
      *                        ];
      *                        </code>
@@ -2021,16 +2021,16 @@ class Redis {
      *
      *                        <code>
      *                        $options = [
-     *                            'ABSTTL'          // If this is present, the `$ttl` provided by the user should
-     *                                              // be an absolute timestamp, in milliseconds()
+     *                            'ABSTTL'          # If this is present, the `$ttl` provided by the user should
+     *                                              # be an absolute timestamp, in milliseconds()
      *
-     *                            'REPLACE'         // This flag instructs Redis to store the key even if a key with
-     *                                              // that name already exists.
+     *                            'REPLACE'         # This flag instructs Redis to store the key even if a key with
+     *                                              # that name already exists.
      *
-     *                            'IDLETIME' => int // Tells Redis to set the keys internal 'idletime' value to a
-     *                                              // specific number (see the Redis command OBJECT for more info).
-     *                            'FREQ'     => int // Tells Redis to set the keys internal 'FREQ' value to a specific
-     *                                              // number (this relates to Redis' LFU eviction algorithm).
+     *                            'IDLETIME' => int # Tells Redis to set the keys internal 'idletime' value to a
+     *                                              # specific number (see the Redis command OBJECT for more info).
+     *                            'FREQ'     => int # Tells Redis to set the keys internal 'FREQ' value to a specific
+     *                                              # number (this relates to Redis' LFU eviction algorithm).
      *                        ];
      *                        </code>
      *
@@ -2920,24 +2920,10 @@ class Redis {
      *     Redis::REDIS_HASH
      *     Redis::REDIS_STREAM
      *
-     * <code>
-     * <?php
-     * $redis = new Redis(['host' => 'localhost']);
-     *
-     * // NOTE:  Never use 'KEYS' in production!
-     * $keys = $redis->keys('*');
-     *
-     * $redis->pipeline();
-     * foreach ($keys as $key) {
-     *     $redis->type($key);
+     * @example
+     * foreach ($redis->keys('*') as $key) {
+     *     echo "$key => " . $redis->type($key) . "\n";
      * }
-     *
-     * $ktypes = array_combine($keys, $redis->exec());
-     *
-     * // Print each key with its corresponding type
-     * print_r($ktypes);
-     * ?>
-     * </code>
      */
     public function type(string $key): Redis|int|false;
 
@@ -2965,13 +2951,13 @@ class Redis {
     /**
      * Unsubscribe from one or more subscribed channels.
      *
+     * @param array $channels One or more channels to unsubscribe from.
+     * @return Redis|array|bool The array of unsubscribed channels.
+     *
      * @see https://redis.io/commands/unsubscribe
      * @see Redis::subscribe()
      *
-     * <code>
-     * <?php
-     * $redis = new Redis(['host' => 'localhost']);
-     *
+     * @example
      * $redis->subscribe(['channel-1', 'channel-2'], function ($redis, $channel, $message) {
      *     if ($message == 'quit') {
      *         echo "$channel => 'quit' detected, unsubscribing!\n";
@@ -2982,8 +2968,6 @@ class Redis {
      * });
      *
      * echo "We've unsubscribed from both channels, exiting\n";
-     * ?>
-     * </code>
      */
     public function unsubscribe(array $channels): Redis|array|bool;
 
@@ -3001,18 +2985,16 @@ class Redis {
     /**
      * Watch one or more keys for conditional execution of a transaction.
      *
-     * @see https://redis.io/commands/watch
-     * @see https://redis.io/commands/unwatch
-     *
      * @param array|string $key_or_keys  Either an array with one or more key names, or a string key name
      * @param string       $other_keys   If the first argument was passed as a string, any number of additional
      *                                   string key names may be passed variadically.
-     *
      * @return Redis|bool
      *
-     * <code>
-     * <?php
      *
+     * @see https://redis.io/commands/watch
+     * @see https://redis.io/commands/unwatch
+     *
+     * @example
      * $redis1 = new Redis(['host' => 'localhost']);
      * $redis2 = new Redis(['host' => 'localhost']);
      *
@@ -3037,8 +3019,6 @@ class Redis {
      *
      * // bool(false)
      * var_dump($res);
-     * </code>
-     *
      */
     public function watch(array|string $key, string ...$other_keys): Redis|bool;
 
@@ -3060,16 +3040,17 @@ class Redis {
      * Acknowledge one ore more messages that are pending (have been consumed using XREADGROUP but
      * not yet acknowledged by XACK.)
      *
+     * @param string $key   The stream to query.
+     * @param string $group The consumer group to use.
+     * @param array  $ids   An array of stream entry IDs.
+     *
+     * @return int|false The number of acknowledged messages
+     *
      * @see https://redis.io/commands/xack
      * @see https://redis.io/commands/xreadgroup
      * @see Redis::xack()
      *
-     * <code>
-     * <?php
-     * $redis = new Redis(['host' => 'localhost']);
-     *
-     * $redis->del('ships');
-     *
+     * @example
      * $redis->xAdd('ships', '*', ['name' => 'Enterprise']);
      * $redis->xAdd('ships', '*', ['name' => 'Defiant']);
      *
@@ -3093,8 +3074,6 @@ class Redis {
      * // The message should no longer be pending.
      * $res = $redis->xPending('ships', 'Federation');
      * var_dump($res);
-     * ?>
-     * </code>
      */
     public function xack(string $key, string $group, array $ids): int|false;
 
@@ -3139,12 +3118,7 @@ class Redis {
      *
      * @return Redis|array|bool An array of pending IDs or false if there are none, or on failure.
      *
-     * <code>
-     * <?php
-     * $redis = new Redis(['host' => 'localhost']);
-     *
-     * $redis->del('ships');
-     *
+     * @example
      * $redis->xGroup('CREATE', 'ships', 'combatants', '0-0', true);
      *
      * $redis->xAdd('ships', '1424-74205', ['name' => 'Defiant']);
@@ -3154,25 +3128,6 @@ class Redis {
      *
      * // The "Jem'Hadar" consumer has the message presently
      * $pending = $redis->xPending('ships', 'combatants');
-     *
-     * //array(4) {
-     * //  [0]=>
-     * //  int(1)
-     * //  [1]=>
-     * //  string(10) "1424-74205"
-     * //  [2]=>
-     * //  string(10) "1424-74205"
-     * //  [3]=>
-     * //  array(1) {
-     * //    [0]=>
-     * //    array(2) {
-     * //      [0]=>
-     * //      string(9) "Jem'Hadar"
-     * //      [1]=>
-     * //      string(1) "1"
-     * //    }
-     * //  }
-     * //}
      * var_dump($pending);
      *
      * // Asssume control of the pending message with a different consumer.
@@ -3180,28 +3135,7 @@ class Redis {
      *
      * // Now the 'Sisko' consumer owns the message
      * $pending = $redis->xPending('ships', 'combatants');
-     *
-     * // array(4) {
-     * //   [0]=>
-     * //   int(1)
-     * //   [1]=>
-     * //   string(10) "1424-74205"
-     * //   [2]=>
-     * //   string(10) "1424-74205"
-     * //   [3]=>
-     * //   array(1) {
-     * //     [0]=>
-     * //     array(2) {
-     * //       [0]=>
-     * //       string(5) "Sisko"
-     * //       [1]=>
-     * //       string(1) "1"
-     * //     }
-     * //   }
-     * // }
      * var_dump($pending);
-     * ?>
-     * </code>
      */
     public function xautoclaim(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false): Redis|bool|array;
 
@@ -3219,28 +3153,26 @@ class Redis {
      * @param array  $options        An options array that modifies how the command operates.
      *
      *                               <code>
-     *                               // Following is an options array describing every option you can pass.  Note that
-     *                               // 'IDLE', and 'TIME' are mutually exclusive.
+     *                               # Following is an options array describing every option you can pass.  Note that
+     *                               # 'IDLE', and 'TIME' are mutually exclusive.
      *                               $options = [
-     *                                   'IDLE'       => 3            // Set the idle time of the message to a 3.  By default the
-     *                                                                // idle time is set to zero.
-     *                                   'TIME'       => 1000*time()  // Same as IDLE except it takes a unix timestamp in milliseconds.
-     *                                   'RETRYCOUNT' => 0            // Set the retry counter to zero.  By default XCLAIM doesn't modify
-     *                                                                // the counter.
-     *                                   'FORCE'                      // Creates the pending message entry even if IDs are not already
-     *                                                                // in the PEL with another client.
-     *                                   'JUSTID'                     // Return only an array of IDs rather than the messages themselves.
+     *                                   'IDLE'       => 3            # Set the idle time of the message to a 3.  By default
+     *                                                                # the idle time is set to zero.
+     *                                   'TIME'       => 1000*time()  # Same as IDLE except it takes a unix timestamp in
+     *                                                                # milliseconds.
+     *                                   'RETRYCOUNT' => 0            # Set the retry counter to zero.  By default XCLAIM
+     *                                                                # doesn't modify the counter.
+     *                                   'FORCE'                      # Creates the pending message entry even if IDs are
+     *                                                                # not already
+     *                                                                # in the PEL with another client.
+     *                                   'JUSTID'                     # Return only an array of IDs rather than the messages
+     *                                                                # themselves.
      *                               ];
      *                               </code>
      *
      * @return Redis|array|bool      An array of claimed messags or false on failure.
      *
-     * <code>
-     * <?php
-     * $redis = new Redis(['host' => 'localhost']);
-     *
-     * $redis->del('ships');
-     *
+     * @example
      * $redis->xGroup('CREATE', 'ships', 'combatants', '0-0', true);
      *
      * $redis->xAdd('ships', '1424-74205', ['name' => 'Defiant']);
@@ -3250,62 +3182,17 @@ class Redis {
      *
      * // The "Jem'Hadar" consumer has the message presently
      * $pending = $redis->xPending('ships', 'combatants');
-     *
-     * //array(4) {
-     * //  [0]=>
-     * //  int(1)
-     * //  [1]=>
-     * //  string(10) "1424-74205"
-     * //  [2]=>
-     * //  string(10) "1424-74205"
-     * //  [3]=>
-     * //  array(1) {
-     * //    [0]=>
-     * //    array(2) {
-     * //      [0]=>
-     * //      string(9) "Jem'Hadar"
-     * //      [1]=>
-     * //      string(1) "1"
-     * //    }
-     * //  }
-     * //}
      * var_dump($pending);
      *
      * assert($pending && isset($pending[1]));
      *
      * // Claim the message by ID.
      * $claimed = $redis->xClaim('ships', 'combatants', 'Sisko', 0, [$pending[1]], ['JUSTID']);
-     *
-     * // array(1) {
-     * //   [0]=>
-     * //   string(10) "1424-74205"
-     * // }
      * var_dump($claimed);
      *
      * // Now the 'Sisko' consumer owns the message
      * $pending = $redis->xPending('ships', 'combatants');
-     *
-     * // array(4) {
-     * //   [0]=>
-     * //   int(1)
-     * //   [1]=>
-     * //   string(10) "1424-74205"
-     * //   [2]=>
-     * //   string(10) "1424-74205"
-     * //   [3]=>
-     * //   array(1) {
-     * //     [0]=>
-     * //     array(2) {
-     * //       [0]=>
-     * //       string(5) "Sisko"
-     * //       [1]=>
-     * //       string(1) "1"
-     * //     }
-     * //   }
-     * // }
      * var_dump($pending);
-     * ?>
-     * </code>
      */
     public function xclaim(string $key, string $group, string $consumer, int $min_idle, array $ids, array $options): Redis|array|bool;
 
@@ -3531,32 +3418,35 @@ class Redis {
      * Add one or more elements and scores to a Redis sorted set.
      *
      * @param string       $key                  The sorted set in question.
-     * @param array|float  $score_or_options     Either the score for the first element, or an array
-     *                                           containing one or more options for the operation.
+     * @param array|float  $score_or_options     Either the score for the first element, or an array of options.
+     *                                           <code>
+     *                                            $options = [
+     *                                                'NX',       # Only update elements that already exist
+     *                                                'NX',       # Only add new elements but don't update existing ones.
+     *
+     *                                                'LT'        # Only update existing elements if the new score is
+     *                                                            # less than the existing one.
+     *                                                'GT'        # Only update existing elements if the new score is
+     *                                                            # greater than the existing one.
+     *
+     *                                                'CH'        # Instead of returning the number of elements added,
+     *                                                            # Redis will return the number Of elements that were
+     *                                                            # changed in the operation.
+     *
+     *                                                'INCR'      # Instead of setting each element to the provide score,
+     *                                                            # increment the element by the
+     *                                                            # provided score, much like ZINCRBY.  When this option
+     *                                                            # is passed, you may only send a single score and member.
+     *                                            ];
+     *
+     *                                            Note:  'GX', 'LT', and 'NX' cannot be passed together, and PhpRedis
+     *                                                   will send whichever one is last in the options array.
+     *
      * @param mixed        $more_scores_and_mems A variadic number of additional scores and members.
      *
      * @return Redis|int|false The return value varies depending on the options passed.
      *
-     * Following is information about the options that may be passed as the scond argument:
-     *
-     * <code>
-     * $options = [
-     *     'NX',       # Only update elements that already exist
-     *     'NX',       # Only add new elements but don't update existing ones.
-     *
-     *     'LT'        # Only update existing elements if the new score is less than the existing one.
-     *     'GT'        # Only update existing elements if the new score is greater than the existing one.
-     *
-     *     'CH'        # Instead of returning the number of elements added, Redis will return the number
-     *                 # Of elements that were changed in the operation.
-     *
-     *     'INCR'      # Instead of setting each element to the provide score, increment the elemnt by the
-     *                 # provided score, much like ZINCRBY.  When this option is passed, you may only
-     *                 # send a single score and member.
-     * ];
-     *
-     * Note:  'GX', 'LT', and 'NX' cannot be passed together, and PhpRedis will send whichever one is last in
-     *        the options array.
+     * Following is information about the options that may be passed as the second argument:
      *
      * @see https://redis.io/commands/zadd
      *
@@ -3698,11 +3588,11 @@ class Redis {
      *                                 controls just the 'WITHSCORES' option.
      *                                 <code>
      *                                 $options = [
-     *                                     'WITHSCORES' => true,     // Return both scores and members.
-     *                                     'LIMIT'      => [10, 10], // Start at offset 10 and return 10 elements.
-     *                                     'REV'                     // Return the elements in reverse order
-     *                                     'BYSCORE',                // Treat `start` and `end` as scores instead
-     *                                     'BYLEX'                   // Treat `start` and `end` as lexicographical values.
+     *                                     'WITHSCORES' => true,     # Return both scores and members.
+     *                                     'LIMIT'      => [10, 10], # Start at offset 10 and return 10 elements.
+     *                                     'REV'                     # Return the elements in reverse order
+     *                                     'BYSCORE',                # Treat `start` and `end` as scores instead
+     *                                     'BYLEX'                   # Treat `start` and `end` as lexicographical values.
      *                                 ];
      *                                 </code>
      *
@@ -4133,12 +4023,12 @@ class Redis {
      *
      *                        <code>
      *                        $options = [
-     *                            // By default when members exist in more than one set Redis will SUM
-     *                            // total score for each match.  Instead, it can return the AVG, MIN,
-     *                            // or MAX value based on this option.
+     *                            # By default when members exist in more than one set Redis will SUM
+     *                            # total score for each match.  Instead, it can return the AVG, MIN,
+     *                            # or MAX value based on this option.
      *                            'AGGREGATE' => 'sum' | 'min' | 'max'
      *
-     *                            // Whether Redis should also return each members aggregated score.
+     *                            # Whether Redis should also return each members aggregated score.
      *                            'WITHSCORES' => true | false
      *                        ]
      *                        </code>
