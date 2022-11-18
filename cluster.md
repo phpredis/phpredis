@@ -193,3 +193,12 @@ The save path for cluster based session storage takes the form of a PHP GET requ
   * _distribute_: phpredis will randomly distribute session reads between masters and any attached slaves (load balancing).
 * _auth (string, empty by default)_:  The password used to authenticate with the server prior to sending commands.
 * _stream (array)_: ssl/tls stream context options.
+
+### redis.session.early_refresh
+Under normal operation, the client will refresh the session's expiry ttl whenever the session is closed. However, we can save this additional round-trip by updating the ttl when the session is opened instead ( This means that sessions that have not been modified will not send further commands to the server ).
+
+To enable, set the following INI variable:
+```ini
+redis.session.early_refresh = 1
+```
+Note: This is disabled by default since it may significantly reduce the session lifetime for long-running scripts. Redis server version 6.2+ required.

@@ -20,6 +20,9 @@ PS_READ_FUNC(rediscluster);
 PS_WRITE_FUNC(rediscluster);
 PS_DESTROY_FUNC(rediscluster);
 PS_GC_FUNC(rediscluster);
+PS_CREATE_SID_FUNC(rediscluster);
+PS_VALIDATE_SID_FUNC(rediscluster);
+PS_UPDATE_TIMESTAMP_FUNC(rediscluster);
 
 #endif
 #endif
