@@ -60,7 +60,7 @@ ps_module ps_mod_redis = {
 };
 
 ps_module ps_mod_redis_cluster = {
-    PS_MOD(rediscluster)
+    PS_MOD_UPDATE_TIMESTAMP(rediscluster)
 };
 
 typedef struct {
@@ -982,6 +982,166 @@ failure:
     return FAILURE;
 }
 
+/* {{{ PS_CREATE_SID_FUNC
+ */
+PS_CREATE_SID_FUNC(rediscluster)
+{
+    redisCluster *c = PS_GET_MOD_DATA();
+    clusterReply *reply;
+    char *cmd, *skey;
+    zend_string *sid;
+    int cmdlen, skeylen;
+    int retries = 3;
+    short slot;
+
+    if (!c) {
+        return php_session_create_id(NULL);
+    }
+
+    if (INI_INT("session.use_strict_mode") == 0) {
+        return php_session_create_id((void **) &c);
+    }
+
+    while (retries-- > 0) {
+        sid = php_session_create_id((void **) &c);
+
+        /* Create session key if it doesn't already exist */
+        skey = cluster_session_key(c, ZSTR_VAL(sid), ZSTR_LEN(sid), &skeylen, &slot);
+        cmdlen = redis_spprintf(NULL, NULL, &cmd, "SET", "ssssd", skey,
+                        skeylen, "", 0, "NX", 2, "EX", 2, session_gc_maxlifetime());
+
+        efree(skey);
+
+        /* Attempt to kick off our command */
+        c->readonly = 0;
+        if (cluster_send_command(c,slot,cmd,cmdlen) < 0 || c->err) {
+            php_error_docref(NULL, E_NOTICE, "Redis connection not available");
+            efree(cmd);
+            zend_string_release(sid);
+            return php_session_create_id(NULL);;
+        }
+
+        efree(cmd);
+
+        /* Attempt to read reply */
+        reply = cluster_read_resp(c, 1);
+
+        if (!reply || c->err) {
+            php_error_docref(NULL, E_NOTICE, "Unable to read redis response");
+        } else if (reply->len > 0) {
+            cluster_free_reply(reply, 1);
+            break;
+        } else {
+            php_error_docref(NULL, E_NOTICE, "Redis sid collision on %s, retrying %d time(s)", sid->val, retries);
+        }
+
+        if (reply) {
+            cluster_free_reply(reply, 1);
+        }
+
+        zend_string_release(sid);
+        sid = NULL;
+    }
+
+    return sid;
+}
+/* }}} */
+
+/* {{{ PS_VALIDATE_SID_FUNC
+ */
+PS_VALIDATE_SID_FUNC(rediscluster)
+{
+    redisCluster *c = PS_GET_MOD_DATA();
+    clusterReply *reply;
+    char *cmd, *skey;
+    int cmdlen, skeylen;
+    int res = FAILURE;
+    short slot;
+
+    /* Check key is valid and whether it already exists */
+    if (php_session_valid_key(ZSTR_VAL(key)) == FAILURE) {
+        php_error_docref(NULL, E_NOTICE, "Invalid session key: %s", ZSTR_VAL(key));
+        return FAILURE;
+    }
+
+    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
+    cmdlen = redis_spprintf(NULL, NULL, &cmd, "EXISTS", "s", skey, skeylen);
+    efree(skey);
+
+    /* We send to master, to ensure consistency */
+    c->readonly = 0;
+    if (cluster_send_command(c,slot,cmd,cmdlen) < 0 || c->err) {
+        php_error_docref(NULL, E_NOTICE, "Redis connection not available");
+        efree(cmd);
+        return FAILURE;
+    }
+
+    efree(cmd);
+
+    /* Attempt to read reply */
+    reply = cluster_read_resp(c, 0);
+
+    if (!reply || c->err) {
+        php_error_docref(NULL, E_NOTICE, "Unable to read redis response");
+        res = FAILURE;
+    } else if (reply->integer == 1) {
+        res = SUCCESS;
+    }
+
+     /* Clean up */
+    if (reply) {
+        cluster_free_reply(reply, 1);
+    }
+
+    return res;
+}
+/* }}} */
+
+/* {{{ PS_UPDATE_TIMESTAMP_FUNC
+ */
+PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
+    redisCluster *c = PS_GET_MOD_DATA();
+    clusterReply *reply;
+    char *cmd, *skey;
+    int cmdlen, skeylen;
+    short slot;
+
+    /* No need to update the session timestamp if we've already done so */
+    if (INI_INT("redis.session.early_refresh")) {
+        return SUCCESS;
+    }
+
+    /* Set up command and slot info */
+    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
+    cmdlen = redis_spprintf(NULL, NULL, &cmd, "EXPIRE", "sd", skey,
+                            skeylen, session_gc_maxlifetime());
+    efree(skey);
+
+    /* Attempt to send EXPIRE command */
+    c->readonly = 0;
+    if (cluster_send_command(c,slot,cmd,cmdlen) < 0 || c->err) {
+        php_error_docref(NULL, E_NOTICE, "Redis unable to update session expiry"); 
+        efree(cmd);
+        return FAILURE;
+    }
+
+    /* Clean up our command */
+    efree(cmd);
+
+    /* Attempt to read reply */
+    reply = cluster_read_resp(c, 0);
+    if (!reply || c->err) {
+        if (reply) cluster_free_reply(reply, 1);
+        return FAILURE;
+    }
+
+    /* Clean up */
+    cluster_free_reply(reply, 1);
+
+    return SUCCESS;
+}
+/* }}} */
+
 /* {{{ PS_READ_FUNC
  */
 PS_READ_FUNC(rediscluster) {
@@ -994,11 +1154,19 @@ PS_READ_FUNC(rediscluster) {
     /* Set up our command and slot information */
     skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
 
-    cmdlen = redis_spprintf(NULL, NULL, &cmd, "GET", "s", skey, skeylen);
+    /* Update the session ttl if early refresh is enabled */
+    if (INI_INT("redis.session.early_refresh")) {
+        cmdlen = redis_spprintf(NULL, NULL, &cmd, "GETEX", "ssd", skey,
+                                skeylen, "EX", 2, session_gc_maxlifetime());
+        c->readonly = 0;
+    } else {
+        cmdlen = redis_spprintf(NULL, NULL, &cmd, "GET", "s", skey, skeylen);
+        c->readonly = 1;
+    }
+    
     efree(skey);
 
     /* Attempt to kick off our command */
-    c->readonly = 1;
     if (cluster_send_command(c,slot,cmd,cmdlen) < 0 || c->err) {
         efree(cmd);
         return FAILURE;
