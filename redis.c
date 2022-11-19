@@ -3077,7 +3077,7 @@ PHP_METHOD(Redis, rawcommand) {
  *     proto array Redis::command('info', string cmd)
  *     proto array Redis::command('getkeys', array cmd_args) */
 PHP_METHOD(Redis, command) {
-    REDIS_PROCESS_CMD(command, redis_read_variant_reply);
+    REDIS_PROCESS_CMD(command, redis_command_response);
 }
 /* }}} */
 
