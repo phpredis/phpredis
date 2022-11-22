@@ -7,6 +7,421 @@
  */
 
 class Redis {
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_NOT_FOUND
+     *
+     */
+    public const REDIS_NOT_FOUND = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_STRING
+     *
+     */
+    public const REDIS_STRING = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_SET
+     *
+     */
+    public const REDIS_SET = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_LIST
+     *
+     */
+    public const REDIS_LIST = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_ZSET
+     *
+     */
+    public const REDIS_ZSET = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_HASH
+     *
+     */
+    public const REDIS_HASH = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_STREAM
+     *
+     */
+    public const REDIS_STREAM = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue ATOMIC
+     *
+     */
+    public const ATOMIC = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue MULTI
+     *
+     */
+    public const MULTI = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue PIPELINE
+     *
+     */
+    public const PIPELINE = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_OPT_SERIALIZER
+     *
+     */
+    public const OPT_SERIALIZER = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_OPT_PREFIX
+     *
+     */
+    public const OPT_PREFIX = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_OPT_READ_TIMEOUT
+     *
+     */
+    public const OPT_READ_TIMEOUT = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_OPT_TCP_KEEPALIVE
+     *
+     */
+    public const OPT_TCP_KEEPALIVE = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_OPT_COMPRESSION
+     *
+     */
+    public const OPT_COMPRESSION = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_OPT_REPLY_LITERAL
+     *
+     */
+    public const OPT_REPLY_LITERAL = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_OPT_COMPRESSION_LEVEL
+     *
+     */
+    public const OPT_COMPRESSION_LEVEL = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_OPT_NULL_MBULK_AS_NULL
+     *
+     */
+    public const OPT_NULL_MULTIBULK_AS_NULL = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_SERIALIZER_NONE
+     *
+     */
+    public const SERIALIZER_NONE = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_SERIALIZER_PHP
+     *
+     */
+    public const SERIALIZER_PHP = UNKNOWN;
+
+#ifdef HAVE_REDIS_IGBINARY
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_SERIALIZER_IGBINARY
+     *
+     */
+    public const SERIALIZER_IGBINARY = UNKNOWN;
+#endif
+
+#ifdef HAVE_REDIS_MSGPACK
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_SERIALIZER_MSGPACK
+     *
+     */
+    public const SERIALIZER_MSGPACK = UNKNOWN;
+#endif
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_SERIALIZER_JSON
+     *
+     */
+    public const SERIALIZER_JSON = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_COMPRESSION_NONE
+     *
+     */
+    public const COMPRESSION_NONE = UNKNOWN;
+
+#ifdef HAVE_REDIS_LZF
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_COMPRESSION_LZF
+     *
+     */
+    public const COMPRESSION_LZF = UNKNOWN;
+#endif
+
+#ifdef HAVE_REDIS_ZSTD
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_COMPRESSION_ZSTD
+     *
+     */
+    public const COMPRESSION_ZSTD = UNKNOWN;
+
+#ifdef ZSTD_CLEVEL_DEFAULT
+    /**
+     *
+     * @var int
+     * @cvalue ZSTD_CLEVEL_DEFAULT
+     *
+     */
+    public const COMPRESSION_ZSTD_DEFAULT = UNKNOWN;
+#else
+    /**
+     *
+     * @var int
+     *
+     */
+    public const COMPRESSION_ZSTD_DEFAULT = 3;
+#endif
+
+#ifdef ZSTD_CLEVEL_MAX
+    /**
+     *
+     * @var int
+     * @cvalue ZSTD_CLEVEL_MAX
+     *
+     */
+    public const COMPRESSION_ZSTD_MAX = UNKNOWN;
+#endif
+
+    /**
+     * @var int
+     * @cvalue ZSTD_maxCLevel()
+     */
+    public const COMPRESSION_ZSTD_MAX = UNKNOWN;
+
+#endif
+
+#ifdef HAVE_REDIS_LZ4
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_COMPRESSION_LZ4
+     *
+     */
+    public const COMPRESSION_LZ4 = UNKNOWN;
+#endif
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_OPT_SCAN
+     *
+     */
+    public const OPT_SCAN = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_SCAN_RETRY
+     *
+     */
+    public const SCAN_RETRY = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_SCAN_NORETRY
+     *
+     */
+    public const SCAN_NORETRY = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_SCAN_PREFIX
+     *
+     */
+    public const SCAN_PREFIX = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_SCAN_NOPREFIX
+     *
+     */
+    public const SCAN_NOPREFIX = UNKNOWN;
+
+    /**
+     *
+     * @var string
+     *
+     */
+    public const BEFORE = "before";
+
+    /**
+     *
+     * @var string
+     *
+     */
+    public const AFTER = "after";
+
+    /**
+     *
+     * @var string
+     *
+     */
+    public const LEFT = "left";
+
+    /**
+     *
+     * @var string
+     *
+     */
+    public const RIGHT = "right";
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_OPT_MAX_RETRIES
+     *
+     */
+    public const OPT_MAX_RETRIES = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_OPT_BACKOFF_ALGORITHM
+     *
+     */
+    public const OPT_BACKOFF_ALGORITHM = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_BACKOFF_ALGORITHM_DEFAULT
+     *
+     */
+    public const BACKOFF_ALGORITHM_DEFAULT = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_BACKOFF_ALGORITHM_CONSTANT
+     *
+     */
+    public const BACKOFF_ALGORITHM_CONSTANT = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_BACKOFF_ALGORITHM_UNIFORM
+     *
+     */
+    public const BACKOFF_ALGORITHM_UNIFORM = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_BACKOFF_ALGORITHM_EXPONENTIAL
+     *
+     */
+    public const BACKOFF_ALGORITHM_EXPONENTIAL = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_BACKOFF_ALGORITHM_FULL_JITTER
+     *
+     */
+    public const BACKOFF_ALGORITHM_FULL_JITTER = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_BACKOFF_ALGORITHM_EQUAL_JITTER
+     *
+     */
+    public const BACKOFF_ALGORITHM_EQUAL_JITTER = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_BACKOFF_ALGORITHM_DECORRELATED_JITTER
+     *
+     */
+    public const BACKOFF_ALGORITHM_DECORRELATED_JITTER = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_OPT_BACKOFF_BASE
+     *
+     */
+    public const OPT_BACKOFF_BASE = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_OPT_BACKOFF_CAP
+     *
+     */
+    public const OPT_BACKOFF_CAP = UNKNOWN;
 
     /**
      * Create a new Redis instance.  If passed sufficient information in the

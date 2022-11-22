@@ -7,6 +7,45 @@
  */
 
 class RedisCluster {
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_OPT_FAILOVER
+     *
+     */
+    public const OPT_SLAVE_FAILOVER = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_FAILOVER_NONE
+     *
+     */
+    public const FAILOVER_NONE = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_FAILOVER_ERROR
+     *
+     */
+    public const FAILOVER_ERROR = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_FAILOVER_DISTRIBUTE
+     *
+     */
+    public const FAILOVER_DISTRIBUTE = UNKNOWN;
+
+    /**
+     *
+     * @var int
+     * @cvalue REDIS_FAILOVER_DISTRIBUTE_SLAVES
+     *
+     */
+    public const FAILOVER_DISTRIBUTE_SLAVES = UNKNOWN;
 
     public function __construct(string|null $name, array $seeds = NULL, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistent = false, #[\SensitiveParameter] mixed $auth = NULL, array $context = NULL);
 

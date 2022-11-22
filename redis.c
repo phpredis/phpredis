@@ -290,104 +290,6 @@ PHP_REDIS_API RedisSock *redis_sock_get_connected(INTERNAL_FUNCTION_PARAMETERS) 
     return redis_sock;
 }
 
-/* Redis and RedisCluster objects share serialization/prefixing settings so
- * this is a generic function to add class constants to either */
-static void add_class_constants(zend_class_entry *ce, int is_cluster) {
-    zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_NOT_FOUND"), REDIS_NOT_FOUND);
-    zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_STRING"), REDIS_STRING);
-    zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_SET"), REDIS_SET);
-    zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_LIST"), REDIS_LIST);
-    zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_ZSET"), REDIS_ZSET);
-    zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_HASH"), REDIS_HASH);
-    zend_declare_class_constant_long(ce, ZEND_STRL("REDIS_STREAM"), REDIS_STREAM);
-
-    /* Add common mode constants */
-    zend_declare_class_constant_long(ce, ZEND_STRL("ATOMIC"), ATOMIC);
-    zend_declare_class_constant_long(ce, ZEND_STRL("MULTI"), MULTI);
-
-    /* options */
-    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_SERIALIZER"), REDIS_OPT_SERIALIZER);
-    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_PREFIX"), REDIS_OPT_PREFIX);
-    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_READ_TIMEOUT"), REDIS_OPT_READ_TIMEOUT);
-    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_TCP_KEEPALIVE"), REDIS_OPT_TCP_KEEPALIVE);
-    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION"), REDIS_OPT_COMPRESSION);
-    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_REPLY_LITERAL"), REDIS_OPT_REPLY_LITERAL);
-    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_COMPRESSION_LEVEL"), REDIS_OPT_COMPRESSION_LEVEL);
-    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_NULL_MULTIBULK_AS_NULL"), REDIS_OPT_NULL_MBULK_AS_NULL);
-
-    /* serializer */
-    zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_NONE"), REDIS_SERIALIZER_NONE);
-    zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_PHP"), REDIS_SERIALIZER_PHP);
-#ifdef HAVE_REDIS_IGBINARY
-    zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_IGBINARY"), REDIS_SERIALIZER_IGBINARY);
-#endif
-#ifdef HAVE_REDIS_MSGPACK
-    zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_MSGPACK"), REDIS_SERIALIZER_MSGPACK);
-#endif
-    zend_declare_class_constant_long(ce, ZEND_STRL("SERIALIZER_JSON"), REDIS_SERIALIZER_JSON);
-
-    /* compression */
-    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_NONE"), REDIS_COMPRESSION_NONE);
-#ifdef HAVE_REDIS_LZF
-    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_LZF"), REDIS_COMPRESSION_LZF);
-#endif
-#ifdef HAVE_REDIS_ZSTD
-    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD"), REDIS_COMPRESSION_ZSTD);
-    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_MIN"), 1);
-#ifdef ZSTD_CLEVEL_DEFAULT
-    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_DEFAULT"), ZSTD_CLEVEL_DEFAULT);
-#else
-    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_DEFAULT"), 3);
-#endif
-    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_ZSTD_MAX"), ZSTD_maxCLevel());
-#endif
-
-#ifdef HAVE_REDIS_LZ4
-    zend_declare_class_constant_long(ce, ZEND_STRL("COMPRESSION_LZ4"), REDIS_COMPRESSION_LZ4);
-#endif
-
-    /* scan options*/
-    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_SCAN"), REDIS_OPT_SCAN);
-    zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_RETRY"), REDIS_SCAN_RETRY);
-    zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_NORETRY"), REDIS_SCAN_NORETRY);
-    zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_PREFIX"), REDIS_SCAN_PREFIX);
-    zend_declare_class_constant_long(ce, ZEND_STRL("SCAN_NOPREFIX"), REDIS_SCAN_NOPREFIX);
-
-    zend_declare_class_constant_stringl(ce, "AFTER", 5, "after", 5);
-    zend_declare_class_constant_stringl(ce, "BEFORE", 6, "before", 6);
-
-    if (is_cluster) {
-        /* Cluster option to allow for slave failover */
-        zend_declare_class_constant_long(ce, ZEND_STRL("OPT_SLAVE_FAILOVER"), REDIS_OPT_FAILOVER);
-        zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_NONE"), REDIS_FAILOVER_NONE);
-        zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_ERROR"), REDIS_FAILOVER_ERROR);
-        zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE"), REDIS_FAILOVER_DISTRIBUTE);
-        zend_declare_class_constant_long(ce, ZEND_STRL("FAILOVER_DISTRIBUTE_SLAVES"), REDIS_FAILOVER_DISTRIBUTE_SLAVES);
-    } else {
-        /* Cluster doesn't support pipelining at this time */
-        zend_declare_class_constant_long(ce, ZEND_STRL("PIPELINE"), PIPELINE);
-
-        zend_declare_class_constant_stringl(ce, ZEND_STRL("LEFT"), ZEND_STRL("left"));
-        zend_declare_class_constant_stringl(ce, ZEND_STRL("RIGHT"), ZEND_STRL("right"));
-    }
-
-    /* retry/backoff options*/
-    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_MAX_RETRIES"), REDIS_OPT_MAX_RETRIES);
-
-    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_BACKOFF_ALGORITHM"), REDIS_OPT_BACKOFF_ALGORITHM);
-    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_DEFAULT"), REDIS_BACKOFF_ALGORITHM_DEFAULT);
-    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_CONSTANT"), REDIS_BACKOFF_ALGORITHM_CONSTANT);
-    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_UNIFORM"), REDIS_BACKOFF_ALGORITHM_UNIFORM);
-    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_EXPONENTIAL"), REDIS_BACKOFF_ALGORITHM_EXPONENTIAL);
-    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_FULL_JITTER"), REDIS_BACKOFF_ALGORITHM_FULL_JITTER);
-    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_EQUAL_JITTER"), REDIS_BACKOFF_ALGORITHM_EQUAL_JITTER);
-    zend_declare_class_constant_long(ce, ZEND_STRL("BACKOFF_ALGORITHM_DECORRELATED_JITTER"), REDIS_BACKOFF_ALGORITHM_DECORRELATED_JITTER);
-
-    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_BACKOFF_BASE"), REDIS_OPT_BACKOFF_BASE);
-
-    zend_declare_class_constant_long(ce, ZEND_STRL("OPT_BACKOFF_CAP"), REDIS_OPT_BACKOFF_CAP);
-}
-
 static ZEND_RSRC_DTOR_FUNC(redis_connections_pool_dtor)
 {
     if (res->ptr) {
@@ -461,10 +363,6 @@ PHP_MINIT_FUNCTION(redis)
 
     /* RedisException class */
     redis_exception_ce = register_class_RedisException(spl_ce_RuntimeException);
-
-    /* Add shared class constants to Redis and RedisCluster objects */
-    add_class_constants(redis_ce, 0);
-    add_class_constants(redis_cluster_ce, 1);
 
 #ifdef PHP_SESSION
     php_session_register_module(&ps_mod_redis);
