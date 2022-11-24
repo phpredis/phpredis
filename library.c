@@ -686,20 +686,24 @@ redis_sock_read_bulk_reply(RedisSock *redis_sock, int bytes)
 {
     int offset = 0, nbytes;
     char *reply;
-    size_t got;
+    ssize_t got;
 
     if (-1 == bytes || -1 == redis_check_eof(redis_sock, 1, 0)) {
         return NULL;
     }
 
+    /* + 2 for \r\n */
     nbytes = bytes + 2;
+
     /* Allocate memory for string */
     reply = emalloc(nbytes);
 
     /* Consume bulk string */
     while (offset < nbytes) {
-        got = php_stream_read(redis_sock->stream, reply + offset, nbytes - offset);
-        if (got == 0 && php_stream_eof(redis_sock->stream)) break;
+        got = redis_sock_read_raw(redis_sock, reply + offset, nbytes - offset);
+        if (got < 0 || (got == 0 && php_stream_eof(redis_sock->stream)))
+            break;
+
         offset += got;
     }
 
@@ -3270,15 +3274,12 @@ PHP_REDIS_API int
 redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz)
 {
     if (redis_check_eof(redis_sock, 0, 0) == 0 &&
-        php_stream_write(redis_sock->stream, cmd, sz) == sz
-    ) {
-        if (IS_MULTI(redis_sock)) {
-            redis_sock->txBytes += sz;
-        } else {
-            redis_sock->txBytes = sz;
-        }
+        php_stream_write(redis_sock->stream, cmd, sz) == sz)
+    {
+        redis_sock->txBytes += sz;
         return sz;
     }
+
     return -1;
 }
 
@@ -3808,17 +3809,13 @@ redis_key_prefix_zstr(RedisSock *redis_sock, zend_string *key) {
  */
 
 PHP_REDIS_API int
-redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size,
-                size_t *line_size)
-{
+redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t *line_size) {
     // Handle EOF
     if(-1 == redis_check_eof(redis_sock, 1, 0)) {
         return -1;
     }
 
-    if(php_stream_get_line(redis_sock->stream, buf, buf_size, line_size)
-                           == NULL)
-    {
+    if(redis_sock_get_line(redis_sock, buf, buf_size, line_size) == NULL) {
         if (redis_sock->port < 0) {
             snprintf(buf, buf_size, "read error on connection to %s", ZSTR_VAL(redis_sock->host));
         } else {
@@ -3844,6 +3841,8 @@ PHP_REDIS_API int
 redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
                       long *reply_info)
 {
+    size_t nread;
+
     // Make sure we haven't lost the connection, even trying to reconnect
     if(-1 == redis_check_eof(redis_sock, 1, 0)) {
         // Failure
@@ -3852,7 +3851,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
     }
 
     // Attempt to read the reply-type byte
-    if((*reply_type = php_stream_getc(redis_sock->stream)) == EOF) {
+    if((*reply_type = redis_sock_getc(redis_sock)) == EOF) {
         REDIS_THROW_EXCEPTION( "socket error on read socket", 0);
         return -1;
     }
@@ -3866,7 +3865,7 @@ redis_read_reply_type(RedisSock *redis_sock, REDIS_REPLY_TYPE *reply_type,
         char inbuf[255];
 
         /* Read up to our newline */
-        if (php_stream_gets(redis_sock->stream, inbuf, sizeof(inbuf)) == NULL) {
+        if (redis_sock_get_line(redis_sock, inbuf, sizeof(inbuf), &nread) == NULL) {
             return -1;
         }
 

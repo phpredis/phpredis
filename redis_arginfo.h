@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 27f05179a82a7b33198a3a707134d9da5597ab1c */
+ * Stub hash: 2f941423f250241850fc678282e0656ecfb44018 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -361,7 +361,10 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_getTimeout, 0, 0, MAY_BE_DOUBLE|MAY_BE_FALSE)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_Redis_getTransferredBytes, 0, 0, MAY_BE_LONG|MAY_BE_FALSE)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_getTransferredBytes, 0, 0, IS_ARRAY, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_clearTransferredBytes, 0, 0, IS_VOID, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_hDel, 0, 2, Redis, MAY_BE_LONG|MAY_BE_FALSE)
@@ -1217,6 +1220,7 @@ ZEND_METHOD(Redis, getReadTimeout);
 ZEND_METHOD(Redis, getset);
 ZEND_METHOD(Redis, getTimeout);
 ZEND_METHOD(Redis, getTransferredBytes);
+ZEND_METHOD(Redis, clearTransferredBytes);
 ZEND_METHOD(Redis, hDel);
 ZEND_METHOD(Redis, hExists);
 ZEND_METHOD(Redis, hGet);
@@ -1465,6 +1469,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, getset, arginfo_class_Redis_getset, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getTimeout, arginfo_class_Redis_getTimeout, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getTransferredBytes, arginfo_class_Redis_getTransferredBytes, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, clearTransferredBytes, arginfo_class_Redis_clearTransferredBytes, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hDel, arginfo_class_Redis_hDel, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hExists, arginfo_class_Redis_hExists, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hGet, arginfo_class_Redis_hGet, ZEND_ACC_PUBLIC)

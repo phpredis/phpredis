@@ -59,12 +59,11 @@
 /* Protected sending of data down the wire to a RedisSock->stream */
 #define CLUSTER_SEND_PAYLOAD(sock, buf, len) \
     (sock && !redis_sock_server_open(sock) && sock->stream && !redis_check_eof(sock, 0, 1) && \
-     php_stream_write(sock->stream, buf, len)==len)
+     redis_sock_write_raw(sock, buf, len) == len)
 
 /* Macro to read our reply type character */
 #define CLUSTER_VALIDATE_REPLY_TYPE(sock, type) \
-    (redis_check_eof(sock, 1, 1) == 0 && \
-     (php_stream_getc(sock->stream) == type))
+    (redis_check_eof(sock, 1, 1) == 0 && redis_sock_getc(sock) == type)
 
 /* Reset our last single line reply buffer and length */
 #define CLUSTER_CLEAR_REPLY(c) \

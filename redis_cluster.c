@@ -1719,9 +1719,43 @@ PHP_METHOD(RedisCluster, clearlasterror) {
 
 PHP_METHOD(RedisCluster, gettransferredbytes) {
     redisCluster *c = GET_CONTEXT();
-    RETURN_LONG(c->flags->txBytes);
+    redisClusterNode *node, *slave;
+    zend_long rx = 0, tx = 0;
+
+    ZEND_HASH_FOREACH_PTR(c->nodes, node) {
+        tx += node->sock->txBytes;
+        rx += node->sock->rxBytes;
+
+        if (node->slaves) {
+            ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
+                tx += slave->sock->txBytes;
+                rx += slave->sock->rxBytes;
+            } ZEND_HASH_FOREACH_END();
+        }
+    } ZEND_HASH_FOREACH_END();
+
+    array_init_size(return_value, 2);
+    add_next_index_long(return_value, tx);
+    add_next_index_long(return_value, rx);
 }
 /* }}} */
+
+PHP_METHOD(RedisCluster, cleartransferredbytes) {
+    redisCluster *c = GET_CONTEXT();
+    redisClusterNode *node, *slave;
+
+    ZEND_HASH_FOREACH_PTR(c->nodes, node) {
+        node->sock->txBytes = 0;
+        node->sock->rxBytes = 0;
+
+        if (node->slaves) {
+            ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
+                slave->sock->txBytes = 0;
+                slave->sock->rxBytes = 0;
+            } ZEND_HASH_FOREACH_END();
+        }
+    } ZEND_HASH_FOREACH_END();
+}
 
 /* {{{ proto long RedisCluster::getOption(long option */
 PHP_METHOD(RedisCluster, getoption) {
@@ -1841,6 +1875,7 @@ PHP_METHOD(RedisCluster, multi) {
     c->flags->mode = MULTI;
 
     c->flags->txBytes = 0;
+    c->flags->rxBytes = 0;
 
     /* Return our object so we can chain MULTI calls */
     RETVAL_ZVAL(getThis(), 1, 0);

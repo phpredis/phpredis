@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: f4e2b11cf48fc70db77a52e79443536ad850d06f */
+ * Stub hash: 9a900fefb0ccb36638768a9d08909c68fff26c10 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -275,6 +275,8 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_RedisCluster_getset arginfo_class_RedisCluster_append
 
 #define arginfo_class_RedisCluster_gettransferredbytes arginfo_class_RedisCluster__masters
+
+#define arginfo_class_RedisCluster_cleartransferredbytes arginfo_class_RedisCluster__masters
 
 #define arginfo_class_RedisCluster_hdel arginfo_class_RedisCluster_geohash
 
@@ -881,6 +883,7 @@ ZEND_METHOD(RedisCluster, getrange);
 ZEND_METHOD(RedisCluster, lcs);
 ZEND_METHOD(RedisCluster, getset);
 ZEND_METHOD(RedisCluster, gettransferredbytes);
+ZEND_METHOD(RedisCluster, cleartransferredbytes);
 ZEND_METHOD(RedisCluster, hdel);
 ZEND_METHOD(RedisCluster, hexists);
 ZEND_METHOD(RedisCluster, hget);
@@ -1091,6 +1094,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, lcs, arginfo_class_RedisCluster_lcs, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, getset, arginfo_class_RedisCluster_getset, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, gettransferredbytes, arginfo_class_RedisCluster_gettransferredbytes, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, cleartransferredbytes, arginfo_class_RedisCluster_cleartransferredbytes, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hdel, arginfo_class_RedisCluster_hdel, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hexists, arginfo_class_RedisCluster_hexists, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hget, arginfo_class_RedisCluster_hget, ZEND_ACC_PUBLIC)

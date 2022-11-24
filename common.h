@@ -324,6 +324,7 @@ typedef struct {
     int                 tcp_keepalive;
     int                 sentinel;
     size_t              txBytes;
+    size_t              rxBytes;
 } RedisSock;
 /* }}} */
 

@@ -1571,7 +1571,19 @@ class Redis {
      */
     public function getTimeout(): float|false;
 
-    public function getTransferredBytes(): int|false;
+    /**
+     * Get the number of bytes sent and received on the socket.
+     *
+     * @return array An array in the form [$sent_bytes, $received_bytes]
+     */
+    public function getTransferredBytes(): array;
+
+    /**
+     * Reset the number of bytes sent and received on the socket.
+     *
+     * @return void
+     */
+    public function clearTransferredBytes(): void;
 
     /**
      * Remove one or more fields from a hash.
