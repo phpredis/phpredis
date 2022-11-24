@@ -225,4 +225,50 @@ void redis_conf_string(HashTable *ht, const char *key, size_t keylen, zend_strin
 void redis_conf_zval(HashTable *ht, const char *key, size_t keylen, zval *zret, int copy, int dtor);
 void redis_conf_auth(HashTable *ht, const char *key, size_t keylen, zend_string **user, zend_string **pass);
 
+static inline char *redis_sock_get_line(RedisSock *redis_sock, char *buf, size_t buf_size, size_t *nread) {
+    char *res;
+
+    res = php_stream_get_line(redis_sock->stream, buf, buf_size, nread);
+    if (res != NULL)
+        redis_sock->rxBytes += *nread;
+
+    return res;
+}
+
+static inline char redis_sock_getc(RedisSock *redis_sock) {
+    char res;
+
+    res = php_stream_getc(redis_sock->stream);
+    if (res != EOF)
+        redis_sock->rxBytes++;
+
+    return res;
+}
+
+static inline ssize_t redis_sock_read_raw(RedisSock *redis_sock, char *buf, size_t buf_size) {
+    ssize_t nread;
+
+    nread = php_stream_read(redis_sock->stream, buf, buf_size);
+    if (nread > 0)
+        redis_sock->rxBytes += nread;
+
+    return nread;
+}
+
+static inline ssize_t redis_sock_write_raw(RedisSock *redis_sock, const char *buf, size_t buf_size) {
+    ssize_t nwritten;
+
+    nwritten = php_stream_write(redis_sock->stream, buf, buf_size);
+    if (nwritten > 0)
+        redis_sock->txBytes += nwritten;
+
+    return nwritten;
+}
+
+static inline char *redis_sock_gets_raw(RedisSock *redis_sock, char *buf, size_t buf_size) {
+    size_t nread;
+
+    return redis_sock_get_line(redis_sock, buf, buf_size, &nread);
+}
+
 #endif

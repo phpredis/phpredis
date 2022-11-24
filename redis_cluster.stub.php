@@ -395,7 +395,12 @@ class RedisCluster {
     /**
      * @see Redis::gettransferredbytes
      */
-    public function gettransferredbytes(): int|false;
+    public function gettransferredbytes(): array|false;
+
+    /**
+     * @see Redis::cleartransferredbytes
+     */
+    public function cleartransferredbytes(): void;
 
     /**
      * @see Redis::hdel

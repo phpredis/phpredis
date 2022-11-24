@@ -266,7 +266,7 @@ static int cluster_send_direct(RedisSock *redis_sock, char *cmd, int cmd_len,
     /* Connect to the socket if we aren't yet and send our command, validate the reply type, and consume the first line */
     if (!CLUSTER_SEND_PAYLOAD(redis_sock,cmd,cmd_len) ||
         !CLUSTER_VALIDATE_REPLY_TYPE(redis_sock, type) ||
-        !php_stream_gets(redis_sock->stream, buf, sizeof(buf))) return -1;
+        !redis_sock_gets_raw(redis_sock, buf, sizeof(buf))) return -1;
 
     /* Success! */
     return 0;
@@ -1165,7 +1165,7 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
     CLUSTER_CLEAR_REPLY(c);
 
     if (-1 == redis_check_eof(c->cmd_sock, 1, 1) ||
-       EOF == (*reply_type = php_stream_getc(c->cmd_sock->stream)))
+       EOF == (*reply_type = redis_sock_getc(c->cmd_sock)))
     {
         return -1;
     }
@@ -1173,10 +1173,11 @@ static int cluster_check_response(redisCluster *c, REDIS_REPLY_TYPE *reply_type)
     // In the event of an ERROR, check if it's a MOVED/ASK error
     if (*reply_type == TYPE_ERR) {
         char inbuf[4096];
+        size_t nbytes;
         int moved;
 
         // Attempt to read the error
-        if (!php_stream_gets(c->cmd_sock->stream, inbuf, sizeof(inbuf))) {
+        if (!redis_sock_get_line(c->cmd_sock, inbuf, sizeof(inbuf), &nbytes)) {
             return -1;
         }
 
@@ -1500,9 +1501,6 @@ PHP_REDIS_API int cluster_send_slot(redisCluster *c, short slot, char *cmd,
     /* Point our cluster to this slot and it's socket */
     c->cmd_slot = slot;
     c->cmd_sock = SLOT_SOCK(c, slot);
-    if (c->flags->mode != MULTI) {
-        c->flags->txBytes = 0;
-    }
 
     /* Enable multi mode on this slot if we've been directed to but haven't
      * send it to this node yet */

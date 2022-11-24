@@ -2861,10 +2861,24 @@ PHP_METHOD(Redis, getDBNum) {
 PHP_METHOD(Redis, getTransferredBytes) {
     RedisSock *redis_sock;
 
-    if ((redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU)) == NULL) {
-        RETURN_FALSE;
+    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
+        RETURN_THROWS();
     }
-    RETURN_LONG(redis_sock->txBytes);
+
+    array_init_size(return_value, 2);
+    add_next_index_long(return_value, redis_sock->txBytes);
+    add_next_index_long(return_value, redis_sock->rxBytes);
+}
+
+PHP_METHOD(Redis, clearTransferredBytes) {
+    RedisSock *redis_sock;
+
+    if ((redis_sock = redis_sock_get_instance(getThis(), 0)) == NULL) {
+        RETURN_THROWS();
+    }
+
+    redis_sock->txBytes = 0;
+    redis_sock->rxBytes = 0;
 }
 
 /* {{{ proto Redis::getTimeout */

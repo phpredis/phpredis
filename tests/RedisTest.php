@@ -5817,12 +5817,28 @@ class Redis_Test extends TestSuite
     }
 
     public function testTransferredBytes() {
-        $this->assertTrue($this->redis->ping());
-        $this->assertEquals(strlen("*1\r\n$4\r\nPING\r\n"), $this->redis->getTransferredBytes());
-        $this->assertEquals(['cluster_enabled' => 0], $this->redis->info('cluster'));
-        $this->assertEquals(strlen("*2\r\n$4\r\nINFO\r\n$7\r\ncluster\r\n"), $this->redis->getTransferredBytes());
-        $this->assertEquals([true, true], $this->redis->multi()->ping()->ping()->exec());
-        $this->assertEquals(strlen("*1\r\n$5\r\nMULTI\r\n*1\r\n$4\r\nEXEC\r\n") + 2 * strlen("*2\r\n$4\r\nPING\r\n"), $this->redis->getTransferredBytes());
+        $this->redis->set('key', 'val');
+
+        $this->redis->clearTransferredBytes();
+
+        $get_tx_resp = "*3\r\n$3\r\nGET\r\n$3\r\nkey\r\n";
+        $get_rx_resp = "$3\r\nval\r\n";
+
+        $this->assertEquals('val', $this->redis->get('key'));
+        list ($tx, $rx) = $this->redis->getTransferredBytes();
+        $this->assertEquals(strlen($get_tx_resp), $tx);
+        $this->assertEquals(strlen($get_rx_resp), $rx);
+
+        $this->redis->clearTransferredBytes();
+
+        $this->redis->multi()->get('key')->get('key')->exec();
+        list($tx, $rx) = $this->redis->getTransferredBytes();
+
+        $this->assertEquals($tx, strlen("*1\r\n$5\r\nMULTI\r\n*1\r\n$4\r\nEXEC\r\n") +
+                                 2 * strlen($get_tx_resp));
+
+        $this->assertEquals($rx, strlen("+OK\r\n") + strlen("+QUEUED\r\n+QUEUED\r\n") +
+                                 strlen("*2\r\n")  + 2 * strlen($get_rx_resp));
     }
 
     /**
