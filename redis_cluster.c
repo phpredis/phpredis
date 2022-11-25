@@ -1717,21 +1717,41 @@ PHP_METHOD(RedisCluster, clearlasterror) {
     RETURN_TRUE;
 }
 
+static void redisSumNodeBytes(redisClusterNode *node, zend_long *tx, zend_long *rx) {
+    struct redisClusterNode *slave;
+
+    *tx += node->sock->txBytes;
+    *rx += node->sock->rxBytes;
+
+    if (node->slaves) {
+        ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
+            *tx += slave->sock->txBytes;
+            *rx += slave->sock->rxBytes;
+        } ZEND_HASH_FOREACH_END();
+    }
+}
+
+static void redisClearNodeBytes(redisClusterNode *node) {
+    struct redisClusterNode *slave;
+
+    node->sock->txBytes = 0;
+    node->sock->rxBytes = 0;
+
+    if (node->slaves) {
+        ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
+            slave->sock->txBytes = 0;
+            slave->sock->rxBytes = 0;
+        } ZEND_HASH_FOREACH_END();
+    }
+}
+
 PHP_METHOD(RedisCluster, gettransferredbytes) {
     redisCluster *c = GET_CONTEXT();
-    redisClusterNode *node, *slave;
     zend_long rx = 0, tx = 0;
+    redisClusterNode *node;
 
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
-        tx += node->sock->txBytes;
-        rx += node->sock->rxBytes;
-
-        if (node->slaves) {
-            ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
-                tx += slave->sock->txBytes;
-                rx += slave->sock->rxBytes;
-            } ZEND_HASH_FOREACH_END();
-        }
+        redisSumNodeBytes(node, &tx, &rx);
     } ZEND_HASH_FOREACH_END();
 
     array_init_size(return_value, 2);
@@ -1742,18 +1762,10 @@ PHP_METHOD(RedisCluster, gettransferredbytes) {
 
 PHP_METHOD(RedisCluster, cleartransferredbytes) {
     redisCluster *c = GET_CONTEXT();
-    redisClusterNode *node, *slave;
+    redisClusterNode *node;
 
     ZEND_HASH_FOREACH_PTR(c->nodes, node) {
-        node->sock->txBytes = 0;
-        node->sock->rxBytes = 0;
-
-        if (node->slaves) {
-            ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
-                slave->sock->txBytes = 0;
-                slave->sock->rxBytes = 0;
-            } ZEND_HASH_FOREACH_END();
-        }
+        redisClearNodeBytes(node);
     } ZEND_HASH_FOREACH_END();
 }
 
