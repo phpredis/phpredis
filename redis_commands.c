@@ -1483,6 +1483,7 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     HashTable *ht_chan;
     smart_string cmdstr = {0};
     subscribeContext *sctx = ecalloc(1, sizeof(*sctx));
+    unsigned short shardslot = REDIS_CLUSTER_SLOTS;
     size_t key_len;
     int key_free;
     char *key;
@@ -1503,6 +1504,16 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
+    if (strcasecmp(kw, "ssubscribe") == 0) {
+        zend_hash_internal_pointer_reset(ht_chan);
+        if ((z_chan = zend_hash_get_current_data(ht_chan)) == NULL) {
+            php_error_docref(NULL, E_WARNING, "Internal Zend HashTable error");
+            efree(sctx);
+            return FAILURE;
+        }
+        shardslot = cluster_hash_key_zval(z_chan);
+    }
+
     // Start command construction
     redis_cmd_init_sstr(&cmdstr, sctx->argc, kw, strlen(kw));
 
@@ -1510,11 +1521,20 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     ZEND_HASH_FOREACH_VAL(ht_chan, z_chan) {
         // We want to deal with strings here
         zend_string *zstr = zval_get_string(z_chan);
-
+        
         // Grab channel name, prefix if required
         key = ZSTR_VAL(zstr);
         key_len = ZSTR_LEN(zstr);
         key_free = redis_key_prefix(redis_sock, &key, &key_len);
+
+        if (shardslot != REDIS_CLUSTER_SLOTS && cluster_hash_key(key, key_len) != shardslot) {
+            php_error_docref(NULL, E_WARNING, "All shard channels needs to belong to a single slot");
+            zend_string_release(zstr);
+            if (key_free) efree(key);
+            smart_string_free(&cmdstr);
+            efree(sctx);
+            return FAILURE;
+        }
 
         // Add this channel
         redis_cmd_append_sstr(&cmdstr, key, key_len);
@@ -1529,13 +1549,17 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     *cmd     = cmdstr.c;
     *ctx     = (void*)sctx;
 
-    // Pick a slot at random
-    CMD_RAND_SLOT(slot);
+    if (shardslot != REDIS_CLUSTER_SLOTS) {
+        if (slot) *slot = shardslot;
+    } else {
+        // Pick a slot at random
+        CMD_RAND_SLOT(slot);
+    }
 
     return SUCCESS;
 }
 
-/* UNSUBSCRIBE/PUNSUBSCRIBE */
+/* UNSUBSCRIBE/PUNSUBSCRIBE/SUNSUBSCRIBE */
 int redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                           char *kw, char **cmd, int *cmd_len, short *slot,
                           void **ctx)
@@ -1552,6 +1576,7 @@ int redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     ht_arr = Z_ARRVAL_P(z_arr);
 
+    sctx->kw = kw;
     sctx->argc = zend_hash_num_elements(ht_arr);
     redis_cmd_init_sstr(&cmdstr, sctx->argc, kw, strlen(kw));
 
@@ -1564,10 +1589,6 @@ int redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_cmd_append_sstr(&cmdstr, key, key_len);
         if (key_free) efree(key);
     } ZEND_HASH_FOREACH_END();
-
-    if (!sctx->argc && redis_sock->subs) {
-        sctx->argc = zend_hash_num_elements(redis_sock->subs);
-    }
 
     // Push out vals
     *cmd_len = cmdstr.len;

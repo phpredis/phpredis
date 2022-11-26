@@ -2376,6 +2376,15 @@ PHP_METHOD(Redis, psubscribe)
     REDIS_PROCESS_KW_CMD("PSUBSCRIBE", redis_subscribe_cmd,
         redis_subscribe_response);
 }
+/* }}} */
+
+/* {{{ proto void Redis::ssubscribe(Array(shardchannel1, shardchannel2, ... shardchannelN)) */
+PHP_METHOD(Redis, ssubscribe)
+{
+    REDIS_PROCESS_KW_CMD("SSUBSCRIBE", redis_subscribe_cmd,
+        redis_subscribe_response);
+}
+/* }}} */
 
 /* {{{ proto void Redis::subscribe(Array(channel1, channel2, ... channelN)) */
 PHP_METHOD(Redis, subscribe) {
@@ -2384,8 +2393,8 @@ PHP_METHOD(Redis, subscribe) {
 }
 
 /**
- *  [p]unsubscribe channel_0 channel_1 ... channel_n
- *  [p]unsubscribe(array(channel_0, channel_1, ..., channel_n))
+ *  [ps]unsubscribe channel_0 channel_1 ... channel_n
+ *  [ps]unsubscribe(array(channel_0, channel_1, ..., channel_n))
  * response format :
  * array(
  *    channel_0 => TRUE|FALSE,
@@ -2404,6 +2413,12 @@ PHP_METHOD(Redis, unsubscribe)
 PHP_METHOD(Redis, punsubscribe)
 {
     REDIS_PROCESS_KW_CMD("PUNSUBSCRIBE", redis_unsubscribe_cmd,
+        redis_unsubscribe_response);
+}
+
+PHP_METHOD(Redis, sunsubscribe)
+{
+    REDIS_PROCESS_KW_CMD("SUNSUBSCRIBE", redis_unsubscribe_cmd,
         redis_unsubscribe_response);
 }
 

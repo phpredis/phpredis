@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 2f941423f250241850fc678282e0656ecfb44018 */
+ * Stub hash: a22731395ec32eed913fde7b2de60758fb1e75da */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -720,11 +720,17 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_sscan arginfo_class_Redis_hscan
 
-#define arginfo_class_Redis_strlen arginfo_class_Redis__prefix
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_subscribe, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_ssubscribe, 0, 0, 2)
 	ZEND_ARG_INFO(0, channels)
 	ZEND_ARG_INFO(0, cb)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_strlen arginfo_class_Redis__prefix
+
+#define arginfo_class_Redis_subscribe arginfo_class_Redis_ssubscribe
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_sunsubscribe, 0, 0, 1)
+	ZEND_ARG_INFO(0, channels)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_swapdb, 0, 0, 2)
@@ -740,9 +746,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_unlink arginfo_class_Redis_del
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_unsubscribe, 0, 0, 1)
-	ZEND_ARG_INFO(0, channels)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_unsubscribe arginfo_class_Redis_sunsubscribe
 
 #define arginfo_class_Redis_unwatch arginfo_class_Redis___destruct
 
@@ -1167,8 +1171,10 @@ ZEND_METHOD(Redis, sortDesc);
 ZEND_METHOD(Redis, sortDescAlpha);
 ZEND_METHOD(Redis, srem);
 ZEND_METHOD(Redis, sscan);
+ZEND_METHOD(Redis, ssubscribe);
 ZEND_METHOD(Redis, strlen);
 ZEND_METHOD(Redis, subscribe);
+ZEND_METHOD(Redis, sunsubscribe);
 ZEND_METHOD(Redis, swapdb);
 ZEND_METHOD(Redis, time);
 ZEND_METHOD(Redis, ttl);
@@ -1418,8 +1424,10 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, sortDescAlpha, arginfo_class_Redis_sortDescAlpha, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
 	ZEND_ME(Redis, srem, arginfo_class_Redis_srem, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, sscan, arginfo_class_Redis_sscan, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, ssubscribe, arginfo_class_Redis_ssubscribe, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, strlen, arginfo_class_Redis_strlen, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, subscribe, arginfo_class_Redis_subscribe, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, sunsubscribe, arginfo_class_Redis_sunsubscribe, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, swapdb, arginfo_class_Redis_swapdb, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, time, arginfo_class_Redis_time, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, ttl, arginfo_class_Redis_ttl, ZEND_ACC_PUBLIC)
