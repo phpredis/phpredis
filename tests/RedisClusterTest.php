@@ -53,7 +53,6 @@ class Redis_Cluster_Test extends Redis_Test {
 
     public function testlMove() { return $this->markTestSkipped(); }
     public function testlPos() { return $this->marktestSkipped(); }
-    public function testsMisMember() { return $this->markTestSkipped(); }
     public function testzDiff() { return $this->markTestSkipped(); }
     public function testzInter() { return $this->markTestSkipped(); }
     public function testzUnion() { return $this->markTestSkipped(); }

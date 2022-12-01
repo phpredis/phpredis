@@ -993,6 +993,12 @@ PHP_METHOD(RedisCluster, sismember) {
 }
 /* }}} */
 
+/* {{{ proto array RedisCluster::smismember(string key, string member0, ...memberN) */
+PHP_METHOD(RedisCluster, smismember) {
+    CLUSTER_PROCESS_KW_CMD("SMISMEMBER", redis_key_varval_cmd, cluster_variant_resp, 1);
+}
+/* }}} */
+
 /* {{{ proto long RedisCluster::sadd(string key, string val1 [, ...]) */
 PHP_METHOD(RedisCluster, sadd) {
     CLUSTER_PROCESS_KW_CMD("SADD", redis_key_varval_cmd, cluster_long_resp, 0);

@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 9a900fefb0ccb36638768a9d08909c68fff26c10 */
+ * Stub hash: 6b0a73d60de6e892ecaaabfe5f69245ebf225fee */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -572,6 +572,8 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_sismember arginfo_class_RedisCluster_append
 
+#define arginfo_class_RedisCluster_smismember arginfo_class_RedisCluster_geohash
+
 #define arginfo_class_RedisCluster_slowlog arginfo_class_RedisCluster_script
 
 #define arginfo_class_RedisCluster_smembers arginfo_class_RedisCluster__prefix
@@ -962,6 +964,7 @@ ZEND_METHOD(RedisCluster, sinter);
 ZEND_METHOD(RedisCluster, sintercard);
 ZEND_METHOD(RedisCluster, sinterstore);
 ZEND_METHOD(RedisCluster, sismember);
+ZEND_METHOD(RedisCluster, smismember);
 ZEND_METHOD(RedisCluster, slowlog);
 ZEND_METHOD(RedisCluster, smembers);
 ZEND_METHOD(RedisCluster, smove);
@@ -1173,6 +1176,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, sintercard, arginfo_class_RedisCluster_sintercard, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, sinterstore, arginfo_class_RedisCluster_sinterstore, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, sismember, arginfo_class_RedisCluster_sismember, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, smismember, arginfo_class_RedisCluster_smismember, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, slowlog, arginfo_class_RedisCluster_slowlog, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, smembers, arginfo_class_RedisCluster_smembers, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, smove, arginfo_class_RedisCluster_smove, ZEND_ACC_PUBLIC)
