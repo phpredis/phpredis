@@ -148,6 +148,21 @@ class RedisCluster {
     public function brpoplpush(string $srckey, string $deskey, int $timeout): mixed;
 
     /**
+     * Move an element from one list into another.
+     *
+     * @see Redis::lmove
+     */
+    public function lmove(string $src, string $dst, string $wherefrom, string $whereto): Redis|string|false;
+
+    /**
+     * Move an element from one list to another, blocking up to a timeout until an element is available.
+     *
+     * @see Redis::blmove
+     *
+     */
+    public function blmove(string $src, string $dst, string $wherefrom, string $whereto, float $timeout): Redis|string|false;
+
+    /**
      * @see Redis::bzpopmax
      */
     public function bzpopmax(string|array $key, string|int $timeout_or_key, mixed ...$extra_args): array;

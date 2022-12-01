@@ -1158,10 +1158,14 @@ PHP_METHOD(Redis, lLen)
 }
 /* }}} */
 
+/* {{{ proto string Redis::blMove(string source, string destination, string wherefrom, string whereto, double $timeout) */
+PHP_METHOD(Redis, blmove) {
+    REDIS_PROCESS_KW_CMD("BLMOVE", redis_lmove_cmd, redis_string_response);
+}
+
 /* {{{ proto string Redis::lMove(string source, string destination, string wherefrom, string whereto) */
-PHP_METHOD(Redis, lMove)
-{
-    REDIS_PROCESS_CMD(lmove, redis_string_response);
+PHP_METHOD(Redis, lMove) {
+    REDIS_PROCESS_KW_CMD("LMOVE", redis_lmove_cmd, redis_string_response);
 }
 
 /* {{{ proto boolean Redis::lrem(string list, string value, int count = 0) */

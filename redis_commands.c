@@ -3321,35 +3321,52 @@ int redis_setbit_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
-int
-redis_lmove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                char **cmd, int *cmd_len, short *slot, void **ctx)
+int redis_lmove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                    char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *src, *dst, *from, *to;
-    size_t src_len, dst_len, from_len, to_len;
+    zend_string *src = NULL, *dst = NULL, *from = NULL, *to = NULL;
+    smart_string cmdstr = {0};
+    double timeout = 0.0;
+    short slot2 = 0;
+    int blocking;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssss",
-                                &src, &src_len, &dst, &dst_len,
-                                &from, &from_len, &to, &to_len) == FAILURE
-    ) {
+    blocking = toupper(*kw) == 'B';
+
+    ZEND_PARSE_PARAMETERS_START(4 + !!blocking, 4 + !!blocking)
+        Z_PARAM_STR(src)
+        Z_PARAM_STR(dst)
+        Z_PARAM_STR(from)
+        Z_PARAM_STR(to)
+        if (blocking) {
+            Z_PARAM_DOUBLE(timeout)
+        }
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (!zend_string_equals_literal_ci(from, "LEFT") && !zend_string_equals_literal_ci(from, "RIGHT")) {
+        php_error_docref(NULL, E_WARNING, "Wherefrom argument must be 'LEFT' or 'RIGHT'");
+        return FAILURE;
+    } else if (!zend_string_equals_literal_ci(to, "LEFT") && !zend_string_equals_literal_ci(to, "RIGHT")) {
+        php_error_docref(NULL, E_WARNING, "Whereto argument must be 'LEFT' or 'RIGHT'");
         return FAILURE;
     }
 
-    // Validate wherefrom/whereto
-    if (strcasecmp(from, "left") != 0 && strcasecmp(from, "right") != 0) {
-        php_error_docref(NULL, E_WARNING,
-            "Wherefrom argument must be either 'LEFT' or 'RIGHT'");
-        return FAILURE;
-    } else if (strcasecmp(to, "left") != 0 && strcasecmp(to, "right") != 0) {
-        php_error_docref(NULL, E_WARNING,
-            "Whereto argument must be either 'LEFT' or 'RIGHT'");
+    redis_cmd_init_sstr(&cmdstr, 4 + !!blocking, kw, strlen(kw));
+    redis_cmd_append_sstr_key_zstr(&cmdstr, src, redis_sock, slot);
+    redis_cmd_append_sstr_key_zstr(&cmdstr, dst, redis_sock, slot ? &slot2 : NULL);
+
+    /* Protect the user from CROSSLOT errors */
+    if (slot && slot2 != *slot) {
+        php_error_docref(NULL, E_WARNING, "Both keys must hash to the same slot!");
+        efree(cmdstr.c);
         return FAILURE;
     }
 
-    /* Construct command */
-    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "LMOVE", "kkss",
-                                  src, src_len, dst, dst_len,
-                                  from, from_len, to, to_len);
+    redis_cmd_append_sstr_zstr(&cmdstr, from);
+    redis_cmd_append_sstr_zstr(&cmdstr, to);
+    if (blocking) redis_cmd_append_sstr_dbl(&cmdstr, timeout);
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
 
     return SUCCESS;
 }
