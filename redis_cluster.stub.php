@@ -561,6 +561,11 @@ class RedisCluster {
     public function lpop(string $key, int $count = 0): RedisCluster|bool|string|array;
 
     /**
+     * @see Redis::lpos
+     */
+    public function lpos(string $key, mixed $value, array $options = null): Redis|null|bool|int|array;
+
+    /**
      * @see Redis::lpush
      */
     public function lpush(string $key, mixed $value, mixed ...$other_values): RedisCluster|int|bool;

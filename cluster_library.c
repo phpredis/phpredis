@@ -1760,6 +1760,23 @@ cluster_pop_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
 }
 
 PHP_REDIS_API void
+cluster_lpos_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
+{
+    zval zret = {0};
+
+    c->cmd_sock->null_mbulk_as_null = c->flags->null_mbulk_as_null;
+    if (redis_read_lpos_response(&zret, c->cmd_sock, c->reply_type, c->reply_len, ctx) < 0) {
+        ZVAL_FALSE(&zret);
+    }
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        RETVAL_ZVAL(&zret, 0, 1);
+    } else {
+        add_next_index_zval(&c->multi_resp, &zret);
+    }
+}
+
+PHP_REDIS_API void
 cluster_set_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
 {
     if (ctx == NULL) {

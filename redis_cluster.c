@@ -839,6 +839,10 @@ PHP_METHOD(RedisCluster, lpop) {
 }
 /* }}} */
 
+PHP_METHOD(RedisCluster, lpos) {
+    CLUSTER_PROCESS_CMD(lpos, cluster_lpos_resp, 1);
+}
+
 /* {{{ proto string RedisCluster::rpop(string key, [int count = 0]) */
 PHP_METHOD(RedisCluster, rpop) {
     CLUSTER_PROCESS_KW_CMD("RPOP", redis_pop_cmd, cluster_pop_resp, 0);

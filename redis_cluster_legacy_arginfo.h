@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 4746475a398a16ba176367a0fbc1c9f7e2c5241d */
+ * Stub hash: 048afee969c189861f5ba0b8f8fb8cbeeba9a206 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -382,6 +382,12 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_lpop, 0, 0, 1)
 	ZEND_ARG_INFO(0, count)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_lpos, 0, 0, 2)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, value)
+	ZEND_ARG_INFO(0, options)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_lpush, 0, 0, 2)
 	ZEND_ARG_INFO(0, key)
 	ZEND_ARG_INFO(0, value)
@@ -545,11 +551,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_sdiffstore, 0, 0, 2)
 	ZEND_ARG_VARIADIC_INFO(0, other_keys)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_set, 0, 0, 2)
-	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, value)
-	ZEND_ARG_INFO(0, options)
-ZEND_END_ARG_INFO()
+#define arginfo_class_RedisCluster_set arginfo_class_RedisCluster_lpos
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_setbit, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
@@ -929,6 +931,7 @@ ZEND_METHOD(RedisCluster, lindex);
 ZEND_METHOD(RedisCluster, linsert);
 ZEND_METHOD(RedisCluster, llen);
 ZEND_METHOD(RedisCluster, lpop);
+ZEND_METHOD(RedisCluster, lpos);
 ZEND_METHOD(RedisCluster, lpush);
 ZEND_METHOD(RedisCluster, lpushx);
 ZEND_METHOD(RedisCluster, lrange);
@@ -1143,6 +1146,7 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, linsert, arginfo_class_RedisCluster_linsert, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, llen, arginfo_class_RedisCluster_llen, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, lpop, arginfo_class_RedisCluster_lpop, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, lpos, arginfo_class_RedisCluster_lpos, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, lpush, arginfo_class_RedisCluster_lpush, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, lpushx, arginfo_class_RedisCluster_lpushx, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, lrange, arginfo_class_RedisCluster_lrange, ZEND_ACC_PUBLIC)
