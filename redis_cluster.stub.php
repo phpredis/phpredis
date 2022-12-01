@@ -506,7 +506,7 @@ class RedisCluster {
      *                                     which cluster node we want to send the command to.
      * @param string       $sections       Optional section(s) you wish Redis server to return.
      *
-     * @return Redis|array|false
+     * @return RedisCluster|array|false
      */
     public function info(string|array $key_or_address, string ...$sections): RedisCluster|array|false;
 
@@ -817,6 +817,11 @@ class RedisCluster {
     public function sismember(string $key, mixed $value): RedisCluster|bool;
 
     /**
+     * @see Redis::smismember
+     */
+    public function smismember(string $key, string $member, string ...$other_members): RedisCluster|array|false;
+
+    /**
      * @see Redis::slowlog
      */
     public function slowlog(string|array $key_or_address, mixed ...$args): mixed;
@@ -945,7 +950,7 @@ class RedisCluster {
     /**
      * @see Redis::xautoclaim
      */
-    public function xautoclaim(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false): Redis|bool|array;
+    public function xautoclaim(string $key, string $group, string $consumer, int $min_idle, string $start, int $count = -1, bool $justid = false): RedisCluster|bool|array;
 
     /**
      * @see Redis::xinfo
