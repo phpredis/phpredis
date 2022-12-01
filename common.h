@@ -84,6 +84,11 @@ typedef enum _PUBSUB_TYPE {
     PUBSUB_NUMPAT
 } PUBSUB_TYPE;
 
+#define REDIS_SUBSCRIBE_IDX  0
+#define REDIS_PSUBSCRIBE_IDX 1
+#define REDIS_SSUBSCRIBE_IDX 2
+#define REDIS_SUBS_BUCKETS   3
+
 /* options */
 #define REDIS_OPT_SERIALIZER         1
 #define REDIS_OPT_PREFIX             2
@@ -300,7 +305,7 @@ typedef struct {
     int                 persistent;
     int                 watching;
     zend_string         *persistent_id;
-    HashTable           *subs;
+    HashTable           *subs[REDIS_SUBS_BUCKETS];
     redis_serializer    serializer;
     int                 compression;
     int                 compression_level;

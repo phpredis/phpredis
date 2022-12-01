@@ -3236,6 +3236,37 @@ class Redis {
     public function sscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): array|false;
 
     /**
+     * Subscribes the client to the specified shard channels.
+     *
+     * @param array    $channels One or more channel names.
+     * @param callable $cb       The callback PhpRedis will invoke when we receive a message
+     *                           from one of the subscribed channels.
+     *
+     * @return bool True on success, false on faiilure.  Note that this command will block the
+     *              client in a subscribe loop, waiting for messages to arrive.
+     *
+     * @see https://redis.io/commands/ssubscribe
+     *
+     * @example
+     * $redis = new Redis(['host' => 'localhost']);
+     *
+     * $redis->ssubscribe(['channel-1', 'channel-2'], function ($redis, $channel, $message) {
+     *     echo "[$channel]: $message\n";
+     *
+     *     // Unsubscribe from the message channel when we read 'quit'
+     *     if ($message == 'quit') {
+     *         echo "Unsubscribing from '$channel'\n";
+     *         $redis->sunsubscribe([$channel]);
+     *     }
+     * });
+     *
+     * // Once we read 'quit' from both channel-1 and channel-2 the subscribe loop will be
+     * // broken and this command will execute.
+     * echo "Subscribe loop ended\n";
+     */
+    public function ssubscribe(array $channels, callable $cb): bool;
+
+    /**
      * Retrieve the length of a Redis STRING key.
      *
      * @param string $key The key we want the length of.
@@ -3279,6 +3310,30 @@ class Redis {
      * echo "Subscribe loop ended\n";
      */
     public function subscribe(array $channels, callable $cb): bool;
+
+    /**
+     * Unsubscribes the client from the given shard channels,
+     * or from all of them if none is given.
+     *
+     * @param array $channels One or more channels to unsubscribe from.
+     * @return Redis|array|bool The array of unsubscribed channels.
+     *
+     * @see https://redis.io/commands/sunsubscribe
+     * @see Redis::ssubscribe()
+     *
+     * @example
+     * $redis->ssubscribe(['channel-1', 'channel-2'], function ($redis, $channel, $message) {
+     *     if ($message == 'quit') {
+     *         echo "$channel => 'quit' detected, unsubscribing!\n";
+     *         $redis->sunsubscribe([$channel]);
+     *     } else {
+     *         echo "$channel => $message\n";
+     *     }
+     * });
+     *
+     * echo "We've unsubscribed from both channels, exiting\n";
+     */
+    public function sunsubscribe(array $channels): Redis|array|bool;
 
     /**
      * Atomically swap two Redis databases so that all of the keys in the source database will
