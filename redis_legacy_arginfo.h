@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: a22731395ec32eed913fde7b2de60758fb1e75da */
+ * Stub hash: 399e9506bc58ff0da1abc8f46a02b2499ed1223a */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -425,6 +425,14 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_lMove, 0, 0, 4)
 	ZEND_ARG_INFO(0, dst)
 	ZEND_ARG_INFO(0, wherefrom)
 	ZEND_ARG_INFO(0, whereto)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_blmove, 0, 0, 5)
+	ZEND_ARG_INFO(0, src)
+	ZEND_ARG_INFO(0, dst)
+	ZEND_ARG_INFO(0, wherefrom)
+	ZEND_ARG_INFO(0, whereto)
+	ZEND_ARG_INFO(0, timeout)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_lPop, 0, 0, 1)
@@ -1090,6 +1098,7 @@ ZEND_METHOD(Redis, keys);
 ZEND_METHOD(Redis, lInsert);
 ZEND_METHOD(Redis, lLen);
 ZEND_METHOD(Redis, lMove);
+ZEND_METHOD(Redis, blmove);
 ZEND_METHOD(Redis, lPop);
 ZEND_METHOD(Redis, lPos);
 ZEND_METHOD(Redis, lPush);
@@ -1341,6 +1350,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, lInsert, arginfo_class_Redis_lInsert, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, lLen, arginfo_class_Redis_lLen, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, lMove, arginfo_class_Redis_lMove, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, blmove, arginfo_class_Redis_blmove, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, lPop, arginfo_class_Redis_lPop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, lPos, arginfo_class_Redis_lPos, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, lPush, arginfo_class_Redis_lPush, ZEND_ACC_PUBLIC)

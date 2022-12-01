@@ -969,6 +969,14 @@ PHP_METHOD(RedisCluster, brpoplpush) {
 }
 /* }}} */
 
+PHP_METHOD(RedisCluster, lmove) {
+    CLUSTER_PROCESS_KW_CMD("LMOVE", redis_lmove_cmd, cluster_bulk_resp, 0);
+}
+
+PHP_METHOD(RedisCluster, blmove) {
+    CLUSTER_PROCESS_KW_CMD("BLMOVE", redis_lmove_cmd, cluster_bulk_resp, 0);
+}
+
 /* {{{ proto long RedisCluster::llen(string key)  */
 PHP_METHOD(RedisCluster, llen) {
     CLUSTER_PROCESS_KW_CMD("LLEN", redis_key_cmd, cluster_long_resp, 1);

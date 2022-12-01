@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 6b0a73d60de6e892ecaaabfe5f69245ebf225fee */
+ * Stub hash: 4746475a398a16ba176367a0fbc1c9f7e2c5241d */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -92,6 +92,21 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_brpoplpush, 0
 	ZEND_ARG_TYPE_INFO(0, srckey, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, deskey, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, timeout, IS_LONG, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_lmove, 0, 4, Redis, MAY_BE_STRING|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, src, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, dst, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, wherefrom, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, whereto, IS_STRING, 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_blmove, 0, 5, Redis, MAY_BE_STRING|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, src, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, dst, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, wherefrom, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, whereto, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, timeout, IS_DOUBLE, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisCluster_bzpopmax, 0, 2, IS_ARRAY, 0)
@@ -984,6 +999,8 @@ ZEND_METHOD(RedisCluster, bitpos);
 ZEND_METHOD(RedisCluster, blpop);
 ZEND_METHOD(RedisCluster, brpop);
 ZEND_METHOD(RedisCluster, brpoplpush);
+ZEND_METHOD(RedisCluster, lmove);
+ZEND_METHOD(RedisCluster, blmove);
 ZEND_METHOD(RedisCluster, bzpopmax);
 ZEND_METHOD(RedisCluster, bzpopmin);
 ZEND_METHOD(RedisCluster, bzmpop);
@@ -1196,6 +1213,8 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, blpop, arginfo_class_RedisCluster_blpop, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, brpop, arginfo_class_RedisCluster_brpop, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, brpoplpush, arginfo_class_RedisCluster_brpoplpush, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, lmove, arginfo_class_RedisCluster_lmove, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, blmove, arginfo_class_RedisCluster_blmove, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, bzpopmax, arginfo_class_RedisCluster_bzpopmax, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, bzpopmin, arginfo_class_RedisCluster_bzpopmin, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, bzmpop, arginfo_class_RedisCluster_bzmpop, ZEND_ACC_PUBLIC)

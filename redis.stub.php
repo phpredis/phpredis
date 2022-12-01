@@ -1920,9 +1920,9 @@ class Redis {
      * @param string $src       The source list.
      * @param string $dst       The destination list
      * @param string $wherefrom Where in the source list to retrieve the element.  This can be either
-     *                          `Redis::LEFT`, or `Redis::RIGHT`.
+     *                          - `Redis::LEFT`, or `Redis::RIGHT`.
      * @param string $whereto   Where in the destination list to put the element.  This can be either
-     *                          `Redis::LEFT`, or `Redis::RIGHT`.
+     *                          - `Redis::LEFT`, or `Redis::RIGHT`.
      * @return Redis|string|false The element removed from the source list.
      *
      * @example
@@ -1930,6 +1930,27 @@ class Redis {
      * $redis->lMove('numbers', 'odds', Redis::LEFT, Redis::LEFT);
      */
     public function lMove(string $src, string $dst, string $wherefrom, string $whereto): Redis|string|false;
+
+    /**
+     * Move an element from one list to another, blocking up to a timeout until an element is available.
+     *
+     * @param string $src       The source list
+     * @param string $dst       The destination list
+     * @param string $wherefrom Where in the source list to extract the element.
+     *                          - `Redis::LEFT`, or `Redis::RIGHT`.
+     * @param string $whereto   Where in the destination list to put the element.
+     *                          - `Redis::LEFT`, or `Redis::RIGHT`.
+     * @param float $timeout    How long to block for an element.
+     *
+     * @return Redis|string|false;
+     *
+     * @example
+     * @redis->lPush('numbers', 'one');
+     * @redis->blmove('numbers', 'odds', Redis::LEFT, Redis::LEFT 1.0);
+     * // This call will block, if no additional elements are in 'numbers'
+     * @redis->blmove('numbers', 'odds', Redis::LEFT, Redis::LEFT, 1.0);
+     */
+    public function blmove(string $src, string $dst, string $wherefrom, string $whereto, float $timeout): Redis|string|false;
 
     /**
      * Pop one or more elements off a list.

@@ -1461,28 +1461,41 @@ class Redis_Test extends TestSuite
         $this->assertEquals('val4', $this->redis->lIndex('list', -1));
     }
 
-    public function testlMove()
-    {
-        // Only available since 6.2.0
-        if (version_compare($this->version, '6.2.0') < 0) {
+    public function testlMove() {
+        if (version_compare($this->version, '6.2.0') < 0)
             $this->markTestSkipped();
-            return;
-        }
 
-        $this->redis->del('list0', 'list1');
-        $this->redis->lPush('list0', 'a');
-        $this->redis->lPush('list0', 'b');
-        $this->redis->lPush('list0', 'c');
+        $this->redis->del('{list}0', '{list}1');
+        $this->redis->lPush('{list}0', 'a');
+        $this->redis->lPush('{list}0', 'b');
+        $this->redis->lPush('{list}0', 'c');
 
-        $return = $this->redis->lMove('list0', 'list1', Redis::LEFT, Redis::RIGHT);
+        $return = $this->redis->lMove('{list}0', '{list}1', Redis::LEFT, Redis::RIGHT);
         $this->assertEquals('c', $return);
 
-        $return = $this->redis->lMove('list0', 'list1', Redis::RIGHT, Redis::LEFT);
+        $return = $this->redis->lMove('{list}0', '{list}1', Redis::RIGHT, Redis::LEFT);
         $this->assertEquals('a', $return);
 
-        $this->assertEquals(['b'], $this->redis->lRange('list0', 0, -1));
-        $this->assertEquals(['a', 'c'], $this->redis->lRange('list1', 0, -1));
+        $this->assertEquals(['b'], $this->redis->lRange('{list}0', 0, -1));
+        $this->assertEquals(['a', 'c'], $this->redis->lRange('{list}1', 0, -1));
 
+    }
+
+    public function testBlmove() {
+        if (version_compare($this->version, '6.2.0') < 0)
+            $this->markTestSkipped();
+
+        $this->redis->del('{list}0', '{list}1');
+        $this->redis->rpush('{list}0', 'a');
+
+        $this->assertEquals('a', $this->redis->blmove('{list}0', '{list}1', Redis::LEFT, Redis::LEFT, 1.0));
+
+        $st = microtime(true);
+        $ret = $this->redis->blmove('{list}0', '{list}1', Redis::LEFT, Redis::LEFT, .1);
+        $et = microtime(true);
+
+        $this->assertEquals(false, $ret);
+        $this->assertTrue($et - $st >= .1);
     }
 
     // lRem testing
