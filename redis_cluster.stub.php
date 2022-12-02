@@ -483,6 +483,11 @@ class RedisCluster {
     public function hscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): array|bool;
 
     /**
+     * @see https://redis.io/commands/hrandfield
+     */
+    public function hrandfield(string $key, array $options = null): RedisCluster|string|array;
+
+    /**
      * @see Redis::hset
      */
     public function hset(string $key, string $member, mixed $value): RedisCluster|int|false;
