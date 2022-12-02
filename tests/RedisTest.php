@@ -6466,9 +6466,9 @@ class Redis_Test extends TestSuite
             return $this->markTestSkipped();
         }
 
-        $this->addCities('gk');
-        $this->assertEquals($this->redis->geosearchstore('{gk}', 'gk', 'Chico', 100, 'km'), 3);
-        $this->assertEquals($this->redis->geosearch('{gk}', 'Chico', 1, 'm'), ['Chico']);
+        $this->addCities('{gk}src');
+        $this->assertEquals($this->redis->geosearchstore('{gk}dst', '{gk}src', 'Chico', 100, 'km'), 3);
+        $this->assertEquals($this->redis->geosearch('{gk}dst', 'Chico', 1, 'm'), ['Chico']);
     }
 
     /* Test a 'raw' command */

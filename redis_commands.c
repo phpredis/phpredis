@@ -1521,7 +1521,7 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     ZEND_HASH_FOREACH_VAL(ht_chan, z_chan) {
         // We want to deal with strings here
         zend_string *zstr = zval_get_string(z_chan);
-        
+
         // Grab channel name, prefix if required
         key = ZSTR_VAL(zstr);
         key_len = ZSTR_LEN(zstr);
@@ -4650,6 +4650,7 @@ redis_geosearchstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     smart_string cmdstr = {0};
     zval *position, *shape, *opts = NULL, *z_ele;
     zend_string *zkey;
+    short s2 = 0;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "sszzs|a",
                               &dest, &destlen, &src, &srclen, &position, &shape,
@@ -4708,7 +4709,13 @@ redis_geosearchstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "GEOSEARCHSTORE");
     redis_cmd_append_sstr_key(&cmdstr, dest, destlen, redis_sock, slot);
-    redis_cmd_append_sstr_key(&cmdstr, src, srclen, redis_sock, slot);
+    redis_cmd_append_sstr_key(&cmdstr, src, srclen, redis_sock, slot ? &s2 : NULL);
+
+    if (slot && *slot != s2) {
+        php_error_docref(NULL, E_WARNING, "All keys must hash to the same slot");
+        efree(cmdstr.c);
+        return FAILURE;
+    }
 
     if (Z_TYPE_P(position) == IS_ARRAY) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "FROMLONLAT");

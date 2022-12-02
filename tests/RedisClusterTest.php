@@ -58,8 +58,6 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testzMscore() { return $this->marktestSkipped(); }
     public function testZRandMember() { return $this->marktestSkipped(); }
     public function testCopy() { return $this->marktestSkipped(); }
-    public function testGeoSearch() { return $this->marktestSkipped(); }
-    public function testGeoSearchStore() { return $this->marktestSkipped(); }
     public function testHRandField() { return $this->marktestSkipped(); }
     public function testConfig() { return $this->markTestSkipped(); }
     public function testFlushDB() { return $this->markTestSkipped(); }
