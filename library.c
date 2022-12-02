@@ -1108,6 +1108,17 @@ int redis_cmd_append_sstr_key_zstr(smart_string *dst, zend_string *key, RedisSoc
     return redis_cmd_append_sstr_key(dst, ZSTR_VAL(key), ZSTR_LEN(key), redis_sock, slot);
 }
 
+int redis_cmd_append_sstr_key_zval(smart_string *dst, zval *zv, RedisSock *redis_sock, short *slot) {
+    zend_string *key;
+    int res;
+
+    key = zval_get_string(zv);
+    res = redis_cmd_append_sstr_key_zstr(dst, key, redis_sock, slot);
+    zend_string_release(key);
+
+    return res;
+}
+
 /* Append an array key to a redis smart string command.  This function
  * handles the boilerplate conditionals around string or integer keys */
 int redis_cmd_append_sstr_arrkey(smart_string *cmd, zend_string *kstr, zend_ulong idx)

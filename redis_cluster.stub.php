@@ -1089,6 +1089,11 @@ class RedisCluster {
                                 array|bool|null $options = null): RedisCluster|int|false;
 
     /**
+     * @see https://redis.io/commands/zRandMember
+     */
+    public function zrandmember(string $key, array $options = null): RedisCluster|string|array;
+
+    /**
      * @see Redis::zrangebylex
      */
     public function zrangebylex(string $key, string $min, string $max, int $offset = -1, int $count = -1): RedisCluster|array|false;
@@ -1154,9 +1159,34 @@ class RedisCluster {
     public function zscore(string $key, mixed $member): RedisCluster|float|false;
 
     /**
+     * @see https://redis.io/commands/zMscore
+     */
+    public function zmscore(string $key, mixed $member, mixed ...$other_members): Redis|array|false;
+
+    /**
      * @see Redis::zunionstore
      */
     public function zunionstore(string $dst, array $keys, ?array $weights = NULL, ?string $aggregate = NULL): RedisCluster|int|false;
+
+    /**
+     * @see https://redis.io/commands/zinter
+     */
+    public function zinter(array $keys, ?array $weights = null, ?array $options = null): RedisCluster|array|false;
+
+    /**
+     * @see https://redis.io/commands/zdiffstore
+     */
+    public function zdiffstore(string $dst, array $keys): RedisCluster|int|false;
+
+    /**
+     * @see https://redis.io/commands/zunion
+     */
+    public function zunion(array $keys, ?array $weights = null, ?array $options = null): RedisCluster|array|false;
+
+    /**
+     * @see https://redis.io/commands/zdiff
+     */
+    public function zdiff(array $keys, array $options = null): RedisCluster|array|false;
 }
 
 class RedisClusterException extends RuntimeException {}

@@ -51,12 +51,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testInvalidAuthArgs() { return $this->markTestSkipped(); }
     public function testScanErrors() { return $this->markTestSkipped(); }
 
-    public function testzDiff() { return $this->markTestSkipped(); }
-    public function testzInter() { return $this->markTestSkipped(); }
-    public function testzUnion() { return $this->markTestSkipped(); }
-    public function testzDiffStore() { return $this->markTestSkipped(); }
-    public function testzMscore() { return $this->marktestSkipped(); }
-    public function testZRandMember() { return $this->marktestSkipped(); }
+    /* These 'directed node' commands work differently in RedisCluster */
     public function testConfig() { return $this->markTestSkipped(); }
     public function testFlushDB() { return $this->markTestSkipped(); }
 
