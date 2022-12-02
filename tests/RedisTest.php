@@ -2708,7 +2708,7 @@ class Redis_Test extends TestSuite
 
         // test weighted zUnion
         $this->redis->del('{zset}Z');
-        $this->assertTrue(4 === $this->redis->zUnionStore('{zset}Z', ['{zset}1', '{zset}2'], [1, 1]));
+        $this->assertEquals(4, $this->redis->zUnionStore('{zset}Z', ['{zset}1', '{zset}2'], [1, 1]));
         $this->assertTrue(['val0', 'val1', 'val2', 'val3'] === $this->redis->zRange('{zset}Z', 0, -1));
 
         $this->redis->zRemRangeByScore('{zset}Z', 0, 10);
@@ -2998,12 +2998,12 @@ class Redis_Test extends TestSuite
             return;
         }
 
-        $this->redis->del('key');
+        $this->redis->del('{zkey}src');
         foreach (range('a', 'c') as $c) {
-            $this->redis->zAdd('key', 1, $c);
+            $this->redis->zAdd('{zkey}src', 1, $c);
         }
-        $this->assertEquals(3, $this->redis->zDiffStore('key2', ['key']));
-        $this->assertEquals(['a', 'b', 'c'], $this->redis->zRange('key2', 0, -1));
+        $this->assertEquals(3, $this->redis->zDiffStore('{zkey}dst', ['{zkey}src']));
+        $this->assertEquals(['a', 'b', 'c'], $this->redis->zRange('{zkey}dst', 0, -1));
     }
 
     public function testzMscore()

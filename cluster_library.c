@@ -1809,6 +1809,30 @@ cluster_geosearch_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
 }
 
 PHP_REDIS_API void
+cluster_zdiff_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
+    if (ctx == NULL) {
+        cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR) {
+        cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        ZEND_ASSERT(!"memory corruption?");
+    }
+}
+
+PHP_REDIS_API void
+cluster_zrandmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
+    if (ctx == NULL) {
+        cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR) {
+        cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR + 1) {
+        cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        ZEND_ASSERT(!"memory corruption?");
+    }
+}
+
+PHP_REDIS_API void
 cluster_set_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
 {
     if (ctx == NULL) {
@@ -2689,6 +2713,14 @@ cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
         mbulk_resp_loop_zipdbl, NULL);
 }
 
+PHP_REDIS_API void
+cluster_mbulk_dbl_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                       void *ctx)
+{
+    cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c,
+        mbulk_resp_loop_dbl, ctx);
+}
+
 /* Associate multi bulk response (for HMGET really) */
 PHP_REDIS_API void
 cluster_mbulk_assoc_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
@@ -2701,6 +2733,25 @@ cluster_mbulk_assoc_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
 /*
  * Various MULTI BULK reply callback functions
  */
+
+int mbulk_resp_loop_dbl(RedisSock *redis_sock, zval *z_result,
+                        long long count, void *ctx)
+{
+    char *line;
+    int line_len;
+
+    while (count--) {
+        line = redis_sock_read(redis_sock, &line_len);
+        if (line != NULL) {
+            add_next_index_double(z_result, atof(line));
+            efree(line);
+        } else {
+            add_next_index_bool(z_result, 0);
+        }
+    }
+
+    return SUCCESS;
+}
 
 /* MULTI BULK response where we don't touch the values (e.g. KEYS) */
 int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result,

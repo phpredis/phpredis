@@ -414,6 +414,10 @@ PHP_REDIS_API void cluster_lpos_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     void *ctx);
 PHP_REDIS_API void cluster_hrandfield_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     void *ctx);
+PHP_REDIS_API void cluster_zdiff_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+    void *ctx);
+PHP_REDIS_API void cluster_zrandmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+    void *ctx);
 PHP_REDIS_API void cluster_set_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     void *ctx);
 PHP_REDIS_API void cluster_geosearch_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
@@ -459,6 +463,8 @@ PHP_REDIS_API void cluster_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 PHP_REDIS_API void cluster_mbulk_zipstr_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 PHP_REDIS_API void cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAMETERS,
+    redisCluster *c, void *ctx);
+PHP_REDIS_API void cluster_mbulk_dbl_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
 PHP_REDIS_API void cluster_mbulk_assoc_resp(INTERNAL_FUNCTION_PARAMETERS,
     redisCluster *c, void *ctx);
@@ -512,6 +518,8 @@ int mbulk_resp_loop(RedisSock *redis_sock, zval *z_result,
 int mbulk_resp_loop_raw(RedisSock *redis_sock, zval *z_result,
     long long count, void *ctx);
 int mbulk_resp_loop_zipstr(RedisSock *redis_sock, zval *z_result,
+    long long count, void *ctx);
+int mbulk_resp_loop_dbl(RedisSock *redis_sock, zval *z_result,
     long long count, void *ctx);
 int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
     long long count, void *ctx);

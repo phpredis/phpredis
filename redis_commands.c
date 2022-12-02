@@ -72,25 +72,27 @@ typedef struct redisRestoreOptions {
     zend_long freq;
 } redisRestoreOptions;
 
-#define REDIS_ZRANGE_HAS_DST_KEY      (1 << 0)
-#define REDIS_ZRANGE_HAS_WITHSCORES   (1 << 1)
-#define REDIS_ZRANGE_HAS_BY_LEX_SCORE (1 << 2)
-#define REDIS_ZRANGE_HAS_REV          (1 << 3)
-#define REDIS_ZRANGE_HAS_LIMIT        (1 << 4)
-#define REDIS_ZRANGE_INT_RANGE        (1 << 5)
+#define REDIS_ZCMD_HAS_DST_KEY      (1 << 0)
+#define REDIS_ZCMD_HAS_WITHSCORES   (1 << 1)
+#define REDIS_ZCMD_HAS_BY_LEX_SCORE (1 << 2)
+#define REDIS_ZCMD_HAS_REV          (1 << 3)
+#define REDIS_ZCMD_HAS_LIMIT        (1 << 4)
+#define REDIS_ZCMD_INT_RANGE        (1 << 5)
+#define REDIS_ZCMD_HAS_AGGREGATE    (1 << 6)
 
 /* ZRANGE, ZRANGEBYSCORE, ZRANGESTORE options */
-typedef struct redisZrangeOptions {
+typedef struct redisZcmdOptions {
     zend_bool withscores;
     zend_bool byscore;
     zend_bool bylex;
     zend_bool rev;
+    zend_string *aggregate;
     struct {
         zend_bool enabled;
         zend_long offset;
         zend_long count;
     } limit;
-} redisZrangeOptions;
+} redisZcmdOptions;
 
 /* Local passthrough macro for command construction.  Given that these methods
  * are generic (so they work whether the caller is Redis or RedisCluster) we
@@ -632,7 +634,7 @@ int redis_fmt_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     return cmdstr.len;
 }
 
-void redis_get_zrange_options(redisZrangeOptions *dst, zval *src, int flags) {
+void redis_get_zcmd_options(redisZcmdOptions *dst, zval *src, int flags) {
     zval *zv, *zoff, *zcnt;
     zend_string *key;
 
@@ -644,7 +646,7 @@ void redis_get_zrange_options(redisZrangeOptions *dst, zval *src, int flags) {
         return;
 
     if (Z_TYPE_P(src) != IS_ARRAY) {
-        if (Z_TYPE_P(src) == IS_TRUE && (flags & REDIS_ZRANGE_HAS_WITHSCORES))
+        if (Z_TYPE_P(src) == IS_TRUE && (flags & REDIS_ZCMD_HAS_WITHSCORES))
             dst->withscores = 1;
         return;
     }
@@ -653,9 +655,9 @@ void redis_get_zrange_options(redisZrangeOptions *dst, zval *src, int flags) {
         ZVAL_DEREF(zv);
 
         if (key) {
-            if ((flags & REDIS_ZRANGE_HAS_WITHSCORES) && zend_string_equals_literal_ci(key, "WITHSCORES"))
+            if ((flags & REDIS_ZCMD_HAS_WITHSCORES) && zend_string_equals_literal_ci(key, "WITHSCORES"))
                 dst->withscores = zval_is_true(zv);
-            else if ((flags & REDIS_ZRANGE_HAS_LIMIT) && zend_string_equals_literal_ci(key, "LIMIT") &&
+            else if ((flags & REDIS_ZCMD_HAS_LIMIT) && zend_string_equals_literal_ci(key, "LIMIT") &&
                      Z_TYPE_P(zv) == IS_ARRAY)
             {
                 if ((zoff = zend_hash_index_find(Z_ARRVAL_P(zv), 0)) != NULL &&
@@ -667,17 +669,28 @@ void redis_get_zrange_options(redisZrangeOptions *dst, zval *src, int flags) {
                 } else {
                     php_error_docref(NULL, E_WARNING, "LIMIT offset and count must be an array with twe elements");
                 }
+            } else if ((flags & REDIS_ZCMD_HAS_AGGREGATE && zend_string_equals_literal_ci(key, "AGGREGATE")) &&
+                       Z_TYPE_P(zv) == IS_STRING)
+            {
+                if (Z_TYPE_P(zv) != IS_STRING || (!zend_string_equals_literal_ci(Z_STR_P(zv), "SUM") &&
+                                                  !zend_string_equals_literal_ci(Z_STR_P(zv), "MIN") &&
+                                                  !zend_string_equals_literal_ci(Z_STR_P(zv), "MAX")))
+                {
+                    php_error_docref(NULL, E_WARNING, "Valid AGGREGATE options are 'SUM', 'MIN', or 'MAX'");
+                } else {
+                    dst->aggregate = Z_STR_P(zv);
+                }
             }
         } else if (Z_TYPE_P(zv) == IS_STRING) {
             key = Z_STR_P(zv);
 
-            if ((flags & REDIS_ZRANGE_HAS_BY_LEX_SCORE) && zend_string_equals_literal_ci(key, "BYSCORE"))
+            if ((flags & REDIS_ZCMD_HAS_BY_LEX_SCORE) && zend_string_equals_literal_ci(key, "BYSCORE"))
                 dst->byscore = 1, dst->bylex = 0;
-            else if ((flags & REDIS_ZRANGE_HAS_BY_LEX_SCORE) && zend_string_equals_literal_ci(key, "BYLEX"))
+            else if ((flags & REDIS_ZCMD_HAS_BY_LEX_SCORE) && zend_string_equals_literal_ci(key, "BYLEX"))
                 dst->bylex = 1, dst->byscore = 0;
-            else if ((flags & REDIS_ZRANGE_HAS_REV) && zend_string_equals_literal_ci(key, "REV"))
+            else if ((flags & REDIS_ZCMD_HAS_REV) && zend_string_equals_literal_ci(key, "REV"))
                 dst->rev = 1;
-            else if ((flags & REDIS_ZRANGE_HAS_WITHSCORES && zend_string_equals_literal_ci(key, "WITHSCORES")))
+            else if ((flags & REDIS_ZCMD_HAS_WITHSCORES && zend_string_equals_literal_ci(key, "WITHSCORES")))
                 dst->withscores = 1;
         }
     } ZEND_HASH_FOREACH_END();
@@ -690,32 +703,42 @@ void redis_get_zrange_options(redisZrangeOptions *dst, zval *src, int flags) {
 // + ZREVRANGEBYSCORE     key   max  min                         [LIMIT offset count] [WITHSCORES]
 // - ZRANGEBYLEX          key   min  max                         [LIMIT offset count]
 // - ZREVRANGEBYLEX       key   max  min                         [LIMIT offset count]
-static int redis_get_zrange_cmd_flags(const char *kw) {
+// - ZDIFF                                                                            [WITHSCORES]
+// - ZUNION                                                                           [WITHSCORES] [AGGREGATE X]
+// - ZINTER                                                                           [WITHSCORES] [AGGREGATE X]
+static int redis_get_zcmd_flags(const char *kw) {
     size_t len = strlen(kw);
 
     if (REDIS_STRICMP_STATIC(kw, len, "ZRANGESTORE")) {
-        return REDIS_ZRANGE_HAS_DST_KEY |
-               REDIS_ZRANGE_HAS_WITHSCORES |
-               REDIS_ZRANGE_HAS_BY_LEX_SCORE |
-               REDIS_ZRANGE_HAS_REV |
-               REDIS_ZRANGE_HAS_LIMIT;
+        return REDIS_ZCMD_HAS_DST_KEY |
+               REDIS_ZCMD_HAS_WITHSCORES |
+               REDIS_ZCMD_HAS_BY_LEX_SCORE |
+               REDIS_ZCMD_HAS_REV |
+               REDIS_ZCMD_HAS_LIMIT;
     } else if (REDIS_STRICMP_STATIC(kw, len, "ZRANGE")) {
-        return REDIS_ZRANGE_HAS_WITHSCORES |
-               REDIS_ZRANGE_HAS_BY_LEX_SCORE |
-               REDIS_ZRANGE_HAS_REV |
-               REDIS_ZRANGE_HAS_LIMIT;
+        return REDIS_ZCMD_HAS_WITHSCORES |
+               REDIS_ZCMD_HAS_BY_LEX_SCORE |
+               REDIS_ZCMD_HAS_REV |
+               REDIS_ZCMD_HAS_LIMIT;
     } else if (REDIS_STRICMP_STATIC(kw, len, "ZREVRANGE")) {
-        return REDIS_ZRANGE_HAS_WITHSCORES |
-               REDIS_ZRANGE_INT_RANGE;
+        return REDIS_ZCMD_HAS_WITHSCORES |
+               REDIS_ZCMD_INT_RANGE;
     } else if (REDIS_STRICMP_STATIC(kw, len, "ZRANGEBYSCORE") ||
                REDIS_STRICMP_STATIC(kw, len, "ZREVRANGEBYSCORE"))
     {
-        return REDIS_ZRANGE_HAS_LIMIT |
-               REDIS_ZRANGE_HAS_WITHSCORES;
+        return REDIS_ZCMD_HAS_LIMIT |
+               REDIS_ZCMD_HAS_WITHSCORES;
     } else if (REDIS_STRICMP_STATIC(kw, len, "ZRANGEBYLEX") ||
                REDIS_STRICMP_STATIC(kw, len, "ZREVRANGEBYLEX"))
     {
-        return REDIS_ZRANGE_HAS_LIMIT;
+        return REDIS_ZCMD_HAS_LIMIT;
+    } else if (REDIS_STRICMP_STATIC(kw, len, "ZDIFF")) {
+        return REDIS_ZCMD_HAS_WITHSCORES;
+    } else if (REDIS_STRICMP_STATIC(kw, len, "ZINTER") ||
+               REDIS_STRICMP_STATIC(kw, len, "ZUNION"))
+    {
+        return REDIS_ZCMD_HAS_WITHSCORES |
+               REDIS_ZCMD_HAS_AGGREGATE;
     }
 
     /* Reaching this line means a compile-time error */
@@ -734,22 +757,22 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      void **ctx)
 {
     zend_string *dst = NULL, *src = NULL, *sstart = NULL, *send = NULL;
-    struct redisZrangeOptions opt;
     zend_long start = 0, end = 0;
     smart_string cmdstr = {0};
     zval *zoptions = NULL;
+    redisZcmdOptions opt;
     int min_argc, flags;
     short slot2;
 
-    flags = redis_get_zrange_cmd_flags(kw);
+    flags = redis_get_zcmd_flags(kw);
 
-    min_argc = 3 + (flags & REDIS_ZRANGE_HAS_DST_KEY);
+    min_argc = 3 + (flags & REDIS_ZCMD_HAS_DST_KEY);
     ZEND_PARSE_PARAMETERS_START(min_argc, min_argc + 1)
-        if (flags & REDIS_ZRANGE_HAS_DST_KEY) {
+        if (flags & REDIS_ZCMD_HAS_DST_KEY) {
             Z_PARAM_STR(dst)
         }
         Z_PARAM_STR(src)
-        if (flags & REDIS_ZRANGE_INT_RANGE) {
+        if (flags & REDIS_ZCMD_INT_RANGE) {
             Z_PARAM_LONG(start)
             Z_PARAM_LONG(end)
         } else {
@@ -760,10 +783,10 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         Z_PARAM_ZVAL_OR_NULL(zoptions)
     ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    redis_get_zrange_options(&opt, zoptions, flags);
+    redis_get_zcmd_options(&opt, zoptions, flags);
 
     if (opt.bylex) {
-        ZEND_ASSERT(!(flags & REDIS_ZRANGE_INT_RANGE));
+        ZEND_ASSERT(!(flags & REDIS_ZCMD_INT_RANGE));
         if (!validate_zlex_arg_zstr(sstart) || !validate_zlex_arg_zstr(send)) {
             php_error_docref(NULL, E_WARNING, "Legographical args must start with '[' or '(' or be '+' or '-'");
             return FAILURE;
@@ -774,18 +797,18 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                                  !!opt.rev + !!opt.withscores +
                                  (opt.limit.enabled ? 3 : 0), kw, strlen(kw));
 
-    if (flags & REDIS_ZRANGE_HAS_DST_KEY)
+    if (flags & REDIS_ZCMD_HAS_DST_KEY)
         redis_cmd_append_sstr_key_zstr(&cmdstr, dst, redis_sock, slot);
     redis_cmd_append_sstr_key_zstr(&cmdstr, src, redis_sock, &slot2);
 
     /* Protect the user from crossslot errors */
-    if ((flags & REDIS_ZRANGE_HAS_DST_KEY) && slot && *slot != slot2) {
+    if ((flags & REDIS_ZCMD_HAS_DST_KEY) && slot && *slot != slot2) {
         php_error_docref(NULL, E_WARNING, "destination and source keys must map to the same slot");
         efree(cmdstr.c);
         return FAILURE;
     }
 
-    if (flags & REDIS_ZRANGE_INT_RANGE) {
+    if (flags & REDIS_ZCMD_INT_RANGE) {
         redis_cmd_append_sstr_long(&cmdstr, start);
         redis_cmd_append_sstr_long(&cmdstr, end);
     } else {
@@ -988,11 +1011,11 @@ int
 redis_zdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    int numkeys;
+    zval *z_keys, *z_opts = NULL, *z_key;
+    redisZcmdOptions opts = {0};
     smart_string cmdstr = {0};
-    zval *z_keys, *z_opts = NULL, *z_ele;
-    zend_bool withscores = 0;
-    zend_string *zkey;
+    int numkeys, flags;
+    short s2 = 0;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a|a",
                               &z_keys, &z_opts) == FAILURE)
@@ -1004,26 +1027,26 @@ redis_zdiff_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    if (z_opts != NULL) {
-        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey, z_ele) {
-            if (zkey != NULL) {
-                ZVAL_DEREF(z_ele);
-                if (zend_string_equals_literal_ci(zkey, "withscores")) {
-                    withscores = zval_is_true(z_ele);
-                }
-            }
-        } ZEND_HASH_FOREACH_END();
-    }
+    flags = redis_get_zcmd_flags("ZDIFF");
+    redis_get_zcmd_options(&opts, z_opts, flags);
 
-    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + numkeys + withscores, "ZDIFF");
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + numkeys + opts.withscores, "ZDIFF");
     redis_cmd_append_sstr_long(&cmdstr, numkeys);
 
-    ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_keys), z_ele) {
-        ZVAL_DEREF(z_ele);
-        redis_cmd_append_sstr_zval(&cmdstr, z_ele, redis_sock);
+    ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_keys), z_key) {
+        ZVAL_DEREF(z_key);
+        redis_cmd_append_sstr_key_zval(&cmdstr, z_key, redis_sock, slot);
+
+        if (slot && s2 && s2 != *slot) {
+            php_error_docref(NULL, E_WARNING, "Not all keys map to the same slot!");
+            efree(cmdstr.c);
+            return FAILURE;
+        }
+
+        if (slot) s2 = *slot;
     } ZEND_HASH_FOREACH_END();
 
-    if (withscores) {
+    if (opts.withscores) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WITHSCORES");
         *ctx = PHPREDIS_CTX_PTR;
     }
@@ -1158,11 +1181,11 @@ redis_zinterunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char *kw, char **cmd, int *cmd_len, short *slot,
                       void **ctx)
 {
-    int numkeys;
-    smart_string cmdstr = {0};
     zval *z_keys, *z_weights = NULL, *z_opts = NULL, *z_ele;
-    zend_string *aggregate = NULL, *zkey;
-    zend_bool withscores = 0;
+    redisZcmdOptions opts = {0};
+    smart_string cmdstr = {0};
+    int numkeys, flags;
+    short s2 = 0;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a|a!a",
                              &z_keys, &z_weights, &z_opts) == FAILURE)
@@ -1174,43 +1197,28 @@ redis_zinterunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    if (z_weights) {
-        if (zend_hash_num_elements(Z_ARRVAL_P(z_weights)) != numkeys) {
-            php_error_docref(NULL, E_WARNING,
-                "WEIGHTS and keys array should be the same size!");
-            return FAILURE;
-        }
+    if (z_weights && zend_hash_num_elements(Z_ARRVAL_P(z_weights)) != numkeys) {
+        php_error_docref(NULL, E_WARNING, "WEIGHTS and keys array should be the same size!");
+        return FAILURE;
     }
 
-    if (z_opts != NULL) {
-        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(z_opts), zkey, z_ele) {
-            if (zkey != NULL) {
-                ZVAL_DEREF(z_ele);
-                if (zend_string_equals_literal_ci(zkey, "aggregate")) {
-                    aggregate = zval_get_string(z_ele);
-                    if (!zend_string_equals_literal_ci(aggregate, "sum") &&
-                        !zend_string_equals_literal_ci(aggregate, "min") &&
-                        !zend_string_equals_literal_ci(aggregate, "max")
-                    ) {
-                        php_error_docref(NULL, E_WARNING,
-                            "Invalid AGGREGATE option provided!");
-                        zend_string_release(aggregate);
-                        return FAILURE;
-                    }
-                } else if (zend_string_equals_literal_ci(zkey, "withscores")) {
-                    withscores = zval_is_true(z_ele);
-                }
-            }
-        } ZEND_HASH_FOREACH_END();
-    }
+    flags = redis_get_zcmd_flags(kw);
+    redis_get_zcmd_options(&opts, z_opts, flags);
 
-    redis_cmd_init_sstr(&cmdstr, 1 + numkeys + (z_weights ? 1 + numkeys : 0) + (aggregate ? 2 : 0) + withscores, kw, strlen(kw));
+    redis_cmd_init_sstr(&cmdstr, 1 + numkeys + (z_weights ? 1 + numkeys : 0) + (opts.aggregate ? 2 : 0) + opts.withscores, kw, strlen(kw));
     redis_cmd_append_sstr_long(&cmdstr, numkeys);
-
 
     ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_keys), z_ele) {
         ZVAL_DEREF(z_ele);
-        redis_cmd_append_sstr_zval(&cmdstr, z_ele, redis_sock);
+        redis_cmd_append_sstr_key_zval(&cmdstr, z_ele, redis_sock, slot);
+        if (slot) {
+            if (s2 && s2 != *slot) {
+                php_error_docref(NULL, E_WARNING, "Not all keys hash to the same slot");
+                efree(cmdstr.c);
+                return FAILURE;
+            }
+            s2 = *slot;
+        }
     } ZEND_HASH_FOREACH_END();
 
     if (z_weights) {
@@ -1218,20 +1226,18 @@ redis_zinterunion_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_weights), z_ele) {
             ZVAL_DEREF(z_ele);
             if (redis_cmd_append_sstr_score(&cmdstr, z_ele) == FAILURE) {
-                if (aggregate) zend_string_release(aggregate);
                 efree(cmdstr.c);
                 return FAILURE;
             }
         } ZEND_HASH_FOREACH_END();
     }
 
-    if (aggregate) {
+    if (opts.aggregate) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "AGGREGATE");
-        redis_cmd_append_sstr_zstr(&cmdstr, aggregate);
-        zend_string_release(aggregate);
+        redis_cmd_append_sstr_zstr(&cmdstr, opts.aggregate);
     }
 
-    if (withscores) {
+    if (opts.withscores) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WITHSCORES");
         *ctx = PHPREDIS_CTX_PTR;
     }
@@ -1245,29 +1251,34 @@ int
 redis_zdiffstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *dst;
-    size_t dst_len;
-    int numkeys;
-    zval *z_keys, *z_ele;
     smart_string cmdstr = {0};
+    zend_string *dst = NULL;
+    HashTable *keys = NULL;
+    zend_ulong nkeys;
+    short s2 = 0;
+    zval *zkey;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sa",
-                              &dst, &dst_len, &z_keys) == FAILURE)
-    {
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STR(dst)
+        Z_PARAM_ARRAY_HT(keys)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    nkeys = zend_hash_num_elements(keys);
+    if (nkeys == 0)
         return FAILURE;
-    }
 
-    if ((numkeys = zend_hash_num_elements(Z_ARRVAL_P(z_keys))) == 0) {
-        return FAILURE;
-    }
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2 + nkeys, "ZDIFFSTORE");
+    redis_cmd_append_sstr_key_zstr(&cmdstr, dst, redis_sock, slot);
+    redis_cmd_append_sstr_long(&cmdstr, nkeys);
 
-    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2 + numkeys, "ZDIFFSTORE");
-    redis_cmd_append_sstr(&cmdstr, dst, dst_len);
-    redis_cmd_append_sstr_long(&cmdstr, numkeys);
-
-    ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_keys), z_ele) {
-        ZVAL_DEREF(z_ele);
-        redis_cmd_append_sstr_zval(&cmdstr, z_ele, redis_sock);
+    ZEND_HASH_FOREACH_VAL(keys, zkey) {
+        ZVAL_DEREF(zkey);
+        redis_cmd_append_sstr_key_zval(&cmdstr, zkey, redis_sock, slot ? &s2 : NULL);
+        if (slot && *slot != s2) {
+            php_error_docref(NULL, E_WARNING, "All keys must hash to the same slot");
+            efree(cmdstr.c);
+            return FAILURE;
+        }
     } ZEND_HASH_FOREACH_END();
 
     *cmd = cmdstr.c;
@@ -1281,120 +1292,72 @@ redis_zinterunionstore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char *kw, char **cmd, int *cmd_len, short *slot,
                      void **ctx)
 {
-    char *key, *agg_op=NULL;
-    int key_free, argc = 2, keys_count;
-    size_t key_len, agg_op_len = 0;
-    zval *z_keys, *z_weights=NULL, *z_ele;
-    HashTable *ht_keys, *ht_weights=NULL;
+    HashTable *keys = NULL, *weights = NULL;
     smart_string cmdstr = {0};
+    zend_string *dst = NULL;
+    zend_string *agg = NULL;
+    zend_ulong nkeys;
+    zval *zv = NULL;
+    short s2 = 0;
 
-    // Parse args
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sa|a!s", &key,
-                             &key_len, &z_keys, &z_weights, &agg_op,
-                             &agg_op_len) == FAILURE)
-    {
+    ZEND_PARSE_PARAMETERS_START(2, 4)
+        Z_PARAM_STR(dst)
+        Z_PARAM_ARRAY_HT(keys)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT_OR_NULL(weights)
+        Z_PARAM_STR_OR_NULL(agg)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    nkeys = zend_hash_num_elements(keys);
+    if (nkeys == 0)
         return FAILURE;
-    }
 
-    // Grab our keys
-    ht_keys = Z_ARRVAL_P(z_keys);
-
-    // Nothing to do if there aren't any
-    if ((keys_count = zend_hash_num_elements(ht_keys)) == 0) {
+    if (weights != NULL && zend_hash_num_elements(weights) != nkeys) {
+        php_error_docref(NULL, E_WARNING, "WEIGHTS and keys array must be the same size!");
         return FAILURE;
-    } else {
-        argc += keys_count;
-    }
-
-    // Handle WEIGHTS
-    if (z_weights != NULL) {
-        ht_weights = Z_ARRVAL_P(z_weights);
-        if (zend_hash_num_elements(ht_weights) != keys_count) {
-            php_error_docref(NULL, E_WARNING,
-                "WEIGHTS and keys array should be the same size!");
-            return FAILURE;
-        }
-
-        // "WEIGHTS" + key count
-        argc += keys_count + 1;
     }
 
     // AGGREGATE option
-    if (agg_op_len != 0) {
-        if (strncasecmp(agg_op, "SUM", sizeof("SUM")) &&
-           strncasecmp(agg_op, "MIN", sizeof("MIN")) &&
-           strncasecmp(agg_op, "MAX", sizeof("MAX")))
-        {
-            php_error_docref(NULL, E_WARNING,
-                "Invalid AGGREGATE option provided!");
-            return FAILURE;
-        }
-
-        // "AGGREGATE" + type
-        argc += 2;
+    if (agg != NULL && (!zend_string_equals_literal_ci(agg, "SUM") &&
+                        !zend_string_equals_literal_ci(agg, "MIN") &&
+                        !zend_string_equals_literal_ci(agg, "MAX")))
+    {
+        php_error_docref(NULL, E_WARNING, "AGGREGATE option must be 'SUM', 'MIN', or 'MAX'");
+        return FAILURE;
     }
 
-    // Prefix key
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
+    redis_cmd_init_sstr(&cmdstr, 2 + nkeys + (weights ? 1 + nkeys : 0) + (agg ? 2 : 0), kw, strlen(kw));
+    redis_cmd_append_sstr_key_zstr(&cmdstr, dst, redis_sock, slot);
+    redis_cmd_append_sstr_int(&cmdstr, nkeys);
 
-    // Start building our command
-    redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
-    redis_cmd_append_sstr(&cmdstr, key, key_len);
-    redis_cmd_append_sstr_int(&cmdstr, keys_count);
-
-    // Set our slot, free the key if we prefixed it
-    CMD_SET_SLOT(slot,key,key_len);
-    if (key_free) efree(key);
-
-    // Process input keys
-    ZEND_HASH_FOREACH_VAL(ht_keys, z_ele) {
-        zend_string *zstr = zval_get_string(z_ele);
-        char *key = ZSTR_VAL(zstr);
-        size_t key_len = ZSTR_LEN(zstr);
-
-        // Prefix key if necissary
-        int key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-        // If we're in Cluster mode, verify the slot is the same
-        if (slot && *slot != cluster_hash_key(key,key_len)) {
-            php_error_docref(NULL, E_WARNING,
-                "All keys don't hash to the same slot!");
+    ZEND_HASH_FOREACH_VAL(keys, zv) {
+        ZVAL_DEREF(zv);
+        redis_cmd_append_sstr_key_zval(&cmdstr, zv, redis_sock, slot ? &s2 : NULL);
+        if (slot && s2 != *slot) {
+            php_error_docref(NULL, E_WARNING, "All keys don't hash to the same slot!");
             efree(cmdstr.c);
-            zend_string_release(zstr);
-            if (key_free) efree(key);
             return FAILURE;
         }
-
-        // Append this input set
-        redis_cmd_append_sstr(&cmdstr, key, key_len);
-
-        // Cleanup
-        zend_string_release(zstr);
-        if (key_free) efree(key);
     } ZEND_HASH_FOREACH_END();
 
-    // Weights
-    if (ht_weights != NULL) {
-        redis_cmd_append_sstr(&cmdstr, ZEND_STRL("WEIGHTS"));
-
-        // Process our weights
-        ZEND_HASH_FOREACH_VAL(ht_weights, z_ele) {
-            ZVAL_DEREF(z_ele);
-            if (redis_cmd_append_sstr_score(&cmdstr, z_ele) == FAILURE) {
+    if (weights) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "WEIGHTS");
+        ZEND_HASH_FOREACH_VAL(weights, zv) {
+            ZVAL_DEREF(zv);
+            if (redis_cmd_append_sstr_score(&cmdstr, zv) == FAILURE) {
                 efree(cmdstr.c);
                 return FAILURE;
             }
         } ZEND_HASH_FOREACH_END();
     }
 
-    // AGGREGATE
-    if (agg_op_len != 0) {
+    if (agg) {
         redis_cmd_append_sstr(&cmdstr, ZEND_STRL("AGGREGATE"));
-        redis_cmd_append_sstr(&cmdstr, agg_op, agg_op_len);
+        redis_cmd_append_sstr_zstr(&cmdstr, agg);
     }
 
     // Push out values
-    *cmd     = cmdstr.c;
+    *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;
 
     return SUCCESS;

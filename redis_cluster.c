@@ -1108,6 +1108,10 @@ PHP_METHOD(RedisCluster, zscore) {
 }
 /* }}} */
 
+PHP_METHOD(RedisCluster, zmscore) {
+    CLUSTER_PROCESS_KW_CMD("ZMSCORE", redis_key_varval_cmd, cluster_mbulk_dbl_resp, 1);
+}
+
 /* {{{ proto long RedisCluster::zadd(string key,double score,string mem, ...) */
 PHP_METHOD(RedisCluster, zadd) {
     CLUSTER_PROCESS_CMD(zadd, cluster_long_resp, 0);
@@ -1494,6 +1498,28 @@ PHP_METHOD(RedisCluster, zunionstore) {
 }
 /* }}} */
 
+PHP_METHOD(RedisCluster, zdiff) {
+    CLUSTER_PROCESS_CMD(zdiff, cluster_zdiff_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, zdiffstore) {
+    CLUSTER_PROCESS_CMD(zdiffstore, cluster_long_resp, 0);
+}
+
+PHP_METHOD(RedisCluster, zinter) {
+    CLUSTER_PROCESS_KW_CMD("ZUNION", redis_zinterunion_cmd, cluster_zdiff_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, zunion) {
+    CLUSTER_PROCESS_KW_CMD("ZINTER", redis_zinterunion_cmd, cluster_zdiff_resp, 1);
+}
+
+/* {{{ proto array RedisCluster::zrandmember(string key, array options) */
+PHP_METHOD(RedisCluster, zrandmember) {
+    CLUSTER_PROCESS_CMD(zrandmember, cluster_zrandmember_resp, 1);
+}
+
+/* }}} */
 /* {{{ proto RedisCluster::zinterstore(string dst, array keys, [array weights,
  *                                     string agg]) */
 PHP_METHOD(RedisCluster, zinterstore) {
