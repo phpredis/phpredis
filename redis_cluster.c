@@ -3142,5 +3142,9 @@ PHP_METHOD(RedisCluster, command) {
     CLUSTER_PROCESS_CMD(command, cluster_variant_resp, 0);
 }
 
+PHP_METHOD(RedisCluster, copy) {
+    CLUSTER_PROCESS_CMD(copy, cluster_1_resp, 0)
+}
+
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */
 

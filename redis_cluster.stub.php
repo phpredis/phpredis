@@ -228,6 +228,11 @@ class RedisCluster {
     public function dbsize(string|array $key_or_address): RedisCluster|int;
 
     /**
+     * @see https://redis.io/commands/copy
+     */
+    public function copy(string $src, string $dst, array $options = null): RedisCluster|bool;
+
+    /**
      * @see Redis::decr()
      */
     public function decr(string $key, int $by = 1): RedisCluster|int|false;
