@@ -1781,11 +1781,26 @@ redis_mpop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return res;
 }
 
+#if PHP_VERSION_ID < 80200
+static HashTable *zend_array_to_list(HashTable *arr) {
+    zval zret = {0}, *zv;
+
+    array_init_size(&zret, zend_hash_num_elements(arr));
+
+    ZEND_HASH_FOREACH_VAL(arr, zv) {
+        Z_TRY_ADDREF_P(zv);
+        add_next_index_zval(&zret, zv);
+    } ZEND_HASH_FOREACH_END();
+
+    return Z_ARRVAL(zret);
+}
+#endif
+
 PHP_REDIS_API int
 redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
                               long long elements, int with_aux_data)
 {
-    zval z_multi_result, z_sub, z_tmp, *z_ele, *zv;
+    zval z_multi_result, z_sub, *z_ele, *zv;
     zend_string *zkey;
 
     /* Handle the trivial "empty" result first */
@@ -1814,12 +1829,8 @@ redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
             // elements of the sub-array: distance, geohash, coordinates
             zend_hash_apply(Z_ARRVAL_P(z_ele), geosearch_cast);
 
-            // Copy values to re-order from zero
-            array_init(&z_sub);
-            ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_ele), zv) {
-                ZVAL_ZVAL(&z_tmp, zv, 1, 0);
-                add_next_index_zval(&z_sub, &z_tmp);
-            } ZEND_HASH_FOREACH_END();
+            // Reindex elements so they start at zero */
+            ZVAL_ARR(&z_sub, zend_array_to_list(Z_ARRVAL_P(z_ele)));
 
             add_assoc_zval_ex(zdst, ZSTR_VAL(zkey), ZSTR_LEN(zkey), &z_sub);
             zend_string_release(zkey);
