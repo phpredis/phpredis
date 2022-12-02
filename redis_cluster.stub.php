@@ -368,6 +368,16 @@ class RedisCluster {
     public function georadiusbymember_ro(string $key, string $member, float $radius, string $unit, array $options = []): mixed;
 
     /**
+     * @see https://redis.io/commands/geosearch
+     */
+    public function geosearch(string $key, array|string $position, array|int|float $shape, string $unit, array $options = []): RedisCluster|array;
+
+    /**
+     * @see https://redis.io/commands/geosearchstore
+     */
+    public function geosearchstore(string $dst, string $src, array|string $position, array|int|float $shape, string $unit, array $options = []): RedisCluster|array|int|false;
+
+    /**
      * @see Redis::get
      */
     public function get(string $key): mixed;

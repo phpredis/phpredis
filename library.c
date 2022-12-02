@@ -1782,63 +1782,73 @@ redis_mpop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 PHP_REDIS_API int
+redis_read_geosearch_response(zval *zdst, RedisSock *redis_sock,
+                              long long elements, int with_aux_data)
+{
+    zval z_multi_result, z_sub, z_tmp, *z_ele, *zv;
+    zend_string *zkey;
+
+    /* Handle the trivial "empty" result first */
+    if (elements < 0 && redis_sock->null_mbulk_as_null) {
+        ZVAL_NULL(zdst);
+        return SUCCESS;
+    }
+
+    array_init(zdst);
+
+    if (with_aux_data == 0) {
+        redis_mbulk_reply_loop(redis_sock, zdst, elements, UNSERIALIZE_NONE);
+    } else {
+        array_init(&z_multi_result);
+
+        redis_read_multibulk_recursive(redis_sock, elements, 0, &z_multi_result);
+
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL(z_multi_result), z_ele) {
+            // The first item in the sub-array is always the name of the returned item
+            zv = zend_hash_index_find(Z_ARRVAL_P(z_ele), 0);
+            zkey = zval_get_string(zv);
+
+            zend_hash_index_del(Z_ARRVAL_P(z_ele), 0);
+
+            // The other information is returned in the following order as successive
+            // elements of the sub-array: distance, geohash, coordinates
+            zend_hash_apply(Z_ARRVAL_P(z_ele), geosearch_cast);
+
+            // Copy values to re-order from zero
+            array_init(&z_sub);
+            ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_ele), zv) {
+                ZVAL_ZVAL(&z_tmp, zv, 1, 0);
+                add_next_index_zval(&z_sub, &z_tmp);
+            } ZEND_HASH_FOREACH_END();
+
+            add_assoc_zval_ex(zdst, ZSTR_VAL(zkey), ZSTR_LEN(zkey), &z_sub);
+            zend_string_release(zkey);
+        } ZEND_HASH_FOREACH_END();
+
+        // Cleanup
+        zval_dtor(&z_multi_result);
+    }
+
+    return SUCCESS;
+}
+
+PHP_REDIS_API int
 redis_geosearch_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                          zval *z_tab, void *ctx)
 {
-    int numElems;
-    zval z_ret, z_multi_result, z_sub, z_tmp, *z_ele, *zv;
-    zend_string *zkey;
+    zval zret = {0};
+    int elements;
 
-    if (read_mbulk_header(redis_sock, &numElems) < 0) {
-        if (IS_ATOMIC(redis_sock)) {
-            RETVAL_FALSE;
-        } else {
-            add_next_index_bool(z_tab, 0);
-        }
-        return FAILURE;
-    }
-
-    if (numElems < 0 && redis_sock->null_mbulk_as_null) {
-        ZVAL_NULL(&z_ret);
-    } else {
-        array_init(&z_ret);
-        if (ctx == NULL) {
-            redis_mbulk_reply_loop(redis_sock, &z_ret, numElems, UNSERIALIZE_NONE);
-        } else {
-            array_init(&z_multi_result);
-            redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_multi_result);
-
-            ZEND_HASH_FOREACH_VAL(Z_ARRVAL(z_multi_result), z_ele) {
-                // The first item in the sub-array is always the name of the returned item
-                zv = zend_hash_index_find(Z_ARRVAL_P(z_ele), 0);
-                zkey = zval_get_string(zv);
-
-                zend_hash_index_del(Z_ARRVAL_P(z_ele), 0);
-
-                // The other information is returned in the following order as successive
-                // elements of the sub-array: distance, geohash, coordinates
-                zend_hash_apply(Z_ARRVAL_P(z_ele), geosearch_cast);
-
-                // Copy values to re-order from zero
-                array_init(&z_sub);
-                ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_ele), zv) {
-                    ZVAL_ZVAL(&z_tmp, zv, 1, 0);
-                    add_next_index_zval(&z_sub, &z_tmp);
-                } ZEND_HASH_FOREACH_END();
-
-                add_assoc_zval_ex(&z_ret, ZSTR_VAL(zkey), ZSTR_LEN(zkey), &z_sub);
-                zend_string_release(zkey);
-            } ZEND_HASH_FOREACH_END();
-
-            // Cleanup
-            zval_dtor(&z_multi_result);
-        }
+    if (read_mbulk_header(redis_sock, &elements) < 0 ||
+        redis_read_geosearch_response(&zret, redis_sock, elements, ctx != NULL) < 0)
+    {
+        ZVAL_FALSE(&zret);
     }
 
     if (IS_ATOMIC(redis_sock)) {
-        RETVAL_ZVAL(&z_ret, 0, 1);
+        RETVAL_ZVAL(&zret, 0, 1);
     } else {
-        add_next_index_zval(z_tab, &z_ret);
+        add_next_index_zval(z_tab, &zret);
     }
 
     return SUCCESS;

@@ -2864,6 +2864,15 @@ PHP_METHOD(RedisCluster, georadiusbymember_ro) {
     CLUSTER_PROCESS_KW_CMD("GEORADIUSBYMEMBER_RO", redis_georadiusbymember_cmd, cluster_variant_resp, 1);
 }
 
+PHP_METHOD(RedisCluster, geosearch) {
+    CLUSTER_PROCESS_CMD(geosearch, cluster_geosearch_resp, 1);
+}
+
+PHP_METHOD(RedisCluster, geosearchstore) {
+    CLUSTER_PROCESS_CMD(geosearchstore, cluster_long_resp, 0);
+}
+
+
 /* {{{ proto array RedisCluster::role(string key)
  *     proto array RedisCluster::role(array host_port) */
 PHP_METHOD(RedisCluster, role) {
