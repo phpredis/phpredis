@@ -5345,44 +5345,56 @@ int
 redis_copy_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                char **cmd, int *cmd_len, short *slot, void **ctx)
 {
+    zend_string *src = NULL, *dst = NULL;
     smart_string cmdstr = {0};
-    char *src, *dst;
-    size_t src_len, dst_len;
-    zend_long db = -1;
+    HashTable *opts = NULL;
     zend_bool replace = 0;
-    zval *opts = NULL, *z_ele;
     zend_string *zkey;
+    zend_long db = -1;
+    short slot2;
+    zval *zv;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss|a",
-                              &src, &src_len, &dst, &dst_len, &opts) == FAILURE)
-    {
-        return FAILURE;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 3)
+        Z_PARAM_STR(src)
+        Z_PARAM_STR(dst)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT_OR_NULL(opts)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
     if (opts != NULL) {
-        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(opts), zkey, z_ele) {
-            if (zkey != NULL) {
-                ZVAL_DEREF(z_ele);
-                if (zend_string_equals_literal_ci(zkey, "db")) {
-                    db = zval_get_long(z_ele);
-                } else if (zend_string_equals_literal_ci(zkey, "replace")) {
-                    replace = zval_is_true(z_ele);
-                }
+        ZEND_HASH_FOREACH_STR_KEY_VAL(opts, zkey, zv) {
+            if (zkey == NULL)
+                continue;
+
+            ZVAL_DEREF(zv);
+            if (zend_string_equals_literal_ci(zkey, "db")) {
+                db = zval_get_long(zv);
+            } else if (zend_string_equals_literal_ci(zkey, "replace")) {
+                replace = zval_is_true(zv);
             }
         } ZEND_HASH_FOREACH_END();
     }
 
+    if (slot && db != -1) {
+        php_error_docref(NULL, E_WARNING, "Cant copy to a specific DB in cluster mode");
+        return FAILURE;
+    }
+
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2 + (db > -1 ? 2 : 0) + replace, "COPY");
-    redis_cmd_append_sstr(&cmdstr, src, src_len);
-    redis_cmd_append_sstr(&cmdstr, dst, dst_len);
+    redis_cmd_append_sstr_key_zstr(&cmdstr, src, redis_sock, slot);
+    redis_cmd_append_sstr_key_zstr(&cmdstr, dst, redis_sock, slot ? &slot2 : NULL);
+
+    if (slot && *slot != slot2) {
+        php_error_docref(NULL, E_WARNING, "Keys must hash to the same slot!");
+        efree(cmdstr.c);
+        return FAILURE;
+    }
 
     if (db > -1) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "DB");
         redis_cmd_append_sstr_long(&cmdstr, db);
     }
-    if (replace) {
-        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "REPLACE");
-    }
+    REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, replace, "REPLACE");
 
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;

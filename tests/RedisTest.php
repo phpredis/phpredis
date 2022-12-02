@@ -7531,17 +7531,17 @@ class Redis_Test extends TestSuite
             return;
         }
 
-        $this->redis->del('key2');
-        $this->redis->set('key', 'foo');
-        $this->assertTrue($this->redis->copy('key', 'key2'));
-        $this->assertEquals('foo', $this->redis->get('key2'));
+        $this->redis->del('{key}dst');
+        $this->redis->set('{key}src', 'foo');
+        $this->assertTrue($this->redis->copy('{key}src', '{key}dst'));
+        $this->assertEquals('foo', $this->redis->get('{key}dst'));
 
-        $this->redis->set('key', 'bar');
-        $this->assertFalse($this->redis->copy('key', 'key2'));
-        $this->assertEquals('foo', $this->redis->get('key2'));
+        $this->redis->set('{key}src', 'bar');
+        $this->assertFalse($this->redis->copy('{key}src', '{key}dst'));
+        $this->assertEquals('foo', $this->redis->get('{key}dst'));
 
-        $this->assertTrue($this->redis->copy('key', 'key2', ['replace' => true]));
-        $this->assertEquals('bar', $this->redis->get('key2'));
+        $this->assertTrue($this->redis->copy('{key}src', '{key}dst', ['replace' => true]));
+        $this->assertEquals('bar', $this->redis->get('{key}dst'));
     }
 
     public function testCommand()
