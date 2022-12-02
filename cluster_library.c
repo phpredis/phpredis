@@ -1748,6 +1748,20 @@ PHP_REDIS_API void cluster_ping_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
 }
 
 PHP_REDIS_API void
+cluster_hrandfield_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
+{
+    if (ctx == NULL) {
+        cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR) {
+        cluster_mbulk_raw_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR + 1) {
+        return cluster_mbulk_zipdbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        ZEND_ASSERT(!"memory corruption?");
+    }
+}
+
+PHP_REDIS_API void
 cluster_pop_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
 {
     if (ctx == NULL) {

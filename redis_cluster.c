@@ -1212,6 +1212,12 @@ PHP_METHOD(RedisCluster, hmset) {
 }
 /* }}} */
 
+/* {{{ proto bool RedisCluster::hrandfield(string key, [array $options]) */
+PHP_METHOD(RedisCluster, hrandfield) {
+    CLUSTER_PROCESS_CMD(hrandfield, cluster_hrandfield_resp, 1);
+}
+/* }}} */
+
 /* {{{ proto long RedisCluster::hdel(string key, string mem1, ... memN) */
 PHP_METHOD(RedisCluster, hdel) {
     CLUSTER_PROCESS_CMD(hdel, cluster_long_resp, 0);
