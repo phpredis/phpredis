@@ -1814,6 +1814,34 @@ int redis_key_str_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         VAL_TYPE_STRINGS, cmd, cmd_len, slot, ctx);
 }
 
+/* Generic function that takes one or more non-serialized arguments */
+int redis_vararg_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char *kw, char **cmd, int *cmd_len, short *slot,
+                     void **ctx)
+{
+    smart_string cmdstr = {0};
+    zval *argv = NULL;
+    zend_string *arg;
+    int argc = 0;
+
+    ZEND_PARSE_PARAMETERS_START(1, -1)
+        Z_PARAM_VARIADIC('*', argv, argc)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    redis_cmd_init_sstr(&cmdstr, ZEND_NUM_ARGS(), kw, strlen(kw));
+
+    for (uint32_t i = 0; i < argc; i++) {
+        arg = zval_get_string(&argv[i]);
+        redis_cmd_append_sstr_zstr(&cmdstr, arg);
+        zend_string_release(arg);
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 /* Generic function that takes a variable number of keys, with an optional
  * timeout value.  This can handle various SUNION/SUNIONSTORE/BRPOP type
  * commands. */
