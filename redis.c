@@ -2523,40 +2523,7 @@ PHP_METHOD(Redis, slowlog) {
 
 /* {{{ proto Redis::wait(int num_slaves, int ms) }}} */
 PHP_METHOD(Redis, wait) {
-    zval *object;
-    RedisSock *redis_sock;
-    zend_long num_slaves, timeout;
-    char *cmd;
-    int cmd_len;
-
-    /* Make sure arguments are valid */
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Oll",
-                                    &object, redis_ce, &num_slaves, &timeout)
-                                    ==FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-    /* Don't even send this to Redis if our args are negative */
-    if(num_slaves < 0 || timeout < 0) {
-        RETURN_FALSE;
-    }
-
-    /* Grab our socket */
-    if ((redis_sock = redis_sock_get(object, 0)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    // Construct the command
-    cmd_len = REDIS_SPPRINTF(&cmd, "WAIT", "ll", num_slaves, timeout);
-
-    /* Kick it off */
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    if (IS_ATOMIC(redis_sock)) {
-        redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL,
-            NULL);
-    }
-    REDIS_PROCESS_RESPONSE(redis_long_response);
+    REDIS_PROCESS_KW_CMD("WAIT", redis_long_long_cmd, redis_long_response);
 }
 
 /*
@@ -2588,46 +2555,9 @@ PHP_METHOD(Redis, evalsha_ro) {
     REDIS_PROCESS_KW_CMD("EVALSHA_RO", redis_eval_cmd, redis_read_raw_variant_reply);
 }
 
-/* {{{ proto status Redis::script('flush')
- * {{{ proto status Redis::script('kill')
- * {{{ proto string Redis::script('load', lua_script)
- * {{{ proto int Reids::script('exists', script_sha1 [, script_sha2, ...])
- */
+/* {{{ public function script($args...): mixed }}} */
 PHP_METHOD(Redis, script) {
-    zval *z_args;
-    RedisSock *redis_sock;
-    smart_string cmd = {0};
-    int argc = ZEND_NUM_ARGS();
-
-    /* Attempt to grab our socket */
-    if (argc < 1 || (redis_sock = redis_sock_get(getThis(), 0)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    /* Allocate an array big enough to store our arguments */
-    z_args = ecalloc(argc, sizeof(zval));
-
-    /* Make sure we can grab our arguments, we have a string directive */
-    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
-        redis_build_script_cmd(&cmd, argc, z_args) == NULL
-    ) {
-        efree(z_args);
-        RETURN_FALSE;
-    }
-
-    /* Free our allocated arguments */
-    efree(z_args);
-
-    // Kick off our request
-    REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
-    if (IS_ATOMIC(redis_sock)) {
-        if(redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                    redis_sock, NULL, NULL) < 0)
-        {
-            RETURN_FALSE;
-        }
-    }
-    REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+    REDIS_PROCESS_KW_CMD("SCRIPT", redis_vararg_cmd, redis_read_variant_reply);
 }
 
 /* {{{ proto DUMP key */
