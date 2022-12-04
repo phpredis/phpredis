@@ -18,11 +18,7 @@ PhpRedis will always be free and open source software, but if you or your compan
 
 The best way to support the project is through [GitHub sponsors](https://github.com/sponsors/michael-grunder).  Many of the reward tiers grant access to our [slack channel](https://phpredis.slack.com) where [myself](https://github.com/michael-grunder) and [Pavlo](https://github.com/yatsukhnenko) are regularly available to answer questions.  Additionally this will allow you to provide feedback on which fixes and new features to prioritize.
 
-You can also make a one-time contribution with one of the links below.
-
-[![PayPal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/michaelgrunder/5)
-[![Bitcoin](https://en.cryptobadges.io/badge/micro/1FXkYHBo5uoaztxFbajiPfbnkgKCbF3ykG)](https://en.cryptobadges.io/donate/1FXkYHBo5uoaztxFbajiPfbnkgKCbF3ykG)
-[![Ethereum](https://en.cryptobadges.io/badge/micro/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)](https://en.cryptobadges.io/donate/0x43D54E32357B96f68dFF0a6B46976d014Bd603E1)
+You can also make a one-time contribution with [![PayPal](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/michaelgrunder/5)
 
 ## Sponsors
 <a href="https://audiomack.com"><img src="https://styleguide.audiomack.com/assets/dl/inline-orange-large.png" align="center" alt="Audiomack.com" width="150"></a>
