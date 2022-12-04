@@ -1818,141 +1818,82 @@ int redis_key_str_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
  * timeout value.  This can handle various SUNION/SUNIONSTORE/BRPOP type
  * commands. */
 static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                          char *kw, int kw_len, int min_argc, int has_timeout,
+                          char *kw, int kw_len, int min_argc, zend_bool has_timeout,
                           char **cmd, int *cmd_len, short *slot)
 {
-    zval *z_args, *z_ele, ztimeout = {0};
-    HashTable *ht_arr;
-    char *key;
-    int key_free, i, tail;
-    size_t key_len;
-    int single_array = 0, argc = ZEND_NUM_ARGS();
+    zval *argv = NULL, ztimeout = {0}, *zv;
     smart_string cmdstr = {0};
     short kslot = -1;
-    zend_string *zstr;
+    int single_array;
+    int argc = 0;
 
-    if (argc < min_argc) {
-        zend_wrong_param_count();
-        return FAILURE;
-    }
+    ZEND_PARSE_PARAMETERS_START(min_argc, -1)
+        Z_PARAM_VARIADIC('*', argv, argc)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    // Allocate args
-    z_args = emalloc(argc * sizeof(zval));
-    if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
-        efree(z_args);
-        return FAILURE;
-    }
+    single_array = argc == 1 + !!has_timeout && Z_TYPE(argv[0]) == IS_ARRAY;
 
-    // Handle our "single array" case
-    if (has_timeout == 0) {
-        single_array = argc==1 && Z_TYPE(z_args[0]) == IS_ARRAY;
-    } else {
-        single_array = argc==2 && Z_TYPE(z_args[0]) == IS_ARRAY &&
-            (Z_TYPE(z_args[1]) == IS_LONG || Z_TYPE(z_args[1]) == IS_DOUBLE);
+    if (has_timeout) {
         if (single_array)
-            ZVAL_COPY_VALUE(&ztimeout, &z_args[1]);
+            ZVAL_COPY_VALUE(&ztimeout, &argv[1]);
+        else
+            ZVAL_COPY_VALUE(&ztimeout, &argv[argc - 1]);
+
+        if (Z_TYPE(ztimeout) != IS_LONG && Z_TYPE(ztimeout) != IS_DOUBLE) {
+            php_error_docref(NULL, E_WARNING, "Timeout must be a long or double");
+            return FAILURE;
+        }
     }
 
     // If we're running a single array, rework args
     if (single_array) {
-        ht_arr = Z_ARRVAL(z_args[0]);
-        argc = zend_hash_num_elements(ht_arr);
-        if (has_timeout) argc++;
-        efree(z_args);
-        z_args = NULL;
+        /* Need at least one argument */
+        argc = zend_hash_num_elements(Z_ARRVAL(argv[0]));
+        if (argc == 0)
+            return FAILURE;
 
-        /* If the array is empty, we can simply abort */
-        if (argc == 0) return FAILURE;
+        if (has_timeout) argc++;
     }
 
     // Begin construction of our command
     redis_cmd_init_sstr(&cmdstr, argc, kw, kw_len);
 
     if (single_array) {
-        ZEND_HASH_FOREACH_VAL(ht_arr, z_ele) {
-            zstr = zval_get_string(z_ele);
-            key = ZSTR_VAL(zstr);
-            key_len = ZSTR_LEN(zstr);
-            key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-            // Protect against CROSSLOT errors
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL(argv[0]), zv) {
+            redis_cmd_append_sstr_key_zval(&cmdstr, zv, redis_sock, slot);
             if (slot) {
-                if (kslot == -1) {
-                    kslot = cluster_hash_key(key, key_len);
-                } else if (cluster_hash_key(key,key_len)!=kslot) {
-                    zend_string_release(zstr);
-                    if (key_free) efree(key);
-                    php_error_docref(NULL, E_WARNING,
-                        "Not all keys hash to the same slot!");
-                    return FAILURE;
-                }
+                if (kslot != -1 && *slot != kslot)
+                    goto cross_slot;
+                kslot = *slot;
             }
-
-            // Append this key, free it if we prefixed
-            redis_cmd_append_sstr(&cmdstr, key, key_len);
-            zend_string_release(zstr);
-            if (key_free) efree(key);
         } ZEND_HASH_FOREACH_END();
-        if (Z_TYPE(ztimeout) == IS_LONG) {
-            redis_cmd_append_sstr_long(&cmdstr, Z_LVAL(ztimeout));
-        } else if (Z_TYPE(ztimeout) == IS_DOUBLE) {
-            redis_cmd_append_sstr_dbl(&cmdstr, Z_DVAL(ztimeout));
-        }
     } else {
-        if (has_timeout) {
-            zend_uchar type = Z_TYPE(z_args[argc - 1]);
-            if (type == IS_LONG || type == IS_DOUBLE) {
-                ZVAL_COPY_VALUE(&ztimeout, &z_args[argc - 1]);
-            } else {
-                php_error_docref(NULL, E_ERROR, "Timeout value must be a long or double");
-                efree(z_args);
-                return FAILURE;
-            }
-        }
-        tail = has_timeout ? argc-1 : argc;
-        for(i = 0; i < tail; i++) {
-            zstr = zval_get_string(&z_args[i]);
-            key = ZSTR_VAL(zstr);
-            key_len = ZSTR_LEN(zstr);
-
-            key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-            /* Protect against CROSSSLOT errors if we've got a slot */
+        for(uint32_t i = 0; i < argc - !!has_timeout; i++) {
+            redis_cmd_append_sstr_key_zval(&cmdstr, &argv[i], redis_sock, slot);
             if (slot) {
-                if ( kslot == -1) {
-                    kslot = cluster_hash_key(key, key_len);
-                } else if (cluster_hash_key(key,key_len)!=kslot) {
-                    php_error_docref(NULL, E_WARNING,
-                        "Not all keys hash to the same slot");
-                    zend_string_release(zstr);
-                    if (key_free) efree(key);
-                    efree(z_args);
-                    return FAILURE;
-                }
+                if (kslot != -1 && *slot != kslot)
+                    goto cross_slot;
+                kslot = *slot;
             }
-
-            // Append this key
-            redis_cmd_append_sstr(&cmdstr, key, key_len);
-            zend_string_release(zstr);
-            if (key_free) efree(key);
         }
+    }
 
-        if (Z_TYPE(ztimeout) == IS_DOUBLE) {
-            redis_cmd_append_sstr_dbl(&cmdstr, Z_DVAL(z_args[tail]));
-        } else if (Z_TYPE(ztimeout) == IS_LONG) {
-            redis_cmd_append_sstr_long(&cmdstr, Z_LVAL(z_args[tail]));
-        }
-
-        // Cleanup args
-        efree(z_args);
+    if (Z_TYPE(ztimeout) == IS_DOUBLE) {
+        redis_cmd_append_sstr_dbl(&cmdstr, Z_DVAL(ztimeout));
+    } else if (Z_TYPE(ztimeout) == IS_LONG) {
+        redis_cmd_append_sstr_long(&cmdstr, Z_LVAL(ztimeout));
     }
 
     // Push out parameters
-    if (slot) *slot = kslot;
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;
 
     return SUCCESS;
+
+cross_slot:
+    efree(cmdstr.c);
+    php_error_docref(NULL, E_WARNING, "Not all keys hash to the same slot!");
+    return FAILURE;
 }
 
 int redis_mpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw,
@@ -2047,7 +1988,7 @@ int redis_blocking_pop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                            void **ctx)
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw,
-        strlen(kw), 2, 2, cmd, cmd_len, slot);
+        strlen(kw), 2, 1, cmd, cmd_len, slot);
 }
 
 /*
