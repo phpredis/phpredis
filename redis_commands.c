@@ -1831,7 +1831,7 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         Z_PARAM_VARIADIC('*', argv, argc)
     ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    single_array = argc == 1 + !!has_timeout && Z_TYPE(argv[0]) == IS_ARRAY;
+    single_array = Z_TYPE(argv[0]) == IS_ARRAY && argc == has_timeout ? 2 : 1;
 
     if (has_timeout) {
         if (single_array)
