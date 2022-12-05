@@ -3666,28 +3666,27 @@ redis_hrandfield_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* SRANDMEMBER */
 int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                          char **cmd, int *cmd_len, short *slot, void **ctx,
-                          short *have_count)
+                          char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *key;
-    size_t key_len;
-    zend_long count;
+    uint32_t argc = ZEND_NUM_ARGS();
+    smart_string cmdstr = {0};
+    zend_long count = 0;
+    zend_string *key;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|l", &key, &key_len,
-                             &count) == FAILURE)
-    {
-        return FAILURE;
-    }
+    ZEND_PARSE_PARAMETERS_START(1, 2)
+        Z_PARAM_STR(key)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(count)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    // Set our have count flag
-    *have_count = ZEND_NUM_ARGS() == 2;
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, ZEND_NUM_ARGS(), "SRANDMEMBER");
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    if (argc == 2)
+        redis_cmd_append_sstr_long(&cmdstr, count);
 
-    // Two args means we have the optional COUNT
-    if (*have_count) {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SRANDMEMBER", "kl", key, key_len, count);
-    } else {
-        *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SRANDMEMBER", "k", key, key_len);
-    }
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+    *ctx = argc == 2 ? PHPREDIS_CTX_PTR : NULL;
 
     return SUCCESS;
 }

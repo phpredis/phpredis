@@ -190,8 +190,10 @@ PHP_REDIS_API int redis_geosearch_response(INTERNAL_FUNCTION_PARAMETERS, RedisSo
 PHP_REDIS_API int redis_hrandfield_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API int redis_pop_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 
+PHP_REDIS_API int redis_srandmember_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API int redis_lpos_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API int redis_read_lpos_response(zval *zdst, RedisSock *redis_sock, char reply_type, long long elements, void *ctx);
+
 
 PHP_REDIS_API int redis_client_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API int redis_command_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);

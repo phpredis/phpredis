@@ -869,37 +869,7 @@ PHP_METHOD(RedisCluster, spop) {
 
 /* {{{ proto string|array RedisCluster::srandmember(string key, [long count]) */
 PHP_METHOD(RedisCluster, srandmember) {
-    redisCluster *c = GET_CONTEXT();
-    cluster_cb cb;
-    char *cmd; int cmd_len; short slot;
-    short have_count;
-
-    /* Treat as readonly */
-    c->readonly = CLUSTER_IS_ATOMIC(c);
-
-    if (redis_srandmember_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags,
-                             &cmd, &cmd_len, &slot, NULL, &have_count)
-                             == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-    if (cluster_send_command(c,slot,cmd,cmd_len) < 0 || c->err != NULL) {
-        efree(cmd);
-        RETURN_FALSE;
-    }
-
-    // Clean up command
-    efree(cmd);
-
-    cb = have_count ? cluster_mbulk_resp : cluster_bulk_resp;
-    if (CLUSTER_IS_ATOMIC(c)) {
-        cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
-    } else {
-        void *ctx = NULL;
-        CLUSTER_ENQUEUE_RESPONSE(c, slot, cb, ctx);
-        RETURN_ZVAL(getThis(), 1, 0);
-    }
+    CLUSTER_PROCESS_CMD(srandmember, cluster_srandmember_resp, 1);
 }
 
 /* {{{ proto string RedisCluster::strlen(string key) */
