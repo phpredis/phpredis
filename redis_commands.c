@@ -3670,8 +3670,8 @@ int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 {
     uint32_t argc = ZEND_NUM_ARGS();
     smart_string cmdstr = {0};
+    zend_string *key = NULL;
     zend_long count = 0;
-    zend_string *key;
 
     ZEND_PARSE_PARAMETERS_START(1, 2)
         Z_PARAM_STR(key)
