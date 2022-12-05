@@ -1225,6 +1225,18 @@ redis_zrange_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval 
     return cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, ctx);
 }
 
+PHP_REDIS_API int
+redis_srandmember_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
+    FailableResultCallback cb;
+
+    /* Whether or not we have a COUNT argument */
+    ZEND_ASSERT(ctx == NULL || ctx == PHPREDIS_CTX_PTR);
+
+    cb = ctx ? redis_sock_read_multibulk_reply : redis_string_response;
+
+    return cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, ctx);
+}
+
 PHP_REDIS_API int redis_info_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx) {
     char *response;
     int response_len;

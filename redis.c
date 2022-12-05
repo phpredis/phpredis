@@ -1249,36 +1249,7 @@ PHP_METHOD(Redis, sPop)
 /* {{{ proto string Redis::sRandMember(string key [int count]) */
 PHP_METHOD(Redis, sRandMember)
 {
-    char *cmd;
-    int cmd_len;
-    short have_count;
-    RedisSock *redis_sock;
-
-    // Grab our socket, validate call
-    if ((redis_sock = redis_sock_get(getThis(), 0)) == NULL ||
-       redis_srandmember_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-                             &cmd, &cmd_len, NULL, NULL, &have_count) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    if(have_count) {
-        if (IS_ATOMIC(redis_sock)) {
-            if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                               redis_sock, NULL, NULL) < 0)
-            {
-                RETURN_FALSE;
-            }
-        }
-        REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
-    } else {
-        if (IS_ATOMIC(redis_sock)) {
-            redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-                NULL, NULL);
-        }
-        REDIS_PROCESS_RESPONSE(redis_string_response);
-    }
+    REDIS_PROCESS_CMD(srandmember, redis_srandmember_response);
 }
 /* }}} */
 

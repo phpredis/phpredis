@@ -418,6 +418,8 @@ PHP_REDIS_API void cluster_zdiff_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster
     void *ctx);
 PHP_REDIS_API void cluster_zrandmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     void *ctx);
+PHP_REDIS_API void cluster_srandmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+    void *ctx);
 PHP_REDIS_API void cluster_set_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
     void *ctx);
 PHP_REDIS_API void cluster_geosearch_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,

@@ -1833,6 +1833,17 @@ cluster_zrandmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ct
 }
 
 PHP_REDIS_API void
+cluster_srandmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
+    if (ctx == NULL) {
+        cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR) {
+        cluster_mbulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        ZEND_ASSERT(!"memory corruption?");
+    }
+}
+
+PHP_REDIS_API void
 cluster_set_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
 {
     if (ctx == NULL) {

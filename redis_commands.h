@@ -264,7 +264,7 @@ int redis_hsetnx_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-    char **cmd, int *cmd_len, short *slot, void **ctx, short *have_count);
+    char **cmd, int *cmd_len, short *slot, void **ctx);
 
 int redis_select_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char **cmd, int *cmd_len, short *slot, void **ctx);
