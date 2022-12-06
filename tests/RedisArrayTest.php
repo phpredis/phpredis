@@ -59,6 +59,7 @@ class Redis_Array_Test extends TestSuite
         if ($this->getAuth()) {
             $options['auth'] = $this->getAuth();
         }
+
         $this->ra = new RedisArray($newRing, $options);
         $this->min_version = getMinVersion($this->ra);
     }
@@ -507,7 +508,7 @@ class Redis_Multi_Exec_Test extends TestSuite {
 
         // change both in a transaction.
         $host = $this->ra->_target('{employee:joe}');   // transactions are per-node, so we need a reference to it.
-        $tr = $this->ra->multi($host)
+        $this->ra->multi($host)
             ->set('1_{employee:joe}_group', $newGroup)
             ->set('1_{employee:joe}_salary', $newSalary)
             ->exec();
@@ -603,7 +604,6 @@ class Redis_Multi_Exec_Test extends TestSuite {
         // Get after discard, unchanged:
         $this->assertTrue($this->ra->get($key) === 'test1');
     }
-
 }
 
 // Test custom distribution function
@@ -660,7 +660,6 @@ function run_tests($className, $str_filter, $str_host, $auth) {
         $newRing = ["$str_host:6379", "$str_host:6380", "$str_host:6381"];
         $oldRing = [];
         $serverList = ["$str_host:6379", "$str_host:6380", "$str_host:6381", "$str_host:6382"];
-
         // run
         return TestSuite::run($className, $str_filter, $str_host, NULL, $auth);
 }
