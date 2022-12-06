@@ -894,52 +894,8 @@ PHP_METHOD(Redis, decrBy){
 
 /* {{{ proto array Redis::mget(array keys)
  */
-PHP_METHOD(Redis, mget)
-{
-    zval *object, *z_args, *z_ele;
-    HashTable *hash;
-    RedisSock *redis_sock;
-    smart_string cmd = {0};
-    int arg_count;
-
-    /* Make sure we have proper arguments */
-    if(zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Oa",
-                                    &object, redis_ce, &z_args) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    /* We'll need the socket */
-    if ((redis_sock = redis_sock_get(object, 0)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    /* Grab our array */
-    hash = Z_ARRVAL_P(z_args);
-
-    /* We don't need to do anything if there aren't any keys */
-    if((arg_count = zend_hash_num_elements(hash)) == 0) {
-        RETURN_FALSE;
-    }
-
-    /* Build our command header */
-    redis_cmd_init_sstr(&cmd, arg_count, "MGET", 4);
-
-    /* Iterate through and grab our keys */
-    ZEND_HASH_FOREACH_VAL(hash, z_ele) {
-        zend_string *zstr = zval_get_string(z_ele);
-        redis_cmd_append_sstr_key(&cmd, ZSTR_VAL(zstr), ZSTR_LEN(zstr), redis_sock, NULL);
-        zend_string_release(zstr);
-    } ZEND_HASH_FOREACH_END();
-
-    /* Kick off our command */
-    REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
-    if (IS_ATOMIC(redis_sock)) {
-        if(redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                           redis_sock, NULL, NULL) < 0) {
-            RETURN_FALSE;
-        }
-    }
-    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+PHP_METHOD(Redis, mget) {
+    REDIS_PROCESS_CMD(mget, redis_sock_read_multibulk_reply);
 }
 
 /* {{{ proto boolean Redis::exists(string $key, string ...$more_keys)
