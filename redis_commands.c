@@ -3664,6 +3664,24 @@ redis_hrandfield_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int redis_select_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    zend_long db = 0;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_LONG(db)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (db < 0 || db > INT_MAX)
+        return FAILURE;
+
+    *ctx = (void*)(uintptr_t)db;
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SELECT", "d", db);
+
+    return SUCCESS;
+}
+
 /* SRANDMEMBER */
 int redis_srandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                           char **cmd, int *cmd_len, short *slot, void **ctx,
