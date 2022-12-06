@@ -1530,6 +1530,17 @@ redis_lpos_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z
 }
 
 PHP_REDIS_API int
+redis_select_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab,
+                      void *ctx)
+{
+    if (redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL) < 0)
+        return FAILURE;
+
+    redis_sock->dbNumber = (long)(uintptr_t)ctx;
+    return SUCCESS;
+}
+
+PHP_REDIS_API int
 redis_boolean_response_impl(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                             zval *z_tab, void *ctx,
                             SuccessCallback success_callback)

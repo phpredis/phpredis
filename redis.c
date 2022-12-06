@@ -1632,32 +1632,7 @@ PHP_METHOD(Redis, info) {
 
 /* {{{ proto bool Redis::select(long dbNumber) */
 PHP_METHOD(Redis, select) {
-
-    zval *object;
-    RedisSock *redis_sock;
-
-    char *cmd;
-    int cmd_len;
-    zend_long dbNumber;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Ol",
-                                     &object, redis_ce, &dbNumber) == FAILURE) {
-        RETURN_FALSE;
-    }
-
-    if (dbNumber < 0 || (redis_sock = redis_sock_get(object, 0)) == NULL) {
-        RETURN_FALSE;
-    }
-
-    redis_sock->dbNumber = dbNumber;
-    cmd_len = REDIS_SPPRINTF(&cmd, "SELECT", "d", dbNumber);
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-    if (IS_ATOMIC(redis_sock)) {
-        redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-            NULL, NULL);
-    }
-    REDIS_PROCESS_RESPONSE(redis_boolean_response);
+    REDIS_PROCESS_CMD(select, redis_select_response);
 }
 /* }}} */
 
