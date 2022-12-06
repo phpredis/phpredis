@@ -1591,29 +1591,7 @@ PHP_METHOD(RedisCluster, sort_ro) {
 
 /* {{{ proto RedisCluster::object(string subcmd, string key) */
 PHP_METHOD(RedisCluster, object) {
-    redisCluster *c = GET_CONTEXT();
-    char *cmd; int cmd_len; short slot;
-    REDIS_REPLY_TYPE rtype;
-
-    if (redis_object_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, c->flags, &rtype,
-                        &cmd, &cmd_len, &slot, NULL) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-     if (cluster_send_command(c,slot,cmd,cmd_len) < 0 || c->err != NULL) {
-        efree(cmd);
-        RETURN_FALSE;
-    }
-
-    efree(cmd);
-
-    // Use the correct response type
-    if (rtype == TYPE_INT) {
-        cluster_long_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
-    } else {
-        cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
-    }
+    CLUSTER_PROCESS_CMD(object, cluster_object_resp, 1);
 }
 
 /* {{{ proto null RedisCluster::subscribe(array chans, callable cb) */

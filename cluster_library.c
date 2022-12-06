@@ -1844,6 +1844,17 @@ cluster_srandmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ct
 }
 
 PHP_REDIS_API void
+cluster_object_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
+    ZEND_ASSERT(ctx == PHPREDIS_CTX_PTR || ctx == PHPREDIS_CTX_PTR + 1);
+
+    if (ctx == PHPREDIS_CTX_PTR) {
+        cluster_long_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    }
+}
+
+PHP_REDIS_API void
 cluster_set_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx)
 {
     if (ctx == NULL) {
