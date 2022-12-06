@@ -2273,6 +2273,37 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+/* MGET */
+int redis_mget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    smart_string cmdstr = {0};
+    HashTable *keys = NULL;
+    zval *zkey;
+
+    /* RedisCluster has a custom MGET implementation */
+    ZEND_ASSERT(slot == NULL);
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ARRAY_HT(keys)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(keys) == 0)
+        return FAILURE;
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, zend_hash_num_elements(keys), "MGET");
+
+    ZEND_HASH_FOREACH_VAL(keys, zkey) {
+        ZVAL_DEREF(zkey);
+        redis_cmd_append_sstr_key_zval(&cmdstr, zkey, redis_sock, slot);
+    } ZEND_HASH_FOREACH_END();
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 int
 redis_getex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 char **cmd, int *cmd_len, short *slot, void **ctx)
