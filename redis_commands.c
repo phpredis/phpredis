@@ -4102,36 +4102,33 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
 /* OBJECT */
 int redis_object_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     REDIS_REPLY_TYPE *rtype, char **cmd, int *cmd_len,
-                     short *slot, void **ctx)
+                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *key, *subcmd;
-    size_t key_len, subcmd_len;
+    zend_string *subcmd = NULL, *key = NULL;
+    smart_string cmdstr = {0};
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss", &subcmd,
-                             &subcmd_len, &key, &key_len) == FAILURE)
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STR(subcmd)
+        Z_PARAM_STR(key)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_string_equals_literal_ci(subcmd, "REFCOUNT") ||
+        zend_string_equals_literal_ci(subcmd, "IDLETIME"))
     {
-        return FAILURE;
-    }
-
-    // Format our command
-    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "OBJECT", "sk", subcmd, subcmd_len, key, key_len);
-
-    // Push the reply type to our caller
-    if (subcmd_len == 8 && (!strncasecmp(subcmd,"refcount",8) ||
-                           !strncasecmp(subcmd,"idletime",8)))
-    {
-        *rtype = TYPE_INT;
-    } else if (subcmd_len == 8 && !strncasecmp(subcmd, "encoding", 8)) {
-        *rtype = TYPE_BULK;
+        *ctx = PHPREDIS_CTX_PTR;
+    } else if (zend_string_equals_literal_ci(subcmd, "ENCODING")) {
+        *ctx = PHPREDIS_CTX_PTR + 1;
     } else {
-        php_error_docref(NULL, E_WARNING,
-            "Invalid subcommand sent to OBJECT");
-        efree(*cmd);
+        php_error_docref(NULL, E_WARNING, "Invalid subcommand sent to OBJECT");
         return FAILURE;
     }
 
-    // Success
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 2, "OBJECT");
+    redis_cmd_append_sstr_zstr(&cmdstr, subcmd);
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
     return SUCCESS;
 }
 

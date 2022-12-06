@@ -2396,35 +2396,7 @@ PHP_METHOD(Redis, replicaof) {
 /* {{{ proto string Redis::object(key) */
 PHP_METHOD(Redis, object)
 {
-    RedisSock *redis_sock;
-    char *cmd; int cmd_len;
-    REDIS_REPLY_TYPE rtype;
-
-    if ((redis_sock = redis_sock_get(getThis(), 0)) == NULL) {
-       RETURN_FALSE;
-    }
-
-    if(redis_object_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &rtype,
-                        &cmd, &cmd_len, NULL, NULL)==FAILURE)
-    {
-       RETURN_FALSE;
-    }
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
-
-    if(rtype == TYPE_INT) {
-        if (IS_ATOMIC(redis_sock)) {
-            redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-                NULL, NULL);
-        }
-        REDIS_PROCESS_RESPONSE(redis_long_response);
-    } else {
-        if (IS_ATOMIC(redis_sock)) {
-            redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-                NULL, NULL);
-        }
-        REDIS_PROCESS_RESPONSE(redis_string_response);
-    }
+    REDIS_PROCESS_CMD(object, redis_object_response);
 }
 /* }}} */
 
