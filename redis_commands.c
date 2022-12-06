@@ -1846,20 +1846,23 @@ int redis_vararg_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
  * timeout value.  This can handle various SUNION/SUNIONSTORE/BRPOP type
  * commands. */
 static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                          char *kw, int kw_len, int min_argc, zend_bool has_timeout,
+                          char *kw, int kw_len, zend_bool has_timeout,
                           char **cmd, int *cmd_len, short *slot)
 {
     zval *argv = NULL, ztimeout = {0}, *zv;
     smart_string cmdstr = {0};
+    uint32_t min_argc;
     short kslot = -1;
     int single_array;
     int argc = 0;
+
+    min_argc = has_timeout ? 2 : 1;
 
     ZEND_PARSE_PARAMETERS_START(min_argc, -1)
         Z_PARAM_VARIADIC('*', argv, argc)
     ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    single_array = Z_TYPE(argv[0]) == IS_ARRAY && argc == (has_timeout ? 2 : 1);
+    single_array = argc == min_argc && Z_TYPE(argv[0]) == IS_ARRAY;
 
     if (has_timeout) {
         if (single_array)
@@ -2016,7 +2019,7 @@ int redis_blocking_pop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                            void **ctx)
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw,
-        strlen(kw), 2, 1, cmd, cmd_len, slot);
+        strlen(kw), 1, cmd, cmd_len, slot);
 }
 
 /*
@@ -4814,7 +4817,7 @@ int redis_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     return gen_varkey_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
-                          kw, strlen(kw), 1, 0, cmd, cmd_len, slot);
+                          kw, strlen(kw), 0, cmd, cmd_len, slot);
 }
 
 static int
