@@ -42,18 +42,6 @@ class TestSuite
     public function getPort() { return $this->i_port; }
     public function getAuth() { return $this->auth; }
 
-    public static function getAvailableCompression() {
-        $result[] = Redis::COMPRESSION_NONE;
-        if (defined('Redis::COMPRESSION_LZF'))
-            $result[] = Redis::COMPRESSION_LZF;
-        if (defined('Redis::COMPRESSION_LZ4'))
-            $result[] = Redis::COMPRESSION_LZ4;
-        if (defined('Redis::COMPRESSION_ZSTD'))
-            $result[] = Redis::COMPRESSION_ZSTD;
-
-        return $result;
-    }
-
     /**
      * Returns the fully qualified host path,
      * which may be used directly for php.ini parameters like session.save_path
@@ -235,6 +223,40 @@ class TestSuite
             }
         }
         return $i_result;
+    }
+
+    private static function findFile($path, $file) {
+        $files = glob($path . '/*', GLOB_NOSORT);
+
+        foreach ($files as $test) {
+            $test = basename($test);
+            if (strcasecmp($file, $test) == 0)
+                return $path . '/' . $test;
+        }
+
+        return NULL;
+    }
+
+    /* Small helper method that tries to load a custom test case class */
+    public static function loadTestClass($class) {
+        $filename = "${class}.php";
+
+        if (($sp = getenv('PHPREDIS_TEST_SEARCH_PATH'))) {
+            $fullname = self::findFile($sp, $filename);
+        } else {
+            $fullname = self::findFile(__DIR__, $filename);
+        }
+
+        if ( ! $fullname)
+            die("Fatal:  Couldn't find $filename\n");
+
+        require_once($fullname);
+
+        if ( ! class_exists($class))
+            die("Fatal:  Loaded '$filename' but didn't find class '$class'\n");
+
+        /* Loaded the file and found the class, return it */
+        return $class;
     }
 
     /* Flag colorization */

@@ -133,9 +133,9 @@ class Redis_Cluster_Test extends Redis_Test {
     }
 
     public function testEcho() {
-        $this->assertEquals($this->redis->echo('k1', 'hello'), 'hello');
-        $this->assertEquals($this->redis->echo('k2', 'world'), 'world');
-        $this->assertEquals($this->redis->echo('k3', " 0123 "), " 0123 ");
+        $this->assertEquals($this->redis->echo('echo1', 'hello'), 'hello');
+        $this->assertEquals($this->redis->echo('echo2', 'world'), 'world');
+        $this->assertEquals($this->redis->echo('echo3', " 0123 "), " 0123 ");
     }
 
     public function testSortPrefix() {
