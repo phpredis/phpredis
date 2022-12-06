@@ -1528,32 +1528,7 @@ PHP_METHOD(Redis, pttl) {
 
 /* {{{ proto array Redis::info() */
 PHP_METHOD(Redis, info) {
-    smart_string cmdstr = {0};
-    RedisSock *redis_sock;
-    zend_string *section;
-    zval *args = NULL;
-    int i, argc = 0;
-
-    ZEND_PARSE_PARAMETERS_START(0, -1)
-        Z_PARAM_VARIADIC('+', args, argc)
-    ZEND_PARSE_PARAMETERS_END();
-
-    if ((redis_sock = redis_sock_get(getThis(), 0)) == NULL)
-        RETURN_FALSE;
-
-    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "INFO");
-    for (i = 0; i < argc; i++) {
-        section = zval_get_string(&args[i]);
-        redis_cmd_append_sstr_zstr(&cmdstr, section);
-        zend_string_release(section);
-    }
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmdstr.c, cmdstr.len);
-    if (IS_ATOMIC(redis_sock)) {
-        redis_info_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL,
-            NULL);
-    }
-    REDIS_PROCESS_RESPONSE(redis_info_response);
+    REDIS_PROCESS_CMD(info, redis_info_response);
 }
 /* }}} */
 
@@ -2432,7 +2407,7 @@ PHP_METHOD(Redis, evalsha_ro) {
 
 /* {{{ public function script($args...): mixed }}} */
 PHP_METHOD(Redis, script) {
-    REDIS_PROCESS_KW_CMD("SCRIPT", redis_vararg_cmd, redis_read_variant_reply);
+    REDIS_PROCESS_CMD(script, redis_read_variant_reply);
 }
 
 /* {{{ proto DUMP key */

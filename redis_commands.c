@@ -1815,16 +1815,17 @@ int redis_key_str_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 /* Generic function that takes one or more non-serialized arguments */
-int redis_vararg_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                     char *kw, char **cmd, int *cmd_len, short *slot,
-                     void **ctx)
+static int
+gen_vararg_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+               uint32_t min_argc, char *kw, char **cmd, int *cmd_len,
+               short *slot, void **ctx)
 {
     smart_string cmdstr = {0};
     zval *argv = NULL;
     zend_string *arg;
     int argc = 0;
 
-    ZEND_PARSE_PARAMETERS_START(1, -1)
+    ZEND_PARSE_PARAMETERS_START(min_argc, -1)
         Z_PARAM_VARIADIC('*', argv, argc)
     ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
@@ -2011,6 +2012,20 @@ int redis_mpop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw
     *cmd_len = cmdstr.len;
 
     return SUCCESS;
+}
+
+int redis_info_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return gen_vararg_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 0,
+                          "INFO", cmd, cmd_len, slot, ctx);
+}
+
+int redis_script_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return gen_vararg_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 1,
+                          "SCRIPT", cmd, cmd_len, slot, ctx);
 }
 
 /* Generic handling of every blocking pop command (BLPOP, BZPOP[MIN/MAX], etc */
