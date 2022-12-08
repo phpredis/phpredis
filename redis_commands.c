@@ -3148,89 +3148,46 @@ int redis_pfmerge_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    zval *z_keys, *z_key;
-    HashTable *ht_keys;
     smart_string cmdstr = {0};
-    int num_keys, key_free;
-    size_t key_len;
-    char *key;
-    short kslot=-1;
-    zend_string *zstr;
+    zval *zarg = NULL, *zv;
+    short slot2 = -1;
+    uint32_t keys;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(),"z",&z_keys) == FAILURE) {
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ZVAL(zarg)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (Z_TYPE_P(zarg) == IS_STRING) {
+        REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1, "PFCOUNT");
+        redis_cmd_append_sstr_key_zstr(&cmdstr, Z_STR_P(zarg), redis_sock, slot);
+    } else if (Z_TYPE_P(zarg) == IS_ARRAY) {
+        keys = zend_hash_num_elements(Z_ARRVAL_P(zarg));
+        if (keys == 0)
+            return FAILURE;
+
+        REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, keys, "PFCOUNT");
+
+        ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(zarg), zv) {
+            redis_cmd_append_sstr_key_zval(&cmdstr, zv, redis_sock, slot);
+            if (slot) {
+                if (slot2 != -1 && slot2 != *slot)
+                    goto cross_slot;
+                slot2 = *slot;
+            }
+        } ZEND_HASH_FOREACH_END();
+    } else {
+        php_error_docref(NULL, E_WARNING, "Argument must be either an array or a string");
         return FAILURE;
     }
 
-    /* If we were passed an array of keys, iterate through them prefixing if
-     * required and capturing lengths and if we need to free them.  Otherwise
-     * attempt to treat the argument as a string and just pass one */
-    if (Z_TYPE_P(z_keys) == IS_ARRAY) {
-        /* Grab key hash table and the number of keys */
-        ht_keys = Z_ARRVAL_P(z_keys);
-        num_keys = zend_hash_num_elements(ht_keys);
-
-        /* There is no reason to send zero keys */
-        if (num_keys == 0) {
-            return FAILURE;
-        }
-
-        /* Initialize the command with our number of arguments */
-        redis_cmd_init_sstr(&cmdstr, num_keys, ZEND_STRL("PFCOUNT"));
-
-        /* Append our key(s) */
-        ZEND_HASH_FOREACH_VAL(ht_keys, z_key) {
-            /* Turn our value into a string if it isn't one */
-            zstr = zval_get_string(z_key);
-            key = ZSTR_VAL(zstr);
-            key_len = ZSTR_LEN(zstr);
-
-            /* Append this key to our command */
-            key_free = redis_key_prefix(redis_sock, &key, &key_len);
-            redis_cmd_append_sstr(&cmdstr, key, key_len);
-
-            /* Protect against CROSSLOT errors */
-            if (slot) {
-                if (kslot == -1) {
-                    kslot = cluster_hash_key(key, key_len);
-                } else if (cluster_hash_key(key,key_len)!=kslot) {
-                    zend_string_release(zstr);
-                    if (key_free) efree(key);
-                    efree(cmdstr.c);
-
-                    php_error_docref(NULL, E_WARNING,
-                        "Not all keys hash to the same slot!");
-                    return FAILURE;
-                }
-            }
-
-            /* Cleanup */
-            zend_string_release(zstr);
-            if (key_free) efree(key);
-        } ZEND_HASH_FOREACH_END();
-    } else {
-        /* Construct our whole command */
-        redis_cmd_init_sstr(&cmdstr, 1, ZEND_STRL("PFCOUNT"));
-
-        /* Turn our key into a string if it's a different type */
-        zstr = zval_get_string(z_keys);
-        key = ZSTR_VAL(zstr);
-        key_len = ZSTR_LEN(zstr);
-        key_free = redis_key_prefix(redis_sock, &key, &key_len);
-        redis_cmd_append_sstr(&cmdstr, key, key_len);
-
-        /* Hash our key */
-        CMD_SET_SLOT(slot, key, key_len);
-
-        /* Cleanup */
-        zend_string_release(zstr);
-        if (key_free) efree(key);
-    }
-
-    /* Push our command and length to the caller */
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;
-
     return SUCCESS;
+
+cross_slot:
+    php_error_docref(NULL, E_WARNING, "Not all keys hash to the same slot!");
+    efree(cmdstr.c);
+    return FAILURE;
 }
 
 int redis_auth_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
