@@ -2590,76 +2590,37 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *key;
-    int key_free, count;
-    size_t key_len;
-    zend_ulong idx;
-    zval *z_arr;
-    HashTable *ht_vals;
     smart_string cmdstr = {0};
-    zend_string *zkey;
-    zval *z_val;
+    zend_string *key = NULL;
+    HashTable *ht = NULL;
+    uint32_t fields;
+    zend_ulong idx;
+    zval *zv;
 
-    // Parse args
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sa", &key, &key_len,
-                             &z_arr) == FAILURE)
-    {
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STR(key)
+        Z_PARAM_ARRAY_HT(ht)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    fields = zend_hash_num_elements(ht);
+    if (fields == 0)
         return FAILURE;
-    }
 
-    // We can abort if we have no fields
-    if ((count = zend_hash_num_elements(Z_ARRVAL_P(z_arr))) == 0) {
-        return FAILURE;
-    }
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + (2 * fields), "HMSET");
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
 
-    // Prefix our key
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    // Grab our array as a HashTable
-    ht_vals = Z_ARRVAL_P(z_arr);
-
-    // Initialize our HMSET command (key + 2x each array entry), add key
-    redis_cmd_init_sstr(&cmdstr, 1+(count*2), ZEND_STRL("HMSET"));
-    redis_cmd_append_sstr(&cmdstr, key, key_len);
-
-    // Start traversing our key => value array
-    ZEND_HASH_FOREACH_KEY_VAL(ht_vals, idx, zkey, z_val) {
-        char *mem, *val, kbuf[40];
-        size_t val_len;
-        int val_free;
-        unsigned int mem_len;
-
-        // If the hash key is an integer, convert it to a string
-        if (zkey) {
-            mem_len = ZSTR_LEN(zkey);
-            mem = ZSTR_VAL(zkey);
+    ZEND_HASH_FOREACH_KEY_VAL(ht, idx, key, zv) {
+        if (key) {
+            redis_cmd_append_sstr_zstr(&cmdstr, key);
         } else {
-            mem_len = snprintf(kbuf, sizeof(kbuf), ZEND_LONG_FMT, idx);
-            mem = (char*)kbuf;
+            redis_cmd_append_sstr_long(&cmdstr, idx);
         }
-
-        // Serialize value (if directed)
-        val_free = redis_pack(redis_sock, z_val, &val, &val_len);
-
-        // Append the key and value to our command
-        redis_cmd_append_sstr(&cmdstr, mem, mem_len);
-        redis_cmd_append_sstr(&cmdstr, val, val_len);
-
-        // Free our value if we serialized it
-        if (val_free) efree(val);
+        redis_cmd_append_sstr_zval(&cmdstr, zv, redis_sock);
     } ZEND_HASH_FOREACH_END();
 
-    // Set slot if directed
-    CMD_SET_SLOT(slot,key,key_len);
-
-    // Free our key if we prefixed it
-    if (key_free) efree(key);
-
-    // Push return pointers
     *cmd_len = cmdstr.len;
     *cmd = cmdstr.c;
 
-    // Success!
     return SUCCESS;
 }
 
