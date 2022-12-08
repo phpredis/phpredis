@@ -2248,11 +2248,11 @@ class Redis {
      *
      * @see https://redis.io/commands/pfcount
      *
-     * @param string $key The key name we wish to query.
+     * @param string $key_or_keys Either one key or an array of keys
      *
      * @return Redis|int The estimated cardinality of the set.
      */
-    public function pfcount(string $key): Redis|int;
+    public function pfcount(array|string $key_or_keys): Redis|int|false;
 
     /**
      * Merge one or more source HyperLogLog sets into a destination set.
