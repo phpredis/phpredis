@@ -3454,43 +3454,31 @@ redis_lpos_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_smove_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *src, *dst;
-    size_t src_len, dst_len;
-    int src_free, dst_free;
-    zval *z_val;
+    zend_string *src = NULL, *dst = NULL;
+    smart_string cmdstr = {0};
+    zval *zv = NULL;
+    short slot2;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssz", &src, &src_len,
-                             &dst, &dst_len, &z_val) == FAILURE)
-    {
+    ZEND_PARSE_PARAMETERS_START(3, 3) {
+        Z_PARAM_STR(src)
+        Z_PARAM_STR(dst)
+        Z_PARAM_ZVAL(zv)
+    } ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 3, "SMOVE");
+    redis_cmd_append_sstr_key_zstr(&cmdstr, src, redis_sock, slot);
+    redis_cmd_append_sstr_key_zstr(&cmdstr, dst, redis_sock, slot ? &slot2 : NULL);
+    redis_cmd_append_sstr_zval(&cmdstr, zv, redis_sock);
+
+    if (slot && *slot != slot2) {
+        php_error_docref(0, E_WARNING, "Source and destination keys don't hash to the same slot!");
+        efree(cmdstr.c);
         return FAILURE;
     }
 
-    src_free = redis_key_prefix(redis_sock, &src, &src_len);
-    dst_free = redis_key_prefix(redis_sock, &dst, &dst_len);
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
 
-    // Protect against a CROSSSLOT error
-    if (slot) {
-        short slot1 = cluster_hash_key(src, src_len);
-        short slot2 = cluster_hash_key(dst, dst_len);
-        if (slot1 != slot2) {
-            php_error_docref(0, E_WARNING,
-                "Source and destination keys don't hash to the same slot!");
-            if (src_free) efree(src);
-            if (dst_free) efree(dst);
-            return FAILURE;
-        }
-        *slot = slot1;
-    }
-
-    // Construct command
-    *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SMOVE", "ssv", src, src_len, dst,
-        dst_len, z_val);
-
-    // Cleanup
-    if (src_free) efree(src);
-    if (dst_free) efree(dst);
-
-    // Success!
     return SUCCESS;
 }
 
