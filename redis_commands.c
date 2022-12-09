@@ -363,46 +363,27 @@ int redis_key_key_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char *kw, char **cmd, int *cmd_len, short *slot,
                       void **ctx)
 {
-    char *k1, *k2;
-    size_t k1len, k2len;
-    int k1free, k2free;
+    zend_string *key1 = NULL, *key2 = NULL;
+    smart_string cmdstr = {0};
+    short slot2;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss", &k1, &k1len,
-                             &k2, &k2len) == FAILURE)
-    {
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STR(key1)
+        Z_PARAM_STR(key2)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    redis_cmd_init_sstr(&cmdstr, 2, kw, strlen(kw));
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key1, redis_sock, slot);
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key2, redis_sock, slot ? &slot2 : NULL);
+
+    if (slot && *slot != slot2) {
+        php_error_docref(0, E_WARNING, "Keys don't hash to the same slot");
+        smart_string_free(&cmdstr);
         return FAILURE;
     }
 
-    // Prefix both keys
-    k1free = redis_key_prefix(redis_sock, &k1, &k1len);
-    k2free = redis_key_prefix(redis_sock, &k2, &k2len);
-
-    // If a slot is requested, we can test that they hash the same
-    if (slot) {
-        // Slots where these keys resolve
-        short slot1 = cluster_hash_key(k1, k1len);
-        short slot2 = cluster_hash_key(k2, k2len);
-
-        // Check if Redis would give us a CROSSLOT error
-        if (slot1 != slot2) {
-            php_error_docref(0, E_WARNING, "Keys don't hash to the same slot");
-            if (k1free) efree(k1);
-            if (k2free) efree(k2);
-            return FAILURE;
-        }
-
-        // They're both the same
-        *slot = slot1;
-    }
-
-    /* Send keys as normal strings because we manually prefixed to check against
-     * cross slot error. */
-    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ss", k1, k1len, k2, k2len);
-
-    /* Clean keys up if we prefixed */
-    if (k1free) efree(k1);
-    if (k2free) efree(k2);
-
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
     return SUCCESS;
 }
 
@@ -411,19 +392,16 @@ int redis_key_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                        char *kw, char **cmd, int *cmd_len, short *slot,
                        void **ctx)
 {
-    char *key;
-    size_t keylen;
-    zend_long lval;
+    zend_string *key = NULL;
+    zend_long lval = 0;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sl", &key, &keylen, &lval)
-                              ==FAILURE)
-    {
-        return FAILURE;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STR(key)
+        Z_PARAM_LONG(lval)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kl", key, keylen, lval);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "kl", ZSTR_VAL(key), ZSTR_LEN(key), lval);
 
-    // Success!
     return SUCCESS;
 }
 
@@ -432,15 +410,14 @@ int redis_long_long_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                         char *kw, char **cmd, int *cmd_len, short *slot,
                         void **ctx)
 {
-    zend_long v1, v2;
+    zend_long l1 = 0, l2 = 0;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ll", &v1, &v2)
-                              == FAILURE)
-    {
-        return FAILURE;
-    }
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_LONG(l1)
+        Z_PARAM_LONG(l2)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ll", v1, v2);
+    *cmd_len = REDIS_CMD_SPPRINTF(cmd, kw, "ll", l1, l2);
 
     return SUCCESS;
 }
