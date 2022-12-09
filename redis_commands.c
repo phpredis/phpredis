@@ -759,7 +759,7 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char *kw, char **cmd, int *cmd_len, short *slot,
                      void **ctx)
 {
-    zval *zoptions = NULL, *zstart, *zend;
+    zval *zoptions = NULL, *zstart = NULL, *zend = NULL;
     zend_string *dst = NULL, *src = NULL;
     zend_long start = 0, end = 0;
     smart_string cmdstr = {0};
