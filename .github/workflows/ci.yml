@@ -148,12 +148,7 @@ jobs:
         run: |
           md binaries
           copy LICENSE binaries
-          if (Test-Path "x64\Release") {
-            Set-Variable -Name "prefix" -Value "x64\Release"
-          } else {
-            Set-Variable -Name "prefix" -Value "x64\Release_TS"
-          }
-          copy $prefix\php_redis.dll binaries
+          Get-ChildItem -Recurse -Filter "php_redis.dll" | ForEach-Object {Copy-Item -Path $_.FullName -Destination "binaries"}
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
         with:
