@@ -4108,9 +4108,9 @@ class Redis {
      * @category zset
      *
      * @example $redis->zRange('zset', 0, -1);
-     * @example $redis->zRange('zset', '-inf', 'inf', ['byscore' => true]);
+     * @example $redis->zRange('zset', '-inf', 'inf', ['byscore']);
      */
-    public function zRange(string $key, mixed $start, mixed $end, array|bool|null $options = null): Redis|array|false;
+    public function zRange(string $key, string|int $start, string|int $end, array|bool|null $options = null): Redis|array|false;
 
     /**
      * Retrieve a range of elements from a sorted set by legographical range.

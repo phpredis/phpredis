@@ -746,20 +746,23 @@ static int redis_get_zcmd_flags(const char *kw) {
 }
 
 /* Validate ZLEX* min/max argument strings */
-#define validate_zlex_arg_zstr(zs_) validate_zlex_arg(ZSTR_VAL((zs_)), ZSTR_LEN((zs_)))
-static int validate_zlex_arg(const char *arg, size_t len) {
-    return (len  > 1 && (*arg == '[' || *arg == '(')) ||
-           (len == 1 && (*arg == '+' || *arg == '-'));
+static int validate_zlex_arg(const char *str, size_t len) {
+    return (len  > 1 && (*str == '[' || *str == '(')) ||
+           (len == 1 && (*str == '+' || *str == '-'));
+}
+
+static int validate_zlex_arg_zval(zval *z) {
+    return Z_TYPE_P(z) == IS_STRING && validate_zlex_arg(Z_STRVAL_P(z), Z_STRLEN_P(z));
 }
 
 int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                      char *kw, char **cmd, int *cmd_len, short *slot,
                      void **ctx)
 {
-    zend_string *dst = NULL, *src = NULL, *sstart = NULL, *send = NULL;
+    zval *zoptions = NULL, *zstart, *zend;
+    zend_string *dst = NULL, *src = NULL;
     zend_long start = 0, end = 0;
     smart_string cmdstr = {0};
-    zval *zoptions = NULL;
     redisZcmdOptions opt;
     int min_argc, flags;
     short slot2;
@@ -776,8 +779,8 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             Z_PARAM_LONG(start)
             Z_PARAM_LONG(end)
         } else {
-            Z_PARAM_STR(sstart)
-            Z_PARAM_STR(send)
+            Z_PARAM_ZVAL(zstart)
+            Z_PARAM_ZVAL(zend)
         }
         Z_PARAM_OPTIONAL
         Z_PARAM_ZVAL_OR_NULL(zoptions)
@@ -787,7 +790,7 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     if (opt.bylex) {
         ZEND_ASSERT(!(flags & REDIS_ZCMD_INT_RANGE));
-        if (!validate_zlex_arg_zstr(sstart) || !validate_zlex_arg_zstr(send)) {
+        if (!validate_zlex_arg_zval(zstart) || !validate_zlex_arg_zval(zend)) {
             php_error_docref(NULL, E_WARNING, "Legographical args must start with '[' or '(' or be '+' or '-'");
             return FAILURE;
         }
@@ -812,8 +815,8 @@ int redis_zrange_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_cmd_append_sstr_long(&cmdstr, start);
         redis_cmd_append_sstr_long(&cmdstr, end);
     } else {
-        redis_cmd_append_sstr_zstr(&cmdstr, sstart);
-        redis_cmd_append_sstr_zstr(&cmdstr, send);
+        redis_cmd_append_sstr_zval(&cmdstr, zstart, NULL);
+        redis_cmd_append_sstr_zval(&cmdstr, zend, NULL);
     }
 
     REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, opt.byscore, "BYSCORE");
