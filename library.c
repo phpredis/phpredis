@@ -1073,16 +1073,23 @@ redis_cmd_append_sstr_dbl(smart_string *str, double value)
     return redis_cmd_append_sstr(str, tmp, len);
 }
 
-/* Append a zval to a redis command.  The value will be serialized if we are
- * configured to do that */
+/* Append a zval to a redis command.  If redis_sock is passed as non-null we will
+ * the value may be serialized, if we're configured to do that. */
 int redis_cmd_append_sstr_zval(smart_string *str, zval *z, RedisSock *redis_sock) {
-    char *val;
-    size_t vallen;
     int valfree, retval;
+    zend_string *zstr;
+    size_t vallen;
+    char *val;
 
-    valfree = redis_pack(redis_sock, z, &val, &vallen);
-    retval = redis_cmd_append_sstr(str, val, vallen);
-    if (valfree) efree(val);
+    if (redis_sock != NULL) {
+        valfree = redis_pack(redis_sock, z, &val, &vallen);
+        retval = redis_cmd_append_sstr(str, val, vallen);
+        if (valfree) efree(val);
+    } else {
+        zstr = zval_get_string(z);
+        retval = redis_cmd_append_sstr_zstr(str, zstr);
+        zend_string_release(zstr);
+    }
 
     return retval;
 }
