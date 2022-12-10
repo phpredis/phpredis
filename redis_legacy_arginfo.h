@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 399e9506bc58ff0da1abc8f46a02b2499ed1223a */
+ * Stub hash: b0d5c56084a89230807e6ba582d2fab536d2e897 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -527,7 +527,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_pfadd, 0, 0, 2)
 	ZEND_ARG_INFO(0, elements)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_Redis_pfcount arginfo_class_Redis__prefix
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_pfcount, 0, 0, 1)
+	ZEND_ARG_INFO(0, key_or_keys)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_pfmerge, 0, 0, 2)
 	ZEND_ARG_INFO(0, dst)
