@@ -119,12 +119,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.3', '7.4', '8.0', '8.1']
+        php: ['7.3', '7.4', '8.0', '8.1', '8.2']
         experimental: [false]
         ts: [nts, ts]
-        include:
-          - php: '8.2'
-            experimental: true
     steps:
       - name: Checkout
         uses: actions/checkout@v3
