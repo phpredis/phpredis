@@ -119,11 +119,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.3', '7.4', '8.0', '8.1']
+        php: ['7.3', '7.4', '8.0', '8.1', '8.2']
         experimental: [false]
-        include:
-          - php: '8.2'
-            experimental: true
+        ts: [nts, ts]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -135,7 +133,7 @@ jobs:
         with:
           version: ${{ matrix.php }}
           arch: x64
-          ts: nts
+          ts: ${{matrix.ts}}
       - name: Install dependencies
         uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -146,3 +144,18 @@ jobs:
           phpize
           ./configure --enable-redis --with-prefix=${{steps.setup-php-sdk.outputs.prefix}}
           nmake
+      - name: package
+        run: |
+          md binaries
+          copy LICENSE binaries
+          if (Test-Path "x64\Release") {
+            Set-Variable -Name "prefix" -Value "x64\Release"
+          } else {
+            Set-Variable -Name "prefix" -Value "x64\Release_TS"
+          }
+          copy $prefix\php_redis.dll binaries
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: redis-${{matrix.php}}-x64-${{matrix.ts}}
+          path: binaries
