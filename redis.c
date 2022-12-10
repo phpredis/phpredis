@@ -1549,67 +1549,16 @@ PHP_METHOD(Redis, move) {
 }
 /* }}} */
 
-static
-void generic_mset(INTERNAL_FUNCTION_PARAMETERS, char *kw, FailableResultCallback fun)
-{
-    RedisSock *redis_sock;
-    smart_string cmd = {0};
-    zval *object, *z_array;
-    HashTable *htargs;
-    zend_string *zkey;
-    zval *zmem;
-    char buf[64];
-    size_t keylen;
-    zend_ulong idx;
-
-    if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "Oa",
-                                     &object, redis_ce, &z_array) == FAILURE)
-    {
-        RETURN_FALSE;
-    }
-
-    /* Make sure we can get our socket, and we were not passed an empty array */
-    if ((redis_sock = redis_sock_get(object, 0)) == NULL ||
-        zend_hash_num_elements(Z_ARRVAL_P(z_array)) == 0)
-    {
-        RETURN_FALSE;
-    }
-
-    /* Initialize our command */
-    htargs = Z_ARRVAL_P(z_array);
-    redis_cmd_init_sstr(&cmd, zend_hash_num_elements(htargs) * 2, kw, strlen(kw));
-
-    ZEND_HASH_FOREACH_KEY_VAL(htargs, idx, zkey,  zmem) {
-        /* Handle string or numeric keys */
-        if (zkey) {
-            redis_cmd_append_sstr_key(&cmd, ZSTR_VAL(zkey), ZSTR_LEN(zkey), redis_sock, NULL);
-        } else {
-            keylen = snprintf(buf, sizeof(buf), "%ld", (long)idx);
-            redis_cmd_append_sstr_key(&cmd, buf, keylen, redis_sock, NULL);
-        }
-
-        /* Append our value */
-        redis_cmd_append_sstr_zval(&cmd, zmem, redis_sock);
-    } ZEND_HASH_FOREACH_END();
-
-    REDIS_PROCESS_REQUEST(redis_sock, cmd.c, cmd.len);
-    if (IS_ATOMIC(redis_sock)) {
-        fun(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
-    }
-
-    REDIS_PROCESS_RESPONSE(fun);
-}
-
 /* {{{ proto bool Redis::mset(array (key => value, ...)) */
 PHP_METHOD(Redis, mset) {
-    generic_mset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "MSET", redis_boolean_response);
+    REDIS_PROCESS_KW_CMD("MSET", redis_mset_cmd, redis_boolean_response);
 }
 /* }}} */
 
 
 /* {{{ proto bool Redis::msetnx(array (key => value, ...)) */
 PHP_METHOD(Redis, msetnx) {
-    generic_mset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "MSETNX", redis_1_response);
+    REDIS_PROCESS_KW_CMD("MSETNX", redis_mset_cmd, redis_1_response);
 }
 /* }}} */
 

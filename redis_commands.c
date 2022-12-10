@@ -1843,6 +1843,45 @@ gen_vararg_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+int redis_mset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   char *kw, char **cmd, int *cmd_len, short *slot,
+                   void **ctx)
+{
+    smart_string cmdstr = {0};
+    HashTable *kvals = NULL;
+    zend_string *key;
+    zend_ulong idx;
+    char buf[64];
+    size_t klen;
+    zval *zv;
+
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ARRAY_HT(kvals)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(kvals) == 0)
+        return FAILURE;
+
+    redis_cmd_init_sstr(&cmdstr, zend_hash_num_elements(kvals) * 2, kw, strlen(kw));
+
+    ZEND_HASH_FOREACH_KEY_VAL(kvals, idx, key, zv) {
+        if (key) {
+            redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, NULL);
+        } else {
+            klen = snprintf(buf, sizeof(buf), ZEND_LONG_FMT, idx);
+            redis_cmd_append_sstr_key(&cmdstr, buf, klen, redis_sock, NULL);
+        }
+
+        ZVAL_DEREF(zv);
+        redis_cmd_append_sstr_zval(&cmdstr, zv, redis_sock);
+    } ZEND_HASH_FOREACH_END();
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
 /* Generic function that takes a variable number of keys, with an optional
  * timeout value.  This can handle various SUNION/SUNIONSTORE/BRPOP type
  * commands. */
