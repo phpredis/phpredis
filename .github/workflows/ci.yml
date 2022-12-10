@@ -3,15 +3,11 @@ on: [push, pull_request]
 jobs:
   ubuntu:
     runs-on: ubuntu-latest
-    continue-on-error: ${{ matrix.experimental }}
+    continue-on-error: false
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.2', '7.3', '7.4', '8.0', '8.1']
-        experimental: [false]
-        include:
-          - php: '8.2'
-            experimental: true
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -81,15 +77,11 @@ jobs:
 
   macos:
     runs-on: macos-latest
-    continue-on-error: ${{ matrix.experimental }}
+    continue-on-error: false
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.2', '7.3', '7.4', '8.0', '8.1']
-        experimental: [false]
-        include:
-          - php: '8.2'
-            experimental: true
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -115,12 +107,11 @@ jobs:
 
   windows:
     runs-on: windows-latest
-    continue-on-error: ${{ matrix.experimental }}
+    continue-on-error: false
     strategy:
       fail-fast: false
       matrix:
         php: ['7.3', '7.4', '8.0', '8.1', '8.2']
-        experimental: [false]
         ts: [nts, ts]
     steps:
       - name: Checkout
