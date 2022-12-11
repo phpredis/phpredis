@@ -1507,36 +1507,31 @@ int redis_unsubscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                           char *kw, char **cmd, int *cmd_len, short *slot,
                           void **ctx)
 {
-    zval *z_arr, *z_chan;
-    HashTable *ht_arr;
     smart_string cmdstr = {0};
-    subscribeContext *sctx = ecalloc(1, sizeof(*sctx));
+    subscribeContext *sctx;
+    HashTable *channels;
+    zval *channel;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &z_arr) == FAILURE) {
-        efree(sctx);
+    ZEND_PARSE_PARAMETERS_START(1, 1)
+        Z_PARAM_ARRAY_HT(channels)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(channels) == 0)
         return FAILURE;
-    }
 
-    ht_arr = Z_ARRVAL_P(z_arr);
-
+    sctx = ecalloc(1, sizeof(*sctx));
     sctx->kw = kw;
-    sctx->argc = zend_hash_num_elements(ht_arr);
+    sctx->argc = zend_hash_num_elements(channels);
+
     redis_cmd_init_sstr(&cmdstr, sctx->argc, kw, strlen(kw));
 
-    ZEND_HASH_FOREACH_VAL(ht_arr, z_chan) {
-        char *key = Z_STRVAL_P(z_chan);
-        size_t key_len = Z_STRLEN_P(z_chan);
-        int key_free;
-
-        key_free = redis_key_prefix(redis_sock, &key, &key_len);
-        redis_cmd_append_sstr(&cmdstr, key, key_len);
-        if (key_free) efree(key);
+    ZEND_HASH_FOREACH_VAL(channels, channel) {
+        redis_cmd_append_sstr_key_zval(&cmdstr, channel, redis_sock, slot);
     } ZEND_HASH_FOREACH_END();
 
-    // Push out vals
     *cmd_len = cmdstr.len;
-    *cmd     = cmdstr.c;
-    *ctx     = (void*)sctx;
+    *cmd = cmdstr.c;
+    *ctx = sctx;
 
     return SUCCESS;
 }
@@ -1726,54 +1721,32 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 /* Commands that take a key and then an array of values */
-#define VAL_TYPE_VALUES 1
-#define VAL_TYPE_STRINGS 2
 static int gen_key_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                           char *kw, int valtype, char **cmd, int *cmd_len,
+                           char *kw, zend_bool pack_values, char **cmd, int *cmd_len,
                            short *slot, void **ctx)
 {
-    zval *z_arr, *z_val;
-    HashTable *ht_arr;
     smart_string cmdstr = {0};
-    zend_string *zstr;
-    int key_free, val_free, argc = 1;
-    size_t val_len, key_len;
-    char *key, *val;
+    HashTable *values = NULL;
+    zend_string *key = NULL;
+    zval *zv;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sa", &key, &key_len,
-                              &z_arr) == FAILURE ||
-                              zend_hash_num_elements(Z_ARRVAL_P(z_arr)) == 0)
-    {
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STR(key)
+        Z_PARAM_ARRAY_HT(values)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(values) == 0)
         return FAILURE;
-    }
 
-    /* Start constructing our command */
-    ht_arr = Z_ARRVAL_P(z_arr);
-    argc += zend_hash_num_elements(ht_arr);
-    redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
+    redis_cmd_init_sstr(&cmdstr, 1 + zend_hash_num_elements(values), kw, strlen(kw));
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
 
-    /* Prefix if required and append the key name */
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-    redis_cmd_append_sstr(&cmdstr, key, key_len);
-    CMD_SET_SLOT(slot, key, key_len);
-    if (key_free) efree(key);
-
-    /* Iterate our hash table, serializing and appending values */
-    assert(valtype == VAL_TYPE_VALUES || valtype == VAL_TYPE_STRINGS);
-    ZEND_HASH_FOREACH_VAL(ht_arr, z_val) {
-        if (valtype == VAL_TYPE_VALUES) {
-            val_free = redis_pack(redis_sock, z_val, &val, &val_len);
-            redis_cmd_append_sstr(&cmdstr, val, val_len);
-            if (val_free) efree(val);
-        } else {
-            zstr = zval_get_string(z_val);
-            redis_cmd_append_sstr(&cmdstr, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
-            zend_string_release(zstr);
-        }
+    ZEND_HASH_FOREACH_VAL(values, zv) {
+        redis_cmd_append_sstr_zval(&cmdstr, zv, pack_values ? redis_sock : NULL);
     } ZEND_HASH_FOREACH_END();
 
-    *cmd_len = cmdstr.len;
     *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
 
     return SUCCESS;
 }
@@ -1783,7 +1756,7 @@ int redis_key_val_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                         void **ctx)
 {
     return gen_key_arr_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw,
-        VAL_TYPE_VALUES, cmd, cmd_len, slot, ctx);
+        1, cmd, cmd_len, slot, ctx);
 }
 
 int redis_key_str_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
@@ -1791,7 +1764,7 @@ int redis_key_str_arr_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                         void **ctx)
 {
     return gen_key_arr_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, kw,
-        VAL_TYPE_STRINGS, cmd, cmd_len, slot, ctx);
+        0, cmd, cmd_len, slot, ctx);
 }
 
 /* Generic function that takes one or more non-serialized arguments */
