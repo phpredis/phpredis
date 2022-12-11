@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: b0d5c56084a89230807e6ba582d2fab536d2e897 */
+ * Stub hash: 3d369227b8f6d01fffa0ffda01f379f0138fa226 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -218,6 +218,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_flushAll, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_flushDB arginfo_class_Redis_flushAll
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_function, 0, 0, 1)
+	ZEND_ARG_INFO(0, operation)
+	ZEND_ARG_VARIADIC_INFO(0, args)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_geoadd, 0, 0, 4)
 	ZEND_ARG_INFO(0, key)
@@ -1046,6 +1051,7 @@ ZEND_METHOD(Redis, expiretime);
 ZEND_METHOD(Redis, pexpiretime);
 ZEND_METHOD(Redis, flushAll);
 ZEND_METHOD(Redis, flushDB);
+ZEND_METHOD(Redis, function);
 ZEND_METHOD(Redis, geoadd);
 ZEND_METHOD(Redis, geodist);
 ZEND_METHOD(Redis, geohash);
@@ -1298,6 +1304,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, pexpiretime, arginfo_class_Redis_pexpiretime, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, flushAll, arginfo_class_Redis_flushAll, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, flushDB, arginfo_class_Redis_flushDB, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, function, arginfo_class_Redis_function, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, geoadd, arginfo_class_Redis_geoadd, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, geodist, arginfo_class_Redis_geodist, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, geohash, arginfo_class_Redis_geohash, ZEND_ACC_PUBLIC)

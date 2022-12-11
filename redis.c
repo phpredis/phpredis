@@ -1494,6 +1494,12 @@ PHP_METHOD(Redis, flushAll)
 }
 /* }}} */
 
+/* {{{ proto mixed Redis::function(string op, mixed ...args) */
+PHP_METHOD(Redis, function)
+{
+    REDIS_PROCESS_CMD(function, redis_function_response)
+}
+
 /* {{{ proto int Redis::dbSize() */
 PHP_METHOD(Redis, dbSize)
 {

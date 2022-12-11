@@ -938,6 +938,98 @@ redis_config_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 int
+redis_function_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                   char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    smart_string cmdstr = {0};
+    zend_string *op = NULL, *arg;
+    zval *argv = NULL;
+    int i, argc = 0;
+
+    ZEND_PARSE_PARAMETERS_START(1, -1)
+        Z_PARAM_STR(op)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_VARIADIC('*', argv, argc)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    for (i = 0; i < argc; ++i) {
+        if (Z_TYPE(argv[i]) != IS_STRING) {
+            php_error_docref(NULL, E_WARNING, "invalid argument");
+            return FAILURE;
+        }
+    }
+
+    if (zend_string_equals_literal_ci(op, "DELETE")) {
+        if (argc < 1) {
+            php_error_docref(NULL, E_WARNING, "argument required");
+            return FAILURE;
+        }
+    } else if (zend_string_equals_literal_ci(op, "DUMP")) {
+        *ctx = PHPREDIS_CTX_PTR;
+    } else if (zend_string_equals_literal_ci(op, "FLUSH")) {
+        if (argc > 0 &&
+            !zend_string_equals_literal_ci(Z_STR(argv[0]), "SYNC") &&
+            !zend_string_equals_literal_ci(Z_STR(argv[0]), "ASYNC")
+        ) {
+            php_error_docref(NULL, E_WARNING, "invalid argument");
+            return FAILURE;
+        }
+    } else if (zend_string_equals_literal_ci(op, "KILL")) {
+        // noop
+    } else if (zend_string_equals_literal_ci(op, "LIST")) {
+        if (argc > 0) {
+            if (zend_string_equals_literal_ci(Z_STR(argv[0]), "LIBRARYNAME")) {
+                if (argc < 2) {
+                    php_error_docref(NULL, E_WARNING, "argument required");
+                    return FAILURE;
+                }
+            } else if (!zend_string_equals_literal_ci(Z_STR(argv[0]), "WITHCODE")) {
+                php_error_docref(NULL, E_WARNING, "invalid argument");
+                return FAILURE;
+            }
+        }
+        *ctx = PHPREDIS_CTX_PTR + 1;
+    } else if (zend_string_equals_literal_ci(op, "LOAD")) {
+        if (argc < 1 || (
+            zend_string_equals_literal_ci(Z_STR(argv[0]), "REPLACE") && argc < 2
+        )) {
+            php_error_docref(NULL, E_WARNING, "argument required");
+            return FAILURE;
+        }
+        *ctx = PHPREDIS_CTX_PTR;
+    } else if (zend_string_equals_literal_ci(op, "RESTORE")) {
+        if (argc < 1 || (
+            argc > 1 &&
+            !zend_string_equals_literal_ci(Z_STR(argv[1]), "FLUSH") &&
+            !zend_string_equals_literal_ci(Z_STR(argv[1]), "APPEND") &&
+            !zend_string_equals_literal_ci(Z_STR(argv[1]), "REPLACE")
+        )) {
+            php_error_docref(NULL, E_WARNING, "invalid argument");
+            return FAILURE;
+        }
+    } else if (zend_string_equals_literal_ci(op, "STATS")) {
+        *ctx = PHPREDIS_CTX_PTR + 1;
+    } else {
+        php_error_docref(NULL, E_WARNING, "Unknown operation '%s'", ZSTR_VAL(op));
+        return FAILURE;
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + argc, "FUNCTION");
+    redis_cmd_append_sstr_zstr(&cmdstr, op);
+
+    for (i = 0; i < argc; i++) {
+        arg = zval_get_string(&argv[i]);
+        redis_cmd_append_sstr_zstr(&cmdstr, arg);
+        zend_string_release(arg);
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+int
 redis_zrandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char **cmd, int *cmd_len, short *slot, void **ctx)
 {

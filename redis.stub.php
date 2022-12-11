@@ -1185,6 +1185,26 @@ class Redis {
     public function flushDB(?bool $sync = null): Redis|bool;
 
     /**
+     * Functions is an API for managing code to be executed on the server.
+     * 
+     * @param string $operation         The subcommand you intend to execute.  Valid options are as follows
+     *                                  'LOAD'      - Create a new library with the given library name and code.
+     *                                  'DELETE'    - Delete the given library.
+     *                                  'LIST'      - Return general information on all the libraries
+     *                                  'STATS'     - Return information about the current function running
+     *                                  'KILL'      - Kill the current running function
+     *                                  'FLUSH'     - Delete all the libraries
+     *                                  'DUMP'      - Return a serialized payload representing the current libraries
+     *                                  'RESTORE'   - Restore the libraries represented by the given payload
+     * @param member $args              Additional arguments
+     *
+     * @return Redis|bool|string|array  Depends on subcommand.
+     *
+     * @see https://redis.io/commands/function
+     */
+    public function function(string $operation, mixed ...$args): Redis|bool|string|array;
+
+    /**
      * Add one or more members to a geospacial sorted set
      *
      * @param string $key The sorted set to add data to.
