@@ -2500,83 +2500,49 @@ int redis_hincrbyfloat_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    char *key;
-    zval *z_arr, *z_mems, *z_mem;
-    int i, count, valid = 0, key_free;
-    size_t key_len;
-    HashTable *ht_arr;
+    zval *field = NULL, *zctx = NULL;
     smart_string cmdstr = {0};
+    HashTable *fields = NULL;
+    zend_string *key = NULL;
+    zend_ulong valid = 0;
 
-    // Parse arguments
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "sa", &key, &key_len,
-                             &z_arr) == FAILURE)
-    {
+    ZEND_PARSE_PARAMETERS_START(2, 2)
+        Z_PARAM_STR(key)
+        Z_PARAM_ARRAY_HT(fields)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (zend_hash_num_elements(fields) == 0)
         return FAILURE;
-    }
 
-    // Our HashTable
-    ht_arr = Z_ARRVAL_P(z_arr);
+    zctx = ecalloc(1 + zend_hash_num_elements(fields), sizeof(*zctx));
 
-    // We can abort if we have no elements
-    if ((count = zend_hash_num_elements(ht_arr)) == 0) {
-        return FAILURE;
-    }
+    ZEND_HASH_FOREACH_VAL(fields, field) {
+        ZVAL_DEREF(field);
+        if (!((Z_TYPE_P(field) == IS_STRING && Z_STRLEN_P(field) > 0) || Z_TYPE_P(field) == IS_LONG))
+            continue;
 
-    // Allocate memory for mems+1 so we can have a sentinel
-    z_mems = ecalloc(count + 1, sizeof(zval));
-
-    // Iterate over our member array
-    ZEND_HASH_FOREACH_VAL(ht_arr, z_mem) {
-        ZVAL_DEREF(z_mem);
-        // We can only handle string or long values here
-        if ((Z_TYPE_P(z_mem) == IS_STRING && Z_STRLEN_P(z_mem) > 0)
-            || Z_TYPE_P(z_mem) == IS_LONG
-        ) {
-            // Copy into our member array
-            ZVAL_ZVAL(&z_mems[valid], z_mem, 1, 0);
-
-            // Increment the member count to actually send
-            valid++;
-        }
+        ZVAL_COPY(&zctx[valid++], field);
     } ZEND_HASH_FOREACH_END();
 
-    // If nothing was valid, fail
     if (valid == 0) {
-        efree(z_mems);
+        efree(zctx);
         return FAILURE;
     }
 
-    // Sentinel so we can free this even if it's used and then we discard
-    // the transaction manually or there is a transaction failure
-    ZVAL_NULL(&z_mems[valid]);
+    ZVAL_NULL(&zctx[valid]);
 
-    // Start command construction
-    redis_cmd_init_sstr(&cmdstr, valid+1, ZEND_STRL("HMGET"));
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + valid, "HMGET");
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
 
-    // Prefix our key
-    key_free = redis_key_prefix(redis_sock, &key, &key_len);
-
-    redis_cmd_append_sstr(&cmdstr, key, key_len);
-
-    // Iterate over members, appending as arguments
-    for(i = 0; i< valid; i++) {
-        zend_string *zstr = zval_get_string(&z_mems[i]);
-        redis_cmd_append_sstr(&cmdstr, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
-        zend_string_release(zstr);
+    for (zend_ulong i = 0; i < valid; i++) {
+        redis_cmd_append_sstr_zval(&cmdstr, &zctx[i], NULL);
     }
-
-    // Set our slot
-    CMD_SET_SLOT(slot,key,key_len);
-
-    // Free our key if we prefixed it
-    if (key_free) efree(key);
 
     // Push out command, length, and key context
     *cmd     = cmdstr.c;
     *cmd_len = cmdstr.len;
-    *ctx     = (void*)z_mems;
+    *ctx     = zctx;
 
-    // Success!
     return SUCCESS;
 }
 
