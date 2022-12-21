@@ -1719,6 +1719,50 @@ static void array_zip_values_and_scores(RedisSock *redis_sock, zval *z_tab,
     ZVAL_ZVAL(z_tab, &z_ret, 0, 0);
 }
 
+static int
+array_zip_values_recursive(zval *z_tab)
+{
+    zend_string *zkey;
+    zval z_ret, z_sub, *zv;
+
+    array_init(&z_ret);
+    for (zend_hash_internal_pointer_reset(Z_ARRVAL_P(z_tab));
+         zend_hash_has_more_elements(Z_ARRVAL_P(z_tab)) == SUCCESS;
+         zend_hash_move_forward(Z_ARRVAL_P(z_tab))
+    ) {
+        if ((zv = zend_hash_get_current_data(Z_ARRVAL_P(z_tab))) == NULL) {
+            zval_dtor(&z_ret);
+            return FAILURE;
+        }
+        if (Z_TYPE_P(zv) == IS_STRING) {
+            zkey = zval_get_string(zv);
+            zend_hash_move_forward(Z_ARRVAL_P(z_tab));
+            if ((zv = zend_hash_get_current_data(Z_ARRVAL_P(z_tab))) == NULL) {
+                zend_string_release(zkey);
+                zval_dtor(&z_ret);
+                return FAILURE;
+            }
+            if (Z_TYPE_P(zv) == IS_ARRAY && array_zip_values_recursive(zv) != SUCCESS) {
+                zend_string_release(zkey);
+                zval_dtor(&z_ret);
+                return FAILURE;
+            }
+            ZVAL_ZVAL(&z_sub, zv, 1, 0);
+            add_assoc_zval_ex(&z_ret, ZSTR_VAL(zkey), ZSTR_LEN(zkey), &z_sub);
+            zend_string_release(zkey);
+        } else {
+            if (Z_TYPE_P(zv) == IS_ARRAY && array_zip_values_recursive(zv) != SUCCESS) {
+                zval_dtor(&z_ret);
+                return FAILURE;
+            }
+            ZVAL_ZVAL(&z_sub, zv, 1, 0);
+            add_next_index_zval(&z_ret, &z_sub);
+        }
+    }
+    zval_dtor(z_tab);
+    ZVAL_ZVAL(z_tab, &z_ret, 0, 0);
+    return SUCCESS;
+}
 
 static int
 redis_mbulk_reply_zipped(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
@@ -1971,6 +2015,50 @@ redis_client_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval 
         return redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
     } else if (ctx == PHPREDIS_CTX_PTR + 4) {
         return redis_client_trackinginfo_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else {
+        ZEND_ASSERT(!"memory corruption?");
+        return FAILURE;
+    }
+}
+
+static int
+redis_function_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    int numElems;
+    zval z_ret;
+
+    if (read_mbulk_header(redis_sock, &numElems) < 0) {
+        if (IS_ATOMIC(redis_sock)) {
+            RETVAL_FALSE;
+        } else {
+            add_next_index_bool(z_tab, 0);
+        }
+        return FAILURE;
+    }
+
+    array_init(&z_ret);
+    redis_read_multibulk_recursive(redis_sock, numElems, 0, &z_ret);
+    array_zip_values_recursive(&z_ret);
+
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_ZVAL(&z_ret, 0, 1);
+    } else {
+        add_next_index_zval(z_tab, &z_ret);
+    }
+
+    return SUCCESS;
+}
+
+
+PHP_REDIS_API int
+redis_function_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    if (ctx == NULL) {
+        return redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR) {
+        return redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+    } else if (ctx == PHPREDIS_CTX_PTR + 1) {
+        return redis_function_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
     } else {
         ZEND_ASSERT(!"memory corruption?");
         return FAILURE;

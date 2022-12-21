@@ -7564,6 +7564,18 @@ class Redis_Test extends TestSuite
         }
     }
 
+    public function testFunction() {
+        $this->assertTrue($this->redis->function('flush', 'sync'));
+        $this->assertEquals('mylib', $this->redis->function('load', "#!lua name=mylib\nredis.register_function('myfunc', function(keys, args) return args[1] end)"));
+        $this->assertEquals('mylib', $this->redis->function('load', 'replace', "#!lua name=mylib\nredis.register_function('myfunc', function(keys, args) return args[1] end)"));
+        $this->assertEquals($this->redis->function('stats'), ['running_script' => false, 'engines' => ['LUA' => ['libraries_count' => 1, 'functions_count' => 1]]]);
+        $payload = $this->redis->function('dump');
+        $this->assertTrue($this->redis->function('delete', 'mylib'));
+        $this->assertTrue($this->redis->function('restore', $payload));
+        $this->assertEquals($this->redis->function('list'), [['library_name' => 'mylib', 'engine' => 'LUA', 'functions' => [['name' => 'myfunc', 'description' => false,'flags' => []]]]]);
+        $this->assertTrue($this->redis->function('delete', 'mylib'));
+    }
+
     /* Make sure we handle a bad option value gracefully */
     public function testBadOptionValue() {
         $this->assertFalse(@$this->redis->setOption(pow(2, 32), false));
