@@ -150,7 +150,7 @@ $redis = new Redis();
 ~~~
 
 Starting from version 6.0.0 it's possible to specify configuration options.
-This allows to connect to the server without explicitly invoking `connect` command.
+This allows to connect lazily to the server without explicitly invoking `connect` command.
 
 ##### *Example*
 
