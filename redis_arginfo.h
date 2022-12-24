@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 3d369227b8f6d01fffa0ffda01f379f0138fa226 */
+ * Stub hash: 600a10da9438d33050be825dff3683399737cc5e */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
@@ -230,6 +230,14 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_expiretime, 0, 1
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_pexpiretime arginfo_class_Redis_expiretime
+
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_fcall, 0, 1, IS_MIXED, 0)
+	ZEND_ARG_TYPE_INFO(0, fn, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, keys, IS_ARRAY, 0, "[]")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, args, IS_ARRAY, 0, "[]")
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_fcall_ro arginfo_class_Redis_fcall
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_flushAll, 0, 0, Redis, MAY_BE_BOOL)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, sync, _IS_BOOL, 1, "null")
@@ -1207,6 +1215,8 @@ ZEND_METHOD(Redis, expireAt);
 ZEND_METHOD(Redis, failover);
 ZEND_METHOD(Redis, expiretime);
 ZEND_METHOD(Redis, pexpiretime);
+ZEND_METHOD(Redis, fcall);
+ZEND_METHOD(Redis, fcall_ro);
 ZEND_METHOD(Redis, flushAll);
 ZEND_METHOD(Redis, flushDB);
 ZEND_METHOD(Redis, function);
@@ -1460,6 +1470,8 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, failover, arginfo_class_Redis_failover, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, expiretime, arginfo_class_Redis_expiretime, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, pexpiretime, arginfo_class_Redis_pexpiretime, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, fcall, arginfo_class_Redis_fcall, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, fcall_ro, arginfo_class_Redis_fcall_ro, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, flushAll, arginfo_class_Redis_flushAll, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, flushDB, arginfo_class_Redis_flushDB, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, function, arginfo_class_Redis_function, ZEND_ACC_PUBLIC)

@@ -1165,6 +1165,34 @@ class Redis {
     public function pexpiretime(string $key): Redis|int|false;
 
     /**
+     * Invoke a function.
+     *
+     * @param string $fn    The name of the function
+     * @param array  $keys  Optional list of keys
+     * @param array  $args  Optional list of args
+     *
+     * @return mixed        Function may return arbitrary data so this method can return
+     *                      strings, arrays, nested arrays, etc.
+     *
+     * @see https://redis.io/commands/fcall
+     */
+    public function fcall(string $fn, array $keys = [], array $args = []): mixed;
+
+    /**
+     * This is a read-only variant of the FCALL command that cannot execute commands that modify data.
+     *
+     * @param string $fn    The name of the function
+     * @param array  $keys  Optional list of keys
+     * @param array  $args  Optional list of args
+     *
+     * @return mixed        Function may return arbitrary data so this method can return
+     *                      strings, arrays, nested arrays, etc.
+     *
+     * @see https://redis.io/commands/fcall_ro
+     */
+    public function fcall_ro(string $fn, array $keys = [], array $args = []): mixed;
+
+    /**
      * Deletes every key in all Redis databases
      *
      * @param  bool  $sync Whether to perform the task in a blocking or non-blocking way.

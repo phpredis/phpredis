@@ -1030,6 +1030,45 @@ redis_function_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 }
 
 int
+redis_fcall_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    HashTable *keys = NULL, *args = NULL;
+    smart_string cmdstr = {0};
+    zend_string *fn = NULL;
+    zval *zv;
+
+    ZEND_PARSE_PARAMETERS_START(1, 3)
+        Z_PARAM_STR(fn)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT(keys)
+        Z_PARAM_ARRAY_HT(args)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    redis_cmd_init_sstr(&cmdstr, 2 + (keys ? zend_hash_num_elements(keys) : 0) + 
+        (args ? zend_hash_num_elements(args) : 0), kw, strlen(kw));
+    redis_cmd_append_sstr_zstr(&cmdstr, fn);
+    redis_cmd_append_sstr_long(&cmdstr, keys ? zend_hash_num_elements(keys) : 0);
+
+    if (keys != NULL) {
+        ZEND_HASH_FOREACH_VAL(keys, zv) {
+            redis_cmd_append_sstr_key_zval(&cmdstr, zv, redis_sock, slot);
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    if (args != NULL) {
+        ZEND_HASH_FOREACH_VAL(args, zv) {
+            redis_cmd_append_sstr_zval(&cmdstr, zv, redis_sock);
+        } ZEND_HASH_FOREACH_END();
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+int
 redis_zrandmember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                       char **cmd, int *cmd_len, short *slot, void **ctx)
 {
