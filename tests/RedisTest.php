@@ -7565,11 +7565,17 @@ class Redis_Test extends TestSuite
     }
 
     public function testFunction() {
+        if (version_compare($this->version, '7.0') < 0) {
+            $this->markTestSkipped();
+            return;
+        }
         $this->assertTrue($this->redis->function('flush', 'sync'));
         $this->assertEquals('mylib', $this->redis->function('load', "#!lua name=mylib\nredis.register_function('myfunc', function(keys, args) return args[1] end)"));
-        $this->assertEquals('mylib', $this->redis->function('load', 'replace', "#!lua name=mylib\nredis.register_function('myfunc', function(keys, args) return args[1] end)"));
-        $this->assertEquals($this->redis->function('stats'), ['running_script' => false, 'engines' => ['LUA' => ['libraries_count' => 1, 'functions_count' => 1]]]);
+        $this->assertEquals('foo', $this->redis->fcall('myfunc', [], ['foo']));
         $payload = $this->redis->function('dump');
+        $this->assertEquals('mylib', $this->redis->function('load', 'replace', "#!lua name=mylib\nredis.register_function{function_name='myfunc', callback=function(keys, args) return args[1] end, flags={'no-writes'}}"));
+        $this->assertEquals('foo', $this->redis->fcall_ro('myfunc', [], ['foo']));
+        $this->assertEquals($this->redis->function('stats'), ['running_script' => false, 'engines' => ['LUA' => ['libraries_count' => 1, 'functions_count' => 1]]]);
         $this->assertTrue($this->redis->function('delete', 'mylib'));
         $this->assertTrue($this->redis->function('restore', $payload));
         $this->assertEquals($this->redis->function('list'), [['library_name' => 'mylib', 'engine' => 'LUA', 'functions' => [['name' => 'myfunc', 'description' => false,'flags' => []]]]]);

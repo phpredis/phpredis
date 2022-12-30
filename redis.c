@@ -2360,6 +2360,16 @@ PHP_METHOD(Redis, evalsha_ro) {
     REDIS_PROCESS_KW_CMD("EVALSHA_RO", redis_eval_cmd, redis_read_raw_variant_reply);
 }
 
+/* {{{ proto variant Redis::fcall(string fn [, array keys [, array args]]) */
+PHP_METHOD(Redis, fcall) {
+    REDIS_PROCESS_KW_CMD("FCALL", redis_fcall_cmd, redis_read_raw_variant_reply);
+}
+
+/* {{{ proto variant Redis::fcall_ro(string fn [, array keys [, array args]]) */
+PHP_METHOD(Redis, fcall_ro) {
+    REDIS_PROCESS_KW_CMD("FCALL_RO", redis_fcall_cmd, redis_read_raw_variant_reply);
+}
+
 /* {{{ public function script($args...): mixed }}} */
 PHP_METHOD(Redis, script) {
     REDIS_PROCESS_CMD(script, redis_read_variant_reply);
