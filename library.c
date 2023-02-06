@@ -1624,40 +1624,30 @@ PHP_REDIS_API int redis_long_response(INTERNAL_FUNCTION_PARAMETERS,
     char *response;
     int response_len;
 
-    if ((response = redis_sock_read(redis_sock, &response_len)) == NULL) {
+    if ((response = redis_sock_read(redis_sock, &response_len)) == NULL || *response != TYPE_INT) {
         if (IS_ATOMIC(redis_sock)) {
             RETVAL_FALSE;
         } else {
             add_next_index_bool(z_tab, 0);
         }
-
+        if (response) efree(response);
         return FAILURE;
     }
 
-    if(response[0] == ':') {
-        int64_t ret = phpredis_atoi64(response + 1);
+    int64_t ret = phpredis_atoi64(response + 1);
 
-        if (IS_ATOMIC(redis_sock)) {
-            if(ret > LONG_MAX) { /* overflow */
-                RETVAL_STRINGL(response + 1, response_len - 1);
-            } else {
-                RETVAL_LONG((long)ret);
-            }
+    if (IS_ATOMIC(redis_sock)) {
+        if (ret > LONG_MAX) { /* overflow */
+            RETVAL_STRINGL(response + 1, response_len - 1);
         } else {
-            if(ret > LONG_MAX) { /* overflow */
-                add_next_index_stringl(z_tab, response + 1, response_len - 1);
-            } else {
-                add_next_index_long(z_tab, (long)ret);
-            }
+            RETVAL_LONG((long)ret);
         }
     } else {
-        if (IS_ATOMIC(redis_sock)) {
-            RETVAL_FALSE;
+        if (ret > LONG_MAX) { /* overflow */
+            add_next_index_stringl(z_tab, response + 1, response_len - 1);
         } else {
-            add_next_index_null(z_tab);
+            add_next_index_long(z_tab, (long)ret);
         }
-        efree(response);
-        return FAILURE;
     }
 
     efree(response);
@@ -3376,8 +3366,10 @@ redis_mbulk_reply_zipped_raw_variant(RedisSock *redis_sock, zval *zret, int coun
             return FAILURE;
 
         /* This can vary */
-        if (redis_read_reply_type(redis_sock, &type, &vallen) < 0)
+        if (redis_read_reply_type(redis_sock, &type, &vallen) < 0) {
+            efree(key);
             return FAILURE;
+        }
 
         if (type == TYPE_BULK) {
             if (vallen > INT_MAX || (val = redis_sock_read_bulk_reply(redis_sock, (int)vallen)) == NULL) {
