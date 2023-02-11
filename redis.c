@@ -2021,8 +2021,8 @@ PHP_METHOD(Redis, discard)
     RETURN_FALSE;
 }
 
-/* redis_sock_read_multibulk_multi_reply */
-PHP_REDIS_API int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS,
+PHP_REDIS_API int
+redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS,
                                       RedisSock *redis_sock)
 {
 
@@ -2030,23 +2030,16 @@ PHP_REDIS_API int redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAME
     int numElems;
     size_t len;
 
-    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
-        return - 1;
-    }
-
-    /* number of responses */
-    numElems = atoi(inbuf+1);
-
-    if(numElems < 0) {
-        return -1;
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 ||
+        *inbuf != TYPE_MULTIBULK || atoi(inbuf + 1) < 0
+    ) {
+        return FAILURE;
     }
 
     array_init(return_value);
 
-    redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    redis_sock, return_value, numElems);
-
-    return 0;
+    return redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                    redis_sock, return_value);
 }
 
 
@@ -2098,8 +2091,11 @@ PHP_METHOD(Redis, exec)
                 ZVAL_FALSE(return_value);
             } else {
                 array_init(return_value);
-                redis_sock_read_multibulk_multi_reply_loop(
-                    INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, return_value, 0);
+                if (redis_sock_read_multibulk_multi_reply_loop(
+                    INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, return_value) != SUCCESS) {
+                    zval_dtor(return_value);
+                    RETVAL_FALSE;
+                }
             }
             zend_string_release(redis_sock->pipeline_cmd);
             redis_sock->pipeline_cmd = NULL;
@@ -2124,12 +2120,9 @@ redis_response_enqueued(RedisSock *redis_sock)
     return ret;
 }
 
-/* TODO:  Investigate/fix the odd logic going on in here.  Looks like previous abort
- *        conditions that are now simply empty if { } { } blocks. */
 PHP_REDIS_API int
 redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
-                                           RedisSock *redis_sock, zval *z_tab,
-                                           int numElems)
+                                           RedisSock *redis_sock, zval *z_tab)
 {
     fold_item *fi;
 
@@ -2142,17 +2135,18 @@ redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
         size_t len;
         char inbuf[255];
 
-        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
-        } else if (strncmp(inbuf, "+OK", 3) != 0) {
+        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 || strncmp(inbuf, "+OK", 3) != 0) {
+            return FAILURE;
         }
 
         while ((fi = fi->next) && fi->fun) {
-            if (redis_response_enqueued(redis_sock) == SUCCESS) {
-            } else {
+            if (redis_response_enqueued(redis_sock) != SUCCESS) {
+                return FAILURE;
             }
         }
 
         if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
+            return FAILURE;
         }
 
         zval z_ret;
@@ -2162,12 +2156,13 @@ redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
         int num = atol(inbuf + 1);
 
         if (num > 0 && redis_read_multibulk_recursive(redis_sock, num, 0, &z_ret) < 0) {
+            return FAILURE;
         }
 
         if (fi) fi = fi->next;
     }
     redis_sock->current = fi;
-    return 0;
+    return SUCCESS;
 }
 
 PHP_METHOD(Redis, pipeline)
