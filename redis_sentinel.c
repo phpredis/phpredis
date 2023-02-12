@@ -41,61 +41,20 @@ PHP_MINIT_FUNCTION(redis_sentinel)
 
 PHP_METHOD(RedisSentinel, __construct)
 {
-    int persistent = 0;
-    char *persistent_id = NULL;
-    double timeout = 0.0, read_timeout = 0.0;
-    zend_long port = 26379, retry_interval = 0;
-    redis_sentinel_object *obj;
-    zend_string *host;
-    zval *auth = NULL, *context = NULL, *zv = NULL;
+    HashTable *opts = NULL;
+    redis_sentinel_object *sentinel;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "S|ldz!ldza",
-                                &host, &port, &timeout, &zv,
-                                &retry_interval, &read_timeout,
-                                &auth, &context) == FAILURE) {
-        RETURN_FALSE;
-    }
+    ZEND_PARSE_PARAMETERS_START(0, 1)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT_OR_NULL(opts)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_THROWS());
 
-    if (port < 0 || port > UINT16_MAX) {
-        REDIS_VALUE_EXCEPTION("Invalid port");
+    sentinel = PHPREDIS_ZVAL_GET_OBJECT(redis_sentinel_object, getThis());
+    sentinel->sock = redis_sock_create(ZEND_STRL("127.0.0.1"), 26379, 0, 0, 0, NULL, 0);
+    if (opts != NULL && redis_sock_configure(sentinel->sock, opts) != SUCCESS) {
         RETURN_THROWS();
     }
-
-    if (timeout > INT_MAX) {
-        REDIS_VALUE_EXCEPTION("Invalid connect timeout");
-        RETURN_THROWS();
-    }
-
-    if (read_timeout > INT_MAX) {
-        REDIS_VALUE_EXCEPTION("Invalid read timeout");
-        RETURN_THROWS();
-    }
-
-    if (retry_interval < 0L || retry_interval > INT_MAX) {
-        REDIS_VALUE_EXCEPTION("Invalid retry interval");
-        RETURN_THROWS();
-    }
-
-    if (zv) {
-        ZVAL_DEREF(zv);
-        if (Z_TYPE_P(zv) == IS_STRING) {
-            persistent_id = Z_STRVAL_P(zv);
-            persistent = 1; /* even empty */
-        } else {
-            persistent = zval_is_true(zv);
-        }
-    }
-
-    obj = PHPREDIS_ZVAL_GET_OBJECT(redis_sentinel_object, getThis());
-    obj->sock = redis_sock_create(ZSTR_VAL(host), ZSTR_LEN(host), port,
-        timeout, read_timeout, persistent, persistent_id, retry_interval);
-    if (auth) {
-        redis_sock_set_auth_zval(obj->sock, auth);
-    }
-    if (context) {
-        redis_sock_set_stream_context(obj->sock, context);
-    }
-    obj->sock->sentinel = 1;
+    sentinel->sock->sentinel = 1;
 }
 
 PHP_METHOD(RedisSentinel, ckquorum)
