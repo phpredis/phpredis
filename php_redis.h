@@ -50,8 +50,7 @@ PHP_REDIS_API int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent);
 PHP_REDIS_API int redis_response_enqueued(RedisSock *redis_sock);
 
 PHP_REDIS_API int redis_sock_read_multibulk_multi_reply_loop(
-    INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab,
-    int numElems);
+    INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab);
 
 extern zend_module_entry redis_module_entry;
 
