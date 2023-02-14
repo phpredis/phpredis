@@ -2023,11 +2023,10 @@ PHP_METHOD(Redis, discard)
 
 PHP_REDIS_API int
 redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS,
-                                      RedisSock *redis_sock)
+                                      RedisSock *redis_sock, zval *z_tab)
 {
 
     char inbuf[4096];
-    int numElems;
     size_t len;
 
     if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 ||
@@ -2036,10 +2035,10 @@ redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS,
         return FAILURE;
     }
 
-    array_init(return_value);
+    array_init(z_tab);
 
     return redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    redis_sock, return_value);
+                    redis_sock, z_tab);
 }
 
 
@@ -2049,7 +2048,7 @@ PHP_METHOD(Redis, exec)
     RedisSock *redis_sock;
     char *cmd;
     int cmd_len, ret;
-    zval *object;
+    zval *object, z_ret;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
                                      "O", &object, redis_ce) == FAILURE ||
@@ -2070,31 +2069,32 @@ PHP_METHOD(Redis, exec)
         SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
         efree(cmd);
 
+        ZVAL_NULL(&z_ret);
         ret = redis_sock_read_multibulk_multi_reply(
-            INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
+            INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_ret);
         free_reply_callbacks(redis_sock);
         REDIS_DISABLE_MODE(redis_sock, MULTI);
         redis_sock->watching = 0;
         if (ret < 0) {
-            zval_dtor(return_value);
-            RETURN_FALSE;
+            zval_dtor(&z_ret);
+            ZVAL_FALSE(&z_ret);
         }
     }
 
     if (IS_PIPELINE(redis_sock)) {
         if (redis_sock->pipeline_cmd == NULL) {
             /* Empty array when no command was run. */
-            array_init(return_value);
+            array_init(&z_ret);
         } else {
             if (redis_sock_write(redis_sock, ZSTR_VAL(redis_sock->pipeline_cmd),
                     ZSTR_LEN(redis_sock->pipeline_cmd)) < 0) {
-                ZVAL_FALSE(return_value);
+                ZVAL_FALSE(&z_ret);
             } else {
-                array_init(return_value);
+                array_init(&z_ret);
                 if (redis_sock_read_multibulk_multi_reply_loop(
-                    INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, return_value) != SUCCESS) {
-                    zval_dtor(return_value);
-                    RETVAL_FALSE;
+                    INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_ret) != SUCCESS) {
+                    zval_dtor(&z_ret);
+                    ZVAL_FALSE(&z_ret);
                 }
             }
             zend_string_release(redis_sock->pipeline_cmd);
@@ -2103,6 +2103,7 @@ PHP_METHOD(Redis, exec)
         free_reply_callbacks(redis_sock);
         REDIS_DISABLE_MODE(redis_sock, PIPELINE);
     }
+    RETURN_ZVAL(&z_ret, 1, 0);
 }
 
 PHP_REDIS_API int
