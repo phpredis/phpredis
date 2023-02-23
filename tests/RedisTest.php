@@ -1137,18 +1137,13 @@ class Redis_Test extends TestSuite
     // PUSH, POP : RPUSH, RPOP
     public function testrPop()
     {
-    //  rpush  => tail
-    //  lpush => head
-
         $this->redis->del('list');
 
         $this->redis->rPush('list', 'val');
         $this->redis->rPush('list', 'val2');
-    $this->redis->lPush('list', 'val3');
+        $this->redis->lPush('list', 'val3');
 
-    // 'list' = [ 'val3', 'val', 'val2']
-
-    $this->assertEquals('val2', $this->redis->rPop('list'));
+        $this->assertEquals('val2', $this->redis->rPop('list'));
         if (version_compare($this->version, "6.2.0") < 0) {
             $this->assertEquals('val', $this->redis->rPop('list'));
             $this->assertEquals('val3', $this->redis->rPop('list'));
@@ -1157,17 +1152,29 @@ class Redis_Test extends TestSuite
         }
         $this->assertEquals(FALSE, $this->redis->rPop('list'));
 
-    // testing binary data
 
-    $this->redis->del('list');
-    $this->assertEquals(1, $this->redis->rPush('list', gzcompress('val1')));
-    $this->assertEquals(2, $this->redis->rPush('list', gzcompress('val2')));
-    $this->assertEquals(3, $this->redis->rPush('list', gzcompress('val3')));
+        $this->redis->del('list');
+        $this->assertEquals(1, $this->redis->rPush('list', gzcompress('val1')));
+        $this->assertEquals(2, $this->redis->rPush('list', gzcompress('val2')));
+        $this->assertEquals(3, $this->redis->rPush('list', gzcompress('val3')));
 
-    $this->assertEquals('val3', gzuncompress($this->redis->rPop('list')));
-    $this->assertEquals('val2', gzuncompress($this->redis->rPop('list')));
-    $this->assertEquals('val1', gzuncompress($this->redis->rPop('list')));
+        $this->assertEquals('val3', gzuncompress($this->redis->rPop('list')));
+        $this->assertEquals('val2', gzuncompress($this->redis->rPop('list')));
+        $this->assertEquals('val1', gzuncompress($this->redis->rPop('list')));
+    }
 
+    /* Regression test for GH #2329 */
+    public function testrPopSerialization() {
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
+
+        $this->redis->del('rpopkey');
+        $this->redis->rpush('rpopkey', ['foo'], ['bar']);
+        $this->assertEquals([['bar'], ['foo']], $this->redis->rpop('rpopkey', 2));
+
+        $this->redis->rpush('rpopkey', ['foo'], ['bar']);
+        $this->assertEquals([['foo'], ['bar']], $this->redis->lpop('rpopkey', 2));
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
     }
 
     public function testblockingPop() {
