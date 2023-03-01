@@ -30,7 +30,7 @@ class Redis_Sentinel_Test extends TestSuite
 
     protected function newInstance()
     {
-        return new RedisSentinel($this->getHost());
+        return new RedisSentinel(['host' => $this->getHost()]);
     }
 
     public function setUp()

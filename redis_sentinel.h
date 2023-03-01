@@ -3,7 +3,7 @@
 
 #include "sentinel_library.h"
 
-#define PHP_REDIS_SENTINEL_VERSION "0.1"
+#define PHP_REDIS_SENTINEL_VERSION "1.0"
 
 extern zend_class_entry *redis_sentinel_ce;
 extern PHP_MINIT_FUNCTION(redis_sentinel);

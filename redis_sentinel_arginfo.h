@@ -1,15 +1,8 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 847c735dfbbb643366344acfe6e2c5e8b76d0520 */
+ * Stub hash: f1f746cc848b1debcdf88eae015732720ba206c8 */
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel___construct, 0, 0, 1)
-	ZEND_ARG_TYPE_INFO(0, host, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, port, IS_LONG, 0, "26379")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, timeout, IS_DOUBLE, 0, "0")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, persistent, IS_MIXED, 0, "null")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, retry_interval, IS_LONG, 0, "0")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, read_timeout, IS_DOUBLE, 0, "0")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, auth, IS_MIXED, 0, "null")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, context, IS_ARRAY, 0, "null")
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel___construct, 0, 0, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 0, "null")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisSentinel_ckquorum, 0, 0, 1)
@@ -77,11 +70,6 @@ static zend_class_entry *register_class_RedisSentinel(void)
 
 	INIT_CLASS_ENTRY(ce, "RedisSentinel", class_RedisSentinel_methods);
 	class_entry = zend_register_internal_class_ex(&ce, NULL);
-#if (PHP_VERSION_ID >= 80200)
-
-
-	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "__construct", sizeof("__construct") - 1), 6, ZSTR_KNOWN(ZEND_STR_SENSITIVEPARAMETER), 0);
-#endif
 
 	return class_entry;
 }

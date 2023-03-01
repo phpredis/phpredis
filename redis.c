@@ -455,82 +455,18 @@ PHP_MINFO_FUNCTION(redis)
     Public constructor */
 PHP_METHOD(Redis, __construct)
 {
+    HashTable *opts = NULL;
     redis_object *redis;
-    zend_string *zkey;
-    zval *val, *opts = NULL;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "|a", &opts) == FAILURE) {
+    ZEND_PARSE_PARAMETERS_START(0, 1)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_ARRAY_HT_OR_NULL(opts)
+    ZEND_PARSE_PARAMETERS_END_EX(RETURN_THROWS());
+
+    redis = PHPREDIS_ZVAL_GET_OBJECT(redis_object, getThis());
+    redis->sock = redis_sock_create(ZEND_STRL("127.0.0.1"), 6379, 0, 0, 0, NULL, 0);
+    if (opts != NULL && redis_sock_configure(redis->sock, opts) != SUCCESS) {
         RETURN_THROWS();
-    }
-
-    if (opts != NULL) {
-        redis = PHPREDIS_ZVAL_GET_OBJECT(redis_object, getThis());
-        redis->sock = redis_sock_create("127.0.0.1", sizeof("127.0.0.1") - 1, 6379, 0, 0, 0, NULL, 0);
-
-        ZEND_HASH_FOREACH_STR_KEY_VAL(Z_ARRVAL_P(opts), zkey, val) {
-            if (zkey == NULL) {
-                continue;
-            }
-            ZVAL_DEREF(val);
-            if (zend_string_equals_literal_ci(zkey, "host")) {
-                if (Z_TYPE_P(val) != IS_STRING) {
-                    REDIS_VALUE_EXCEPTION("Invalid host");
-                    RETURN_THROWS();
-                }
-                zend_string_release(redis->sock->host);
-                redis->sock->host = zval_get_string(val);
-            } else if (zend_string_equals_literal_ci(zkey, "port")) {
-                if (Z_TYPE_P(val) != IS_LONG) {
-                    REDIS_VALUE_EXCEPTION("Invalid port");
-                    RETURN_THROWS();
-                }
-                redis->sock->port = zval_get_long(val);
-            } else if (zend_string_equals_literal_ci(zkey, "connectTimeout")) {
-                if (Z_TYPE_P(val) != IS_LONG && Z_TYPE_P(val) != IS_DOUBLE) {
-                    REDIS_VALUE_EXCEPTION("Invalid connect timeout");
-                    RETURN_THROWS();
-                }
-                redis->sock->timeout = zval_get_double(val);
-            } else if (zend_string_equals_literal_ci(zkey, "readTimeout")) {
-                if (Z_TYPE_P(val) != IS_LONG && Z_TYPE_P(val) != IS_DOUBLE) {
-                    REDIS_VALUE_EXCEPTION("Invalid read timeout");
-                    RETURN_THROWS();
-                }
-                redis->sock->read_timeout = zval_get_double(val);
-            } else if (zend_string_equals_literal_ci(zkey, "persistent")) {
-                if (Z_TYPE_P(val) == IS_STRING) {
-                    if (redis->sock->persistent_id) zend_string_release(redis->sock->persistent_id);
-                    redis->sock->persistent_id = zval_get_string(val);
-                    redis->sock->persistent = 1;
-                } else {
-                    redis->sock->persistent = zval_is_true(val);
-                }
-            } else if (zend_string_equals_literal_ci(zkey, "retryInterval")) {
-                if (Z_TYPE_P(val) != IS_LONG && Z_TYPE_P(val) != IS_DOUBLE) {
-                    REDIS_VALUE_EXCEPTION("Invalid retry interval");
-                    RETURN_THROWS();
-                }
-                redis->sock->retry_interval = zval_get_long(val);
-            } else if (zend_string_equals_literal_ci(zkey, "ssl")) {
-                if (redis_sock_set_stream_context(redis->sock, val) != SUCCESS) {
-                    REDIS_VALUE_EXCEPTION("Invalid SSL context options");
-                    RETURN_THROWS();
-                }
-            } else if (zend_string_equals_literal_ci(zkey, "auth")) {
-                if (Z_TYPE_P(val) != IS_STRING && Z_TYPE_P(val) != IS_ARRAY) {
-                    REDIS_VALUE_EXCEPTION("Invalid auth credentials");
-                    RETURN_THROWS();
-                }
-                redis_sock_set_auth_zval(redis->sock, val);
-            } else if (zend_string_equals_literal_ci(zkey, "backoff")) {
-                if (redis_sock_set_backoff(redis->sock, val) != SUCCESS) {
-                    REDIS_VALUE_EXCEPTION("Invalid backoff options");
-                    RETURN_THROWS();
-                }
-            } else {
-                php_error_docref(NULL, E_WARNING, "Skip unknown option '%s'", ZSTR_VAL(zkey));
-            }
-        } ZEND_HASH_FOREACH_END();
     }
 }
 /* }}} */
