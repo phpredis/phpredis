@@ -1427,6 +1427,18 @@ redis_parse_client_list_response(char *response, zval *z_ret)
 }
 
 PHP_REDIS_API int
+redis_zadd_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    FailableResultCallback cb;
+
+    ZEND_ASSERT(ctx == NULL || ctx == PHPREDIS_CTX_PTR);
+
+    cb = ctx ? redis_bulk_double_response : redis_long_response;
+
+    return cb(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, z_tab, NULL);
+}
+
+PHP_REDIS_API int
 redis_zrandmember_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
     if (ctx == NULL) {

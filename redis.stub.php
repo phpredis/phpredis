@@ -1214,7 +1214,7 @@ class Redis {
 
     /**
      * Functions is an API for managing code to be executed on the server.
-     * 
+     *
      * @param string $operation         The subcommand you intend to execute.  Valid options are as follows
      *                                  'LOAD'      - Create a new library with the given library name and code.
      *                                  'DELETE'    - Delete the given library.
@@ -4004,7 +4004,7 @@ class Redis {
      * @example $redis->zadd('zs', 1, 'first', 2, 'second', 3, 'third');
      * @example $redis->zAdd('zs', ['XX'], 8, 'second', 99, 'new-element');
      */
-    public function zAdd(string $key, array|float $score_or_options, mixed ...$more_scores_and_mems): Redis|int|false;
+    public function zAdd(string $key, array|float $score_or_options, mixed ...$more_scores_and_mems): Redis|int|float|false;
 
     /**
      * Return the number of elements in a sorted set.

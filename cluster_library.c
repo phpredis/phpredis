@@ -1820,6 +1820,18 @@ cluster_zdiff_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
 }
 
 PHP_REDIS_API void
+cluster_zadd_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
+    ZEND_ASSERT(ctx == NULL || ctx == PHPREDIS_CTX_PTR);
+
+    if (ctx == NULL) {
+        cluster_long_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        cluster_dbl_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    }
+}
+
+
+PHP_REDIS_API void
 cluster_zrandmember_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c, void *ctx) {
     if (ctx == NULL) {
         cluster_bulk_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
