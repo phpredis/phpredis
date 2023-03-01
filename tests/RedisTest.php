@@ -2567,6 +2567,15 @@ class Redis_Test extends TestSuite
         $this->assertTrue(['val0', 'val1'] === $this->redis->zRange($zsetName, 0, -1));
     }
 
+    public function testZaddIncr() {
+        $this->redis->del('zset');
+
+        $this->assertEquals(10.0, $this->redis->zAdd('zset', ['incr'], 10, 'value'));
+        $this->assertEquals(20.0, $this->redis->zAdd('zset', ['incr'], 10, 'value'));
+
+        $this->assertFalse($this->redis->zAdd('zset', ['incr'], 10, 'value', 20, 'value2'));
+    }
+
     public function testZX() {
         $this->redis->del('key');
 

@@ -1035,7 +1035,7 @@ class RedisCluster {
     /**
      * @see Redis::zadd
      */
-    public function zadd(string $key, array|float $score_or_options, mixed ...$more_scores_and_mems): RedisCluster|int|false;
+    public function zadd(string $key, array|float $score_or_options, mixed ...$more_scores_and_mems): RedisCluster|int|float|false;
 
     /**
      * @see Redis::zcard

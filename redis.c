@@ -1583,7 +1583,7 @@ PHP_METHOD(Redis, brpoplpush) {
 
 /* {{{ proto long Redis::zAdd(string key, int score, string value) */
 PHP_METHOD(Redis, zAdd) {
-    REDIS_PROCESS_CMD(zadd, redis_long_response);
+    REDIS_PROCESS_CMD(zadd, redis_zadd_response);
 }
 /* }}} */
 

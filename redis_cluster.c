@@ -1084,7 +1084,7 @@ PHP_METHOD(RedisCluster, zmscore) {
 
 /* {{{ proto long RedisCluster::zadd(string key,double score,string mem, ...) */
 PHP_METHOD(RedisCluster, zadd) {
-    CLUSTER_PROCESS_CMD(zadd, cluster_long_resp, 0);
+    CLUSTER_PROCESS_CMD(zadd, cluster_zadd_resp, 0);
 }
 /* }}} */
 
