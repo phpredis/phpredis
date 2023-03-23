@@ -3318,16 +3318,18 @@ class Redis_Test extends TestSuite
         $this->redis->lpush('key', 'value');
 
         /* Newer versions of redis are going to encode lists as 'quicklists',
-         * so 'quicklist' or 'ziplist' is valid here */
+         * redis >= 7.2 as 'listpack'
+         * so 'quicklist' or 'ziplist' or 'listpack' are valid here */
         $str_encoding = $this->redis->object('encoding', 'key');
-        $this->assertTrue($str_encoding === "ziplist" || $str_encoding === 'quicklist');
+        $this->assertTrue($str_encoding === "ziplist" || $str_encoding === 'quicklist' || $str_encoding === 'listpack', $str_encoding);
 
         $this->assertTrue($this->redis->object('refcount', 'key') === 1);
         $this->assertTrue(is_numeric($this->redis->object('idletime', 'key')));
 
         $this->redis->del('key');
         $this->redis->sadd('key', 'value');
-        $this->assertTrue($this->redis->object('encoding', 'key') === "hashtable");
+        $str_encoding = $this->redis->object('encoding', 'key');
+        $this->assertTrue($str_encoding === "hashtable" || $str_encoding === 'listpack', $str_encoding);
         $this->assertTrue($this->redis->object('refcount', 'key') === 1);
         $this->assertTrue(is_numeric($this->redis->object('idletime', 'key')));
 
