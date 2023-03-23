@@ -102,13 +102,13 @@ class TestSuite
         return false;
     }
 
-    protected function assertTrue($bool) {
+    protected function assertTrue($bool, $msg='') {
         if($bool)
             return true;
 
         $bt = debug_backtrace(false);
-        self::$errors []= sprintf("Assertion failed: %s:%d (%s)\n",
-            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+        self::$errors []= sprintf("Assertion failed: %s:%d (%s) %s\n",
+            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], $msg);
 
         return false;
     }
