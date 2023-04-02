@@ -375,13 +375,14 @@ redis_check_eof(RedisSock *redis_sock, zend_bool no_retry, zend_bool no_throw)
                         errmsg = "AUTH failed while reconnecting";
                         break;
                     }
+                    redis_sock->status = REDIS_SOCK_STATUS_AUTHENTICATED;
 
-                    redis_sock->status = REDIS_SOCK_STATUS_READY;
                     /* If we're using a non-zero db, reselect it */
                     if (redis_sock->dbNumber && reselect_db(redis_sock) != 0) {
                         errmsg = "SELECT failed while reconnecting";
                         break;
                     }
+                    redis_sock->status = REDIS_SOCK_STATUS_READY;
                     /* Success */
                     return 0;
                 }
@@ -3015,7 +3016,7 @@ redis_sock_check_liveness(RedisSock *redis_sock)
         } else {
             goto failure;
         }
-        redis_sock->status = REDIS_SOCK_STATUS_READY;
+        redis_sock->status = REDIS_SOCK_STATUS_AUTHENTICATED;
     } else {
         if (strncmp(inbuf, "-NOAUTH", 7) == 0) {
             /* connection is fine but authentication required */
@@ -3179,13 +3180,19 @@ redis_sock_server_open(RedisSock *redis_sock)
         case REDIS_SOCK_STATUS_DISCONNECTED:
             if (redis_sock_connect(redis_sock) != SUCCESS) {
                 break;
-            } else if (redis_sock->status == REDIS_SOCK_STATUS_READY) {
-                return SUCCESS;
             }
+            redis_sock->status = REDIS_SOCK_STATUS_CONNECTED;
             // fall through
         case REDIS_SOCK_STATUS_CONNECTED:
-            if (redis_sock_auth(redis_sock) != SUCCESS)
+            if (redis_sock_auth(redis_sock) != SUCCESS) {
                 break;
+            }
+            redis_sock->status = REDIS_SOCK_STATUS_AUTHENTICATED;
+            // fall through
+        case REDIS_SOCK_STATUS_AUTHENTICATED:
+            if (redis_sock->dbNumber && reselect_db(redis_sock) != SUCCESS) {
+                break;
+            }
             redis_sock->status = REDIS_SOCK_STATUS_READY;
             // fall through
         case REDIS_SOCK_STATUS_READY:

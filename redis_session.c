@@ -74,7 +74,6 @@ typedef struct redis_pool_member_ {
 
     RedisSock *redis_sock;
     int weight;
-    int database;
     struct redis_pool_member_ *next;
 
 } redis_pool_member;
@@ -93,12 +92,11 @@ typedef struct {
 // }
 
 PHP_REDIS_API void
-redis_pool_add(redis_pool *pool, RedisSock *redis_sock, int weight, int database)
+redis_pool_add(redis_pool *pool, RedisSock *redis_sock, int weight)
 {
     redis_pool_member *rpm = ecalloc(1, sizeof(redis_pool_member));
     rpm->redis_sock = redis_sock;
     rpm->weight = weight;
-    rpm->database = database;
 
     rpm->next = pool->head;
     pool->head = rpm;
@@ -156,21 +154,6 @@ static int redis_simple_cmd(RedisSock *redis_sock, char *cmd, int cmdlen,
     return len_written;
 }
 
-static void
-redis_pool_member_select(redis_pool_member *rpm) {
-    RedisSock *redis_sock = rpm->redis_sock;
-    char *response, *cmd;
-    int response_len, cmd_len;
-
-    cmd_len = REDIS_SPPRINTF(&cmd, "SELECT", "d", rpm->database);
-    if (redis_sock_write(redis_sock, cmd, cmd_len) >= 0) {
-        if ((response = redis_sock_read(redis_sock, &response_len))) {
-            efree(response);
-        }
-    }
-    efree(cmd);
-}
-
 PHP_REDIS_API redis_pool_member *
 redis_pool_get_sock(redis_pool *pool, const char *key) {
 
@@ -183,10 +166,6 @@ redis_pool_get_sock(redis_pool *pool, const char *key) {
     for(i = 0; i < pool->totalWeight;) {
         if (pos >= i && pos < i + rpm->weight) {
             if (redis_sock_server_open(rpm->redis_sock) == 0) {
-                if (rpm->database >= 0) { /* default is -1 which leaves the choice to redis. */
-                    redis_pool_member_select(rpm);
-                }
-
                 return rpm;
             }
         }
@@ -495,11 +474,15 @@ PS_OPEN_FUNC(redis)
                                            persistent, persistent_id ? ZSTR_VAL(persistent_id) : NULL,
                                            retry_interval);
 
+            if (db >= 0) { /* default is -1 which leaves the choice to redis. */
+                redis_sock->dbNumber = db;
+            }
+
             if (Z_TYPE(context) == IS_ARRAY) {
                 redis_sock_set_stream_context(redis_sock, &context);
             }
 
-            redis_pool_add(pool, redis_sock, weight, db);
+            redis_pool_add(pool, redis_sock, weight);
             redis_sock->prefix = prefix;
             redis_sock_set_auth(redis_sock, user, pass);
 
