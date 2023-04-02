@@ -160,15 +160,11 @@ zend_object_handlers redis_object_handlers;
 static int
 redis_send_discard(RedisSock *redis_sock)
 {
-    int result = FAILURE;
-    char *cmd, *resp;
-    int resp_len, cmd_len;
-
-    /* format our discard command */
-    cmd_len = REDIS_SPPRINTF(&cmd, "DISCARD", "");
+    char *resp;
+    int resp_len, result = FAILURE;
 
     /* send our DISCARD command */
-    if (redis_sock_write(redis_sock, cmd, cmd_len) >= 0 &&
+    if (redis_sock_write(redis_sock, ZEND_STRL(RESP_DISCARD_CMD)) >= 0 &&
        (resp = redis_sock_read(redis_sock,&resp_len)) != NULL)
     {
         /* success if we get OK */
@@ -177,9 +173,6 @@ redis_send_discard(RedisSock *redis_sock)
         /* free our response */
         efree(resp);
     }
-
-    /* free our command */
-    efree(cmd);
 
     /* return success/failure */
     return result;
@@ -1865,8 +1858,8 @@ PHP_METHOD(Redis, multi)
 {
 
     RedisSock *redis_sock;
-    char *resp, *cmd;
-    int resp_len, cmd_len;
+    char *resp;
+    int resp_len;
     zval *object;
     zend_long multi_value = MULTI;
 
@@ -1897,15 +1890,12 @@ PHP_METHOD(Redis, multi)
     } else if (multi_value == MULTI) {
         /* Don't want to do anything if we're already in MULTI mode */
         if (!IS_MULTI(redis_sock)) {
-            cmd_len = REDIS_SPPRINTF(&cmd, "MULTI", "");
             if (IS_PIPELINE(redis_sock)) {
-                PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len);
-                efree(cmd);
+                PIPELINE_ENQUEUE_COMMAND(RESP_MULTI_CMD, sizeof(RESP_MULTI_CMD) - 1);
                 REDIS_SAVE_CALLBACK(NULL, NULL);
                 REDIS_ENABLE_MODE(redis_sock, MULTI);
             } else {
-                SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
-                efree(cmd);
+                SOCKET_WRITE_COMMAND(redis_sock, RESP_MULTI_CMD, sizeof(RESP_MULTI_CMD) - 1)
                 if ((resp = redis_sock_read(redis_sock, &resp_len)) == NULL) {
                     RETURN_FALSE;
                 } else if (strncmp(resp, "+OK", 3) != 0) {
@@ -1982,8 +1972,7 @@ redis_sock_read_multibulk_multi_reply(INTERNAL_FUNCTION_PARAMETERS,
 PHP_METHOD(Redis, exec)
 {
     RedisSock *redis_sock;
-    char *cmd;
-    int cmd_len, ret;
+    int ret;
     zval *object, z_ret;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
@@ -1994,16 +1983,13 @@ PHP_METHOD(Redis, exec)
     }
 
     if (IS_MULTI(redis_sock)) {
-        cmd_len = REDIS_SPPRINTF(&cmd, "EXEC", "");
         if (IS_PIPELINE(redis_sock)) {
-            PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len);
-            efree(cmd);
+            PIPELINE_ENQUEUE_COMMAND(RESP_EXEC_CMD, sizeof(RESP_EXEC_CMD) - 1);
             REDIS_SAVE_CALLBACK(NULL, NULL);
             REDIS_DISABLE_MODE(redis_sock, MULTI);
             RETURN_ZVAL(getThis(), 1, 0);
         }
-        SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len)
-        efree(cmd);
+        SOCKET_WRITE_COMMAND(redis_sock, RESP_EXEC_CMD, sizeof(RESP_EXEC_CMD) - 1)
 
         ZVAL_NULL(&z_ret);
         ret = redis_sock_read_multibulk_multi_reply(

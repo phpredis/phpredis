@@ -289,6 +289,11 @@ typedef enum {
     #endif
 #endif
 
+/* Complete representation for various commands in RESP */
+#define RESP_MULTI_CMD         "*1\r\n$5\r\nMULTI\r\n"
+#define RESP_EXEC_CMD          "*1\r\n$4\r\nEXEC\r\n"
+#define RESP_DISCARD_CMD       "*1\r\n$7\r\nDISCARD\r\n"
+
 /* {{{ struct RedisSock */
 typedef struct {
     php_stream          *stream;

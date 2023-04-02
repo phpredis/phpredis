@@ -12,9 +12,6 @@
 #define REDIS_CLUSTER_MOD   (REDIS_CLUSTER_SLOTS-1)
 
 /* Complete representation for various commands in RESP */
-#define RESP_MULTI_CMD         "*1\r\n$5\r\nMULTI\r\n"
-#define RESP_EXEC_CMD          "*1\r\n$4\r\nEXEC\r\n"
-#define RESP_DISCARD_CMD       "*1\r\n$7\r\nDISCARD\r\n"
 #define RESP_UNWATCH_CMD       "*1\r\n$7\r\nUNWATCH\r\n"
 #define RESP_CLUSTER_SLOTS_CMD "*2\r\n$7\r\nCLUSTER\r\n$5\r\nSLOTS\r\n"
 #define RESP_ASKING_CMD        "*1\r\n$6\r\nASKING\r\n"
