@@ -599,7 +599,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
         }
     }
 
-    if (redis_sock_server_open(redis->sock) < 0) {
+    if (redis_sock_connect(redis->sock) != SUCCESS) {
         if (redis->sock->err) {
             REDIS_THROW_EXCEPTION(ZSTR_VAL(redis->sock->err), 0);
         }
