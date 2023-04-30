@@ -45,7 +45,7 @@ Fedora users can install the package from the official repository.
 
 ### Fedora ≥ 29, Version 5
 
-Installation of the [php-pecl-redis5](https://apps.fedoraproject.org/packages/php-pecl-redis5) package:
+Installation of the [php-pecl-redis5](https://packages.fedoraproject.org/pkgs/php-pecl-redis5/php-pecl-redis5/) package:
 
 ~~~
 dnf install php-pecl-redis5
