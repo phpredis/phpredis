@@ -146,3 +146,36 @@ jobs:
         with:
           name: redis-${{matrix.php}}-x64-${{matrix.ts}}
           path: binaries
+
+  pecl:
+    runs-on: ubuntu-latest
+    container: php:8.2-cli-alpine
+    steps:
+      - name: Install required system packages
+        run: apk add --update $PHPIZE_DEPS zstd-libs zstd-dev git
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Create temporary directory
+        id: temp-dir
+        run: printf "path=%s\n" "$(mktemp -d)" >>"$GITHUB_OUTPUT"
+      - name: Create package
+        run: |
+          cd "${{ steps.temp-dir.outputs.path }}"
+          pecl package "$GITHUB_WORKSPACE/package.xml"
+      - name: Compile package
+        run: printf '' | pecl install ${{ steps.temp-dir.outputs.path }}/redis-*.tgz
+      - name: Enable extension
+        run: docker-php-ext-enable redis
+      - name: Check for PHP startup warnings
+        run: |
+          php -d display_errors=stderr -d display_startup_errors=1 -d error_reporting=-1 -r ';' 2>/tmp/php-startup-warnings
+          if [ -s /tmp/php-startup-warnings ]; then
+            echo 'The PHP extension was successfully installed, but PHP raised these warnings:' >&2
+            cat /tmp/php-startup-warnings >&2
+            exit 1
+          fi
+          echo "PHP didn't raise any warnings at startup."
+      - name: Inspect extension
+        run: php --ri redis
