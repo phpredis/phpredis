@@ -31,7 +31,7 @@ You can also make a one-time contribution with [![PayPal](https://img.shields.io
 1. [Installing/Configuring](#installingconfiguring)
    * [Installation](#installation)
    * [PHP Session handler](#php-session-handler)
-   * [Distributed Redis Array](./array.md#readme)
+   * [Distributed Redis Array](./arrays.md#readme)
    * [Redis Cluster support](./cluster.md#readme)
    * [Redis Sentinel support](./sentinel.md#readme)
    * [Running the unit tests](#running-the-unit-tests)
