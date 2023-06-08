@@ -1037,22 +1037,7 @@ PS_GC_FUNC(redis)
  */
 
 /* Prefix a session key */
-static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
-                                 int *skeylen, short *slot) {
-    char *skey;
-
-    *skeylen = keylen + ZSTR_LEN(c->flags->prefix);
-    skey = emalloc(*skeylen);
-    memcpy(skey, ZSTR_VAL(c->flags->prefix), ZSTR_LEN(c->flags->prefix));
-    memcpy(skey + ZSTR_LEN(c->flags->prefix), key, keylen);
-
-    *slot = cluster_hash_key(skey, *skeylen);
-
-    return skey;
-}
-
-/* Prefix a session key */
-static zend_string *cluster_session_key_new(redisCluster *c, const char *key, int keylen,
+static zend_string *cluster_session_key(redisCluster *c, const char *key, int keylen,
                                  short *slot) {
     zend_string *session;
     int skeylen;
@@ -1065,6 +1050,22 @@ static zend_string *cluster_session_key_new(redisCluster *c, const char *key, in
     *slot = cluster_hash_key(ZSTR_VAL(session), skeylen);
 
     return session;
+}
+
+/* Prefix a session key */
+static void *set_cluster_session_key(redis_cluster_session *sc, const char *key, int keylen) {
+    int skeylen;
+    redisCluster *c = sc->c;
+
+    if (sc->lock_status.session_key) {
+        zend_string_release(sc->lock_status.session_key);
+    }
+    skeylen = keylen + ZSTR_LEN(c->flags->prefix);
+    sc->lock_status.session_key = zend_string_alloc(skeylen, 0);
+    memcpy(ZSTR_VAL(sc->lock_status.session_key), ZSTR_VAL(c->flags->prefix), ZSTR_LEN(c->flags->prefix));
+    memcpy(ZSTR_VAL(sc->lock_status.session_key) + ZSTR_LEN(c->flags->prefix), key, keylen);
+
+    sc->slot = cluster_hash_key(ZSTR_VAL(sc->lock_status.session_key), skeylen);
 }
 
 PS_OPEN_FUNC(rediscluster) {
@@ -1187,11 +1188,12 @@ failure:
  */
 PS_CREATE_SID_FUNC(rediscluster)
 {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *sc = PS_GET_MOD_DATA();
+    redisCluster *c = sc->c;
     clusterReply *reply;
-    char *cmd, *skey;
-    zend_string *sid;
-    int cmdlen, skeylen;
+    char *cmd;
+    zend_string *sid, *skey;
+    int cmdlen;
     int retries = 3;
     short slot;
 
@@ -1207,11 +1209,11 @@ PS_CREATE_SID_FUNC(rediscluster)
         sid = php_session_create_id((void **) &c);
 
         /* Create session key if it doesn't already exist */
-        skey = cluster_session_key(c, ZSTR_VAL(sid), ZSTR_LEN(sid), &skeylen, &slot);
-        cmdlen = redis_spprintf(NULL, NULL, &cmd, "SET", "ssssd", skey,
-                        skeylen, "", 0, "NX", 2, "EX", 2, session_gc_maxlifetime());
+        skey = cluster_session_key(c, ZSTR_VAL(sid), ZSTR_LEN(sid), &slot);
+        cmdlen = redis_spprintf(NULL, NULL, &cmd, "SET", "Ssssd", skey,
+                        "", 0, "NX", 2, "EX", 2, session_gc_maxlifetime());
 
-        efree(skey);
+        zend_string_release(skey);
 
         /* Attempt to kick off our command */
         c->readonly = 0;
@@ -1252,10 +1254,12 @@ PS_CREATE_SID_FUNC(rediscluster)
  */
 PS_VALIDATE_SID_FUNC(rediscluster)
 {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *sc = PS_GET_MOD_DATA();
+    redisCluster *c = sc->c;
     clusterReply *reply;
-    char *cmd, *skey;
-    int cmdlen, skeylen;
+    char *cmd;
+    zend_string *skey;
+    int cmdlen;
     int res = FAILURE;
     short slot;
 
@@ -1265,9 +1269,9 @@ PS_VALIDATE_SID_FUNC(rediscluster)
         return FAILURE;
     }
 
-    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
-    cmdlen = redis_spprintf(NULL, NULL, &cmd, "EXISTS", "s", skey, skeylen);
-    efree(skey);
+    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &slot);
+    cmdlen = redis_spprintf(NULL, NULL, &cmd, "EXISTS", "S", skey);
+    zend_string_release(skey);
 
     /* We send to master, to ensure consistency */
     c->readonly = 0;
@@ -1301,11 +1305,11 @@ PS_VALIDATE_SID_FUNC(rediscluster)
 /* {{{ PS_UPDATE_TIMESTAMP_FUNC
  */
 PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *sc = PS_GET_MOD_DATA();
+    redisCluster *c = sc->c;
     clusterReply *reply;
-    char *cmd, *skey;
-    int cmdlen, skeylen;
-    short slot;
+    char *cmd;
+    int cmdlen;
 
     /* No need to update the session timestamp if we've already done so */
     if (INI_INT("redis.session.early_refresh")) {
@@ -1313,14 +1317,13 @@ PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
     }
 
     /* Set up command and slot info */
-    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
-    cmdlen = redis_spprintf(NULL, NULL, &cmd, "EXPIRE", "sd", skey,
-                            skeylen, session_gc_maxlifetime());
-    efree(skey);
+    set_cluster_session_key(sc, ZSTR_VAL(key), ZSTR_LEN(key));
+    cmdlen = redis_spprintf(NULL, NULL, &cmd, "EXPIRE", "Sd", sc->lock_status.session_key,
+                            session_gc_maxlifetime());
 
     /* Attempt to send EXPIRE command */
     c->readonly = 0;
-    if (cluster_send_command(c,slot,cmd,cmdlen) < 0 || c->err) {
+    if (cluster_send_command(c,sc->slot,cmd,cmdlen) < 0 || c->err) {
         php_error_docref(NULL, E_NOTICE, "Redis unable to update session expiry");
         efree(cmd);
         return FAILURE;
@@ -1354,9 +1357,7 @@ PS_READ_FUNC(rediscluster) {
     short slot;
 
     /* Set up our command and slot information */
-    if (sc->lock_status.session_key) zend_string_release(sc->lock_status.session_key);
-    sc->lock_status.session_key = cluster_session_key_new(c, ZSTR_VAL(key), ZSTR_LEN(key), &slot);
-    sc->slot = slot;
+    set_cluster_session_key(sc, ZSTR_VAL(key), ZSTR_LEN(key));
 
     /* Update the session ttl if early refresh is enabled */
     if (INI_INT("redis.session.early_refresh")) {
@@ -1375,7 +1376,7 @@ PS_READ_FUNC(rediscluster) {
     }
 
     /* Attempt to kick off our command */
-    if (cluster_send_command(c,slot,cmd,cmdlen) < 0 || c->err) {
+    if (cluster_send_command(c,sc->slot,cmd,cmdlen) < 0 || c->err) {
         efree(cmd);
         return FAILURE;
     }
@@ -1453,13 +1454,12 @@ PS_DESTROY_FUNC(rediscluster) {
     clusterReply *reply;
     char *cmd;
     int cmdlen;
-    short slot;
 
     /* Set up command and slot info */
     cmdlen = redis_spprintf(NULL, NULL, &cmd, "DEL", "S", sc->lock_status.session_key);
 
     /* Attempt to send command */
-    if (cluster_send_command(c,slot,cmd,cmdlen) < 0 || c->err) {
+    if (cluster_send_command(c,sc->slot,cmd,cmdlen) < 0 || c->err) {
         efree(cmd);
         return FAILURE;
     }
