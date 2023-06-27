@@ -8,7 +8,7 @@ free_redis_sentinel_object(zend_object *object)
     redis_sentinel_object *obj = PHPREDIS_GET_OBJECT(redis_sentinel_object, object);
 
     if (obj->sock) {
-        redis_sock_disconnect(obj->sock, 0);
+        redis_sock_disconnect(obj->sock, 0, 1);
         redis_free_socket(obj->sock);
     }
     zend_object_std_dtor(&obj->std);

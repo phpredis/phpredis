@@ -111,7 +111,7 @@ redis_pool_free(redis_pool *pool) {
     rpm = pool->head;
     while (rpm) {
         next = rpm->next;
-        redis_sock_disconnect(rpm->redis_sock, 0);
+        redis_sock_disconnect(rpm->redis_sock, 0, 1);
         redis_free_socket(rpm->redis_sock);
         efree(rpm);
         rpm = next;
@@ -1103,7 +1103,7 @@ PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
     /* Attempt to send EXPIRE command */
     c->readonly = 0;
     if (cluster_send_command(c,slot,cmd,cmdlen) < 0 || c->err) {
-        php_error_docref(NULL, E_NOTICE, "Redis unable to update session expiry"); 
+        php_error_docref(NULL, E_NOTICE, "Redis unable to update session expiry");
         efree(cmd);
         return FAILURE;
     }
@@ -1146,7 +1146,7 @@ PS_READ_FUNC(rediscluster) {
         cmdlen = redis_spprintf(NULL, NULL, &cmd, "GET", "s", skey, skeylen);
         c->readonly = 1;
     }
-    
+
     efree(skey);
 
     /* Attempt to kick off our command */
