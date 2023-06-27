@@ -359,7 +359,7 @@ redis_check_eof(RedisSock *redis_sock, zend_bool no_retry, zend_bool no_throw)
         for (retry_index = 0; !no_retry && retry_index < redis_sock->max_retries; ++retry_index) {
             /* close existing stream before reconnecting */
             if (redis_sock->stream) {
-                /* reconnect no need to reset mode, it will cause pipleline mode socket exception */
+                /* reconnect no need to reset mode, it will cause pipeline mode socket exception */
                 redis_sock_disconnect(redis_sock, 1, 0);
             }
             /* Sleep based on our backoff algorithm */
