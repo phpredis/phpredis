@@ -359,7 +359,8 @@ redis_check_eof(RedisSock *redis_sock, zend_bool no_retry, zend_bool no_throw)
         for (retry_index = 0; !no_retry && retry_index < redis_sock->max_retries; ++retry_index) {
             /* close existing stream before reconnecting */
             if (redis_sock->stream) {
-                redis_sock_disconnect(redis_sock, 1);
+                /* reconnect no need to reset mode, it will cause pipeline mode socket exception */
+                redis_sock_disconnect(redis_sock, 1, 0);
             }
             /* Sleep based on our backoff algorithm */
             zend_ulong delay = redis_backoff_compute(&redis_sock->backoff, retry_index);
@@ -390,7 +391,7 @@ redis_check_eof(RedisSock *redis_sock, zend_bool no_retry, zend_bool no_throw)
         }
     }
     /* close stream and mark socket as failed */
-    redis_sock_disconnect(redis_sock, 1);
+    redis_sock_disconnect(redis_sock, 1, 1);
     redis_sock->status = REDIS_SOCK_STATUS_FAILED;
     if (!no_throw) {
         REDIS_THROW_EXCEPTION( errmsg, 0);
@@ -3058,7 +3059,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
     ConnectionPool *p = NULL;
 
     if (redis_sock->stream != NULL) {
-        redis_sock_disconnect(redis_sock, 0);
+        redis_sock_disconnect(redis_sock, 0, 1);
     }
 
     address = ZSTR_VAL(redis_sock->host);
@@ -3206,7 +3207,7 @@ redis_sock_server_open(RedisSock *redis_sock)
  * redis_sock_disconnect
  */
 PHP_REDIS_API int
-redis_sock_disconnect(RedisSock *redis_sock, int force)
+redis_sock_disconnect(RedisSock *redis_sock, int force, int is_reset_mode)
 {
     if (redis_sock == NULL) {
         return FAILURE;
@@ -3228,7 +3229,9 @@ redis_sock_disconnect(RedisSock *redis_sock, int force)
         }
         redis_sock->stream = NULL;
     }
-    redis_sock->mode = ATOMIC;
+    if (is_reset_mode) {
+        redis_sock->mode = ATOMIC;
+    }
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->watching = 0;
 
@@ -4107,7 +4110,7 @@ redis_sock_gets(RedisSock *redis_sock, char *buf, int buf_size, size_t *line_siz
             snprintf(buf, buf_size, "read error on connection to %s:%d", ZSTR_VAL(redis_sock->host), redis_sock->port);
         }
         // Close our socket
-        redis_sock_disconnect(redis_sock, 1);
+        redis_sock_disconnect(redis_sock, 1, 1);
 
         // Throw a read error exception
         REDIS_THROW_EXCEPTION(buf, 0);

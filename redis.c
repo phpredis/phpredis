@@ -192,7 +192,7 @@ free_redis_object(zend_object *object)
 
     zend_object_std_dtor(&redis->std);
     if (redis->sock) {
-        redis_sock_disconnect(redis->sock, 0);
+        redis_sock_disconnect(redis->sock, 0, 1);
         redis_free_socket(redis->sock);
     }
 }
@@ -573,7 +573,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 
     /* if there is a redis sock already we have to remove it */
     if (redis->sock) {
-        redis_sock_disconnect(redis->sock, 0);
+        redis_sock_disconnect(redis->sock, 0, 1);
         redis_free_socket(redis->sock);
     }
 
@@ -632,7 +632,7 @@ PHP_METHOD(Redis, close)
 {
     RedisSock *redis_sock = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU);
 
-    if (redis_sock_disconnect(redis_sock, 1) == SUCCESS) {
+    if (redis_sock_disconnect(redis_sock, 1, 1) == SUCCESS) {
         RETURN_TRUE;
     }
     RETURN_FALSE;

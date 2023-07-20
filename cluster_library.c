@@ -1097,7 +1097,7 @@ PHP_REDIS_API int cluster_map_keyspace(redisCluster *c) {
                 memset(c->master, 0, sizeof(redisClusterNode*)*REDIS_CLUSTER_SLOTS);
             }
         }
-        redis_sock_disconnect(seed, 0);
+        redis_sock_disconnect(seed, 0, 1);
         if (mapped) break;
     } ZEND_HASH_FOREACH_END();
 
@@ -1218,13 +1218,13 @@ PHP_REDIS_API void cluster_disconnect(redisCluster *c, int force) {
         if (node == NULL) continue;
 
         /* Disconnect from the master */
-        redis_sock_disconnect(node->sock, force);
+        redis_sock_disconnect(node->sock, force, 1);
 
         /* We also want to disconnect any slave connections so they will be pooled
          * in the event we are using persistent connections and connection pooling. */
         if (node->slaves) {
             ZEND_HASH_FOREACH_PTR(node->slaves, slave) {
-                redis_sock_disconnect(slave->sock, force);
+                redis_sock_disconnect(slave->sock, force, 1);
             } ZEND_HASH_FOREACH_END();
         }
     } ZEND_HASH_FOREACH_END();
@@ -1603,7 +1603,7 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
         return -1;
     } else if (timedout || resp == -1) {
         // Make sure the socket is reconnected, it such that it is in a clean state
-        redis_sock_disconnect(c->cmd_sock, 1);
+        redis_sock_disconnect(c->cmd_sock, 1, 1);
 
         if (timedout) {
             CLUSTER_THROW_EXCEPTION("Timed out attempting to find data in the correct node!", 0);
