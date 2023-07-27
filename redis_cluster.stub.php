@@ -47,7 +47,7 @@ class RedisCluster {
      */
     public const FAILOVER_DISTRIBUTE_SLAVES = UNKNOWN;
 
-    public function __construct(string|null $name, array $seeds = NULL, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistent = false, #[\SensitiveParameter] mixed $auth = NULL, array $context = NULL);
+    public function __construct(string|null $name, ?array $seeds = null, int|float $timeout = 0, int|float $read_timeout = 0, bool $persistent = false, #[\SensitiveParameter] mixed $auth = null, ?array $context = null);
 
     /**
      * @see Redis::_compress()
@@ -200,7 +200,7 @@ class RedisCluster {
     /**
      * @see Redis::client
      */
-    public function client(string|array $key_or_address, string $subcommand, ?string $arg = NULL): array|string|bool;
+    public function client(string|array $key_or_address, string $subcommand, ?string $arg = null): array|string|bool;
 
     /**
      * @see Redis::close
@@ -230,7 +230,7 @@ class RedisCluster {
     /**
      * @see https://redis.io/commands/copy
      */
-    public function copy(string $src, string $dst, array $options = null): RedisCluster|bool;
+    public function copy(string $src, string $dst, ?array $options = null): RedisCluster|bool;
 
     /**
      * @see Redis::decr()
@@ -305,12 +305,12 @@ class RedisCluster {
     /**
      * @see Redis::expire
      */
-    public function expire(string $key, int $timeout, ?string $mode = NULL): RedisCluster|bool;
+    public function expire(string $key, int $timeout, ?string $mode = null): RedisCluster|bool;
 
     /**
      * @see Redis::expireat
      */
-    public function expireat(string $key, int $timestamp, ?string $mode = NULL): RedisCluster|bool;
+    public function expireat(string $key, int $timestamp, ?string $mode = null): RedisCluster|bool;
 
     /**
      * @see Redis::expiretime()
@@ -415,7 +415,7 @@ class RedisCluster {
     /**
      * @see Redis::lcs
      */
-    public function lcs(string $key1, string $key2, ?array $options = NULL): RedisCluster|string|array|int|false;
+    public function lcs(string $key1, string $key2, ?array $options = null): RedisCluster|string|array|int|false;
 
     /**
      * @see Redis::getset
@@ -490,7 +490,7 @@ class RedisCluster {
     /**
      * @see https://redis.io/commands/hrandfield
      */
-    public function hrandfield(string $key, array $options = null): RedisCluster|string|array;
+    public function hrandfield(string $key, ?array $options = null): RedisCluster|string|array;
 
     /**
      * @see Redis::hset
@@ -583,7 +583,7 @@ class RedisCluster {
     /**
      * @see Redis::lpos
      */
-    public function lpos(string $key, mixed $value, array $options = null): Redis|null|bool|int|array;
+    public function lpos(string $key, mixed $value, ?array $options = null): Redis|null|bool|int|array;
 
     /**
      * @see Redis::lpush
@@ -648,12 +648,12 @@ class RedisCluster {
     /**
      * @see Redis::pexpire
      */
-    public function pexpire(string $key, int $timeout, ?string $mode = NULL): RedisCluster|bool;
+    public function pexpire(string $key, int $timeout, ?string $mode = null): RedisCluster|bool;
 
     /**
      * @see Redis::pexpireat
      */
-    public function pexpireat(string $key, int $timestamp, ?string $mode = NULL): RedisCluster|bool;
+    public function pexpireat(string $key, int $timestamp, ?string $mode = null): RedisCluster|bool;
 
 
     /**
@@ -684,7 +684,7 @@ class RedisCluster {
      * @return mixed This method always returns `true` if no message was sent, and the message itself
      *               if one was.
      */
-    public function ping(string|array $key_or_address, ?string $message = NULL): mixed;
+    public function ping(string|array $key_or_address, ?string $message = null): mixed;
 
     /**
      * @see Redis::psetex
@@ -739,7 +739,7 @@ class RedisCluster {
     /**
      * @see Redis::restore
      */
-    public function restore(string $key, int $timeout, string $value, ?array $options = NULL): RedisCluster|bool;
+    public function restore(string $key, int $timeout, string $value, ?array $options = null): RedisCluster|bool;
 
     /**
      * @see Redis::role
@@ -809,7 +809,7 @@ class RedisCluster {
     /**
      * @see https://redis.io/commands/set
      */
-    public function set(string $key, mixed $value, mixed $options = NULL): RedisCluster|string|bool;
+    public function set(string $key, mixed $value, mixed $options = null): RedisCluster|string|bool;
 
     /**
      * @see Redis::setbit
@@ -879,12 +879,12 @@ class RedisCluster {
     /**
      * @see Redis::sort()
      */
-    public function sort(string $key, ?array $options = NULL): RedisCluster|array|bool|int|string;
+    public function sort(string $key, ?array $options = null): RedisCluster|array|bool|int|string;
 
     /**
      * @see Redis::sort_ro()
      */
-    public function sort_ro(string $key, ?array $options = NULL): RedisCluster|array|bool|int|string;
+    public function sort_ro(string $key, ?array $options = null): RedisCluster|array|bool|int|string;
 
     /**
      * @see Redis::spop
@@ -984,7 +984,7 @@ class RedisCluster {
     /**
      * @see Redis::xgroup
      */
-    public function xgroup(string $operation, string $key = null, string $group = null, string $id_or_consumer = null,
+    public function xgroup(string $operation, ?string $key = null, ?string $group = null, ?string $id_or_consumer = null,
                            bool $mkstream = false, int $entries_read = -2): mixed;
 
     /**
@@ -1070,12 +1070,12 @@ class RedisCluster {
     /**
      * @see Redis::zpopmax
      */
-    public function zpopmax(string $key, int $value = null): RedisCluster|bool|array;
+    public function zpopmax(string $key, ?int $value = null): RedisCluster|bool|array;
 
     /**
      * @see Redis::zpopmin
      */
-    public function zpopmin(string $key, int $value = null): RedisCluster|bool|array;
+    public function zpopmin(string $key, ?int $value = null): RedisCluster|bool|array;
 
     /**
      * @see Redis::zrange
@@ -1091,7 +1091,7 @@ class RedisCluster {
     /**
      * @see https://redis.io/commands/zRandMember
      */
-    public function zrandmember(string $key, array $options = null): RedisCluster|string|array;
+    public function zrandmember(string $key, ?array $options = null): RedisCluster|string|array;
 
     /**
      * @see Redis::zrangebylex
@@ -1131,17 +1131,17 @@ class RedisCluster {
     /**
      * @see Redis::zrevrange
      */
-    public function zrevrange(string $key, string $min, string $max, array $options = null): RedisCluster|bool|array;
+    public function zrevrange(string $key, string $min, string $max, ?array $options = null): RedisCluster|bool|array;
 
     /**
      * @see Redis::zrevrangebylex
      */
-    public function zrevrangebylex(string $key, string $min, string $max, array $options = null): RedisCluster|bool|array;
+    public function zrevrangebylex(string $key, string $min, string $max, ?array $options = null): RedisCluster|bool|array;
 
     /**
      * @see Redis::zrevrangebyscore
      */
-    public function zrevrangebyscore(string $key, string $min, string $max, array $options = null): RedisCluster|bool|array;
+    public function zrevrangebyscore(string $key, string $min, string $max, ?array $options = null): RedisCluster|bool|array;
 
     /**
      * @see Redis::zrevrank
@@ -1166,7 +1166,7 @@ class RedisCluster {
     /**
      * @see Redis::zunionstore
      */
-    public function zunionstore(string $dst, array $keys, ?array $weights = NULL, ?string $aggregate = NULL): RedisCluster|int|false;
+    public function zunionstore(string $dst, array $keys, ?array $weights = null, ?string $aggregate = null): RedisCluster|int|false;
 
     /**
      * @see https://redis.io/commands/zinter
@@ -1186,7 +1186,7 @@ class RedisCluster {
     /**
      * @see https://redis.io/commands/zdiff
      */
-    public function zdiff(array $keys, array $options = null): RedisCluster|array|false;
+    public function zdiff(array $keys, ?array $options = null): RedisCluster|array|false;
 }
 
 class RedisClusterException extends RuntimeException {}
