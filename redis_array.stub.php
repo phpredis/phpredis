@@ -10,7 +10,7 @@ class RedisArray {
 
     public function __call(string $function_name, array $arguments): mixed;
 
-    public function __construct(string|array $name_or_hosts, array $options = NULL);
+    public function __construct(string|array $name_or_hosts, ?array $options = null);
 
     public function _continuum(): bool|array;
 
@@ -22,7 +22,7 @@ class RedisArray {
 
     public function _instance(string $host): bool|null|Redis;
 
-    public function _rehash(callable $fn = NULL): bool|null;
+    public function _rehash(?callable $fn = null): bool|null;
 
     public function _target(string $key): bool|string|null;
 
@@ -50,7 +50,7 @@ class RedisArray {
 
     public function mset(array $pairs): bool;
 
-    public function multi(string $host, int $mode = NULL): bool|RedisArray;
+    public function multi(string $host, ?int $mode = null): bool|RedisArray;
 
     public function ping(): bool|array;
 
