@@ -1877,6 +1877,7 @@ gen_vararg_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     smart_string cmdstr = {0};
     zval *argv = NULL;
     int argc = 0;
+    uint32_t i;
 
     ZEND_PARSE_PARAMETERS_START(min_argc, -1)
         Z_PARAM_VARIADIC('*', argv, argc)
@@ -1884,7 +1885,7 @@ gen_vararg_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     redis_cmd_init_sstr(&cmdstr, argc, kw, strlen(kw));
 
-    for (uint32_t i = 0; i < argc; i++) {
+    for (i = 0; i < argc; i++) {
         redis_cmd_append_sstr_zval(&cmdstr, &argv[i], NULL);
     }
 
@@ -1986,7 +1987,8 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             }
         } ZEND_HASH_FOREACH_END();
     } else {
-        for(uint32_t i = 0; i < argc - !!has_timeout; i++) {
+        uint32_t i;
+        for(i = 0; i < argc - !!has_timeout; i++) {
             redis_cmd_append_sstr_key_zval(&cmdstr, &argv[i], redis_sock, slot);
             if (slot) {
                 if (kslot != -1 && *slot != kslot)
@@ -2605,7 +2607,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     smart_string cmdstr = {0};
     HashTable *fields = NULL;
     zend_string *key = NULL;
-    zend_ulong valid = 0;
+    zend_ulong valid = 0, i;
 
     ZEND_PARSE_PARAMETERS_START(2, 2)
         Z_PARAM_STR(key)
@@ -2635,7 +2637,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + valid, "HMGET");
     redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
 
-    for (zend_ulong i = 0; i < valid; i++) {
+    for (i = 0; i < valid; i++) {
         redis_cmd_append_sstr_zval(&cmdstr, &zctx[i], NULL);
     }
 
