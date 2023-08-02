@@ -271,6 +271,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="enable-redis-zstd" prompt="enable zstd compression support?" default="no"/>
   <configureoption name="enable-redis-msgpack" prompt="enable msgpack serializer support?" default="no"/>
   <configureoption name="enable-redis-lz4" prompt="enable lz4 compression?" default="no"/>
+  <configureoption name="with-liblz4" prompt="use system liblz4?" default="yes"/>
  </extsrcrelease>
  <changelog>
  <release>
