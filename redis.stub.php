@@ -478,7 +478,7 @@ class Redis {
      *
      * @return Redis
      */
-    public function __construct(array $options = null);
+    public function __construct(?array $options = null);
 
     public function __destruct();
 
@@ -816,7 +816,7 @@ class Redis {
 
     public function close(): bool;
 
-    public function command(string $opt = null, mixed ...$args): mixed;
+    public function command(?string $opt = null, mixed ...$args): mixed;
 
     /**
      *  Execute the Redis CONFIG command in a variety of ways.
@@ -835,10 +835,10 @@ class Redis {
      * $redis->config('SET', 'timeout', 30);
      * $redis->config('SET', ['timeout' => 30, 'loglevel' => 'warning']);
      */
-    public function config(string $operation, array|string|null $key_or_settings = NULL, ?string $value = NULL): mixed;
+    public function config(string $operation, array|string|null $key_or_settings = null, ?string $value = null): mixed;
 
-    public function connect(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = null,
-                            int $retry_interval = 0, float $read_timeout = 0, array $context = null): bool;
+    public function connect(string $host, int $port = 6379, float $timeout = 0, ?string $persistent_id = null,
+                            int $retry_interval = 0, float $read_timeout = 0, ?array $context = null): bool;
 
     /**
      * Make a copy of a key.
@@ -873,7 +873,7 @@ class Redis {
      * var_dump($redis->copy('source1', 'exists'));
      * var_dump($redis->copy('source1', 'exists', ['REPLACE' => true]));
      */
-    public function copy(string $src, string $dst, array $options = null): Redis|bool;
+    public function copy(string $src, string $dst, ?array $options = null): Redis|bool;
 
     /**
      * Return the number of keys in the currently selected Redis database.
@@ -1105,7 +1105,7 @@ class Redis {
      * @see https://redis.io/commands/expire
      *
      */
-    public function expire(string $key, int $timeout, ?string $mode = NULL): Redis|bool;
+    public function expire(string $key, int $timeout, ?string $mode = null): Redis|bool;
 
     /*
      * Set a key's expiration to a specific Unix timestamp in seconds.
@@ -1131,7 +1131,7 @@ class Redis {
      * @see https://redis.io/commands/expire
      * @see Redis::expire()
      */
-    public function expireAt(string $key, int $timestamp, ?string $mode = NULL): Redis|bool;
+    public function expireAt(string $key, int $timestamp, ?string $mode = null): Redis|bool;
 
     public function failover(?array $to = null, bool $abort = false, int $timeout = 0): Redis|bool;
 
@@ -1587,7 +1587,7 @@ class Redis {
      * $redis->set('seq2', 'aactcggcgcgagtaccaggccaaggtcgttccagagcaaagactcgtgccccgctgagc');
      * echo $redis->lcs('seq1', 'seq2') . "\n";
      */
-    public function lcs(string $key1, string $key2, ?array $options = NULL): Redis|string|array|int|false;
+    public function lcs(string $key1, string $key2, ?array $options = null): Redis|string|array|int|false;
 
     /**
      * Get the currently set read timeout on the connection.
@@ -1783,7 +1783,7 @@ class Redis {
      * @example $redis->hrandfield('settings');
      * @example $redis->hrandfield('settings', ['count' => 2, 'withvalues' => true]);
      */
-    public function hRandField(string $key, array $options = null): Redis|string|array;
+    public function hRandField(string $key, ?array $options = null): Redis|string|array;
 
     public function hSet(string $key, string $member, mixed $value): Redis|int|false;
 
@@ -1861,7 +1861,7 @@ class Redis {
      *
      * $redis->hmset('big-hash', $fields);
      *
-     * $it = NULL;
+     * $it = null;
      *
      * do {
      *     // Scan the hash but limit it to fields that match '*:1?3'
@@ -2041,7 +2041,7 @@ class Redis {
      *
      * @return Redis|null|bool|int|array Returns one or more of the matching indexes, or null/false if none were found.
      */
-    public function lPos(string $key, mixed $value, array $options = null): Redis|null|bool|int|array;
+    public function lPos(string $key, mixed $value, ?array $options = null): Redis|null|bool|int|array;
 
     /**
      * Prepend one or more elements to a list.
@@ -2178,7 +2178,7 @@ class Redis {
 
     public function migrate(string $host, int $port, string|array $key, int $dstdb, int $timeout,
                             bool $copy = false, bool $replace = false,
-                            #[\SensitiveParameter] mixed $credentials = NULL): Redis|bool;
+                            #[\SensitiveParameter] mixed $credentials = null): Redis|bool;
 
     /**
      * Move a key to a different database on the same redis instance.
@@ -2237,9 +2237,9 @@ class Redis {
      * @deprecated
      * @alias Redis::connect
      */
-    public function open(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
+    public function open(string $host, int $port = 6379, float $timeout = 0, ?string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, ?array $context = null): bool;
 
-    public function pconnect(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
+    public function pconnect(string $host, int $port = 6379, float $timeout = 0, ?string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, ?array $context = null): bool;
 
     /**
      * Remove the expiration from a key.
@@ -2262,7 +2262,7 @@ class Redis {
      *
      *  @return Redis|bool   True if an expiry was set on the key, and false otherwise.
      */
-    public function pexpire(string $key, int $timeout, ?string $mode = NULL): bool;
+    public function pexpire(string $key, int $timeout, ?string $mode = null): bool;
 
     /**
      * Set a key's expiration to a specific Unix Timestamp in milliseconds.  If connected to
@@ -2276,7 +2276,7 @@ class Redis {
      *
      *  @return Redis|bool   True if an expiration was set on the key, false otherwise.
      */
-    public function pexpireAt(string $key, int $timestamp, ?string $mode = NULL): Redis|bool;
+    public function pexpireAt(string $key, int $timestamp, ?string $mode = null): Redis|bool;
 
     /**
      * Add one or more elements to a Redis HyperLogLog key
@@ -2327,7 +2327,7 @@ class Redis {
      * @example $redis->ping();
      * @example $redis->ping('beep boop');
      */
-    public function ping(string $message = NULL): Redis|string|bool;
+    public function ping(?string $message = null): Redis|string|bool;
 
     /**
      * Enter into pipeline mode.
@@ -2353,7 +2353,7 @@ class Redis {
      * @deprecated
      * @alias Redis::pconnect
      */
-    public function popen(string $host, int $port = 6379, float $timeout = 0, string $persistent_id = NULL, int $retry_interval = 0, float $read_timeout = 0, array $context = NULL): bool;
+    public function popen(string $host, int $port = 6379, float $timeout = 0, ?string $persistent_id = null, int $retry_interval = 0, float $read_timeout = 0, ?array $context = null): bool;
 
     /**
      * Set a key with an expiration time in milliseconds
@@ -2542,7 +2542,7 @@ class Redis {
      *
      * $redis->restore('captains-backup', 0, $serialized);
      */
-    public function restore(string $key, int $ttl, string $value, ?array $options = NULL): Redis|bool;
+    public function restore(string $key, int $ttl, string $value, ?array $options = null): Redis|bool;
 
     /**
      * Query whether the connected instance is a primary or replica
@@ -2891,7 +2891,7 @@ class Redis {
      *
      * $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
      *
-     * $it = NULL;
+     * $it = null;
      *
      * do {
      *     $keys = $redis->scan($it, '*zorg*');
@@ -2902,7 +2902,7 @@ class Redis {
      *
      * $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
      *
-     * $it = NULL;
+     * $it = null;
      *
      * // When Redis::SCAN_RETRY is enabled, we can use simpler logic, as we will never receive an
      * // empty array of keys when the iterator is nonzero.
@@ -2912,7 +2912,7 @@ class Redis {
      *     }
      * }
      */
-    public function scan(?int &$iterator, ?string $pattern = null, int $count = 0, string $type = NULL): array|false;
+    public function scan(?int &$iterator, ?string $pattern = null, int $count = 0, ?string $type = null): array|false;
 
     /**
      * Retrieve the number of members in a Redis set.
@@ -2985,7 +2985,7 @@ class Redis {
      * @example $redis->set('key', 'value');
      * @example $redis->set('key', 'expires_in_60_seconds', 60);
      */
-    public function set(string $key, mixed $value, mixed $options = NULL): Redis|string|bool;
+    public function set(string $key, mixed $value, mixed $options = null): Redis|string|bool;
 
     /**
      * Set a specific bit in a Redis string to zero or one
@@ -3106,7 +3106,7 @@ class Redis {
      * @see https://redis.io/commands/replicaof
      * @see Redis::replicaof()
      */
-    public function slaveof(string $host = NULL, int $port = 6379): Redis|bool;
+    public function slaveof(?string $host = null, int $port = 6379): Redis|bool;
 
     /**
      * Used to turn a Redis instance into a replica of another, or to remove
@@ -3132,7 +3132,7 @@ class Redis {
      * // attempting to promote the instance to a primary.
      * $redis->replicaof();
      */
-    public function replicaof(string $host = NULL, int $port = 6379): Redis|bool;
+    public function replicaof(?string $host = null, int $port = 6379): Redis|bool;
 
     /**
      * Update one or more keys last modified metadata.
@@ -3274,7 +3274,7 @@ class Redis {
      * $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_NORETRY);
      *
      * $scanned = 0;
-     * $it = NULL;
+     * $it = null;
      *
      * // Without Redis::SCAN_RETRY we may receive empty results and
      * // a nonzero iterator.
@@ -3291,7 +3291,7 @@ class Redis {
      * $redis->setOption(Redis::OPT_SCAN, Redis::SCAN_RETRY);
      *
      * $scanned = 0;
-     * $it = NULL;
+     * $it = null;
      *
      * // With Redis::SCAN_RETRY PhpRedis will never return an empty array
      * // when the cursor is non-zero
@@ -3795,7 +3795,7 @@ class Redis {
      *
      * @return mixed                 This command return various results depending on the operation performed.
      */
-    public function xgroup(string $operation, string $key = null, string $group = null, string $id_or_consumer = null,
+    public function xgroup(string $operation, ?string $key = null, ?string $group = null, ?string $id_or_consumer = null,
                            bool $mkstream = false, int $entries_read = -2): mixed;
 
     /**
@@ -4105,7 +4105,7 @@ class Redis {
      * $redis->zPopMax('zs');
      * $redis->zPopMax('zs', 2);.
      */
-    public function zPopMax(string $key, int $count = null): Redis|array|false;
+    public function zPopMax(string $key, ?int $count = null): Redis|array|false;
 
     /**
      * Pop one or more of the lowest scoring elements from a sorted set.
@@ -4123,7 +4123,7 @@ class Redis {
      * $redis->zPopMin('zs');
      * $redis->zPopMin('zs', 2);
      */
-    public function zPopMin(string $key, int $count = null): Redis|array|false;
+    public function zPopMin(string $key, ?int $count = null): Redis|array|false;
 
     /**
      * Retrieve a range of elements of a sorted set between a start and end point.
@@ -4222,7 +4222,7 @@ class Redis {
      * See {@link Redis::zRange} for a full description of the possible options.
      */
     public function zrangestore(string $dstkey, string $srckey, string $start, string $end,
-                                array|bool|null $options = NULL): Redis|int|false;
+                                array|bool|null $options = null): Redis|int|false;
 
     /**
      * Retrieve one or more random members from a Redis sorted set.
@@ -4240,7 +4240,7 @@ class Redis {
      *
      * @example $redis->zRandMember('zs', ['COUNT' => 2, 'WITHSCORES' => true]);
      */
-    public function zRandMember(string $key, array $options = null): Redis|string|array;
+    public function zRandMember(string $key, ?array $options = null): Redis|string|array;
 
     /**
      * Get the rank of a member of a sorted set, by score.
@@ -4448,7 +4448,7 @@ class Redis {
      *
      * $redis->zDiff(['primes', 'evens', 'mod3']);
      */
-    public function zdiff(array $keys, array $options = null): Redis|array|false;
+    public function zdiff(array $keys, ?array $options = null): Redis|array|false;
 
     /**
      * Store the difference of one or more sorted sets in a destination sorted set.
@@ -4619,7 +4619,7 @@ class Redis {
      *
      * $redis->zUnionStore('dst', ['zs1', 'zs2', 'zs3']);
      */
-    public function zunionstore(string $dst, array $keys, ?array $weights = NULL, ?string $aggregate = NULL): Redis|int|false;
+    public function zunionstore(string $dst, array $keys, ?array $weights = null, ?string $aggregate = null): Redis|int|false;
 }
 
 class RedisException extends RuntimeException {}
