@@ -1845,7 +1845,8 @@ redis_read_mpop_response(RedisSock *redis_sock, zval *zdst, int elements,
     array_init_size(&zele, elements);
 
     if (ctx == PHPREDIS_CTX_PTR) {
-        for (int i = 0; i < elements; i++) {
+        int i;
+        for (i = 0; i < elements; i++) {
             if (read_mbulk_header(redis_sock, &subele) < 0 || subele != 2) {
                 zval_dtor(&zele);
                 goto fail;
