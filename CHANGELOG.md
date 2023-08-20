@@ -7,6 +7,33 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [6.0.0RC2] - 2023-08-20 ([GitHub](https://github.com/phpredis/phpredis/releases/6.0.0RC2), [PECL](https://pecl.php.net/package/redis/6.0.0RC2))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+### Fixed
+
+- Fix arginfo for arguments that default to null
+  [8d99b7d1](https://github.com/phpredis/phpredis/commit/8d99b7d1)
+  ([Nicolas Grekas](https://github.com/nicolas-grekas))
+- Fix C99 usages
+  [54d9ca45](https://github.com/phpredis/phpredis/commit/54d9ca45)
+  ([Remi Collet](https://github.com/remicollet))
+- Raise minimal supported version to 7.2
+  [e10b9a85](https://github.com/phpredis/phpredis/commit/e10b9a85)
+  ([Remi Collet](https://github.com/remicollet))
+
 ## [6.0.0RC1] - 2023-08-01 ([GitHub](https://github.com/phpredis/phpredis/releases/6.0.0RC1), [PECL](https://pecl.php.net/package/redis/6.0.0RC1))
 
 ### Sponsors :sparkling_heart:
