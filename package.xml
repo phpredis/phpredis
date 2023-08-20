@@ -27,25 +27,17 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2023-08-01</date>
+ <date>2023-08-20</date>
  <version>
-  <release>6.0.0RC1</release>
+  <release>6.0.0RC2</release>
   <api>6.0.0</api>
  </version>
  <stability>
-  <release>alpha</release>
-  <api>alpha</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    phpredis 6.0.0RC1
-
-    This release adds new commands introduced in Redis 6.2 and 7.0 as well
-    as many fixes and improvements.
-
-    You can find a detailed list of changes in CHANGELOG.md and package.xml
-    or by inspecting the git commit logs.
-
     --- Sponsors ---
 
     Audiomack - https://audiomack.com
@@ -57,7 +49,21 @@ http://pear.php.net/dtd/package-2.0.xsd">
     BatchLabs - https://batch.com
     Luis Zarate - https://github.com/jlzaratec
 
+    phpredis 6.0.0RC2
+
+    * Fix arginfo for arguments that default to null [8d99b7d1] (Nicolas Grekas)
+    * Fix C99 usages [54d9ca45] (Remi Collet)
+    * Raise minimal supported version to 7.2 [e10b9a85] (Remi Collet)
+
     ---
+
+    phpredis 6.0.0RC1
+
+    This release adds new commands introduced in Redis 6.2 and 7.0 as well
+    as many fixes and improvements.
+
+    You can find a detailed list of changes in CHANGELOG.md and package.xml
+    or by inspecting the git commit logs.
 
     * Fix restoring keys when using compression [82e08723] (Till Krüss)
     * Fix missing auth in RedisSentinel stub [5db85561] (Lu Fei)
@@ -275,18 +281,10 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
  <release>
-   <stability><release>alpha</release><api>alpha</api></stability>
-   <version><release>6.0.0RC1</release><api>6.0.0</api></version>
-   <date>2023-08-01</date>
+   <stability><release>beta</release><api>beta</api></stability>
+   <version><release>6.0.0RC2</release><api>6.0.0</api></version>
+   <date>2023-08-20</date>
    <notes>
-    phpredis 6.0.0RC1
-
-    This release adds new commands introduced in Redis 6.2 and 7.0 as well
-    as many fixes and improvements.
-
-    You can find a detailed list of changes in CHANGELOG.md and package.xml
-    or by inspecting the git commit logs.
-
     --- Sponsors ---
 
     Audiomack - https://audiomack.com
@@ -298,7 +296,15 @@ http://pear.php.net/dtd/package-2.0.xsd">
     BatchLabs - https://batch.com
     Luis Zarate - https://github.com/jlzaratec
 
+    phpredis 6.0.0RC2
+
+    * Fix arginfo for arguments that default to null [8d99b7d1] (Nicolas Grekas)
+    * Fix C99 usages [54d9ca45] (Remi Collet)
+    * Raise minimal supported version to 7.2 [e10b9a85] (Remi Collet)
+
     ---
+
+    phpredis 6.0.0RC1
 
     * Fix restoring keys when using compression [82e08723] (Till Krüss)
     * Fix missing auth in RedisSentinel stub [5db85561] (Lu Fei)
