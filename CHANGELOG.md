@@ -7,6 +7,631 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [6.0.0] - 2023-09-09 ([GitHub](https://github.com/phpredis/phpredis/releases/6.0.0), [PECL](https://pecl.php.net/package/redis/6.0.0))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+*There were no changes between 6.0.0 and 6.0.0RC2*
+
+## [6.0.0RC2] - 2023-08-20 ([GitHub](https://github.com/phpredis/phpredis/releases/6.0.0RC2), [PECL](https://pecl.php.net/package/redis/6.0.0RC2))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+### Fixed
+
+- Fix arginfo for arguments that default to null
+  [8d99b7d1](https://github.com/phpredis/phpredis/commit/8d99b7d1)
+  ([Nicolas Grekas](https://github.com/nicolas-grekas))
+- Fix C99 usages
+  [54d9ca45](https://github.com/phpredis/phpredis/commit/54d9ca45)
+  ([Remi Collet](https://github.com/remicollet))
+- Raise minimal supported version to 7.2
+  [e10b9a85](https://github.com/phpredis/phpredis/commit/e10b9a85)
+  ([Remi Collet](https://github.com/remicollet))
+
+## [6.0.0RC1] - 2023-08-01 ([GitHub](https://github.com/phpredis/phpredis/releases/6.0.0RC1), [PECL](https://pecl.php.net/package/redis/6.0.0RC1))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+### Fixed
+
+- Fix restoring keys when using compression
+  [82e08723](https://github.com/phpredis/phpredis/commit/82e08723)
+  ([Till Krüss](https://github.com/tillkruss))
+- Fix missing auth in RedisSentinel stub
+  [5db85561](https://github.com/phpredis/phpredis/commit/5db85561)
+  ([Lu Fei](https://github.com/sy-records))
+- Fix RedisSentinel pconnect check
+  [42cbd88a](https://github.com/phpredis/phpredis/commit/42cbd88a)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix NULL-pointer dereferences and handle possible UB
+  [36457555](https://github.com/phpredis/phpredis/commit/36457555)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix security alerts
+  [ee210f86](https://github.com/phpredis/phpredis/commit/ee210f86),
+  [fb6a297c](https://github.com/phpredis/phpredis/commit/fb6a297c)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)),
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Fix segfault
+  [55bf0202](https://github.com/phpredis/phpredis/commit/55bf0202)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix default host length
+  [c40f9d6c](https://github.com/phpredis/phpredis/commit/c40f9d6c)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix redis session standalone stream ssl context
+  [ed10f365](https://github.com/phpredis/phpredis/commit/ed10f365),
+  [d1bc6727](https://github.com/phpredis/phpredis/commit/d1bc6727),
+  [2ff11df5](https://github.com/phpredis/phpredis/commit/2ff11df5)
+  ([patricio.dorantes](https://github.com/patricio.dorantes))
+- Fix segfault with session+tls
+  [a471c87a](https://github.com/phpredis/phpredis/commit/a471c87a)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix non standards conforming prototypes.
+  [b3ce0486](https://github.com/phpredis/phpredis/commit/b3ce0486)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Avoid registering the same replicas multiple times
+  [f2bfd723](https://github.com/phpredis/phpredis/commit/f2bfd723)
+  ([Marius Adam](https://github.com/mariusadam))
+- Better unix:// or file:// detection.
+  [d05d301b](https://github.com/phpredis/phpredis/commit/d05d301b)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Future proof our igbinary header check
+  [69355faa](https://github.com/phpredis/phpredis/commit/69355faa)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Fix BITOP cross-slot bug
+  [af13f951](https://github.com/phpredis/phpredis/commit/af13f951)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- SENTINEL RESET returns a long.
+  [0243dd9d](https://github.com/phpredis/phpredis/commit/0243dd9d)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Fix redis_sock_read_multibulk_multi_reply_loop logic
+  [d9cb5946](https://github.com/phpredis/phpredis/commit/d9cb5946),
+  [5a643b62](https://github.com/phpredis/phpredis/commit/5a643b62)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix RPOP to unserialize/decompress data.
+  [02c91d59](https://github.com/phpredis/phpredis/commit/02c91d59)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Fix testObject for redis 7.2
+  [fea19b52](https://github.com/phpredis/phpredis/commit/fea19b52),
+  [dcb95a3f](https://github.com/phpredis/phpredis/commit/dcb95a3f)
+  ([Remi Collet](https://github.com/remicollet))
+- Fix bug: the pipeline mode socket return an unexpected result after reconnecting
+  [a3327d9d](https://github.com/phpredis/phpredis/commit/a3327d9d)
+  ([thomaston](https://github.com/omigafu))
+- Fix stub files
+  [9aa5f387](https://github.com/phpredis/phpredis/commit/9aa5f387),
+  [74cf49f5](https://github.com/phpredis/phpredis/commit/74cf49f5),
+  [8b1eafe8](https://github.com/phpredis/phpredis/commit/8b1eafe8),
+  [e392dd88](https://github.com/phpredis/phpredis/commit/e392dd88),
+  [b5ea5fd7](https://github.com/phpredis/phpredis/commit/b5ea5fd7),
+  [71758b09](https://github.com/phpredis/phpredis/commit/71758b09),
+  [2a6dee5d](https://github.com/phpredis/phpredis/commit/2a6dee5d)
+  ([Nicolas Grekas](https://github.com/nicolas-grekas)),
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Update documentation
+  [b64d93e1](https://github.com/phpredis/phpredis/commit/b64d93e1),
+  [703d71b5](https://github.com/phpredis/phpredis/commit/703d71b5),
+  [eba1c6d2](https://github.com/phpredis/phpredis/commit/eba1c6d2),
+  [0f502c9e](https://github.com/phpredis/phpredis/commit/0f502c9e),
+  [130b5d0b](https://github.com/phpredis/phpredis/commit/130b5d0b),
+  [21c3ef94](https://github.com/phpredis/phpredis/commit/21c3ef94),
+  [b7bf22d4](https://github.com/phpredis/phpredis/commit/b7bf22d4),
+  [50151e7a](https://github.com/phpredis/phpredis/commit/50151e7a),
+  [b9950727](https://github.com/phpredis/phpredis/commit/b9950727),
+  [ab4ce4ab](https://github.com/phpredis/phpredis/commit/ab4ce4ab),
+  [8d80ca5b](https://github.com/phpredis/phpredis/commit/8d80ca5b),
+  [c4de8667](https://github.com/phpredis/phpredis/commit/c4de8667),
+  [6982941b](https://github.com/phpredis/phpredis/commit/6982941b),
+  [375d093d](https://github.com/phpredis/phpredis/commit/375d093d),
+  [43da8dd9](https://github.com/phpredis/phpredis/commit/43da8dd9),
+  [71344612](https://github.com/phpredis/phpredis/commit/71344612),
+  [b9de0b97](https://github.com/phpredis/phpredis/commit/b9de0b97),
+  [2d8a8a44](https://github.com/phpredis/phpredis/commit/2d8a8a44),
+  [a2b0c86f](https://github.com/phpredis/phpredis/commit/a2b0c86f),
+  [e0b24be1](https://github.com/phpredis/phpredis/commit/e0b24be1),
+  [e609fbe8](https://github.com/phpredis/phpredis/commit/e609fbe8),
+  [c4aef956](https://github.com/phpredis/phpredis/commit/c4aef956),
+  [df50b2ad](https://github.com/phpredis/phpredis/commit/df50b2ad),
+  [cc2383f0](https://github.com/phpredis/phpredis/commit/cc2383f0),
+  [0dd2836f](https://github.com/phpredis/phpredis/commit/0dd2836f),
+  [7d5db510](https://github.com/phpredis/phpredis/commit/7d5db510),
+  [99340889](https://github.com/phpredis/phpredis/commit/99340889),
+  [70a55f3e](https://github.com/phpredis/phpredis/commit/70a55f3e),
+  [b04684d4](https://github.com/phpredis/phpredis/commit/b04684d4),
+  [980ea6b1](https://github.com/phpredis/phpredis/commit/980ea6b1),
+  [bb06ffa3](https://github.com/phpredis/phpredis/commit/bb06ffa3),
+  [b8679d7a](https://github.com/phpredis/phpredis/commit/b8679d7a),
+  [854f3aa4](https://github.com/phpredis/phpredis/commit/854f3aa4),
+  [a5c47901](https://github.com/phpredis/phpredis/commit/a5c47901),
+  [cf63e96e](https://github.com/phpredis/phpredis/commit/cf63e96e),
+  [f05ba819](https://github.com/phpredis/phpredis/commit/f05ba819),
+  [17db2328](https://github.com/phpredis/phpredis/commit/17db2328),
+  [450904f7](https://github.com/phpredis/phpredis/commit/450904f7),
+  [114f4d60](https://github.com/phpredis/phpredis/commit/114f4d60),
+  [142bddf0](https://github.com/phpredis/phpredis/commit/142bddf0),
+  [87fa36d6](https://github.com/phpredis/phpredis/commit/87fa36d6),
+  [531177d4](https://github.com/phpredis/phpredis/commit/531177d4),
+  [ecf65144](https://github.com/phpredis/phpredis/commit/ecf65144),
+  [53d142d9](https://github.com/phpredis/phpredis/commit/53d142d9),
+  [c14a9e3a](https://github.com/phpredis/phpredis/commit/c14a9e3a),
+  [72f8eb25](https://github.com/phpredis/phpredis/commit/72f8eb25),
+  [872b6931](https://github.com/phpredis/phpredis/commit/872b6931)
+  ([Karina Kwiatek](https://github.com/raccube)),
+  ([Nicolas Grekas](https://github.com/nicolas-grekas)),
+  ([Muhammad Dyas Yaskur](https://github.com/dyaskur)),
+  ([sergkash7](https://github.com/sergkash7)),
+  ([Dawid Polak](https://github.com/DeyV)),
+  ([Michael Grunder](https://github.com/michael-grunder)),
+  ([Yurun](https://github.com/Yurunsoft)),
+  ([twosee](https://github.com/twose)),
+  ([Juha](https://github.com/ejuhjav)),
+  ([Till Krüss](https://github.com/tillkruss))
+
+### Changed
+
+- Allow to pass null as iterator
+  [14d121bb](https://github.com/phpredis/phpredis/commit/14d121bb)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add NOMKSTREAM option to XADD command.
+  [f9436e25](https://github.com/phpredis/phpredis/commit/f9436e25)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Don't allow reconnect on read response
+  [5a269ab6](https://github.com/phpredis/phpredis/commit/5a269ab6)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Reset multi/pipline transaction on pconnect close
+  [0879770a](https://github.com/phpredis/phpredis/commit/0879770a)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Use read_mbulk_header helper where possible
+  [ca8b4c93](https://github.com/phpredis/phpredis/commit/ca8b4c93)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Allow to pass null as auth argument
+  [41517753](https://github.com/phpredis/phpredis/commit/41517753)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Refactor redis_parse_client_list_response
+  [68136a29](https://github.com/phpredis/phpredis/commit/68136a29),
+  [aaa4c91a](https://github.com/phpredis/phpredis/commit/aaa4c91a),
+  [1fb2935b](https://github.com/phpredis/phpredis/commit/1fb2935b),
+  [cf2c052c](https://github.com/phpredis/phpredis/commit/cf2c052c)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Refactor subscribe/unsubscribe
+  [3c9e159c](https://github.com/phpredis/phpredis/commit/3c9e159c)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Change PHPREDIS_CTX_PTR type
+  [de3635da](https://github.com/phpredis/phpredis/commit/de3635da)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Refactor redis_parse_info_response
+  [982bd13b](https://github.com/phpredis/phpredis/commit/982bd13b)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Allow IPv6 address within square brackets
+  [c28ad7bb](https://github.com/phpredis/phpredis/commit/c28ad7bb)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Allow multiple field-value pairs for hmset command.
+  [e858e8e3](https://github.com/phpredis/phpredis/commit/e858e8e3)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Refactor MINIT and use @generate-class-entries in stub files
+  [3675f442](https://github.com/phpredis/phpredis/commit/3675f442)
+  ([Remi Collet](https://github.com/remicollet))
+- Use spl_ce_RuntimeException
+  [3cd5ac1e](https://github.com/phpredis/phpredis/commit/3cd5ac1e),
+  [a7e5ea64](https://github.com/phpredis/phpredis/commit/a7e5ea64)
+  ([Remi Collet](https://github.com/remicollet))
+- Regenerate arginfo using 8.2.0
+  [a38e08da](https://github.com/phpredis/phpredis/commit/a38e08da)
+  ([Remi Collet](https://github.com/remicollet))
+- Refactor client command
+  [a8d10291](https://github.com/phpredis/phpredis/commit/a8d10291)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Pull COUNT/ANY parsing into a helper function
+  [d67b2020](https://github.com/phpredis/phpredis/commit/d67b2020)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Return false or NULL on empty lpos response
+  [39a01ac7](https://github.com/phpredis/phpredis/commit/39a01ac7)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- BLPOP with a float timeout
+  [a98605f2](https://github.com/phpredis/phpredis/commit/a98605f2),
+  [dc9af529](https://github.com/phpredis/phpredis/commit/dc9af529)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Make sure we set an error for key based scans
+  [98fda1b8](https://github.com/phpredis/phpredis/commit/98fda1b8)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Add back a default switch case for setoption handler
+  [87464932](https://github.com/phpredis/phpredis/commit/87464932)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Update stubs so the tests pass in strict mode
+  [bebd398c](https://github.com/phpredis/phpredis/commit/bebd398c)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Move where we generate our salt
+  [d2044c9f](https://github.com/phpredis/phpredis/commit/d2044c9f)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor XINFO handler
+  [3b0d8b77](https://github.com/phpredis/phpredis/commit/3b0d8b77)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor and fix XPENDING handler
+  [457953f4](https://github.com/phpredis/phpredis/commit/457953f4)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor FLUSHDB and update docs.
+  [54a084e5](https://github.com/phpredis/phpredis/commit/54a084e5)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Add missing directed node command to docs and refactor stubs.
+  [5ac92d25](https://github.com/phpredis/phpredis/commit/5ac92d25)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor BITPOS and implement BIT/BYTE option.
+  [4d8afd38](https://github.com/phpredis/phpredis/commit/4d8afd38)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- INFO with multiple sections
+  [44d03ca0](https://github.com/phpredis/phpredis/commit/44d03ca0)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor SLOWLOG command
+  [d87f1428](https://github.com/phpredis/phpredis/commit/d87f1428)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor SORT and add SORT_RO command
+  [8c7c5a3a](https://github.com/phpredis/phpredis/commit/8c7c5a3a)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Use ZEND_STRL in redis_commands.c
+  [78de25a3](https://github.com/phpredis/phpredis/commit/78de25a3)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Refactor PubSub command
+  [2a0d1c1e](https://github.com/phpredis/phpredis/commit/2a0d1c1e)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Refactor SLAVEOF handler
+  [f2cef8be](https://github.com/phpredis/phpredis/commit/f2cef8be)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor ACL command
+  [504810a5](https://github.com/phpredis/phpredis/commit/504810a5)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Use fast_zpp API
+  [376d4d27](https://github.com/phpredis/phpredis/commit/376d4d27)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix XAUTOCLAIM response handler
+  [0b7bd83f](https://github.com/phpredis/phpredis/commit/0b7bd83f)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor `command` command
+  [ff863f3f](https://github.com/phpredis/phpredis/commit/ff863f3f)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Refactor rawCommand and WAIT
+  [79c9d224](https://github.com/phpredis/phpredis/commit/79c9d224)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor SELECT command
+  [86f15cca](https://github.com/phpredis/phpredis/commit/86f15cca)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor SRANDMEMBER command.
+  [f62363c2](https://github.com/phpredis/phpredis/commit/f62363c2)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor OBJECT command.
+  [acb5db76](https://github.com/phpredis/phpredis/commit/acb5db76)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor gen_varkey_cmd
+  [3efa59cb](https://github.com/phpredis/phpredis/commit/3efa59cb)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor MGET command.
+  [8cb6dd17](https://github.com/phpredis/phpredis/commit/8cb6dd17)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor INFO and SCRIPT commands.
+  [3574ef08](https://github.com/phpredis/phpredis/commit/3574ef08)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor MSET and MSETNX commands.
+  [6d104481](https://github.com/phpredis/phpredis/commit/6d104481)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor HMSET command.
+  [90eb0470](https://github.com/phpredis/phpredis/commit/90eb0470)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor PFCOUNT command.
+  [19fd7e0c](https://github.com/phpredis/phpredis/commit/19fd7e0c)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor SMOVE command.
+  [204a02c5](https://github.com/phpredis/phpredis/commit/204a02c5)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Rework ZRANGE argument handling.
+  [aa0938a4](https://github.com/phpredis/phpredis/commit/aa0938a4)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor a couple more command methods.
+  [5b560ccf](https://github.com/phpredis/phpredis/commit/5b560ccf),
+  [c8224b93](https://github.com/phpredis/phpredis/commit/c8224b93),
+  [40e1b1bf](https://github.com/phpredis/phpredis/commit/40e1b1bf),
+  [ccd419a4](https://github.com/phpredis/phpredis/commit/ccd419a4)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor HMGET command
+  [bb66a547](https://github.com/phpredis/phpredis/commit/bb66a547)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Refactor CLIENT command
+  [77c4f7a3](https://github.com/phpredis/phpredis/commit/77c4f7a3)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Refactor redis_long_response
+  [f14a80db](https://github.com/phpredis/phpredis/commit/f14a80db)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Synchronize Redis and RedisSentinel constructors
+  [ebb2386e](https://github.com/phpredis/phpredis/commit/ebb2386e)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Use redis_sock_connect on connect
+  [f6c8b9c6](https://github.com/phpredis/phpredis/commit/f6c8b9c6)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Auto-select db in redis_sock_server_open
+  [6930a81c](https://github.com/phpredis/phpredis/commit/6930a81c)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Use on-stack allocated valiables
+  [7a055cad](https://github.com/phpredis/phpredis/commit/7a055cad)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+### Added
+
+- Add XAUTOCLAIM command
+  [01f3342c](https://github.com/phpredis/phpredis/commit/01f3342c)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add SYNC arg to FLUSHALL and FLUSHDB, and ASYNC/SYNC arg to SCRIPT FLUSH
+  [750b6cf3](https://github.com/phpredis/phpredis/commit/750b6cf3)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add reset command
+  [947a2d38](https://github.com/phpredis/phpredis/commit/947a2d38)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add hRandField command
+  [fe397371](https://github.com/phpredis/phpredis/commit/fe397371)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add PXAT/EXAT arguments to SET command.
+  [0a160685](https://github.com/phpredis/phpredis/commit/0a160685)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add GETEX, GETDEL commands.
+  [11861d95](https://github.com/phpredis/phpredis/commit/11861d95)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add FAILOVER command.
+  [4b767be7](https://github.com/phpredis/phpredis/commit/4b767be7)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Backoff settings in constructor
+  [e6b3fe54](https://github.com/phpredis/phpredis/commit/e6b3fe54)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add the COUNT argument to LPOP and RPOP
+  [df97cc35](https://github.com/phpredis/phpredis/commit/df97cc35)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Unsubscribe from all channels
+  [0f1ca0cc](https://github.com/phpredis/phpredis/commit/0f1ca0cc)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add lPos command.
+  [687a5c78](https://github.com/phpredis/phpredis/commit/687a5c78)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add the ANY argument to GEOSEARCH and GEORADIUS
+  [bf6f31e3](https://github.com/phpredis/phpredis/commit/bf6f31e3)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add 'BIT'/'BYTE' modifier to BITCOUNT + tests
+  [a3d2f131](https://github.com/phpredis/phpredis/commit/a3d2f131)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Add missing configureoption entries in package.xml
+  [59053f10](https://github.com/phpredis/phpredis/commit/59053f10)
+  ([Michele Locati](https://github.com/mlocati))
+- Implement CONFIG RESETSTAT
+  [239678a0](https://github.com/phpredis/phpredis/commit/239678a0)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- SINTERCARD and ZINTERCARD commands
+  [64300508](https://github.com/phpredis/phpredis/commit/64300508)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- LCS command
+  [c0e839f6](https://github.com/phpredis/phpredis/commit/c0e839f6)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- EXPIRETIME and PEXPIRETIME
+  [f5b2a09b](https://github.com/phpredis/phpredis/commit/f5b2a09b)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- [B]LMPOP and [B]ZMPOP commands
+  [6ea978eb](https://github.com/phpredis/phpredis/commit/6ea978eb)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Implement new RESTORE options
+  [9a3fe401](https://github.com/phpredis/phpredis/commit/9a3fe401)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Add new Redis 6.2.0 XTRIM options
+  [6b34d17f](https://github.com/phpredis/phpredis/commit/6b34d17f)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Implement AUTH/AUTH2 arguments for MIGRATE
+  [114d79d1](https://github.com/phpredis/phpredis/commit/114d79d1)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Implement CONFIG REWRITE
+  [525958ea](https://github.com/phpredis/phpredis/commit/525958ea)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Implement Redis 7.0.0 [P]EXPIRE[AT] options
+  [872ae107](https://github.com/phpredis/phpredis/commit/872ae107)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Variadic CONFIG GET/SET
+  [36ef4bd8](https://github.com/phpredis/phpredis/commit/36ef4bd8),
+  [a176f586](https://github.com/phpredis/phpredis/commit/a176f586)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- EVAL_RO and EVALSHA_RO
+  [f3a40830](https://github.com/phpredis/phpredis/commit/f3a40830)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Implement ZRANGESTORE and add ZRANGE options
+  [71bcbcb9](https://github.com/phpredis/phpredis/commit/71bcbcb9)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- XGROUP DELCONSUMER and ENTRIESREAD
+  [1343f500](https://github.com/phpredis/phpredis/commit/1343f500)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Expose the transferred number of bytes
+  [e0a88b7b](https://github.com/phpredis/phpredis/commit/e0a88b7b),
+  [90828019](https://github.com/phpredis/phpredis/commit/90828019),
+  [7a4cee2d](https://github.com/phpredis/phpredis/commit/7a4cee2d)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)),
+  ([Michael Grunder](https://github.com/michael-grunder))
+- TOUCH command
+  [dc1f2398](https://github.com/phpredis/phpredis/commit/dc1f2398)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Redis Sentinel TLS support
+  [f2bb2cdb](https://github.com/phpredis/phpredis/commit/f2bb2cdb)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add the CH, NX, XX arguments to GEOADD
+  [2bb64038](https://github.com/phpredis/phpredis/commit/2bb64038),
+  [e8f5b517](https://github.com/phpredis/phpredis/commit/e8f5b517)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Implement SMISMEMBER for RedisCluster
+  [abfac47b](https://github.com/phpredis/phpredis/commit/abfac47b)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Implement ssubscribe/sunsubscribe
+  [7644736e](https://github.com/phpredis/phpredis/commit/7644736e)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Implement BLMOVE and add LMOVE/BLMOVE to cluster.
+  [121e9d9c](https://github.com/phpredis/phpredis/commit/121e9d9c)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Implement LPOS for RedisCluster
+  [7121aaae](https://github.com/phpredis/phpredis/commit/7121aaae)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Implement GEOSEARCH and GEOSEARCHSTORE for RedisCluster.
+  [fa5d1af9](https://github.com/phpredis/phpredis/commit/fa5d1af9)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Implement HRANDFIELD for RedisCluster
+  [e222b85e](https://github.com/phpredis/phpredis/commit/e222b85e)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Implement COPY for RedisCluster
+  [40a2c254](https://github.com/phpredis/phpredis/commit/40a2c254)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Implement new ZSET commands for cluster
+  [27900f39](https://github.com/phpredis/phpredis/commit/27900f39)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Add cluster support for strict sessions and lazy write
+  [b6cf6361](https://github.com/phpredis/phpredis/commit/b6cf6361)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Add function command
+  [90a0e9cc](https://github.com/phpredis/phpredis/commit/90a0e9cc)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Add FCALL/FCALL_RO commands
+  [7c46ad2c](https://github.com/phpredis/phpredis/commit/7c46ad2c)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+### Removed
+
+- Remove unused macroses
+  [831d6118](https://github.com/phpredis/phpredis/commit/831d6118)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+## [5.3.7] - 2021-02-15 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.7), [PECL](https://pecl.php.net/package/redis/5.3.7))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+*There were no changes between 5.3.7 and 5.3.7RC2*
+
+## [5.3.7RC2] - 2021-02-12 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.7RC2), [PECL](https://pecl.php.net/package/redis/5.3.7RC2))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+*There were no changes between 5.3.7RC2 and 5.3.7RC1*
+
+## [5.3.7RC1] - 2021-02-02 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.7RC1), [PECL](https://pecl.php.net/package/redis/5.3.7RC1))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+### Fixed
+
+- Fix RedisArray::[hsz]scan and tests
+  [08a9d5db](https://github.com/phpredis/phpredis/commit/08a9d5db),
+  [0264de18](https://github.com/phpredis/phpredis/commit/0264de18),
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)),
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Fix RedisArray::scan
+  [8689ab1c](https://github.com/phpredis/phpredis/commit/8689ab1c)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix LZF decompression logic
+  [0719c1ec](https://github.com/phpredis/phpredis/commit/0719c1ec)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+## [5.3.6] - 2021-01-17 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.6), [PECL](https://pecl.php.net/package/redis/5.3.6))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+### Fixed
+
+- Fix a segfault in RedisArray::del
+  [d2f2a7d9](https://github.com/phpredis/phpredis/commit/d2f2a7d9)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+## [5.3.5] - 2021-12-18 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.5), [PECL](https://pecl.php.net/package/redis/5.3.5))
+
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+### Fixed
+
+- Fixed typo in cluster_scan_resp
+  [44affad2](https://github.com/phpredis/phpredis/commit/44affad2)
+
 ## [5.3.5RC1] - 2021-11-16 ([GitHub](https://github.com/phpredis/phpredis/releases/5.3.5RC1), [PECL](https://pecl.php.net/package/redis/5.3.5RC1))
 
 ### Sponsors :sparkling_heart:
