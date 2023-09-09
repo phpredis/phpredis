@@ -27,14 +27,14 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2023-08-20</date>
+ <date>2023-09-09</date>
  <version>
-  <release>6.0.0RC2</release>
+  <release>6.0.0</release>
   <api>6.0.0</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
@@ -48,6 +48,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Zaher Ghaibeh - https://github.com/zaherg
     BatchLabs - https://batch.com
     Luis Zarate - https://github.com/jlzaratec
+
+    phpredis 6.0.0
+
+    - There were no changes between 6.0.0 and 6.0.0RC2.
+
+    ---
 
     phpredis 6.0.0RC2
 
@@ -281,9 +287,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
  <release>
-   <stability><release>beta</release><api>beta</api></stability>
-   <version><release>6.0.0RC2</release><api>6.0.0</api></version>
-   <date>2023-08-20</date>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>6.0.0</release><api>6.0.0</api></version>
+   <date>2023-09-09</date>
    <notes>
     --- Sponsors ---
 
@@ -295,6 +301,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Zaher Ghaibeh - https://github.com/zaherg
     BatchLabs - https://batch.com
     Luis Zarate - https://github.com/jlzaratec
+
+    phpredis 6.0.0
+
+    - There were no changes between 6.0.0 and 6.0.0RC2.
+
+    ---
 
     phpredis 6.0.0RC2
 
