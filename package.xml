@@ -71,7 +71,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     You can find a detailed list of changes in CHANGELOG.md and package.xml
     or by inspecting the git commit logs.
 
-    * Fix restoring keys when using compression [82e08723] (Till Krüss)
+    * Fix restoring keys when using compression [82e08723] (Till Kruss)
     * Fix missing auth in RedisSentinel stub [5db85561] (Lu Fei)
     * Fix RedisSentinel pconnect check [42cbd88a] (Pavlo Yatsukhnenko)
     * Fix NULL-pointer dereferences and handle possible UB [36457555] (Pavlo Yatsukhnenko)
@@ -91,7 +91,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix testObject for redis 7.2 [fea19b52, dcb95a3f] (Remi Collet)
     * Fix bug: the pipeline mode socket return an unexpected result after reconnecting [a3327d9d] (thomaston)
     * Fix stub files [9aa5f387, 74cf49f5, 8b1eafe8, e392dd88, b5ea5fd7, 71758b09, 2a6dee5d] (Nicolas Grekas), (Michael Grunder)
-    * Update documentation [b64d93e1, 703d71b5, eba1c6d2, 0f502c9e, 130b5d0b, 21c3ef94, b7bf22d4, 50151e7a, b9950727, ab4ce4ab, 8d80ca5b, c4de8667, 6982941b, 375d093d, 43da8dd9, 71344612, b9de0b97, 2d8a8a44, a2b0c86f, e0b24be1, e609fbe8, c4aef956, df50b2ad, cc2383f0, 0dd2836f, 7d5db510, 99340889, 70a55f3e, b04684d4, 980ea6b1, bb06ffa3, b8679d7a, 854f3aa4, a5c47901, cf63e96e, f05ba819, 17db2328, 450904f7, 114f4d60, 142bddf0, 87fa36d6, 531177d4, ecf65144, 53d142d9, c14a9e3a, 72f8eb25, 872b6931] (Karina Kwiatek), (Nicolas Grekas), (Muhammad Dyas Yaskur), (sergkash7), (Dawid Polak), (Michael Grunder), (Yurun), (twosee), (Juha), (Till Krüss)
+    * Update documentation [b64d93e1, 703d71b5, eba1c6d2, 0f502c9e, 130b5d0b, 21c3ef94, b7bf22d4, 50151e7a, b9950727, ab4ce4ab, 8d80ca5b, c4de8667, 6982941b, 375d093d, 43da8dd9, 71344612, b9de0b97, 2d8a8a44, a2b0c86f, e0b24be1, e609fbe8, c4aef956, df50b2ad, cc2383f0, 0dd2836f, 7d5db510, 99340889, 70a55f3e, b04684d4, 980ea6b1, bb06ffa3, b8679d7a, 854f3aa4, a5c47901, cf63e96e, f05ba819, 17db2328, 450904f7, 114f4d60, 142bddf0, 87fa36d6, 531177d4, ecf65144, 53d142d9, c14a9e3a, 72f8eb25, 872b6931] (Karina Kwiatek), (Nicolas Grekas), (Muhammad Dyas Yaskur), (sergkash7), (Dawid Polak), (Michael Grunder), (Yurun), (twosee), (Juha), (Till Kruss)
     * Allow to pass null as iterator [14d121bb] (Pavlo Yatsukhnenko)
     * Add NOMKSTREAM option to XADD command. [f9436e25] (Pavlo Yatsukhnenko)
     * Don't allow reconnect on read response [5a269ab6] (Pavlo Yatsukhnenko)
@@ -318,7 +318,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     phpredis 6.0.0RC1
 
-    * Fix restoring keys when using compression [82e08723] (Till Krüss)
+    * Fix restoring keys when using compression [82e08723] (Till Kruss)
     * Fix missing auth in RedisSentinel stub [5db85561] (Lu Fei)
     * Fix RedisSentinel pconnect check [42cbd88a] (Pavlo Yatsukhnenko)
     * Fix NULL-pointer dereferences and handle possible UB [36457555] (Pavlo Yatsukhnenko)
@@ -338,7 +338,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix testObject for redis 7.2 [fea19b52, dcb95a3f] (Remi Collet)
     * Fix bug: the pipeline mode socket return an unexpected result after reconnecting [a3327d9d] (thomaston)
     * Fix stub files [9aa5f387, 74cf49f5, 8b1eafe8, e392dd88, b5ea5fd7, 71758b09, 2a6dee5d] (Nicolas Grekas), (Michael Grunder)
-    * Update documentation [b64d93e1, 703d71b5, eba1c6d2, 0f502c9e, 130b5d0b, 21c3ef94, b7bf22d4, 50151e7a, b9950727, ab4ce4ab, 8d80ca5b, c4de8667, 6982941b, 375d093d, 43da8dd9, 71344612, b9de0b97, 2d8a8a44, a2b0c86f, e0b24be1, e609fbe8, c4aef956, df50b2ad, cc2383f0, 0dd2836f, 7d5db510, 99340889, 70a55f3e, b04684d4, 980ea6b1, bb06ffa3, b8679d7a, 854f3aa4, a5c47901, cf63e96e, f05ba819, 17db2328, 450904f7, 114f4d60, 142bddf0, 87fa36d6, 531177d4, ecf65144, 53d142d9, c14a9e3a, 72f8eb25, 872b6931] (Karina Kwiatek), (Nicolas Grekas), (Muhammad Dyas Yaskur), (sergkash7), (Dawid Polak), (Michael Grunder), (Yurun), (twosee), (Juha), (Till Krüss)
+    * Update documentation [b64d93e1, 703d71b5, eba1c6d2, 0f502c9e, 130b5d0b, 21c3ef94, b7bf22d4, 50151e7a, b9950727, ab4ce4ab, 8d80ca5b, c4de8667, 6982941b, 375d093d, 43da8dd9, 71344612, b9de0b97, 2d8a8a44, a2b0c86f, e0b24be1, e609fbe8, c4aef956, df50b2ad, cc2383f0, 0dd2836f, 7d5db510, 99340889, 70a55f3e, b04684d4, 980ea6b1, bb06ffa3, b8679d7a, 854f3aa4, a5c47901, cf63e96e, f05ba819, 17db2328, 450904f7, 114f4d60, 142bddf0, 87fa36d6, 531177d4, ecf65144, 53d142d9, c14a9e3a, 72f8eb25, 872b6931] (Karina Kwiatek), (Nicolas Grekas), (Muhammad Dyas Yaskur), (sergkash7), (Dawid Polak), (Michael Grunder), (Yurun), (twosee), (Juha), (Till Kruss)
     * Allow to pass null as iterator [14d121bb] (Pavlo Yatsukhnenko)
     * Add NOMKSTREAM option to XADD command. [f9436e25] (Pavlo Yatsukhnenko)
     * Don't allow reconnect on read response [5a269ab6] (Pavlo Yatsukhnenko)
@@ -1297,7 +1297,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * A printf like method to construct a Redis RESP command [a4a0ed, d75081, bdd287, 0eaeae, b3d00d] (Michael Grunder)
     * Use custom objects instead of zend_list for storing Redis/RedisArray [a765f8, 8fa85a] (Pavlo Yatsukhnenko)
     * Make sure redisCluster members are all initialized on (re)creation [162d88] (Michael Grunder)
-    * Fix Null Bulk String response parsing in cluster library [058753] (Alberto Fernández)
+    * Fix Null Bulk String response parsing in cluster library [058753] (Alberto Fernandez)
     * Add hStrLen command [c52077, fb88e1] (Pavlo Yatsukhnenko)
     * Add optional COUNT argument to sPop [d2e203] (Michael Grunder)
     * Allow sInterStore to take one arg [26aec4, 4cd06b] (Michael Grunder)
@@ -1329,7 +1329,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    * RedisArray segfault fix [564ce3] (Pavlo Yatsukhnenko)
    * Small memory leak fix [645888b] (Mike Grunder)
    * Segfault fix when recreating RedisCluster objects [abf7d4] (Michael Grunder)
-   * Fix for RedisCluster bulk response parsing [4121c4] (Alberto Fernández)
+   * Fix for RedisCluster bulk response parsing [4121c4] (Alberto Fernandez)
    * Re allow single array for sInterStore [6ef0c2, d01966] (Michael Grunder)
    * Better TravisCI integration [4fd2f6] (Pavlo Yatsukhnenko)
    </notes>
@@ -1428,7 +1428,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
 
     * PHP liveness checking workaround (Shafreeck Sea) [c18d58b9]
     * Various documentation and code formatting and style fixes (ares333,
-      sanpili, Bryan Nelson, linfangrong, Romero Malaquias, Viktor Szépe)
+      sanpili, Bryan Nelson, linfangrong, Romero Malaquias, Viktor Szepe)
     * Fix scan reply processing to use long instead of int to avoid overflow
       (mixiaojiong).
     * Fix potential segfault in Redis Cluster session storage (Sergei Lomakov)
