@@ -18,7 +18,7 @@ Redis Sentinel also provides other collateral tasks such as monitoring, notifica
 *read_timeout*: Float, value in seconds (optional, default is 0 meaning unlimited)  
 *auth*:String, or an Array with one or two elements, used to authenticate with the redis-sentinel. (optional, default is NULL meaning NOAUTH)
 
-##### *Example*
+##### *Examples for version 6.0 or later*
 
 ~~~php
 $sentinel = new RedisSentinel([
@@ -57,6 +57,17 @@ $sentinel = new RedisSentinel([
   'readTimeout' => 0,
   'auth' => 'secret',
 ]); // connect sentinel with password authentication
+~~~
+
+##### *Examples for versions older than 6.0*
+
+~~~php
+$sentinel = new RedisSentinel('127.0.0.1'); // default parameters
+$sentinel = new RedisSentinel('127.0.0.1', 26379, 2.5); // 2.5 sec timeout.
+$sentinel = new RedisSentinel('127.0.0.1', 26379, 0, 'sentinel'); // persistent connection with id 'sentinel'
+$sentinel = new RedisSentinel('127.0.0.1', 26379, 0, ''); // also persistent connection with id ''
+$sentinel = new RedisSentinel('127.0.0.1', 26379, 1, null, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
+$sentinel = new RedisSentinel('127.0.0.1', 26379, 0, NULL, 0, 0, "secret"); // connect sentinel with password authentication
 ~~~
 
 ### Usage
