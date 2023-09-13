@@ -21,12 +21,42 @@ Redis Sentinel also provides other collateral tasks such as monitoring, notifica
 ##### *Example*
 
 ~~~php
-$sentinel = new RedisSentinel('127.0.0.1'); // default parameters
-$sentinel = new RedisSentinel('127.0.0.1', 26379, 2.5); // 2.5 sec timeout.
-$sentinel = new RedisSentinel('127.0.0.1', 26379, 0, 'sentinel'); // persistent connection with id 'sentinel'
-$sentinel = new RedisSentinel('127.0.0.1', 26379, 0, ''); // also persistent connection with id ''
-$sentinel = new RedisSentinel('127.0.0.1', 26379, 1, null, 100); // 1 sec timeout, 100ms delay between reconnection attempts.
-$sentinel = new RedisSentinel('127.0.0.1', 26379, 0, NULL, 0, 0, "secret"); // connect sentinel with password authentication
+$sentinel = new RedisSentinel([
+  'host' => '127.0.0.1',
+]); // default parameters
+$sentinel = new RedisSentinel([
+  'host' => '127.0.0.1',
+  'port' => 26379,
+  'connectTimeout' => 2.5,
+]); // 2.5 sec timeout.
+$sentinel = new RedisSentinel([
+  'host' => '127.0.0.1',
+  'port' => 26379,
+  'connectTimeout' => 2.5,
+  'persistent' => 'sentinel',
+]); // persistent connection with id 'sentinel'
+$sentinel = new RedisSentinel([
+  'host' => '127.0.0.1',
+  'port' => 26379,
+  'connectTimeout' => 2.5,
+  'persistent' => '',
+]); // also persistent connection with id ''
+$sentinel = new RedisSentinel([
+  'host' => '127.0.0.1',
+  'port' => 26379,
+  'connectTimeout' => 1,
+  'persistent' => null,
+  'retryInterval' => 100,
+]); // 1 sec timeout, 100ms delay between reconnection attempts.
+$sentinel = new RedisSentinel([
+  'host' => '127.0.0.1',
+  'port' => 26379,
+  'connectTimeout' => 0,
+  'persistent' => null,
+  'retryInterval' => 0,
+  'readTimeout' => 0,
+  'auth' => 'secret',
+]); // connect sentinel with password authentication
 ~~~
 
 ### Usage
