@@ -1091,8 +1091,9 @@ class Redis {
      * redis-server >= 7.0.0 you may send an additional "mode" argument which
      * modifies how the command will execute.
      *
-     * @param string  $key  The key to set an expiration on.
-     * @param string  $mode A two character modifier that changes how the
+     * @param string      $key  The key to set an expiration on.
+     * @param int         $timeout  The number of seconds after which key will be automatically deleted.
+     * @param string|null $mode  A two character modifier that changes how the
      *                      command works.
      *                      <code>
      *                      NX - Set expiry only if key has no expiry
@@ -1122,9 +1123,9 @@ class Redis {
     /**
      * Set a key to expire at an exact unix timestamp.
      *
-     * @param string $key The key to set an expiration on.
-     * @param int $timestamp The unix timestamp to expire at.
-     * @param string $mode An option 'mode' that modifies how the command acts (see {@link Redis::expire}).
+     * @param string      $key The key to set an expiration on.
+     * @param int         $timestamp The unix timestamp to expire at.
+     * @param string|null $mode An option 'mode' that modifies how the command acts (see {@link Redis::expire}).
      * @return Redis|bool True if an expiration was set, false if not.
      *
      * @see https://redis.io/commands/expireat
@@ -2256,8 +2257,9 @@ class Redis {
      *
      *  @see Redis::expire() for a description of the mode argument.
      *
-     *  @param string  $key  The key to set an expiration on.
-     *  @param string $mode  A two character modifier that changes how the
+     *  @param string      $key  The key to set an expiration on.
+     *  @param int         $timeout  The number of milliseconds after which key will be automatically deleted.
+     *  @param string|null $mode  A two character modifier that changes how the
      *                       command works.
      *
      *  @return Redis|bool   True if an expiry was set on the key, and false otherwise.
@@ -2270,8 +2272,9 @@ class Redis {
      *
      * @see Redis::expire() For a description of the mode argument.
      *
-     *  @param string  $key  The key to set an expiration on.
-     *  @param string  $mode A two character modifier that changes how the
+     *  @param string      $key  The key to set an expiration on.
+     *  @param int         $timestamp The unix timestamp to expire at.
+     *  @param string|null $mode A two character modifier that changes how the
      *                       command works.
      *
      *  @return Redis|bool   True if an expiration was set on the key, false otherwise.
