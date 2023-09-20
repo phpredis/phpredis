@@ -7323,22 +7323,31 @@ return;
         }
     }
 
+    protected function detectRedis($host, $port) {
+        $sock = @fsockopen($host, $port, $errno, $errstr, .1);
+        if (! $sock)
+            return false;
+
+        stream_set_timeout($sock, 0, 100000);
+
+        $ping_cmd = "*1\r\n$4\r\nPING\r\n";
+        if (fwrite($sock, $ping_cmd) != strlen($ping_cmd))
+            return false;
+
+        return fread($sock, strlen("+PONG\r\n")) == "+PONG\r\n";
+    }
+
     /* Test high ports if we detect Redis running there */
     public function testHighPorts() {
-        $arr_ports = [32767, 32768, 32769];
-        $arr_test_ports = [];
+        $ports = array_filter(array_map(function ($port) {
+            return $this->detectRedis('localhost', $port) ? $port : 0;
+        }, [32768, 32769, 32770]));
 
-        foreach ($arr_ports as $port) {
-            if (is_resource(@fsockopen('localhost', $port))) {
-                $arr_test_ports[] = $port;
-            }
-        }
-
-        if ( ! $arr_test_ports) {
+        if ( ! $ports) {
             return $this->markTestSkipped();
         }
 
-        foreach ($arr_test_ports as $port) {
+        foreach ($ports as $port) {
             $obj_r = new Redis();
             try {
                 @$obj_r->connect('localhost', $port);
