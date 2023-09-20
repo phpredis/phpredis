@@ -6002,7 +6002,7 @@ int redis_expire_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         Z_PARAM_STR(key)
         Z_PARAM_LONG(timeout)
         Z_PARAM_OPTIONAL
-        Z_PARAM_STR(mode)
+        Z_PARAM_STR_OR_NULL(mode)
     ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
     if (mode != NULL && !(zend_string_equals_literal_ci(mode, "NX") ||
