@@ -7,8 +7,6 @@ require_once(dirname($_SERVER['PHP_SELF'])."/RedisTest.php");
  * where we're validating specific cluster mechanisms
  */
 class Redis_Cluster_Test extends Redis_Test {
-    private static $_arr_node_map = [];
-
     private $_arr_redis_types = [
         Redis::REDIS_STRING,
         Redis::REDIS_SET,
@@ -23,6 +21,7 @@ class Redis_Cluster_Test extends Redis_Test {
         RedisCluster::FAILOVER_DISTRIBUTE
     ];
 
+    protected static $_arr_node_map = [];
     /**
      * @var string
      */
@@ -74,15 +73,16 @@ class Redis_Cluster_Test extends Redis_Test {
     public function __construct($str_host, $i_port, $str_auth) {
         parent::__construct($str_host, $i_port, $str_auth);
 
-        $str_nodemap_file = dirname($_SERVER['PHP_SELF']) . '/nodes/nodemap';
-
-        if (!file_exists($str_nodemap_file)) {
-            fprintf(STDERR, "Error:  Can't find nodemap file for seeds!\n");
-            exit(1);
-        }
-
+        self::$_arr_node_map = preg_split('/\s+/', getenv('REDIS_CLUSTER_NODES'));
         /* Store our node map */
         if (!self::$_arr_node_map) {
+            $str_nodemap_file = dirname($_SERVER['PHP_SELF']) . '/nodes/nodemap';
+
+            if (!file_exists($str_nodemap_file)) {
+                fprintf(STDERR, "Error:  Can't find nodemap file for seeds!\n");
+                exit(1);
+            }
+
             self::$_arr_node_map = array_filter(
                 explode("\n", file_get_contents($str_nodemap_file)
             ));
