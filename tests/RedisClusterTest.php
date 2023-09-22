@@ -73,7 +73,7 @@ class Redis_Cluster_Test extends Redis_Test {
     public function __construct($str_host, $i_port, $str_auth) {
         parent::__construct($str_host, $i_port, $str_auth);
 
-        self::$_arr_node_map = preg_split('/\s+/', getenv('REDIS_CLUSTER_NODES'));
+        self::$_arr_node_map = array_filter(explode(' ', getenv('REDIS_CLUSTER_NODES')));
         /* Store our node map */
         if (!self::$_arr_node_map) {
             $str_nodemap_file = dirname($_SERVER['PHP_SELF']) . '/nodes/nodemap';
