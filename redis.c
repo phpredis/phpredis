@@ -1982,6 +1982,8 @@ PHP_METHOD(Redis, exec)
         RETURN_FALSE;
     }
 
+    ZVAL_FALSE(&z_ret);
+
     if (IS_MULTI(redis_sock)) {
         if (IS_PIPELINE(redis_sock)) {
             PIPELINE_ENQUEUE_COMMAND(RESP_EXEC_CMD, sizeof(RESP_EXEC_CMD) - 1);
@@ -1991,7 +1993,6 @@ PHP_METHOD(Redis, exec)
         }
         SOCKET_WRITE_COMMAND(redis_sock, RESP_EXEC_CMD, sizeof(RESP_EXEC_CMD) - 1)
 
-        ZVAL_NULL(&z_ret);
         ret = redis_sock_read_multibulk_multi_reply(
             INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_ret);
         free_reply_callbacks(redis_sock);
@@ -2025,7 +2026,7 @@ PHP_METHOD(Redis, exec)
         free_reply_callbacks(redis_sock);
         REDIS_DISABLE_MODE(redis_sock, PIPELINE);
     }
-    RETURN_ZVAL(&z_ret, 1, 0);
+    RETURN_ZVAL(&z_ret, 0, 1);
 }
 
 PHP_REDIS_API int
