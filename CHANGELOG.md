@@ -22,6 +22,10 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 
 ### Fixed
+- Fix memory leak and segfault in Redis::exec
+  [362e1141](https://github.com/phpredis/phpredis/commit/362e1141)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko)),
+  ([Markus Podar](https://github.com/mfn))
 - Fix unknown expiration modifier
   [264c0c7e](https://github.com/phpredis/phpredis/commit/264c0c7e),
   [95bd184b](https://github.com/phpredis/phpredis/commit/95bd184b)
