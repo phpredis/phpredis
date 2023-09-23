@@ -7,6 +7,35 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+
+### Fixed
+- Fix unknown expiration modifier
+  [264c0c7e](https://github.com/phpredis/phpredis/commit/264c0c7e),
+  [95bd184b](https://github.com/phpredis/phpredis/commit/95bd184b)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+
+### Added
+- Add missing option to exampleA
+  [3674d663](https://github.com/phpredis/phpredis/commit/3674d663)
+  ([Till Krüss](https://github.com/tillkruss))
+- Update sentinel documentation
+  [849bedb6](https://github.com/phpredis/phpredis/commit/849bedb6),
+  [1ad95b63](https://github.com/phpredis/phpredis/commit/1ad95b63)
+  ([Joost OrangeJuiced](https://github.com/OrangeJuiced))
+
 ## [6.0.0] - 2023-09-09 ([GitHub](https://github.com/phpredis/phpredis/releases/6.0.0), [PECL](https://pecl.php.net/package/redis/6.0.0))
 
 ### Sponsors :sparkling_heart:
