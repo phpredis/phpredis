@@ -10,7 +10,7 @@ jobs:
         php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install PHP ${{ matrix.php }}
@@ -85,7 +85,7 @@ jobs:
         php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install PHP ${{ matrix.php }}
@@ -116,7 +116,7 @@ jobs:
         ts: [nts, ts]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install PHP ${{ matrix.php }}
@@ -154,7 +154,7 @@ jobs:
       - name: Install required system packages
         run: apk add --update $PHPIZE_DEPS zstd-libs zstd-dev git
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Create temporary directory
