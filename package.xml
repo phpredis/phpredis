@@ -27,9 +27,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>n.favrefelix@gmail.com</email>
   <active>no</active>
  </lead>
- <date>2023-09-09</date>
+ <date>2023-09-23</date>
  <version>
-  <release>6.0.0</release>
+  <release>6.0.1</release>
   <api>6.0.0</api>
  </version>
  <stability>
@@ -47,153 +47,24 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Avtandil Kikabidze - https://github.com/akalongman
     Zaher Ghaibeh - https://github.com/zaherg
     BatchLabs - https://batch.com
+    Stackhero - https://github.com/stackhero-io
+    Florian Levis - https://github.com/Gounlaf
     Luis Zarate - https://github.com/jlzaratec
 
-    phpredis 6.0.0
-
-    - There were no changes between 6.0.0 and 6.0.0RC2.
-
     ---
 
-    phpredis 6.0.0RC2
+    phpredis 6.0.1
 
-    * Fix arginfo for arguments that default to null [8d99b7d1] (Nicolas Grekas)
-    * Fix C99 usages [54d9ca45] (Remi Collet)
-    * Raise minimal supported version to 7.2 [e10b9a85] (Remi Collet)
-
-    ---
-
-    phpredis 6.0.0RC1
-
-    This release adds new commands introduced in Redis 6.2 and 7.0 as well
-    as many fixes and improvements.
+    This release contains fix for unknown expiration modifier issue
+    as well as memory leak and segfault in exec function
+    and small documentation improvements.
 
     You can find a detailed list of changes in CHANGELOG.md and package.xml
     or by inspecting the git commit logs.
 
-    * Fix restoring keys when using compression [82e08723] (Till Kruss)
-    * Fix missing auth in RedisSentinel stub [5db85561] (Lu Fei)
-    * Fix RedisSentinel pconnect check [42cbd88a] (Pavlo Yatsukhnenko)
-    * Fix NULL-pointer dereferences and handle possible UB [36457555] (Pavlo Yatsukhnenko)
-    * Fix security alerts [ee210f86, fb6a297c] (Pavlo Yatsukhnenko), (Michael Grunder)
-    * Fix segfault [55bf0202] (Pavlo Yatsukhnenko)
-    * Fix default host length [c40f9d6c] (Pavlo Yatsukhnenko)
-    * Fix redis session standalone stream ssl context [ed10f365, d1bc6727, 2ff11df5] (patricio.dorantes)
-    * Fix segfault with session+tls [a471c87a] (Pavlo Yatsukhnenko)
-    * Fix non standards conforming prototypes. [b3ce0486] (Michael Grunder)
-    * Avoid registering the same replicas multiple times [f2bfd723] (Marius Adam)
-    * Better unix:// or file:// detection. [d05d301b] (Michael Grunder)
-    * Future proof our igbinary header check [69355faa] (Michael Grunder)
-    * Fix BITOP cross-slot bug [af13f951] (Michael Grunder)
-    * SENTINEL RESET returns a long. [0243dd9d] (Michael Grunder)
-    * Fix redis_sock_read_multibulk_multi_reply_loop logic [d9cb5946, 5a643b62] (Pavlo Yatsukhnenko)
-    * Fix RPOP to unserialize/decompress data. [02c91d59] (Michael Grunder)
-    * Fix testObject for redis 7.2 [fea19b52, dcb95a3f] (Remi Collet)
-    * Fix bug: the pipeline mode socket return an unexpected result after reconnecting [a3327d9d] (thomaston)
-    * Fix stub files [9aa5f387, 74cf49f5, 8b1eafe8, e392dd88, b5ea5fd7, 71758b09, 2a6dee5d] (Nicolas Grekas), (Michael Grunder)
-    * Update documentation [b64d93e1, 703d71b5, eba1c6d2, 0f502c9e, 130b5d0b, 21c3ef94, b7bf22d4, 50151e7a, b9950727, ab4ce4ab, 8d80ca5b, c4de8667, 6982941b, 375d093d, 43da8dd9, 71344612, b9de0b97, 2d8a8a44, a2b0c86f, e0b24be1, e609fbe8, c4aef956, df50b2ad, cc2383f0, 0dd2836f, 7d5db510, 99340889, 70a55f3e, b04684d4, 980ea6b1, bb06ffa3, b8679d7a, 854f3aa4, a5c47901, cf63e96e, f05ba819, 17db2328, 450904f7, 114f4d60, 142bddf0, 87fa36d6, 531177d4, ecf65144, 53d142d9, c14a9e3a, 72f8eb25, 872b6931] (Karina Kwiatek), (Nicolas Grekas), (Muhammad Dyas Yaskur), (sergkash7), (Dawid Polak), (Michael Grunder), (Yurun), (twosee), (Juha), (Till Kruss)
-    * Allow to pass null as iterator [14d121bb] (Pavlo Yatsukhnenko)
-    * Add NOMKSTREAM option to XADD command. [f9436e25] (Pavlo Yatsukhnenko)
-    * Don't allow reconnect on read response [5a269ab6] (Pavlo Yatsukhnenko)
-    * Reset multi/pipline transaction on pconnect close [0879770a] (Pavlo Yatsukhnenko)
-    * Use read_mbulk_header helper where possible [ca8b4c93] (Pavlo Yatsukhnenko)
-    * Allow to pass null as auth argument [41517753] (Pavlo Yatsukhnenko)
-    * Refactor redis_parse_client_list_response [68136a29, aaa4c91a, 1fb2935b, cf2c052c] (Pavlo Yatsukhnenko)
-    * Refactor subscribe/unsubscribe [3c9e159c] (Pavlo Yatsukhnenko)
-    * Change PHPREDIS_CTX_PTR type [de3635da] (Pavlo Yatsukhnenko)
-    * Refactor redis_parse_info_response [982bd13b] (Pavlo Yatsukhnenko)
-    * Allow IPv6 address within square brackets [c28ad7bb] (Pavlo Yatsukhnenko)
-    * Allow multiple field-value pairs for hmset command. [e858e8e3] (Pavlo Yatsukhnenko)
-    * Refactor MINIT and use @generate-class-entries in stub files [3675f442] (Remi Collet)
-    * Use spl_ce_RuntimeException [3cd5ac1e, a7e5ea64] (Remi Collet)
-    * Regenerate arginfo using 8.2.0 [a38e08da] (Remi Collet)
-    * Refactor client command [a8d10291] (Pavlo Yatsukhnenko)
-    * Pull COUNT/ANY parsing into a helper function [d67b2020] (Michael Grunder)
-    * Return false or NULL on empty lpos response [39a01ac7] (Michael Grunder)
-    * BLPOP with a float timeout [a98605f2, dc9af529] (Michael Grunder)
-    * Make sure we set an error for key based scans [98fda1b8] (Michael Grunder)
-    * Add back a default switch case for setoption handler [87464932] (Michael Grunder)
-    * Update stubs so the tests pass in strict mode [bebd398c] (Michael Grunder)
-    * Move where we generate our salt [d2044c9f] (Michael Grunder)
-    * Refactor XINFO handler [3b0d8b77] (Michael Grunder)
-    * Refactor and fix XPENDING handler [457953f4] (Michael Grunder)
-    * Refactor FLUSHDB and update docs. [54a084e5] (Michael Grunder)
-    * Add missing directed node command to docs and refactor stubs. [5ac92d25] (Michael Grunder)
-    * Refactor BITPOS and implement BIT/BYTE option. [4d8afd38] (Michael Grunder)
-    * INFO with multiple sections [44d03ca0] (Michael Grunder)
-    * Refactor SLOWLOG command [d87f1428] (Michael Grunder)
-    * Refactor SORT and add SORT_RO command [8c7c5a3a] (Michael Grunder)
-    * Use ZEND_STRL in redis_commands.c [78de25a3] (Pavlo Yatsukhnenko)
-    * Refactor PubSub command [2a0d1c1e] (Pavlo Yatsukhnenko)
-    * Refactor SLAVEOF handler [f2cef8be] (Michael Grunder)
-    * Refactor ACL command [504810a5] (Pavlo Yatsukhnenko)
-    * Use fast_zpp API [376d4d27] (Pavlo Yatsukhnenko)
-    * Fix XAUTOCLAIM response handler [0b7bd83f] (Michael Grunder)
-    * Refactor command command [ff863f3f] (Pavlo Yatsukhnenko)
-    * Refactor rawCommand and WAIT [79c9d224] (Michael Grunder)
-    * Refactor SELECT command [86f15cca] (Michael Grunder)
-    * Refactor SRANDMEMBER command. [f62363c2] (Michael Grunder)
-    * Refactor OBJECT command. [acb5db76] (Michael Grunder)
-    * Refactor gen_varkey_cmd [3efa59cb] (Michael Grunder)
-    * Refactor MGET command. [8cb6dd17] (Michael Grunder)
-    * Refactor INFO and SCRIPT commands. [3574ef08] (Michael Grunder)
-    * Refactor MSET and MSETNX commands. [6d104481] (Michael Grunder)
-    * Refactor HMSET command. [90eb0470] (Michael Grunder)
-    * Refactor PFCOUNT command. [19fd7e0c] (Michael Grunder)
-    * Refactor SMOVE command. [204a02c5] (Michael Grunder)
-    * Rework ZRANGE argument handling. [aa0938a4] (Michael Grunder)
-    * Refactor a couple more command methods. [5b560ccf, c8224b93, 40e1b1bf, ccd419a4] (Michael Grunder)
-    * Refactor HMGET command [bb66a547] (Michael Grunder)
-    * Refactor CLIENT command [77c4f7a3] (Pavlo Yatsukhnenko)
-    * Refactor redis_long_response [f14a80db] (Pavlo Yatsukhnenko)
-    * Synchronize Redis and RedisSentinel constructors [ebb2386e] (Pavlo Yatsukhnenko)
-    * Use redis_sock_connect on connect [f6c8b9c6] (Pavlo Yatsukhnenko)
-    * Auto-select db in redis_sock_server_open [6930a81c] (Pavlo Yatsukhnenko)
-    * Use on-stack allocated valiables [7a055cad] (Pavlo Yatsukhnenko)
-    * Add XAUTOCLAIM command [01f3342c] (Pavlo Yatsukhnenko)
-    * Add SYNC arg to FLUSHALL and FLUSHDB, and ASYNC/SYNC arg to SCRIPT FLUSH [750b6cf3] (Pavlo Yatsukhnenko)
-    * Add reset command [947a2d38] (Pavlo Yatsukhnenko)
-    * Add hRandField command [fe397371] (Pavlo Yatsukhnenko)
-    * Add PXAT/EXAT arguments to SET command. [0a160685] (Pavlo Yatsukhnenko)
-    * Add GETEX, GETDEL commands. [11861d95] (Pavlo Yatsukhnenko)
-    * Add FAILOVER command. [4b767be7] (Pavlo Yatsukhnenko)
-    * Backoff settings in constructor [e6b3fe54] (Pavlo Yatsukhnenko)
-    * Add the COUNT argument to LPOP and RPOP [df97cc35] (Pavlo Yatsukhnenko)
-    * Unsubscribe from all channels [0f1ca0cc] (Pavlo Yatsukhnenko)
-    * Add lPos command. [687a5c78] (Pavlo Yatsukhnenko)
-    * Add the ANY argument to GEOSEARCH and GEORADIUS [bf6f31e3] (Pavlo Yatsukhnenko)
-    * Add 'BIT'/'BYTE' modifier to BITCOUNT + tests [a3d2f131] (Michael Grunder)
-    * Add missing configureoption entries in package.xml [59053f10] (Michele Locati)
-    * Implement CONFIG RESETSTAT [239678a0] (Michael Grunder)
-    * SINTERCARD and ZINTERCARD commands [64300508] (Michael Grunder)
-    * LCS command [c0e839f6] (Michael Grunder)
-    * EXPIRETIME and PEXPIRETIME [f5b2a09b] (Michael Grunder)
-    * [B]LMPOP and [B]ZMPOP commands [6ea978eb] (Michael Grunder)
-    * Implement new RESTORE options [9a3fe401] (Michael Grunder)
-    * Add new Redis 6.2.0 XTRIM options [6b34d17f] (Michael Grunder)
-    * Implement AUTH/AUTH2 arguments for MIGRATE [114d79d1] (Michael Grunder)
-    * Implement CONFIG REWRITE [525958ea] (Michael Grunder)
-    * Implement Redis 7.0.0 [P]EXPIRE[AT] [options 872ae107] (Michael Grunder)
-    * Variadic CONFIG GET/SET [36ef4bd8, a176f586] (Michael Grunder)
-    * EVAL_RO and EVALSHA_RO [f3a40830] (Michael Grunder)
-    * Implement ZRANGESTORE and add ZRANGE options [71bcbcb9] (Michael Grunder)
-    * XGROUP DELCONSUMER and ENTRIESREAD [1343f500] (Michael Grunder)
-    * Expose the transferred number of bytes [e0a88b7b, 90828019, 7a4cee2d] (Pavlo Yatsukhnenko), (Michael Grunder)
-    * TOUCH command [dc1f2398] (Michael Grunder)
-    * Redis Sentinel TLS support [f2bb2cdb] (Pavlo Yatsukhnenko)
-    * Add the CH, NX, XX arguments to GEOADD [2bb64038, e8f5b517] (Pavlo Yatsukhnenko)
-    * Implement SMISMEMBER for RedisCluster [abfac47b] (Michael Grunder)
-    * Implement ssubscribe/sunsubscribe [7644736e] (Pavlo Yatsukhnenko)
-    * Implement BLMOVE and add LMOVE/BLMOVE to cluster. [121e9d9c] (Michael Grunder)
-    * Implement LPOS for RedisCluster [7121aaae] (Michael Grunder)
-    * Implement GEOSEARCH and GEOSEARCHSTORE for RedisCluster. [fa5d1af9] (Michael Grunder)
-    * Implement HRANDFIELD for RedisCluster [e222b85e] (Michael Grunder)
-    * Implement COPY for RedisCluster [40a2c254] (Michael Grunder)
-    * Implement new ZSET commands for cluster [27900f39] (Michael Grunder)
-    * Add cluster support for strict sessions and lazy write [b6cf6361] (Michael Grunder)
-    * Add function command [90a0e9cc] (Pavlo Yatsukhnenko)
-    * Add FCALL/FCALL_RO commands [7c46ad2c] (Pavlo Yatsukhnenko)
-    * Remove unused macroses [831d6118] (Pavlo Yatsukhnenko)
+    * Fix  memory leak and segfault in Redis::exec [362e1141] (Pavlo Yatsukhnenko), (Markus Podar)
+    * Fix unknown expiration modifier [264c0c7e, 95bd184b] (Pavlo Yatsukhnenko)
+    * Update documentation [3674d663, 849bedb6, 1ad95b63] (Till Kruss), (Joost OrangeJuiced)
 
  </notes>
  <contents>
@@ -286,6 +157,40 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="with-liblz4" prompt="use system liblz4?" default="yes"/>
  </extsrcrelease>
  <changelog>
+ <release>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>6.0.1</release><api>6.0.1</api></version>
+   <date>2023-09-23</date>
+   <notes>
+    --- Sponsors ---
+
+    Audiomack - https://audiomack.com
+    Open LMS - https://openlms.net/
+    BlueHost - https://bluehost.com
+    Object Cache Pro for WordPress - https://objectcache.pro/
+    Avtandil Kikabidze - https://github.com/akalongman
+    Zaher Ghaibeh - https://github.com/zaherg
+    BatchLabs - https://batch.com
+    Stackhero - https://github.com/stackhero-io
+    Florian Levis - https://github.com/Gounlaf
+    Luis Zarate - https://github.com/jlzaratec
+
+    ---
+
+    phpredis 6.0.1
+
+    This release contains fix for unknown expiration modifier issue
+    as well as memory leak and segfault in exec function
+    and small documentation improvements.
+
+    You can find a detailed list of changes in CHANGELOG.md and package.xml
+    or by inspecting the git commit logs.
+
+    * Fix  memory leak and segfault in Redis::exec [362e1141] (Pavlo Yatsukhnenko), (Markus Podar)
+    * Fix unknown expiration modifier [264c0c7e, 95bd184b] (Pavlo Yatsukhnenko)
+    * Update documentation [3674d663, 849bedb6, 1ad95b63] (Till Kruss), (Joost OrangeJuiced)
+   </notes>
+ </release>
  <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>6.0.0</release><api>6.0.0</api></version>

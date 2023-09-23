@@ -7,6 +7,8 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [6.0.1] - 2023-09-23 ([GitHub](https://github.com/phpredis/phpredis/releases/6.0.1), [PECL](https://pecl.php.net/package/redis/6.0.1))
+
 ### Sponsors :sparkling_heart:
 
 - [Audiomack](https://audiomack.com)
