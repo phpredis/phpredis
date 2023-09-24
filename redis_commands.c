@@ -5263,7 +5263,7 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     if (threshold < 0) {
         php_error_docref(NULL, E_WARNING,
-            "Invalid MAXLEN/MINID argument or approximate flag");
+            "Invalid threshold argument flag");
     }
 
     /* Calculate argc for XADD.  It's a bit complex because we've got
