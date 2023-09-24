@@ -3640,11 +3640,14 @@ class Redis {
      *                           end of the stream.  It can also be a value in the form <ms>-* which will
      *                           generate an ID that appends to the end ot entries with the same <ms> value
      *                           (if any exist).
-     * @param int    $maxlen     If specified Redis will append the new message but trim any number of the
-     *                           oldest messages in the stream until the length is <= $maxlen.
-     * @param bool   $approx     Used in conjunction with `$maxlen`, this flag tells Redis to trim the stream
-     *                           but in a more efficient way, meaning the trimming may not be exactly to
-     *                           `$maxlen` values.
+     * @param string $threshold This can either be a maximum length, or a minimum id.
+     *                          MAXLEN - An integer describing the maximum desired length of the stream after the command.
+     *                          MINID  - An ID that will become the new minimum ID in the stream, as Redis will trim all
+     *                                   messages older than this ID.
+     * @param bool   $approx    Whether redis is allowed to do an approximate trimming of the stream.  This is
+     *                          more efficient for Redis given how streams are stored internally.
+     * @param bool   $minid     When set to `true`, users should pass a minimum ID to the `$threshold` argument.
+     * @param int    $limit     An optional upper bound on how many entries to trim during the command.
      * @param bool   $nomkstream If passed as `TRUE`, the stream must exist for Redis to append the message.
      *
      * @see https://redis.io/commands/xadd
@@ -3652,7 +3655,7 @@ class Redis {
      * @example $redis->xAdd('ds9-season-1', '1-1', ['title' => 'Emissary Part 1']);
      * @example $redis->xAdd('ds9-season-1', '1-2', ['title' => 'A Man Alone']);
      */
-    public function xadd(string $key, string $id, array $values, int $maxlen = 0, bool $approx = false, bool $nomkstream = false): Redis|string|false;
+    public function xadd(string $key, string $id, array $values, int $threshold = 0, bool $approx = false, bool $minid = false, int $limit = -1, bool $nomkstream = false): Redis|string|false;
 
     /**
      * This command allows a consumer to claim pending messages that have been idle for a specified period of time.
