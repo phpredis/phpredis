@@ -5306,9 +5306,6 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_cmd_append_sstr_zval(&cmdstr, value, redis_sock);
     } ZEND_HASH_FOREACH_END();
 
-    // TODO remove this
-    printf("%s\n", cmdstr.c);
-
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;
     return SUCCESS;
