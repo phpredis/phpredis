@@ -545,8 +545,9 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
     /* Multibulk response, {[pattern], type, channel, payload } */
     while (redis_sock->subs[i]) {
         zval z_ret, z_args[4], *z_type, *z_chan, *z_pat = NULL, *z_data;
-        HashTable *ht_tab;
         int tab_idx = 1, is_pmsg = 0;
+        HashTable *ht_tab;
+        zend_string *zs;
 
         ZVAL_NULL(&z_resp);
         if (!redis_sock_read_multibulk_reply_zval(redis_sock, &z_resp)) {
@@ -573,22 +574,26 @@ PHP_REDIS_API int redis_subscribe_response(INTERNAL_FUNCTION_PARAMETERS,
         }
 
         // Extract pattern if it's a pmessage
-        if(is_pmsg) {
-            if ((z_pat = zend_hash_index_find(ht_tab, tab_idx++)) == NULL) {
+        if (is_pmsg) {
+            z_pat = zend_hash_index_find(ht_tab, tab_idx++);
+            if (z_pat == NULL || Z_TYPE_P(z_pat) != IS_STRING)
                 goto failure;
-            }
         }
 
-        // Extract channel and data
-        if ((z_chan = zend_hash_index_find(ht_tab, tab_idx++)) == NULL ||
-            (z_data = zend_hash_index_find(ht_tab, tab_idx++)) == NULL
-        ) {
+        /* Extract channel */
+        z_chan = zend_hash_index_find(ht_tab, tab_idx++);
+        if (z_chan == NULL || Z_TYPE_P(z_chan) != IS_STRING)
             goto failure;
-        }
 
-        if ((cb = zend_hash_str_find_ptr(redis_sock->subs[i], Z_STRVAL_P(z_chan), Z_STRLEN_P(z_chan))) == NULL) {
+        /* Finally, extract data */
+        z_data = zend_hash_index_find(ht_tab, tab_idx++);
+        if (z_data == NULL)
             goto failure;
-        }
+
+        /* Find our callback, either by channel or pattern string */
+        zs = z_pat != NULL ? Z_STR_P(z_pat) : Z_STR_P(z_chan);
+        if ((cb = zend_hash_find_ptr(redis_sock->subs[i], zs)) == NULL)
+            goto failure;
 
         // Different args for SUBSCRIBE and PSUBSCRIBE
         z_args[0] = *getThis();
