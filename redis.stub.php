@@ -1802,7 +1802,7 @@ class Redis {
      * $redis->hsetnx('player:1', 'lock', 'enabled');
      * $redis->hsetnx('player:1', 'lock', 'enabled');
      */
-    public function hSetNx(string $key, string $field, string $value): Redis|bool;
+    public function hSetNx(string $key, string $field, mixed $value): Redis|bool;
 
     /**
      * Get the string length of a hash field
