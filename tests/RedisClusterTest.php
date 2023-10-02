@@ -723,7 +723,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $pong = 0;
         for ($i = 0; $i < 10; $i++) {
-            $obj_rc = new RedisCluster(NULL, self::$_arr_node_map, 30, 30, true, $this->getAuth());
+            $obj_rc = $this->newInstance();
             $pong += $obj_rc->ping("key:$i");
         }
 
@@ -739,7 +739,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $pong = 0;
         for ($i = 0; $i < 10; $i++) {
-            $obj_rc = new RedisCluster(NULL, self::$_arr_node_map, 30, 30, true, $this->getAuth());
+            $obj_rc = $this->newInstance();
             $pong += $obj_rc->ping("key:$i");
         }
 
