@@ -983,13 +983,18 @@ class Redis_Test extends TestSuite
         $this->redis->del('notakey');
 
         $this->assertTrue($this->redis->mset(['{idle}1' => 'beep', '{idle}2' => 'boop']));
-        usleep(1100000);
-        $this->assertTrue($this->redis->object('idletime', '{idle}1') >= 1);
-        $this->assertTrue($this->redis->object('idletime', '{idle}2') >= 1);
+        usleep(2100000);
+        $this->assertTrue($this->redis->object('idletime', '{idle}1') >= 2);
+        $this->assertTrue($this->redis->object('idletime', '{idle}2') >= 2);
 
         $this->assertEquals(2, $this->redis->touch('{idle}1', '{idle}2', '{idle}notakey'));
-        $this->assertTrue($this->redis->object('idletime', '{idle}1') == 0);
-        $this->assertTrue($this->redis->object('idletime', '{idle}2') == 0);
+        $idle1 = $this->redis->object('idletime', '{idle}1');
+        $idle2 = $this->redis->object('idletime', '{idle}2');
+
+        /* We're not testing if idle is 0 because CPU scheduling on GitHub CI
+         * potatoes can cause that to erroneously fail. */
+        $this->assertTrue($idle1 < 2);
+        $this->assertTrue($idle2 < 2);
     }
 
     public function testKeys()
