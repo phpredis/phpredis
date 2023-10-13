@@ -2765,7 +2765,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     } else {
         // Doesn't require a key
         if(zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                        "Oz/|s!lS", &object, redis_ce, &z_iter,
+                                        "Oz/|s!lS!", &object, redis_ce, &z_iter,
                                         &pattern, &pattern_len, &count, &match_type)
                                         == FAILURE)
         {
