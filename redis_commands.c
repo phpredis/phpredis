@@ -5229,27 +5229,31 @@ redis_copy_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
-/* XADD */
+// XADD key [NOMKSTREAM] [MAXLEN|MINID [=|~] threshold [LIMIT count]] *|id field value [field value ...]
 int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     smart_string cmdstr = {0};
     zend_string *arrkey;
     zval *z_fields, *value;
-    zend_long maxlen = 0;
-    zend_bool approx = 0, nomkstream = 0;
+    zend_long threshold = 0, limit = -1;
+    zend_bool approx = 0, minid = 0, nomkstream = 0;
     zend_ulong idx;
     HashTable *ht_fields;
     int fcount, argc;
-    char *key, *id;
-    size_t keylen, idlen;
+    zend_string *key, *id;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssa|lbb", &key, &keylen,
-                              &id, &idlen, &z_fields, &maxlen, &approx,
-                              &nomkstream) == FAILURE)
-    {
-        return FAILURE;
-    }
+    ZEND_PARSE_PARAMETERS_START(3, 8)
+        Z_PARAM_STR(key)
+        Z_PARAM_STR(id)
+        Z_PARAM_ARRAY(z_fields)
+        Z_PARAM_OPTIONAL
+        Z_PARAM_LONG(threshold)
+        Z_PARAM_BOOL(approx)
+        Z_PARAM_BOOL(minid)
+        Z_PARAM_LONG(limit)
+        Z_PARAM_BOOL(nomkstream)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
     /* At least one field and string are required */
     ht_fields = Z_ARRVAL_P(z_fields);
@@ -5257,34 +5261,46 @@ int redis_xadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    if (maxlen < 0 || (maxlen == 0 && approx != 0)) {
+    if (threshold < 0) {
         php_error_docref(NULL, E_WARNING,
-            "Warning:  Invalid MAXLEN argument or approximate flag");
+            "Invalid threshold argument flag");
     }
 
-
     /* Calculate argc for XADD.  It's a bit complex because we've got
-     * an optional MAXLEN argument which can either take the form MAXLEN N
-     * or MAXLEN ~ N */
-    argc = 2 + nomkstream + (fcount * 2) + (maxlen > 0 ? (approx ? 3 : 2) : 0);
+     * an optional threshold (MAXLEN/MINID) which can either take the 
+     * form OPTION N or OPTION ~ N, with the optional LIMIT N */
+    argc = 2 + nomkstream + (fcount * 2) + (threshold > 0 ? 2 + (approx && limit > -1 ? 3 : approx) : 0);
 
     /* XADD key ID field string [field string ...] */
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "XADD");
-    redis_cmd_append_sstr_key(&cmdstr, key, keylen, redis_sock, slot);
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
 
     if (nomkstream) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "NOMKSTREAM");
     }
 
-    /* Now append our MAXLEN bits if we've got them */
-    if (maxlen > 0) {
-        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "MAXLEN");
+    /* Now append our MAXLEN/MINID bits if we've got them */
+    if (threshold > 0) {
+        if (minid) {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "MINID");
+        } else {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "MAXLEN");
+        }
+
         REDIS_CMD_APPEND_SSTR_OPT_STATIC(&cmdstr, approx, "~");
-        redis_cmd_append_sstr_long(&cmdstr, maxlen);
+        redis_cmd_append_sstr_long(&cmdstr, threshold);
+
+        if (limit > -1 && approx) {
+            REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "LIMIT");
+            redis_cmd_append_sstr_long(&cmdstr, limit);
+        } else if (limit > -1) {
+            php_error_docref(NULL, E_WARNING, 
+                "Cannot use LIMIT without an approximate match, ignoring");
+        }
     }
 
     /* Now append ID and field(s) */
-    redis_cmd_append_sstr(&cmdstr, id, idlen);
+    redis_cmd_append_sstr_zstr(&cmdstr, id);
     ZEND_HASH_FOREACH_KEY_VAL(ht_fields, idx, arrkey, value) {
         redis_cmd_append_sstr_arrkey(&cmdstr, arrkey, idx);
         redis_cmd_append_sstr_zval(&cmdstr, value, redis_sock);
