@@ -7,6 +7,30 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
+### Fixed
+- Fix deprecation error when passing null to match_type parameter.
+  [b835aaa3](https://github.com/phpredis/phpredis/commit/b835aaa3)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix flaky test and OBJECT in a pipeline.
+  [a7f51f70](https://github.com/phpredis/phpredis/commit/a7f51f70)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Find our callback by pattern with PSUBSCRIBE
+  [2f276dcd](https://github.com/phpredis/phpredis/commit/2f276dcd)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
 ## [6.0.1] - 2023-09-23 ([GitHub](https://github.com/phpredis/phpredis/releases/6.0.1), [PECL](https://pecl.php.net/package/redis/6.0.1))
 
 ### Sponsors :sparkling_heart:
