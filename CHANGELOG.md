@@ -7,6 +7,19 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Sponsors :sparkling_heart:
+
+- [Audiomack](https://audiomack.com)
+- [Open LMS](https://openlms.net/)
+- [BlueHost](https://bluehost.com)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+- [Avtandil Kikabidze](https://github.com/akalongman)
+- [Zaher Ghaibeh](https://github.com/zaherg)
+- [BatchLabs](https://batch.com)
+- [Stackhero](https://github.com/stackhero-io)
+- [Florian Levis](https://github.com/Gounlaf)
+- [Luis Zárate](https://github.com/jlzaratec)
+
 ## [6.0.2] - 2023-10-22 ([GitHub](https://github.com/phpredis/phpredis/releases/6.0.2), [PECL](https://pecl.php.net/package/redis/6.0.2))
 
 ### Sponsors :sparkling_heart:
