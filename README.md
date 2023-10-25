@@ -780,7 +780,7 @@ $redis->slowLog('len');
 * [del, delete, unlink](#del-delete-unlink) - Delete a key
 * [dump](#dump) - Return a serialized version of the value stored at the specified key.
 * [exists](#exists) - Determine if a key exists
-* [expire, setTimeout, pexpire](#expire-settimeout-pexpire) - Set a key's time to live in seconds
+* [expire, setTimeout, pexpire](#expire-pexpire) - Set a key's time to live in seconds
 * [expireAt, pexpireAt](#expireat-pexpireat) - Set the expiration for a key as a UNIX timestamp
 * [keys, getKeys](#keys-getkeys) - Find all keys matching the given pattern
 * [scan](#scan) - Scan for keys in the keyspace (Redis >= 2.8.0)
