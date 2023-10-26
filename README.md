@@ -2169,6 +2169,7 @@ $redis->rPop('key1'); /* key1 => [ 'A', 'B' ] */
 ### rPopLPush
 -----
 _**Description**_: Pops a value from the tail of a list, and pushes it to the front of another list. Also return this value. (redis >= 1.1)
+Referenced as chapter [Reliable Queues](https://redis.com/glossary/redis-queue/#:~:text=Redis%2C%20with%20its%20support%20for,at%20a%20certain%20scheduled%20time.) in Redis docs. 
 
 ##### *Parameters*
 *Key*: srckey  
