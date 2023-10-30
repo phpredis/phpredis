@@ -32,7 +32,7 @@ class RedisArray {
 
     public function discard(): bool|null;
 
-    public function exec(): bool|null;
+    public function exec(): bool|null|array;
 
     public function flushall(): bool|array;
 
