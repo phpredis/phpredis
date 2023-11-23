@@ -2171,11 +2171,11 @@ class Redis {
      * Get one ore more string keys.
      *
      * @param array $keys The keys to retrieve
-     * @return Redis|array an array of keys with their values.
+     * @return Redis|array|false an array of keys with their values.
      *
      * @example $redis->mget(['key1', 'key2']);
      */
-    public function mget(array $keys): Redis|array;
+    public function mget(array $keys): Redis|array|false;
 
     public function migrate(string $host, int $port, string|array $key, int $dstdb, int $timeout,
                             bool $copy = false, bool $replace = false,
