@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -82,7 +82,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2']
+        php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -112,7 +112,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.3', '7.4', '8.0', '8.1', '8.2']
+        php: ['7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
         ts: [nts, ts]
     steps:
       - name: Checkout
@@ -120,7 +120,7 @@ jobs:
         with:
           submodules: true
       - name: Install PHP ${{ matrix.php }}
-        uses: cmb69/setup-php-sdk@v0.6
+        uses: php/setup-php-sdk@v0.8
         id: setup-php-sdk
         with:
           version: ${{ matrix.php }}
@@ -149,7 +149,7 @@ jobs:
 
   pecl:
     runs-on: ubuntu-latest
-    container: php:8.2-cli-alpine
+    container: php:8.3-cli-alpine
     steps:
       - name: Install required system packages
         run: apk add --update $PHPIZE_DEPS zstd-libs zstd-dev git
