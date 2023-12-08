@@ -7817,7 +7817,7 @@ return;
     {
         $host = $this->getHost() ?: 'localhost';
 
-        @ini_set('session.save_handler', 'redis');
+        @ini_set('session.save_handler', $this->sessionSaveHandler);
         @ini_set('session.save_path', 'tcp://' . $host . ':6379');
     }
 
