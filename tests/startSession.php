@@ -18,16 +18,16 @@ if (empty($redisHost)) {
 ini_set('session.save_handler', $saveHandler);
 ini_set('session.save_path', $redisHost);
 ini_set('max_execution_time', $maxExecutionTime);
-ini_set('redis.session.lock_retries', $lock_retries);
-ini_set('redis.session.lock_expire', $lock_expire);
+ini_set("{$saveHandler}.session.lock_retries", $lock_retries);
+ini_set("{$saveHandler}.session.lock_expire", $lock_expire);
 ini_set('session.gc_maxlifetime', $sessionLifetime);
 
 if (isset($argv[10])) {
-    ini_set('redis.session.locking_enabled', $argv[10]);
+    ini_set("{$saveHandler}.session.locking_enabled", $argv[10]);
 }
 
 if (isset($argv[11])) {
-    ini_set('redis.session.lock_wait_time', $argv[11]);
+    ini_set("{$saveHandler}.session.lock_wait_time", $argv[11]);
 }
 
 session_id($sessionId);
