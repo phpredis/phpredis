@@ -153,10 +153,12 @@ typedef enum {
 #define PHPREDIS_DEBUG_LOGGING 0
 
 #if PHP_VERSION_ID < 80000
+#define Z_PARAM_ARRAY_OR_NULL(dest) \
+    Z_PARAM_ARRAY_EX(dest, 1, 0)
 #define Z_PARAM_ARRAY_HT_OR_NULL(dest) \
-        Z_PARAM_ARRAY_HT_EX(dest, 1, 0)
+    Z_PARAM_ARRAY_HT_EX(dest, 1, 0)
 #define Z_PARAM_STR_OR_NULL(dest) \
-        Z_PARAM_STR_EX(dest, 1, 0)
+    Z_PARAM_STR_EX(dest, 1, 0)
 #define Z_PARAM_ZVAL_OR_NULL(dest) \
 	Z_PARAM_ZVAL_EX(dest, 1, 0)
 #define Z_PARAM_BOOL_OR_NULL(dest, is_null) \
