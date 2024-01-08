@@ -4358,20 +4358,22 @@ redis_read_variant_reply_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_
     return variant_reply_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 1, 0, z_tab, ctx);
 }
 
+/* The user may wish to send us something like [NULL, 'password'] or
+ * [false, 'password'] so don't convert NULL or FALSE into "". */
+static int redisTrySetAuthArg(zend_string **dst, zval *zsrc) {
+    if (Z_TYPE_P(zsrc) == IS_NULL || Z_TYPE_P(zsrc) == IS_FALSE)
+        return FAILURE;
+
+    *dst = zval_get_string(zsrc);
+
+    return SUCCESS;
+}
+
 PHP_REDIS_API
 int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass) {
     zval *zv;
     HashTable *ht;
     int num;
-
-    /* The user may wish to send us something like [NULL, 'password'] or
-     * [false, 'password'] so don't convert NULL or FALSE into "". */
-    #define TRY_SET_AUTH_ARG(zv, ppzstr) \
-        do { \
-            if (Z_TYPE_P(zv) != IS_NULL && Z_TYPE_P(zv) != IS_FALSE) { \
-                *(ppzstr) = zval_get_string(zv); \
-            } \
-        } while (0)
 
     /* Null out user and password */
     *user = *pass = NULL;
@@ -4382,8 +4384,7 @@ int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass)
 
     /* Handle a non-array first */
     if (Z_TYPE_P(ztest) != IS_ARRAY) {
-        TRY_SET_AUTH_ARG(ztest, pass);
-        return SUCCESS;
+        return redisTrySetAuthArg(pass, ztest);
     }
 
     /* Handle the array case */
@@ -4400,18 +4401,18 @@ int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass)
         if ((zv = REDIS_HASH_STR_FIND_STATIC(ht, "user")) ||
             (zv = zend_hash_index_find(ht, 0)))
         {
-            TRY_SET_AUTH_ARG(zv, user);
+            redisTrySetAuthArg(user, zv);
         }
 
         if ((zv = REDIS_HASH_STR_FIND_STATIC(ht, "pass")) ||
             (zv = zend_hash_index_find(ht, 1)))
         {
-            TRY_SET_AUTH_ARG(zv, pass);
+            redisTrySetAuthArg(pass, zv);
         }
     } else if ((zv = REDIS_HASH_STR_FIND_STATIC(ht, "pass")) ||
                (zv = zend_hash_index_find(ht, 0)))
     {
-        TRY_SET_AUTH_ARG(zv, pass);
+        redisTrySetAuthArg(pass, zv);
     }
 
     /* If we at least have a password, we're good */
