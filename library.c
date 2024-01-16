@@ -2859,7 +2859,7 @@ redis_sock_create(char *host, int host_len, int port,
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->retry_interval = retry_interval * 1000;
     redis_sock->max_retries = 10;
-    redis_initialize_backoff(&redis_sock->backoff, retry_interval);
+    redis_initialize_backoff(&redis_sock->backoff, redis_sock->retry_interval);
     redis_sock->persistent = persistent;
 
     if (persistent && persistent_id != NULL) {
