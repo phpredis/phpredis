@@ -704,7 +704,7 @@ class RedisCluster {
     /**
      * @see Redis::publish
      */
-    public function publish(string $channel, string $message): RedisCluster|bool;
+    public function publish(string $channel, string $message): RedisCluster|bool|int;
 
     /**
      * @see Redis::pubsub
