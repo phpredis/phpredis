@@ -4026,8 +4026,8 @@ class Redis {
      * Count the number of members in a sorted set with scores inside a provided range.
      *
      * @param string $key The sorted set to check.
-     * @param string $min The minimum score to include in the count
-     * @param string $max The maximum score to include in the count
+     * @param int|string $min The minimum score to include in the count
+     * @param int|string $max The maximum score to include in the count
      *
      * NOTE:  In addition to a floating point score you may pass the special values of '-inf' and
      *        '+inf' meaning negative and positive infinity, respectively.
@@ -4038,7 +4038,7 @@ class Redis {
      * @example $redis->zCount('fruit-rankings', 50, 60);
      * @example $redis->zCount('fruit-rankings', '-inf', 0);
      */
-    public function zCount(string $key, string $start, string $end): Redis|int|false;
+    public function zCount(string $key, int|string $start, int|string $end): Redis|int|false;
 
     /**
      * Create or increment the score of a member in a Redis sorted set
