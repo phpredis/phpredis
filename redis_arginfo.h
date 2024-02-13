@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 3b2ecc525884fc1ae2a71b8e053fa245b108c4bb */
+ * Stub hash: de2f6e77cadba00b1f8312a8244db9df00a74a85 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -48,6 +48,12 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_bgSave, 0, 0, Re
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_bgrewriteaof arginfo_class_Redis_bgSave
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_waitaof, 0, 3, Redis, MAY_BE_ARRAY|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, numlocal, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, numreplicas, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, timeout, IS_LONG, 0)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_bitcount, 0, 1, Redis, MAY_BE_LONG|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
@@ -1168,6 +1174,7 @@ ZEND_METHOD(Redis, append);
 ZEND_METHOD(Redis, auth);
 ZEND_METHOD(Redis, bgSave);
 ZEND_METHOD(Redis, bgrewriteaof);
+ZEND_METHOD(Redis, waitaof);
 ZEND_METHOD(Redis, bitcount);
 ZEND_METHOD(Redis, bitop);
 ZEND_METHOD(Redis, bitpos);
@@ -1422,6 +1429,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, auth, arginfo_class_Redis_auth, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bgSave, arginfo_class_Redis_bgSave, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bgrewriteaof, arginfo_class_Redis_bgrewriteaof, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, waitaof, arginfo_class_Redis_waitaof, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bitcount, arginfo_class_Redis_bitcount, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bitop, arginfo_class_Redis_bitop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bitpos, arginfo_class_Redis_bitpos, ZEND_ACC_PUBLIC)

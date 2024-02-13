@@ -7673,6 +7673,17 @@ return;
         $this->assertTrue($this->redis->function('delete', 'mylib'));
     }
 
+    protected function execWaitAOF() {
+        return $this->redis->waitaof(0, 0, 0);
+    }
+
+    public function testWaitAOF() {
+        $res = $this->execWaitAOF();
+        $this->assertTrue(is_array($res) && count($res) == 2 &&
+                          isset($res[0]) && is_int($res[0]) &&
+                          isset($res[1]) && is_int($res[1]));
+    }
+
     /* Make sure we handle a bad option value gracefully */
     public function testBadOptionValue() {
         $this->assertFalse(@$this->redis->setOption(pow(2, 32), false));

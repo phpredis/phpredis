@@ -778,5 +778,9 @@ class Redis_Cluster_Test extends Redis_Test {
 
         $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, false);
     }
+
+    protected function execWaitAOF() {
+        return $this->redis->waitaof(uniqid(), 0, 0, 0);
+    }
 }
 ?>

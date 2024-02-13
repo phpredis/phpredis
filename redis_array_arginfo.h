@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: fa84ce2b68b10564dd8abaffecefe4dd5d65b591 */
+ * Stub hash: 59943eeb14b3ed78f88117e6923d64a95911b5ff */
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisArray___call, 0, 2, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, function_name, IS_STRING, 0)
@@ -44,7 +44,8 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisArray_discard, 0, 0, _IS_BOOL, 1)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisArray_exec arginfo_class_RedisArray_discard
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisArray_exec, 0, 0, MAY_BE_BOOL|MAY_BE_NULL|MAY_BE_ARRAY)
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisArray_flushall arginfo_class_RedisArray__continuum
 

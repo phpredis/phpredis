@@ -103,6 +103,9 @@ class RedisCluster {
      */
     public function bgrewriteaof(string|array $key_or_address): RedisCluster|bool;
 
+    public function waitaof(string|array $key_or_address, int $numlocal,
+                            int $numreplicas, int $timeout): RedisCluster|array|false;
+
     /**
      * @see Redis::bgsave
      */
