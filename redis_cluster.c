@@ -2876,6 +2876,53 @@ PHP_METHOD(RedisCluster, randomkey) {
 }
 /* }}} */
 
+PHP_METHOD(RedisCluster, waitaof) {
+    zend_long numlocal, numreplicas, timeout;
+    redisCluster *c = GET_CONTEXT();
+    smart_string cmdstr = {0};
+    void *ctx = NULL;
+    short slot;
+    zval *node;
+
+    ZEND_PARSE_PARAMETERS_START(4, 4)
+        Z_PARAM_ZVAL(node)
+        Z_PARAM_LONG(numlocal)
+        Z_PARAM_LONG(numreplicas)
+        Z_PARAM_LONG(timeout)
+    ZEND_PARSE_PARAMETERS_END();
+
+    if (numlocal < 0 || numreplicas < 0 || timeout < 0) {
+        php_error_docref(NULL, E_WARNING, "No arguments can be negative");
+        RETURN_FALSE;
+    }
+
+    slot = cluster_cmd_get_slot(c, node);
+    if (slot < 0) {
+        RETURN_FALSE;
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 3, "WAITAOF");
+    redis_cmd_append_sstr_long(&cmdstr, numlocal);
+    redis_cmd_append_sstr_long(&cmdstr, numreplicas);
+    redis_cmd_append_sstr_long(&cmdstr, timeout);
+
+    c->readonly = 0;
+
+    if (cluster_send_slot(c, slot, cmdstr.c, cmdstr.len, TYPE_MULTIBULK) < 0) {
+        CLUSTER_THROW_EXCEPTION("Unable to send command at the specified node", 0);
+        smart_string_free(&cmdstr);
+        RETURN_FALSE;
+    }
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        cluster_variant_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_resp, ctx);
+    }
+
+    smart_string_free(&cmdstr);
+}
+
 /* {{{ proto bool RedisCluster::ping(string key| string msg)
  *     proto bool RedisCluster::ping(array host_port| string msg) */
 PHP_METHOD(RedisCluster, ping) {

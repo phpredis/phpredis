@@ -2178,6 +2178,10 @@ PHP_METHOD(Redis, sunsubscribe)
         redis_unsubscribe_response);
 }
 
+PHP_METHOD(Redis, waitaof) {
+    REDIS_PROCESS_CMD(waitaof, redis_read_variant_reply);
+}
+
 /* {{{ proto string Redis::bgrewriteaof() */
 PHP_METHOD(Redis, bgrewriteaof)
 {

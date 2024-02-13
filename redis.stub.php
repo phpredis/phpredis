@@ -612,6 +612,13 @@ class Redis {
     public function bgrewriteaof(): Redis|bool;
 
     /**
+     * @see https://redis.io/commands/waitaof
+     *
+     * @return Redis|array
+     */
+    public function waitaof(int $numlocal, int $numreplicas, int $timeout): Redis|array|false;
+
+    /**
      * Count the number of set bits in a Redis string.
      *
      * @see https://redis.io/commands/bitcount/

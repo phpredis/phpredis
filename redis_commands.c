@@ -1045,7 +1045,7 @@ redis_fcall_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         Z_PARAM_ARRAY_HT(args)
     ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    redis_cmd_init_sstr(&cmdstr, 2 + (keys ? zend_hash_num_elements(keys) : 0) + 
+    redis_cmd_init_sstr(&cmdstr, 2 + (keys ? zend_hash_num_elements(keys) : 0) +
         (args ? zend_hash_num_elements(args) : 0), kw, strlen(kw));
     redis_cmd_append_sstr_zstr(&cmdstr, fn);
     redis_cmd_append_sstr_long(&cmdstr, keys ? zend_hash_num_elements(keys) : 0);
@@ -2224,6 +2224,34 @@ redis_acl_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         redis_cmd_append_sstr_zstr(&cmdstr, zstr);
         zend_string_release(zstr);
     }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+int redis_waitaof_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                      char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    zend_long numlocal, numreplicas, timeout;
+    smart_string cmdstr = {0};
+
+    ZEND_PARSE_PARAMETERS_START(3, 3)
+        Z_PARAM_LONG(numlocal)
+        Z_PARAM_LONG(numreplicas)
+        Z_PARAM_LONG(timeout)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (numlocal < 0 || numreplicas < 0 || timeout < 0) {
+        php_error_docref(NULL, E_WARNING, "No arguments can be negative");
+        return FAILURE;
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 3, "WAITAOF");
+    redis_cmd_append_sstr_long(&cmdstr, numlocal);
+    redis_cmd_append_sstr_long(&cmdstr, numreplicas);
+    redis_cmd_append_sstr_long(&cmdstr, timeout);
 
     *cmd = cmdstr.c;
     *cmd_len = cmdstr.len;
