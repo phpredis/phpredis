@@ -450,7 +450,7 @@ void cluster_dist_add_val(redisCluster *c, clusterKeyVal *kv, zval *z_val
     // Serialize our value
     val_free = redis_pack(c->flags, z_val, &val, &val_len);
 
-    // Attach it to the provied keyval entry
+    // Attach it to the provided keyval entry
     kv->val = val;
     kv->val_len = val_len;
     kv->val_free = val_free;
@@ -468,7 +468,7 @@ void cluster_multi_add(clusterMultiCmd *mc, char *data, int data_len) {
     redis_cmd_append_sstr(&(mc->args), data, data_len);
 }
 
-/* Finalize a clusterMutliCmd by constructing the whole thing */
+/* Finalize a clusterMultiCmd by constructing the whole thing */
 void cluster_multi_fini(clusterMultiCmd *mc) {
     mc->cmd.len = 0;
     redis_cmd_init_sstr(&(mc->cmd), mc->argc, mc->kw, mc->kw_len);
@@ -709,7 +709,7 @@ static int cluster_map_slots(redisCluster *c, clusterReply *r) {
             master = cluster_node_create(c, host, hlen, port, low, 0);
             zend_hash_str_update_ptr(c->nodes, key, klen, master);
 
-            // Attach slaves first time we encounter a given master in order to avoid regitering the slaves multiple times
+            // Attach slaves first time we encounter a given master in order to avoid registering the slaves multiple times
             for (j = 3; j< r2->elements; j++) {
                 r3 = r2->element[j];
                 if (!VALIDATE_SLOTS_INNER(r3)) {
@@ -1151,7 +1151,7 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
  * redirection, parsing out slot host and port so the caller can take
  * appropriate action.
  *
- * In the case of a non MOVED/ASK error, we wlll set our cluster error
+ * In the case of a non MOVED/ASK error, we will set our cluster error
  * condition so GetLastError can be queried by the client.
  *
  * This function will return -1 on a critical error (e.g. parse/communication

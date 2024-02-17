@@ -1495,7 +1495,7 @@ int redis_pubsub_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     ) {
         if (arg != NULL) {
             if (Z_TYPE_P(arg) != IS_STRING) {
-                php_error_docref(NULL, E_WARNING, "Invalid patern value");
+                php_error_docref(NULL, E_WARNING, "Invalid pattern value");
                 return FAILURE;
             }
             pattern = zval_get_string(arg);

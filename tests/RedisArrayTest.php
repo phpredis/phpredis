@@ -558,7 +558,7 @@ class Redis_Multi_Exec_Test extends TestSuite {
         $this->assertEquals(0, $this->ra->exists('1_{employee:joe}_salary'));
     }
 
-    public function testMutliExecUnlink() {
+    public function testMultiExecUnlink() {
         if (version_compare($this->min_version, "4.0.0", "lt")) {
             $this->markTestSkipped();
         }

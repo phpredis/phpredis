@@ -159,7 +159,7 @@ static int reselect_db(RedisSock *redis_sock) {
     return 0;
 }
 
-/* Append an AUTH command to a smart string if neccessary.  This will either
+/* Append an AUTH command to a smart string if necessary.  This will either
  * append the new style AUTH <user> <password>, old style AUTH <password>, or
  * append no command at all.  Function returns 1 if we appended a command
  * and 0 otherwise. */
@@ -823,7 +823,7 @@ static zend_string *redis_hash_auth(zend_string *user, zend_string *pass) {
     if (user == NULL && pass == NULL)
         return NULL;
 
-    /* Theoretically inpossible but check anyway */
+    /* Theoretically impossible but check anyway */
     algo = zend_string_init("sha256", sizeof("sha256") - 1, 0);
     if ((ops = redis_hash_fetch_ops(algo)) == NULL) {
         zend_string_release(algo);

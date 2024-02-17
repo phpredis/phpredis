@@ -116,7 +116,7 @@
     mc->args.len = 0; \
     mc->argc     = 0; \
 
-/* Initialzie a clusterMultiCmd with a keyword and length */
+/* Initialize a clusterMultiCmd with a keyword and length */
 #define CLUSTER_MULTI_INIT(mc, keyword, keyword_len) \
     mc.kw     = keyword; \
     mc.kw_len = keyword_len; \
