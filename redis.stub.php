@@ -1676,7 +1676,7 @@ class Redis {
      * Read every field and value from a hash.
      *
      * @param string $key The hash to query.
-     * @return Redis|array|false All fields and values or false if the key didn't exist.
+     * @return Redis|array<string, mixed>|false All fields and values or false if the key didn't exist.
      *
      * @see https://redis.io/commands/hgetall
      *
@@ -1722,7 +1722,7 @@ class Redis {
      *
      * @param string $key The hash to query.
      *
-     * @return Redis|array|false The fields in the hash or false if the hash doesn't exist.
+     * @return Redis|list<string>|false The fields in the hash or false if the hash doesn't exist.
      *
      * @see https://redis.io/commands/hkeys
      *
@@ -1834,7 +1834,7 @@ class Redis {
      *
      * @param string $key The hash to query.
      *
-     * @return Redis|array|false The values from the hash.
+     * @return Redis|list<mixed>|false The values from the hash.
      *
      * @see https://redis.io/commands/hvals
      *
@@ -1952,7 +1952,7 @@ class Redis {
      */
     public function isConnected(): bool;
 
-    /** @return Redis|array|false */
+    /** @return Redis|list<string>|false */
     public function keys(string $pattern);
 
     /**
