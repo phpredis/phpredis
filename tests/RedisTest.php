@@ -2400,7 +2400,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testWait() {
-        // Closest we can check based on redis commmit history
+        // Closest we can check based on redis commit history
         if(version_compare($this->version, '2.9.11') < 0) {
             $this->markTestSkipped();
             return;
@@ -2793,7 +2793,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->zScore('{zset}U', 'duplicate')===1.0);
         $this->redis->del('{zset}U');
 
-        //now test zUnion *without* weights but with aggregrate function
+        //now test zUnion *without* weights but with aggregate function
         $this->redis->zUnionStore('{zset}U', ['{zset}1','{zset}2'], null, 'MIN');
         $this->assertTrue($this->redis->zScore('{zset}U', 'duplicate')===1.0);
         $this->redis->del('{zset}U', '{zset}1', '{zset}2');
@@ -3481,7 +3481,7 @@ return;
         $this->assertEquals(5, count($ret)); // should be 5 atomic operations
     }
 
-    /* Github issue #1211 (ignore redundant calls to pipeline or multi) */
+    /* GitHub issue #1211 (ignore redundant calls to pipeline or multi) */
     public function testDoublePipeNoOp() {
         /* Only the first pipeline should be honored */
         for ($i = 0; $i < 6; $i++) {
@@ -5569,7 +5569,7 @@ return;
         // Flush any loaded scripts
         $this->redis->script('flush');
 
-        // Non existant script (but proper sha1), and a random (not) sha1 string
+        // Non existent script (but proper sha1), and a random (not) sha1 string
         $this->assertFalse($this->redis->evalsha(sha1(uniqid())));
         $this->assertFalse($this->redis->evalsha('some-random-data'));
 
@@ -6813,7 +6813,7 @@ return;
             ['{stream}-1' => [$new_id => ['final' => 'row']]]
         );
 
-        /* Emtpy query should fail */
+        /* Empty query should fail */
         $this->assertFalse($this->redis->xRead([]));
     }
 
@@ -7105,7 +7105,7 @@ return;
         $pending = $this->redis->xPending('ships', 'combatants');
         $this->assertTrue($pending && isset($pending[3][0][0]) && $pending[3][0][0] == "Jem'Hadar");
 
-        // Asssume control of the pending message with a different consumer.
+        // Assume control of the pending message with a different consumer.
         $res = $this->redis->xAutoClaim('ships', 'combatants', 'Sisko', 0, '0-0');
 
         $this->assertTrue($res && count($res) == 3 && $res[0] == '0-0' &&

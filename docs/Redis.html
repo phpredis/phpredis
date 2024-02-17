@@ -654,7 +654,7 @@ modifies how the command will execute.</p></p>                </div>
                 <div class="col-md-8">
                     <a href="#method_pexpiretime">pexpiretime</a>(string $key)
         
-                                            <p><p>Get the expriation timestamp of a given Redis key but in milliseconds.</p></p>                </div>
+                                            <p><p>Get the expiration timestamp of a given Redis key but in milliseconds.</p></p>                </div>
                 <div class="col-md-2"></div>
             </div>
                     <div class="row">
@@ -714,7 +714,7 @@ modifies how the command will execute.</p></p>                </div>
                 <div class="col-md-8">
                     <a href="#method_geopos">geopos</a>(string $key, string $member, string ...$other_members)
         
-                                            <p><p>Return the longitude and lattitude for one or more members of a geospacially encoded sorted set.</p></p>                </div>
+                                            <p><p>Return the longitude and latitude for one or more members of a geospacially encoded sorted set.</p></p>                </div>
                 <div class="col-md-2"></div>
             </div>
                     <div class="row">
@@ -1128,7 +1128,7 @@ a new set.</p></p>                </div>
                 <div class="col-md-8">
                     <a href="#method_incr">incr</a>(string $key, int $by = 1)
         
-                                            <p><p>Increment a key's value, optionally by a specifc amount.</p></p>                </div>
+                                            <p><p>Increment a key's value, optionally by a specific amount.</p></p>                </div>
                 <div class="col-md-2"></div>
             </div>
                     <div class="row">
@@ -1203,7 +1203,7 @@ to that section.</p></p>                </div>
                 <div class="col-md-8">
                     <a href="#method_lLen">lLen</a>(string $key)
         
-                                            <p><p>Retrieve the lenght of a list.</p></p>                </div>
+                                            <p><p>Retrieve the length of a list.</p></p>                </div>
                 <div class="col-md-2"></div>
             </div>
                     <div class="row">
@@ -2180,7 +2180,7 @@ Redis blocking for a long period of time.</p></p>                </div>
                     <a href="#method_wait">wait</a>(int $numreplicas, int $timeout)
         
                                             <p><p>Block the client up to the provided timeout until a certain number of replicas have confirmed
-recieving them.</p></p>                </div>
+receiving them.</p></p>                </div>
                 <div class="col-md-2"></div>
             </div>
                     <div class="row">
@@ -2313,7 +2313,7 @@ acknowledged with XACK.</p></p>                </div>
                 <div class="col-md-8">
                     <a href="#method_xrevrange">xrevrange</a>(string $key, string $end, string $start, int $count = -1)
         
-                                            <p><p>Get a range of entries from a STREAM ke in reverse cronological order.</p></p>                </div>
+                                            <p><p>Get a range of entries from a STREAM key in reverse chronological order.</p></p>                </div>
                 <div class="col-md-2"></div>
             </div>
                     <div class="row">
@@ -2373,7 +2373,7 @@ acknowledged with XACK.</p></p>                </div>
                 <div class="col-md-8">
                     <a href="#method_zLexCount">zLexCount</a>(string $key, string $min, string $max)
         
-                                            <p><p>Count the number of elements in a sorted set whos members fall within the provided
+                                            <p><p>Count the number of elements in a sorted set whose members fall within the provided
 lexographical range.</p></p>                </div>
                 <div class="col-md-2"></div>
             </div>
@@ -3805,7 +3805,7 @@ to Redis &gt;= 6.0.0 to send a floating point timeout.</p></td>
         <div class="method-description">
                             <p><p>POP the maximum scoring element off of one or more sorted sets, blocking up to a specified
 timeout if no elements are available.</p></p>                <p><p>Following are examples of the two main ways to call this method.</p>
-<p><strong>NOTE</strong>:  We reccomend calling this function with an array and a timeout as the other strategy
+<p><strong>NOTE</strong>:  We recommend calling this function with an array and a timeout as the other strategy
 may be deprecated in future versions of PhpRedis</p></p>        
         </div>
         <div class="tags">
@@ -5850,7 +5850,7 @@ $redis-&gt;expiretime(&#039;mykey&#039;);</pre></td>
             
 
         <div class="method-description">
-                            <p><p>Get the expriation timestamp of a given Redis key but in milliseconds.</p></p>                        
+                            <p><p>Get the expiration timestamp of a given Redis key but in milliseconds.</p></p>                        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -6036,7 +6036,7 @@ Redis::expiretime</a>
                     <tr>
                 <td>float</td>
                 <td>$lat</td>
-                <td><p>The lattitude of the first member.</p></td>
+                <td><p>The latitude of the first member.</p></td>
             </tr>
                     <tr>
                 <td>string</td>
@@ -6046,7 +6046,7 @@ Redis::expiretime</a>
                     <tr>
                 <td>mixed</td>
                 <td>...$other_triples_and_options</td>
-                <td><p>You can continue to pass longitude, lattitude, and member
+                <td><p>You can continue to pass longitude, latitude, and member
 arguments to add as many members as you wish.  Optionally, the final argument may be
 a string with options for the command <a href="Redis.html">Redis</a> documentation for the options.</p></td>
             </tr>
@@ -6262,7 +6262,7 @@ if one or both members did not exist.</p></td>
             
 
         <div class="method-description">
-                            <p><p>Return the longitude and lattitude for one or more members of a geospacially encoded sorted set.</p></p>                        
+                            <p><p>Return the longitude and latitude for one or more members of a geospacially encoded sorted set.</p></p>                        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -6291,7 +6291,7 @@ if one or both members did not exist.</p></td>
                     <table class="table table-condensed">
         <tr>
             <td>Redis|array|false</td>
-            <td><p>array of longitude and lattitude pairs.</p></td>
+            <td><p>array of longitude and latitude pairs.</p></td>
         </tr>
     </table>
 
@@ -6662,7 +6662,7 @@ See <a href="Redis.html#method_georadius">Redis::georadius</a> for options.</p><
                     <tr>
                 <td>array|string</td>
                 <td>$position</td>
-                <td><p>Either a two element array with longitude and lattitude, or
+                <td><p>Either a two element array with longitude and latitude, or
 a string representing a member of the set.</p></td>
             </tr>
                     <tr>
@@ -6734,7 +6734,7 @@ a new set.</p></p>
                     <tr>
                 <td>array|string</td>
                 <td>$position</td>
-                <td><p>Either a two element array with longitude and lattitude, or
+                <td><p>Either a two element array with longitude and latitude, or
 a string representing a member of the set.</p></td>
             </tr>
                     <tr>
@@ -7452,7 +7452,7 @@ echo $redis-&gt;getRange(&#039;silly-word&#039;, 0, 4) . &quot;\n&quot;;</pre></
                     <tr>
                 <td>array|null</td>
                 <td>$options</td>
-                <td><p>An optional array of modifiers for the comand.</p>
+                <td><p>An optional array of modifiers for the command.</p>
 <pre><code>$options = [
     'MINMATCHLEN'  =&gt; int  # Exclude matching substrings that are less than this value
 
@@ -8755,7 +8755,7 @@ do {<br />
             
 
         <div class="method-description">
-                            <p><p>Increment a key's value, optionally by a specifc amount.</p></p>                        
+                            <p><p>Increment a key's value, optionally by a specific amount.</p></p>                        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -9145,7 +9145,7 @@ to that section.</p></p>                <p><p>If connected to Redis server &gt;=
             
 
         <div class="method-description">
-                            <p><p>Retrieve the lenght of a list.</p></p>                        
+                            <p><p>Retrieve the length of a list.</p></p>                        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -12781,7 +12781,7 @@ $redis-&gt;sPop(&#039;numbers&#039;);</pre></td>
                 <td><p>An optional count of members to return.</p>
 <p>If this value is positive, Redis will return <em>up to</em> the requested
 number but with unique elements that will never repeat.  This means
-you may recieve fewer then <code>$count</code> replies.</p>
+you may receive fewer then <code>$count</code> replies.</p>
 <p>If the number is negative, Redis will return the exact number requested
 but the result may contain duplicate elements.</p></td>
             </tr>
@@ -14013,7 +14013,7 @@ replica status promoting the instance to a primary.</p></p>
         <tr>
             <td>Redis|bool</td>
             <td><p>Success if we were successfully able to start replicating a primary or
-were able to promote teh replicat to a primary.</p></td>
+were able to promote the replicat to a primary.</p></td>
         </tr>
     </table>
 
@@ -15577,7 +15577,7 @@ var_dump($res);</pre></td>
 
         <div class="method-description">
                             <p><p>Block the client up to the provided timeout until a certain number of replicas have confirmed
-recieving them.</p></p>                        
+receiving them.</p></p>                        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -15586,7 +15586,7 @@ recieving them.</p></p>
                     <tr>
                 <td>int</td>
                 <td>$numreplicas</td>
-                <td><p>The number of replicas we want to confirm write operaions</p></td>
+                <td><p>The number of replicas we want to confirm write operations</p></td>
             </tr>
                     <tr>
                 <td>int</td>
@@ -15759,7 +15759,7 @@ var_dump($res);</pre></td>
                 <td><p>The ID for the message we want to add.  This can be the special value '<em>'
 which means Redis will generate the ID that appends the message to the
 end of the stream.  It can also be a value in the form <ms>-</em> which will
-generate an ID that appends to the end ot entries with the same <ms> value
+generate an ID that appends to the end of entries with the same <ms> value
 (if any exist).</p></td>
             </tr>
                     <tr>
@@ -15932,7 +15932,7 @@ $msgs = $redis-&gt;xReadGroup(&#039;combatants&#039;, &quot;Jem&#039;Hadar&quot;
 $pending = $redis-&gt;xPending(&#039;ships&#039;, &#039;combatants&#039;);<br />
 var_dump($pending);<br />
 <br />
-// Asssume control of the pending message with a different consumer.<br />
+// Assume control of the pending message with a different consumer.<br />
 $res = $redis-&gt;xAutoClaim(&#039;ships&#039;, &#039;combatants&#039;, &#039;Sisko&#039;, 0, &#039;0-0&#039;);<br />
 <br />
 // Now the &#039;Sisko&#039; consumer owns the message<br />
@@ -16017,7 +16017,7 @@ $options = [
                     <table class="table table-condensed">
         <tr>
             <td>Redis|array|bool</td>
-            <td><p>An array of claimed messags or false on failure.</p></td>
+            <td><p>An array of claimed messages or false on failure.</p></td>
         </tr>
     </table>
 
@@ -16555,7 +16555,7 @@ acknowledged with XACK.</p></p>
                     <tr>
                 <td>int</td>
                 <td>$count</td>
-                <td><p>An optional limit to how many entries are returnd <em>per stream</em></p></td>
+                <td><p>An optional limit to how many entries are returned <em>per stream</em></p></td>
             </tr>
                     <tr>
                 <td>int</td>
@@ -16718,7 +16718,7 @@ $msgs = $redis-&gt;xReadGroup(&#039;ds9&#039;, &#039;sisko&#039;, [&#039;episode
             
 
         <div class="method-description">
-                            <p><p>Get a range of entries from a STREAM ke in reverse cronological order.</p></p>                        
+                            <p><p>Get a range of entries from a STREAM key in reverse chronological order.</p></p>                        
         </div>
         <div class="tags">
                             <h4>Parameters</h4>
@@ -16997,7 +16997,7 @@ more efficient for Redis given how streams are stored internally.</p></td>
                     <tr>
                 <td>string</td>
                 <td>$key</td>
-                <td><p>The sorted set to retreive cardinality from.</p></td>
+                <td><p>The sorted set to retrieve cardinality from.</p></td>
             </tr>
             </table>
 
@@ -17200,7 +17200,7 @@ more efficient for Redis given how streams are stored internally.</p></td>
             
 
         <div class="method-description">
-                            <p><p>Count the number of elements in a sorted set whos members fall within the provided
+                            <p><p>Count the number of elements in a sorted set whose members fall within the provided
 lexographical range.</p></p>                        
         </div>
         <div class="tags">
@@ -17584,7 +17584,7 @@ controls just the 'WITHSCORES' option.</p>
                     <tr>
                 <td>string</td>
                 <td>$key</td>
-                <td><p>The sorted set to retreive elements from</p></td>
+                <td><p>The sorted set to retrieve elements from</p></td>
             </tr>
                     <tr>
                 <td>string</td>
@@ -18120,7 +18120,7 @@ it will store them in a destination key provided by the user</p></p>
                     <tr>
                 <td>string</td>
                 <td>$key</td>
-                <td><p>The sorted set where we wnat to remove members.</p></td>
+                <td><p>The sorted set where we want to remove members.</p></td>
             </tr>
                     <tr>
                 <td>int</td>
@@ -18191,7 +18191,7 @@ it will store them in a destination key provided by the user</p></p>
                     <tr>
                 <td>string</td>
                 <td>$key</td>
-                <td><p>The sorted set where we wnat to remove members.</p></td>
+                <td><p>The sorted set where we want to remove members.</p></td>
             </tr>
                     <tr>
                 <td>string</td>

@@ -597,7 +597,7 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Removed
 
-- Remove unused macroses
+- Remove unused macros
   [831d6118](https://github.com/phpredis/phpredis/commit/831d6118)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 
@@ -1495,7 +1495,7 @@ serializers, soft deprecation of non-Redis commands.
 
 ## [4.3.0] - 2019-03-13 ([GitHub](https://github.com/phpredis/phpredis/releases/tag/4.3.0), [PECL](https://pecl.php.net/package/redis/4.3.0))
 
-This is probably the last release with PHP 5 suport!!!
+This is probably the last release with PHP 5 support!!!
 
 ### Added
 
@@ -1566,7 +1566,7 @@ The main feature of this release is new Streams API implemented by
 ### Changed
 
 - Optimize close method [2a1ef961](https://www.github.com/phpredis/phpredis/commit/2a1ef961) ([yulonghu](https://github.com/yulonghu))
-- Use a ZSET insted of SET for EVAL tests [2e412373](https://www.github.com/phpredis/phpredis/commit/2e412373) ([Michael Grunder](https://github.com/michael-grunder))
+- Use a ZSET instead of SET for EVAL tests [2e412373](https://www.github.com/phpredis/phpredis/commit/2e412373) ([Michael Grunder](https://github.com/michael-grunder))
 - Modify session testing logic [bfd27471](https://www.github.com/phpredis/phpredis/commit/bfd27471) ([Michael Grunder](https://github.com/michael-grunder))
 - Documentation improvements ([@michael-grunder](https://github.com/michael-grunder), [@elcheco](https://github.com/elcheco), [@lucascourot](https://github.com/lucascourot), [@nolimitdev](https://github.com/nolimitdev),
   [Michael Grunder](https://github.com/michael-grunder))
@@ -1618,7 +1618,7 @@ The main feature of this release is new Streams API implemented by
 - Add tcp_keepalive option to redis sock [68c58513](https://www.github.com/phpredis/phpredis/commit/68c58513), [5101172a](https://www.github.com/phpredis/phpredis/commit/5101172a), [010336d5](https://www.github.com/phpredis/phpredis/commit/010336d5),
   [51e48729](https://www.github.com/phpredis/phpredis/commit/51e48729) ([@git-hulk](https://github.com/git-hulk), [Michael Grunder](https://github.com/michael-grunder))
 - More robust GEORADIUS COUNT validation [f7edee5d](https://www.github.com/phpredis/phpredis/commit/f7edee5d) ([Michael Grunder](https://github.com/michael-grunder))
-- Allow to use empty string as persistant_id [ec4fd1bd](https://www.github.com/phpredis/phpredis/commit/ec4fd1bd) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Allow to use empty string as persistent_id [ec4fd1bd](https://www.github.com/phpredis/phpredis/commit/ec4fd1bd) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Documentation improvements ([Michael Grunder](https://github.com/michael-grunder), [@TomA-R](https://github.com/TomA-R))
 
 ### Fixed
@@ -1641,7 +1641,7 @@ This is interim release which contains only bug fixes.
 - Fix segfault when extending Redis class in PHP 5 [d23eff](https://www.github.com/phpredis/phpredis/commit/d23eff) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Fix RedisCluster constructor with PHP 7 strict scalar type [5c21d7](https://www.github.com/phpredis/phpredis/commit/5c21d7)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Allow to use empty string as persistant_id [344de5](https://www.github.com/phpredis/phpredis/commit/344de5) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Allow to use empty string as persistent_id [344de5](https://www.github.com/phpredis/phpredis/commit/344de5) ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Fix cluster_init_seeds. [db1347](https://www.github.com/phpredis/phpredis/commit/db1347) ([@adlagares](https://github.com/adlagares))
 - Fix z_seeds may be a reference [42581a](https://www.github.com/phpredis/phpredis/commit/42581a) ([@janic716](https://github.com/janic716))
 - PHP >=7.3 uses zend_string for php_url elements [b566fb](https://www.github.com/phpredis/phpredis/commit/b566fb) ([@fmk](https://github.com/fmk))
@@ -1701,9 +1701,9 @@ to the api, listed below.
 
 This release contains two big improvements:
 
-1. Adding a new printf like command construction function with additionaly
+1. Adding a new printf like command construction function with additionally
    format specifiers specific to phpredis.
-2. Implementation of custom objects for Redis and RedisArray wich eliminates
+2. Implementation of custom objects for Redis and RedisArray which eliminates
    double hash lookup.
 
 Also many small improvements and bug fixes were made.
@@ -1783,7 +1783,7 @@ the php 5 and 7 codebase into a single branch.
 - wrong size. ([@remicollet](https://github.com/remicollet))
 -
 - Added php session unit test ([@yatsukhnenko](https://github.com/weltling))
-- Added explicit module dependancy for igbinary ([@remicollet](https://github.com/remicollet))
+- Added explicit module dependency for igbinary ([@remicollet](https://github.com/remicollet))
 - Added phpinfo serialization information ([@remicollet](https://github.com/remicollet))
 
 ---
@@ -1886,7 +1886,7 @@ than 7.
 - Fixed memory leak in discard function [17b1f427](https://www.github.com/phpredis/phpredis/commit/17b1f427)
 - Sanity check for igbinary unserialization
   [3266b222](https://www.github.com/phpredis/phpredis/commit/3266b222), [528297a](https://www.github.com/phpredis/phpredis/commit/528297a) ([Maurus Cuelenaere](https://github.com/mcuelenaere)).
-- Fix segfault occuring from unclosed socket connection for Redis Cluster
+- Fix segfault occurring from unclosed socket connection for Redis Cluster
   [04196aee](https://www.github.com/phpredis/phpredis/commit/04196aee) ([CatKang](https://github.com/CatKang))
 - Case insensitive zRangeByScore options
 - Fixed dreaded size_t vs long long compiler warning

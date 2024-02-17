@@ -460,7 +460,7 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 1. [Backoff algorithms](#backoff-algorithms)
 
 ### Maximum retries
-You can set and get the maximum retries upon connection issues using the `OPT_MAX_RETRIES` option. Note that this is the number of _retries_, meaning if you set this option to _n_, there will be a maximum _n+1_ attemps overall. Defaults to 10.
+You can set and get the maximum retries upon connection issues using the `OPT_MAX_RETRIES` option. Note that this is the number of _retries_, meaning if you set this option to _n_, there will be a maximum _n+1_ attempts overall. Defaults to 10.
 
 ##### *Example*
 
@@ -511,7 +511,7 @@ $redis->setOption(Redis::OPT_BACKOFF_CAP, 750); // backoff time capped at 750ms
 _**Description**_: Execute the Redis ACL command.
 
 ##### *Parameters*
-_variable_:  Minumum of one argument for `Redis` and two for `RedisCluster`.
+_variable_:  Minimum of one argument for `Redis` and two for `RedisCluster`.
 
 ##### *Example*
 ~~~php

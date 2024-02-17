@@ -436,7 +436,7 @@ class Redis_Cluster_Test extends Redis_Test {
         // Flush any loaded scripts
         $this->redis->script($str_key, 'flush');
 
-        // Non existant script (but proper sha1), and a random (not) sha1 string
+        // Non existent script (but proper sha1), and a random (not) sha1 string
         $this->assertFalse($this->redis->evalsha(sha1(uniqid()),[$str_key], 1));
         $this->assertFalse($this->redis->evalsha('some-random-data'),[$str_key], 1);
 

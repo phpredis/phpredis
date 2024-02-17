@@ -1358,7 +1358,7 @@ PHP_METHOD(RedisCluster, zmpop) {
 }
 /* }}} */
 
-/* {{{ proto Redis|array|false Redis::bzmpop(double $timeout, array $keys, sring $from, int $count = 1) */
+/* {{{ proto Redis|array|false Redis::bzmpop(double $timeout, array $keys, string $from, int $count = 1) */
 PHP_METHOD(RedisCluster, bzmpop) {
     CLUSTER_PROCESS_KW_CMD("BZMPOP", redis_mpop_cmd, cluster_mpop_resp, 0);
 }
@@ -2394,7 +2394,7 @@ PHP_METHOD(RedisCluster, acl) {
 
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc - 1, "ACL");
 
-    /* Read the op, determin if it's readonly, and add it */
+    /* Read the op, determine if it's readonly, and add it */
     zs = zval_get_string(&zargs[1]);
     readonly = redis_acl_op_readonly(zs);
     redis_cmd_append_sstr_zstr(&cmdstr, zs);
