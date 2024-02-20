@@ -7678,10 +7678,16 @@ return;
     }
 
     public function testWaitAOF() {
+        if (!$this->minVersionCheck("7.2.0"))
+            $this->markTestSkipped();
+
         $res = $this->execWaitAOF();
-        $this->assertTrue(is_array($res) && count($res) == 2 &&
-                          isset($res[0]) && is_int($res[0]) &&
-                          isset($res[1]) && is_int($res[1]));
+        $this->assertValidate($res, function ($v) {
+            if ( ! is_array($v) || count($v) != 2)
+                return false;
+            return isset($v[0]) && is_int($v[0]) &&
+                   isset($v[1]) && is_int($v[1]);
+        });
     }
 
     /* Make sure we handle a bad option value gracefully */
