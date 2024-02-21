@@ -2291,13 +2291,18 @@ static int redis_try_get_expiry(zval *zv, zend_long *lval) {
 int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    smart_string cmdstr = {0};
-    zval *z_value, *z_opts=NULL;
     char *key = NULL, *exp_type = NULL, *set_type = NULL;
-    long exp_set = 0, keep_ttl = 0;
+    zval *z_value, *z_opts=NULL;
+    smart_string cmdstr = {0};
     zend_long expire = -1;
     zend_bool get = 0;
+    long keep_ttl = 0;
     size_t key_len;
+
+    #define setExpiryWarning(zv) \
+        php_error_docref(NULL, E_WARNING, "%s passed as EXPIRY is invalid " \
+                         "(must be an int, float, or numeric string >= 1)", \
+                         zend_zval_type_name((zv)))
 
     // Make sure the function is being called correctly
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz|z", &key, &key_len,
@@ -2305,6 +2310,7 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     {
         return FAILURE;
     }
+
 
     // Check for an options array
     if (z_opts && Z_TYPE_P(z_opts) == IS_ARRAY) {
@@ -2321,17 +2327,12 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                          zend_string_equals_literal_ci(zkey, "EXAT") ||
                          zend_string_equals_literal_ci(zkey, "PXAT"))
             ) {
-                exp_set = 1;
-
-                /* Set expire type */
-                exp_type = ZSTR_VAL(zkey);
-
-                /* Try to extract timeout */
-                if (Z_TYPE_P(v) == IS_LONG) {
-                    expire = Z_LVAL_P(v);
-                } else if (Z_TYPE_P(v) == IS_STRING) {
-                    expire = atol(Z_STRVAL_P(v));
+                if (redis_try_get_expiry(v, &expire) == FAILURE || expire < 1) {
+                    setExpiryWarning(v);
+                    return FAILURE;
                 }
+
+                exp_type = ZSTR_VAL(zkey);
             } else if (Z_TYPE_P(v) == IS_STRING) {
                 if (zend_string_equals_literal_ci(Z_STR_P(v), "KEEPTTL")) {
                     keep_ttl  = 1;
@@ -2345,19 +2346,14 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             }
         } ZEND_HASH_FOREACH_END();
     } else if (z_opts && Z_TYPE_P(z_opts) != IS_NULL) {
-        if (redis_try_get_expiry(z_opts, &expire) == FAILURE) {
-            php_error_docref(NULL, E_WARNING, "Expire must be a long, double, or a numeric string");
+        if (redis_try_get_expiry(z_opts, &expire) == FAILURE || expire < 1) {
+            setExpiryWarning(z_opts);
             return FAILURE;
         }
-
-        exp_set = 1;
     }
 
     /* Protect the user from syntax errors but give them some info about what's wrong */
-    if (exp_set && expire < 1) {
-        php_error_docref(NULL, E_WARNING, "EXPIRE can't be < 1");
-        return FAILURE;
-    } else if (exp_type && keep_ttl) {
+    if (exp_type && keep_ttl) {
         php_error_docref(NULL, E_WARNING, "KEEPTTL can't be combined with EX or PX option");
         return FAILURE;
     }
@@ -2396,6 +2392,8 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     *cmd_len = cmdstr.len;
 
     return SUCCESS;
+
+    #undef setExpiryWarning
 }
 
 /* MGET */
