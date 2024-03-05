@@ -1,6 +1,72 @@
 on: [push, pull_request]
 
 jobs:
+  configured-deps:
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    strategy:
+      fail-fast: true
+      matrix:
+        php: ['8.3']
+    steps:
+      - name: Checkout PhpRedis
+        uses: actions/checkout@v4
+
+      - name: Install liblzf
+        run: |
+          git clone --depth=1 https://github.com/nemequ/liblzf.git
+          cd liblzf
+          autoreconf -vi
+          CFLAGS=-fPIC ./configure --prefix="$GITHUB_WORKSPACE/liblzf"
+          make install
+
+      - name: Install liblz4
+        run: |
+          git clone -b v1.9.4 --depth=1 https://github.com/lz4/lz4
+          cd lz4/lib
+          PREFIX="$GITHUB_WORKSPACE/liblz4" make install
+
+      - name: Install libzstd
+        run: |
+          git clone -b v1.5.5 --depth=1 https://github.com/facebook/zstd
+          cd zstd
+          PREFIX="$GITHUB_WORKSPACE/libzstd" make install
+
+      - name: Install PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: json, igbinary, msgpack, :redis
+          coverage: none
+          tools: none
+
+      - name: Configure and build PhpRedis with distinct dep paths
+        run: |
+          phpize
+          ./configure \
+            --enable-redis-lz4 \
+            --with-liblz4="$GITHUB_WORKSPACE/liblz4" \
+            --enable-redis-lzf \
+            --with-liblzf="$GITHUB_WORKSPACE/liblzf" \
+            --enable-redis-zstd \
+            --with-libzstd="$GITHUB_WORKSPACE/libzstd"
+          sudo make -j"$(nproc)"
+
+      - name: Make sure we're linking against specific liblz4
+        run: |
+          grep "INCLUDES.*$GITHUB_WORKSPACE/liblz4" Makefile
+          grep "REDIS_SHARED_LIBADD.*-L$GITHUB_WORKSPACE/liblz4" Makefile
+
+      - name: Make sure we're linking against specific liblzf
+        run: |
+          grep "INCLUDES.*$GITHUB_WORKSPACE/liblzf" Makefile
+          grep "REDIS_SHARED_LIBADD.*-L$GITHUB_WORKSPACE/liblzf" Makefile
+
+      - name: Make sure we're linking against specific libzstd
+        run: |
+          grep "INCLUDES.*$GITHUB_WORKSPACE/libzstd" Makefile
+          grep "REDIS_SHARED_LIBADD.*-L$GITHUB_WORKSPACE/libzstd" Makefile
+
   ubuntu:
     runs-on: ubuntu-latest
     continue-on-error: false

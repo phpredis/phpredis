@@ -221,6 +221,7 @@ if test "$PHP_REDIS" != "no"; then
       PHP_CHECK_LIBRARY(lzf, lzf_compress,
       [
         PHP_ADD_LIBRARY_WITH_PATH(lzf, $LIBLZF_DIR/$PHP_LIBDIR, REDIS_SHARED_LIBADD)
+        PHP_ADD_INCLUDE($LIBLZF_DIR/include)
       ], [
         AC_MSG_ERROR([could not find usable liblzf])
       ], [
@@ -263,12 +264,12 @@ if test "$PHP_REDIS" != "no"; then
       PHP_CHECK_LIBRARY(lz4, LZ4_compress,
       [
         PHP_ADD_LIBRARY_WITH_PATH(lz4, $LIBLZ4_DIR/$PHP_LIBDIR, REDIS_SHARED_LIBADD)
+        PHP_ADD_INCLUDE($LIBLZ4_DIR/include)
       ], [
         AC_MSG_ERROR([could not find usable liblz4])
       ], [
         -L$LIBLZ4_DIR/$PHP_LIBDIR
       ])
-      PHP_SUBST(REDIS_SHARED_LIBADD)
     else
       AC_MSG_ERROR([only system liblz4 is supported])
     fi
@@ -307,6 +308,7 @@ if test "$PHP_REDIS" != "no"; then
       PHP_CHECK_LIBRARY(zstd, ZSTD_getFrameContentSize,
       [
         PHP_ADD_LIBRARY_WITH_PATH(zstd, $LIBZSTD_DIR/$PHP_LIBDIR, REDIS_SHARED_LIBADD)
+        PHP_ADD_INCLUDE($LIBZSTD_DIR/include)
       ], [
         AC_MSG_ERROR([could not find usable libzstd, version 1.3.0 required])
       ], [
