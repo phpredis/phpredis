@@ -1042,7 +1042,7 @@ PHP_METHOD(RedisCluster, sdiffstore) {
 }
 /* }}} */
 
-/* {{{ proto bool RedisCluster::smove(sting src, string dst, string mem) */
+/* {{{ proto bool RedisCluster::smove(string src, string dst, string mem) */
 PHP_METHOD(RedisCluster, smove) {
     CLUSTER_PROCESS_CMD(smove, cluster_1_resp, 0);
 }
@@ -2201,7 +2201,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     short slot;
     int i, argc = ZEND_NUM_ARGS();
 
-    /* Commands using this pass-thru don't need to be enabled in MULTI mode */
+    /* Commands using this pass-through don't need to be enabled in MULTI mode */
     if (!CLUSTER_IS_ATOMIC(c)) {
         php_error_docref(0, E_WARNING,
             "Command can't be issued in MULTI mode");
@@ -2754,7 +2754,7 @@ PHP_METHOD(RedisCluster, script) {
     short slot;
     int argc = ZEND_NUM_ARGS();
 
-    /* Commands using this pass-thru don't need to be enabled in MULTI mode */
+    /* Commands using this pass-through don't need to be enabled in MULTI mode */
     if (!CLUSTER_IS_ATOMIC(c)) {
         php_error_docref(0, E_WARNING,
             "Command can't be issued in MULTI mode");

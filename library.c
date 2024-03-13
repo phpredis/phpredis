@@ -2956,7 +2956,7 @@ static int redis_stream_detect_dirty(php_stream *stream) {
     if ((fd = redis_stream_fd_for_select(stream)) == -1)
         return FAILURE;
 
-    /* We want to detect a readable socket (it shouln't be) */
+    /* We want to detect a readable socket (it shouldn't be) */
     REDIS_POLL_FD_SET(pfd, fd, PHP_POLLREADABLE);
     rv = php_poll2(&pfd, 1, redis_pool_poll_timeout());
 

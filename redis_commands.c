@@ -5230,7 +5230,7 @@ redis_copy_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     if (slot && db != -1) {
-        php_error_docref(NULL, E_WARNING, "Cant copy to a specific DB in cluster mode");
+        php_error_docref(NULL, E_WARNING, "Can't copy to a specific DB in cluster mode");
         return FAILURE;
     }
 

@@ -723,7 +723,7 @@ PHP_METHOD(Redis, reset)
     }
 
     if (IS_PIPELINE(redis_sock)) {
-        php_error_docref(NULL, E_ERROR, "Reset ins't allowed in pipeline mode!");
+        php_error_docref(NULL, E_ERROR, "Reset isn't allowed in pipeline mode!");
         RETURN_FALSE;
     }
 

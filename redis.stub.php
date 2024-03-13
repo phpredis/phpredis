@@ -1472,7 +1472,7 @@ class Redis {
      *
      * @return Redis|string|bool The key's value or false if it didn't exist.
      *
-     * @see https://redis.io/comands/getex
+     * @see https://redis.io/commands/getex
      *
      * @example $redis->getEx('mykey', ['EX' => 60]);
      */
@@ -2175,7 +2175,7 @@ class Redis {
     public function ltrim(string $key, int $start , int $end): Redis|bool;
 
     /**
-     * Get one ore more string keys.
+     * Get one or more string keys.
      *
      * @param array $keys The keys to retrieve
      * @return Redis|array|false an array of keys with their values.
@@ -2197,7 +2197,7 @@ class Redis {
     public function move(string $key, int $index): Redis|bool;
 
     /**
-     * Set one ore more string keys.
+     * Set one or more string keys.
      *
      * @param array $key_values An array with keys and their values.
      * @return Redis|bool True if the keys could be set.
@@ -2209,7 +2209,7 @@ class Redis {
     public function mset(array $key_values): Redis|bool;
 
     /**
-     * Set one ore more string keys but only if none of the key exist.
+     * Set one or more string keys but only if none of the key exist.
      *
      * @param array $key_values An array of keys with their values.
      *
@@ -2445,7 +2445,7 @@ class Redis {
      * @param int    $count The maximum number of elements to pop at once.
      *                      NOTE:  The `count` argument requires Redis >= 6.2.0
      *
-     * @return Redis|array|string|bool One ore more popped elements or false if all were empty.
+     * @return Redis|array|string|bool One or more popped elements or false if all were empty.
      *
      * @see https://redis.io/commands/rpop
      *
@@ -2604,7 +2604,7 @@ class Redis {
     public function sAdd(string $key, mixed $value, mixed ...$other_values): Redis|int|false;
 
     /**
-     * Add one ore more values to a Redis SET key.  This is an alternative to Redis::sadd() but
+     * Add one or more values to a Redis SET key.  This is an alternative to Redis::sadd() but
      * instead of being variadic, takes a single array of values.
      *
      * @see https://redis.io/commands/sadd
@@ -2944,7 +2944,7 @@ class Redis {
      * @see https://redis.io/commands/script
      *
      * @param string $command The script suboperation to execute.
-     * @param mixed  $args    One ore more additional argument
+     * @param mixed  $args    One or more additional argument
      *
      * @return mixed This command returns various things depending on the specific operation executed.
      *
@@ -3598,7 +3598,7 @@ class Redis {
     public function wait(int $numreplicas, int $timeout): int|false;
 
     /**
-     * Acknowledge one ore more messages that are pending (have been consumed using XREADGROUP but
+     * Acknowledge one or more messages that are pending (have been consumed using XREADGROUP but
      * not yet acknowledged by XACK.)
      *
      * @param string $key   The stream to query.
@@ -4105,7 +4105,7 @@ class Redis {
      * @param string $key   The sorted set to pop elements from.
      * @param int    $count An optional count of elements to pop.
      *
-     * @return Redis|array|false All of the popped elements with scores or false on fialure.
+     * @return Redis|array|false All of the popped elements with scores or false on failure
      *
      * @see https://redis.io/commands/zpopmax
      *
@@ -4244,7 +4244,7 @@ class Redis {
      *                        'COUNT'      int      The number of random members to return.
      *                        'WITHSCORES' bool     Whether to return scores and members instead of
      *
-     * @return Redis|string|array One ore more random elements.
+     * @return Redis|string|array One or more random elements.
      *
      * @see https://redis.io/commands/zrandmember
      *
@@ -4443,7 +4443,7 @@ class Redis {
      * Given one or more sorted set key names, return every element that is in the first
      * set but not any of the others.
      *
-     * @param array $keys    One ore more sorted sets.
+     * @param array $keys    One or more sorted sets.
      * @param array $options An array which can contain ['WITHSCORES' => true] if you want Redis to
      *                       return members and scores.
      *
@@ -4479,7 +4479,7 @@ class Redis {
     /**
      * Compute the intersection of one or more sorted sets and return the members
      *
-     * @param array $keys    One ore more sorted sets.
+     * @param array $keys    One or more sorted sets.
      * @param array $weights An optional array of weights to be applied to each set when performing
      *                       the intersection.
      * @param array $options Options for how Redis should combine duplicate elements when performing the
@@ -4507,7 +4507,7 @@ class Redis {
      * @see https://redis.io/commands/zinter
      * @see Redis::zinter()
      *
-     * @param array $keys   One ore more sorted set key names.
+     * @param array $keys   One or more sorted set key names.
      * @param int   $limit  An optional upper bound on the returned cardinality.  If set to a value
      *                      greater than zero, Redis will stop processing the intersection once the
      *                      resulting cardinality reaches this limit.
@@ -4523,10 +4523,10 @@ class Redis {
     public function zintercard(array $keys, int $limit = -1): Redis|int|false;
 
     /**
-     * Compute the intersection of one ore more sorted sets storing the result in a new sorted set.
+     * Compute the intersection of one or more sorted sets storing the result in a new sorted set.
      *
      * @param string $dst       The destination sorted set to store the intersected values.
-     * @param array  $keys      One ore more sorted set key names.
+     * @param array  $keys      One or more sorted set key names.
      * @param array  $weights   An optional array of floats to weight each passed input set.
      * @param string $aggregate An optional aggregation method to use.
      *
@@ -4576,7 +4576,7 @@ class Redis {
     /**
      * Retrieve the union of one or more sorted sets
      *
-     * @param array $keys     One ore more sorted set key names
+     * @param array $keys     One or more sorted set key names
      * @param array $weights  An optional array with floating point weights used when performing the union.
      *                        Note that if this argument is passed, it must contain the same number of
      *                        elements as the $keys array.
