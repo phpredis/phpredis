@@ -13,15 +13,15 @@ mkdir -p debian/$DIR
 cp debian.control debian/DEBIAN/control
 
 UBUNTU=`uname -v | grep -ci ubuntu`
-mkdir -p debian/etc/php5/apache2/conf.d/
+mkdir -p debian/etc/php/7.0/apache2/conf.d/
 if [ $UBUNTU = "0" ]; then
-	mkdir -p debian/etc/php5/cli/conf.d/
+	mkdir -p debian/etc/php/7.0/cli/conf.d/
 fi
 
-echo "extension=redis.so" >> debian/etc/php5/apache2/conf.d/redis.ini
+echo "extension=redis.so" >> debian/etc/php/7.0/apache2/conf.d/redis.ini
 
 if [ $UBUNTU = "0" ]; then
-	cp debian/etc/php5/apache2/conf.d/redis.ini debian/etc/php5/cli/conf.d/redis.ini
+	cp debian/etc/php/7.0/apache2/conf.d/redis.ini debian/etc/php/7.0/cli/conf.d/redis.ini
 fi
 
 cp modules/redis.so debian/$DIR

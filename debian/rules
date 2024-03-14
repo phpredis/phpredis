@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 # Sample debian/rules that uses debhelper.
-# This file is public domain software, originally written by Joey Hess. 
+# This file is public domain software, originally written by Joey Hess.
 #
 # This version is for packages that are architecture dependent.
 
@@ -9,7 +9,7 @@
 
 DEB_SRCDIR=$(shell pwd)
 INSTALL_DIR=$(DEB_SRCDIR)/debian/$(shell dh_listpackages)
-EXTENSION_DIR=`php-config5 --extension-dir`
+EXTENSION_DIR=`php-config --extension-dir | cut -c 2-`
 CFLAGS = -O3
 
 
@@ -18,7 +18,7 @@ build-stamp:
 	dh_testdir
 
 	# Add here commands to compile the package.
-	
+
 	# Because phpize --clean removes all testfiles
 	# in tests/*.php the svn-buildpackage will fail
 	# when tests/TestRedis.php was removed.
@@ -26,7 +26,7 @@ build-stamp:
 	cd $(DEB_SRCDIR) && mv tests/TestRedis.php tests/TestRedis.php.bak && \
 		phpize --clean && mv tests/TestRedis.php.bak tests/TestRedis.php && \
 	        phpize && \
-		./configure --with-php-config=/usr/bin/php-config5
+		./configure --with-php-config=/usr/bin/php-config
 	$(MAKE) -C $(DEB_SRCDIR)
 
 	touch build-stamp
@@ -67,7 +67,7 @@ binary-arch: build install
 	dh_installexamples
 #	dh_install
 #	dh_installmenu
-#	dh_installdebconf	
+#	dh_installdebconf
 #	dh_installlogrotate
 #	dh_installemacsen
 #	dh_installcatalogs
@@ -91,7 +91,7 @@ binary-arch: build install
 	dh_installdeb
 	dh_shlibdeps
 	cd $(DEB_SRCDIR) && \
-	       echo "php5:Depends=phpapi-`php-config5 --phpapi`, php5-common" >> debian/phpredis.substvars
+	       echo "php5:Depends=phpapi-`php-config --phpapi`, php7.0-common" >> debian/phpredis.substvars
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
