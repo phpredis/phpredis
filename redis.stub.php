@@ -1880,7 +1880,7 @@ class Redis {
      *     }
      * } while ($it != 0);
      */
-    public function hscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): Redis|array|bool;
+    public function hscan(string $key, null|int|string &$iterator, ?string $pattern = null, int $count = 0): Redis|array|bool;
 
     /**
      * Increment a key's value, optionally by a specific amount.
@@ -2922,7 +2922,7 @@ class Redis {
      *     }
      * }
      */
-    public function scan(?int &$iterator, ?string $pattern = null, int $count = 0, ?string $type = null): array|false;
+    public function scan(null|int|string &$iterator, ?string $pattern = null, int $count = 0, ?string $type = null): array|false;
 
     /**
      * Retrieve the number of members in a Redis set.
@@ -3312,7 +3312,7 @@ class Redis {
      *     }
      * }
      */
-    public function sscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): array|false;
+    public function sscan(string $key, null|int|string &$iterator, ?string $pattern = null, int $count = 0): array|false;
 
     /**
      * Subscribes the client to the specified shard channels.
@@ -4571,7 +4571,7 @@ class Redis {
      * NOTE:  See Redis::scan() for detailed example code on how to call SCAN like commands.
      *
      */
-    public function zscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): Redis|array|false;
+    public function zscan(string $key, null|int|string &$iterator, ?string $pattern = null, int $count = 0): Redis|array|false;
 
     /**
      * Retrieve the union of one or more sorted sets

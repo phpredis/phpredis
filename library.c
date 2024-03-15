@@ -401,7 +401,7 @@ redis_check_eof(RedisSock *redis_sock, zend_bool no_retry, zend_bool no_throw)
 
 PHP_REDIS_API int
 redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                           REDIS_SCAN_TYPE type, zend_long *iter)
+                           REDIS_SCAN_TYPE type, uint64_t *cursor)
 {
     REDIS_REPLY_TYPE reply_type;
     long reply_info;
@@ -434,7 +434,7 @@ redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Push the iterator out to the caller */
-    *iter = atol(p_iter);
+    *cursor = strtoull(p_iter, NULL, 10);
     efree(p_iter);
 
     /* Read our actual keys/members/etc differently depending on what kind of

@@ -1123,11 +1123,11 @@ ra_generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw_len)
 {
     RedisArray *ra;
     zend_string *key, *pattern = NULL;
-    zval *object, *redis_inst, *z_iter, z_fun, z_args[4];
+    zval *object, *redis_inst, *z_cursor, z_fun, z_args[4];
     zend_long count = 0;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(), "OSz/|S!l",
-            &object, redis_array_ce, &key, &z_iter, &pattern, &count) == FAILURE) {
+            &object, redis_array_ce, &key, &z_cursor, &pattern, &count) == FAILURE) {
         RETURN_FALSE;
     }
 
@@ -1141,7 +1141,7 @@ ra_generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw_len)
     }
 
     ZVAL_STR(&z_args[0], key);
-    ZVAL_NEW_REF(&z_args[1], z_iter);
+    ZVAL_NEW_REF(&z_args[1], z_cursor);
     if (pattern) ZVAL_STR(&z_args[2], pattern);
     ZVAL_LONG(&z_args[3], count);
 
@@ -1149,7 +1149,7 @@ ra_generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, const char *kw, int kw_len)
     call_user_function(&redis_ce->function_table, redis_inst, &z_fun, return_value, ZEND_NUM_ARGS(), z_args);
     zval_dtor(&z_fun);
 
-    ZVAL_ZVAL(z_iter, &z_args[1], 0, 1);
+    ZVAL_ZVAL(z_cursor, &z_args[1], 0, 1);
 }
 
 PHP_METHOD(RedisArray, hscan)
