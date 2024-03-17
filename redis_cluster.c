@@ -381,7 +381,7 @@ static void redis_cluster_init(redisCluster *c, HashTable *ht_seeds, double time
     c->flags->timeout = timeout;
     c->flags->read_timeout = read_timeout;
     c->flags->persistent = persistent;
-    c->waitms = timeout * 1000L;
+    c->waitms = (long)(1000 * (timeout + read_timeout));
 
     /* Attempt to load slots from cache if caching is enabled */
     if (CLUSTER_CACHING_ENABLED()) {
