@@ -239,7 +239,7 @@ class TestSuite
 
     /* Small helper method that tries to load a custom test case class */
     public static function loadTestClass($class) {
-        $filename = "${class}.php";
+        $filename = "{$class}.php";
 
         if (($sp = getenv('PHPREDIS_TEST_SEARCH_PATH'))) {
             $fullname = self::findFile($sp, $filename);
