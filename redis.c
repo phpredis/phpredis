@@ -2744,40 +2744,6 @@ redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     return cmdstr.len;
 }
 
-/* Update a zval with the current 64 bit scan cursor.  This presents a problem
- * because we can only represent up to 63 bits in a PHP integer.  So depending
- * on the cursor value, we may need to represent it as a string. */
-static void updateScanCursorZVal(zval *zv, uint64_t cursor) {
-    char tmp[21];
-    size_t len;
-
-    ZEND_ASSERT(zv != NULL && (Z_TYPE_P(zv) == IS_LONG ||
-                               Z_TYPE_P(zv) == IS_STRING));
-
-    if (Z_TYPE_P(zv) == IS_STRING)
-        zend_string_release(Z_STR_P(zv));
-
-    if (cursor > ZEND_LONG_MAX) {
-        len = snprintf(tmp, sizeof(tmp), "%llu", (unsigned long long)cursor);
-        ZVAL_STRINGL(zv, tmp, len);
-    } else {
-        ZVAL_LONG(zv, cursor);
-    }
-}
-
-static uint64_t getScanCursorZVal(zval *zv, zend_bool *was_zero) {
-    ZEND_ASSERT(zv != NULL && (Z_TYPE_P(zv) == IS_LONG ||
-                               Z_TYPE_P(zv) == IS_STRING));;
-
-    if (Z_TYPE_P(zv) == IS_STRING) {
-        *was_zero = Z_STRLEN_P(zv) == 1 && Z_STRVAL_P(zv)[0] == '0';
-        return strtoull(Z_STRVAL_P(zv), NULL, 10);
-    } else {
-        *was_zero = Z_LVAL_P(zv) == 0;
-        return Z_LVAL_P(zv);
-    }
-}
-
 /* {{{ proto redis::scan(&$iterator, [pattern, [count, [type]]]) */
 PHP_REDIS_API void
 generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
@@ -2825,18 +2791,10 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
         RETURN_FALSE;
     }
 
-    /* If our cursor is NULL (it can only be null|int|string), convert it to a
-     * long and initialize it to zero for oure initial SCAN.  Otherwise et the
-     * uint64_t value from the zval which can either be in the form of a long or
-     * a string (if the cursor is too large to fit in a zend_long). */
-    if (Z_TYPE_P(z_cursor) == IS_NULL) {
-        convert_to_long(z_cursor);
-        cursor = 0;
-    } else {
-        cursor = getScanCursorZVal(z_cursor, &completed);
-        if (completed)
-            RETURN_FALSE;
-    }
+    /* Get our SCAN cursor short circuiting if we're done */
+    cursor = redisGetScanCursor(z_cursor, &completed);
+    if (completed)
+        RETURN_FALSE;
 
     /* Prefix our key if we've got one and we have a prefix set */
     if(key_len) {
@@ -2889,7 +2847,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     if(key_free) efree(key);
 
     /* Update our iterator reference */
-    updateScanCursorZVal(z_cursor, cursor);
+    redisSetScanCursor(z_cursor, cursor);
 }
 
 PHP_METHOD(Redis, scan) {

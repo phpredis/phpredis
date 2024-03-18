@@ -2279,8 +2279,9 @@ PHP_REDIS_API void cluster_gen_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
 }
 
 /* HSCAN, SSCAN, ZSCAN */
-PHP_REDIS_API int cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
-                              REDIS_SCAN_TYPE type, long *it)
+PHP_REDIS_API int
+cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *c,
+                  REDIS_SCAN_TYPE type, uint64_t *cursor)
 {
     char *pit;
 
@@ -2304,12 +2305,11 @@ PHP_REDIS_API int cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
     }
 
     // Push the new iterator value to our caller
-    *it = atol(pit);
+    *cursor = strtoull(pit, NULL, 10);
     efree(pit);
 
     // We'll need another MULTIBULK response for the payload
-    if (cluster_check_response(c, &c->reply_type) < 0)
-    {
+    if (cluster_check_response(c, &c->reply_type) < 0) {
         return FAILURE;
     }
 
