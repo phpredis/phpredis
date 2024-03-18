@@ -4512,4 +4512,45 @@ void redis_conf_auth(HashTable *ht, const char *key, size_t keylen,
     redis_extract_auth_info(zv, user, pass);
 }
 
+/* Update a zval with the current 64 bit scan cursor.  This presents a problem
+ * because we can only represent up to 63 bits in a PHP integer.  So depending
+ * on the cursor value, we may need to represent it as a string. */
+void redisSetScanCursor(zval *zv, uint64_t cursor) {
+    char tmp[21];
+    size_t len;
+
+    ZEND_ASSERT(zv != NULL && (Z_TYPE_P(zv) == IS_LONG ||
+                               Z_TYPE_P(zv) == IS_STRING));
+
+    if (Z_TYPE_P(zv) == IS_STRING)
+        zend_string_release(Z_STR_P(zv));
+
+    if (cursor > ZEND_LONG_MAX) {
+        len = snprintf(tmp, sizeof(tmp), "%llu", (unsigned long long)cursor);
+        ZVAL_STRINGL(zv, tmp, len);
+    } else {
+        ZVAL_LONG(zv, cursor);
+    }
+}
+
+/* Get a Redis SCAN cursor value out of a zval.  These are always taken as a
+ * reference argument that that must be `null`, `int`, or `string`.  */
+uint64_t redisGetScanCursor(zval *zv, zend_bool *was_zero) {
+    ZEND_ASSERT(zv != NULL && (Z_TYPE_P(zv) == IS_LONG ||
+                               Z_TYPE_P(zv) == IS_STRING ||
+                               Z_TYPE_P(zv) == IS_NULL));
+
+    if (Z_TYPE_P(zv) == IS_NULL) {
+        convert_to_long(zv);
+        *was_zero = 0;
+        return 0;
+    } else if (Z_TYPE_P(zv) == IS_STRING) {
+        *was_zero = Z_STRLEN_P(zv) == 1 && Z_STRVAL_P(zv)[0] == '0';
+        return strtoull(Z_STRVAL_P(zv), NULL, 10);
+    } else {
+        *was_zero = Z_LVAL_P(zv) == 0;
+        return Z_LVAL_P(zv);
+    }
+}
+
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */
