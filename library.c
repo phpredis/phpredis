@@ -56,8 +56,13 @@
 #include <ext/json/php_json.h>
 #endif
 
-#include <ext/standard/php_rand.h>
 #include <ext/hash/php_hash.h>
+
+#if PHP_VERSION_ID < 80400
+#include <ext/standard/php_rand.h>
+#else
+#include <ext/random/php_random.h>
+#endif
 
 #define UNSERIALIZE_NONE 0
 #define UNSERIALIZE_KEYS 1
