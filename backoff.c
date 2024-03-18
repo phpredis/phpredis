@@ -1,14 +1,14 @@
 #include "common.h"
 
+#if PHP_VERSION_ID < 80400
 #include <ext/standard/php_rand.h>
-
-#if PHP_VERSION_ID >= 70100
-#include <ext/standard/php_mt_rand.h>
 #else
+#include <ext/random/php_random.h>
+#endif
+
+#if PHP_VERSION_ID < 70100
 static zend_long php_mt_rand_range(zend_long min, zend_long max) {
-    zend_long number = php_rand();
-    RAND_RANGE(number, min, max, PHP_RAND_MAX);
-    return number;
+	return min + php_rand() % (max - min + 1)
 }
 #endif
 

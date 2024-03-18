@@ -27,12 +27,16 @@
 #include "redis_cluster.h"
 #include "redis_commands.h"
 #include "redis_sentinel.h"
-#include <standard/php_random.h>
 #include <ext/spl/spl_exceptions.h>
 #include <zend_exceptions.h>
 #include <ext/standard/info.h>
 #include <ext/hash/php_hash.h>
 
+#if PHP_VERSION_ID < 80400
+#include <ext/standard/php_random.h>
+#else
+#include <ext/random/php_random.h>
+#endif
 
 #ifdef PHP_SESSION
 #include <ext/session/php_session.h>
