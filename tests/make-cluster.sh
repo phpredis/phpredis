@@ -13,6 +13,8 @@ BASEDIR=`pwd`
 NODEDIR=$BASEDIR/nodes
 MAPFILE=$NODEDIR/nodemap
 
+REDIS_BINARY=${REDIS_BINARY:-redis-server}
+
 # Host, nodes, replicas, ports, etc.  Change if you want different values
 HOST="127.0.0.1"
 NOASK=0
@@ -43,7 +45,7 @@ spawnNode() {
     fi
 
     # Attempt to spawn the node
-    verboseRun redis-server --cluster-enabled yes --dir $NODEDIR --port $PORT \
+    verboseRun "$REDIS_BINARY" --cluster-enabled yes --dir $NODEDIR --port $PORT \
         --cluster-config-file node-$PORT.conf --daemonize yes --save \'\' \
         --bind $HOST --dbfilename node-$PORT.rdb $ACLARG
 
@@ -167,8 +169,7 @@ printUsage() {
     exit 0
 }
 
-# We need redis-server
-checkExe redis-server
+checkExe "$REDIS_BINARY"
 
 while getopts "u:p:a:hy" OPT; do
     case $OPT in

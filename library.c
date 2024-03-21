@@ -2310,9 +2310,9 @@ redis_read_xclaim_reply(RedisSock *redis_sock, int count, int is_xautoclaim, zva
     zval z_msgs = {0};
     char *id = NULL;
     long id_len = 0;
-    int messages;
+    int messages = 0;
 
-    ZEND_ASSERT(!is_xautoclaim || count == 3);
+    ZEND_ASSERT(!is_xautoclaim || (count == 2 || count == 3));
 
     ZVAL_UNDEF(rv);
 
@@ -2338,15 +2338,18 @@ redis_read_xclaim_reply(RedisSock *redis_sock, int count, int is_xautoclaim, zva
     if (is_xautoclaim) {
         zval z_deleted = {0};
 
-        if (redis_sock_read_multibulk_reply_zval(redis_sock, &z_deleted) == NULL)
+        if (count == 3 && redis_sock_read_multibulk_reply_zval(redis_sock, &z_deleted) == NULL)
             goto failure;
 
         array_init(rv);
 
-        // Package up ID, message, and deleted messages in our reply
+        // Package up ID and message
         add_next_index_stringl(rv, id, id_len);
         add_next_index_zval(rv, &z_msgs);
-        add_next_index_zval(rv, &z_deleted);
+
+        // Add deleted messages if they exist
+        if (count == 3)
+            add_next_index_zval(rv, &z_deleted);
 
         efree(id);
     } else {
