@@ -15,6 +15,7 @@ class TestSuite
 
     /* Redis server version */
     protected $version;
+    protected $is_keydb;
 
     private static $_boo_colorize = false;
 
