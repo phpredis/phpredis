@@ -1899,7 +1899,9 @@ PHP_METHOD(Redis, multi)
                 REDIS_SAVE_CALLBACK(NULL, NULL);
                 REDIS_ENABLE_MODE(redis_sock, MULTI);
             } else {
-                SOCKET_WRITE_COMMAND(redis_sock, RESP_MULTI_CMD, sizeof(RESP_MULTI_CMD) - 1)
+                if (redis_sock_write(redis_sock, ZEND_STRL(RESP_MULTI_CMD)) < 0) {
+                    RETURN_FALSE;
+                }
                 if ((resp = redis_sock_read(redis_sock, &resp_len)) == NULL) {
                     RETURN_FALSE;
                 } else if (strncmp(resp, "+OK", 3) != 0) {
@@ -1995,8 +1997,9 @@ PHP_METHOD(Redis, exec)
             REDIS_DISABLE_MODE(redis_sock, MULTI);
             RETURN_ZVAL(getThis(), 1, 0);
         }
-        SOCKET_WRITE_COMMAND(redis_sock, RESP_EXEC_CMD, sizeof(RESP_EXEC_CMD) - 1)
-
+        if (redis_sock_write(redis_sock, ZEND_STRL(RESP_EXEC_CMD)) < 0) {
+            RETURN_FALSE;
+        }
         ret = redis_sock_read_multibulk_multi_reply(
             INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_ret);
         free_reply_callbacks(redis_sock);
