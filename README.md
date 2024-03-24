@@ -4,8 +4,9 @@
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/13205/badge.svg)](https://scan.coverity.com/projects/phpredis-phpredis)
 [![PHP version](https://img.shields.io/badge/php-%3E%3D%207.0-8892BF.svg)](https://github.com/phpredis/phpredis)
 
-The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
-This code has been developed and maintained by Owlient from November 2009 to March 2011.
+The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It also supports [KeyDB](https://docs.keydb.dev/), an open source alternative to Redis.
+
+It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 
 You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to michael.grunder@gmail.com ([Twitter](https://twitter.com/grumi78), <a rel="me" href="https://phpc.social/@mgrunder">Mastodon</a>), p.yatsukhnenko@gmail.com ([@yatsukhnenko](https://twitter.com/yatsukhnenko)), or n.favrefelix@gmail.com ([@yowgi](https://twitter.com/yowgi)).
 
