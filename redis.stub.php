@@ -991,7 +991,7 @@ class Redis {
      * $binary = $redis->dump('zset');
      * $redis->restore('new-zset', 0, $binary);
      */
-    public function dump(string $key): Redis|string;
+    public function dump(string $key): Redis|string|false;
 
     /**
      * Have Redis repeat back an arbitrary string to the client.
