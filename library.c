@@ -886,6 +886,10 @@ redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...) {
     smart_str_append_ex(&str, redis_sock->host, 0);
     smart_str_appendc(&str, ':');
     smart_str_append_long(&str, (zend_long)redis_sock->port);
+    if (redis_sock->persistent_id) {
+        smart_str_appendc(&str, ':');
+        smart_str_append_ex(&str, redis_sock->persistent_id, 0);
+    }
 
     /* Short circuit if we don't have a pattern */
     if (fmt == NULL) {
@@ -895,15 +899,9 @@ redis_pool_spprintf(RedisSock *redis_sock, char *fmt, ...) {
 
     while (*fmt) {
         switch (*fmt) {
-            case 'i':
-                if (redis_sock->persistent_id) {
-                    smart_str_appendc(&str, ':');
-                    smart_str_append_ex(&str, redis_sock->persistent_id, 0);
-                }
-                break;
             case 'u':
-                smart_str_appendc(&str, ':');
                 if (redis_sock->user) {
+                    smart_str_appendc(&str, ':');
                     smart_str_append_ex(&str, redis_sock->user, 0);
                 }
                 break;
