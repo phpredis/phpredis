@@ -2411,8 +2411,10 @@ int redis_mget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         Z_PARAM_ARRAY_HT(keys)
     ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
 
-    if (zend_hash_num_elements(keys) == 0)
+    if (zend_hash_num_elements(keys) == 0) {
+        zend_throw_exception(NULL, "Expected array of at least one element", 0);
         return FAILURE;
+    }
 
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, zend_hash_num_elements(keys), "MGET");
 
