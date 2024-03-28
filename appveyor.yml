@@ -1,0 +1,138 @@
+version: "{branch}.build.{build}"
+skip_tags: true
+
+branches:
+        only:
+                - develop
+
+clone_folder:  c:\projects\redis
+
+install:
+        ps: |
+                if (-not (Test-Path c:\build-cache)) {
+                        mkdir c:\build-cache
+                }
+                $bname = 'php-sdk-' + $env:BIN_SDK_VER + '.zip'
+                if (-not (Test-Path c:\build-cache\$bname)) {
+                        (new-object net.webclient).DownloadFile('https://github.com/OSTC/php-sdk-binary-tools/archive/' + $bname, 'c:\build-cache\' + $bname)
+                }
+                $dname0 = 'php-sdk-binary-tools-php-sdk-' + $env:BIN_SDK_VER
+                $dname1 = 'php-sdk-' + $env:BIN_SDK_VER
+                if (-not (Test-Path c:\build-cache\$dname1)) {
+                        7z x c:\build-cache\$bname -oc:\build-cache
+                        move c:\build-cache\$dname0 c:\build-cache\$dname1
+                }
+
+cache:
+        c:\build-cache -> .appveyor.yml
+
+environment:
+        BIN_SDK_VER: 2.0.12
+        matrix:
+                - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+                  ARCH: x64
+                  VC: vc14
+                  PHP_VER: 7.0.24
+                  TS: 0
+                - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+                  ARCH: x64
+                  VC: vc14
+                  PHP_VER: 7.0.24
+                  TS: 1
+                - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+                  ARCH: x86
+                  VC: vc14
+                  PHP_VER: 7.0.24
+                  TS: 0
+                - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+                  ARCH: x86
+                  VC: vc14
+                  PHP_VER: 7.0.24
+                  TS: 1
+                - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+                  ARCH: x64
+                  VC: vc14
+                  PHP_VER: 7.1.10
+                  TS: 0
+                - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+                  ARCH: x64
+                  VC: vc14
+                  PHP_VER: 7.1.10
+                  TS: 1
+                - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+                  ARCH: x86
+                  VC: vc14
+                  PHP_VER: 7.1.10
+                  TS: 0
+                - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+                  ARCH: x86
+                  VC: vc14
+                  PHP_VER: 7.1.10
+                  TS: 1
+
+build_script:
+        ps: |
+                $ts_part = ''
+                if ('0' -eq $env:TS) { $ts_part = '-nts' }
+                $bname = 'php-devel-pack-' + $env:PHP_VER + $ts_part + '-Win32-' + $env:VC.toUpper() + '-' + $env:ARCH + '.zip'
+                if (-not (Test-Path c:\build-cache\$bname)) {
+                        (new-object net.webclient).DownloadFile('http://windows.php.net/downloads/releases/archives/' + $bname, 'c:\build-cache\' + $bname)
+                        if (-not (Test-Path c:\build-cache\$bname)) {
+                                (new-object net.webclient).DownloadFile('http://windows.php.net/downloads/releases/' + $bname, 'c:\build-cache\' + $bname)
+                        }
+                }
+                $dname0 = 'php-' + $env:PHP_VER + '-devel-' + $env:VC.toUpper() + '-' + $env:ARCH
+                $dname1 = 'php-' + $env:PHP_VER + $ts_part + '-devel-' + $env:VC.toUpper() + '-' + $env:ARCH
+                if (-not (Test-Path c:\build-cache\$dname1)) {
+                        7z x c:\build-cache\$bname -oc:\build-cache
+                        if ($dname0 -ne $dname1) { move c:\build-cache\$dname0 c:\build-cache\$dname1 }
+                }
+                cd c:\projects\redis
+                $env:PATH = 'c:\build-cache\' + $dname1 + ';' + $env:PATH
+                #echo "@echo off" | Out-File -Encoding "ASCII" task.bat
+                #echo "" | Out-File -Encoding "ASCII" -Append task.bat
+                echo "" | Out-File -Encoding "ASCII" task.bat
+                echo "call phpize 2>&1" | Out-File -Encoding "ASCII" -Append task.bat
+                echo "call configure --enable-redis --enable-debug-pack 2>&1" | Out-File -Encoding "ASCII" -Append task.bat
+                echo "nmake /nologo 2>&1" | Out-File -Encoding "ASCII" -Append task.bat
+                $here = (Get-Item -Path ".\" -Verbose).FullName
+                $runner = 'c:\build-cache\php-sdk-' + $env:BIN_SDK_VER + '\phpsdk' + '-' + $env:VC + '-' + $env:ARCH + '.bat'
+                $task = $here + '\task.bat'
+                & $runner -t $task
+
+after_build:
+        ps: |
+                $ts_part = 'ts'
+                if ('0' -eq $env:TS) { $ts_part = 'nts' }
+                $zip_bname = 'php_redis-' + $env:APPVEYOR_REPO_COMMIT.substring(0, 8) + '-' + $env:PHP_VER.substring(0, 3) + '-' + $ts_part + '-' + $env:VC + '-' + $env:ARCH + '.zip'
+                $dir = 'c:\projects\redis\';
+                if ('x64' -eq $env:ARCH) { $dir = $dir + 'x64\' }
+                $dir = $dir + 'Release'
+                if ('1' -eq $env:TS) { $dir = $dir + '_TS' }
+                & 7z a c:\$zip_bname $dir\php_redis.dll $dir\php_redis.pdb
+                Push-AppveyorArtifact c:\$zip_bname
+
+test_script:
+        ps: |
+                $ts_part = ''
+                if ('0' -eq $env:TS) { $ts_part = '-nts' }
+                $bname = 'php-' + $env:PHP_VER + $ts_part + '-Win32-' + $env:VC.toUpper() + '-' + $env:ARCH + '.zip'
+                if (-not (Test-Path c:\build-cache\$bname)) {
+                        (new-object net.webclient).DownloadFile('http://windows.php.net/downloads/releases/archives/' + $bname, 'c:\build-cache\' + $bname)
+                        if (-not (Test-Path c:\build-cache\$bname)) {
+                                (new-object net.webclient).DownloadFile('http://windows.php.net/downloads/releases/' + $bname, 'c:\build-cache\' + $bname)
+                        }
+                }
+                $dname = 'php-' + $env:PHP_VER + $ts_part + '-' + $env:VC.toUpper() + '-' + $env:ARCH
+                if (-not (Test-Path c:\build-cache\$dname)) {
+                        7z x c:\build-cache\$bname -oc:\build-cache\$dname
+                }
+                cd c:\projects\redis
+                echo "" | Out-File -Encoding "ASCII" task.bat
+                $cmd = 'call configure --enable-redis --with-prefix=c:\build-cache\' + $dname + " 2>&1"
+                echo $cmd | Out-File -Encoding "ASCII" -Append task.bat
+                echo "nmake /nologo test TESTS=-q 2>&1" | Out-File -Encoding "ASCII" -Append task.bat
+                $here = (Get-Item -Path ".\" -Verbose).FullName
+                $runner = 'c:\build-cache\php-sdk-' + $env:BIN_SDK_VER + '\phpsdk' + '-' + $env:VC + '-' + $env:ARCH + '.bat'
+                $task = $here + '\task.bat'
+                & $runner -t $task
