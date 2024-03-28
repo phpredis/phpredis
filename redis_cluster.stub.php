@@ -636,7 +636,18 @@ class RedisCluster {
     /* We only support Redis::MULTI in RedisCluster but take the argument
        so we can test MULTI..EXEC with RedisTest.php and in the event
        we add pipeline support in the future. */
-    public function multi(int $value = Redis::MULTI): RedisCluster|bool;
+
+    /**
+     * @see Redis::multi
+     *
+     * @param int $mode The mode to use, although `Redis::MULTI` is the only mode supported in `RedisCluster`.`
+     * @return RedisCluster|false
+     *
+     * Unlike `Redis`, if you call `multi()` when already in multi modce, this function will return false and
+     * display a warning.
+     *
+     */
+    public function multi(int $mode = Redis::MULTI): RedisCluster|false;
 
     /**
      * @see Redis::object
