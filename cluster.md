@@ -206,3 +206,13 @@ To enable, set the following INI variable:
 redis.session.early_refresh = 1
 ```
 Note: This is disabled by default since it may significantly reduce the session lifetime for long-running scripts. Redis server version 6.2+ required.
+
+### Session compression
+
+Following INI variables can be used to configure session compression:
+~~~
+; Should session compression be enabled? Possible values are zstd, lzf, lz4, none. Defaults to: none
+redis.session.compression = zstd
+; What compression level should be used? Compression level depends on used library. For most deployments range 1-9 should be fine. Defaults to: 3
+redis.session.compression_level = 3
+~~~
