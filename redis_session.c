@@ -563,6 +563,7 @@ PS_OPEN_FUNC(redis)
         return SUCCESS;
     }
 
+    redis_pool_free(pool);
     return FAILURE;
 }
 /* }}} */
