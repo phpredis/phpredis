@@ -143,7 +143,7 @@ jobs:
 
       - name: Start ${{ matrix.server }}-server
         run: |
-          for PORT in $(seq 6379 6382) $(seq 32767 32769); do
+          for PORT in {6379..6382} {32767..32769}; do
             ${{ matrix.server }}-server \
               --port "$PORT" \
               --daemonize yes \
@@ -161,7 +161,7 @@ jobs:
         run: |
           mkdir -p tests/nodes
           echo -n > tests/nodes/nodemap
-          for PORT in $(seq 7000 7005); do
+          for PORT in {7000..7005}; do
             ${{ matrix.server }}-server \
               --port "$PORT" \
               --cluster-enabled yes \
@@ -171,14 +171,12 @@ jobs:
               --acl-pubsub-default allchannels
             echo 127.0.0.1:"$PORT" >> tests/nodes/nodemap
           done
-          echo yes | ${{ matrix.server }}-cli --cluster create $(seq -f 127.0.0.1:%g 7000 7005) \
-                               --cluster-replicas 1 --user phpredis -a phpredis
 
       - name: Start ${{ matrix.server }} sentinel
         continue-on-error: ${{ matrix.server == 'valkey' }}
         run: |
           wget raw.githubusercontent.com/redis/redis/7.0/sentinel.conf
-          for PORT in $(seq 26379 26380); do
+          for PORT in {26379..26380}; do
             cp sentinel.conf "$PORT.conf"
             sed -i '/^sentinel/Id' "$PORT.conf"
             ${{ matrix.server }}-server "$PORT.conf" \
@@ -187,6 +185,24 @@ jobs:
               --sentinel monitor mymaster 127.0.0.1 6379 1 \
               --sentinel auth-pass mymaster phpredis
           done
+
+      - name: Wait for ${{ matrix.server }} instances
+        run: |
+          for PORT in {6379..6382} {7000..7005} {32767..32768} {26379..26380}; do
+            until echo PING | ${{ matrix.server }}-cli -p "$PORT" 2>&1 | grep -qE 'PONG|NOAUTH'; do
+              echo "Still waiting for ${{ matrix.server }} on port $PORT"
+              sleep .05
+            done
+          done
+          until echo PING | ${{ matrix.server }}-cli -s /tmp/redis.sock 2>&1 | grep -qE 'PONG|NOAUTH'; do
+            echo "Still waiting for ${{ matrix.server }} at /tmp/redis.sock"
+            sleep .05
+          done
+
+      - name: Initialize ${{ matrix.server }} cluster
+        run: |
+          echo yes | ${{ matrix.server }}-cli --cluster create 127.0.0.1:{7000..7005} \
+                                              --cluster-replicas 1 --user phpredis -a phpredis
 
       - name: Run tests
         continue-on-error: ${{ matrix.server == 'valkey' }}
