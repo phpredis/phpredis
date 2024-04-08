@@ -118,6 +118,16 @@ redis.session.lock_wait_time = 50000
 redis.session.lock_retries = 2000
 ~~~
 
+### Session compression
+
+Following INI variables can be used to configure session compression:
+~~~
+; Should session compression be enabled? Possible values are zstd, lzf, lz4, none. Defaults to: none
+redis.session.compression = zstd
+; What compression level should be used? Compression level depends on used library. For most deployments range 1-9 should be fine. Defaults to: 3
+redis.session.compression_level = 3
+~~~
+
 ## Running the unit tests
 
 phpredis uses a small custom unit test suite for testing functionality of the various classes.  To run tests, simply do the following:

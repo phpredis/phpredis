@@ -115,6 +115,8 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("redis.session.lock_retries", "100", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.session.lock_wait_time", "20000", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.session.early_refresh", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.compression", "none", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.compression_level", "3", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
 static const zend_module_dep redis_deps[] = {
