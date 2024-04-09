@@ -51,13 +51,13 @@ class Redis_Test extends TestSuite
     }
 
     protected function getCompressors() {
-        $result[] = Redis::COMPRESSION_NONE;
+        $result['none'] = Redis::COMPRESSION_NONE;
         if (defined('Redis::COMPRESSION_LZF'))
-            $result[] = Redis::COMPRESSION_LZF;
+            $result['lzf'] = Redis::COMPRESSION_LZF;
         if (defined('Redis::COMPRESSION_LZ4'))
-            $result[] = Redis::COMPRESSION_LZ4;
+            $result['lz4'] = Redis::COMPRESSION_LZ4;
         if (defined('Redis::COMPRESSION_ZSTD'))
-            $result[] = Redis::COMPRESSION_ZSTD;
+            $result['zstd'] = Redis::COMPRESSION_ZSTD;
 
         return $result;
     }
@@ -7377,6 +7377,26 @@ return;
         }
     }
 
+    public function testSession_compression() {
+        $this->setSessionHandler();
+
+        foreach ($this->getCompressors() as $name => $val) {
+
+            $id = $this->generateSessionId();
+            $res = $this->startSessionProcess($id, 0, false, 300, true, null,
+                                              -1, 0, "testing_compression_$name", 1440,
+                                              $name);
+
+            $this->assertTrue($res);
+
+            $key = $this->sessionPrefix . $id;
+
+            $this->redis->setOption(Redis::OPT_COMPRESSION, $val);
+            $this->assertTrue($this->redis->get($key) !== false);
+            $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+        }
+    }
+
     public function testSession_savedToRedis()
     {
         $this->setSessionHandler();
@@ -7878,33 +7898,40 @@ return;
      * @param int    $lock_retries
      * @param int    $lock_expires
      * @param string $sessionData
-     *
      * @param int    $sessionLifetime
+     * @param string $sessionCompression
      *
      * @return bool
      * @throws Exception
      */
-    private function startSessionProcess($sessionId, $sleepTime, $background, $maxExecutionTime = 300, $locking_enabled = true, $lock_wait_time = null, $lock_retries = -1, $lock_expires = 0, $sessionData = '', $sessionLifetime = 1440)
+    private function startSessionProcess($sessionId, $sleepTime, $background,
+                                         $maxExecutionTime = 300,
+                                         $locking_enabled = true,
+                                         $lock_wait_time = null,
+                                         $lock_retries = -1,
+                                         $lock_expires = 0,
+                                         $sessionData = '',
+                                         $sessionLifetime = 1440,
+                                         $sessionCompression = 'none')
     {
-        if (substr(php_uname(), 0, 7) == "Windows"){
+        if (strpos(php_uname(), 'Windows') !== false)
             $this->markTestSkipped();
-            return true;
-        } else {
-            $commandParameters = [$this->getFullHostPath(), $this->sessionSaveHandler, $sessionId, $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires, $sessionData, $sessionLifetime];
-            if ($locking_enabled) {
-                $commandParameters[] = '1';
 
-                if ($lock_wait_time != null) {
-                    $commandParameters[] = $lock_wait_time;
-                }
-            }
-            $commandParameters = array_map('escapeshellarg', $commandParameters);
+        $commandParameters = [
+            $this->getFullHostPath(), $this->sessionSaveHandler, $sessionId,
+            $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires,
+            $sessionData, $sessionLifetime, $locking_enabled ? 1 : 0,
+            $lock_wait_time ?? 0, $sessionCompression
+        ];
 
-            $command = self::getPhpCommand('startSession.php') . implode(' ', $commandParameters);
-            $command .= $background ? ' 2>/dev/null > /dev/null &' : ' 2>&1';
-            exec($command, $output);
-            return ($background || (count($output) == 1 && $output[0] == 'SUCCESS')) ? true : false;
-        }
+        $commandParameters = array_map('escapeshellarg', $commandParameters);
+        $commandParameters[] = $background ? '>/dev/null 2>&1 &' : '2>&1';
+
+        $command = self::getPhpCommand('startSession.php') . implode(' ', $commandParameters);
+
+        exec($command, $output);
+
+        return ($background || (count($output) == 1 && $output[0] == 'SUCCESS'));
     }
 
     /**
