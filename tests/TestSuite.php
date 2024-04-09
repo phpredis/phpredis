@@ -43,19 +43,6 @@ class TestSuite
     public function getPort() { return $this->i_port; }
     public function getAuth() { return $this->auth; }
 
-    /**
-     * Returns the fully qualified host path,
-     * which may be used directly for php.ini parameters like session.save_path
-     *
-     * @return null|string
-     */
-    protected function getFullHostPath()
-    {
-        return $this->str_host
-            ? 'tcp://' . $this->str_host . ':' . $this->i_port
-            : null;
-    }
-
     public static function make_bold($str_msg) {
         return self::$_boo_colorize
             ? self::$BOLD_ON . $str_msg . self::$BOLD_OFF
@@ -80,13 +67,84 @@ class TestSuite
             : $str_msg;
     }
 
+    protected function printArg($v) {
+        if (is_null($v))
+            return '(null)';
+        else if ($v === false || $v === true)
+            return $v ? '(true)' : '(false)';
+        else if (is_string($v))
+            return "'$v'";
+        else
+            return print_r($v, true);
+    }
+
+    protected function findTestFunction($bt) {
+        $i = 0;
+        while (isset($bt[$i])) {
+            if (substr($bt[$i]['function'], 0, 4) == 'test')
+                return $bt[$i]['function'];
+            $i++;
+        }
+        return NULL;
+    }
+
+    protected function assertionTrace(?string $fmt = NULL, ...$args) {
+        $prefix = 'Assertion failed:';
+
+        $lines = [];
+
+        $bt = debug_backtrace();
+
+        $msg = $fmt ? vsprintf($fmt, $args) : NULL;
+
+        $fn = $this->findTestFunction($bt);
+        $lines []= sprintf("%s %s - %s", $prefix, self::make_bold($fn),
+                           $msg ? $msg : '(no message)');
+
+        array_shift($bt);
+
+        for ($i = 0; $i < count($bt); $i++) {
+            $file = $bt[$i]['file'];
+            $line = $bt[$i]['line'];
+            $fn   = $bt[$i+1]['function'] ?? $bt[$i]['function'];
+
+            $lines []= sprintf("%s %s:%d (%s)%s",
+                str_repeat(' ', strlen($prefix)), $file, $line,
+                $fn, $msg ? " $msg" : '');
+
+            if (substr($fn, 0, 4) == 'test')
+                break;
+        }
+
+        return implode("\n", $lines) . "\n";
+    }
+
+    protected function assert($fmt, ...$args) {
+        self::$errors []= $this->assertionTrace($fmt, ...$args);
+    }
+
     protected function assertFalse($bool) {
-        if(!$bool)
+        if( ! $bool)
+            return true;
+        self::$errors []= $this->assertionTrace();
+
+        return false;
+    }
+
+    protected function assertKeyExists($redis, $key) {
+        if ($redis->exists($key))
             return true;
 
-        $bt = debug_backtrace(false);
-        self::$errors []= sprintf("Assertion failed: %s:%d (%s)\n",
-            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+        self::$errors []= $this->assertionTrace("Key '%s' does not exist.", $key);
+
+        return false;
+    }
+
+    protected function assertKeyMissing($redis, $key) {
+        if ( ! $redis->exists($key))
+            return true;
+
+        self::$errors []= $this->assertionTrace("Key '%s' exists but shouldn't.", $key);
 
         return false;
     }
@@ -95,40 +153,42 @@ class TestSuite
         if($bool)
             return true;
 
-        $bt = debug_backtrace(false);
-        self::$errors []= sprintf("Assertion failed: %s:%d (%s) %s\n",
-            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], $msg);
+        self::$errors []= $this->assertionTrace($msg);
 
         return false;
     }
 
-    protected function assertInArray($ele, $arr, $cb = NULL) {
-        if ($cb && !is_callable($cb))
-            die("Fatal:  assertInArray callback must be callable!\n");
+    protected function assertInArray($ele, $arr, ?callable $cb = NULL) {
+        $cb ??= function ($v) { return true; };
 
-        if (($in = in_array($ele, $arr)) && (!$cb || $cb($arr[array_search($ele, $arr)])))
+        $key = array_search($ele, $arr);
+
+        if ($key !== false && ($valid = $cb($ele)))
             return true;
 
-
-        $bt = debug_backtrace(false);
-        $ex = $in ? 'validation' : 'missing';
-        self::$errors []= sprintf("Assertion failed: %s:%d (%s) [%s '%s']\n",
-            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], $ex, $ele);
+        self::$errors []= $this->assertionTrace("%s %s %s", $this->printArg($ele),
+                                                $key === false ? 'missing from' : 'is invalid in',
+                                                $this->printArg($arr));
 
         return false;
     }
 
-    protected function assertArrayKey($arr, $key, $cb = NULL) {
-        if ($cb && !is_callable($cb))
-            die("Fatal:  assertArrayKey callback must be callable\n");
+    protected function assertArrayKey($arr, $key, callable $cb = NULL) {
+        $cb ??= function ($v) { return true; };
 
-        if (($exists = isset($arr[$key])) && (!$cb || $cb($arr[$key])))
+        if (($exists = isset($arr[$key])) && $cb($arr[$key]))
             return true;
 
-        $bt = debug_backtrace(false);
-        $ex = $exists ? 'validation' : 'missing';
-        self::$errors []= sprintf("Assertion failed: %s:%d (%s) [%s '%s']\n",
-            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], $ex, $key);
+
+        if ($exists) {
+            $msg = sprintf("%s is invalid in %s", $this->printArg($arr[$key]),
+                                                  $this->printArg($arr));
+        } else {
+            $msg = sprintf("%s is not a key in %s", $this->printArg($key),
+                                                    $this->printArg($arr));
+        }
+
+        self::$errors []= $this->assertionTrace($msg);
 
         return false;
     }
@@ -140,9 +200,7 @@ class TestSuite
         if ($cb($val))
             return true;
 
-        $bt = debug_backtrace(false);
-        self::$errors []= sprintf("Assertion failed: %s:%d (%s)\n--- VALUE ---\n%s\n",
-            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], print_r($val, true));
+        self::$errors []= $this->assertionTrace("%s is invalid.", $this->printArg($val));
 
         return false;
     }
@@ -163,62 +221,101 @@ class TestSuite
         if ($threw && $match)
             return true;
 
-        $bt = debug_backtrace(false);
+//        $bt = debug_backtrace(false);
         $ex = !$threw ? 'no exception' : "no match '$regex'";
-        self::$errors []= sprintf("Assertion failed: %s:%d (%s) [%s]\n",
-            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], $ex);
 
+        self::$errors []= $this->assertionTrace("[$ex]");
+//
         return false;
     }
 
     protected function assertLess($a, $b) {
         if($a < $b)
-            return;
+            return true;
 
+        self::$errors []= $this->assertionTrace("%s >= %s", $a, $b);
+
+        return false;
+    }
+
+    protected function assertMore($a, $b) {
+        if($a > $b)
+            return true;
+
+        self::$errors [] = $this->assertionTrace("%s <= %s", $a, $b);
+
+        return false;
+    }
+
+    protected function externalCmdFailure($cmd, $output, $msg = NULL, $exit_code = NULL) {
         $bt = debug_backtrace(false);
-        self::$errors[] = sprintf("Assertion failed (%s >= %s): %s: %d (%s\n",
-            print_r($a, true), print_r($b, true),
-            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+
+        $lines[] = sprintf("Assertion failed: %s:%d (%s)",
+                           $bt[0]['file'], $bt[0]['line'],
+                           self::make_bold($bt[0]['function']));
+
+
+        if ($msg)
+            $lines[] = sprintf("         Message: %s", $msg);
+        if ($exit_code !== NULL)
+            $lines[] = sprintf("       Exit code: %d", $exit_code);
+        $lines[] = sprintf(    "         Command: %s", $cmd);
+        if ($output)
+            $lines[] = sprintf("          Output: %s", $output);
+
+        self::$errors[] = implode("\n", $lines) . "\n";
     }
 
     protected function assertBetween($value, $min, $max, bool $exclusive = false) {
         if ($exclusive) {
             if ($value > $min && $value < $max)
-                return;
+                return true;
         } else {
             if ($value >= $min && $value <= $max)
-                return;
+                return true;
         }
 
-        $bt = debug_backtrace(false);
-        self::$errors []= sprintf("Assertion failed (%s not between %s and %s): %s:%d (%s)\n",
-            print_r($value, true), print_r($min, true), print_r($max, true),
-            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+        self::$errors []= $this->assertionTrace(sprintf("'%s' not between '%s' and '%s'",
+                                                        $value, $min, $max));
+
+        return false;
     }
 
     protected function assertEquals($a, $b) {
         if($a === $b)
-            return;
+            return true;
 
-        $bt = debug_backtrace(false);
-        self::$errors []= sprintf("Assertion failed (%s !== %s): %s:%d (%s)\n",
-            print_r($a, true), print_r($b, true),
-            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+        self::$errors[] = $this->assertionTrace("%s !== %s", $this->printArg($a),
+                                                $this->printArg($b));
+
+        return false;
+    }
+
+    public function assertNotEquals($a, $b) {
+        if($a !== $b)
+            return true;
+
+        self::$errors []= $this->assertionTrace("%s === %s", $this->printArg($a),
+                                                $this->printArg($b));
+
+        return false;
     }
 
     protected function assertPatternMatch($str_test, $str_regex) {
         if (preg_match($str_regex, $str_test))
-            return;
+            return true;
 
-        $bt = debug_backtrace(false);
-        self::$errors []= sprintf("Assertion failed ('%s' doesnt match '%s'): %s:%d (%s)\n",
-            $str_test, $str_regex, $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+        self::$errors []= $this->assertionTrace("'%s' doesnt match '%s'",
+                                                $str_test, $str_regex);
+
+        return false;
     }
 
     protected function markTestSkipped($msg='') {
         $bt = debug_backtrace(false);
         self::$warnings []= sprintf("Skipped test: %s:%d (%s) %s\n",
-            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], $msg);
+                                    $bt[0]["file"], $bt[0]["line"],
+                                    $bt[1]["function"], $msg);
 
         throw new TestSkippedException($msg);
     }

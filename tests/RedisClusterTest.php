@@ -22,15 +22,6 @@ class Redis_Cluster_Test extends Redis_Test {
     ];
 
     protected static $_arr_node_map = [];
-    /**
-     * @var string
-     */
-    protected $sessionPrefix = 'PHPREDIS_CLUSTER_SESSION:';
-
-    /**
-     * @var string
-     */
-    protected $sessionSaveHandler = 'rediscluster';
 
     /* Tests we'll skip all together in the context of RedisCluster.  The
      * RedisCluster class doesn't implement specialized (non-redis) commands
@@ -709,12 +700,14 @@ class Redis_Cluster_Test extends Redis_Test {
     public function testSession()
     {
         @ini_set('session.save_handler', 'rediscluster');
-        @ini_set('session.save_path', $this->getFullHostPath() . '&failover=error');
+        @ini_set('session.save_path', $this->sessionSavePath() . '&failover=error');
+
         if (!@session_start()) {
             return $this->markTestSkipped();
         }
         session_write_close();
-        $this->assertTrue($this->redis->exists('PHPREDIS_CLUSTER_SESSION:' . session_id()));
+
+        $this->assertKeyExists($this->sessionPrefix() . session_id());
     }
 
 
@@ -748,16 +741,21 @@ class Redis_Cluster_Test extends Redis_Test {
         ini_set('redis.pconnect.pooling_enabled', $prev_value);
     }
 
+    protected function sessionPrefix(): string {
+        return 'PHPREDIS_CLUSTER_SESSION:';
+    }
+
+    protected function sessionSaveHandler(): string {
+        return 'rediscluster';
+    }
+
     /**
      * @inheritdoc
      */
-    protected function getFullHostPath()
-    {
-        $auth = $this->getAuthFragment();
-
+    protected function sessionSavePath(): string {
         return implode('&', array_map(function ($host) {
             return 'seed[]=' . $host;
-        }, self::$_arr_node_map)) . ($auth ? "&$auth" : '');
+        }, self::$_arr_node_map)) . '&' . $this->getAuthFragment();
     }
 
     /* Test correct handling of null multibulk replies */
