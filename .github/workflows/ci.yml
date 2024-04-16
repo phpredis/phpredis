@@ -121,7 +121,7 @@ jobs:
       - name: Install ValKey
         if: matrix.server == 'valkey'
         run: |
-          git clone https://github.com/valkey-io/valkey.git
+          git clone --depth 1 --branch 7.2.5 https://github.com/valkey-io/valkey.git
           cd valkey && BUILD_TLS=yes sudo make install
 
       - name: Build phpredis
@@ -173,7 +173,6 @@ jobs:
           done
 
       - name: Start ${{ matrix.server }} sentinel
-        continue-on-error: ${{ matrix.server == 'valkey' }}
         run: |
           wget raw.githubusercontent.com/redis/redis/7.0/sentinel.conf
           for PORT in {26379..26380}; do
@@ -205,7 +204,6 @@ jobs:
                                               --cluster-replicas 1 --user phpredis -a phpredis
 
       - name: Run tests
-        continue-on-error: ${{ matrix.server == 'valkey' }}
         run: |
           php tests/TestRedis.php --class Redis --user phpredis --auth phpredis
           php tests/TestRedis.php --class RedisArray --user phpredis --auth phpredis
