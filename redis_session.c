@@ -135,7 +135,7 @@ redis_pool_free(redis_pool *pool) {
     efree(pool);
 }
 
-/* Retreive session.gc_maxlifetime from php.ini protecting against an integer overflow */
+/* Retrieve session.gc_maxlifetime from php.ini protecting against an integer overflow */
 static int session_gc_maxlifetime(void) {
     zend_long value = INI_INT("session.gc_maxlifetime");
     if (value > INT_MAX) {

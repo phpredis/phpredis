@@ -372,7 +372,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Add cluster support for strict sessions and lazy write [b6cf6361] (Michael Grunder)
     * Add function command [90a0e9cc] (Pavlo Yatsukhnenko)
     * Add FCALL/FCALL_RO commands [7c46ad2c] (Pavlo Yatsukhnenko)
-    * Remove unused macroses [831d6118] (Pavlo Yatsukhnenko)
+    * Remove unused macros [831d6118] (Pavlo Yatsukhnenko)
 
    </notes>
  </release>
@@ -809,7 +809,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     This release contains initial support for Redis Sentinel as well as many
     smaller bug fixes and improvements.  It is especially of interest if you
     use persistent connections, as we've added logic to make sure they are in
-    a good state when retreving them from the pool.
+    a good state when retrieving them from the pool.
 
     IMPORTANT: Sentinel support is considered experimental and the API
                will likely change based on user feedback.
@@ -823,7 +823,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Initial support for RedisSentinel [90cb69f3, c94e28f1, 46da22b0, 5a609fa4,
       383779ed] (Pavlo Yatsukhnenko)
 
-    * Houskeeping (spelling, doc changes, etc) [23f9de30, d07a8df6, 2d39b48d,
+    * Housekeeping (spelling, doc changes, etc) [23f9de30, d07a8df6, 2d39b48d,
       0ef488fc, 2c35e435, f52bd8a8, 2ddc5f21, 1ff7dfb7, db446138] (Tyson Andre,
       Pavlo Yatsukhnenko, Michael Grunder, Tyson Andre)
 
@@ -853,7 +853,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     This release contains initial support for Redis Sentinel as well as many
     smaller bug fixes and improvements.  It is especially of interest if you
     use persistent connections, as we've added logic to make sure they are in
-    a good state when retreving them from the pool.
+    a good state when retrieving them from the pool.
 
     IMPORTANT: Sentinel support is considered experimental and the API
                will likely change based on user feedback.
@@ -867,7 +867,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Initial support for RedisSentinel [90cb69f3, c94e28f1, 46da22b0, 5a609fa4,
       383779ed] (Pavlo Yatsukhnenko)
 
-    * Houskeeping (spelling, doc changes, etc) [23f9de30, d07a8df6, 2d39b48d,
+    * Housekeeping (spelling, doc changes, etc) [23f9de30, d07a8df6, 2d39b48d,
       0ef488fc, 2c35e435, f52bd8a8, 2ddc5f21, 1ff7dfb7, db446138] (Tyson Andre,
       Pavlo Yatsukhnenko, Michael Grunder, Tyson Andre)
 
@@ -984,7 +984,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <notes>
       phpredis 4.3.0
 
-      This is probably the last release with PHP 5 suport!!!
+      This is probably the last release with PHP 5 support!!!
 
       * Proper persistent connections pooling implementation [a3703820, c76e00fb, 0433dc03, c75b3b93] (Pavlo Yatsukhnenko)
       * RedisArray auth [b5549cff, 339cfa2b, 6b411aa8] (Pavlo Yatsukhnenko)
@@ -1036,7 +1036,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
       * Fix incorrect arginfo for `Redis::sRem` and `Redis::multi` [25b043ce] (Pavlo Yatsukhnenko)
       * Update STREAM API to handle STATUS -> BULK reply change [0b97ec37] (Michael Grunder)
       * Treat a -1 response from cluster_check_response as a timeout. [27df9220, 07ef7f4e, d1172426] (Michael Grunder)
-      * Use a ZSET insted of SET for EVAL tests [2e412373] (Michael Grunder)
+      * Use a ZSET instead of SET for EVAL tests [2e412373] (Michael Grunder)
       * Missing space between command and args [0af2a7fe] (@remicollet)
 
       4.2.0RC1:
@@ -1154,7 +1154,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
    <notes>
     phpredis 3.1.6
 
-    This release conains only fix of RedisArray distributor hashing function
+    This release contains only fix of RedisArray distributor hashing function
     which was broken in 3.1.4. Huge thanks to @rexchen123
    </notes>
    </release>
@@ -1222,8 +1222,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
     phpredis 3.1.3
 
     This release contains two big improvements:
-      1. Adding a new printf like command construction function with additionaly format specifiers specific to phpredis.
-      2. Implementation of custom objects for Redis and RedisArray wich eliminates double hash lookup.
+      1. Adding a new printf like command construction function with additionally format specifiers specific to phpredis.
+      2. Implementation of custom objects for Redis and RedisArray which eliminates double hash lookup.
     Also many small improvements and bug fixes were made.
 
     * A printf like method to construct a Redis RESP command [a4a0ed, d75081, bdd287, 0eaeae, b3d00d] (Michael Grunder)
@@ -1295,7 +1295,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
       wrong size. (@remicollet)
 
     * Added php session unit test (@yatsukhnenko)
-    * Added explicit module dependancy for igbinary (@remicollet)
+    * Added explicit module dependency for igbinary (@remicollet)
     * Added phpinfo serialization information (@remicollet)
    </notes>
    </release>
@@ -1342,7 +1342,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     In addition there have been many bug fixes and improvements to non cluster
     related commands, which are listed below.
 
-    I've attempted to include everyone who contribued to the project in each fix
+    I've attempted to include everyone who contributed to the project in each fix
     description and have included names or github user ids.
 
     Thanks to everyone for submitting bug reports and pull requests.  A special
@@ -1368,7 +1368,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fixed memory leak in discard function [17b1f427]
     * Sanity check for igbinary unserialization (Maurus Cuelenaere) [3266b222,
       5528297a]
-    * Fix segfault occuring from unclosed socket connection for Redis Cluster
+    * Fix segfault occurring from unclosed socket connection for Redis Cluster
       (CatKang) [04196aee]
     * Case insensitive zRangeByScore options
     * Fixed dreaded size_t vs long long compiler warning

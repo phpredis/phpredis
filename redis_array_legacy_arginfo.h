@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: fa84ce2b68b10564dd8abaffecefe4dd5d65b591 */
+ * Stub hash: ddb92422452cb767a7d6694aa8ac60d883db6672 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisArray___call, 0, 0, 2)
 	ZEND_ARG_INFO(0, function_name)

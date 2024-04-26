@@ -1,6 +1,72 @@
 on: [push, pull_request]
 
 jobs:
+  configured-deps:
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    strategy:
+      fail-fast: true
+      matrix:
+        php: ['8.3']
+    steps:
+      - name: Checkout PhpRedis
+        uses: actions/checkout@v4
+
+      - name: Install liblzf
+        run: |
+          git clone --depth=1 https://github.com/nemequ/liblzf.git
+          cd liblzf
+          autoreconf -vi
+          CFLAGS=-fPIC ./configure --prefix="$GITHUB_WORKSPACE/liblzf"
+          make install
+
+      - name: Install liblz4
+        run: |
+          git clone -b v1.9.4 --depth=1 https://github.com/lz4/lz4
+          cd lz4/lib
+          PREFIX="$GITHUB_WORKSPACE/liblz4" make install
+
+      - name: Install libzstd
+        run: |
+          git clone -b v1.5.5 --depth=1 https://github.com/facebook/zstd
+          cd zstd
+          PREFIX="$GITHUB_WORKSPACE/libzstd" make install
+
+      - name: Install PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: json, igbinary, msgpack, :redis
+          coverage: none
+          tools: none
+
+      - name: Configure and build PhpRedis with distinct dep paths
+        run: |
+          phpize
+          ./configure \
+            --enable-redis-lz4 \
+            --with-liblz4="$GITHUB_WORKSPACE/liblz4" \
+            --enable-redis-lzf \
+            --with-liblzf="$GITHUB_WORKSPACE/liblzf" \
+            --enable-redis-zstd \
+            --with-libzstd="$GITHUB_WORKSPACE/libzstd"
+          sudo make -j"$(nproc)"
+
+      - name: Make sure we're linking against specific liblz4
+        run: |
+          grep "INCLUDES.*$GITHUB_WORKSPACE/liblz4" Makefile
+          grep "REDIS_SHARED_LIBADD.*-L$GITHUB_WORKSPACE/liblz4" Makefile
+
+      - name: Make sure we're linking against specific liblzf
+        run: |
+          grep "INCLUDES.*$GITHUB_WORKSPACE/liblzf" Makefile
+          grep "REDIS_SHARED_LIBADD.*-L$GITHUB_WORKSPACE/liblzf" Makefile
+
+      - name: Make sure we're linking against specific libzstd
+        run: |
+          grep "INCLUDES.*$GITHUB_WORKSPACE/libzstd" Makefile
+          grep "REDIS_SHARED_LIBADD.*-L$GITHUB_WORKSPACE/libzstd" Makefile
+
   ubuntu:
     runs-on: ubuntu-latest
     continue-on-error: false
@@ -8,6 +74,8 @@ jobs:
       fail-fast: false
       matrix:
         php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
+        server: ['redis-server', 'keydb-server']
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,42 +88,88 @@ jobs:
           extensions: json, igbinary, msgpack, :redis
           coverage: none
           tools: none
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
-          curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
           sudo apt-get update
-          sudo apt --fix-broken install
-          sudo apt-get install redis valgrind libzstd-dev liblz4-dev
+          sudo apt-get install valgrind libzstd-dev liblz4-dev
+      - name: Install Redis
+        env:
+          REDIS_PPA_URI: "packages.redis.io/deb"
+          REDIS_PPA_KEY: "packages.redis.io/gpg"
+        run: |
+          echo "deb https://$REDIS_PPA_URI $(lsb_release -cs) main" | \
+               sudo tee /etc/apt/sources.list.d/redis.list
+          curl -fsSL "https://$REDIS_PPA_KEY" | \
+               sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/redis.gpg
+          sudo apt-get update
+          sudo apt-get install redis
+
+      - name: Install KeyDB
+        env:
+          KEYDB_PPA_URI: "download.keydb.dev/open-source-dist"
+          KEYDB_PPA_KEY: "download.keydb.dev/open-source-dist/keyring.gpg"
+        run: |
+          echo "deb https://$KEYDB_PPA_URI $(lsb_release -sc) main" | \
+               sudo tee /etc/apt/sources.list.d/keydb.list
+          sudo wget -O /etc/apt/trusted.gpg.d/keydb.gpg "https://$KEYDB_PPA_KEY"
+          sudo apt-get update
+          sudo apt-get install keydb
       - name: Build phpredis
         run: |
           phpize
-          ./configure --enable-redis-lzf --enable-redis-zstd --enable-redis-igbinary --enable-redis-msgpack --enable-redis-lz4 --with-liblz4
+          ./configure \
+            --enable-redis-lzf \
+            --enable-redis-zstd \
+            --enable-redis-igbinary \
+            --enable-redis-msgpack \
+            --enable-redis-lz4 \
+            --with-liblz4
           sudo make -j"$(nproc)" install
+
           echo 'extension = redis.so' | sudo tee -a "$(php --ini | grep 'Scan for additional .ini files' | awk '{print $7}')"/90-redis.ini
       - name: Start redis
         run: |
           redis-cli SHUTDOWN NOSAVE
           for PORT in $(seq 6379 6382) $(seq 32767 32769); do
-            redis-server --port "$PORT" --daemonize yes --aclfile tests/users.acl --acl-pubsub-default allchannels
+            ${{ matrix.server }} \
+              --port "$PORT" \
+              --daemonize yes \
+              --aclfile tests/users.acl \
+              --acl-pubsub-default allchannels
           done
-          redis-server --port 0 --unixsocket /tmp/redis.sock --daemonize yes --aclfile tests/users.acl --acl-pubsub-default allchannels
+          ${{ matrix.server }} \
+            --port 0 \
+            --unixsocket /tmp/redis.sock \
+            --daemonize yes \
+            --aclfile tests/users.acl \
+            --acl-pubsub-default allchannels
       - name: Start redis cluster
         run: |
           mkdir -p tests/nodes
           echo -n > tests/nodes/nodemap
           for PORT in $(seq 7000 7005); do
-            redis-server --port "$PORT" --cluster-enabled yes --cluster-config-file "$PORT".conf --daemonize yes --aclfile tests/users.acl --acl-pubsub-default allchannels
+            ${{ matrix.server }} \
+              --port "$PORT" \
+              --cluster-enabled yes \
+              --cluster-config-file "$PORT".conf \
+              --daemonize yes \
+              --aclfile tests/users.acl \
+              --acl-pubsub-default allchannels
             echo 127.0.0.1:"$PORT" >> tests/nodes/nodemap
           done
-          echo yes | redis-cli --cluster create $(seq -f 127.0.0.1:%g 7000 7005) --cluster-replicas 1 --user phpredis -a phpredis
+          echo yes | redis-cli --cluster create $(seq -f 127.0.0.1:%g 7000 7005) \
+                               --cluster-replicas 1 --user phpredis -a phpredis
       - name: Start redis sentinel
         run: |
           wget raw.githubusercontent.com/redis/redis/7.0/sentinel.conf
           for PORT in $(seq 26379 26380); do
             cp sentinel.conf "$PORT.conf"
             sed -i '/^sentinel/Id' "$PORT.conf"
-            redis-server "$PORT.conf" --port "$PORT" --daemonize yes --sentinel monitor mymaster 127.0.0.1 6379 1 --sentinel auth-pass mymaster phpredis
+            ${{ matrix.server }} "$PORT.conf" \
+              --port "$PORT" \
+              --daemonize yes \
+              --sentinel monitor mymaster 127.0.0.1 6379 1 \
+              --sentinel auth-pass mymaster phpredis
           done
       - name: Run tests
         run: |

@@ -4,8 +4,9 @@
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/13205/badge.svg)](https://scan.coverity.com/projects/phpredis-phpredis)
 [![PHP version](https://img.shields.io/badge/php-%3E%3D%207.0-8892BF.svg)](https://github.com/phpredis/phpredis)
 
-The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
-This code has been developed and maintained by Owlient from November 2009 to March 2011.
+The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It also supports [KeyDB](https://docs.keydb.dev/), an open source alternative to Redis.
+
+It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
 
 You can send comments, patches, questions [here on github](https://github.com/phpredis/phpredis/issues), to michael.grunder@gmail.com ([Twitter](https://twitter.com/grumi78), <a rel="me" href="https://phpc.social/@mgrunder">Mastodon</a>), p.yatsukhnenko@gmail.com ([@yatsukhnenko](https://twitter.com/yatsukhnenko)), or n.favrefelix@gmail.com ([@yowgi](https://twitter.com/yowgi)).
 
@@ -65,11 +66,7 @@ see the [INSTALL.md](./INSTALL.md) page.
 
 ## PHP Session handler
 
-phpredis can be used to store PHP sessions. To do this, configure `session.save_handler` and `session.save_path` in your php.ini to tell phpredis where to store the sessions:
-~~~
-session.save_handler = redis
-session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeout=2.5, tcp://host3:6379?weight=2&read_timeout=2.5"
-~~~
+phpredis can be used to store PHP sessions. To do this, configure `session.save_handler` and `session.save_path` in your php.ini to tell phpredis where to store the sessions.
 
 `session.save_path` can have a simple `host:port` format too, but you need to provide the `tcp://` scheme if you want to use the parameters. The following parameters are available:
 
@@ -83,6 +80,26 @@ session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeou
 Sessions have a lifetime expressed in seconds and stored in the INI variable "session.gc_maxlifetime". You can change it with [`ini_set()`](http://php.net/ini_set).
 The session handler requires a version of Redis supporting `EX` and `NX` options of `SET` command (at least 2.6.12).
 phpredis can also connect to a unix domain socket: `session.save_path = "unix:///var/run/redis/redis.sock?persistent=1&weight=1&database=0"`.
+
+### Examples
+
+Multiple Redis servers:
+~~~
+session.save_handler = redis
+session.save_path = "tcp://host1:6379?weight=1, tcp://host2:6379?weight=2&timeout=2.5, tcp://host3:6379?weight=2&read_timeout=2.5"
+~~~
+
+Login to Redis using username and password:
+~~~
+session.save_handler = redis
+session.save_path = "tcp://127.0.0.1:6379?auth[]=user&auth[]=password"
+~~~
+
+Login to Redis using username, password, and set prefix:
+~~~
+session.save_handler = redis
+session.save_path = "tcp://127.0.0.1:6379?auth[]=user&auth[]=password&prefix=user_PHPREDIS_SESSION:"
+~~~
 
 ### Session locking
 
@@ -460,7 +477,7 @@ _**Description**_: Sends a string to Redis, which replies with the same string
 1. [Backoff algorithms](#backoff-algorithms)
 
 ### Maximum retries
-You can set and get the maximum retries upon connection issues using the `OPT_MAX_RETRIES` option. Note that this is the number of _retries_, meaning if you set this option to _n_, there will be a maximum _n+1_ attemps overall. Defaults to 10.
+You can set and get the maximum retries upon connection issues using the `OPT_MAX_RETRIES` option. Note that this is the number of _retries_, meaning if you set this option to _n_, there will be a maximum _n+1_ attempts overall. Defaults to 10.
 
 ##### *Example*
 
@@ -511,7 +528,7 @@ $redis->setOption(Redis::OPT_BACKOFF_CAP, 750); // backoff time capped at 750ms
 _**Description**_: Execute the Redis ACL command.
 
 ##### *Parameters*
-_variable_:  Minumum of one argument for `Redis` and two for `RedisCluster`.
+_variable_:  Minimum of one argument for `Redis` and two for `RedisCluster`.
 
 ##### *Example*
 ~~~php

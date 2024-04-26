@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: fa84ce2b68b10564dd8abaffecefe4dd5d65b591 */
+ * Stub hash: ddb92422452cb767a7d6694aa8ac60d883db6672 */
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisArray___call, 0, 2, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, function_name, IS_STRING, 0)
@@ -44,7 +44,8 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_RedisArray_discard, 0, 0, _IS_BOOL, 1)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_RedisArray_exec arginfo_class_RedisArray_discard
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisArray_exec, 0, 0, MAY_BE_BOOL|MAY_BE_NULL|MAY_BE_ARRAY)
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisArray_flushall arginfo_class_RedisArray__continuum
 
@@ -56,7 +57,7 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisArray_hscan, 0, 2, MAY_BE_BOOL|MAY_BE_ARRAY)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(1, iterator, IS_LONG, 1)
+	ZEND_ARG_TYPE_MASK(1, iterator, MAY_BE_NULL|MAY_BE_LONG|MAY_BE_STRING, NULL)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, pattern, IS_STRING, 1, "null")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
@@ -85,7 +86,7 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_RedisArray_save arginfo_class_RedisArray__continuum
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisArray_scan, 0, 2, MAY_BE_BOOL|MAY_BE_ARRAY)
-	ZEND_ARG_TYPE_INFO(1, iterator, IS_LONG, 1)
+	ZEND_ARG_TYPE_MASK(1, iterator, MAY_BE_NULL|MAY_BE_LONG|MAY_BE_STRING, NULL)
 	ZEND_ARG_TYPE_INFO(0, node, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, pattern, IS_STRING, 1, "null")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")

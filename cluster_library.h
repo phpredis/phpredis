@@ -116,7 +116,7 @@
     mc->args.len = 0; \
     mc->argc     = 0; \
 
-/* Initialzie a clusterMultiCmd with a keyword and length */
+/* Initialize a clusterMultiCmd with a keyword and length */
 #define CLUSTER_MULTI_INIT(mc, keyword, keyword_len) \
     mc.kw     = keyword; \
     mc.kw_len = keyword_len; \
@@ -488,7 +488,7 @@ PHP_REDIS_API void cluster_msetnx_resp(INTERNAL_FUNCTION_PARAMETERS,
 
 /* Response handler for ZSCAN, SSCAN, and HSCAN */
 PHP_REDIS_API int cluster_scan_resp(INTERNAL_FUNCTION_PARAMETERS,
-    redisCluster *c, REDIS_SCAN_TYPE type, long *it);
+    redisCluster *c, REDIS_SCAN_TYPE type, uint64_t *cursor);
 
 /* INFO response handler */
 PHP_REDIS_API void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS,

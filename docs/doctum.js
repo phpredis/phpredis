@@ -168,7 +168,7 @@ var Doctum = {
             DoctumSearch.doctumSearchPageAutoCompleteProgressBar.className = 'progress-bar';
         }
     },
-    makeProgess: function () {
+    makeProgress: function () {
         Doctum.makeProgressOnProgressBar(
             Doctum.doctumSearchAutoCompleteProgressBarPercent,
             Doctum.doctumSearchAutoCompleteProgressBar
@@ -209,7 +209,7 @@ var Doctum = {
             oReq.onprogress = function (pe) {
                 if (pe.lengthComputable) {
                     Doctum.doctumSearchAutoCompleteProgressBarPercent = parseInt(pe.loaded / pe.total * 100, 10);
-                    Doctum.makeProgess();
+                    Doctum.makeProgress();
                 }
             };
             oReq.onloadend = function (_) {

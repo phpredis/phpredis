@@ -15,6 +15,7 @@ class TestSuite
 
     /* Redis server version */
     protected $version;
+    protected $is_keydb;
 
     private static $_boo_colorize = false;
 
@@ -140,8 +141,8 @@ class TestSuite
             return true;
 
         $bt = debug_backtrace(false);
-        self::$errors []= sprintf("Assertion failed: %s:%d (%s)\n",
-            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+        self::$errors []= sprintf("Assertion failed: %s:%d (%s)\n--- VALUE ---\n%s\n",
+            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"], print_r($val, true));
 
         return false;
     }
@@ -239,7 +240,7 @@ class TestSuite
 
     /* Small helper method that tries to load a custom test case class */
     public static function loadTestClass($class) {
-        $filename = "${class}.php";
+        $filename = "{$class}.php";
 
         if (($sp = getenv('PHPREDIS_TEST_SEARCH_PATH'))) {
             $fullname = self::findFile($sp, $filename);

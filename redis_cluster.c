@@ -1042,7 +1042,7 @@ PHP_METHOD(RedisCluster, sdiffstore) {
 }
 /* }}} */
 
-/* {{{ proto bool RedisCluster::smove(sting src, string dst, string mem) */
+/* {{{ proto bool RedisCluster::smove(string src, string dst, string mem) */
 PHP_METHOD(RedisCluster, smove) {
     CLUSTER_PROCESS_CMD(smove, cluster_1_resp, 0);
 }
@@ -1358,7 +1358,7 @@ PHP_METHOD(RedisCluster, zmpop) {
 }
 /* }}} */
 
-/* {{{ proto Redis|array|false Redis::bzmpop(double $timeout, array $keys, sring $from, int $count = 1) */
+/* {{{ proto Redis|array|false Redis::bzmpop(double $timeout, array $keys, string $from, int $count = 1) */
 PHP_METHOD(RedisCluster, bzmpop) {
     CLUSTER_PROCESS_KW_CMD("BZMPOP", redis_mpop_cmd, cluster_mpop_resp, 0);
 }
@@ -2201,7 +2201,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     short slot;
     int i, argc = ZEND_NUM_ARGS();
 
-    /* Commands using this pass-thru don't need to be enabled in MULTI mode */
+    /* Commands using this pass-through don't need to be enabled in MULTI mode */
     if (!CLUSTER_IS_ATOMIC(c)) {
         php_error_docref(0, E_WARNING,
             "Command can't be issued in MULTI mode");
@@ -2266,8 +2266,10 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     short slot;
     zval *z_it;
     HashTable *hash;
-    long it, num_ele;
+    long num_ele;
     zend_long count = 0;
+    zend_bool complted;
+    uint64_t cursor;
 
     // Can't be in MULTI mode
     if (!CLUSTER_IS_ATOMIC(c)) {
@@ -2285,16 +2287,10 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     /* Treat as readonly */
     c->readonly = 1;
 
-    // Convert iterator to long if it isn't, update our long iterator if it's
-    // set and >0, and finish if it's back to zero
-    if (Z_TYPE_P(z_it) != IS_LONG || Z_LVAL_P(z_it) < 0) {
-        convert_to_long(z_it);
-        it = 0;
-    } else if (Z_LVAL_P(z_it) != 0) {
-        it = Z_LVAL_P(z_it);
-    } else {
+    /* Get our scan cursor and return early if we're done */
+    cursor = redisGetScanCursor(z_it, &complted);
+    if (complted)
         RETURN_FALSE;
-    }
 
     // Apply any key prefix we have, get the slot
     key_free = redis_key_prefix(c->flags, &key, &key_len);
@@ -2314,7 +2310,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
         }
 
         // Create command
-        cmd_len = redis_fmt_scan_cmd(&cmd, type, key, key_len, it, pat, pat_len,
+        cmd_len = redis_fmt_scan_cmd(&cmd, type, key, key_len, cursor, pat, pat_len,
             count);
 
         // Send it off
@@ -2328,7 +2324,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
         // Read response
         if (cluster_scan_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, type,
-                              &it) == FAILURE)
+                              &cursor) == FAILURE)
         {
             CLUSTER_THROW_EXCEPTION("Couldn't read SCAN response", 0);
             if (key_free) efree(key);
@@ -2342,7 +2338,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
 
         // Free our command
         efree(cmd);
-    } while (c->flags->scan & REDIS_SCAN_RETRY && it != 0 && num_ele == 0);
+    } while (c->flags->scan & REDIS_SCAN_RETRY && cursor != 0 && num_ele == 0);
 
     // Free our pattern
     if (pat_free) efree(pat);
@@ -2351,7 +2347,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     if (key_free) efree(key);
 
     // Update iterator reference
-    Z_LVAL_P(z_it) = it;
+    redisSetScanCursor(z_it, cursor);
 }
 
 static int redis_acl_op_readonly(zend_string *op) {
@@ -2394,7 +2390,7 @@ PHP_METHOD(RedisCluster, acl) {
 
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc - 1, "ACL");
 
-    /* Read the op, determin if it's readonly, and add it */
+    /* Read the op, determine if it's readonly, and add it */
     zs = zval_get_string(&zargs[1]);
     readonly = redis_acl_op_readonly(zs);
     redis_cmd_append_sstr_zstr(&cmdstr, zs);
@@ -2445,9 +2441,11 @@ PHP_METHOD(RedisCluster, scan) {
     size_t pat_len = 0;
     int cmd_len;
     short slot;
-    zval *z_it, *z_node;
-    long it, num_ele, pat_free = 0;
+    zval *zcursor, *z_node;
+    long num_ele, pat_free = 0;
     zend_long count = 0;
+    zend_bool completed;
+    uint64_t cursor;
 
     /* Treat as read-only */
     c->readonly = CLUSTER_IS_ATOMIC(c);
@@ -2459,21 +2457,16 @@ PHP_METHOD(RedisCluster, scan) {
     }
 
     /* Parse arguments */
-    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z/z|s!l", &z_it,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "z/z|s!l", &zcursor,
                              &z_node, &pat, &pat_len, &count) == FAILURE)
     {
         RETURN_FALSE;
     }
 
-    /* Convert or update iterator */
-    if (Z_TYPE_P(z_it) != IS_LONG || Z_LVAL_P(z_it) < 0) {
-        convert_to_long(z_it);
-        it = 0;
-    } else if (Z_LVAL_P(z_it) != 0) {
-        it = Z_LVAL_P(z_it);
-    } else {
+    /* Get the scan cursor and return early if we're done */
+    cursor = redisGetScanCursor(zcursor, &completed);
+    if (completed)
         RETURN_FALSE;
-    }
 
     if (c->flags->scan & REDIS_SCAN_PREFIX) {
         pat_free = redis_key_prefix(c->flags, &pat, &pat_len);
@@ -2489,7 +2482,7 @@ PHP_METHOD(RedisCluster, scan) {
         }
 
         /* Construct our command */
-        cmd_len = redis_fmt_scan_cmd(&cmd, TYPE_SCAN, NULL, 0, it, pat, pat_len,
+        cmd_len = redis_fmt_scan_cmd(&cmd, TYPE_SCAN, NULL, 0, cursor, pat, pat_len,
             count);
 
         if ((slot = cluster_cmd_get_slot(c, z_node)) < 0) {
@@ -2505,7 +2498,7 @@ PHP_METHOD(RedisCluster, scan) {
         }
 
         if (cluster_scan_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, TYPE_SCAN,
-                           &it) == FAILURE || Z_TYPE_P(return_value)!=IS_ARRAY)
+                              &cursor) == FAILURE || Z_TYPE_P(return_value) != IS_ARRAY)
         {
             CLUSTER_THROW_EXCEPTION("Couldn't process SCAN response from node", 0);
             efree(cmd);
@@ -2515,11 +2508,11 @@ PHP_METHOD(RedisCluster, scan) {
         efree(cmd);
 
         num_ele = zend_hash_num_elements(Z_ARRVAL_P(return_value));
-    } while (c->flags->scan & REDIS_SCAN_RETRY && it != 0 && num_ele == 0);
+    } while (c->flags->scan & REDIS_SCAN_RETRY && cursor != 0 && num_ele == 0);
 
     if (pat_free) efree(pat);
 
-    Z_LVAL_P(z_it) = it;
+    redisSetScanCursor(zcursor, cursor);
 }
 /* }}} */
 
@@ -2754,7 +2747,7 @@ PHP_METHOD(RedisCluster, script) {
     short slot;
     int argc = ZEND_NUM_ARGS();
 
-    /* Commands using this pass-thru don't need to be enabled in MULTI mode */
+    /* Commands using this pass-through don't need to be enabled in MULTI mode */
     if (!CLUSTER_IS_ATOMIC(c)) {
         php_error_docref(0, E_WARNING,
             "Command can't be issued in MULTI mode");
@@ -2875,6 +2868,53 @@ PHP_METHOD(RedisCluster, randomkey) {
         TYPE_BULK, cluster_bulk_resp);
 }
 /* }}} */
+
+PHP_METHOD(RedisCluster, waitaof) {
+    zend_long numlocal, numreplicas, timeout;
+    redisCluster *c = GET_CONTEXT();
+    smart_string cmdstr = {0};
+    void *ctx = NULL;
+    short slot;
+    zval *node;
+
+    ZEND_PARSE_PARAMETERS_START(4, 4)
+        Z_PARAM_ZVAL(node)
+        Z_PARAM_LONG(numlocal)
+        Z_PARAM_LONG(numreplicas)
+        Z_PARAM_LONG(timeout)
+    ZEND_PARSE_PARAMETERS_END();
+
+    if (numlocal < 0 || numreplicas < 0 || timeout < 0) {
+        php_error_docref(NULL, E_WARNING, "No arguments can be negative");
+        RETURN_FALSE;
+    }
+
+    slot = cluster_cmd_get_slot(c, node);
+    if (slot < 0) {
+        RETURN_FALSE;
+    }
+
+    REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 3, "WAITAOF");
+    redis_cmd_append_sstr_long(&cmdstr, numlocal);
+    redis_cmd_append_sstr_long(&cmdstr, numreplicas);
+    redis_cmd_append_sstr_long(&cmdstr, timeout);
+
+    c->readonly = 0;
+
+    if (cluster_send_slot(c, slot, cmdstr.c, cmdstr.len, TYPE_MULTIBULK) < 0) {
+        CLUSTER_THROW_EXCEPTION("Unable to send command at the specified node", 0);
+        smart_string_free(&cmdstr);
+        RETURN_FALSE;
+    }
+
+    if (CLUSTER_IS_ATOMIC(c)) {
+        cluster_variant_resp(INTERNAL_FUNCTION_PARAM_PASSTHRU, c, NULL);
+    } else {
+        CLUSTER_ENQUEUE_RESPONSE(c, slot, cluster_variant_resp, ctx);
+    }
+
+    smart_string_free(&cmdstr);
+}
 
 /* {{{ proto bool RedisCluster::ping(string key| string msg)
  *     proto bool RedisCluster::ping(array host_port| string msg) */

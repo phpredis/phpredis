@@ -103,6 +103,9 @@ class RedisCluster {
      */
     public function bgrewriteaof(string|array $key_or_address): RedisCluster|bool;
 
+    public function waitaof(string|array $key_or_address, int $numlocal,
+                            int $numreplicas, int $timeout): RedisCluster|array|false;
+
     /**
      * @see Redis::bgsave
      */
@@ -485,7 +488,7 @@ class RedisCluster {
     /**
      * @see Redis::hscan
      */
-    public function hscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): array|bool;
+    public function hscan(string $key, null|int|string &$iterator, ?string $pattern = null, int $count = 0): array|bool;
 
     /**
      * @see https://redis.io/commands/hrandfield
@@ -704,7 +707,7 @@ class RedisCluster {
     /**
      * @see Redis::publish
      */
-    public function publish(string $channel, string $message): RedisCluster|bool;
+    public function publish(string $channel, string $message): RedisCluster|bool|int;
 
     /**
      * @see Redis::pubsub
@@ -784,7 +787,7 @@ class RedisCluster {
     /**
      * @see Redis::scan
      */
-    public function scan(?int &$iterator, string|array $key_or_address, ?string $pattern = null, int $count = 0): bool|array;
+    public function scan(null|int|string &$iterator, string|array $key_or_address, ?string $pattern = null, int $count = 0): bool|array;
 
     /**
      * @see Redis::scard
@@ -904,7 +907,7 @@ class RedisCluster {
     /**
      * @see Redis::sscan
      */
-    public function sscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): array|false;
+    public function sscan(string $key, null|int|string &$iterator, ?string $pattern = null, int $count = 0): array|false;
 
     /**
      * @see Redis::strlen
@@ -1151,7 +1154,7 @@ class RedisCluster {
     /**
      * @see Redis::zscan
      */
-    public function zscan(string $key, ?int &$iterator, ?string $pattern = null, int $count = 0): RedisCluster|bool|array;
+    public function zscan(string $key, null|int|string &$iterator, ?string $pattern = null, int $count = 0): RedisCluster|bool|array;
 
     /**
      * @see Redis::zscore

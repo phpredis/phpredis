@@ -75,6 +75,8 @@ class Redis_Test extends TestSuite
         $this->redis = $this->newInstance();
         $info = $this->redis->info();
         $this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
+
+        $this->is_keydb = $this->redis->info('keydb') !== false;
     }
 
     protected function minVersionCheck($version) {
@@ -265,9 +267,11 @@ class Redis_Test extends TestSuite
         $this->redis->set('bitcountkey', hex2bin('10eb8939e68bfdb640260f0629f3'));
         $this->assertEquals(1, $this->redis->bitcount('bitcountkey', 8, 8, false));
 
-        /* key, start, end, BIT */
-        $this->redis->set('bitcountkey', hex2bin('cd0e4c80f9e4590d888a10'));
-        $this->assertEquals(5, $this->redis->bitcount('bitcountkey', 0, 9, true));
+        if ( ! $this->is_keydb) {
+            /* key, start, end, BIT */
+            $this->redis->set('bitcountkey', hex2bin('cd0e4c80f9e4590d888a10'));
+            $this->assertEquals(5, $this->redis->bitcount('bitcountkey', 0, 9, true));
+        }
     }
 
     public function testBitop() {
@@ -331,6 +335,8 @@ class Redis_Test extends TestSuite
     }
 
     public function testLcs() {
+        if ( ! $this->minVersionCheck('7.0.0') || $this->is_keydb)
+            $this->markTestSkipped();
 
         $key1 = '{lcs}1'; $key2 = '{lcs}2';
         $this->assertTrue($this->redis->set($key1, '12244447777777'));
@@ -2400,7 +2406,7 @@ class Redis_Test extends TestSuite
     }
 
     public function testWait() {
-        // Closest we can check based on redis commmit history
+        // Closest we can check based on redis commit history
         if(version_compare($this->version, '2.9.11') < 0) {
             $this->markTestSkipped();
             return;
@@ -2793,7 +2799,7 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->zScore('{zset}U', 'duplicate')===1.0);
         $this->redis->del('{zset}U');
 
-        //now test zUnion *without* weights but with aggregrate function
+        //now test zUnion *without* weights but with aggregate function
         $this->redis->zUnionStore('{zset}U', ['{zset}1','{zset}2'], null, 'MIN');
         $this->assertTrue($this->redis->zScore('{zset}U', 'duplicate')===1.0);
         $this->redis->del('{zset}U', '{zset}1', '{zset}2');
@@ -3481,7 +3487,7 @@ return;
         $this->assertEquals(5, count($ret)); // should be 5 atomic operations
     }
 
-    /* Github issue #1211 (ignore redundant calls to pipeline or multi) */
+    /* GitHub issue #1211 (ignore redundant calls to pipeline or multi) */
     public function testDoublePipeNoOp() {
         /* Only the first pipeline should be honored */
         for ($i = 0; $i < 6; $i++) {
@@ -5569,7 +5575,7 @@ return;
         // Flush any loaded scripts
         $this->redis->script('flush');
 
-        // Non existant script (but proper sha1), and a random (not) sha1 string
+        // Non existent script (but proper sha1), and a random (not) sha1 string
         $this->assertFalse($this->redis->evalsha(sha1(uniqid())));
         $this->assertFalse($this->redis->evalsha('some-random-data'));
 
@@ -6813,7 +6819,7 @@ return;
             ['{stream}-1' => [$new_id => ['final' => 'row']]]
         );
 
-        /* Emtpy query should fail */
+        /* Empty query should fail */
         $this->assertFalse($this->redis->xRead([]));
     }
 
@@ -7094,7 +7100,12 @@ return;
 
         // Test an empty xautoclaim reply
         $res = $this->redis->xAutoClaim('ships', 'combatants', 'Sisko', 0, '0-0');
-        $this->assertEquals(['0-0', [], []], $res);
+        $this->assertTrue(is_array($res) && (count($res) == 2 || count($res) == 3));
+        if (count($res) == 2) {
+            $this->assertEquals(['0-0', []], $res);
+        } else {
+            $this->assertEquals(['0-0', [], []], $res);
+        }
 
         $this->redis->xAdd('ships', '1424-74205', ['name' => 'Defiant']);
 
@@ -7105,12 +7116,12 @@ return;
         $pending = $this->redis->xPending('ships', 'combatants');
         $this->assertTrue($pending && isset($pending[3][0][0]) && $pending[3][0][0] == "Jem'Hadar");
 
-        // Asssume control of the pending message with a different consumer.
+        // Assume control of the pending message with a different consumer.
         $res = $this->redis->xAutoClaim('ships', 'combatants', 'Sisko', 0, '0-0');
 
-        $this->assertTrue($res && count($res) == 3 && $res[0] == '0-0' &&
-                          isset($res[1]['1424-74205']['name']) &&
-                                $res[1]['1424-74205']['name'] == 'Defiant');
+        $this->assertTrue($res && (count($res) == 2 || count($res) == 3));
+        $this->assertTrue(isset($res[1]['1424-74205']['name']) &&
+                          $res[1]['1424-74205']['name'] == 'Defiant');
 
         // Now the 'Sisko' consumer should own the message
         $pending = $this->redis->xPending('ships', 'combatants');
@@ -7640,9 +7651,12 @@ return;
         $commands = $this->redis->command();
         $this->assertTrue(is_array($commands));
         $this->assertEquals(count($commands), $this->redis->command('count'));
-        $infos = $this->redis->command('info');
-        $this->assertTrue(is_array($infos));
-        $this->assertEquals(count($infos), count($commands));
+
+        if (!$this->is_keydb) {
+            $infos = $this->redis->command('info');
+            $this->assertTrue(is_array($infos));
+            $this->assertEquals(count($infos), count($commands));
+        }
 
         if (version_compare($this->version, '7.0') >= 0) {
             $docs = $this->redis->command('docs');
@@ -7671,6 +7685,23 @@ return;
         $this->assertTrue($this->redis->function('restore', $payload));
         $this->assertEquals($this->redis->function('list'), [['library_name' => 'mylib', 'engine' => 'LUA', 'functions' => [['name' => 'myfunc', 'description' => false,'flags' => []]]]]);
         $this->assertTrue($this->redis->function('delete', 'mylib'));
+    }
+
+    protected function execWaitAOF() {
+        return $this->redis->waitaof(0, 0, 0);
+    }
+
+    public function testWaitAOF() {
+        if (!$this->minVersionCheck("7.2.0"))
+            $this->markTestSkipped();
+
+        $res = $this->execWaitAOF();
+        $this->assertValidate($res, function ($v) {
+            if ( ! is_array($v) || count($v) != 2)
+                return false;
+            return isset($v[0]) && is_int($v[0]) &&
+                   isset($v[1]) && is_int($v[1]);
+        });
     }
 
     /* Make sure we handle a bad option value gracefully */

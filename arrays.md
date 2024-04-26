@@ -40,7 +40,7 @@ $ra = new RedisArray(array("host1", "host2", "host3"), array("previous" => array
 #### Specifying the "retry_interval" parameter
 The retry_interval is used to specify a delay in milliseconds between reconnection attempts in case the client loses connection with a server
 <pre>
-$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("retry_timeout" => 100));
+$ra = new RedisArray(array("host1", "host2:63792", "host2:6380"), array("retry_interval" => 100));
 </pre>
 
 #### Specifying the "lazy_connect" parameter

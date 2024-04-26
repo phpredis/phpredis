@@ -27,12 +27,16 @@
 #include "redis_cluster.h"
 #include "redis_commands.h"
 #include "redis_sentinel.h"
-#include <standard/php_random.h>
 #include <ext/spl/spl_exceptions.h>
 #include <zend_exceptions.h>
 #include <ext/standard/info.h>
 #include <ext/hash/php_hash.h>
 
+#if PHP_VERSION_ID < 80400
+#include <ext/standard/php_random.h>
+#else
+#include <ext/random/php_random.h>
+#endif
 
 #ifdef PHP_SESSION
 #include <ext/session/php_session.h>
@@ -723,7 +727,7 @@ PHP_METHOD(Redis, reset)
     }
 
     if (IS_PIPELINE(redis_sock)) {
-        php_error_docref(NULL, E_ERROR, "Reset ins't allowed in pipeline mode!");
+        php_error_docref(NULL, E_ERROR, "Reset isn't allowed in pipeline mode!");
         RETURN_FALSE;
     }
 
@@ -1895,7 +1899,9 @@ PHP_METHOD(Redis, multi)
                 REDIS_SAVE_CALLBACK(NULL, NULL);
                 REDIS_ENABLE_MODE(redis_sock, MULTI);
             } else {
-                SOCKET_WRITE_COMMAND(redis_sock, RESP_MULTI_CMD, sizeof(RESP_MULTI_CMD) - 1)
+                if (redis_sock_write(redis_sock, ZEND_STRL(RESP_MULTI_CMD)) < 0) {
+                    RETURN_FALSE;
+                }
                 if ((resp = redis_sock_read(redis_sock, &resp_len)) == NULL) {
                     RETURN_FALSE;
                 } else if (strncmp(resp, "+OK", 3) != 0) {
@@ -1991,8 +1997,9 @@ PHP_METHOD(Redis, exec)
             REDIS_DISABLE_MODE(redis_sock, MULTI);
             RETURN_ZVAL(getThis(), 1, 0);
         }
-        SOCKET_WRITE_COMMAND(redis_sock, RESP_EXEC_CMD, sizeof(RESP_EXEC_CMD) - 1)
-
+        if (redis_sock_write(redis_sock, ZEND_STRL(RESP_EXEC_CMD)) < 0) {
+            RETURN_FALSE;
+        }
         ret = redis_sock_read_multibulk_multi_reply(
             INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, &z_ret);
         free_reply_callbacks(redis_sock);
@@ -2176,6 +2183,10 @@ PHP_METHOD(Redis, sunsubscribe)
 {
     REDIS_PROCESS_KW_CMD("SUNSUBSCRIBE", redis_unsubscribe_cmd,
         redis_unsubscribe_response);
+}
+
+PHP_METHOD(Redis, waitaof) {
+    REDIS_PROCESS_CMD(waitaof, redis_read_variant_reply);
 }
 
 /* {{{ proto string Redis::bgrewriteaof() */
@@ -2743,21 +2754,23 @@ redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
 /* {{{ proto redis::scan(&$iterator, [pattern, [count, [type]]]) */
 PHP_REDIS_API void
 generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
-    zval *object, *z_iter;
+    zval *object, *z_cursor;
     RedisSock *redis_sock;
     HashTable *hash;
     char *pattern = NULL, *cmd, *key = NULL;
     int cmd_len, num_elements, key_free = 0, pattern_free = 0;
     size_t key_len = 0, pattern_len = 0;
     zend_string *match_type = NULL;
-    zend_long count = 0, iter;
+    zend_long count = 0;
+    zend_bool completed;
+    uint64_t cursor;
 
     /* Different prototype depending on if this is a key based scan */
     if(type != TYPE_SCAN) {
         // Requires a key
         if(zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
                                         "Os!z/|s!l", &object, redis_ce, &key,
-                                        &key_len, &z_iter, &pattern,
+                                        &key_len, &z_cursor, &pattern,
                                         &pattern_len, &count)==FAILURE)
         {
             RETURN_FALSE;
@@ -2765,7 +2778,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     } else {
         // Doesn't require a key
         if(zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                        "Oz/|s!lS!", &object, redis_ce, &z_iter,
+                                        "Oz/|s!lS!", &object, redis_ce, &z_cursor,
                                         &pattern, &pattern_len, &count, &match_type)
                                         == FAILURE)
         {
@@ -2785,20 +2798,10 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
         RETURN_FALSE;
     }
 
-    // The iterator should be passed in as NULL for the first iteration, but we
-    // can treat any NON LONG value as NULL for these purposes as we've
-    // separated the variable anyway.
-    if(Z_TYPE_P(z_iter) != IS_LONG || Z_LVAL_P(z_iter) < 0) {
-        /* Convert to long */
-        convert_to_long(z_iter);
-        iter = 0;
-    } else if(Z_LVAL_P(z_iter) != 0) {
-        /* Update our iterator value for the next passthru */
-        iter = Z_LVAL_P(z_iter);
-    } else {
-        /* We're done, back to iterator zero */
+    /* Get our SCAN cursor short circuiting if we're done */
+    cursor = redisGetScanCursor(z_cursor, &completed);
+    if (completed)
         RETURN_FALSE;
-    }
 
     /* Prefix our key if we've got one and we have a prefix set */
     if(key_len) {
@@ -2826,13 +2829,13 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
         }
 
         // Format our SCAN command
-        cmd_len = redis_build_scan_cmd(&cmd, type, key, key_len, (long)iter,
+        cmd_len = redis_build_scan_cmd(&cmd, type, key, key_len, (long)cursor,
                                    pattern, pattern_len, count, match_type);
 
         /* Execute our command getting our new iterator value */
         REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
         if(redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                                      redis_sock,type,&iter) < 0)
+                                      redis_sock,type, &cursor) < 0)
         {
             if(key_free) efree(key);
             RETURN_FALSE;
@@ -2841,7 +2844,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
         /* Get the number of elements */
         hash = Z_ARRVAL_P(return_value);
         num_elements = zend_hash_num_elements(hash);
-    } while (redis_sock->scan & REDIS_SCAN_RETRY && iter != 0 &&
+    } while (redis_sock->scan & REDIS_SCAN_RETRY && cursor != 0 &&
             num_elements == 0);
 
     /* Free our pattern if it was prefixed */
@@ -2851,7 +2854,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     if(key_free) efree(key);
 
     /* Update our iterator reference */
-    Z_LVAL_P(z_iter) = iter;
+    redisSetScanCursor(z_cursor, cursor);
 }
 
 PHP_METHOD(Redis, scan) {

@@ -186,12 +186,6 @@ typedef enum {
     } \
 } while (0)
 
-#define SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len) \
-    if(redis_sock_write(redis_sock, cmd, cmd_len) < 0) { \
-    efree(cmd); \
-    RETURN_FALSE; \
-}
-
 #define REDIS_SAVE_CALLBACK(callback, closure_context) do { \
     fold_item *fi = malloc(sizeof(fold_item)); \
     fi->fun = callback; \
@@ -209,8 +203,9 @@ typedef enum {
 #define REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len) \
     if (IS_PIPELINE(redis_sock)) { \
         PIPELINE_ENQUEUE_COMMAND(cmd, cmd_len); \
-    } else { \
-        SOCKET_WRITE_COMMAND(redis_sock, cmd, cmd_len); \
+    } else if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) { \
+        efree(cmd); \
+        RETURN_FALSE; \
     } \
     efree(cmd);
 

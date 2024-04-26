@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: f98761a9bf8bfd22f34609b4d7c0c26f69248668 */
+ * Stub hash: 21f3434814d9fa077a9a81c8ba114c3faf079e85 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -43,6 +43,12 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_Redis_bgSave arginfo_class_Redis___destruct
 
 #define arginfo_class_Redis_bgrewriteaof arginfo_class_Redis___destruct
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_waitaof, 0, 0, 3)
+	ZEND_ARG_INFO(0, numlocal)
+	ZEND_ARG_INFO(0, numreplicas)
+	ZEND_ARG_INFO(0, timeout)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_bitcount, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
@@ -1019,6 +1025,7 @@ ZEND_METHOD(Redis, append);
 ZEND_METHOD(Redis, auth);
 ZEND_METHOD(Redis, bgSave);
 ZEND_METHOD(Redis, bgrewriteaof);
+ZEND_METHOD(Redis, waitaof);
 ZEND_METHOD(Redis, bitcount);
 ZEND_METHOD(Redis, bitop);
 ZEND_METHOD(Redis, bitpos);
@@ -1273,6 +1280,7 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, auth, arginfo_class_Redis_auth, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bgSave, arginfo_class_Redis_bgSave, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bgrewriteaof, arginfo_class_Redis_bgrewriteaof, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, waitaof, arginfo_class_Redis_waitaof, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bitcount, arginfo_class_Redis_bitcount, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bitop, arginfo_class_Redis_bitop, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, bitpos, arginfo_class_Redis_bitpos, ZEND_ACC_PUBLIC)

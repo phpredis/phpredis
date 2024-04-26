@@ -56,8 +56,13 @@
 #include <ext/json/php_json.h>
 #endif
 
-#include <ext/standard/php_rand.h>
 #include <ext/hash/php_hash.h>
+
+#if PHP_VERSION_ID < 80400
+#include <ext/standard/php_rand.h>
+#else
+#include <ext/random/php_random.h>
+#endif
 
 #define UNSERIALIZE_NONE 0
 #define UNSERIALIZE_KEYS 1
@@ -159,7 +164,7 @@ static int reselect_db(RedisSock *redis_sock) {
     return 0;
 }
 
-/* Append an AUTH command to a smart string if neccessary.  This will either
+/* Append an AUTH command to a smart string if necessary.  This will either
  * append the new style AUTH <user> <password>, old style AUTH <password>, or
  * append no command at all.  Function returns 1 if we appended a command
  * and 0 otherwise. */
@@ -401,7 +406,7 @@ redis_check_eof(RedisSock *redis_sock, zend_bool no_retry, zend_bool no_throw)
 
 PHP_REDIS_API int
 redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
-                           REDIS_SCAN_TYPE type, zend_long *iter)
+                           REDIS_SCAN_TYPE type, uint64_t *cursor)
 {
     REDIS_REPLY_TYPE reply_type;
     long reply_info;
@@ -434,7 +439,7 @@ redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     /* Push the iterator out to the caller */
-    *iter = atol(p_iter);
+    *cursor = strtoull(p_iter, NULL, 10);
     efree(p_iter);
 
     /* Read our actual keys/members/etc differently depending on what kind of
@@ -823,7 +828,7 @@ static zend_string *redis_hash_auth(zend_string *user, zend_string *pass) {
     if (user == NULL && pass == NULL)
         return NULL;
 
-    /* Theoretically inpossible but check anyway */
+    /* Theoretically impossible but check anyway */
     algo = zend_string_init("sha256", sizeof("sha256") - 1, 0);
     if ((ops = redis_hash_fetch_ops(algo)) == NULL) {
         zend_string_release(algo);
@@ -2305,9 +2310,9 @@ redis_read_xclaim_reply(RedisSock *redis_sock, int count, int is_xautoclaim, zva
     zval z_msgs = {0};
     char *id = NULL;
     long id_len = 0;
-    int messages;
+    int messages = 0;
 
-    ZEND_ASSERT(!is_xautoclaim || count == 3);
+    ZEND_ASSERT(!is_xautoclaim || (count == 2 || count == 3));
 
     ZVAL_UNDEF(rv);
 
@@ -2333,15 +2338,18 @@ redis_read_xclaim_reply(RedisSock *redis_sock, int count, int is_xautoclaim, zva
     if (is_xautoclaim) {
         zval z_deleted = {0};
 
-        if (redis_sock_read_multibulk_reply_zval(redis_sock, &z_deleted) == NULL)
+        if (count == 3 && redis_sock_read_multibulk_reply_zval(redis_sock, &z_deleted) == NULL)
             goto failure;
 
         array_init(rv);
 
-        // Package up ID, message, and deleted messages in our reply
+        // Package up ID and message
         add_next_index_stringl(rv, id, id_len);
         add_next_index_zval(rv, &z_msgs);
-        add_next_index_zval(rv, &z_deleted);
+
+        // Add deleted messages if they exist
+        if (count == 3)
+            add_next_index_zval(rv, &z_deleted);
 
         efree(id);
     } else {
@@ -2859,7 +2867,7 @@ redis_sock_create(char *host, int host_len, int port,
     redis_sock->status = REDIS_SOCK_STATUS_DISCONNECTED;
     redis_sock->retry_interval = retry_interval * 1000;
     redis_sock->max_retries = 10;
-    redis_initialize_backoff(&redis_sock->backoff, retry_interval);
+    redis_initialize_backoff(&redis_sock->backoff, redis_sock->retry_interval);
     redis_sock->persistent = persistent;
 
     if (persistent && persistent_id != NULL) {
@@ -2956,7 +2964,7 @@ static int redis_stream_detect_dirty(php_stream *stream) {
     if ((fd = redis_stream_fd_for_select(stream)) == -1)
         return FAILURE;
 
-    /* We want to detect a readable socket (it shouln't be) */
+    /* We want to detect a readable socket (it shouldn't be) */
     REDIS_POLL_FD_SET(pfd, fd, PHP_POLLREADABLE);
     rv = php_poll2(&pfd, 1, redis_pool_poll_timeout());
 
@@ -4358,20 +4366,22 @@ redis_read_variant_reply_strings(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_
     return variant_reply_generic(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 1, 0, z_tab, ctx);
 }
 
+/* The user may wish to send us something like [NULL, 'password'] or
+ * [false, 'password'] so don't convert NULL or FALSE into "". */
+static int redisTrySetAuthArg(zend_string **dst, zval *zsrc) {
+    if (Z_TYPE_P(zsrc) == IS_NULL || Z_TYPE_P(zsrc) == IS_FALSE)
+        return FAILURE;
+
+    *dst = zval_get_string(zsrc);
+
+    return SUCCESS;
+}
+
 PHP_REDIS_API
 int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass) {
     zval *zv;
     HashTable *ht;
     int num;
-
-    /* The user may wish to send us something like [NULL, 'password'] or
-     * [false, 'password'] so don't convert NULL or FALSE into "". */
-    #define TRY_SET_AUTH_ARG(zv, ppzstr) \
-        do { \
-            if (Z_TYPE_P(zv) != IS_NULL && Z_TYPE_P(zv) != IS_FALSE) { \
-                *(ppzstr) = zval_get_string(zv); \
-            } \
-        } while (0)
 
     /* Null out user and password */
     *user = *pass = NULL;
@@ -4382,8 +4392,7 @@ int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass)
 
     /* Handle a non-array first */
     if (Z_TYPE_P(ztest) != IS_ARRAY) {
-        TRY_SET_AUTH_ARG(ztest, pass);
-        return SUCCESS;
+        return redisTrySetAuthArg(pass, ztest);
     }
 
     /* Handle the array case */
@@ -4400,18 +4409,18 @@ int redis_extract_auth_info(zval *ztest, zend_string **user, zend_string **pass)
         if ((zv = REDIS_HASH_STR_FIND_STATIC(ht, "user")) ||
             (zv = zend_hash_index_find(ht, 0)))
         {
-            TRY_SET_AUTH_ARG(zv, user);
+            redisTrySetAuthArg(user, zv);
         }
 
         if ((zv = REDIS_HASH_STR_FIND_STATIC(ht, "pass")) ||
             (zv = zend_hash_index_find(ht, 1)))
         {
-            TRY_SET_AUTH_ARG(zv, pass);
+            redisTrySetAuthArg(pass, zv);
         }
     } else if ((zv = REDIS_HASH_STR_FIND_STATIC(ht, "pass")) ||
                (zv = zend_hash_index_find(ht, 0)))
     {
-        TRY_SET_AUTH_ARG(zv, pass);
+        redisTrySetAuthArg(pass, zv);
     }
 
     /* If we at least have a password, we're good */
@@ -4509,6 +4518,47 @@ void redis_conf_auth(HashTable *ht, const char *key, size_t keylen,
         return;
 
     redis_extract_auth_info(zv, user, pass);
+}
+
+/* Update a zval with the current 64 bit scan cursor.  This presents a problem
+ * because we can only represent up to 63 bits in a PHP integer.  So depending
+ * on the cursor value, we may need to represent it as a string. */
+void redisSetScanCursor(zval *zv, uint64_t cursor) {
+    char tmp[21];
+    size_t len;
+
+    ZEND_ASSERT(zv != NULL && (Z_TYPE_P(zv) == IS_LONG ||
+                               Z_TYPE_P(zv) == IS_STRING));
+
+    if (Z_TYPE_P(zv) == IS_STRING)
+        zend_string_release(Z_STR_P(zv));
+
+    if (cursor > ZEND_LONG_MAX) {
+        len = snprintf(tmp, sizeof(tmp), "%llu", (unsigned long long)cursor);
+        ZVAL_STRINGL(zv, tmp, len);
+    } else {
+        ZVAL_LONG(zv, cursor);
+    }
+}
+
+/* Get a Redis SCAN cursor value out of a zval.  These are always taken as a
+ * reference argument that that must be `null`, `int`, or `string`.  */
+uint64_t redisGetScanCursor(zval *zv, zend_bool *was_zero) {
+    ZEND_ASSERT(zv != NULL && (Z_TYPE_P(zv) == IS_LONG ||
+                               Z_TYPE_P(zv) == IS_STRING ||
+                               Z_TYPE_P(zv) == IS_NULL));
+
+    if (Z_TYPE_P(zv) == IS_NULL) {
+        convert_to_long(zv);
+        *was_zero = 0;
+        return 0;
+    } else if (Z_TYPE_P(zv) == IS_STRING) {
+        *was_zero = Z_STRLEN_P(zv) == 1 && Z_STRVAL_P(zv)[0] == '0';
+        return strtoull(Z_STRVAL_P(zv), NULL, 10);
+    } else {
+        *was_zero = Z_LVAL_P(zv) == 0;
+        return Z_LVAL_P(zv);
+    }
 }
 
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */

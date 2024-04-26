@@ -94,6 +94,7 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->redis = $this->newInstance();
         $info = $this->redis->info(uniqid());
         $this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
+        $this->is_keydb = $this->redis->info('keydb') !== false;
     }
 
     /* Override newInstance as we want a RedisCluster object */
@@ -436,7 +437,7 @@ class Redis_Cluster_Test extends Redis_Test {
         // Flush any loaded scripts
         $this->redis->script($str_key, 'flush');
 
-        // Non existant script (but proper sha1), and a random (not) sha1 string
+        // Non existent script (but proper sha1), and a random (not) sha1 string
         $this->assertFalse($this->redis->evalsha(sha1(uniqid()),[$str_key], 1));
         $this->assertFalse($this->redis->evalsha('some-random-data'),[$str_key], 1);
 
@@ -777,6 +778,10 @@ class Redis_Cluster_Test extends Redis_Test {
         }
 
         $this->redis->setOption(Redis::OPT_NULL_MULTIBULK_AS_NULL, false);
+    }
+
+    protected function execWaitAOF() {
+        return $this->redis->waitaof(uniqid(), 0, 0, 0);
     }
 }
 ?>
