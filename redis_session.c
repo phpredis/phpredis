@@ -844,6 +844,11 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
 
     if (!skeylen) return FAILURE;
 
+    /* No need to update the session timestamp if we've already done so */
+    if (INI_INT("redis.session.early_refresh")) {
+        return SUCCESS;
+    }
+
     redis_pool *pool = PS_GET_MOD_DATA();
     redis_pool_member *rpm = redis_pool_get_sock(pool, skey);
     RedisSock *redis_sock = rpm ? rpm->redis_sock : NULL;
@@ -897,7 +902,14 @@ PS_READ_FUNC(redis)
     /* send GET command */
     if (pool->lock_status.session_key) zend_string_release(pool->lock_status.session_key);
     pool->lock_status.session_key = redis_session_key(redis_sock, skey, skeylen);
-    cmd_len = REDIS_SPPRINTF(&cmd, "GET", "S", pool->lock_status.session_key);
+
+    /* Update the session ttl if early refresh is enabled */
+    if (INI_INT("redis.session.early_refresh")) {
+        cmd_len = REDIS_SPPRINTF(&cmd, "GETEX", "Ssd", pool->lock_status.session_key,
+                                 "EX", 2, session_gc_maxlifetime());
+    } else {
+        cmd_len = REDIS_SPPRINTF(&cmd, "GET", "S", pool->lock_status.session_key);
+    }
 
     if (lock_acquire(redis_sock, &pool->lock_status) != SUCCESS) {
         php_error_docref(NULL, E_WARNING, "Failed to acquire session lock");

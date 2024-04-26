@@ -833,7 +833,7 @@ PHP_REDIS_API redisCluster *cluster_create(double timeout, double read_timeout,
     c->err = NULL;
 
     /* Set up our waitms based on timeout */
-    c->waitms  = (long)(1000 * timeout);
+    c->waitms  = (long)(1000 * (timeout + read_timeout));
 
     /* Allocate our seeds hash table */
     ALLOC_HASHTABLE(c->seeds);

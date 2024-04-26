@@ -74,7 +74,7 @@ jobs:
       fail-fast: false
       matrix:
         php: ['7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3']
-        server: ['redis-server', 'keydb-server']
+        server: ['redis', 'keydb', 'valkey']
 
     steps:
       - name: Checkout
@@ -91,8 +91,10 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install valgrind libzstd-dev liblz4-dev
+          sudo apt-get install valgrind libzstd-dev liblz4-dev libssl-dev
+
       - name: Install Redis
+        if: matrix.server == 'redis'
         env:
           REDIS_PPA_URI: "packages.redis.io/deb"
           REDIS_PPA_KEY: "packages.redis.io/gpg"
@@ -105,6 +107,7 @@ jobs:
           sudo apt-get install redis
 
       - name: Install KeyDB
+        if: matrix.server == 'keydb'
         env:
           KEYDB_PPA_URI: "download.keydb.dev/open-source-dist"
           KEYDB_PPA_KEY: "download.keydb.dev/open-source-dist/keyring.gpg"
@@ -114,6 +117,13 @@ jobs:
           sudo wget -O /etc/apt/trusted.gpg.d/keydb.gpg "https://$KEYDB_PPA_KEY"
           sudo apt-get update
           sudo apt-get install keydb
+
+      - name: Install ValKey
+        if: matrix.server == 'valkey'
+        run: |
+          git clone https://github.com/valkey-io/valkey.git
+          cd valkey && BUILD_TLS=yes sudo make install
+
       - name: Build phpredis
         run: |
           phpize
@@ -127,28 +137,32 @@ jobs:
           sudo make -j"$(nproc)" install
 
           echo 'extension = redis.so' | sudo tee -a "$(php --ini | grep 'Scan for additional .ini files' | awk '{print $7}')"/90-redis.ini
-      - name: Start redis
+
+      - name: Attempt to shutdown default server
+        run: ${{ matrix.server }}-cli SHUTDOWN NOSAVE || true
+
+      - name: Start ${{ matrix.server }}-server
         run: |
-          redis-cli SHUTDOWN NOSAVE
-          for PORT in $(seq 6379 6382) $(seq 32767 32769); do
-            ${{ matrix.server }} \
+          for PORT in {6379..6382} {32767..32769}; do
+            ${{ matrix.server }}-server \
               --port "$PORT" \
               --daemonize yes \
               --aclfile tests/users.acl \
               --acl-pubsub-default allchannels
           done
-          ${{ matrix.server }} \
+          ${{ matrix.server }}-server \
             --port 0 \
             --unixsocket /tmp/redis.sock \
             --daemonize yes \
             --aclfile tests/users.acl \
             --acl-pubsub-default allchannels
-      - name: Start redis cluster
+
+      - name: Start ${{ matrix.server }} cluster
         run: |
           mkdir -p tests/nodes
           echo -n > tests/nodes/nodemap
-          for PORT in $(seq 7000 7005); do
-            ${{ matrix.server }} \
+          for PORT in {7000..7005}; do
+            ${{ matrix.server }}-server \
               --port "$PORT" \
               --cluster-enabled yes \
               --cluster-config-file "$PORT".conf \
@@ -157,21 +171,41 @@ jobs:
               --acl-pubsub-default allchannels
             echo 127.0.0.1:"$PORT" >> tests/nodes/nodemap
           done
-          echo yes | redis-cli --cluster create $(seq -f 127.0.0.1:%g 7000 7005) \
-                               --cluster-replicas 1 --user phpredis -a phpredis
-      - name: Start redis sentinel
+
+      - name: Start ${{ matrix.server }} sentinel
+        continue-on-error: ${{ matrix.server == 'valkey' }}
         run: |
           wget raw.githubusercontent.com/redis/redis/7.0/sentinel.conf
-          for PORT in $(seq 26379 26380); do
+          for PORT in {26379..26380}; do
             cp sentinel.conf "$PORT.conf"
             sed -i '/^sentinel/Id' "$PORT.conf"
-            ${{ matrix.server }} "$PORT.conf" \
+            ${{ matrix.server }}-server "$PORT.conf" \
               --port "$PORT" \
               --daemonize yes \
               --sentinel monitor mymaster 127.0.0.1 6379 1 \
               --sentinel auth-pass mymaster phpredis
           done
+
+      - name: Wait for ${{ matrix.server }} instances
+        run: |
+          for PORT in {6379..6382} {7000..7005} {32767..32768} {26379..26380}; do
+            until echo PING | ${{ matrix.server }}-cli -p "$PORT" 2>&1 | grep -qE 'PONG|NOAUTH'; do
+              echo "Still waiting for ${{ matrix.server }} on port $PORT"
+              sleep .05
+            done
+          done
+          until echo PING | ${{ matrix.server }}-cli -s /tmp/redis.sock 2>&1 | grep -qE 'PONG|NOAUTH'; do
+            echo "Still waiting for ${{ matrix.server }} at /tmp/redis.sock"
+            sleep .05
+          done
+
+      - name: Initialize ${{ matrix.server }} cluster
+        run: |
+          echo yes | ${{ matrix.server }}-cli --cluster create 127.0.0.1:{7000..7005} \
+                                              --cluster-replicas 1 --user phpredis -a phpredis
+
       - name: Run tests
+        continue-on-error: ${{ matrix.server == 'valkey' }}
         run: |
           php tests/TestRedis.php --class Redis --user phpredis --auth phpredis
           php tests/TestRedis.php --class RedisArray --user phpredis --auth phpredis
@@ -182,10 +216,14 @@ jobs:
       - name: Run tests using valgrind
         continue-on-error: true
         run: |
-          valgrind --suppressions=tests/vg.supp --error-exitcode=1 php tests/TestRedis.php --class Redis --user phpredis --auth phpredis
-          valgrind --suppressions=tests/vg.supp --error-exitcode=1 php tests/TestRedis.php --class RedisArray --user phpredis --auth phpredis
-          valgrind --suppressions=tests/vg.supp --error-exitcode=1 php tests/TestRedis.php --class RedisCluster --user phpredis --auth phpredis
-          valgrind --suppressions=tests/vg.supp --error-exitcode=1 php tests/TestRedis.php --class RedisSentinel --auth phpredis
+          valgrind --suppressions=tests/vg.supp --error-exitcode=1 \
+              php tests/TestRedis.php --class Redis --user phpredis --auth phpredis
+          valgrind --suppressions=tests/vg.supp --error-exitcode=1 \
+              php tests/TestRedis.php --class RedisArray --user phpredis --auth phpredis
+          valgrind --suppressions=tests/vg.supp --error-exitcode=1 \
+              php tests/TestRedis.php --class RedisCluster --user phpredis --auth phpredis
+          valgrind --suppressions=tests/vg.supp --error-exitcode=1 \
+              php tests/TestRedis.php --class RedisSentinel --auth phpredis
         env:
           TEST_PHP_ARGS: -e
           USE_ZEND_ALLOC: 0
