@@ -149,6 +149,66 @@ static int session_gc_maxlifetime(void) {
     return value;
 }
 
+/* Retrieve redis.session.compression from php.ini */
+static int session_compression_type(void) {
+#ifdef HAVE_REDIS_LZF
+    if(strncasecmp(INI_STR("redis.session.compression"), "lzf", sizeof("lzf") - 1) == 0) {
+        return REDIS_COMPRESSION_LZF;
+    }
+#endif
+#ifdef HAVE_REDIS_ZSTD
+    if(strncasecmp(INI_STR("redis.session.compression"), "zstd", sizeof("zstd") - 1) == 0) {
+        return REDIS_COMPRESSION_ZSTD;
+    }
+#endif
+#ifdef HAVE_REDIS_LZ4
+    if(strncasecmp(INI_STR("redis.session.compression"), "lz4", sizeof("lz4") - 1) == 0) {
+        return REDIS_COMPRESSION_LZ4;
+    }
+#endif
+    if(strncasecmp(INI_STR("redis.session.compression"), "none", sizeof("none") - 1) == 0) {
+        return REDIS_COMPRESSION_NONE;
+    }
+
+    // E_NOTICE when outside of valid values
+    php_error_docref(NULL, E_NOTICE, "redis.session.compression is outside of valid values, disabling");
+
+    return REDIS_COMPRESSION_NONE;
+}
+
+/* Helper to compress session data */
+static int
+session_compress_data(RedisSock *redis_sock, char *data, size_t len,
+                      char **compressed_data, size_t *compressed_len)
+{
+    if (redis_sock->compression) {
+        if(redis_compress(redis_sock, compressed_data, compressed_len, data, len)) {
+            return 1;
+        }
+    }
+
+    *compressed_data = data;
+    *compressed_len = len;
+
+    return 0;
+}
+
+/* Helper to uncompress session data */
+static int 
+session_uncompress_data(RedisSock *redis_sock, char *data, size_t len,
+                                   char **decompressed_data, size_t *decompressed_len) {
+    if (redis_sock->compression) {
+        if(redis_uncompress(redis_sock, decompressed_data, decompressed_len, data, len)) {
+            return 1;
+        }
+    }
+
+    *decompressed_data = data;
+    *decompressed_len = len;
+
+    return 0;
+}
+
 /* Send a command to Redis.  Returns byte count written to socket (-1 on failure) */
 static int redis_simple_cmd(RedisSock *redis_sock, char *cmd, int cmdlen,
                               char **reply, int *replylen)
@@ -677,6 +737,9 @@ PS_OPEN_FUNC(redis)
                 redis_sock->dbNumber = db;
             }
 
+            redis_sock->compression = session_compression_type();
+            redis_sock->compression_level = INI_INT("redis.session.compression_level");
+
             if (Z_TYPE(context) == IS_ARRAY) {
                 redis_sock_set_stream_context(redis_sock, &context);
             }
@@ -884,10 +947,10 @@ PS_UPDATE_TIMESTAMP_FUNC(redis)
  */
 PS_READ_FUNC(redis)
 {
-    char *resp, *cmd;
-    int resp_len, cmd_len;
+    char *resp, *cmd, *compressed_buf;
+    int resp_len, cmd_len, compressed_free;
     const char *skey = ZSTR_VAL(key);
-    size_t skeylen = ZSTR_LEN(key);
+    size_t skeylen = ZSTR_LEN(key), compressed_len;
 
     if (!skeylen) return FAILURE;
 
@@ -936,8 +999,13 @@ PS_READ_FUNC(redis)
     if (resp_len < 0) {
         *val = ZSTR_EMPTY_ALLOC();
     } else {
-        *val = zend_string_init(resp, resp_len, 0);
+        compressed_free = session_uncompress_data(redis_sock, resp, resp_len, &compressed_buf, &compressed_len);
+        *val = zend_string_init(compressed_buf, compressed_len, 0);
+        if (compressed_free) {
+            efree(compressed_buf); // Free the buffer allocated by redis_uncompress
+        }
     }
+
     efree(resp);
 
     return SUCCESS;
@@ -948,10 +1016,10 @@ PS_READ_FUNC(redis)
  */
 PS_WRITE_FUNC(redis)
 {
-    char *cmd, *response;
-    int cmd_len, response_len;
+    char *cmd, *response, *compressed_buf = NULL;
+    int cmd_len, response_len, compressed_free = 0;
     const char *skey = ZSTR_VAL(key), *sval = ZSTR_VAL(val);
-    size_t skeylen = ZSTR_LEN(key), svallen = ZSTR_LEN(val);
+    size_t skeylen = ZSTR_LEN(key), svallen = ZSTR_LEN(val), compressed_len = 0;
 
     if (!skeylen) return FAILURE;
 
@@ -966,8 +1034,15 @@ PS_WRITE_FUNC(redis)
     /* send SET command */
     zend_string *session = redis_session_key(redis_sock, skey, skeylen);
 
+    compressed_free = session_compress_data(redis_sock, ZSTR_VAL(val), ZSTR_LEN(val), &compressed_buf, &compressed_len);
+    sval = compressed_buf;
+    svallen = compressed_len;
+    
     cmd_len = REDIS_SPPRINTF(&cmd, "SETEX", "Sds", session, session_gc_maxlifetime(), sval, svallen);
     zend_string_release(session);
+    if (compressed_free) {
+        efree(compressed_buf);
+    }
 
     if (!write_allowed(redis_sock, &pool->lock_status)) {
         php_error_docref(NULL, E_WARNING, "Unable to write session: session lock not held");
@@ -1160,6 +1235,9 @@ PS_OPEN_FUNC(rediscluster) {
     } else {
         c->flags->prefix = CLUSTER_DEFAULT_PREFIX();
     }
+
+    c->flags->compression = session_compression_type();
+    c->flags->compression_level = INI_INT("redis.session.compression_level");
 
     redis_sock_set_auth(c->flags, user, pass);
 
@@ -1364,8 +1442,9 @@ PS_READ_FUNC(rediscluster) {
     redis_cluster_session *sc = PS_GET_MOD_DATA();
     redisCluster *c = sc->c;
     clusterReply *reply;
-    char *cmd;
-    int cmdlen, free_flag;
+    char *cmd, *compressed_buf;
+    int cmdlen, free_flag, compressed_free;
+    size_t compressed_len;
     short slot;
 
     /* Set up our command and slot information */
@@ -1407,7 +1486,11 @@ PS_READ_FUNC(rediscluster) {
     if (reply->str == NULL) {
         *val = ZSTR_EMPTY_ALLOC();
     } else {
-        *val = zend_string_init(reply->str, reply->len, 0);
+        compressed_free = session_uncompress_data(c->flags, reply->str, reply->len, &compressed_buf, &compressed_len);
+        *val = zend_string_init(compressed_buf, compressed_len, 0);
+        if (compressed_free) {
+            efree(compressed_buf); // Free the buffer allocated by redis_uncompress
+        }
     }
 
     free_flag = 1;
@@ -1425,15 +1508,23 @@ PS_WRITE_FUNC(rediscluster) {
     redis_cluster_session *sc = PS_GET_MOD_DATA();
     redisCluster *c = sc->c;
     clusterReply *reply;
-    char *cmd;
-    int cmdlen;
+    char *cmd, *compressed_buf = NULL, *sval = ZSTR_VAL(val);
+    int cmdlen, compressed_free = 0, svallen = ZSTR_LEN(val);
     short slot;
+    size_t compressed_len = 0;
+
+    compressed_free = session_compress_data(c->flags, sval, svallen, &compressed_buf, &compressed_len);
+    sval = compressed_buf;
+    svallen = compressed_len;
 
     /* Set up command and slot info */
     slot = sc->slot;
-    cmdlen = redis_spprintf(NULL, NULL, &cmd, "SETEX", "SdS", sc->lock_status.session_key,
+    cmdlen = redis_spprintf(NULL, NULL, &cmd, "SETEX", "Sds", sc->lock_status.session_key,
                             session_gc_maxlifetime(),
-                            val);
+                            sval, svallen);
+    if (compressed_free) {
+        efree(compressed_buf);
+    }
 
     /* Attempt to send command */
     c->readonly = 0;
