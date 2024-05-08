@@ -977,6 +977,7 @@ class Redis {
     /**
      * Dump Redis' internal binary representation of a key.
      *
+     * <code>
      * $redis->zRange('new-zset', 0, -1, true);
      * </code>
      *
@@ -2671,6 +2672,7 @@ class Redis {
      * @param string $other_keys One or more Redis SET keys.
      *
      * @example
+     * <code>
      * $redis->pipeline()
      *       ->del('alice_likes', 'bob_likes', 'bill_likes')
      *       ->sadd('alice_likes', 'asparagus', 'broccoli', 'carrot', 'potato')
@@ -2695,12 +2697,12 @@ class Redis {
      * @see https://redis.io/commands/sintercard
      *
      * @example
+     * <code>
      * $redis->sAdd('set1', 'apple', 'pear', 'banana', 'carrot');
      * $redis->sAdd('set2', 'apple',         'banana');
      * $redis->sAdd('set3',          'pear', 'banana');
      *
      * $redis->sInterCard(['set1', 'set2', 'set3']);
-     * ?>
      * </code>
      */
     public function sintercard(array $keys, int $limit = -1): Redis|int|false;
@@ -2719,10 +2721,9 @@ class Redis {
      *
      * @see https://redis.io/commands/sinterstore
      * @see Redis::sinter()
-     *
+     * <code>
      * @example $redis->sInterStore(['dst', 'src1', 'src2', 'src3']);
      * @example $redis->sInterStore('dst', 'src1', 'src'2', 'src3');
-     * ?>
      * </code>
      */
     public function sInterStore(array|string $key, string ...$other_keys): Redis|int|false;
@@ -2934,7 +2935,6 @@ class Redis {
      * @see https://redis.io/commands/scard
      *
      * @example $redis->scard('set');
-     * </code>
      */
     public function scard(string $key): Redis|int|false;
 
