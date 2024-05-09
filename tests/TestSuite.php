@@ -181,6 +181,21 @@ class TestSuite
             $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
     }
 
+    protected function assertBetween($value, $min, $max, bool $exclusive = false) {
+        if ($exclusive) {
+            if ($value > $min && $value < $max)
+                return;
+        } else {
+            if ($value >= $min && $value <= $max)
+                return;
+        }
+
+        $bt = debug_backtrace(false);
+        self::$errors []= sprintf("Assertion failed (%s not between %s and %s): %s:%d (%s)\n",
+            print_r($value, true), print_r($min, true), print_r($max, true),
+            $bt[0]["file"], $bt[0]["line"], $bt[1]["function"]);
+    }
+
     protected function assertEquals($a, $b) {
         if($a === $b)
             return;
