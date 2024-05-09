@@ -7462,7 +7462,7 @@ return;
         $end = microtime(true);
         $elapsedTime = $end - $start;
 
-        $this->assertTrue($elapsedTime < 3);
+        $this->assertLess($elapsedTime, 3);
         $this->assertTrue($sessionSuccessful);
     }
 
@@ -7543,7 +7543,7 @@ return;
         $end = microtime(true);
         $elapsedTime = $end - $start;
 
-        $this->assertTrue($elapsedTime > 2 && $elapsedTime < 3);
+        $this->assertBetween($elapsedTime, 2, 3);
         $this->assertFalse($sessionSuccessful);
     }
 
@@ -7931,7 +7931,14 @@ return;
 
         exec($command, $output);
 
-        return ($background || (count($output) == 1 && $output[0] == 'SUCCESS'));
+        if ($background)
+            return true;
+
+        $result = $output[0] == 'SUCCESS';
+
+        // var_dump(['command' => $command, 'output' => $output, 'result' => $result]);
+
+        return $result;
     }
 
     /**
@@ -8006,11 +8013,12 @@ return;
         if (!$cmd) {
             $cmd  = (getenv('TEST_PHP_EXECUTABLE') ?: PHP_BINARY);
 
-            if ($test_args = getenv('TEST_PHP_ARGS')) {
-                $cmd .= ' ';
-                $cmd .= $test_args;
+            $test_args = getenv('TEST_PHP_ARGS');
+            if ($test_args !== false) {
+                $cmd .= ' ' . $test_args;
             } else {
-                /* Only append specific extension directives if PHP hasn't been compiled with what we need statically */
+                /* Only append specific extension directives if PHP hasn't been compiled
+ *                 with what we need statically */
                 $modules   = shell_exec("$cmd --no-php-ini -m");
 
                 /* Determine if we need to specifically add extensions */
