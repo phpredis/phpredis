@@ -7890,20 +7890,36 @@ return;
             $this->markTestSkipped();
             return true;
         } else {
-            $commandParameters = [$this->getFullHostPath(), $this->sessionSaveHandler, $sessionId, $sleepTime, $maxExecutionTime, $lock_retries, $lock_expires, $sessionData, $sessionLifetime];
+            $cmd_args = [$this->getFullHostPath(), $this->sessionSaveHandler,
+                $sessionId, $sleepTime, $maxExecutionTime,
+                $lock_retries, $lock_expires, $sessionData, $sessionLifetime
+            ];
+
             if ($locking_enabled) {
-                $commandParameters[] = '1';
+                $cmd_args[] = '1';
 
                 if ($lock_wait_time != null) {
-                    $commandParameters[] = $lock_wait_time;
+                    $cmd_args[] = $lock_wait_time;
                 }
             }
-            $commandParameters = array_map('escapeshellarg', $commandParameters);
 
-            $command = self::getPhpCommand('startSession.php') . implode(' ', $commandParameters);
-            $command .= $background ? ' 2>/dev/null > /dev/null &' : ' 2>&1';
-            exec($command, $output);
-            return ($background || (count($output) == 1 && $output[0] == 'SUCCESS')) ? true : false;
+            $cmd_args = array_map('escapeshellarg', $cmd_args);
+
+            $cmd  = self::getPhpCommand('startSession.php') . implode(' ', $cmd_args);
+            $cmd .= $background ? ' >/dev/null 2>&1 &' : " 2>&1";
+
+            exec($cmd, $output);
+
+            if ($background || count($output) == 1 && $output[0] == 'SUCCESS')
+                return true;
+
+            fprintf(STDERR, "--- Session process failure ---\n");
+            fprintf(STDERR, "Command: $cmd\n");
+            fprintf(STDERR, "--- BEGIN OUTPUT ---\n");
+            fprintf(STDERR, implode("\n", $output));
+            fprintf(STDERR, "--- END OUTPUT ---\n");
+
+            return false;
         }
     }
 
@@ -7983,27 +7999,32 @@ return;
                 $cmd .= ' ';
                 $cmd .= $test_args;
             } else {
-                /* Only append specific extension directives if PHP hasn't been compiled with what we need statically */
-                $modules   = shell_exec("$cmd --no-php-ini -m");
+                /* Only append specific extension directives if PHP hasn't been
+                 * compiled with what we need statically */
+                $modules = shell_exec("$cmd --no-php-ini -m");
 
                 /* Determine if we need to specifically add extensions */
-                $arr_extensions = array_filter(
-                    ['redis', 'igbinary', 'msgpack', 'json'],
+                $extensions = array_filter(
+                    ['igbinary', 'msgpack', 'json', 'redis'],
                     function ($module) use ($modules) {
                         return strpos($modules, $module) === false;
                     }
                 );
 
                 /* If any are needed add them to the command */
-                if ($arr_extensions) {
+                if ($extensions) {
                     $cmd .= ' --no-php-ini';
-                    foreach ($arr_extensions as $str_extension) {
-                        /* We want to use the locally built redis extension */
-                        if ($str_extension == 'redis') {
-                            $str_extension = dirname(__DIR__) . '/modules/redis';
+                    foreach ($extensions as $extension) {
+                        /* Use the local build of redis.so if we're running from the PhpRedis
+                         * build tree and the shared object exists. */
+                        if ($extension == 'redis') {
+                            $local = dirname(__DIR__) . '/modules/redis';
+                            if (is_file("$local.so")) {
+                                $extension = $local;
+                            }
                         }
 
-                        $cmd .= " --define extension=$str_extension.so";
+                        $cmd .= " -dextension=$extension.so";
                     }
                 }
             }
