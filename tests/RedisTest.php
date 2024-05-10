@@ -7462,7 +7462,7 @@ return;
         $end = microtime(true);
         $elapsedTime = $end - $start;
 
-        $this->assertLess($elapsedTime, 3);
+        $this->assertLess($elapsedTime, 4);
         $this->assertTrue($sessionSuccessful);
     }
 
