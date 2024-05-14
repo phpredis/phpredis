@@ -239,14 +239,21 @@ class Redis {
     public const COMPRESSION_ZSTD_DEFAULT = 3;
 #endif
 
-#ifdef ZSTD_CLEVEL_MAX
+#if ZSTD_VERSION_NUMBER >= 10400
     /**
      *
      * @var int
-     * @cvalue ZSTD_CLEVEL_MAX
+     * @cvalue ZSTD_minCLevel()
      *
      */
-    public const COMPRESSION_ZSTD_MAX = UNKNOWN;
+    public const COMPRESSION_ZSTD_MIN = UNKNOWN;
+#else
+    /**
+    *
+    * @var int
+    *
+    */
+    public const COMPRESSION_ZSTD_MIN = 1;
 #endif
 
     /**
@@ -254,7 +261,6 @@ class Redis {
      * @cvalue ZSTD_maxCLevel()
      */
     public const COMPRESSION_ZSTD_MAX = UNKNOWN;
-
 #endif
 
 #ifdef HAVE_REDIS_LZ4
