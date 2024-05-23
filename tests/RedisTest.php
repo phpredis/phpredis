@@ -7365,7 +7365,7 @@ return;
         return (new SessionHelpers\Runner())
             ->prefix($this->sessionPrefix())
             ->handler($this->sessionSaveHandler())
-            ->save_path($this->sessionSavePath());
+            ->savePath($this->sessionSavePath());
     }
 
     public function testSession_compression() {
@@ -7373,17 +7373,17 @@ return;
             $data = "testing_compression_$name";
 
             $runner = $this->sessionRunner()
-                ->max_execution_time(300)
-                ->locking_enabled(true)
-                ->lock_wait_time(-1)
-                ->lock_expires(0)
+                ->maxExecutionTime(300)
+                ->lockingEnabled(true)
+                ->lockWaitTime(-1)
+                ->lockExpires(0)
                 ->data($data)
                 ->compression($name);
 
-            $this->assertEquals('SUCCESS', $runner->exec_fg());
+            $this->assertEquals('SUCCESS', $runner->execFg());
 
             $this->redis->setOption(Redis::OPT_COMPRESSION, $val);
-            $this->assertPatternMatch($this->redis->get($runner->get_session_key()), "/.*$data.*/");
+            $this->assertPatternMatch($this->redis->get($runner->getSessionKey()), "/.*$data.*/");
             $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
         }
     }
@@ -7392,8 +7392,8 @@ return;
     {
         $runner = $this->sessionRunner();
 
-        $this->assertEquals('SUCCESS', $runner->exec_fg());
-        $this->assertKeyExists($this->redis, $runner->get_session_key());
+        $this->assertEquals('SUCCESS', $runner->execFg());
+        $this->assertKeyExists($this->redis, $runner->getSessionKey());
     }
 
     protected function sessionWaitUsec() {
@@ -7408,51 +7408,51 @@ return;
     public function testSession_lockKeyCorrect() {
         $runner = $this->sessionRunner()->sleep(5);
 
-        $this->assertTrue($runner->exec_bg());
+        $this->assertTrue($runner->execBg());
 
-        if ( ! $runner->wait_for_lock_key($this->redis, $this->sessionWaitSec())) {
-            $this->externalCmdFailure($runner->get_cmd(), $runner->output(),
-                                 "Failed waiting for session lock key '{$runner->get_session_lock_key()}'",
-                                 $runner->get_exit_code());
+        if ( ! $runner->waitForLockKey($this->redis, $this->sessionWaitSec())) {
+            $this->externalCmdFailure($runner->getCmd(), $runner->output(),
+                                 "Failed waiting for session lock key '{$runner->getSessionLockKey()}'",
+                                 $runner->getExitCode());
         }
     }
 
     public function testSession_lockingDisabledByDefault()
     {
         $runner = $this->sessionRunner()
-            ->locking_enabled(false)
+            ->lockingEnabled(false)
             ->sleep(5);
 
-        $this->assertEquals('SUCCESS', $runner->exec_fg());
-        $this->assertKeyMissing($this->redis, $runner->get_session_lock_key());
+        $this->assertEquals('SUCCESS', $runner->execFg());
+        $this->assertKeyMissing($this->redis, $runner->getSessionLockKey());
     }
 
     public function testSession_lockReleasedOnClose()
     {
         $runner = $this->sessionRunner()
             ->sleep(1)
-            ->locking_enabled(true);
+            ->lockingEnabled(true);
 
-        $this->assertTrue($runner->exec_bg());
+        $this->assertTrue($runner->execBg());
         usleep($this->sessionWaitUsec() + 100000);
-        $this->assertKeyMissing($this->redis, $runner->get_session_lock_key());
+        $this->assertKeyMissing($this->redis, $runner->getSessionLockKey());
     }
 
     public function testSession_lock_ttlMaxExecutionTime()
     {
         $runner1 = $this->sessionRunner()
             ->sleep(10)
-            ->max_execution_time(2);
+            ->maxExecutionTime(2);
 
-        $this->assertTrue($runner1->exec_bg());
+        $this->assertTrue($runner1->execBg());
         usleep(100000);
 
         $runner2 = $this->sessionRunner()
-            ->id($runner1->get_id())
+            ->id($runner1->getId())
             ->sleep(0);
 
         $st = microtime(true);
-        $this->assertEquals('SUCCESS', $runner2->exec_fg());
+        $this->assertEquals('SUCCESS', $runner2->execFg());
         $el = microtime(true) - $st;
         $this->assertLess($el, 4);
     }
@@ -7462,19 +7462,19 @@ return;
 
         $runner1 = $this->sessionRunner()
             ->sleep(10)
-            ->max_execution_time(300)
-            ->locking_enabled(true)
-            ->lock_expires(2);
+            ->maxExecutionTime(300)
+            ->lockingEnabled(true)
+            ->lockExpires(2);
 
-        $this->assertTrue($runner1->exec_bg());
+        $this->assertTrue($runner1->execBg());
         usleep(100000);
 
         $runner2 = $this->sessionRunner()
-            ->id($runner1->get_id())
+            ->id($runner1->getId())
             ->sleep(0);
 
         $st = microtime(true);
-        $this->assertEquals('SUCCESS', $runner2->exec_fg());
+        $this->assertEquals('SUCCESS', $runner2->execFg());
         $this->assertLess(microtime(true) - $st, 3);
     }
 
@@ -7483,61 +7483,61 @@ return;
 
         $runner = $this->sessionRunner()
             ->sleep(2)
-            ->locking_enabled(true)
-            ->lock_expires(1)
+            ->lockingEnabled(true)
+            ->lockExpires(1)
             ->data('firstProcess');
 
         $runner2 = $this->sessionRunner()
-            ->id($runner->get_id())
+            ->id($runner->getId())
             ->sleep(0)
-            ->locking_enabled(true)
-            ->lock_expires(10)
+            ->lockingEnabled(true)
+            ->lockExpires(10)
             ->data('secondProcess');
 
-        $this->assertTrue($runner->exec_bg());
+        $this->assertTrue($runner->execBg());
         usleep(1500000); // 1.5 sec
-        $this->assertEquals('SUCCESS', $runner2->exec_fg());
+        $this->assertEquals('SUCCESS', $runner2->execFg());
 
-        $this->assertEquals($runner->get_data(), 'secondProcess');
+        $this->assertEquals($runner->getData(), 'secondProcess');
     }
 
     public function testSession_lockHoldCheckBeforeWrite_nobodyHasLock()
     {
         $runner = $this->sessionRunner()
             ->sleep(2)
-            ->locking_enabled(true)
-            ->lock_expires(1)
+            ->lockingEnabled(true)
+            ->lockExpires(1)
             ->data('firstProcess');
 
-        $this->assertNotEquals('SUCCESS', $runner->exec_fg());
-        $this->assertNotEquals('firstProcess', $runner->get_Data());
+        $this->assertNotEquals('SUCCESS', $runner->execFg());
+        $this->assertNotEquals('firstProcess', $runner->getData());
     }
 
     public function testSession_correctLockRetryCount() {
         $runner = $this->sessionRunner()
             ->sleep(10);
 
-        $this->assertTrue($runner->exec_bg());
-        if ( ! $runner->wait_for_lock_key($this->redis, 2)) {
-            $this->externalCmdFailure($runner->get_cmd(), $runner->output(),
+        $this->assertTrue($runner->execBg());
+        if ( ! $runner->waitForLockKey($this->redis, 2)) {
+            $this->externalCmdFailure($runner->getCmd(), $runner->output(),
                                  "Failed waiting for session lock key",
-                                 $runner->get_exit_code());
+                                 $runner->getExitCode());
         }
 
         $runner2 = $this->sessionRunner()
-            ->id($runner->get_id())
+            ->id($runner->getId())
             ->sleep(0)
-            ->max_execution_time(10)
-            ->locking_enabled(true)
-            ->lock_wait_time(100000)
-            ->lock_retries(10);
+            ->maxExecutionTime(10)
+            ->lockingEnabled(true)
+            ->lockWaitTime(100000)
+            ->lockRetries(10);
 
         $st = microtime(true);
-        $ex = $runner2->exec_fg();
+        $ex = $runner2->execFg();
         if (stripos($ex, 'SUCCESS') !== false) {
-            $this->externalCmdFailure($runner2->get_cmd(), $ex,
+            $this->externalCmdFailure($runner2->getCmd(), $ex,
                                       "Expected failure but lock was acquired!",
-                                      $runner2->get_exit_code());
+                                      $runner2->getExitCode());
         }
         $et = microtime(true);
 
@@ -7549,23 +7549,23 @@ return;
             ->sleep(10);
 
         $runner2 = $this->sessionRunner()
-            ->id($runner->get_id())
+            ->id($runner->getId())
             ->sleep(0)
-            ->locking_enabled(true)
-            ->max_execution_time(10)
-            ->lock_wait_time(20000)
-            ->lock_retries(0);
+            ->lockingEnabled(true)
+            ->maxExecutionTime(10)
+            ->lockWaitTime(20000)
+            ->lockRetries(0);
 
-        $this->assertTrue($runner->exec_bg());
+        $this->assertTrue($runner->execBg());
 
-        if ( ! $runner->wait_for_lock_key($this->redis, 3)) {
-            $this->externalCmdFailure($runner->get_cmd(), $runner->output(),
+        if ( ! $runner->waitForLockKey($this->redis, 3)) {
+            $this->externalCmdFailure($runner->getCmd(), $runner->output(),
                                       "Failed waiting for session lock key",
-                                      $runner->get_exit_code());
+                                      $runner->getExitCode());
         }
 
         $st = microtime(true);
-        $this->assertNotEquals('SUCCESS', $runner2->exec_fg());
+        $this->assertNotEquals('SUCCESS', $runner2->execFg());
         $et = microtime(true);
         $this->assertBetween($et - $st, 2, 3);
     }
@@ -7578,14 +7578,14 @@ return;
 
         $runner = $this->sessionRunner()
             ->sleep($sleep)
-            ->max_execution_time(3);
+            ->maxExecutionTime(3);
 
         $tm1 = microtime(true);
 
         /* 1.  Start a background process, and wait until we are certain
          *     the lock was attained. */
-        $this->assertTrue($runner->exec_bg());
-        if ( ! $runner->wait_for_lock_key($this->redis, 1)) {
+        $this->assertTrue($runner->execBg());
+        if ( ! $runner->waitForLockKey($this->redis, 1)) {
             $this->assert("Failed waiting for session lock key");
             return;
         }
@@ -7593,11 +7593,11 @@ return;
         /* 2.  Attempt to lock the same session.  This should force us to
          *     wait until the first lock is released. */
         $runner2 = $this->sessionRunner()
-            ->id($runner->get_id())
+            ->id($runner->getId())
             ->sleep(0);
 
         $tm2 = microtime(true);
-        $this->assertEquals('SUCCESS', $runner2->exec_fg());
+        $this->assertEquals('SUCCESS', $runner2->execFg());
         $tm3 = microtime(true);
 
         /* 3. Verify we had to wait for this lock */
@@ -7608,20 +7608,20 @@ return;
 
         $runner = $this->sessionRunner()
             ->sleep(1)
-            ->max_execution_time(300);
+            ->maxExecutionTime(300);
 
         $runner2 = $this->sessionRunner()
-            ->id($runner->get_id())
+            ->id($runner->getId())
             ->sleep(0)
-            ->max_execution_time(300)
-            ->locking_enabled(true)
-            ->lock_wait_time(3000000);
+            ->maxExecutionTime(300)
+            ->lockingEnabled(true)
+            ->lockWaitTime(3000000);
 
-        $this->assertTrue($runner->exec_bg());
+        $this->assertTrue($runner->execBg());
         usleep(100000);
 
         $st = microtime(true);
-        $this->assertEquals('SUCCESS', $runner2->exec_fg());
+        $this->assertEquals('SUCCESS', $runner2->execFg());
         $et = microtime(true);
 
         $this->assertBetween($et - $st, 2.5, 3.5);
@@ -7769,17 +7769,17 @@ return;
         $data   = uniqid('regenerate-id:');
         $runner = $this->sessionRunner()
             ->sleep(0)
-            ->max_execution_time(300)
-            ->locking_enabled(true)
-            ->lock_retries(1)
+            ->maxExecutionTime(300)
+            ->lockingEnabled(true)
+            ->lockRetries(1)
             ->data($data);
 
-        $this->assertEquals('SUCCESS', $runner->exec_fg());
+        $this->assertEquals('SUCCESS', $runner->execFg());
 
-        $new_id = $runner->regenerate_id($lock, $destroy, $proxy);
+        $new_id = $runner->regenerateId($lock, $destroy, $proxy);
 
-        $this->assertNotEquals($runner->get_id(), $new_id);
-        $this->assertEquals($runner->get_data(), $runner->get_data());
+        $this->assertNotEquals($runner->getId(), $new_id);
+        $this->assertEquals($runner->getData(), $runner->getData());
     }
 
     public  function testSession_regenerateSessionId_noLock_noDestroy() {
@@ -7817,30 +7817,30 @@ return;
     public function testSession_ttl_equalsToSessionLifetime()
     {
         $runner = $this->sessionRunner()->lifetime(600);
-        $this->assertEquals('SUCCESS', $runner->exec_fg());
-        $this->assertEquals(600, $this->redis->ttl($runner->get_session_key()));
+        $this->assertEquals('SUCCESS', $runner->execFg());
+        $this->assertEquals(600, $this->redis->ttl($runner->getSessionKey()));
     }
 
     public function testSession_ttl_resetOnWrite()
     {
         $runner1 = $this->sessionRunner()->lifetime(600);
-        $this->assertEquals('SUCCESS', $runner1->exec_fg());
+        $this->assertEquals('SUCCESS', $runner1->execFg());
 
-        $runner2 = $this->sessionRunner()->id($runner1->get_id())->lifetime(1800);
-        $this->assertEquals('SUCCESS', $runner2->exec_fg());
+        $runner2 = $this->sessionRunner()->id($runner1->getId())->lifetime(1800);
+        $this->assertEquals('SUCCESS', $runner2->execFg());
 
-        $this->assertEquals(1800, $this->redis->ttl($runner2->get_session_key()));
+        $this->assertEquals(1800, $this->redis->ttl($runner2->getSessionKey()));
     }
 
     public function testSession_ttl_resetOnRead() {
         $data = uniqid(__FUNCTION__);
 
         $runner = $this->sessionRunner()->lifetime(600)->data($data);
-        $this->assertEquals('SUCCESS', $runner->exec_fg());
-        $this->redis->expire($runner->get_session_key(), 9999);
+        $this->assertEquals('SUCCESS', $runner->execFg());
+        $this->redis->expire($runner->getSessionKey(), 9999);
 
-        $this->assertEquals($data, $runner->get_data());
-        $this->assertEquals(600, $this->redis->ttl($runner->get_session_key()));
+        $this->assertEquals($data, $runner->getData());
+        $this->assertEquals(600, $this->redis->ttl($runner->getSessionKey()));
     }
 }
 ?>

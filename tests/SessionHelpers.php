@@ -3,7 +3,7 @@
 namespace SessionHelpers;
 
 class PhpSpawner {
-    protected static function append_php_args(string $php): string {
+    protected static function appendPhpArgs(string $php): string {
         $modules   = shell_exec("$php --no-php-ini -m");
 
         /* Determine if we need to specifically add extensions */
@@ -49,7 +49,7 @@ class PhpSpawner {
             if ($test_args = getenv('TEST_PHP_ARGS')) {
                 $cmd .= ' ' . $test_args;
             } else {
-                $cmd = self::append_php_args($cmd);
+                $cmd = self::appendPhpArgs($cmd);
             }
         }
 
@@ -87,18 +87,18 @@ class Runner {
     private $output;
 
     public function __construct() {
-        $this->args['id'] = $this->generate_id();
+        $this->args['id'] = $this->createId();
     }
 
-    public function get_exit_code(): int {
+    public function getExitCode(): int {
         return $this->exit_code;
     }
 
-    public function get_cmd(): ?string {
+    public function getCmd(): ?string {
         return $this->cmd;
     }
 
-    public function get_id(): ?string {
+    public function getId(): ?string {
         return $this->args['id'];
     }
 
@@ -107,12 +107,12 @@ class Runner {
         return $this;
     }
 
-    public function get_session_key(): string {
-        return $this->prefix . $this->get_id();
+    public function getSessionKey(): string {
+        return $this->prefix . $this->getId();
     }
 
-    public function get_session_lock_key(): string {
-        return $this->get_session_key() . '_LOCK';
+    public function getSessionLockKey(): string {
+        return $this->getSessionKey() . '_LOCK';
     }
 
     protected function set($setting, $v): self {
@@ -124,7 +124,7 @@ class Runner {
         return $this->set('handler', $handler);
     }
 
-    public function save_path(string $path): self {
+    public function savePath(string $path): self {
         return $this->set('save-path', $path);
     }
 
@@ -136,23 +136,23 @@ class Runner {
         return $this->set('sleep', $sleep);
     }
 
-    public function max_execution_time(int $time): self {
+    public function maxExecutionTime(int $time): self {
         return $this->set('max-execution-time', $time);
     }
 
-    public function locking_enabled(bool $enabled): self {
+    public function lockingEnabled(bool $enabled): self {
         return $this->set('locking-enabled', $enabled);
     }
 
-    public function lock_wait_time(int $time): self {
+    public function lockWaitTime(int $time): self {
         return $this->set('lock-wait-time', $time);
     }
 
-    public function lock_retries(int $retries): self {
+    public function lockRetries(int $retries): self {
         return $this->set('lock-retries', $retries);
     }
 
-    public function lock_expires(int $expires): self {
+    public function lockExpires(int $expires): self {
         return $this->set('lock-expires', $expires);
     }
 
@@ -168,21 +168,21 @@ class Runner {
         return $this->set('compression', $compression);
     }
 
-    protected function validate_args(array $required) {
+    protected function validateArgs(array $required) {
         foreach ($required as $req) {
             if ( ! isset($this->args[$req]) || $this->args[$req] === null)
                 throw new \Exception("Command requires '$req' arg");
         }
     }
 
-    private function generate_id(): string {
+    private function createId(): string {
         if (function_exists('session_create_id'))
             return session_create_id();
 
         return uniqid();
     }
 
-    private function get_tmp_file_name() {
+    private function getTmpFileName() {
         return '/tmp/sessiontmp.txt';
         return tempnam(sys_get_temp_dir(), 'session');
     }
@@ -198,11 +198,11 @@ class Runner {
      *
      * @return bool
      */
-    public function wait_for_lock_key($redis, $max_wait_sec) {
+    public function waitForLockKey($redis, $max_wait_sec) {
         $now = microtime(true);
 
         do {
-            if ($redis->exists($this->get_session_lock_key()))
+            if ($redis->exists($this->getSessionLockKey()))
                 return true;
             usleep(10000);
         } while (microtime(true) <= $now + $max_wait_sec);
@@ -210,7 +210,7 @@ class Runner {
         return false;
     }
 
-    private function append_cmd_args(array $args): string {
+    private function appendCmdArgs(array $args): string {
         $append = [];
 
         foreach ($args as $arg => $val) {
@@ -227,12 +227,12 @@ class Runner {
         return implode(' ', $append);
     }
 
-    private function build_php_cmd(string $script, array $args): string {
-        return PhpSpawner::cmd($script) . ' ' . $this->append_cmd_args($args);
+    private function buildPhpCmd(string $script, array $args): string {
+        return PhpSpawner::cmd($script) . ' ' . $this->appendCmdArgs($args);
     }
 
-    public function start_session_cmd(): string {
-        return $this->build_php_cmd(self::start_script, $this->args);
+    private function startSessionCmd(): string {
+        return $this->buildPhpCmd(self::start_script, $this->args);
     }
 
     public function output(?int $timeout = NULL): ?string {
@@ -264,13 +264,13 @@ class Runner {
         return $this->output;
     }
 
-    public function exec_bg(): bool {
+    public function execBg(): bool {
         if ($this->cmd)
             throw new \Exception("Command already executed!");
 
-        $output_file = $this->get_tmp_file_name();
+        $output_file = $this->getTmpFileName();
 
-        $this->cmd  = $this->start_session_cmd();
+        $this->cmd  = $this->startSessionCmd();
         $this->cmd .= " >$output_file 2>&1 & echo $!";
 
         $pid = exec($this->cmd, $output, $exit_code);
@@ -285,11 +285,11 @@ class Runner {
         return true;
     }
 
-    public function exec_fg() {
+    public function execFg() {
         if ($this->cmd)
             throw new \Exception("Command already executed!");
 
-        $this->cmd = $this->start_session_cmd() . ' 2>&1';
+        $this->cmd = $this->startSessionCmd() . ' 2>&1';
 
         exec($this->cmd, $output, $exit_code);
         $this->exit_code = $exit_code;
@@ -298,8 +298,8 @@ class Runner {
         return $this->output;
     }
 
-    private function regenerate_id_cmd($locking, $destroy, $proxy): string {
-        $this->validate_args(['handler', 'id', 'save-path']);
+    private function regenerateIdCmd($locking, $destroy, $proxy): string {
+        $this->validateArgs(['handler', 'id', 'save-path']);
 
         $args = [
             'handler' => $this->args['handler'],
@@ -310,14 +310,14 @@ class Runner {
             'proxy' => !!$proxy,
         ];
 
-        return $this->build_php_cmd(self::regenerate_id_script, $args);
+        return $this->buildPhpCmd(self::regenerate_id_script, $args);
     }
 
-    public function regenerate_id($locking = false, $destroy = false, $proxy = false) {
+    public function regenerateId($locking = false, $destroy = false, $proxy = false) {
         if ( ! $this->cmd)
             throw new \Exception("Cannot regenerate id before starting session!");
 
-        $cmd = $this->regenerate_id_cmd($locking, $destroy, $proxy);
+        $cmd = $this->regenerateIdCmd($locking, $destroy, $proxy);
 
         exec($cmd, $output, $exit_code);
 
@@ -327,8 +327,8 @@ class Runner {
         return $output[0];
     }
 
-    private function get_data_cmd(?int $lifetime): string {
-        $this->validate_args(['handler', 'save-path', 'id']);
+    private function getDataCmd(?int $lifetime): string {
+        $this->validateArgs(['handler', 'save-path', 'id']);
 
         $args = [
             'handler' => $this->args['handler'],
@@ -337,11 +337,11 @@ class Runner {
             'lifetime' => is_int($lifetime) ? $lifetime : $this->args['lifetime'],
         ];
 
-        return $this->build_php_cmd(self::get_data_script, $args);
+        return $this->buildPhpCmd(self::get_data_script, $args);
     }
 
-    public function get_data(?int $lifetime = NULL): string {
-        $cmd = $this->get_data_cmd($lifetime);
+    public function getData(?int $lifetime = NULL): string {
+        $cmd = $this->getDataCmd($lifetime);
 
         exec($cmd, $output, $exit_code);
         if ($exit_code != 0) {
