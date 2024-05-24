@@ -173,6 +173,24 @@ class TestSuite
         return false;
     }
 
+    protected function assertIsInt($v) {
+        if (is_int($v))
+            return true;
+
+        self::$errors []= $this->assertionTrace("%s is not an integer", $this->printArg($v));
+
+        return false;
+    }
+
+    protected function assertIsArray($v) {
+        if (is_array($v))
+            return true;
+
+        self::$errors []= $this->assertionTrace("%s is not an array", $this->printArg($v));
+
+        return false;
+    }
+
     protected function assertArrayKey($arr, $key, callable $cb = NULL) {
         $cb ??= function ($v) { return true; };
 
@@ -267,6 +285,9 @@ class TestSuite
     }
 
     protected function assertBetween($value, $min, $max, bool $exclusive = false) {
+        if ($min > $max)
+            [$max, $min] = [$min, $max];
+
         if ($exclusive) {
             if ($value > $min && $value < $max)
                 return true;
@@ -281,12 +302,49 @@ class TestSuite
         return false;
     }
 
-    protected function assertEquals($a, $b) {
-        if($a === $b)
+    /* Replica of PHPUnit's assertion.  Basically are two arrys the same without
+   '   respect to order. */
+    protected function assertEqualsCanonicalizing($expected, $actual, $keep_keys = false) {
+        if ($expected InstanceOf Traversable)
+            $expected = iterator_to_array($expected);
+
+        if ($actual InstanceOf Traversable)
+            $actual = iterator_to_array($actual);
+
+        if ($keep_keys) {
+            asort($expected);
+            asort($actual);
+        } else {
+            sort($expected);
+            sort($actual);
+        }
+
+        if ($expected === $actual)
             return true;
 
-        self::$errors[] = $this->assertionTrace("%s !== %s", $this->printArg($a),
-                                                $this->printArg($b));
+        self::$errors []= $this->assertionTrace("%s !== %s",
+                                                $this->printArg($actual),
+                                                $this->printArg($expected));
+
+        return false;
+    }
+
+    protected function assertEqualsWeak($expected, $actual) {
+        if ($expected == $actual)
+            return true;
+
+        self::$errors []= $this->assertionTrace("%s != %s", $this->printArg($actual),
+                                                $this->printArg($expected));
+
+        return false;
+    }
+
+    protected function assertEquals($expected, $actual) {
+        if($expected === $actual)
+            return true;
+
+        self::$errors[] = $this->assertionTrace("%s !== %s", $this->printArg($actual),
+                                                $this->printArg($expected));
 
         return false;
     }
@@ -299,6 +357,18 @@ class TestSuite
                                                 $this->printArg($b));
 
         return false;
+    }
+
+    protected function assertStringContains(string $needle, $haystack) {
+        if ( ! is_string($haystack)) {
+            self::$errors []= $this->assertionTrace("'%s' is not a string", $this->printArg($haystack));
+            return false;
+        }
+
+        if (strstr($haystack, $needle) !== false)
+            return true;
+
+        self::$errors []= $this->assertionTrace("'%s' not found in '%s'", $needle, $haystack);
     }
 
     protected function assertPatternMatch($str_test, $str_regex) {

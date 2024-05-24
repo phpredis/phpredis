@@ -27,38 +27,39 @@ class Redis_Cluster_Test extends Redis_Test {
      * RedisCluster class doesn't implement specialized (non-redis) commands
      * such as sortAsc, or sortDesc and other commands such as SELECT are
      * simply invalid in Redis Cluster */
-    public function testSortAsc()  { return $this->markTestSkipped(); }
-    public function testSortDesc() { return $this->markTestSkipped(); }
-    public function testWait()     { return $this->markTestSkipped(); }
-    public function testSelect()   { return $this->markTestSkipped(); }
-    public function testReconnectSelect() { return $this->markTestSkipped(); }
-    public function testMultipleConnect() { return $this->markTestSkipped(); }
-    public function testDoublePipeNoOp() { return $this->markTestSkipped(); }
-    public function testSwapDB() { return $this->markTestSkipped(); }
-    public function testConnectException() { return $this->markTestSkipped(); }
-    public function testTlsConnect() { return $this->markTestSkipped(); }
-    public function testReset() { return $this->markTestSkipped(); }
-    public function testInvalidAuthArgs() { return $this->markTestSkipped(); }
-    public function testScanErrors() { return $this->markTestSkipped(); }
+    public function testPipelinePublish() { $this->markTestSkipped(); }
+    public function testSortAsc()  { $this->markTestSkipped(); }
+    public function testSortDesc() { $this->markTestSkipped(); }
+    public function testWait()     { $this->markTestSkipped(); }
+    public function testSelect()   { $this->markTestSkipped(); }
+    public function testReconnectSelect() { $this->markTestSkipped(); }
+    public function testMultipleConnect() { $this->markTestSkipped(); }
+    public function testDoublePipeNoOp() { $this->markTestSkipped(); }
+    public function testSwapDB() { $this->markTestSkipped(); }
+    public function testConnectException() { $this->markTestSkipped(); }
+    public function testTlsConnect() { $this->markTestSkipped(); }
+    public function testReset() { $this->markTestSkipped(); }
+    public function testInvalidAuthArgs() { $this->markTestSkipped(); }
+    public function testScanErrors() { $this->markTestSkipped(); }
 
     /* These 'directed node' commands work differently in RedisCluster */
-    public function testConfig() { return $this->markTestSkipped(); }
-    public function testFlushDB() { return $this->markTestSkipped(); }
-    public function testFunction() { return $this->markTestSkipped(); }
+    public function testConfig() { $this->markTestSkipped(); }
+    public function testFlushDB() { $this->markTestSkipped(); }
+    public function testFunction() { $this->markTestSkipped(); }
 
     /* Session locking feature is currently not supported in in context of Redis Cluster.
        The biggest issue for this is the distribution nature of Redis cluster */
-    public function testSession_lockKeyCorrect() { return $this->markTestSkipped(); }
-    public function testSession_lockingDisabledByDefault() { return $this->markTestSkipped(); }
-    public function testSession_lockReleasedOnClose() { return $this->markTestSkipped(); }
-    public function testSession_ttlMaxExecutionTime() { return $this->markTestSkipped(); }
-    public function testSession_ttlLockExpire() { return $this->markTestSkipped(); }
-    public function testSession_lockHoldCheckBeforeWrite_otherProcessHasLock() { return $this->markTestSkipped(); }
-    public function testSession_lockHoldCheckBeforeWrite_nobodyHasLock() { return $this->markTestSkipped(); }
-    public function testSession_correctLockRetryCount() { return $this->markTestSkipped(); }
-    public function testSession_defaultLockRetryCount() { return $this->markTestSkipped(); }
-    public function testSession_noUnlockOfOtherProcess() { return $this->markTestSkipped(); }
-    public function testSession_lockWaitTime() { return $this->markTestSkipped(); }
+    public function testSession_lockKeyCorrect() { $this->markTestSkipped(); }
+    public function testSession_lockingDisabledByDefault() { $this->markTestSkipped(); }
+    public function testSession_lockReleasedOnClose() { $this->markTestSkipped(); }
+    public function testSession_ttlMaxExecutionTime() { $this->markTestSkipped(); }
+    public function testSession_ttlLockExpire() { $this->markTestSkipped(); }
+    public function testSession_lockHoldCheckBeforeWrite_otherProcessHasLock() { $this->markTestSkipped(); }
+    public function testSession_lockHoldCheckBeforeWrite_nobodyHasLock() { $this->markTestSkipped(); }
+    public function testSession_correctLockRetryCount() { $this->markTestSkipped(); }
+    public function testSession_defaultLockRetryCount() { $this->markTestSkipped(); }
+    public function testSession_noUnlockOfOtherProcess() { $this->markTestSkipped(); }
+    public function testSession_lockWaitTime() { $this->markTestSkipped(); }
 
     /* Load our seeds on construction */
     public function __construct($str_host, $i_port, $str_auth) {
@@ -692,7 +693,7 @@ class Redis_Cluster_Test extends Redis_Test {
        the command to a specific node. */
     public function testAcl() {
         if ( ! $this->minVersionCheck("6.0"))
-            return $this->markTestSkipped();
+            $this->markTestSkipped();
 
         $this->assertInArray('default', $this->redis->acl('foo', 'USERS'));
     }
@@ -702,9 +703,9 @@ class Redis_Cluster_Test extends Redis_Test {
         @ini_set('session.save_handler', 'rediscluster');
         @ini_set('session.save_path', $this->sessionSavePath() . '&failover=error');
 
-        if (!@session_start()) {
-            return $this->markTestSkipped();
-        }
+        if (!@session_start())
+            $this->markTestSkipped();
+
         session_write_close();
 
         $this->assertKeyExists($this->sessionPrefix() . session_id());
