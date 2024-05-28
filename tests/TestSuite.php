@@ -7,17 +7,17 @@ class TestSkippedException extends Exception {}
 class TestSuite
 {
     /* Host and port the unit tests will use */
-    private $str_host;
-    private $i_port = 6379;
+    private string $host;
+    private ?int $port = 6379;
 
     /* Redis authentication we'll use */
     private $auth;
 
     /* Redis server version */
     protected $version;
-    protected $is_keydb;
+    protected bool $is_keydb;
 
-    private static $_boo_colorize = false;
+    private static bool $colorize = false;
 
     private static $BOLD_ON = "\033[1m";
     private static $BOLD_OFF = "\033[0m";
@@ -30,41 +30,33 @@ class TestSuite
     private static $YELLOW = "\033[0;33m";
     private static $RED = "\033[0;31m";
 
-    public static $errors = [];
-    public static $warnings = [];
+    public static array $errors = [];
+    public static array $warnings = [];
 
-    public function __construct($str_host, $i_port, $auth) {
-        $this->str_host = $str_host;
-        $this->i_port = $i_port;
+    public function __construct(string $host, ?int $port, $auth) {
+        $this->host = $host;
+        $this->port = $port;
         $this->auth = $auth;
     }
 
-    public function getHost() { return $this->str_host; }
-    public function getPort() { return $this->i_port; }
+    public function getHost() { return $this->host; }
+    public function getPort() { return $this->port; }
     public function getAuth() { return $this->auth; }
 
-    public static function make_bold($str_msg) {
-        return self::$_boo_colorize
-            ? self::$BOLD_ON . $str_msg . self::$BOLD_OFF
-            : $str_msg;
+    public static function make_bold(string $msg) {
+        return self::$colorize ? self::$BOLD_ON . $msg . self::$BOLD_OFF : $msg;
     }
 
-    public static function make_success($str_msg) {
-        return self::$_boo_colorize
-            ? self::$GREEN . $str_msg . self::$BOLD_OFF
-            : $str_msg;
+    public static function make_success(string $msg) {
+        return self::$colorize ? self::$GREEN . $msg . self::$BOLD_OFF : $msg;
     }
 
-    public static function make_fail($str_msg) {
-        return self::$_boo_colorize
-            ? self::$RED . $str_msg . self::$BOLD_OFF
-            : $str_msg;
+    public static function make_fail(string $msg) {
+        return self::$colorize ? self::$RED . $msg . self::$BOLD_OFF : $msg;
     }
 
-    public static function make_warning($str_msg) {
-        return self::$_boo_colorize
-            ? self::$YELLOW . $str_msg . self::$BOLD_OFF
-            : $str_msg;
+    public static function make_warning(string $msg) {
+        return self::$colorize ? self::$YELLOW . $msg . self::$BOLD_OFF : $msg;
     }
 
     protected function printArg($v) {
@@ -123,15 +115,7 @@ class TestSuite
         self::$errors []= $this->assertionTrace($fmt, ...$args);
     }
 
-    protected function assertFalse($bool) {
-        if( ! $bool)
-            return true;
-        self::$errors []= $this->assertionTrace();
-
-        return false;
-    }
-
-    protected function assertKeyExists($redis, $key) {
+    protected function assertKeyExists($redis, $key): bool {
         if ($redis->exists($key))
             return true;
 
@@ -140,7 +124,7 @@ class TestSuite
         return false;
     }
 
-    protected function assertKeyMissing($redis, $key) {
+    protected function assertKeyMissing($redis, $key): bool {
         if ( ! $redis->exists($key))
             return true;
 
@@ -149,16 +133,37 @@ class TestSuite
         return false;
     }
 
-    protected function assertTrue($bool, $msg='') {
-        if($bool)
+    protected function assertTrue($value): bool {
+        if ($value === true)
             return true;
 
-        self::$errors []= $this->assertionTrace($msg);
+        self::$errors []= $this->assertionTrace("%s !== %s", $this->printArg($value),
+                                                             $this->printArg(true));
 
         return false;
     }
 
-    protected function assertInArray($ele, $arr, ?callable $cb = NULL) {
+    protected function assertFalse($value): bool {
+        if ($value === false)
+            return true;
+
+        self::$errors []= $this->assertionTrace("%s !== %s", $this->printArg($value),
+                                                             $this->printArg(false));
+
+        return false;
+    }
+
+    protected function assertNull($value): bool {
+        if ($value === NULL)
+            return true;
+
+        self::$errors []= $this->assertionTrace("%s !== %s", $this->printArg($value),
+                                                             $this->printArg(NULL));
+
+        return false;
+    }
+
+    protected function assertInArray($ele, $arr, ?callable $cb = NULL): bool {
         $cb ??= function ($v) { return true; };
 
         $key = array_search($ele, $arr);
@@ -173,7 +178,16 @@ class TestSuite
         return false;
     }
 
-    protected function assertIsInt($v) {
+    protected function assertIsString($v): bool {
+        if (is_string($v))
+            return true;
+
+        self::$errors []= $this->assertionTrace("%s is not a string", $this->printArg($v));
+
+        return false;
+    }
+
+    protected function assertIsInt($v): bool {
         if (is_int($v))
             return true;
 
@@ -182,16 +196,21 @@ class TestSuite
         return false;
     }
 
-    protected function assertIsArray($v) {
-        if (is_array($v))
-            return true;
+    protected function assertIsArray($v, ?int $size = null): bool {
+        if ( ! is_array($v)) {
+            self::$errors []= $this->assertionTrace("%s is not an array", $this->printArg($v));
+            return false;
+        }
 
-        self::$errors []= $this->assertionTrace("%s is not an array", $this->printArg($v));
+        if ( ! is_null($size) && count($v) != $size) {
+            self::$errors []= $this->assertionTrace("Array size %d != %d", count($v), $size);
+            return false;
+        }
 
-        return false;
+        return true;
     }
 
-    protected function assertArrayKey($arr, $key, callable $cb = NULL) {
+    protected function assertArrayKey($arr, $key, callable $cb = NULL): bool {
         $cb ??= function ($v) { return true; };
 
         if (($exists = isset($arr[$key])) && $cb($arr[$key]))
@@ -211,10 +230,24 @@ class TestSuite
         return false;
     }
 
-    protected function assertValidate($val, $cb) {
-        if ( ! is_callable($cb))
-            die("Fatal:  Callable assertValidate callback required\n");
+    protected function assertArrayKeyEquals($arr, $key, $value): bool {
+        if ( ! isset($arr[$key])) {
+            self::$errors []= $this->assertionTrace(
+                "Key '%s' not found in %s", $key, $this->printArg($arr));
+            return false;
+        }
 
+        if ($arr[$key] !== $value) {
+            self::$errors []= $this->assertionTrace(
+                "Value '%s' != '%s' for key '%s' in %s",
+                $arr[$key], $value, $key, $this->printArg($arr));
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function assertValidate($val, callable $cb): bool {
         if ($cb($val))
             return true;
 
@@ -223,11 +256,8 @@ class TestSuite
         return false;
     }
 
-    protected function assertThrowsMatch($arg, $cb, $regex = NULL) {
+    protected function assertThrowsMatch($arg, callable $cb, $regex = NULL): bool {
         $threw = $match = false;
-
-        if ( ! is_callable($cb))
-            die("Fatal:  Callable assertThrows callback required\n");
 
         try {
             $cb($arg);
@@ -239,28 +269,45 @@ class TestSuite
         if ($threw && $match)
             return true;
 
-//        $bt = debug_backtrace(false);
         $ex = !$threw ? 'no exception' : "no match '$regex'";
 
         self::$errors []= $this->assertionTrace("[$ex]");
-//
-        return false;
-    }
-
-    protected function assertLess($a, $b) {
-        if($a < $b)
-            return true;
-
-        self::$errors []= $this->assertionTrace("%s >= %s", $a, $b);
 
         return false;
     }
 
-    protected function assertMore($a, $b) {
-        if($a > $b)
+    protected function assertLTE($maximum, $value): bool {
+        if ($value <= $maximum)
             return true;
 
-        self::$errors [] = $this->assertionTrace("%s <= %s", $a, $b);
+        self::$errors []= $this->assertionTrace("%s > %s", $value, $maximum);
+
+        return false;
+    }
+
+    protected function assertLT($minimum, $value): bool {
+        if ($value < $minimum)
+            return true;
+
+        self::$errors []= $this->assertionTrace("%s >= %s", $value, $minimum);
+
+        return false;
+    }
+
+    protected function assertGT($maximum, $value): bool {
+        if ($value > $maximum)
+            return true;
+
+        self::$errors [] = $this->assertionTrace("%s <= %s", $maximum, $value);
+
+        return false;
+    }
+
+    protected function assertGTE($minimum, $value): bool {
+        if ($value >= $minimum)
+            return true;
+
+        self::$errors [] = $this->assertionTrace("%s < %s", $minimum, $value);
 
         return false;
     }
@@ -284,7 +331,7 @@ class TestSuite
         self::$errors[] = implode("\n", $lines) . "\n";
     }
 
-    protected function assertBetween($value, $min, $max, bool $exclusive = false) {
+    protected function assertBetween($value, $min, $max, bool $exclusive = false): bool {
         if ($min > $max)
             [$max, $min] = [$min, $max];
 
@@ -304,7 +351,7 @@ class TestSuite
 
     /* Replica of PHPUnit's assertion.  Basically are two arrys the same without
    '   respect to order. */
-    protected function assertEqualsCanonicalizing($expected, $actual, $keep_keys = false) {
+    protected function assertEqualsCanonicalizing($expected, $actual, $keep_keys = false): bool {
         if ($expected InstanceOf Traversable)
             $expected = iterator_to_array($expected);
 
@@ -329,7 +376,7 @@ class TestSuite
         return false;
     }
 
-    protected function assertEqualsWeak($expected, $actual) {
+    protected function assertEqualsWeak($expected, $actual): bool {
         if ($expected == $actual)
             return true;
 
@@ -339,8 +386,8 @@ class TestSuite
         return false;
     }
 
-    protected function assertEquals($expected, $actual) {
-        if($expected === $actual)
+    protected function assertEquals($expected, $actual): bool {
+        if ($expected === $actual)
             return true;
 
         self::$errors[] = $this->assertionTrace("%s !== %s", $this->printArg($actual),
@@ -349,17 +396,17 @@ class TestSuite
         return false;
     }
 
-    public function assertNotEquals($a, $b) {
-        if($a !== $b)
+    public function assertNotEquals($wrong_value, $test_value): bool {
+        if ($wrong_value !== $test_value)
             return true;
 
-        self::$errors []= $this->assertionTrace("%s === %s", $this->printArg($a),
-                                                $this->printArg($b));
+        self::$errors []= $this->assertionTrace("%s === %s", $this->printArg($wrong_value),
+                                                $this->printArg($test_value));
 
         return false;
     }
 
-    protected function assertStringContains(string $needle, $haystack) {
+    protected function assertStringContains(string $needle, $haystack): bool {
         if ( ! is_string($haystack)) {
             self::$errors []= $this->assertionTrace("'%s' is not a string", $this->printArg($haystack));
             return false;
@@ -371,18 +418,19 @@ class TestSuite
         self::$errors []= $this->assertionTrace("'%s' not found in '%s'", $needle, $haystack);
     }
 
-    protected function assertPatternMatch($str_test, $str_regex) {
-        if (preg_match($str_regex, $str_test))
+    protected function assertPatternMatch(string $pattern, string $value): bool {
+        if (preg_match($pattern, $value))
             return true;
 
-        self::$errors []= $this->assertionTrace("'%s' doesnt match '%s'",
-                                                $str_test, $str_regex);
+        self::$errors []= $this->assertionTrace("'%s' doesnt match '%s'", $value,
+                                                $pattern);
 
         return false;
     }
 
-    protected function markTestSkipped($msg='') {
+    protected function markTestSkipped(string $msg = '') {
         $bt = debug_backtrace(false);
+
         self::$warnings []= sprintf("Skipped test: %s:%d (%s) %s\n",
                                     $bt[0]["file"], $bt[0]["line"],
                                     $bt[1]["function"], $msg);
@@ -390,22 +438,23 @@ class TestSuite
         throw new TestSkippedException($msg);
     }
 
-    private static function getMaxTestLen($arr_methods, $str_limit) {
-        $i_result = 0;
+    private static function getMaxTestLen(array $methods, ?string $limit): int {
+        $result = 0;
 
-        foreach ($arr_methods as $obj_method) {
-            $str_name = strtolower($obj_method->name);
+        foreach ($methods as $obj_method) {
+            $name = strtolower($obj_method->name);
 
-            if (substr($str_name, 0, 4) != 'test')
+            if (substr($name, 0, 4) != 'test')
                 continue;
-            if ($str_limit && !strstr($str_name, $str_limit))
+            if ($limit && !strstr($name, $limit))
                 continue;
 
-            if (strlen($str_name) > $i_result) {
-                $i_result = strlen($str_name);
+            if (strlen($name) > $result) {
+                $result = strlen($name);
             }
         }
-        return $i_result;
+
+        return $result;
     }
 
     private static function findFile($path, $file) {
@@ -443,28 +492,31 @@ class TestSuite
     }
 
     /* Flag colorization */
-    public static function flagColorization($boo_override) {
-        self::$_boo_colorize = $boo_override && function_exists('posix_isatty') &&
+    public static function flagColorization(bool $override) {
+        self::$colorize = $override && function_exists('posix_isatty') &&
             posix_isatty(STDOUT);
     }
 
-    public static function run($className, $str_limit = NULL, $str_host = NULL, $i_port = NULL, $auth = NULL) {
+    public static function run($className, ?string $limit = NULL,
+                               ?string $host = NULL, ?int $port = NULL,
+                               $auth = NULL)
+    {
         /* Lowercase our limit arg if we're passed one */
-        $str_limit = $str_limit ? strtolower($str_limit) : $str_limit;
+        $limit ??= strtolower($limit);
 
         $rc = new ReflectionClass($className);
         $methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
 
-        $i_max_len = self::getMaxTestLen($methods, $str_limit);
+        $i_max_len = self::getMaxTestLen($methods, $limit);
 
         foreach($methods as $m) {
             $name = $m->name;
-            if(substr($name, 0, 4) !== 'test')
+            if (substr($name, 0, 4) !== 'test')
                 continue;
 
             /* If we're trying to limit to a specific test and can't match the
              * substring, skip */
-            if ($str_limit && strstr(strtolower($name), $str_limit)===FALSE) {
+            if ($limit && stristr($name, $limit) === false) {
                 continue;
             }
 
@@ -472,7 +524,7 @@ class TestSuite
             echo self::make_bold($str_out_name);
 
             $count = count($className::$errors);
-            $rt = new $className($str_host, $i_port, $auth);
+            $rt = new $className($host, $port, $auth);
 
             try {
                 $rt->setUp();
@@ -483,7 +535,6 @@ class TestSuite
                 } else {
                     $str_msg = self::make_fail('FAILED');
                 }
-                //echo ($count === count($className::$errors)) ? "." : "F";
             } catch (Exception $e) {
                 /* We may have simply skipped the test */
                 if ($e instanceof TestSkippedException) {
@@ -499,7 +550,7 @@ class TestSuite
         echo "\n";
         echo implode('', $className::$warnings) . "\n";
 
-        if(empty($className::$errors)) {
+        if (empty($className::$errors)) {
             echo "All tests passed. \o/\n";
             return 0;
         }
