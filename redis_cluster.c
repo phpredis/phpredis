@@ -2268,7 +2268,7 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     HashTable *hash;
     long num_ele;
     zend_long count = 0;
-    zend_bool complted;
+    zend_bool completed;
     uint64_t cursor;
 
     // Can't be in MULTI mode
@@ -2288,8 +2288,8 @@ static void cluster_kscan_cmd(INTERNAL_FUNCTION_PARAMETERS,
     c->readonly = 1;
 
     /* Get our scan cursor and return early if we're done */
-    cursor = redisGetScanCursor(z_it, &complted);
-    if (complted)
+    cursor = redisGetScanCursor(z_it, &completed);
+    if (completed)
         RETURN_FALSE;
 
     // Apply any key prefix we have, get the slot

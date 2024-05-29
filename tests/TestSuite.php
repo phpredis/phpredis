@@ -349,7 +349,7 @@ class TestSuite
         return false;
     }
 
-    /* Replica of PHPUnit's assertion.  Basically are two arrys the same without
+    /* Replica of PHPUnit's assertion.  Basically are two arrays the same without
    '   respect to order. */
     protected function assertEqualsCanonicalizing($expected, $actual, $keep_keys = false): bool {
         if ($expected InstanceOf Traversable)
