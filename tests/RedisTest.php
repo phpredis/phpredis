@@ -703,9 +703,9 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(['v1', 'v2', 'v3'], $this->redis->mget(['mget1', 'mget2', 'mget3']));
 
         $this->redis->set('k5', '$1111111111');
-        $this->assertEquals([0 => '$1111111111'], $this->redis->mget(['k5']));
+        $this->assertEquals(['$1111111111'], $this->redis->mget(['k5']));
 
-        $this->assertEquals([0 => 'test'], $this->redis->mget([1])); // non-string
+        $this->assertEquals(['test'], $this->redis->mget([1])); // non-string
     }
 
     public function testMultipleBin() {

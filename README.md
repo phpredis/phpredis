@@ -4013,7 +4013,7 @@ _**Description**_: Subscribe to channels. Warning: this function will probably c
 
 ##### *Parameters*
 *channels*: an array of channels to subscribe to  
-*callback*: either a string or an Array($instance, 'method_name'). The callback function receives 3 parameters: the redis instance, the channel name, and the message.
+*callback*: either a string or [$instance, 'method_name']. The callback function receives 3 parameters: the redis instance, the channel name, and the message.
 *return value*:  Mixed.  Any non-null return value in the callback will be returned to the caller.
 ##### *Example*
 ~~~php
@@ -4112,7 +4112,7 @@ $ret = $redis->multi()
     ->exec();
 
 /*
-$ret == Array(0 => TRUE, 1 => 'val1', 2 => TRUE, 3 => 'val2');
+$ret == [0 => TRUE, 1 => 'val1', 2 => TRUE, 3 => 'val2'];
 */
 ~~~
 

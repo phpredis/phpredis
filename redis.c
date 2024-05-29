@@ -1719,13 +1719,13 @@ PHP_METHOD(Redis, zPopMin)
 }
 /* }}} */
 
-/* {{{ proto Redis::bzPopMax(Array(keys) [, timeout]): Array */
+/* {{{ proto Redis::bzPopMax(Array[keys] [, timeout]): Array */
 PHP_METHOD(Redis, bzPopMax) {
     REDIS_PROCESS_KW_CMD("BZPOPMAX", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
 }
 /* }}} */
 
-/* {{{ proto Redis::bzPopMin(Array(keys) [, timeout]): Array */
+/* {{{ proto Redis::bzPopMin([keys] [, timeout]): Array */
 PHP_METHOD(Redis, bzPopMin) {
     REDIS_PROCESS_KW_CMD("BZPOPMIN", redis_blocking_pop_cmd, redis_sock_read_multibulk_reply);
 }
@@ -2135,7 +2135,7 @@ PHP_METHOD(Redis, publish)
 }
 /* }}} */
 
-/* {{{ proto void Redis::psubscribe(Array(pattern1, pattern2, ... patternN)) */
+/* {{{ proto void Redis::psubscribe([pattern1, pattern2, ... patternN]) */
 PHP_METHOD(Redis, psubscribe)
 {
     REDIS_PROCESS_KW_CMD("PSUBSCRIBE", redis_subscribe_cmd,
@@ -2143,7 +2143,7 @@ PHP_METHOD(Redis, psubscribe)
 }
 /* }}} */
 
-/* {{{ proto void Redis::ssubscribe(Array(shardchannel1, shardchannel2, ... shardchannelN)) */
+/* {{{ proto void Redis::ssubscribe([shardchannel1, shardchannel2, ... shardchannelN]) */
 PHP_METHOD(Redis, ssubscribe)
 {
     REDIS_PROCESS_KW_CMD("SSUBSCRIBE", redis_subscribe_cmd,
@@ -2151,7 +2151,7 @@ PHP_METHOD(Redis, ssubscribe)
 }
 /* }}} */
 
-/* {{{ proto void Redis::subscribe(Array(channel1, channel2, ... channelN)) */
+/* {{{ proto void Redis::subscribe([channel1, channel2, ... channelN]) */
 PHP_METHOD(Redis, subscribe) {
     REDIS_PROCESS_KW_CMD("SUBSCRIBE", redis_subscribe_cmd,
         redis_subscribe_response);
@@ -2159,7 +2159,7 @@ PHP_METHOD(Redis, subscribe) {
 
 /**
  *  [ps]unsubscribe channel_0 channel_1 ... channel_n
- *  [ps]unsubscribe(array(channel_0, channel_1, ..., channel_n))
+ *  [ps]unsubscribe([channel_0, channel_1, ..., channel_n])
  * response format :
  * array(
  *    channel_0 => TRUE|FALSE,
