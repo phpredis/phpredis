@@ -2277,9 +2277,9 @@ class Redis_Test extends TestSuite {
 
         // Figure out which ip:port is us!
         $address = NULL;
-        foreach($clients as $cleint) {
-            if ($cleint['name'] == 'phpredis_unit_tests') {
-                $address = $cleint['addr'];
+        foreach($clients as $client) {
+            if ($client['name'] == 'phpredis_unit_tests') {
+                $address = $client['addr'];
             }
         }
 
