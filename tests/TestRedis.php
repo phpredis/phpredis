@@ -24,7 +24,7 @@ function getClassArray($classes) {
 }
 
 function getTestClass($class) {
-    $arr_valid_classes = [
+    $valid_classes = [
         'redis'         => 'Redis_Test',
         'redisarray'    => 'Redis_Array_Test',
         'rediscluster'  => 'Redis_Cluster_Test',
@@ -32,11 +32,20 @@ function getTestClass($class) {
     ];
 
     /* Return early if the class is one of our built-in ones */
-    if (isset($arr_valid_classes[$class]))
-        return $arr_valid_classes[$class];
+    if (isset($valid_classes[$class]))
+        return $valid_classes[$class];
 
     /* Try to load it */
     return TestSuite::loadTestClass($class);
+}
+
+function raHosts($host, $ports) {
+    if ( ! is_array($ports))
+        $ports = [6379, 6380, 6381, 6382];
+
+    return array_map(function ($port) use ($host) {
+        return sprintf("%s:%d", $host, $port);
+    }, $ports);
 }
 
 /* Make sure errors go to stdout and are shown */
@@ -44,68 +53,70 @@ error_reporting(E_ALL);
 ini_set( 'display_errors','1');
 
 /* Grab options */
-$arr_args = getopt('', ['host:', 'port:', 'class:', 'test:', 'nocolors', 'user:', 'auth:']);
+$opt = getopt('', ['host:', 'port:', 'class:', 'test:', 'nocolors', 'user:', 'auth:']);
 
 /* The test class(es) we want to run */
-$arr_classes = getClassArray($arr_args['class'] ?? 'redis');
+$classes = getClassArray($opt['class'] ?? 'redis');
 
-$boo_colorize = !isset($arr_args['nocolors']);
+$colorize = !isset($opt['nocolors']);
 
 /* Get our test filter if provided one */
-$str_filter = isset($arr_args['test']) ? $arr_args['test'] : NULL;
+$filter = $opt['test'] ?? NULL;
 
 /* Grab override host/port if it was passed */
-$str_host = isset($arr_args['host']) ? $arr_args['host'] : '127.0.0.1';
-$i_port = isset($arr_args['port']) ? intval($arr_args['port']) : 6379;
+$host = $opt['host'] ?? '127.0.0.1';
+$port = $opt['port'] ?? 6379;
 
 /* Get optional username and auth (password) */
-$str_user = isset($arr_args['user']) ? $arr_args['user'] : NULL;
-$str_auth = isset($arr_args['auth']) ? $arr_args['auth'] : NULL;
+$user = $opt['user'] ?? NULL;
+$auth = $opt['auth'] ?? NULL;
 
-/* Massage the actual auth arg */
-$auth = NULL;
-if ($str_user && $str_auth) {
-    $auth = [$str_user, $str_auth];
-} else if ($str_auth) {
-    $auth = $str_auth;
-} else if ($str_user) {
-    echo TestSuite::make_warning("User passed without a password, ignoring!\n");
+if ($user && $auth) {
+    $auth = [$user, $auth];
+} else if ($user && ! $auth) {
+    echo TestSuite::make_warning("User passed without a password!\n");
 }
 
 /* Toggle colorization in our TestSuite class */
-TestSuite::flagColorization($boo_colorize);
+TestSuite::flagColorization($colorize);
 
 /* Let the user know this can take a bit of time */
 echo "Note: these tests might take up to a minute. Don't worry :-)\n";
-echo "Using PHP version " . PHP_VERSION . " (" . (PHP_INT_SIZE*8) . " bits)\n";
+echo "Using PHP version " . PHP_VERSION . " (" . (PHP_INT_SIZE * 8) . " bits)\n";
 
-foreach ($arr_classes as $str_class) {
-    $str_class = getTestClass($str_class);
+foreach ($classes as $class) {
+    $class = getTestClass($class);
 
     /* Depending on the classes being tested, run our tests on it */
     echo "Testing class ";
-    if ($str_class == 'Redis_Array_Test') {
+    if ($class == 'Redis_Array_Test') {
         echo TestSuite::make_bold("RedisArray") . "\n";
 
-        foreach(array(true, false) as $useIndex) {
+        $full_ring = raHosts($host, $port);
+        $sub_ring  = array_slice($full_ring, 0, -1);
+
+        echo TestSuite::make_bold("Full Ring: ") . implode(' ', $full_ring) . "\n";
+        echo TestSuite::make_bold(" New Ring: ") . implode(' ',  $sub_ring) . "\n";
+
+        foreach([true, false] as $useIndex) {
             echo "\n". ($useIndex ? "WITH" : "WITHOUT") . " per-node index:\n";
 
             /* The various RedisArray subtests we can run */
-            $arr_ra_tests = [
+            $test_classes = [
                 'Redis_Array_Test', 'Redis_Rehashing_Test', 'Redis_Auto_Rehashing_Test',
                 'Redis_Multi_Exec_Test', 'Redis_Distributor_Test'
             ];
 
-            foreach ($arr_ra_tests as $str_test) {
+            foreach ($test_classes as $test_class) {
                 /* Run until we encounter a failure */
-                if (run_tests($str_test, $str_filter, $str_host, $auth) != 0) {
+                if (run_ra_tests($test_class, $filter, $host, $full_ring, $sub_ring, $auth) != 0) {
                     exit(1);
                 }
             }
         }
     } else {
-        echo TestSuite::make_bold($str_class) . "\n";
-        if (TestSuite::run("$str_class", $str_filter, $str_host, $i_port, $auth))
+        echo TestSuite::make_bold($class) . "\n";
+        if (TestSuite::run("$class", $filter, $host, $port, $auth))
             exit(1);
     }
 }

@@ -24,7 +24,7 @@ $obj_cluster = new RedisCluster(NULL, ["host:7000", "host:7001"], 1.5, 1.5, true
 
 // Connect with cluster using SSL/TLS
 // last argument is an array with [SSL context](https://www.php.net/manual/en/context.ssl.php) options
-$obj_cluster = new RedisCluster(NULL, ["host:7000", "host:7001"], 1.5, 1.5, true, NULL, Array("verify_peer" => false));
+$obj_cluster = new RedisCluster(NULL, ["host:7000", "host:7001"], 1.5, 1.5, true, NULL, ["verify_peer" => false]);
 ```
 
 #### Loading a cluster configuration by name

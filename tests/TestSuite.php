@@ -187,6 +187,15 @@ class TestSuite
         return false;
     }
 
+    protected function assertIsBool($v): bool {
+        if (is_bool($v))
+            return true;
+
+        self::$errors []= $this->assertionTrace("%s is not a boolean", $this->printArg($v));
+
+        return false;
+    }
+
     protected function assertIsInt($v): bool {
         if (is_int($v))
             return true;
@@ -194,6 +203,19 @@ class TestSuite
         self::$errors []= $this->assertionTrace("%s is not an integer", $this->printArg($v));
 
         return false;
+    }
+
+    protected function assertIsObject($v, ?string $type = NULL): bool {
+        if ( ! is_object($v)) {
+            self::$errors []= $this->assertionTrace("%s is not an object", $this->printArg($v));
+            return false;
+        } else if ( $type !== NULL && !($v InstanceOf $type)) {
+            self::$errors []= $this->assertionTrace("%s is not an instance of %s",
+                                                    $this->printArg($v), $type);
+            return false;
+        }
+
+        return true;
     }
 
     protected function assertIsArray($v, ?int $size = null): bool {
@@ -497,17 +519,17 @@ class TestSuite
             posix_isatty(STDOUT);
     }
 
-    public static function run($className, ?string $limit = NULL,
+    public static function run($class_name, ?string $limit = NULL,
                                ?string $host = NULL, ?int $port = NULL,
                                $auth = NULL)
     {
         /* Lowercase our limit arg if we're passed one */
         $limit ??= strtolower($limit);
 
-        $rc = new ReflectionClass($className);
+        $rc = new ReflectionClass($class_name);
         $methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
 
-        $i_max_len = self::getMaxTestLen($methods, $limit);
+        $max_test_len = self::getMaxTestLen($methods, $limit);
 
         foreach($methods as $m) {
             $name = $m->name;
@@ -520,42 +542,42 @@ class TestSuite
                 continue;
             }
 
-            $str_out_name = str_pad($name, $i_max_len + 1);
+            $str_out_name = str_pad($name, $max_test_len + 1);
             echo self::make_bold($str_out_name);
 
-            $count = count($className::$errors);
-            $rt = new $className($host, $port, $auth);
+            $count = count($class_name::$errors);
+            $rt = new $class_name($host, $port, $auth);
 
             try {
                 $rt->setUp();
                 $rt->$name();
 
-                if ($count === count($className::$errors)) {
-                    $str_msg = self::make_success('PASSED');
+                if ($count === count($class_name::$errors)) {
+                    $result = self::make_success('PASSED');
                 } else {
-                    $str_msg = self::make_fail('FAILED');
+                    $result = self::make_fail('FAILED');
                 }
             } catch (Exception $e) {
                 /* We may have simply skipped the test */
                 if ($e instanceof TestSkippedException) {
-                    $str_msg = self::make_warning('SKIPPED');
+                    $result = self::make_warning('SKIPPED');
                 } else {
-                    $className::$errors[] = "Uncaught exception '".$e->getMessage()."' ($name)\n";
-                    $str_msg = self::make_fail('FAILED');
+                    $class_name::$errors[] = "Uncaught exception '".$e->getMessage()."' ($name)\n";
+                    $result = self::make_fail('FAILED');
                 }
             }
 
-            echo "[" . $str_msg . "]\n";
+            echo "[" . $result . "]\n";
         }
         echo "\n";
-        echo implode('', $className::$warnings) . "\n";
+        echo implode('', $class_name::$warnings) . "\n";
 
-        if (empty($className::$errors)) {
+        if (empty($class_name::$errors)) {
             echo "All tests passed. \o/\n";
             return 0;
         }
 
-        echo implode('', $className::$errors);
+        echo implode('', $class_name::$errors);
         return 1;
     }
 }
