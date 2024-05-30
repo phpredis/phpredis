@@ -542,8 +542,8 @@ class TestSuite
                 continue;
             }
 
-            $str_out_name = str_pad($name, $max_test_len + 1);
-            echo self::make_bold($str_out_name);
+            $padded_name = str_pad($name, $max_test_len + 1);
+            echo self::make_bold($padded_name);
 
             $count = count($class_name::$errors);
             $rt = new $class_name($host, $port, $auth);
