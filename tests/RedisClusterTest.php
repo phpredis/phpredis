@@ -345,11 +345,11 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertIsArray($result);
         $this->assertEquals(4, count($result));
 
-        $arr_zipped = [];
-        for ($i = 0; $i <= count($result) / 2; $i+=2) {
-            $arr_zipped[$result[$i]] = $result[$i+1];
+        $zipped = [];
+        for ($i = 0; $i <= count($result) / 2; $i += 2) {
+            $zipped[$result[$i]] = $result[$i+1];
         }
-        $result = $arr_zipped;
+        $result = $zipped;
 
         // Make sure the elements are correct, and have zero counts
         foreach([$c1,$c2] as $channel) {
@@ -391,7 +391,7 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertIsArray($this->redis->slowlog($key, 'get', 10));
         $this->assertIsInt($this->redis->slowlog($key, 'len'));
         $this->assertTrue($this->redis->slowlog($key, 'reset'));
-        $this->assertFalse($this->redis->slowlog($key, 'notvalid'));
+        $this->assertFalse(@$this->redis->slowlog($key, 'notvalid'));
     }
 
     /* INFO COMMANDSTATS requires a key or ip:port for node direction */
@@ -640,6 +640,7 @@ class Redis_Cluster_Test extends Redis_Test {
 
         /* Update our reference array so we can verify values */
         $arr_ref[$key] = $value;
+
         return $key;
     }
 
@@ -757,7 +758,7 @@ class Redis_Cluster_Test extends Redis_Test {
         @ini_set('session.save_handler', 'rediscluster');
         @ini_set('session.save_path', $this->sessionSavePath() . '&failover=error');
 
-        if (!@session_start())
+        if ( ! @session_start())
             $this->markTestSkipped();
 
         session_write_close();

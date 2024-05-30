@@ -523,8 +523,8 @@ class TestSuite
                                ?string $host = NULL, ?int $port = NULL,
                                $auth = NULL)
     {
-        /* Lowercase our limit arg if we're passed one */
-        $limit ??= strtolower($limit);
+        if ($limit)
+            $limit = strtolower($limit);
 
         $rc = new ReflectionClass($class_name);
         $methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
@@ -542,8 +542,8 @@ class TestSuite
                 continue;
             }
 
-            $str_out_name = str_pad($name, $max_test_len + 1);
-            echo self::make_bold($str_out_name);
+            $padded_name = str_pad($name, $max_test_len + 1);
+            echo self::make_bold($padded_name);
 
             $count = count($class_name::$errors);
             $rt = new $class_name($host, $port, $auth);

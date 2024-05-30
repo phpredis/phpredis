@@ -24,7 +24,7 @@ ini_set('session.save_path', $save_path);
 ini_set('session.gc_maxlifetime', $lifetime);
 
 session_id($id);
-if (!session_start()) {
+if ( ! session_start()) {
     fprintf(STDERR, "session_start() was nut successful");
     exit(1);
 } else {
