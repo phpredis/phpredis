@@ -6467,7 +6467,7 @@ class Redis_Test extends TestSuite {
         $this->assertEquals(count(explode('-', $id)), 2);
 
         /* Empty message should fail */
-        $this->redis->xAdd('stream', '*', []);
+        @$this->redis->xAdd('stream', '*', []);
     }
 
     protected function doXRangeTest($reverse) {
@@ -6662,7 +6662,7 @@ class Redis_Test extends TestSuite {
         );
 
         /* Empty query should fail */
-        $this->assertFalse($this->redis->xRead([]));
+        $this->assertFalse(@$this->redis->xRead([]));
     }
 
     public function testXRead() {
@@ -6809,7 +6809,7 @@ class Redis_Test extends TestSuite {
         }
 
         /* Empty array should fail */
-        $this->assertFalse($this->redis->xDel('s', []));
+        $this->assertFalse(@$this->redis->xDel('s', []));
     }
 
     public function testXTrim() {

@@ -391,7 +391,7 @@ class Redis_Cluster_Test extends Redis_Test {
         $this->assertIsArray($this->redis->slowlog($key, 'get', 10));
         $this->assertIsInt($this->redis->slowlog($key, 'len'));
         $this->assertTrue($this->redis->slowlog($key, 'reset'));
-        $this->assertFalse($this->redis->slowlog($key, 'notvalid'));
+        $this->assertFalse(@$this->redis->slowlog($key, 'notvalid'));
     }
 
     /* INFO COMMANDSTATS requires a key or ip:port for node direction */

@@ -523,8 +523,8 @@ class TestSuite
                                ?string $host = NULL, ?int $port = NULL,
                                $auth = NULL)
     {
-        /* Lowercase our limit arg if we're passed one */
-        $limit ??= strtolower($limit);
+        if ($limit)
+            $limit = strtolower($limit);
 
         $rc = new ReflectionClass($class_name);
         $methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
