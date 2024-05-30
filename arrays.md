@@ -121,7 +121,7 @@ For instance, the keys “{user:1}:name” and “{user:1}:email” will be stor
 ## Custom key distribution function
 In order to control the distribution of keys by hand, you can provide a custom function or closure that returns the server number, which is the index in the array of servers that you created the RedisArray object with.
 
-For instance, instantiate a RedisArray object with `new RedisArray(array("us-host", "uk-host", "de-host"), array("distributor" => "dist"));` and write a function called "dist" that will return `2` for all the keys that should end up on the "de-host" server.
+For instance, instantiate a RedisArray object with `new RedisArray(["us-host", "uk-host", "de-host"], ["distributor" => "dist"]);` and write a function called "dist" that will return `2` for all the keys that should end up on the "de-host" server.
 
 ### Example
 <pre>
