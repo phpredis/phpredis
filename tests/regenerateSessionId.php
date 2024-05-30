@@ -78,9 +78,9 @@ if ($proxy) {
 
 session_id($id);
 
-if (!session_start()) {
+if ( !  session_start()) {
     $result = "FAILED: session_start()";
-} else if (!session_regenerate_id($destroy_previous)) {
+} else if ( ! session_regenerate_id($destroy_previous)) {
     $result = "FAILED: session_regenerateId()";
 } else {
     $result = session_id();
