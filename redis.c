@@ -1906,7 +1906,7 @@ PHP_METHOD(Redis, multi)
                 }
                 if ((resp = redis_sock_read(redis_sock, &resp_len)) == NULL) {
                     RETURN_FALSE;
-                } else if (strncmp(resp, "+OK", 3) != 0) {
+                } else if (strncmp(resp, ZEND_STRL("+OK")) != 0) {
                     efree(resp);
                     RETURN_FALSE;
                 }
@@ -2045,7 +2045,7 @@ redis_response_enqueued(RedisSock *redis_sock)
     int resp_len, ret = FAILURE;
 
     if ((resp = redis_sock_read(redis_sock, &resp_len)) != NULL) {
-        if (strncmp(resp, "+QUEUED", 7) == 0) {
+        if (strncmp(resp, ZEND_STRL("+QUEUED")) == 0) {
             ret = SUCCESS;
         }
         efree(resp);
@@ -2068,7 +2068,9 @@ redis_sock_read_multibulk_multi_reply_loop(INTERNAL_FUNCTION_PARAMETERS,
         size_t len;
         char inbuf[255];
 
-        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 || strncmp(inbuf, "+OK", 3) != 0) {
+        if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 ||
+            strncmp(inbuf, ZEND_STRL("+OK")) != 0)
+        {
             return FAILURE;
         }
 
