@@ -2886,11 +2886,13 @@ redis_sock_create(char *host, int host_len, int port,
 }
 
 static int redis_uniqid(char *buf, size_t buflen) {
+    static unsigned long counter = 0;
     struct timeval tv;
+
     gettimeofday(&tv, NULL);
 
     return snprintf(buf, buflen, "phpredis:%08lx%05lx:%08lx",
-                    (long)tv.tv_sec, (long)tv.tv_usec, (long)php_rand());
+                    (long)tv.tv_sec, (long)tv.tv_usec, counter++);
 }
 
 static int redis_stream_liveness_check(php_stream *stream) {
