@@ -1910,15 +1910,15 @@ PHP_REDIS_API void cluster_type_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
     // Switch on the type
     if (strncmp (c->line_reply, "string", 6) == 0) {
         CLUSTER_RETURN_LONG(c, REDIS_STRING);
-    } else if (strncmp(c->line_reply, "set", 3) == 0) {
+    } else if (strncmp(c->line_reply, ZEND_STRL("set")) == 0) {
         CLUSTER_RETURN_LONG(c, REDIS_SET);
-    } else if (strncmp(c->line_reply, "list", 4) == 0) {
+    } else if (strncmp(c->line_reply, ZEND_STRL("list")) == 0) {
         CLUSTER_RETURN_LONG(c, REDIS_LIST);
-    } else if (strncmp(c->line_reply, "hash", 4) == 0) {
+    } else if (strncmp(c->line_reply, ZEND_STRL("hash")) == 0) {
         CLUSTER_RETURN_LONG(c, REDIS_HASH);
-    } else if (strncmp(c->line_reply, "zset", 4) == 0) {
+    } else if (strncmp(c->line_reply, ZEND_STRL("zset")) == 0) {
         CLUSTER_RETURN_LONG(c, REDIS_ZSET);
-    } else if (strncmp(c->line_reply, "stream", 6) == 0) {
+    } else if (strncmp(c->line_reply, ZEND_STRL("stream")) == 0) {
         CLUSTER_RETURN_LONG(c, REDIS_STREAM);
     } else {
         CLUSTER_RETURN_LONG(c, REDIS_NOT_FOUND);
@@ -1977,8 +1977,8 @@ PHP_REDIS_API void cluster_sub_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster *
         }
 
         // Make sure we have a message or pmessage
-        if (!strncmp(Z_STRVAL_P(z_type), "message", 7) ||
-            !strncmp(Z_STRVAL_P(z_type), "pmessage", 8)
+        if (!strncmp(Z_STRVAL_P(z_type), ZEND_STRL("message")) ||
+            !strncmp(Z_STRVAL_P(z_type), ZEND_STRL("pmessage"))
         ) {
             is_pmsg = *Z_STRVAL_P(z_type) == 'p';
         } else {
