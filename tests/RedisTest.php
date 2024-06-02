@@ -1449,23 +1449,23 @@ class Redis_Test extends TestSuite {
         if (version_compare($this->version, '6.2.0') < 0)
             $this->markTestSkipped();
 
-        [$k1, $k2] = ['{l}0', '{l}1'];
+        [$list1, $list2] = ['{l}0', '{l}1'];
         $left  = $this->getLeftConstant();
         $right = $this->getRightConstant();
 
-        $this->redis->del($k1, $k2);
-        $this->redis->lPush($k1, 'a');
-        $this->redis->lPush($k1, 'b');
-        $this->redis->lPush($k1, 'c');
+        $this->redis->del($list1, $list2);
+        $this->redis->lPush($list1, 'a');
+        $this->redis->lPush($list1, 'b');
+        $this->redis->lPush($list1, 'c');
 
-        $return = $this->redis->lMove($k1, $k2, $left, $right);
+        $return = $this->redis->lMove($list1, $list2, $left, $right);
         $this->assertEquals('c', $return);
 
-        $return = $this->redis->lMove($k1, $k2, $right, $left);
+        $return = $this->redis->lMove($list1, $list2, $right, $left);
         $this->assertEquals('a', $return);
 
-        $this->assertEquals(['b'], $this->redis->lRange($k1, 0, -1));
-        $this->assertEquals(['a', 'c'], $this->redis->lRange($k2, 0, -1));
+        $this->assertEquals(['b'], $this->redis->lRange($list1, 0, -1));
+        $this->assertEquals(['a', 'c'], $this->redis->lRange($list2, 0, -1));
 
     }
 
@@ -1473,17 +1473,17 @@ class Redis_Test extends TestSuite {
         if (version_compare($this->version, '6.2.0') < 0)
             $this->markTestSkipped();
 
-        [$k1, $k2] = ['{l}0', '{l}1'];
+        [$list1, $list2] = ['{l}0', '{l}1'];
         $left = $this->getLeftConstant();
 
-        $this->redis->del($k1, $k2);
-        $this->redis->rpush($k1, 'a');
+        $this->redis->del($list1, $list2);
+        $this->redis->rpush($list1, 'a');
 
 
-        $this->assertEquals('a', $this->redis->blmove($k1, $k2, $left, $left, 1.));
+        $this->assertEquals('a', $this->redis->blmove($list1, $list2, $left, $left, 1.));
 
         $st = microtime(true);
-        $ret = $this->redis->blmove($k1, $k2, $left, $left, .1);
+        $ret = $this->redis->blmove($list1, $list2, $left, $left, .1);
         $et = microtime(true);
 
         $this->assertFalse($ret);
