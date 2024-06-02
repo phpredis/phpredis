@@ -567,8 +567,8 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 
     /* Does the host look like a unix socket */
     af_unix = (host_len > 0 && host[0] == '/') ||
-              (host_len > 6 && !strncasecmp(host, "unix://", sizeof("unix://") - 1)) ||
-              (host_len > 6 && !strncasecmp(host, "file://", sizeof("file://") - 1));
+              (host_len > 6 && (!strncasecmp(host, ZEND_STRL("unix://")) ||
+                                !strncasecmp(host, ZEND_STRL("file://"))));
 
     /* If it's not a unix socket, set to default */
     if (port == -1 && !af_unix) {
@@ -1258,18 +1258,18 @@ generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, int desc, int alpha)
     }
 
     /* Start constructing final command and append key */
-    redis_cmd_init_sstr(&cmd, argc, "SORT", 4);
+    redis_cmd_init_sstr(&cmd, argc, ZEND_STRL("SORT"));
     redis_cmd_append_sstr_key(&cmd, key, keylen, redis_sock, NULL);
 
     /* BY pattern */
     if (pattern && patternlen) {
-        redis_cmd_append_sstr(&cmd, "BY", sizeof("BY") - 1);
+        redis_cmd_append_sstr(&cmd, ZEND_STRL("BY"));
         redis_cmd_append_sstr(&cmd, pattern, patternlen);
     }
 
     /* LIMIT offset count */
     if (offset >= 0 && count >= 0) {
-        redis_cmd_append_sstr(&cmd, "LIMIT", sizeof("LIMIT") - 1);
+        redis_cmd_append_sstr(&cmd, ZEND_STRL("LIMIT"));
         redis_cmd_append_sstr_long(&cmd, offset);
         redis_cmd_append_sstr_long(&cmd, count);
     }
@@ -1279,25 +1279,25 @@ generic_sort_cmd(INTERNAL_FUNCTION_PARAMETERS, int desc, int alpha)
         if (Z_TYPE_P(zget) == IS_ARRAY) {
             ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(zget), zele) {
                 zpattern = zval_get_string(zele);
-                redis_cmd_append_sstr(&cmd, "GET", sizeof("GET") - 1);
+                redis_cmd_append_sstr(&cmd, ZEND_STRL("GET"));
                 redis_cmd_append_sstr(&cmd, ZSTR_VAL(zpattern), ZSTR_LEN(zpattern));
                 zend_string_release(zpattern);
             } ZEND_HASH_FOREACH_END();
         } else {
             zpattern = zval_get_string(zget);
-            redis_cmd_append_sstr(&cmd, "GET", sizeof("GET") - 1);
+            redis_cmd_append_sstr(&cmd, ZEND_STRL("GET"));
             redis_cmd_append_sstr(&cmd, ZSTR_VAL(zpattern), ZSTR_LEN(zpattern));
             zend_string_release(zpattern);
         }
     }
 
     /* Append optional DESC and ALPHA modifiers */
-    if (desc)  redis_cmd_append_sstr(&cmd, "DESC", sizeof("DESC") - 1);
-    if (alpha) redis_cmd_append_sstr(&cmd, "ALPHA", sizeof("ALPHA") - 1);
+    if (desc)  redis_cmd_append_sstr(&cmd, ZEND_STRL("DESC"));
+    if (alpha) redis_cmd_append_sstr(&cmd, ZEND_STRL("ALPHA"));
 
     /* Finally append STORE if we've got it */
     if (store && storelen) {
-        redis_cmd_append_sstr(&cmd, "STORE", sizeof("STORE") - 1);
+        redis_cmd_append_sstr(&cmd, ZEND_STRL("STORE"));
         redis_cmd_append_sstr_key(&cmd, store, storelen, redis_sock, NULL);
     }
 
