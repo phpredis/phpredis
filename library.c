@@ -3125,7 +3125,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
 
             int limit = INI_INT("redis.pconnect.connection_limit");
             if (limit > 0 && p->nb_active >= limit) {
-                redis_sock_set_err(redis_sock, "Connection limit reached", sizeof("Connection limit reached") - 1);
+                redis_sock_set_err(redis_sock, ZEND_STRL("Connection limit reached"));
                 return FAILURE;
             }
 
