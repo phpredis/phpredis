@@ -567,8 +567,8 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 
     /* Does the host look like a unix socket */
     af_unix = (host_len > 0 && host[0] == '/') ||
-              (host_len > 6 && (!strncasecmp(host, ZEND_STRL("unix://")) ||
-                                !strncasecmp(host, ZEND_STRL("file://"))));
+              (host_len > 6 && (!strncasecmp(host, "unix://", sizeof("unix://") - 1) ||
+                                !strncasecmp(host, "file://", sizeof("file://") - 1)));
 
     /* If it's not a unix socket, set to default */
     if (port == -1 && !af_unix) {
