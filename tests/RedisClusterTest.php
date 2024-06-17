@@ -1,5 +1,6 @@
 <?php defined('PHPREDIS_TESTRUN') or die("Use TestRedis.php to run tests!\n");
-require_once(dirname($_SERVER['PHP_SELF'])."/RedisTest.php");
+
+require_once __DIR__ . "/RedisTest.php";
 
 /**
  * Most RedisCluster tests should work the same as the standard Redis object
@@ -111,9 +112,9 @@ class Redis_Cluster_Test extends Redis_Test {
         if (($seeds = $this->loadSeedsFromHostPort($host, $port)))
             return $seeds;
 
-        fprintf(STDERR, "Error:  Unable to load seeds for RedisCluster tests\n");
+        TestSuite::errorMessage("Error:  Unable to load seeds for RedisCluster tests");
         foreach (self::$seed_messages as $msg) {
-            fprintf(STDERR, "   Tried: %s\n", $msg);
+            TestSuite::errorMessage("   Tried: %s", $msg);
         }
 
         exit(1);
@@ -139,9 +140,9 @@ class Redis_Cluster_Test extends Redis_Test {
         try {
             return new RedisCluster(NULL, self::$seeds, 30, 30, true, $this->getAuth());
         } catch (Exception $ex) {
-            fprintf(STDERR, "Fatal error: %s\n", $ex->getMessage());
-            fprintf(STDERR, "Seeds: %s\n", implode(' ', self::$seeds));
-            fprintf(STDERR, "Seed source: %s\n", self::$seed_source);
+            TestSuite::errorMessage("Fatal error: %s\n", $ex->getMessage());
+            TestSuite::errorMessage("Seeds: %s\n", implode(' ', self::$seeds));
+            TestSuite::errorMessage("Seed source: %s\n", self::$seed_source);
             exit(1);
         }
     }
