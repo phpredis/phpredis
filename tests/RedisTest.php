@@ -1,7 +1,7 @@
 <?php defined('PHPREDIS_TESTRUN') or die('Use TestRedis.php to run tests!\n');
 
-require_once(dirname($_SERVER['PHP_SELF']).'/TestSuite.php');
-require_once(dirname($_SERVER['PHP_SELF']).'/SessionHelpers.php');
+require_once __DIR__ . '/TestSuite.php';
+require_once __DIR__ . '/SessionHelpers.php';
 
 class Redis_Test extends TestSuite {
     /**
@@ -7223,7 +7223,15 @@ class Redis_Test extends TestSuite {
             ->savePath($this->sessionSavePath());
     }
 
+    protected function testRequiresMode(string $mode) {
+        if (php_sapi_name() != $mode) {
+            $this->markTestSkipped("Test requires PHP running in '$mode' mode");
+        }
+    }
+
     public function testSession_compression() {
+        $this->testRequiresMode('cli');
+
         foreach ($this->getCompressors() as $name => $val) {
             $data = "testing_compression_$name";
 
@@ -7244,6 +7252,8 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSession_savedToRedis() {
+        $this->testRequiresMode('cli');
+
         $runner = $this->sessionRunner();
 
         $this->assertEquals('SUCCESS', $runner->execFg());
@@ -7260,6 +7270,8 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSession_lockKeyCorrect() {
+        $this->testRequiresMode('cli');
+
         $runner = $this->sessionRunner()->sleep(5);
 
         $this->assertTrue($runner->execBg());
@@ -7272,6 +7284,8 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSession_lockingDisabledByDefault() {
+        $this->testRequiresMode('cli');
+
         $runner = $this->sessionRunner()
             ->lockingEnabled(false)
             ->sleep(5);
@@ -7281,6 +7295,8 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSession_lockReleasedOnClose() {
+        $this->testRequiresMode('cli');
+
         $runner = $this->sessionRunner()
             ->sleep(1)
             ->lockingEnabled(true);
@@ -7291,6 +7307,8 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSession_lock_ttlMaxExecutionTime() {
+        $this->testRequiresMode('cli');
+
         $runner1 = $this->sessionRunner()
             ->sleep(10)
             ->maxExecutionTime(2);
@@ -7309,6 +7327,7 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSession_lock_ttlLockExpire() {
+        $this->testRequiresMode('cli');
 
         $runner1 = $this->sessionRunner()
             ->sleep(10)
@@ -7329,6 +7348,8 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSession_lockHoldCheckBeforeWrite_otherProcessHasLock() {
+        $this->testRequiresMode('cli');
+
         $id = 'test-id';
 
         $runner = $this->sessionRunner()
@@ -7352,6 +7373,8 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSession_lockHoldCheckBeforeWrite_nobodyHasLock() {
+        $this->testRequiresMode('cli');
+
         $runner = $this->sessionRunner()
             ->sleep(2)
             ->lockingEnabled(true)
@@ -7363,6 +7386,8 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSession_correctLockRetryCount() {
+        $this->testRequiresMode('cli');
+
         $runner = $this->sessionRunner()
             ->sleep(10);
 
@@ -7394,6 +7419,8 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSession_defaultLockRetryCount() {
+        $this->testRequiresMode('cli');
+
         $runner = $this->sessionRunner()
             ->sleep(10);
 
@@ -7420,6 +7447,8 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSession_noUnlockOfOtherProcess() {
+        $this->testRequiresMode('cli');
+
         $st = microtime(true);
 
         $sleep = 3;
@@ -7453,6 +7482,8 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSession_lockWaitTime() {
+        $this->testRequiresMode('cli');
+
 
         $runner = $this->sessionRunner()
             ->sleep(1)
@@ -7603,6 +7634,8 @@ class Redis_Test extends TestSuite {
     }
 
     protected function regenerateIdHelper(bool $lock, bool $destroy, bool $proxy) {
+        $this->testRequiresMode('cli');
+
         $data   = uniqid('regenerate-id:');
         $runner = $this->sessionRunner()
             ->sleep(0)
@@ -7652,12 +7685,16 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSession_ttl_equalsToSessionLifetime() {
+        $this->testRequiresMode('cli');
+
         $runner = $this->sessionRunner()->lifetime(600);
         $this->assertEquals('SUCCESS', $runner->execFg());
         $this->assertEquals(600, $this->redis->ttl($runner->getSessionKey()));
     }
 
     public function testSession_ttl_resetOnWrite() {
+        $this->testRequiresMode('cli');
+
         $runner1 = $this->sessionRunner()->lifetime(600);
         $this->assertEquals('SUCCESS', $runner1->execFg());
 
@@ -7668,6 +7705,8 @@ class Redis_Test extends TestSuite {
     }
 
     public function testSession_ttl_resetOnRead() {
+        $this->testRequiresMode('cli');
+
         $data = uniqid(__FUNCTION__);
 
         $runner = $this->sessionRunner()->lifetime(600)->data($data);

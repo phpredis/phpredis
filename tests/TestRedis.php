@@ -1,10 +1,10 @@
 <?php define('PHPREDIS_TESTRUN', true);
 
-require_once(dirname($_SERVER['PHP_SELF'])."/TestSuite.php");
-require_once(dirname($_SERVER['PHP_SELF'])."/RedisTest.php");
-require_once(dirname($_SERVER['PHP_SELF'])."/RedisArrayTest.php");
-require_once(dirname($_SERVER['PHP_SELF'])."/RedisClusterTest.php");
-require_once(dirname($_SERVER['PHP_SELF'])."/RedisSentinelTest.php");
+require_once __DIR__ . "/TestSuite.php";
+require_once __DIR__ . "/RedisTest.php";
+require_once __DIR__ . "/RedisArrayTest.php";
+require_once __DIR__ . "/RedisClusterTest.php";
+require_once __DIR__ . "/RedisSentinelTest.php";
 
 function getClassArray($classes) {
     $result = [];

@@ -1,5 +1,6 @@
 <?php defined('PHPREDIS_TESTRUN') or die("Use TestRedis.php to run tests!\n");
-require_once(dirname($_SERVER['PHP_SELF'])."/TestSuite.php");
+
+require_once __DIR__ . "/TestSuite.php";
 
 define('REDIS_ARRAY_DATA_SIZE', 1000);
 define('REDIS_RA_DEFAULT_PORTS', [6379, 6380, 6381, 6382]);

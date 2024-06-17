@@ -43,6 +43,16 @@ class TestSuite
     public function getPort() { return $this->port; }
     public function getAuth() { return $this->auth; }
 
+    public static function errorMessage(string $fmt, ...$args) {
+        $msg = vsprintf($fmt . "\n", $args);
+
+        if (defined('STDERR')) {
+            fwrite(STDERR, $msg);
+        } else {
+            echo $msg;
+        }
+    }
+
     public static function make_bold(string $msg) {
         return self::$colorize ? self::$BOLD_ON . $msg . self::$BOLD_OFF : $msg;
     }
@@ -516,7 +526,7 @@ class TestSuite
     /* Flag colorization */
     public static function flagColorization(bool $override) {
         self::$colorize = $override && function_exists('posix_isatty') &&
-            posix_isatty(STDOUT);
+                          defined('STDOUT') && posix_isatty(STDOUT);
     }
 
     public static function run($class_name, ?string $limit = NULL,
