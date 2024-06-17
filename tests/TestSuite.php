@@ -125,8 +125,30 @@ class TestSuite
         self::$errors []= $this->assertionTrace($fmt, ...$args);
     }
 
-    protected function assertKeyExists($redis, $key): bool {
-        if ($redis->exists($key))
+    protected function assertKeyEquals($expected, $key, $redis = NULL): bool {
+        $actual = ($redis ??= $this->redis)->get($key);
+        if ($actual === $expected)
+            return true;
+
+        self::$errors []= $this->assertionTrace("%s !== %s", $this->printArg($actual),
+                                                $this->printArg($expected));
+
+        return false;
+    }
+
+    protected function assertKeyEqualsWeak($expected, $key, $redis = NULL): bool {
+        $actual = ($redis ??= $this->redis)->get($key);
+        if ($actual == $expected)
+            return true;
+
+        self::$errors []= $this->assertionTrace("%s != %s", $this->printArg($actual),
+                                                $this->printArg($expected));
+
+        return false;
+    }
+
+    protected function assertKeyExists($key, $redis = NULL): bool {
+        if (($redis ??= $this->redis)->exists($key))
             return true;
 
         self::$errors []= $this->assertionTrace("Key '%s' does not exist.", $key);
@@ -134,8 +156,8 @@ class TestSuite
         return false;
     }
 
-    protected function assertKeyMissing($redis, $key): bool {
-        if ( ! $redis->exists($key))
+    protected function assertKeyMissing($key, $redis = NULL): bool {
+        if ( ! ($redis ??= $this->redis)->exists($key))
             return true;
 
         self::$errors []= $this->assertionTrace("Key '%s' exists but shouldn't.", $key);
