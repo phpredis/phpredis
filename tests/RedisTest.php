@@ -939,7 +939,8 @@ class Redis_Test extends TestSuite {
 
         /* Test passing an array as well as the keys variadic */
         $this->assertEquals(count($mkeys), $this->redis->exists($mkeys));
-        $this->assertEquals(count($mkeys), $this->redis->exists(...$mkeys));
+        if (count($mkeys))
+            $this->assertEquals(count($mkeys), $this->redis->exists(...$mkeys));
     }
 
     public function testTouch() {
