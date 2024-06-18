@@ -148,7 +148,7 @@ class Redis_Test extends TestSuite {
         $this->tearDown();
     }
 
-    /* Helper function to determine if the clsas has pipeline support */
+    /* Helper function to determine if the class has pipeline support */
     protected function havePipeline() {
         return defined(get_class($this->redis) . '::PIPELINE');
     }
