@@ -2476,6 +2476,11 @@ redis_getex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     persist = zval_is_true(z_ele);
                     exp_type = NULL;
                 }
+            } else if (Z_TYPE_P(z_ele) == IS_STRING &&
+                       zend_string_equals_literal_ci(Z_STR_P(z_ele), "PERSIST"))
+            {
+                persist = zval_is_true(z_ele);
+                exp_type = NULL;
             }
         } ZEND_HASH_FOREACH_END();
     }

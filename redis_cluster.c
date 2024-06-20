@@ -727,6 +727,10 @@ PHP_METHOD(RedisCluster, msetnx) {
 }
 /* }}} */
 
+PHP_METHOD(RedisCluster, getex) {
+    CLUSTER_PROCESS_CMD(getex, cluster_bulk_resp, 0);
+}
+
 /* {{{ proto bool RedisCluster::setex(string key, string value, int expiry) */
 PHP_METHOD(RedisCluster, setex) {
     CLUSTER_PROCESS_KW_CMD("SETEX", redis_key_long_val_cmd, cluster_bool_resp, 0);

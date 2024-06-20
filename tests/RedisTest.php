@@ -790,8 +790,35 @@ class Redis_Test extends TestSuite {
         $this->redis->del('key1');
     }
 
-    public function testSetEx() {
+    public function testGetEx() {
+        if (version_compare($this->version, '6.2.0') < 0)
+            $this->markTestSkipped();
 
+        $this->assertTrue($this->redis->set('key', 'value'));
+
+        $this->assertEquals('value', $this->redis->getEx('key', ['EX' => 100]));
+        $this->assertBetween($this->redis->ttl('key'), 95, 100);
+
+        $this->assertEquals('value', $this->redis->getEx('key', ['PX' => 100000]));
+        $this->assertBetween($this->redis->pttl('key'), 95000, 100000);
+
+        $this->assertEquals('value', $this->redis->getEx('key', ['EXAT' => time() + 200]));
+        $this->assertBetween($this->redis->ttl('key'), 195, 200);
+
+        $this->assertEquals('value', $this->redis->getEx('key', ['PXAT' => (time()*1000) + 25000]));
+        $this->assertBetween($this->redis->pttl('key'), 24000, 25000);
+
+        $this->assertEquals('value', $this->redis->getEx('key', ['PERSIST' => true]));
+        $this->assertEquals(-1, $this->redis->ttl('key'));
+
+        $this->assertTrue($this->redis->expire('key', 100));
+        $this->assertBetween($this->redis->ttl('key'), 95, 100);
+
+        $this->assertEquals('value', $this->redis->getEx('key', ['PERSIST']));
+        $this->assertEquals(-1, $this->redis->ttl('key'));
+    }
+
+    public function testSetEx() {
         $this->redis->del('key');
         $this->assertTrue($this->redis->setex('key', 7, 'val'));
         $this->assertEquals(7, $this->redis->ttl('key'));
