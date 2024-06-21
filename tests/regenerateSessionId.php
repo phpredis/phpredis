@@ -1,23 +1,30 @@
 <?php
+
 error_reporting(E_ERROR | E_WARNING);
 
-$redisHost = $argv[1];
-$saveHandler = $argv[2];
-$sessionId = $argv[3];
-$locking = !!$argv[4];
-$destroyPrevious = !!$argv[5];
-$sessionProxy = !!$argv[6];
+$opt = getopt('', [
+    'handler:', 'save-path:', 'id:', 'locking-enabled:',
+    'destroy-previous:', 'proxy:'
+]);
 
-if (empty($redisHost)) {
-    $redisHost = 'tcp://localhost:6379';
+$handler = $opt['handler'] ?? NULL;
+$save_path = $opt['save-path'] ?? NULL;
+$id = $opt['id'] ?? NULL;
+$locking_enabled = !!($opt['locking-enabled'] ?? false);
+$destroy_previous = !!($opt['destroy-previous'] ?? false);
+$proxy = !!($opt['proxy'] ?? false);
+
+if ( ! $handler) {
+    fprintf(STDERR, "--handler is required\n");
+    exit(1);
+} else if ( ! $save_path) {
+    fprintf(STDERR, "--save-path is required\n");
+    exit(1);
 }
 
-ini_set('session.save_handler', $saveHandler);
-ini_set('session.save_path', $redisHost);
-
-if ($locking) {
-    ini_set('redis.session.locking_enabled', true);
-}
+ini_set('session.save_handler', $handler);
+ini_set('session.save_path', $save_path);
+ini_set('redis.session.locking_enabled', $locking_enabled);
 
 if (interface_exists('SessionHandlerInterface')) {
     class TestHandler implements SessionHandlerInterface
@@ -64,21 +71,21 @@ if (interface_exists('SessionHandlerInterface')) {
     }
 }
 
-if ($sessionProxy) {
+if ($proxy) {
     $handler = new TestHandler();
     session_set_save_handler($handler);
 }
 
-session_id($sessionId);
-if (!session_start()) {
+session_id($id);
+
+if ( !  session_start()) {
     $result = "FAILED: session_start()";
-}
-elseif (!session_regenerate_id($destroyPrevious)) {
-    $result = "FAILED: session_regenerate_id()";
-}
-else {
+} else if ( ! session_regenerate_id($destroy_previous)) {
+    $result = "FAILED: session_regenerateId()";
+} else {
     $result = session_id();
 }
-session_write_close();
-echo $result;
 
+session_write_close();
+
+echo $result;

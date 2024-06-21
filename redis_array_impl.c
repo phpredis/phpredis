@@ -90,38 +90,43 @@ ra_init_function_table(RedisArray *ra)
     ALLOC_HASHTABLE(ra->pure_cmds);
     zend_hash_init(ra->pure_cmds, 0, NULL, NULL, 0);
 
-    zend_hash_str_update_ptr(ra->pure_cmds, "EXISTS", sizeof("EXISTS") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "GET", sizeof("GET") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "GETBIT", sizeof("GETBIT") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "GETRANGE", sizeof("GETRANGE") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "HEXISTS", sizeof("HEXISTS") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "HGET", sizeof("HGET") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "HGETALL", sizeof("HGETALL") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "HKEYS", sizeof("HKEYS") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "HLEN", sizeof("HLEN") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "HMGET", sizeof("HMGET") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "HVALS", sizeof("HVALS") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "LINDEX", sizeof("LINDEX") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "LLEN", sizeof("LLEN") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "LRANGE", sizeof("LRANGE") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "OBJECT", sizeof("OBJECT") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "SCARD", sizeof("SCARD") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "SDIFF", sizeof("SDIFF") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "SINTER", sizeof("SINTER") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "SISMEMBER", sizeof("SISMEMBER") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "SMEMBERS", sizeof("SMEMBERS") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "SRANDMEMBER", sizeof("SRANDMEMBER") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "STRLEN", sizeof("STRLEN") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "SUNION", sizeof("SUNION") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "TYPE", sizeof("TYPE") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "ZCARD", sizeof("ZCARD") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "ZCOUNT", sizeof("ZCOUNT") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "ZRANGE", sizeof("ZRANGE") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "ZRANK", sizeof("ZRANK") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "ZREVRANGE", sizeof("ZREVRANGE") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "ZREVRANGEBYSCORE", sizeof("ZREVRANGEBYSCORE") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "ZREVRANK", sizeof("ZREVRANK") - 1, NULL);
-    zend_hash_str_update_ptr(ra->pure_cmds, "ZSCORE", sizeof("ZSCORE") - 1, NULL);
+    #define ra_add_pure_cmd(cmd) \
+        zend_hash_str_update_ptr(ra->pure_cmds, cmd, sizeof(cmd) - 1, NULL);
+
+    ra_add_pure_cmd("EXISTS");
+    ra_add_pure_cmd("GET");
+    ra_add_pure_cmd("GETBIT");
+    ra_add_pure_cmd("GETRANGE");
+    ra_add_pure_cmd("HEXISTS");
+    ra_add_pure_cmd("HGET");
+    ra_add_pure_cmd("HGETALL");
+    ra_add_pure_cmd("HKEYS");
+    ra_add_pure_cmd("HLEN");
+    ra_add_pure_cmd("HMGET");
+    ra_add_pure_cmd("HVALS");
+    ra_add_pure_cmd("LINDEX");
+    ra_add_pure_cmd("LLEN");
+    ra_add_pure_cmd("LRANGE");
+    ra_add_pure_cmd("OBJECT");
+    ra_add_pure_cmd("SCARD");
+    ra_add_pure_cmd("SDIFF");
+    ra_add_pure_cmd("SINTER");
+    ra_add_pure_cmd("SISMEMBER");
+    ra_add_pure_cmd("SMEMBERS");
+    ra_add_pure_cmd("SRANDMEMBER");
+    ra_add_pure_cmd("STRLEN");
+    ra_add_pure_cmd("SUNION");
+    ra_add_pure_cmd("TYPE");
+    ra_add_pure_cmd("ZCARD");
+    ra_add_pure_cmd("ZCOUNT");
+    ra_add_pure_cmd("ZRANGE");
+    ra_add_pure_cmd("ZRANK");
+    ra_add_pure_cmd("ZREVRANGE");
+    ra_add_pure_cmd("ZREVRANGEBYSCORE");
+    ra_add_pure_cmd("ZREVRANK");
+    ra_add_pure_cmd("ZSCORE");
+
+    #undef ra_add_pure_cmd
 }
 
 static int
@@ -277,7 +282,8 @@ RedisArray *ra_load_array(const char *name) {
         array_init(&z_tmp);
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         if ((z_data = zend_hash_str_find(Z_ARRVAL(z_tmp), name, name_len)) != NULL) {
-            consistent = Z_TYPE_P(z_data) == IS_STRING && strncmp(Z_STRVAL_P(z_data), "1", 1) == 0;
+            consistent = Z_TYPE_P(z_data) == IS_STRING &&
+                         strncmp(Z_STRVAL_P(z_data), ZEND_STRL("1")) == 0;
         }
         zval_dtor(&z_tmp);
     }

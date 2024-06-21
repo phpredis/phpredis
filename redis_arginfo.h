@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 21f3434814d9fa077a9a81c8ba114c3faf079e85 */
+ * Stub hash: 04fe88bbcc4d3dc3be06385e8931dfb080442f23 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -1866,13 +1866,21 @@ static zend_class_entry *register_class_Redis(void)
 	zend_declare_class_constant_ex(class_entry, const_COMPRESSION_ZSTD_DEFAULT_name, &const_COMPRESSION_ZSTD_DEFAULT_value, ZEND_ACC_PUBLIC, NULL);
 	zend_string_release(const_COMPRESSION_ZSTD_DEFAULT_name);
 #endif
-#if defined(HAVE_REDIS_ZSTD) && defined(ZSTD_CLEVEL_MAX)
+#if defined(HAVE_REDIS_ZSTD) && ZSTD_VERSION_NUMBER >= 10400
 
-	zval const_COMPRESSION_ZSTD_MAX_value;
-	ZVAL_LONG(&const_COMPRESSION_ZSTD_MAX_value, ZSTD_CLEVEL_MAX);
-	zend_string *const_COMPRESSION_ZSTD_MAX_name = zend_string_init_interned("COMPRESSION_ZSTD_MAX", sizeof("COMPRESSION_ZSTD_MAX") - 1, 1);
-	zend_declare_class_constant_ex(class_entry, const_COMPRESSION_ZSTD_MAX_name, &const_COMPRESSION_ZSTD_MAX_value, ZEND_ACC_PUBLIC, NULL);
-	zend_string_release(const_COMPRESSION_ZSTD_MAX_name);
+	zval const_COMPRESSION_ZSTD_MIN_value;
+	ZVAL_LONG(&const_COMPRESSION_ZSTD_MIN_value, ZSTD_minCLevel());
+	zend_string *const_COMPRESSION_ZSTD_MIN_name = zend_string_init_interned("COMPRESSION_ZSTD_MIN", sizeof("COMPRESSION_ZSTD_MIN") - 1, 1);
+	zend_declare_class_constant_ex(class_entry, const_COMPRESSION_ZSTD_MIN_name, &const_COMPRESSION_ZSTD_MIN_value, ZEND_ACC_PUBLIC, NULL);
+	zend_string_release(const_COMPRESSION_ZSTD_MIN_name);
+#endif
+#if defined(HAVE_REDIS_ZSTD) && !(ZSTD_VERSION_NUMBER >= 10400)
+
+	zval const_COMPRESSION_ZSTD_MIN_value;
+	ZVAL_LONG(&const_COMPRESSION_ZSTD_MIN_value, 1);
+	zend_string *const_COMPRESSION_ZSTD_MIN_name = zend_string_init_interned("COMPRESSION_ZSTD_MIN", sizeof("COMPRESSION_ZSTD_MIN") - 1, 1);
+	zend_declare_class_constant_ex(class_entry, const_COMPRESSION_ZSTD_MIN_name, &const_COMPRESSION_ZSTD_MIN_value, ZEND_ACC_PUBLIC, NULL);
+	zend_string_release(const_COMPRESSION_ZSTD_MIN_name);
 #endif
 #if defined(HAVE_REDIS_ZSTD)
 

@@ -117,6 +117,10 @@ PHP_REDIS_API void
 redis_pool_free(redis_pool *pool) {
 
     redis_pool_member *rpm, *next;
+
+    if (pool == NULL)
+        return;
+
     rpm = pool->head;
     while (rpm) {
         next = rpm->next;
@@ -659,9 +663,7 @@ PS_OPEN_FUNC(redis)
                     "Failed to parse session.save_path (error at offset %d, url was '%s')", i, path);
                 efree(path);
 
-                redis_pool_free(pool);
-                PS_SET_MOD_DATA(NULL);
-                return FAILURE;
+                goto fail;
             }
 
             ZVAL_NULL(&context);
@@ -708,10 +710,8 @@ PS_OPEN_FUNC(redis)
                 if (prefix) zend_string_release(prefix);
                 if (user) zend_string_release(user);
                 if (pass) zend_string_release(pass);
-                redis_pool_free(pool);
-                PS_SET_MOD_DATA(NULL);
 
-                return FAILURE;
+                goto fail;
             }
 
             RedisSock *redis_sock;
@@ -762,6 +762,9 @@ PS_OPEN_FUNC(redis)
         return SUCCESS;
     }
 
+fail:
+    redis_pool_free(pool);
+    PS_SET_MOD_DATA(NULL);
     return FAILURE;
 }
 /* }}} */

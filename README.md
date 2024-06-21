@@ -787,6 +787,7 @@ $redis->slowLog('len');
 * [bitOp](#bitop) - Perform bitwise operations between strings
 * [decr, decrBy](#decr-decrby) - Decrement the value of a key
 * [get](#get) - Get the value of a key
+* [getEx](#getex) - Get the value of a key and set its expiration
 * [getBit](#getbit) - Returns the bit value at offset in the string value stored at key
 * [getRange](#getrange) - Get a substring of the string stored at a key
 * [getSet](#getset) - Set the string value of a key and return its old value
@@ -839,6 +840,28 @@ _**Description**_: Get the value related to the specified key
 
 ~~~php
 $redis->get('key');
+~~~
+
+### getEx
+-----
+_**Description**_: Get the value related to the specified key and set its expiration
+
+##### *Parameters*
+*key* 
+*options array* (optional) with the following keys:
+  * `EX` - expire time in seconds
+  * `PX` - expire time in milliseconds
+  * `EXAT` - expire time in seconds since UNIX epoch
+  * `PXAT` - expire time in milliseconds since UNIX epoch
+  * `PERSIST` - remove the expiration from the key
+
+##### *Return value*
+*String* or *Bool*: If key didn't exist, `FALSE` is returned. Otherwise, the value related to this key is returned.
+
+##### *Examples*
+
+~~~php
+$redis->getEx('key', ['EX' => 10]); // get key and set its expiration to 10 seconds
 ~~~
 
 ### set
@@ -4013,7 +4036,7 @@ _**Description**_: Subscribe to channels. Warning: this function will probably c
 
 ##### *Parameters*
 *channels*: an array of channels to subscribe to  
-*callback*: either a string or an Array($instance, 'method_name'). The callback function receives 3 parameters: the redis instance, the channel name, and the message.
+*callback*: either a string or [$instance, 'method_name']. The callback function receives 3 parameters: the redis instance, the channel name, and the message.
 *return value*:  Mixed.  Any non-null return value in the callback will be returned to the caller.
 ##### *Example*
 ~~~php
@@ -4112,7 +4135,7 @@ $ret = $redis->multi()
     ->exec();
 
 /*
-$ret == Array(0 => TRUE, 1 => 'val1', 2 => TRUE, 3 => 'val2');
+$ret == [0 => TRUE, 1 => 'val1', 2 => TRUE, 3 => 'val2'];
 */
 ~~~
 

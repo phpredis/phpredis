@@ -168,16 +168,17 @@ redis_build_script_cmd(smart_string *cmd, int argc, zval *z_args)
         return NULL;
     }
     // Branch based on the directive
-    if (!strcasecmp(Z_STRVAL(z_args[0]), "kill")) {
+    if (zend_string_equals_literal_ci(Z_STR(z_args[0]), "kill")) {
         // Simple SCRIPT_KILL command
         REDIS_CMD_INIT_SSTR_STATIC(cmd, argc, "SCRIPT");
         redis_cmd_append_sstr(cmd, ZEND_STRL("KILL"));
-    } else if (!strcasecmp(Z_STRVAL(z_args[0]), "flush")) {
+    } else if (zend_string_equals_literal_ci(Z_STR(z_args[0]), "flush")) {
         // Simple SCRIPT FLUSH [ASYNC | SYNC]
         if (argc > 1 && (
-            Z_TYPE(z_args[1]) != IS_STRING ||
-            strcasecmp(Z_STRVAL(z_args[1]), "sync") ||
-            strcasecmp(Z_STRVAL(z_args[1]), "async")
+            Z_TYPE(z_args[1]) != IS_STRING || (
+                !zend_string_equals_literal_ci(Z_STR(z_args[1]), "sync") &&
+                !zend_string_equals_literal_ci(Z_STR(z_args[1]), "async")
+            )
         )) {
             return NULL;
         }
@@ -186,7 +187,7 @@ redis_build_script_cmd(smart_string *cmd, int argc, zval *z_args)
         if (argc > 1) {
             redis_cmd_append_sstr(cmd, Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1]));
         }
-    } else if (!strcasecmp(Z_STRVAL(z_args[0]), "load")) {
+    } else if (zend_string_equals_literal_ci(Z_STR(z_args[0]), "load")) {
         // Make sure we have a second argument, and it's not empty.  If it is
         // empty, we can just return an empty array (which is what Redis does)
         if (argc < 2 || Z_TYPE(z_args[1]) != IS_STRING || Z_STRLEN(z_args[1]) < 1) {
@@ -196,7 +197,7 @@ redis_build_script_cmd(smart_string *cmd, int argc, zval *z_args)
         REDIS_CMD_INIT_SSTR_STATIC(cmd, argc, "SCRIPT");
         redis_cmd_append_sstr(cmd, ZEND_STRL("LOAD"));
         redis_cmd_append_sstr(cmd, Z_STRVAL(z_args[1]), Z_STRLEN(z_args[1]));
-    } else if (!strcasecmp(Z_STRVAL(z_args[0]), "exists")) {
+    } else if (zend_string_equals_literal_ci(Z_STR(z_args[0]), "exists")) {
         // Make sure we have a second argument
         if (argc < 2) {
             return NULL;
@@ -2106,8 +2107,22 @@ int redis_info_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 int redis_script_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                    char **cmd, int *cmd_len, short *slot, void **ctx)
 {
-    return gen_vararg_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, 1,
-                          "SCRIPT", cmd, cmd_len, slot, ctx);
+    int argc = 0;
+    smart_string cmdstr = {0};
+    zval *argv = NULL;
+
+    ZEND_PARSE_PARAMETERS_START(1, -1)
+        Z_PARAM_VARIADIC('*', argv, argc)
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    if (redis_build_script_cmd(&cmdstr, argc, argv) == NULL) {
+        return FAILURE;
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
 }
 
 /* Generic handling of every blocking pop command (BLPOP, BZPOP[MIN/MAX], etc */
@@ -2461,6 +2476,11 @@ redis_getex_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     persist = zval_is_true(z_ele);
                     exp_type = NULL;
                 }
+            } else if (Z_TYPE_P(z_ele) == IS_STRING &&
+                       zend_string_equals_literal_ci(Z_STR_P(z_ele), "PERSIST"))
+            {
+                persist = zval_is_true(z_ele);
+                exp_type = NULL;
             }
         } ZEND_HASH_FOREACH_END();
     }

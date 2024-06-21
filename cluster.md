@@ -10,21 +10,21 @@ To maintain consistency with the RedisArray class, one can create and connect to
 #### Declaring a cluster with an array of seeds
 ```php
 // Create a cluster setting three nodes as seeds
-$obj_cluster = new RedisCluster(NULL, Array('host:7000', 'host:7001', 'host:7003'));
+$obj_cluster = new RedisCluster(NULL, ['host:7000', 'host:7001', 'host:7003']);
 
 // Connect and specify timeout and read_timeout
-$obj_cluster = new RedisCluster(NULL, Array("host:7000", "host:7001"), 1.5, 1.5);
+$obj_cluster = new RedisCluster(NULL, ["host:7000", "host:7001"], 1.5, 1.5);
 
 // Connect with read/write timeout as well as specify that phpredis should use
 // persistent connections to each node.
-$obj_cluster = new RedisCluster(NULL, Array("host:7000", "host:7001"), 1.5, 1.5, true);
+$obj_cluster = new RedisCluster(NULL, ["host:7000", "host:7001"], 1.5, 1.5, true);
 
 // Connect with cluster using password.
-$obj_cluster = new RedisCluster(NULL, Array("host:7000", "host:7001"), 1.5, 1.5, true, "password");
+$obj_cluster = new RedisCluster(NULL, ["host:7000", "host:7001"], 1.5, 1.5, true, "password");
 
 // Connect with cluster using SSL/TLS
 // last argument is an array with [SSL context](https://www.php.net/manual/en/context.ssl.php) options
-$obj_cluster = new RedisCluster(NULL, Array("host:7000", "host:7001"), 1.5, 1.5, true, NULL, Array("verify_peer" => false));
+$obj_cluster = new RedisCluster(NULL, ["host:7000", "host:7001"], 1.5, 1.5, true, NULL, ["verify_peer" => false]);
 ```
 
 #### Loading a cluster configuration by name
