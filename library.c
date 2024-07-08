@@ -3130,7 +3130,7 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
             }
 
             gettimeofday(&tv, NULL);
-            persistent_id = strpprintf(0, "phpredis_%ld%ld", tv.tv_sec, tv.tv_usec);
+            persistent_id = strpprintf(0, "phpredis_%ld%ld", tv.tv_sec, (long)tv.tv_usec);
         } else {
             if (redis_sock->persistent_id) {
                 persistent_id = strpprintf(0, "phpredis:%s:%s", host, ZSTR_VAL(redis_sock->persistent_id));
