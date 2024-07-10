@@ -537,7 +537,7 @@ redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent)
 #endif
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS(), getThis(),
-                                     "Os|lds!lda", &object, redis_ce, &host,
+                                     "Os|lds!lda!", &object, redis_ce, &host,
                                      &host_len, &port, &timeout, &persistent_id,
                                      &persistent_id_len, &retry_interval,
                                      &read_timeout, &context) == FAILURE)
