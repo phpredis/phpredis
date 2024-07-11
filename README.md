@@ -2794,7 +2794,8 @@ while(($arr_mems = $redis->sScan('set', $it, "*pattern*"))!==FALSE) {
 * [zRemRangeByScore](#zremrangebyscore) - Remove all members in a sorted set within the given scores
 * [zRevRange](#zrevrange) - Return a range of members in a sorted set, by index, with scores ordered from high to low
 * [zScore](#zscore) - Get the score associated with the given member in a sorted set
-* [zunionstore, zUnion](#zunionstore-zunion) - Add multiple sorted sets and store the resulting sorted set in a new key
+* [zUnion](#zunion) - Add multiple sorted sets and return the resulting sorted set
+* [zunionstore](#zunionstore) - Add multiple sorted sets and store the resulting sorted set in a new key
 * [zScan](#zscan) - Scan a sorted set for members
 
 ### bzPop
@@ -2921,7 +2922,7 @@ $redis->zIncrBy('key', 1, 'member1'); /* 3.5 */
 _**Description**_: Creates an intersection of sorted sets given in first argument. The result of the intersection will be returned.
 
 The second optional argument defines `weights` to apply to the sorted sets in input. In this case, the `weights` will be multiplied by the score of each element in the sorted set before applying the aggregation.
-The third argument defines the `AGGREGATE` option which specify how the results of the intersection are aggregated.
+The third argument is a set of options.  It can define the `AGGREGATE` option which specify how the results of the intersection are aggregated.  It can also define `WITHSCORES` so that the scores are returned as well.
 
 ##### *Parameters*
 *arrayZSetKeys*  
@@ -3222,7 +3223,41 @@ $redis->zAdd('key', 2.5, 'val2');
 $redis->zScore('key', 'val2'); /* 2.5 */
 ~~~
 
-### zunionstore, zUnion
+### zUnion
+-----
+_**Description**_: Creates an union of sorted sets given in first argument. The result of the union will be returned.
+
+The second optional argument defines `weights` to apply to the sorted sets in input. In this case, the `weights` will be multiplied by the score of each element in the sorted set before applying the aggregation.
+The third argument is a set of options.  It can define the `AGGREGATE` option which specify how the results of the intersection are aggregated.  It can also define `WITHSCORES` so that the scores are returned as well.
+
+##### *Parameters*
+*arrayZSetKeys*  
+*arrayWeights*  
+*arrayOptions* Two options are available: `withscores => TRUE`, and `aggregate => $behaviour`.  Either "SUM", "MIN", or "MAX" defines the behaviour to use on duplicate entries during the zunion.
+
+##### *Return value*
+*ARRAY* The result of the union of sets.
+
+##### *Example*
+~~~php
+$redis->del('k1');
+$redis->del('k2');
+$redis->del('k3');
+
+$redis->zAdd('k1', 0, 'val0');
+$redis->zAdd('k1', 1, 'val1');
+
+$redis->zAdd('k2', 2, 'val2');
+$redis->zAdd('k2', 3, 'val3');
+
+$redis->zunion(['k1', 'k2']); /* ['val0', 'val1', 'val2', 'val3'] */
+
+/* Weighted zunion */
+$redis->zunion(['k1', 'k2'], [1, 1]); /* ['val0', 'val1', 'val2', 'val3'] */
+$redis->zunion(['k1', 'k2'], [5, 1]); /* ['val0', 'val2', 'val3', 'val1'] */
+~~~
+
+### zunionstore
 -----
 _**Description**_: Creates an union of sorted sets given in second argument. The result of the union will be stored in the sorted set defined by the first argument.
 
@@ -3259,8 +3294,6 @@ $redis->zunionstore('ko1', ['k1', 'k2']); /* 4, 'ko1' => ['val0', 'val1', 'val2'
 $redis->zunionstore('ko2', ['k1', 'k2'], [1, 1]); /* 4, 'ko2' => ['val0', 'val1', 'val2', 'val3'] */
 $redis->zunionstore('ko3', ['k1', 'k2'], [5, 1]); /* 4, 'ko3' => ['val0', 'val2', 'val3', 'val1'] */
 ~~~
-
-**Note:** `zUnion` is an alias for `zunionstore` and will be removed in future versions of phpredis.
 
 ### zScan
 -----
