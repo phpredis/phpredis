@@ -2782,7 +2782,8 @@ while(($arr_mems = $redis->sScan('set', $it, "*pattern*"))!==FALSE) {
 * [zCard](#zcard) - Get the number of members in a sorted set
 * [zCount](#zcount) - Count the members in a sorted set with scores within the given values
 * [zIncrBy](#zincrby) - Increment the score of a member in a sorted set
-* [zinterstore, zInter](#zinterstore-zinter) - Intersect multiple sorted sets and store the resulting sorted set in a new key
+* [zInter](#zinter) - Intersect multiple sorted sets and return the resulting sorted set
+* [zinterstore](#zinterstore) - Intersect multiple sorted sets and store the resulting sorted set in a new key
 * [zPop](#zpop) - Redis can pop the highest or lowest scoring member from one a ZSET.
 * [zRange](#zrange) - Return a range of members in a sorted set, by index
 * [zRangeByScore, zRevRangeByScore](#zrangebyscore-zrevrangebyscore) - Return a range of members in a sorted set, by score
@@ -2915,12 +2916,48 @@ $redis->zIncrBy('key', 2.5, 'member1'); /* key or member1 didn't exist, so membe
 $redis->zIncrBy('key', 1, 'member1'); /* 3.5 */
 ~~~
 
-### zinterstore, zInter
+### zInter
 -----
-_**Description**_: Creates an intersection of sorted sets given in second argument. The result of the union will be stored in the sorted set defined by the first argument.
+_**Description**_: Creates an intersection of sorted sets given in first argument. The result of the intersection will be returned.
+
+The second optional argument defines `weights` to apply to the sorted sets in input. In this case, the `weights` will be multiplied by the score of each element in the sorted set before applying the aggregation.
+The third argument defines the `AGGREGATE` option which specify how the results of the intersection are aggregated.
+
+##### *Parameters*
+*arrayZSetKeys*  
+*arrayWeights*  
+*arrayOptions* Two options are available: `withscores => TRUE`, and `aggregate => $behaviour`.  Either "SUM", "MIN", or "MAX" defines the behaviour to use on duplicate entries during the zinter.
+
+##### *Return value*
+*ARRAY* The result of the intersection of sets.
+
+##### *Example*
+~~~php
+$redis->del('k1');
+$redis->del('k2');
+$redis->del('k3');
+
+$redis->zAdd('k1', 0, 'val0');
+$redis->zAdd('k1', 1, 'val1');
+$redis->zAdd('k1', 3, 'val3');
+
+$redis->zAdd('k2', 5, 'val1');
+$redis->zAdd('k2', 3, 'val3');
+
+$redis->zinter(['k1', 'k2']); 				/* ['val1', 'val3'] */
+$redis->zinter(['k1', 'k2'], [1, 1]); /* ['val1', 'val3'] */
+
+/* Weighted zinter */
+$redis->zinter(['k1', 'k2'], [1, 5], 'min'); /* ['val1', 'val3'] */
+$redis->zinter(['k1', 'k2'], [1, 5], 'max'); /* ['val3', 'val1'] */
+~~~
+
+### zinterstore
+-----
+_**Description**_: Creates an intersection of sorted sets given in second argument. The result of the intersection will be stored in the sorted set defined by the first argument.
 
 The third optional argument defines `weights` to apply to the sorted sets in input. In this case, the `weights` will be multiplied by the score of each element in the sorted set before applying the aggregation.
-The forth argument defines the `AGGREGATE` option which specify how the results of the union are aggregated.
+The forth argument defines the `AGGREGATE` option which specify how the results of the intersection are aggregated.
 
 ##### *Parameters*
 *keyOutput*  
@@ -2946,18 +2983,16 @@ $redis->zAdd('k1', 0, 'val0');
 $redis->zAdd('k1', 1, 'val1');
 $redis->zAdd('k1', 3, 'val3');
 
-$redis->zAdd('k2', 2, 'val1');
+$redis->zAdd('k2', 5, 'val1');
 $redis->zAdd('k2', 3, 'val3');
 
 $redis->zinterstore('ko1', ['k1', 'k2']); 				/* 2, 'ko1' => ['val1', 'val3'] */
-$redis->zinterstore('ko2', ['k1', 'k2'], [1, 1]); 	/* 2, 'ko2' => ['val1', 'val3'] */
+$redis->zinterstore('ko2', ['k1', 'k2'], [1, 1]); /* 2, 'ko2' => ['val1', 'val3'] */
 
 /* Weighted zinterstore */
 $redis->zinterstore('ko3', ['k1', 'k2'], [1, 5], 'min'); /* 2, 'ko3' => ['val1', 'val3'] */
 $redis->zinterstore('ko4', ['k1', 'k2'], [1, 5], 'max'); /* 2, 'ko4' => ['val3', 'val1'] */
 ~~~
-
-**Note:** `zInter` is an alias for `zinterstore` and will be removed in future versions of phpredis.
 
 ### zPop
 -----
