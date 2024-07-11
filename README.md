@@ -2781,6 +2781,8 @@ while(($arr_mems = $redis->sScan('set', $it, "*pattern*"))!==FALSE) {
 * [zAdd](#zadd) - Add one or more members to a sorted set or update its score if it already exists
 * [zCard](#zcard) - Get the number of members in a sorted set
 * [zCount](#zcount) - Count the members in a sorted set with scores within the given values
+* [zDiff](#zdiff) - Computes the difference between the first and all successive input sorted sets and return the resulting sorted set
+* [zdiffstore](#zdiffstore) - Computes the difference between the first and all successive input sorted sets and stores the result in a new key
 * [zIncrBy](#zincrby) - Increment the score of a member in a sorted set
 * [zInter](#zinter) - Intersect multiple sorted sets and return the resulting sorted set
 * [zinterstore](#zinterstore) - Intersect multiple sorted sets and store the resulting sorted set in a new key
@@ -2895,6 +2897,75 @@ $redis->zAdd('key', 0, 'val0');
 $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
 $redis->zCount('key', 0, 3); /* 2, corresponding to ['val0', 'val2'] */
+~~~
+
+### zDiff
+-----
+_**Description**_: Computes the difference between the first and all successive input sorted sets in the first argument.  The result of the difference will be returned.
+
+The second argument is a set of options.  It can define `WITHSCORES` so that the scores are returned as well.
+
+##### *Parameters*
+*arrayZSetKeys*  
+*arrayOptions* One option is available: `withscores => TRUE`.
+
+##### *Return value*
+*ARRAY* The result of the difference of sets.
+
+##### *Example*
+~~~php
+$redis->del('k1');
+$redis->del('k2');
+$redis->del('k3');
+
+$redis->zAdd('k1', 0, 'val0');
+$redis->zAdd('k1', 1, 'val1');
+$redis->zAdd('k1', 3, 'val3');
+
+$redis->zAdd('k2', 5, 'val1');
+
+$redis->zAdd('k3', 5, 'val0');
+$redis->zAdd('k3', 3, 'val4');
+
+$redis->zDiff(['k1', 'k2']); 				                 /* ['val0', 'val3'] */
+$redis->zDiff(['k2', 'k1']); 				                 /* [] */
+$redis->zDiff(['k1', 'k2'], ['withscores' => true]); /* ['val0' => 0.0, 'val3' => 3.0] */
+
+$redis->zDiff(['k1', 'k2', 'k3']);                   /* ['val3'] */
+$redis->zDiff(['k3', 'k2', 'k1']);                   /* ['val4'] */
+~~~
+
+### zdiffstore
+-----
+_**Description**_: Computes the difference between the first and all successive input sorted sets in the second argument. The result of the difference will be stored in the sorted set defined by the first argument.
+
+##### *Parameters*
+*keyOutput*  
+*arrayZSetKeys*  
+
+##### *Return value*
+*LONG* The number of values in the new sorted set.
+
+##### *Example*
+~~~php
+$redis->del('k1');
+$redis->del('k2');
+$redis->del('k3');
+
+$redis->zAdd('k1', 0, 'val0');
+$redis->zAdd('k1', 1, 'val1');
+$redis->zAdd('k1', 3, 'val3');
+
+$redis->zAdd('k2', 5, 'val1');
+
+$redis->zAdd('k3', 5, 'val0');
+$redis->zAdd('k3', 3, 'val4');
+
+$redis->zdiffstore('ko1', ['k1', 'k2']); 		   /* 2, 'ko1' => ['val0', 'val3'] */
+$redis->zdiffstore('ko2', ['k2', 'k1']); 			 /* 0, 'ko2' => [] */
+
+$redis->zdiffstore('ko3', ['k1', 'k2', 'k3']); /* 1, 'ko3' => ['val3'] */
+$redis->zdiffstore('ko4', ['k3', 'k2', 'k1']); /* 1, 'k04' => ['val4'] */
 ~~~
 
 ### zIncrBy
