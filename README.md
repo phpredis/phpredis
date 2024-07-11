@@ -793,7 +793,7 @@ $redis->slowLog('len');
 * [getSet](#getset) - Set the string value of a key and return its old value
 * [incr, incrBy](#incr-incrby) - Increment the value of a key
 * [incrByFloat](#incrbyfloat) - Increment the float value of a key by the given amount
-* [mGet, getMultiple](#mget-getmultiple) - Get the values of all the given keys
+* [mGet](#mget) - Get the values of all the given keys
 * [mSet, mSetNX](#mset-msetnx) - Set multiple keys to multiple values
 * [set](#set) - Set the string value of a key
 * [setBit](#setbit) - Sets or clears the bit at offset in the string value stored at key
@@ -808,16 +808,16 @@ $redis->slowLog('len');
 * [del, delete, unlink](#del-delete-unlink) - Delete a key
 * [dump](#dump) - Return a serialized version of the value stored at the specified key.
 * [exists](#exists) - Determine if a key exists
-* [expire, setTimeout, pexpire](#expire-pexpire) - Set a key's time to live in seconds
+* [expire, pexpire](#expire-pexpire) - Set a key's time to live in seconds
 * [expireAt, pexpireAt](#expireat-pexpireat) - Set the expiration for a key as a UNIX timestamp
-* [keys, getKeys](#keys-getkeys) - Find all keys matching the given pattern
+* [keys](#keys) - Find all keys matching the given pattern
 * [scan](#scan) - Scan for keys in the keyspace (Redis >= 2.8.0)
 * [migrate](#migrate) - Atomically transfer a key from a Redis instance to another one
 * [move](#move) - Move a key to another database
 * [object](#object) - Inspect the internals of Redis objects
 * [persist](#persist) - Remove the expiration from a key
 * [randomKey](#randomkey) - Return a random key from the keyspace
-* [rename, renameKey](#rename-renamekey) - Rename a key
+* [rename](#rename) - Rename a key
 * [renameNx](#renamenx) - Rename a key, only if the new key does not exist
 * [type](#type) - Determine the type stored at key
 * [sort](#sort) - Sort the elements in a list, set or sorted set
@@ -1052,7 +1052,7 @@ $redis->decr('key1', 10);   /* -13 */
 $redis->decrBy('key1', 10); /* -23 */
 ~~~
 
-### mGet, getMultiple
+### mGet
 -----
 _**Description**_: Get the values of all the specified keys. If one or more keys don't exist, the array will contain `FALSE` at the position of the key.
 
@@ -1070,8 +1070,6 @@ $redis->set('key3', 'value3');
 $redis->mGet(['key1', 'key2', 'key3']); /* ['value1', 'value2', 'value3'];
 $redis->mGet(['key0', 'key1', 'key5']); /* [`FALSE`, 'value1', `FALSE`];
 ~~~
-
-**Note:** `getMultiple` is an alias for `mGet` and will be removed in future versions of phpredis.
 
 ### getSet
 -----
@@ -1126,7 +1124,7 @@ $redis->select(1);	// switch to DB 1
 $redis->get('x');	// will return 42
 ~~~
 
-### rename, renameKey
+### rename
 -----
 _**Description**_: Renames a key.
 ##### *Parameters*
@@ -1143,8 +1141,6 @@ $redis->rename('x', 'y');
 $redis->get('y'); 	// → 42
 $redis->get('x'); 	// → `FALSE`
 ~~~
-
-**Note:** `renameKey` is an alias for `rename` and will be removed in future versions of phpredis.
 
 ### renameNx
 -----
@@ -1170,8 +1166,6 @@ sleep(5);				// wait 5 seconds
 $redis->get('x'); 		// will return `FALSE`, as 'x' has expired.
 ~~~
 
-**Note:** `setTimeout` is an alias for `expire` and will be removed in future versions of phpredis.
-
 ### expireAt, pexpireAt
 -----
 _**Description**_: Seta specific timestamp for a key to expire in seconds or milliseconds.
@@ -1193,7 +1187,7 @@ sleep(5);				// wait 5 seconds
 $redis->get('x'); 	// will return `FALSE`, as 'x' has expired.
 ~~~
 
-### keys, getKeys
+### keys
 -----
 _**Description**_: Returns the keys that match a certain pattern.
 
@@ -1208,8 +1202,6 @@ _**Description**_: Returns the keys that match a certain pattern.
 $allKeys = $redis->keys('*');	// all keys will match this.
 $keyWithUserPrefix = $redis->keys('user*');
 ~~~
-
-**Note:** `getKeys` is an alias for `keys` and will be removed in future versions of phpredis.
 
 ### scan
 -----
@@ -1336,8 +1328,6 @@ $redis->set('key', 'string value');
 $redis->getRange('key', 0, 5); /* 'string' */
 $redis->getRange('key', -5, -1); /* 'value' */
 ~~~
-
-**Note**: `substr` is an alias for `getRange` and will be removed in future versions of phpredis.
 
 ### setRange
 -----
@@ -1895,16 +1885,16 @@ _**Description**_: Get the string length of the value associated with field in t
 
 * [blPop, brPop](#blpop-brpop) - Remove and get the first/last element in a list
 * [bRPopLPush](#brpoplpush) - Pop a value from a list, push it to another list and return it
-* [lIndex, lGet](#lindex-lget) - Get an element from a list by its index
+* [lIndex](#lindex) - Get an element from a list by its index
 * [lInsert](#linsert) - Insert an element before or after another element in a list
-* [lLen, lSize](#llen-lsize) - Get the length/size of a list
+* [lLen](#llen) - Get the length/size of a list
 * [lPop](#lpop) - Remove and get the first element in a list
 * [lPush](#lpush) - Prepend one or multiple values to a list
 * [lPushx](#lpushx) - Prepend a value to a list, only if the list exists
-* [lRange, lGetRange](#lrange-lgetrange) - Get a range of elements from a list
-* [lRem, lRemove](#lrem-lremove) - Remove elements from a list
+* [lRange](#lrange) - Get a range of elements from a list
+* [lRem](#lrem) - Remove elements from a list
 * [lSet](#lset) - Set the value of an element in a list by its index
-* [lTrim, listTrim](#ltrim-listtrim) - Trim a list to the specified range
+* [lTrim](#ltrim) - Trim a list to the specified range
 * [rPop](#rpop) - Remove and get the last element in a list
 * [rPopLPush](#rpoplpush) - Remove the last element in a list, append it to another list and return it (redis >= 1.1)
 * [rPush](#rpush) - Append one or multiple values to a list
@@ -1969,7 +1959,7 @@ _**Description**_: A blocking version of `rPopLPush`, with an integral timeout i
 ##### *Return value*
 *STRING* The element that was moved in case of success, `FALSE` in case of timeout.
 
-### lIndex, lGet
+### lIndex
 -----
 _**Description**_: Return the specified element of the list stored at the specified key.
 
@@ -1995,8 +1985,6 @@ $redis->lindex('key1', 0); /* 'A' */
 $redis->lindex('key1', -1); /* 'C' */
 $redis->lindex('key1', 10); /* `FALSE` */
 ~~~
-
-**Note:** `lGet` is an alias for `lIndex` and will be removed in future versions of phpredis.
 
 ### lInsert
 -----
@@ -2096,7 +2084,7 @@ $redis->lPushx('key1', 'C'); // returns 3
 /* key1 now points to the following list: [ 'A', 'B', 'C' ] */
 ~~~
 
-### lRange, lGetRange
+### lRange
 -----
 _**Description**_: Returns the specified elements of the list stored at the specified key in the range [start, end]. start and stop are interpreted as indices:  
 0 the first element, 1 the second ...  
@@ -2118,9 +2106,7 @@ $redis->rPush('key1', 'C');
 $redis->lRange('key1', 0, -1); /* ['A', 'B', 'C'] */
 ~~~
 
-**Note:** `lGetRange` is an alias for `lRange` and will be removed in future versions of phpredis.
-
-### lRem, lRemove
+### lRem
 -----
 _**Description**_: Removes the first `count` occurrences of the value element from the list. If count is zero, all the matching elements are removed. If count is negative, elements are removed from tail to head.
 
@@ -2148,8 +2134,6 @@ $redis->lRem('key1', 'A', 2); /* 2 */
 $redis->lRange('key1', 0, -1); /* ['C', 'B', 'A'] */
 ~~~
 
-**Note:** `lRemove` is an alias for `lRem` and will be removed in future versions of phpredis.
-
 ### lSet
 -----
 _**Description**_: Set the list at index with the new value.
@@ -2172,7 +2156,7 @@ $redis->lSet('key1', 0, 'X');
 $redis->lindex('key1', 0); /* 'X' */
 ~~~
 
-### lTrim, listTrim
+### lTrim
 -----
 _**Description**_: Trims an existing list so that it will contain only a specified range of elements.
 
@@ -2194,8 +2178,6 @@ $redis->lRange('key1', 0, -1); /* ['A', 'B', 'C'] */
 $redis->lTrim('key1', 0, 1);
 $redis->lRange('key1', 0, -1); /* ['A', 'B'] */
 ~~~
-
-**Note:** `listTrim` is an alias for `lTrim` and will be removed in future versions of phpredis.
 
 ### rPop
 -----
@@ -2302,7 +2284,7 @@ $redis->rPushX('key1', 'C'); // returns 3
 /* key1 now points to the following list: [ 'A', 'B', 'C' ] */
 ~~~
 
-### lLen, lSize
+### lLen
 -----
 _**Description**_: Returns the size of a list identified by Key.
 
@@ -2325,23 +2307,21 @@ $redis->rPop('key1');
 $redis->lLen('key1');/* 2 */
 ~~~
 
-**Note:** `lSize` is an alias for `lLen` and will be removed in future versions of phpredis.
-
 
 ## Sets
 
 * [sAdd](#sadd) - Add one or more members to a set
-* [sCard, sSize](#scard-ssize) - Get the number of members in a set
+* [sCard](#scard) - Get the number of members in a set
 * [sDiff](#sdiff) - Subtract multiple sets
 * [sDiffStore](#sdiffstore) - Subtract multiple sets and store the resulting set in a key
 * [sInter](#sinter) - Intersect multiple sets
 * [sInterStore](#sinterstore) - Intersect multiple sets and store the resulting set in a key
-* [sIsMember, sContains](#sismember-scontains) - Determine if a given value is a member of a set
-* [sMembers, sGetMembers](#smembers-sgetmembers) - Get all the members in a set
+* [sIsMember](#sismember) - Determine if a given value is a member of a set
+* [sMembers](#smembers) - Get all the members in a set
 * [sMove](#smove) - Move a member from one set to another
 * [sPop](#spop) - Remove and return one or more members of a set at random
 * [sRandMember](#srandmember) - Get one or multiple random members from a set
-* [sRem, sRemove](#srem-sremove) - Remove one or more members from a set
+* [sRem](#srem) - Remove one or more members from a set
 * [sUnion](#sunion) - Add multiple sets
 * [sUnionStore](#sunionstore) - Add multiple sets and store the resulting set in a key
 * [sScan](#sscan) - Scan a set for members
@@ -2362,7 +2342,7 @@ $redis->sAdd('key1' , 'member2', 'member3'); /* 2, 'key1' => {'member1', 'member
 $redis->sAdd('key1' , 'member2'); /* 0, 'key1' => {'member1', 'member2', 'member3'}*/
 ~~~
 
-### sCard, sSize
+### sCard
 -----
 _**Description**_: Returns the cardinality of the set identified by key.
 ##### *Parameters*
@@ -2377,8 +2357,6 @@ $redis->sAdd('key1' , 'member3'); /* 'key1' => {'member1', 'member2', 'member3'}
 $redis->sCard('key1'); /* 3 */
 $redis->sCard('keyX'); /* 0 */
 ~~~
-
-**Note:** `sSize` is an alias for `sCard` and will be removed in future versions of phpredis.
 
 ### sDiff
 -----
@@ -2533,7 +2511,7 @@ array(2) {
 }
 ~~~
 
-### sIsMember, sContains
+### sIsMember
 -----
 _**Description**_: Checks if `value` is a member of the set stored at the key `key`.
 ##### *Parameters*
@@ -2552,9 +2530,7 @@ $redis->sIsMember('key1', 'member1'); /* TRUE */
 $redis->sIsMember('key1', 'memberX'); /* FALSE */
 ~~~
 
-**Note:** `sContains` is an alias for `sIsMember` and will be removed in future versions of phpredis.
-
-### sMembers, sGetMembers
+### sMembers
 -----
 _**Description**_: Returns the contents of a set.
 
@@ -2586,8 +2562,6 @@ array(3) {
 }
 ~~~
 The order is random and corresponds to redis' own internal representation of the set structure.
-
-**Note:** `sGetMembers` is an alias for `sMembers` and will be removed in future versions of phpredis.
 
 ### sMove
 -----
@@ -2664,7 +2638,7 @@ $redis->sRandMember('empty-set', 100); // Will return an empty array
 $redis->sRandMember('not-a-set', 100); // Will return FALSE
 ~~~
 
-### sRem, sRemove
+### sRem
 -----
 _**Description**_: Removes the specified member from the set value stored at key.
 ##### *Parameters*
@@ -2679,8 +2653,6 @@ $redis->sAdd('key1' , 'member2');
 $redis->sAdd('key1' , 'member3'); /* 'key1' => {'member1', 'member2', 'member3'}*/
 $redis->sRem('key1', 'member2', 'member3'); /*return 2. 'key1' => {'member1'} */
 ~~~
-
-**Note:** `sRemove` is an alias for `sRem` and will be removed in future versions of phpredis.
 
 ### sUnion
 -----
@@ -2807,7 +2779,7 @@ while(($arr_mems = $redis->sScan('set', $it, "*pattern*"))!==FALSE) {
 
 * [bzPop](#bzpop) - Block until Redis can pop the highest or lowest scoring member from one or more ZSETs.
 * [zAdd](#zadd) - Add one or more members to a sorted set or update its score if it already exists
-* [zCard, zSize](#zcard-zsize) - Get the number of members in a sorted set
+* [zCard](#zcard) - Get the number of members in a sorted set
 * [zCount](#zcount) - Count the members in a sorted set with scores within the given values
 * [zIncrBy](#zincrby) - Increment the score of a member in a sorted set
 * [zinterstore, zInter](#zinterstore-zinter) - Intersect multiple sorted sets and store the resulting sorted set in a new key
@@ -2816,9 +2788,9 @@ while(($arr_mems = $redis->sScan('set', $it, "*pattern*"))!==FALSE) {
 * [zRangeByScore, zRevRangeByScore](#zrangebyscore-zrevrangebyscore) - Return a range of members in a sorted set, by score
 * [zRangeByLex](#zrangebylex) - Return a lexicographical range from members that share the same score
 * [zRank, zRevRank](#zrank-zrevrank) - Determine the index of a member in a sorted set
-* [zRem, zDelete, zRemove](#zrem-zdelete-zremove) - Remove one or more members from a sorted set
-* [zRemRangeByRank, zDeleteRangeByRank](#zremrangebyrank-zdeleterangebyrank) - Remove all members in a sorted set within the given indexes
-* [zRemRangeByScore, zDeleteRangeByScore, zRemoveRangeByScore](#zremrangebyscore-zdeleterangebyscore-zremoverangebyscore) - Remove all members in a sorted set within the given scores
+* [zRem](#zrem) - Remove one or more members from a sorted set
+* [zRemRangeByRank](#zremrangebyrank) - Remove all members in a sorted set within the given indexes
+* [zRemRangeByScore](#zremrangebyscore) - Remove all members in a sorted set within the given scores
 * [zRevRange](#zrevrange) - Return a range of members in a sorted set, by index, with scores ordered from high to low
 * [zScore](#zscore) - Get the score associated with the given member in a sorted set
 * [zunionstore, zUnion](#zunionstore-zunion) - Add multiple sorted sets and store the resulting sorted set in a new key
@@ -2885,7 +2857,7 @@ $redis->zRange('key', 0, -1); // [val0, val1, val5]
 $redis->zAdd('key', ['CH'], 5, 'val5', 10, 'val10', 15, 'val15');
 ~~~
 
-### zCard, zSize
+### zCard
 -----
 _**Description**_: Returns the cardinality of an ordered set.
 
@@ -2902,8 +2874,6 @@ $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
 $redis->zCard('key'); /* 3 */
 ~~~
-
-**Note**: `zSize` is an alias for `zCard` and will be removed in future versions of phpredis.
 
 ### zCount
 -----
@@ -3115,7 +3085,7 @@ $redis->zRevRank('key', 'one'); /* 1 */
 $redis->zRevRank('key', 'two'); /* 0 */
 ~~~
 
-### zRem, zDelete, zRemove
+### zRem
 -----
 _**Description**_: Delete one or more members from a sorted set.
 
@@ -3133,9 +3103,7 @@ $redis->zAdd('key', 0, 'val0', 1, 'val1', 2, 'val2');
 $redis->zRem('key', 'val0', 'val1', 'val2'); // Returns: 3
 ~~~
 
-**Note:** `zDelete` and `zRemove` are an alias for `zRem` and will be removed in future versions of phpredis.
-
-### zRemRangeByRank, zDeleteRangeByRank
+### zRemRangeByRank
 -----
 _**Description**_: Deletes the elements of the sorted set stored at the specified key which have rank in the range [start,end].
 
@@ -3156,9 +3124,7 @@ $redis->zRemRangeByRank('key', 0, 1); /* 2 */
 $redis->zRange('key', 0, -1, ['withscores' => TRUE]); /* ['three' => 3] */
 ~~~
 
-**Note:** `zDeleteRangeByRank` is an alias for `zRemRangeByRank` and will be removed in future versions of phpredis.
-
-### zRemRangeByScore, zDeleteRangeByScore, zRemoveRangeByScore
+### zRemRangeByScore
 -----
 _**Description**_: Deletes the elements of the sorted set stored at the specified key which have scores in the range [start,end].
 
@@ -3177,8 +3143,6 @@ $redis->zAdd('key', 2, 'val2');
 $redis->zAdd('key', 10, 'val10');
 $redis->zRemRangeByScore('key', 0, 3); /* 2 */
 ~~~
-
-**Note:** `zDeleteRangeByScore` and `zRemoveRangeByScore` are an alias for `zRemRangeByScore` and will be removed in future versions of phpredis.
 
 ### zRevRange
 -----
