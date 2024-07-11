@@ -2786,6 +2786,7 @@ while(($arr_mems = $redis->sScan('set', $it, "*pattern*"))!==FALSE) {
 * [zIncrBy](#zincrby) - Increment the score of a member in a sorted set
 * [zInter](#zinter) - Intersect multiple sorted sets and return the resulting sorted set
 * [zinterstore](#zinterstore) - Intersect multiple sorted sets and store the resulting sorted set in a new key
+* [zMscore](#zmscore) - Get the scores associated with the given members in a sorted set
 * [zPop](#zpop) - Redis can pop the highest or lowest scoring member from one a ZSET.
 * [zRange](#zrange) - Return a range of members in a sorted set, by index
 * [zRangeByScore, zRevRangeByScore](#zrangebyscore-zrevrangebyscore) - Return a range of members in a sorted set, by score
@@ -3064,6 +3065,25 @@ $redis->zinterstore('ko2', ['k1', 'k2'], [1, 1]); /* 2, 'ko2' => ['val1', 'val3'
 /* Weighted zinterstore */
 $redis->zinterstore('ko3', ['k1', 'k2'], [1, 5], 'min'); /* 2, 'ko3' => ['val1', 'val3'] */
 $redis->zinterstore('ko4', ['k1', 'k2'], [1, 5], 'max'); /* 2, 'ko4' => ['val3', 'val1'] */
+~~~
+
+### zMscore
+-----
+_**Description**_: Returns the scores of the given members in the specified sorted set.
+
+##### *Parameters*
+*key*  
+*members*: member1, member2, ... , memberN: Any number of members in the specified sorted set.
+
+##### *Return value*
+*ARRAY* or *FALSE* when the key is not found.  Array entries corresponding to members that do not exist will be `false`.
+
+##### *Example*
+~~~php
+$redis->zAdd('key', 2.5, 'val2');
+$redis->zAdd('key', 4.5, 'val4');
+
+$redis->zMscore('key', 'val2', 'val3', 'val4'); /* [2.5, false, 4.5] */
 ~~~
 
 ### zPop
