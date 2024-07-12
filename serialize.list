@@ -5,9 +5,9 @@ This file lists which methods support serialization. Only indented methods have 
 	setex
 	setnx
 	getSet
-	getMultiple
+	mGet
 append
-substr
+getRange
 strlen
 	lPush
 	lPushx
@@ -17,19 +17,19 @@ strlen
 	rPop
 	blPop
 	brPop
-	lRemove
-	lGet
-	lGetRange
+	lRange
+	lRem
+	lIndex
 	lSet
 	lInsert
 
 	sAdd
-	sRemove
+	sRem
 	sMove
-	sContains
+	sIsMember
 
 	zAdd
-	zDelete
+	zRem
 	zScore
 	zRank
 	zRevRank

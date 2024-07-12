@@ -716,7 +716,7 @@ class Redis_Test extends TestSuite {
                             $this->redis->mget(array_keys($kvals)));
     }
 
-    public function testSetTimeout() {
+    public function testExpire() {
         $this->redis->del('key');
         $this->redis->set('key', 'value');
 
@@ -1289,7 +1289,7 @@ class Redis_Test extends TestSuite {
         }
     }
 
-    // ltrim, lsize, lpop
+    // ltrim, lLen, lpop
     public function testltrim() {
         $this->redis->del('list');
 
@@ -4049,13 +4049,13 @@ class Redis_Test extends TestSuite {
         $this->assertFalse($ret[$i++]); // ltrim
         $this->assertFalse($ret[$i++]); // lindex
         $this->assertFalse($ret[$i++]); // lset
-        $this->assertFalse($ret[$i++]); // lremove
+        $this->assertFalse($ret[$i++]); // lrem
         $this->assertFalse($ret[$i++]); // lpop
         $this->assertFalse($ret[$i++]); // rpop
         $this->assertFalse($ret[$i++]); // rpoplush
 
         $this->assertFalse($ret[$i++]); // sadd
-        $this->assertFalse($ret[$i++]); // sremove
+        $this->assertFalse($ret[$i++]); // srem
         $this->assertFalse($ret[$i++]); // spop
         $this->assertFalse($ret[$i++]); // smove
         $this->assertFalse($ret[$i++]); // scard
@@ -4171,7 +4171,7 @@ class Redis_Test extends TestSuite {
         $this->assertFalse($ret[$i++]); // decrBy
 
         $this->assertFalse($ret[$i++]); // sadd
-        $this->assertFalse($ret[$i++]); // sremove
+        $this->assertFalse($ret[$i++]); // srem
         $this->assertFalse($ret[$i++]); // spop
         $this->assertFalse($ret[$i++]); // smove
         $this->assertFalse($ret[$i++]); // scard
@@ -4295,7 +4295,7 @@ class Redis_Test extends TestSuite {
         $this->assertFalse($ret[$i++]); // ltrim
         $this->assertFalse($ret[$i++]); // lindex
         $this->assertFalse($ret[$i++]); // lset
-        $this->assertFalse($ret[$i++]); // lremove
+        $this->assertFalse($ret[$i++]); // lrem
         $this->assertFalse($ret[$i++]); // lpop
         $this->assertFalse($ret[$i++]); // rpop
         $this->assertFalse($ret[$i++]); // rpoplush
@@ -4411,13 +4411,13 @@ class Redis_Test extends TestSuite {
         $this->assertFalse($ret[$i++]); // ltrim
         $this->assertFalse($ret[$i++]); // lindex
         $this->assertFalse($ret[$i++]); // lset
-        $this->assertFalse($ret[$i++]); // lremove
+        $this->assertFalse($ret[$i++]); // lrem
         $this->assertFalse($ret[$i++]); // lpop
         $this->assertFalse($ret[$i++]); // rpop
         $this->assertFalse($ret[$i++]); // rpoplush
 
         $this->assertFalse($ret[$i++]); // sadd
-        $this->assertFalse($ret[$i++]); // sremove
+        $this->assertFalse($ret[$i++]); // srem
         $this->assertFalse($ret[$i++]); // spop
         $this->assertFalse($ret[$i++]); // smove
         $this->assertFalse($ret[$i++]); // scard
@@ -4527,13 +4527,13 @@ class Redis_Test extends TestSuite {
         $this->assertFalse($ret[$i++]); // ltrim
         $this->assertFalse($ret[$i++]); // lindex
         $this->assertFalse($ret[$i++]); // lset
-        $this->assertFalse($ret[$i++]); // lremove
+        $this->assertFalse($ret[$i++]); // lrem
         $this->assertFalse($ret[$i++]); // lpop
         $this->assertFalse($ret[$i++]); // rpop
         $this->assertFalse($ret[$i++]); // rpoplush
 
         $this->assertFalse($ret[$i++]); // sadd
-        $this->assertFalse($ret[$i++]); // sremove
+        $this->assertFalse($ret[$i++]); // srem
         $this->assertFalse($ret[$i++]); // spop
         $this->assertFalse($ret[$i++]); // smove
         $this->assertFalse($ret[$i++]); // scard
@@ -5099,7 +5099,7 @@ class Redis_Test extends TestSuite {
             $this->assertEquals($a[$k], $v);
         }
 
-        // getMultiple
+        // mGet
         $this->redis->set('a', NULL);
         $this->redis->set('b', FALSE);
         $this->redis->set('c', 42);
