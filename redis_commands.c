@@ -3577,9 +3577,17 @@ redis_hrandfield_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                 } else if (zend_string_equals_literal_ci(zkey, "withvalues")) {
                     withvalues = zval_is_true(z_ele);
                 }
+            } else if (Z_TYPE_P(z_ele) == IS_STRING) {
+                if (zend_string_equals_literal_ci(Z_STR_P(z_ele), "WITHVALUES")) {
+                    withvalues = 1;
+                }
             }
         } ZEND_HASH_FOREACH_END();
     }
+
+    /* If we're sending WITHVALUES we must also send a count */
+    if (count == 0 && withvalues)
+        count = 1;
 
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, 1 + (count != 0) + withvalues, "HRANDFIELD");
     redis_cmd_append_sstr_key(&cmdstr, key, key_len, redis_sock, slot);
