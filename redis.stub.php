@@ -1798,7 +1798,7 @@ class Redis {
      * @example $redis->hrandfield('settings');
      * @example $redis->hrandfield('settings', ['count' => 2, 'withvalues' => true]);
      */
-    public function hRandField(string $key, ?array $options = null): Redis|string|array;
+    public function hRandField(string $key, ?array $options = null): Redis|string|array|false;
 
     public function hSet(string $key, string $member, mixed $value): Redis|int|false;
 
