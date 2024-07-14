@@ -237,6 +237,15 @@ class TestSuite
         return false;
     }
 
+    protected function assertIsFloat($v): bool {
+        if (is_float($v))
+            return true;
+
+        self::$errors []= $this->assertionTrace("%s is not a float", $this->printArg($v));
+
+        return false;
+    }
+
     protected function assertIsObject($v, ?string $type = NULL): bool {
         if ( ! is_object($v)) {
             self::$errors []= $this->assertionTrace("%s is not an object", $this->printArg($v));
@@ -248,6 +257,17 @@ class TestSuite
         }
 
         return true;
+    }
+
+    protected function assertSameType($expected, $actual): bool {
+        if (gettype($expected) === gettype($actual))
+            return true;
+
+        self::$errors []= $this->assertionTrace("%s is not the same type as %s",
+                                                $this->printArg($actual),
+                                                $this->printArg($expected));
+
+        return false;
     }
 
     protected function assertIsArray($v, ?int $size = null): bool {

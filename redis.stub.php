@@ -2826,7 +2826,7 @@ class Redis {
      * @example $redis->sRandMember('myset', 10);
      * @example $redis->sRandMember('myset', -10);
      */
-    public function sRandMember(string $key, int $count = 0): Redis|string|array|false;
+    public function sRandMember(string $key, int $count = 0): mixed;
 
     /**
      * Returns the union of one or more Redis SET keys.
