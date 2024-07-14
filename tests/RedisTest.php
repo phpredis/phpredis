@@ -1697,6 +1697,13 @@ class Redis_Test extends TestSuite {
             $this->assertInArray($reply_mem, $mems);
         }
 
+        /* Ensure we can handle basically any return type */
+        foreach ([3.1415, new stdClass(), 42, 'hello', NULL] as $val) {
+            $this->assertEquals(1, $this->redis->del('set0'));
+            $this->assertEquals(1, $this->redis->sadd('set0', $val));
+            $this->assertSameType($val, $this->redis->srandmember('set0'));
+        }
+
         $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
     }
 
