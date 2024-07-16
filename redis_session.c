@@ -50,6 +50,7 @@
 
 /* Check if a response is the Redis +OK status response */
 #define IS_REDIS_OK(r, len) (r != NULL && len == 3 && !memcmp(r, "+OK", 3))
+#define IS_REDIS_CLUSTER_OK(r, len) (r != NULL && len == 2 && !memcmp(r, "OK", 2))
 #define NEGATIVE_LOCK_RESPONSE 1
 
 #define CLUSTER_DEFAULT_PREFIX() \
@@ -87,6 +88,14 @@ typedef struct {
     redis_session_lock_status lock_status;
 
 } redis_pool;
+
+typedef struct {
+    redisCluster *c;
+    redis_session_lock_status lock_status;
+    short slot;
+    short lock_slot;
+
+} redis_cluster_session;
 
 // static char *session_conf_string(HashTable *ht, const char *key, size_t keylen) {
 // }
@@ -219,6 +228,41 @@ static int redis_simple_cmd(RedisSock *redis_sock, char *cmd, int cmdlen,
     return len_written;
 }
 
+static int redis_cluster_simple_cmd(redisCluster *c, short slot, char *cmd, int cmdlen,
+                              char **reply, int *replylen, int *replyint)
+{
+    clusterReply *cluster_reply;
+
+    c->readonly = 0;
+    int csc = cluster_send_command(c,slot,cmd,cmdlen);
+    if (csc < 0 || c->err) {
+        return FAILURE;
+    }
+
+    /* Attempt to read reply */
+    cluster_reply = cluster_read_resp(c, 1);
+    if (!cluster_reply || c->err) {
+        if (cluster_reply) cluster_free_reply(cluster_reply, 1);
+        return FAILURE;
+    }
+
+    /* Push reply value to caller */
+    if (cluster_reply->str == NULL) {
+        *reply = NULL;
+        *replylen = 0;
+    } else {
+        *reply = emalloc(cluster_reply->len);
+        memcpy(*reply, cluster_reply->str, cluster_reply->len);
+        *replylen = cluster_reply->len;
+    }
+    *replyint = cluster_reply->integer;
+
+    /* Clean up */
+    int free_flag = 1;
+    cluster_free_reply(cluster_reply, free_flag);
+    return SUCCESS;
+}
+
 PHP_REDIS_API redis_pool_member *
 redis_pool_get_sock(redis_pool *pool, const char *key) {
 
@@ -260,6 +304,48 @@ static int set_session_lock_key(RedisSock *redis_sock, char *cmd, int cmd_len
 
     /* Return FAILURE in case of network problems */
     return sent_len >= 0 ? NEGATIVE_LOCK_RESPONSE : FAILURE;
+}
+
+/* Helper to set our session lock key */
+static int set_session_lock_key_cluster(redis_cluster_session *sc, char *cmd, int cmd_len)
+{
+    char *reply;
+    int cmd_ok, reply_len, reply_int;
+
+    cmd_ok = redis_cluster_simple_cmd(sc->c, sc->lock_slot, cmd, cmd_len, &reply, &reply_len, &reply_int);
+
+    if (reply) {
+        if (IS_REDIS_CLUSTER_OK(reply, reply_len)) {
+            efree(reply);
+            return SUCCESS;
+        }
+
+        efree(reply);
+    }
+
+    /* Return FAILURE in case of network problems */
+    return cmd_ok == SUCCESS ? NEGATIVE_LOCK_RESPONSE : FAILURE;
+}
+
+/* Prefix + suffix a session key to get lock key name and slot */
+static char *cluster_session_lock_key(redis_cluster_session *sc) {
+    char *skey;
+    size_t skeylen;
+
+    char suffix[] = "_LOCK";
+    redisCluster *c = sc->c;
+    redis_session_lock_status *lock_status = &sc->lock_status;
+
+    if (lock_status->lock_key) {
+        zend_string_release(lock_status->lock_key);
+    }
+
+    skeylen = ZSTR_LEN(lock_status->session_key) + sizeof(suffix) - 1;
+    lock_status->lock_key = zend_string_alloc(skeylen, 0);
+    memcpy(ZSTR_VAL(lock_status->lock_key), ZSTR_VAL(lock_status->session_key), ZSTR_LEN(lock_status->session_key));
+    memcpy(ZSTR_VAL(lock_status->lock_key) + ZSTR_LEN(lock_status->session_key), suffix, sizeof(suffix) - 1);
+
+    sc->lock_slot = cluster_hash_key(ZSTR_VAL(lock_status->lock_key), skeylen);
 }
 
 static int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_status
@@ -313,6 +399,80 @@ static int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_s
     /* Attempt to get our lock */
     for (i = 0; retries == -1 || i <= retries; i++) {
         set_lock_key_result = set_session_lock_key(redis_sock, cmd, cmd_len);
+
+        if (set_lock_key_result == SUCCESS) {
+            lock_status->is_locked = 1;
+            break;
+        } else if (set_lock_key_result == FAILURE) {
+            /* In case of network problems, break the loop and report to userland */
+            lock_status->is_locked = 0;
+            break;
+        }
+
+        /* Sleep unless we're done making attempts */
+        if (retries == -1 || i < retries) {
+            usleep(lock_wait_time);
+        }
+    }
+
+    /* Cleanup SET command */
+    efree(cmd);
+
+    /* Success if we're locked */
+    return lock_status->is_locked ? SUCCESS : FAILURE;
+}
+
+static int lock_acquire_cluster(redis_cluster_session *sc, const char *key, int keylen)
+{
+    char *cmd, hostname[HOST_NAME_MAX] = {0}, suffix[] = "_LOCK";
+    int cmd_len, lock_wait_time, retries, i, set_lock_key_result, expiry;
+    short slot;
+    redisCluster *c = sc->c;
+    redis_session_lock_status *lock_status = &sc->lock_status;
+
+    /* Short circuit if we are already locked or not using session locks */
+    if (lock_status->is_locked || !INI_INT("redis.session.locking_enabled")) {
+        return SUCCESS;
+    }
+
+    /* How long to wait between attempts to acquire lock */
+    lock_wait_time = INI_INT("redis.session.lock_wait_time");
+    if (lock_wait_time == 0) {
+        lock_wait_time = 20000;
+    }
+
+    /* Maximum number of times to retry (-1 means infinite) */
+    retries = INI_INT("redis.session.lock_retries");
+    if (retries == 0) {
+        retries = 100;
+    }
+
+    /* How long should the lock live (in seconds) */
+    expiry = INI_INT("redis.session.lock_expire");
+    if (expiry == 0) {
+        expiry = INI_INT("max_execution_time");
+    }
+
+    /* Set up our command and slot information */
+    cluster_session_lock_key(sc);
+    
+    /* Calculate lock secret */
+    gethostname(hostname, HOST_NAME_MAX);
+    if (lock_status->lock_secret) zend_string_release(lock_status->lock_secret);
+    lock_status->lock_secret = strpprintf(0, "%s|%ld", hostname, (long)getpid());
+
+    if (expiry > 0) {
+        cmd_len = redis_spprintf(NULL, NULL, &cmd, "SET", "SSssd", lock_status->lock_key,
+                                 lock_status->lock_secret, "NX", 2, "PX", 2,
+                                 expiry * 1000);
+    } else {
+        cmd_len = redis_spprintf(NULL, NULL, &cmd, "SET", "SSs", lock_status->lock_key,
+                                 lock_status->lock_secret, "NX", 2);
+    }
+
+    /* Attempt to get our lock */
+    for (i = 0; retries == -1 || i <= retries; i++) {
+           set_lock_key_result = set_session_lock_key_cluster(sc, cmd, cmd_len);
 
         if (set_lock_key_result == SUCCESS) {
             lock_status->is_locked = 1;
@@ -409,6 +569,45 @@ static void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_
 
     /* Something has failed if we are still locked */
     if (lock_status->is_locked) {
+        php_error_docref(NULL, E_WARNING, "Failed to release session lock");
+    }
+}
+
+/* Release any session lock we hold and cleanup allocated lock data.  This function
+ * first attempts to use EVALSHA and then falls back to EVAL if EVALSHA fails.  This
+ * will cause Redis to cache the script, so subsequent calls should then succeed
+ * using EVALSHA. */
+static void lock_release_cluster(redis_cluster_session *sc)
+{
+    char *cmd, *reply;
+    int i, cmdlen, replylen, reply_int;
+
+    /* Keywords, command, and length fallbacks */
+    const char *kwd[] = {"EVALSHA", "EVAL"};
+    const char *lua[] = {LOCK_RELEASE_SHA_STR, LOCK_RELEASE_LUA_STR};
+    int len[] = {LOCK_RELEASE_SHA_LEN, LOCK_RELEASE_LUA_LEN};
+
+    /* We first want to try EVALSHA and then fall back to EVAL */
+    for (i = 0; sc->lock_status.is_locked && i < sizeof(kwd)/sizeof(*kwd); i++) {
+        /* Construct our command */
+        cmdlen = redis_spprintf(NULL, NULL, &cmd, (char*)kwd[i], "sdSS", lua[i], len[i], 1,
+            sc->lock_status.lock_key, sc->lock_status.lock_secret);
+
+        /* Send it off */
+        redis_cluster_simple_cmd(sc->c, sc->lock_slot, cmd, cmdlen, &reply, &replylen, &reply_int);
+
+        /* Release lock and cleanup reply if we got one */
+        if (reply_int == 1) {
+            sc->lock_status.is_locked = 0;
+            efree(reply);
+        }
+
+        /* Cleanup command */
+        efree(cmd);
+    }
+
+    /* Something has failed if we are still locked */
+    if (sc->lock_status.is_locked) {
         php_error_docref(NULL, E_WARNING, "Failed to release session lock");
     }
 }
@@ -929,21 +1128,39 @@ PS_GC_FUNC(redis)
  */
 
 /* Prefix a session key */
-static char *cluster_session_key(redisCluster *c, const char *key, int keylen,
-                                 int *skeylen, short *slot) {
-    char *skey;
+static zend_string *cluster_session_key(redisCluster *c, const char *key, int keylen,
+                                 short *slot) {
+    zend_string *session;
+    int skeylen;
 
-    *skeylen = keylen + ZSTR_LEN(c->flags->prefix);
-    skey = emalloc(*skeylen);
-    memcpy(skey, ZSTR_VAL(c->flags->prefix), ZSTR_LEN(c->flags->prefix));
-    memcpy(skey + ZSTR_LEN(c->flags->prefix), key, keylen);
+    skeylen = keylen + ZSTR_LEN(c->flags->prefix);
+    session = zend_string_alloc(skeylen, 0);
+    memcpy(ZSTR_VAL(session), ZSTR_VAL(c->flags->prefix), ZSTR_LEN(c->flags->prefix));
+    memcpy(ZSTR_VAL(session) + ZSTR_LEN(c->flags->prefix), key, keylen);
 
-    *slot = cluster_hash_key(skey, *skeylen);
+    *slot = cluster_hash_key(ZSTR_VAL(session), skeylen);
 
-    return skey;
+    return session;
+}
+
+/* Prefix a session key */
+static void *set_cluster_session_key(redis_cluster_session *sc, const char *key, int keylen) {
+    int skeylen;
+    redisCluster *c = sc->c;
+
+    if (sc->lock_status.session_key) {
+        zend_string_release(sc->lock_status.session_key);
+    }
+    skeylen = keylen + ZSTR_LEN(c->flags->prefix);
+    sc->lock_status.session_key = zend_string_alloc(skeylen, 0);
+    memcpy(ZSTR_VAL(sc->lock_status.session_key), ZSTR_VAL(c->flags->prefix), ZSTR_LEN(c->flags->prefix));
+    memcpy(ZSTR_VAL(sc->lock_status.session_key) + ZSTR_LEN(c->flags->prefix), key, keylen);
+
+    sc->slot = cluster_hash_key(ZSTR_VAL(sc->lock_status.session_key), skeylen);
 }
 
 PS_OPEN_FUNC(rediscluster) {
+    redis_cluster_session *sc;
     redisCluster *c;
     zval z_conf, *zv, *context;
     HashTable *ht_conf, *ht_seeds;
@@ -1013,7 +1230,9 @@ PS_OPEN_FUNC(rediscluster) {
         return FAILURE;
     }
 
-    c = cluster_create(timeout, read_timeout, failover, persistent);
+    sc = ecalloc(1, sizeof(*sc));
+    sc->c = cluster_create(timeout, read_timeout, failover, persistent);
+    c = sc->c;
 
     if (prefix) {
         c->flags->prefix = zend_string_copy(prefix);
@@ -1050,7 +1269,7 @@ PS_OPEN_FUNC(rediscluster) {
 
 success:
     CLUSTER_SESSION_CLEANUP();
-    PS_SET_MOD_DATA(c);
+    PS_SET_MOD_DATA(sc);
     return SUCCESS;
 
 failure:
@@ -1063,11 +1282,12 @@ failure:
  */
 PS_CREATE_SID_FUNC(rediscluster)
 {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *sc = PS_GET_MOD_DATA();
+    redisCluster *c = sc->c;
     clusterReply *reply;
-    char *cmd, *skey;
-    zend_string *sid;
-    int cmdlen, skeylen;
+    char *cmd;
+    zend_string *sid, *skey;
+    int cmdlen;
     int retries = 3;
     short slot;
 
@@ -1083,11 +1303,11 @@ PS_CREATE_SID_FUNC(rediscluster)
         sid = php_session_create_id((void **) &c);
 
         /* Create session key if it doesn't already exist */
-        skey = cluster_session_key(c, ZSTR_VAL(sid), ZSTR_LEN(sid), &skeylen, &slot);
-        cmdlen = redis_spprintf(NULL, NULL, &cmd, "SET", "ssssd", skey,
-                        skeylen, "", 0, "NX", 2, "EX", 2, session_gc_maxlifetime());
+        skey = cluster_session_key(c, ZSTR_VAL(sid), ZSTR_LEN(sid), &slot);
+        cmdlen = redis_spprintf(NULL, NULL, &cmd, "SET", "Ssssd", skey,
+                        "", 0, "NX", 2, "EX", 2, session_gc_maxlifetime());
 
-        efree(skey);
+        zend_string_release(skey);
 
         /* Attempt to kick off our command */
         c->readonly = 0;
@@ -1128,10 +1348,12 @@ PS_CREATE_SID_FUNC(rediscluster)
  */
 PS_VALIDATE_SID_FUNC(rediscluster)
 {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *sc = PS_GET_MOD_DATA();
+    redisCluster *c = sc->c;
     clusterReply *reply;
-    char *cmd, *skey;
-    int cmdlen, skeylen;
+    char *cmd;
+    zend_string *skey;
+    int cmdlen;
     int res = FAILURE;
     short slot;
 
@@ -1141,9 +1363,9 @@ PS_VALIDATE_SID_FUNC(rediscluster)
         return FAILURE;
     }
 
-    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
-    cmdlen = redis_spprintf(NULL, NULL, &cmd, "EXISTS", "s", skey, skeylen);
-    efree(skey);
+    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &slot);
+    cmdlen = redis_spprintf(NULL, NULL, &cmd, "EXISTS", "S", skey);
+    zend_string_release(skey);
 
     /* We send to master, to ensure consistency */
     c->readonly = 0;
@@ -1177,11 +1399,11 @@ PS_VALIDATE_SID_FUNC(rediscluster)
 /* {{{ PS_UPDATE_TIMESTAMP_FUNC
  */
 PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *sc = PS_GET_MOD_DATA();
+    redisCluster *c = sc->c;
     clusterReply *reply;
-    char *cmd, *skey;
-    int cmdlen, skeylen;
-    short slot;
+    char *cmd;
+    int cmdlen;
 
     /* No need to update the session timestamp if we've already done so */
     if (INI_INT("redis.session.early_refresh")) {
@@ -1189,14 +1411,13 @@ PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
     }
 
     /* Set up command and slot info */
-    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
-    cmdlen = redis_spprintf(NULL, NULL, &cmd, "EXPIRE", "sd", skey,
-                            skeylen, session_gc_maxlifetime());
-    efree(skey);
+    set_cluster_session_key(sc, ZSTR_VAL(key), ZSTR_LEN(key));
+    cmdlen = redis_spprintf(NULL, NULL, &cmd, "EXPIRE", "Sd", sc->lock_status.session_key,
+                            session_gc_maxlifetime());
 
     /* Attempt to send EXPIRE command */
     c->readonly = 0;
-    if (cluster_send_command(c,slot,cmd,cmdlen) < 0 || c->err) {
+    if (cluster_send_command(c,sc->slot,cmd,cmdlen) < 0 || c->err) {
         php_error_docref(NULL, E_NOTICE, "Redis unable to update session expiry");
         efree(cmd);
         return FAILURE;
@@ -1222,30 +1443,35 @@ PS_UPDATE_TIMESTAMP_FUNC(rediscluster) {
 /* {{{ PS_READ_FUNC
  */
 PS_READ_FUNC(rediscluster) {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *sc = PS_GET_MOD_DATA();
+    redisCluster *c = sc->c;
     clusterReply *reply;
-    char *cmd, *skey, *compressed_buf;
-    int cmdlen, skeylen, free_flag, compressed_free;
+    char *cmd, *compressed_buf;
+    int cmdlen, free_flag, compressed_free;
     size_t compressed_len;
     short slot;
 
     /* Set up our command and slot information */
-    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
+    set_cluster_session_key(sc, ZSTR_VAL(key), ZSTR_LEN(key));
 
     /* Update the session ttl if early refresh is enabled */
     if (INI_INT("redis.session.early_refresh")) {
-        cmdlen = redis_spprintf(NULL, NULL, &cmd, "GETEX", "ssd", skey,
-                                skeylen, "EX", 2, session_gc_maxlifetime());
+        cmdlen = redis_spprintf(NULL, NULL, &cmd, "GETEX", "Ssd", sc->lock_status.session_key,
+                                "EX", 2, session_gc_maxlifetime());
         c->readonly = 0;
     } else {
-        cmdlen = redis_spprintf(NULL, NULL, &cmd, "GET", "s", skey, skeylen);
+        if (lock_acquire_cluster(sc, ZSTR_VAL(key), ZSTR_LEN(key)) != SUCCESS) {
+            php_error_docref(NULL, E_WARNING, "Failed to acquire session lock");
+            return FAILURE;
+        }
+
+        cmdlen = redis_spprintf(NULL, NULL, &cmd, "GET", "S", sc->lock_status.session_key);
+
         c->readonly = 1;
     }
 
-    efree(skey);
-
     /* Attempt to kick off our command */
-    if (cluster_send_command(c,slot,cmd,cmdlen) < 0 || c->err) {
+    if (cluster_send_command(c,sc->slot,cmd,cmdlen) < 0 || c->err) {
         efree(cmd);
         return FAILURE;
     }
@@ -1283,10 +1509,11 @@ PS_READ_FUNC(rediscluster) {
 /* {{{ PS_WRITE_FUNC
  */
 PS_WRITE_FUNC(rediscluster) {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *sc = PS_GET_MOD_DATA();
+    redisCluster *c = sc->c;
     clusterReply *reply;
-    char *cmd, *skey, *sval;
-    int cmdlen, skeylen, compressed_free;
+    char *cmd, *sval;
+    int cmdlen, compressed_free;
     size_t svallen;
     short slot;
 
@@ -1294,11 +1521,10 @@ PS_WRITE_FUNC(rediscluster) {
                                             &sval, &svallen);
 
     /* Set up command and slot info */
-    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
-    cmdlen = redis_spprintf(NULL, NULL, &cmd, "SETEX", "sds", skey,
-                            skeylen, session_gc_maxlifetime(),
+    slot = sc->slot;
+    cmdlen = redis_spprintf(NULL, NULL, &cmd, "SETEX", "Sds", sc->lock_status.session_key,
+                            session_gc_maxlifetime(),
                             sval, svallen);
-    efree(skey);
     if (compressed_free) {
         efree(sval);
     }
@@ -1329,20 +1555,17 @@ PS_WRITE_FUNC(rediscluster) {
 /* {{{ PS_DESTROY_FUNC(rediscluster)
  */
 PS_DESTROY_FUNC(rediscluster) {
-    redisCluster *c = PS_GET_MOD_DATA();
+    redis_cluster_session *sc = PS_GET_MOD_DATA();
+    redisCluster *c = sc->c;
     clusterReply *reply;
-    char *cmd, *skey;
-    int cmdlen, skeylen;
-    short slot;
+    char *cmd;
+    int cmdlen;
 
     /* Set up command and slot info */
-    skey = cluster_session_key(c, ZSTR_VAL(key), ZSTR_LEN(key), &skeylen, &slot);
-
-    cmdlen = redis_spprintf(NULL, NULL, &cmd, "DEL", "s", skey, skeylen);
-    efree(skey);
+    cmdlen = redis_spprintf(NULL, NULL, &cmd, "DEL", "S", sc->lock_status.session_key);
 
     /* Attempt to send command */
-    if (cluster_send_command(c,slot,cmd,cmdlen) < 0 || c->err) {
+    if (cluster_send_command(c,sc->slot,cmd,cmdlen) < 0 || c->err) {
         efree(cmd);
         return FAILURE;
     }
@@ -1367,9 +1590,12 @@ PS_DESTROY_FUNC(rediscluster) {
  */
 PS_CLOSE_FUNC(rediscluster)
 {
-    redisCluster *c = PS_GET_MOD_DATA();
-    if (c) {
-        cluster_free(c, 1);
+    redis_cluster_session *sc = PS_GET_MOD_DATA();
+    lock_release_cluster(sc);
+
+    if (sc) {
+        cluster_free(sc->c, 1);
+        efree(sc);
         PS_SET_MOD_DATA(NULL);
     }
     return SUCCESS;
