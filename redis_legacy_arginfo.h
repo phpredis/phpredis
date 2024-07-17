@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: a888154a03dc0edbe479e0226f012a34c7cb4100 */
+ * Stub hash: 1cc5fe0df8dfa7d95f2bc45c2383132a68629f24 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -395,10 +395,9 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_hRandField arginfo_class_Redis_getEx
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hSet, 0, 0, 3)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hSet, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
-	ZEND_ARG_INFO(0, member)
-	ZEND_ARG_INFO(0, value)
+	ZEND_ARG_VARIADIC_INFO(0, fields_and_vals)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_hSetNx arginfo_class_Redis_hIncrBy

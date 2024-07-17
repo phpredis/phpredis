@@ -1800,7 +1800,21 @@ class Redis {
      */
     public function hRandField(string $key, ?array $options = null): Redis|string|array|false;
 
-    public function hSet(string $key, string $member, mixed $value): Redis|int|false;
+    /**
+     * Add or update one or more hash fields and values.
+     *
+     * @param string $key             The hash to create/update.
+     * @param mixed  $fields_and_vals Argument pairs of fields and values. Alternatively, an associative array with the
+     *                                fields and their values.
+     *
+     * @return Redis|int|false The number of fields that were added, or false on failure.
+     *
+     * @see https://redis.io/commands/hset/
+     *
+     * @example $redis->hSet('player:1', 'name', 'Kim', 'score', 78);
+     * @example $redis->hSet('player:1', ['name' => 'Kim', 'score' => 78]);
+     */
+    public function hSet(string $key, mixed ...$fields_and_vals): Redis|int|false;
 
     /**
      * Set a hash field and value, but only if that field does not exist

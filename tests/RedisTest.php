@@ -3237,6 +3237,24 @@ class Redis_Test extends TestSuite {
         $this->assertEquals('Object', $h1['z']);
         $this->assertEquals('', $h1['t']);
 
+        // hset with fields + values as an associative array
+        if (version_compare($this->version, '4.0.0') >= 0) {
+            $this->redis->del('h');
+            $this->assertEquals(3, $this->redis->hSet('h', ['x' => 123, 'y' => 456, 'z' => 'abc']));
+            $this->assertEquals(['x' => '123', 'y' => '456', 'z' => 'abc'], $this->redis->hGetAll('h'));
+            $this->assertEquals(0, $this->redis->hSet('h', ['x' => 789]));
+            $this->assertEquals(['x' => '789', 'y' => '456', 'z' => 'abc'], $this->redis->hGetAll('h'));
+        }
+
+        // hset with variadic fields + values
+        if (version_compare($this->version, '4.0.0') >= 0) {
+            $this->redis->del('h');
+            $this->assertEquals(3, $this->redis->hSet('h', 'x', 123, 'y', 456, 'z', 'abc'));
+            $this->assertEquals(['x' => '123', 'y' => '456', 'z' => 'abc'], $this->redis->hGetAll('h'));
+            $this->assertEquals(0, $this->redis->hSet('h', 'x', 789));
+            $this->assertEquals(['x' => '789', 'y' => '456', 'z' => 'abc'], $this->redis->hGetAll('h'));
+        }
+
         // hstrlen
         if (version_compare($this->version, '3.2.0') >= 0) {
             $this->redis->del('h');
