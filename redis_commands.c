@@ -3481,7 +3481,7 @@ int redis_hset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         }
 
         /* Initialize our command */
-        redis_cmd_init_sstr(&cmdstr, 1 + zend_hash_num_elements(Z_ARRVAL(z_args[1])), ZEND_STRL("HSET"));
+        redis_cmd_init_sstr(&cmdstr, 1 + zend_hash_num_elements(Z_ARRVAL(z_args[1])) * 2, ZEND_STRL("HSET"));
 
         /* Append key */
         zkey = zval_get_string(&z_args[0]);
