@@ -21,47 +21,128 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <lead>
-  <name>Nicolas Favre-Felix</name>
-  <user>nff</user>
-  <email>n.favrefelix@gmail.com</email>
-  <active>no</active>
- </lead>
- <date>2023-10-22</date>
+ <date>2024-08-04</date>
  <version>
-  <release>6.0.2</release>
+  <release>6.1.0RC1</release>
   <api>6.0.0</api>
  </version>
  <stability>
-  <release>stable</release>
-  <api>stable</api>
+  <release>beta</release>
+  <api>beta</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
-    --- Sponsors ---
+    Sponsors
 
     Audiomack - https://audiomack.com
     Open LMS - https://openlms.net
-    BlueHost - https://bluehost.com
-    Object Cache Pro for WordPress - https://objectcache.pro
     Avtandil Kikabidze - https://github.com/akalongman
-    Zaher Ghaibeh - https://github.com/zaherg
-    BatchLabs - https://batch.com
-    Stackhero - https://github.com/stackhero-io
-    Florian Levis - https://github.com/Gounlaf
-    Luis Zarate - https://github.com/jlzaratec
+    Ty Karok - https://github.com/karock
+    Object Cache Pro for WordPress - https://objectcache.pro
 
-    ---
+    Fixed:
 
-    phpredis 6.0.2
+    * Fix random connection timeouts with Redis Cluster. [eb7f31e7] (Jozsef Koszo)
+    * Fix argument count issue in HSET with associative array [6ea5b3e0]
+      (Viktor Djupsjobacka)
+    * SRANDMEMBER can return any type because of serialization. [6673b5b2]
+      (Michael Grunder)
+    * Fix HRANDFIELD command when WITHVALUES is used. [99f9fd83] (Michael Grunder)
+    * Allow context array to be nullable [50529f56] (Michael Grunder)
+    * Fix a macOS (M1) compiler warning. [7de29d57] (Michael Grunder)
+    * `GETEX` documentation/updates and implentation in `RedisCluster` [981c6931]
+      (Michael Grunder)
+    * Refactor redis_script_cmd and fix to `flush` subcommand. [7c551424]
+      (Pavlo Yatsukhnenko)
+    * Update liveness check and fix PHP 8.4 compilation error. [c139de3a]
+      (Michael Grunder)
+    * Rework how we declare ZSTD min/max constants. [34b5bd81] (Michael Grunder)
+    * Fix memory leak if we fail in ps_open_redis. [0e926165] (Michael Grunder)
+    * Fix segfault and remove redundant macros [a9e53fd1] (Pavlo Yatsukhnenko)
+    * Fix PHP 8.4 includes [a51215ce] (Michael Grunder)
+    * Handle arbitrarily large `SCAN` cursors properly. [2612d444, e52f0afa]
+      (Michael Grunder)
+    * Improve warning when we encounter an invalid EXPIRY in SET [732e466a]
+      (Michael Grunder)
+    * Fix Arginfo / zpp mismatch for DUMP command [50e5405c] (Pavlo Yatsukhnenko)
+    * RedisCluster::publish returns a cluster_long_resp [14f93339] (Alexandre Choura)
+    * Fix segfault when passing just false to auth. [6dc0a0be] (Michael Grunder)
+    * the VALUE argument type for hSetNx must be the same as for hSet [df074dbe]
+      (Uladzimir Tsykun)
+    * Fix `PSUBSCRIBE` to find callback by pattern not string literal. [2f276dcd]
+      (Michael Grunder)
+    * Fix memory leak and segfault in Redis::exec [362e1141] (Pavlo Yatsukhnenko)
+    * Fix unknown expiration modifier warning when null argument passed [264c0c7e,
+      3eb60f58] (Pavlo Yatsukhnenko)
+    * Other fixes [e18f6c6d, 3d7be358, 2b555c89, fa1a283a, 37c5f8d4] (Michael Grunder, Viktor Szepe)
 
-    This release contains fixes for OBJECT, PSUBSCRIBE and SCAN commands.
-    You can find a detailed list of changes in CHANGELOG.md and package.xml
-    or by inspecting the git commit logs.
+    Added:
 
-    * Fix deprecation error when passing null to match_type parameter.[b835aaa3] (Pavlo Yatsukhnenko) 
-    * Fix flaky test and OBJECT in a pipeline. [a7f51f70] (Michael Grunder)
-    * Find our callback by pattern with PSUBSCRIBE [2f276dcd] (Michael Grunder)
+    * Compression support for PHP sessions. [da4ab0a7] (bitactive)
+    * Support for early_refresh in Redis sessions to match cluster behavior
+      [b6989018] (Bitactive)
+    * Implement WAITAOF command. [ed7c9f6f] (Michael Grunder)
+
+    Removed:
+
+    * PHP 7.1, 7.2, and 7.3 CI jobs [d68c30f8, dc39bd55] (Michael Grunder)
+
+    Changed:
+
+    * Fix the time unit of retry_interval [3fdd52b4] (woodong)
+
+    Documentation:
+
+    * Many documentation fixes. [eeb51099] (Michael Dwyer)
+    * fix missing code tags [f865d5b9] (divinity76)
+    * Mention Valkey support [5f1eecfb] (PlavorSeol)
+    * Mention KeyDB support in README.md [37fa3592] (Tim Starling)
+    * Remove mention of pickle [c7a73abb] (David Baker)
+    * Add session.save_path examples [8a39caeb] (Martin Vancl)
+    * Tighter return types for Redis::(keys|hKeys|hVals|hGetAll) [77ab62bc]
+      (Benjamin Morel)
+    * Update stubs [4d233977, ff305349, 12966a74, a4a283ab, 8f8ff72a, 5d293245,
+      95bd184b] (Michael Grunder, Takayasu Oyama, Pavlo Yatsukhnenko)
+    * Fix config.m4 when using custom dep paths [ece3f7be] (Michael Grunder)
+    * Fix retry_internal documentation [142c1f4a] (SplotyCode)
+    * Fix anchor link [9b5cad31] (Git'Fellow)
+    * Fix typo in link [bfd379f0] (deiga)
+    * Fix Fedora package url [60b1ba14, 717713e1] (Dmitrii Kotov)
+    * Update Redis Sentinel documentation to reflect changes to constructor in 6.0
+      release [dc05d65c] (Pavlo Yatsukhnenko)
+    * Add back old examples with note [1ad95b63] (Joost)
+
+    Tests/CI:
+
+    * Avoid fatal error in test execution. [57304970] (Michael Grunder)
+    * Refactor unit test framework. [b1771def] (Michael Grunder)
+    * Get unit tests working in `php-cgi`. [b808cc60] (Michael Grunder)
+    * Switch to `ZEND_STRL` in more places. [7050c989, f8c762e7] (Michael Grunder)
+    * Workaround weird PHP compiler crash. [d3b2d87b] (Michael Grunder)
+    * Refactor tests (formatting, modernization, etc). [dab6a62d, c6cd665b, 78b70ca8,
+      3c125b09, 18b0da72, b88e72b1, 0f94d9c1, 59965971, 3dbc2bd8, 9b90c03b, c0d6f042]
+      (Michael Grunder)
+    * Spelling fixes [0d89e928] (Michael Grunder)
+    * Added Valkey support. [f350dc34] (Michael Grunder)
+    * Add a test for session compression. [9f3ca98c] (Michael Grunder)
+    * Test against valkey [a819a44b] (Michael Grunder)
+    * sessionSaveHandler injection. [9f8f80ca] (Pavlo Yatsukhnenko)
+    * KeyDB addiions [54d62c72, d9c48b78] (Michael Grunder)
+    * Add PHP 8.3 to CI [78d15140, e051a5db] (Robert Kelcak, Pavlo Yatsukhnenko)
+    * Fix deprecation error when passing null to match_type parameter [b835aaa3]
+      (Pavlo Yatsukhnenko)
+    * Fix crash in `OBJECT` command in pipeline. [a7f51f70] (Michael Grunder)
+    * Use newInstance in RedisClusterTest [954fbab8] (Pavlo Yatsukhnenko)
+    * Use actions/checkout@v4 [f4c2ac26] (Pavlo Yatsukhnenko)
+    * Cluster nodes from ENV [eda39958, 0672703b] (Pavlo Yatsukhnenko)
+    * Ensure we're talking to redis-server in our high ports test. [7825efbc]
+      (Michael Grunder)
+    * Add missing option to installation example [2bddd84f] (Pavlo Yatsukhnenko)
+    * Update sentinel documentation to reflect changes to constructor in 6.0 release
+      [849bedb6] (Joost)
+    * Add missing option to example [3674d663] (Till Kruss)
+    * Fix typo in link [8f6bc98f] (Timo Sand)
+    * Update tests to allow users to use a custom class. [5f6ce414] (Michael Grunder)
  </notes>
  <contents>
   <dir name="/">
@@ -153,6 +234,124 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <configureoption name="with-liblz4" prompt="use system liblz4?" default="yes"/>
  </extsrcrelease>
  <changelog>
+ <release>
+   <stability><release>beta</release><api>beta</api></stability>
+   <version><release>6.1.0RC1</release><api>6.0.0</api></version>
+   <date>2024-08-04</date>
+   <notes>
+    --- Sponsors ---
+
+    Audiomack - https://audiomack.com
+    Open LMS - https://openlms.net
+    Avtandil Kikabidze - https://github.com/akalongman
+    Ty Karok - https://github.com/karock
+    Object Cache Pro for WordPress - https://objectcache.pro
+
+    Fixed:
+
+    * Fix random connection timeouts with Redis Cluster. [eb7f31e7] (Jozsef Koszo)
+    * Fix argument count issue in HSET with associative array [6ea5b3e0]
+      (Viktor Djupsjobacka)
+    * SRANDMEMBER can return any type because of serialization. [6673b5b2]
+      (Michael Grunder)
+    * Fix HRANDFIELD command when WITHVALUES is used. [99f9fd83] (Michael Grunder)
+    * Allow context array to be nullable [50529f56] (Michael Grunder)
+    * Fix a macOS (M1) compiler warning. [7de29d57] (Michael Grunder)
+    * `GETEX` documentation/updates and implentation in `RedisCluster` [981c6931]
+      (Michael Grunder)
+    * Refactor redis_script_cmd and fix to `flush` subcommand. [7c551424]
+      (Pavlo Yatsukhnenko)
+    * Update liveness check and fix PHP 8.4 compilation error. [c139de3a]
+      (Michael Grunder)
+    * Rework how we declare ZSTD min/max constants. [34b5bd81] (Michael Grunder)
+    * Fix memory leak if we fail in ps_open_redis. [0e926165] (Michael Grunder)
+    * Fix segfault and remove redundant macros [a9e53fd1] (Pavlo Yatsukhnenko)
+    * Fix PHP 8.4 includes [a51215ce] (Michael Grunder)
+    * Handle arbitrarily large `SCAN` cursors properly. [2612d444, e52f0afa]
+      (Michael Grunder)
+    * Improve warning when we encounter an invalid EXPIRY in SET [732e466a]
+      (Michael Grunder)
+    * Fix Arginfo / zpp mismatch for DUMP command [50e5405c] (Pavlo Yatsukhnenko)
+    * RedisCluster::publish returns a cluster_long_resp [14f93339] (Alexandre Choura)
+    * Fix segfault when passing just false to auth. [6dc0a0be] (Michael Grunder)
+    * the VALUE argument type for hSetNx must be the same as for hSet [df074dbe]
+      (Uladzimir Tsykun)
+    * Fix `PSUBSCRIBE` to find callback by pattern not string literal. [2f276dcd]
+      (Michael Grunder)
+    * Fix memory leak and segfault in Redis::exec [362e1141] (Pavlo Yatsukhnenko)
+    * Fix unknown expiration modifier warning when null argument passed [264c0c7e,
+      3eb60f58] (Pavlo Yatsukhnenko)
+    * Other fixes [e18f6c6d, 3d7be358, 2b555c89, fa1a283a, 37c5f8d4] (Michael Grunder, Viktor Szepe)
+
+    Added:
+
+    * Compression support for PHP sessions. [da4ab0a7] (bitactive)
+    * Support for early_refresh in Redis sessions to match cluster behavior
+      [b6989018] (Bitactive)
+    * Implement WAITAOF command. [ed7c9f6f] (Michael Grunder)
+
+    Removed:
+
+    * PHP 7.1, 7.2, and 7.3 CI jobs [d68c30f8, dc39bd55] (Michael Grunder)
+
+    Changed:
+
+    * Fix the time unit of retry_interval [3fdd52b4] (woodong)
+
+    Documentation:
+
+    * Many documentation fixes. [eeb51099] (Michael Dwyer)
+    * fix missing code tags [f865d5b9] (divinity76)
+    * Mention Valkey support [5f1eecfb] (PlavorSeol)
+    * Mention KeyDB support in README.md [37fa3592] (Tim Starling)
+    * Remove mention of pickle [c7a73abb] (David Baker)
+    * Add session.save_path examples [8a39caeb] (Martin Vancl)
+    * Tighter return types for Redis::(keys|hKeys|hVals|hGetAll) [77ab62bc]
+      (Benjamin Morel)
+    * Update stubs [4d233977, ff305349, 12966a74, a4a283ab, 8f8ff72a, 5d293245,
+      95bd184b] (Michael Grunder, Takayasu Oyama, Pavlo Yatsukhnenko)
+    * Fix config.m4 when using custom dep paths [ece3f7be] (Michael Grunder)
+    * Fix retry_internal documentation [142c1f4a] (SplotyCode)
+    * Fix anchor link [9b5cad31] (Git'Fellow)
+    * Fix typo in link [bfd379f0] (deiga)
+    * Fix Fedora package url [60b1ba14, 717713e1] (Dmitrii Kotov)
+    * Update Redis Sentinel documentation to reflect changes to constructor in 6.0
+      release [dc05d65c] (Pavlo Yatsukhnenko)
+    * Add back old examples with note [1ad95b63] (Joost)
+
+    Tests/CI:
+
+    * Avoid fatal error in test execution. [57304970] (Michael Grunder)
+    * Refactor unit test framework. [b1771def] (Michael Grunder)
+    * Get unit tests working in `php-cgi`. [b808cc60] (Michael Grunder)
+    * Switch to `ZEND_STRL` in more places. [7050c989, f8c762e7] (Michael Grunder)
+    * Workaround weird PHP compiler crash. [d3b2d87b] (Michael Grunder)
+    * Refactor tests (formatting, modernization, etc). [dab6a62d, c6cd665b, 78b70ca8,
+      3c125b09, 18b0da72, b88e72b1, 0f94d9c1, 59965971, 3dbc2bd8, 9b90c03b, c0d6f042]
+      (Michael Grunder)
+    * Spelling fixes [0d89e928] (Michael Grunder)
+    * Added Valkey support. [f350dc34] (Michael Grunder)
+    * Add a test for session compression. [9f3ca98c] (Michael Grunder)
+    * Test against valkey [a819a44b] (Michael Grunder)
+    * sessionSaveHandler injection. [9f8f80ca] (Pavlo Yatsukhnenko)
+    * KeyDB addiions [54d62c72, d9c48b78] (Michael Grunder)
+    * Add PHP 8.3 to CI [78d15140, e051a5db] (Robert Kelcak, Pavlo Yatsukhnenko)
+    * Fix deprecation error when passing null to match_type parameter [b835aaa3]
+      (Pavlo Yatsukhnenko)
+    * Fix crash in `OBJECT` command in pipeline. [a7f51f70] (Michael Grunder)
+    * Use newInstance in RedisClusterTest [954fbab8] (Pavlo Yatsukhnenko)
+    * Use actions/checkout@v4 [f4c2ac26] (Pavlo Yatsukhnenko)
+    * Cluster nodes from ENV [eda39958, 0672703b] (Pavlo Yatsukhnenko)
+    * Ensure we're talking to redis-server in our high ports test. [7825efbc]
+      (Michael Grunder)
+    * Add missing option to installation example [2bddd84f] (Pavlo Yatsukhnenko)
+    * Update sentinel documentation to reflect changes to constructor in 6.0 release
+      [849bedb6] (Joost)
+    * Add missing option to example [3674d663] (Till Kruss)
+    * Fix typo in link [8f6bc98f] (Timo Sand)
+    * Update tests to allow users to use a custom class. [5f6ce414] (Michael Grunder)
+   </notes>
+ </release>
  <release>
    <stability><release>stable</release><api>stable</api></stability>
    <version><release>6.0.2</release><api>6.0.0</api></version>
