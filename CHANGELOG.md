@@ -5,20 +5,308 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [6.1.0RC1] - 2024-08-04 ([GitHub](https://github.com/phpredis/phpredis/releases/6.1.0RC1), [PECL](https://pecl.php.net/package/redis/6.1.0RC1))
 
 ### Sponsors :sparkling_heart:
 
-- [Audiomack](https://audiomack.com)
+- [A-VISION](https://github.com/A-VISION-BV)
 - [Open LMS](https://openlms.net/)
-- [BlueHost](https://bluehost.com)
-- [Object Cache Pro for WordPress](https://objectcache.pro/)
 - [Avtandil Kikabidze](https://github.com/akalongman)
-- [Zaher Ghaibeh](https://github.com/zaherg)
-- [BatchLabs](https://batch.com)
-- [Stackhero](https://github.com/stackhero-io)
-- [Florian Levis](https://github.com/Gounlaf)
-- [Luis Zárate](https://github.com/jlzaratec)
+- [Ty Karok](https://github.com/karock)
+- [Object Cache Pro for WordPress](https://objectcache.pro/)
+
+### Contributors to this release :sparkling_heart:
+
+  @michael-grunder, @yatsukhnenko, @bitactive, @OrangeJuiced, @crocodele,
+  @kalifg, @divinity76, @PlavorSeol, @kjoe, @tstarling, @acorncom, @tuxmartin,
+  @BenMorel, @szepeviktor, @SplotyCode, @taka-oyama, @PROFeNoM, @woodongwong,
+  @RobiNN1, @vtsykun, @solracsf, @tillkruss, @deiga, @tutuna
+
+### Fixed
+
+- Fix random connection timeouts with Redis Cluster.
+  [eb7f31e7](https://github.com/phpredis/phpredis/commit/eb7f31e7)
+  ([Jozsef Koszo](https://github.com/kjoe))
+  [#1142](https://github.com/phpredis/phpredis/pull/1142)
+  [#1385](https://github.com/phpredis/phpredis/pull/1385)
+  [#1633](https://github.com/phpredis/phpredis/pull/1633)
+  [#1707](https://github.com/phpredis/phpredis/pull/1707)
+  [#1811](https://github.com/phpredis/phpredis/pull/1811)
+  [#2407](https://github.com/phpredis/phpredis/pull/2407)
+- Fix argument count issue in HSET with associative array
+  [6ea5b3e0](https://github.com/phpredis/phpredis/commit/6ea5b3e0)
+  ([Viktor Djupsjöbacka](https://github.com/crocodele))
+- SRANDMEMBER can return any type because of serialization.
+  [6673b5b2](https://github.com/phpredis/phpredis/commit/6673b5b2)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix HRANDFIELD command when WITHVALUES is used.
+  [99f9fd83](https://github.com/phpredis/phpredis/commit/99f9fd83)
+  ([Michael Grunder](https://github.com/michael-grunder))
+  [#2524](https://github.com/phpredis/phpredis/pull/2524)
+- Allow context array to be nullable
+  [50529f56](https://github.com/phpredis/phpredis/commit/50529f56)
+  ([michael-grunder](https://github.com/michael-grunder))
+  [#2521](https://github.com/phpredis/phpredis/pull/2521)
+- Fix a macOS (M1) compiler warning.
+  [7de29d57](https://github.com/phpredis/phpredis/commit/7de29d57)
+  ([michael-grunder](https://github.com/michael-grunder))
+- `GETEX` documentation/updates and implentation in `RedisCluster`
+  [981c6931](https://github.com/phpredis/phpredis/commit/981c6931)
+  ([michael-grunder](https://github.com/michael-grunder))
+  [#2512](https://github.com/phpredis/phpredis/pull/2512)
+- Refactor redis_script_cmd and fix to `flush` subcommand.
+  [7c551424](https://github.com/phpredis/phpredis/commit/7c551424)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Update liveness check and fix PHP 8.4 compilation error.
+  [c139de3a](https://github.com/phpredis/phpredis/commit/c139de3a)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Rework how we declare ZSTD min/max constants.
+  [34b5bd81](https://github.com/phpredis/phpredis/commit/34b5bd81)
+  ([michael-grunder](https://github.com/michael-grunder))
+  [#2487](https://github.com/phpredis/phpredis/pull/2487)
+- Fix memory leak if we fail in ps_open_redis.
+  [0e926165](https://github.com/phpredis/phpredis/commit/0e926165)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix segfault and remove redundant macros
+  [a9e53fd1](https://github.com/phpredis/phpredis/commit/a9e53fd1)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix PHP 8.4 includes
+  [a51215ce](https://github.com/phpredis/phpredis/commit/a51215ce)
+  [#2463](https://github.com/phpredis/phpredis/pull/2463)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Handle arbitrarily large `SCAN` cursors properly.
+  [2612d444](https://github.com/phpredis/phpredis/commit/2612d444)
+  [e52f0afa](https://github.com/phpredis/phpredis/commit/e52f0afa)
+  [#2454](https://github.com/phpredis/phpredis/pull/2454)
+  [#2458](https://github.com/phpredis/phpredis/pull/2458)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Improve warning when we encounter an invalid EXPIRY in SET
+  [732e466a](https://github.com/phpredis/phpredis/commit/732e466a)
+  [#2448](https://github.com/phpredis/phpredis/pull/2448)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Fix Arginfo / zpp mismatch for DUMP command
+  [50e5405c](https://github.com/phpredis/phpredis/commit/50e5405c)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- RedisCluster::publish returns a cluster_long_resp
+  [14f93339](https://github.com/phpredis/phpredis/commit/14f93339)
+  ([Alexandre Choura](https://github.com/PROFeNoM))
+- Fix segfault when passing just false to auth.
+  [6dc0a0be](https://github.com/phpredis/phpredis/commit/6dc0a0be)
+  [#2430](https://github.com/phpredis/phpredis/pull/2430)
+  ([michael-grunder](https://github.com/michael-grunder))
+- the VALUE argument type for hSetNx must be the same as for hSet
+  [df074dbe](https://github.com/phpredis/phpredis/commit/df074dbe)
+  ([Uładzimir Tsykun](https://github.com/vtsykun))
+- Fix `PSUBSCRIBE` to find callback by pattern not string literal.
+  [2f276dcd](https://github.com/phpredis/phpredis/commit/2f276dcd)
+  ([michael-grunder](https://github.com/michael-grunder))
+  [#2395](https://github.com/phpredis/phpredis/pull/2395)
+- Fix memory leak and segfault in Redis::exec
+  [362e1141](https://github.com/phpredis/phpredis/commit/362e1141)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix unknown expiration modifier warning when null argument passed
+  [264c0c7e](https://github.com/phpredis/phpredis/commit/264c0c7e)
+  [3eb60f58](https://github.com/phpredis/phpredis/commit/3eb60f58)
+  [#2388](https://github.com/phpredis/phpredis/pull/2388)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Other fixes
+  [e18f6c6d](https://github.com/phpredis/phpredis/commit/e18f6c6d)
+  [3d7be358](https://github.com/phpredis/phpredis/commit/3d7be358)
+  [2b555c89](https://github.com/phpredis/phpredis/commit/2b555c89)
+  [fa1a283a](https://github.com/phpredis/phpredis/commit/fa1a283a)
+  ([michael-grunder](https://github.com/michael-grunder))
+  [37c5f8d4](https://github.com/phpredis/phpredis/commit/37c5f8d4)
+  ([Viktor Szépe](https://github.com/szepeviktor))
+
+### Added
+
+- Compression support for PHP sessions.
+  [da4ab0a7](https://github.com/phpredis/phpredis/commit/da4ab0a7)
+  [#2473](https://github.com/phpredis/phpredis/pull/2473)
+  ([bitactive](https://github.com/bitactive))
+- Support for early_refresh in Redis sessions to match cluster behavior
+  [b6989018](https://github.com/phpredis/phpredis/commit/b6989018)
+  ([Bitactive](https://github.com/bitactive))
+- Implement WAITAOF command.
+  [ed7c9f6f](https://github.com/phpredis/phpredis/commit/ed7c9f6f)
+  ([michael-grunder](https://github.com/michael-grunder))
+
+### Removed
+
+- PHP 7.1, 7.2, and 7.3 CI jobs
+  [d68c30f8](https://github.com/phpredis/phpredis/commit/d68c30f8)
+  [dc39bd55](https://github.com/phpredis/phpredis/commit/dc39bd55)
+  [#2478](https://github.com/phpredis/phpredis/pull/2478)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+### Changed
+
+- Fix the time unit of retry_interval
+  [3fdd52b4](https://github.com/phpredis/phpredis/commit/3fdd52b4)
+  ([woodong](https://github.com/woodongwong))
+
+### Documentation
+
+- Many documentation fixes.
+  [eeb51099](https://github.com/phpredis/phpredis/commit/eeb51099)
+  ([Michael Dwyer](https://github.com/kalifg))
+  [#2523](https://github.com/phpredis/phpredis/pull/2523)
+- fix missing <code> tags
+  [f865d5b9](https://github.com/phpredis/phpredis/commit/f865d5b9)
+  ([divinity76](https://github.com/divinity76))
+- Mention Valkey support
+  [5f1eecfb](https://github.com/phpredis/phpredis/commit/5f1eecfb)
+  ([PlavorSeol](https://github.com/PlavorSeol))
+- Mention KeyDB support in README.md
+  [37fa3592](https://github.com/phpredis/phpredis/commit/37fa3592)
+  ([Tim Starling](https://github.com/tstarling))
+- Remove mention of pickle
+  [c7a73abb](https://github.com/phpredis/phpredis/commit/c7a73abb)
+  ([David Baker](https://github.com/acorncom))
+- Add session.save_path examples
+  [8a39caeb](https://github.com/phpredis/phpredis/commit/8a39caeb)
+  ([Martin Vancl](https://github.com/tuxmartin))
+- Tighter return types for Redis::(keys|hKeys|hVals|hGetAll)()
+  [77ab62bc](https://github.com/phpredis/phpredis/commit/77ab62bc)
+  ([Benjamin Morel](https://github.com/BenMorel))
+- Update stubs
+  [4d233977](https://github.com/phpredis/phpredis/commit/4d233977)
+  [ff305349](https://github.com/phpredis/phpredis/commit/ff305349)
+  [12966a74](https://github.com/phpredis/phpredis/commit/12966a74)
+  [a4a283ab](https://github.com/phpredis/phpredis/commit/a4a283ab)
+  ([michael-grunder](https://github.com/michael-grunder))
+  [8f8ff72a](https://github.com/phpredis/phpredis/commit/8f8ff72a)
+  ([Takayasu Oyama](https://github.com/taka-oyama))
+  [5d293245](https://github.com/phpredis/phpredis/commit/5d293245)
+  [95bd184b](https://github.com/phpredis/phpredis/commit/95bd184b)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix config.m4 when using custom dep paths
+  [ece3f7be](https://github.com/phpredis/phpredis/commit/ece3f7be)
+  ([Michael Grunder](https://github.com/michael-grunder))
+  [#2453](https://github.com/phpredis/phpredis/pull/2453)
+  [#2452](https://github.com/phpredis/phpredis/pull/2452)
+- Fix retry_internal documentation
+  [142c1f4a](https://github.com/phpredis/phpredis/commit/142c1f4a)
+  ([SplotyCode](https://github.com/SplotyCode))
+- Fix anchor link
+  [9b5cad31](https://github.com/phpredis/phpredis/commit/9b5cad31)
+  ([Git'Fellow](https://github.com/solracsf))
+- Fix typo in link
+  [bfd379f0](https://github.com/phpredis/phpredis/commit/bfd379f0)
+  [#2349](https://github.com/phpredis/phpredis/pull/2349)
+  ([deiga](https://github.com/deiga))
+- Fix Fedora package url
+  [60b1ba14](https://github.com/phpredis/phpredis/commit/60b1ba14)
+  [717713e1](https://github.com/phpredis/phpredis/commit/717713e1)
+  ([Dmitrii Kotov](https://github.com/tutunak))
+- Update Redis Sentinel documentation to reflect changes to constructor in 6.0 release
+  [dc05d65c](https://github.com/phpredis/phpredis/commit/dc05d65c)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+  [#2381](https://github.com/phpredis/phpredis/pull/2381)
+- Add back old examples with note
+  [1ad95b63](https://github.com/phpredis/phpredis/commit/1ad95b63)
+  ([Joost](https://github.com/OrangeJuiced))
+
+### Tests/CI
+
+- Avoid fatal error in test execution.
+  [57304970](https://github.com/phpredis/phpredis/commit/57304970)
+  ([Michael Grunder](https://github.com/michael-grunder))
+  [#2510](https://github.com/phpredis/phpredis/pull/2510)
+- Refactor unit test framework.
+  [b1771def](https://github.com/phpredis/phpredis/commit/b1771def)
+  ([Michael Grunder](https://github.com/michael-grunder))
+  [#2509](https://github.com/phpredis/phpredis/pull/2509)
+- Get unit tests working in `php-cgi`.
+  [b808cc60](https://github.com/phpredis/phpredis/commit/b808cc60)
+  ([michael-grunder](https://github.com/michael-grunder))
+  [#2507](https://github.com/phpredis/phpredis/pull/2507)
+- Switch to `ZEND_STRL` in more places.
+  [7050c989](https://github.com/phpredis/phpredis/commit/7050c989)
+  [f8c762e7](https://github.com/phpredis/phpredis/commit/f8c762e7)
+  ([Michael Grunder](https://github.com/michael-grunder))
+  [#2505](https://github.com/phpredis/phpredis/pull/2505)
+- Workaround weird PHP compiler crash.
+  [d3b2d87b](https://github.com/phpredis/phpredis/commit/d3b2d87b)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Refactor tests (formatting, modernization, etc).
+  [dab6a62d](https://github.com/phpredis/phpredis/commit/dab6a62d)
+  [c6cd665b](https://github.com/phpredis/phpredis/commit/c6cd665b)
+  [78b70ca8](https://github.com/phpredis/phpredis/commit/78b70ca8)
+  [3c125b09](https://github.com/phpredis/phpredis/commit/3c125b09)
+  [18b0da72](https://github.com/phpredis/phpredis/commit/18b0da72)
+  [b88e72b1](https://github.com/phpredis/phpredis/commit/b88e72b1)
+  [#2492](https://github.com/phpredis/phpredis/pull/2492)
+  [0f94d9c1](https://github.com/phpredis/phpredis/commit/0f94d9c1)
+  [59965971](https://github.com/phpredis/phpredis/commit/59965971)
+  [3dbc2bd8](https://github.com/phpredis/phpredis/commit/3dbc2bd8)
+  [9b90c03b](https://github.com/phpredis/phpredis/commit/9b90c03b)
+  [c0d6f042](https://github.com/phpredis/phpredis/commit/c0d6f042)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Spelling fixes
+  [0d89e928](https://github.com/phpredis/phpredis/commit/0d89e928)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Added Valkey support.
+  [f350dc34](https://github.com/phpredis/phpredis/commit/f350dc34)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Add a test for session compression.
+  [9f3ca98c](https://github.com/phpredis/phpredis/commit/9f3ca98c)
+  ([michael-grunder](https://github.com/michael-grunder))
+  [#2473](https://github.com/phpredis/phpredis/pull/2473)
+  [#2480](https://github.com/phpredis/phpredis/pull/2480)
+- Test against valkey
+  [a819a44b](https://github.com/phpredis/phpredis/commit/a819a44b)
+  ([michael-grunder](https://github.com/michael-grunder))
+- sessionSaveHandler injection.
+  [9f8f80ca](https://github.com/phpredis/phpredis/commit/9f8f80ca)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- KeyDB addiions
+  [54d62c72](https://github.com/phpredis/phpredis/commit/54d62c72)
+  [d9c48b78](https://github.com/phpredis/phpredis/commit/d9c48b78)
+  [#2466](https://github.com/phpredis/phpredis/pull/2466)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Add PHP 8.3 to CI
+  [78d15140](https://github.com/phpredis/phpredis/commit/78d15140)
+  ([Róbert Kelčák](https://github.com/RobiNN1))
+  [e051a5db](https://github.com/phpredis/phpredis/commit/e051a5db)
+  [#2427](https://github.com/phpredis/phpredis/pull/2427)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix deprecation error when passing null to match_type parameter
+  [b835aaa3](https://github.com/phpredis/phpredis/commit/b835aaa3)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Fix crash in `OBJECT` command in pipeline.
+  [a7f51f70](https://github.com/phpredis/phpredis/commit/a7f51f70)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Use newInstance in RedisClusterTest
+  [954fbab8](https://github.com/phpredis/phpredis/commit/954fbab8)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Use actions/checkout@v4
+  [f4c2ac26](https://github.com/phpredis/phpredis/commit/f4c2ac26)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Cluster nodes from ENV
+  [eda39958](https://github.com/phpredis/phpredis/commit/eda39958)
+  [0672703b](https://github.com/phpredis/phpredis/commit/0672703b)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+- Ensure we're talking to redis-server in our high ports test.
+  [7825efbc](https://github.com/phpredis/phpredis/commit/7825efbc)
+  ([michael-grunder](https://github.com/michael-grunder))
+- Add missing option to installation example
+  [2bddd84f](https://github.com/phpredis/phpredis/commit/2bddd84f)
+  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
+  [#2378](https://github.com/phpredis/phpredis/pull/2378)
+- Update sentinel documentation to reflect changes to constructor in 6.0 release
+  [849bedb6](https://github.com/phpredis/phpredis/commit/849bedb6)
+  ([Joost](https://github.com/OrangeJuiced))
+- Add missing option to example
+  [3674d663](https://github.com/phpredis/phpredis/commit/3674d663)
+  ([Till Krüss](https://github.com/tillkruss))
+- Fix typo in link
+  [8f6bc98f](https://github.com/phpredis/phpredis/commit/8f6bc98f)
+  ([Timo Sand](https://github.com/deiga))
+- Update tests to allow users to use a custom class.
+  [5f6ce414](https://github.com/phpredis/phpredis/commit/5f6ce414)
+  ([michael-grunder](https://github.com/michael-grunder))
+
 
 ## [6.0.2] - 2023-10-22 ([GitHub](https://github.com/phpredis/phpredis/releases/6.0.2), [PECL](https://pecl.php.net/package/redis/6.0.2))
 
