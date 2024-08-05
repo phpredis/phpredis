@@ -6,12 +6,6 @@
 #include <ext/random/php_random.h>
 #endif
 
-#if PHP_VERSION_ID < 70100
-static zend_long php_mt_rand_range(zend_long min, zend_long max) {
-	return min + php_rand() % (max - min + 1)
-}
-#endif
-
 #include "backoff.h"
 
 static zend_ulong random_range(zend_ulong min, zend_ulong max) {

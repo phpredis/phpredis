@@ -413,11 +413,7 @@ static void lock_release(RedisSock *redis_sock, redis_session_lock_status *lock_
     }
 }
 
-#if PHP_VERSION_ID < 70300
-#define REDIS_URL_STR(umem) umem
-#else
 #define REDIS_URL_STR(umem) ZSTR_VAL(umem)
-#endif
 
 /* {{{ PS_OPEN_FUNC
  */
