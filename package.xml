@@ -69,11 +69,6 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix segfault when passing just false to auth. [6dc0a0be] (Michael Grunder)
     * the VALUE argument type for hSetNx must be the same as for hSet [df074dbe]
       (Uladzimir Tsykun)
-    * Fix `PSUBSCRIBE` to find callback by pattern not string literal. [2f276dcd]
-      (Michael Grunder)
-    * Fix memory leak and segfault in Redis::exec [362e1141] (Pavlo Yatsukhnenko)
-    * Fix unknown expiration modifier warning when null argument passed [264c0c7e,
-      3eb60f58] (Pavlo Yatsukhnenko)
     * Other fixes [e18f6c6d, 3d7be358, 2b555c89, fa1a283a, 37c5f8d4] (Michael Grunder, Viktor Szepe)
 
     Added:
@@ -101,8 +96,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Add session.save_path examples [8a39caeb] (Martin Vancl)
     * Tighter return types for Redis::(keys|hKeys|hVals|hGetAll) [77ab62bc]
       (Benjamin Morel)
-    * Update stubs [4d233977, ff305349, 12966a74, a4a283ab, 8f8ff72a, 5d293245,
-      95bd184b] (Michael Grunder, Takayasu Oyama, Pavlo Yatsukhnenko)
+    * Update stubs [4d233977, ff305349, 12966a74, a4a283ab, 8f8ff72a] 
+      (Michael Grunder, Takayasu Oyama, Pavlo Yatsukhnenko)
     * Fix config.m4 when using custom dep paths [ece3f7be] (Michael Grunder)
     * Fix retry_internal documentation [142c1f4a] (SplotyCode)
     * Fix anchor link [9b5cad31] (Git'Fellow)
@@ -110,7 +105,6 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix Fedora package url [60b1ba14, 717713e1] (Dmitrii Kotov)
     * Update Redis Sentinel documentation to reflect changes to constructor in 6.0
       release [dc05d65c] (Pavlo Yatsukhnenko)
-    * Add back old examples with note [1ad95b63] (Joost)
 
     Tests/CI:
 
@@ -129,18 +123,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * sessionSaveHandler injection. [9f8f80ca] (Pavlo Yatsukhnenko)
     * KeyDB addiions [54d62c72, d9c48b78] (Michael Grunder)
     * Add PHP 8.3 to CI [78d15140, e051a5db] (Robert Kelcak, Pavlo Yatsukhnenko)
-    * Fix deprecation error when passing null to match_type parameter [b835aaa3]
-      (Pavlo Yatsukhnenko)
-    * Fix crash in `OBJECT` command in pipeline. [a7f51f70] (Michael Grunder)
     * Use newInstance in RedisClusterTest [954fbab8] (Pavlo Yatsukhnenko)
     * Use actions/checkout@v4 [f4c2ac26] (Pavlo Yatsukhnenko)
     * Cluster nodes from ENV [eda39958, 0672703b] (Pavlo Yatsukhnenko)
     * Ensure we're talking to redis-server in our high ports test. [7825efbc]
       (Michael Grunder)
     * Add missing option to installation example [2bddd84f] (Pavlo Yatsukhnenko)
-    * Update sentinel documentation to reflect changes to constructor in 6.0 release
-      [849bedb6] (Joost)
-    * Add missing option to example [3674d663] (Till Kruss)
     * Fix typo in link [8f6bc98f] (Timo Sand)
     * Update tests to allow users to use a custom class. [5f6ce414] (Michael Grunder)
  </notes>
@@ -277,11 +265,6 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix segfault when passing just false to auth. [6dc0a0be] (Michael Grunder)
     * the VALUE argument type for hSetNx must be the same as for hSet [df074dbe]
       (Uladzimir Tsykun)
-    * Fix `PSUBSCRIBE` to find callback by pattern not string literal. [2f276dcd]
-      (Michael Grunder)
-    * Fix memory leak and segfault in Redis::exec [362e1141] (Pavlo Yatsukhnenko)
-    * Fix unknown expiration modifier warning when null argument passed [264c0c7e,
-      3eb60f58] (Pavlo Yatsukhnenko)
     * Other fixes [e18f6c6d, 3d7be358, 2b555c89, fa1a283a, 37c5f8d4] (Michael Grunder, Viktor Szepe)
 
     Added:
@@ -309,8 +292,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Add session.save_path examples [8a39caeb] (Martin Vancl)
     * Tighter return types for Redis::(keys|hKeys|hVals|hGetAll) [77ab62bc]
       (Benjamin Morel)
-    * Update stubs [4d233977, ff305349, 12966a74, a4a283ab, 8f8ff72a, 5d293245,
-      95bd184b] (Michael Grunder, Takayasu Oyama, Pavlo Yatsukhnenko)
+    * Update stubs [4d233977, ff305349, 12966a74, a4a283ab, 8f8ff72a, 5d293245] 
+      (Michael Grunder, Takayasu Oyama, Pavlo Yatsukhnenko)
     * Fix config.m4 when using custom dep paths [ece3f7be] (Michael Grunder)
     * Fix retry_internal documentation [142c1f4a] (SplotyCode)
     * Fix anchor link [9b5cad31] (Git'Fellow)
@@ -318,7 +301,6 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fix Fedora package url [60b1ba14, 717713e1] (Dmitrii Kotov)
     * Update Redis Sentinel documentation to reflect changes to constructor in 6.0
       release [dc05d65c] (Pavlo Yatsukhnenko)
-    * Add back old examples with note [1ad95b63] (Joost)
 
     Tests/CI:
 
@@ -337,18 +319,12 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * sessionSaveHandler injection. [9f8f80ca] (Pavlo Yatsukhnenko)
     * KeyDB addiions [54d62c72, d9c48b78] (Michael Grunder)
     * Add PHP 8.3 to CI [78d15140, e051a5db] (Robert Kelcak, Pavlo Yatsukhnenko)
-    * Fix deprecation error when passing null to match_type parameter [b835aaa3]
-      (Pavlo Yatsukhnenko)
-    * Fix crash in `OBJECT` command in pipeline. [a7f51f70] (Michael Grunder)
     * Use newInstance in RedisClusterTest [954fbab8] (Pavlo Yatsukhnenko)
     * Use actions/checkout@v4 [f4c2ac26] (Pavlo Yatsukhnenko)
     * Cluster nodes from ENV [eda39958, 0672703b] (Pavlo Yatsukhnenko)
     * Ensure we're talking to redis-server in our high ports test. [7825efbc]
       (Michael Grunder)
     * Add missing option to installation example [2bddd84f] (Pavlo Yatsukhnenko)
-    * Update sentinel documentation to reflect changes to constructor in 6.0 release
-      [849bedb6] (Joost)
-    * Add missing option to example [3674d663] (Till Kruss)
     * Fix typo in link [8f6bc98f] (Timo Sand)
     * Update tests to allow users to use a custom class. [5f6ce414] (Michael Grunder)
    </notes>

@@ -97,18 +97,6 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - the VALUE argument type for hSetNx must be the same as for hSet
   [df074dbe](https://github.com/phpredis/phpredis/commit/df074dbe)
   ([Uładzimir Tsykun](https://github.com/vtsykun))
-- Fix `PSUBSCRIBE` to find callback by pattern not string literal.
-  [2f276dcd](https://github.com/phpredis/phpredis/commit/2f276dcd)
-  ([michael-grunder](https://github.com/michael-grunder))
-  [#2395](https://github.com/phpredis/phpredis/pull/2395)
-- Fix memory leak and segfault in Redis::exec
-  [362e1141](https://github.com/phpredis/phpredis/commit/362e1141)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Fix unknown expiration modifier warning when null argument passed
-  [264c0c7e](https://github.com/phpredis/phpredis/commit/264c0c7e)
-  [3eb60f58](https://github.com/phpredis/phpredis/commit/3eb60f58)
-  [#2388](https://github.com/phpredis/phpredis/pull/2388)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Other fixes
   [e18f6c6d](https://github.com/phpredis/phpredis/commit/e18f6c6d)
   [3d7be358](https://github.com/phpredis/phpredis/commit/3d7be358)
@@ -178,8 +166,6 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [8f8ff72a](https://github.com/phpredis/phpredis/commit/8f8ff72a)
   ([Takayasu Oyama](https://github.com/taka-oyama))
   [5d293245](https://github.com/phpredis/phpredis/commit/5d293245)
-  [95bd184b](https://github.com/phpredis/phpredis/commit/95bd184b)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
 - Fix config.m4 when using custom dep paths
   [ece3f7be](https://github.com/phpredis/phpredis/commit/ece3f7be)
   ([Michael Grunder](https://github.com/michael-grunder))
@@ -203,9 +189,6 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [dc05d65c](https://github.com/phpredis/phpredis/commit/dc05d65c)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
   [#2381](https://github.com/phpredis/phpredis/pull/2381)
-- Add back old examples with note
-  [1ad95b63](https://github.com/phpredis/phpredis/commit/1ad95b63)
-  ([Joost](https://github.com/OrangeJuiced))
 
 ### Tests/CI
 
@@ -271,12 +254,6 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [e051a5db](https://github.com/phpredis/phpredis/commit/e051a5db)
   [#2427](https://github.com/phpredis/phpredis/pull/2427)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Fix deprecation error when passing null to match_type parameter
-  [b835aaa3](https://github.com/phpredis/phpredis/commit/b835aaa3)
-  ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
-- Fix crash in `OBJECT` command in pipeline.
-  [a7f51f70](https://github.com/phpredis/phpredis/commit/a7f51f70)
-  ([michael-grunder](https://github.com/michael-grunder))
 - Use newInstance in RedisClusterTest
   [954fbab8](https://github.com/phpredis/phpredis/commit/954fbab8)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
@@ -294,12 +271,6 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [2bddd84f](https://github.com/phpredis/phpredis/commit/2bddd84f)
   ([Pavlo Yatsukhnenko](https://github.com/yatsukhnenko))
   [#2378](https://github.com/phpredis/phpredis/pull/2378)
-- Update sentinel documentation to reflect changes to constructor in 6.0 release
-  [849bedb6](https://github.com/phpredis/phpredis/commit/849bedb6)
-  ([Joost](https://github.com/OrangeJuiced))
-- Add missing option to example
-  [3674d663](https://github.com/phpredis/phpredis/commit/3674d663)
-  ([Till Krüss](https://github.com/tillkruss))
 - Fix typo in link
   [8f6bc98f](https://github.com/phpredis/phpredis/commit/8f6bc98f)
   ([Timo Sand](https://github.com/deiga))
