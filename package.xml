@@ -209,6 +209,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
      <file role='test' name='getSessionData.php'/>
      <file role='test' name='regenerateSessionId.php'/>
      <file role='test' name='startSession.php'/>
+     <file role='test' name='SessionHelpers.php'/>
      <file role='test' name='make-cluster.sh'/>
      <file role='test' name='mkring.sh'/>
    </dir> <!-- tests -->
