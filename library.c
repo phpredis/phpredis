@@ -100,15 +100,7 @@ static int redis_mbulk_reply_zipped_raw_variant(RedisSock *redis_sock, zval *zre
 
 /* Register a persistent resource in a a way that works for every PHP 7 version. */
 void redis_register_persistent_resource(zend_string *id, void *ptr, int le_id) {
-#if PHP_VERSION_ID < 70300
-    zend_resource res;
-    res.type = le_id;
-    res.ptr = ptr;
-
-    zend_hash_str_update_mem(&EG(persistent_list), ZSTR_VAL(id), ZSTR_LEN(id), &res, sizeof(res));
-#else
     zend_register_persistent_resource(ZSTR_VAL(id), ZSTR_LEN(id), ptr, le_id);
-#endif
 }
 
 static ConnectionPool *
