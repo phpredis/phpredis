@@ -1,0 +1,62 @@
+
+{
+    "name": "phpredis/phpredis",
+    "type": "php-ext",
+    "license": "PHP-3.01",
+    "description": "A PHP extension for Redis",
+    "require": {
+        "php": ">= 7.4.0"
+    },
+    "php-ext": {
+        "extension-name": "redis",
+        "configure-options": [
+            {
+                "name": "enable-redis",
+                "description": "Enable redis support"
+            },
+            {
+                "name": "disable-redis-session",
+                "description": "Disable session support"
+            },
+            {
+                "name": "disable-redis-json",
+                "description": "Disable json serializer support"
+            },
+            {
+                "name": "enable-redis-igbinary",
+                "description": "Enable igbinary serializer support"
+            },
+            {
+                "name": "enable-redis-msgpack",
+                "description": "Enable msgpack serializer support"
+            },
+            {
+                "name": "enable-redis-lzf",
+                "description": "Enable lzf compression support"
+            },
+            {
+                "name": "with-liblzf",
+                "description": "Use system liblzf",
+                "needs-value": true
+            },
+            {
+                "name": "enable-redis-zstd",
+                "description": "Enable Zstd compression support"
+            },
+            {
+                "name": "with-libzstd",
+                "description": "Use system libzstd",
+                "needs-value": true
+            },
+            {
+                "name": "enable-redis-lz4",
+                "description": "Enable lz4 compression support"
+            },
+            {
+                "name": "with-liblz4",
+                "description": "Use system liblz4",
+                "needs-value": true
+            }
+        ]
+    }
+}
