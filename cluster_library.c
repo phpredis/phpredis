@@ -2995,7 +2995,7 @@ static zend_string **get_valid_seeds(HashTable *input, uint32_t *nseeds) {
         }
 
         /* Add as a key to avoid duplicates */
-        zend_hash_str_update_ptr(valid, Z_STRVAL_P(z_seed), Z_STRLEN_P(z_seed), NULL);
+        zend_hash_str_add_empty_element(valid, Z_STRVAL_P(z_seed), Z_STRLEN_P(z_seed));
     } ZEND_HASH_FOREACH_END();
 
     /* We need at least one valid seed */
