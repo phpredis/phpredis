@@ -17,10 +17,30 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Contributors to this release :sparkling_heart:
 
-  @michael-grunder, @yatsukhnenko, @bitactive, @OrangeJuiced, @crocodele,
-  @kalifg, @divinity76, @PlavorSeol, @kjoe, @tstarling, @acorncom, @tuxmartin,
-  @BenMorel, @szepeviktor, @SplotyCode, @taka-oyama, @PROFeNoM, @woodongwong,
-  @RobiNN1, @vtsykun, @solracsf, @tillkruss, @deiga, @tutuna
+  [@michael-grunder](https://github.com/michael-grunder),
+  [@yatsukhnenko](https://github.com/yatsukhnenko),
+  [@bitactive](https://github.com/bitactive),
+  [@OrangeJuiced](https://github.com/OrangeJuiced),
+  [@crocodele](https://github.com/crocodele),
+  [@kalifg](https://github.com/kalifg),
+  [@divinity76](https://github.com/divinity76),
+  [@PlavorSeol](https://github.com/PlavorSeol),
+  [@kjoe](https://github.com/kjoe),
+  [@tstarling](https://github.com/tstarling),
+  [@acorncom](https://github.com/acorncom),
+  [@tuxmartin](https://github.com/tuxmartin),
+  [@BenMorel](https://github.com/BenMorel),
+  [@szepeviktor](https://github.com/szepeviktor),
+  [@SplotyCode](https://github.com/SplotyCode),
+  [@taka-oyama](https://github.com/taka-oyama),
+  [@PROFeNoM](https://github.com/PROFeNoM),
+  [@woodongwong](https://github.com/woodongwong),
+  [@RobiNN1](https://github.com/RobiNN1),
+  [@vtsykun](https://github.com/vtsykun),
+  [@solracsf](https://github.com/solracsf),
+  [@tillkruss](https://github.com/tillkruss),
+  [@deiga](https://github.com/deiga),
+  [@tutuna](https://github.com/tutuna)
 
 ### Fixed
 
@@ -32,6 +52,10 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   ([Remi Collet](https://github.com/remicollet))
 - Add `SessionHelpers.php` to `package.xml`
   [e9474b80](https://github.com/phpredis/phpredis/commit/e9474b80)
+  ([Remi Collet](https://github.com/remicollet))
+- 8.4 implicit null fix, bump version
+  [bff3a22e](https://github.com/phpredis/phpredis/commit/bff3a22e)
+  [30c8f90c](https://github.com/phpredis/phpredis/commit/30c8f90c)
   ([Remi Collet](https://github.com/remicollet))
 
 ### Changed
@@ -177,7 +201,7 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [eeb51099](https://github.com/phpredis/phpredis/commit/eeb51099)
   ([Michael Dwyer](https://github.com/kalifg))
   [#2523](https://github.com/phpredis/phpredis/pull/2523)
-- fix missing <code> tags
+- fix missing \<code\> tags
   [f865d5b9](https://github.com/phpredis/phpredis/commit/f865d5b9)
   ([divinity76](https://github.com/divinity76))
 - Mention Valkey support
