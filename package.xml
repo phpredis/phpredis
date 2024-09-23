@@ -47,6 +47,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Fixed a `SIGABRT` error in PHP 8.4 [a75a7e5a] (Michael Grunder)
     * Clean up code for unsupported versions of PHP [37cebdd7] (Remi Collet)
     * Add `SessionHelpers.php` to `package.xml`[e9474b80] (Remi Collet)
+    * 8.4 implicit null fix, bump version [bff3a22e, 30c8f90c] [Remi Collet]
 
     Changed:
 

@@ -33,6 +33,10 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Add `SessionHelpers.php` to `package.xml`
   [e9474b80](https://github.com/phpredis/phpredis/commit/e9474b80)
   ([Remi Collet](https://github.com/remicollet))
+- 8.4 implicit null fix, bump version
+  [bff3a22e](https://github.com/phpredis/phpredis/commit/bff3a22e)
+  [30c8f90c](https://github.com/phpredis/phpredis/commit/30c8f90c)
+  ([Remi Collet](https://github.com/remicollet))
 
 ### Changed
 
