@@ -5,7 +5,7 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.1.0RC1] - 2024-08-04 ([GitHub](https://github.com/phpredis/phpredis/releases/6.1.0RC1), [PECL](https://pecl.php.net/package/redis/6.1.0RC1))
+## [6.1.0RC2] - 2024-09-23 ([Github](https://github.com/phpredis/phpredis/releases/6.1.0RC2), [PECL](https://pecl.php.net/package/redis/6.1.0RC2))
 
 ### Sponsors :sparkling_heart:
 
@@ -21,6 +21,44 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   @kalifg, @divinity76, @PlavorSeol, @kjoe, @tstarling, @acorncom, @tuxmartin,
   @BenMorel, @szepeviktor, @SplotyCode, @taka-oyama, @PROFeNoM, @woodongwong,
   @RobiNN1, @vtsykun, @solracsf, @tillkruss, @deiga, @tutuna
+
+### Fixed
+
+- Fixed a `SIGABRT` error in PHP 8.4
+  [a75a7e5a](https://github.com/phpredis/phpredis/commit/a75a7e5a)
+  ([Michael Grunder](https://github.com/michael-grunder))
+- Clean up code for unsupported versions of PHP
+  [37cebdd7](https://github.com/phpredis/phpredis/commit/37cebdd7)
+  ([Remi Collet](https://github.com/remicollet))
+- Add `SessionHelpers.php` to `package.xml`
+  [e9474b80](https://github.com/phpredis/phpredis/commit/e9474b80)
+  ([Remi Collet](https://github.com/remicollet))
+
+### Changed
+
+- Raised minimum supported PHP version to 7.4
+  [8b519423](https://github.com/phpredis/phpredis/commit/8b519423)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+### Removed
+
+- Removed erroneously duplicated changelog entries
+  [40c89736](https://github.com/phpredis/phpredis/commit/40c89736)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+### Tests/CI
+
+- Move to upload artifacts v4
+  [9d3805009](https://github.com/phpredis/phpredis/commit/9d3805009)
+  ([Michael Grunder](https://github.com/michael-grunder))
+
+### Added
+
+- Added `composer.json` to support [PIE](https://github.com/php/pie) (PHP Installer for Extensions)
+  [b59e35a6](https://github.com/phpredis/phpredis/commit/b59e35a6)
+  ([James Titcumb](https://github.com/asgrim))
+
+## [6.1.0RC1] - 2024-08-04 ([GitHub](https://github.com/phpredis/phpredis/releases/6.1.0RC1), [PECL](https://pecl.php.net/package/redis/6.1.0RC1))
 
 ### Fixed
 
@@ -1075,7 +1113,7 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [05129c3a3](https://github.com/phpredis/phpredis/commit/05129c3a3)
   [5bba6a7fc](https://github.com/phpredis/phpredis/commit/5bba6a7fc)
   ([Nathaniel Braun](https://github.com/nbraun-amazon))
-- Added experimental support for detecting a dirty connection by 
+- Added experimental support for detecting a dirty connection by
   trying to determine if the underlying stream is readable.
   [d68579562](https://github.com/phpredis/phpredis/commit/d68579562)
   [#2013](https://github.com/phpredis/phpredis/issues/2013)
