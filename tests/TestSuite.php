@@ -284,7 +284,7 @@ class TestSuite
         return true;
     }
 
-    protected function assertArrayKey($arr, $key, callable $cb = NULL): bool {
+    protected function assertArrayKey($arr, $key, ?callable $cb = NULL): bool {
         $cb ??= function ($v) { return true; };
 
         if (($exists = isset($arr[$key])) && $cb($arr[$key]))
