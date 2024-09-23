@@ -21,9 +21,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2024-08-04</date>
+ <date>2024-09-23</date>
  <version>
-  <release>6.1.0RC1</release>
+  <release>6.1.0RC2</release>
   <api>6.0.0</api>
  </version>
  <stability>
@@ -39,6 +39,33 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Avtandil Kikabidze - https://github.com/akalongman
     Ty Karok - https://github.com/karock
     Object Cache Pro for WordPress - https://objectcache.pro
+
+    --- 6.1.0RC2 ---
+
+    Fixed:
+
+    * Fixed a `SIGABRT` error in PHP 8.4 [a75a7e5a] (Michael Grunder)
+    * Clean up code for unsupported versions of PHP [37cebdd7] (Remi Collet)
+    * Add `SessionHelpers.php` to `package.xml`[e9474b80] (Remi Collet)
+
+    Changed:
+
+    * Raised minimum supported PHP version to 7.4 [8b519423] (Michael Grunder)
+
+    Removed:
+
+    * Removed erroneously duplicated changelog entries [40c89736] (Michael Grunder)
+
+    Tests/CI:
+
+    * Move to upload artifacts v4 [9d380500] (Michael Grunder)
+
+    Added:
+
+    * Added `composer.json` to support PIE (PHP Installer for Extensions) [b59e35a6]
+      (James Titcumb)
+
+    --- 6.1.0RC1 ---
 
     Fixed:
 
@@ -96,7 +123,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Add session.save_path examples [8a39caeb] (Martin Vancl)
     * Tighter return types for Redis::(keys|hKeys|hVals|hGetAll) [77ab62bc]
       (Benjamin Morel)
-    * Update stubs [4d233977, ff305349, 12966a74, a4a283ab, 8f8ff72a] 
+    * Update stubs [4d233977, ff305349, 12966a74, a4a283ab, 8f8ff72a]
       (Michael Grunder, Takayasu Oyama, Pavlo Yatsukhnenko)
     * Fix config.m4 when using custom dep paths [ece3f7be] (Michael Grunder)
     * Fix retry_internal documentation [142c1f4a] (SplotyCode)
@@ -225,8 +252,8 @@ http://pear.php.net/dtd/package-2.0.xsd">
  <changelog>
  <release>
    <stability><release>beta</release><api>beta</api></stability>
-   <version><release>6.1.0RC1</release><api>6.0.0</api></version>
-   <date>2024-08-04</date>
+   <version><release>6.1.0RC2</release><api>6.0.0</api></version>
+   <date>2024-09-23</date>
    <notes>
     --- Sponsors ---
 
@@ -235,6 +262,33 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Avtandil Kikabidze - https://github.com/akalongman
     Ty Karok - https://github.com/karock
     Object Cache Pro for WordPress - https://objectcache.pro
+
+    --- 6.1.0RC2 ---
+
+    Fixed:
+
+    * Fixed a `SIGABRT` error in PHP 8.4 [a75a7e5a] (Michael Grunder)
+    * Clean up code for unsupported versions of PHP [37cebdd7] (Remi Collet)
+    * Add `SessionHelpers.php` to `package.xml`[e9474b80] (Remi Collet)
+
+    Changed:
+
+    * Raised minimum supported PHP version to 7.4 [8b519423] (Michael Grunder)
+
+    Removed:
+
+    * Removed erroneously duplicated changelog entries [40c89736] (Michael Grunder)
+
+    Tests/CI:
+
+    * Move to upload artifacts v4 [9d380500] (Michael Grunder)
+
+    Added:
+
+    * Added `composer.json` to support PIE (PHP Installer for Extensions) [b59e35a6]
+      (James Titcumb)
+
+    --- 6.1.0RC1 ---
 
     Fixed:
 
@@ -292,7 +346,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     * Add session.save_path examples [8a39caeb] (Martin Vancl)
     * Tighter return types for Redis::(keys|hKeys|hVals|hGetAll) [77ab62bc]
       (Benjamin Morel)
-    * Update stubs [4d233977, ff305349, 12966a74, a4a283ab, 8f8ff72a, 5d293245] 
+    * Update stubs [4d233977, ff305349, 12966a74, a4a283ab, 8f8ff72a, 5d293245]
       (Michael Grunder, Takayasu Oyama, Pavlo Yatsukhnenko)
     * Fix config.m4 when using custom dep paths [ece3f7be] (Michael Grunder)
     * Fix retry_internal documentation [142c1f4a] (SplotyCode)
@@ -355,7 +409,7 @@ http://pear.php.net/dtd/package-2.0.xsd">
     You can find a detailed list of changes in CHANGELOG.md and package.xml
     or by inspecting the git commit logs.
 
-    * Fix deprecation error when passing null to match_type parameter.[b835aaa3] (Pavlo Yatsukhnenko) 
+    * Fix deprecation error when passing null to match_type parameter.[b835aaa3] (Pavlo Yatsukhnenko)
     * Fix flaky test and OBJECT in a pipeline. [a7f51f70] (Michael Grunder)
     * Find our callback by pattern with PSUBSCRIBE [2f276dcd] (Michael Grunder)
    </notes>
