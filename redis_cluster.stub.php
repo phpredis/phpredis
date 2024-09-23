@@ -1097,7 +1097,7 @@ class RedisCluster {
                                 array|bool|null $options = null): RedisCluster|int|false;
 
     /**
-     * @see https://redis.io/commands/zRandMember
+     * @see https://redis.io/commands/zrandmember
      */
     public function zrandmember(string $key, ?array $options = null): RedisCluster|string|array;
 
@@ -1167,7 +1167,7 @@ class RedisCluster {
     public function zscore(string $key, mixed $member): RedisCluster|float|false;
 
     /**
-     * @see https://redis.io/commands/zMscore
+     * @see https://redis.io/commands/zmscore
      */
     public function zmscore(string $key, mixed $member, mixed ...$other_members): Redis|array|false;
 
