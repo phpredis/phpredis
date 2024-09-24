@@ -245,7 +245,7 @@ class Redis_Test extends TestSuite {
         $this->redis->set('bitcountkey', hex2bin('10eb8939e68bfdb640260f0629f3'));
         $this->assertEquals(1, $this->redis->bitcount('bitcountkey', 8, 8, false));
 
-        if ( ! $this->is_keydb) {
+        if ( ! $this->is_keydb && $this->minVersionCheck('7.0')) {
             /* key, start, end, BIT */
             $this->redis->set('bitcountkey', hex2bin('cd0e4c80f9e4590d888a10'));
             $this->assertEquals(5, $this->redis->bitcount('bitcountkey', 0, 9, true));
@@ -7625,7 +7625,7 @@ class Redis_Test extends TestSuite {
         $this->assertIsArray($commands);
         $this->assertEquals(count($commands), $this->redis->command('count'));
 
-        if ( ! $this->is_keydb) {
+        if ( ! $this->is_keydb && $this->minVersionCheck('7.0')) {
             $infos = $this->redis->command('info');
             $this->assertIsArray($infos);
             $this->assertEquals(count($infos), count($commands));
