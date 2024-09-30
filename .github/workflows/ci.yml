@@ -270,12 +270,13 @@ jobs:
         with:
           submodules: true
       - name: Install PHP ${{ matrix.php }}
-        uses: php/setup-php-sdk@v0.8
+        uses: php/setup-php-sdk@v0.10
         id: setup-php-sdk
         with:
           version: ${{ matrix.php }}
           arch: x64
           ts: ${{matrix.ts}}
+          cache: true
       - name: Install dependencies
         uses: ilammy/msvc-dev-cmd@v1
         with:
