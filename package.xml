@@ -5,10 +5,10 @@ http://pear.php.net/dtd/package-2.0
 http://pear.php.net/dtd/package-2.0.xsd">
  <name>redis</name>
  <channel>pecl.php.net</channel>
- <summary>PHP extension for interfacing with key-value store</summary>
+ <summary>PHP extension for interfacing with key-value stores</summary>
  <description>
-   This extension provides an API for communicating with Redis key-value store.
-   It also supports KeyDB and Valkey, which are open source alternatives to Redis.
+   This extension provides an API for communicating with RESP-based key-value
+   stores, such as Redis, Valkey, and KeyDB.
  </description>
  <lead>
   <name>Michael Grunder</name>
