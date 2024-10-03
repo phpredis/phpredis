@@ -5,7 +5,24 @@ All changes to phpredis will be documented in this file.
 We're basing this format on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.1.0RC2] - 2024-09-23 ([Github](https://github.com/phpredis/phpredis/releases/6.1.0RC2), [PECL](https://pecl.php.net/package/redis/6.1.0RC2))
+## [6.1.0] - 2024-10-04 ([Github](https://github.com/phpredis/phpredis/releases/6.1.0), [PECL](https://pecl.php.net/package/redis/6.1.0))
+
+**NOTE**: There were no changes to C code between 6.1.0RC2 and 6.1.0.
+
+### Documentation
+
+- Update package.xml to make it clearer that we support many key-value stores
+  [52e69ede](https://github.com/phpredis/phpredis/commit/52e69ede)
+  ([Remi Collet](https://github.com/remicollet))
+- Fix redis.io urls
+  [0bae4bb0](https://github.com/phpredis/phpredis/commit/0bae4bb0)
+  ([Vincent Langlet](https://github.com/VincentLanglet))
+
+### Tests/CI
+
+- Fix 2 tests with redis 6.2
+  [cc1be322](https://github.com/phpredis/phpredis/commit/cc1be322)
+  ([Remi Collet](https://github.com/remicollet))
 
 ### Sponsors :sparkling_heart:
 
@@ -41,6 +58,10 @@ and PhpRedis adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   [@tillkruss](https://github.com/tillkruss),
   [@deiga](https://github.com/deiga),
   [@tutuna](https://github.com/tutuna)
+  [@VincentLanglet](https://github.com/VincentLanglet)
+
+
+## [6.1.0RC2] - 2024-09-23 ([Github](https://github.com/phpredis/phpredis/releases/6.1.0RC2), [PECL](https://pecl.php.net/package/redis/6.1.0RC2))
 
 ### Fixed
 

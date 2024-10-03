@@ -22,14 +22,14 @@ http://pear.php.net/dtd/package-2.0.xsd">
   <email>p.yatsukhnenko@gmail.com</email>
   <active>yes</active>
  </lead>
- <date>2024-09-23</date>
+ <date>2024-10-04</date>
  <version>
-  <release>6.1.0RC2</release>
+  <release>6.1.0</release>
   <api>6.0.0</api>
  </version>
  <stability>
-  <release>beta</release>
-  <api>beta</api>
+  <release>stable</release>
+  <api>stable</api>
  </stability>
  <license uri="http://www.php.net/license">PHP</license>
  <notes>
@@ -40,6 +40,20 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Avtandil Kikabidze - https://github.com/akalongman
     Ty Karok - https://github.com/karock
     Object Cache Pro for WordPress - https://objectcache.pro
+
+    --- 6.1.0 ---
+
+    NOTE: There were no changes to C code between 6.1.0RC2 and 6.1.0
+
+    Documentation:
+
+    * Update package.xml to make it clearer that we support many key-value stores
+      [52e69ede] (Remi Collet)
+    * Fix redis.io urls [0bae4bb0] (Vincent Langlet)
+
+    Tests/CI:
+
+    * Fix 2 tests with redis 6.2 [cc1be322] (Remi Collet)
 
     --- 6.1.0RC2 ---
 
@@ -253,9 +267,9 @@ http://pear.php.net/dtd/package-2.0.xsd">
  </extsrcrelease>
  <changelog>
  <release>
-   <stability><release>beta</release><api>beta</api></stability>
-   <version><release>6.1.0RC2</release><api>6.0.0</api></version>
-   <date>2024-09-23</date>
+   <stability><release>stable</release><api>stable</api></stability>
+   <version><release>6.1.0</release><api>6.0.0</api></version>
+   <date>2024-10-04</date>
    <notes>
     --- Sponsors ---
 
@@ -264,6 +278,21 @@ http://pear.php.net/dtd/package-2.0.xsd">
     Avtandil Kikabidze - https://github.com/akalongman
     Ty Karok - https://github.com/karock
     Object Cache Pro for WordPress - https://objectcache.pro
+
+    --- 6.1.0 ---
+
+    NOTE: There were no changes to C code between 6.1.0RC2 and 6.1.0
+
+    Documentation:
+
+    * Update package.xml to make it clearer that we support many key-value stores
+      [52e69ede] (Remi Collet)
+    * Fix redis.io urls [0bae4bb0] (Vincent Langlet)
+
+    Tests/CI:
+
+    * Fix 2 tests with redis 6.2 [cc1be322] (Remi Collet)
+
 
     --- 6.1.0RC2 ---
 

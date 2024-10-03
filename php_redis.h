@@ -23,7 +23,7 @@
 #define PHP_REDIS_H
 
 /* phpredis version */
-#define PHP_REDIS_VERSION "6.1.0RC2"
+#define PHP_REDIS_VERSION "6.1.0"
 
 /* For convenience we store the salt as a printable hex string which requires 2
  * characters per byte + 1 for the NULL terminator */
