@@ -161,6 +161,22 @@ class Redis_Test extends TestSuite {
         $this->assertTrue(version_compare($this->version, '2.4.0') >= 0);
     }
 
+    public function testClone()
+    {
+        if (get_class($this->redis) !== 'Redis') {
+            $this->markTestSkipped();
+            return;
+        }
+
+        $new = clone $this->redis;
+        /* check that connection works */
+        $this->assertTrue($new->ping());
+        /* confirm socket settings are disconnected from source object */
+        $this->assertTrue($new->setOption(Redis::OPT_PREFIX, 'test'));
+        $this->assertEquals($new->getOption(Redis::OPT_PREFIX), 'test');
+        $this->assertFalse($this->redis->getOption(Redis::OPT_PREFIX));
+    }
+
     public function testPing() {
         /* Reply literal off */
         $this->assertTrue($this->redis->ping());
