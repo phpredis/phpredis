@@ -103,6 +103,22 @@ void redis_register_persistent_resource(zend_string *id, void *ptr, int le_id) {
     zend_register_persistent_resource(ZSTR_VAL(id), ZSTR_LEN(id), ptr, le_id);
 }
 
+typedef struct {
+    php_stream *stream;
+    redis_sock_status status;
+} PoolEntry;
+
+static void
+pool_entry_dtor(void *ptr)
+{
+    if (ptr != NULL) {
+        PoolEntry *pe = ptr;
+        if (pe->stream != NULL) {
+            php_stream_pclose(pe->stream);
+        }
+    }
+}
+
 static ConnectionPool *
 redis_sock_get_connection_pool(RedisSock *redis_sock)
 {
@@ -121,7 +137,7 @@ redis_sock_get_connection_pool(RedisSock *redis_sock)
 
     /* Create the pool and store it in our persistent list */
     pool = pecalloc(1, sizeof(*pool), 1);
-    zend_llist_init(&pool->list, sizeof(php_stream *), NULL, 1);
+    zend_llist_init(&pool->list, sizeof(PoolEntry), pool_entry_dtor, 1);
     redis_register_persistent_resource(persistent_id, pool, le_redis_pconnect);
 
     zend_string_release(persistent_id);
@@ -2975,7 +2991,7 @@ static int
 redis_sock_check_liveness(RedisSock *redis_sock)
 {
     char id[64], inbuf[4096];
-    int idlen, auth;
+    int idlen, auth = 0;
     smart_string cmd = {0};
     size_t len;
 
@@ -2993,8 +3009,10 @@ redis_sock_check_liveness(RedisSock *redis_sock)
         return SUCCESS;
     }
 
-    /* AUTH (if we need it) */
-    auth = redis_sock_append_auth(redis_sock, &cmd);
+    if (redis_sock->status != REDIS_SOCK_STATUS_READY) {
+        /* AUTH (if we need it) */
+        auth = redis_sock_append_auth(redis_sock, &cmd);
+    }
 
     /* ECHO challenge/response */
     idlen = redis_uniqid(id, sizeof(id));
@@ -3105,7 +3123,12 @@ PHP_REDIS_API int redis_sock_connect(RedisSock *redis_sock)
         if (INI_INT("redis.pconnect.pooling_enabled")) {
             p = redis_sock_get_connection_pool(redis_sock);
             if (zend_llist_count(&p->list) > 0) {
-                redis_sock->stream = *(php_stream **)zend_llist_get_last(&p->list);
+                PoolEntry *pe = zend_llist_get_last(&p->list);
+                redis_sock->status = pe->status;
+                /* Move pointer */
+                redis_sock->stream = pe->stream;
+                pe->stream = NULL;
+
                 zend_llist_remove_tail(&p->list);
 
                 if (redis_sock_check_liveness(redis_sock) == SUCCESS) {
@@ -3237,7 +3260,8 @@ redis_sock_disconnect(RedisSock *redis_sock, int force, int is_reset_mode)
                 free_reply_callbacks(redis_sock);
                 if (p) p->nb_active--;
             } else if (p) {
-                zend_llist_prepend_element(&p->list, &redis_sock->stream);
+                PoolEntry pe = { redis_sock->stream, redis_sock->status };
+                zend_llist_prepend_element(&p->list, &pe);
             }
         } else {
             php_stream_close(redis_sock->stream);
