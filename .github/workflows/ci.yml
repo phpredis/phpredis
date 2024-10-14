@@ -68,7 +68,7 @@ jobs:
           grep "REDIS_SHARED_LIBADD.*-L$GITHUB_WORKSPACE/libzstd" Makefile
 
   ubuntu:
-    runs-on: ubuntu:23.04
+    runs-on: ubuntu-22.04
     continue-on-error: false
     strategy:
       fail-fast: false
