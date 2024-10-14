@@ -336,7 +336,7 @@ static int lock_acquire(RedisSock *redis_sock, redis_session_lock_status *lock_s
     return lock_status->is_locked ? SUCCESS : FAILURE;
 }
 
-#define IS_LOCK_SECRET(reply, len, secret) (len == ZSTR_LEN(secret) && !strncmp(reply, ZSTR_VAL(secret), len))
+#define IS_LOCK_SECRET(reply, len, secret) (len == ZSTR_LEN(secret) && !redis_strncmp(reply, ZSTR_VAL(secret), len))
 static int write_allowed(RedisSock *redis_sock, redis_session_lock_status *lock_status)
 {
     if (!INI_INT("redis.session.locking_enabled")) {
@@ -444,7 +444,7 @@ PS_OPEN_FUNC(redis)
             zend_string *user = NULL, *pass = NULL;
 
             /* translate unix: into file: */
-            if (!strncmp(save_path+i, "unix:", sizeof("unix:")-1)) {
+            if (!redis_strncmp(save_path+i, ZEND_STRL("unix:"))) {
                 int len = j-i;
                 char *path = estrndup(save_path+i, len);
                 memcpy(path, "file:", sizeof("file:")-1);

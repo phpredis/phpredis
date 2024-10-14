@@ -139,7 +139,7 @@ ra_find_name(const char *name) {
     for(p = ini_names; p;) {
         next = strchr(p, ',');
         if(next) {
-            if(strncmp(p, name, next - p) == 0) {
+            if(redis_strncmp(p, name, next - p) == 0) {
                 return 1;
             }
         } else {
@@ -283,7 +283,7 @@ RedisArray *ra_load_array(const char *name) {
         sapi_module.treat_data(PARSE_STRING, estrdup(iptr), &z_tmp);
         if ((z_data = zend_hash_str_find(Z_ARRVAL(z_tmp), name, name_len)) != NULL) {
             consistent = Z_TYPE_P(z_data) == IS_STRING &&
-                         strncmp(Z_STRVAL_P(z_data), ZEND_STRL("1")) == 0;
+                         redis_strncmp(Z_STRVAL_P(z_data), ZEND_STRL("1")) == 0;
         }
         zval_dtor(&z_tmp);
     }

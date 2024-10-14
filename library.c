@@ -147,7 +147,7 @@ static int reselect_db(RedisSock *redis_sock) {
         return -1;
     }
 
-    if (strncmp(response, ZEND_STRL("+OK"))) {
+    if (redis_strncmp(response, ZEND_STRL("+OK"))) {
         efree(response);
         return -1;
     }
@@ -247,7 +247,7 @@ PHP_REDIS_API int redis_sock_auth(RedisSock *redis_sock) {
     efree(cmd);
 
     if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 ||
-        strncmp(inbuf, ZEND_STRL("+OK")))
+        redis_strncmp(inbuf, ZEND_STRL("+OK")))
     {
         return FAILURE;
     }
@@ -1202,17 +1202,17 @@ PHP_REDIS_API int redis_type_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *r
         return FAILURE;
     }
 
-    if (strncmp(response, ZEND_STRL("+string")) == 0) {
+    if (redis_strncmp(response, ZEND_STRL("+string")) == 0) {
         l = REDIS_STRING;
-    } else if (strncmp(response, ZEND_STRL("+set")) == 0){
+    } else if (redis_strncmp(response, ZEND_STRL("+set")) == 0){
         l = REDIS_SET;
-    } else if (strncmp(response, ZEND_STRL("+list")) == 0){
+    } else if (redis_strncmp(response, ZEND_STRL("+list")) == 0){
         l = REDIS_LIST;
-    } else if (strncmp(response, ZEND_STRL("+zset")) == 0){
+    } else if (redis_strncmp(response, ZEND_STRL("+zset")) == 0){
         l = REDIS_ZSET;
-    } else if (strncmp(response, ZEND_STRL("+hash")) == 0){
+    } else if (redis_strncmp(response, ZEND_STRL("+hash")) == 0){
         l = REDIS_HASH;
-    } else if (strncmp(response, ZEND_STRL("+stream")) == 0) {
+    } else if (redis_strncmp(response, ZEND_STRL("+stream")) == 0) {
         l = REDIS_STREAM;
     } else {
         l = REDIS_NOT_FOUND;
@@ -3013,18 +3013,18 @@ redis_sock_check_liveness(RedisSock *redis_sock)
     }
 
     if (auth) {
-        if (strncmp(inbuf, ZEND_STRL("+OK")) == 0 ||
-            strncmp(inbuf, ZEND_STRL("-ERR Client sent AUTH")) == 0)
+        if (redis_strncmp(inbuf, ZEND_STRL("+OK")) == 0 ||
+            redis_strncmp(inbuf, ZEND_STRL("-ERR Client sent AUTH")) == 0)
         {
             /* successfully authenticated or authentication isn't required */
             if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
                 goto failure;
             }
-        } else if (strncmp(inbuf, ZEND_STRL("-NOAUTH")) == 0) {
+        } else if (redis_strncmp(inbuf, ZEND_STRL("-NOAUTH")) == 0) {
             /* connection is fine but authentication failed, next command must
              * fail too */
             if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0
-                || strncmp(inbuf, ZEND_STRL("-NOAUTH")) != 0)
+                || redis_strncmp(inbuf, ZEND_STRL("-NOAUTH")) != 0)
             {
                 goto failure;
             }
@@ -3034,7 +3034,7 @@ redis_sock_check_liveness(RedisSock *redis_sock)
         }
         redis_sock->status = REDIS_SOCK_STATUS_AUTHENTICATED;
     } else {
-        if (strncmp(inbuf, ZEND_STRL("-NOAUTH")) == 0) {
+        if (redis_strncmp(inbuf, ZEND_STRL("-NOAUTH")) == 0) {
             /* connection is fine but authentication required */
             return SUCCESS;
         }
@@ -3042,11 +3042,11 @@ redis_sock_check_liveness(RedisSock *redis_sock)
 
     /* check echo response */
     if ((redis_sock->sentinel && (
-        strncmp(inbuf, ZEND_STRL("-ERR unknown command")) != 0 ||
+        redis_strncmp(inbuf, ZEND_STRL("-ERR unknown command")) != 0 ||
         strstr(inbuf, id) == NULL
     )) || *inbuf != TYPE_BULK || atoi(inbuf + 1) != idlen ||
         redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 ||
-        strncmp(inbuf, id, idlen) != 0
+        redis_strncmp(inbuf, id, idlen) != 0
     ) {
         goto failure;
     }
