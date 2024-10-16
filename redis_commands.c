@@ -5795,7 +5795,7 @@ redis_xautoclaim_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         return FAILURE;
     }
 
-    argc = 5 + (count > 0 ? 1 + count : 0) + justid;
+    argc = 5 + (count > 0 ? 2 : 0) + justid;
 
     REDIS_CMD_INIT_SSTR_STATIC(&cmdstr, argc, "XAUTOCLAIM");
     redis_cmd_append_sstr_key(&cmdstr, key, keylen, redis_sock, slot);
