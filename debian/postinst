@@ -17,12 +17,15 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
+PHP_VERSION=`php-config --version | cut -d'-' -f1 | cut -d"." -f1,2`
+
 case "$1" in
     configure)
-	    cat > /etc/php5/conf.d/redis.ini <<EOF
+	    cat > /etc/php/$PHP_VERSION/mods-available/redis.ini <<EOF
 ; uncomment the next line to enable the module
 extension=redis.so
 EOF
+      phpenmod -v $PHP_VERSION redis
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
