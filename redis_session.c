@@ -776,9 +776,7 @@ PS_READ_FUNC(redis)
     }
 
     if (lock_acquire(redis_sock, &pool->lock_status) != SUCCESS) {
-        php_error_docref(NULL, E_WARNING, "Failed to acquire session lock");
-        efree(cmd);
-        return FAILURE;
+        php_error_docref(NULL, E_WARNING, "Failed to acquire session lock, session will be read only");
     }
 
     if (redis_sock_write(redis_sock, cmd, cmd_len) < 0) {
