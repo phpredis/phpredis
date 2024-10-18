@@ -1381,7 +1381,7 @@ static redisClusterNode *cluster_find_node(redisCluster *c, const char *host,
 
 /* Provided a redisCluster object, the slot where we thought data was and
  * the slot where data was moved, update our node mapping */
-static void cluster_update_slot(redisCluster *c) {
+static int cluster_update_slot(redisCluster *c) {
     redisClusterNode *node;
     char key[1024];
     size_t klen;
@@ -1390,7 +1390,7 @@ static void cluster_update_slot(redisCluster *c) {
     if (c->master[c->redir_slot]) {
         /* No need to do anything if it's the same node */
         if (!CLUSTER_REDIR_CMP(c, SLOT_SOCK(c,c->redir_slot))) {
-            return;
+            return SUCCESS;
         }
 
         /* Check to see if we have this new node mapped */
@@ -1403,6 +1403,10 @@ static void cluster_update_slot(redisCluster *c) {
             /* If the redirected node is a replica of the previous slot owner, a failover has taken place.
             We must then remap the cluster's keyspace in order to update the cluster's topology. */
             redisClusterNode *prev_master = SLOT(c,c->redir_slot);
+            if (NULL == prev_master->slaves) {
+                CLUSTER_THROW_EXCEPTION("Redis Cluster's master data is incomplete.  Cluster is in invalid state.", 0);
+                return FAILURE;
+            }
             redisClusterNode *slave;
             ZEND_HASH_FOREACH_PTR(prev_master->slaves, slave) {
                 if (slave == NULL) {
@@ -1412,7 +1416,7 @@ static void cluster_update_slot(redisCluster *c) {
                     // Detected a failover, the redirected node was a replica
                     // Remap the cluster's keyspace
                     cluster_map_keyspace(c);
-                    return;
+                    return SUCCESS;
                 }
             } ZEND_HASH_FOREACH_END();
 
@@ -1445,6 +1449,7 @@ static void cluster_update_slot(redisCluster *c) {
     /* Make sure we unflag this node as a slave, as Redis Cluster will only ever
      * direct us to master nodes. */
     node->slave = 0;
+    return SUCCESS;
 }
 
 /* Abort any transaction in process, by sending DISCARD to any nodes that
@@ -1585,7 +1590,9 @@ PHP_REDIS_API short cluster_send_command(redisCluster *c, short slot, const char
 
            if (c->redir_type == REDIR_MOVED) {
                /* For MOVED redirection we want to update our cached mapping */
-               cluster_update_slot(c);
+               if (FAILURE == cluster_update_slot(c)) {
+                   return -1;
+               }
                c->cmd_sock = SLOT_SOCK(c, slot);
            } else if (c->redir_type == REDIR_ASK) {
                /* For ASK redirection we want to redirect but not update slot mapping */
