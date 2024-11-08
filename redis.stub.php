@@ -813,7 +813,7 @@ class Redis {
      * Reset any last error on the connection to NULL
      *
      * @see Redis::getLastError()
-     * @return bool This should always return true or throw an exception if we're not connected.
+     * @return bool False if not connected, otherwise always true.
      *
      * @example
      * $redis = new Redis(['host' => 'localhost']);
@@ -1444,7 +1444,7 @@ class Redis {
     /**
      * Get the authentication information on the connection, if any.
      *
-     * @return mixed The authentication information used to authenticate the connection.
+     * @return mixed The authentication information used to authenticate the connection, or false if not connected.
      *
      * @see Redis::auth()
      */
@@ -1490,12 +1490,12 @@ class Redis {
      *
      * This value is updated internally in PhpRedis each time {@link Redis::select} is called.
      *
-     * @return The database we're connected to.
+     * @return int|false The database we're connected to, or false if not connected.
      *
      * @see Redis::select()
      * @see https://redis.io/commands/select
      */
-    public function getDBNum(): int;
+    public function getDBNum(): int|false;
 
     /**
      * Get a key from Redis and delete it in an atomic operation.
@@ -1512,24 +1512,24 @@ class Redis {
     /**
      * Return the host or Unix socket we are connected to.
      *
-     * @return string The host or Unix socket.
+     * @return string|false The host or Unix socket, or false if not connected.
      */
-    public function getHost(): string;
+    public function getHost(): string|false;
 
     /**
      * Get the last error returned to us from Redis, if any.
      *
-     * @return string The error string or NULL if there is none.
+     * @return string|null|false The error string or NULL if there is none, or false if not connected.
      */
-    public function getLastError(): ?string;
+    public function getLastError(): string|null|false;
 
     /**
      * Returns whether the connection is in ATOMIC, MULTI, or PIPELINE mode
      *
-     * @return int The mode we're in.
+     * @return int|false The mode we're in, or false if not connected.
      *
      */
-    public function getMode(): int;
+    public function getMode(): int|false;
 
     /**
      * Retrieve the value of a configuration setting as set by Redis::setOption()
@@ -1543,16 +1543,16 @@ class Redis {
     /**
      * Get the persistent connection ID, if there is one.
      *
-     * @return string The ID or NULL if we don't have one.
+     * @return string|null|false The ID or NULL if we don't have one, or false if not connected.
      */
-    public function getPersistentID(): ?string;
+    public function getPersistentID(): string|null|false;
 
     /**
      * Get the port we are connected to.  This number will be zero if we are connected to a unix socket.
      *
-     * @return int The port.
+     * @return int|false The port, or false if not connected.
      */
-    public function getPort(): int;
+    public function getPort(): int|false;
 
     /**
      * Retrieve a substring of a string by index.
@@ -1607,9 +1607,9 @@ class Redis {
     /**
      * Get the currently set read timeout on the connection.
      *
-     * @return float The timeout.
+     * @return float|false The timeout, or false if not connected.
      */
-    public function getReadTimeout(): float;
+    public function getReadTimeout(): float|false;
 
     /**
      * Sets a key and returns any previously set value, if the key already existed.
@@ -1630,7 +1630,7 @@ class Redis {
     /**
      * Retrieve any set connection timeout
      *
-     * @return float The currently set timeout or false on failure (e.g. we aren't connected).
+     * @return float|false The currently set timeout or false on failure (e.g. we aren't connected).
      */
     public function getTimeout(): float|false;
 
