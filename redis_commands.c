@@ -6079,6 +6079,57 @@ int redis_expire_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     return SUCCESS;
 }
 
+static int
+generic_expiremember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                         char *kw, size_t kw_len, int has_unit, char **cmd,
+                         int *cmd_len, short *slot)
+{
+    zend_string *key, *mem, *unit = NULL;
+    smart_string cmdstr = {0};
+    zend_long expiry;
+
+    ZEND_PARSE_PARAMETERS_START(3, has_unit ? 4 : 3)
+        Z_PARAM_STR(key)
+        Z_PARAM_STR(mem)
+        Z_PARAM_LONG(expiry)
+        if (has_unit) {
+            Z_PARAM_OPTIONAL
+            Z_PARAM_STR_OR_NULL(unit)
+        }
+    ZEND_PARSE_PARAMETERS_END_EX(return FAILURE);
+
+    redis_cmd_init_sstr(&cmdstr, 3 + (unit != NULL), kw, kw_len);
+    redis_cmd_append_sstr_key_zstr(&cmdstr, key, redis_sock, slot);
+    redis_cmd_append_sstr_zstr(&cmdstr, mem);
+    redis_cmd_append_sstr_long(&cmdstr, expiry);
+
+    if (unit != NULL) {
+        redis_cmd_append_sstr_zstr(&cmdstr, unit);
+    }
+
+    *cmd = cmdstr.c;
+    *cmd_len = cmdstr.len;
+
+    return SUCCESS;
+}
+
+
+int redis_expiremember_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                           char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return generic_expiremember_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                    redis_sock, ZEND_STRL("EXPIREMEMBER"), 1,
+                                    cmd, cmd_len, slot);
+}
+
+int redis_expirememberat_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
+                             char **cmd, int *cmd_len, short *slot, void **ctx)
+{
+    return generic_expiremember_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                                    redis_sock, ZEND_STRL("EXPIREMEMBERAT"), 0,
+                                    cmd, cmd_len, slot);
+}
+
 int
 redis_sentinel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                     char *kw, char **cmd, int *cmd_len, short *slot, void **ctx)

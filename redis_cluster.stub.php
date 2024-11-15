@@ -496,6 +496,16 @@ class RedisCluster {
     public function hscan(string $key, null|int|string &$iterator, ?string $pattern = null, int $count = 0): array|bool;
 
     /**
+     * @see Redis::expiremember
+     */
+    public function expiremember(string $key, string $field, int $ttl, ?string $unit = null): Redis|int|false;
+
+    /**
+     * @see Redis::expirememberat
+     */
+    public function expirememberat(string $key, string $field, int $timestamp): Redis|int|false;
+
+    /**
      * @see https://redis.io/commands/hrandfield
      */
     public function hrandfield(string $key, ?array $options = null): RedisCluster|string|array;

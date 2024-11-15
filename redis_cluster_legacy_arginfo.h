@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 5713c5b2f88ddead50088f14026447801120fa33 */
+ * Stub hash: b9310b607794caa862d509ba316a2a512d2736fe */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_INFO(0, name)
@@ -366,6 +366,19 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_hscan, 0, 0, 2)
 	ZEND_ARG_INFO(1, iterator)
 	ZEND_ARG_INFO(0, pattern)
 	ZEND_ARG_INFO(0, count)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_expiremember, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, field)
+	ZEND_ARG_INFO(0, ttl)
+	ZEND_ARG_INFO(0, unit)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster_expirememberat, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, field)
+	ZEND_ARG_INFO(0, timestamp)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_hrandfield arginfo_class_RedisCluster_getex
@@ -977,6 +990,8 @@ ZEND_METHOD(RedisCluster, hlen);
 ZEND_METHOD(RedisCluster, hmget);
 ZEND_METHOD(RedisCluster, hmset);
 ZEND_METHOD(RedisCluster, hscan);
+ZEND_METHOD(RedisCluster, expiremember);
+ZEND_METHOD(RedisCluster, expirememberat);
 ZEND_METHOD(RedisCluster, hrandfield);
 ZEND_METHOD(RedisCluster, hset);
 ZEND_METHOD(RedisCluster, hsetnx);
@@ -1204,6 +1219,8 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, hmget, arginfo_class_RedisCluster_hmget, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hmset, arginfo_class_RedisCluster_hmset, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hscan, arginfo_class_RedisCluster_hscan, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, expiremember, arginfo_class_RedisCluster_expiremember, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, expirememberat, arginfo_class_RedisCluster_expirememberat, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hrandfield, arginfo_class_RedisCluster_hrandfield, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hset, arginfo_class_RedisCluster_hset, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hsetnx, arginfo_class_RedisCluster_hsetnx, ZEND_ACC_PUBLIC)

@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 1cc5fe0df8dfa7d95f2bc45c2383132a68629f24 */
+ * Stub hash: bacbe6b1d55da4ba6d370fff1090e8de0363c4c2 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -411,6 +411,19 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_hscan, 0, 0, 2)
 	ZEND_ARG_INFO(1, iterator)
 	ZEND_ARG_INFO(0, pattern)
 	ZEND_ARG_INFO(0, count)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_expiremember, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, field)
+	ZEND_ARG_INFO(0, ttl)
+	ZEND_ARG_INFO(0, unit)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_expirememberat, 0, 0, 3)
+	ZEND_ARG_INFO(0, key)
+	ZEND_ARG_INFO(0, field)
+	ZEND_ARG_INFO(0, timestamp)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_incr arginfo_class_Redis_decr
@@ -1113,6 +1126,8 @@ ZEND_METHOD(Redis, hSetNx);
 ZEND_METHOD(Redis, hStrLen);
 ZEND_METHOD(Redis, hVals);
 ZEND_METHOD(Redis, hscan);
+ZEND_METHOD(Redis, expiremember);
+ZEND_METHOD(Redis, expirememberat);
 ZEND_METHOD(Redis, incr);
 ZEND_METHOD(Redis, incrBy);
 ZEND_METHOD(Redis, incrByFloat);
@@ -1369,6 +1384,8 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, hStrLen, arginfo_class_Redis_hStrLen, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hVals, arginfo_class_Redis_hVals, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hscan, arginfo_class_Redis_hscan, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, expiremember, arginfo_class_Redis_expiremember, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, expirememberat, arginfo_class_Redis_expirememberat, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, incr, arginfo_class_Redis_incr, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, incrBy, arginfo_class_Redis_incrBy, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, incrByFloat, arginfo_class_Redis_incrByFloat, ZEND_ACC_PUBLIC)

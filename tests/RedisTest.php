@@ -716,6 +716,22 @@ class Redis_Test extends TestSuite {
                             $this->redis->mget(array_keys($kvals)));
     }
 
+    public function testExpireMember() {
+        if ( ! $this->is_keydb)
+            $this->markTestSkipped();
+
+        $this->redis->del('h');
+        $this->redis->hmset('h', ['f1' => 'v1', 'f2' => 'v2', 'f3' => 'v3', 'f4' => 'v4']);
+
+        $this->assertEquals(1, $this->redis->expiremember('h', 'f1', 1));
+        $this->assertEquals(1, $this->redis->expiremember('h', 'f2', 1000, 'ms'));
+        $this->assertEquals(1, $this->redis->expiremember('h', 'f3', 1000,  null));
+        $this->assertEquals(0, $this->redis->expiremember('h', 'nk', 10));
+
+        $this->assertEquals(1, $this->redis->expirememberat('h', 'f4', time() + 1));
+        $this->assertEquals(0, $this->redis->expirememberat('h', 'nk', time() + 1));
+    }
+
     public function testExpire() {
         $this->redis->del('key');
         $this->redis->set('key', 'value');

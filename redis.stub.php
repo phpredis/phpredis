@@ -1904,6 +1904,28 @@ class Redis {
     public function hscan(string $key, null|int|string &$iterator, ?string $pattern = null, int $count = 0): Redis|array|bool;
 
     /**
+     * Set an expiration on a key member (KeyDB only).
+     *
+     * @see https://docs.keydb.dev/docs/commands/#expiremember
+     *
+     * @param string $key The key to expire
+     * @param string $field The field to expire
+     * @param string|null $unit The unit of the ttl (s, or ms).
+     */
+    public function expiremember(string $key, string $field, int $ttl, ?string $unit = null): Redis|int|false;
+
+    /**
+     * Set an expiration on a key membert to a specific unix timestamp (KeyDB only).
+     *
+     * @see https://docs.keydb.dev/docs/commands/#expirememberat
+     *
+     * @param string $key The key to expire
+     * @param string $field The field to expire
+     * @param int $timestamp The unix timestamp to expire at.
+     */
+    public function expirememberat(string $key, string $field, int $timestamp): Redis|int|false;
+
+    /**
      * Increment a key's value, optionally by a specific amount.
      *
      * @see https://redis.io/commands/incr

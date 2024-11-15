@@ -1303,6 +1303,14 @@ PHP_METHOD(RedisCluster, getbit) {
 }
 /* }}} */
 
+PHP_METHOD(RedisCluster, expiremember) {
+    CLUSTER_PROCESS_CMD(expiremember, cluster_long_resp, 0);
+}
+
+PHP_METHOD(RedisCluster, expirememberat) {
+    CLUSTER_PROCESS_CMD(expiremember, cluster_long_resp, 0);
+}
+
 /* {{{ proto long RedisCluster::setbit(string key, long offset, bool onoff) */
 PHP_METHOD(RedisCluster, setbit) {
     CLUSTER_PROCESS_CMD(setbit, cluster_long_resp, 0);

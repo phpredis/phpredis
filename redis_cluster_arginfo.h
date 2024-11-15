@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 5713c5b2f88ddead50088f14026447801120fa33 */
+ * Stub hash: b9310b607794caa862d509ba316a2a512d2736fe */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -414,6 +414,19 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_RedisCluster_hscan, 0, 2, 
 	ZEND_ARG_TYPE_MASK(1, iterator, MAY_BE_NULL|MAY_BE_LONG|MAY_BE_STRING, NULL)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, pattern, IS_STRING, 1, "null")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_expiremember, 0, 3, Redis, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, field, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, ttl, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, unit, IS_STRING, 1, "null")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_expirememberat, 0, 3, Redis, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, field, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, timestamp, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_hrandfield, 0, 1, RedisCluster, MAY_BE_STRING|MAY_BE_ARRAY)
@@ -1135,6 +1148,8 @@ ZEND_METHOD(RedisCluster, hlen);
 ZEND_METHOD(RedisCluster, hmget);
 ZEND_METHOD(RedisCluster, hmset);
 ZEND_METHOD(RedisCluster, hscan);
+ZEND_METHOD(RedisCluster, expiremember);
+ZEND_METHOD(RedisCluster, expirememberat);
 ZEND_METHOD(RedisCluster, hrandfield);
 ZEND_METHOD(RedisCluster, hset);
 ZEND_METHOD(RedisCluster, hsetnx);
@@ -1362,6 +1377,8 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, hmget, arginfo_class_RedisCluster_hmget, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hmset, arginfo_class_RedisCluster_hmset, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hscan, arginfo_class_RedisCluster_hscan, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, expiremember, arginfo_class_RedisCluster_expiremember, ZEND_ACC_PUBLIC)
+	ZEND_ME(RedisCluster, expirememberat, arginfo_class_RedisCluster_expirememberat, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hrandfield, arginfo_class_RedisCluster_hrandfield, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hset, arginfo_class_RedisCluster_hset, ZEND_ACC_PUBLIC)
 	ZEND_ME(RedisCluster, hsetnx, arginfo_class_RedisCluster_hsetnx, ZEND_ACC_PUBLIC)
@@ -1541,10 +1558,12 @@ static zend_class_entry *register_class_RedisCluster(void)
 	zend_string *const_FAILOVER_DISTRIBUTE_SLAVES_name = zend_string_init_interned("FAILOVER_DISTRIBUTE_SLAVES", sizeof("FAILOVER_DISTRIBUTE_SLAVES") - 1, 1);
 	zend_declare_class_constant_ex(class_entry, const_FAILOVER_DISTRIBUTE_SLAVES_name, &const_FAILOVER_DISTRIBUTE_SLAVES_value, ZEND_ACC_PUBLIC, NULL);
 	zend_string_release(const_FAILOVER_DISTRIBUTE_SLAVES_name);
-#if (PHP_VERSION_ID >= 80200)
+#if (PHP_VERSION_ID >= 80000)
 
 
-	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "__construct", sizeof("__construct") - 1), 5, ZSTR_KNOWN(ZEND_STR_SENSITIVEPARAMETER), 0);
+	zend_string *attribute_name_SensitiveParameter_func___construct_arg5_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "__construct", sizeof("__construct") - 1), 5, attribute_name_SensitiveParameter_func___construct_arg5_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func___construct_arg5_0);
 #endif
 
 	return class_entry;

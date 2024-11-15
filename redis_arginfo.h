@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 1cc5fe0df8dfa7d95f2bc45c2383132a68629f24 */
+ * Stub hash: bacbe6b1d55da4ba6d370fff1090e8de0363c4c2 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -462,6 +462,19 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_hscan, 0, 2, Red
 	ZEND_ARG_TYPE_MASK(1, iterator, MAY_BE_NULL|MAY_BE_LONG|MAY_BE_STRING, NULL)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, pattern, IS_STRING, 1, "null")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_expiremember, 0, 3, Redis, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, field, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, ttl, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, unit, IS_STRING, 1, "null")
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_expirememberat, 0, 3, Redis, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, field, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, timestamp, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_incr arginfo_class_Redis_decr
@@ -1270,6 +1283,8 @@ ZEND_METHOD(Redis, hSetNx);
 ZEND_METHOD(Redis, hStrLen);
 ZEND_METHOD(Redis, hVals);
 ZEND_METHOD(Redis, hscan);
+ZEND_METHOD(Redis, expiremember);
+ZEND_METHOD(Redis, expirememberat);
 ZEND_METHOD(Redis, incr);
 ZEND_METHOD(Redis, incrBy);
 ZEND_METHOD(Redis, incrByFloat);
@@ -1526,6 +1541,8 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, hStrLen, arginfo_class_Redis_hStrLen, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hVals, arginfo_class_Redis_hVals, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, hscan, arginfo_class_Redis_hscan, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, expiremember, arginfo_class_Redis_expiremember, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, expirememberat, arginfo_class_Redis_expirememberat, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, incr, arginfo_class_Redis_incr, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, incrBy, arginfo_class_Redis_incrBy, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, incrByFloat, arginfo_class_Redis_incrByFloat, ZEND_ACC_PUBLIC)
@@ -2027,12 +2044,16 @@ static zend_class_entry *register_class_Redis(void)
 	zend_string *const_OPT_BACKOFF_CAP_name = zend_string_init_interned("OPT_BACKOFF_CAP", sizeof("OPT_BACKOFF_CAP") - 1, 1);
 	zend_declare_class_constant_ex(class_entry, const_OPT_BACKOFF_CAP_name, &const_OPT_BACKOFF_CAP_value, ZEND_ACC_PUBLIC, NULL);
 	zend_string_release(const_OPT_BACKOFF_CAP_name);
-#if (PHP_VERSION_ID >= 80200)
+#if (PHP_VERSION_ID >= 80000)
 
 
-	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "auth", sizeof("auth") - 1), 0, ZSTR_KNOWN(ZEND_STR_SENSITIVEPARAMETER), 0);
+	zend_string *attribute_name_SensitiveParameter_func_auth_arg0_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "auth", sizeof("auth") - 1), 0, attribute_name_SensitiveParameter_func_auth_arg0_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func_auth_arg0_0);
 
-	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "migrate", sizeof("migrate") - 1), 7, ZSTR_KNOWN(ZEND_STR_SENSITIVEPARAMETER), 0);
+	zend_string *attribute_name_SensitiveParameter_func_migrate_arg7_0 = zend_string_init_interned("SensitiveParameter", sizeof("SensitiveParameter") - 1, 1);
+	zend_add_parameter_attribute(zend_hash_str_find_ptr(&class_entry->function_table, "migrate", sizeof("migrate") - 1), 7, attribute_name_SensitiveParameter_func_migrate_arg7_0, 0);
+	zend_string_release(attribute_name_SensitiveParameter_func_migrate_arg7_0);
 #endif
 
 	return class_entry;
