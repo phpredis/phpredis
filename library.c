@@ -107,13 +107,6 @@ void redis_register_persistent_resource(zend_string *id, void *ptr, int le_id) {
     zend_register_persistent_resource(ZSTR_VAL(id), ZSTR_LEN(id), ptr, le_id);
 }
 
-/* Do not allocate empty string or string with one character */
-static zend_always_inline void redis_add_next_index_stringl(zval *arg, const char *str, size_t length) {
-    zval tmp;
-    ZVAL_STRINGL_FAST(&tmp, str, length);
-    zend_hash_next_index_insert(Z_ARRVAL_P(arg), &tmp);
-}
-
 static ConnectionPool *
 redis_sock_get_connection_pool(RedisSock *redis_sock)
 {
@@ -2751,9 +2744,7 @@ static int redis_bulk_resp_to_zval(RedisSock *redis_sock, zval *zdst, int *dstle
         return FAILURE;
     }
 
-    if (!redis_unpack(redis_sock, resp, len, zdst)) {
-        ZVAL_STRINGL_FAST(zdst, resp, len);
-    }
+    redis_unpack(redis_sock, resp, len, zdst);
 
     efree(resp);
     return SUCCESS;
@@ -3503,7 +3494,7 @@ PHP_REDIS_API void
 redis_mbulk_reply_loop(RedisSock *redis_sock, zval *z_tab, int count,
                        int unserialize)
 {
-    zval z_unpacked;
+    zval z_value;
     char *line;
     int i, len;
 
@@ -3522,11 +3513,13 @@ redis_mbulk_reply_loop(RedisSock *redis_sock, zval *z_tab, int count,
             (unserialize == UNSERIALIZE_VALS && i % 2 != 0)
         );
 
-        if (unwrap && redis_unpack(redis_sock, line, len, &z_unpacked)) {
-            add_next_index_zval(z_tab, &z_unpacked);
+        if (unwrap) {
+            redis_unpack(redis_sock, line, len, &z_value);
         } else {
-            redis_add_next_index_stringl(z_tab, line, len);
+            ZVAL_STRINGL_FAST(&z_value, line, len);
         }
+        zend_hash_next_index_insert_new(Z_ARRVAL_P(z_tab), &z_value);
+
         efree(line);
     }
 }
@@ -3611,9 +3604,7 @@ PHP_REDIS_API int redis_mbulk_reply_assoc(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
         response = redis_sock_read(redis_sock, &response_len);
         zval z_unpacked;
         if (response != NULL) {
-            if (!redis_unpack(redis_sock, response, response_len, &z_unpacked)) {
-                ZVAL_STRINGL(&z_unpacked, response, response_len);
-            }
+            redis_unpack(redis_sock, response, response_len, &z_unpacked);
             efree(response);
         } else {
             ZVAL_FALSE(&z_unpacked);
@@ -4020,6 +4011,12 @@ redis_unpack(RedisSock *redis_sock, const char *src, int srclen, zval *zdst) {
         }
     }
 
+    /* Input string is empty */
+    if (srclen == 0) {
+        ZVAL_STR(zdst, ZSTR_EMPTY_ALLOC());
+        return 1;
+    }
+
     /* Uncompress, then unserialize */
     if (redis_uncompress(redis_sock, &buf, &len, src, srclen)) {
         if (!redis_unserialize(redis_sock, buf, len, zdst)) {
@@ -4029,7 +4026,11 @@ redis_unpack(RedisSock *redis_sock, const char *src, int srclen, zval *zdst) {
         return 1;
     }
 
-    return redis_unserialize(redis_sock, buf, len, zdst);
+    if (!redis_unserialize(redis_sock, src, srclen, zdst)) {
+        ZVAL_STRINGL_FAST(zdst, src, srclen);
+    }
+
+    return 1;
 }
 
 PHP_REDIS_API int
