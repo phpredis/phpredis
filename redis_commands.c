@@ -6465,8 +6465,6 @@ void redis_unpack_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
         RETURN_FALSE;
     }
 
-    if (redis_unpack(redis_sock, ZSTR_VAL(str), ZSTR_LEN(str), return_value) == 0) {
-        RETURN_STR_COPY(str);
-    }
+    redis_unpack(redis_sock, ZSTR_VAL(str), ZSTR_LEN(str), return_value);
 }
 /* vim: set tabstop=4 softtabstop=4 expandtab shiftwidth=4: */
