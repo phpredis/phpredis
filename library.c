@@ -73,6 +73,10 @@
 #define SCORE_DECODE_INT  1
 #define SCORE_DECODE_DOUBLE 2
 
+#define REDIS_CALLBACKS_INIT_SIZE      8
+#define REDIS_CALLBACKS_MAX_DOUBLE 32768
+#define REDIS_CALLBACKS_ADD_SIZE    4096
+
 /* PhpRedis often returns either FALSE or NULL depending on whether we have
  * an option set, so this macro just wraps that often repeated logic */
 #define REDIS_ZVAL_NULL(sock_, zv_) \
@@ -3536,16 +3540,16 @@ redis_sock_write(RedisSock *redis_sock, char *cmd, size_t sz)
     return -1;
 }
 
+/* Grow array to double size if we need more space */
 fold_item*
 redis_add_reply_callback(RedisSock *redis_sock) {
-    /* Grow array to double size if we need more space */
     if (UNEXPECTED(redis_sock->reply_callback_count == redis_sock->reply_callback_capacity)) {
         if (redis_sock->reply_callback_capacity == 0) {
-            redis_sock->reply_callback_capacity = 8; /* initial capacity */
-        } else if (redis_sock->reply_callback_capacity < 1024) {
+            redis_sock->reply_callback_capacity = REDIS_CALLBACKS_INIT_SIZE;
+        } else if (redis_sock->reply_callback_capacity < REDIS_CALLBACKS_MAX_DOUBLE) {
             redis_sock->reply_callback_capacity *= 2;
         } else {
-            redis_sock->reply_callback_capacity += 4 * 4096 / sizeof(fold_item);
+            redis_sock->reply_callback_capacity += REDIS_CALLBACKS_ADD_SIZE;
         }
         redis_sock->reply_callback = erealloc(redis_sock->reply_callback, redis_sock->reply_callback_capacity * sizeof(fold_item));
     }
