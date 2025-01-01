@@ -147,6 +147,10 @@ static int session_gc_maxlifetime(void) {
 /* Retrieve redis.session.compression from php.ini */
 static int session_compression_type(void) {
     const char *compression = INI_STR("redis.session.compression");
+    if(compression == NULL || *compression == '\0' || strncasecmp(compression, "none", sizeof("none") - 1) == 0) {
+        return REDIS_COMPRESSION_NONE;
+    }
+
 #ifdef HAVE_REDIS_LZF
     if(strncasecmp(compression, "lzf", sizeof("lzf") - 1) == 0) {
         return REDIS_COMPRESSION_LZF;
@@ -162,9 +166,6 @@ static int session_compression_type(void) {
         return REDIS_COMPRESSION_LZ4;
     }
 #endif
-    if(*compression == '\0' || strncasecmp(compression, "none", sizeof("none") - 1) == 0) {
-        return REDIS_COMPRESSION_NONE;
-    }
 
     // E_NOTICE when outside of valid values
     php_error_docref(NULL, E_NOTICE, "redis.session.compression is outside of valid values, disabling");
