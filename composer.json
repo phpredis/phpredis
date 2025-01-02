@@ -57,6 +57,7 @@
                 "description": "Use system liblz4",
                 "needs-value": true
             }
-        ]
+        ],
+        "priority": 60
     }
 }
