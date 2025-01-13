@@ -2694,9 +2694,9 @@ PHP_METHOD(Redis, copy) {
 /* }}} */
 
 /* Helper to format any combination of SCAN arguments */
-PHP_REDIS_API int
+static int
 redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
-                     long iter, char *pattern, int pattern_len, int count,
+                     uint64_t cursor, char *pattern, int pattern_len, int count,
                      zend_string *match_type)
 {
     smart_string cmdstr = {0};
@@ -2727,7 +2727,7 @@ redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     /* Start the command */
     redis_cmd_init_sstr(&cmdstr, argc, keyword, strlen(keyword));
     if (key_len) redis_cmd_append_sstr(&cmdstr, key, key_len);
-    redis_cmd_append_sstr_long(&cmdstr, iter);
+    redis_cmd_append_sstr_u64(&cmdstr, cursor);
 
     /* Append COUNT if we've got it */
     if(count) {
@@ -2751,7 +2751,7 @@ redis_build_scan_cmd(char **cmd, REDIS_SCAN_TYPE type, char *key, int key_len,
     return cmdstr.len;
 }
 
-/* {{{ proto redis::scan(&$iterator, [pattern, [count, [type]]]) */
+/* {{{ proto redis::scan(&$cursor, [pattern, [count, [type]]]) */
 PHP_REDIS_API void
 generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     zval *object, *z_cursor;
@@ -2818,7 +2818,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
      * pattern.  phpredis can be set up to abstract this from the user, by
      * setting OPT_SCAN to REDIS_SCAN_RETRY.  Otherwise we will return empty
      * keys and the user will need to make subsequent calls with an updated
-     * iterator.
+     * cursor.
      */
     do {
         /* Free our previous reply if we're back in the loop.  We know we are
@@ -2829,10 +2829,10 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
         }
 
         // Format our SCAN command
-        cmd_len = redis_build_scan_cmd(&cmd, type, key, key_len, (long)cursor,
-                                   pattern, pattern_len, count, match_type);
+        cmd_len = redis_build_scan_cmd(&cmd, type, key, key_len, cursor,
+                                       pattern, pattern_len, count, match_type);
 
-        /* Execute our command getting our new iterator value */
+        /* Execute our command getting our new cursor value */
         REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
         if(redis_sock_read_scan_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,
                                       redis_sock,type, &cursor) < 0)
@@ -2853,7 +2853,7 @@ generic_scan_cmd(INTERNAL_FUNCTION_PARAMETERS, REDIS_SCAN_TYPE type) {
     /* Free our key if it was prefixed */
     if(key_free) efree(key);
 
-    /* Update our iterator reference */
+    /* Update our cursor reference */
     redisSetScanCursor(z_cursor, cursor);
 }
 
