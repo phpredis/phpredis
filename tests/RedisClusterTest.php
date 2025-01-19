@@ -133,6 +133,7 @@ class Redis_Cluster_Test extends Redis_Test {
         $info           = $this->redis->info(uniqid());
         $this->version  = $info['redis_version'] ?? '0.0.0';
         $this->is_keydb = $this->detectKeyDB($info);
+        $this->is_valkey = $this->detectValkey($info);
     }
 
     /* Override newInstance as we want a RedisCluster object */

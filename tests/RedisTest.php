@@ -67,11 +67,16 @@ class Redis_Test extends TestSuite {
                isset($info['mvcc_depth']);
     }
 
+    protected function detectValkey(array $info) {
+        return isset($info['server_name']) && $info['server_name'] === 'valkey';
+    }
+
     public function setUp() {
         $this->redis = $this->newInstance();
         $info = $this->redis->info();
         $this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
         $this->is_keydb = $this->detectKeyDB($info);
+        $this->is_valkey = $this->detectValKey($info); 
     }
 
     protected function minVersionCheck($version) {
@@ -627,6 +632,19 @@ class Redis_Test extends TestSuite {
             return;
 
         $this->assertEquals('bar', $this->redis->set('foo', 'baz', ['GET']));
+    }
+
+    /* Test Valkey >= 8.1 IFEQ SET option */
+    public function testValkeyIfEq() {
+        if ( ! $this->is_valkey || ! $this->minVersionCheck('8.1.0'))
+            $this->markTestSkipped();
+
+        $this->redis->del('foo');
+        $this->assertTrue($this->redis->set('foo', 'bar'));
+        $this->assertTrue($this->redis->set('foo', 'bar2', ['IFEQ' => 'bar']));
+        $this->assertFalse($this->redis->set('foo', 'bar4', ['IFEQ' => 'bar3']));
+
+        $this->assertEquals('bar2', $this->redis->set('foo', 'bar3', ['IFEQ' => 'bar2', 'GET']));
     }
 
     public function testGetSet() {
