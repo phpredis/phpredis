@@ -3831,11 +3831,37 @@ redis_uncompress(RedisSock *redis_sock, char **dst, size_t *dstlen, const char *
     return 0;
 }
 
+static int serialize_generic_zval(char **dst, size_t *len, zval *zsrc) {
+    zend_string *zstr;
+
+    zstr = zval_get_string_func(zsrc);
+    if (ZSTR_IS_INTERNED(zstr)) {
+        *dst = ZSTR_VAL(zstr);
+        *len = ZSTR_LEN(zstr);
+        return 0;
+    }
+
+    *dst = estrndup(ZSTR_VAL(zstr), ZSTR_LEN(zstr));
+    *len = ZSTR_LEN(zstr);
+
+    zend_string_release(zstr);
+
+    return 1;
+}
+
+
 PHP_REDIS_API int
 redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len) {
     size_t tmplen;
     int tmpfree;
     char *tmp;
+
+    /* Don't pack actual numbers if the user asked us not to */
+    if (UNEXPECTED(redis_sock->pack_ignore_numbers &&
+                   (Z_TYPE_P(z) == IS_LONG || Z_TYPE_P(z) == IS_DOUBLE)))
+    {
+        return serialize_generic_zval(val, val_len, z);
+    }
 
     /* First serialize */
     tmpfree = redis_serialize(redis_sock, z, &tmp, &tmplen);
@@ -3851,8 +3877,28 @@ redis_pack(RedisSock *redis_sock, zval *z, char **val, size_t *val_len) {
 
 PHP_REDIS_API int
 redis_unpack(RedisSock *redis_sock, const char *src, int srclen, zval *zdst) {
+    zend_long lval;
+    double dval;
     size_t len;
     char *buf;
+
+    if (UNEXPECTED((redis_sock->serializer != REDIS_SERIALIZER_NONE &&
+                    redis_sock->compression != REDIS_COMPRESSION_NONE) &&
+                    redis_sock->pack_ignore_numbers) &&
+                    srclen > 0 && srclen < 24)
+    {
+        switch (is_numeric_string(src, srclen, &lval, &dval, 0)) {
+            case IS_LONG:
+                ZVAL_LONG(zdst, lval);
+                return 1;
+            case IS_DOUBLE:
+                ZVAL_DOUBLE(zdst, dval);
+                return 1;
+            default:
+                /* Fallthrough */
+                break;
+        }
+    }
 
     /* Uncompress, then unserialize */
     if (redis_uncompress(redis_sock, &buf, &len, src, srclen)) {
@@ -3898,18 +3944,8 @@ redis_serialize(RedisSock *redis_sock, zval *z, char **val, size_t *val_len)
                     *val_len = 5;
                     break;
 
-                default: { /* copy */
-                    zend_string *zstr = zval_get_string_func(z);
-                    if (ZSTR_IS_INTERNED(zstr)) { // do not reallocate interned strings
-                        *val = ZSTR_VAL(zstr);
-                        *val_len = ZSTR_LEN(zstr);
-                        return 0;
-                    }
-                    *val = estrndup(ZSTR_VAL(zstr), ZSTR_LEN(zstr));
-                    *val_len = ZSTR_LEN(zstr);
-                    zend_string_efree(zstr);
-                    return 1;
-                }
+                default:
+                    return serialize_generic_zval(val, val_len, z);
             }
             break;
         case REDIS_SERIALIZER_PHP:

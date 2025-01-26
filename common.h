@@ -91,20 +91,21 @@ typedef enum _PUBSUB_TYPE {
 #define REDIS_SUBS_BUCKETS   3
 
 /* options */
-#define REDIS_OPT_SERIALIZER         1
-#define REDIS_OPT_PREFIX             2
-#define REDIS_OPT_READ_TIMEOUT       3
-#define REDIS_OPT_SCAN               4
-#define REDIS_OPT_FAILOVER           5
-#define REDIS_OPT_TCP_KEEPALIVE      6
-#define REDIS_OPT_COMPRESSION        7
-#define REDIS_OPT_REPLY_LITERAL      8
-#define REDIS_OPT_COMPRESSION_LEVEL  9
-#define REDIS_OPT_NULL_MBULK_AS_NULL 10
-#define REDIS_OPT_MAX_RETRIES        11
-#define REDIS_OPT_BACKOFF_ALGORITHM  12
-#define REDIS_OPT_BACKOFF_BASE       13
-#define REDIS_OPT_BACKOFF_CAP        14
+#define REDIS_OPT_SERIALIZER          1
+#define REDIS_OPT_PREFIX              2
+#define REDIS_OPT_READ_TIMEOUT        3
+#define REDIS_OPT_SCAN                4
+#define REDIS_OPT_FAILOVER            5
+#define REDIS_OPT_TCP_KEEPALIVE       6
+#define REDIS_OPT_COMPRESSION         7
+#define REDIS_OPT_REPLY_LITERAL       8
+#define REDIS_OPT_COMPRESSION_LEVEL   9
+#define REDIS_OPT_NULL_MBULK_AS_NULL  10
+#define REDIS_OPT_MAX_RETRIES         11
+#define REDIS_OPT_BACKOFF_ALGORITHM   12
+#define REDIS_OPT_BACKOFF_BASE        13
+#define REDIS_OPT_BACKOFF_CAP         14
+#define REDIS_OPT_PACK_IGNORE_NUMBERS 15
 
 /* cluster options */
 #define REDIS_FAILOVER_NONE              0
@@ -300,6 +301,7 @@ typedef struct {
     zend_string         *persistent_id;
     HashTable           *subs[REDIS_SUBS_BUCKETS];
     redis_serializer    serializer;
+    zend_bool           pack_ignore_numbers;
     int                 compression;
     int                 compression_level;
     long                dbNumber;

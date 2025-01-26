@@ -76,7 +76,7 @@ class Redis_Test extends TestSuite {
         $info = $this->redis->info();
         $this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
         $this->is_keydb = $this->detectKeyDB($info);
-        $this->is_valkey = $this->detectValKey($info); 
+        $this->is_valkey = $this->detectValKey($info);
     }
 
     protected function minVersionCheck($version) {
@@ -4956,6 +4956,104 @@ class Redis_Test extends TestSuite {
         $this->redis->setOption(Redis::OPT_PREFIX, 'test:');
         $this->checkSerializer(Redis::SERIALIZER_PHP);
         $this->redis->setOption(Redis::OPT_PREFIX, '');
+    }
+
+    private function cartesianProduct(array $arrays) {
+        $result = [[]];
+
+        foreach ($arrays as $array) {
+            $append = [];
+            foreach ($result as $product) {
+                foreach ($array as $item) {
+                    $newProduct = $product;
+                    $newProduct[] = $item;
+                    $append[] = $newProduct;
+                }
+            }
+
+            $result = $append;
+        }
+
+        return $result;
+    }
+
+    public function testIgnoreNumbers() {
+        $combinations = $this->cartesianProduct([
+            [false, true, false],
+            $this->getSerializers(),
+            $this->getCompressors(),
+        ]);
+
+        foreach ($combinations as [$ignore, $serializer, $compression]) {
+            $this->redis->setOption(Redis::OPT_PACK_IGNORE_NUMBERS, $ignore);
+            $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+            $this->redis->setOption(Redis::OPT_COMPRESSION, $compression);
+
+            $this->assertIsInt($this->redis->del('answer'));
+            $this->assertIsInt($this->redis->del('hash'));
+
+            $transparent = $compression === Redis::COMPRESSION_NONE &&
+                           ($serializer === Redis::SERIALIZER_NONE ||
+                            $serializer === Redis::SERIALIZER_JSON);
+
+            if ($transparent || $ignore) {
+                $expected_answer = 42;
+                $expected_pi = 3.14;
+            } else {
+                $expected_answer = false;
+                $expected_pi = false;
+            }
+
+            $this->assertTrue($this->redis->set('answer', 32));
+            $this->assertEquals($expected_answer, $this->redis->incr('answer', 10));
+
+            $this->assertTrue($this->redis->set('pi', 3.04));
+            $this->assertEquals($expected_pi, $this->redis->incrByFloat('pi', 0.1));
+
+            $this->assertEquals(1, $this->redis->hset('hash', 'answer', 32));
+            $this->assertEquals($expected_answer, $this->redis->hIncrBy('hash', 'answer', 10));
+
+            $this->assertEquals(1, $this->redis->hset('hash', 'pi', 3.04));
+            $this->assertEquals($expected_pi, $this->redis->hIncrByFloat('hash', 'pi', 0.1));
+        }
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+        $this->redis->setOption(Redis::OPT_PACK_IGNORE_NUMBERS, false);
+    }
+
+    function testIgnoreNumbersReturnTypes() {
+        $combinations = $this->cartesianProduct([
+            [false, true],
+            array_filter($this->getSerializers(), function($s) {
+                return $s !== Redis::SERIALIZER_NONE;
+            }),
+            array_filter($this->getCompressors(), function($c) {
+                return $c !== Redis::COMPRESSION_NONE;
+            }),
+        ]);
+
+        foreach ($combinations as [$ignore, $serializer, $compression]) {
+            $this->redis->setOption(Redis::OPT_PACK_IGNORE_NUMBERS, $ignore);
+            $this->redis->setOption(Redis::OPT_SERIALIZER, $serializer);
+            $this->redis->setOption(Redis::OPT_COMPRESSION, $compression);
+
+            foreach ([42, 3.14] as $value) {
+                $this->assertTrue($this->redis->set('key', $value));
+
+                /* There's a known issue in the PHP JSON parser, which
+                   can stringify numbers. Unclear the root cause */
+                if ($serializer == Redis::SERIALIZER_JSON) {
+                    $this->assertEqualsWeak($value, $this->redis->get('key'));
+                } else {
+                    $this->assertEquals($value, $this->redis->get('key'));
+                }
+            }
+        }
+
+        $this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_NONE);
+        $this->redis->setOption(Redis::OPT_COMPRESSION, Redis::COMPRESSION_NONE);
+        $this->redis->setOption(Redis::OPT_PACK_IGNORE_NUMBERS, false);
     }
 
     public function testSerializerIGBinary() {

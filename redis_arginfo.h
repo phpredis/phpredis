@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 1f8f22ab9cd1635066463b20ab12d295c11b4ac7 */
+ * Stub hash: 78283cf59cefb411c09adf7a0f0bd234c65327b3 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -1816,6 +1816,12 @@ static zend_class_entry *register_class_Redis(void)
 	zend_string *const_OPT_NULL_MULTIBULK_AS_NULL_name = zend_string_init_interned("OPT_NULL_MULTIBULK_AS_NULL", sizeof("OPT_NULL_MULTIBULK_AS_NULL") - 1, 1);
 	zend_declare_class_constant_ex(class_entry, const_OPT_NULL_MULTIBULK_AS_NULL_name, &const_OPT_NULL_MULTIBULK_AS_NULL_value, ZEND_ACC_PUBLIC, NULL);
 	zend_string_release(const_OPT_NULL_MULTIBULK_AS_NULL_name);
+
+	zval const_OPT_PACK_IGNORE_NUMBERS_value;
+	ZVAL_LONG(&const_OPT_PACK_IGNORE_NUMBERS_value, REDIS_OPT_PACK_IGNORE_NUMBERS);
+	zend_string *const_OPT_PACK_IGNORE_NUMBERS_name = zend_string_init_interned("OPT_PACK_IGNORE_NUMBERS", sizeof("OPT_PACK_IGNORE_NUMBERS") - 1, 1);
+	zend_declare_class_constant_ex(class_entry, const_OPT_PACK_IGNORE_NUMBERS_name, &const_OPT_PACK_IGNORE_NUMBERS_value, ZEND_ACC_PUBLIC, NULL);
+	zend_string_release(const_OPT_PACK_IGNORE_NUMBERS_name);
 
 	zval const_SERIALIZER_NONE_value;
 	ZVAL_LONG(&const_SERIALIZER_NONE_value, REDIS_SERIALIZER_NONE);

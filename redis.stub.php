@@ -152,6 +152,13 @@ class Redis {
     public const OPT_NULL_MULTIBULK_AS_NULL = UNKNOWN;
 
     /**
+     * @var int
+     * @cvalue REDIS_OPT_PACK_IGNORE_NUMBERS
+     *
+     */
+    public const OPT_PACK_IGNORE_NUMBERS = UNKNOWN;
+
+    /**
      *
      * @var int
      * @cvalue REDIS_SERIALIZER_NONE
