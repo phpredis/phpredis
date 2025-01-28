@@ -3882,10 +3882,10 @@ redis_unpack(RedisSock *redis_sock, const char *src, int srclen, zval *zdst) {
     size_t len;
     char *buf;
 
-    if (UNEXPECTED((redis_sock->serializer != REDIS_SERIALIZER_NONE &&
+    if (UNEXPECTED((redis_sock->serializer != REDIS_SERIALIZER_NONE ||
                     redis_sock->compression != REDIS_COMPRESSION_NONE) &&
                     redis_sock->pack_ignore_numbers) &&
-                    srclen > 0 && srclen < 24)
+                    srclen > 0 && srclen < 512)
     {
         switch (is_numeric_string(src, srclen, &lval, &dval, 0)) {
             case IS_LONG:
