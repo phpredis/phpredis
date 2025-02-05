@@ -155,6 +155,25 @@ class Redis {
      * @var int
      * @cvalue REDIS_OPT_PACK_IGNORE_NUMBERS
      *
+     * When enabled, this option tells PhpRedis to ignore purely numeric values
+     * when packing and unpacking data. This does not include numeric strings.
+     * If you want numeric strings to be ignored, typecast them to an int or float.
+     *
+     * The primary purpose of this option is to make it more ergonomic when
+     * setting keys that will later be incremented or decremented.
+     *
+     * Note: This option incurs a small performance penalty when reading data
+     * because we have to see if the data is a string representation of an int
+     * or float.
+     *
+     * @example
+     * $redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_IGBINARY);
+     * $redis->setOption(Redis::OPT_PACK_IGNORE_NUMBERS, true);
+     *
+     * $redis->set('answer', 32);
+     *
+     * var_dump($redis->incrBy('answer', 10));  // int(42)
+     * var_dump($redis->get('answer'));         // int(42)
      */
     public const OPT_PACK_IGNORE_NUMBERS = UNKNOWN;
 
