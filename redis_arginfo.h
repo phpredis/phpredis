@@ -1,5 +1,8 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 3c4051fdd9f860523bcd72aba260b1af823d1d9c */
+ * Stub hash: e538a2a4594f37cda5e77021186efb696ceb83c3 */
+
+ZEND_STATIC_ASSERT(PHP_VERSION_ID >= 80000, "redis_arginfo.h only supports PHP version ID 80000 or newer, "
+	"but it is included on an older PHP version");
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -1179,7 +1182,6 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_zunionstore arginfo_class_Redis_zinterstore
 
-
 ZEND_METHOD(Redis, __construct);
 ZEND_METHOD(Redis, __destruct);
 ZEND_METHOD(Redis, _compress);
@@ -1435,7 +1437,6 @@ ZEND_METHOD(Redis, zscan);
 ZEND_METHOD(Redis, zunion);
 ZEND_METHOD(Redis, zunionstore);
 
-
 static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, __construct, arginfo_class_Redis___construct, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, __destruct, arginfo_class_Redis___destruct, ZEND_ACC_PUBLIC)
@@ -1476,7 +1477,11 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, decr, arginfo_class_Redis_decr, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, decrBy, arginfo_class_Redis_decrBy, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, del, arginfo_class_Redis_del, ZEND_ACC_PUBLIC)
-	ZEND_MALIAS(Redis, delete, del, arginfo_class_Redis_delete, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
+#if (PHP_VERSION_ID >= 80400)
+	ZEND_RAW_FENTRY("delete", zim_Redis_del, arginfo_class_Redis_delete, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED, NULL, NULL)
+#else
+	ZEND_RAW_FENTRY("delete", zim_Redis_del, arginfo_class_Redis_delete, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
+#endif
 	ZEND_ME(Redis, discard, arginfo_class_Redis_discard, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, dump, arginfo_class_Redis_dump, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, echo, arginfo_class_Redis_echo, ZEND_ACC_PUBLIC)
@@ -1572,7 +1577,11 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, msetnx, arginfo_class_Redis_msetnx, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, multi, arginfo_class_Redis_multi, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, object, arginfo_class_Redis_object, ZEND_ACC_PUBLIC)
-	ZEND_MALIAS(Redis, open, connect, arginfo_class_Redis_open, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
+#if (PHP_VERSION_ID >= 80400)
+	ZEND_RAW_FENTRY("open", zim_Redis_connect, arginfo_class_Redis_open, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED, NULL, NULL)
+#else
+	ZEND_RAW_FENTRY("open", zim_Redis_connect, arginfo_class_Redis_open, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
+#endif
 	ZEND_ME(Redis, pconnect, arginfo_class_Redis_pconnect, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, persist, arginfo_class_Redis_persist, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, pexpire, arginfo_class_Redis_pexpire, ZEND_ACC_PUBLIC)
@@ -1582,7 +1591,11 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, pfmerge, arginfo_class_Redis_pfmerge, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, ping, arginfo_class_Redis_ping, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, pipeline, arginfo_class_Redis_pipeline, ZEND_ACC_PUBLIC)
-	ZEND_MALIAS(Redis, popen, pconnect, arginfo_class_Redis_popen, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
+#if (PHP_VERSION_ID >= 80400)
+	ZEND_RAW_FENTRY("popen", zim_Redis_pconnect, arginfo_class_Redis_popen, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED, NULL, NULL)
+#else
+	ZEND_RAW_FENTRY("popen", zim_Redis_pconnect, arginfo_class_Redis_popen, ZEND_ACC_PUBLIC|ZEND_ACC_DEPRECATED)
+#endif
 	ZEND_ME(Redis, psetex, arginfo_class_Redis_psetex, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, psubscribe, arginfo_class_Redis_psubscribe, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, pttl, arginfo_class_Redis_pttl, ZEND_ACC_PUBLIC)
@@ -1696,7 +1709,6 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, zunionstore, arginfo_class_Redis_zunionstore, ZEND_ACC_PUBLIC)
 	ZEND_FE_END
 };
-
 
 static const zend_function_entry class_RedisException_methods[] = {
 	ZEND_FE_END
