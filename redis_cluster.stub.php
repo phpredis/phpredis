@@ -1139,7 +1139,7 @@ class RedisCluster {
     /**
      * @see Redis::zremrangebyrank
      */
-    public function zremrangebyrank(string $key, string $min, string $max): RedisCluster|int|false;
+    public function zremrangebyrank(string $key, int $min, int $max): RedisCluster|int|false;
 
     /**
      * @see Redis::zremrangebyscore

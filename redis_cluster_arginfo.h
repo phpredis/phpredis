@@ -1,5 +1,8 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: b9310b607794caa862d509ba316a2a512d2736fe */
+ * Stub hash: 8257c3e1ade1600e23ec089b3bf3e575d8c07464 */
+
+ZEND_STATIC_ASSERT(PHP_VERSION_ID >= 80000, "redis_cluster_arginfo.h only supports PHP version ID 80000 or newer, "
+	"but it is included on an older PHP version");
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_RedisCluster___construct, 0, 0, 1)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 1)
@@ -1003,7 +1006,11 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_zremrangebylex arginfo_class_RedisCluster_zlexcount
 
-#define arginfo_class_RedisCluster_zremrangebyrank arginfo_class_RedisCluster_zlexcount
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zremrangebyrank, 0, 3, RedisCluster, MAY_BE_LONG|MAY_BE_FALSE)
+	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, min, IS_LONG, 0)
+	ZEND_ARG_TYPE_INFO(0, max, IS_LONG, 0)
+ZEND_END_ARG_INFO()
 
 #define arginfo_class_RedisCluster_zremrangebyscore arginfo_class_RedisCluster_zlexcount
 
@@ -1057,7 +1064,6 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_RedisCluster_zdiff, 0,
 	ZEND_ARG_TYPE_INFO(0, keys, IS_ARRAY, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
 ZEND_END_ARG_INFO()
-
 
 ZEND_METHOD(RedisCluster, __construct);
 ZEND_METHOD(RedisCluster, _compress);
@@ -1285,7 +1291,6 @@ ZEND_METHOD(RedisCluster, zinter);
 ZEND_METHOD(RedisCluster, zdiffstore);
 ZEND_METHOD(RedisCluster, zunion);
 ZEND_METHOD(RedisCluster, zdiff);
-
 
 static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, __construct, arginfo_class_RedisCluster___construct, ZEND_ACC_PUBLIC)
@@ -1516,7 +1521,6 @@ static const zend_function_entry class_RedisCluster_methods[] = {
 	ZEND_ME(RedisCluster, zdiff, arginfo_class_RedisCluster_zdiff, ZEND_ACC_PUBLIC)
 	ZEND_FE_END
 };
-
 
 static const zend_function_entry class_RedisClusterException_methods[] = {
 	ZEND_FE_END
