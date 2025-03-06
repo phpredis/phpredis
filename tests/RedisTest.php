@@ -654,6 +654,13 @@ class Redis_Test extends TestSuite {
         $this->assertEquals('123', $this->redis->getSet('key', '123'));
     }
 
+    public function testGetDel() {
+        $this->redis->del('key');
+        $this->assertTrue($this->redis->set('key', 'iexist'));
+        $this->assertEquals('iexist', $this->redis->getDel('key'));
+        $this->assertEquals(0, $this->redis->exists('key'));
+    }
+
     public function testRandomKey() {
         for ($i = 0; $i < 1000; $i++) {
             $k = $this->redis->randomKey();

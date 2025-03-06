@@ -391,6 +391,11 @@ class RedisCluster {
     public function get(string $key): mixed;
 
     /**
+     * @see Redis::getdel
+     */
+    public function getdel(string $key): mixed;
+
+    /**
      * @see Redis::getWithMeta
      */
     public function getWithMeta(string $key): RedisCluster|array|false;

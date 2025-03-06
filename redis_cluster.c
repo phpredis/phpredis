@@ -287,6 +287,12 @@ PHP_METHOD(RedisCluster, get) {
 }
 /* }}} */
 
+/* {{{ proto string RedisCluster::getdel(string key) */
+PHP_METHOD(RedisCluster, getdel) {
+    CLUSTER_PROCESS_KW_CMD("GETDEL", redis_key_cmd, cluster_bulk_resp, 1);
+}
+/* }}} */
+
 /* {{{ proto array|false RedisCluster::getWithMeta(string key) */
 PHP_METHOD(RedisCluster, getWithMeta) {
     redisCluster *c = GET_CONTEXT();
