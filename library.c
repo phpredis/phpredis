@@ -765,13 +765,13 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
     size_t len;
 
     *buf_len = 0;
-    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0) {
+    if (redis_sock_gets(redis_sock, inbuf, sizeof(inbuf) - 1, &len) < 0 || len < 1) {
         return NULL;
     }
 
     switch(inbuf[0]) {
         case '-':
-            redis_sock_set_err(redis_sock, inbuf+1, len);
+            redis_sock_set_err(redis_sock, inbuf + 1, len - 1);
 
             /* Filter our ERROR through the few that should actually throw */
             redis_error_throw(redis_sock);
@@ -783,7 +783,7 @@ redis_sock_read(RedisSock *redis_sock, int *buf_len)
 
         case '*':
             /* For null multi-bulk replies (like timeouts from brpoplpush): */
-            if(memcmp(inbuf + 1, "-1", 2) == 0) {
+            if(len > 2 && memcmp(inbuf + 1, "-1", 2) == 0) {
                 return NULL;
             }
             REDIS_FALLTHROUGH;
