@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 6dd5a9e9d1d5ed8a78e248c99352232e30046f28 */
+ * Stub hash: 79376d7ada29d6f9bb873e7c59e64e22af3ca559 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_INFO(0, options)
@@ -332,6 +332,10 @@ ZEND_END_ARG_INFO()
 #define arginfo_class_Redis_getPersistentID arginfo_class_Redis___destruct
 
 #define arginfo_class_Redis_getPort arginfo_class_Redis___destruct
+
+#define arginfo_class_Redis_serverName arginfo_class_Redis___destruct
+
+#define arginfo_class_Redis_serverVersion arginfo_class_Redis___destruct
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis_getRange, 0, 0, 3)
 	ZEND_ARG_INFO(0, key)
@@ -1106,6 +1110,8 @@ ZEND_METHOD(Redis, getMode);
 ZEND_METHOD(Redis, getOption);
 ZEND_METHOD(Redis, getPersistentID);
 ZEND_METHOD(Redis, getPort);
+ZEND_METHOD(Redis, serverName);
+ZEND_METHOD(Redis, serverVersion);
 ZEND_METHOD(Redis, getRange);
 ZEND_METHOD(Redis, lcs);
 ZEND_METHOD(Redis, getReadTimeout);
@@ -1365,6 +1371,8 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, getOption, arginfo_class_Redis_getOption, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getPersistentID, arginfo_class_Redis_getPersistentID, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getPort, arginfo_class_Redis_getPort, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, serverName, arginfo_class_Redis_serverName, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, serverVersion, arginfo_class_Redis_serverVersion, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getRange, arginfo_class_Redis_getRange, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, lcs, arginfo_class_Redis_lcs, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getReadTimeout, arginfo_class_Redis_getReadTimeout, ZEND_ACC_PUBLIC)

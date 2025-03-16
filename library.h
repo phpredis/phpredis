@@ -211,6 +211,9 @@ PHP_REDIS_API int redis_function_response(INTERNAL_FUNCTION_PARAMETERS, RedisSoc
 PHP_REDIS_API int redis_command_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 PHP_REDIS_API int redis_select_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
 
+PHP_REDIS_API int redis_hello_server_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
+PHP_REDIS_API int redis_hello_version_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx);
+
 /* Helper methods to get configuration values from a HashTable. */
 
 #define REDIS_HASH_STR_FIND_STATIC(ht, sstr) \

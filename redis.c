@@ -2577,6 +2577,30 @@ PHP_METHOD(Redis, getPort) {
     }
 }
 
+PHP_METHOD(Redis, serverName) {
+    RedisSock *rs;
+
+    if ((rs = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU)) == NULL) {
+        RETURN_FALSE;
+    } else if (rs->hello.server != NULL) {
+        RETURN_STR_COPY(rs->hello.server);
+    }
+
+    REDIS_PROCESS_KW_CMD("HELLO", redis_empty_cmd, redis_hello_server_response);
+}
+
+PHP_METHOD(Redis, serverVersion) {
+    RedisSock *rs;
+
+    if ((rs = redis_sock_get_connected(INTERNAL_FUNCTION_PARAM_PASSTHRU)) == NULL) {
+        RETURN_FALSE;
+    } else if (rs->hello.version != NULL) {
+        RETURN_STR_COPY(rs->hello.version);
+    }
+
+    REDIS_PROCESS_KW_CMD("HELLO", redis_empty_cmd, redis_hello_version_response);
+}
+
 /* {{{ proto Redis::getDBNum */
 PHP_METHOD(Redis, getDBNum) {
     RedisSock *redis_sock;

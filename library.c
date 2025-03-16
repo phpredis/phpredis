@@ -2047,6 +2047,75 @@ redis_client_response(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval 
 }
 
 static int
+redis_hello_response(INTERNAL_FUNCTION_PARAMETERS,
+                     RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    int numElems;
+    zval z_ret, *zv;
+
+    if (read_mbulk_header(redis_sock, &numElems) < 0) {
+        if (IS_ATOMIC(redis_sock)) {
+            RETVAL_FALSE;
+        } else {
+            add_next_index_bool(z_tab, 0);
+        }
+        return FAILURE;
+    }
+
+    array_init(&z_ret);
+    redis_mbulk_reply_zipped_raw_variant(redis_sock, &z_ret, numElems);
+
+    if (redis_sock->hello.server) {
+        zend_string_release(redis_sock->hello.server);
+    }
+    zv = zend_hash_str_find(Z_ARRVAL(z_ret), ZEND_STRL("server"));
+    redis_sock->hello.server = zv ? zval_get_string(zv) : ZSTR_EMPTY_ALLOC();
+
+    if (redis_sock->hello.version) {
+        zend_string_release(redis_sock->hello.version);
+    }
+    zv = zend_hash_str_find(Z_ARRVAL(z_ret), ZEND_STRL("version"));
+    redis_sock->hello.version = zv ? zval_get_string(zv) : ZSTR_EMPTY_ALLOC();
+
+    if (ctx != NULL) {
+        zval_dtor(&z_ret);
+        if (ctx == PHPREDIS_CTX_PTR) {
+            ZVAL_STR_COPY(&z_ret, redis_sock->hello.server);
+        } else if (ctx == PHPREDIS_CTX_PTR + 1) {
+            ZVAL_STR_COPY(&z_ret, redis_sock->hello.version);
+        } else {
+            ZEND_ASSERT(!"memory corruption?");
+            return FAILURE;
+        }
+    }
+
+    if (IS_ATOMIC(redis_sock)) {
+        RETVAL_ZVAL(&z_ret, 0, 1);
+    } else {
+        add_next_index_zval(z_tab, &z_ret);
+    }
+
+    return SUCCESS;
+}
+
+
+PHP_REDIS_API int
+redis_hello_server_response(INTERNAL_FUNCTION_PARAMETERS,
+                            RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    return redis_hello_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                                z_tab, PHPREDIS_CTX_PTR);
+}
+
+PHP_REDIS_API int
+redis_hello_version_response(INTERNAL_FUNCTION_PARAMETERS,
+                             RedisSock *redis_sock, zval *z_tab, void *ctx)
+{
+    return redis_hello_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock,
+                                z_tab, PHPREDIS_CTX_PTR + 1);
+}
+
+static int
 redis_function_reply(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, zval *z_tab, void *ctx)
 {
     int numElems;
@@ -3578,6 +3647,19 @@ redis_free_reply_callbacks(RedisSock *redis_sock)
     }
 }
 
+static void
+redis_sock_release_hello(struct RedisHello *hello) {
+    if (hello->server) {
+        zend_string_release(hello->server);
+        hello->server = NULL;
+    }
+
+    if (hello->version) {
+        zend_string_release(hello->version);
+        hello->version = NULL;
+    }
+}
+
 /**
  * redis_free_socket
  */
@@ -3607,6 +3689,7 @@ PHP_REDIS_API void redis_free_socket(RedisSock *redis_sock)
     }
     redis_sock_free_auth(redis_sock);
     redis_free_reply_callbacks(redis_sock);
+    redis_sock_release_hello(&redis_sock->hello);
     efree(redis_sock);
 }
 

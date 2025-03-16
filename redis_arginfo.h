@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 6dd5a9e9d1d5ed8a78e248c99352232e30046f28 */
+ * Stub hash: 79376d7ada29d6f9bb873e7c59e64e22af3ca559 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_Redis___construct, 0, 0, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, options, IS_ARRAY, 1, "null")
@@ -363,6 +363,11 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_Redis_getPort arginfo_class_Redis_getDBNum
 
+ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_serverName, 0, 0, Redis, MAY_BE_STRING|MAY_BE_FALSE)
+ZEND_END_ARG_INFO()
+
+#define arginfo_class_Redis_serverVersion arginfo_class_Redis_serverName
+
 ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_getRange, 0, 3, Redis, MAY_BE_STRING|MAY_BE_FALSE)
 	ZEND_ARG_TYPE_INFO(0, key, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, start, IS_LONG, 0)
@@ -681,8 +686,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_rPop, 0, 1, Redi
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, count, IS_LONG, 0, "0")
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_OBJ_TYPE_MASK_EX(arginfo_class_Redis_randomKey, 0, 0, Redis, MAY_BE_STRING|MAY_BE_FALSE)
-ZEND_END_ARG_INFO()
+#define arginfo_class_Redis_randomKey arginfo_class_Redis_serverName
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_Redis_rawcommand, 0, 1, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, command, IS_STRING, 0)
@@ -1263,6 +1267,8 @@ ZEND_METHOD(Redis, getMode);
 ZEND_METHOD(Redis, getOption);
 ZEND_METHOD(Redis, getPersistentID);
 ZEND_METHOD(Redis, getPort);
+ZEND_METHOD(Redis, serverName);
+ZEND_METHOD(Redis, serverVersion);
 ZEND_METHOD(Redis, getRange);
 ZEND_METHOD(Redis, lcs);
 ZEND_METHOD(Redis, getReadTimeout);
@@ -1522,6 +1528,8 @@ static const zend_function_entry class_Redis_methods[] = {
 	ZEND_ME(Redis, getOption, arginfo_class_Redis_getOption, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getPersistentID, arginfo_class_Redis_getPersistentID, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getPort, arginfo_class_Redis_getPort, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, serverName, arginfo_class_Redis_serverName, ZEND_ACC_PUBLIC)
+	ZEND_ME(Redis, serverVersion, arginfo_class_Redis_serverVersion, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getRange, arginfo_class_Redis_getRange, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, lcs, arginfo_class_Redis_lcs, ZEND_ACC_PUBLIC)
 	ZEND_ME(Redis, getReadTimeout, arginfo_class_Redis_getReadTimeout, ZEND_ACC_PUBLIC)

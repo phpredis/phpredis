@@ -287,6 +287,11 @@ static inline int redis_strncmp(const char *s1, const char *s2, size_t n) {
 #define RESP_EXEC_CMD          "*1\r\n$4\r\nEXEC\r\n"
 #define RESP_DISCARD_CMD       "*1\r\n$7\r\nDISCARD\r\n"
 
+typedef struct RedisHello {
+    zend_string *server;
+    zend_string *version;
+} RedisHello;
+
 /* {{{ struct RedisSock */
 typedef struct {
     php_stream          *stream;
@@ -310,9 +315,8 @@ typedef struct {
     int                 compression;
     int                 compression_level;
     long                dbNumber;
-
     zend_string         *prefix;
-
+    struct RedisHello   hello;
     short               mode;
     struct fold_item    *reply_callback;
     size_t              reply_callback_count;
@@ -320,7 +324,6 @@ typedef struct {
     smart_string        pipeline_cmd;
 
     zend_string         *err;
-
     int                 scan;
 
     int                 readonly;

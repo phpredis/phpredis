@@ -1591,6 +1591,20 @@ class Redis {
     public function getPort(): int;
 
     /**
+     * Get the server name as reported by the `HELLO` response.
+     *
+     * @return string|false
+     */
+    public function serverName(): Redis|string|false;
+
+    /**
+     * Get the server version as reported by the `HELLO` response.
+     *
+     * @return string|false
+     */
+    public function serverVersion(): Redis|string|false;
+
+    /**
      * Retrieve a substring of a string by index.
      *
      * @param string $key   The string to query.
