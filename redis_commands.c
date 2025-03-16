@@ -2293,8 +2293,8 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                   char **cmd, int *cmd_len, short *slot, void **ctx)
 {
     char *key = NULL, *exp_type = NULL, *set_type = NULL;
-    zend_string *ifeq = NULL, *tmp = NULL;
-    zval *z_value, *z_opts = NULL;
+    zval *z_value, *z_opts = NULL, *ifeq = NULL;
+    zend_string *zstr = NULL, *tmp = NULL;
     smart_string cmdstr = {0};
     zend_long expire = -1;
     zend_bool get = 0;
@@ -2329,14 +2329,13 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
                          zend_string_equals_literal_ci(zkey, "PXAT"))
             ) {
                 if (redis_try_get_expiry(v, &expire) == FAILURE || expire < 1) {
-                    zend_tmp_string_release(tmp);
                     setExpiryWarning(v);
                     return FAILURE;
                 }
 
                 exp_type = ZSTR_VAL(zkey);
-            } else if (zkey && !ifeq && zend_string_equals_literal_ci(zkey, "IFEQ")) {
-                ifeq = zval_get_tmp_string(v, &tmp);
+            } else if (zkey && zend_string_equals_literal_ci(zkey, "IFEQ")) {
+                ifeq = v;
             } else if (Z_TYPE_P(v) == IS_STRING) {
                 if (zend_string_equals_literal_ci(Z_STR_P(v), "KEEPTTL")) {
                     keep_ttl  = 1;
@@ -2351,7 +2350,6 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         } ZEND_HASH_FOREACH_END();
     } else if (z_opts && Z_TYPE_P(z_opts) != IS_NULL) {
         if (redis_try_get_expiry(z_opts, &expire) == FAILURE || expire < 1) {
-            zend_tmp_string_release(tmp);
             setExpiryWarning(z_opts);
             return FAILURE;
         }
@@ -2360,14 +2358,12 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     /* Protect the user from syntax errors but give them some info about what's wrong */
     if (exp_type && keep_ttl) {
         php_error_docref(NULL, E_WARNING, "KEEPTTL can't be combined with EX or PX option");
-        zend_tmp_string_release(tmp);
         return FAILURE;
     }
 
     /* You can't use IFEQ with NX or XX */
     if (set_type && ifeq) {
         php_error_docref(NULL, E_WARNING, "IFEQ can't be combined with NX or XX option");
-        zend_tmp_string_release(tmp);
         return FAILURE;
     }
 
@@ -2375,7 +2371,6 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
      * actually execute a SETEX command */
     if (expire > 0 && !exp_type && !set_type && !keep_ttl) {
         *cmd_len = REDIS_CMD_SPPRINTF(cmd, "SETEX", "klv", key, key_len, expire, z_value);
-        zend_tmp_string_release(tmp);
         return SUCCESS;
     }
 
@@ -2388,26 +2383,26 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     redis_cmd_append_sstr_key(&cmdstr, key, key_len, redis_sock, slot);
     redis_cmd_append_sstr_zval(&cmdstr, z_value, redis_sock);
 
-    if (exp_type) {
-        redis_cmd_append_sstr(&cmdstr, exp_type, strlen(exp_type));
-        redis_cmd_append_sstr_long(&cmdstr, (long)expire);
-    }
-
     if (ifeq) {
+        zstr = zval_get_tmp_string(ifeq, &tmp);
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "IFEQ");
-        redis_cmd_append_sstr_zstr(&cmdstr, ifeq);
+        redis_cmd_append_sstr_zstr(&cmdstr, zstr);
+        zend_tmp_string_release(tmp);
     } else if (set_type) {
         redis_cmd_append_sstr(&cmdstr, set_type, strlen(set_type));
     }
 
-    if (keep_ttl)
-        redis_cmd_append_sstr(&cmdstr, "KEEPTTL", 7);
     if (get) {
         REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "GET");
         *ctx = PHPREDIS_CTX_PTR;
     }
 
-    zend_tmp_string_release(tmp);
+    if (exp_type) {
+        redis_cmd_append_sstr(&cmdstr, exp_type, strlen(exp_type));
+        redis_cmd_append_sstr_long(&cmdstr, (long)expire);
+    } else if (keep_ttl) {
+        REDIS_CMD_APPEND_SSTR_STATIC(&cmdstr, "KEEPTTL");
+    }
 
     /* Push command and length to the caller */
     *cmd = cmdstr.c;
